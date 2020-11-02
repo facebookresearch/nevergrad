@@ -72,10 +72,10 @@ class _EvolutionStrategy(base.Optimizer):
             else:
                 self._waiting.append(candidate)
             if len(self._waiting) >= self._config.offsprings:
-                self._simple_selection()
+                self._select()
 
 
-    def _simple_selection(self):
+    def _select(self):
         choices = self._waiting + ([] if self._config.only_offsprings else list(self._population.values()))
         if self._ranker is not None:
             choices_rank = self._ranker.rank(choices, self._config.popsize)
