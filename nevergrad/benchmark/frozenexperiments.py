@@ -4,18 +4,37 @@
 # LICENSE file in the root directory of this source tree.
 
 import typing as tp
+from uuid import uuid4 as uuid_gen
 import numpy as np
 from nevergrad import optimizers
 from nevergrad.optimization.base import ConfiguredOptimizer
 from nevergrad.optimization import experimentalvariants  # pylint: disable=unused-import
 from nevergrad.functions import ArtificialFunction
+from nevergrad.functions.perfcap3d.core import Perfcap3DExperimentConfig, Perfcap3DFunction, Perfcap3DServerComm
 from .xpbase import registry
 from .xpbase import create_seed_generator
 from .xpbase import Experiment
-from .perfcap.experiments import perfcap_experiment
 
 # pylint: disable=stop-iteration-return, too-many-nested-blocks
 
+def perfcap_experiment(experiment_filename: str, seedg: tp.Iterator[tp.Optional[int]]) -> tp.Iterator[Experiment]:
+    """
+    Factory function that creates Experiments for Perfcap3DFunction
+    """
+
+    cfg = Perfcap3DExperimentConfig(experiment_filename)
+    server_comm = Perfcap3DServerComm(cfg.server_config)
+
+    budgets = [2000, 4000, 7000]
+    optimizer_names = [ "Shiwa", "RandomSearch",
+                        "RealSpacePSO", "Powell", "DiscreteOnePlusOne",
+                        "CMA", "NGO", "TBPSA", "chainCMAPowell", "DE"]
+
+    # pylint: disable=stop-iteration-return
+    for budget in budgets:
+        for optim in optimizer_names:
+            yield Experiment(function=Perfcap3DFunction(server_comm, cfg.objective_function_config, str(uuid_gen())),
+                                optimizer=optim, budget=budget, seed=next(seedg))
 
 @registry.register
 def perfcap_bench1(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:

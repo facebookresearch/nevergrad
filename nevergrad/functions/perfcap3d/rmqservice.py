@@ -1,9 +1,3 @@
-#################################################################
-# Author: Alex Doumanoglou (al3x.doum@gmail.com / aldoum@iti.gr)
-# Information Technologies Institute - Visual Computing Lab (https://vcl.iti.gr)
-# 30 Sept 2020
-#################################################################
-
 import asyncio
 import typing as tp
 import threading
