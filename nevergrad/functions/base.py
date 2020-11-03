@@ -52,7 +52,7 @@ class ExperimentFunction:
             raise RuntimeError('"get_posponing_delay" has been replaced by "compute_pseudotime" and has been  aggressively deprecated')
         if hasattr(self, "noisefree_function"):
             raise RuntimeError('"noisefree_function" has been replaced by "evaluation_function" and has been  aggressively deprecated')
-        if len(self.parametrization.name) > 24:
+        if len(self.parametrization.name) > 240:
             raise RuntimeError(f"For the sake of benchmarking, please rename the current parametrization:\n{self.parametrization!r}\n"
                                "to a shorter name. This way it will be more readable in the experiments.\n"
                                'Eg: parametrization.set_name("") to just ignore it\n'
