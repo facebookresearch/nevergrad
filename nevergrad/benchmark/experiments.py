@@ -993,9 +993,9 @@ def neuro_control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experime
         f.parametrization.freeze()
         funcs2.append(f)
 
-    optims = ["RandomSearch", "Shiwa", "CMA", "NGOpt4", "DiagonalCMA", "NGOpt8"]
+    optims = ["CMA", "NGOpt4", "DiagonalCMA", "NGOpt8", "MetaModel", "chainCMAPowell"]
 
-    for budget in [50, 75, 100, 150, 200, 250, 300, 400, 500, 1000, 3000, 5000, 8000, 16000, 32000, 64000]:
+    for budget in [50, 500, 5000, 50000]:#, 75, 100, 150, 200, 250, 300, 400, 500, 1000, 3000, 5000, 8000, 16000, 32000, 64000]:
         for num_workers in [1]:
             if num_workers < budget:
                 for algo in optims:

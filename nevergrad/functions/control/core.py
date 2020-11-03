@@ -163,5 +163,5 @@ class Humanoid(BaseFunction):
 
     
 class NeuroHumanoid(Humanoid):
-    policy_dim = (17, 376)
-    policy_2ndlayer_dim = (17, 17)
+    policy_dim = (50, 376)
+    policy_2ndlayer_dim = (17, 50)
