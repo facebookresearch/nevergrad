@@ -57,7 +57,7 @@ class BaseFunction(ExperimentFunction):
                                num_rollouts=self.num_rollouts,
                                random_state=self.random_state)
         loss = env(x, y)
-        base.update_leaderboard(f'{self.env_name},{self.parametrization.dimension}', loss, x, verbose=True)
+        #base.update_leaderboard(f'{self.env_name},{self.parametrization.dimension}', loss, x, verbose=True)
         return loss
 
     @property
