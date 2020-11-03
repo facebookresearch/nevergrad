@@ -49,7 +49,7 @@ class GenericMujocoEnv:
                     if "Humanoid" in str(self.env):
                         action = 0.01 * action
                 if y is not None:
-                    action = np.dot(np.eye(y.shape[0], y.shape[1]) + 1.e-3 + y, action)
+                    action = np.dot(np.eye(y.shape[0], y.shape[1]) + 1.e-3 + y, np.tanh(action))
                 obs, r, done, _ = self.env.step(action)
                 totalr += r
             returns.append(totalr)
