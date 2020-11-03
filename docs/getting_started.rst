@@ -32,7 +32,7 @@ the :code:`[all]` flag (example: :code:`pip install -e .[all]`).
 Installing on Windows
 ---------------------
 
-For Windows installation, please refer to `the Windows documention <./windows.html>`_.
+For Windows installation, please refer to the `Windows documention <windows.html>`_.
 
 Basic optimization example
 --------------------------
