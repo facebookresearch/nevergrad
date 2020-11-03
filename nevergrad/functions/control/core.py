@@ -56,7 +56,9 @@ class BaseFunction(ExperimentFunction):
                                state_std=self.state_std,
                                num_rollouts=self.num_rollouts,
                                random_state=self.random_state)
-        return env(x, y)
+        loss = env(x, y)
+        base.update_leaderboard(f'{self.env_name},{self.parametrization.dimension}', loss, x, verbose=True)
+        return loss
 
     @property
     def env_name(self):
