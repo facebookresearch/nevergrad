@@ -54,7 +54,7 @@ def test_fast_non_dominated_ranking() -> None:
             expected_frontier.append(candidate)
         expected_frontiers.append(expected_frontier)
 
-    ranking_method = rankers.FastNonDominatedRanking()
+    ranking_method = nsga2.FastNonDominatedRanking()
     frontiers = ranking_method.compute_ranking(candidates)
     assert set(frontiers[0]) == set(expected_frontiers[0])
     assert set(frontiers[1]) == set(expected_frontiers[1])
