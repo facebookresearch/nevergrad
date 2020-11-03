@@ -4,7 +4,7 @@ Examples of benchmarks
 The following figures are examples of algorithm benchmarks which can be generated very easily from the platform
 In all examples, we use independent experiments for the different x-values; so that consistent rankings between methods, over several x-values, have a statistical meaning.
 
-If you want to run the examples yourself, please make sure you have installed :code:`nevergrad` with the :code:`benchmark` flag (see `here <benchmarking>`).
+If you want to run the examples yourself, please make sure you have installed :code:`nevergrad` with the :code:`benchmark` flag (see :ref:`here <benchmarking>`).
 
 Noisy optimization
 ------------------
