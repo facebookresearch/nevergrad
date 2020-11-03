@@ -987,23 +987,13 @@ def neuro_control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experime
              control.NeuroHumanoid(num_rollouts=num_rollouts, random_state=seed)
              ]
 
-    sigmas = [0.1, 0.1, 0.1, 0.1, 0.01, 0.001]
-    funcs2 = []
-    for sigma, func in zip(sigmas, funcs):
-        f = func.copy()
-        #param: ng.p.Array = f.parametrization.copy()  # type: ignore
-        #param.set_mutation(sigma=sigma).set_name(f"sigma={sigma}")
-        #f.parametrization = param
-        #f.parametrization.freeze()
-        funcs2.append(f)
-
     optims = ["CMA", "NGOpt4", "DiagonalCMA", "NGOpt8", "MetaModel", "chainCMAPowell"]
 
     for budget in [50, 500, 5000, 20000, 50000, 100000, 200000]:
         for num_workers in [1]:
             if num_workers < budget:
                 for algo in optims:
-                    for fu in funcs2:
+                    for fu in funcs:
                         xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
                         if not xp.is_incoherent:
                             yield xp                           
