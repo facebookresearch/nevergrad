@@ -206,7 +206,7 @@ class Pyomo(base.ExperimentFunction):
 
 
 # Simple Pyomo models, based on https://www.ima.umn.edu/materials/2017-2018.2/W8.21-25.17/26326/3_PyomoFundamentals.pdf.
-def get_pyomo_list():
+def generate_pyomo_functions() -> tp.Generator[base.Callable, None, None]:
     model = pyomo.ConcreteModel()
     model.x = pyomo.Var([1, 2], domain=pyomo.NonNegativeReals)
     model.obj = pyomo.Objective(expr=(model.x[1] - 0.5)**2 + (model.x[2] - 0.5)**2)
