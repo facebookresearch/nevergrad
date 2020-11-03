@@ -3,7 +3,7 @@ import numpy as np
 import nevergrad as ng
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
-from . import rankers
+from . import nsga2
 
 # pylint: disable=reimported,redefined-outer-name,unused-variable,unsubscriptable-object, unused-argument
 # pylint: disable=import-outside-toplevel
@@ -19,7 +19,7 @@ def test_crowding_distance() -> None:
     for i, v in enumerate(loss_values):
         candidates.append(params.spawn_child().set_standardized_data(v))
         candidates[i]._losses = np.array(v)
-    crowding_distance = rankers.CrowdingDistance()
+    crowding_distance = nsga2.CrowdingDistance()
     crowding_distance.compute_distance(candidates)
 
     # For objective 1
@@ -83,7 +83,7 @@ def get_nsga2_test_case_data():
 
 def test_nsga2_ranking() -> None:
     candidates, expected_frontiers = get_nsga2_test_case_data()
-    ranking_method = rankers.NSGA2Ranking()
+    ranking_method = nsga2.NSGA2Ranking()
     rank_result = ranking_method.rank(candidates, len(candidates))
 
     assert len(rank_result) == len(candidates)
@@ -94,7 +94,7 @@ def test_nsga2_ranking() -> None:
 
 def test_nsga2_ranking_2() -> None:
     candidates, expected_frontiers = get_nsga2_test_case_data()
-    ranking_method = rankers.NSGA2Ranking()
+    ranking_method = nsga2.NSGA2Ranking()
     n_selected = len(expected_frontiers[0]) + len(expected_frontiers[1])-1
     rank_result = ranking_method.rank(candidates, n_selected)
 
@@ -116,7 +116,7 @@ def test_nsga2_ranking_2() -> None:
 
 def test_nsga2_ranking_3() -> None:
     candidates, expected_frontiers = get_nsga2_test_case_data()
-    ranking_method = rankers.NSGA2Ranking()
+    ranking_method = nsga2.NSGA2Ranking()
     rank_result = ranking_method.rank(candidates, None)
     
     assert len(rank_result) == len(candidates)
@@ -139,7 +139,7 @@ def test_nsga2_ranking_4():
         candidate = params.spawn_child().set_standardized_data(v)
         candidate.loss = np.array(v)
         candidates.append(candidate)
-    ranking_method = rankers.NSGA2Ranking()
+    ranking_method = nsga2.NSGA2Ranking()
 
     n_selected = 3
     rank_result = ranking_method.rank(candidates, n_selected)
