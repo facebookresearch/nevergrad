@@ -979,7 +979,11 @@ def neuro_control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experime
     """MuJoCo testbed. Learn neural policies."""
     seedg = create_seed_generator(seed)
     num_rollouts = 1
-    funcs = [
+    funcs = [control.NeuroSwimmer(num_rollouts=num_rollouts, random_state=seed),
+             control.NeuroHalfCheetah(num_rollouts=num_rollouts, random_state=seed),
+             control.NeuroHopper(num_rollouts=num_rollouts, random_state=seed),
+             control.NeuroWalker2d(num_rollouts=num_rollouts, random_state=seed),
+             control.NeuroAnt(num_rollouts=num_rollouts, random_state=seed),
              control.NeuroHumanoid(num_rollouts=num_rollouts, random_state=seed)
              ]
 
