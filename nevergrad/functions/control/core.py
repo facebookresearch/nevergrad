@@ -40,7 +40,7 @@ class BaseFunction(ExperimentFunction):
     """
 
     def __init__(self, num_rollouts: int, random_state: tp.Optional[int] = None) -> None:
-        parametrization = ng.p.Instrumentation(
+        parametrization = p.Instrumentation(
             p.Array(shape=self.policy_dim),
             p.Array(shape=self.policy_2ndlayer_dim).set_mutation(sigma=1.e-4)
            ) if self.policy_2ndlayer_dim is not None else p.Array(shape=self.policy_dim)
