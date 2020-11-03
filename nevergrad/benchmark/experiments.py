@@ -991,15 +991,15 @@ def neuro_control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experime
     funcs2 = []
     for sigma, func in zip(sigmas, funcs):
         f = func.copy()
-        param: ng.p.Array = f.parametrization.copy()  # type: ignore
-        param.set_mutation(sigma=sigma).set_name(f"sigma={sigma}")
-        f.parametrization = param
-        f.parametrization.freeze()
+        #param: ng.p.Array = f.parametrization.copy()  # type: ignore
+        #param.set_mutation(sigma=sigma).set_name(f"sigma={sigma}")
+        #f.parametrization = param
+        #f.parametrization.freeze()
         funcs2.append(f)
 
     optims = ["CMA", "NGOpt4", "DiagonalCMA", "NGOpt8", "MetaModel", "chainCMAPowell"]
 
-    for budget in [50]:#, 500, 5000, 50000]:#, 75, 100, 150, 200, 250, 300, 400, 500, 1000, 3000, 5000, 8000, 16000, 32000, 64000]:
+    for budget in [50, 500]:#, 500, 5000, 50000]:#, 75, 100, 150, 200, 250, 300, 400, 500, 1000, 3000, 5000, 8000, 16000, 32000, 64000]:
         for num_workers in [1]:
             if num_workers < budget:
                 for algo in optims:

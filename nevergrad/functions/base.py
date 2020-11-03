@@ -206,7 +206,7 @@ def update_leaderboard(identifier: str, loss: float, array: np.ndarray, verbose:
             bests = bests.loc[sorted(x for x in bests.index), :]
             bests.to_csv(filepath)
             if verbose:
-                print(f"New best value for {identifier}: {loss}\nwith: {string}")
+                print(f"New best value for {identifier}: {loss}\nwith: {string[:80]}")
     except Exception:  # pylint: disable=broad-except
         pass  # better avoir bugs for this
 
