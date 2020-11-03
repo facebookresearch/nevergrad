@@ -9,7 +9,7 @@ import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
 from nevergrad.optimization.utils import UidQueue
 from . import base
-from .evolution_ops import rankers as rankers
+from .multiobjective import nsga2 as nsga2
 
 
 class _EvolutionStrategy(base.Optimizer):
@@ -35,7 +35,7 @@ class _EvolutionStrategy(base.Optimizer):
         self._config = EvolutionStrategy() if config is None else config
         self._ranker: tp.Any = None   # TODO better typing (eventually)
         if self._config.ranker == "nsga2":
-            self._ranker = rankers.NSGA2Ranking()
+            self._ranker = nsga2.NSGA2Ranking()
         elif self._config.ranker != "simple":
             raise NotImplementedError(f"Unknown ranker {self._config.ranker}")
 
