@@ -40,7 +40,7 @@ class CrowdingDistance:
                 # individual distance values corresponding to each objective.
                 front[j]._meta['crowding_distance'] += distance
         else:
-            front = sorted(front, key=lambda x: x.loss)
+            front = sorted(front, key=lambda x: x.loss)  # type: ignore
             objective_minn = front[0].loss
             objective_maxn = front[-1].loss
             assert objective_minn <= objective_maxn
