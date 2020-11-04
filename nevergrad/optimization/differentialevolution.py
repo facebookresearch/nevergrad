@@ -9,7 +9,6 @@ from scipy import stats
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
 from . import base
-from .base import IntOrParameter
 from . import sequences
 
 
@@ -72,7 +71,7 @@ class _DE(base.Optimizer):
 
     def __init__(
         self,
-        parametrization: IntOrParameter,
+        parametrization: base.IntOrParameter,
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
         config: tp.Optional["DifferentialEvolution"] = None
@@ -152,10 +151,10 @@ class _DE(base.Optimizer):
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         uid = candidate.heritage["lineage"]
-        self._uid_queue.tell(uid)
-        if uid not in self.population:
+        if uid not in self.population:  # parent was removed, revert to tell_not_asked
             self._internal_tell_not_asked(candidate, loss)
             return
+        self._uid_queue.tell(uid)  # only add to queue if not a "tell_not_asked" (from a removed parent)
         parent = self.population[uid]
         parent_value: float = parent.loss  # type: ignore
         mo_adapt = self._config.multiobjective_adaptation and self.num_objectives > 1
@@ -171,7 +170,7 @@ class _DE(base.Optimizer):
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         worst: tp.Optional[p.Parameter] = None
         if len(self.population) >= self.llambda:
-            worst = max(self.population.values(), key=lambda p: p.loss)
+            worst = max(self.population.values(), key=base._loss)
             if worst.loss < loss:  # type: ignore
                 return  # no need to update
             else:

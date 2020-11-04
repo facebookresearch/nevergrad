@@ -17,12 +17,20 @@ from . import utils
 from . import multiobjective as mobj
 
 
-registry: Registry[tp.Union["ConfiguredOptimizer", tp.Type["Optimizer"]]] = Registry()
+OptCls = tp.Union["ConfiguredOptimizer", tp.Type["Optimizer"]]
+registry: Registry[OptCls] = Registry()
 _OptimCallBack = tp.Union[tp.Callable[["Optimizer", "p.Parameter", float], None], tp.Callable[["Optimizer"], None]]
 X = tp.TypeVar("X", bound="Optimizer")
 Y = tp.TypeVar("Y")
 IntOrParameter = tp.Union[int, p.Parameter]
 _PruningCallable = tp.Callable[[utils.Archive[utils.MultiValue]], utils.Archive[utils.MultiValue]]
+
+
+def _loss(param: p.Parameter) -> float:
+    """Returns the loss if available, or inf otherwise.
+    Used to simplify handling of losses
+    """
+    return param.loss if param.loss is not None else float('inf')
 
 
 def load(cls: tp.Type[X], filepath: tp.PathLike) -> X:
