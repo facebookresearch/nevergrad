@@ -1,4 +1,4 @@
-.. _benchmarking:
+.. _winners2020:
 
 Results of the OpenCompetition2020_ _OpenCompetition2020:https://github.com/facebookresearch/nevergrad/blob/master/docs/opencompetition2020.md are in :-)
 
