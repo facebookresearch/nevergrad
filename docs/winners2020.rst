@@ -1,6 +1,6 @@
 .. _winners2020:
 
-Results of the OpenCompetition2020_ _OpenCompetition2020:https://github.com/facebookresearch/nevergrad/blob/master/docs/opencompetition2020.md are in :-)
+Results of the `Open Competition 2020 <https://github.com/facebookresearch/nevergrad/blob/master/docs/opencompetition2020.md>`_ are in :-) 
 
 Open competition 2020
 =====================
