@@ -6,6 +6,7 @@ Open competition 2020
 =====================
 
 First rank winners (alphabetic order):
+
 - Corwinpro
 - Foloso
 - nojhan
@@ -13,11 +14,13 @@ First rank winners (alphabetic order):
 - Teftimov
 
 Second rank winners (alphabetic order):
+
 - Alexd314
 - fteytaud
 - herilalaina
 
 Honorable mention:
+
 - thomasWeise 
 - Ljialin
 - Dvermetten
