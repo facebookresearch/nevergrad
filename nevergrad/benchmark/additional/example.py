@@ -19,7 +19,7 @@ class CustomFunction(ngfuncs.ExperimentFunction):
     """
 
     def __init__(self, offset):
-        super().__init__(self.oracle_call, ng.p.Scalar())
+        super().__init__(self.oracle_call, ng.p.Scalar().set_name(""))
         self.register_initialization(offset=offset)  # to create equivalent instances through "copy"
         self.offset = offset
         # add your own function descriptors (from base class, we already get "dimension" etc...)
