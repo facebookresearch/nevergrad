@@ -44,7 +44,7 @@ from . import frozenexperiments  # noqa # pylint: disable=unused-import
 
 default_optims: tp.Optional[tp.List[str]] = None  # ["NGO10", "CMA", "Shiwa"]
 
-def smallmltuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool = False) -> tp.Iterator[Experiment]:
+def kerastuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool = False) -> tp.Iterator[Experiment]:
     """Machine learning hyperparameter tuning experiment. Based on scikit models."""
     seedg = create_seed_generator(seed)
     # Continuous case,
@@ -54,21 +54,18 @@ def smallmltuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: 
     if default_optims is not None:
         optims = default_optims
     for dimension in [None]:
-        for regressor in ["mlp", "decision_tree", "decision_tree_depth"]:
+        for regressor in ["kerasDenseNN"]:
             for dataset in (
-                    ["boston"] if dimension is None else ["artificialcos", "artificial",
-                                                                      "artificialsquare"]):
+                    ["kerasBoston"]):
                 function = MLTuning(regressor=regressor, data_dimension=dimension, dataset=dataset,
                                     overfitter=overfitter)
-                for budget in [50], 150, 500]:
+                for budget in [50, 150, 500]:
                     for num_workers in [1] if seq else [1, 10, 50, 100]:  # Seq for sequential optimization experiments.
                         for optim in optims:
                             xp = Experiment(function, optim, num_workers=num_workers,
                                             budget=budget, seed=next(seedg))
                             if not xp.is_incoherent:
                                 yield xp
-
-
 
 
 def mltuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool = False) -> tp.Iterator[Experiment]:
@@ -103,6 +100,21 @@ def naivemltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     for xp in internal_generator:
         yield xp
 
+# We register only the sequential counterparts for the moment.
+@registry.register
+def seqkerastuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Sequential counterpart of mltuning."""
+    internal_generator = kerastuning(seed, overfitter=False, seq=True)
+    for xp in internal_generator:
+        yield xp
+
+# We register only the sequential counterparts for the moment.
+@registry.register
+def naiveseqkerastuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Sequential counterpart of mltuning."""
+    internal_generator = kerastuning(seed, overfitter=True, seq=True)
+    for xp in internal_generator:
+        yield xp
 
 # We register only the sequential counterparts for the moment.
 @registry.register
