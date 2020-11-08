@@ -46,7 +46,7 @@ class Parameter:
 
     @property
     def losses(self) -> np.ndarray:
-        """Pssibly multiobjective losses which were told
+        """Possibly multiobjective losses which were told
         to the optimizer along this parameter.
         In case of mono-objective loss, losses is the array containing this loss as sole element
 
