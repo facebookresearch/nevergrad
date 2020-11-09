@@ -19,6 +19,8 @@ Second rank winners (alphabetic order):
 - fteytaud
 - herilalaina
 
+Winners (above) should contact oteytaud@fb.com and Carola.Doerr@mpi-inf.mpg.de.
+
 Honorable mention:
 
 - thomasWeise 
