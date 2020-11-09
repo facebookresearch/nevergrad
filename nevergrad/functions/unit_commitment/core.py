@@ -1,8 +1,6 @@
 import numpy as np
 import nevergrad as ng
-from nevergrad.parametrization import parameter as p
 from ..base import ExperimentFunction
-
 
 class UnitCommitmentProblem1(ExperimentFunction):
     """Model that uses conventional implementation for emi-continuous variables
@@ -45,18 +43,6 @@ class UnitCommitmentProblem1(ExperimentFunction):
         super().__init__(self.unit_commitment_obj_with_penalization, instru)
         self.register_initialization(**params)
         self._descriptors.update(T_points=T_points, N_generators=N_generators)
-
-
-    # def unit_commitment_obj_with_penalization(x, u, N_generators, T_points, p_min, p_max, demands, cost_a, cost_b, ):
-    #     demand_penalty, lb_penalty, ub_penalty = 0, 0, 0
-    #     # From demand constraint
-    #     demand_penalty = np.sum(np.abs(np.sum(x, axis=0) - demands))
-    #     # From semi_continuous_constraints
-    #     lb_penalty = np.sum(np.clip(p_min*u - x, 0, a_max=None), axis=None)
-    #     ub_penalty = np.sum(np.clip(x - p_max*u, 0, a_max=None), axis=None)
-    #     # Running cost
-    #     running_cost = np.sum(np.sum(x, axis=1) * cost_a + np.sum(u, axis=1) * cost_b)
-    #     return running_cost + (demand_penalty + lb_penalty + ub_penalty) * penalty_weight
 
 
     def unit_commitment_obj_with_penalization(self, x, u):
