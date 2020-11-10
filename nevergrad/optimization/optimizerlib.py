@@ -33,8 +33,8 @@ from .recastlib import *  # noqa: F403
 
 try:
     from .nghyperopt import HyperOpt # pylint: disable=unused-import
-except Exception as e:
-    raise e
+except ModuleNotFoundError:
+    pass
 
 # run with LOGLEVEL=DEBUG for more debug information
 logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
