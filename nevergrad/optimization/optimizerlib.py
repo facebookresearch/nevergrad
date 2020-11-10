@@ -32,7 +32,7 @@ from .oneshot import *  # noqa: F403
 from .recastlib import *  # noqa: F403
 
 try:
-    from .nghyperopt import HyperOpt
+    from .nghyperopt import HyperOpt # pylint: disable=unused-import
 except Exception as e:
     raise e
 
