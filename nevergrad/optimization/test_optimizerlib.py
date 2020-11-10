@@ -488,7 +488,7 @@ def test_bo_ordering() -> None:
     "parametrization,has_transform",
     [(ng.p.Choice(list(range(10))), True),
     (ng.p.Scalar(lower=0, upper=1), True),
-    (ng.p.Scalar(lower=0, upper=1).set_integer_casting(), True),
+    (ng.p.Scalar(lower=0, upper=10).set_integer_casting(), True),
     (ng.p.Log(lower=1e-3, upper=1e3), True),
     (ng.p.Array(init=np.zeros(10)), True),
     (ng.p.Instrumentation(
@@ -512,12 +512,26 @@ def test_bo_ordering() -> None:
     ]
 )
 def test_hyperopt(parametrization, has_transform) -> None:
-    # Test parametrization
-    optim = registry["HyperOpt"](parametrization=parametrization, budget=3)
-    # optim.tell(optim.ask(), 0)
-    optim.tell(parametrization.sample(), 0) # Tell not asked
-    # optim.tell(optim.ask(), 0)
-    assert (optim._transform is not None) == has_transform # type: ignore
+    from .nghyperopt import _get_search_space, _dict_to_parametrization, _parametrization_to_dict
+    optim1 = registry["HyperOpt"](parametrization=parametrization, budget=5)
+    optim2 = registry["HyperOpt"](parametrization=parametrization.copy(), budget=5)
+    for it in range(4):
+        cand = optim1.ask()
+        optim1.tell(cand, 0) # Tell asked
+        del cand._meta["trial_id"]
+        optim2.tell(cand, 0) # Tell not asked
+        assert optim1.trials._dynamic_trials[it]["misc"]["vals"] == optim2.trials._dynamic_trials[it]["misc"]["vals"]
+
+    assert optim1.trials.new_trial_ids(1) == optim2.trials.new_trial_ids(1)
+    assert optim1.trials.new_trial_ids(1)[0] == (it + 2)
+    assert (optim1._transform is not None) == has_transform # type: ignore
+
+    if has_transform:
+        with pytest.raises(NotImplementedError):
+            _get_search_space("no_name", parametrization)
+    else:
+        cand = optim1.ask()
+        
 
     # Test parallelization
     opt = registry["HyperOpt"](parametrization=parametrization, budget=30, num_workers=5)
