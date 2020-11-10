@@ -519,7 +519,7 @@ def test_hyperopt(parametrization, has_transform) -> None:
         optim1.tell(cand, 0) # Tell asked
         del cand._meta["trial_id"]
         optim2.tell(cand, 0) # Tell not asked
-        assert optim1.trials._dynamic_trials[it]["misc"]["vals"] == optim2.trials._dynamic_trials[it]["misc"]["vals"]
+        assert optim1.trials._dynamic_trials[it]["misc"]["vals"] == optim2.trials._dynamic_trials[it]["misc"]["vals"] # type: ignore
 
     assert optim1.trials.new_trial_ids(1) == optim2.trials.new_trial_ids(1) # type: ignore
     assert optim1.trials.new_trial_ids(1)[0] == (it + 2) # type: ignore
