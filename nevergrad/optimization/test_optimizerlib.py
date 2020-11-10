@@ -512,7 +512,6 @@ def test_bo_ordering() -> None:
     ]
 )
 def test_hyperopt(parametrization, has_transform) -> None:
-    from .nghyperopt import _get_search_space, _dict_to_parametrization, _parametrization_to_dict
     optim1 = registry["HyperOpt"](parametrization=parametrization, budget=5)
     optim2 = registry["HyperOpt"](parametrization=parametrization.copy(), budget=5)
     for it in range(4):
@@ -522,16 +521,9 @@ def test_hyperopt(parametrization, has_transform) -> None:
         optim2.tell(cand, 0) # Tell not asked
         assert optim1.trials._dynamic_trials[it]["misc"]["vals"] == optim2.trials._dynamic_trials[it]["misc"]["vals"]
 
-    assert optim1.trials.new_trial_ids(1) == optim2.trials.new_trial_ids(1)
-    assert optim1.trials.new_trial_ids(1)[0] == (it + 2)
+    assert optim1.trials.new_trial_ids(1) == optim2.trials.new_trial_ids(1) # type: ignore
+    assert optim1.trials.new_trial_ids(1)[0] == (it + 2) # type: ignore
     assert (optim1._transform is not None) == has_transform # type: ignore
-
-    if has_transform:
-        with pytest.raises(NotImplementedError):
-            _get_search_space("no_name", parametrization)
-    else:
-        cand = optim1.ask()
-        
 
     # Test parallelization
     opt = registry["HyperOpt"](parametrization=parametrization, budget=30, num_workers=5)
