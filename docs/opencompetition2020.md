@@ -58,6 +58,7 @@ All pull requests active between December 1st 2019 and Sept 30, 2020 are eligibl
 ## Awards:
 Up to 12 000 euros of awards, to be used for traveling to PPSN or GECCO 2020 or 2021, distributed over several winners.
 In addition, a limited number of registration fee waivers are available for PPSN 2020.
+Winners: [https://github.com/facebookresearch/nevergrad/blob/master/docs/winners2020.rst](https://github.com/facebookresearch/nevergrad/blob/master/docs/winners2020.rst)
 
 ## About Nevergrad and IOHprofiler
 
