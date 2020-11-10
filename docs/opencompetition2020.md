@@ -63,57 +63,57 @@ In addition, a limited number of registration fee waivers are available for PPSN
 The winning entries of the Open Optimization Competition 2020 are 
 (ordered by pull request ID):
 
-    - nojhan 
-    https://github.com/IOHprofiler/IOHexperimenter/pull/45 
+- nojhan 
+    [https://github.com/IOHprofiler/IOHexperimenter/pull/45](https://github.com/IOHprofiler/IOHexperimenter/pull/45)
     On-the-fly computation of the area under the EDCF curve, for use within automated algorithm configuration frameworks. A proxy for integrating problems defined in Python. 
 
-    - teftimov 
-    https://github.com/IOHprofiler/IOHanalyzer/pull/56 
+- teftimov 
+    [https://github.com/IOHprofiler/IOHanalyzer/pull/56](https://github.com/IOHprofiler/IOHanalyzer/pull/56)
     Interface to the Deep Statistical Comparison Toolbox and PerformViz. 
 
-    - Corwinpro 
-    https://github.com/facebookresearch/nevergrad/pull/484  
+- Corwinpro 
+    [https://github.com/facebookresearch/nevergrad/pull/484](https://github.com/facebookresearch/nevergrad/pull/484)
     Hypervolume (pyhv.py) module rewrite. Makes the code more readable, and makes the license more compliant. 
 
-    - Foloso
-    https://github.com/facebookresearch/nevergrad/pull/812  
+- Foloso
+    [https://github.com/facebookresearch/nevergrad/pull/812](https://github.com/facebookresearch/nevergrad/pull/812)  
     Adds a real-world objective function describing Madagascar’s electricity mix. 
 
-    - Pacowong 
-    https://github.com/facebookresearch/nevergrad/pull/823  
+- Pacowong 
+    [https://github.com/facebookresearch/nevergrad/pull/823](https://github.com/facebookresearch/nevergrad/pull/823)  
     Draft of an NSGA-II implementation  
 
 Second Prize
 (ordered by pull request ID):
 
-    - Fteytaud
-    https://github.com/facebookresearch/nevergrad/pull/551  https://github.com/facebookresearch/nevergrad/pull/561  https://github.com/facebookresearch/nevergrad/pull/404/files 
+- Fteytaud
+    [https://github.com/facebookresearch/nevergrad/pull/551](https://github.com/facebookresearch/nevergrad/pull/551)  [https://github.com/facebookresearch/nevergrad/pull/561](https://github.com/facebookresearch/nevergrad/pull/561)  [https://github.com/facebookresearch/nevergrad/pull/404](https://github.com/facebookresearch/nevergrad/pull/404)
     EMNA and EMNA combined with population control methods.
 
-    - Herilalaina 
-    https://github.com/facebookresearch/nevergrad/pull/790 
+- Herilalaina 
+    [https://github.com/facebookresearch/nevergrad/pull/790](https://github.com/facebookresearch/nevergrad/pull/790) 
     Adding Mujoco support from Lamcts and Ars papers.
 
-    - Alexd314    
-    https://github.com/facebookresearch/nevergrad/pull/828 
+- Alexd314    
+    [https://github.com/facebookresearch/nevergrad/pull/828](https://github.com/facebookresearch/nevergrad/pull/828)
     Real-world problem: fitting an animatable 3D human mesh template to data
 
 Honorable mention (in no particular order): 
 
-    - thomasWeise 
-    https://github.com/IOHprofiler/IOHanalyzer/pull/39 
+- thomasWeise 
+    [https://github.com/IOHprofiler/IOHanalyzer/pull/39](https://github.com/IOHprofiler/IOHanalyzer/pull/39) 
     Support for string-based function IDs in IOHanalyzer and bug fixing in uploading zip files containing multiple algorithms
     
-    - Ljialin
+- Ljialin
     Variations around NGOpt, an algorithm for algorithm selection implemented in Nevergrad. Led to a paper published with the Nevergrad team.
     
-    - Dvermetten
+- Dvermetten
     Adding experiments from IOHexperimenter.
     
-    - Dietermarwo
+- Dietermarwo
     add support for alternative cmaes implementation (fcmaes)
     
-    - Fmder
+- Fmder
     Cooperative Coevolution Optimization with DEAP
     
 List of winners: [https://github.com/facebookresearch/nevergrad/blob/master/docs/winners2020.rst](https://github.com/facebookresearch/nevergrad/blob/master/docs/winners2020.rst)
