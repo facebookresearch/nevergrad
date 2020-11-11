@@ -68,17 +68,14 @@ class MLTuning(ExperimentFunction):
                     keras.layers.Dense(64, activation=activation, input_shape=(self.X_train.shape[1],)),
                     keras.layers.Dense(1)
             ])
-            regr.compile(optimizer=solver, loss='mse', metrics=['mse'])
+            regr.compile(optimizer=solver, loss='mse', metrics=['mae'])
         else:
             raise ValueError(f"Unknown regressor {regressor}.")
 
         if noise_free:  # noise_free is True when we want the result on the test set.
             X_test = self.X_test
             y_test = self.y_test
-            if regressor == "kerasDenseNN":
-                regr.fit(np.asarray(self.X_train), np.asarray(self.y_train), epochs=20)
-            else:
-                regr.fit(np.asarray(self.X_train), np.asarray(self.y_train))
+            regr.fit(self.X_train, self.y_train)
             pred_test = regr.predict(self.X_test)
             return mean_squared_error(self.y_test, pred_test)
 
@@ -86,15 +83,11 @@ class MLTuning(ExperimentFunction):
         for X, y, X_test, y_test in zip(self.X_train_cv, self.y_train_cv, self.X_valid_cv, self.y_valid_cv):
             assert isinstance(depth, int), f"depth has class {type(depth)} and value {depth}."
 
-            if regressor == "kerasDenseNN":
-                regr.fit(np.asarray(X), np.asarray(y), epochs=20)
-            else:
-                regr.fit(np.asarray(X), np.asarray(y))
+            regr.fit(X, y)
 
             # Predict
             pred_test = regr.predict(X_test)
             result += mean_squared_error(y_test, pred_test)
-
         return result / self._cross_val_num  # We return a num_cv-fold validation error.
 
     def __init__(
@@ -179,7 +172,7 @@ class MLTuning(ExperimentFunction):
         elif regressor == "kerasDenseNN":
             parametrization = p.Instrumentation(
                 activation=p.Choice(["selu", "sigmoid", "tanh", "relu"]),
-                solver=p.Choice(["sgd", "rmsprop", "adam"]),
+                solver=p.Choice(["Adadelta", "RMSprop", "adam"]),
                 regressor="kerasDenseNN",
                 # metrics=p.Choice(["mae", "mse"]),
             )

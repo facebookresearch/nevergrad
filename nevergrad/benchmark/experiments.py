@@ -50,7 +50,7 @@ def kerastuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: bo
     # Continuous case,
 
     # First, a few functions with constraints.
-    optims = ["Shiwa", "DE"]
+    optims = ["PSO", "OnePlusOne"]
     if default_optims is not None:
         optims = default_optims
     for dimension in [None]:
