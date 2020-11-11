@@ -4,7 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 import numpy as np
-import nevergrad as ng
 from . import core
 
 def test_unit_commitment_p1() -> None:
