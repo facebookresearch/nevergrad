@@ -487,7 +487,10 @@ class XpPlotter:
         stds = groupeddf.std()
         optim_vals: tp.Dict[str, tp.Dict[str, np.ndarray]] = {}
         # extract name and coordinates
+        max_len = np.max(np.prod(means.loc[optim, "loss"].shape) for optim in df.unique("optimizer_name"))
         for optim in df.unique("optimizer_name"):
+            if np.prod(means.loc[optim, "loss"].shape) < max_len:  # No incomplete algorithm
+                continue
             optim_vals[optim] = {}
             optim_vals[optim]["budget"] = np.array(means.loc[optim, :].index)
             optim_vals[optim]["loss"] = np.array(means.loc[optim, "loss"])
