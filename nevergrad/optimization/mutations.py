@@ -75,9 +75,9 @@ class Mutator:
         """This is the anisotropic counterpart of the classical 1+1 mutations in discrete domains
         with tunable intensity: it is useful for anisotropic adaptivity."""
         dimension = len(parent)
-        boolean_vector = [False for _ in parent]
-        while not any(boolean_vector):
-            boolean_vector = [self.random_state.rand() < (1. / dimension) for _ in parent]
+        boolean_vector = np.zeros(dimension, dtype=bool)
+        while not boolean_vector.any():
+            boolean_vector = self.random_state.rand(size=dimension) < (1. / dimension)
         discrete_data = discretization.threshold_discretization(parent, arity=arity)
         return discretization.inverse_threshold_discretization([s if not b else s + np.random.choice([-1. ,1.]) * v for (b, s, v) 
                                                                 in zip(boolean_vector, discrete_data, velocity)])
