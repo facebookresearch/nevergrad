@@ -394,15 +394,25 @@ def test_parallel_es() -> None:
             opt.tell(cand, 1)
 
 
-def test_constrained_optimization() -> None:
+@pytest.mark.parametrize(
+    "penalization,expected", [
+        (False, [1.005573e+00, 3.965783e-04]),
+        (True, [0.999987, -0.322118]),
+    ]
+)
+def test_constrained_optimization(penalization: bool, expected: tp.List[float]) -> None:
+    def constraint(i): return i[1]["x"][0] >= 1
     parametrization = ng.p.Instrumentation(x=ng.p.Array(shape=(1,)), y=ng.p.Scalar())
     optimizer = optlib.OnePlusOne(parametrization, budget=100)
     optimizer.parametrization.random_state.seed(12)
+    if penalization:
+        optimizer._constraints_manager.update(max_trials=2, penalty_factor=10)
+        def constraint(i): return -abs(i[1]["x"][0] - 1)
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", category=UserWarning)
-        optimizer.parametrization.register_cheap_constraint(lambda i: i[1]["x"][0] >= 1)  # type:ignore
+        optimizer.parametrization.register_cheap_constraint(constraint)  # type:ignore
     recom = optimizer.minimize(_square)
-    np.testing.assert_array_almost_equal([recom.kwargs["x"][0], recom.kwargs["y"]], [1.005573e+00, 3.965783e-04])
+    np.testing.assert_array_almost_equal([recom.kwargs["x"][0], recom.kwargs["y"]], expected)
 
 
 @pytest.mark.parametrize("name", registry)  # type: ignore
