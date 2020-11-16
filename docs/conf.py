@@ -71,4 +71,5 @@ html_static_path = []
 
 # -- Other --
 linkcheck_ignore = [r'https://gecco-2020.sigevo.org/*',
+                    'windows.html',
                     r'https://arxiv.org/abs/*']  # Transient certificate error :(

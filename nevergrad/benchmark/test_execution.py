@@ -16,7 +16,7 @@ from . import execution
 class Function(ExperimentFunction):
 
     def __init__(self) -> None:
-        super().__init__(self._func, ng.p.Instrumentation())
+        super().__init__(self._func, ng.p.Instrumentation().set_name("test"))
 
     def _func(self, x: int, y: int) -> float:
         return x + y
