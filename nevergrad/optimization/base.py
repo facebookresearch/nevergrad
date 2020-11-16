@@ -26,6 +26,13 @@ IntOrParameter = tp.Union[int, p.Parameter]
 _PruningCallable = tp.Callable[[utils.Archive[utils.MultiValue]], utils.Archive[utils.MultiValue]]
 
 
+def _loss(param: p.Parameter) -> float:
+    """Returns the loss if available, or inf otherwise.
+    Used to simplify handling of losses
+    """
+    return param.loss if param.loss is not None else float('inf')
+
+
 def load(cls: tp.Type[X], filepath: tp.PathLike) -> X:
     """Loads a pickle file and checks that it contains an optimizer.
     The optimizer class is not always fully reliable though (e.g.: optimizer families) so the user is responsible for it.

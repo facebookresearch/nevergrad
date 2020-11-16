@@ -11,46 +11,46 @@ from nevergrad.common import testing
 from . import base
 
 
-def _arg_return(*args: tp.Any, **kwargs: tp.Any) -> tp.Tuple[tp.Tuple[tp.Any, ...], tp.Dict[str, tp.Any]]:
-    return args, kwargs
+def _arg_return(*args: tp.Any, **kwargs: tp.Any) -> float:
+    # for the sake of tests just do some really stupid return
+    return args, kwargs  # type: ignore
 
 
 def test_experiment_function() -> None:
-    ifunc = base.ExperimentFunction(_arg_return, p.Instrumentation(  # type: ignore
+    param = p.Instrumentation(
         p.Choice([1, 12]),
         "constant",
         p.Array(shape=(2, 2)),
         constkwarg="blublu",
         plop=p.Choice([3, 4]),
-    ))
+    )
+    with pytest.raises(RuntimeError):
+        base.ExperimentFunction(_arg_return, param)
+    param.set_name("myparam")
+    ifunc = base.ExperimentFunction(_arg_return, param)
     np.testing.assert_equal(ifunc.dimension, 8)
     data = [-100.0, 100, 1, 2, 3, 4, 100, -100]
     args0, kwargs0 = ifunc.parametrization.spawn_child().set_standardized_data(data).value
-    output = ifunc(*args0, **kwargs0)  # this is very stupid and should be removed when Parameter is in use
-    args: tp.Any = output[0]  # type: ignore
-    kwargs: tp.Any = output[1]  # type: ignore
+    output: tp.Any = ifunc(*args0, **kwargs0)
+    args: tp.Any = output[0]
+    kwargs: tp.Any = output[1]
     testing.printed_assert_equal(args, [12, "constant", [[1, 2], [3, 4]]])
     testing.printed_assert_equal(kwargs, {"constkwarg": "blublu", "plop": 3})
-    instru_str = ("Instrumentation(Tuple(Choice(choices=Tuple(1,12),"
-                  "weights=Array{(1,2)}),constant,"
-                  "Array{(2,2)}),"
-                  "Dict(constkwarg=blublu,plop=Choice(choices=Tuple(3,4),"
-                  "weights=Array{(1,2)})))")
     testing.printed_assert_equal(
         ifunc.descriptors,
         {
             "dimension": 8,
             "name": "_arg_return",
             "function_class": "ExperimentFunction",
-            "parametrization": instru_str,
+            "parametrization": "myparam"
         },
     )
 
 
 def test_instrumented_function_kwarg_order() -> None:
-    ifunc = base.ExperimentFunction(_arg_return, p.Instrumentation(  # type: ignore
+    ifunc = base.ExperimentFunction(_arg_return, p.Instrumentation(
         kw4=p.Choice([1, 0]), kw2="constant", kw3=p.Array(shape=(2, 2)), kw1=p.Scalar(2.0).set_mutation(sigma=2.0)
-    ))
+    ).set_name("test"))
     np.testing.assert_equal(ifunc.dimension, 7)
     data = np.array([-1, 1, 2, 3, 4, 100, -100])
     args0, kwargs0 = ifunc.parametrization.spawn_child().set_standardized_data(data).value
@@ -65,14 +65,14 @@ class _Callable:
 
 
 def test_callable_parametrization() -> None:
-    ifunc = base.ExperimentFunction(lambda x: x ** 2, p.Scalar(2).set_mutation(2))  # type: ignore
+    ifunc = base.ExperimentFunction(lambda x: x ** 2, p.Scalar(2).set_mutation(2).set_name(""))  # type: ignore
     np.testing.assert_equal(ifunc.descriptors["name"], "<lambda>")
-    ifunc = base.ExperimentFunction(_Callable(), p.Scalar(2).set_mutation(sigma=2))
+    ifunc = base.ExperimentFunction(_Callable(), p.Scalar(2).set_mutation(sigma=2).set_name(""))
     np.testing.assert_equal(ifunc.descriptors["name"], "_Callable")
 
 
 def test_packed_function() -> None:
-    ifunc = base.ExperimentFunction(_Callable(), p.Scalar(1))
+    ifunc = base.ExperimentFunction(_Callable(), p.Scalar(1).set_name(""))
     with pytest.raises(AssertionError):
         base.MultiExperiment([ifunc, ifunc], [100, 100])
     pfunc = base.MultiExperiment([ifunc, ifunc.copy()], [100, 100])
@@ -81,7 +81,7 @@ def test_packed_function() -> None:
 
 
 def test_deterministic_data_setter() -> None:
-    instru = p.Instrumentation(p.Choice([0, 1, 2, 3]), y=p.Choice([0, 1, 2, 3]))
+    instru = p.Instrumentation(p.Choice([0, 1, 2, 3]), y=p.Choice([0, 1, 2, 3])).set_name("")
     ifunc = base.ExperimentFunction(_Callable(), instru)
     data = [0.01, 0, 0, 0, 0.01, 0, 0, 0]
     for _ in range(20):
