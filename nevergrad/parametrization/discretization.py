@@ -47,7 +47,7 @@ def inverse_threshold_discretization(indexes: tp.List[int], arity: int = 2) -> n
     # We take the center of each bin (in the pdf space)
     x = scipy.stats.norm.ppf(indexes_arr * pdf_bin_size + (pdf_bin_size / 2))  # type: ignore
     nan_indices = np.where(np.isnan(x))
-    x[nan_indices] = np.sign(indexes_arr[nan_indices] - (arity / 2.)) * 500.
+    x[nan_indices] = np.sign(indexes_arr[nan_indices] - (arity / 2.)) * np.finfo(np.dtype('float')).max
     return x
 
 
