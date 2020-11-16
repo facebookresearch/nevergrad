@@ -77,7 +77,7 @@ class Mutator:
         dimension = len(parent)
         boolean_vector = np.array(np.zeros(dimension), dtype=bool)
         while not any(boolean_vector):
-            boolean_vector = self.random.rand(dimension) < (1. / dimension)
+            boolean_vector = self.random_state.rand(dimension) < (1. / dimension)
         discrete_data = discretization.threshold_discretization(parent, arity=arity)
         return discretization.inverse_threshold_discretization([s if not b else s + np.random.choice([-1. ,1.]) * v for (b, s, v) 
                                                                 in zip(boolean_vector, discrete_data, velocity)])
