@@ -277,10 +277,7 @@ class Parameter:
         if not self._constraint_checkers:
             return True
         val = self.value
-        def ok(x: tp.Union[bool, float]) -> bool:
-            """Adapts a constraints (possibly formulated as a float >= 0 or as a bool) to the generic boolean case."""
-            return x >= 0. if isinstance(x, float) else x
-        return all(ok(func(val)) for func in self._constraint_checkers)
+        return all(utils.float_penalty(func(val)) <= 0 for func in self._constraint_checkers)
 
     def register_cheap_constraint(self, func: tp.Union[tp.Callable[[tp.Any], bool], tp.Callable[[tp.Any], float]]) -> None:
         """Registers a new constraint on the parameter values.
@@ -289,7 +286,7 @@ class Parameter:
         ----------
         func: Callable
             function which, given the value of the instance, returns whether it satisfies the constraints (if output = bool),
-            or a float which is >= 0. if the constraint is satisfied (if output = float).
+            or a float which is >= 0 if the constraint is satisfied.
 
         Note
         ----

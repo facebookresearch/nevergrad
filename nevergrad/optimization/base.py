@@ -52,11 +52,7 @@ class TellNotAskedNotSupportedError(NotImplementedError):
     """To be raised by optimizers which do not support the tell_not_asked interface.
     """
 
-# Converts constraint outptus into float penalties.
-def _float_penalty(x: tp.Union[bool, float]) -> float:
-    """Unifies penalties as float (bool=False becomes 1)."""
-    return 1 if x is False else 0 if x is True else -x if x < 0 else 0
-    
+
 class Optimizer:  # pylint: disable=too-many-instance-attributes
     """Algorithm framework with 3 main functions:
 
@@ -92,26 +88,21 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
     no_parallelization = False  # algorithm which is designed to run sequentially only
     hashed = False
 
-
-    
-    
     def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
         if self.no_parallelization and num_workers > 1:
             raise ValueError(f"{self.__class__.__name__} does not support parallelization")
         # "seedable" random state: externally setting the seed will provide deterministic behavior
         # you can also replace or reinitialize this random state
         self.num_workers = int(num_workers)
-
-        # Constants relative to constraints.
-        self._max_constraints_trials: int = 1000
-        self._constraint_penalization: float = 0.
-        self._constraint_penalty_exponent: float = 1.001
-
         self.budget = budget
+
         # How do we deal with cheap constraints i.e. constraints which are fast and use low resources and easy ?
         # True ==> we penalize them (infinite values for candidates which violate the constraint).
         # False ==> we repeat the ask until we solve the problem.
+        self._constraints_manager = utils.ConstraintManager()
         self._penalize_cheap_violations = False
+        self._memorize_constraint_failures = False
+
         self.parametrization = (
             parametrization
             if not isinstance(parametrization, (int, np.int))
@@ -184,51 +175,6 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         (or were suggested).
         """
         return self._num_tell_not_asked
-        
-    def penalty_(self, candidate: p.Parameter):
-
-        # Extract useful data from self.
-        val = candidate.value
-        budget = self.budget
-        num_ask = self._num_ask
-        exponent = self._constraint_penalty_exponent
-        return self._constraint_penalization * (exponent ** (num_ask / np.sqrt(budget))) * sum(_float_penalty(func(val)) for func in candidate._constraint_checkers)
-
-    def _set_constraints_management(self, max_constraints_trials: tp.Optional[int] = None,
-            constraint_penalization: tp.Optional[float] = None, constraint_penalty_exponent: tp.Optional[float] = None,
-            penalize_cheap_violations: tp.Optional[bool] = None, memorize_constraint_failures: tp.Optional[bool] = None):
-        """Try max_constraints_trials random explorations for satisfying constraints.
-        The finally chosen point, if it does not satisfy constraints, is penalized as shown in the penalty function,
-        using coeffcieints mentioned here.
-        Parameters
-        ----------
-            max_constraints_trials: int
-                number of random tries for satisfying constraints.
-            constraint_penalization: float
-                multiplicative factor on the constraint penalization.
-            constraint_penalty_exponent: float
-                exponent, usually close to 1 and slightly greater than 1.
-            penalize_cheap_violations: bool
-                decides if we should store failed attempts of satisfying constraints with an infinite value.
-            memorize_constraint_failures: bool
-                decides if we should store the last attempt of satisfying constrints with an infinite value.
-
-        Possibly unstable.
-        """
-        if max_constraints_trials is not None:
-            assert max_constraints_trials >= 0
-            self._max_constraints_trials = max_constraints_trials
-        if constraint_penalization is not None:
-            assert constraint_penalization >= 0.
-            self._constraint_penalization = constraint_penalization
-        if constraint_penalty_exponent is not None:
-            assert constraint_penalty_exponent >= 1.
-            self._constraint_penalty_exponent = constraint_penalty_exponent
-        if penalize_cheap_violations is not None:
-            self._penalize_cheap_violations = penalize_cheap_violations
-        if memorize_constraint_failures is not None:
-            self._memorize_constraint_failures = memorize_constraint_failures
-        assert not (self._memorize_constraint_failures and self._penalize_cheap_violations)  # both simultaneously does not make sense.
 
     def pareto_front(
         self,
@@ -398,9 +344,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             # but this allows obtaining both scalar and multiobjective loss (through losses)
             callback(self, candidate, loss)
         if not candidate.satisfies_constraints() and self.budget is not None:
-            penalty = self.penalty_(candidate)
+            penalty = self._constraints_manager.penalty(candidate, self.num_ask, self.budget)
             assert isinstance(loss, float)
-            assert isinstance(penalty, float)
             loss = loss + penalty
         if isinstance(loss, float):
             self._update_archive_and_bests(candidate, loss)
@@ -469,7 +414,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             callback(self)
         current_num_ask = self.num_ask
         # tentatives if a cheap constraint is available
-        for k in range(self._max_constraints_trials):  # TODO: this should be replaced by an optimization algorithm.
+        # TODO: this should be replaced by an optimization algorithm.
+        max_trials = self._constraints_manager.max_trials
+        for k in range(max_trials):
             is_suggestion = False
             if self._suggestions:
                 is_suggestion = True
@@ -479,11 +426,12 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 # only register actual asked points
             if candidate.satisfies_constraints():
                 break  # good to go!
-            if self._penalize_cheap_violations or (k == self._max_constraints_trials - 2 and self._memorize_constraint_failures):  # a tell may help before last tentative
-                self._internal_tell_candidate(candidate, float("Inf"))
+            if self._penalize_cheap_violations or (k == max_trials - 2 and self._memorize_constraint_failures):
+                self._internal_tell_candidate(candidate, float("Inf"))  # a tell may help before last tentative
             self._num_ask += 1  # this is necessary for some algorithms which need new num to ask another point
-            if k == self._max_constraints_trials - 1:
-                warnings.warn(f"Could not bypass the constraint after {self._max_constraints_trials} tentatives, sending candidate anyway.")
+            if k == max_trials - 1:
+                warnings.warn(f"Could not bypass the constraint after {max_trials} tentatives, "
+                              "sending candidate anyway.")
         if not is_suggestion:
             if candidate.uid in self._asked:
                 raise RuntimeError(

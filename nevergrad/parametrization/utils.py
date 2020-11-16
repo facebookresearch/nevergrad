@@ -10,6 +10,7 @@ import tempfile
 import subprocess
 import typing as tp
 from pathlib import Path
+import numpy as np
 from nevergrad.common import tools as ngtools
 
 
@@ -153,3 +154,12 @@ class CommandFunction:
                 subprocess_error = subprocess.CalledProcessError(retcode, process.args, output=stdout, stderr=stderr)
                 raise FailedJobError(stderr.decode()) from subprocess_error
         return stdout
+
+
+def float_penalty(x: tp.Union[bool, float]) -> float:
+    """Unifies penalties as float (bool=False becomes 1).
+    The value is positive for unsatisfied penality else 0.
+    """
+    if isinstance(x, (bool, np.bool_)):
+        return float(not x)
+    return -min(0, x)

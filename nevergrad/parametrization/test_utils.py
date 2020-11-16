@@ -8,8 +8,8 @@ import sys
 import time
 import contextlib
 import typing as tp
-# from unittest import SkipTest
 from pathlib import Path
+import numpy as np
 from nevergrad.common import testing
 from . import parameter as p
 from . import utils
@@ -105,6 +105,18 @@ def test_parameter_as_choice_tag(param: p.Parameter, cls: tp.Type[p.Parameter], 
     tag = p.BaseChoice.ChoiceTag.as_tag(param)
     assert tag.cls == cls
     assert tag.arity == arity
+
+
+@testing.parametrized(
+    true=(True, 0.0),
+    false=(False, 1.0),
+    np_true=(np.bool_(True), 0.0),
+    np_false=(np.bool_(False), 1.0),
+    pos=(0.7, 0.0),
+    neg=(-0.7, 0.7),
+)
+def test_float_penalty(value: tp.Any, expected: float) -> None:
+    assert utils.float_penalty(value) == expected
 
 
 def do_nothing(*args: tp.Any, **kwargs: tp.Any) -> int:
