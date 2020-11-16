@@ -85,7 +85,7 @@ class Mutator:
     def discrete_mutation(self, parent: tp.ArrayLike, arity: int = 2) -> tp.ArrayLike:
         """This is the most classical discrete 1+1 mutation of the evolution literature."""
         dimension = len(parent)
-        boolean_vector = np.array(np.ones(dimension), dtype=bool)
+        boolean_vector = np.ones(dimension, dtype=bool)
         while all(boolean_vector):
             boolean_vector = [self.random_state.rand() > (1. / dimension) for _ in parent]
         return [s if b else self.significantly_mutate(s, arity) for (b, s) in zip(boolean_vector, parent)]
