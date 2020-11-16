@@ -209,10 +209,8 @@ class _OnePlusOne(base.Optimizer):
             self._adaptive_mr = min(1., factor * self._adaptive_mr)
         if self.mutation == "coordinatewiseadaptive":
             factor = 1.2 if loss < self.current_bests["pessimistic"].mean else 0.731  # 0.731 = 1.2**(-np.exp(1)-1)
-            for i in range(self.dimension):
-                if self._modified_variables[i]:
-                    self._velocity[i] *= factor 
-                    self._velocity[i] = min(max(self._velocity[i], 1.), self._arity / 4.)
+            inds = self._modified_variables
+            self._velocity[inds] = np.clip(self._velocity[inds] * factor, 1., self._arity / 4.)
 
 
 class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
