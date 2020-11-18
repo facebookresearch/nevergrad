@@ -199,19 +199,19 @@ def create_plots(
     assert not any("Unnamed: " in x for x in df.columns), f"Remove the unnamed index column:  {df.columns}"
     assert "error " not in df.columns, f"Remove error rows before plotting"
     required = {"optimizer_name", "budget", "loss", "elapsed_time", "elapsed_budget"}
-    excluded = {x for x in set(df.columns) if x.startswith('{') and x.endswith('}')}  # ignore all descriptors starting enclosed in "{ }"
-
+    #excluded = {x for x in set(df.columns) if x.startswith('{') and x.endswith('}')}  # ignore all descriptors starting enclosed in "{ }"
+    df = df.loc[:,[x for x in df.columns if not (x.startswith('{') and x.endswith('}'))]]
     missing = required - set(df.columns)
     assert not missing, f"Missing fields: {missing}"
     output_folder = Path(output_folder)
     os.makedirs(output_folder, exist_ok=True)
     # check which descriptors do vary
     # all other columns are descriptors
-    descriptors = sorted(set(df.columns) - (excluded | required | {"instrum_str", "seed", "pseudotime"}))
+    descriptors = sorted(set(df.columns) - (required | {"instrum_str", "seed", "pseudotime"}))
     to_drop = [x for x in descriptors if len(df.unique(x)) == 1]
     df = utils.Selector(df.loc[:, [x for x in df.columns if x not in to_drop]])
     # now those should be actual interesting descriptors
-    all_descriptors = sorted(set(df.columns) - (excluded | required | {"instrum_str", "seed", "pseudotime"}))
+    all_descriptors = sorted(set(df.columns) - (required | {"instrum_str", "seed", "pseudotime"}))
     print(f"Descriptors: {all_descriptors}")
     print("# Fight plots")
     #

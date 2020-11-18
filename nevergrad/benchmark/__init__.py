@@ -5,3 +5,4 @@
 
 from .xpbase import Experiment
 from .experiments import registry
+from . import dynexpreg

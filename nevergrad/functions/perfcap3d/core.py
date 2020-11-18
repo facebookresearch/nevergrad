@@ -5,9 +5,9 @@ import typing as tp
 import logging
 import itertools
 import copy
-from enum import Enum
+import nevergrad as ng
 from uuid import uuid4 as uuid_gen
-from nevergrad.parametrization import parameter as p
+from enum import Enum
 from .rmqservice import RMQService as _RMQService, RMQSettings as _RMQSettings
 from ...functions.base import ExperimentFunction
 
@@ -102,7 +102,7 @@ class Perfcap3DFunction(ExperimentFunction):
     """
     # pylint:disable=too-many-locals
 
-    def _create_parameters(self, cfg: tp.Dict[str, tp.Any]) -> tp.List[p.Scalar]:
+    def _create_parameters(self, cfg: tp.Dict[str, tp.Any]) -> tp.List[ng.p.Scalar]:
         """
         Creates the parameters for the objective function based on configuration read from experimentX.json
         Objective Function parameters (i.e variables) are based on the Degrees of Freadom (DoFs) of each template mesh joint
@@ -146,7 +146,7 @@ class Perfcap3DFunction(ExperimentFunction):
         self._var_normalizers = [VarNormalizer(lower_bound=x[0], upper_bound=x[1], normalize=self._normalize)
                                  for x in zip(bounds_min, bounds_max)]
         # parameter creation (initial value, bounds, mutable_mutation_var)
-        params = [p.Scalar(init=n.normalize(init), lower=n.active_lower_bound, upper=n.active_upper_bound, mutable_sigma=ms)
+        params = [ng.p.Scalar(init=n.normalize(init), lower=n.active_lower_bound, upper=n.active_upper_bound, mutable_sigma=ms)
              for (n, ms, init) in zip(self._var_normalizers, mutable_mut_var, initial_values)]
         # leave negative mutation variances to auto / ie. do not set
         for (v, mv, n) in filter(lambda x: x[1] > 0.0, zip(params, mutation_variances, self._var_normalizers)):
@@ -154,7 +154,10 @@ class Perfcap3DFunction(ExperimentFunction):
 
         return params
 
-    def __init__(self, server_comm: 'Perfcap3DServerComm', objective_func_cfg: tp.Dict[str, tp.Any], experiment_tag_id: str):
+    def __init__(self, experiment_filename : str, **kwargs):
+
+        cfg = Perfcap3DExperimentConfig(experiment_filename)
+        objective_func_cfg = cfg.objective_function_config
 
         self._initial_pose: tp.Dict[int, tp.List[float]] = dict(map(lambda o: (o["joint_id"], o["values"]),
                                                                     objective_func_cfg["initial_pose"]))
@@ -164,18 +167,18 @@ class Perfcap3DFunction(ExperimentFunction):
         self._var_normalizers: tp.List[VarNormalizer] = None
         self._variable_to_dof_index_map: tp.Dict[int, int] = None
         self._variable_to_joint_index_map: tp.Dict[int, int] = None
-        self._experiment_tag_id: str = experiment_tag_id
-        self._server_comm = server_comm
+        self._experiment_tag_id: str = str(uuid_gen()) if 'experiment_tag_id' not in kwargs else kwargs['experiment_tag_id']
+        self._server_comm = Perfcap3DServerComm(cfg.server_config)
         self._experiment_started : bool = False
         params = self._create_parameters(objective_func_cfg)
-        super().__init__(self.oracle_call, p.Instrumentation(*params))
-        self.register_initialization(server_comm=server_comm,
-                                     objective_func_cfg=objective_func_cfg,
-                                     experiment_tag_id=experiment_tag_id)  # to create equivalent instances through "copy"
+        super().__init__(self.oracle_call, ng.p.Instrumentation(*params))
+        self.register_initialization(experiment_filename = experiment_filename,
+                                    experiment_tag_id = self._experiment_tag_id)  # to create equivalent instances through "copy"
 
         # exclude experiment_tag_id from fight descriptors by encapsulating its name inside "{ }"
-        self._descriptors[r"{experiment_tag_id}"] = experiment_tag_id       # append experiment_tag_id to ExperimentFunction descritors.
+        # append experiment_tag_id to ExperimentFunction descritors.
         # put name inside "{}", to exclude from fightplots (plotting.py has been updated accordingly)
+        self._descriptors[r"{experiment_tag_id}"] = self._experiment_tag_id
 
     def compute_pose(self, *args) -> tp.Dict[int, tp.List[float]]:
         """
@@ -227,9 +230,20 @@ class Perfcap3DFunction(ExperimentFunction):
                                                 # this notifies server to flush logs with converged pose equal to args.
         return loss
 
+
+class Singleton(type):
+
+    _instances = {}
+
+    def __call__(cls, *args, **kwargs):
+
+        if cls not in cls._instances:
+            cls._instances[cls] = super(Singleton,cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
+
 # pylint: disable=too-many-instance-attributes
 
-class Perfcap3DServerComm:
+class Perfcap3DServerComm(metaclass = Singleton):
     """
     Perfcap3DServerComm is responsible for all communications to the Perfcap Benchmark Server
     """

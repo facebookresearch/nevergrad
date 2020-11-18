@@ -4,27 +4,26 @@
 # LICENSE file in the root directory of this source tree.
 
 import typing as tp
-from uuid import uuid4 as uuid_gen
 import numpy as np
 from nevergrad import optimizers
 from nevergrad.optimization.base import ConfiguredOptimizer
 from nevergrad.optimization import experimentalvariants  # pylint: disable=unused-import
 from nevergrad.functions import ArtificialFunction
-from nevergrad.functions.perfcap3d.core import Perfcap3DExperimentConfig, Perfcap3DFunction, Perfcap3DServerComm
+from nevergrad.functions.perfcap3d.core import Perfcap3DFunction
 from .xpbase import registry
 from .xpbase import create_seed_generator
 from .xpbase import Experiment
 
 # pylint: disable=stop-iteration-return, too-many-nested-blocks
 
-def perfcap_experiment(experiment_filename: str, seedg: tp.Iterator[tp.Optional[int]]) -> tp.Iterator[Experiment]:
+def perfcap_experiment(experiment_filename: str, seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """
     Factory function that creates Experiments for Perfcap3DFunction
+    This function is registered dynamically for 11 experiments under the names
+    'perfcap_bench1' to 'perfcap_bench11' in dynexpreg.py
     """
 
-    cfg = Perfcap3DExperimentConfig(experiment_filename)
-    server_comm = Perfcap3DServerComm(cfg.server_config)
-
+    seedg = create_seed_generator(seed)
     budgets = [2000, 4000, 7000]
     optimizer_names = [ "Shiwa", "RandomSearch",
                         "RealSpacePSO", "Powell", "DiscreteOnePlusOne",
@@ -33,63 +32,8 @@ def perfcap_experiment(experiment_filename: str, seedg: tp.Iterator[tp.Optional[
     # pylint: disable=stop-iteration-return
     for budget in budgets:
         for optim in optimizer_names:
-            yield Experiment(function=Perfcap3DFunction(server_comm, cfg.objective_function_config, str(uuid_gen())),
+            yield Experiment(function=Perfcap3DFunction(experiment_filename),
                                 optimizer=optim, budget=budget, seed=next(seedg))
-
-@registry.register
-def perfcap_bench1(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    seedg = create_seed_generator(seed)
-    return perfcap_experiment("experiment1.json", seedg)
-
-@registry.register
-def perfcap_bench2(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    seedg = create_seed_generator(seed)
-    return perfcap_experiment("experiment2.json", seedg)
-
-@registry.register
-def perfcap_bench3(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    seedg = create_seed_generator(seed)
-    return perfcap_experiment("experiment3.json", seedg)
-
-@registry.register
-def perfcap_bench4(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    seedg = create_seed_generator(seed)
-    return perfcap_experiment("experiment4.json", seedg)
-
-@registry.register
-def perfcap_bench5(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    seedg = create_seed_generator(seed)
-    return perfcap_experiment("experiment5.json", seedg)
-
-@registry.register
-def perfcap_bench6(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    seedg = create_seed_generator(seed)
-    return perfcap_experiment("experiment6.json", seedg)
-
-@registry.register
-def perfcap_bench7(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    seedg = create_seed_generator(seed)
-    return perfcap_experiment("experiment7.json", seedg)
-
-@registry.register
-def perfcap_bench8(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    seedg = create_seed_generator(seed)
-    return perfcap_experiment("experiment8.json", seedg)
-
-@registry.register
-def perfcap_bench9(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    seedg = create_seed_generator(seed)
-    return perfcap_experiment("experiment9.json", seedg)
-
-@registry.register
-def perfcap_bench10(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    seedg = create_seed_generator(seed)
-    return perfcap_experiment("experiment10.json", seedg)
-
-@registry.register
-def perfcap_bench11(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    seedg = create_seed_generator(seed)
-    return perfcap_experiment("experiment11.json", seedg)
 
 @registry.register
 def basic(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
