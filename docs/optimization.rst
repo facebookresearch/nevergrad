@@ -156,6 +156,7 @@ Optimization with constraints
 Nevergrad has a mechanism for cheap constraints.
 "Cheap" means that we do not try to reduce the number of calls to such constraints.
 We basically repeat mutations until we get a satisfiable point.
+
 Let us say that we want to minimize :code:`(x[0]-.5)**2 + (x[1]-.5)**2` under the constraint :code:`x[0] >= 1`.
 
 .. literalinclude:: ../nevergrad/optimization/test_doc.py
