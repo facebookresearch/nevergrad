@@ -417,8 +417,8 @@ class ConstraintManager:
     """
 
     def __init__(self) -> None:
-        self.max_trials = 1000
-        self.penalty_factor = 0.0
+        self.max_trials = 100
+        self.penalty_factor = 1.0
         self.penalty_exponent = 1.001
         self.mode = "penalty"
 
