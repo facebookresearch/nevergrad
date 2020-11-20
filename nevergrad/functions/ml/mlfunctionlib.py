@@ -9,6 +9,8 @@ import numpy as np
 import sklearn.datasets
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.neural_network import MLPRegressor
+from sklearn.model_selection import train_test_split, KFold
+from sklearn.metrics import mean_squared_error
 
 from nevergrad.parametrization import parameter as p
 from ..base import ExperimentFunction
@@ -51,7 +53,7 @@ class MLTuning(ExperimentFunction):
     ) -> float:
         if not self.X.size:  # lazzy initialization
             self.make_dataset(self.data_dimension, self.dataset)
-        # 10-folds cross-validation
+        # num_cv-folds cross-validation
         result = 0.0
         # Fit regression model
         if regressor == "decision_tree":
@@ -64,23 +66,25 @@ class MLTuning(ExperimentFunction):
             raise ValueError(f"Unknown regressor {regressor}.")
 
         if noise_free:  # noise_free is True when we want the result on the test set.
-            X = self.X
-            y = self.y
+            X = self.X_train
+            y = self.y_train
             X_test = self.X_test
             y_test = self.y_test
             regr.fit(np.asarray(self.X), np.asarray(self.y))
             pred_test = regr.predict(self.X_test)
-            return float(np.sum((self.y_test - pred_test)**2) / len(self.y_test))
+            return mean_squared_error(self.y_test, pred_test)
 
         # We do a cross-validation.
-        for X, y, X_test, y_test in zip(self.X_train, self.y_train, self.X_valid, self.y_valid):
+        for X, y, X_test, y_test in zip(self.X_train_cv, self.y_train_cv, self.X_valid_cv, self.y_valid_cv):
             assert isinstance(depth, int), f"depth has class {type(depth)} and value {depth}."
+
             regr.fit(np.asarray(X), np.asarray(y))
+
             # Predict
             pred_test = regr.predict(X_test)
-            result += np.sum((y_test - pred_test)**2)
+            result += mean_squared_error(y_test, pred_test)
 
-        return result / self.num_data  # We return a 10-fold validation error.
+        return result / self._cross_val_num  # We return a num_cv-fold validation error.
 
     def __init__(
         self,
@@ -106,10 +110,12 @@ class MLTuning(ExperimentFunction):
         self.y: np.ndarray
 
         # Variables for storing the cross-validation splits.
-        self.X_train: tp.List[tp.Any] = []  # This will be the list of training subsets.
-        self.X_valid: tp.List[tp.Any] = []  # This will be the list of validation subsets.
-        self.y_train: tp.List[tp.Any] = []
-        self.y_valid: tp.List[tp.Any] = []
+        self.X_train_cv: tp.List[tp.Any] = []  # This will be the list of training subsets.
+        self.X_valid_cv: tp.List[tp.Any] = []  # This will be the list of validation subsets.
+        self.y_train_cv: tp.List[tp.Any] = []
+        self.y_valid_cv: tp.List[tp.Any] = []
+        self.X_train: np.ndarray
+        self.y_train: np.ndarray
         self.X_test: np.ndarray
         self.y_test: np.ndarray
 
@@ -189,18 +195,20 @@ class MLTuning(ExperimentFunction):
 
             # Half the dataset for training.
             rng.shuffle(data[0].T)  # We randomly shuffle the columns.
-            self.X = data[0][::2]
-            self.y = data[1][::2]
-            self.num_data = len(self.X)
-            for cv in range(10):
-                train_range = np.arange(self.num_data) % 10 != cv
-                valid_range = np.arange(self.num_data) % 10 == cv
-                self.X_train += [self.X[train_range]]
-                self.y_train += [self.y[train_range]]
-                self.X_valid += [self.X[valid_range]]
-                self.y_valid += [self.y[valid_range]]
-            self.X_test = data[0][1::2]
-            self.y_test = data[1][1::2]
+            self.X = data[0]
+            self.y = data[1]
+            self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.X, self.y, test_size=0.5, random_state=42)
+            num_train_data = len(self.X_train)
+            self.num_data = num_train_data
+
+            kf = KFold(n_splits=self._cross_val_num)
+            kf.get_n_splits(self.X_train)
+
+            for train_index, valid_index in kf.split(self.X_train):
+                self.X_train_cv += [self.X_train[train_index]]
+                self.y_train_cv += [self.y_train[train_index]]
+                self.X_valid_cv += [self.X_train[valid_index]]
+                self.y_valid_cv += [self.y_train[valid_index]]
             return
 
         assert data_dimension is not None, f"Pb with {dataset} in dimension {data_dimension}"
@@ -216,24 +224,26 @@ class MLTuning(ExperimentFunction):
             "artificialsquare": np.square,
         }[dataset]
         y = np.sum(np.sin(X), axis=1).ravel()
-        self.X = X  # Training set.
-        self.y = y  # Labels of the training set.
+        self.X = X
+        self.y = y
+        self.X_train = X  # Training set.
+        self.y_train = y  # Labels of the training set.
 
         # We generate the cross-validation subsets.
         for cv in range(self._cross_val_num):
 
             # Training set.
-            X_train = X[np.arange(self.num_data) % 10 != cv].copy()
-            y_train = np.sum(target_function(X_train), axis=1).ravel()
-            self.X_train += [X_train]
-            self.y_train += [y_train]
+            X_train_cv = X[np.arange(self.num_data) % self._cross_val_num != cv].copy()
+            y_train_cv = np.sum(target_function(X_train_cv), axis=1).ravel()
+            self.X_train_cv += [X_train_cv]
+            self.y_train_cv += [y_train_cv]
 
             # Validation set or test set (noise_free is True for test set).
-            X_valid = X[np.arange(self.num_data) % 10 == cv].copy()
-            X_valid = X_valid.reshape(-1, data_dimension)
-            y_valid = np.sum(target_function(X_valid), axis=1).ravel()
-            self.X_valid += [X_valid]
-            self.y_valid += [y_valid]
+            X_valid_cv = X[np.arange(self.num_data) % self._cross_val_num == cv].copy()
+            X_valid_cv = X_valid_cv.reshape(-1, data_dimension)
+            y_valid_cv = np.sum(target_function(X_valid_cv), axis=1).ravel()
+            self.X_valid_cv += [X_valid_cv]
+            self.y_valid_cv += [y_valid_cv]
 
         # We also generate the test set.
         X_test = np.arange(0., 1., 1. / 60000)
@@ -242,3 +252,4 @@ class MLTuning(ExperimentFunction):
         y_test = np.sum(target_function(X_test), axis=1).ravel()
         self.X_test = X_test
         self.y_test = y_test
+        

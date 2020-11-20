@@ -45,10 +45,10 @@ class _OnePlusOne(base.Optimizer):
     It was independently rediscovered by Devroye (1972) and Rechenberg (1973).
     We use asynchronous updates, so that the 1+1 can actually be parallel and even
     performs quite well in such a context - this is naturally close to 1+lambda.
-    
+
     Posssible mutations include gaussian and cauchy for the continuous case, and in the discrete case:
     discrete, fastga, doublefastga, adaptive, portfolio, discreteBSO, doerr.
-    
+
     Discrete is the most classical discrete mutation operator,
     DoubleFastGA is an adaptation of FastGA to arity > 2, Portfolio corresponds to random mutation rates,
     DiscreteBSO corresponds to a decreasing schedule of mutation rate.
@@ -326,7 +326,7 @@ class _CMA(base.Optimizer):
     def es(self) -> tp.Any:  # typing not possible since cmaes not imported :(
         if self._es is None:
             if not self._fcmaes:
-                inopts = {"popsize": self._popsize, "randn": self._rng.randn, "CMA_diagonal": self._diagonal, "verbose": 0}
+                inopts = dict(popsize=self._popsize, randn=self._rng.randn, CMA_diagonal=self._diagonal, verbose=0, seed=np.nan)
                 self._es = cma.CMAEvolutionStrategy(x0=self._rng.normal(size=self.dimension) if self._random_init else np.zeros(
                     self.dimension, dtype=np.float), sigma0=self._scale, inopts=inopts)
             else:
@@ -1043,11 +1043,23 @@ class Portfolio(base.Optimizer):
         return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        optim_index: int = candidate._meta["optim_index"]
-        self.optims[optim_index].tell(candidate, loss)
+        for opt in self.optims:
+            try:
+                opt.tell(candidate, loss)
+            except base.TellNotAskedNotSupportedError:
+                pass
+        # Presumably better than self.optims[optim_index].tell(candidate, value)
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        raise base.TellNotAskedNotSupportedError
+        at_least_one_ok = False
+        for opt in self.optims:
+            try:
+                opt.tell(candidate, loss)
+                at_least_one_ok = True
+            except base.TellNotAskedNotSupportedError:
+                pass
+        if not at_least_one_ok:
+            raise base.TellNotAskedNotSupportedError
 
 
 class InfiniteMetaModelOptimum(ValueError):

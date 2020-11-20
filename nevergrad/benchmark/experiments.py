@@ -78,11 +78,11 @@ def naivemltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         yield xp
 
 
-# We register only the sequuential counterparts for the moment.
+# We register only the sequential counterparts for the moment.
 @registry.register
 def seqmltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Sequuential counterpart of mltuning."""
-    internal_generator = mltuning(seed, overfitter=True, seq=True)
+    """Sequential counterpart of mltuning."""
+    internal_generator = mltuning(seed, overfitter=False, seq=True)
     for xp in internal_generator:
         yield xp
 
@@ -140,10 +140,10 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # Discrete, unordered.
     for nv in [10, 50, 200]:
         for arity in [2, 7]:
-            instrum = ng.p.TransitionChoice(range(arity), repetitions=nv).set_name("noname")
-            for discrete_func in [corefuncs.onemax, corefuncs.leadingones, corefuncs.jump]:
-                dfunc = ExperimentFunction(discrete_func, instrum)
-                dfunc._descriptors.update(arity=arity)
+            instrum = ng.p.TransitionChoice(range(arity), repetitions=nv)
+            for name in ["onemax", "leadingones", "jump"]:
+                dfunc = ExperimentFunction(corefuncs.DiscreteFunction(name, arity), instrum.set_name("transition"))
+                dfunc.add_descriptors(arity=arity)
                 for optim in optims:
                     for nw in [1, 10]:
                         for budget in [500, 5000]:
@@ -225,10 +225,9 @@ def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                 else:
                     assert instrum_str == "Unordered"
                     instrum = ng.p.TransitionChoice(range(arity), repetitions=nv)
-                for discrete_func in [corefuncs.onemax, corefuncs.leadingones, corefuncs.jump]:
-                    dfunc = ExperimentFunction(discrete_func, instrum.set_name("noname"))
+                for name in ["onemax", "leadingones", "jump"]:
+                    dfunc = ExperimentFunction(corefuncs.DiscreteFunction(name, arity), instrum.set_name(instrum_str))
                     dfunc.add_descriptors(arity=arity)
-                    dfunc.add_descriptors(instrum_str=instrum_str)
                     for optim in optims:
                         for nw in [1, 10]:
                             for budget in [50, 500, 5000]:
@@ -248,11 +247,10 @@ def sequential_instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Ex
         for arity in [2, 3, 7, 30]:
             for instrum_str in ["Unordered"]:
                 assert instrum_str == "Unordered"
-                instrum = ng.p.TransitionChoice(range(arity), repetitions=nv).set_name("noname")
-                for discrete_func in [corefuncs.onemax, corefuncs.leadingones, corefuncs.jump]:
-                    dfunc = ExperimentFunction(discrete_func, instrum.set_name("noname"))
+                instrum = ng.p.TransitionChoice(range(arity), repetitions=nv)
+                for name in ["onemax", "leadingones", "jump"]:
+                    dfunc = ExperimentFunction(corefuncs.DiscreteFunction(name, arity), instrum.set_name(instrum_str))
                     dfunc.add_descriptors(arity=arity)
-                    dfunc.add_descriptors(instrum_str=instrum_str)
                     for optim in optims:
                         for budget in [50, 500, 5000, 50000]:
                             yield Experiment(dfunc, optim, budget=budget, seed=next(seedg))
@@ -1130,7 +1128,7 @@ def arcoating(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 def images(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """AR coating. Problems about optical properties of nanolayers."""
     seedg = create_seed_generator(seed)
-    optims = ["CMA", "Shiwa", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
+    optims = ["CMA", "Shiwa", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "NSGAIIES", "ParametrizationDE"]
     if default_optims is not None:
         optims = default_optims
     for budget in [100 * 5 ** k for k in range(3)]:
@@ -1286,7 +1284,7 @@ def bragg_structure(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 @registry.register
 def adversarial_attack(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
-    optims = ["CMA", "Shiwa", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
+    optims = ["CMA", "Shiwa", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE", "NSGAIIES"]
     folder = os.environ.get("NEVERGRAD_ADVERSARIAL_EXPERIMENT_FOLDER", None)
     if folder is None:
         warnings.warn("Using random images, set variable NEVERGRAD_ADVERSARIAL_EXPERIMENT_FOLDER to specify a folder")
