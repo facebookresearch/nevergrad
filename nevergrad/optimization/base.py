@@ -101,7 +101,6 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # False ==> we repeat the ask until we solve the problem.
         self._constraints_manager = utils.ConstraintManager()
         self._penalize_cheap_violations = False
-        self._memorize_constraint_failures = False
 
         self.parametrization = (
             parametrization
@@ -345,7 +344,6 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             callback(self, candidate, loss)
         if not candidate.satisfies_constraints() and self.budget is not None:
             penalty = self._constraints_manager.penalty(candidate, self.num_ask, self.budget)
-            assert isinstance(loss, float)
             loss = loss + penalty
         if isinstance(loss, float):
             self._update_archive_and_bests(candidate, loss)
@@ -426,8 +424,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 # only register actual asked points
             if candidate.satisfies_constraints():
                 break  # good to go!
-            if self._penalize_cheap_violations or (k == max_trials - 2 and self._memorize_constraint_failures):
-                self._internal_tell_candidate(candidate, float("Inf"))  # a tell may help before last tentative
+            if self._penalize_cheap_violations:
+                # TODO using a suboptimizer instead may help remove this
+                self._internal_tell_candidate(candidate, float("Inf"))  # DE requires a tell
             self._num_ask += 1  # this is necessary for some algorithms which need new num to ask another point
             if k == max_trials - 1:
                 warnings.warn(f"Could not bypass the constraint after {max_trials} tentatives, "
