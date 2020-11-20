@@ -417,7 +417,7 @@ class ConstraintManager:
     """
 
     def __init__(self) -> None:
-        self.max_trials = 100
+        self.max_trials = 1000
         self.penalty_factor = 1.0
         self.penalty_exponent = 1.001
         self.mode = "penalty"
@@ -441,10 +441,6 @@ class ConstraintManager:
                 multiplicative factor on the constraint penalization.
             penalty_exponent: float
                 exponent, usually close to 1 and slightly greater than 1.
-            penalize_cheap_violations: bool
-                decides if we should store failed attempts of satisfying constraints with an infinite value.
-            memorize_constraint_failures: bool
-                decides if we should store the last attempt of satisfying constraints with an infinite value.
         """
         for x, y in locals().items():
             if y is not None and x != "self" and not x.startswith("_"):
@@ -452,11 +448,10 @@ class ConstraintManager:
         if self.penalty_exponent < 1:
             raise ValueError("Penalty exponent needs to be equal or greater than 1")
 
-    def penalty(self, parameter: p.Parameter, num_ask: int, budget: int) -> float:
+    def penalty(self, parameter: p.Parameter, num_ask: int, budget: tp.Optional[int]) -> float:
         """Computes the penalty associated with a Parameter, for constraint management
         """
-        if budget is None:
-            raise RuntimeError("A budget needs to be provided for constraints through penalization")
+        budget = 1 if budget is None else budget
         coeff = self.penalty_factor * (self.penalty_exponent ** (num_ask / np.sqrt(budget)))
         val = parameter.value
         return coeff * sum(_float_penalty(func(val)) for func in parameter._constraint_checkers)  # type: ignore
