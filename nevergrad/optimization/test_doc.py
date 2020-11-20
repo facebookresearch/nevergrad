@@ -135,13 +135,7 @@ def test_doc_constrained_optimization() -> None:
 
         optimizer = ng.optimizers.OnePlusOne(parametrization=2, budget=100)
         # define a constraint on first variable of x:
-        #
-        # Deprecated: register a function returning True with constrained is satisfied
-        # optimizer.parametrization.register_cheap_constraint(lambda x: x[0] >= 1)
-        #
-        # New prefered method:
-        # register a function returning a positive float when constraint is satisfied
-        optimizer.parametrization.register_cheap_constraint(lambda x: x[0] - 1)
+        optimizer.parametrization.register_cheap_constraint(lambda x: x[0] >= 1)
 
         recommendation = optimizer.minimize(square)
         print(recommendation.value)
