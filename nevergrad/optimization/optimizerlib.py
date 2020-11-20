@@ -1024,11 +1024,23 @@ class Portfolio(base.Optimizer):
         return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        optim_index: int = candidate._meta["optim_index"]
-        self.optims[optim_index].tell(candidate, loss)
+        for opt in self.optims:
+            try:
+                opt.tell(candidate, loss)
+            except base.TellNotAskedNotSupportedError:
+                pass
+        # Presumably better than self.optims[optim_index].tell(candidate, value)
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        raise base.TellNotAskedNotSupportedError
+        at_least_one_ok = False
+        for opt in self.optims:
+            try:
+                opt.tell(candidate, loss)
+                at_least_one_ok = True
+            except base.TellNotAskedNotSupportedError:
+                pass
+        if not at_least_one_ok:
+            raise base.TellNotAskedNotSupportedError
 
 
 class InfiniteMetaModelOptimum(ValueError):
