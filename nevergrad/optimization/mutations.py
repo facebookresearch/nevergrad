@@ -87,7 +87,7 @@ class Mutator:
         dimension = len(parent)
         boolean_vector = np.ones(dimension, dtype=bool)
         while all(boolean_vector):
-            boolean_vector = [self.random_state.rand() > (1. / dimension) for _ in parent]
+            boolean_vector = self.random_state.rand(dimension) > (1. / dimension)
         return [s if b else self.significantly_mutate(s, arity) for (b, s) in zip(boolean_vector, parent)]
 
     def crossover(self, parent: tp.ArrayLike, donor: tp.ArrayLike) -> tp.ArrayLike:
