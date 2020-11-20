@@ -4,12 +4,12 @@ Examples of benchmarks
 The following figures are examples of algorithm benchmarks which can be generated very easily from the platform
 In all examples, we use independent experiments for the different x-values; so that consistent rankings between methods, over several x-values, have a statistical meaning.
 
-If you want to run the examples yourself, please make sure you have installed :code:`nevergrad` with the :code:`benchmark` flag (see `here <benchmarking>`_).
+If you want to run the examples yourself, please make sure you have installed :code:`nevergrad` with the :code:`benchmark` flag (see :ref:`here <benchmarking>`).
 
 Noisy optimization
 ------------------
 
-Created with command: 
+Created with command:
 
 .. code-block:: bash
 
@@ -78,7 +78,7 @@ In dimension-4
 ^^^^^^^^^^^^^^
 
 In moderate dimension, scrambling is less necessary (consistently with theory) and LHS becomes weaker as budget increases (consistently with discrepancy results in https://arxiv.org/abs/1707.08481).
-The following plot was created with command: 
+The following plot was created with command:
 
 .. code-block:: bash
 

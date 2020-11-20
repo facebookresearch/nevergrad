@@ -183,7 +183,9 @@ A unit tests automatically makes sure that all optimizers have repeatable behavi
 About type hints
 ^^^^^^^^^^^^^^^^
 
-We have used `type hints <https://docs.python.org/3/library/typing.html>`_ throughout :code:`nevergrad` to make it more robust, and the continuous integration will check that everything is correct when pull requests are submitted. However, **we do not want typing to be an annoyance** for contributors who do not care about it, so please feel entirely free to use :code:`# type: ignore` on each line the continuous integration will flag as incorrect, so that the errors disappear. If we consider it useful to have correct typing, we will update the code after your pull request is merged.
+We have used `type hints <https://docs.python.org/3/library/typing.html>`_ throughout :code:`nevergrad` to make it more robust, and the continuous integration will check that everything is correct when pull requests are submitted.
+If you need to add base types for your code, please import them through :code:`import nevergrad.common.typing as tp`.
+However, **we do not want typing to be an annoyance** for contributors who do not care about it, so please feel entirely free to use :code:`# type: ignore` on each line the continuous integration will flag as incorrect, so that the errors disappear. If we consider it useful to have correct typing, we will update the code after your pull request is merged.
 
 
 Optimizer families

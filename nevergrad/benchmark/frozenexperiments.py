@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Iterator, Optional, List, Union
+import typing as tp
 import numpy as np
 from nevergrad import optimizers
 from nevergrad.optimization.base import ConfiguredOptimizer
@@ -16,7 +16,7 @@ from .xpbase import Experiment
 
 
 @registry.register
-def basic(seed: Optional[int] = None) -> Iterator[Experiment]:
+def basic(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Test settings
     """
     seedg = create_seed_generator(seed)
@@ -28,34 +28,19 @@ def basic(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 @registry.register
-def repeated_basic(seed: Optional[int] = None) -> Iterator[Experiment]:
+def repeated_basic(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Test settings
     """
     seedg = create_seed_generator(seed)
     function = ArtificialFunction(name="sphere", block_dimension=2, noise_level=1)
-    optims: List[Union[str, ConfiguredOptimizer]] = ["OnePlusOne", optimizers.DifferentialEvolution()]
+    optims: tp.List[tp.Union[str, ConfiguredOptimizer]] = ["OnePlusOne", optimizers.DifferentialEvolution()]
     for _ in range(5):
         for optim in optims:
             yield Experiment(function, optimizer=optim, num_workers=2, budget=4, seed=next(seedg))
 
 
 @registry.register
-def small_discrete(seed: Optional[int] = None) -> Iterator[Experiment]:
-    # prepare list of parameters to sweep for independent variables
-    seedg = create_seed_generator(seed)
-    names = ["hardonemax5", "hardjump5", "hardleadingones5"]
-    optims = sorted(x for x, y in optimizers.registry.items() if "iscrete" in x and "epea" not in x and "DE" not in x
-                    and "SSNEA" not in x)
-    functions = [ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
-                 for name in names for bd in [30] for uv_factor in [5, 10] for n_blocks in [1]]
-    for func in functions:
-        for optim in optims:
-            for budget in [100, 400, 700, 1000, 1300, 1600, 1900, 2200, 2500, 2800, 3000]:  # , 10000]:
-                yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
-
-
-@registry.register
-def illcond(seed: Optional[int] = None) -> Iterator[Experiment]:
+def illcond(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """All optimizers on ill cond problems
     """
     seedg = create_seed_generator(seed)
@@ -68,7 +53,7 @@ def illcond(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 @registry.register
-def compabasedillcond(seed: Optional[int] = None) -> Iterator[Experiment]:
+def compabasedillcond(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """All optimizers on ill cond problems
     """
     seedg = create_seed_generator(seed)
@@ -82,7 +67,7 @@ def compabasedillcond(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 @registry.register
-def noise(seed: Optional[int] = None) -> Iterator[Experiment]:
+def noise(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """All optimizers on ill cond problems
     """
     seedg = create_seed_generator(seed)
@@ -97,7 +82,7 @@ def noise(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 @registry.register
-def dim10_smallbudget(seed: Optional[int] = None) -> Iterator[Experiment]:
+def dim10_smallbudget(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
     names = ["sphere"]
@@ -111,7 +96,8 @@ def dim10_smallbudget(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 @registry.register
-def dim10_select_two_features(seed: Optional[int] = None) -> Iterator[Experiment]:     # 2 variables matter - Scrambled Hammersley rules.
+# 2 variables matter - Scrambled Hammersley rules.
+def dim10_select_two_features(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
     names = ["sphere"]
@@ -125,7 +111,7 @@ def dim10_select_two_features(seed: Optional[int] = None) -> Iterator[Experiment
 
 
 @registry.register
-def dim10_select_one_feature(seed: Optional[int] = None) -> Iterator[Experiment]:    # One and only one variable matters - LHS wins.
+def dim10_select_one_feature(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:    # One and only one variable matters - LHS wins.
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
     names = ["sphere"]
@@ -139,7 +125,7 @@ def dim10_select_one_feature(seed: Optional[int] = None) -> Iterator[Experiment]
 
 
 @registry.register
-def doe_dim4(seed: Optional[int] = None) -> Iterator[Experiment]:  # Here, QR performs best, then Random, then LHS, then Cauchy.
+def doe_dim4(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:  # Here, QR performs best, then Random, then LHS, then Cauchy.
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
     names = ["sphere"]  # n for n in ArtificialFunction.list_sorted_function_names() if "sphere" in n]
@@ -153,7 +139,7 @@ def doe_dim4(seed: Optional[int] = None) -> Iterator[Experiment]:  # Here, QR pe
 
 
 @registry.register
-def oneshot4(seed: Optional[int] = None) -> Iterator[Experiment]:
+def oneshot4(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # General experiment comparing one-shot optimizers, excluding those with "large" or "small"
     # in the name.
     seedg = create_seed_generator(seed)
@@ -168,7 +154,7 @@ def oneshot4(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 @registry.register
-def oneshot3(seed: Optional[int] = None) -> Iterator[Experiment]:
+def oneshot3(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # General experiment comparing one-shot optimizers, excluding those with "large" or "small"
     # in the name.
     seedg = create_seed_generator(seed)
@@ -182,7 +168,7 @@ def oneshot3(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 @registry.register
-def oneshot2(seed: Optional[int] = None) -> Iterator[Experiment]:
+def oneshot2(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # Experiment comparing one-shot optimizers in the context of useless vars vs critical vars.
     seedg = create_seed_generator(seed)
     names = ["sphere", "altcigar", "cigar", "ellipsoid", "rosenbrock", "rastrigin", "altellipsoid"]
@@ -195,7 +181,7 @@ def oneshot2(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 @registry.register
-def oneshot1(seed: Optional[int] = None) -> Iterator[Experiment]:
+def oneshot1(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Comparing one-shot optimizers as initializers for Bayesian Optimization.
     """
     seedg = create_seed_generator(seed)
@@ -211,7 +197,7 @@ def oneshot1(seed: Optional[int] = None) -> Iterator[Experiment]:
 
 
 @registry.register
-def metanoise(seed: Optional[int] = None) -> Iterator[Experiment]:
+def metanoise(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     optims = ["NoisyBandit", "TBPSA", "NaiveTBPSA"]
     for budget in [15, 31, 62, 125, 250, 500, 1000, 2000, 4000, 8000]:

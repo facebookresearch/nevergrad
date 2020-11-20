@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Dict, Tuple, Any, List
+import typing as tp
 import numpy as np
 import gym
 from . import base
@@ -36,7 +36,7 @@ class JamesBond:
         else:
             self.consecutive_protect = 0
 
-    def get_state(self) -> Tuple[int, int]:
+    def get_state(self) -> tp.Tuple[int, int]:
         return (self.ammunitions, self.consecutive_protect)
 
 
@@ -66,7 +66,7 @@ class DoubleOSeven(base.MultiAgentEnv):
         self.verbose = verbose
         self._step = 0
 
-    def reset(self) -> Dict[str, np.ndarray]:
+    def reset(self) -> tp.Dict[str, np.ndarray]:
         """Resets the env and returns observations from ready agents.
         Returns:
             obs (dict): New observations for each ready agent.
@@ -75,14 +75,14 @@ class DoubleOSeven(base.MultiAgentEnv):
         self.players = [JamesBond(), JamesBond()]
         return self._make_observations()
 
-    def _make_observations(self) -> Dict[str, np.ndarray]:
+    def _make_observations(self) -> tp.Dict[str, np.ndarray]:
         states = [p.get_state() for p in self.players]
         return {"player_0": np.array(states[0] + states[1]), "player_1": np.array(states[1] + states[0])}
 
     def copy(self) -> "DoubleOSeven":
         return self.__class__(verbose=self.verbose)
 
-    def step(self, action_dict: Dict[str, int]) -> base.StepReturn:
+    def step(self, action_dict: tp.Dict[str, int]) -> base.StepReturn:
         """Returns observations from ready agents.
         The returns are dicts mapping from agent_id strings to values. The
         number of agents in the env can vary over time.
@@ -96,14 +96,14 @@ class DoubleOSeven(base.MultiAgentEnv):
             infos (dict): Optional info values for each agent id.
         """
         if self.verbose:
-            strings: List[str] = []
+            strings: tp.List[str] = []
             for k in range(2):
                 action = JamesBond.actions[action_dict[f"player_{k}"]]
                 strings.append(f"Player {k} {self.players[k].get_state()}: {action}")
             print(" - ".join(strings))
         actions = [JamesBond.actions[action_dict[f"player_{k}"]] for k in range(2)]
         self._step += 1
-        info: Dict[Any, Any] = {}
+        info: tp.Dict[tp.Any, tp.Any] = {}
         rew = {"player_0": 0, "player_1": 0}
         # change impossible actions
         actions = ["reload" if a == "fire" and not p.ammunitions else a for p, a in zip(self.players, actions)]

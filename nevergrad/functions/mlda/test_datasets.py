@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import tempfile
-from typing import List
+import typing as tp
 from pathlib import Path
 from unittest.mock import patch
 import pandas as pd
@@ -44,7 +44,7 @@ def test_get_dataset_filepath() -> None:
     ruspini=("Ruspini", """     5    74
 11    59""", [[5, 74], [11, 59]])
 )
-def test_get_data(name: str, text: str, expected: List[List[float]]) -> None:
+def test_get_data(name: str, text: str, expected: tp.List[tp.List[float]]) -> None:
     with tempfile.TemporaryDirectory() as tmp:
         # create an example file
         filepath = Path(tmp) / "example.txt"

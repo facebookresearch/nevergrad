@@ -79,6 +79,7 @@ def test_fight_plotter() -> None:
 def test_xp_plotter() -> None:
     opt = "OnePlusOneOptimizer"
     df = utils.Selector.read_csv(Path(__file__).parent / "sphere_perf_example.csv").select(optimizer_name=[opt])
+    unused_data = plotting.XpPlotter.make_data(df, normalized_loss=True)
     data = plotting.XpPlotter.make_data(df)
     # check data
     testing.assert_set_equal(data.keys(), {opt})
@@ -159,12 +160,30 @@ def test_compute_best_placements(positions: tp.List[float], expected: tp.List[fl
 def test_merge_parametrization_and_optimizer() -> None:
     df = pd.DataFrame(
         columns=["optimizer_name", "parametrization", "val"],
-        data=[["o1", "p1", 1], ["o1", "p2", 2], ["o2", "p1", 3]]
+        data=[["o1", "p1", 1], ["o1", "p2", 2], ["o2", np.nan, 3]]
     )
-    out = plotting.merge_parametrization_and_optimizer(utils.Selector(df))
+    out = plotting.merge_optimizer_name_pattern(utils.Selector(df), "{optimizer_name},{parametrization}")
     assert isinstance(out, utils.Selector)
     assert out["optimizer_name"].tolist() == ["o1,p1", "o1,p2", "o2"]
     assert out["val"].tolist() == [1, 2, 3]
+    # nothing to do
+    out = plotting.merge_optimizer_name_pattern(utils.Selector(df), "")
+    assert out["optimizer_name"].tolist() == ["o1", "o1", "o2"]
+
+
+def test_normalized_losses() -> None:
+    data = [
+        ["alg0", 0, "sphere", 3],
+        ["alg0", -2, "sphere", 3],
+        ["alg2", 2, "sphere", 3],
+        ["alg3", 12, "sphere", 12],
+        ["alg2", 5, "sphere", 12],
+        ["alg4", 24, "ellipsoid", 3],
+        ["alg5", float("inf"), "sphere", 3],
+    ]
+    df = pd.DataFrame(columns=["optimizer_name", "loss", "func", "dimension"], data=data)
+    ndf = plotting.normalized_losses(df, ["func", "dimension"])
+    np.testing.assert_array_equal(ndf.loss, [0.5, 0, 1, 1, 0, 1, float("inf")])
 
 
 if __name__ == "__main__":

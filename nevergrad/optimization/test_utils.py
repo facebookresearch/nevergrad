@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import pickle
 import pytest
 import numpy as np
 import nevergrad as ng
@@ -59,7 +60,7 @@ def test_get_nash() -> None:
 
 def test_archive() -> None:
     data = [1, 4.5, 12, 0]
-    archive = utils.Archive[int]()
+    archive: utils.Archive[int] = utils.Archive()
     archive[np.array(data)] = 12
     np.testing.assert_equal(archive[np.array(data)], 12)
     np.testing.assert_equal(archive.get(data), 12)
@@ -76,7 +77,7 @@ def test_archive() -> None:
 
 
 def test_archive_errors() -> None:
-    archive = utils.Archive[float]()
+    archive: utils.Archive[float] = utils.Archive()
     archive[[12, 0.]] = 12.
     np.testing.assert_raises(AssertionError, archive.__getitem__, [12, 0])  # int instead of float
     np.testing.assert_raises(AssertionError, archive.__getitem__, [[12], [0.]])  # int instead of float
@@ -86,7 +87,7 @@ def test_archive_errors() -> None:
 
 def test_pruning() -> None:
     param = ng.p.Scalar(init=12.0)
-    archive = utils.Archive[utils.MultiValue]()
+    archive: utils.Archive[utils.MultiValue] = utils.Archive()
     for k in range(3):
         value = utils.MultiValue(param, float(k), reference=param)
         archive[(float(k),)] = value
@@ -98,9 +99,10 @@ def test_pruning() -> None:
     # 0 is best optimistic and average, and 3 is best pessimistic (variance=0)
     archive = pruning(archive)
     testing.assert_set_equal([x[0] for x in archive.keys_as_arrays()], [0, 3], err_msg=f"Repetition #{k+1}")
+    pickle.dumps(archive)  # should be picklable
     # should not change anything this time
-    archive = pruning(archive)
-    testing.assert_set_equal([x[0] for x in archive.keys_as_arrays()], [0, 3], err_msg=f"Repetition #{k+1}")
+    archive2 = pruning(archive)
+    testing.assert_set_equal([x[0] for x in archive2.keys_as_arrays()], [0, 3], err_msg=f"Repetition #{k+1}")
 
 
 @pytest.mark.parametrize("nw,dimension,expected_min,expected_max", [  # type: ignore
@@ -132,6 +134,9 @@ def test_uid_queue() -> None:
     uidq.discard("a")
     for uid in ["c", "c"]:
         assert uidq.ask() == uid
+    # pickling
+    string = pickle.dumps(uidq)
+    pickle.loads(string)
     # clearing
     uidq.clear()
     with pytest.raises(RuntimeError):

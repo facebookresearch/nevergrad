@@ -4,15 +4,17 @@
 # LICENSE file in the root directory of this source tree.
 
 import sys
+import numbers
 import contextlib
 from unittest.mock import patch
-from typing import Optional, List, Any
 import numpy as np
+import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
 from nevergrad.common import testing
 from nevergrad.optimization import test_base
 from nevergrad.functions import ArtificialFunction
 from nevergrad.functions import ExperimentFunction
+from nevergrad.functions.base import MultiExperiment
 from nevergrad.functions.test_functionlib import DESCRIPTION_KEYS as ARTIFICIAL_KEYS
 from . import xpbase
 
@@ -30,6 +32,14 @@ def test_run_artificial_function() -> None:
     testing.assert_set_equal(summary.keys(), DESCRIPTION_KEYS)
     np.testing.assert_equal(summary["elapsed_budget"], 24)
     np.testing.assert_equal(summary["pseudotime"], 12)  # defaults to 1 unit per eval ( /2 because 2 workers)
+
+
+def test_run_packed_artificial_function() -> None:
+    func = MultiExperiment([ArtificialFunction(name="sphere", block_dimension=2) for _ in range(2)],
+                           [100, 100])
+    xp = xpbase.Experiment(func, optimizer="OnePlusOne", budget=24, num_workers=2, batch_mode=True, seed=14)
+    summary = xp.run()
+    np.testing.assert_almost_equal(summary["loss"], -9961.7, decimal=1)  # makes sure seeding works!
 
 
 def test_noisy_artificial_function_loss() -> None:
@@ -76,7 +86,7 @@ def test_is_incoherent(optimizer: str, num_workers: int, expected: bool) -> None
     seed_with_rand=(12, 12, [363, 803, 222, 277]),
     different_seed=(24, 0, [914, 555, 376, 855]),
 )
-def test_seed_generator(seed: Optional[int], randsize: int, expected: List[Optional[int]]) -> None:
+def test_seed_generator(seed: tp.Optional[int], randsize: int, expected: tp.List[tp.Optional[int]]) -> None:
     output = []
     generator = xpbase.create_seed_generator(seed)
     for _ in range(4):
@@ -97,15 +107,16 @@ class Function(ExperimentFunction):
         return float(x[0])
 
     # pylint: disable=unused-argument
-    def compute_pseudotime(self, input_parameter: Any, value: float) -> float:
-        return 5 - value
+    def compute_pseudotime(self, input_parameter: tp.Any, loss: tp.Loss) -> float:
+        assert isinstance(loss, numbers.Number)
+        return 5 - loss
 
 
 @testing.parametrized(
     w3_batch=(True, ['s0', 's1', 's2', 'u0', 'u1', 'u2', 's3', 's4', 'u3', 'u4']),
     w3_steady=(False, ['s0', 's1', 's2', 'u2', 's3', 'u1', 's4', 'u0', 'u3', 'u4']),  # u0 and u1 are delayed
 )
-def test_batch_mode_parameter(batch_mode: bool, expected: List[str]) -> None:
+def test_batch_mode_parameter(batch_mode: bool, expected: tp.List[str]) -> None:
     func = Function(dimension=1)
     optim = test_base.LoggingOptimizer(3)
     with patch.object(xpbase.OptimizerSettings, "instantiate", return_value=optim):
@@ -119,3 +130,13 @@ def test_equality() -> None:
     xp1 = xpbase.Experiment(func, optimizer="OnePlusOne", budget=300, num_workers=2)
     xp2 = xpbase.Experiment(func, optimizer="RandomSearch", budget=300, num_workers=2)
     assert xp1 != xp2
+
+
+def test_multiobjective_experiment() -> None:
+    mofunc = MultiExperiment([ArtificialFunction("sphere", block_dimension=7),
+                              ArtificialFunction("cigar", block_dimension=7)],
+                             upper_bounds=np.array((50., 50.)))
+    xp = xpbase.Experiment(mofunc, optimizer="TwoPointsDE", budget=100, num_workers=1)
+    summary = xp.run()
+    loss: float = summary["loss"]
+    assert loss < 1e9

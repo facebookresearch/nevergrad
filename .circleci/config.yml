@@ -9,12 +9,11 @@ orbs:
   win: circleci/windows@2.2.0
 
 
-
 # the set up in which the ubuntu jobs will run:
 executors:
-  ubuntu-python36:
+  ubuntu-python37:
     docker:
-      - image: circleci/python:3.6.1
+      - image: circleci/python:3.7
     working_directory: ~/repo
 
 
@@ -28,9 +27,9 @@ commands:
       - restore_cache:
           name: "[all] Restore cache"
           keys:
-          - v3-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          - v5-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
           # fallback to installing main requirements
-          - v3-dependencies-main-{{ checksum "requirements/main.txt"}}
+          - v5-dependencies-main-{{ checksum "requirements/main.txt"}}
 
       - run:
           name: "[all] Install dependencies"
@@ -44,7 +43,7 @@ commands:
 
 jobs:
   install:
-    executor: ubuntu-python36
+    executor: ubuntu-python37
 
     steps:
       - checkout
@@ -53,7 +52,7 @@ jobs:
       - restore_cache:
           name: "[no-extra] Restore cache"
           keys:
-          - v3-dependencies-main-{{ checksum "requirements/main.txt"}}
+          - v5-dependencies-main-{{ checksum "requirements/main.txt"}}
           # fallback to using the latest cache if no exact match is found
 
       - run:
@@ -68,6 +67,11 @@ jobs:
           name: "[no-extra] Print installation"
           when: always
           command: |
+            if [[ -z "$CIRCLE_REPOSITORY_URL" ]]; then
+                echo "CIRCLE_REPOSITORY_URL must be provided in environment" 1>&2
+                exit 1
+            fi
+            echo "This is on $CIRCLE_REPOSITORY_URL."
             . venv/bin/activate
             pip freeze
 
@@ -75,7 +79,7 @@ jobs:
           name: "[no-extra] Save cache"
           paths:
             - ./venv
-          key: v3-dependencies-main-{{ checksum "requirements/main.txt"}}
+          key: v5-dependencies-main-{{ checksum "requirements/main.txt"}}
 
       - run:
           name: "[no-extra] Run basic tests (checking dependencies)"
@@ -90,7 +94,7 @@ jobs:
           name: "[all] Save cache"
           paths:
             - ./venv
-          key: v3-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          key: v5-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
 
       - run:
           name: "[all] Print installation"
@@ -133,7 +137,7 @@ jobs:
           paths: html
 
   static:
-    executor: ubuntu-python36
+    executor: ubuntu-python37
 
     steps:
 
@@ -155,7 +159,7 @@ jobs:
 
 
   pytests:
-    executor: ubuntu-python36
+    executor: ubuntu-python37
 
     steps:
 
@@ -167,6 +171,7 @@ jobs:
           command: |
             . venv/bin/activate
             pytest nevergrad -v --exitfirst --durations=20 --cov=nevergrad
+
 
   docs-deploy:
     docker:
@@ -190,7 +195,12 @@ jobs:
 
       - run:
           name: Deploy docs to gh-pages branch
-          command: gh-pages --dotfiles --message "[skip ci] Updates" --dist docs/_build/html
+          command: |
+            echo "This is on $CIRCLE_REPOSITORY_URL."
+            if [[ "$CIRCLE_REPOSITORY_URL" == *":facebookresearch/"* ]]; then
+              echo "Deploying"
+              gh-pages --dotfiles --message "[skip ci] Updates" --dist docs/_build/html
+            fi
 
 
   windows-pytests:
@@ -205,7 +215,7 @@ jobs:
       - restore_cache:
           name: "[all] Restore cache"
           keys:
-          - v3-win-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          - v5-win-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
 
       - run:
           name: Setup nevergrad in virtualenv
@@ -220,7 +230,7 @@ jobs:
           name: "[all] Save cache"
           paths:
             - ./venv
-          key: v3-win-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          key: v5-win-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
 
       - run:
           name: pytest
@@ -254,10 +264,14 @@ jobs:
       - run:
           name: upload to pypi
           command: |
-            . venv/bin/activate
-            du -h nevergrad-build/dist/*
-            twine check nevergrad-build/dist/nevergrad-*
-            twine upload nevergrad-build/dist/nevergrad-* --verbose
+            echo "This is on $CIRCLE_REPOSITORY_URL."
+            if [[ "$CIRCLE_REPOSITORY_URL" == *":facebookresearch/"* ]]; then
+              echo "Deploying"
+              . venv/bin/activate
+              du -h nevergrad-build/dist/*
+              twine check nevergrad-build/dist/nevergrad-*
+              twine upload nevergrad-build/dist/nevergrad-* --verbose
+            fi
 
 
 workflows:

@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Dict, List, Tuple
+import typing as tp
 import pytest
 import numpy as np
 from nevergrad.common import testing
@@ -48,7 +48,7 @@ def test_doubleoseven_observations() -> None:
     max_protections=([("protect", "protect")] * 100, {"player_0": 0, "player_1": 0}),
     double_fire=([("reload", "reload"), ("reload", "reload"), ("fire", "fire"), ("fire", "reload")], {"player_0": 1, "player_1": 0}),
 )
-def test_doubleoseven(base_sequence: List[Tuple[str, str]], base_expected: Dict[str, int]) -> None:
+def test_doubleoseven(base_sequence: tp.List[tp.Tuple[str, str]], base_expected: tp.Dict[str, int]) -> None:
     game = envs.DoubleOSeven()
     for case in ["standard", "symmetric"]:
         # prepare sequence for either standard case or symmetric case (player1 and player2 actions are inverted)

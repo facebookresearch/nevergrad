@@ -3,25 +3,36 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Any, Optional, Dict, Iterable, Tuple, List, Union
+import typing as tp
 from collections import defaultdict
 import gym
 
 
-StepReturn = Tuple[Dict[str, Any], Dict[str, int], Dict[str, bool], Dict[str, Any]]  # ray-like multi-agent return type
+StepReturn = tp.Tuple[
+    tp.Dict[str, tp.Any],
+    tp.Dict[str, int],
+    tp.Dict[str, bool],
+    tp.Dict[str, tp.Any]
+]  # ray-like multi-agent return type
 
 
 class StepOutcome:
     """Handle for dealing with environment (and especially multi-agent) outputs more easily
     """
 
-    def __init__(self, observation: Any, reward: Any = None, done: bool = False, info: Optional[Dict[Any, Any]] = None) -> None:
+    def __init__(
+        self,
+        observation: tp.Any,
+        reward: tp.Any = None,
+        done: bool = False,
+        info: tp.Optional[tp.Dict[tp.Any, tp.Any]] = None
+    ) -> None:
         self.observation = observation
         self.reward = reward
         self.done = done
-        self.info: Dict[Any, Any] = {} if info is None else info
+        self.info: tp.Dict[tp.Any, tp.Any] = {} if info is None else info
 
-    def __iter__(self) -> Iterable[Any]:
+    def __iter__(self) -> tp.Iterable[tp.Any]:
         return iter((self.observation, self.reward, self.done, self.info))
 
     def __repr__(self) -> str:
@@ -29,8 +40,8 @@ class StepOutcome:
 
     @classmethod
     def from_multiagent_step(
-        cls, obs: Dict[str, Any], reward: Dict[str, Any], done: Dict[str, bool], info: Dict[str, Dict[Any, Any]]
-    ) -> Tuple[Dict[str, "StepOutcome"], bool]:
+        cls, obs: tp.Dict[str, tp.Any], reward: tp.Dict[str, tp.Any], done: tp.Dict[str, bool], info: tp.Dict[str, tp.Dict[tp.Any, tp.Any]]
+    ) -> tp.Tuple[tp.Dict[str, "StepOutcome"], bool]:
         outcomes = {
             agent: cls(obs[agent], reward.get(agent, None), done.get(agent, done.get("__all__", False)), info.get(agent, {}))
             for agent in obs
@@ -38,7 +49,7 @@ class StepOutcome:
         return outcomes, done.get("__all__", False)
 
     @staticmethod
-    def to_multiagent_step(outcomes: Dict[str, "StepOutcome"], done: bool = False) -> StepReturn:
+    def to_multiagent_step(outcomes: tp.Dict[str, "StepOutcome"], done: bool = False) -> StepReturn:
         names = ["observation", "reward", "done", "info"]
         obs, reward, done_dict, info = ({agent: getattr(outcome, name) for agent, outcome in outcomes.items()} for name in names)
         done_dict["__all__"] = done
@@ -49,7 +60,7 @@ class Agent:
     """Base class for an Agent operating in an environment.
     """
 
-    def act(self, observation: Any, reward: Any, done: bool, info: Optional[Dict[Any, Any]] = None) -> Any:
+    def act(self, observation: tp.Any, reward: tp.Any, done: bool, info: tp.Optional[tp.Dict[tp.Any, tp.Any]] = None) -> tp.Any:
         raise NotImplementedError
 
     def reset(self) -> None:
@@ -65,12 +76,12 @@ class MultiAgentEnv:
 
     observation_space: gym.Space
     action_space: gym.Space
-    agent_names: List[str]
+    agent_names: tp.List[str]
 
-    def reset(self) -> Dict[str, Any]:
+    def reset(self) -> tp.Dict[str, tp.Any]:
         raise NotImplementedError
 
-    def step(self, action_dict: Dict[str, Any]) -> StepReturn:
+    def step(self, action_dict: tp.Dict[str, tp.Any]) -> StepReturn:
         """Returns observations from ready agents.
         The returns are dicts mapping from agent_id strings to StepOutcome. The
         number of agents in the env can vary over time.
@@ -100,14 +111,14 @@ class PartialMultiAgentEnv(MultiAgentEnv):
         self.agent_names = [an for an in env.agent_names if an not in agents]
         self.observation_space = env.observation_space
         self.action_space = env.action_space
-        self._agents_outcome: Dict[str, StepOutcome] = {}
+        self._agents_outcome: tp.Dict[str, StepOutcome] = {}
 
-    def reset(self) -> Dict[str, Any]:
+    def reset(self) -> tp.Dict[str, tp.Any]:
         outcomes = StepOutcome.from_multiagent_step(self.env.reset(), {}, {}, {})[0]
         self._agents_outcome = {name: outcomes[name] for name in self.agents}
         return {name: outcomes[name].observation for name in outcomes if name not in self.agents}
 
-    def step(self, action_dict: Dict[str, Any]) -> StepReturn:
+    def step(self, action_dict: tp.Dict[str, tp.Any]) -> StepReturn:
         """Returns observations from ready agents.
         The returns are dicts mapping from agent_id strings to StepOutcome. The
         number of agents in the env can vary over time.
@@ -140,10 +151,10 @@ class SingleAgentEnv(gym.Env):  # type: ignore
         self._agent_name = env.agent_names[0]
         self.env = env
 
-    def reset(self) -> Any:
+    def reset(self) -> tp.Any:
         return self.env.reset()[self._agent_name]
 
-    def step(self, action: Any) -> Tuple[Any, Any, bool, Dict[Any, Any]]:
+    def step(self, action: tp.Any) -> tp.Tuple[tp.Any, tp.Any, bool, tp.Dict[tp.Any, tp.Any]]:
         an = self._agent_name
         obs, reward, done, info = self.env.step({an: action})
         return obs[an], reward[an], done[an] | done["__all__"], info.get(an, {})
@@ -165,12 +176,17 @@ class EnvironmentRunner:
         maximum number of steps to play the environemnet before breaking
     """
 
-    def __init__(self, env: Union[gym.Env, MultiAgentEnv], num_repetitions: int = 1, max_step: float = float("inf")) -> None:
+    def __init__(
+            self,
+            env: tp.Union[gym.Env, MultiAgentEnv],
+            num_repetitions: int = 1,
+            max_step: float = float("inf")
+    ) -> None:
         self.env = env
         self.num_repetitions = num_repetitions
         self.max_step = max_step
 
-    def run(self, *agent: Agent, **agents: Agent) -> Union[float, Dict[str, float]]:
+    def run(self, *agent: Agent, **agents: Agent) -> tp.Union[float, tp.Dict[str, float]]:
         """Run one agent or multiple named agents
 
         Parameters
@@ -186,7 +202,7 @@ class EnvironmentRunner:
             the mean reward (possibly for each agent)
         """
         san = "single_agent_name"
-        sum_rewards: Dict[str, float] = {name: 0.0 for name in agents} if agents else {san: 0.0}
+        sum_rewards: tp.Dict[str, float] = {name: 0.0 for name in agents} if agents else {san: 0.0}
         for _ in range(self.num_repetitions):
             rewards = self._run_once(*agent, **agents)
             for name, value in rewards.items():
@@ -196,7 +212,7 @@ class EnvironmentRunner:
             return mean_rewards[san]
         return mean_rewards
 
-    def _run_once(self, *single_agent: Agent, **agents: Agent) -> Dict[str, float]:
+    def _run_once(self, *single_agent: Agent, **agents: Agent) -> tp.Dict[str, float]:
         san = "single_agent_name"
         if len(single_agent) == 1 and not agents:
             agents = {san: single_agent[0]}
@@ -208,10 +224,10 @@ class EnvironmentRunner:
             outcomes, done = {san: StepOutcome(self.env.reset())}, False
         else:
             outcomes, done = StepOutcome.from_multiagent_step(self.env.reset(), {}, {}, {})
-        reward_sum: Dict[str, float] = defaultdict(float)
+        reward_sum: tp.Dict[str, float] = defaultdict(float)
         step = 0
         while step < self.max_step and not done:
-            actions: Dict[str, Any] = {}
+            actions: tp.Dict[str, tp.Any] = {}
             for name, outcome in outcomes.items():
                 actions[name] = agents[name].act(*outcome)  # type: ignore
             if isinstance(self.env, gym.Env):

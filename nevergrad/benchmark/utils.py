@@ -3,11 +3,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import collections
-import typing as tp
+from collections import abc
 import numpy as np
 import pandas as pd
-from nevergrad.common.typetools import PathLike
+import nevergrad.common.typing as tp
 from nevergrad.common import testing
 
 
@@ -40,7 +39,7 @@ class Selector(pd.DataFrame):  # type: ignore
         """
         df = self
         for name, criterion in kwargs.items():
-            if isinstance(criterion, collections.abc.Iterable) and not isinstance(criterion, str):
+            if isinstance(criterion, abc.Iterable) and not isinstance(criterion, str):
                 selected = df.loc[:, name].isin(criterion)
             elif callable(criterion):
                 selected = [bool(criterion(x)) for x in df.loc[:, name]]
@@ -81,7 +80,7 @@ class Selector(pd.DataFrame):  # type: ignore
             raise NotImplementedError("Only strings, lists and tuples are allowed")
 
     @classmethod
-    def read_csv(cls, path: PathLike) -> "Selector":
+    def read_csv(cls, path: tp.PathLike) -> "Selector":
         return cls(pd.read_csv(str(path)))
 
     def assert_equivalent(self, other: pd.DataFrame, err_msg: str = "") -> None:

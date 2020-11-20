@@ -47,4 +47,4 @@ def test_arcoating_transform_and_call() -> None:
     assert value < np.inf
     data = func.parametrization.spawn_child().set_standardized_data(np.arange(8)).args[0]
     for f in [func, func.evaluation_function]:
-        np.testing.assert_almost_equal(f(data), 13.1007174)  # type: ignore
+        np.testing.assert_almost_equal(f(data), 16.5538936)  # type: ignore

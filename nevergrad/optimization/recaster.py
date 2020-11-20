@@ -6,10 +6,9 @@
 import time
 import warnings
 import threading
-import typing as tp
 import numpy as np
+import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
-from nevergrad.common.typetools import ArrayLike
 from . import base
 from .base import IntOrParameter
 
@@ -172,7 +171,7 @@ class RecastOptimizer(base.Optimizer):
         self._messaging_thread: tp.Optional[MessagingThread] = None  # instantiate at runtime
         self._last_optimizer_duration = 0.0001
 
-    def get_optimization_function(self) -> tp.Callable[[tp.Callable[..., tp.Any]], ArrayLike]:
+    def get_optimization_function(self) -> tp.Callable[[tp.Callable[..., tp.Any]], tp.ArrayLike]:
         """Return an optimization procedure function (taking a function to optimize as input)
 
         Note
@@ -233,7 +232,7 @@ class RecastOptimizer(base.Optimizer):
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         raise base.TellNotAskedNotSupportedError
 
-    def _internal_provide_recommendation(self) -> tp.Optional[base.ArrayLike]:
+    def _internal_provide_recommendation(self) -> tp.Optional[tp.ArrayLike]:
         """Returns the underlying optimizer output if provided (ie if the optimizer did finish)
         else the best pessimistic point.
         """

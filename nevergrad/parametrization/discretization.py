@@ -3,11 +3,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import typing as tp
 import warnings
 import numpy as np
 import scipy.stats
-from ..common.typetools import ArrayLike
+import nevergrad.common.typing as tp
 
 
 # Nevergrad, in the most fundamental layer, uses continuous variables only.
@@ -15,7 +14,7 @@ from ..common.typetools import ArrayLike
 # - by a softmax transformation, a k-valued categorical variable is converted into k continuous variables.
 # - by a discretization - as we often use Gaussian random values, we discretize according to quantiles of the normal
 #   distribution.
-def threshold_discretization(x: ArrayLike, arity: int = 2) -> tp.List[int]:
+def threshold_discretization(x: tp.ArrayLike, arity: int = 2) -> tp.List[int]:
     """Discretize by casting values from 0 to arity -1, assuming that x values
     follow a normal distribution.
 

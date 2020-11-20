@@ -6,11 +6,10 @@
 import math
 import operator
 import warnings
-import typing as tp
 import numpy as np
 from nevergrad.parametrization import parameter as p
+import nevergrad.common.typing as tp
 from nevergrad.common.tools import OrderedSet
-from nevergrad.common.typetools import ArrayLike
 
 
 class MultiValue:
@@ -144,7 +143,7 @@ class SequentialExecutor:
         return DelayedJob(fn, *args, **kwargs)
 
 
-def _tobytes(x: ArrayLike) -> bytes:
+def _tobytes(x: tp.ArrayLike) -> bytes:
     x = np.array(x, copy=False)  # for compatibility
     assert x.ndim == 1, f"Input shape: {x.shape}"
     assert x.dtype == np.float, f"Incorrect type {x.dtype} is not float"
@@ -169,16 +168,16 @@ class Archive(tp.Generic[Y]):
     def __init__(self) -> None:
         self.bytesdict: tp.Dict[bytes, Y] = {}
 
-    def __setitem__(self, x: ArrayLike, value: Y) -> None:
+    def __setitem__(self, x: tp.ArrayLike, value: Y) -> None:
         self.bytesdict[_tobytes(x)] = value
 
-    def __getitem__(self, x: ArrayLike) -> Y:
+    def __getitem__(self, x: tp.ArrayLike) -> Y:
         return self.bytesdict[_tobytes(x)]
 
-    def __contains__(self, x: ArrayLike) -> bool:
+    def __contains__(self, x: tp.ArrayLike) -> bool:
         return _tobytes(x) in self.bytesdict
 
-    def get(self, x: ArrayLike, default: tp.Optional[Y] = None) -> tp.Optional[Y]:
+    def get(self, x: tp.ArrayLike, default: tp.Optional[Y] = None) -> tp.Optional[Y]:
         return self.bytesdict.get(_tobytes(x), default)
 
     def __len__(self) -> int:
@@ -256,7 +255,7 @@ class Pruning:
         names = ["optimistic", "pessimistic", "average"]
         for name in names:
             quantiles[name] = np.quantile([v.get_estimation(name) for v in archive.values()], threshold, interpolation="lower")
-        new_archive = Archive[MultiValue]()
+        new_archive: Archive[MultiValue] = Archive()
         new_archive.bytesdict = {b: v for b, v in archive.bytesdict.items() if any(v.get_estimation(n) <= quantiles[n] for n in names)}
         return new_archive
 
@@ -290,7 +289,7 @@ class UidQueue:
     """
 
     def __init__(self) -> None:
-        self.told = tp.Deque[str]()
+        self.told = tp.Deque[str]()  # this seems to be picklable (this syntax does not always work)
         self.asked: OrderedSet[str] = OrderedSet()
 
     def clear(self) -> None:
@@ -373,7 +372,7 @@ class BoundScaler:
             output += cls.list_arrays(subpar)
         return output
 
-    def transform(self, x: ArrayLike, unbounded_transform: tp.Callable[[np.ndarray], np.ndarray]) -> np.ndarray:
+    def transform(self, x: tp.ArrayLike, unbounded_transform: tp.Callable[[np.ndarray], np.ndarray]) -> np.ndarray:
         """Transform from [0, 1] to the space between bounds
         """
         y = np.array(x, copy=True)

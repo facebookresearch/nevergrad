@@ -4,10 +4,9 @@
 # LICENSE file in the root directory of this source tree.
 
 import argparse
-import typing as tp
 from pathlib import Path
 from concurrent import futures
-from nevergrad.common.typetools import PathLike
+import nevergrad.common.typing as tp
 from . import utils
 from . import core
 from . import plotting
@@ -15,7 +14,7 @@ from . import plotting
 
 # pylint: disable=too-many-arguments
 def launch(experiment: str, num_workers: int = 1, seed: tp.Optional[int] = None,
-           cap_index: tp.Optional[int] = None, output: tp.Optional[PathLike] = None) -> Path:
+           cap_index: tp.Optional[int] = None, output: tp.Optional[tp.PathLike] = None) -> Path:
     """Launch experiment with given names and selection modulo
     max_index can be specified to provide a limited number of settings
     """
@@ -58,10 +57,16 @@ def get_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def repeated_launch(experiment: str, num_workers: int = 1, seed: tp.Optional[int] = None,
-                    cap_index: tp.Optional[int] = None, output: tp.Optional[PathLike] = None,
-                    plot: tp.Union[bool, PathLike] = False, imports: tp.Optional[tp.List[PathLike]] = None,
-                    repetitions: int = 1) -> None:
+def repeated_launch(
+    experiment: str,
+    num_workers: int = 1,
+    seed: tp.Optional[int] = None,
+    cap_index: tp.Optional[int] = None,
+    output: tp.Optional[tp.PathLike] = None,
+    plot: tp.Union[bool, tp.PathLike] = False,
+    imports: tp.Optional[tp.List[tp.PathLike]] = None,
+    repetitions: int = 1
+) -> None:
     """Launch experiment with given names and selection module
     max_index can be specified to provide a limited number of settings
     This repeats the plan several times and increments the seed.

@@ -53,11 +53,13 @@ def _true(*args: tp.Any, **kwargs: tp.Any) -> bool:  # pylint: disable=unused-ar
                                    par.Scalar(),
                                    par.Scalar(1.0).set_mutation(exponent=2.),
                                    par.Dict(blublu=par.Array(shape=(2, 3)), truc=12),
+                                   par.Dict(scalar=par.Scalar(), const_array=np.array([12.0, 12.0]), const_list=[3, 3]),
                                    par.Tuple(par.Array(shape=(2, 3)), 12),
                                    par.Instrumentation(par.Array(shape=(2,)), nonhash=[1, 2], truc=par.Array(shape=(1, 3))),
                                    par.Choice([par.Array(shape=(2,)), "blublu"]),
                                    par.Choice([1, 2], repetitions=2),
                                    par.TransitionChoice([par.Array(shape=(2,)), par.Scalar()]),
+                                   par.TransitionChoice(["a", "b", "c"], transitions=(0, 2, 1), repetitions=4),
                                    ],
                          )
 def test_parameters_basic_features(param: par.Parameter) -> None:
@@ -157,14 +159,14 @@ def check_parameter_freezable(param: par.Parameter) -> None:
      (par.Tuple(12), "Tuple(12)"),
      (par.Dict(constant=12), "Dict(constant=12)"),
      (par.Scalar(), "Scalar[sigma=Log{exp=2.0}]"),
-     (par.Log(lower=3.2, upper=12.0, exponent=1.5), "Log{exp=1.5,Cl(3.2,12)}"),
+     (par.Log(lower=3.2, upper=12.0, exponent=1.5), "Log{exp=1.5,Cl(3.2,12,b)}"),
      (par.Scalar().set_integer_casting(), "Scalar{int}[sigma=Log{exp=2.0}]"),
      (par.Instrumentation(par.Array(shape=(2,)), string="blublu", truc="plop"),
       "Instrumentation(Tuple(Array{(2,)}),Dict(string=blublu,truc=plop))"),
      (par.Choice([1, 12]), "Choice(choices=Tuple(1,12),weights=Array{(1,2)})"),
      (par.Choice([1, 12], deterministic=True), "Choice{det}(choices=Tuple(1,12),weights=Array{(1,2)})"),
-     (par.TransitionChoice([1, 12]), "TransitionChoice(choices=Tuple(1,12),position=Scalar["
-                                     "sigma=Log{exp=2.0}],transitions=[1. 1.])")
+     (par.TransitionChoice([1, 12]), "TransitionChoice(choices=Tuple(1,12),positions=Array{Cd(0,2)}"
+                                     ",transitions=[1. 1.])")
      ]
 )
 def test_parameter_names(param: par.Parameter, name: str) -> None:
@@ -312,6 +314,17 @@ def test_choice_repetitions() -> None:
     expected[[0, 1], [3, 1]] = 0.588
     np.testing.assert_almost_equal(choice.weights.value, expected, decimal=3)
     choice.mutate()
+
+
+def test_transition_choice_repetitions() -> None:
+    choice = par.TransitionChoice([0, 1, 2, 3], repetitions=2)
+    choice.random_state.seed(12)
+    assert len(choice) == 4
+    assert choice.value == (2, 2)
+    choice.value = (3, 1)
+    np.testing.assert_almost_equal(choice.positions.value, [3.5, 1.5], decimal=3)
+    choice.mutate()
+    assert choice.value == (3, 0)
 
 
 def test_descriptors() -> None:
