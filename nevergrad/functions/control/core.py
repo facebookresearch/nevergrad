@@ -40,13 +40,13 @@ class BaseFunction(ExperimentFunction):
         random state for reproducibility in Gym environment.
     """
 
-    def __init__(self, num_rollouts: int, online_stats: bool = False, random_state: tp.Optional[int] = None) -> None:
+    def __init__(self, num_rollouts: int, online_stats: bool, random_state: tp.Optional[int] = None) -> None:
         super().__init__(self._simulate, p.Array(shape=self.policy_dim))
         self.online_stats = online_stats
         self.num_rollouts = num_rollouts
         self.random_state = random_state
         self.register_initialization(num_rollouts=num_rollouts, random_state=random_state)
-        self.add_descriptors(num_rollouts=num_rollouts)
+        self.add_descriptors(num_rollouts=num_rollouts, online_stats=online_stats)
 
     def _simulate(self, x: np.ndarray) -> float:
         env = GenericMujocoEnv(env_name=self.env_name,

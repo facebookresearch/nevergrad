@@ -25,7 +25,7 @@ class GenericMujocoEnv:
     """
 
     def __init__(self, env_name, num_rollouts,
-                 random_state, online_stats=True, state_mean=None, state_std=None):
+                 random_state, online_stats, state_mean=None, state_std=None):
         self.online_stats = online_stats
         self.s_n = 0.
         self.n_obs = 0
