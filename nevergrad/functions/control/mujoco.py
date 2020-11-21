@@ -62,8 +62,8 @@ class GenericMujocoEnv:
         return -np.mean(returns)
 
     def update_stats(self, obs):
-        self.num_obs += 1
+        self.n_obs += 1
         e = obs - self.mean
-        self.mean += e / self.num_obs
+        self.mean += e / self.n_obs
         self.s_n += e * (obs - self.mean)
-        self.std = self.s_n / max(self.num_obs - 1, 1)
+        self.std = self.s_n / max(self.n_obs - 1, 1)
