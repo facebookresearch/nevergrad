@@ -23,10 +23,20 @@ class GenericMujocoEnv:
     random_state: int or None
         random state for reproducibility in Gym environment.
     """
-    def __init__(self, env_name, state_mean, state_std, num_rollouts,
-                 random_state):
-        self.mean = np.array(state_mean)
-        self.std = np.array(state_std)
+
+    def __init__(self, env_name, num_rollouts,
+                 random_state, online_stats=True, state_mean=None, state_std=None):
+        self.online_stats = online_stats
+
+        if self.online_stats:
+            self.mean = 0.
+            self.std = 0.
+            self.s_n = 0.
+            self.n_obs = 0
+        else:
+            self.mean = np.array(state_mean)
+            self.std = np.array(state_std)
+
         self.env = gym.make(env_name)
         self.num_rollouts = num_rollouts
         self.env.seed(random_state)
@@ -37,12 +47,23 @@ class GenericMujocoEnv:
         returns = []
         for _ in range(self.num_rollouts):
             obs = self.env.reset()
+            if self.online_stats:
+                self.update_stats(obs)
             done = False
             totalr = 0.
             while not done:
-                action = np.dot(x, (obs - self.mean) / self.std)
+                action = np.dot(x, (obs - self.mean) / (self.std + 1e-9))
                 obs, r, done, _ = self.env.step(action)
+                if self.online_stats:
+                    self.update_stats(obs)
                 totalr += r
             returns.append(totalr)
 
         return -np.mean(returns)
+
+    def update_stats(self, obs):
+        self.num_obs += 1
+        e = obs - self.mean
+        self.mean += e / self.num_obs
+        self.s_n += e * (obs - self.mean)
+        self.std = self.s_n / max(self.num_obs - 1, 1)
