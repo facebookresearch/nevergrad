@@ -27,12 +27,12 @@ class GenericMujocoEnv:
     def __init__(self, env_name, num_rollouts,
                  random_state, online_stats=True, state_mean=None, state_std=None):
         self.online_stats = online_stats
+        self.s_n = 0.
+        self.n_obs = 0
 
         if self.online_stats:
             self.mean = 0.
             self.std = 0.
-            self.s_n = 0.
-            self.n_obs = 0
         else:
             self.mean = np.array(state_mean)
             self.std = np.array(state_std)
