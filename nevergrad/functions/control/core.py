@@ -40,7 +40,7 @@ class BaseFunction(ExperimentFunction):
         random state for reproducibility in Gym environment.
     """
 
-    def __init__(self, num_rollouts: int, online_stats: bool = True, random_state: tp.Optional[int] = None) -> None:
+    def __init__(self, num_rollouts: int, online_stats: bool = False, random_state: tp.Optional[int] = None) -> None:
         super().__init__(self._simulate, p.Array(shape=self.policy_dim))
         self.online_stats = online_stats
         self.num_rollouts = num_rollouts
