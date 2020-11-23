@@ -44,7 +44,8 @@ from . import frozenexperiments  # noqa # pylint: disable=unused-import
 
 default_optims: tp.Optional[tp.List[str]] = None  # ["NGO10", "CMA", "Shiwa"]
 
-def kerastuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool = False) -> tp.Iterator[Experiment]:
+
+def keras_tuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool = False) -> tp.Iterator[Experiment]:
     """Machine learning hyperparameter tuning experiment. Based on scikit models."""
     seedg = create_seed_generator(seed)
     # Continuous case,
@@ -100,21 +101,24 @@ def naivemltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     for xp in internal_generator:
         yield xp
 
-# We register only the sequential counterparts for the moment.
-@registry.register
-def seqkerastuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Sequential counterpart of mltuning."""
-    internal_generator = kerastuning(seed, overfitter=False, seq=True)
-    for xp in internal_generator:
-        yield xp
 
 # We register only the sequential counterparts for the moment.
 @registry.register
-def naiveseqkerastuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def seq_keras_tuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Sequential counterpart of mltuning."""
-    internal_generator = kerastuning(seed, overfitter=True, seq=True)
+    internal_generator = keras_tuning(seed, overfitter=False, seq=True)
     for xp in internal_generator:
         yield xp
+
+
+# We register only the sequential counterparts for the moment.
+@registry.register
+def naive_seq_keras_tuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Sequential counterpart of mltuning."""
+    internal_generator = keras_tuning(seed, overfitter=True, seq=True)
+    for xp in internal_generator:
+        yield xp
+
 
 # We register only the sequential counterparts for the moment.
 @registry.register
