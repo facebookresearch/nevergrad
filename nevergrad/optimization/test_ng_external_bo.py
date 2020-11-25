@@ -111,7 +111,7 @@ def test_hyperopt(parametrization, has_transform) -> None:
         ]
     )]
 )
-def test_parametrization_conversion(parametrization, values):
+def test_hyperopt_helpers(parametrization, values):
     for val, dict_val, hyperopt_val in values:
         parametrization.value = val
         assert _hp_parametrization_to_dict(parametrization) == dict_val
