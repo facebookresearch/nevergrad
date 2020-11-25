@@ -485,55 +485,6 @@ def test_bo_ordering() -> None:
 
 
 @pytest.mark.parametrize(  # type: ignore
-    "parametrization,has_transform",
-    [(ng.p.Choice(list(range(10))), True),
-    (ng.p.Scalar(lower=0, upper=1), True),
-    (ng.p.Scalar(lower=0, upper=10).set_integer_casting(), True),
-    (ng.p.Log(lower=1e-3, upper=1e3), True),
-    (ng.p.Array(init=np.zeros(10)), True),
-    (ng.p.Instrumentation(
-                        ng.p.Scalar(lower=0, upper=1),
-                        a=ng.p.Choice(list(range(10)))
-    ), False),
-    (ng.p.Instrumentation(a=ng.p.Choice([
-                         ng.p.Scalar(lower=0, upper=1),
-                         ng.p.Scalar(lower=100, upper=1000)
-    ])), True),
-    (ng.p.Instrumentation(a=ng.p.Choice([
-                         ng.p.Choice(list(range(10))),
-                         ng.p.Scalar(lower=0, upper=1),
-    ])), False),
-    (ng.p.Instrumentation(a=ng.p.Choice([
-                             ng.p.Instrumentation(b=ng.p.Choice(list(range(10))),
-                                                  c=ng.p.Log(lower=1e-3, upper=1e3)),
-                             ng.p.Instrumentation(d=ng.p.Scalar(lower=0, upper=1),
-                                                  e=ng.p.Log(lower=1e-3, upper=1e3)),
-    ])), False)
-    ]
-)
-def test_hyperopt(parametrization, has_transform) -> None:
-    optim1 = registry["HyperOpt"](parametrization=parametrization, budget=5)
-    optim2 = registry["HyperOpt"](parametrization=parametrization.copy(), budget=5)
-    for it in range(4):
-        cand = optim1.ask()
-        optim1.tell(cand, 0) # Tell asked
-        del cand._meta["trial_id"]
-        optim2.tell(cand, 0) # Tell not asked
-        assert optim1.trials._dynamic_trials[it]["misc"]["vals"] == optim2.trials._dynamic_trials[it]["misc"]["vals"] # type: ignore
-
-    assert optim1.trials.new_trial_ids(1) == optim2.trials.new_trial_ids(1) # type: ignore
-    assert optim1.trials.new_trial_ids(1)[0] == (it + 2) # type: ignore
-    assert (optim1._transform is not None) == has_transform # type: ignore
-
-    # Test parallelization
-    opt = registry["HyperOpt"](parametrization=parametrization, budget=30, num_workers=5)
-    for k in range(40):
-        cand = opt.ask()
-        if not k:
-            opt.tell(cand, 1)
-
-
-@pytest.mark.parametrize(  # type: ignore
     "name,expected", [("NGOpt2", ["TBPSA", "RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne"])]
 )
 def test_ngo_split_optimizer(name: str, expected: tp.List[str]) -> None:

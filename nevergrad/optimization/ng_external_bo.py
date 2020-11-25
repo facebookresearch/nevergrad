@@ -12,13 +12,13 @@ from nevergrad.parametrization import parameter as p
 import hyperopt # type: ignore
 from hyperopt import hp, Trials, Domain, tpe # type: ignore
 
-def _parametrization_to_dict(x, **kwargs):
+def _hp_parametrization_to_dict(x, **kwargs):
     if isinstance(x, p.Instrumentation):
         x_dict = kwargs.get("default", {})
         for idx_param in range(len(x[0].value)):
-            x_dict.update(_parametrization_to_dict(x[0][idx_param], name=str(idx_param)))
+            x_dict.update(_hp_parametrization_to_dict(x[0][idx_param], name=str(idx_param)))
         for name in x[1].value.keys():
-            x_dict.update(_parametrization_to_dict(x[1][name], name=name))
+            x_dict.update(_hp_parametrization_to_dict(x[1][name], name=name))
         return x_dict
     elif isinstance(x, (p.Log, p.Scalar)):
         return {kwargs["name"]: [x.value]}
@@ -30,14 +30,14 @@ def _parametrization_to_dict(x, **kwargs):
                 if isinstance(x.choices[i], (p.Log, p.Scalar, p.Choice)):
                     x_dict[kwargs["name"] + f"__{i}"] = [x.choices[i].value]
                 elif isinstance(x.choices[i], p.Instrumentation):
-                    x_dict.update(_parametrization_to_dict(x.choices[i]))
+                    x_dict.update(_hp_parametrization_to_dict(x.choices[i]))
         return x_dict
 
 
-def _dict_to_parametrization(x):
+def _hp_dict_to_parametrization(x):
     if isinstance(x, dict) and ("args" in x) and ("kwargs" in x):
-        x["args"] = tuple([_dict_to_parametrization(x["args"][str(i)]) for i in range(len(x["args"]))])
-        x["kwargs"] = {k: _dict_to_parametrization(v) for k, v in x["kwargs"].items()}
+        x["args"] = tuple([_hp_dict_to_parametrization(x["args"][str(i)]) for i in range(len(x["args"]))])
+        x["kwargs"] = {k: _hp_dict_to_parametrization(v) for k, v in x["kwargs"].items()}
         return (x["args"], x["kwargs"])
     return x
 
@@ -143,7 +143,7 @@ class _HyperOpt(base.Optimizer):
         else:
             spec = hyperopt.base.spec_from_misc(new_trial["misc"])
             config = hyperopt.space_eval(self.space, spec)
-            candidate.value = _dict_to_parametrization(config)
+            candidate.value = _hp_dict_to_parametrization(config)
 
         candidate._meta["trial_id"] = new_trial["tid"]
         return candidate
@@ -177,7 +177,7 @@ class _HyperOpt(base.Optimizer):
             self.trials._dynamic_trials[tid]["misc"]["vals"] = {f"x_{i}": [data[i]] for i in range(len(data))}
         else:
             null_config: dict = {k: [] for k in self.trials._dynamic_trials[tid]["misc"]["vals"].keys()}
-            new_vals: dict = _parametrization_to_dict(candidate, default=null_config)
+            new_vals: dict = _hp_parametrization_to_dict(candidate, default=null_config)
             self.trials._dynamic_trials[tid]["misc"]["vals"] = new_vals
 
         self.trials.refresh()
