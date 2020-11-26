@@ -1231,7 +1231,7 @@ def bragg_structure(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         ng.families.EvolutionStrategy(recombination_ratio=0.1, popsize=40).set_name("Pairwise-ES"),
         ng.families.DifferentialEvolution(crossover="parametrization").set_name("Param-DE")
     ]
-    optims = ["SplitCMA9", "SplitCMAAuto", "TwoPointsDE", "DE", "CMA", "NaiveTBPSA", "DiagonalCMA", "NGOpt8", "OneplusOne"]
+    optims = ["SplitCMA9", "SplitCMAAuto", "TwoPointsDE", "DE", "CMA", "NaiveTBPSA", "DiagonalCMA", "NGOpt8", "OnePlusOne"]
     func = Photonics("bragg", 80, bounding_method="clipping")
     func.parametrization.set_name("layer")
     #
