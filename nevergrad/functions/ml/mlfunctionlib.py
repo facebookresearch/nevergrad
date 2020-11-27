@@ -15,7 +15,6 @@ from sklearn.metrics import mean_squared_error
 from nevergrad.parametrization import parameter as p
 from ..base import ExperimentFunction
 
-from tensorflow import keras
 
 # pylint: disable=too-many-instance-attributes,too-many-locals,too-many-arguments
 class MLTuning(ExperimentFunction):
@@ -64,6 +63,11 @@ class MLTuning(ExperimentFunction):
             regr = MLPRegressor(alpha=alpha, activation=activation, solver=solver,
                                 learning_rate=learning_rate, random_state=0)
         elif regressor == "kerasDenseNN":
+            try:
+                from tensorflow import keras # pylint: disable=import-outside-toplevel
+            except ImportError as e:
+                raise ImportError("Please install keras (pip install keras) to use keras ml tuning") from e
+
             regr = keras.Sequential([
                     keras.layers.Dense(64, activation=activation, input_shape=(self.X_train.shape[1],)),
                     keras.layers.Dense(1)
@@ -202,6 +206,11 @@ class MLTuning(ExperimentFunction):
             assert dataset in ["boston", "diabetes", "kerasBoston"]
             assert data_dimension is None
             if dataset == "kerasBoston":
+                try:
+                    from tensorflow import keras # pylint: disable=import-outside-toplevel
+                except ImportError as e:
+                    raise ImportError("Please install keras (pip install keras) to use keras ml tuning") from e
+
                 data = keras.datasets.boston_housing
             else:
                 data = {"boston": sklearn.datasets.load_boston,
