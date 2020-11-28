@@ -593,7 +593,7 @@ def illcondi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     Dimension 50.
     """
     seedg = create_seed_generator(seed)
-    optims = ["NGOpt8", "Cobyla", "SQP", "OnePlusOne", "DiagonalCMA" "MiniDE"]
+    optims = ["NGOpt8", "Cobyla", "SQP", "OnePlusOne", "DiagonalCMA", "MiniDE"]
     if default_optims is not None:
         optims = default_optims
     functions = [
