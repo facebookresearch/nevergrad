@@ -51,7 +51,7 @@ def mltuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool 
     # Continuous case,
 
     # First, a few functions with constraints.
-    optims = ["NGOpt8", "CMA", "MetaRecentering", "MiniDE", "HyperOpt",
+    optims = ["NGOpt8", "CMA", "MetaRecentering", "MiniDE",
               "PSO", "BO", "MetaTuneRecentering", "OnePlusOne", "SQP"]
     if default_optims is not None:
         optims = default_optims
@@ -1132,7 +1132,7 @@ def double_o_seven(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     for num_repetitions in [1, 10, 100]:
         for archi in ["mono", "multi"]:
             dde = ng.optimizers.DifferentialEvolution(crossover="dimension").set_name("DiscreteDE")
-            for optim in ["PSO", dde, "MetaTuneRecentering", "HyperOpt", "DiagonalCMA"]:
+            for optim in ["PSO", dde, "MetaTuneRecentering", "DiagonalCMA"]:
                 for env_budget in [5000, 10000, 20000, 40000]:
                     for num_workers in [1, 10, 100]:
                         # careful, not threadsafe
