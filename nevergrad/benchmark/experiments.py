@@ -660,8 +660,8 @@ def ranknoisy(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     With or without noise dissymmetry.
     """
     seedg = create_seed_generator(seed)
-    optims = ["ProgONOPO3", "ProgONOPO5", "ProgONOPO9", "ProgONOPO13", "ProgONOPOInf",
-              "ProgODOPO3", "ProgODOPO5", "ProgODOPO9", "ProgODOPO13", "ProgODOPOInf", "NGOpt8",
+    optims = ["ProgONOPO3", "ProgONOPO5", "ProgONOPO9", "ProgONOPO13", 
+              "ProgODOPO3", "ProgODOPO5", "ProgODOPO9", "ProgODOPO13", "NGOpt8",
               "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
     if default_optims is not None:
         optims = default_optims
@@ -1018,8 +1018,8 @@ def powersystems(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
               "NGO", "Shiwa", "DiagonalCMA", "SplitCMA3", "SplitCMA13", "SplitCMAAuto"]
     if default_optims is not None:
         optims = default_optims
-    optims += ["ProgONOPO3", "ProgONOPO5", "ProgONOPO9", "ProgONOPO13", "ProgONOPOAuto", "ProgONOPOInf",
-               "ProgODOPO3", "ProgODOPO5", "ProgODOPO9", "ProgODOPO13", "ProgODOPOAuto", "ProgOPOPOInf",
+    optims += ["ProgONOPO3", "ProgONOPO5", "ProgONOPO9", "ProgONOPO13", "ProgONOPOAuto",
+               "ProgODOPO3", "ProgODOPO5", "ProgODOPO9", "ProgODOPO13", "ProgODOPOAuto",
                "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne", "OnePlusOne"]
     budgets = [3200, 6400, 12800]
     for budget in budgets:
