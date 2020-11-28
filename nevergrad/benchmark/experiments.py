@@ -502,7 +502,7 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
             noise_level = 100
     else:
         noise_level = 0
-    optims: tp.List[str] = ["chainMetaModelSQP", "NGOpt8", "ChainCMASQP", "MetaModel", "CMA", "CMandAS2"]
+    optims: tp.List[str] = ["chainMetaModelSQP", "NGOpt8", "chainCMASQP", "MetaModel", "CMA", "CMandAS2"]
     if noise:
         optims += ["TBPSA", "SQP", "NoisyDiscreteOnePlusOne"]
     if hd:
