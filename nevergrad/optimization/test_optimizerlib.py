@@ -494,3 +494,30 @@ def test_ngo_split_optimizer(name: str, expected: tp.List[str]) -> None:
     opt = optlib.ConfSplitOptimizer(multivariate_optimizer=Opt)(param, budget=1000)
     names = [o.optim.name for o in opt.optims]  # type: ignore
     assert names == expected
+
+    def fake_training(learning_rate: float, batch_size: int, architecture: str) -> float:
+      # optimal for learning_rate=0.2, batch_size=4, architecture="conv"
+      return (learning_rate - 0.2)**2 + (batch_size - 4)**2 + (0 if architecture == "conv" else 10)
+    
+    # Instrumentation class is used for functions with multiple inputs
+    # (positional and/or keywords)
+    parametrization = ng.p.Instrumentation(
+      # a log-distributed scalar between 0.001 and 1.0
+      learning_rate=ng.p.Log(lower=0.001, upper=1.0),
+      # an integer from 1 to 12
+      batch_size=ng.p.Scalar(lower=1, upper=12).set_integer_casting(),
+      # either "conv" or "fc"
+      architecture=ng.p.Choice(["conv", "fc"])
+    )
+    
+    for b in [100, 1000]:
+        optimizer = ng.optimizers.NGOpt(parametrization=parametrization, budget=b)
+        recommendation = optimizer.minimize(fake_training)
+        
+        # show the recommended keyword arguments of the function
+        # print(recommendation.kwargs)
+        # print(fake_training(**recommendation.kwargs))
+        assert fake_training(**recommendation.kwargs) < 1e-3
+
+
+
