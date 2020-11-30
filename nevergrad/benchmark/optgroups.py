@@ -46,6 +46,15 @@ def large() -> tp.Sequence[Optim]:
             "MultiCMA", "TripleCMA", "MultiScaleCMA", "RSQP", "RCobyla", "RPowell", "SQPCMA", "MetaModel", "PolyCMA", "ManyCMA"]
 
 
+def emna_variants() -> tp.Sequence[Optim]:
+    return ["IsoEMNA", "NaiveIsoEMNA", "AnisoEMNA", "NaiveAnisoEMNA", "CMA", "NaiveTBPSA",
+              "NaiveIsoEMNATBPSA", "IsoEMNATBPSA", "NaiveAnisoEMNATBPSA", "AnisoEMNATBPSA"]
+
+
+def basics() -> tp.Sequence[Optim]:
+    return ["NGOpt8", "CMandAS2", "CMA", "DE", "MetaModel", "BO"]
+
+
 @registry.register
 def cma() -> tp.Sequence[Optim]:
     return ["DiagonalCMA", "CMA"]

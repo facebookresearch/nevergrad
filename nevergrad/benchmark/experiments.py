@@ -48,11 +48,8 @@ default_optims: tp.Optional[tp.List[str]] = None  # ["NGO10", "CMA", "Shiwa"]
 def mltuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool = False) -> tp.Iterator[Experiment]:
     """Machine learning hyperparameter tuning experiment. Based on scikit models."""
     seedg = create_seed_generator(seed)
-    # Continuous case,
-
-    # First, a few functions with constraints.
-    optims = ["NGOpt8", "CMA", "MetaRecentering", "MiniDE",
-              "PSO", "BO", "MetaTuneRecentering", "OnePlusOne", "SQP"]
+    optims = get_optimizers("basics")
+             
     if default_optims is not None:
         optims = default_optims
     for dimension in [None, 1, 2, 3]:
@@ -126,7 +123,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         for num_blocks in [1]
         for d in [2, 40, 100, 3000]
     ]
-    optims = ["NoisyDiscreteOnePlusOne", "Shiwa", "CMA", "PSO", "TwoPointsDE", "DE", "OnePlusOne", "CMandAS2"]
+    optims = get_optimizers("basics") + ["NoisyDiscreteOnePlusOne"]
     if default_optims is not None:
         optims = default_optims
     for optim in optims:
@@ -169,7 +166,7 @@ def parallel_small_budget(seed: tp.Optional[int] = None) -> tp.Iterator[Experime
     """Parallel optimization with small budgets
     """
     seedg = create_seed_generator(seed)
-    optims = ["NGOpt8", "DiagonalCMA", "CMA", "NaiveTBPSA", "CMandAS2", "OnePlusOne"]
+    optims = get_optimizers("basics")
     names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "multipeak"]
     names += ["sphere", "cigar", "ellipsoid", "altellipsoid"]
     names += ["deceptiveillcond", "deceptivemultimodal", "deceptivepath"]
@@ -282,7 +279,7 @@ def parallel(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     Testing both no useless variables and 5/6 of useless variables."""
     seedg = create_seed_generator(seed)
     names = ["sphere", "rastrigin", "cigar"]
-    optims = ["NGOpt8", "CMandAS2", "CMA", "DE", "MetaModel"]
+    optims = get_optimizers("basics")
     if default_optims is not None:
         optims = default_optims
     functions = [
@@ -302,8 +299,7 @@ def harderparallel(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Parallel optimization on 4 classical objective functions. More distinct settings than << parallel >>."""
     seedg = create_seed_generator(seed)
     names = ["sphere", "rastrigin", "cigar", "ellipsoid"]
-    optims = ["NGOpt8", "IsoEMNA", "NaiveIsoEMNA", "AnisoEMNA", "NaiveAnisoEMNA", "CMA", "NaiveTBPSA",
-              "NaiveIsoEMNATBPSA", "IsoEMNATBPSA", "NaiveAnisoEMNATBPSA", "AnisoEMNATBPSA"]
+    optims = ["NGOpt8"] + get_optimizers("emna_variants", seed=next(seedg))
     if default_optims is not None:
         optims = default_optims
     functions = [
