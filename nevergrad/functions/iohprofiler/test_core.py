@@ -8,7 +8,7 @@ from . import core
 def test_PBO(fid: int) -> None:
     try:
         func = core.PBOFunction(fid, 0, 16)
-    except ImportError:
+    except ModuleNotFoundError:
         raise SkipTest("IOH is not installed")
     x = func.parametrization.sample()
     value = func(x.value)
@@ -20,7 +20,7 @@ def test_PBO(fid: int) -> None:
 def test_PBO_parameterization(instrumentation) -> None:
     try:
         func = core.PBOFunction(1, 0, 16, instrumentation=instrumentation)
-    except ImportError:
+    except ModuleNotFoundError:
         raise SkipTest("IOH is not installed")
     x = func.parametrization.sample()
     value = func(x.value)
@@ -31,7 +31,7 @@ def test_PBO_parameterization(instrumentation) -> None:
 def test_W_model() -> None:
     try:
         func = core.WModelFunction()
-    except ImportError:
+    except ModuleNotFoundError:
         raise SkipTest("IOH is not installed")
     x = func.parametrization.sample()
     func2 = core.PBOFunction(1, 0, 16)
