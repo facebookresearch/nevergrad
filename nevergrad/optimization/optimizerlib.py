@@ -1848,7 +1848,8 @@ class MetaModel(base.Optimizer):
     def _internal_ask_candidate(self) -> p.Parameter:
         # We request a bit more points than what is really necessary for our dimensionality (+dimension).
         if (self._num_ask % max(self.num_workers, self.dimension) == 0 and
-                len(self.archive) >= (self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1):
+                len(self.archive) >= (self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1 and
+            self.num_workers > 1):
             try:
                 data = learn_on_k_best(self.archive,
                                        int((self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1))
