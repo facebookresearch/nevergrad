@@ -13,4 +13,4 @@ tqdm
 torchvision
 pyomo>=5.7
 mixsimulator>=0.2.9.5
-IOHexperimenter==0.2.8
+# IOHexperimenter==0.2.8  # buggy package on pypi
