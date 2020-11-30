@@ -16,8 +16,8 @@ def test_PBO(fid: int) -> None:
     assert np.isfinite(value)
 
 
-@pytest.mark.parametrize("instrumentation", ["Softmax", "Ordered"])
-def test_PBO_parameterization(instrumentation) -> None:
+@pytest.mark.parametrize("instrumentation", ["Softmax", "Ordered"])  # type: ignore
+def test_PBO_parameterization(instrumentation: str) -> None:
     try:
         func = core.PBOFunction(1, 0, 16, instrumentation=instrumentation)
     except ModuleNotFoundError:

@@ -1,5 +1,2 @@
-try:
-    from .core import PBOFunction as PBOFunction
-    from .core import WModelFunction as WModelFunction
-except ModuleNotFoundError:
-    pass
+from .core import PBOFunction as PBOFunction
+from .core import WModelFunction as WModelFunction
