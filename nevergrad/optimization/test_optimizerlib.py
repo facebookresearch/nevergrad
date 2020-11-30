@@ -495,6 +495,7 @@ def test_ngo_split_optimizer(name: str, expected: tp.List[str]) -> None:
     names = [o.optim.name for o in opt.optims]  # type: ignore
     assert names == expected
 
+def test_ngopt_on_simple_realistic_scenario() -> None:
     def fake_training(learning_rate: float, batch_size: int, architecture: str) -> float:
       # optimal for learning_rate=0.2, batch_size=4, architecture="conv"
       return (learning_rate - 0.2)**2 + (batch_size - 4)**2 + (0 if architecture == "conv" else 10)
