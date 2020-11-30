@@ -1881,9 +1881,6 @@ class NGOptBase(base.Optimizer):
         self.has_discrete_not_softmax = any(issubclass(ct.cls, p.TransitionChoice) for ct in choicetags)
         self._has_discrete = any(issubclass(ct.cls, p.BaseChoice) for ct in choicetags)
         self._arity = max(ct.arity for ct in choicetags)
-        if not self.has_discrete_not_softmax:  # When using softmax, the problem is continuous.
-            self._arity = -1
-            self.fully_continuous = True
         self._optim: tp.Optional[base.Optimizer] = None
 
     @property
@@ -1923,7 +1920,7 @@ class NGOptBase(base.Optimizer):
                                 cls = OnePlusOne if self.dimension > 30 else Cobyla
                             else:
                                 # DE is great in such a case (?).
-                                cls = DE if self.dimension > 2000 else CMA
+                                cls = DE if self.dimension > 2000 else CMA if self.dimension > 1 else OnePlusOne
         return cls
 
     def _internal_ask_candidate(self) -> p.Parameter:
