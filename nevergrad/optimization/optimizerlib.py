@@ -1959,8 +1959,6 @@ class NGOpt2(NGOptBase):
     """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
 
     def _select_optimizer_cls(self) -> base.OptCls:
-        # override because it is different from NGOptBase (bug?)
-        #self.has_discrete_not_softmax = self._has_discrete
         budget, num_workers = self.budget, self.num_workers
         assert budget is not None
         optimClass: base.OptCls
@@ -2023,8 +2021,6 @@ class NGOpt4(NGOptBase):
     """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
 
     def _select_optimizer_cls(self) -> base.OptCls:
-        # override because it is different from NGOptBase (bug?)
-        #self.has_discrete_not_softmax = self._has_discrete
         self.fully_continuous = self.fully_continuous and not self.has_discrete_not_softmax and self._arity < 0
         budget, num_workers = self.budget, self.num_workers
         assert budget is not None
