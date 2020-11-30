@@ -693,11 +693,12 @@ other instances.</p>
 
 <dl class="py method">
 <dt id="nevergrad.p.Parameter.register_cheap_constraint">
-<code class="sig-name descname">register_cheap_constraint</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">func</span><span class="p">:</span> <span class="n">Callable<span class="p">[</span><span class="p">[</span>Any<span class="p">]</span><span class="p">, </span>bool<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.p.Parameter.register_cheap_constraint" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">register_cheap_constraint</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">func</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>Callable<span class="p">[</span><span class="p">[</span>Any<span class="p">]</span><span class="p">, </span>bool<span class="p">]</span><span class="p">, </span>Callable<span class="p">[</span><span class="p">[</span>Any<span class="p">]</span><span class="p">, </span>float<span class="p">]</span><span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.p.Parameter.register_cheap_constraint" title="Permalink to this definition">¶</a></dt>
 <dd><p>Registers a new constraint on the parameter values.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>func</strong> (<em>Callable</em>) – function which, given the value of the instance, returns whether it satisfies the constraints.</p>
+<dd class="field-odd"><p><strong>func</strong> (<em>Callable</em>) – function which, given the value of the instance, returns whether it satisfies the constraints (if output = bool),
+or a float which is &gt;= 0 if the constraint is satisfied.</p>
 </dd>
 </dl>
 <div class="admonition note">
