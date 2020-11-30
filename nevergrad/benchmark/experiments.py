@@ -5,7 +5,6 @@
 
 import os
 import warnings
-import logging
 import typing as tp
 import itertools
 import numpy as np
@@ -44,7 +43,9 @@ from . import frozenexperiments  # noqa # pylint: disable=unused-import
 # fmt: off
 
 
-logger = logging.Logger(__file__)
+class MissingBenchmarkPackageError(ModuleNotFoundError):
+    pass
+
 
 default_optims: tp.Optional[tp.List[str]] = None  # ["NGO10", "CMA", "Shiwa"]
 
@@ -1354,8 +1355,7 @@ def pbo_suite(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                 try:
                     func = iohprofiler.PBOFunction(fid, iid, dim)
                 except ModuleNotFoundError:
-                    logger.warning("IOHexperimenter needs to be installed")
-                    return
+                    raise MissingBenchmarkPackageError("IOHexperimenter needs to be installed")
                 for optim in ["DiscreteOnePlusOne", "Shiwa", "CMA", "PSO", "TwoPointsDE", "DE", "OnePlusOne", "AdaptiveDiscreteOnePlusOne",
                               "CMandAS2", "PortfolioDiscreteOnePlusOne", "DoubleFastGADiscreteOnePlusOne", "MultiDiscrete", "cGA", dde]:
                     for nw in [1, 10]:
