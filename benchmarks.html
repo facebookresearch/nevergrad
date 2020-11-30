@@ -478,6 +478,12 @@ Onemax, Leadingones, Jump function.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt id="nevergrad.benchmark.experiments.keras_tuning">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">keras_tuning</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">overfitter</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">seq</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.keras_tuning" title="Permalink to this definition">¶</a></dt>
+<dd><p>Machine learning hyperparameter tuning experiment. Based on scikit models.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt id="nevergrad.benchmark.experiments.mixsimulator">
 <code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">mixsimulator</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.mixsimulator" title="Permalink to this definition">¶</a></dt>
 <dd><p>MixSimulator of power plants
@@ -520,6 +526,12 @@ Sequential.</p>
 <dd><p>Optimization of 2 and 3 objective functions in Sphere, Ellipsoid, Cigar, Hm.
 Dimension 6 and 7.
 Budget 100 to 3200</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="nevergrad.benchmark.experiments.naive_seq_keras_tuning">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">naive_seq_keras_tuning</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.naive_seq_keras_tuning" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sequential counterpart of mltuning.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -659,6 +671,12 @@ Sequential or 10-parallel or 100-parallel.</p>
 <dd><p>Rocket simulator. Maximize max altitude by choosing the thrust schedule, given a total thrust.
 Budget 25, 50, …, 1600.
 Sequential or 30 workers.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="nevergrad.benchmark.experiments.seq_keras_tuning">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">seq_keras_tuning</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.seq_keras_tuning" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sequential counterpart of mltuning.</p>
 </dd></dl>
 
 <dl class="py function">
