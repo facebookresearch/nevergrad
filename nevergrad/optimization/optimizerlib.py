@@ -32,7 +32,7 @@ from .oneshot import *  # noqa: F403
 from .recastlib import *  # noqa: F403
 
 try:
-    from .ng_external_bo import HyperOpt # pylint: disable=unused-import
+    from .externalbo import HyperOpt # pylint: disable=unused-import
 except ModuleNotFoundError:
     pass
 

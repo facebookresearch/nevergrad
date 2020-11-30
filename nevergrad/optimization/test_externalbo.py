@@ -7,7 +7,7 @@ import pytest
 import numpy as np
 import nevergrad as ng
 from .optimizerlib import registry
-from .ng_external_bo import _hp_parametrization_to_dict, _hp_dict_to_parametrization
+from .externalbo import _hp_parametrization_to_dict, _hp_dict_to_parametrization
 
 @pytest.mark.parametrize(  # type: ignore
     "parametrization,has_transform",
