@@ -1353,7 +1353,7 @@ def pbo_suite(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
             for iid in range(1, 5):
                 try:
                     func = iohprofiler.PBOFunction(fid, iid, dim)
-                except AttributeError:
+                except ModuleNotFoundError:
                     logger.warning("IOHexperimenter needs to be installed")
                     return
                 for optim in ["DiscreteOnePlusOne", "Shiwa", "CMA", "PSO", "TwoPointsDE", "DE", "OnePlusOne", "AdaptiveDiscreteOnePlusOne",
