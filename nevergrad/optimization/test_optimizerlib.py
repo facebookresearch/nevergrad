@@ -495,6 +495,7 @@ def test_ngo_split_optimizer(name: str, expected: tp.List[str]) -> None:
     names = [o.optim.name for o in opt.optims]  # type: ignore
     assert names == expected
 
+
 def test_ngopt_on_simple_realistic_scenario() -> None:
     def fake_training(learning_rate: float, batch_size: int, architecture: str) -> float:
       # optimal for learning_rate=0.2, batch_size=4, architecture="conv"
@@ -519,6 +520,5 @@ def test_ngopt_on_simple_realistic_scenario() -> None:
         # print(recommendation.kwargs)
         # print(fake_training(**recommendation.kwargs))
         assert fake_training(**recommendation.kwargs) < 1e-3
-
 
 
