@@ -420,7 +420,6 @@ class ConstraintManager:
         self.max_trials = 1000
         self.penalty_factor = 1.0
         self.penalty_exponent = 1.001
-        self.mode = "penalty"
 
     def __repr__(self) -> str:
         return "Constraints:" + ",".join(f"{x}={y}" for x, y in self.__dict__.items())
