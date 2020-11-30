@@ -52,6 +52,7 @@ def emna_variants() -> tp.Sequence[Optim]:
               "NaiveIsoEMNATBPSA", "IsoEMNATBPSA", "NaiveAnisoEMNATBPSA", "AnisoEMNATBPSA"]
 
 
+@registry.register
 def basics() -> tp.Sequence[Optim]:
     return ["NGOpt8", "CMandAS2", "CMA", "DE", "MetaModel", "BO"]
 
