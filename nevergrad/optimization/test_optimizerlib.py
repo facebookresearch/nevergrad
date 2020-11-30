@@ -496,7 +496,8 @@ def test_ngo_split_optimizer(name: str, expected: tp.List[str]) -> None:
     assert names == expected
 
 
-def test_ngopt_on_simple_realistic_scenario() -> None:
+@pytest.mark.parametrize("budget", [100, 1000])  # type: ignore
+def test_ngopt_on_simple_realistic_scenario(budget: int) -> None:
     def fake_training(learning_rate: float, batch_size: int, architecture: str) -> float:
       # optimal for learning_rate=0.2, batch_size=4, architecture="conv"
       return (learning_rate - 0.2)**2 + (batch_size - 4)**2 + (0 if architecture == "conv" else 10)
@@ -512,13 +513,12 @@ def test_ngopt_on_simple_realistic_scenario() -> None:
       architecture=ng.p.Choice(["conv", "fc"])
     )
     
-    for b in [100, 1000]:
-        optimizer = ng.optimizers.NGOpt(parametrization=parametrization, budget=b)
-        recommendation = optimizer.minimize(fake_training)
+    optimizer = ng.optimizers.NGOpt(parametrization=parametrization, budget=budget)
+    recommendation = optimizer.minimize(fake_training)
         
-        # show the recommended keyword arguments of the function
-        # print(recommendation.kwargs)
-        # print(fake_training(**recommendation.kwargs))
-        assert fake_training(**recommendation.kwargs) < 1e-3
+    # show the recommended keyword arguments of the function
+    # print(recommendation.kwargs)
+    # print(fake_training(**recommendation.kwargs))
+    assert fake_training(**recommendation.kwargs) < 1e-3
 
 
