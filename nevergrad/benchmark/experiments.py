@@ -28,7 +28,7 @@ from nevergrad.functions.mixsimulator import OptimizeMix
 from nevergrad.functions import control
 from nevergrad.functions import rl
 from nevergrad.functions.games import game
-from nevergrad.functions.iohprofiler import PBOFunction
+from nevergrad.functions import iohprofiler
 from .xpbase import Experiment as Experiment
 from .xpbase import create_seed_generator
 from .xpbase import registry as registry  # noqa
@@ -41,6 +41,11 @@ from . import frozenexperiments  # noqa # pylint: disable=unused-import
 # pylint: disable=too-many-lines
 # for black (since lists are way too long...):
 # fmt: off
+
+
+class MissingBenchmarkPackageError(ModuleNotFoundError):
+    pass
+
 
 default_optims: tp.Optional[tp.List[str]] = None  # ["NGO10", "CMA", "Shiwa"]
 
@@ -960,6 +965,7 @@ def rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                         if not xp.is_incoherent:
                             yield xp
 
+
 @registry.register
 def mixsimulator(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """MixSimulator of power plants
@@ -967,10 +973,10 @@ def mixsimulator(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     Sequential or 30 workers."""
     funcs = [OptimizeMix()]
     seedg = create_seed_generator(seed)
-    optims = ["OnePlusOne","NGOpt","CMA","DE","PSO"]
+    optims = ["OnePlusOne", "NGOpt", "CMA", "DE", "PSO"]
     if default_optims is not None:
         optims = default_optims
-    seq = np.arange(0,1601,20)
+    seq = np.arange(0, 1601, 20)
     for budget in seq:
         for num_workers in [1, 30]:
             if num_workers < budget:
@@ -979,6 +985,7 @@ def mixsimulator(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                         xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
                         if not xp.is_incoherent:
                             yield xp
+
 
 @registry.register
 def control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
@@ -1345,7 +1352,10 @@ def pbo_suite(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     for dim in [16, 64, 100]:
         for fid in range(1, 24):
             for iid in range(1, 5):
-                func = PBOFunction(fid, iid, dim)
+                try:
+                    func = iohprofiler.PBOFunction(fid, iid, dim)
+                except ModuleNotFoundError:
+                    raise MissingBenchmarkPackageError("IOHexperimenter needs to be installed")
                 for optim in ["DiscreteOnePlusOne", "Shiwa", "CMA", "PSO", "TwoPointsDE", "DE", "OnePlusOne", "AdaptiveDiscreteOnePlusOne",
                               "CMandAS2", "PortfolioDiscreteOnePlusOne", "DoubleFastGADiscreteOnePlusOne", "MultiDiscrete", "cGA", dde]:
                     for nw in [1, 10]:
