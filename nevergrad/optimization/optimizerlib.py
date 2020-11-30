@@ -1865,7 +1865,8 @@ class MetaModel(base.Optimizer):
     def _internal_ask_candidate(self) -> p.Parameter:
         # We request a bit more points than what is really necessary for our dimensionality (+dimension).
         if (self._num_ask % max(self.num_workers, self.dimension) == 0 and
-                len(self.archive) >= (self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1):
+                len(self.archive) >= (self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1 and
+            self.num_workers > 1):
             try:
                 data = learn_on_k_best(self.archive,
                                        int((self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1))
@@ -1898,6 +1899,9 @@ class NGOptBase(base.Optimizer):
         self._has_discrete = any(issubclass(ct.cls, p.BaseChoice) for ct in choicetags)
         self._arity = max(ct.arity for ct in choicetags)
         self._optim: tp.Optional[base.Optimizer] = None
+        self._constraints_manager.update(
+            max_trials=1000, penalty_factor=1.0, penalty_exponent=1.01,
+        )
 
     @property
     def optim(self) -> base.Optimizer:
@@ -2141,5 +2145,5 @@ class NGOpt8(NGOpt4):
 
 
 @registry.register
-class NGOpt(NGOpt4):
+class NGOpt(NGOpt8):
     pass

@@ -8,6 +8,7 @@ import operator
 import warnings
 import numpy as np
 from nevergrad.parametrization import parameter as p
+from nevergrad.parametrization.utils import float_penalty as _float_penalty
 import nevergrad.common.typing as tp
 from nevergrad.common.tools import OrderedSet
 
@@ -404,3 +405,52 @@ class BoundScaler:
                 x[start: end] = array.get_standardized_data(reference=ref)
             start = end
         return x
+
+
+class ConstraintManager:
+    """Try max_constraints_trials random explorations for satisfying constraints.
+    The finally chosen point, if it does not satisfy constraints, is penalized as shown in the penalty function,
+    using coeffcieints mentioned here.
+
+
+    Possibly unstable.
+    """
+
+    def __init__(self) -> None:
+        self.max_trials = 1000
+        self.penalty_factor = 1.0
+        self.penalty_exponent = 1.001
+
+    def __repr__(self) -> str:
+        return "Constraints:" + ",".join(f"{x}={y}" for x, y in self.__dict__.items())
+
+    # pylint: disable=unused-argument
+    def update(
+        self,
+        max_trials: tp.Optional[int] = None,
+        penalty_factor: tp.Optional[float] = None,
+        penalty_exponent: tp.Optional[float] = None,
+    ) -> None:
+        """
+        Parameters
+        ----------
+            max_trials: int
+                number of random tries for satisfying constraints.
+            penalty: float
+                multiplicative factor on the constraint penalization.
+            penalty_exponent: float
+                exponent, usually close to 1 and slightly greater than 1.
+        """
+        for x, y in locals().items():
+            if y is not None and x != "self" and not x.startswith("_"):
+                setattr(self, x, y)
+        if self.penalty_exponent < 1:
+            raise ValueError("Penalty exponent needs to be equal or greater than 1")
+
+    def penalty(self, parameter: p.Parameter, num_ask: int, budget: tp.Optional[int]) -> float:
+        """Computes the penalty associated with a Parameter, for constraint management
+        """
+        budget = 1 if budget is None else budget
+        coeff = self.penalty_factor * (self.penalty_exponent ** (num_ask / np.sqrt(budget)))
+        val = parameter.value
+        return coeff * sum(_float_penalty(func(val)) for func in parameter._constraint_checkers)  # type: ignore
