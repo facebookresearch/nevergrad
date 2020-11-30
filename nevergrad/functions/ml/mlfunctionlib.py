@@ -51,7 +51,7 @@ class MLTuning(ExperimentFunction):
         regressor: str,  # Choice of learner.
         noise_free: bool  # Whether we work on the test set (the real cost) on an approximation (CV error on train). -> not really noise
     ) -> float:
-        if not self.X.size:  # lazzy initialization
+        if not self.X_train.size:  # lazzy initialization
             self.make_dataset(self.data_dimension, self.dataset)
         # num_cv-folds cross-validation
         result = 0.0
@@ -62,15 +62,24 @@ class MLTuning(ExperimentFunction):
         elif regressor == "mlp":
             regr = MLPRegressor(alpha=alpha, activation=activation, solver=solver,
                                 learning_rate=learning_rate, random_state=0)
+        elif regressor == "kerasDenseNN":
+            try:
+                from tensorflow import keras # pylint: disable=import-outside-toplevel
+            except ImportError as e:
+                raise ImportError("Please install keras (pip install keras) to use keras ml tuning") from e
+
+            regr = keras.Sequential([
+                    keras.layers.Dense(64, activation=activation, input_shape=(self.X_train.shape[1],)),
+                    keras.layers.Dense(1)
+            ])
+            regr.compile(optimizer=solver, loss='mse', metrics=['mae'])
         else:
             raise ValueError(f"Unknown regressor {regressor}.")
 
         if noise_free:  # noise_free is True when we want the result on the test set.
-            X = self.X_train
-            y = self.y_train
             X_test = self.X_test
             y_test = self.y_test
-            regr.fit(np.asarray(self.X), np.asarray(self.y))
+            regr.fit(self.X_train, self.y_train)
             pred_test = regr.predict(self.X_test)
             return mean_squared_error(self.y_test, pred_test)
 
@@ -78,12 +87,11 @@ class MLTuning(ExperimentFunction):
         for X, y, X_test, y_test in zip(self.X_train_cv, self.y_train_cv, self.X_valid_cv, self.y_valid_cv):
             assert isinstance(depth, int), f"depth has class {type(depth)} and value {depth}."
 
-            regr.fit(np.asarray(X), np.asarray(y))
+            regr.fit(X, y)
 
             # Predict
             pred_test = regr.predict(X_test)
             result += mean_squared_error(y_test, pred_test)
-
         return result / self._cross_val_num  # We return a num_cv-fold validation error.
 
     def __init__(
@@ -105,19 +113,19 @@ class MLTuning(ExperimentFunction):
         # Dimension does not make sense if we use a real world dataset.
         assert bool("artificial" in dataset) == bool(data_dimension is not None)
 
-        # Variables for storing the training set and the test set.
-        self.X: np.ndarray = np.array([])
-        self.y: np.ndarray
+        # # Variables for storing the training set and the test set.
+        self.X_train: np.ndarray = np.array([])
+        self.y_train: np.ndarray
+        self.X_test: np.ndarray
+        self.y_test: np.ndarray
+        # self.X: np.ndarray = np.array([])
+        # self.y: np.ndarray
 
         # Variables for storing the cross-validation splits.
         self.X_train_cv: tp.List[tp.Any] = []  # This will be the list of training subsets.
         self.X_valid_cv: tp.List[tp.Any] = []  # This will be the list of validation subsets.
         self.y_train_cv: tp.List[tp.Any] = []
         self.y_valid_cv: tp.List[tp.Any] = []
-        self.X_train: np.ndarray
-        self.y_train: np.ndarray
-        self.X_test: np.ndarray
-        self.y_test: np.ndarray
 
         evalparams: tp.Dict[str, tp.Any] = {}
         if regressor == "decision_tree_depth":
@@ -135,7 +143,7 @@ class MLTuning(ExperimentFunction):
                 depth=p.Scalar(lower=1, upper=1200).set_integer_casting(),  # Depth, in case we use a decision tree.
                 criterion=p.Choice(["mse", "friedman_mse", "mae"]),  # Criterion for building the decision tree.
                 min_samples_split=p.Log(lower=0.0000001, upper=1),  # Min ratio of samples in a node for splitting.
-                regressor=p.Choice(["mlp", "decision_tree"]),  # Type of regressor.
+                regressor=p.Choice(["mlp", "decision_tree", "kerasDenseNN"]),  # Type of regressor.
                 activation=p.Choice(["identity", "logistic", "tanh", "relu"]),  # Activation function, in case we use a net.
                 solver=p.Choice(["lbfgs", "sgd", "adam"]),  # Numerical optimizer.
                 learning_rate=p.Choice(["constant", "invscaling", "adaptive"]),  # Learning rate schedule.
@@ -165,6 +173,14 @@ class MLTuning(ExperimentFunction):
                 alpha=p.Log(lower=0.0000001, upper=1.),
             )
             params = dict(noise_free=False, regressor="mlp", depth=-3, criterion="no", min_samples_split=0.1)
+        elif regressor == "kerasDenseNN":
+            parametrization = p.Instrumentation(
+                activation=p.Choice(["selu", "sigmoid", "tanh", "relu"]),
+                solver=p.Choice(["Adadelta", "RMSprop", "adam"]),
+                regressor="kerasDenseNN",
+                # metrics=p.Choice(["mae", "mse"]),
+            )
+            params = dict(noise_free=False, regressor="kerasDenseNN", depth=-3, criterion="no", min_samples_split=0.1, alpha=0.1, learning_rate="constant")
         else:
             assert False, f"Problem type {regressor} undefined!"
         # build eval params if not specified
@@ -187,17 +203,27 @@ class MLTuning(ExperimentFunction):
         # Filling datasets.
         rng = self.parametrization.random_state
         if not dataset.startswith("artificial"):
-            assert dataset in ["boston", "diabetes"]
+            assert dataset in ["boston", "diabetes", "kerasBoston"]
             assert data_dimension is None
-            data = {"boston": sklearn.datasets.load_boston,
-                    "diabetes": sklearn.datasets.load_diabetes,
+            if dataset == "kerasBoston":
+                try:
+                    from tensorflow import keras # pylint: disable=import-outside-toplevel
+                except ImportError as e:
+                    raise ImportError("Please install keras (pip install keras) to use keras ml tuning") from e
+
+                data = keras.datasets.boston_housing
+            else:
+                data = {"boston": sklearn.datasets.load_boston,
+                       "diabetes": sklearn.datasets.load_diabetes,
                     }[dataset](return_X_y=True)
 
             # Half the dataset for training.
-            rng.shuffle(data[0].T)  # We randomly shuffle the columns.
-            self.X = data[0]
-            self.y = data[1]
-            self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.X, self.y, test_size=0.5, random_state=42)
+            if dataset == "kerasBoston":
+                (self.X_train, self.y_train), (self.X_test, self.y_test) = data.load_data(test_split=0.5, seed=42)
+            else:
+                rng.shuffle(data[0].T)  # We randomly shuffle the columns.
+                self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(data[0], data[1], test_size=0.5, random_state=42)
+
             num_train_data = len(self.X_train)
             self.num_data = num_train_data
 
@@ -224,8 +250,6 @@ class MLTuning(ExperimentFunction):
             "artificialsquare": np.square,
         }[dataset]
         y = np.sum(np.sin(X), axis=1).ravel()
-        self.X = X
-        self.y = y
         self.X_train = X  # Training set.
         self.y_train = y  # Labels of the training set.
 
