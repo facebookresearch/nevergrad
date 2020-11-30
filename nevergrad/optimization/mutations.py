@@ -76,7 +76,7 @@ class Mutator:
         with tunable intensity: it is useful for anisotropic adaptivity."""
         dimension = len(parent)
         boolean_vector = np.zeros(dimension, dtype=bool)
-        while not boolean_vector.any():
+        while not any(boolean_vector):
             boolean_vector = self.random_state.rand(size=dimension) < (1. / dimension)
         discrete_data = discretization.threshold_discretization(parent, arity=arity)
         return discretization.inverse_threshold_discretization([s if not b else s + np.random.choice([-1. ,1.]) * v for (b, s, v) 
