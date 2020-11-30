@@ -1885,6 +1885,9 @@ class NGOptBase(base.Optimizer):
         self._has_discrete = any(issubclass(ct.cls, p.BaseChoice) for ct in choicetags)
         self._arity = max(ct.arity for ct in choicetags)
         self._optim: tp.Optional[base.Optimizer] = None
+        self._constraints_manager.update(
+            max_trials=1000, penalty_factor=1.0, penalty_exponent=1.01,
+        )
 
     @property
     def optim(self) -> base.Optimizer:
@@ -2128,5 +2131,5 @@ class NGOpt8(NGOpt4):
 
 
 @registry.register
-class NGOpt(NGOpt4):
+class NGOpt(NGOpt8):
     pass
