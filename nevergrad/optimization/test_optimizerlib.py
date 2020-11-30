@@ -333,17 +333,18 @@ def test_optimization_discrete_with_one_sample() -> None:
     optimizer.minimize(_square)
 
 
-@pytest.mark.parametrize("name", ["TBPSA", "PSO", "TwoPointsDE"])  # type: ignore
-# this test is added because some generic class can fail to be pickled
-def test_population_pickle(name: str) -> None:
+@pytest.mark.parametrize("name", ["TBPSA", "PSO", "TwoPointsDE", "CMA", "BO"])  # type: ignore
+def test_optim_pickle(name: str) -> None:
+    # some generic class can fail to be pickled:
     # example of work around:
     # "self.population = base.utils.Population[DEParticle]([])"
     # becomes:
     # "self.population: base.utils.Population[DEParticle] = base.utils.Population([])""
+    #
+    # Scipy optimizers also fail to be pickled, but this is more complex to solve (not supported yet)
     optim = registry[name](parametrization=12, budget=100, num_workers=2)
     with tempfile.TemporaryDirectory() as folder:
-        filepath = Path(folder) / "dump_test.pkl"
-        optim.dump(filepath)
+        optim.dump(Path(folder) / "dump_test.pkl")
 
 
 def test_bo_parametrization_and_parameters() -> None:
@@ -403,15 +404,25 @@ def test_parallel_es() -> None:
             opt.tell(cand, 1)
 
 
-def test_constrained_optimization() -> None:
+@pytest.mark.parametrize(
+    "penalization,expected", [
+        (False, [1.005573e+00, 3.965783e-04]),
+        (True, [0.999987, -0.322118]),
+    ]
+)
+def test_constrained_optimization(penalization: bool, expected: tp.List[float]) -> None:
+    def constraint(i): return i[1]["x"][0] >= 1
     parametrization = ng.p.Instrumentation(x=ng.p.Array(shape=(1,)), y=ng.p.Scalar())
     optimizer = optlib.OnePlusOne(parametrization, budget=100)
     optimizer.parametrization.random_state.seed(12)
+    if penalization:
+        optimizer._constraints_manager.update(max_trials=2, penalty_factor=10)
+        def constraint(i): return -abs(i[1]["x"][0] - 1)
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", category=UserWarning)
-        optimizer.parametrization.register_cheap_constraint(lambda i: i[1]["x"][0] >= 1)  # type:ignore
+        optimizer.parametrization.register_cheap_constraint(constraint)  # type:ignore
     recom = optimizer.minimize(_square)
-    np.testing.assert_array_almost_equal([recom.kwargs["x"][0], recom.kwargs["y"]], [1.005573e+00, 3.965783e-04])
+    np.testing.assert_array_almost_equal([recom.kwargs["x"][0], recom.kwargs["y"]], expected)
 
 
 @pytest.mark.parametrize("name", registry)  # type: ignore
