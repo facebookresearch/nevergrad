@@ -85,9 +85,6 @@ class _OnePlusOne(base.Optimizer):
         if mutation == "adaptive":
             self._adaptive_mr = 0.5
         if mutation == "coordinatewiseadaptive":
-            all_params = paramhelpers.flatten_parameter(self.parametrization)
-            arity = max(len(param.choices) if isinstance(param, p.TransitionChoice) else 500 for param in all_params.values())
-            self._arity = arity
             self._velocity = np.random.uniform(size=self.dimension) * arity / 4.
             self._modified_variables = np.array([True] * self.dimension)
         self.noise_handling = noise_handling
@@ -163,7 +160,7 @@ class _OnePlusOne(base.Optimizer):
                 data = mutator.portfolio_discrete_mutation(pessimistic_data, intensity=intensity, arity=self.arity_for_discrete_mutation)
             elif mutation == "coordinatewiseadaptive":
                 self._modified_variables = np.array([True] * self.dimension)
-                data = mutator.coordinatewise_mutation(pessimistic_data, self._velocity, self._modified_variables, self._arity)
+                data = mutator.coordinatewise_mutation(pessimistic_data, self._velocity, self._modified_variables, arity=self.arity_for_discrete_mutation)
             elif mutation == "lengler":
                 alpha = 1.54468
                 intensity = int(max(1, self.dimension * (alpha * np.log(self.num_ask) / self.num_ask)))
@@ -210,7 +207,7 @@ class _OnePlusOne(base.Optimizer):
         if self.mutation == "coordinatewiseadaptive":
             factor = 1.2 if loss < self.current_bests["pessimistic"].mean else 0.731  # 0.731 = 1.2**(-np.exp(1)-1)
             inds = self._modified_variables
-            self._velocity[inds] = np.clip(self._velocity[inds] * factor, 1., self._arity / 4.)
+            self._velocity[inds] = np.clip(self._velocity[inds] * factor, 1., self.arity_for_discrete_mutation / 4.)
 
 
 class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
