@@ -242,7 +242,6 @@ class ImageFromPGAN(base.ExperimentFunction):
     def _loss(self, x: np.ndarray) -> float:
         image = self._generate_images(x)
         loss = self.loss_function.compute_loss(image)
-        print(f'k512 loss {loss}')
         return loss
 
     def _generate_images(self, x: np.ndarray):
