@@ -95,10 +95,13 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # you can also replace or reinitialize this random state
         self.num_workers = int(num_workers)
         self.budget = budget
+
         # How do we deal with cheap constraints i.e. constraints which are fast and use low resources and easy ?
         # True ==> we penalize them (infinite values for candidates which violate the constraint).
         # False ==> we repeat the ask until we solve the problem.
+        self._constraints_manager = utils.ConstraintManager()
         self._penalize_cheap_violations = False
+
         self.parametrization = (
             parametrization
             if not isinstance(parametrization, (int, np.int))
@@ -339,6 +342,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             # multiobjective reference is not handled :s
             # but this allows obtaining both scalar and multiobjective loss (through losses)
             callback(self, candidate, loss)
+        if not candidate.satisfies_constraints() and self.budget is not None:
+            penalty = self._constraints_manager.penalty(candidate, self.num_ask, self.budget)
+            loss = loss + penalty
         if isinstance(loss, float):
             self._update_archive_and_bests(candidate, loss)
         if candidate.uid in self._asked:
@@ -406,8 +412,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             callback(self)
         current_num_ask = self.num_ask
         # tentatives if a cheap constraint is available
-        MAX_TENTATIVES = 1000
-        for k in range(MAX_TENTATIVES):
+        # TODO: this should be replaced by an optimization algorithm.
+        max_trials = self._constraints_manager.max_trials
+        for k in range(max_trials):
             is_suggestion = False
             if self._suggestions:
                 is_suggestion = True
@@ -417,11 +424,13 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 # only register actual asked points
             if candidate.satisfies_constraints():
                 break  # good to go!
-            if self._penalize_cheap_violations or k == MAX_TENTATIVES - 2:  # a tell may help before last tentative
-                self._internal_tell_candidate(candidate, float("Inf"))
+            if self._penalize_cheap_violations:
+                # TODO using a suboptimizer instead may help remove this
+                self._internal_tell_candidate(candidate, float("Inf"))  # DE requires a tell
             self._num_ask += 1  # this is necessary for some algorithms which need new num to ask another point
-            if k == MAX_TENTATIVES - 1:
-                warnings.warn(f"Could not bypass the constraint after {MAX_TENTATIVES} tentatives, sending candidate anyway.")
+            if k == max_trials - 1:
+                warnings.warn(f"Could not bypass the constraint after {max_trials} tentatives, "
+                              "sending candidate anyway.")
         if not is_suggestion:
             if candidate.uid in self._asked:
                 raise RuntimeError(

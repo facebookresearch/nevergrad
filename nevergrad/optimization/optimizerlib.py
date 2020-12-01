@@ -31,6 +31,11 @@ from .es import *  # type: ignore  # noqa: F403
 from .oneshot import *  # noqa: F403
 from .recastlib import *  # noqa: F403
 
+try:
+    from .externalbo import HyperOpt # pylint: disable=unused-import
+except ModuleNotFoundError:
+    pass
+
 # run with LOGLEVEL=DEBUG for more debug information
 logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
 logger = logging.getLogger(__name__)
@@ -1847,12 +1852,11 @@ class MetaModel(base.Optimizer):
 
     def _internal_ask_candidate(self) -> p.Parameter:
         # We request a bit more points than what is really necessary for our dimensionality (+dimension).
-        if (self._num_ask % max(self.num_workers, self.dimension) == 0 and
-                len(self.archive) >= (self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1 and
-            self.num_workers > 1):
+        if (self._num_ask % max(13, self.num_workers, self.dimension) == 0 and
+                len(self.archive) >= (self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1):
             try:
                 data = learn_on_k_best(self.archive,
-                                       int((self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1))
+                                       int((self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 2))
                 candidate = self.parametrization.spawn_child().set_standardized_data(data)
             except InfiniteMetaModelOptimum:  # The optimum is at infinity. Shit happens.
                 candidate = self._optim.ask()
@@ -1882,6 +1886,9 @@ class NGOptBase(base.Optimizer):
         self._has_discrete = any(issubclass(ct.cls, p.BaseChoice) for ct in choicetags)
         self._arity = max(ct.arity for ct in choicetags)
         self._optim: tp.Optional[base.Optimizer] = None
+        self._constraints_manager.update(
+            max_trials=1000, penalty_factor=1.0, penalty_exponent=1.01,
+        )
 
     @property
     def optim(self) -> base.Optimizer:

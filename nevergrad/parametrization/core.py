@@ -38,7 +38,8 @@ class Parameter:
         # Additional convenient features
         self._random_state: tp.Optional[np.random.RandomState] = None  # lazy initialization
         self._generation = 0
-        self._constraint_checkers: tp.List[tp.Callable[[tp.Any], bool]] = []
+        #self._constraint_checkers: tp.List[tp.Union[tp.Callable[[tp.Any], bool], tp.Callable[[tp.Any], float]]] = []
+        self._constraint_checkers: tp.List[tp.Callable[[tp.Any], tp.Union[bool, float]]] = []
         self._name: tp.Optional[str] = None
         self._frozen = False
         self._descriptors: tp.Optional[utils.Descriptors] = None
@@ -276,15 +277,16 @@ class Parameter:
         if not self._constraint_checkers:
             return True
         val = self.value
-        return all(func(val) for func in self._constraint_checkers)
+        return all(utils.float_penalty(func(val)) <= 0 for func in self._constraint_checkers)
 
-    def register_cheap_constraint(self, func: tp.Callable[[tp.Any], bool]) -> None:
+    def register_cheap_constraint(self, func: tp.Union[tp.Callable[[tp.Any], bool], tp.Callable[[tp.Any], float]]) -> None:
         """Registers a new constraint on the parameter values.
 
         Parameters
         ----------
         func: Callable
-            function which, given the value of the instance, returns whether it satisfies the constraints.
+            function which, given the value of the instance, returns whether it satisfies the constraints (if output = bool),
+            or a float which is >= 0 if the constraint is satisfied.
 
         Note
         ----

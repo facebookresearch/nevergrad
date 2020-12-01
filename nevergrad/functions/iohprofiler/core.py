@@ -1,7 +1,7 @@
 import numpy as np
-from IOHexperimenter import IOH_function, W_model_function
 import nevergrad as ng
 from .. import base
+# pylint: disable=import-outside-toplevel
 
 
 class PBOFunction(base.ExperimentFunction):
@@ -34,6 +34,7 @@ class PBOFunction(base.ExperimentFunction):
     """
 
     def __init__(self, fid: int = 1, iid: int = 0, dim: int = 16, instrumentation: str = "Softmax") -> None:
+        from IOHexperimenter import IOH_function  # lazy import in case it is not installed
         if fid in [21, 23]:
             assert np.sqrt(dim).is_integer(), "Dimension needs to be a perfect square for the selected problem"
         self.f_internal = IOH_function(fid=fid, dim=dim, iid=iid, suite="PBO")
@@ -100,11 +101,11 @@ class WModelFunction(base.ExperimentFunction):
         ruggedness: int = 0,
         instrumentation: str = "Softmax"
     ) -> None:
+        from IOHexperimenter import W_model_function  # lazy import in case it is not installed
         assert epistasis <= dim, "Epistasis has to be less or equal to than dimension"
         assert neutrality <= dim, "Neutrality has to be less than or equal to dimension"
         assert ruggedness <= dim ** 2, "Ruggedness has to be less than or equal to dimension squared"
         assert 0 <= dummy <= 1, "Dummy variable fraction has to be in [0,1]"
-
         self.f_internal = W_model_function(base_function=base_function, iid=iid, dim=dim, dummy=dummy, epistasis=epistasis,
                                            neutrality=neutrality, ruggedness=ruggedness)
         assert instrumentation in ["Softmax", "Ordered"], "The only valid options for 'instrumentation' are 'Softmax' and 'Unordered'"
