@@ -568,7 +568,7 @@ def test_ngopt_on_continuous_realistic_scenario(budget: int) -> None:
  
     optimizer = ng.optimizers.NGOpt(parametrization=parametrization, budget=budget)
     recommendation = optimizer.minimize(fake_training)
-    assert fake_training(**recommendation.kwargs) < 1e-3
+    assert fake_training(**recommendation.kwargs) < 5e-3
 
 
 
