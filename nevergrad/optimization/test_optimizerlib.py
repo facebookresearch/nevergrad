@@ -522,13 +522,11 @@ def test_ngopt_on_simple_realistic_scenario(budget: int) -> None:
       # either "conv" or "fc"
       architecture=ng.p.Choice(["conv", "fc"])
     )
-    
-    optimizer = ng.optimizers.NGOpt(parametrization=parametrization, budget=budget)
-    recommendation = optimizer.minimize(fake_training)
-        
-    # show the recommended keyword arguments of the function
-    # print(recommendation.kwargs)
-    # print(fake_training(**recommendation.kwargs))
-    assert fake_training(**recommendation.kwargs) < 1e-3
+ 
+    for u in range(5):
+        optimizer = ng.optimizers.NGOpt(parametrization=parametrization, budget=budget)
+        recommendation = optimizer.minimize(fake_training)
+        assert fake_training(**recommendation.kwargs) < 5e-2
+
 
 
