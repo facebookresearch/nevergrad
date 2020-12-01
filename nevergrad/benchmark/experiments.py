@@ -1072,8 +1072,7 @@ def powersystems(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     if default_optims is not None:
         optims = default_optims
     optims += ["OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne", "OnePlusOne"]
-    optims += get_optimizers("progressive", seed=next(seedg))  # type: ignore
-    optims += get_optimizers("splitters")  # type: ignore
+    optims += get_optimizers("splitters", "progressive", seed=next(seedg))  # type: ignore
     budgets = [3200, 6400, 12800]
     for budget in budgets:
         for num_workers in [1, 10, 100]:
