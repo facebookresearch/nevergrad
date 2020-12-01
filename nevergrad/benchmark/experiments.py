@@ -159,8 +159,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         func.parametrization.register_cheap_constraint(_positive_sum)
 
     # Then, let us build a constraint-free case. We include the noisy case.
-    names = ["hm", "rastrigin", "sphere", "doublelinearslope", "stepdoublelinearslope", "cigar", "ellipsoid",
-             "stepellipsoid"]
+    names = ["hm", "rastrigin", "sphere", "doublelinearslope", "ellipsoid"]
 
     # names += ["deceptiveillcond", "deceptivemultimodal", "deceptivepath"]
     functions += [
@@ -168,9 +167,11 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         for rotation in [True, False]
         for nl in [0., 100.]
         for num_blocks in [1]
-        for d in [2, 40, 100, 3000]
+        for d in [2, 40, 3000]
     ]
-    optims: tp.List[str] = get_optimizers("basics", seed=next(seedg)) + ["NoisyDiscreteOnePlusOne"]
+    # This problem is intended as a stable basis forever.
+    # The list of optimizers should contain only the basic for comparison and "baselines".
+    optims: tp.List[str] = ["NGOpt8"] + get_optimizers("baselines", seed=next(seedg))
     if default_optims is not None:
         optims = default_optims
     for optim in optims:
@@ -182,8 +183,8 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                     if not xp.is_incoherent:
                         yield xp
     # Discrete, unordered.
-    for nv in [10, 50, 200]:
-        for arity in [2, 7]:
+    for nv in [200, 2000]:
+        for arity in [2, 7, 37]:
             instrum = ng.p.TransitionChoice(range(arity), repetitions=nv)
             for name in ["onemax", "leadingones", "jump"]:
                 dfunc = ExperimentFunction(corefuncs.DiscreteFunction(name, arity), instrum.set_name("transition"))
@@ -195,11 +196,18 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # The multiobjective case.
     # TODO the upper bounds are really not well set for this experiment with cigar
     mofuncs: tp.List[MultiExperiment] = []
-    for name1 in ["sphere", "cigar"]:
-        for name2 in ["sphere", "cigar", "hm"]:
+    for name1 in ["sphere", "ellipsoid"]:
+        for name2 in ["sphere", "hm"]:
             mofuncs += [MultiExperiment([ArtificialFunction(name1, block_dimension=7),
                                          ArtificialFunction(name2, block_dimension=7)],
-                                        upper_bounds=np.array((50., 50.)))]
+                                        upper_bounds=np.array((100., 100.)))]
+    for name1 in ["sphere", "ellipsoid"]:
+        for name2 in ["sphere", "hm"]:
+            for name3 in ["sphere", "hm"]:
+                mofuncs += [MultiExperiment([ArtificialFunction(name1, block_dimension=7),
+                                             ArtificialFunction(name2, block_dimension=7)],
+                                             ArtificialFunction(name3, block_dimension=7)],
+                                             upper_bounds=np.array((100., 100., 100.)))]
     for mofunc in mofuncs:
         for optim in optims:
             for budget in [2000, 4000, 8000]:
@@ -326,7 +334,7 @@ def parallel(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     Testing both no useless variables and 5/6 of useless variables."""
     seedg = create_seed_generator(seed)
     names = ["sphere", "rastrigin", "cigar"]
-    optims: tp.List[str] = get_optimizers("basics", seed=next(seedg))
+    optims: tp.List[str] = get_optimizers("parallel_basics", seed=next(seedg))
     if default_optims is not None:
         optims = default_optims
     functions = [

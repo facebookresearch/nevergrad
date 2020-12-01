@@ -8,9 +8,7 @@ import typing as tp
 import numpy as np
 import nevergrad as ng
 from nevergrad.common.decorators import Registry
-from nevergrad.optimization import base as obase
 
-#Optim = tp.Union[obase.ConfiguredOptimizer, str]
 Optim = str
 registry: Registry[tp.Callable[[], tp.Iterable[Optim]]] = Registry()
 
@@ -61,6 +59,18 @@ def progressive() -> tp.Sequence[Optim]:
 @registry.register
 def basics() -> tp.Sequence[Optim]:
     return ["NGOpt8", "CMandAS2", "CMA", "DE", "MetaModel", "BO"]
+
+
+@registry.register
+def baselines() -> tp.Sequence[Optim]:
+    # This list should not change. This is the basics for comparison.
+    # No algorithm with unstable other dependency.
+    return ["OnePlusOne", "DiscreteOnePlusOne", "NoisyDiscreteOnePlusOne", "PSO", "DE", "TwoPointsDE"]
+
+
+@registry.register
+def parallel_basics() -> tp.Sequence[Optim]:
+    return ["NGOpt8", "CMandAS2", "CMA", "DE", "MetaModel"]
 
 
 @registry.register
