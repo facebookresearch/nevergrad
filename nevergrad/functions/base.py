@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import inspect
 from pathlib import Path
 import numbers
 import numpy as np
@@ -17,6 +18,7 @@ class ExperimentFunctionCopyError(NotImplementedError):
     """
 
 
+# pylint: disable=too-many-instance-attributes
 class ExperimentFunction:
     """Combines a function and its parametrization for running experiments (see benchmark subpackage)
 
@@ -34,9 +36,22 @@ class ExperimentFunction:
       if you subclass ExperimentFunction since it is intensively used in benchmarks.
     """
 
+    def __new__(cls: tp.Type[EF], *args: tp.Any, **kwargs: tp.Any) -> EF:
+        """Identifies initialization parameters during initialization and store them
+        """
+        inst = object.__new__(cls)
+        sig = inspect.signature(cls.__init__)
+        callargs = dict(sig.bind(inst, *args, **kwargs).arguments)
+        callargs.pop("self")
+        inst._auto_init = callargs
+        inst._auto_descriptors = {x: y for x, y in callargs.items() if isinstance(y, (str, tuple, int, float))}
+        return inst  # type: ignore
+
     def __init__(self: EF, function: tp.Callable[..., tp.Loss], parametrization: p.Parameter) -> None:
         assert callable(function)
         assert not hasattr(self, "_initialization_kwargs"), '"register_initialization" was called before super().__init__'
+        self._auto_init: tp.Dict[str, tp.Any]  # filled by __new__
+        self._auto_descriptors: tp.Dict[str, tp.Hashable]  # filled by __new__
         self._initialization_kwargs: tp.Optional[tp.Dict[str, tp.Any]] = None
         self._initialization_func: tp.Callable[..., EF] = self.__class__
         self._descriptors: tp.Dict[str, tp.Any] = {"function_class": self.__class__.__name__}
