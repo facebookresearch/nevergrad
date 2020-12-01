@@ -135,13 +135,14 @@ class ExperimentFunction:
         that you provided and which were recorded through the __new__ method of ExperimentFunction
         """
         # auto_init is automatically filled by __new__, aka when creating the instance
-        output: EF = self.__class__(**{x: y if not isinstance(y, p.Parameter) else y.copy()
+        output: EF = self.__class__(**{x: y.copy() if isinstance(y, p.Parameter) else y
                                        for x, y in self._auto_init.items()})
         # add descriptors present in self but not added by initialization
         # (they must have been added manually)
         keys = set(output.descriptors)
         output.add_descriptors(**{x: y for x, y in self.descriptors.items() if x not in keys})
-        # parametrization may have been overriden, we can update it
+        # parametrization may have been overriden, so let's always update it
+        # Caution: only if names differ!
         if output.parametrization.name != self.parametrization.name:
             output.parametrization = self.parametrization.copy()
         # then if there are still differences, something went wrong
@@ -151,6 +152,9 @@ class ExperimentFunction:
                                               "This means that the auto-copy behavior of ExperimentFunction does not work.\n"
                                               "You may want to implement your own copy method, or check implementation of "
                                               "ExperimentFunction.__new__ and copy to better understand what happens")
+        # propagate other useful information # TODO a bit hacky
+        output.parametrization._constraint_checkers = self.parametrization._constraint_checkers
+        output.multiobjective_upper_bounds = self.multiobjective_upper_bounds  # TODO not sure why this is needed
         return output
 
     def compute_pseudotime(self, input_parameter: tp.Any, loss: tp.Loss) -> float:  # pylint: disable=unused-argument
