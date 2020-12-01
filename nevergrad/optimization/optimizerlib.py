@@ -1883,6 +1883,7 @@ class NGOptBase(base.Optimizer):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         descr = self.parametrization.descriptors
         self.has_noise = not (descr.deterministic and descr.deterministic_function)
+        self.noise_from_instrumentation = self.has_noise and descr.deterministic_function  # The noise coming from discrete variables goes to 0.
         self.fully_continuous = descr.continuous
         all_params = paramhelpers.flatten_parameter(self.parametrization)
         choicetags = [p.BaseChoice.ChoiceTag.as_tag(x) for x in all_params.values()]
@@ -1931,7 +1932,7 @@ class NGOptBase(base.Optimizer):
                                 cls = OnePlusOne if self.dimension > 30 else Cobyla
                             else:
                                 # DE is great in such a case (?).
-                                cls = DE if self.dimension > 2000 else CMA
+                                cls = DE if self.dimension > 2000 else CMA if self.dimension > 1 else OnePlusOne
         return cls
 
     def _internal_ask_candidate(self) -> p.Parameter:
@@ -1970,8 +1971,6 @@ class NGOpt2(NGOptBase):
     """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
 
     def _select_optimizer_cls(self) -> base.OptCls:
-        # override because it is different from NGOptBase (bug?)
-        self.has_discrete_not_softmax = self._has_discrete
         budget, num_workers = self.budget, self.num_workers
         assert budget is not None
         optimClass: base.OptCls
@@ -2034,8 +2033,6 @@ class NGOpt4(NGOptBase):
     """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
 
     def _select_optimizer_cls(self) -> base.OptCls:
-        # override because it is different from NGOptBase (bug?)
-        self.has_discrete_not_softmax = self._has_discrete
         self.fully_continuous = self.fully_continuous and not self.has_discrete_not_softmax and self._arity < 0
         budget, num_workers = self.budget, self.num_workers
         assert budget is not None
@@ -2057,10 +2054,9 @@ class NGOpt4(NGOptBase):
             else:
                 if self.has_noise and self.fully_continuous:
                     if budget > 100:
-                        optimClass = SQP
+                        optimClass = OnePlusOne if self.noise_from_instrumentation else SQP
                     else:
-                        # This is the realm of population control. FIXME: should we pair with a bandit ?
-                        optimClass = TBPSA
+                        optimClass = OnePlusOne
                 else:
                     if self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable or not self.fully_continuous:
                         optimClass = DoubleFastGADiscreteOnePlusOne
@@ -2110,7 +2106,6 @@ class NGOpt8(NGOpt4):
         # Extracting info as far as possible.
         assert self.budget is not None
         optimClass: base.OptCls
-
         if self.has_noise and (self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable):
             if self.budget > 10000:
                 optimClass = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
