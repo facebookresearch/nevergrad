@@ -500,6 +500,14 @@ def test_bo_ordering() -> None:
 )
 def test_ngo_split_optimizer(name: str, expected: tp.List[str]) -> None:
     param = ng.p.Choice(["const", ng.p.Array(init=[1, 2, 3])])
+    param = ng.p.Instrumentation(
+      # a log-distributed scalar between 0.001 and 1.0
+      learning_rate=ng.p.Log(lower=0.001, upper=1.0),
+      # an integer from 1 to 12
+      batch_size=ng.p.Scalar(lower=1, upper=12).set_integer_casting(),
+      # either "conv" or "fc"
+      architecture=ng.p.Choice(["conv", "fc"])
+    )
     Opt = optlib.registry[name]
     opt = optlib.ConfSplitOptimizer(multivariate_optimizer=Opt)(param, budget=1000)
     names = [o.optim.name for o in opt.optims]  # type: ignore
