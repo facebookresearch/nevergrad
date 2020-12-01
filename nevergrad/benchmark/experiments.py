@@ -698,9 +698,8 @@ def ranknoisy(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     With or without noise dissymmetry.
     """
     seedg = create_seed_generator(seed)
-    optims = ["ProgONOPO3", "ProgONOPO5", "ProgONOPO9", "ProgONOPO13", 
-              "ProgODOPO3", "ProgODOPO5", "ProgODOPO9", "ProgODOPO13", "NGOpt8",
-              "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
+    optims = get_optimizers("progressive", seed=next(seedg)) + [
+            "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
     if default_optims is not None:
         optims = default_optims
     # optims += ["NGO", "Shiwa", "DiagonalCMA"] + sorted(
@@ -732,9 +731,8 @@ def noisy(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     Budget 25000, 50000, 100000.
     """
     seedg = create_seed_generator(seed)
-    optims = ["ProgONOPO3", "ProgONOPO5", "ProgONOPO9", "ProgONOPO13",
-              "ProgODOPO3", "ProgODOPO5", "ProgODOPO9", "ProgODOPO13",
-              "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
+    optims = get_optimizers("progressive", seed=next(seedg)) + [
+            "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
     optims += ["NGO", "Shiwa", "DiagonalCMA"] + sorted(
         x for x, y in ng.optimizers.registry.items() if
         ("SPSA" in x or "TBPSA" in x or "ois" in x or "epea" in x or "Random" in x)
@@ -1027,10 +1025,9 @@ def sequential_fastgames(seed: tp.Optional[int] = None) -> tp.Iterator[Experimen
     Games: War, Batawaf, Flip, GuessWho,  BigGuessWho."""
     funcs = [game.Game(name) for name in ["war", "batawaf", "flip", "guesswho", "bigguesswho"]]
     seedg = create_seed_generator(seed)
-    optims = ["ProgONOPO3", "ProgONOPO5", "ProgONOPO9", "ProgONOPO13", "ProgONOPOAuto",
-              "ProgODOPO3", "ProgODOPO5", "ProgODOPO9", "ProgODOPO13", "ProgODOPOAuto",
-              "CMA", "SplitCMA5", "DiagonalCMA", "NGOpt8",
+    optims = ["CMA", "SplitCMA5", "DiagonalCMA", "NGOpt8",
               "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
+    optims += get_optimizers("progressive", seed=next(seedg))
     if default_optims is not None:
         optims = default_optims
     for budget in [12800, 25600, 51200, 102400]:
@@ -1056,9 +1053,8 @@ def powersystems(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
               "NGO", "Shiwa", "DiagonalCMA", "SplitCMA3", "SplitCMA13", "SplitCMAAuto"]
     if default_optims is not None:
         optims = default_optims
-    optims += ["ProgONOPO3", "ProgONOPO5", "ProgONOPO9", "ProgONOPO13", "ProgONOPOAuto", "ProgONOPOInf",
-               "ProgODOPO3", "ProgODOPO5", "ProgODOPO9", "ProgODOPO13", "ProgODOPOAuto", "ProgODOPOInf",
-               "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne", "OnePlusOne"]
+    optims += ["OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne", "OnePlusOne"]
+    optims += get_optimizers("progressive", seed=next(seedg))
     budgets = [3200, 6400, 12800]
     for budget in budgets:
         for num_workers in [1, 10, 100]:
