@@ -207,7 +207,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         for name2 in ["sphere", "hm"]:
             for name3 in ["sphere", "hm"]:
                 mofuncs += [MultiExperiment([ArtificialFunction(name1, block_dimension=7),
-                                             ArtificialFunction(name2, block_dimension=7)],
+                                             ArtificialFunction(name2, block_dimension=7),
                                              ArtificialFunction(name3, block_dimension=7)],
                                              upper_bounds=np.array((100., 100., 100.)))]
     for mofunc in mofuncs:
