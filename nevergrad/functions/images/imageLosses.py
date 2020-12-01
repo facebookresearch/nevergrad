@@ -6,7 +6,7 @@ class _ImageLoss:
     def __init__(self) -> None:
         pass
 
-    def compute_loss(self, img: np.ndarray) -> float:
+    def __call__(self, img: np.ndarray) -> float:
         assert False
 
 
@@ -16,12 +16,12 @@ class _ImageLossUsingRef(_ImageLoss):
         self.reference = reference
 
 
-class sumAbsoluteDifferencesLoss(_ImageLossUsingRef):
+class SumAbsoluteDifferencesLoss(_ImageLossUsingRef):
     def __init__(self, reference: np.ndarray) -> None:
         super().__init__(reference)
         self.domain_shape = self.reference.shape
 
-    def compute_loss(self, x: np.ndarray) -> float:
+    def __call__(self, x: np.ndarray) -> float:
         x = np.array(x, copy=False).ravel()
         x = x.reshape(self.domain_shape)
         assert x.shape == self.domain_shape, f"Shape = {x.shape} vs {self.domain_shape}"
@@ -39,7 +39,7 @@ class Koncept512Loss(_ImageLoss):
         super().__init__()
         self.koncept = Koncept512()
 
-    def compute_loss(self, img: np.ndarray) -> float:
+    def __call__(self, img: np.ndarray) -> float:
         loss = self.koncept.assess(img)
         if len(loss.shape) == 0:
             loss = float(loss)

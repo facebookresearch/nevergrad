@@ -10,7 +10,7 @@ import PIL.Image
 import torch.nn as nn
 import torch
 import torchvision
-from nevergrad.functions.images.imageLosses import sumAbsoluteDifferencesLoss, Koncept512Loss
+from nevergrad.functions.images.imageLosses import SumAbsoluteDifferencesLoss, Koncept512Loss
 from torchvision.models import resnet50
 import torchvision.transforms as tr
 
@@ -21,7 +21,7 @@ from .. import base
 
 
 class Image(base.ExperimentFunction):
-    def __init__(self, problem_name: str = "recovering", index: int = 0, loss=sumAbsoluteDifferencesLoss) -> None:
+    def __init__(self, problem_name: str = "recovering", index: int = 0, loss=SumAbsoluteDifferencesLoss) -> None:
         """
         problem_name: the type of problem we are working on.
            recovering: we directly try to recover the target image.
@@ -55,7 +55,7 @@ class Image(base.ExperimentFunction):
         self.loss_function = loss(reference=self.data)
 
     def _loss(self, x: np.ndarray) -> float:
-        return self.loss_function.compute_loss(x)
+        return self.loss_function(x)
 
 
 # #### Adversarial attacks ##### #
@@ -214,7 +214,7 @@ class ImageFromPGAN(base.ExperimentFunction):
     n_mutations: number of mutations
     """
 
-    def __init__(self, problem_name: str = "GAN_optimization", initial_noise: np.ndarray = None, use_gpu: bool = True, scorer=Koncept512Loss, mutable_sigma=True, n_mutations=35) -> None:
+    def __init__(self, initial_noise: np.ndarray = None, use_gpu: bool = True, scorer=Koncept512Loss, mutable_sigma=True, n_mutations=35) -> None:
         if torch.cuda.is_available():
             use_gpu = False
 
@@ -223,7 +223,6 @@ class ImageFromPGAN(base.ExperimentFunction):
                                'PGAN', model_name='celebAHQ-512',
                                pretrained=True, useGPU=use_gpu)
 
-        self.problem_name = problem_name
         self.noise_shape = (1, 512)
         if initial_noise is None:
             initial_noise = np.random.normal(size=self.noise_shape)
@@ -235,13 +234,13 @@ class ImageFromPGAN(base.ExperimentFunction):
         array.set_recombination(ng.p.mutation.Crossover(axis=(0, 1))).set_name("")
 
         super().__init__(self._loss, array)
-        self.register_initialization(problem_name=problem_name)
-        self._descriptors.update(problem_name=problem_name)
         self.loss_function = scorer()
+        self.register_initialization(initial_noise=initial_noise, use_gpu=use_gpu, scorer=scorer, mutable_sigma=mutable_sigma, n_mutations=n_mutations)
+        self._descriptors.update(initial_noise=initial_noise, use_gpu=use_gpu, scorer=scorer, mutable_sigma=mutable_sigma, n_mutations=n_mutations)
 
     def _loss(self, x: np.ndarray) -> float:
         image = self._generate_images(x)
-        loss = self.loss_function.compute_loss(image)
+        loss = self.loss_function(image)
         return loss
 
     def _generate_images(self, x: np.ndarray):
