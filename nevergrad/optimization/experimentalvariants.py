@@ -7,12 +7,9 @@ from .oneshot import SamplingSearch
 from .differentialevolution import DifferentialEvolution
 from .optimizerlib import RandomSearchMaker, SQP, LHSSearch, DE, RandomSearch, MetaRecentering, MetaTuneRecentering  # type: ignore
 from .optimizerlib import (
-    OptimisticNoisyOnePlusOne,
-    OptimisticDiscreteOnePlusOne,
     ParametrizedOnePlusOne,
     ParametrizedCMA,
     ConfiguredPSO,
-    ConfSplitOptimizer,
     ParametrizedBO,
     EMNA,
 )
