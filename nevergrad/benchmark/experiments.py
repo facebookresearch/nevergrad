@@ -1141,7 +1141,7 @@ def images(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def imagesUsingGan(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def images_using_gan(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Optimizing an image using koncept512 and a GAN"""
     seedg = create_seed_generator(seed)
     optims = ["CMA", "Shiwa", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "NSGAIIES", "ParametrizationDE"]
