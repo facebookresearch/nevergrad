@@ -50,6 +50,7 @@ class MissingBenchmarkPackageError(ModuleNotFoundError):
 default_optims: tp.Optional[tp.List[str]] = None  # ["NGO10", "CMA", "Shiwa"]
 
 
+@registry.register
 def fake_learning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
@@ -60,7 +61,7 @@ def fake_learning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     
     # Instrumentation class is used for functions with multiple inputs
     # (positional and/or keywords)
-    parametrization_fake_training = ng.p.Instrumentation(
+    instrum = ng.p.Instrumentation(
       # a log-distributed scalar between 0.001 and 1.0
       learning_rate=ng.p.Log(lower=0.001, upper=1.0),
       # an integer from 1 to 12
@@ -68,13 +69,13 @@ def fake_learning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
       # either "conv" or "fc"
       architecture=ng.p.Choice(["conv", "fc"])
     )
-    for function, parametrization in [fake_training,   
-            TODO parametrization
+    fake_learnings = [ExperimentFunction(fake_training, instrum)]
+
+    for function in fake_learnings:
         for optim in ["OnePlusOne", "NGOpt8", "CMA", "DE"]:
             for budget in [10, 100, 1000, 10000]:
                 for nw in [1, int(np.sqrt(budget)), budget]:
-                    yield Experiment(fake_learning, optim, num_workers=nw,
-                        budget=budget, seed=next(seedg))
+                    yield Experiment(function, optim, num_workers=nw, budget=budget, seed=next(seedg))
 
 
 def keras_tuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool = False) -> tp.Iterator[Experiment]:
