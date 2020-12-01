@@ -146,6 +146,8 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     The goal is basically to have a very wide family of problems: continuous and discrete,
     noisy and noise-free, mono- and multi-objective,  constrained and not constrained, sequential
     and parallel.
+
+    TODO(oteytaud): this requires a significant improvement, covering mixed problems and different types of constraints.
     """
     seedg = create_seed_generator(seed)
     # Continuous case
@@ -177,7 +179,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     for optim in optims:
         for function in functions:
             for budget in [50, 500, 5000, 50000]:
-                for nw in [1, 100]:
+                for nw in [1, 100] + ([] if budget < 100 else [budget]):
                     xp = Experiment(function, optim, num_workers=nw,
                                     budget=budget, seed=next(seedg))
                     if not xp.is_incoherent:
@@ -190,7 +192,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                 dfunc = ExperimentFunction(corefuncs.DiscreteFunction(name, arity), instrum.set_name("transition"))
                 dfunc.add_descriptors(arity=arity)
                 for optim in optims:
-                    for nw in [1, 10]:
+                    for nw in [1, 10] + ([] if budget < 100 else [budget]):
                         for budget in [500, 5000]:
                             yield Experiment(dfunc, optim, num_workers=nw, budget=budget, seed=next(seedg))
     # The multiobjective case.
