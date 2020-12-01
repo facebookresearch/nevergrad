@@ -1885,7 +1885,6 @@ class NGOptBase(base.Optimizer):
         choicetags = [p.BaseChoice.ChoiceTag.as_tag(x) for x in all_params.values()]
         self.has_discrete_not_softmax = any(issubclass(ct.cls, p.TransitionChoice) for ct in choicetags)
         self._has_discrete = any(issubclass(ct.cls, p.BaseChoice) for ct in choicetags)
-
         self._arity = max(ct.arity for ct in choicetags)
         if self.fully_continuous:
             self._arity = -1
