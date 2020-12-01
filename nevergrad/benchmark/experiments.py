@@ -1044,8 +1044,7 @@ def sequential_fastgames(seed: tp.Optional[int] = None) -> tp.Iterator[Experimen
     seedg = create_seed_generator(seed)
     optims = ["CMA", "DiagonalCMA", "NGOpt8",
               "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
-    optims += get_optimizers("progressive", seed=next(seedg))  # type: ignore
-    optims += get_optimizers("splitters")  # type: ignore
+    optims += get_optimizers("splitters", "progressive", seed=next(seedg))  # type: ignore
     if default_optims is not None:
         optims = default_optims
     for budget in [12800, 25600, 51200, 102400]:
