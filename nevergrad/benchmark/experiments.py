@@ -173,7 +173,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     ]
     # This problem is intended as a stable basis forever.
     # The list of optimizers should contain only the basic for comparison and "baselines".
-    optims: tp.List[str] = ["NGOpt8"] + get_optimizers("baselines", seed=next(seedg))
+    optims: tp.List[str] = ["NGOpt8"] + get_optimizers("baselines", seed=next(seedg))  # type: ignore
     if default_optims is not None:
         optims = default_optims
     for optim in optims:
@@ -356,7 +356,7 @@ def harderparallel(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Parallel optimization on 4 classical objective functions. More distinct settings than << parallel >>."""
     seedg = create_seed_generator(seed)
     names = ["sphere", "rastrigin", "cigar", "ellipsoid"]
-    optims = ["NGOpt8"] + get_optimizers("emna_variants", seed=next(seedg))
+    optims = ["NGOpt8"] + get_optimizers("emna_variants", seed=next(seedg))  # type: ignore
     if default_optims is not None:
         optims = default_optims
     functions = [
@@ -575,7 +575,7 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
     elif (small and not noise):
         budgets = [10, 20, 40]
     if hd:
-        optims += get_optimizers("splitters", seed=next(seedg))
+        optims += get_optimizers("splitters", seed=next(seedg))  # type: ignore
     for optim in optims:
         for function in functions:
             for budget in budgets:
@@ -697,7 +697,7 @@ def constrained_illconditioned_parallel(seed: tp.Optional[int] = None) -> tp.Ite
         func.parametrization.register_cheap_constraint(_positive_sum)
     for function in functions:
         for budget in [400, 4000, 40000]:
-            optims: tp.List[str] = get_optimizers("large", seed=next(seedg))
+            optims: tp.List[str] = get_optimizers("large", seed=next(seedg))  # type: ignore
             for optim in optims:
                 yield Experiment(function, optim, budget=budget, num_workers=1, seed=next(seedg))
 
@@ -866,7 +866,7 @@ def spsa_benchmark(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     Sphere, Sphere4, Cigar.
     """
     seedg = create_seed_generator(seed)
-    optims: tp.List[str] = get_optimizers("spsa")
+    optims: tp.List[str] = get_optimizers("spsa")  # type: ignore
     for budget in [500, 1000, 2000, 4000, 8000, 16000, 32000, 64000, 128000]:
         for optim in optims:
             for rotation in [True, False]:

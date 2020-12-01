@@ -10,6 +10,8 @@ import nevergrad as ng
 from nevergrad.common.decorators import Registry
 
 from nevergrad.optimization import base as obase
+from nevergrad.optimization.optimizerlib import ConfSplitOptimizer
+from nevergrad.optimization.optimizerlib import ParametrizedOnePlusOne
 
 Optim = tp.Union[obase.ConfiguredOptimizer, str]
 registry: Registry[tp.Callable[[], tp.Iterable[Optim]]] = Registry()
