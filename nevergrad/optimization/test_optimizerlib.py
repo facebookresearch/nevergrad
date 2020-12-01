@@ -496,13 +496,15 @@ def test_bo_ordering() -> None:
 
 
 @pytest.mark.parametrize(  # type: ignore
-    "name,expected", [("NGOpt8", ["SQP", "SQP"])]
-#    "name,expected", [("NGOpt2", ["TBPSA", "CMandAS2"])]
+    "name,budget,expected", [
+        ("NGOpt8", 100, ["OnePlusOne", "OnePlusOne"]),
+        ("NGOpt8", 200, ["SQP", "SQP"])
+        ]
 )
-def test_ngo_split_optimizer(name: str, expected: tp.List[str]) -> None:
+def test_ngo_split_optimizer(name: str, budget: int, expected: tp.List[str]) -> None:
     param = ng.p.Choice(["const", ng.p.Array(init=[1, 2, 3])])
     Opt = optlib.registry[name]
-    opt = optlib.ConfSplitOptimizer(multivariate_optimizer=Opt)(param, budget=1000)
+    opt = optlib.ConfSplitOptimizer(multivariate_optimizer=Opt)(param, budget=budget)
     names = [o.optim.name for o in opt.optims]  # type: ignore
     assert names == expected
 
