@@ -70,7 +70,8 @@ def progressive() -> tp.Sequence[Optim]:
     optims:tp.List[Optim] = []
     for mutation in ["discrete", "gaussian"]:
         for num_optims in [None, 13, 10000]:
-            name = "Prog" + ("Disc" if mutation == "discrete" else "") + ("Auto" if num_optims is None else "Inf" if num_optims = 10000 else str(num_optims))
+            name = "Prog" + ("Disc" if mutation == "discrete" else "") + (
+                    "Auto" if num_optims is None else ("Inf" if num_optims == 10000 else str(num_optims)))
             mv = ParametrizedOnePlusOne(noise_handling="optimistic", mutation=mutation)
             opt = ConfSplitOptimizer(
                 num_optims=num_optims, progressive=True, multivariate_optimizer=mv
