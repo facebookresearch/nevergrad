@@ -9,7 +9,9 @@ import numpy as np
 import nevergrad as ng
 from nevergrad.common.decorators import Registry
 
-Optim = str
+from nevergrad.optimization import base as obase
+
+Optim = tp.Union[obase.ConfiguredOptimizer, str]
 registry: Registry[tp.Callable[[], tp.Iterable[Optim]]] = Registry()
 
 
@@ -53,7 +55,16 @@ def emna_variants() -> tp.Sequence[Optim]:
 
 @registry.register
 def progressive() -> tp.Sequence[Optim]:
-    return ["ProgONOPOInf", "ProgONOPOAuto", "ProgONOPO13", "ProgODOPOInf", "ProgODOPOAuto", "ProgODOPO13"]
+    optims:tp.List[Optim] = []
+    for mutation in ["discrete", "gaussian"]:
+        for num_optims in [None, 13, 10000]:
+            name = "Prog" + ("Disc" if mutation == "discrete" else "") + ("Auto" if num_optims is None else str(num_optims)
+            mv = ParametrizedOnePlusOne(noise_handling="optimistic", mutation=mutation)
+            opt = ConfSplitOptimizer(
+                num_optims=num_optims, progressive=True, multivariate_optimizer=mv
+            ).set_name(name)
+            optims.append(opt)
+    return optims
 
 
 @registry.register

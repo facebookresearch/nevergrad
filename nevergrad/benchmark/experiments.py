@@ -77,7 +77,7 @@ def keras_tuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: b
 def mltuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool = False) -> tp.Iterator[Experiment]:
     """Machine learning hyperparameter tuning experiment. Based on scikit models."""
     seedg = create_seed_generator(seed)
-    optims: tp.List[str]  = get_optimizers("basics", seed=next(seedg))
+    optims: tp.List[str]  = get_optimizers("basics", seed=next(seedg))  # type: ignore
              
     if default_optims is not None:
         optims = default_optims
@@ -223,7 +223,7 @@ def parallel_small_budget(seed: tp.Optional[int] = None) -> tp.Iterator[Experime
     """Parallel optimization with small budgets
     """
     seedg = create_seed_generator(seed)
-    optims: tp.List[str] = get_optimizers("basics", seed=next(seedg))
+    optims: tp.List[str] = get_optimizers("basics", seed=next(seedg))  # type: ignore
     names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "multipeak"]
     names += ["sphere", "cigar", "ellipsoid", "altellipsoid"]
     names += ["deceptiveillcond", "deceptivemultimodal", "deceptivepath"]
@@ -336,7 +336,7 @@ def parallel(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     Testing both no useless variables and 5/6 of useless variables."""
     seedg = create_seed_generator(seed)
     names = ["sphere", "rastrigin", "cigar"]
-    optims: tp.List[str] = get_optimizers("parallel_basics", seed=next(seedg))
+    optims: tp.List[str] = get_optimizers("parallel_basics", seed=next(seedg))  # type: ignore
     if default_optims is not None:
         optims = default_optims
     functions = [
@@ -713,7 +713,7 @@ def ranknoisy(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     With or without noise dissymmetry.
     """
     seedg = create_seed_generator(seed)
-    optims: tp.List[str] = get_optimizers("progressive", seed=next(seedg)) + [
+    optims: tp.List[str] = get_optimizers("progressive", seed=next(seedg)) + [  # type: ignore
             "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
     if default_optims is not None:
         optims = default_optims
@@ -746,7 +746,7 @@ def noisy(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     Budget 25000, 50000, 100000.
     """
     seedg = create_seed_generator(seed)
-    optims: tp.List[str] = get_optimizers("progressive", seed=next(seedg)) + [
+    optims: tp.List[str] = get_optimizers("progressive", seed=next(seedg)) + [  # type: ignore
             "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
     optims += ["NGO", "Shiwa", "DiagonalCMA"] + sorted(
         x for x, y in ng.optimizers.registry.items() if
@@ -961,7 +961,7 @@ def mixsimulator(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     Sequential or 30 workers."""
     funcs = [OptimizeMix()]
     seedg = create_seed_generator(seed)
-    optims: tp.List[str] = get_optimizers("basics", seed=next(seedg))
+    optims: tp.List[str] = get_optimizers("basics", seed=next(seedg))  # type: ignore
     if default_optims is not None:
         optims = default_optims
     seq = np.arange(0, 1601, 20)
@@ -1044,7 +1044,7 @@ def sequential_fastgames(seed: tp.Optional[int] = None) -> tp.Iterator[Experimen
     seedg = create_seed_generator(seed)
     optims = ["CMA", "SplitCMA5", "DiagonalCMA", "NGOpt8",
               "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
-    optims += get_optimizers("progressive", seed=next(seedg))
+    optims += get_optimizers("progressive", seed=next(seedg))  # type: ignore
     if default_optims is not None:
         optims = default_optims
     for budget in [12800, 25600, 51200, 102400]:
@@ -1071,7 +1071,7 @@ def powersystems(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     if default_optims is not None:
         optims = default_optims
     optims += ["OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne", "OnePlusOne"]
-    optims += get_optimizers("progressive", seed=next(seedg))
+    optims += get_optimizers("progressive", seed=next(seedg))  # type: ignore
     budgets = [3200, 6400, 12800]
     for budget in budgets:
         for num_workers in [1, 10, 100]:
@@ -1122,7 +1122,7 @@ def mldakmeans(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
 
     optims = ["OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne", "CMA", "TBPSA", "NaiveTBPSA", "SPSA"]
-    optims += get_optimizers("progressive", seed=next(seedg))
+    optims += get_optimizers("progressive", seed=next(seedg))  # type: ignore
     if default_optims is not None:
         optims = default_optims
     for budget in [1000, 10000]:
