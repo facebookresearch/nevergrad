@@ -178,8 +178,8 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         optims = default_optims
     for optim in optims:
         for function in functions:
-            for budget in [50, 500, 5000, 50000]:
-                for nw in [1, 100] + ([] if budget < 100 else [budget]):
+            for budget in [50, 1500, 50000]:
+                for nw in [1, budget] + ([] if budget <= 300 else [300]):
                     xp = Experiment(function, optim, num_workers=nw,
                                     budget=budget, seed=next(seedg))
                     if not xp.is_incoherent:
@@ -192,9 +192,10 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                 dfunc = ExperimentFunction(corefuncs.DiscreteFunction(name, arity), instrum.set_name("transition"))
                 dfunc.add_descriptors(arity=arity)
                 for optim in optims:
-                    for nw in [1, 10] + ([] if budget < 100 else [budget]):
-                        for budget in [500, 5000]:
+                    for budget in [500, 5000]:
+                        for nw in [1, 100]:
                             yield Experiment(dfunc, optim, num_workers=nw, budget=budget, seed=next(seedg))
+                            
     # The multiobjective case.
     # TODO the upper bounds are really not well set for this experiment with cigar
     mofuncs: tp.List[MultiExperiment] = []
@@ -212,7 +213,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                                              upper_bounds=np.array((100., 100., 100.)))]
     for mofunc in mofuncs:
         for optim in optims:
-            for budget in [2000, 4000, 8000]:
+            for budget in [2000, 8000]:
                 for nw in [1, 100]:
                     yield Experiment(mofunc, optim, budget=budget, num_workers=nw, seed=next(seedg))
 
