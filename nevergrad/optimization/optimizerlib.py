@@ -31,6 +31,11 @@ from .es import *  # type: ignore  # noqa: F403
 from .oneshot import *  # noqa: F403
 from .recastlib import *  # noqa: F403
 
+try:
+    from .externalbo import HyperOpt # pylint: disable=unused-import
+except ModuleNotFoundError:
+    pass
+
 # run with LOGLEVEL=DEBUG for more debug information
 logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
 logger = logging.getLogger(__name__)
