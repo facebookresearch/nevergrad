@@ -1331,13 +1331,21 @@ def bragg_structure(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 @registry.register
 def adversarial_attack(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Pretrained ResNes50 under black-box attacked.
+    Square attacks: 
+    100 queries ==> 0.1743119266055046
+    200 queries ==> 0.09043250327653997
+    300 queries ==> 0.05111402359108781
+    400 queries ==> 0.04325032765399738
+    1700 queries ==> 0.001310615989515072
+    """
     seedg = create_seed_generator(seed)
     optims = ["CMA", "Shiwa", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE", "NSGAIIES"]
     folder = os.environ.get("NEVERGRAD_ADVERSARIAL_EXPERIMENT_FOLDER", None)
     if folder is None:
         warnings.warn("Using random images, set variable NEVERGRAD_ADVERSARIAL_EXPERIMENT_FOLDER to specify a folder")
     for func in ImageAdversarial.make_folder_functions(folder=folder):
-        for budget in [10]:
+        for budget in [100, 200, 300, 400, 1700]:  # 200 queries.
             for num_workers in [1]:
                 for algo in optims:
                     xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
