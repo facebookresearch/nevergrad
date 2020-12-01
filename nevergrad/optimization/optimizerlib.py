@@ -2102,6 +2102,8 @@ class NGOpt8(NGOpt4):
         # Extracting info as far as possible.
         assert self.budget is not None
         optimClass: base.OptCls
+        if not self.parametrization.descriptors.monoobjective and (self.noise_from_instrumentation or not self.has_noise):
+            optimClass = DE
         if self.has_noise and (self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable):
             if self.budget > 10000:
                 optimClass = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
