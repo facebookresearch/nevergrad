@@ -1875,7 +1875,7 @@ class NGOptBase(base.Optimizer):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         descr = self.parametrization.descriptors
         self.has_noise = not (descr.deterministic and descr.deterministic_function)
-        self.small_noise = self.has_noise and descr.deterministic_function  # The noise coming from discrete variables goes to 0.
+        self.noise_from_instrumentation = self.has_noise and descr.deterministic_function  # The noise coming from discrete variables goes to 0.
         self.fully_continuous = descr.continuous
         all_params = paramhelpers.flatten_parameter(self.parametrization)
         choicetags = [p.BaseChoice.ChoiceTag.as_tag(x) for x in all_params.values()]
@@ -2043,7 +2043,7 @@ class NGOpt4(NGOptBase):
             else:
                 if self.has_noise and self.fully_continuous:
                     if budget > 100:
-                        optimClass = OnePlusOne if self.small_noise else SQP
+                        optimClass = OnePlusOne if self.noise_from_instrumentation else SQP
                     else:
                         optimClass = OnePlusOne
                 else:
