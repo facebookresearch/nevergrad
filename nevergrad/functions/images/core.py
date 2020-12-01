@@ -10,7 +10,7 @@ import PIL.Image
 import torch.nn as nn
 import torch
 import torchvision
-from nevergrad.functions.images.image_losses import _ImageLossUsingRef, sumAbsoluteDifferencesLoss, Koncept512Loss
+from nevergrad.functions.images.imageLosses import sumAbsoluteDifferencesLoss, Koncept512Loss
 from torchvision.models import resnet50
 import torchvision.transforms as tr
 
