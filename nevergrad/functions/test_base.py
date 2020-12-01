@@ -71,7 +71,6 @@ def test_callable_parametrization() -> None:
     np.testing.assert_equal(ifunc.descriptors["name"], "_Callable")
     # test automatic filling
     assert len(ifunc._auto_init) == 2
-    assert not ifunc._auto_descriptors
 
 
 def test_packed_function() -> None:

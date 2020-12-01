@@ -101,7 +101,6 @@ class Function(ExperimentFunction):
 
     def __init__(self, dimension: int):
         super().__init__(self.oracle_call, p.Array(shape=(dimension,)))
-        self.register_initialization(dimension=dimension)
 
     def oracle_call(self, x: np.ndarray) -> float:
         return float(x[0])
