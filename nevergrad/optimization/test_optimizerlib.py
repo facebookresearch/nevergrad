@@ -461,7 +461,7 @@ def test_shiwa_dim1() -> None:
 @pytest.mark.parametrize(  # type: ignore
     "name,param,budget,num_workers,expected",
     [("Shiwa", 1, 10, 1, "Cobyla"),
-     ("Shiwa", 1, 10, 2, "CMA"),
+     ("Shiwa", 1, 10, 2, "OnePlusOne"),
      ("Shiwa", ng.p.Log(lower=1, upper=1000).set_integer_casting(), 10, 2, "DoubleFastGADiscreteOnePlusOne"),
      ("NGOpt", 1, 10, 1, "MetaModel"),
      ("NGOpt", 1, 10, 2, "MetaModel"),
@@ -469,7 +469,7 @@ def test_shiwa_dim1() -> None:
      ("NGOpt", ng.p.TransitionChoice(range(30), repetitions=10), 10, 2, "CMandAS2"),
      ("NGOpt", ng.p.TransitionChoice(range(3), repetitions=10), 10, 2, "AdaptiveDiscreteOnePlusOne"),
      ("NGO", 1, 10, 1, "Cobyla"),
-     ("NGO", 1, 10, 2, "CMA"),
+     ("NGO", 1, 10, 2, "OnePlusOne"),
      ]  # pylint: disable=too-many-arguments
 )
 def test_shiwa_selection(name: str, param: tp.Any, budget: int, num_workers: int, expected: str, caplog: tp.Any) -> None:
@@ -496,7 +496,7 @@ def test_bo_ordering() -> None:
 
 
 @pytest.mark.parametrize(  # type: ignore
-    "name,expected", [("NGOpt2", ["TBPSA", "RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne"])]
+    "name,expected", [("NGOpt2", ["TBPSA", "CMandAS2"])]
 )
 def test_ngo_split_optimizer(name: str, expected: tp.List[str]) -> None:
     param = ng.p.Choice(["const", ng.p.Array(init=[1, 2, 3])])
