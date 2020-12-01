@@ -54,7 +54,7 @@ def emna_variants() -> tp.Sequence[Optim]:
 
 @registry.register
 def progressive() -> tp.Sequence[Optim]:
-    return ["ProgONOPOInf", "ProgONOPOAuto", "ProONOPO13", "ProgODOPOInf", "ProgODOPOAuto", "ProODOPO13"]
+    return ["ProgONOPOInf", "ProgONOPOAuto", "ProgONOPO13", "ProgODOPOInf", "ProgODOPOAuto", "ProgODOPO13"]
 
 
 @registry.register

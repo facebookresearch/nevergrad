@@ -1104,9 +1104,8 @@ def mldakmeans(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     ]
     seedg = create_seed_generator(seed)
 
-    optims = ["ProgONOPO3", "ProgONOPO5", "ProgONOPO9", "ProgONOPO13", "ProgONOPOAuto",
-              "ProgODOPO3", "ProgODOPO5", "ProgODOPO9", "ProgODOPO13", "ProgODOPOAuto",
-              "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne", "CMA", "TBPSA", "NaiveTBPSA", "SPSA"]
+    optims = ["OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne", "CMA", "TBPSA", "NaiveTBPSA", "SPSA"]
+    optims += get_optimizers("progressive", seed=next(seedg))
     if default_optims is not None:
         optims = default_optims
     for budget in [1000, 10000]:
