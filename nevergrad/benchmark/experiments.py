@@ -575,7 +575,7 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
     elif (small and not noise):
         budgets = [10, 20, 40]
     if hd:
-        optims += ["SplitCMA9", "SplitCMA5", "SplitCMA13", "SplitCMAAuto"]
+        optims += get_optimizers("splitters", seed=next(seedg))
     for optim in optims:
         for function in functions:
             for budget in budgets:
@@ -1042,9 +1042,10 @@ def sequential_fastgames(seed: tp.Optional[int] = None) -> tp.Iterator[Experimen
     Games: War, Batawaf, Flip, GuessWho,  BigGuessWho."""
     funcs = [game.Game(name) for name in ["war", "batawaf", "flip", "guesswho", "bigguesswho"]]
     seedg = create_seed_generator(seed)
-    optims = ["CMA", "SplitCMA5", "DiagonalCMA", "NGOpt8",
+    optims = ["CMA", "DiagonalCMA", "NGOpt8",
               "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
     optims += get_optimizers("progressive", seed=next(seedg))  # type: ignore
+    optims += get_optimizers("splitters")  # type: ignore
     if default_optims is not None:
         optims = default_optims
     for budget in [12800, 25600, 51200, 102400]:
@@ -1066,12 +1067,13 @@ def powersystems(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     optims = ["NaiveTBPSA", "ScrHammersleySearch", "PSO", "OnePlusOne",
               "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
-              "RandomScaleRandomSearch", "MiniDE", "SplitCMA5", "SplitCMA9",
-              "NGO", "Shiwa", "DiagonalCMA", "SplitCMA3", "SplitCMA13", "SplitCMAAuto"]
+              "RandomScaleRandomSearch", "MiniDE",
+              "NGO", "Shiwa", "DiagonalCMA"] 
     if default_optims is not None:
         optims = default_optims
     optims += ["OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne", "OnePlusOne"]
     optims += get_optimizers("progressive", seed=next(seedg))  # type: ignore
+    optims += get_optimizers("splitters")  # type: ignore
     budgets = [3200, 6400, 12800]
     for budget in budgets:
         for num_workers in [1, 10, 100]:
@@ -1259,8 +1261,9 @@ def photonics(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     es = [ng.families.EvolutionStrategy(recombination_ratio=recomb, only_offsprings=only, popsize=pop,
                                         offsprings=pop * 5)
           for only in [True, False] for recomb in [0.1, .5] for pop in popsizes]
-    optims = ["TwoPointsDE", "DE", "PSO", "NGOpt8", "SplitCMAAuto", "SplitCMA5", "SplitCMA13"] + es  # type: ignore
+    optims = ["TwoPointsDE", "DE", "PSO", "NGOpt8"] + es  # type: ignore
 
+    optims += get_optimizers("splitters")  # type: ignore
     if default_optims is not None:
         optims = default_optims
     for method in ["clipping", "tanh"]:  # , "arctan"]:
@@ -1281,7 +1284,8 @@ def bragg_structure(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         ng.families.EvolutionStrategy(recombination_ratio=0.1, popsize=40).set_name("Pairwise-ES"),
         ng.families.DifferentialEvolution(crossover="parametrization").set_name("Param-DE")
     ]
-    optims = ["SplitCMA9", "SplitCMAAuto", "TwoPointsDE", "DE", "CMA", "NaiveTBPSA", "DiagonalCMA", "NGOpt8", "OnePlusOne"]
+    optims = ["TwoPointsDE", "DE", "CMA", "NaiveTBPSA", "DiagonalCMA", "NGOpt8", "OnePlusOne"]
+    optims += get_optimizers("splitters")  # type: ignore
     func = Photonics("bragg", 80, bounding_method="clipping")
     func.parametrization.set_name("layer")
     #

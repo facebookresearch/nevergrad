@@ -54,6 +54,18 @@ def emna_variants() -> tp.Sequence[Optim]:
 
 
 @registry.register
+def splitters() -> tp.Sequence[Optim]:
+    optims:tp.List[Optim] = []
+    for num_optims in [None, 3, 5, 9, 13]:
+        name = "SplitCMA" + ("Auto" if num_optims is None else str(num_optims))
+        opt = ConfSplitOptimizer(
+                num_optims=num_optims
+            ).set_name(name)
+        optims.append(opt)
+    return optims
+
+
+@registry.register
 def progressive() -> tp.Sequence[Optim]:
     optims:tp.List[Optim] = []
     for mutation in ["discrete", "gaussian"]:
