@@ -1147,13 +1147,13 @@ def images_using_gan(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     optims = ["CMA", "Shiwa", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "NSGAIIES", "ParametrizationDE"]
     if default_optims is not None:
         optims = default_optims
+    func = ImageFromPGAN()
+    num_workers = 1
     for budget in [100 * 5 ** k for k in range(3)]:
-        for num_workers in [1]:
-            for algo in optims:
-                for func in [ImageFromPGAN()]:
-                    xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
-                    if not xp.is_incoherent:
-                        yield xp
+        for algo in optims:
+            xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
+            if not xp.is_incoherent:
+                yield xp
 
 @registry.register
 def double_o_seven(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
