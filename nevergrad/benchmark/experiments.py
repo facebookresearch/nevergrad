@@ -72,7 +72,7 @@ def keras_tuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: b
 def mltuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool = False) -> tp.Iterator[Experiment]:
     """Machine learning hyperparameter tuning experiment. Based on scikit models."""
     seedg = create_seed_generator(seed)
-    optims = get_optimizers("basics")
+    optims = get_optimizers("basics", seed=next(seedg))
              
     if default_optims is not None:
         optims = default_optims
@@ -165,7 +165,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         for num_blocks in [1]
         for d in [2, 40, 100, 3000]
     ]
-    optims = get_optimizers("basics") + ["NoisyDiscreteOnePlusOne"]
+    optims = get_optimizers("basics", seed=next(seedg)) + ["NoisyDiscreteOnePlusOne"]
     if default_optims is not None:
         optims = default_optims
     for optim in optims:
@@ -208,7 +208,7 @@ def parallel_small_budget(seed: tp.Optional[int] = None) -> tp.Iterator[Experime
     """Parallel optimization with small budgets
     """
     seedg = create_seed_generator(seed)
-    optims = get_optimizers("basics")
+    optims = get_optimizers("basics", seed=next(seedg))
     names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "multipeak"]
     names += ["sphere", "cigar", "ellipsoid", "altellipsoid"]
     names += ["deceptiveillcond", "deceptivemultimodal", "deceptivepath"]
@@ -321,7 +321,7 @@ def parallel(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     Testing both no useless variables and 5/6 of useless variables."""
     seedg = create_seed_generator(seed)
     names = ["sphere", "rastrigin", "cigar"]
-    optims = get_optimizers("basics")
+    optims = get_optimizers("basics", seed=next(seedg))
     if default_optims is not None:
         optims = default_optims
     functions = [
