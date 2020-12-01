@@ -77,7 +77,7 @@ def keras_tuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: b
 def mltuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool = False) -> tp.Iterator[Experiment]:
     """Machine learning hyperparameter tuning experiment. Based on scikit models."""
     seedg = create_seed_generator(seed)
-    optims = get_optimizers("basics", seed=next(seedg))
+    optims: tp.List[str]  = get_optimizers("basics", seed=next(seedg))
              
     if default_optims is not None:
         optims = default_optims
@@ -170,7 +170,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         for num_blocks in [1]
         for d in [2, 40, 100, 3000]
     ]
-    optims = get_optimizers("basics", seed=next(seedg)) + ["NoisyDiscreteOnePlusOne"]
+    optims: tp.List[str] = get_optimizers("basics", seed=next(seedg)) + ["NoisyDiscreteOnePlusOne"]
     if default_optims is not None:
         optims = default_optims
     for optim in optims:
@@ -213,7 +213,7 @@ def parallel_small_budget(seed: tp.Optional[int] = None) -> tp.Iterator[Experime
     """Parallel optimization with small budgets
     """
     seedg = create_seed_generator(seed)
-    optims = get_optimizers("basics", seed=next(seedg))
+    optims: tp.List[str] = get_optimizers("basics", seed=next(seedg))
     names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "multipeak"]
     names += ["sphere", "cigar", "ellipsoid", "altellipsoid"]
     names += ["deceptiveillcond", "deceptivemultimodal", "deceptivepath"]
@@ -326,7 +326,7 @@ def parallel(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     Testing both no useless variables and 5/6 of useless variables."""
     seedg = create_seed_generator(seed)
     names = ["sphere", "rastrigin", "cigar"]
-    optims = get_optimizers("basics", seed=next(seedg))
+    optims: tp.List[str] = get_optimizers("basics", seed=next(seedg))
     if default_optims is not None:
         optims = default_optims
     functions = [
@@ -687,7 +687,7 @@ def constrained_illconditioned_parallel(seed: tp.Optional[int] = None) -> tp.Ite
         func.parametrization.register_cheap_constraint(_positive_sum)
     for function in functions:
         for budget in [400, 4000, 40000]:
-            optims = get_optimizers("large", seed=next(seedg))
+            optims: tp.List[str] = get_optimizers("large", seed=next(seedg))
             for optim in optims:
                 yield Experiment(function, optim, budget=budget, num_workers=1, seed=next(seedg))
 
@@ -703,7 +703,7 @@ def ranknoisy(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     With or without noise dissymmetry.
     """
     seedg = create_seed_generator(seed)
-    optims = get_optimizers("progressive", seed=next(seedg)) + [
+    optims: tp.List[str] = get_optimizers("progressive", seed=next(seedg)) + [
             "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
     if default_optims is not None:
         optims = default_optims
@@ -736,7 +736,7 @@ def noisy(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     Budget 25000, 50000, 100000.
     """
     seedg = create_seed_generator(seed)
-    optims = get_optimizers("progressive", seed=next(seedg)) + [
+    optims: tp.List[str] = get_optimizers("progressive", seed=next(seedg)) + [
             "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
     optims += ["NGO", "Shiwa", "DiagonalCMA"] + sorted(
         x for x, y in ng.optimizers.registry.items() if
@@ -856,7 +856,7 @@ def spsa_benchmark(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     Sphere, Sphere4, Cigar.
     """
     seedg = create_seed_generator(seed)
-    optims = get_optimizers("spsa")
+    optims: tp.List[str] = get_optimizers("spsa")
     for budget in [500, 1000, 2000, 4000, 8000, 16000, 32000, 64000, 128000]:
         for optim in optims:
             for rotation in [True, False]:
@@ -951,7 +951,7 @@ def mixsimulator(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     Sequential or 30 workers."""
     funcs = [OptimizeMix()]
     seedg = create_seed_generator(seed)
-    optims = get_optimizers("basics", seed=next(seedg))
+    optims: tp.List[str] = get_optimizers("basics", seed=next(seedg))
     if default_optims is not None:
         optims = default_optims
     seq = np.arange(0, 1601, 20)
