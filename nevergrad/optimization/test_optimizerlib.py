@@ -506,7 +506,7 @@ def test_ngo_split_optimizer(name: str, expected: tp.List[str]) -> None:
     assert names == expected
 
 
-@pytest.mark.parametrize("budget", [100, 1000])  # type: ignore
+@pytest.mark.parametrize("budget", [100, 300, 1000, 3000])  # type: ignore
 def test_ngopt_on_simple_realistic_scenario(budget: int) -> None:
     def fake_training(learning_rate: float, batch_size: int, architecture: str) -> float:
       # optimal for learning_rate=0.2, batch_size=4, architecture="conv"
@@ -523,10 +523,30 @@ def test_ngopt_on_simple_realistic_scenario(budget: int) -> None:
       architecture=ng.p.Choice(["conv", "fc"])
     )
  
-    for u in range(5):
-        optimizer = ng.optimizers.NGOpt(parametrization=parametrization, budget=budget)
-        recommendation = optimizer.minimize(fake_training)
-        assert fake_training(**recommendation.kwargs) < 5e-2
+    optimizer = ng.optimizers.NGOpt(parametrization=parametrization, budget=budget)
+    recommendation = optimizer.minimize(fake_training)
+    assert fake_training(**recommendation.kwargs) < 5e-2
+
+
+
+@pytest.mark.parametrize("budget", [100, 300, 1000, 3000])  # type: ignore
+def test_ngopt_on_continuous_realistic_scenario(budget: int) -> None:
+    def fake_training(learning_rate: float, architecture: str) -> float:
+      # optimal for learning_rate=0.2, batch_size=4, architecture="conv"
+      return (learning_rate - 0.2)**2 + (0 if architecture == "conv" else 10)
+    
+    # Instrumentation class is used for functions with multiple inputs
+    # (positional and/or keywords)
+    parametrization = ng.p.Instrumentation(
+      # a log-distributed scalar between 0.001 and 1.0
+      learning_rate=ng.p.Log(lower=0.001, upper=1.0),
+      # either "conv" or "fc"
+      architecture=ng.p.Choice(["conv", "fc"])
+    )
+ 
+    optimizer = ng.optimizers.NGOpt(parametrization=parametrization, budget=budget)
+    recommendation = optimizer.minimize(fake_training)
+    assert fake_training(**recommendation.kwargs) < 1e-3
 
 
 
