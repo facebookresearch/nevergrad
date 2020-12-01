@@ -50,6 +50,33 @@ class MissingBenchmarkPackageError(ModuleNotFoundError):
 default_optims: tp.Optional[tp.List[str]] = None  # ["NGO10", "CMA", "Shiwa"]
 
 
+def fake_learning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+
+
+
+    def fake_training(learning_rate: float, batch_size: int, architecture: str) -> float:
+      # optimal for learning_rate=0.2, batch_size=4, architecture="conv"
+      return (learning_rate - 0.2)**2 + (batch_size - 4)**2 + (0 if architecture == "conv" else 10)
+    
+    # Instrumentation class is used for functions with multiple inputs
+    # (positional and/or keywords)
+    parametrization_fake_training = ng.p.Instrumentation(
+      # a log-distributed scalar between 0.001 and 1.0
+      learning_rate=ng.p.Log(lower=0.001, upper=1.0),
+      # an integer from 1 to 12
+      batch_size=ng.p.Scalar(lower=1, upper=12).set_integer_casting(),
+      # either "conv" or "fc"
+      architecture=ng.p.Choice(["conv", "fc"])
+    )
+    for function, parametrization in [fake_training,   
+            TODO parametrization
+        for optim in ["OnePlusOne", "NGOpt8", "CMA", "DE"]:
+            for budget in [10, 100, 1000, 10000]:
+                for nw in [1, int(np.sqrt(budget)), budget]:
+                    yield Experiment(fake_learning, optim, num_workers=nw,
+                        budget=budget, seed=next(seedg))
+
+
 def keras_tuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool = False) -> tp.Iterator[Experiment]:
     """Machine learning hyperparameter tuning experiment. Based on scikit models."""
     seedg = create_seed_generator(seed)
