@@ -44,7 +44,7 @@ class ExperimentFunction:
         callargs = dict(sig.bind(inst, *args, **kwargs).arguments)
         callargs.pop("self")
         inst._auto_init = callargs
-        inst._auto_descriptors = {x: y for x, y in callargs.items() if isinstance(y, (str, tuple, int, float))}
+        inst._auto_descriptors = {x: y for x, y in callargs.items() if isinstance(y, (str, tuple, int, float, bool))}
         return inst  # type: ignore
 
     def __init__(self: EF, function: tp.Callable[..., tp.Loss], parametrization: p.Parameter) -> None:
