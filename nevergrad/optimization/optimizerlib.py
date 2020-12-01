@@ -901,7 +901,7 @@ class SplitOptimizer(base.Optimizer):
             num_optims: tp.Optional[int] = None,
             num_vars: tp.Optional[tp.List[int]] = None,
             multivariate_optimizer: base.OptCls = CMA,
-            monovariate_optimizer: base.OptCls = RandomSearch,
+            monovariate_optimizer: base.OptCls = OnePlusOne,
             progressive: bool = False,
             non_deterministic_descriptor: bool = True,
     ) -> None:

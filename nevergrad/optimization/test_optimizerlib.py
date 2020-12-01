@@ -496,10 +496,20 @@ def test_bo_ordering() -> None:
 
 
 @pytest.mark.parametrize(  # type: ignore
-    "name,expected", [("NGOpt2", ["TBPSA", "CMandAS2"])]
+    "name,expected", [("NGOpt8", ["SQP", "SQP"])]
 )
 def test_ngo_split_optimizer(name: str, expected: tp.List[str]) -> None:
     param = ng.p.Choice(["const", ng.p.Array(init=[1, 2, 3])])
+    Opt = optlib.registry[name]
+    opt = optlib.ConfSplitOptimizer(multivariate_optimizer=Opt)(param, budget=1000)
+    names = [o.optim.name for o in opt.optims]  # type: ignore
+    assert names == expected
+
+
+@pytest.mark.parametrize(  # type: ignore
+    "name,expected", [("NGOpt8", ['SQP', 'monovariate', 'monovariate'])]
+)
+def test_instrumented_ngo_split_optimizer(name: str, expected: tp.List[str]) -> None:
     param = ng.p.Instrumentation(
       # a log-distributed scalar between 0.001 and 1.0
       learning_rate=ng.p.Log(lower=0.001, upper=1.0),
@@ -510,8 +520,9 @@ def test_ngo_split_optimizer(name: str, expected: tp.List[str]) -> None:
     )
     Opt = optlib.registry[name]
     opt = optlib.ConfSplitOptimizer(multivariate_optimizer=Opt)(param, budget=1000)
-    names = [o.optim.name for o in opt.optims]  # type: ignore
+    names = [o.optim.name if o.dimension != 1 else "monovariate" for o in opt.optims]  # type: ignore
     assert names == expected
+
 
 
 @pytest.mark.parametrize("budget", [100, 300, 1000, 3000])  # type: ignore
