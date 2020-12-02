@@ -1083,30 +1083,17 @@ def learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.Arra
     model.fit(X2, y)
 
     best_val = float("Inf")
-    for algo, budget in [
-        (OnePlusOne, 7*dimension),
-        #(OnePlusOne, 7*dimension+500),
-        #(DE, 13*dimension+500),
-        (Powell, 30*dimension+30),
-        ]:
-        # Find the minimum of the quadratic model.
-        optimizer = algo(parametrization=dimension, budget=budget)
-        try:
-            target = lambda x: float(model.predict(polynomial_features.fit_transform(np.asarray([x]))))
-            optimizer.minimize(target)
-            minimum = optimizer.provide_recommendation().value
-            value = target(minimum)
-            if value < best_val:
-                best_minimum = minimum
-                best_val = value
-        except ValueError:
-            raise InfiniteMetaModelOptimum("Infinite meta-model optimum in learn_on_k_best.")
-        if best_val < min(y) - (max(y) - min(y)):
-            break
+    optimizer = Powell(parametrization=dimension, budget=45*dimension+30)
+    try:
+        target = lambda x: float(model.predict(polynomial_features.fit_transform(np.asarray([x]))))
+        optimizer.minimize(target)
+        minimum = optimizer.provide_recommendation().value
+    except ValueError:
+        raise InfiniteMetaModelOptimum("Infinite meta-model optimum in learn_on_k_best.")
 
-    if np.sum(best_minimum**2) > 1.:
+    if np.sum(minimum**2) > 1.:
         raise InfiniteMetaModelOptimum("huge meta-model optimum in learn_on_k_best.")
-    return middle + normalization * best_minimum
+    return middle + normalization * minimum
 
 
 @registry.register
