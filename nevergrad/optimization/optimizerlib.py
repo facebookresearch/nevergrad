@@ -871,7 +871,7 @@ class _Rescaled(base.Optimizer):
             scale: tp.Optional[float] = None,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        self.base_optimizer = base_optimizer(parametrization, budget=budget, num_workers=num_workers)
+        self._optimizer = base_optimizer(parametrization, budget=budget, num_workers=num_workers)
         self._subcandidates: tp.Dict[str, p.Parameter] = {}
         if scale is None:
             assert budget is not None, "Either scale or budget must be known in _Rescaled."
@@ -884,18 +884,18 @@ class _Rescaled(base.Optimizer):
         return self.parametrization.spawn_child().set_standardized_data(self.scale * data)
 
     def _internal_ask_candidate(self) -> p.Parameter:
-        candidate = self.base_optimizer.ask()
+        candidate = self._optimizer.ask()
         sent_candidate = self.rescale_candidate(candidate)
         # We store the version corresponding to the underlying optimizer.
         self._subcandidates[sent_candidate.uid] = candidate  
         return sent_candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        self.base_optimizer.tell(self._subcandidates[candidate.uid], loss)
+        self._optimizer.tell(self._subcandidates[candidate.uid], loss)
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         candidate = self.rescale_candidate(candidate)
-        self.base_optimizer.tell(candidate, loss)
+        self._optimizer.tell(candidate, loss)
 
 
 class SplitOptimizer(base.Optimizer):
