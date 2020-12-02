@@ -871,7 +871,7 @@ class _Rescaled(base.Optimizer):
             scale: tp.Optional[float] = None,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        self.base_optimizer = base_optimizer(parametrization, budget=budget, num_workers=num_workers)
+        self.base_optimizer = base_optimizer(self.parametrization, budget=budget, num_workers=num_workers)
         self._subcandidates: tp.Dict[str, p.Parameter] = {}
         if scale is None:
             assert budget is not None, "Either scale or budget must be known in _Rescaled."
