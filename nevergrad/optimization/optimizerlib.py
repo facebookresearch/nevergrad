@@ -1082,7 +1082,6 @@ def learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.Arra
     model = LinearRegression()
     model.fit(X2, y)
 
-    best_val = float("Inf")
     optimizer = Powell(parametrization=dimension, budget=45*dimension+30)
     try:
         target = lambda x: float(model.predict(polynomial_features.fit_transform(np.asarray([x]))))
