@@ -1935,6 +1935,10 @@ class NGOptBase(base.Optimizer):
         return self.optim.ask()
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        if self._first_tell_done:  # This includes the case in which the first tell is in progress.
+            if not self.parametrization.descriptors.monoobjective and self.num_objectives > 0:
+                warnings.warn("NGOptBase run with monoobjective flag on multiobjective problem:"
+                    "please use Parameter.descriptions.monoobjective = False", base.InefficientSettingsWarning)
         self.optim.tell(candidate, loss)
 
     def recommend(self) -> p.Parameter:
