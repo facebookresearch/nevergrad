@@ -405,6 +405,59 @@ def test_parallel_es() -> None:
 
 
 @pytest.mark.parametrize(
+    "dimension, num_workers, scale, budget, ellipsoid",
+    [
+    (2, 3, 1., 120, False),
+    #(2, 1, 8., 120, True),
+    (2, 3, 8., 70, False),
+    #(1, 1, 1., 20, True),
+    (1, 3, 5., 20, False),
+    #(2, 3, 1., 70, True),
+    (2, 1, 8., 40, False),
+    #(2, 3, 8., 70, True),
+    (5, 1, 1., 150, False),
+    #(5, 3, 1., 225, True),
+    (5, 1, 8., 150, False),
+    #(5, 3, 8., 500, True),
+    (8, 27, 8., 200, True),
+    (9, 27, 8., 700, True),
+    #(10, 27, 8., 400, False),
+    ]
+    )
+def test_metamodel(dimension: int, num_workers: int, scale: float, budget: int, ellipsoid: bool) -> None:
+    """The test can operate on the sphere or on an elliptic funciton."""
+    def _square(x: np.ndarray) -> float:
+        return sum((-scale + x) ** 2)
+    def _ellips(x: np.ndarray) -> float:
+        return sum(((-scale + x) * (np.arange(1, dimension+1)**2))** 2)
+    _target = _ellips if ellipsoid else _square
+
+    # In both cases we compare MetaModel and CMA for a same given budget.
+    # But we expect MetaModel to be clearly better only for a larger budget in the ellipsoid case.
+    contextual_budget = (budget if ellipsoid else 3 * budget)
+    contextual_budget *= int(max(1, np.sqrt(scale)))
+
+    # Let us run the comparison.
+    default = (registry["CMA"] if dimension > 1 else registry["OnePlusOne"])(dimension, contextual_budget, num_workers=num_workers)
+    MetaModel = registry["MetaModel"](dimension, contextual_budget, num_workers=num_workers)
+    default_recom, MetaModel_recom = default.minimize(_target), MetaModel.minimize(_target) 
+    default_data = default_recom.get_standardized_data(reference=default.parametrization)
+    MetaModel_data = MetaModel_recom.get_standardized_data(reference=MetaModel.parametrization)
+
+    # Let us assert that MetaModel is better.
+    assert _target(default_data) > _target(MetaModel_data)
+
+    # With large budget, the difference should be significant.
+    if budget > 60 * dimension:
+        assert _target(default_data) > 4 * _target(MetaModel_data)
+
+    # ... even more in the non ellipsoid case.
+    if budget > 60 * dimension and not ellipsoid:
+        assert _target(default_data) > 7 * _target(MetaModel_data)
+
+
+
+@pytest.mark.parametrize(
     "penalization,expected", [
         (False, [1.005573e+00, 3.965783e-04]),
         (True, [0.999987, -0.322118]),
