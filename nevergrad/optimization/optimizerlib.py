@@ -879,9 +879,10 @@ class _Rescaled(base.Optimizer):
         self.scale = scale
         assert self.scale != 0., "scale should be non-zero in Rescaler."
 
-    def rescale_candidate(self, candidate: p.Parameter) -> p.Parameter:
+    def rescale_candidate(self, candidate: p.Parameter, inverse: bool=False) -> p.Parameter:
         data = candidate.get_standardized_data(reference=self.parametrization)
-        return self.parametrization.spawn_child().set_standardized_data(self.scale * data)
+        scale = self.scale if not inverse else 1. / self.scale
+        return self.parametrization.spawn_child().set_standardized_data(scale * data)
 
     def _internal_ask_candidate(self) -> p.Parameter:
         candidate = self._optimizer.ask()
@@ -891,10 +892,10 @@ class _Rescaled(base.Optimizer):
         return sent_candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        self._optimizer.tell(self._subcandidates[candidate.uid], loss)
+        self._optimizer.tell(self._subcandidates.pop(candidate.uid), loss)
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        candidate = self.rescale_candidate(candidate)
+        candidate = self.rescale_candidate(candidate, inverse=True)
         self._optimizer.tell(candidate, loss)
 
 
