@@ -1084,9 +1084,8 @@ def learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.Arra
 
     optimizer = Powell(parametrization=dimension, budget=45*dimension+30)
     try:
-        target = lambda x: float(model.predict(polynomial_features.fit_transform(np.asarray([x]))))
-        optimizer.minimize(target)
-        minimum = optimizer.provide_recommendation().value
+        minimum = optimizer.minimize(
+            lambda x: float(model.predict(polynomial_features.fit_transform(x.reshape((1, -1)))))).value
     except ValueError:
         raise InfiniteMetaModelOptimum("Infinite meta-model optimum in learn_on_k_best.")
 
@@ -1100,7 +1099,7 @@ class MetaModel(base.Optimizer):
     """Adding a metamodel into CMA."""
 
     def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1,
-                 multivariate_optimizer: tp.Optional[base.ConfiguredOptimizer] = None) -> None:
+                 multivariate_optimizer: tp.Optional[base.OptCls] = None) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if multivariate_optimizer is None:
             multivariate_optimizer = CMA if self.dimension > 1 else OnePlusOne
@@ -1109,12 +1108,12 @@ class MetaModel(base.Optimizer):
 
     def _internal_ask_candidate(self) -> p.Parameter:
         # We request a bit more points than what is really necessary for our dimensionality (+dimension).
-        k = int((self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1)
+        sample_size = int((self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1)
         if (self._num_ask % max(13, self.num_workers, self.dimension) == 0 and
-                len(self.archive) >= k):
+                len(self.archive) >= sample_size):
             try:
                 data = learn_on_k_best(self.archive,
-                                       k)
+                                       sample_size)
                 candidate = self.parametrization.spawn_child().set_standardized_data(data)
             except InfiniteMetaModelOptimum:  # The optimum is at infinity. Shit happens.
                 candidate = self._optim.ask()
@@ -1253,9 +1252,8 @@ class CMandAS2(ASCMADEthird):
             self.optims = [OnePlusOne(self.parametrization, budget=None, num_workers=num_workers)]
         if budget > 50 * self.dimension or num_workers < 30:
             self.optims = [
-                MetaModel(self.parametrization, budget=None, num_workers=num_workers),  # share parametrization and its rng
-                MetaModel(self.parametrization, budget=None, num_workers=num_workers),
-                MetaModel(self.parametrization, budget=None, num_workers=num_workers),
+                MetaModel(self.parametrization, budget=None, num_workers=num_workers)
+                for _ in range(3)
             ]
             self.budget_before_choosing = budget // 10
 

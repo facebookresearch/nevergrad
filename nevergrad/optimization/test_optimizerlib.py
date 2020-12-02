@@ -438,22 +438,22 @@ def test_metamodel(dimension: int, num_workers: int, scale: float, budget: int, 
     contextual_budget *= int(max(1, np.sqrt(scale)))
 
     # Let us run the comparison.
-    default = (registry["CMA"] if dimension > 1 else registry["OnePlusOne"])(dimension, contextual_budget, num_workers=num_workers)
-    MetaModel = registry["MetaModel"](dimension, contextual_budget, num_workers=num_workers)
-    default_recom, MetaModel_recom = default.minimize(_target), MetaModel.minimize(_target) 
-    default_data = default_recom.get_standardized_data(reference=default.parametrization)
-    MetaModel_data = MetaModel_recom.get_standardized_data(reference=MetaModel.parametrization)
+    default = registry["CMA" if dimension > 1 else "OnePlusOne"](dimension, contextual_budget, num_workers=num_workers)
+    metamodel = registry["MetaModel"](dimension, contextual_budget, num_workers=num_workers)
+    default_recom, metamodel_recom = default.minimize(_target), metamodel.minimize(_target) 
+    #default_data = default_recom.get_standardized_data(reference=default.parametrization)
+    #metamodel_data = metamodel_recom.get_standardized_data(reference=metamodel.parametrization)
 
     # Let us assert that MetaModel is better.
-    assert _target(default_data) > _target(MetaModel_data)
+    assert _target(**default_data.kwargs) > _target(**metamodel_data.kwargs)
 
     # With large budget, the difference should be significant.
     if budget > 60 * dimension:
-        assert _target(default_data) > 4 * _target(MetaModel_data)
+        assert _target(**default_data.kwargs) > 4 * _target(**metamodel_data.kwargs)
 
     # ... even more in the non ellipsoid case.
     if budget > 60 * dimension and not ellipsoid:
-        assert _target(default_data) > 7 * _target(MetaModel_data)
+        assert _target(**default_data.kwargs) > 7 * _target(**metamodel_data.kwargs)
 
 
 
