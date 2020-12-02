@@ -405,30 +405,37 @@ def test_parallel_es() -> None:
 
 
 @pytest.mark.parametrize(
-    "dimension, num_workers, scale",
+    "dimension, num_workers, scale, budget",
     [
-    (1, 1, 1.),
-    (5, 1, 1.),
-    (2, 3, 1.),
-    (5, 3, 1.),
-    (2, 1, 8.),
-    (5, 1, 8.),
-    (2, 3, 8.),
-    (1, 3, 5.),
-    (5, 3, 8.),
-    (10, 27, 8.),
+    (1, 1, 1., 70),
+    (1, 3, 5., 70),
+    (2, 3, 1., 120),
+    (2, 1, 8., 120),
+    (2, 3, 8., 120),
+    (1, 1, 1., 35),
+    (1, 3, 5., 35),
+    (2, 3, 1., 60),
+    (2, 1, 8., 60),
+    (2, 3, 8., 60),
+    (5, 1, 1., 225),
+    (5, 3, 1., 225),
+    (5, 1, 8., 225),
+    (5, 3, 8., 225),
+    (10, 27, 8., 200),
     ]
     )
-def test_metamodel(dimension: int, num_workers: int, scale: float) -> None:
+def test_metamodel(dimension: int, num_workers: int, scale: float, budget: int) -> None:
     def _square(x: np.ndarray) -> float:
         return sum((-scale + x) ** 2)
-    budget = 7 * dimension**2 + 13 * dimension
+    #budget = 7 * dimension**2 + 13 * dimension + 9
     default = (registry["CMA"] if dimension > 1 else registry["OnePlusOne"])(dimension, budget, num_workers=num_workers)
     MetaModel = registry["MetaModel"](dimension, budget, num_workers=num_workers)
     default_recom, MetaModel_recom = default.minimize(_square), MetaModel.minimize(_square) 
     default_data = default_recom.get_standardized_data(reference=default.parametrization)
     MetaModel_data = MetaModel_recom.get_standardized_data(reference=MetaModel.parametrization)
     assert _square(default_data) > _square(MetaModel_data)
+    if budget > 50*dimension:
+        assert _square(default_data) > 7 * _square(MetaModel_data)
 
 
 
