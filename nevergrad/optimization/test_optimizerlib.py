@@ -528,8 +528,19 @@ def test_instrumented_ngo_split_optimizer(name: str, expected: tp.List[str]) -> 
 
 
 
-@pytest.mark.parametrize("budget", [100, 300, 1000, 3000])  # type: ignore
-def test_ngopt_on_simple_realistic_scenario(budget: int) -> None:
+@pytest.mark.parametrize(  # type: ignore
+    "budget,with_int", [
+    (100, True),
+    (300, True),
+    (1000, True),
+    (3000, True),
+    (100, False),
+    (300, False),
+    (1000, False),
+    (3000, False),
+    ]
+)
+def test_ngopt_on_simple_realistic_scenario(budget: int, with_int: bool) -> None:
     def fake_training(learning_rate: float, batch_size: int, architecture: str) -> float:
       # optimal for learning_rate=0.2, batch_size=4, architecture="conv"
       return (learning_rate - 0.2)**2 + (batch_size - 4)**2 + (0 if architecture == "conv" else 10)
@@ -540,35 +551,17 @@ def test_ngopt_on_simple_realistic_scenario(budget: int) -> None:
       # a log-distributed scalar between 0.001 and 1.0
       learning_rate=ng.p.Log(lower=0.001, upper=1.0),
       # an integer from 1 to 12
-      batch_size=ng.p.Scalar(lower=1, upper=12).set_integer_casting(),
+      batch_size=ng.p.Scalar(lower=1, upper=12).set_integer_casting() if with_int else ng.p.Scalar(lower=1, upper=12),
       # either "conv" or "fc"
       architecture=ng.p.Choice(["conv", "fc"])
     )
  
     optimizer = ng.optimizers.NGOpt(parametrization=parametrization, budget=budget)
     recommendation = optimizer.minimize(fake_training)
-    assert fake_training(**recommendation.kwargs) < 5e-2
+    assert fake_training(**recommendation.kwargs) < 5e-2 if with_int else 5e-3
 
 
 
-@pytest.mark.parametrize("budget", [100, 300, 1000, 3000])  # type: ignore
-def test_ngopt_on_continuous_realistic_scenario(budget: int) -> None:
-    def fake_training(learning_rate: float, architecture: str) -> float:
-      # optimal for learning_rate=0.2, batch_size=4, architecture="conv"
-      return (learning_rate - 0.2)**2 + (0 if architecture == "conv" else 10)
-    
-    # Instrumentation class is used for functions with multiple inputs
-    # (positional and/or keywords)
-    parametrization = ng.p.Instrumentation(
-      # a log-distributed scalar between 0.001 and 1.0
-      learning_rate=ng.p.Log(lower=0.001, upper=1.0),
-      # either "conv" or "fc"
-      architecture=ng.p.Choice(["conv", "fc"])
-    )
- 
-    optimizer = ng.optimizers.NGOpt(parametrization=parametrization, budget=budget)
-    recommendation = optimizer.minimize(fake_training)
-    assert fake_training(**recommendation.kwargs) < 5e-3
 
 
 
