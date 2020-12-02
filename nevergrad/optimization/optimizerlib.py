@@ -872,7 +872,7 @@ class _Rescaled(base.Optimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.base_optimizer = base_optimizer(parametrization, budget=budget, num_workers=num_workers)
-        self._subcandidates: tp.Dict[str, tp.List[p.Parameter]] = {}
+        self._subcandidates: tp.Dict[str, p.Parameter] = {}
         if scale is None:
             assert budget is not None, "Either scale or budget must be known in _Rescaled."
             scale = np.sqrt(np.log(self.budget) / self.dimension)
@@ -1017,7 +1017,7 @@ class SplitOptimizer(base.Optimizer):
 
 
 class Rescaled(base.ConfiguredOptimizer):
-    """
+    """Configured optimizer for creating rescaled optimization algorithms.
     """
     # pylint: disable=unused-argument
     def __init__(
