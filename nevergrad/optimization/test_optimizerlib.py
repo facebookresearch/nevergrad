@@ -405,6 +405,34 @@ def test_parallel_es() -> None:
 
 
 @pytest.mark.parametrize(
+    "dimension, num_workers, scale",
+    [
+    (1, 1, 1.),
+    (5, 1, 1.),
+    (2, 3, 1.),
+    (5, 3, 1.),
+    (2, 1, 8.),
+    (5, 1, 8.),
+    (2, 3, 8.),
+    (1, 3, 8.),
+    (5, 3, 8.),
+    (10, 27, 8.),
+    ]
+    )
+def test_metamodel(dimension: int, num_workers: int, scale: float) -> None:
+    def _square(x: np.ndarray) -> float:
+        return sum((-scale + x) ** 2)
+    budget = 7 * dimension**2 + 13 * dimension
+    default = (registry["CMA"] if dimension > 1 else registry["OnePlusOne"])(dimension, budget, num_workers=num_workers)
+    MetaModel = registry["MetaModel"](dimension, budget, num_workers=num_workers)
+    default_recom, MetaModel_recom = default.minimize(_square), MetaModel.minimize(_square) 
+    default_data = default_recom.get_standardized_data(reference=default.parametrization)
+    MetaModel_data = MetaModel_recom.get_standardized_data(reference=MetaModel.parametrization)
+    assert _square(default_data) > _square(MetaModel_data)
+
+
+
+@pytest.mark.parametrize(
     "penalization,expected", [
         (False, [1.005573e+00, 3.965783e-04]),
         (True, [0.999987, -0.322118]),

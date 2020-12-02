@@ -1100,19 +1100,22 @@ class MetaModel(base.Optimizer):
     """Adding a metamodel into CMA."""
 
     def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1,
-                 multivariate_optimizer: base.ConfiguredOptimizer = CMA) -> None:
+                 multivariate_optimizer: tp.Optional[base.ConfiguredOptimizer] = None) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
+        if multivariate_optimizer is None:
+            multivariate_optimizer = CMA if self.dimension > 1 else OnePlusOne
         self._optim = multivariate_optimizer(self.parametrization, budget,
                                              num_workers)  # share parametrization and its rng
 
     def _internal_ask_candidate(self) -> p.Parameter:
         # We request a bit more points than what is really necessary for our dimensionality (+dimension).
+        k = int((self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1)
         if (self._num_ask % max(13, self.num_workers, self.dimension) == 0 and
-                len(self.archive) >= (self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1):
+                len(self.archive) >= k):
             try:
                 data = learn_on_k_best(self.archive,
-                                       int((self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 2))
+                                       k)
                 candidate = self.parametrization.spawn_child().set_standardized_data(data)
             except InfiniteMetaModelOptimum:  # The optimum is at infinity. Shit happens.
                 candidate = self._optim.ask()
@@ -1251,9 +1254,9 @@ class CMandAS2(ASCMADEthird):
             self.optims = [OnePlusOne(self.parametrization, budget=None, num_workers=num_workers)]
         if budget > 50 * self.dimension or num_workers < 30:
             self.optims = [
-                CMA(self.parametrization, budget=None, num_workers=num_workers),  # share parametrization and its rng
-                CMA(self.parametrization, budget=None, num_workers=num_workers),
-                CMA(self.parametrization, budget=None, num_workers=num_workers),
+                MetaModel(self.parametrization, budget=None, num_workers=num_workers),  # share parametrization and its rng
+                MetaModel(self.parametrization, budget=None, num_workers=num_workers),
+                MetaModel(self.parametrization, budget=None, num_workers=num_workers),
             ]
             self.budget_before_choosing = budget // 10
 
@@ -2123,7 +2126,7 @@ class NGOpt8(NGOpt4):
             if not (self.has_noise and self.fully_continuous and self.dimension > 100) and not (
                     self.has_noise and self.fully_continuous) and not (self.num_workers > self.budget / 5) and (
                     self.num_workers == 1 and self.budget > 6000 and self.dimension > 7):
-                optimClass = chainCMAPowell
+                optimClass = chainMetaModelPowell
             else:
                 optimClass = super()._select_optimizer_cls()
 
