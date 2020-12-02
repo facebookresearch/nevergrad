@@ -496,23 +496,13 @@ def test_bo_ordering() -> None:
 
 
 @pytest.mark.parametrize(  # type: ignore
-    "name,budget,expected", [
-        ("NGOpt8", 100, ["OnePlusOne", "OnePlusOne"]),
-        ("NGOpt8", 200, ["SQP", "SQP"])
+    "name,fake_learning,budget,expected", [
+        ("NGOpt8", False, 100, ["OnePlusOne", "OnePlusOne"]),
+        ("NGOpt8", False, 200, ["SQP", "SQP"]),
+        ("NGOpt8", True, 1000, ['SQP', 'monovariate', 'monovariate']),
         ]
 )
-def test_ngo_split_optimizer(name: str, budget: int, expected: tp.List[str]) -> None:
-    param = ng.p.Choice(["const", ng.p.Array(init=[1, 2, 3])])
-    Opt = optlib.registry[name]
-    opt = optlib.ConfSplitOptimizer(multivariate_optimizer=Opt)(param, budget=budget)
-    names = [o.optim.name for o in opt.optims]  # type: ignore
-    assert names == expected
-
-
-@pytest.mark.parametrize(  # type: ignore
-    "name,expected", [("NGOpt8", ['SQP', 'monovariate', 'monovariate'])]
-)
-def test_instrumented_ngo_split_optimizer(name: str, expected: tp.List[str]) -> None:
+def test_ngo_split_optimizer(name: str, fake_learning: bool, budget: int, expected: tp.List[str]) -> None:
     param = ng.p.Instrumentation(
       # a log-distributed scalar between 0.001 and 1.0
       learning_rate=ng.p.Log(lower=0.001, upper=1.0),
@@ -520,12 +510,11 @@ def test_instrumented_ngo_split_optimizer(name: str, expected: tp.List[str]) -> 
       batch_size=ng.p.Scalar(lower=1, upper=12).set_integer_casting(),
       # either "conv" or "fc"
       architecture=ng.p.Choice(["conv", "fc"])
-    )
+    ) if fake_learning else ng.p.Choice(["const", ng.p.Array(init=[1, 2, 3])])
     Opt = optlib.registry[name]
-    opt = optlib.ConfSplitOptimizer(multivariate_optimizer=Opt)(param, budget=1000)
+    opt = optlib.ConfSplitOptimizer(multivariate_optimizer=Opt)(param, budget=budget)
     names = [o.optim.name if o.dimension != 1 else "monovariate" for o in opt.optims]  # type: ignore
     assert names == expected
-
 
 
 @pytest.mark.parametrize(  # type: ignore
