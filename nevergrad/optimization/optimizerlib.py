@@ -860,7 +860,7 @@ class SPSA(base.Optimizer):
         return self.avg
 
 
-class RescaleOptimizer(base.Optimizer):
+class _Rescaled(base.Optimizer):
     """Proposes a version of a base optimizer which works at a different scale."""
     def __init__(
             self,
@@ -872,8 +872,9 @@ class RescaleOptimizer(base.Optimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.base_optimizer = base_optimizer(parametrization, budget=budget, num_workers=num_workers)
+        self._subcandidates: tp.Dict[str, tp.List[p.Parameter]] = {}
         if scale is None:
-            assert budget is not None, "Either scale or budget must be known in RescaleOptimizer."
+            assert budget is not None, "Either scale or budget must be known in _Rescaled."
             scale = np.sqrt(np.log(self.budget) / self.dimension)
         self.scale = scale
         assert self.scale != 0., "scale should be non-zero in Rescaler."
@@ -886,12 +887,12 @@ class RescaleOptimizer(base.Optimizer):
 
     def _internal_ask_candidate(self) -> p.Parameter:
         candidate = self.base_optimizer.ask()
-        candidate = self.rescale_candidate(candidate)
-        return candidate
+        sent_candidate = self.rescale_candidate(candidate)
+        self._subcandidates[sent_candidate.uid] = candidate
+        return sent_candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        candidate = self.rescale_candidate(candidate)
-        self.base_optimizer.tell(candidate, loss)
+        self.base_optimizer.tell(self._subcandidates[candidate.uid], loss)
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         candidate = self.rescale_candidate(candidate)
@@ -1015,7 +1016,7 @@ class SplitOptimizer(base.Optimizer):
             opt.tell(local_candidate, loss)
 
 
-class ConfRescaleOptimizer(base.ConfiguredOptimizer):
+class Rescaled(base.ConfiguredOptimizer):
     """
     """
     # pylint: disable=unused-argument
@@ -1025,10 +1026,10 @@ class ConfRescaleOptimizer(base.ConfiguredOptimizer):
         base_optimizer: base.OptCls = CMA,
         scale: tp.Optional[float] = None,
     ) -> None:
-        super().__init__(RescaleOptimizer, locals())
+        super().__init__(_Rescaled, locals())
 
 
-RescaleCMA = ConfRescaleOptimizer().set_name("RescaleCMA", register=True)
+RescaledCMA = Rescaled().set_name("RescaledCMA", register=True)
 
 class ConfSplitOptimizer(base.ConfiguredOptimizer):
     """"Combines optimizers, each of them working on their own variables.
