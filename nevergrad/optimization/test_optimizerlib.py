@@ -421,7 +421,7 @@ def test_parallel_es() -> None:
     (5, 3, 1., 225),
     (5, 1, 8., 225),
     (5, 3, 8., 275),
-    (10, 27, 8., 200),
+    (10, 27, 8., 300),
     ]
     )
 def test_metamodel(dimension: int, num_workers: int, scale: float, budget: int) -> None:
