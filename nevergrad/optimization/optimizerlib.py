@@ -32,7 +32,7 @@ from .oneshot import *  # noqa: F403
 from .recastlib import *  # noqa: F403
 
 try:
-    from .externalbo import HyperOpt # pylint: disable=unused-import
+    from .externalbo import HyperOpt  # pylint: disable=unused-import
 except ModuleNotFoundError:
     pass
 
@@ -2130,6 +2130,12 @@ class NGOpt8(NGOpt4):
                 optimClass = super()._select_optimizer_cls()
 
         return optimClass
+
+    def _num_objectives_callback(self) -> None:
+        if self.num_objectives > 1:
+            if self.noise_from_instrumentation or not self.has_noise:
+                # override at runtime
+                self._optim = DE(self.parametrization, self.budget, self.num_workers)
 
 
 @registry.register
