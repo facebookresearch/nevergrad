@@ -23,7 +23,7 @@ class CustomFunction(ngfuncs.ExperimentFunction):
         self.offset = offset
         # add your own function descriptors if need be with add_descriptors
         # (from base class, we already get "dimension" etc...
-        #  + all str/int/bool/float parameters such as offet here)
+        #  + all str/int/bool/float parameters such as offset here - for all those types, no use explicitly using add_descriptors)
         # those will be recorded during benchmarks
 
     def oracle_call(self, x):  # np.ndarray as input
