@@ -23,6 +23,7 @@ def photonics(problem='morpho', budget=1500, num_workers=50):
     target = Photonics(problem, 60 if problem == "morpho" else 100)
     #target = Photonics(problem, 60 if problem == "morpho" else 100)
     opt = ng.optimizers.NGOpt(target.parametrization, num_workers=num_workers, budget=budget)
+    opt.suggest(target.auto_suggest())
     best_value = float("inf")
     new_best = None
     for i in range(budget // num_workers):
@@ -69,7 +70,7 @@ def photonics(problem='morpho', budget=1500, num_workers=50):
                 new_best = population[j]
             opt.tell(population[j], result[j])
             
-        print(f"Iteration {i}, Time taken {endtime-starttime} seconds")
+        print(f"Iteration {i}, Time taken {endtime-starttime} seconds, best={best_value}.")
     if new_best is not None:
         target.evaluation_function(new_best.value)
 

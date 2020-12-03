@@ -13,6 +13,7 @@ from nevergrad.optimization.base import ConfiguredOptimizer
 import nevergrad.functions.corefuncs as corefuncs
 from nevergrad.functions import ExperimentFunction
 from nevergrad.functions.base import MultiExperiment
+from nevergrad.functions.base import get_best_from_leaderboard
 from nevergrad.functions import ArtificialFunction
 from nevergrad.functions import FarOptimumFunction
 from nevergrad.functions import PBT

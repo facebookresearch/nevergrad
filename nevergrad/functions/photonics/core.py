@@ -124,6 +124,11 @@ class Photonics(base.ExperimentFunction):
         self.register_initialization(name=name, dimension=dimension, bounding_method=bounding_method, rolling=rolling)
         self._descriptors.update(name=name, bounding_method=bounding_method, rolling=rolling)
 
+    def auto_suggest(self) -> p.Parameter:
+        shape = self.parametrization.spawn_child().value.shape
+        data = base.get_best_from_leaderboard(f'{self.name},{self.parametrization.dimension}')
+        return data.reshape(shape)  #candidate.get_standardized_data()
+
     # pylint: disable=arguments-differ
     def evaluation_function(self, x: np.ndarray) -> float:  # type: ignore
         # pylint: disable=not-callable
