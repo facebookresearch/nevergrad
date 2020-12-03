@@ -1084,14 +1084,8 @@ def learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.Arra
 
     optimizer = Powell(parametrization=dimension, budget=45 * dimension + 30)
     try:
-<<<<<<< Updated upstream
         minimum = optimizer.minimize(
             lambda x: float(model.predict(polynomial_features.fit_transform(x[None, :])))).value
-=======
-        def target(x): return float(model.predict(polynomial_features.fit_transform(np.asarray([x]))))
-        optimizer.minimize(target)
-        minimum = optimizer.provide_recommendation().value
->>>>>>> Stashed changes
     except ValueError:
         raise InfiniteMetaModelOptimum("Infinite meta-model optimum in learn_on_k_best.")
 
