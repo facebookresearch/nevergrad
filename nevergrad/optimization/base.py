@@ -166,11 +166,11 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             raise ValueError("Number of objectives must be strictly positive")
         if not self._num_objectives:
             self._num_objectives = num
-            self._num_objectives_callback()
+            self._num_objectives_set_callback()
         elif num != self._num_objectives:
             raise ValueError(f"Expected {self._num_objectives} loss(es), but received {num}.")
 
-    def _num_objectives_callback(self) -> None:
+    def _num_objectives_set_callback(self) -> None:
         """Callback for when num objectives is first known
         """
 
