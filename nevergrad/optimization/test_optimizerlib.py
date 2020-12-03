@@ -438,11 +438,11 @@ def test_metamodel(dimension: int, num_workers: int, scale: float, budget: int, 
     contextual_budget *= int(max(1, np.sqrt(scale)))
 
     # Let us run the comparison.
-recommendations: tp.List[np.ndarray] = []
-for name in ("MetaModel", "CMA" if dimension > 1 else "OnePlusOne"):
-    opt = registry[name](dimension, contextual_budget, num_workers=num_workers)
-    recommendations.append(opt.minimize(_target).value
-metamodel_recom, default_recom = recommendations
+    recommendations: tp.List[np.ndarray] = []
+    for name in ("MetaModel", "CMA" if dimension > 1 else "OnePlusOne"):
+        opt = registry[name](dimension, contextual_budget, num_workers=num_workers)
+        recommendations.append(opt.minimize(_target).value)
+    metamodel_recom, default_recom = recommendations
 
     # Let us assert that MetaModel is better.
     assert _target(default_recom) > _target(metamodel_recom)
