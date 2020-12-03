@@ -89,7 +89,6 @@ class PowerSystem(ExperimentFunction):
                  num_years: float = 1.0,
                  failure_cost: float = 500.,
                  ) -> None:
-        params = {x: y for x, y in locals().items() if x not in ["self", "__class__"]}  # for copying
         self.num_dams = num_dams
         self.losses: tp.List[float] = []
         self.marginal_costs: tp.List[float] = []
@@ -112,8 +111,6 @@ class PowerSystem(ExperimentFunction):
         parameter = p.Instrumentation(*[p.Array(shape=(int(a.dimension),)) for a in self.dam_agents]).set_name("")
         super().__init__(self._simulate_power_system, parameter)
         self.parametrization.descriptors.deterministic_function = False
-        self.register_initialization(**params)
-        self._descriptors.update(num_dams=num_dams, depth=depth, width=width)
 
     def get_num_vars(self) -> tp.List[tp.Any]:
         return [m.dimension for m in self.dam_agents]
