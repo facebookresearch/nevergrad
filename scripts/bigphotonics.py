@@ -17,7 +17,7 @@ def square(x):
     time.sleep(1)
     return sum((x-0.5)**2)
 
-def photonics(problem='morpho', budget=240, num_workers=25):
+def photonics(problem='morpho', budget=1500, num_workers=50):
     mode = "arraysubmitit"  # other: submitit, multiprocessing
     assert problem in ["bragg", "chirped", "morpho"]
     target = Photonics(problem, 60 if problem == "morpho" else 100)
@@ -43,7 +43,7 @@ def photonics(problem='morpho', budget=240, num_workers=25):
         elif mode == "submitit":
             executor = submitit.AutoExecutor(folder="log_bigphotonics")
             executor.update_parameters(timeout_min=60, cpus_per_task=60, slurm_partition="learnfair",
-                slurm_array_parallelism=num_workers)
+                slurm_array_parallelism=20)
             jobs = [executor.submit(target.__call__, p.value) for p in population]
             if new_best is not None:
                 target.evaluation_function(new_best.value)
