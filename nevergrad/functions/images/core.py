@@ -47,10 +47,7 @@ class Image(base.ExperimentFunction):
         array.set_bounds(lower=0, upper=255.99, method="clipping", full_range_sampling=True)
         max_size = ng.p.Scalar(lower=1, upper=200).set_integer_casting()
         array.set_recombination(ng.p.mutation.Crossover(axis=(0, 1), max_size=max_size)).set_name("")  # type: ignore
-
         super().__init__(self._loss, array)
-        self.register_initialization(problem_name=problem_name, index=index)
-        self._descriptors.update(problem_name=problem_name, index=index)
 
     def _loss(self, x: np.ndarray) -> float:
         assert self.problem_name == "recovering"
@@ -122,12 +119,7 @@ class ImageAdversarial(base.ExperimentFunction):
         array.set_bounds(lower=-self.epsilon, upper=self.epsilon, method="clipping", full_range_sampling=True)
         max_size = ng.p.Scalar(lower=1, upper=200).set_integer_casting()
         array.set_recombination(ng.p.mutation.Crossover(axis=(1, 2), max_size=max_size))  # type: ignore
-
         super().__init__(self._loss, array)
-        self.register_initialization(classifier=classifier, image=image, label=label,
-                                     targeted=targeted, epsilon=epsilon)
-        # classifier and image cant be set as descriptors
-        self.add_descriptors(label=label, targeted=targeted, epsilon=epsilon)
 
     def _loss(self, x: np.ndarray) -> float:
         output_adv = self._get_classifier_output(x)
@@ -188,20 +180,7 @@ class ImageAdversarial(base.ExperimentFunction):
         for data, target in data_loader:
             _, pred = torch.max(classifier(data), axis=1)
             if pred == target:
-                func = cls._with_tag(tags=tags, classifier=classifier, image=data[0],
-                                     label=int(target), targeted=False, epsilon=0.05)
+                func = cls(classifier=classifier, image=data[0],
+                           label=int(target), targeted=False, epsilon=0.05)
+                func.add_descriptors(**tags)
                 yield func
-
-    @classmethod
-    def _with_tag(
-            cls,
-            tags: tp.Dict[str, str],
-            **kwargs: tp.Any,
-    ) -> "ImageAdversarial":
-        # generates an instance with a hack so that additional tags are propagated to copies
-        func = cls(**kwargs)
-        func.add_descriptors(**tags)
-        func._initialization_func = cls._with_tag  # type: ignore
-        assert func._initialization_kwargs is not None
-        func._initialization_kwargs["tags"] = tags
-        return func

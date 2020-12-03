@@ -69,6 +69,8 @@ def test_callable_parametrization() -> None:
     np.testing.assert_equal(ifunc.descriptors["name"], "<lambda>")
     ifunc = base.ExperimentFunction(_Callable(), p.Scalar(2).set_mutation(sigma=2).set_name(""))
     np.testing.assert_equal(ifunc.descriptors["name"], "_Callable")
+    # test automatic filling
+    assert len(ifunc._auto_init) == 2
 
 
 def test_packed_function() -> None:

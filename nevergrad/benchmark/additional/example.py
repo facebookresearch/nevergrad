@@ -20,11 +20,11 @@ class CustomFunction(ngfuncs.ExperimentFunction):
 
     def __init__(self, offset):
         super().__init__(self.oracle_call, ng.p.Scalar().set_name(""))
-        self.register_initialization(offset=offset)  # to create equivalent instances through "copy"
         self.offset = offset
-        # add your own function descriptors (from base class, we already get "dimension" etc...)
+        # add your own function descriptors if need be with add_descriptors
+        # (from base class, we already get "dimension" etc...
+        #  and all str/int/bool/float parameters such as offset here - for all those types, no need to use add_descriptors)
         # those will be recorded during benchmarks
-        self._descriptors.update(offset=offset)
 
     def oracle_call(self, x):  # np.ndarray as input
         """Implements the call of the function.
