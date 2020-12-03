@@ -134,7 +134,7 @@ class Photonics(base.ExperimentFunction):
 
     def _compute(self, x: np.ndarray) -> float:
         x_cat = np.array(x, copy=False).ravel()
-        assert x_cat.size == self.dimension
+        assert x_cat.size == self.dimension, x_cat.size
         try:
             output = self._base_func(x_cat)
         except Exception:  # pylint: disable=broad-except
