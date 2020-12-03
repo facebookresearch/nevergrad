@@ -363,10 +363,10 @@ def test_bo_parametrization_and_parameters() -> None:
 
 def test_bo_init() -> None:
     arg = ng.p.Scalar(init=4, lower=1, upper=10).set_integer_casting()
-    gp_param = {'alpha': 1e-3, 'normalize_y': True,
-                'n_restarts_optimizer': 5, 'random_state': None}
+    gp_param = {'alpha': 1e-5, 'normalize_y': False,
+                'n_restarts_optimizer': 1, 'random_state': None}
     my_opt = ng.optimizers.ParametrizedBO(gp_parameters=gp_param, initialization=None)
-    optimizer = my_opt(parametrization=arg, budget=5)
+    optimizer = my_opt(parametrization=arg, budget=10)
     optimizer.minimize(np.abs)
 
 
