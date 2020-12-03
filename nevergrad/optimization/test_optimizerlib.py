@@ -366,7 +366,7 @@ def test_bo_init() -> None:
     gp_param = {'alpha': 1e-3, 'normalize_y': True,
                 'n_restarts_optimizer': 5, 'random_state': None}
     my_opt = ng.optimizers.ParametrizedBO(gp_parameters=gp_param, initialization=None)
-    optimizer = my_opt(parametrization=arg, budget=10)
+    optimizer = my_opt(parametrization=arg, budget=5)
     optimizer.minimize(np.abs)
 
 
