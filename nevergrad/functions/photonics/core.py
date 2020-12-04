@@ -20,6 +20,7 @@
 #   Moosh: A Numerical Swiss Army Knife for the Optics of Multilayers in Octave/Matlab. Journal of Open Research Software, 4(1), p.e13.
 
 import numpy as np
+import typing as tp
 from nevergrad.parametrization import parameter as p
 from . import photonics
 from .. import base
@@ -63,11 +64,9 @@ def _make_parametrization(
     assert b_array.shape[0] == shape[0]  # pylint: disable=unsubscriptable-object
     init = np.sum(b_array, axis=1, keepdims=True).dot(np.ones((1, shape[1],))) / 2
     if as_tuple:
-        #assert False, str(b_array[:, [0]]) + "_" + str(b_array[:, [1]]) + ">" + str(init[:,7])
         instrum = p.Instrumentation(*[p.Array(init=init[:, i]).set_bounds(b_array[:, 0], b_array[:, 1],
             method=bounding_method, full_range_sampling=True) for i in range(init.shape[1])]).set_name("as_tuple")
         assert instrum.dimension == dimension, instrum
-        #assert False, instrum
         return instrum
     array = p.Array(init=init)
     if bounding_method not in ("arctan", "tanh"):
@@ -136,7 +135,9 @@ class Photonics(base.ExperimentFunction):
         super().__init__(self._compute, param)
 
     # pylint: disable=arguments-differ
-    def evaluation_function(self, x: np.ndarray) -> float:  # type: ignore
+    def evaluation_function(self,  *args: tp.Any, **kwargs: tp.Any) -> float:  # type: ignore
+        assert len(kwargs.items()) == 0
+        x = np.concatenate([a for a in args])
         if self._as_tuple:
             x = np.transpose(x)
         # pylint: disable=not-callable
@@ -145,7 +146,9 @@ class Photonics(base.ExperimentFunction):
         base.update_leaderboard(f'{self.name},{self.parametrization.dimension}', loss, x, verbose=True)
         return loss
 
-    def _compute(self, x: np.ndarray) -> float:
+    def _compute(self,  *args: tp.Any, **kwargs: tp.Any) -> float:  # type: ignore
+        assert len(kwargs.items()) == 0
+        x = np.concatenate([a for a in args])
         if self._as_tuple:
             x = np.transpose(x)
         x_cat = np.array(x, copy=False).ravel()
