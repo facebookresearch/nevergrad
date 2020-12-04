@@ -63,9 +63,8 @@ def _make_parametrization(
     assert b_array.shape[0] == shape[0]  # pylint: disable=unsubscriptable-object
     init = np.sum(b_array, axis=1, keepdims=True).dot(np.ones((1, shape[1],))) / 2
     if as_tuple:
-        instrum = p.Instrumentation(p.Array(init=init[:, i]).set_bounds(b_array[:, [0]], b_array[:, [1]],
-            method=bounding_method, full_range_sampling=True) for i in range(init.shape[1]))
-        return instrum
+        return p.Instrumentation(p.Array(init=init[:, i]).set_bounds(b_array[:, [0]], b_array[:, [1]],
+            method=bounding_method, full_range_sampling=True) for i in range(init.shape[1])).set_name("as_tuple")
     array = p.Array(init=init)
     if bounding_method not in ("arctan", "tanh"):
         # sigma must be adapted for clipping and constraint methods
