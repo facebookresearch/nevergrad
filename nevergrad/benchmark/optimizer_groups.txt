@@ -1,1 +1,1 @@
-splitters = [SplitCMAAuto, SplitCMA3, SplitCMA5, SplitCMA9, SplitCMA13] ProgInf], 'NaiveTBPSA', 'NaiveIsoEMNATBPSA', 'IsoEMNATBPSA', 'NaiveAnisoEMNATBPSA', 'AnisoEMNATBPSA']
+progressive = [ProgDiscAuto, ProgDisc13, ProgDiscInf, ProgAuto, Prog13, ProgInf]
