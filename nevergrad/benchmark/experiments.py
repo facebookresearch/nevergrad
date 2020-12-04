@@ -1267,7 +1267,7 @@ def photonics(seed: tp.Optional[int] = None, as_tuple: bool=False) -> tp.Iterato
         optims = default_optims
     for method in ["clipping", "tanh"]:  # , "arctan"]:
         for name in ["bragg", "chirped", "morpho"]:
-            func = Photonics(name, 60 if name == "morpho" else 80, bounding_method=method)
+            func = Photonics(name, 60 if name == "morpho" else 80, bounding_method=method, as_tuple=as_tuple)
             for budget in [1e3, 1e4, 1e5, 1e6]:
                 for algo in optims:
                     xp = Experiment(func, algo, int(budget), num_workers=1, seed=next(seedg))
