@@ -9,6 +9,8 @@ import numpy as np
 import sklearn.datasets
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.neural_network import MLPRegressor
+from sklearn.model_selection import train_test_split, KFold
+from sklearn.metrics import mean_squared_error
 
 from nevergrad.parametrization import parameter as p
 from ..base import ExperimentFunction
@@ -49,9 +51,9 @@ class MLTuning(ExperimentFunction):
         regressor: str,  # Choice of learner.
         noise_free: bool  # Whether we work on the test set (the real cost) on an approximation (CV error on train). -> not really noise
     ) -> float:
-        if not self.X.size:  # lazzy initialization
+        if not self.X_train.size:  # lazzy initialization
             self.make_dataset(self.data_dimension, self.dataset)
-        # 10-folds cross-validation
+        # num_cv-folds cross-validation
         result = 0.0
         # Fit regression model
         if regressor == "decision_tree":
@@ -60,27 +62,37 @@ class MLTuning(ExperimentFunction):
         elif regressor == "mlp":
             regr = MLPRegressor(alpha=alpha, activation=activation, solver=solver,
                                 learning_rate=learning_rate, random_state=0)
+        elif regressor == "kerasDenseNN":
+            try:
+                from tensorflow import keras  # pylint: disable=import-outside-toplevel
+            except ImportError as e:
+                raise ImportError("Please install keras (pip install keras) to use keras ml tuning") from e
+
+            regr = keras.Sequential([
+                keras.layers.Dense(64, activation=activation, input_shape=(self.X_train.shape[1],)),
+                keras.layers.Dense(1)
+            ])
+            regr.compile(optimizer=solver, loss='mse', metrics=['mae'])
         else:
             raise ValueError(f"Unknown regressor {regressor}.")
 
         if noise_free:  # noise_free is True when we want the result on the test set.
-            X = self.X
-            y = self.y
             X_test = self.X_test
             y_test = self.y_test
-            regr.fit(np.asarray(self.X), np.asarray(self.y))
+            regr.fit(self.X_train, self.y_train)
             pred_test = regr.predict(self.X_test)
-            return float(np.sum((self.y_test - pred_test)**2) / len(self.y_test))
+            return mean_squared_error(self.y_test, pred_test)
 
         # We do a cross-validation.
-        for X, y, X_test, y_test in zip(self.X_train, self.y_train, self.X_valid, self.y_valid):
+        for X, y, X_test, y_test in zip(self.X_train_cv, self.y_train_cv, self.X_valid_cv, self.y_valid_cv):
             assert isinstance(depth, int), f"depth has class {type(depth)} and value {depth}."
-            regr.fit(np.asarray(X), np.asarray(y))
+
+            regr.fit(X, y)
+
             # Predict
             pred_test = regr.predict(X_test)
-            result += np.sum((y_test - pred_test)**2)
-
-        return result / self.num_data  # We return a 10-fold validation error.
+            result += mean_squared_error(y_test, pred_test)
+        return result / self._cross_val_num  # We return a num_cv-fold validation error.
 
     def __init__(
         self,
@@ -93,25 +105,25 @@ class MLTuning(ExperimentFunction):
         self.data_dimension = data_dimension
         self.dataset = dataset
         self.overfitter = overfitter
-        self._descriptors: tp.Dict[str, tp.Any] = {}
-        self.add_descriptors(regressor=regressor, data_dimension=data_dimension, dataset=dataset, overfitter=overfitter)
         self.name = regressor + f"Dim{data_dimension}"
         self.num_data = 120  # default for artificial function
         self._cross_val_num = 10  # number of cross validation
         # Dimension does not make sense if we use a real world dataset.
         assert bool("artificial" in dataset) == bool(data_dimension is not None)
 
-        # Variables for storing the training set and the test set.
-        self.X: np.ndarray = np.array([])
-        self.y: np.ndarray
-
-        # Variables for storing the cross-validation splits.
-        self.X_train: tp.List[tp.Any] = []  # This will be the list of training subsets.
-        self.X_valid: tp.List[tp.Any] = []  # This will be the list of validation subsets.
-        self.y_train: tp.List[tp.Any] = []
-        self.y_valid: tp.List[tp.Any] = []
+        # # Variables for storing the training set and the test set.
+        self.X_train: np.ndarray = np.array([])
+        self.y_train: np.ndarray
         self.X_test: np.ndarray
         self.y_test: np.ndarray
+        # self.X: np.ndarray = np.array([])
+        # self.y: np.ndarray
+
+        # Variables for storing the cross-validation splits.
+        self.X_train_cv: tp.List[tp.Any] = []  # This will be the list of training subsets.
+        self.X_valid_cv: tp.List[tp.Any] = []  # This will be the list of validation subsets.
+        self.y_train_cv: tp.List[tp.Any] = []
+        self.y_valid_cv: tp.List[tp.Any] = []
 
         evalparams: tp.Dict[str, tp.Any] = {}
         if regressor == "decision_tree_depth":
@@ -129,7 +141,7 @@ class MLTuning(ExperimentFunction):
                 depth=p.Scalar(lower=1, upper=1200).set_integer_casting(),  # Depth, in case we use a decision tree.
                 criterion=p.Choice(["mse", "friedman_mse", "mae"]),  # Criterion for building the decision tree.
                 min_samples_split=p.Log(lower=0.0000001, upper=1),  # Min ratio of samples in a node for splitting.
-                regressor=p.Choice(["mlp", "decision_tree"]),  # Type of regressor.
+                regressor=p.Choice(["mlp", "decision_tree", "kerasDenseNN"]),  # Type of regressor.
                 activation=p.Choice(["identity", "logistic", "tanh", "relu"]),  # Activation function, in case we use a net.
                 solver=p.Choice(["lbfgs", "sgd", "adam"]),  # Numerical optimizer.
                 learning_rate=p.Choice(["constant", "invscaling", "adaptive"]),  # Learning rate schedule.
@@ -159,6 +171,15 @@ class MLTuning(ExperimentFunction):
                 alpha=p.Log(lower=0.0000001, upper=1.),
             )
             params = dict(noise_free=False, regressor="mlp", depth=-3, criterion="no", min_samples_split=0.1)
+        elif regressor == "kerasDenseNN":
+            parametrization = p.Instrumentation(
+                activation=p.Choice(["selu", "sigmoid", "tanh", "relu"]),
+                solver=p.Choice(["Adadelta", "RMSprop", "adam"]),
+                regressor="kerasDenseNN",
+                # metrics=p.Choice(["mae", "mse"]),
+            )
+            params = dict(noise_free=False, regressor="kerasDenseNN", depth=-3, criterion="no",
+                          min_samples_split=0.1, alpha=0.1, learning_rate="constant")
         else:
             assert False, f"Problem type {regressor} undefined!"
         # build eval params if not specified
@@ -168,8 +189,6 @@ class MLTuning(ExperimentFunction):
         evalparams["noise_free"] = not overfitter
         super().__init__(partial(self._ml_parametrization, **params), parametrization.set_name(""))
         self._evalparams = evalparams
-        self.register_initialization(regressor=regressor, data_dimension=data_dimension, dataset=dataset,
-                                     overfitter=overfitter)
 
     def evaluation_function(self, *args: tp.Any, **kwargs: tp.Any) -> float:
         assert not args
@@ -181,26 +200,38 @@ class MLTuning(ExperimentFunction):
         # Filling datasets.
         rng = self.parametrization.random_state
         if not dataset.startswith("artificial"):
-            assert dataset in ["boston", "diabetes"]
+            assert dataset in ["boston", "diabetes", "kerasBoston"]
             assert data_dimension is None
-            data = {"boston": sklearn.datasets.load_boston,
-                    "diabetes": sklearn.datasets.load_diabetes,
-                    }[dataset](return_X_y=True)
+            if dataset == "kerasBoston":
+                try:
+                    from tensorflow import keras  # pylint: disable=import-outside-toplevel
+                except ImportError as e:
+                    raise ImportError("Please install keras (pip install keras) to use keras ml tuning") from e
+
+                data = keras.datasets.boston_housing
+            else:
+                data = {"boston": sklearn.datasets.load_boston,
+                        "diabetes": sklearn.datasets.load_diabetes,
+                        }[dataset](return_X_y=True)
 
             # Half the dataset for training.
-            rng.shuffle(data[0].T)  # We randomly shuffle the columns.
-            self.X = data[0][::2]
-            self.y = data[1][::2]
-            self.num_data = len(self.X)
-            for cv in range(10):
-                train_range = np.arange(self.num_data) % 10 != cv
-                valid_range = np.arange(self.num_data) % 10 == cv
-                self.X_train += [self.X[train_range]]
-                self.y_train += [self.y[train_range]]
-                self.X_valid += [self.X[valid_range]]
-                self.y_valid += [self.y[valid_range]]
-            self.X_test = data[0][1::2]
-            self.y_test = data[1][1::2]
+            if dataset == "kerasBoston":
+                (self.X_train, self.y_train), (self.X_test, self.y_test) = data.load_data(test_split=0.5, seed=42)
+            else:
+                rng.shuffle(data[0].T)  # We randomly shuffle the columns.
+                self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(data[0], data[1], test_size=0.5, random_state=42)
+
+            num_train_data = len(self.X_train)
+            self.num_data = num_train_data
+
+            kf = KFold(n_splits=self._cross_val_num)
+            kf.get_n_splits(self.X_train)
+
+            for train_index, valid_index in kf.split(self.X_train):
+                self.X_train_cv += [self.X_train[train_index]]
+                self.y_train_cv += [self.y_train[train_index]]
+                self.X_valid_cv += [self.X_train[valid_index]]
+                self.y_valid_cv += [self.y_train[valid_index]]
             return
 
         assert data_dimension is not None, f"Pb with {dataset} in dimension {data_dimension}"
@@ -216,24 +247,24 @@ class MLTuning(ExperimentFunction):
             "artificialsquare": np.square,
         }[dataset]
         y = np.sum(np.sin(X), axis=1).ravel()
-        self.X = X  # Training set.
-        self.y = y  # Labels of the training set.
+        self.X_train = X  # Training set.
+        self.y_train = y  # Labels of the training set.
 
         # We generate the cross-validation subsets.
         for cv in range(self._cross_val_num):
 
             # Training set.
-            X_train = X[np.arange(self.num_data) % 10 != cv].copy()
-            y_train = np.sum(target_function(X_train), axis=1).ravel()
-            self.X_train += [X_train]
-            self.y_train += [y_train]
+            X_train_cv = X[np.arange(self.num_data) % self._cross_val_num != cv].copy()
+            y_train_cv = np.sum(target_function(X_train_cv), axis=1).ravel()
+            self.X_train_cv += [X_train_cv]
+            self.y_train_cv += [y_train_cv]
 
             # Validation set or test set (noise_free is True for test set).
-            X_valid = X[np.arange(self.num_data) % 10 == cv].copy()
-            X_valid = X_valid.reshape(-1, data_dimension)
-            y_valid = np.sum(target_function(X_valid), axis=1).ravel()
-            self.X_valid += [X_valid]
-            self.y_valid += [y_valid]
+            X_valid_cv = X[np.arange(self.num_data) % self._cross_val_num == cv].copy()
+            X_valid_cv = X_valid_cv.reshape(-1, data_dimension)
+            y_valid_cv = np.sum(target_function(X_valid_cv), axis=1).ravel()
+            self.X_valid_cv += [X_valid_cv]
+            self.y_valid_cv += [y_valid_cv]
 
         # We also generate the test set.
         X_test = np.arange(0., 1., 1. / 60000)

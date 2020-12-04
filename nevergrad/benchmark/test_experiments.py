@@ -7,6 +7,7 @@ import inspect
 import itertools
 import typing as tp
 from pathlib import Path
+from unittest import SkipTest
 import pytest
 import numpy as np
 from nevergrad.optimization import registry as optregistry
@@ -24,8 +25,7 @@ from . import optgroups
 def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> None:
     with datasets.mocked_data():  # mock mlda data that should be downloaded
         check_maker(maker)  # this is to extract the function for reuse if other external packages need it
-    if name not in {"realworld_oneshot", "mlda", "mldaas", "realworld", "rocket", "mldakmeans",
-                    "naivemltuning", "seqmltuning", "naiveseqmltuning", "mltuning", "control_problem"}:
+    if name not in ["rocket", "control_problem"] and not any(x in name for x in ["tuning", "mlda", "realworld"]):
         check_seedable(maker, "mltuning" in name)  # this is a basic test on first elements, do not fully rely on it
 
 
@@ -53,7 +53,10 @@ def test_groups_registry(name: str, recorder: tp.Dict[str, tp.List[optgroups.Opt
 def check_maker(maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> None:
     generators = [maker() for _ in range(2)]
     # check 1 sample
-    sample = next(maker())
+    try:
+        sample = next(maker())
+    except experiments.MissingBenchmarkPackageError as e:
+        raise SkipTest("Skipping because of missing package") from e
     assert isinstance(sample, experiments.Experiment)
     # check names, coherence and non-randomness
     for k, (elem1, elem2) in enumerate(itertools.zip_longest(*generators)):
