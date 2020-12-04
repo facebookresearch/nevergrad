@@ -3,29 +3,20 @@ from koncept.models import Koncept512
 
 
 class _ImageLoss:
-    def __init__(self) -> None:
-        pass
-
-    def __call__(self, img: np.ndarray) -> float:
-        assert False
-
-
-class _ImageLossUsingRef(_ImageLoss):
-    def __init__(self, reference: np.ndarray) -> None:
-        super().__init__()
+    def __init__(self, reference=None) -> None:
         self.reference = reference
 
+    def __call__(self, img: np.ndarray) -> float:
+        pass
 
-class SumAbsoluteDifferencesLoss(_ImageLossUsingRef):
+
+class SumAbsoluteDifferencesLoss(_ImageLoss):
     def __init__(self, reference: np.ndarray) -> None:
         super().__init__(reference)
         self.domain_shape = self.reference.shape
 
     def __call__(self, x: np.ndarray) -> float:
-        x = np.array(x, copy=False).ravel()
-        x = x.reshape(self.domain_shape)
         assert x.shape == self.domain_shape, f"Shape = {x.shape} vs {self.domain_shape}"
-        # Define the loss, in case of recovering: the goal is to find the target image.
         value = float(np.linalg.norm(x - self.reference, 1))
         return value
 

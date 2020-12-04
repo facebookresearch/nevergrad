@@ -50,8 +50,8 @@ class Image(base.ExperimentFunction):
         array.set_recombination(ng.p.mutation.Crossover(axis=(0, 1), max_size=max_size)).set_name("")  # type: ignore
 
         super().__init__(self._loss, array)
-        self.register_initialization(problem_name=problem_name, index=index)
-        self._descriptors.update(problem_name=problem_name, index=index)
+        self.register_initialization(problem_name=problem_name, index=index, loss=loss.__name__)
+        self._descriptors.update(problem_name=problem_name, index=index, loss=loss.__name__)
         self.loss_function = loss(reference=self.data)
 
     def _loss(self, x: np.ndarray) -> float:
@@ -235,8 +235,8 @@ class ImageFromPGAN(base.ExperimentFunction):
 
         super().__init__(self._loss, array)
         self.loss_function = scorer()
-        self.register_initialization(initial_noise=initial_noise, use_gpu=use_gpu, scorer=scorer, mutable_sigma=mutable_sigma, n_mutations=n_mutations)
-        self._descriptors.update(initial_noise=initial_noise, use_gpu=use_gpu, scorer=scorer, mutable_sigma=mutable_sigma, n_mutations=n_mutations)
+        self.register_initialization(initial_noise=initial_noise, use_gpu=use_gpu, scorer=scorer.__name__, mutable_sigma=mutable_sigma, n_mutations=n_mutations)
+        self._descriptors.update(initial_noise=initial_noise, use_gpu=use_gpu, scorer=scorer.__name__, mutable_sigma=mutable_sigma, n_mutations=n_mutations)
 
     def _loss(self, x: np.ndarray) -> float:
         image = self._generate_images(x)
