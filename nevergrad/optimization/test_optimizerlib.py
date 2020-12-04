@@ -559,3 +559,12 @@ def test_ngo_split_optimizer(name: str, expected: tp.List[str]) -> None:
     opt = optlib.ConfSplitOptimizer(multivariate_optimizer=Opt)(param, budget=1000)
     names = [o.optim.name for o in opt.optims]  # type: ignore
     assert names == expected
+
+@pytest.mark.parametrize(  # type: ignore
+    "name,expected", [("NGOpt2", ["SQP", "DiscreteOnePlusOne"])]
+)
+def test_metangopt8(name: str, expected: tp.List[str]) -> None:
+    param = ng.p.Choice(["const", ng.p.Array(init=[1, 2, 3])])
+    opt = xpvariants.MetaNGOpt8(param, budget=1000)
+    names = [o.optim.name for o in opt.optims]  # type: ignore
+    assert names == expected

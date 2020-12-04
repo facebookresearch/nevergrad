@@ -12,8 +12,7 @@ from .base import IntOrParameter
 from . import recaster
 
 
-#class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
-class _ScipyMinimizeBase(recaster.RecastOptimizer):
+class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
 
     def __init__(
         self,

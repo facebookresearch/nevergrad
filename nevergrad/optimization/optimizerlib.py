@@ -1898,7 +1898,11 @@ class NGOptBase(base.Optimizer):
     @property
     def optim(self) -> base.Optimizer:
         if self._optim is None:
-            self._optim = self._select_optimizer_cls()(self.parametrization, self.budget, self.num_workers)
+            try:
+               cls = self._select_optimizer_cls()
+               self._optim = cls(self.parametrization, self.budget, self.num_workers)
+            except ValueError:
+               assert False, f"{cls}, {self.budget}, {self.parametrization}, num_workers={self.num_workers}"
             optim = self._optim if not isinstance(self._optim, NGOptBase) else self._optim.optim
             logger.debug("%s selected %s optimizer.", *(x.name for x in (self, optim)))
         return self._optim
@@ -1933,6 +1937,7 @@ class NGOptBase(base.Optimizer):
                             else:
                                 # DE is great in such a case (?).
                                 cls = DE if self.dimension > 2000 else CMA if self.dimension > 1 else OnePlusOne
+        assert num_workers != 2, cls
         return cls
 
     def _internal_ask_candidate(self) -> p.Parameter:
@@ -2054,7 +2059,7 @@ class NGOpt4(NGOptBase):
             else:
                 if self.has_noise and self.fully_continuous:
                     if budget > 100:
-                        optimClass = OnePlusOne if self.noise_from_instrumentation else SQP
+                        optimClass = OnePlusOne if self.noise_from_instrumentation or self.num_workers > 1 else SQP
                     else:
                         optimClass = OnePlusOne
                 else:
