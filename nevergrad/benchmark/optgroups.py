@@ -64,6 +64,7 @@ def splitters() -> tp.Sequence[Optim]:
                 num_optims=num_optims
             ).set_name(name)
         optims.append(opt)
+    optims.append("MetaNGOpt8")
     return optims
 
 

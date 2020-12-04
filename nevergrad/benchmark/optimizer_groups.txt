@@ -18,6 +18,4 @@ parallel_basics = ['NGOpt8', 'CMandAS2', 'CMA', 'DE', 'MetaModel']
 
 progressive = [ProgDiscAuto, ProgDisc13, ProgDiscInf, ProgAuto, Prog13, ProgInf]
 
-splitters = [SplitCMAAuto, SplitCMA3, SplitCMA5, SplitCMA9, SplitCMA13]
-
 spsa = ['NaiveTBPSA', 'SPSA', 'TBPSA']

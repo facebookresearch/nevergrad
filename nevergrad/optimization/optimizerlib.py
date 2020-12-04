@@ -1937,7 +1937,6 @@ class NGOptBase(base.Optimizer):
                             else:
                                 # DE is great in such a case (?).
                                 cls = DE if self.dimension > 2000 else CMA if self.dimension > 1 else OnePlusOne
-        assert num_workers != 2, cls
         return cls
 
     def _internal_ask_candidate(self) -> p.Parameter:
