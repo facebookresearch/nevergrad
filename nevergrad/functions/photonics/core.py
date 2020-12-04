@@ -27,7 +27,7 @@ from .. import base
 
 def _make_parametrization(
     name: str, dimension: int, bounding_method: str = "bouncing", rolling: bool = False, 
-    as_tuple: bool=False) -> p.Array:
+    as_tuple: bool=False) -> p.Parameter:
     """Creates appropriate parametrization for a Photonics problem
 
     Parameters
