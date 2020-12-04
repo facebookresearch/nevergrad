@@ -1898,8 +1898,7 @@ class NGOptBase(base.Optimizer):
     @property
     def optim(self) -> base.Optimizer:
         if self._optim is None:
-            cls = self._select_optimizer_cls()
-            self._optim = cls(self.parametrization, self.budget, self.num_workers)
+            self._optim = self._select_optimizer_cls()(self.parametrization, self.budget, self.num_workers)
             optim = self._optim if not isinstance(self._optim, NGOptBase) else self._optim.optim
             logger.debug("%s selected %s optimizer.", *(x.name for x in (self, optim)))
         return self._optim
