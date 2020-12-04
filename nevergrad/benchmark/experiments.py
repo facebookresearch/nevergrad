@@ -1253,7 +1253,7 @@ def far_optimum_es(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def photonics(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def photonics(seed: tp.Optional[int] = None, as_tuple: bool=False) -> tp.Iterator[Experiment]:
     """Too small for being interesting: Bragg mirror + Chirped + Morpho butterfly."""
     seedg = create_seed_generator(seed)
     popsizes = [20, 40, 80]
@@ -1274,6 +1274,13 @@ def photonics(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                     if not xp.is_incoherent:
                         yield xp
 
+
+@registry.register
+def photonics2(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with higher dimensions."""
+    internal_generator = photonics(seed, as_tuple=True)
+    for xp in internal_generator:
+        yield xp
 
 @registry.register
 def bragg_structure(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:

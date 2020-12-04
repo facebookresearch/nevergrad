@@ -25,7 +25,9 @@ from . import photonics
 from .. import base
 
 
-def _make_parametrization(name: str, dimension: int, bounding_method: str = "bouncing", rolling: bool = False) -> p.Array:
+def _make_parametrization(
+    name: str, dimension: int, bounding_method: str = "bouncing", rolling: bool = False, 
+    as_tuple: bool=False) -> p.Array:
     """Creates appropriate parametrization for a Photonics problem
 
     Parameters
@@ -35,6 +37,8 @@ def _make_parametrization(name: str, dimension: int, bounding_method: str = "bou
         size of the problem among 16, 40 and 60 (morpho) or 80 (bragg and chirped)
     bounding_method: str
         transform type for the bounding ("arctan", "tanh", "bouncing" or "clipping"see `Array.bounded`)
+    as_tuple: bool
+        whether we should use a Tuple of Array instead of a 2D-array.
 
     Returns
     -------
@@ -58,6 +62,10 @@ def _make_parametrization(name: str, dimension: int, bounding_method: str = "bou
     b_array = np.array(bounds)
     assert b_array.shape[0] == shape[0]  # pylint: disable=unsubscriptable-object
     init = np.sum(b_array, axis=1, keepdims=True).dot(np.ones((1, shape[1],))) / 2
+    if as_tuple:
+        instrum = p.Instrumentation(Array(init=init[:, i]).set_bounds(b_array[:, [0]], b_array[:, [1]],
+            method=bounding_method, full_range_sampling=True) for i in range(init.shape[1]))
+        return instrum
     array = p.Array(init=init)
     if bounding_method not in ("arctan", "tanh"):
         # sigma must be adapted for clipping and constraint methods
@@ -115,15 +123,19 @@ class Photonics(base.ExperimentFunction):
       Moosh: A Numerical Swiss Army Knife for the Optics of Multilayers in Octave/Matlab. Journal of Open Research Software, 4(1), p.e13.
     """
 
-    def __init__(self, name: str, dimension: int, bounding_method: str = "clipping", rolling: bool = False) -> None:
+    def __init__(self, name: str, dimension: int, bounding_method: str = "clipping", rolling: bool = False, as_tuple=False) -> None:
         assert name in ["bragg", "morpho", "chirped"]
         self.name = name
+        self._as_tuple = as_tuple
         self._base_func = {"morpho": photonics.morpho, "bragg": photonics.bragg, "chirped": photonics.chirped}[name]
-        param = _make_parametrization(name=name, dimension=dimension, bounding_method=bounding_method, rolling=rolling)
+        param = _make_parametrization(name=name, dimension=dimension,
+            bounding_method=bounding_method, rolling=rolling, as_tuple=as_tuple)
         super().__init__(self._compute, param)
 
     # pylint: disable=arguments-differ
     def evaluation_function(self, x: np.ndarray) -> float:  # type: ignore
+        if self._as_tuple:
+            x = np.transpose(x)
         # pylint: disable=not-callable
         loss = self.function(x)
         assert isinstance(loss, float)
@@ -131,6 +143,8 @@ class Photonics(base.ExperimentFunction):
         return loss
 
     def _compute(self, x: np.ndarray) -> float:
+        if self._as_tuple:
+            x = np.transpose(x)
         x_cat = np.array(x, copy=False).ravel()
         assert x_cat.size == self.dimension
         try:
@@ -140,3 +154,5 @@ class Photonics(base.ExperimentFunction):
         if np.isnan(output):
             output = float("inf")
         return output
+
+
