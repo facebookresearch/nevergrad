@@ -567,7 +567,7 @@ def test_ngo_split_optimizer(name: str, expected: tp.List[str]) -> None:
     ]
 )
 def test_metangopt8(dimension: int, num_workers: int, expected: tp.List[str]) -> None:
-    param = ng.p.Choice(["const", ng.p.Array(init=[list(range(1, dimension+1))])])
+    param = ng.p.Choice(["const", ng.p.Array(init=list(range(1, dimension+1)))])
     opt = xpvariants.MetaNGOpt8(param, budget=1000, num_workers=num_workers)
     names = [o.optim.name for o in opt.optims]  # type: ignore
     assert names == expected
