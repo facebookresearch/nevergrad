@@ -860,6 +860,45 @@ class SPSA(base.Optimizer):
         return self.avg
 
 
+class _Rescaled(base.Optimizer):
+    """Proposes a version of a base optimizer which works at a different scale."""
+    def __init__(
+            self,
+            parametrization: IntOrParameter,
+            budget: tp.Optional[int] = None,
+            num_workers: int = 1,
+            base_optimizer: base.OptCls = CMA,
+            scale: tp.Optional[float] = None,
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        self._optimizer = base_optimizer(self.parametrization, budget=budget, num_workers=num_workers)
+        self._subcandidates: tp.Dict[str, p.Parameter] = {}
+        if scale is None:
+            assert budget is not None, "Either scale or budget must be known in _Rescaled."
+            scale = np.sqrt(np.log(self.budget) / self.dimension)
+        self.scale = scale
+        assert self.scale != 0., "scale should be non-zero in Rescaler."
+
+    def rescale_candidate(self, candidate: p.Parameter, inverse: bool=False) -> p.Parameter:
+        data = candidate.get_standardized_data(reference=self.parametrization)
+        scale = self.scale if not inverse else 1. / self.scale
+        return self.parametrization.spawn_child().set_standardized_data(scale * data)
+
+    def _internal_ask_candidate(self) -> p.Parameter:
+        candidate = self._optimizer.ask()
+        sent_candidate = self.rescale_candidate(candidate)
+        # We store the version corresponding to the underlying optimizer.
+        self._subcandidates[sent_candidate.uid] = candidate  
+        return sent_candidate
+
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        self._optimizer.tell(self._subcandidates.pop(candidate.uid), loss)
+
+    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        candidate = self.rescale_candidate(candidate, inverse=True)
+        self._optimizer.tell(candidate, loss)
+
+
 class SplitOptimizer(base.Optimizer):
     """Combines optimizers, each of them working on their own variables.
 
@@ -977,6 +1016,28 @@ class SplitOptimizer(base.Optimizer):
             opt.tell(local_candidate, loss)
 
 
+class Rescaled(base.ConfiguredOptimizer):
+    """Configured optimizer for creating rescaled optimization algorithms.
+
+    Parameters
+    ----------
+    base_optimizer: base.OptCls
+        optimization algorithm to be rescaled.
+    scale: how much do we rescale. E.g. 0.001 if we want to focus on the center
+        with std 0.001 (assuming the std of the domain is set to 1).
+    """
+    # pylint: disable=unused-argument
+    def __init__(
+        self,
+        *,
+        base_optimizer: base.OptCls = CMA,
+        scale: tp.Optional[float] = None,
+    ) -> None:
+        super().__init__(_Rescaled, locals())
+
+
+RescaledCMA = Rescaled().set_name("RescaledCMA", register=True)
+
 class ConfSplitOptimizer(base.ConfiguredOptimizer):
     """"Combines optimizers, each of them working on their own variables.
 
@@ -990,7 +1051,7 @@ class ConfSplitOptimizer(base.ConfiguredOptimizer):
         whether we progressively add optimizers.
     non_deterministic_descriptor: bool
         subparts parametrization descriptor is set to noisy function.
-        This can have an impact for optimizer selection for NGOpt optimizers.
+        This can have an impact for optimizer selection for competence maps.
     """
 
     # pylint: disable=unused-argument
