@@ -50,8 +50,6 @@ class Image(base.ExperimentFunction):
         array.set_recombination(ng.p.mutation.Crossover(axis=(0, 1), max_size=max_size)).set_name("")  # type: ignore
 
         super().__init__(self._loss, array)
-        self.register_initialization(problem_name=problem_name, index=index, loss=loss.__name__)
-        self._descriptors.update(problem_name=problem_name, index=index, loss=loss.__name__)
         self.loss_function = loss(reference=self.data)
 
     def _loss(self, x: np.ndarray) -> float:
