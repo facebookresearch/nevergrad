@@ -22,6 +22,13 @@ from scipy.linalg import toeplitz
 
 
 def bragg(X: np.ndarray) -> float:
+    """
+        Cost function for the Bragg mirror problem: maximizing the reflection
+        when the refractive index are given for all the layers.
+        Input: a vector whose components represent each the thickness of each
+        layer.
+        https://hal.archives-ouvertes.fr/hal-02613161
+    """
     lam = 600
     bar = int(np.size(X) / 2)
     n = np.concatenate(([1], np.sqrt(X[0:bar]), [1.7320508075688772]))
