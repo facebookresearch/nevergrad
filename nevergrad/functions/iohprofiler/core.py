@@ -44,8 +44,6 @@ class PBOFunction(base.ExperimentFunction):
         else:
             parameterization = ng.p.TransitionChoice([0, 1], repetitions=dim)
         super().__init__(self._evaluation_internal, parameterization.set_name(instrumentation))
-        self.descriptors.update(fid=fid, iid=iid)
-        self.register_initialization(fid=fid, iid=iid, dim=dim, instrumentation=instrumentation)
 
     def _evaluation_internal(self, x: np.ndarray) -> float:
         assert len(x) == self.f_internal.number_of_variables
@@ -114,10 +112,6 @@ class WModelFunction(base.ExperimentFunction):
         else:
             parameterization = ng.p.TransitionChoice([0, 1], repetitions=dim)
         super().__init__(self._evaluation_internal, parameterization.set_name("instrumentation"))
-        self.descriptors.update(base_function=base_function, iid=iid, dummy=dummy, epistasis=epistasis,
-                                neutrality=neutrality, ruggedness=ruggedness)
-        self.register_initialization(base_function=base_function, iid=iid, dim=dim, dummy=dummy, epistasis=epistasis,
-                                     neutrality=neutrality, ruggedness=ruggedness, instrumentation=instrumentation)
 
     def _evaluation_internal(self, x: np.ndarray) -> float:
         assert len(x) == self.f_internal.number_of_variables

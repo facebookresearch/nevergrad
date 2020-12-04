@@ -150,15 +150,11 @@ class ArtificialFunction(ExperimentFunction):
         if noise_level > 0:
             parametrization.descriptors.deterministic_function = False
         super().__init__(self.noisy_function, parametrization)
-        self.register_initialization(**self._parameters)
         self._aggregator = {"max": np.max, "mean": np.mean, "sum": np.sum}[aggregator]
         info = corefuncs.registry.get_info(self._parameters["name"])
         # add descriptors
-        self._descriptors.update(**self._parameters, useful_dimensions=block_dimension * num_blocks,
-                                 discrete=any(x in name for x in ["onemax", "leadingones", "jump"]))
-        # transforms are initialized at runtime to avoid slow init
-        if hasattr(self._func, "get_postponing_delay"):
-            raise RuntimeError('"get_posponing_delay" has been replaced by "compute_pseudotime" and has been  aggressively deprecated')
+        self.add_descriptors(useful_dimensions=block_dimension * num_blocks,
+                             discrete=any(x in name for x in ["onemax", "leadingones", "jump"]))
 
     @property
     def dimension(self) -> int:
@@ -249,10 +245,6 @@ class FarOptimumFunction(ExperimentFunction):
         parametrization.set_recombination("average" if recombination == "average" else p.mutation.Crossover())
         self._multiobjective = MultiobjectiveFunction(self._multifunc, 2 * self._optimum)
         super().__init__(self._multiobjective if multiobjective else self._monofunc, parametrization.set_name(""))  # type: ignore
-        descr = dict(independent_sigma=independent_sigma, mutable_sigma=mutable_sigma,
-                     multiobjective=multiobjective, optimum=optimum, recombination=recombination)
-        self._descriptors.update(descr)
-        self.register_initialization(**descr)
 
     def _multifunc(self, x: np.ndarray) -> np.ndarray:
         return np.abs(x - self._optimum)  # type: ignore

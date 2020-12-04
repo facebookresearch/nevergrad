@@ -121,8 +121,6 @@ class Photonics(base.ExperimentFunction):
         self._base_func = {"morpho": photonics.morpho, "bragg": photonics.bragg, "chirped": photonics.chirped}[name]
         param = _make_parametrization(name=name, dimension=dimension, bounding_method=bounding_method, rolling=rolling)
         super().__init__(self._compute, param)
-        self.register_initialization(name=name, dimension=dimension, bounding_method=bounding_method, rolling=rolling)
-        self._descriptors.update(name=name, bounding_method=bounding_method, rolling=rolling)
 
     def auto_suggest(self) -> p.Parameter:
         shape = self.parametrization.spawn_child().value.shape
