@@ -901,7 +901,7 @@ class SplitOptimizer(base.Optimizer):
             num_optims: tp.Optional[int] = None,
             num_vars: tp.Optional[tp.List[int]] = None,
             multivariate_optimizer: base.OptCls = CMA,
-            monovariate_optimizer: base.OptCls = RandomSearch,
+            monovariate_optimizer: base.OptCls = OnePlusOne,
             progressive: bool = False,
             non_deterministic_descriptor: bool = True,
     ) -> None:
@@ -1890,6 +1890,8 @@ class NGOptBase(base.Optimizer):
         self.has_discrete_not_softmax = any(issubclass(ct.cls, p.TransitionChoice) for ct in choicetags)
         self._has_discrete = any(issubclass(ct.cls, p.BaseChoice) for ct in choicetags)
         self._arity = max(ct.arity for ct in choicetags)
+        if self.fully_continuous:
+            self._arity = -1
         self._optim: tp.Optional[base.Optimizer] = None
         self._constraints_manager.update(
             max_trials=1000, penalty_factor=1.0, penalty_exponent=1.01,
