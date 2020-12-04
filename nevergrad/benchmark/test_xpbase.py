@@ -99,9 +99,9 @@ def test_seed_generator(seed: tp.Optional[int], randsize: int, expected: tp.List
 
 class Function(ExperimentFunction):
 
-    def __init__(self, dimension: int):
+    def __init__(self, dimension: int, default: int = 12):  # pylint: disable=unused-argument
+        # unused argument is used to check that it is automatically added as descriptor
         super().__init__(self.oracle_call, p.Array(shape=(dimension,)))
-        self.register_initialization(dimension=dimension)
 
     def oracle_call(self, x: np.ndarray) -> float:
         return float(x[0])
@@ -119,6 +119,7 @@ class Function(ExperimentFunction):
 def test_batch_mode_parameter(batch_mode: bool, expected: tp.List[str]) -> None:
     func = Function(dimension=1)
     optim = test_base.LoggingOptimizer(3)
+    assert "default" in func.descriptors
     with patch.object(xpbase.OptimizerSettings, "instantiate", return_value=optim):
         xp = xpbase.Experiment(func, optimizer="OnePlusOne", budget=10, num_workers=3, batch_mode=batch_mode)
         xp._run_with_error()

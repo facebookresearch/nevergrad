@@ -64,13 +64,13 @@ class MLTuning(ExperimentFunction):
                                 learning_rate=learning_rate, random_state=0)
         elif regressor == "kerasDenseNN":
             try:
-                from tensorflow import keras # pylint: disable=import-outside-toplevel
+                from tensorflow import keras  # pylint: disable=import-outside-toplevel
             except ImportError as e:
                 raise ImportError("Please install keras (pip install keras) to use keras ml tuning") from e
 
             regr = keras.Sequential([
-                    keras.layers.Dense(64, activation=activation, input_shape=(self.X_train.shape[1],)),
-                    keras.layers.Dense(1)
+                keras.layers.Dense(64, activation=activation, input_shape=(self.X_train.shape[1],)),
+                keras.layers.Dense(1)
             ])
             regr.compile(optimizer=solver, loss='mse', metrics=['mae'])
         else:
@@ -105,8 +105,6 @@ class MLTuning(ExperimentFunction):
         self.data_dimension = data_dimension
         self.dataset = dataset
         self.overfitter = overfitter
-        self._descriptors: tp.Dict[str, tp.Any] = {}
-        self.add_descriptors(regressor=regressor, data_dimension=data_dimension, dataset=dataset, overfitter=overfitter)
         self.name = regressor + f"Dim{data_dimension}"
         self.num_data = 120  # default for artificial function
         self._cross_val_num = 10  # number of cross validation
@@ -180,7 +178,8 @@ class MLTuning(ExperimentFunction):
                 regressor="kerasDenseNN",
                 # metrics=p.Choice(["mae", "mse"]),
             )
-            params = dict(noise_free=False, regressor="kerasDenseNN", depth=-3, criterion="no", min_samples_split=0.1, alpha=0.1, learning_rate="constant")
+            params = dict(noise_free=False, regressor="kerasDenseNN", depth=-3, criterion="no",
+                          min_samples_split=0.1, alpha=0.1, learning_rate="constant")
         else:
             assert False, f"Problem type {regressor} undefined!"
         # build eval params if not specified
@@ -190,8 +189,6 @@ class MLTuning(ExperimentFunction):
         evalparams["noise_free"] = not overfitter
         super().__init__(partial(self._ml_parametrization, **params), parametrization.set_name(""))
         self._evalparams = evalparams
-        self.register_initialization(regressor=regressor, data_dimension=data_dimension, dataset=dataset,
-                                     overfitter=overfitter)
 
     def evaluation_function(self, *args: tp.Any, **kwargs: tp.Any) -> float:
         assert not args
@@ -207,15 +204,15 @@ class MLTuning(ExperimentFunction):
             assert data_dimension is None
             if dataset == "kerasBoston":
                 try:
-                    from tensorflow import keras # pylint: disable=import-outside-toplevel
+                    from tensorflow import keras  # pylint: disable=import-outside-toplevel
                 except ImportError as e:
                     raise ImportError("Please install keras (pip install keras) to use keras ml tuning") from e
 
                 data = keras.datasets.boston_housing
             else:
                 data = {"boston": sklearn.datasets.load_boston,
-                       "diabetes": sklearn.datasets.load_diabetes,
-                    }[dataset](return_X_y=True)
+                        "diabetes": sklearn.datasets.load_diabetes,
+                        }[dataset](return_X_y=True)
 
             # Half the dataset for training.
             if dataset == "kerasBoston":
@@ -276,4 +273,3 @@ class MLTuning(ExperimentFunction):
         y_test = np.sum(target_function(X_test), axis=1).ravel()
         self.X_test = X_test
         self.y_test = y_test
-        

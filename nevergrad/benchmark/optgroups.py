@@ -8,7 +8,10 @@ import typing as tp
 import numpy as np
 import nevergrad as ng
 from nevergrad.common.decorators import Registry
+
 from nevergrad.optimization import base as obase
+from nevergrad.optimization.optimizerlib import ConfSplitOptimizer
+from nevergrad.optimization.optimizerlib import ParametrizedOnePlusOne
 
 Optim = tp.Union[obase.ConfiguredOptimizer, str]
 registry: Registry[tp.Callable[[], tp.Iterable[Optim]]] = Registry()
@@ -44,6 +47,56 @@ def large() -> tp.Sequence[Optim]:
             "TwoPointsDE", "OnePointDE", "AlmostRotationInvariantDE", "RotationInvariantDE",
             "Portfolio", "ASCMADEthird", "ASCMADEQRthird", "ASCMA2PDEthird", "CMandAS2", "CMandAS", "CM",
             "MultiCMA", "TripleCMA", "MultiScaleCMA", "RSQP", "RCobyla", "RPowell", "SQPCMA", "MetaModel", "PolyCMA", "ManyCMA"]
+
+
+@registry.register
+def emna_variants() -> tp.Sequence[Optim]:
+    return ["IsoEMNA", "NaiveIsoEMNA", "AnisoEMNA", "NaiveAnisoEMNA", "CMA", "NaiveTBPSA",
+              "NaiveIsoEMNATBPSA", "IsoEMNATBPSA", "NaiveAnisoEMNATBPSA", "AnisoEMNATBPSA"]
+
+
+@registry.register
+def splitters() -> tp.Sequence[Optim]:
+    optims:tp.List[Optim] = []
+    for num_optims in [None, 3, 5, 9, 13]:
+        name = "SplitCMA" + ("Auto" if num_optims is None else str(num_optims))
+        opt = ConfSplitOptimizer(
+                num_optims=num_optims
+            ).set_name(name)
+        optims.append(opt)
+    return optims
+
+
+@registry.register
+def progressive() -> tp.Sequence[Optim]:
+    optims:tp.List[Optim] = []
+    for mutation in ["discrete", "gaussian"]:
+        for num_optims in [None, 13, 10000]:
+            name = "Prog" + ("Disc" if mutation == "discrete" else "") + (
+                    "Auto" if num_optims is None else ("Inf" if num_optims == 10000 else str(num_optims)))
+            mv = ParametrizedOnePlusOne(noise_handling="optimistic", mutation=mutation)
+            opt = ConfSplitOptimizer(
+                num_optims=num_optims, progressive=True, multivariate_optimizer=mv
+            ).set_name(name)
+            optims.append(opt)
+    return optims
+
+
+@registry.register
+def basics() -> tp.Sequence[Optim]:
+    return ["NGOpt8", "CMandAS2", "CMA", "DE", "MetaModel", "BO"]
+
+
+@registry.register
+def baselines() -> tp.Sequence[Optim]:
+    # This list should not change. This is the basics for comparison.
+    # No algorithm with unstable other dependency.
+    return ["OnePlusOne", "DiscreteOnePlusOne", "NoisyDiscreteOnePlusOne", "PSO", "DE", "TwoPointsDE"]
+
+
+@registry.register
+def parallel_basics() -> tp.Sequence[Optim]:
+    return ["NGOpt8", "CMandAS2", "CMA", "DE", "MetaModel"]
 
 
 @registry.register
