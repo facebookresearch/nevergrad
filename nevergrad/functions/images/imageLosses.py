@@ -26,7 +26,7 @@ class SumAbsoluteDifferencesLoss(_ImageLossUsingRef):
         x = x.reshape(self.domain_shape)
         assert x.shape == self.domain_shape, f"Shape = {x.shape} vs {self.domain_shape}"
         # Define the loss, in case of recovering: the goal is to find the target image.
-        value = float(np.sum(np.fabs(np.subtract(x, self.reference))))
+        value = float(np.linalg.norm(x - self.reference, 1))
         return value
 
 
