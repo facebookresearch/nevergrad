@@ -60,7 +60,7 @@ def emna_variants() -> tp.Sequence[Optim]:
 def splitters() -> tp.Sequence[Optim]:
     optims:tp.List[Optim] = []
     for num_optims in [None, 3, 5, 9, 13]:
-        for str_optims in ["CMA", "ECMA", "DE", "TwoPointsDE"]:
+        for str_optim in ["CMA", "ECMA", "DE", "TwoPointsDE"]:
             optim = optimizerlib_registry[str_optim]
             name = "Split" + str_optim + ("Auto" if num_optims is None else str(num_optims))
             opt = ConfSplitOptimizer(
