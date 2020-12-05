@@ -84,9 +84,6 @@ class Mutator:
             discrete_data + np.random.choice([-1., 1.], size=dimension) * velocity,
             discrete_data)
         return discretization.inverse_threshold_discretization(discrete_data)
-        #return discretization.inverse_threshold_discretization([s if not b else s + np.random.choice([-1. ,1.]) * v for (b, s, v) 
-        #                                                        in zip(boolean_vector, discrete_data, velocity)])
-
 
     def discrete_mutation(self, parent: tp.ArrayLike, arity: int = 2) -> tp.ArrayLike:
         """This is the most classical discrete 1+1 mutation of the evolution literature."""
