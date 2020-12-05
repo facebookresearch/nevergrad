@@ -11,6 +11,7 @@ from nevergrad.common.decorators import Registry
 
 from nevergrad.optimization import base as obase
 from nevergrad.optimization.optimizerlib import ConfSplitOptimizer
+from nevergrad.optimization.optimizerlib import registry as optimizerlib_registry
 from nevergrad.optimization.optimizerlib import ParametrizedOnePlusOne
 
 Optim = tp.Union[obase.ConfiguredOptimizer, str]
@@ -59,11 +60,13 @@ def emna_variants() -> tp.Sequence[Optim]:
 def splitters() -> tp.Sequence[Optim]:
     optims:tp.List[Optim] = []
     for num_optims in [None, 3, 5, 9, 13]:
-        name = "SplitCMA" + ("Auto" if num_optims is None else str(num_optims))
-        opt = ConfSplitOptimizer(
-                num_optims=num_optims
-            ).set_name(name)
-        optims.append(opt)
+        for str_optims in ["CMA", "ECMA", "DE", "TwoPointsDE"]:
+            optim = optimizerlib_registry[str_optim]
+            name = "Split" + str_optim + ("Auto" if num_optims is None else str(num_optims))
+            opt = ConfSplitOptimizer(
+                    num_optims=num_optims
+                ).set_name(name)
+            optims.append(opt)
     return optims
 
 
