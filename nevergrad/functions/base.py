@@ -45,10 +45,12 @@ class ExperimentFunction:
         """
         inst = object.__new__(cls)
         sig = inspect.signature(cls.__init__)
-        boundargs = sig.bind(inst, *args, **kwargs)
-        boundargs.apply_defaults()  # make sure we get the default non-provided arguments
-        callargs = dict(boundargs.arguments)
-        callargs.pop("self")
+        callargs: tp.Dict[str, tp.Any] = {}
+        if args or kwargs:  # unpickling calls new without args nor kwargs
+            boundargs = sig.bind(inst, *args, **kwargs)
+            boundargs.apply_defaults()  # make sure we get the default non-provided arguments
+            callargs = dict(boundargs.arguments)
+            callargs.pop("self")
         inst._auto_init = callargs
         inst._descriptors = {x: y for x, y in callargs.items() if isinstance(y, (str, tuple, int, float, bool))}
         inst._descriptors["function_class"] = cls.__name__
