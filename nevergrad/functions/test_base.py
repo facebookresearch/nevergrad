@@ -132,5 +132,5 @@ def test_function_descriptors_and_pickle() -> None:
     func = ExampleFunction(dimension=1, number=3)
     assert "default" in func.descriptors
     out = pickle.dumps(func)
-    func2 = pickle.loads(out)
+    func2 = pickle.loads(out).copy()
     assert func2.descriptors["number"] == 3
