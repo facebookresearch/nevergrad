@@ -2010,68 +2010,6 @@ class NGOptBase(base.Optimizer):
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         self.optim.tell(candidate, loss)
 
-@registry.register
-class ShiwaC1(Shiwa):
-    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers) 
-        self.set_constraints_management(max_constraints_trials = 1000, constraint_penalization = 1., constraint_penalty_exponent = 1.0001,
-            penalize_cheap_violations = True, memorize_constraint_failures = False)
-
-@registry.register
-class ShiwaC2(Shiwa):
-    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers) 
-        self.set_constraints_management(max_constraints_trials = 1000, constraint_penalization = 1., constraint_penalty_exponent = 1.001,
-            penalize_cheap_violations = True, memorize_constraint_failures = False)
-
-@registry.register
-class ShiwaC3(Shiwa):
-    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers) 
-        self.set_constraints_management(max_constraints_trials = 1000, constraint_penalization = 1., constraint_penalty_exponent = 1.01,
-            penalize_cheap_violations = True, memorize_constraint_failures = False)
-
-@registry.register
-class ShiwaC4(Shiwa):
-    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers) 
-        self.set_constraints_management(max_constraints_trials = 1000, constraint_penalization = 1., constraint_penalty_exponent = 1.1,
-            penalize_cheap_violations = True, memorize_constraint_failures = False)
-
-@registry.register
-class ShiwaC0(Shiwa):
-    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers) 
-        self.set_constraints_management(max_constraints_trials = 10000, constraint_penalization = 0., constraint_penalty_exponent = 1.,
-            penalize_cheap_violations = False, memorize_constraint_failures = False)
-
-@registry.register
-class ShiwaC5(Shiwa):
-    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers) 
-        self.set_constraints_management(max_constraints_trials = 1000, constraint_penalization = 1., constraint_penalty_exponent = 1.0001,
-            penalize_cheap_violations = False, memorize_constraint_failures = False)
-
-@registry.register
-class ShiwaC6(Shiwa):
-    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers) 
-        self.set_constraints_management(max_constraints_trials = 1000, constraint_penalization = 1., constraint_penalty_exponent = 1.001,
-            penalize_cheap_violations = False, memorize_constraint_failures = False)
-
-@registry.register
-class ShiwaC7(Shiwa):
-    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers) 
-        self.set_constraints_management(max_constraints_trials = 1000, constraint_penalization = 1., constraint_penalty_exponent = 1.01,
-            penalize_cheap_violations = False, memorize_constraint_failures = False)
-
-@registry.register
-class ShiwaC8(Shiwa):
-    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers) 
-        self.set_constraints_management(max_constraints_trials = 1000, constraint_penalization = 1., constraint_penalty_exponent = 1.1,
-            penalize_cheap_violations = False, memorize_constraint_failures = False)
 
 @registry.register
 class Shiwa(NGOptBase):

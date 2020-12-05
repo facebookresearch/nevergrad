@@ -81,7 +81,6 @@ def mltuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool 
              
     if default_optims is not None:
         optims = default_optims
-    optims += ["Shiwa"] + ["ShiwaC" + str(i) for i in range(9)]
     for dimension in [None, 1, 2, 3]:
         for regressor in ["mlp", "decision_tree", "decision_tree_depth"]:
             for dataset in (
@@ -177,7 +176,6 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     optims: tp.List[str] = ["NGOpt8"] + get_optimizers("baselines", seed=next(seedg))  # type: ignore
     if default_optims is not None:
         optims = default_optims
-    optims += ["Shiwa"] + ["ShiwaC" + str(i) for i in range(9)]
     for optim in optims:
         for function in functions:
             for budget in [50, 1500, 50000]:
