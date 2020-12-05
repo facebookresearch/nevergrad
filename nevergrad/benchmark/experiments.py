@@ -43,7 +43,7 @@ from . import frozenexperiments  # noqa # pylint: disable=unused-import
 # fmt: off
 
 
-def _positive_sum_float(data: np.ndarray) -> bool:  # This one is Boolean.
+def _positive_sum_float(data: np.ndarray) -> float:  # This one is Boolean.
     if not isinstance(data, np.ndarray):
         raise ValueError(f"Unexpected inputs as np.ndarray, got {data}")
     return float(np.sum(data))
@@ -67,19 +67,19 @@ def _ball_float(data: np.ndarray) -> float:
     return float(np.sum(np.square(data))) - float(len(data)) - float(np.sqrt(len(data)))  # Most points violate the constraint.
 
 
-def _positive_sum(data: np.ndarray) -> bool:  # This one is Boolean.
+def _positive_sum(data: np.ndarray) -> float:  # This one is Boolean.
     if not isinstance(data, np.ndarray):
         raise ValueError(f"Unexpected inputs as np.ndarray, got {data}")
     return float(np.sum(data)) > 0
 
 
-def _positive_diff(data: np.ndarray) -> float:
+def _positive_diff(data: np.ndarray) -> bool:
     if not isinstance(data, np.ndarray):
         raise ValueError(f"Unexpected inputs as np.ndarray, got {data}")
     return float(np.sum(data[::2]) - np.sum(data[1::2])) > 0
 
 
-def _positive_second_diff(data: np.ndarray) -> float:
+def _positive_second_diff(data: np.ndarray) -> bool:
     if not isinstance(data, np.ndarray):
         raise ValueError(f"Unexpected inputs as np.ndarray, got {data}")
     return float(2 * np.sum(data[1::2]) - 3 * np.sum(data[::2])) > 0 
@@ -620,13 +620,13 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
     ]
     assert constraints < 8, "We have only four possible constraints."
     for func in functions:
-        if constraints > 0:
+        if constraints > 0 and constraints <= 4:
             func.parametrization.register_cheap_constraint(_positive_sum_float)
-        if constraints > 1:
+        if constraints > 1 and constraints <= 5:
             func.parametrization.register_cheap_constraint(_positive_diff_float)
-        if constraints > 2:
+        if constraints > 2 and constraints <= 6:
             func.parametrization.register_cheap_constraint(_positive_second_diff_float)
-        if constraints > 3:
+        if constraints > 3 and constraints <= 7:
             func.parametrization.register_cheap_constraint(_ball_float)
         if constraints > 4:
             func.parametrization.register_cheap_constraint(_positive_sum)
