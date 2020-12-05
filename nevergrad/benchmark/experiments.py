@@ -1345,7 +1345,7 @@ def adversarial_attack(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]
     if folder is None:
         warnings.warn("Using random images, set variable NEVERGRAD_ADVERSARIAL_EXPERIMENT_FOLDER to specify a folder")
     for func in ImageAdversarial.make_folder_functions(folder=folder):
-        for budget in [100, 200, 300, 400, 1700]:  # 200 queries.
+        for budget in [100, 200, 300, 400, 1700]:
             for num_workers in [1]:
                 for algo in optims:
                     xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
