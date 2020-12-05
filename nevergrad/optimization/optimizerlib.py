@@ -289,6 +289,7 @@ class _CMA(base.Optimizer):
             budget: tp.Optional[int] = None,
             num_workers: int = 1,
             scale: float = 1.0,
+            elitist: bool = False,
             popsize: tp.Optional[int] = None,
             diagonal: bool = False,
             fcmaes: bool = False,
@@ -296,6 +297,7 @@ class _CMA(base.Optimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._scale = scale
+        self._elitist = elitist
         self._popsize = max(self.num_workers, 4 + int(3 * np.log(self.dimension))) if popsize is None else popsize
         self._diagonal = diagonal
         self._fcmaes = fcmaes
@@ -312,7 +314,8 @@ class _CMA(base.Optimizer):
     def es(self) -> tp.Any:  # typing not possible since cmaes not imported :(
         if self._es is None:
             if not self._fcmaes:
-                inopts = dict(popsize=self._popsize, randn=self._rng.randn, CMA_diagonal=self._diagonal, verbose=0, seed=np.nan)
+                inopts = dict(popsize=self._popsize, randn=self._rng.randn, CMA_diagonal=self._diagonal, verbose=0, seed=np.nan,
+                              CMA_elitist=self._elitist)
                 self._es = cma.CMAEvolutionStrategy(x0=self._rng.normal(size=self.dimension) if self._random_init else np.zeros(
                     self.dimension, dtype=np.float), sigma0=self._scale, inopts=inopts)
             else:
@@ -367,6 +370,8 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
     ----------
     scale: float
         scale of the search
+    elitist: bool
+        whether we switch to elitist mode
     popsize: Optional[int] = None
         population size, should be n * self.num_workers for int n >= 1.
         default is max(self.num_workers, 4 + int(3 * np.log(self.dimension)))
@@ -384,6 +389,7 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         self,
         *,
         scale: float = 1.0,
+        elitist: bool = False,
         popsize: tp.Optional[int] = None,
         diagonal: bool = False,
         fcmaes: bool = False,
@@ -396,6 +402,7 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
 
 
 CMA = ParametrizedCMA().set_name("CMA", register=True)
+ECMA = ParametrizedCMA(elitist=True).set_name("ECMA", register=True)
 DiagonalCMA = ParametrizedCMA(diagonal=True).set_name("DiagonalCMA", register=True)
 FCMA = ParametrizedCMA(fcmaes=True).set_name("FCMA", register=True)
 
