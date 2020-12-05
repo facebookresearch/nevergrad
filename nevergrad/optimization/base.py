@@ -17,12 +17,20 @@ from . import utils
 from . import multiobjective as mobj
 
 
-registry: Registry[tp.Union["ConfiguredOptimizer", tp.Type["Optimizer"]]] = Registry()
+OptCls = tp.Union["ConfiguredOptimizer", tp.Type["Optimizer"]]
+registry: Registry[OptCls] = Registry()
 _OptimCallBack = tp.Union[tp.Callable[["Optimizer", "p.Parameter", float], None], tp.Callable[["Optimizer"], None]]
 X = tp.TypeVar("X", bound="Optimizer")
 Y = tp.TypeVar("Y")
 IntOrParameter = tp.Union[int, p.Parameter]
 _PruningCallable = tp.Callable[[utils.Archive[utils.MultiValue]], utils.Archive[utils.MultiValue]]
+
+
+def _loss(param: p.Parameter) -> float:
+    """Returns the loss if available, or inf otherwise.
+    Used to simplify handling of losses
+    """
+    return param.loss if param.loss is not None else float('inf')
 
 
 def load(cls: tp.Type[X], filepath: tp.PathLike) -> X:
@@ -93,10 +101,13 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         self._constraint_penalty_exponent: float = 1.001
 
         self.budget = budget
+
         # How do we deal with cheap constraints i.e. constraints which are fast and use low resources and easy ?
         # True ==> we penalize them (infinite values for candidates which violate the constraint).
         # False ==> we repeat the ask until we solve the problem.
+        self._constraints_manager = utils.ConstraintManager()
         self._penalize_cheap_violations = False
+
         self.parametrization = (
             parametrization
             if not isinstance(parametrization, (int, np.int))
@@ -385,9 +396,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             # but this allows obtaining both scalar and multiobjective loss (through losses)
             callback(self, candidate, loss)
         if not candidate.satisfies_constraints() and self.budget is not None:
-            penalty = self.penalty(candidate)
-            assert isinstance(loss, float)
-            assert isinstance(penalty, float)
+            penalty = self._constraints_manager.penalty(candidate, self.num_ask, self.budget)
             loss = loss + penalty
         if isinstance(loss, float):
             self._update_archive_and_bests(candidate, loss)
@@ -456,7 +465,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             callback(self)
         current_num_ask = self.num_ask
         # tentatives if a cheap constraint is available
-        for k in range(self._max_constraints_trials):  # TODO: this should be replaced by an optimization algorithm.
+        # TODO: this should be replaced by an optimization algorithm.
+        max_trials = self._constraints_manager.max_trials
+        for k in range(max_trials):
             is_suggestion = False
             if self._suggestions:
                 is_suggestion = True
@@ -466,11 +477,13 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 # only register actual asked points
             if candidate.satisfies_constraints():
                 break  # good to go!
-            if self._penalize_cheap_violations or (k == self._max_constraints_trials - 2 and self._memorize_constraint_failures):  # a tell may help before last tentative
-                self._internal_tell_candidate(candidate, float("Inf"))
+            if self._penalize_cheap_violations:
+                # TODO using a suboptimizer instead may help remove this
+                self._internal_tell_candidate(candidate, float("Inf"))  # DE requires a tell
             self._num_ask += 1  # this is necessary for some algorithms which need new num to ask another point
-            if k == self._max_constraints_trials - 1:
-                warnings.warn(f"Could not bypass the constraint after {self._max_constraints_trials} tentatives, sending candidate anyway.")
+            if k == max_trials - 1:
+                warnings.warn(f"Could not bypass the constraint after {max_trials} tentatives, "
+                              "sending candidate anyway.")
         if not is_suggestion:
             if candidate.uid in self._asked:
                 raise RuntimeError(

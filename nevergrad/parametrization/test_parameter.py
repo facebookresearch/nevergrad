@@ -244,6 +244,19 @@ def test_endogeneous_constraint() -> None:
     assert not param2.satisfies_constraints()
 
 
+def _return_val(val: float) -> float:  # pylint: disable=unused-argument
+    return val
+
+
+@pytest.mark.parametrize(  # type: ignore
+    "val,expected", [(1.0, True), (0.0, True), (-1.0, False)]
+)
+def test_float_constraint(val: float, expected: bool) -> None:
+    param = par.Scalar(val, mutable_sigma=True)
+    param.register_cheap_constraint(_return_val)
+    assert param.satisfies_constraints() is expected
+
+
 @pytest.mark.parametrize(  # type: ignore
     "name", ["clipping", "arctan", "tanh", "constraint", "bouncing"]
 )

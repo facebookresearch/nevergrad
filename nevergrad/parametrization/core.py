@@ -30,7 +30,7 @@ class Parameter:
         # Main features
         self.uid = uuid.uuid4().hex
         self.parents_uids: tp.List[str] = []
-        self.heritage: tp.Dict[str, tp.Any] = {"lineage": self.uid}  # passed through to children
+        self.heritage: tp.Dict[tp.Hashable, tp.Any] = {"lineage": self.uid}  # passed through to children
         self.loss: tp.Optional[float] = None  # associated loss
         self._losses: tp.Optional[np.ndarray] = None  # associated losses (multiobjective) as an array
         self._parameters = None if not parameters else Dict(**parameters)  # internal/model parameters
@@ -43,11 +43,11 @@ class Parameter:
         self._name: tp.Optional[str] = None
         self._frozen = False
         self._descriptors: tp.Optional[utils.Descriptors] = None
-        self._meta: tp.Dict[str, tp.Any] = {}  # for anything algorithm related
+        self._meta: tp.Dict[tp.Hashable, tp.Any] = {}  # for anything algorithm related
 
     @property
     def losses(self) -> np.ndarray:
-        """Pssibly multiobjective losses which were told
+        """Possibly multiobjective losses which were told
         to the optimizer along this parameter.
         In case of mono-objective loss, losses is the array containing this loss as sole element
 
@@ -277,10 +277,7 @@ class Parameter:
         if not self._constraint_checkers:
             return True
         val = self.value
-        def ok(x: tp.Union[bool, float]) -> bool:
-            """Adapts a constraints (possibly formulated as a float >= 0 or as a bool) to the generic boolean case."""
-            return x >= 0. if isinstance(x, float) else x
-        return all(ok(func(val)) for func in self._constraint_checkers)
+        return all(utils.float_penalty(func(val)) <= 0 for func in self._constraint_checkers)
 
     def register_cheap_constraint(self, func: tp.Union[tp.Callable[[tp.Any], bool], tp.Callable[[tp.Any], float]]) -> None:
         """Registers a new constraint on the parameter values.
@@ -289,7 +286,7 @@ class Parameter:
         ----------
         func: Callable
             function which, given the value of the instance, returns whether it satisfies the constraints (if output = bool),
-            or a float which is >= 0. if the constraint is satisfied (if output = float).
+            or a float which is >= 0 if the constraint is satisfied.
 
         Note
         ----

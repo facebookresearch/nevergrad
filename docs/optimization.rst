@@ -91,6 +91,7 @@ Also, **you can print the full list of optimizers** with:
 
 All algorithms have strengths and weaknesses. Questionable rules of thumb could be:
 
+- :code:`NGOpt` is "meta"-optimizer which adapts to the provided settings (budget, number of workers, parametrization) and should therefore be a good default.
 - :code:`TwoPointsDE` is excellent in many cases, including very high :code:`num_workers`.
 - :code:`PortfolioDiscreteOnePlusOne` is excellent in discrete settings of mixed settings when high precision on parameters is not relevant; it's possibly a good choice for hyperparameter choice.
 - :code:`OnePlusOne` is a simple robust method for continuous parameters with :code:`num_workers` < 8.
@@ -155,6 +156,7 @@ Optimization with constraints
 Nevergrad has a mechanism for cheap constraints.
 "Cheap" means that we do not try to reduce the number of calls to such constraints.
 We basically repeat mutations until we get a satisfiable point.
+
 Let us say that we want to minimize :code:`(x[0]-.5)**2 + (x[1]-.5)**2` under the constraint :code:`x[0] >= 1`.
 
 .. literalinclude:: ../nevergrad/optimization/test_doc.py
