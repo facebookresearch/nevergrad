@@ -114,7 +114,7 @@ def competence_map() -> tp.Sequence[Optim]:
 def competitive() -> tp.Sequence[Optim]:
     """A set of competitive algorithms
     """
-    return get_optimizers("cma", "competence_map") + ["NaiveTBPSA", "PSO", "DE", "LhsDE", "RandomSearch", "OnePlusOne", "TwoPointsDE"]
+    return get_optimizers("cma", "competence_map") + ["MetaNGOpt8", "NaiveTBPSA", "PSO", "DE", "LhsDE", "RandomSearch", "OnePlusOne", "TwoPointsDE"]
 
 
 @registry.register
