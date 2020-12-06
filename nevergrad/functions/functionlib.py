@@ -48,12 +48,13 @@ class ArtificialVariable:
         if not self._transforms:
             self._initialize()
         if self.hashing:
+            data2 = np.array(data, copy=True)
             state = np.random.get_state()
             for i, y in enumerate(data):
-                np.random.seed(int(int(hashlib.md5(str(y).encode()).hexdigest(), 16) % 500000))  # type: ignore
-                data[i] = np.random.normal(0., 1.)  # type: ignore
+                np.random.seed(int(int(hashlib.md5(str(int(1000*y)).encode()).hexdigest(), 16) % 500000))  # type: ignore
+                data2[i] = np.random.normal(0., 1.)  # type: ignore
             np.random.set_state(state)
-        data = np.array(data, copy=False)
+        data = np.array(data2, copy=False)
         output = []
         for transform in self._transforms:
             output.append(data[transform.indices] if self.only_index_transform else transform(data))
