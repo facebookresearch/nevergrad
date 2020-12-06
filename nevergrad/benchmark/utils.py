@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import collections
+from collections import abc
 import numpy as np
 import pandas as pd
 import nevergrad.common.typing as tp
@@ -39,7 +39,7 @@ class Selector(pd.DataFrame):  # type: ignore
         """
         df = self
         for name, criterion in kwargs.items():
-            if isinstance(criterion, collections.abc.Iterable) and not isinstance(criterion, str):
+            if isinstance(criterion, abc.Iterable) and not isinstance(criterion, str):
                 selected = df.loc[:, name].isin(criterion)
             elif callable(criterion):
                 selected = [bool(criterion(x)) for x in df.loc[:, name]]

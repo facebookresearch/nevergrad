@@ -7,8 +7,6 @@ from .oneshot import SamplingSearch
 from .differentialevolution import DifferentialEvolution
 from .optimizerlib import RandomSearchMaker, SQP, LHSSearch, DE, RandomSearch, MetaRecentering, MetaTuneRecentering  # type: ignore
 from .optimizerlib import (
-    OptimisticNoisyOnePlusOne,
-    OptimisticDiscreteOnePlusOne,
     ParametrizedOnePlusOne,
     ParametrizedCMA,
     ConfiguredPSO,
@@ -275,59 +273,6 @@ chainCMAwithMetaRecentering = Chaining(
     [MetaRecentering, CMA], ["num_workers"]
 ).set_name("chainCMAwithMetaRecentering", register=True)
 
-# SplitOptimizer
-SplitCMA3 = ConfSplitOptimizer(num_optims=3).set_name(
-    "SplitCMA3", register=True
-)
-SplitCMA5 = ConfSplitOptimizer(num_optims=5).set_name(
-    "SplitCMA5", register=True
-)
-SplitCMA9 = ConfSplitOptimizer(num_optims=9).set_name(
-    "SplitCMA9", register=True
-)
-SplitCMA13 = ConfSplitOptimizer(num_optims=13).set_name(
-    "SplitCMA13", register=True
-)
-SplitCMAAuto = ConfSplitOptimizer().set_name("SplitCMAAuto", register=True)
-
-# ProgOptimizer
-ProgONOPO3 = ConfSplitOptimizer(num_optims=3, progressive=True, multivariate_optimizer=OptimisticNoisyOnePlusOne).set_name(
-    "ProgONOPO3", register=True
-)
-ProgONOPO5 = ConfSplitOptimizer(num_optims=5, progressive=True, multivariate_optimizer=OptimisticNoisyOnePlusOne).set_name(
-    "ProgONOPO5", register=True
-)
-ProgONOPO9 = ConfSplitOptimizer(num_optims=9, progressive=True, multivariate_optimizer=OptimisticNoisyOnePlusOne).set_name(
-    "ProgONOPO9", register=True
-)
-ProgONOPO13 = ConfSplitOptimizer(num_optims=13, progressive=True, multivariate_optimizer=OptimisticNoisyOnePlusOne).set_name(
-    "ProgONOPO13", register=True
-)
-ProgONOPOInf = ConfSplitOptimizer(num_optims=100000, progressive=True, multivariate_optimizer=OptimisticNoisyOnePlusOne).set_name(
-    "ProgONOPOInf", register=True
-)
-ProgONOPOAuto = ConfSplitOptimizer(progressive=True, multivariate_optimizer=OptimisticNoisyOnePlusOne).set_name(
-    "ProgONOPOAuto", register=True
-)
-# ProgOptimizer
-ProgODOPO3 = ConfSplitOptimizer(num_optims=3, progressive=True, multivariate_optimizer=OptimisticDiscreteOnePlusOne).set_name(
-    "ProgODOPO3", register=True
-)
-ProgODOPO5 = ConfSplitOptimizer(num_optims=5, progressive=True, multivariate_optimizer=OptimisticDiscreteOnePlusOne).set_name(
-    "ProgODOPO5", register=True
-)
-ProgODOPO9 = ConfSplitOptimizer(num_optims=9, progressive=True, multivariate_optimizer=OptimisticDiscreteOnePlusOne).set_name(
-    "ProgODOPO9", register=True
-)
-ProgODOPO13 = ConfSplitOptimizer(num_optims=13, progressive=True, multivariate_optimizer=OptimisticDiscreteOnePlusOne).set_name(
-    "ProgODOPO13", register=True
-)
-ProgODOPOInf = ConfSplitOptimizer(num_optims=100000, progressive=True, multivariate_optimizer=OptimisticDiscreteOnePlusOne).set_name(
-    "ProgODOPOInf", register=True
-)
-ProgODOPOAuto = ConfSplitOptimizer(progressive=True, multivariate_optimizer=OptimisticDiscreteOnePlusOne).set_name(
-    "ProgODOPOAuto", register=True
-)
 ProgNGOpt4 = ConfSplitOptimizer(progressive=True, multivariate_optimizer=NGOpt4).set_name(  # type:ignore
     "ProgNGOpt4", register=True
 )

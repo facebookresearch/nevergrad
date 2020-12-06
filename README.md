@@ -15,7 +15,7 @@ More installation options, including windows installation, and complete instruct
 
 You can join Nevergrad users Facebook group [here](https://www.facebook.com/groups/nevergradusers/).
 
-Minimizing a function using an optimizer (here `NGO`) is straightforward:
+Minimizing a function using an optimizer (here `NGOpt`) is straightforward:
 
 ```python
 import nevergrad as ng
@@ -23,7 +23,7 @@ import nevergrad as ng
 def square(x):
     return sum((x - .5)**2)
 
-optimizer = ng.optimizers.NGO(parametrization=2, budget=100)
+optimizer = ng.optimizers.NGOpt(parametrization=2, budget=100)
 recommendation = optimizer.minimize(square)
 print(recommendation.value)  # recommended value
 >>> [0.49971112 0.5002944]
@@ -50,7 +50,7 @@ parametrization = ng.p.Instrumentation(
     architecture=ng.p.Choice(["conv", "fc"])
 )
 
-optimizer = ng.optimizers.NGO(parametrization=parametrization, budget=100)
+optimizer = ng.optimizers.NGOpt(parametrization=parametrization, budget=100)
 recommendation = optimizer.minimize(fake_training)
 
 # show the recommended keyword arguments of the function
