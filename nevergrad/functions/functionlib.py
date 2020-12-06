@@ -149,7 +149,7 @@ class ArtificialFunction(ExperimentFunction):
         assert not (split and hashing)
         assert not (split and useless_variables > 0)
         parametrization = p.Array(shape=(1,) if hashing else (self._dimension,)).set_name("") if not split else (
-            p.Instrumentation([p.Array(shape=(block_dimension,)) for _ in range(num_blocks)]).set_name("split"))
+            p.Instrumentation(*[p.Array(shape=(block_dimension,)) for _ in range(num_blocks)]).set_name("split"))
         if noise_level > 0:
             parametrization.descriptors.deterministic_function = False
         super().__init__(self.noisy_function, parametrization)
