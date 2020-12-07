@@ -414,17 +414,29 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # tentatives if a cheap constraint is available
         # TODO: this should be replaced by an optimization algorithm.
         max_trials = self._constraints_manager.max_trials
+        use_auxiliary_optimizer = True  # If enabled, we use the 2nd half of budget for an auxiliary optimization method.
+        auxiliary_optimizer = None
         for k in range(max_trials):
             is_suggestion = False
             if self._suggestions:
                 is_suggestion = True
                 candidate = self._suggestions.pop()
             else:
-                candidate = self._internal_ask_candidate()
+                if use_auxiliary_optimizer and k > max_trials / 2 and not auxiliary_optimizer:
+                    auxiliary_optimizer = registry["OnePlusOne"](self.parametrization, num_workers=1)
+                if auxiliary_optimizer:
+                    candidate = auxiliary_optimizer.recommend() if k == max_trials - 1 else auxiliary_optimizer.ask()
+                else:
+                    candidate = self._internal_ask_candidate()
                 # only register actual asked points
             if candidate.satisfies_constraints():
                 break  # good to go!
-            if self._penalize_cheap_violations:
+            if auxiliary_optimizer:
+                violation = candidate.constraint_violation()
+                distance_penalization = np.tanh(np.sum((candidate.value - original_candidate.value) ** 2))
+                auxiliary_optimizer.tell(candidate, (
+                    distance_penalization + 1. + violation) if violation > 0. else distance_penalization)
+            if self._penalize_cheap_violations and not use_auxiliary_optimizer:
                 # TODO using a suboptimizer instead may help remove this
                 self._internal_tell_candidate(candidate, float("Inf"))  # DE requires a tell
             self._num_ask += 1  # this is necessary for some algorithms which need new num to ask another point

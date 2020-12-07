@@ -263,6 +263,23 @@ class Parameter:
 
     # %% Constraint management
 
+    def constraint_violation(self) -> float:
+        """Returns maximum of constraint values.u
+        Uses 1 for True, constraint violation for float, negative numbers ok
+        when inside the satisfaction domain.
+
+        Returns
+        -------
+        float
+            max constraint violation.
+        """
+        if self._parameters is not None and not self.parameters.satisfies_constraints():
+            return 1.
+        if not self._constraint_checkers:
+            return 0.
+        val = self.value
+        return max(utils.float_penalty(func(val)) for func in self._constraint_checkers)
+        
     def satisfies_constraints(self) -> bool:
         """Whether the instance satisfies the constraints added through
         the `register_cheap_constraint` method
@@ -272,12 +289,7 @@ class Parameter:
         bool
             True iff the constraint is satisfied
         """
-        if self._parameters is not None and not self.parameters.satisfies_constraints():
-            return False
-        if not self._constraint_checkers:
-            return True
-        val = self.value
-        return all(utils.float_penalty(func(val)) <= 0 for func in self._constraint_checkers)
+        return self.constraint_violation() <= 0.
 
     def register_cheap_constraint(self, func: tp.Union[tp.Callable[[tp.Any], bool], tp.Callable[[tp.Any], float]]) -> None:
         """Registers a new constraint on the parameter values.
