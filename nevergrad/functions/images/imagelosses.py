@@ -21,7 +21,7 @@ class SumAbsoluteDifferencesLoss(_ImageLoss):
         return value
 
 
-class Koncept512Loss(_ImageLoss):
+class Koncept512(ImageLoss):
     """
     This loss uses the neural network Koncept512 to score images
     It takes one image or a list of images of shape [x, y, 3] and returns a score
