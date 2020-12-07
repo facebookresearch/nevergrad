@@ -7,7 +7,7 @@ class _ImageLoss:
         self.reference = reference
 
     def __call__(self, img: np.ndarray) -> float:
-        pass
+        raise NotImplementedError
 
 
 class SumAbsoluteDifferences(ImageLoss):
