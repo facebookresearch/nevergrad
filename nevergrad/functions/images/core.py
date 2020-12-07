@@ -188,7 +188,7 @@ class ImageFromPGAN(base.ExperimentFunction):
     problem_name: the type of problem we are working on.
     initial_noise: the initial noise of the GAN. It should be of dimension (1, 512). If None, it is defined randomly.
     use_gpu: whether to use gpus to compute the images
-    scorer: which scorer to use for the images
+    loss: which loss to use for the images
     mutable_sigma: whether the sigma should be mutable
     n_mutations: number of mutations
     """
