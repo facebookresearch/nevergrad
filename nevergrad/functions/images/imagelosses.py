@@ -2,7 +2,7 @@ import numpy as np
 from koncept.models import Koncept512
 
 
-class _ImageLoss:
+class ImageLoss:
     def __init__(self, reference=None) -> None:
         self.reference = reference
 
