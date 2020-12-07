@@ -1,5 +1,5 @@
 import numpy as np
-from koncept.models import Koncept512
+from koncept.models import Koncept512 as K512_model
 
 
 class ImageLoss:
@@ -28,7 +28,7 @@ class Koncept512(ImageLoss):
     """
     def __init__(self) -> None:
         super().__init__()
-        self.koncept = Koncept512()
+        self.koncept = K512_model()
 
     def __call__(self, img: np.ndarray) -> float:
         loss = self.koncept.assess(img)
