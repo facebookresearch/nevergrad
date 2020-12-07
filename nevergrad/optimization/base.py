@@ -414,7 +414,12 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # tentatives if a cheap constraint is available
         # TODO: this should be replaced by an optimization algorithm.
         max_trials = self._constraints_manager.max_trials
-        use_auxiliary_optimizer = True  # If enabled, we use the 2nd half of budget for an auxiliary optimization method.
+        # Very simple constraint solver:
+        # - we use a simple algorithm.
+        # - no memory of previous iterations.
+        # - just projection to constraint satisfaction.
+        # We try using the normal tool during half constraint budget, in order to reduce the impact on the normal run.
+        use_auxiliary_optimizer = True  
         auxiliary_optimizer = None
         for k in range(max_trials):
             is_suggestion = False
@@ -437,7 +442,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 auxiliary_optimizer.tell(candidate, (
                     distance_penalization + 1. + violation) if violation > 0. else distance_penalization)
             if self._penalize_cheap_violations and not use_auxiliary_optimizer:
-                # TODO using a suboptimizer instead may help remove this
+                # Warning! This might be a tell not asked.
                 self._internal_tell_candidate(candidate, float("Inf"))  # DE requires a tell
             self._num_ask += 1  # this is necessary for some algorithms which need new num to ask another point
             if k == max_trials - 1:
