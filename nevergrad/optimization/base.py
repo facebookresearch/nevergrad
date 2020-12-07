@@ -421,6 +421,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # We try using the normal tool during half constraint budget, in order to reduce the impact on the normal run.
         use_auxiliary_optimizer = True  
         auxiliary_optimizer = None
+        original_candidate = None
         for k in range(max_trials):
             is_suggestion = False
             if self._suggestions:
@@ -434,6 +435,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 else:
                     candidate = self._internal_ask_candidate()
                 # only register actual asked points
+            if not original_candidate:
+                original_candidate = candidate
             if candidate.satisfies_constraints():
                 break  # good to go!
             if auxiliary_optimizer:
