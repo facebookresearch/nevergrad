@@ -551,13 +551,15 @@ def test_bo_ordering() -> None:
 
 
 @pytest.mark.parametrize(  # type: ignore
-    "name,fake_learning,budget,expected", [
-        ("NGOpt8", False, 100, ["OnePlusOne", "OnePlusOne"]),
-        ("NGOpt8", False, 200, ["SQP", "SQP"]),
-        ("NGOpt8", True, 1000, ['SQP', 'monovariate', 'monovariate']),
+    "name,dimension,num_workers,fake_learning,budget,expected", [
+        ("NGOpt8", 3, 1, False, 100, ["OnePlusOne", "OnePlusOne"]),
+        ("NGOpt8", 3, 1, False, 200, ["SQP", "SQP"]),
+        ("NGOpt8", 3, 1, True, 1000, ["SQP", "monovariate", "monovariate"]),
+        (None, 3, 1, False, 1000, ["CMA", "CMA"]),
+        (None, 3, 20, False, 1000, ["MetaModel", "MetaModel"]),
         ]
 )
-def test_ngo_split_optimizer(name: str, fake_learning: bool, budget: int, expected: tp.List[str]) -> None:
+def test_ngo_split_optimizer( name: str, dimension: int, num_workers: int, fake_learning: bool, budget: int, expected: tp.List[str]) -> None:
     param = ng.p.Instrumentation(
       # a log-distributed scalar between 0.001 and 1.0
       learning_rate=ng.p.Log(lower=0.001, upper=1.0),
@@ -565,23 +567,14 @@ def test_ngo_split_optimizer(name: str, fake_learning: bool, budget: int, expect
       batch_size=ng.p.Scalar(lower=1, upper=12).set_integer_casting(),
       # either "conv" or "fc"
       architecture=ng.p.Choice(["conv", "fc"])
-    ) if fake_learning else ng.p.Choice(["const", ng.p.Array(init=[1, 2, 3])])
-    Opt = optlib.registry[name]
-    opt = optlib.ConfSplitOptimizer(multivariate_optimizer=Opt)(param, budget=budget)
-    names = [o.optim.name if o.dimension != 1 else "monovariate" for o in opt.optims]  # type: ignore
-    assert names == expected
-
-
-@pytest.mark.parametrize(  # type: ignore
-    "dimension,num_workers,expected", [
-    (3, 1, ["SQP", "DiscreteOnePlusOne"]),
-    (1, 20, ["OnePlusOne", "CMandAS2"]),
-    ]
-)
-def test_metangopt8(dimension: int, num_workers: int, expected: tp.List[str]) -> None:
-    param = ng.p.Choice(["const", ng.p.Array(init=list(range(1, dimension+1)))])
-    opt = xpvariants.MetaNGOpt8(param, budget=1000, num_workers=num_workers)
-    names = [o.optim.name for o in opt.optims]  # type: ignore
+    ) if fake_learning else ng.p.Choice(["const", ng.p.Array(init=list(range(1, dimension+1)))])
+    if name is not None:
+        Opt = optlib.registry[name]
+        opt = optlib.ConfSplitOptimizer(multivariate_optimizer=Opt)
+    else:
+        opt = xpvariants.MetaNGOpt8
+    optimizer = opt(param, budget=budget, num_workers=num_workers)
+    names = [o.optim.name if o.dimension != 1 or name is None else "monovariate" for o in optimizer.optims]  # type: ignore
     assert names == expected
 
 

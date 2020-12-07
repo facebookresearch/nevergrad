@@ -334,6 +334,6 @@ HCHAvgCauchyLHSSearch = SamplingSearch(sampler="LHS", cauchy=True, recommendatio
 
 
 # Split on top of competence map.
-MetaNGOpt8 = ConfSplitOptimizer(multivariate_optimizer=NGOpt8, monovariate_optimizer=NGOpt8).set_name("MetaNGOpt8", register=True)
+MetaNGOpt8 = ConfSplitOptimizer(multivariate_optimizer=NGOpt8, monovariate_optimizer=NGOpt8, non_deterministic_descriptor=False).set_name("MetaNGOpt8", register=True)
 
 
