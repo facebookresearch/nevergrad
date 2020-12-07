@@ -1155,7 +1155,6 @@ def learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.Arra
     except ValueError:
         raise InfiniteMetaModelOptimum("Infinite meta-model optimum in learn_on_k_best.")
 
-
     if np.sum(minimum**2) > 1.:
         raise InfiniteMetaModelOptimum("huge meta-model optimum in learn_on_k_best.")
     return middle + normalization * minimum
