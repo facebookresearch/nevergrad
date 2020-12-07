@@ -10,7 +10,7 @@ class _ImageLoss:
         pass
 
 
-class SumAbsoluteDifferencesLoss(_ImageLoss):
+class SumAbsoluteDifferences(ImageLoss):
     def __init__(self, reference: np.ndarray) -> None:
         super().__init__(reference)
         self.domain_shape = self.reference.shape
