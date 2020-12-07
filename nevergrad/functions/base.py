@@ -46,8 +46,11 @@ class ExperimentFunction:
         inst = object.__new__(cls)
         sig = inspect.signature(cls.__init__)
         callargs: tp.Dict[str, tp.Any] = {}
-        if args or kwargs:  # unpickling calls new without args nor kwargs
+        try:
             boundargs = sig.bind(inst, *args, **kwargs)
+        except TypeError:
+            pass  # either a problem which will be caught later or a unpickling
+        else:
             boundargs.apply_defaults()  # make sure we get the default non-provided arguments
             callargs = dict(boundargs.arguments)
             callargs.pop("self")
