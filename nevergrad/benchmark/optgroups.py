@@ -64,6 +64,7 @@ def splitters() -> tp.Sequence[Optim]:
                 num_optims=num_optims
             ).set_name(name)
         optims.append(opt)
+    optims.append("MetaNGOpt8")
     return optims
 
 
@@ -113,7 +114,7 @@ def competence_map() -> tp.Sequence[Optim]:
 def competitive() -> tp.Sequence[Optim]:
     """A set of competitive algorithms
     """
-    return get_optimizers("cma", "competence_map") + ["NaiveTBPSA", "PSO", "DE", "LhsDE", "RandomSearch", "OnePlusOne", "TwoPointsDE"]
+    return get_optimizers("cma", "competence_map") + ["MetaNGOpt8", "NaiveTBPSA", "PSO", "DE", "LhsDE", "RandomSearch", "OnePlusOne", "TwoPointsDE"]
 
 
 @registry.register

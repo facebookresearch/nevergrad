@@ -1144,6 +1144,7 @@ def learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.Arra
     model.fit(X2, y)
 
     try:
+<<<<<<< HEAD
         for cls in Powell, DE:  # Powell excellent here, DE as a backup for thread safety.
             optimizer = cls(parametrization=dimension, budget=45*dimension+30)
             try:
@@ -1153,7 +1154,13 @@ def learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.Arra
             except RuntimeError:
                 assert cls == Powell, "Only Powell is allowed to crash here."
     except ValueError:
+=======
+        minimum = optimizer.minimize(
+            lambda x: float(model.predict(polynomial_features.fit_transform(x[None, :])))).value
+    except (ValueError, RuntimeError):
+>>>>>>> 22926615cb0208fc0e43f6d729ea1944a083cf74
         raise InfiniteMetaModelOptimum("Infinite meta-model optimum in learn_on_k_best.")
+        
 
     if np.sum(minimum**2) > 1.:
         raise InfiniteMetaModelOptimum("huge meta-model optimum in learn_on_k_best.")
@@ -2122,7 +2129,7 @@ class NGOpt4(NGOptBase):
             else:
                 if self.has_noise and self.fully_continuous:
                     if budget > 100:
-                        optimClass = OnePlusOne if self.noise_from_instrumentation else SQP
+                        optimClass = OnePlusOne if self.noise_from_instrumentation or self.num_workers > 1 else SQP
                     else:
                         optimClass = OnePlusOne
                 else:

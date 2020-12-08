@@ -10,8 +10,10 @@ from .optimizerlib import (
     ParametrizedOnePlusOne,
     ParametrizedCMA,
     ConfiguredPSO,
+    ConfSplitOptimizer,
     ParametrizedBO,
     EMNA,
+    NGOpt8,
 )
 from .optimizerlib import CMA, Chaining, PSO, BO
 
@@ -329,3 +331,9 @@ HCHAvgCauchyScrHammersleySearch = SamplingSearch(
 HCHAvgLHSSearch = SamplingSearch(sampler="LHS", recommendation_rule="average_of_hull_best").set_name("HCHAvgLHSSearch", register=True)
 HCHAvgCauchyLHSSearch = SamplingSearch(sampler="LHS", cauchy=True, recommendation_rule="average_of_hull_best").set_name(
     "HCHAvgCauchyLHSSearch", register=True)
+
+
+# Split on top of competence map.
+MetaNGOpt8 = ConfSplitOptimizer(multivariate_optimizer=NGOpt8, monovariate_optimizer=NGOpt8, non_deterministic_descriptor=False).set_name("MetaNGOpt8", register=True)
+
+
