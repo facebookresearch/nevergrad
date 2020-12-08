@@ -112,7 +112,7 @@ def keras_tuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: b
     for dimension in [None]:
         for regressor in ["kerasDenseNN"]:
             for dataset in (
-                    ["kerasBoston"]):
+                    ["kerasBoston", "boston", "diabetes"]):
                 function = MLTuning(regressor=regressor, data_dimension=dimension, dataset=dataset,
                                     overfitter=overfitter)
                 for budget in [50, 150, 500]:
