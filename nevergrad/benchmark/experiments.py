@@ -1357,7 +1357,7 @@ def far_optimum_es(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def photonics(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def photonics(seed: tp.Optional[int] = None, as_tuple: bool=False) -> tp.Iterator[Experiment]:
     """Too small for being interesting: Bragg mirror + Chirped + Morpho butterfly."""
     seedg = create_seed_generator(seed)
     popsizes = [20, 40, 80]
@@ -1371,13 +1371,20 @@ def photonics(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         optims = default_optims
     for method in ["clipping", "tanh"]:  # , "arctan"]:
         for name in ["bragg", "chirped", "morpho"]:
-            func = Photonics(name, 60 if name == "morpho" else 80, bounding_method=method)
+            func = Photonics(name, 60 if name == "morpho" else 80, bounding_method=method, as_tuple=as_tuple)
             for budget in [1e3, 1e4, 1e5, 1e6]:
                 for algo in optims:
                     xp = Experiment(func, algo, int(budget), num_workers=1, seed=next(seedg))
                     if not xp.is_incoherent:
                         yield xp
 
+
+@registry.register
+def photonics2(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with higher dimensions."""
+    internal_generator = photonics(seed, as_tuple=True)
+    for xp in internal_generator:
+        yield xp
 
 @registry.register
 def bragg_structure(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
