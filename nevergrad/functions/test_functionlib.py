@@ -106,7 +106,7 @@ def test_function_transform() -> None:
 
 def test_artificial_function_summary() -> None:
     func = functionlib.ArtificialFunction("sphere", 5)
-    testing.assert_set_equal(func.descriptors.keys(), DESCRIPTION_KEYS)
+    testing.assert_set_equal(func.descriptors.keys(), DESCRIPTION_KEYS | {"split"})
     np.testing.assert_equal(func.descriptors["function_class"], "ArtificialFunction")
 
 
