@@ -584,7 +584,11 @@ def paramultimodal(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 @registry.register
 def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = False, small: bool = False,
 <<<<<<< HEAD
+<<<<<<< HEAD
            noise: bool = False, hd: bool = False, split: bool = False) -> tp.Iterator[Experiment]:
+=======
+           noise: bool = False, hd: bool = False, constraints: int = 0) -> tp.Iterator[Experiment]:
+>>>>>>> c82d099bac932a11f63a839b264325743f4daa0e
 =======
            noise: bool = False, hd: bool = False, constraints: int = 0) -> tp.Iterator[Experiment]:
 >>>>>>> c82d099bac932a11f63a839b264325743f4daa0e
@@ -657,6 +661,18 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
                 if not xp.is_incoherent:
                     yield xp
 
+
+
+@registry.register
+def yaconstrainedbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with higher dimensions."""
+    for i in range(8):
+        internal_generator = yabbob(seed, constraints=i)
+        j = 0
+        for xp in internal_generator:
+            j = j + 1
+            if j % 8 == i:  # We use only one test case out of 4, due to computational cost.
+                yield xp
 
 
 @registry.register
