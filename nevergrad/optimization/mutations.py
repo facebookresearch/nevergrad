@@ -57,7 +57,9 @@ class Mutator:
     def portfolio_discrete_mutation(self, parent: tp.ArrayLike, intensity: tp.Optional[int] = None, arity: int = 2) -> tp.ArrayLike:
         """Mutation discussed in
         https://arxiv.org/pdf/1606.05551v1.pdf
-        We mutate a randomly drawn number of variables in average.
+        We mutate a randomly drawn number of variables on average.
+        The mutation is the same for all variables - coordinatewise mutation will be different from this point of view and will make it possible
+        to do anisotropic mutations.
         """
         dimension = len(parent)
         if intensity is None:
@@ -69,7 +71,22 @@ class Mutator:
             boolean_vector = [self.random_state.rand() > (float(intensity) / dimension) for _ in parent]
         return [s if b else self.significantly_mutate(s, arity) for (b, s) in zip(boolean_vector, parent)]
 
+    def coordinatewise_mutation(self, parent: tp.ArrayLike, velocity: tp.ArrayLike, boolean_vector: tp.ArrayLike, arity: int) -> tp.ArrayLike:
+        """This is the anisotropic counterpart of the classical 1+1 mutations in discrete domains
+        with tunable intensity: it is useful for anisotropic adaptivity."""
+        dimension = len(parent)
+        boolean_vector = np.zeros(dimension, dtype=bool)
+        while not any(boolean_vector):
+            boolean_vector = self.random_state.rand(dimension) < (1. / dimension)
+        discrete_data = discretization.threshold_discretization(parent, arity=arity)
+        discrete_data = np.where(
+            boolean_vector,
+            discrete_data + np.random.choice([-1., 1.], size=dimension) * velocity,
+            discrete_data)
+        return discretization.inverse_threshold_discretization(discrete_data)
+
     def discrete_mutation(self, parent: tp.ArrayLike, arity: int = 2) -> tp.ArrayLike:
+        """This is the most classical discrete 1+1 mutation of the evolution literature."""
         dimension = len(parent)
         boolean_vector = [True for _ in parent]
         while all(boolean_vector):

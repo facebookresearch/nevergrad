@@ -308,7 +308,7 @@ def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     optims = ["DiscreteOnePlusOne", "Shiwa", "CMA", "PSO", "TwoPointsDE", "DE", "OnePlusOne",
               "AdaptiveDiscreteOnePlusOne",
               "CMandAS2", "PortfolioDiscreteOnePlusOne", "DoubleFastGADiscreteOnePlusOne", "MultiDiscrete",
-              "DiscreteBSOOnePlusOne", "DiscreteLenglerOnePlusOne"]
+              "DiscreteBSOOnePlusOne", "AnisotropicAdaptiveDiscreteOnePlusOne", "DiscreteLenglerOnePlusOne"]
 
     if default_optims is not None:
         optims = default_optims
@@ -342,7 +342,8 @@ def sequential_instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Ex
     """Sequential counterpart of instrum_discrete."""
     # Discrete, unordered.
     optims = ["DiscreteOnePlusOne", "DiscreteDoerrOnePlusOne", "DiscreteLenglerOnePlusOne", "FastGADiscreteOnePlusOne",
-              "DiscreteBSOOnePlusOne", "PortfolioDiscreteOnePlusOne", "DoubleFastGADiscreteOnePlusOne"]
+              "DiscreteBSOOnePlusOne", "PortfolioDiscreteOnePlusOne", "DoubleFastGADiscreteOnePlusOne",
+              "AnisotropicAdaptiveDiscreteOnePlusOne"]
 
     seedg = create_seed_generator(seed)
     for nv in [10, 50, 200, 1000, 5000]:
