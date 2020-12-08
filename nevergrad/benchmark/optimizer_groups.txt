@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 parallel_basics = ['NGOpt8', 'CMandAS2', 'CMA', 'DE', 'MetaModel']
 
 all_bo = ['BO', 'LBO', 'MidQRBO', 'QRBO', 'RBO', 'chainBOwithLHS', 'chainBOwithLHS30', 'chainBOwithLHSdim', 'chainBOwithLHSsqrt', 'chainBOwithMetaRecentering', 'chainBOwithMetaRecentering30', 'chainBOwithMetaRecenteringdim', 'chainBOwithMetaRecenteringsqrt', 'chainBOwithMetaTuneRecentering', 'chainBOwithMetaTuneRecentering30', 'chainBOwithMetaTuneRecenteringdim', 'chainBOwithMetaTuneRecenteringsqrt', 'chainBOwithR', 'chainBOwithR30', 'chainBOwithRdim', 'chainBOwithRsqrt']
@@ -24,6 +23,3 @@ progressive = [ProgDiscAuto, ProgDisc13, ProgDiscInf, ProgAuto, Prog13, ProgInf]
 splitters = [SplitCMAAuto, SplitCMA3, SplitCMA5, SplitCMA9, SplitCMA13, 'MetaNGOpt8']
 
 spsa = ['NaiveTBPSA', 'SPSA', 'TBPSA']
-=======
-large = ['NGO', 'Shiwa', 'DiagonalCMA', 'CMA', 'PSO', 'DE', 'MiniDE', 'QrDE', 'MiniQrDE', 'LhsDE', 'OnePlusOne', 'SQP', 'Cobyla', 'Powell', 'TwoPointsDE', 'OnePointDE', 'AlmostRotationInvariantDE', 'RotationInvariantDE', 'Portfolio', 'ASCMADEthird', 'ASCMADEQRthird', 'ASCMA2PDEthird', 'CMandAS2', 'CMandAS', 'CM', 'MultiCMA', 'TripleCMA', 'MultiScaleCMA', 'RSQP', 'RCobyla', 'RPowell', 'SQPCMA', 'MetaModel', 'PolyCMA', 'ManyCMA']
->>>>>>> a0d4887faea121132ac212a98de56bd453e77117
