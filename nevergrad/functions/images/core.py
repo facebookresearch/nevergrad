@@ -195,7 +195,7 @@ class ImageFromPGAN(base.ExperimentFunction):
     """
 
     def __init__(self, initial_noise: np.ndarray = None, use_gpu: bool = True,
-                 loss: imagelosses.ImageLoss = imagelosses.Koncept512,
+                 loss: imagelosses.ImageLoss = imagelosses.Koncept512(),
                  mutable_sigma=True, n_mutations=35) -> None:
         if torch.cuda.is_available():
             use_gpu = False
@@ -216,7 +216,7 @@ class ImageFromPGAN(base.ExperimentFunction):
         array.set_recombination(ng.p.mutation.Crossover(axis=(0, 1))).set_name("")
 
         super().__init__(self._loss, array)
-        self.loss_function = loss()
+        self.loss_function = loss
 
     def _loss(self, x: np.ndarray) -> float:
         image = self._generate_images(x)
