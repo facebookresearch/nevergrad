@@ -17,7 +17,7 @@ class SumAbsoluteDifferences(ImageLoss):
 
     def __call__(self, x: np.ndarray) -> float:
         assert x.shape == self.domain_shape, f"Shape = {x.shape} vs {self.domain_shape}"
-        value = float(np.linalg.norm(x - self.reference, 1))
+        value = float(np.sum(np.fabs(x - self.reference)))
         return value
 
 
