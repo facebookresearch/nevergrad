@@ -15,7 +15,4 @@ pyomo>=5.7
 mixsimulator>=0.2.9.5
 hyperopt>=0.2.5
 IOHexperimenter==0.2.8.7
-koncept>=0.2.1
-gast==0.2.2
-tensorboard>=2.1.0
-tensorflow-estimator>=2.1.0
+koncept>=0.2.2
