@@ -1,5 +1,5 @@
 import numpy as np
-from koncept.models import Koncept512 as K512_model
+from koncept.models import Koncept512 as K512_model  # type: ignore
 
 
 class ImageLoss:
