@@ -583,15 +583,8 @@ def paramultimodal(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 # pylint: disable=redefined-outer-name,too-many-arguments
 @registry.register
 def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = False, small: bool = False,
-<<<<<<< HEAD
-<<<<<<< HEAD
            noise: bool = False, hd: bool = False, split: bool = False) -> tp.Iterator[Experiment]:
-=======
-           noise: bool = False, hd: bool = False, constraints: int = 0) -> tp.Iterator[Experiment]:
->>>>>>> c82d099bac932a11f63a839b264325743f4daa0e
-=======
-           noise: bool = False, hd: bool = False, constraints: int = 0) -> tp.Iterator[Experiment]:
->>>>>>> c82d099bac932a11f63a839b264325743f4daa0e
+           noise: bool = False, hd: bool = False, split: bool = False, constraints: int = 0) -> tp.Iterator[Experiment]:
     """Yet Another Black-Box Optimization Benchmark.
     Related to, but without special effort for exactly sticking to, the BBOB/COCO dataset.
     Dimension 2, 10 and 50.
