@@ -108,6 +108,7 @@ def keras_tuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: b
     optims = ["PSO", "OnePlusOne"]
     if default_optims is not None:
         optims = default_optims
+    optims += ["HyperOpt"]         
     for dimension in [None]:
         for regressor in ["kerasDenseNN"]:
             for dataset in (
@@ -127,7 +128,7 @@ def mltuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool 
     """Machine learning hyperparameter tuning experiment. Based on scikit models."""
     seedg = create_seed_generator(seed)
     optims: tp.List[str]  = get_optimizers("basics", seed=next(seedg))  # type: ignore
-             
+    optims += ["HyperOpt"]         
     if default_optims is not None:
         optims = default_optims
     for dimension in [None, 1, 2, 3]:
@@ -585,7 +586,6 @@ def paramultimodal(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 # pylint: disable=redefined-outer-name,too-many-arguments
 @registry.register
 def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = False, small: bool = False,
-           noise: bool = False, hd: bool = False, split: bool = False) -> tp.Iterator[Experiment]:
            noise: bool = False, hd: bool = False, split: bool = False, constraints: int = 0) -> tp.Iterator[Experiment]:
     """Yet Another Black-Box Optimization Benchmark.
     Related to, but without special effort for exactly sticking to, the BBOB/COCO dataset.
@@ -614,6 +614,8 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
         optims += ["TBPSA", "SQP", "NoisyDiscreteOnePlusOne"]
     if hd:
         optims += ["OnePlusOne"]
+    if constraints > 0:
+        optims += ["HyperOpt"]
 
     if default_optims is not None:
         optims = default_optims
@@ -655,19 +657,6 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
                                 budget=budget, seed=next(seedg))
                 if not xp.is_incoherent:
                     yield xp
-
-
-
-@registry.register
-def yaconstrainedbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Counterpart of yabbob with higher dimensions."""
-    for i in range(8):
-        internal_generator = yabbob(seed, constraints=i)
-        j = 0
-        for xp in internal_generator:
-            j = j + 1
-            if j % 8 == i:  # We use only one test case out of 4, due to computational cost.
-                yield xp
 
 
 @registry.register
