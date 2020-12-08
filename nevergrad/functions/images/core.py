@@ -10,6 +10,7 @@ import PIL.Image
 import torch.nn as nn
 import torch
 import torchvision
+from . import imagelosses
 from torchvision.models import resnet50
 import torchvision.transforms as tr
 
@@ -20,7 +21,8 @@ from .. import base
 
 
 class Image(base.ExperimentFunction):
-    def __init__(self, problem_name: str = "recovering", index: int = 0) -> None:
+    def __init__(self, problem_name: str = "recovering", index: int = 0,
+                 loss=imagelosses.SumAbsoluteDifferences) -> None:
         """
         problem_name: the type of problem we are working on.
            recovering: we directly try to recover the target image.
@@ -48,16 +50,10 @@ class Image(base.ExperimentFunction):
         max_size = ng.p.Scalar(lower=1, upper=200).set_integer_casting()
         array.set_recombination(ng.p.mutation.Crossover(axis=(0, 1), max_size=max_size)).set_name("")  # type: ignore
         super().__init__(self._loss, array)
+        self.loss_function = loss(reference=self.data)
 
     def _loss(self, x: np.ndarray) -> float:
-        assert self.problem_name == "recovering"
-        x = np.array(x, copy=False).ravel()
-        x = x.reshape(self.domain_shape)
-        assert x.shape == self.domain_shape, f"Shape = {x.shape} vs {self.domain_shape}"
-        # Define the loss, in case of recovering: the goal is to find the target image.
-        assert self.index == 0
-        value = float(np.sum(np.fabs(np.subtract(x, self.data))))
-        return value
+        return self.loss_function(x)
 
 
 # #### Adversarial attacks ##### #
@@ -184,3 +180,49 @@ class ImageAdversarial(base.ExperimentFunction):
                            label=int(target), targeted=False, epsilon=0.05)
                 func.add_descriptors(**tags)
                 yield func
+
+
+class ImageFromPGAN(base.ExperimentFunction):
+    """
+    Creates face images using a GAN from pytorch GAN zoo trained on celebAHQ and optimizes the noise vector of the GAN
+
+    problem_name: the type of problem we are working on.
+    initial_noise: the initial noise of the GAN. It should be of dimension (1, 512). If None, it is defined randomly.
+    use_gpu: whether to use gpus to compute the images
+    loss: which loss to use for the images
+    mutable_sigma: whether the sigma should be mutable
+    n_mutations: number of mutations
+    """
+
+    def __init__(self, initial_noise: np.ndarray = None, use_gpu: bool = True,
+                 loss: imagelosses.ImageLoss = imagelosses.Koncept512,
+                 mutable_sigma=True, n_mutations=35) -> None:
+        if torch.cuda.is_available():
+            use_gpu = False
+
+        # Storing high level information..
+        self.pgan_model = torch.hub.load('facebookresearch/pytorch_GAN_zoo:hub',
+                               'PGAN', model_name='celebAHQ-512',
+                               pretrained=True, useGPU=use_gpu)
+
+        self.noise_shape = (1, 512)
+        if initial_noise is None:
+            initial_noise = np.random.normal(size=self.noise_shape)
+        assert initial_noise.shape == self.noise_shape, f'The shape of the initial noise vector was {initial_noise.shape}, it should be {self.noise_shape}'
+
+        array = ng.p.Array(init=initial_noise, mutable_sigma=mutable_sigma)
+        # parametrization
+        array.set_mutation(sigma=n_mutations)
+        array.set_recombination(ng.p.mutation.Crossover(axis=(0, 1))).set_name("")
+
+        super().__init__(self._loss, array)
+        self.loss_function = loss()
+
+    def _loss(self, x: np.ndarray) -> float:
+        image = self._generate_images(x)
+        loss = self.loss_function(image)
+        return loss
+
+    def _generate_images(self, x: np.ndarray):
+        noise = torch.tensor(x.astype('float32'))
+        return self.pgan_model.test(noise).permute(0, 2, 3, 1).cpu().numpy()

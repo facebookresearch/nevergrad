@@ -9,6 +9,7 @@ import typing as tp
 import itertools
 import numpy as np
 import nevergrad as ng
+from nevergrad.functions.images.core import ImageFromPGAN
 from nevergrad.optimization.base import ConfiguredOptimizer
 import nevergrad.functions.corefuncs as corefuncs
 from nevergrad.functions import ExperimentFunction
@@ -1272,6 +1273,21 @@ def images(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                     if not xp.is_incoherent:
                         yield xp
 
+
+@registry.register
+def images_using_gan(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Optimizing an image using koncept512 and a GAN"""
+    seedg = create_seed_generator(seed)
+    optims = ["CMA", "Shiwa", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "NSGAIIES", "ParametrizationDE"]
+    if default_optims is not None:
+        optims = default_optims
+    func = ImageFromPGAN()
+    num_workers = 1
+    for budget in [100 * 5 ** k for k in range(3)]:
+        for algo in optims:
+            xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
+            if not xp.is_incoherent:
+                yield xp
 
 @registry.register
 def double_o_seven(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
