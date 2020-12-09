@@ -226,6 +226,8 @@ class ImageFromPGAN(base.ExperimentFunction):
 
         super().__init__(self._loss, array)
         self.loss_function = loss
+        self._descriptors.pop("use_gpu", None)
+        self.add_descriptors(loss=loss.__class__.__name__)
 
     def _loss(self, x: np.ndarray) -> float:
         image = self._generate_images(x)
