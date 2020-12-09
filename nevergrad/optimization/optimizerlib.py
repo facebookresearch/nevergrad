@@ -31,6 +31,11 @@ from .es import *  # type: ignore  # noqa: F403
 from .oneshot import *  # noqa: F403
 from .recastlib import *  # noqa: F403
 
+try:
+    from .externalbo import HyperOpt # pylint: disable=unused-import
+except ModuleNotFoundError:
+    pass
+
 # run with LOGLEVEL=DEBUG for more debug information
 logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
 logger = logging.getLogger(__name__)
@@ -855,6 +860,45 @@ class SPSA(base.Optimizer):
         return self.avg
 
 
+class _Rescaled(base.Optimizer):
+    """Proposes a version of a base optimizer which works at a different scale."""
+    def __init__(
+            self,
+            parametrization: IntOrParameter,
+            budget: tp.Optional[int] = None,
+            num_workers: int = 1,
+            base_optimizer: base.OptCls = CMA,
+            scale: tp.Optional[float] = None,
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        self._optimizer = base_optimizer(self.parametrization, budget=budget, num_workers=num_workers)
+        self._subcandidates: tp.Dict[str, p.Parameter] = {}
+        if scale is None:
+            assert budget is not None, "Either scale or budget must be known in _Rescaled."
+            scale = np.sqrt(np.log(self.budget) / self.dimension)
+        self.scale = scale
+        assert self.scale != 0., "scale should be non-zero in Rescaler."
+
+    def rescale_candidate(self, candidate: p.Parameter, inverse: bool=False) -> p.Parameter:
+        data = candidate.get_standardized_data(reference=self.parametrization)
+        scale = self.scale if not inverse else 1. / self.scale
+        return self.parametrization.spawn_child().set_standardized_data(scale * data)
+
+    def _internal_ask_candidate(self) -> p.Parameter:
+        candidate = self._optimizer.ask()
+        sent_candidate = self.rescale_candidate(candidate)
+        # We store the version corresponding to the underlying optimizer.
+        self._subcandidates[sent_candidate.uid] = candidate  
+        return sent_candidate
+
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        self._optimizer.tell(self._subcandidates.pop(candidate.uid), loss)
+
+    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        candidate = self.rescale_candidate(candidate, inverse=True)
+        self._optimizer.tell(candidate, loss)
+
+
 class SplitOptimizer(base.Optimizer):
     """Combines optimizers, each of them working on their own variables.
 
@@ -896,7 +940,7 @@ class SplitOptimizer(base.Optimizer):
             num_optims: tp.Optional[int] = None,
             num_vars: tp.Optional[tp.List[int]] = None,
             multivariate_optimizer: base.OptCls = CMA,
-            monovariate_optimizer: base.OptCls = RandomSearch,
+            monovariate_optimizer: base.OptCls = OnePlusOne,
             progressive: bool = False,
             non_deterministic_descriptor: bool = True,
     ) -> None:
@@ -972,6 +1016,28 @@ class SplitOptimizer(base.Optimizer):
             opt.tell(local_candidate, loss)
 
 
+class Rescaled(base.ConfiguredOptimizer):
+    """Configured optimizer for creating rescaled optimization algorithms.
+
+    Parameters
+    ----------
+    base_optimizer: base.OptCls
+        optimization algorithm to be rescaled.
+    scale: how much do we rescale. E.g. 0.001 if we want to focus on the center
+        with std 0.001 (assuming the std of the domain is set to 1).
+    """
+    # pylint: disable=unused-argument
+    def __init__(
+        self,
+        *,
+        base_optimizer: base.OptCls = CMA,
+        scale: tp.Optional[float] = None,
+    ) -> None:
+        super().__init__(_Rescaled, locals())
+
+
+RescaledCMA = Rescaled().set_name("RescaledCMA", register=True)
+
 class ConfSplitOptimizer(base.ConfiguredOptimizer):
     """"Combines optimizers, each of them working on their own variables.
 
@@ -985,7 +1051,7 @@ class ConfSplitOptimizer(base.ConfiguredOptimizer):
         whether we progressively add optimizers.
     non_deterministic_descriptor: bool
         subparts parametrization descriptor is set to noisy function.
-        This can have an impact for optimizer selection for NGOpt optimizers.
+        This can have an impact for optimizer selection for competence maps.
     """
 
     # pylint: disable=unused-argument
@@ -1024,11 +1090,23 @@ class Portfolio(base.Optimizer):
         return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        optim_index: int = candidate._meta["optim_index"]
-        self.optims[optim_index].tell(candidate, loss)
+        for opt in self.optims:
+            try:
+                opt.tell(candidate, loss)
+            except base.TellNotAskedNotSupportedError:
+                pass
+        # Presumably better than self.optims[optim_index].tell(candidate, value)
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        raise base.TellNotAskedNotSupportedError
+        at_least_one_ok = False
+        for opt in self.optims:
+            try:
+                opt.tell(candidate, loss)
+                at_least_one_ok = True
+            except base.TellNotAskedNotSupportedError:
+                pass
+        if not at_least_one_ok:
+            raise base.TellNotAskedNotSupportedError
 
 
 class InfiniteMetaModelOptimum(ValueError):
@@ -1065,17 +1143,47 @@ def learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.Arra
     model = LinearRegression()
     model.fit(X2, y)
 
-    # Find the minimum of the quadratic model.
-    optimizer = OnePlusOne(parametrization=dimension, budget=dimension * dimension + dimension + 500)
+    optimizer = Powell(parametrization=dimension, budget=45*dimension+30)
     try:
-        optimizer.minimize(lambda x: float(model.predict(polynomial_features.fit_transform(np.asarray([x])))))
+        minimum = optimizer.minimize(
+            lambda x: float(model.predict(polynomial_features.fit_transform(x[None, :])))).value
     except ValueError:
         raise InfiniteMetaModelOptimum("Infinite meta-model optimum in learn_on_k_best.")
 
-    minimum = optimizer.provide_recommendation().value
     if np.sum(minimum**2) > 1.:
         raise InfiniteMetaModelOptimum("huge meta-model optimum in learn_on_k_best.")
     return middle + normalization * minimum
+
+
+@registry.register
+class MetaModel(base.Optimizer):
+    """Adding a metamodel into CMA."""
+
+    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1,
+                 multivariate_optimizer: tp.Optional[base.OptCls] = None) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        if multivariate_optimizer is None:
+            multivariate_optimizer = CMA if self.dimension > 1 else OnePlusOne
+        self._optim = multivariate_optimizer(self.parametrization, budget,
+                                             num_workers)  # share parametrization and its rng
+
+    def _internal_ask_candidate(self) -> p.Parameter:
+        # We request a bit more points than what is really necessary for our dimensionality (+dimension).
+        sample_size = int((self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1)
+        if (self._num_ask % max(13, self.num_workers, self.dimension) == 0 and
+                len(self.archive) >= sample_size):
+            try:
+                data = learn_on_k_best(self.archive,
+                                       sample_size)
+                candidate = self.parametrization.spawn_child().set_standardized_data(data)
+            except InfiniteMetaModelOptimum:  # The optimum is at infinity. Shit happens.
+                candidate = self._optim.ask()
+        else:
+            candidate = self._optim.ask()
+        return candidate
+
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        self._optim.tell(candidate, loss)
 
 
 @registry.register
@@ -1205,9 +1313,8 @@ class CMandAS2(ASCMADEthird):
             self.optims = [OnePlusOne(self.parametrization, budget=None, num_workers=num_workers)]
         if budget > 50 * self.dimension or num_workers < 30:
             self.optims = [
-                CMA(self.parametrization, budget=None, num_workers=num_workers),  # share parametrization and its rng
-                CMA(self.parametrization, budget=None, num_workers=num_workers),
-                CMA(self.parametrization, budget=None, num_workers=num_workers),
+                MetaModel(self.parametrization, budget=None, num_workers=num_workers)
+                for _ in range(3)
             ]
             self.budget_before_choosing = budget // 10
 
@@ -1619,6 +1726,10 @@ class Chaining(base.ConfiguredOptimizer):
 
 chainCMAPowell = Chaining([CMA, Powell], ["half"]).set_name("chainCMAPowell", register=True)
 chainCMAPowell.no_parallelization = True
+chainMetaModelSQP = Chaining([MetaModel, SQP], ["half"]).set_name("chainMetaModelSQP", register=True)
+chainMetaModelSQP.no_parallelization = True
+chainMetaModelPowell = Chaining([MetaModel, Powell], ["half"]).set_name("chainMetaModelPowell", register=True)
+chainMetaModelPowell.no_parallelization = True
 chainDiagonalCMAPowell = Chaining([DiagonalCMA, Powell], ["half"]).set_name("chainDiagonalCMAPowell", register=True)
 chainDiagonalCMAPowell.no_parallelization = True
 chainNaiveTBPSAPowell = Chaining([NaiveTBPSA, Powell], ["half"]).set_name("chainNaiveTBPSAPowell", register=True)
@@ -1822,35 +1933,6 @@ class EMNA(base.ConfiguredOptimizer):
 NaiveIsoEMNA = EMNA().set_name("NaiveIsoEMNA", register=True)
 
 
-@registry.register
-class MetaModel(base.Optimizer):
-    """Adding a metamodel into CMA."""
-
-    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1,
-                 multivariate_optimizer: base.ConfiguredOptimizer = CMA) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        assert budget is not None
-        self._optim = multivariate_optimizer(self.parametrization, budget,
-                                             num_workers)  # share parametrization and its rng
-
-    def _internal_ask_candidate(self) -> p.Parameter:
-        # We request a bit more points than what is really necessary for our dimensionality (+dimension).
-        if (self._num_ask % max(self.num_workers, self.dimension) == 0 and
-                len(self.archive) >= (self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1):
-            try:
-                data = learn_on_k_best(self.archive,
-                                       int((self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1))
-                candidate = self.parametrization.spawn_child().set_standardized_data(data)
-            except InfiniteMetaModelOptimum:  # The optimum is at infinity. Shit happens.
-                candidate = self._optim.ask()
-        else:
-            candidate = self._optim.ask()
-        return candidate
-
-    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        self._optim.tell(candidate, loss)
-
-
 # Discussions with Jialin Liu and Fabien Teytaud helped the following development.
 # This includes discussion at Dagstuhl's 2019 seminars on randomized search heuristics and computational intelligence in games.
 @registry.register
@@ -1862,13 +1944,19 @@ class NGOptBase(base.Optimizer):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         descr = self.parametrization.descriptors
         self.has_noise = not (descr.deterministic and descr.deterministic_function)
+        self.noise_from_instrumentation = self.has_noise and descr.deterministic_function  # The noise coming from discrete variables goes to 0.
         self.fully_continuous = descr.continuous
         all_params = paramhelpers.flatten_parameter(self.parametrization)
         choicetags = [p.BaseChoice.ChoiceTag.as_tag(x) for x in all_params.values()]
         self.has_discrete_not_softmax = any(issubclass(ct.cls, p.TransitionChoice) for ct in choicetags)
         self._has_discrete = any(issubclass(ct.cls, p.BaseChoice) for ct in choicetags)
         self._arity = max(ct.arity for ct in choicetags)
+        if self.fully_continuous:
+            self._arity = -1
         self._optim: tp.Optional[base.Optimizer] = None
+        self._constraints_manager.update(
+            max_trials=1000, penalty_factor=1.0, penalty_exponent=1.01,
+        )
 
     @property
     def optim(self) -> base.Optimizer:
@@ -1907,7 +1995,7 @@ class NGOptBase(base.Optimizer):
                                 cls = OnePlusOne if self.dimension > 30 else Cobyla
                             else:
                                 # DE is great in such a case (?).
-                                cls = DE if self.dimension > 2000 else CMA
+                                cls = DE if self.dimension > 2000 else CMA if self.dimension > 1 else OnePlusOne
         return cls
 
     def _internal_ask_candidate(self) -> p.Parameter:
@@ -1946,8 +2034,6 @@ class NGOpt2(NGOptBase):
     """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
 
     def _select_optimizer_cls(self) -> base.OptCls:
-        # override because it is different from NGOptBase (bug?)
-        self.has_discrete_not_softmax = self._has_discrete
         budget, num_workers = self.budget, self.num_workers
         assert budget is not None
         optimClass: base.OptCls
@@ -2010,8 +2096,6 @@ class NGOpt4(NGOptBase):
     """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
 
     def _select_optimizer_cls(self) -> base.OptCls:
-        # override because it is different from NGOptBase (bug?)
-        self.has_discrete_not_softmax = self._has_discrete
         self.fully_continuous = self.fully_continuous and not self.has_discrete_not_softmax and self._arity < 0
         budget, num_workers = self.budget, self.num_workers
         assert budget is not None
@@ -2033,10 +2117,9 @@ class NGOpt4(NGOptBase):
             else:
                 if self.has_noise and self.fully_continuous:
                     if budget > 100:
-                        optimClass = SQP
+                        optimClass = OnePlusOne if self.noise_from_instrumentation else SQP
                     else:
-                        # This is the realm of population control. FIXME: should we pair with a bandit ?
-                        optimClass = TBPSA
+                        optimClass = OnePlusOne
                 else:
                     if self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable or not self.fully_continuous:
                         optimClass = DoubleFastGADiscreteOnePlusOne
@@ -2086,7 +2169,6 @@ class NGOpt8(NGOpt4):
         # Extracting info as far as possible.
         assert self.budget is not None
         optimClass: base.OptCls
-
         if self.has_noise and (self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable):
             if self.budget > 10000:
                 optimClass = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
@@ -2104,7 +2186,7 @@ class NGOpt8(NGOpt4):
             if not (self.has_noise and self.fully_continuous and self.dimension > 100) and not (
                     self.has_noise and self.fully_continuous) and not (self.num_workers > self.budget / 5) and (
                     self.num_workers == 1 and self.budget > 6000 and self.dimension > 7):
-                optimClass = chainCMAPowell
+                optimClass = chainMetaModelPowell
             else:
                 optimClass = super()._select_optimizer_cls()
 
@@ -2112,5 +2194,5 @@ class NGOpt8(NGOpt4):
 
 
 @registry.register
-class NGOpt(NGOpt4):
+class NGOpt(NGOpt8):
     pass

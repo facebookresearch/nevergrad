@@ -141,8 +141,7 @@ class Pyomo(base.ExperimentFunction):
         exp_tag = ",".join([n.name for n in self.all_objectives])
         exp_tag += "|" + ",".join([n.name for n in self.all_vars])
         exp_tag += "|" + ",".join([n.name for n in self.all_constraints])
-        self.register_initialization(name=exp_tag, model=self._model_instance)
-        self._descriptors.update(name=exp_tag)
+        self.add_descriptors(name=exp_tag)
 
     def _pyomo_value_assignment(self, k_model_variables: tp.Dict[str, tp.Any]) -> None:
         if self._value_assignment_code_obj == "":
