@@ -17,3 +17,4 @@ hyperopt>=0.2.5
 IOHexperimenter==0.2.8.7
 koncept>=0.2.2
 tensorflow>=2.3.1
+cdt>=0.5
