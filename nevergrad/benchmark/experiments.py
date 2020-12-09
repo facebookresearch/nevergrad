@@ -209,7 +209,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         in [True, False]
     ]
     for func in functions:
-        func.parametrization.register_cheap_constraint(_positive_sum)
+        func.parametrization.register_cheap_constraint(_positive_sum())
 
     # Then, let us build a constraint-free case. We include the noisy case.
     names = ["hm", "rastrigin", "sphere", "doublelinearslope", "ellipsoid"]
@@ -623,8 +623,8 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
     ]
     assert constraints < 8, "We have only four possible constraints."
     for func in functions:
-        constraints_list = [_positive_sum_float, _positive_diff_float, _positive_second_diff_float, _ball_float,
-            _positive_sum, _positive_diff, _positive_second_diff, _ball]
+        constraints_list = [_positive_sum_float(), _positive_diff_float(), _positive_second_diff_float(), _ball_float(),
+            _positive_sum(), _positive_diff(), _positive_second_diff(), _ball()]
         for u in range(8):
             if constraints > u and constraints <= u+4:
                 func.parametrization.register_cheap_constraint(constraints_list[u])
