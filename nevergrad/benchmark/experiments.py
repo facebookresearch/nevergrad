@@ -620,22 +620,11 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
     ]
     assert constraints < 8, "We have only four possible constraints."
     for func in functions:
-        if constraints > 0 and constraints <= 4:
-            func.parametrization.register_cheap_constraint(_positive_sum_float)
-        if constraints > 1 and constraints <= 5:
-            func.parametrization.register_cheap_constraint(_positive_diff_float)
-        if constraints > 2 and constraints <= 6:
-            func.parametrization.register_cheap_constraint(_positive_second_diff_float)
-        if constraints > 3 and constraints <= 7:
-            func.parametrization.register_cheap_constraint(_ball_float)
-        if constraints > 4:
-            func.parametrization.register_cheap_constraint(_positive_sum)
-        if constraints > 5:
-            func.parametrization.register_cheap_constraint(_positive_diff)
-        if constraints > 6:
-            func.parametrization.register_cheap_constraint(_positive_second_diff)
-        if constraints > 7:
-            func.parametrization.register_cheap_constraint(_ball)
+        constraints_list = [_positive_sum_float, _positive_diff_float, _positive_second_diff_float, _ball_float,
+            _positive_sum, _positive_diff, _positive_second_diff, _ball]
+        for u in range(8):
+            if constraints > u and constraints <= u+4:
+                func.parametrization.register_cheap_constraint(constraints_list[u])
     budgets = [50, 200, 800, 3200, 12800]
     if (big and not noise):
         budgets = [40000, 80000, 160000, 320000]
