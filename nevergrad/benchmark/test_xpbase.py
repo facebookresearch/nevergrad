@@ -19,7 +19,7 @@ from nevergrad.functions.test_functionlib import DESCRIPTION_KEYS as ARTIFICIAL_
 from . import xpbase
 
 
-DESCRIPTION_KEYS = {"seed", "elapsed_time", "elapsed_budget", "loss", "optimizer_name", "pseudotime",
+DESCRIPTION_KEYS = {"split", "seed", "elapsed_time", "elapsed_budget", "loss", "optimizer_name", "pseudotime",
                     "num_workers", "budget", "error", "batch_mode"} | ARTIFICIAL_KEYS
 
 
@@ -29,7 +29,7 @@ def test_run_artificial_function() -> None:
     summary = xp.run()
     assert summary["elapsed_time"] < .5  # should be much faster
     np.testing.assert_almost_equal(summary["loss"], 0.00078544)  # makes sure seeding works!
-    testing.assert_set_equal(summary.keys(), DESCRIPTION_KEYS | {"split"})
+    testing.assert_set_equal(summary.keys(), DESCRIPTION_KEYS)
     np.testing.assert_equal(summary["elapsed_budget"], 24)
     np.testing.assert_equal(summary["pseudotime"], 12)  # defaults to 1 unit per eval ( /2 because 2 workers)
 
@@ -64,7 +64,7 @@ def test_run_with_error() -> None:
         run.side_effect = ValueError("test error string")
         with contextlib.redirect_stderr(sys.stdout):
             summary = xp.run()
-    testing.assert_set_equal(summary.keys(), DESCRIPTION_KEYS | {"split"})
+    testing.assert_set_equal(summary.keys(), DESCRIPTION_KEYS)
     np.testing.assert_equal(summary["error"], "ValueError")
     assert xp._optimizer is not None
     np.testing.assert_equal(xp._optimizer.num_tell, 0)  # make sure optimizer is kept in case we need to restart (eg.: KeyboardInterrupt)
