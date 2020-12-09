@@ -22,7 +22,7 @@ from .. import base
 
 class Image(base.ExperimentFunction):
     def __init__(self, problem_name: str = "recovering", index: int = 0,
-                 loss: imageloss.ImageLoss = imagelosses.SumAbsoluteDifferences) -> None:
+                 loss: imagelosses.ImageLoss = imagelosses.SumAbsoluteDifferences) -> None:
         """
         problem_name: the type of problem we are working on.
            recovering: we directly try to recover the target image.
