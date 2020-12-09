@@ -23,7 +23,7 @@ from . import mlfunctionlib
     mlp_artificial=(
         dict(regressor="mlp", data_dimension=2, dataset="artificial"),
         dict(activation="relu", solver="adam", alpha=0.01, learning_rate="constant"),
-        0.002202216487,
+        0.004006291718074663,
     ),
     choosing_regressor_perceptron=(
         dict(regressor="any", data_dimension=2, dataset="artificial"),
@@ -35,17 +35,17 @@ from . import mlfunctionlib
         dict(regressor="any", data_dimension=2, dataset="artificial"),
         dict(activation="relu", solver="adam", alpha=0.01, learning_rate="constant", depth=3,
              criterion="mse", min_samples_split=0.001, regressor="mlp"),
-        0.0022022164,
+        0.004006291718074663,
     ),
     decision_tree_boston=(
         dict(regressor="decision_tree", data_dimension=None, dataset="boston"),
         dict(depth=5, criterion="mse", min_samples_split=0.001),
-        33.188238558,
+        26.643219512470644,
     ),
     decision_tree_diabetes=(
         dict(regressor="decision_tree", data_dimension=None, dataset="diabetes"),
         dict(depth=5, criterion="mse", min_samples_split=0.001),
-        5302.64340105
+        5042.938793165054,
     ),
     decision_tree_cos=(
         dict(regressor="decision_tree", data_dimension=3, dataset="artificialcos"),

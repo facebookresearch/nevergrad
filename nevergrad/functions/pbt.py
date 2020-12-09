@@ -25,14 +25,12 @@ class PBT(ExperimentFunction):
         self._dimensions = dimensions
         self._total_dimension = sum(dimensions)
         parametrization = p.Array(shape=(self._hyperparameter_dimension,)).set_name("")
-
         # Population of checkpoints (that are optimized by the underlying optimization method)
         # and parameters (that we do optimize).
         self._population_checkpoints: tp.List[np.ndarray] = [np.zeros(self._total_dimension)] * num_workers
         self._population_parameters: tp.List[np.ndarray] = [np.zeros(self._hyperparameter_dimension)] * num_workers
         self._population_fitness: tp.List[float] = [float("inf")] * num_workers
         super().__init__(self._func, parametrization)
-        self.register_initialization(names=names, dimensions=dimensions, num_workers=num_workers)
 
     # The 3 methods below are function-specific.
     def unflatten(self, x):
@@ -61,10 +59,10 @@ class PBT(ExperimentFunction):
             for i in range(len(x)):
                 e = np.zeros(len(x))
                 e[i] = epsilon
-                value_plus = f(x+e)
+                value_plus = f(x + e)
                 assert type(value_plus) == type(1.5), str(type(value_plus))
                 g[i] = (value_plus - value_minus) / epsilon
-            return g 
+            return g
         y = self.unflatten(x)
         assert len(y) == self._hyperparameter_dimension
 
@@ -80,7 +78,6 @@ class PBT(ExperimentFunction):
             current_idx += self._dimensions[j]
         assert current_idx == self._total_dimension
 
-
     def _func(self, x: np.ndarray):
         assert len(x) == self._hyperparameter_dimension
 
@@ -93,7 +90,7 @@ class PBT(ExperimentFunction):
             else:
                 distances = [np.linalg.norm(i - x, 1) for i in self._population_parameters]
         _, source_idx = min((val, idx) for (idx, val) in enumerate(distances))
-        
+
         # Let us copy the checkpoint to a target.
         idx = np.random.choice(range(len(self._population_fitness)))
         if idx != source_idx:
@@ -110,11 +107,10 @@ class PBT(ExperimentFunction):
     @classmethod
     def itercases(cls) -> tp.Iterator["PBT"]:
         options = dict(
-                       names=[["Sphere", "Cigar", "Ellipsoid", "Cigar"], ["Hm", "Rastrigin", "Sphere", "Cigar"]],
-                       dimensions=[[2, 2, 2, 2], [5, 5, 5, 5], [77, 77, 77, 77]]
-                       )
+            names=[["Sphere", "Cigar", "Ellipsoid", "Cigar"], ["Hm", "Rastrigin", "Sphere", "Cigar"]],
+            dimensions=[[2, 2, 2, 2], [5, 5, 5, 5], [77, 77, 77, 77]]
+        )
         keys = sorted(options)
         select = itertools.product(*(options[k] for k in keys))  # type: ignore
         cases = (dict(zip(keys, s)) for s in select)
         return (cls(**c) for c in cases)
-
