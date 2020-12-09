@@ -43,52 +43,55 @@ from . import frozenexperiments  # noqa # pylint: disable=unused-import
 # fmt: off
 
 
-def _positive_sum_float(data: np.ndarray) -> float:
-    if not isinstance(data, np.ndarray):
-        raise ValueError(f"Unexpected inputs as np.ndarray, got {data}")
-    return float(np.sum(data))
+class _Constraint:
+
+    def _function(self, data: np.ndarray) -> float:
+        raise NotImplementedError()
+
+    def __call__(self, data: np.ndarray) -> float:
+        if not isinstance(data, np.ndarray):
+            raise ValueError(f"Unexpected inputs as np.ndarray, got {data}")
+        return self._function(data)
 
 
-def _positive_diff_float(data: np.ndarray) -> float:
-    if not isinstance(data, np.ndarray):
-        raise ValueError(f"Unexpected inputs as np.ndarray, got {data}")
-    return float(np.sum(data[::2]) - np.sum(data[1::2]))
+class _positive_sum_float(_Constraint):
+    def _function(self, data: np.ndarray) -> float:
+        return float(np.sum(data))
 
 
-def _positive_second_diff_float(data: np.ndarray) -> float:
-    if not isinstance(data, np.ndarray):
-        raise ValueError(f"Unexpected inputs as np.ndarray, got {data}")
-    return float(2 * np.sum(data[1::2]) - 3 * np.sum(data[::2]))
+class _positive_diff_float(_Constraint):
+    def _function(self, data: np.ndarray) -> float:
+        return float(np.sum(data[::2]) - np.sum(data[1::2]))
 
 
-def _ball_float(data: np.ndarray) -> float:
-    if not isinstance(data, np.ndarray):
-        raise ValueError(f"Unexpected inputs as np.ndarray, got {data}")
-    return float(np.sum(np.square(data))) - float(len(data)) - float(np.sqrt(len(data)))  # Most points violate the constraint.
+class _positive_second_diff_float(_Constraint):
+    def _function(self, data: np.ndarray) -> float:
+        return float(2 * np.sum(data[1::2]) - 3 * np.sum(data[::2]))
 
 
-def _positive_sum(data: np.ndarray) -> float:  # This one is Boolean.
-    if not isinstance(data, np.ndarray):
-        raise ValueError(f"Unexpected inputs as np.ndarray, got {data}")
-    return float(np.sum(data)) > 0
+class _ball_float(_Constraint):
+    def _function(self, data: np.ndarray) -> float:
+        return float(np.sum(np.square(data))) - float(len(data)) - float(np.sqrt(len(data)))  # Most points violate the constraint.
 
 
-def _positive_diff(data: np.ndarray) -> bool:
-    if not isinstance(data, np.ndarray):
-        raise ValueError(f"Unexpected inputs as np.ndarray, got {data}")
-    return float(np.sum(data[::2]) - np.sum(data[1::2])) > 0
+class _positive_sum(_Constraint):
+    def _function(self, data: np.ndarray) -> float:
+        return float(np.sum(data)) > 0
 
 
-def _positive_second_diff(data: np.ndarray) -> bool:
-    if not isinstance(data, np.ndarray):
-        raise ValueError(f"Unexpected inputs as np.ndarray, got {data}")
-    return float(2 * np.sum(data[1::2]) - 3 * np.sum(data[::2])) > 0 
+class _positive_diff(_Constraint):
+    def _function(self, data: np.ndarray) -> float:
+        return float(np.sum(data[::2]) - np.sum(data[1::2])) > 0
+
+
+class _positive_second_diff(_Constraint):
+    def _function(self, data: np.ndarray) -> float:
+        return float(2 * np.sum(data[1::2]) - 3 * np.sum(data[::2])) > 0 
 
 
 def _ball(data: np.ndarray) -> float:
-    if not isinstance(data, np.ndarray):
-        raise ValueError(f"Unexpected inputs as np.ndarray, got {data}")
-    return float(np.sum(np.square(data))) - float(len(data)) - float(np.sqrt(len(data))) > 0  # Most points violate the constraint.
+    def _function(self, data: np.ndarray) -> float:
+        return float(np.sum(np.square(data))) - float(len(data)) - float(np.sqrt(len(data))) > 0  # Most points violate the constraint.
 
 
 class MissingBenchmarkPackageError(ModuleNotFoundError):
