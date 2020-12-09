@@ -17,12 +17,13 @@ import torchvision.transforms as tr
 import nevergrad as ng
 import nevergrad.common.typing as tp
 from .. import base
+from typing import Type
 # pylint: disable=abstract-method
 
 
 class Image(base.ExperimentFunction):
     def __init__(self, problem_name: str = "recovering", index: int = 0,
-                 loss: imagelosses.ImageLoss.__class__ = imagelosses.SumAbsoluteDifferences) -> None:
+                 loss: Type[imagelosses.ImageLoss] = imagelosses.SumAbsoluteDifferences) -> None:
         """
         problem_name: the type of problem we are working on.
            recovering: we directly try to recover the target image.§
