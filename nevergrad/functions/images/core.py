@@ -22,10 +22,10 @@ from .. import base
 
 class Image(base.ExperimentFunction):
     def __init__(self, problem_name: str = "recovering", index: int = 0,
-                 loss: imagelosses.ImageLoss = imagelosses.SumAbsoluteDifferences) -> None:
+                 loss: imagelosses.ImageLoss.__class__ = imagelosses.SumAbsoluteDifferences) -> None:
         """
         problem_name: the type of problem we are working on.
-           recovering: we directly try to recover the target image.
+           recovering: we directly try to recover the target image.§
         index: the index of the problem, inside the problem type.
            For example, if problem_name is "recovering" and index == 0,
            we try to recover the face of O. Teytaud.
