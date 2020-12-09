@@ -187,12 +187,20 @@ class ImageFromPGAN(base.ExperimentFunction):
     """
     Creates face images using a GAN from pytorch GAN zoo trained on celebAHQ and optimizes the noise vector of the GAN
 
-    problem_name: the type of problem we are working on.
-    initial_noise: the initial noise of the GAN. It should be of dimension (1, 512). If None, it is defined randomly.
-    use_gpu: whether to use gpus to compute the images
-    loss: which loss to use for the images
-    mutable_sigma: whether the sigma should be mutable
-    n_mutations: number of mutations
+    Parameters
+    ----------
+    problem_name: str
+        the type of problem we are working on.
+    initial_noise: np.ndarray
+        the initial noise of the GAN. It should be of dimension (1, 512). If None, it is defined randomly.
+    use_gpu: bool
+        whether to use gpus to compute the images
+    loss: ImageLoss
+        which loss to use for the images
+    mutable_sigma: bool
+        whether the sigma should be mutable
+    n_mutations: int
+        number of mutations
     """
 
     def __init__(self, initial_noise: np.ndarray = None, use_gpu: bool = True,
