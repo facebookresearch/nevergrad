@@ -43,7 +43,7 @@ from . import frozenexperiments  # noqa # pylint: disable=unused-import
 # fmt: off
 
 
-def _positive_sum_float(data: np.ndarray) -> float:  # This one is Boolean.
+def _positive_sum_float(data: np.ndarray) -> float:
     if not isinstance(data, np.ndarray):
         raise ValueError(f"Unexpected inputs as np.ndarray, got {data}")
     return float(np.sum(data))
