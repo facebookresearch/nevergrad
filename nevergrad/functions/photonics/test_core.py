@@ -10,8 +10,10 @@ import typing as tp
 import pytest
 import numpy as np
 from nevergrad.common import testing
-from . import core
-
+#from . import core
+#from . import photonics
+import core
+import photonics
 
 @testing.parametrized(
     bragg=("bragg", [2.93, 2.18, 2.35, 2.12, 45.77, 37.99, 143.34, 126.55]),
@@ -134,14 +136,16 @@ def test_photonics_values_random(name: str, expected: float, data: tp.Optional[t
         np.testing.assert_almost_equal(func(candidate.value), expected, decimal=4)  # type: ignore
 
 def test_photosic_reference() -> None:
-    debut=np.array([79,102])
-    fin=np.array([100,70])
-    dbr=np.tile(np.array([147,120]),3)
-    X=np.append(debut,np.append(dbr,fin))
-    cf_test=cf_photosic_reference(X)
+    debut = np.array([79, 102])
+    fin = np.array([100, 70])
+    dbr = np.tile(np.array([147, 120]), 3)
+    X = np.concatenate([debut, dbr, fin])
+    cf_test = photonics.cf_photosic_reference(X)
     np.testing.assert_almost_equal(cf_test, 0.09069397)
 
+
 def test_photosic_realist() -> None:
-    eps_and_d=np.array([2.10,5.52,3.00,4.25,4.66,4.58,5.52,2.76,2.10,5.52,88.55,106.89,144.35,180.41,61.50,63.51,105.42,78.16,86.40,49.99])
-    cf_test=cf_photosic_realist(eps_and_d)
+    eps_and_d = np.array([2.10, 5.52, 3.00, 4.25, 4.66, 4.58, 5.52, 2.76, 2.10, 5.52, 88.55,
+                          106.89, 144.35, 180.41, 61.50, 63.51, 105.42, 78.16, 86.40, 49.99])
+    cf_test = photonics.cf_photosic_realist(eps_and_d)
     np.testing.assert_almost_equal(cf_test, 0.02581328)

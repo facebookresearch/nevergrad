@@ -21,10 +21,10 @@
 
 import numpy as np
 from nevergrad.parametrization import parameter as p
-from . import photonics
-from .. import base
-
-
+#from . import photonics
+import photonics
+#from .. import base
+from . import base
 def _make_parametrization(name: str, dimension: int, bounding_method: str = "bouncing", rolling: bool = False) -> p.Array:
     """Creates appropriate parametrization for a Photonics problem
 
