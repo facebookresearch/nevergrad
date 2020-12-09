@@ -72,7 +72,7 @@ class MLTuning(ExperimentFunction):
                 keras.layers.Dense(64, activation=activation, input_shape=(self.X_train.shape[1],)),
                 keras.layers.Dense(1)
             ])
-            regr.compile(optimizer=solver, loss='mse', metrics=['mae'], verbose=0, epochs=350)
+            regr.compile(optimizer=solver, loss='mse', metrics=['mae'])
         else:
             raise ValueError(f"Unknown regressor {regressor}.")
 
