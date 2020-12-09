@@ -27,6 +27,7 @@ def test_gym() -> None:
     assert value != 0
 
 def test_all_mujoco_envs() -> None:
+    pytest.importorskip('mujoco_py')
     core = pytest.importorskip('nevergrad.functions.control.core')
 
     for module in ["Ant", "Swimmer", "HalfCheetah", "Hopper", "Walker2d", "Humanoid", "NeuroAnt", "NeuroSwimmer", "NeuroHalfCheetah", "NeuroHopper", "NeuroWalker2d", "NeuroHumanoid"]:

@@ -995,7 +995,7 @@ def control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     for sigma, func in zip(sigmas, funcs):
         f = func.copy()
         param: ng.p.Array = f.parametrization.copy()  # type: ignore
-        param[0][0].set_mutation(sigma=sigma).set_name(f"sigma={sigma}")
+        param[0][0].set_mutation(sigma=sigma).set_name(f"sigma={sigma}") # type: ignore
         f.parametrization = param
         f.parametrization.freeze()
         funcs2.append(f)
