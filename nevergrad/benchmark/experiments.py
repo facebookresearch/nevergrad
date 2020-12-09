@@ -89,7 +89,7 @@ class _positive_second_diff(_Constraint):
         return float(2 * np.sum(data[1::2]) - 3 * np.sum(data[::2])) > 0 
 
 
-def _ball(data: np.ndarray) -> float:
+class _ball(_Constraint):
     def _function(self, data: np.ndarray) -> float:
         return float(np.sum(np.square(data))) - float(len(data)) - float(np.sqrt(len(data))) > 0  # Most points violate the constraint.
 
@@ -759,7 +759,7 @@ def constrained_illconditioned_parallel(seed: tp.Optional[int] = None) -> tp.Ite
         in [True, False]
     ]
     for func in functions:
-        func.parametrization.register_cheap_constraint(_positive_sum)
+        func.parametrization.register_cheap_constraint(_positive_sum())
     for function in functions:
         for budget in [400, 4000, 40000]:
             optims: tp.List[str] = get_optimizers("large", seed=next(seedg))  # type: ignore
