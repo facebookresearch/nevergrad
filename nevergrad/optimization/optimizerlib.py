@@ -53,7 +53,6 @@ class _OnePlusOne(base.Optimizer):
 
     Posssible mutations include gaussian and cauchy for the continuous case, and in the discrete case:
     discrete, fastga, doublefastga, adaptive, portfolio, discreteBSO, doerr.
-
     - discrete is the most classical discrete mutation operator,
     - doubleFastGA is an adaptation of FastGA to arity > 2, Portfolio corresponds to random mutation rates,
     - discreteBSO corresponds to a decreasing schedule of mutation rate.
@@ -89,9 +88,6 @@ class _OnePlusOne(base.Optimizer):
         if mutation == "adaptive":
             self._adaptive_mr = 0.5
         if mutation == "coordinatewise_adaptive":
-            all_params = paramhelpers.flatten_parameter(self.parametrization)
-            arity = max(len(param.choices) if isinstance(param, p.TransitionChoice) else 500 for param in all_params.values())
-            self._arity = arity
             self._velocity = np.random.uniform(size=self.dimension) * arity / 4.
             self._modified_variables = np.array([True] * self.dimension)
         self.noise_handling = noise_handling
