@@ -49,32 +49,6 @@ class MissingBenchmarkPackageError(ModuleNotFoundError):
 
 default_optims: tp.Optional[tp.List[str]] = None  # ["NGO10", "CMA", "Shiwa"]
 
-def smallmltuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool = False) -> tp.Iterator[Experiment]:
-    """Machine learning hyperparameter tuning experiment. Based on scikit models."""
-    seedg = create_seed_generator(seed)
-    # Continuous case,
-
-    # First, a few functions with constraints.
-    optims = ["Shiwa", "DE"]
-    if default_optims is not None:
-        optims = default_optims
-    for dimension in [None]:
-        for regressor in ["mlp", "decision_tree", "decision_tree_depth"]:
-            for dataset in (
-                    ["boston"] if dimension is None else ["artificialcos", "artificial",
-                                                                      "artificialsquare"]):
-                function = MLTuning(regressor=regressor, data_dimension=dimension, dataset=dataset,
-                                    overfitter=overfitter)
-                for budget in [50], 150, 500]:
-                    for num_workers in [1] if seq else [1, 10, 50, 100]:  # Seq for sequential optimization experiments.
-                        for optim in optims:
-                            xp = Experiment(function, optim, num_workers=num_workers,
-                                            budget=budget, seed=next(seedg))
-                            if not xp.is_incoherent:
-                                yield xp
-
-
-
 
 def keras_tuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool = False) -> tp.Iterator[Experiment]:
     """Machine learning hyperparameter tuning experiment. Based on scikit models."""
@@ -88,7 +62,7 @@ def keras_tuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: b
     for dimension in [None]:
         for regressor in ["kerasDenseNN"]:
             for dataset in (
-                    ["kerasBoston"]):
+                    ["kerasBoston", "diabetes", "auto-mpg", "red-wine", "white-wine"]):
                 function = MLTuning(regressor=regressor, data_dimension=dimension, dataset=dataset,
                                     overfitter=overfitter)
                 for budget in [50, 150, 500]:
@@ -110,7 +84,7 @@ def mltuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool 
     for dimension in [None, 1, 2, 3]:
         for regressor in ["mlp", "decision_tree", "decision_tree_depth"]:
             for dataset in (
-                    ["boston", "diabetes"] if dimension is None else ["artificialcos", "artificial",
+                    ["boston", "diabetes", "auto-mpg", "red-wine", "white-wine"] if dimension is None else ["artificialcos", "artificial",
                                                                       "artificialsquare"]):
                 function = MLTuning(regressor=regressor, data_dimension=dimension, dataset=dataset,
                                     overfitter=overfitter)
