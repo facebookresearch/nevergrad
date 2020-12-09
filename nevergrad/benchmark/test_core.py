@@ -51,7 +51,7 @@ def test_commandline_launch() -> None:
                                      "--imports", str(Path(__file__).parent / "additional" / "example.py")])()
         assert output.exists()
         df = utils.Selector.read_csv(str(output))
-        testing.assert_set_equal(df.columns, DESCRIPTION_KEYS | {"offset", "split"})  # "offset" comes from the custom function
+        testing.assert_set_equal(df.columns, DESCRIPTION_KEYS | {"offset"})  # "offset" comes from the custom function
         np.testing.assert_equal(len(df), 2)
 
 

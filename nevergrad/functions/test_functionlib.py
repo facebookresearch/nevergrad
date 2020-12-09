@@ -11,7 +11,7 @@ from nevergrad.parametrization import parameter as p
 from . import functionlib
 
 
-DESCRIPTION_KEYS = {"function_class", "name", "block_dimension", "useful_dimensions", "useless_variables", "translation_factor",
+DESCRIPTION_KEYS = {"split", "function_class", "name", "block_dimension", "useful_dimensions", "useless_variables", "translation_factor",
                     "num_blocks", "rotation", "noise_level", "dimension", "discrete", "aggregator", "hashing",
                     "parametrization", "noise_dissymmetry"}
 
@@ -106,7 +106,7 @@ def test_function_transform() -> None:
 
 def test_artificial_function_summary() -> None:
     func = functionlib.ArtificialFunction("sphere", 5)
-    testing.assert_set_equal(func.descriptors.keys(), DESCRIPTION_KEYS | {"split"})
+    testing.assert_set_equal(func.descriptors.keys(), DESCRIPTION_KEYS)
     np.testing.assert_equal(func.descriptors["function_class"], "ArtificialFunction")
 
 
