@@ -19,7 +19,7 @@ from nevergrad.functions.test_functionlib import DESCRIPTION_KEYS as ARTIFICIAL_
 from . import xpbase
 
 
-DESCRIPTION_KEYS = {"split", "seed", "elapsed_time", "elapsed_budget", "loss", "optimizer_name", "pseudotime",
+DESCRIPTION_KEYS = {"seed", "elapsed_time", "elapsed_budget", "loss", "optimizer_name", "pseudotime",
                     "num_workers", "budget", "error", "batch_mode"} | ARTIFICIAL_KEYS
 
 
