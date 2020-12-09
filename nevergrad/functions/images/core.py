@@ -54,10 +54,6 @@ class Image(base.ExperimentFunction):
         self.add_descriptors(loss=loss.__class__.__name__)
         self.loss_function = loss(reference=self.data)
 
-    def _loss(self, x: np.ndarray) -> float:
-        return self.loss_function(x)
-
-
 # #### Adversarial attacks ##### #
 
 
