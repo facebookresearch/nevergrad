@@ -79,7 +79,10 @@ class MLTuning(ExperimentFunction):
         if noise_free:  # noise_free is True when we want the result on the test set.
             X_test = self.X_test
             y_test = self.y_test
-            regr.fit(self.X_train, self.y_train)
+            if regressor == "kerasDenseNN":
+                regr.fit(self.X_train, self.y_train, verbose=0, epochs=350)
+            else:
+                regr.fit(self.X_train, self.y_train)
             pred_test = regr.predict(self.X_test)
             return mean_squared_error(self.y_test, pred_test)
 
@@ -87,8 +90,10 @@ class MLTuning(ExperimentFunction):
         for X, y, X_test, y_test in zip(self.X_train_cv, self.y_train_cv, self.X_valid_cv, self.y_valid_cv):
             assert isinstance(depth, int), f"depth has class {type(depth)} and value {depth}."
 
-            regr.fit(X, y)
-
+            if regressor == "kerasDenseNN":
+                regr.fit(X, y, verbose=0, epochs=350)
+            else:
+                regr.fit(X, y)
             # Predict
             pred_test = regr.predict(X_test)
             result += mean_squared_error(y_test, pred_test)
