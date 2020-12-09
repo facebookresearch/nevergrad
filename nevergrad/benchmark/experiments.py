@@ -165,12 +165,14 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
     # names += ["deceptiveillcond", "deceptivemultimodal", "deceptivepath"]
     functions += [
-        ArtificialFunction(name, block_dimension=d, rotation=rotation, noise_level=nl) for name in names
-        for rotation in [True, False]
-        for nl in [0., 100.]
-        for num_blocks in [1]
-        for d in [2, 40, 3000]
-    ]
+        ArtificialFunction(name, block_dimension=d, rotation=rotation, noise_level=nl, split=split)
+        for name in names              # period 5
+        for rotation in [True, False]  # period 2
+        for nl in [0., 100.]           # period 2
+        for num_blocks in [1, 8]       # period 2
+        for d in [2, 40, 3000, 10000]  # period 4
+        for split in [True, False]     # period 2
+    ][::13]  # 13 is coprime with all periods above so we sample correctly the possibilities.
     # This problem is intended as a stable basis forever.
     # The list of optimizers should contain only the basic for comparison and "baselines".
     optims: tp.List[str] = ["NGOpt8"] + get_optimizers("baselines", seed=next(seedg))  # type: ignore
@@ -533,7 +535,7 @@ def paramultimodal(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 # pylint: disable=redefined-outer-name,too-many-arguments
 @registry.register
 def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = False, small: bool = False,
-           noise: bool = False, hd: bool = False) -> tp.Iterator[Experiment]:
+           noise: bool = False, hd: bool = False, split: bool = False) -> tp.Iterator[Experiment]:
     """Yet Another Black-Box Optimization Benchmark.
     Related to, but without special effort for exactly sticking to, the BBOB/COCO dataset.
     Dimension 2, 10 and 50.
@@ -565,7 +567,7 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
     if default_optims is not None:
         optims = default_optims
     functions = [
-        ArtificialFunction(name, block_dimension=d, rotation=rotation, noise_level=noise_level) for name in names
+        ArtificialFunction(name, block_dimension=d, rotation=rotation, noise_level=noise_level, split=split) for name in names
         for rotation in [True, False]
         for num_blocks in [1]
         for d in ([100, 1000, 3000] if hd else [2, 10, 50])
@@ -586,6 +588,7 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
                     yield xp
 
 
+
 @registry.register
 def yahdnoisybbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with higher dimensions."""
@@ -598,6 +601,22 @@ def yahdnoisybbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 def yabigbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with more budget."""
     internal_generator = yabbob(seed, parallel=False, big=True)
+    for xp in internal_generator:
+        yield xp
+
+
+@registry.register
+def yasplitbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with more budget."""
+    internal_generator = yabbob(seed, parallel=False, split=True)
+    for xp in internal_generator:
+        yield xp
+
+
+@registry.register
+def yahdsplitbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with more budget."""
+    internal_generator = yabbob(seed, hd=True, split=True)
     for xp in internal_generator:
         yield xp
 
