@@ -3,11 +3,12 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import typing as tp
+import pickle
 import numpy as np
 import pytest
 from nevergrad.parametrization import parameter as p
 from nevergrad.common import testing
+import nevergrad.common.typing as tp
 from . import base
 
 
@@ -110,3 +111,43 @@ def test_parametrization_continuous_noisy(variables: tp.Tuple[p.Parameter, ...],
     instru = p.Instrumentation(*variables)
     assert instru.descriptors.continuous == continuous
     assert instru.descriptors.deterministic != noisy
+
+
+class ExampleFunction(base.ExperimentFunction):
+
+    def __init__(self, dimension: int, number: int, default: int = 12):  # pylint: disable=unused-argument
+        # unused argument is used to check that it is automatically added as descriptor
+        super().__init__(self.oracle_call, p.Array(shape=(dimension,)))
+
+    def oracle_call(self, x: np.ndarray) -> float:
+        return float(x[0])
+
+    # pylint: disable=unused-argument
+    def compute_pseudotime(self, input_parameter: tp.Any, loss: tp.Loss) -> float:
+        assert isinstance(loss, (int, float))
+        return 5 - loss
+
+
+def test_function_descriptors_and_pickle() -> None:
+    func = ExampleFunction(dimension=1, number=3)
+    assert "default" in func.descriptors
+    assert "self" not in func._auto_init
+    out = pickle.dumps(func)
+    func2 = pickle.loads(out).copy()
+    assert func2.descriptors["number"] == 3
+
+
+class ExampleFunctionAllDefault(base.ExperimentFunction):
+
+    def __init__(self, dimension: int = 2, default: int = 12):  # pylint: disable=unused-argument
+        # unused argument is used to check that it is automatically added as descriptor
+        super().__init__(lambda x: 3.0, p.Array(shape=(dimension,)))
+
+
+def test_function_descriptors_all_default() -> None:
+    func = ExampleFunctionAllDefault()
+    assert func.descriptors["default"] == 12
+    assert "self" not in func._auto_init
+    with pytest.raises(TypeError):
+        # make sure unexpected keyword still works
+        ExampleFunctionAllDefault(blublu=12)   # type: ignore

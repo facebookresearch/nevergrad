@@ -574,7 +574,7 @@ def test_ngo_split_optimizer(name: str, fake_learning: bool, budget: int, expect
 
 @pytest.mark.parametrize(  # type: ignore
     "budget,with_int", [
-    (100, True),
+    (150, True),
     (300, True),
     (1000, True),
     (3000, True),
@@ -602,7 +602,8 @@ def test_ngopt_on_simple_realistic_scenario(budget: int, with_int: bool) -> None
  
     optimizer = ng.optimizers.NGOpt(parametrization=parametrization, budget=budget)
     recommendation = optimizer.minimize(fake_training)
-    assert fake_training(**recommendation.kwargs) < 5e-2 if with_int else 5e-3
+    result = fake_training(**recommendation.kwargs)
+    assert result < 5e-2 if with_int else 5e-3, f"{result} not < {5e-2 if with_int else 5e-3}"
 
 
 
