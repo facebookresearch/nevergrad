@@ -203,7 +203,7 @@ class ImageFromPGAN(base.ExperimentFunction):
         number of mutations
     """
 
-    def __init__(self, initial_noise: np.ndarray = None, use_gpu: bool = True,
+    def __init__(self, initial_noise: np.ndarray = None, use_gpu: bool = False,
                  loss: imagelosses.ImageLoss = imagelosses.Koncept512(),
                  mutable_sigma=True, n_mutations=35) -> None:
         if torch.cuda.is_available():
