@@ -61,7 +61,7 @@ class _Constraint:
         elif self.name == "ball":
             value = float(np.sum(np.square(data))) - float(len(data)) - float(np.sqrt(len(data)))  # Most points violate the constraint.
         else:
-            raise NotImplentedError(f"Unknown function {self.name}")
+            raise NotImplementedError(f"Unknown function {self.name}")
         return value > 0 if self.as_bool else value
 
 
@@ -180,7 +180,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         in [True, False]
     ]
     for func in functions:
-        func.parametrization.register_cheap_constraint(_Constraint("positive_sum"))
+        func.parametrization.register_cheap_constraint(_Constraint("positive_sum", as_bool=False))
 
     # Then, let us build a constraint-free case. We include the noisy case.
     names = ["hm", "rastrigin", "sphere", "doublelinearslope", "ellipsoid"]
@@ -751,7 +751,7 @@ def constrained_illconditioned_parallel(seed: tp.Optional[int] = None) -> tp.Ite
         in [True, False]
     ]
     for func in functions:
-        func.parametrization.register_cheap_constraint(_Constraint("positive_sum"))
+        func.parametrization.register_cheap_constraint(_Constraint("positive_sum", as_bool=False))
     for function in functions:
         for budget in [400, 4000, 40000]:
             optims: tp.List[str] = get_optimizers("large", seed=next(seedg))  # type: ignore
