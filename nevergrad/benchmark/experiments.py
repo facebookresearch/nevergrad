@@ -625,7 +625,7 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
     for func in functions:
         constraints_list = [_positive_sum_float(), _positive_diff_float(), _positive_second_diff_float(), _ball_float(),
             _positive_sum(), _positive_diff(), _positive_second_diff(), _ball()]
-        for u in range(8):
+        for u in range(len(constraints_list)):
             if constraints > u and constraints <= u+4:
                 func.parametrization.register_cheap_constraint(constraints_list[u])
     budgets = [50, 200, 800, 3200, 12800]
