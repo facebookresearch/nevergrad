@@ -52,48 +52,17 @@ class _Constraint:
     def __call__(self, data: np.ndarray) -> tp.Union[bool, float]:
         if not isinstance(data, np.ndarray):
             raise ValueError(f"Unexpected inputs as np.ndarray, got {data}")
-        if self.name == "positive_sum_float":
+        if self.name == "positive_sum":
             value = float(np.sum(data))
-        elif self.name ==...:
-             ...
-         else:
-             raise NotImplentedError(f"Unknown function {self.name}")
-         return value > 0 if self.as_bool else value
-
-
-class _positive_diff_float(_Constraint):
-    def _function(self, data: np.ndarray) -> float:
-        return float(np.sum(data[::2]) - np.sum(data[1::2]))
-
-
-class _positive_second_diff_float(_Constraint):
-    def _function(self, data: np.ndarray) -> float:
-        return float(2 * np.sum(data[1::2]) - 3 * np.sum(data[::2]))
-
-
-class _ball_float(_Constraint):
-    def _function(self, data: np.ndarray) -> float:
-        return float(np.sum(np.square(data))) - float(len(data)) - float(np.sqrt(len(data)))  # Most points violate the constraint.
-
-
-class _positive_sum(_Constraint):
-    def _function(self, data: np.ndarray) -> float:
-        return float(np.sum(data)) > 0
-
-
-class _positive_diff(_Constraint):
-    def _function(self, data: np.ndarray) -> float:
-        return float(np.sum(data[::2]) - np.sum(data[1::2])) > 0
-
-
-class _positive_second_diff(_Constraint):
-    def _function(self, data: np.ndarray) -> float:
-        return float(2 * np.sum(data[1::2]) - 3 * np.sum(data[::2])) > 0 
-
-
-class _ball(_Constraint):
-    def _function(self, data: np.ndarray) -> float:
-        return float(np.sum(np.square(data))) - float(len(data)) - float(np.sqrt(len(data))) > 0  # Most points violate the constraint.
+        elif self.name == "positive_diff":
+            value = float(np.sum(data[::2]) - np.sum(data[1::2]))
+        elif self.name == "positive_second_diff":
+            value = float(2 * np.sum(data[1::2]) - 3 * np.sum(data[::2]))
+        elif self.name == "ball":
+            value = float(np.sum(np.square(data))) - float(len(data)) - float(np.sqrt(len(data)))  # Most points violate the constraint.
+        else:
+            raise NotImplentedError(f"Unknown function {self.name}")
+        return value > 0 if self.as_bool else value
 
 
 class MissingBenchmarkPackageError(ModuleNotFoundError):
@@ -211,7 +180,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         in [True, False]
     ]
     for func in functions:
-        func.parametrization.register_cheap_constraint(_positive_sum())
+        func.parametrization.register_cheap_constraint(_Constraint("positive_sum"))
 
     # Then, let us build a constraint-free case. We include the noisy case.
     names = ["hm", "rastrigin", "sphere", "doublelinearslope", "ellipsoid"]
@@ -624,12 +593,13 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
         for d in ([100, 1000, 3000] if hd else [2, 10, 50])
     ]
     assert constraints < 8, "We have only four possible constraints."
-    for func in functions:
-        constraints_list = [_positive_sum_float(), _positive_diff_float(), _positive_second_diff_float(), _ball_float(),
-            _positive_sum(), _positive_diff(), _positive_second_diff(), _ball()]
-        for u in range(len(constraints_list)):
-            if constraints > u and constraints <= u+4:
-                func.parametrization.register_cheap_constraint(constraints_list[u])
+    constraints_list = [_Constraint(name, as_bool)
+        for as_bool in [False, True]
+        for name in ["positive_sum", "positive_diff", "positive_second_diff", "ball"]
+        ]
+    for u, func in enumerate(functions):
+        if constraints > u and constraints <= u+4:
+            func.parametrization.register_cheap_constraint(constraints_list[u % len(constraints_list)])
     budgets = [50, 200, 800, 3200, 12800]
     if (big and not noise):
         budgets = [40000, 80000, 160000, 320000]
@@ -761,7 +731,7 @@ def constrained_illconditioned_parallel(seed: tp.Optional[int] = None) -> tp.Ite
         in [True, False]
     ]
     for func in functions:
-        func.parametrization.register_cheap_constraint(_positive_sum())
+        func.parametrization.register_cheap_constraint(_Constraint("positive_sum"))
     for function in functions:
         for budget in [400, 4000, 40000]:
             optims: tp.List[str] = get_optimizers("large", seed=next(seedg))  # type: ignore
