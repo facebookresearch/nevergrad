@@ -63,7 +63,6 @@ class CausalDiscovery(ExperimentFunction):
         param_links = ng.p.Choice([-1, 0, 1], repetitions=self._nvars*(self._nvars-1)//2)
         instru = ng.p.Instrumentation(network_links=param_links).set_name("")
         super().__init__(self.objective, instru)
-        self._descriptors.update(generator=generator)
         self._min_score_so_far = None #Debugging
 
 
