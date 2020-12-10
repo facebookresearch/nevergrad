@@ -32,7 +32,7 @@ from .oneshot import *  # noqa: F403
 from .recastlib import *  # noqa: F403
 
 try:
-    from .externalbo import HyperOpt # pylint: disable=unused-import
+    from .externalbo import HyperOpt  # pylint: disable=unused-import
 except ModuleNotFoundError:
     pass
 
@@ -1155,7 +1155,7 @@ def learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.Arra
     model = LinearRegression()
     model.fit(X2, y)
 
-    optimizer = Powell(parametrization=dimension, budget=45*dimension+30)
+    optimizer = Powell(parametrization=dimension, budget=45 * dimension + 30)
     try:
         minimum = optimizer.minimize(
             lambda x: float(model.predict(polynomial_features.fit_transform(x[None, :])))).value
@@ -1956,7 +1956,8 @@ class NGOptBase(base.Optimizer):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         descr = self.parametrization.descriptors
         self.has_noise = not (descr.deterministic and descr.deterministic_function)
-        self.noise_from_instrumentation = self.has_noise and descr.deterministic_function  # The noise coming from discrete variables goes to 0.
+        # The noise coming from discrete variables goes to 0.
+        self.noise_from_instrumentation = self.has_noise and descr.deterministic_function
         self.fully_continuous = descr.continuous
         all_params = paramhelpers.flatten_parameter(self.parametrization)
         choicetags = [p.BaseChoice.ChoiceTag.as_tag(x) for x in all_params.values()]
@@ -2203,6 +2204,13 @@ class NGOpt8(NGOpt4):
                 optimClass = super()._select_optimizer_cls()
 
         return optimClass
+
+    def _num_objectives_set_callback(self) -> None:
+        super()._num_objectives_set_callback()
+        if self.num_objectives > 1:
+            if self.noise_from_instrumentation or not self.has_noise:
+                # override at runtime
+                self._optim = DE(self.parametrization, self.budget, self.num_workers)
 
 
 @registry.register
