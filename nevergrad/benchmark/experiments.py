@@ -45,18 +45,20 @@ from . import frozenexperiments  # noqa # pylint: disable=unused-import
 
 class _Constraint:
 
-    def _function(self, data: np.ndarray) -> float:
-        raise NotImplementedError()
+    def __init__(self, name: str, as_bool: bool) -> None:
+         self.name = name
+         self.as_bool = as_bool
 
-    def __call__(self, data: np.ndarray) -> float:
+    def __call__(self, data: np.ndarray) -> tp.Union[bool, float]:
         if not isinstance(data, np.ndarray):
             raise ValueError(f"Unexpected inputs as np.ndarray, got {data}")
-        return self._function(data)
-
-
-class _positive_sum_float(_Constraint):
-    def _function(self, data: np.ndarray) -> float:
-        return float(np.sum(data))
+        if self.name == "positive_sum_float":
+            value = float(np.sum(data))
+        elif self.name ==...:
+             ...
+         else:
+             raise NotImplentedError(f"Unknown function {self.name}")
+         return value > 0 if self.as_bool else value
 
 
 class _positive_diff_float(_Constraint):
