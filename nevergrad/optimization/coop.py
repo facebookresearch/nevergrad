@@ -69,7 +69,7 @@ class _CooperativeOptimization(base.Optimizer):
         self.populations: tp.List[tp.List[p.Parameter]] = [
             [] for _ in range(len(self.species))
         ]
-        self.candidates : tp.Dict[str, p.Parameter]
+        self.candidates: tp.Dict[str, p.Parameter] = {}
         self.representatives: tp.List[p.Parameter] = []
 
     def _internal_ask_candidate(self) -> p.Parameter:
@@ -104,12 +104,17 @@ class _CooperativeOptimization(base.Optimizer):
                               + (candidate.value,) \
                               + tuple(v.value for v in self.representatives[idx+1:])
 
-        # Crossover or mutate
+        # Crossover
+        elif self._rng.random() < 0.5:
+            pass
+
+        # Mutate
         else:
             pass
 
 
-        return self.parametrization.spawn_child(new_value=candidate_value)
+        full_candidate = self.parametrization.spawn_child(new_value=candidate_value)
+        full_candidate.uid = candidate.uid
 
     def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
         pass
@@ -133,4 +138,5 @@ class CooperativeOptimization(base.ConfiguredOptimizer, ):
         self.mutation = mutation
         self.popsize = popsize
 
-Coop = CooperativeOptimization().set_name("Coop")
+
+Coop = CooperativeOptimization().set_name("Coop", register=True)
