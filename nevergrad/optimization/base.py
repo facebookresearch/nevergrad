@@ -127,7 +127,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         self._hypervolume_pareto: tp.Optional[mobj.HypervolumePareto] = None
         # instance state
         self._asked: tp.Set[str] = set()
-        self._first_tell_done = False  # set to True at the beginning of the first tell
+        self._num_objectives = 0
         self._suggestions: tp.Deque[p.Parameter] = deque()
         self._num_ask = 0
         self._num_tell = 0  # increases after each successful tell
@@ -152,9 +152,27 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
 
     @property
     def num_objectives(self) -> int:
-        if not self._first_tell_done:
-            raise RuntimeError('Unknown number of objectives, provide a "tell" first.')
-        return 1 if self._hypervolume_pareto is None else self._hypervolume_pareto.num_objectives
+        """Provides 0 if the number is not known yet, else the number of objectives
+        to optimize upon.
+        """
+        if self._hypervolume_pareto is not None and self._num_objectives != self._hypervolume_pareto.num_objectives:
+            raise RuntimeError("Number of objectives is incorrectly set. Please create a nevergrad issue")
+        return self._num_objectives
+
+    @num_objectives.setter
+    def num_objectives(self, num: int) -> None:
+        num = int(num)
+        if num <= 0:
+            raise ValueError("Number of objectives must be strictly positive")
+        if not self._num_objectives:
+            self._num_objectives = num
+            self._num_objectives_set_callback()
+        elif num != self._num_objectives:
+            raise ValueError(f"Expected {self._num_objectives} loss(es), but received {num}.")
+
+    def _num_objectives_set_callback(self) -> None:
+        """Callback for when num objectives is first known
+        """
 
     @property
     def num_ask(self) -> int:
@@ -302,12 +320,6 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             raise TypeError(
                 f'"tell" method only supports float values but the passed loss was: {loss} (type: {type(loss)}.'
             )
-        # check loss length
-        if self.num_tell:
-            expected = self.num_objectives
-            actual = 1 if isinstance(loss, float) else loss.size
-            if actual != expected:
-                raise ValueError(f"Expected {expected} loss(es) (like previous ones) but received {actual}.")
         # check Parameter
         if not isinstance(candidate, p.Parameter):
             raise TypeError(
@@ -317,9 +329,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 "or optimizer.suggest(*args, **kwargs) to suggest a point that should be used for "
                 "the next ask"
             )
+        # check loss length
+        self.num_objectives = 1 if isinstance(loss, float) else loss.size
         # checks are done, start processing
         candidate.freeze()  # make sure it is not modified somewhere
-        self._first_tell_done = True
         # add reference if provided
         if isinstance(candidate, p.MultiobjectiveReference):
             if self._hypervolume_pareto is not None:
@@ -328,7 +341,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 raise RuntimeError("MultiobjectiveReference must only be used for multiobjective losses")
             self._hypervolume_pareto = mobj.HypervolumePareto(upper_bounds=loss)
             if candidate.value is None:
-                return
+                return  # no value, so stopping processing there
             candidate = candidate.value
         # preprocess multiobjective loss
         if isinstance(loss, np.ndarray):
