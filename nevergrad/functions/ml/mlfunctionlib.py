@@ -25,8 +25,9 @@ class MLTuning(ExperimentFunction):
     Parameters
     ----------
     regressor: str
-        type of function we can use for doing the regression. Can be "mlp", "decision_tree", "decision_tree_depth", "any".
-        "any" means that the regressor has one more parameter which is a discrete choice among possibilities.
+        type of function we can use for doing the regression. Can be "mlp", "decision_tree", "decision_tree_depth", 
+        "keras_dense_nn", "any".
+        "any" means that the regressor has one more parameter which is a discrete choice among scikitlearn possibilities.
     data_dimension: int
         dimension of the data we generate. None if not an artificial dataset.
     dataset: str

@@ -60,7 +60,7 @@ def keras_tuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: b
     if default_optims is not None:
         optims = default_optims
     for dimension in [None]:
-        for regressor in ["kerasDenseNN"]:
+        for regressor in ["keras_dense_nn"]:
             for dataset in (
                     ["kerasBoston", "boston", "diabetes"]):
                 function = MLTuning(regressor=regressor, data_dimension=dimension, dataset=dataset,
