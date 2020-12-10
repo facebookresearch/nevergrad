@@ -15,13 +15,13 @@ def test_causal_discovery_using_data() -> None:
     param_links = ng.p.Choice([-1, 0, 1], repetitions=func._nvars*(func._nvars-1)//2)
     param_links.set_standardized_data([i % 2 for i in range(0, param_links.dimension)])
     result = func(network_links=param_links.value)
-    assert math.isclose(17.425619834710744, result, abs_tol=1e-10)
+    assert np.isclose(17.425619834710744, result, atol=1e-10)
 
     optimizer = ng.optimizers.OnePlusOne(parametrization=func.parametrization, budget=500)
     optimizer.parametrization.random_state = np.random.RandomState(12)
     recommendation = optimizer.minimize(func)
     recommendation_score = func(**recommendation.kwargs)
-    assert math.isclose(17.425619834710744, recommendation_score, abs_tol=1e-10) #Optimal
+    assert np.isclose(17.425619834710744, recommendation_score, atol=1e-10) #Optimal
     assert len(recommendation.kwargs['network_links']) == func._nvars*(func._nvars-1)//2
 
 
