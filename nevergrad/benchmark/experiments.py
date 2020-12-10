@@ -595,14 +595,17 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
         for num_blocks in [1]
         for d in ([100, 1000, 3000] if hd else [2, 10, 50])
     ]
-    assert constraints < 8, "We have only four possible constraints."
+    max_num_constraints = 4
+    assert constraints < len(constraints_list) + max_num_constraints, (
+        "constraints should be in 0, 1, ..., {len(constraints_list) + max_num_constraints - 1} (0 = no constraint).")
     constraints_list = [_Constraint(name, as_bool)
         for as_bool in [False, True]
         for name in ["positive_sum", "positive_diff", "positive_second_diff", "ball"]
         ]
-    for u, func in enumerate(functions):
-        if constraints > u and constraints <= u+4:
-            func.parametrization.register_cheap_constraint(constraints_list[u % len(constraints_list)])
+    for func in functions:
+        for u in range(len(constraints_list)):
+            if u < constraints and constraints - max_num_constraints <= u:  # we add the constraints with index u in {constraints-max, ..., constraints-1}
+                func.parametrization.register_cheap_constraint(constraints_list[u % len(constraints_list)])
     budgets = [50, 200, 800, 3200, 12800]
     if (big and not noise):
         budgets = [40000, 80000, 160000, 320000]
