@@ -37,5 +37,4 @@ def test_causal_discovery_using_generator() -> None:
     recommendation = optimizer.minimize(func)
     recommendation_score = func(**recommendation.kwargs)
     assert recommendation_score == func._min_score_so_far #Why sometimes False?
-    assert 38 >= recommendation_score
     assert len(recommendation.kwargs['network_links']) == nnodes*(nnodes-1)//2
