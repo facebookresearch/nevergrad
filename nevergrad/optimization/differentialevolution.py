@@ -128,7 +128,7 @@ class _DE(base.Optimizer):
         a, b = (self.population[uids[self._rng.randint(self.llambda)]] for _ in range(2))
         best = self.current_bests["pessimistic"].parameter
         # redefine the different parents in case of multiobjective optimization
-        if self._first_tell_done and self._config.multiobjective_adaptation and self.num_objectives > 1:
+        if self._config.multiobjective_adaptation and self.num_objectives > 1:
             pareto = self.pareto_front()
             if pareto:
                 best = parent if parent in pareto else self._rng.choice(pareto)
