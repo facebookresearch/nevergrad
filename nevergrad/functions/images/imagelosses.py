@@ -1,5 +1,4 @@
 import numpy as np
-from koncept.models import Koncept512 as K512_model  # type: ignore
 
 
 class ImageLoss:
@@ -28,6 +27,7 @@ class Koncept512(ImageLoss):
     """
     def __init__(self) -> None:
         super().__init__()
+        from koncept.models import Koncept512 as K512_model  # type: ignore
         self.koncept = K512_model()
 
     def __call__(self, img: np.ndarray) -> float:
