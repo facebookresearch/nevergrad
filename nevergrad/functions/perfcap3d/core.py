@@ -5,9 +5,10 @@ import typing as tp
 import logging
 import itertools
 import copy
-import nevergrad as ng
+import subprocess
 from uuid import uuid4 as uuid_gen
 from enum import Enum
+import nevergrad as ng
 from .rmqservice import RMQService as _RMQService, RMQSettings as _RMQSettings
 from ...functions.base import ExperimentFunction
 
@@ -228,6 +229,7 @@ class Perfcap3DFunction(ExperimentFunction):
         self._server_comm.stop_experiment(self._experiment_tag_id,
                                                 self.compute_pose(*args))
                                                 # this notifies server to flush logs with converged pose equal to args.
+
         return loss
 
 
@@ -253,17 +255,7 @@ class Perfcap3DServerComm(metaclass = Singleton):
 
     def _setupRMQ(self) -> _RMQService:
 
-        rmqsettings_fpath = os.path.join(pathlib.Path(os.path.abspath(__file__)).parent, "experiment_config\\rmqsettings.json")
-        with open(rmqsettings_fpath) as f:
-            rmq_settings = json.load(f)
-
-        # in case Benchmark is run under multi processing, each process (i.e. one instance of Experiment Manager)
-        # defines a unique routing_key to receive messages from Perfcap Benchmark Server
-        # this routing key is embedded in outgoing messages by RMQService, so that the Perfcap Benchmark Server knows under which
-        # routing key to forward the reply.
-        rmq_settings = _RMQSettings(conn_str=rmq_settings["uri"], exchange_in=rmq_settings["ng_exchange_in"],
-                                    exchange_out=rmq_settings["ng_exchange_out"], routing_key_in=str(uuid_gen()))
-        return _RMQService(rmq_settings)
+        return _RMQService(_RMQSettings.from_json())
 
     def __init__(self, server_config : tp.Dict[str,tp.Any]) -> None:
         """
@@ -290,8 +282,8 @@ class Perfcap3DServerComm(metaclass = Singleton):
         Perfcap Benchmark Server or start a new Perfcap Benchmark Server instance under different RMQSettings
         """
 
-        if self._experiment_set:
-            return
+        # if self._experiment_set:
+        #   return
 
         self._logger.info("Setting experiment to: %d", self._experiment_id)
         self._logger.info("Sending Perfcap bechmark server request to set experiment to %d", self._experiment_id)
@@ -313,6 +305,20 @@ class Perfcap3DServerComm(metaclass = Singleton):
         except KeyError as ex:
             self._logger.error("Error while parsing reply for set experiment from benchmark server")
             raise ex
+
+    def _wait_for_server_ready(self) -> None:
+
+        if self._rmq_service is None:
+            self._rmq_service = self._setupRMQ()
+
+        self._logger.info("Polling to see if server is alive...")
+        msg = {
+            "action": "ping"
+        }
+
+        _ = self._rmq_service.poll_request_forced(msg)      # ignore processing of server reply. since we received a message,
+                                                            # this is sufficient to know that server is alive
+        self._logger.info("Server alive! Proceeding ...")
 
     def _register_experiment(self, experiment_tag_id) -> None:
         """
@@ -387,8 +393,7 @@ class Perfcap3DServerComm(metaclass = Singleton):
         Perfcap Benchmark Server and nevergrad logs.
         """
         self._no_of_pending_experiments += 1
-        if self._rmq_service is None:
-            self._rmq_service = self._setupRMQ()
+        self._wait_for_server_ready()
         self._set_experiment()
         self._register_experiment(experiment_tag_id)
 
@@ -448,3 +453,31 @@ class Perfcap3DExperimentConfig:
     @property
     def server_config(self):
         return self._config["benchmark_server_args"]
+
+class Perfcap3DServerExecutor:
+
+    @classmethod
+    def execute_server(cls, experiment_count : int):
+
+        # TODO: download/extract benchmark server/dataset if not exist
+
+        exe_folder_path = os.path.join(pathlib.Path(os.path.abspath(__file__)).parent, "resources")
+        lock_file_path = os.path.join(exe_folder_path,'.running.lck')
+        # if lock file already exists, skipping launching benchmark server
+        try:
+            # open lockfile for exclusive creation
+            with open(lock_file_path,'x'):
+                pass
+                #f.write(str(experiment_count).join("\n"))       # write number of experiments to execute in lockfile
+
+            rmq_settings = _RMQSettings.from_json()
+            exe_path = os.path.join(exe_folder_path,'performance_capture.exe')
+            cmd_args = ['--benchmark_server', '--benchmark_server_rmq_uri', rmq_settings.connection_string,
+                        '--benchmark_server_ng_exchange_in', rmq_settings.exchange_in,
+                        '--benchmark_server_ng_exchange_out', rmq_settings.exchange_out,
+                        "--experiment_count", str(experiment_count)]
+            subprocess.Popen([str(exe_path)]+cmd_args, cwd=str(exe_folder_path), creationflags = subprocess.CREATE_NEW_CONSOLE)
+            #exe_path = os.path.join(exe_folder_path,'run_benchmark_server.bat')
+            #subprocess.Popen(str(exe_path), cwd=str(exe_folder_path),creationflags = subprocess.CREATE_NEW_CONSOLE)
+        except FileExistsError:
+            pass

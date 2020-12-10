@@ -9,7 +9,7 @@ from nevergrad import optimizers
 from nevergrad.optimization.base import ConfiguredOptimizer
 from nevergrad.optimization import experimentalvariants  # pylint: disable=unused-import
 from nevergrad.functions import ArtificialFunction
-from nevergrad.functions.perfcap3d.core import Perfcap3DFunction
+from nevergrad.functions.perfcap3d import core as perfcap3d
 from .xpbase import registry
 from .xpbase import create_seed_generator
 from .xpbase import Experiment
@@ -24,15 +24,21 @@ def perfcap_experiment(experiment_filename: str, seed: tp.Optional[int] = None) 
     """
 
     seedg = create_seed_generator(seed)
-    budgets = [2000, 4000, 7000]
-    optimizer_names = [ "Shiwa", "RandomSearch",
-                        "RealSpacePSO", "Powell", "DiscreteOnePlusOne",
-                        "CMA", "NGO", "TBPSA", "chainCMAPowell", "DE"]
+    # budgets = [2000, 4000, 7000]
+    # optimizer_names = [ "Shiwa", "RandomSearch",
+    #                     "RealSpacePSO", "Powell", "DiscreteOnePlusOne",
+    #                     "CMA", "NGO", "TBPSA", "chainCMAPowell", "DE"]
+
+    budgets = [10,20]
+    optimizer_names = ["Shiwa","RandomSearch"]
+
+    total_experiment_count = len(budgets) * len(optimizer_names)
+    perfcap3d.Perfcap3DServerExecutor.execute_server(total_experiment_count)
 
     # pylint: disable=stop-iteration-return
     for budget in budgets:
         for optim in optimizer_names:
-            yield Experiment(function=Perfcap3DFunction(experiment_filename),
+            yield Experiment(function=perfcap3d.Perfcap3DFunction(experiment_filename),
                                 optimizer=optim, budget=budget, seed=next(seedg))
 
 @registry.register
