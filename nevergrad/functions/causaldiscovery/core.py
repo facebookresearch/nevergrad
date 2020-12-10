@@ -43,7 +43,6 @@ class CausalDiscovery(ExperimentFunction):
                  parents_max: int = 5,
                  expected_degree: int = 3,
                  ) -> None:
-        params = {x: y for x, y in locals().items() if x not in ["self", "__class__"]}  # for copying
         #Currently, there are three datasets as described in https://fentechsolutions.github.io/CausalDiscoveryToolbox/html/data.html
         _dataset = ['tuebingen', 'sachs', 'dream4']
         assert generator in _dataset + ['acylicgraph']
