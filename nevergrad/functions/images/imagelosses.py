@@ -27,11 +27,15 @@ class Koncept512(ImageLoss):
     """
     def __init__(self) -> None:
         super().__init__()
-        from koncept.models import Koncept512 as K512_model  # type: ignore
-        self.koncept = K512_model()
+        import os
+        if os.name != 'nt':
+            from koncept.models import Koncept512 as K512_model  # type: ignore
+            self.koncept = K512_model()
+        else:
+            self.koncept = None
 
     def __call__(self, img: np.ndarray) -> float:
-        loss = self.koncept.assess(img)
+        loss = self.koncept.assess(img) if self.koncept else np.zeros(1)
         if len(loss.shape) == 0:
             loss = float(loss)
         return loss
