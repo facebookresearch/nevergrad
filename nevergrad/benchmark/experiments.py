@@ -561,6 +561,8 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
     Both rotated or not rotated.
     """
     seedg = create_seed_generator(seed)
+
+    # List of objective functions.
     names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal", "bucherastrigin",
              "multipeak"]
     names += ["sphere", "doublelinearslope", "stepdoublelinearslope"]
@@ -569,27 +571,32 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
     # Deceptive path is related to the sharp ridge function; there is a long path to the optimum.
     # Deceptive illcond is related to the difference of powers function; the conditioning varies as we get closer to the optimum.
     # Deceptive multimodal is related to the Weierstrass function and to the Schaffers function.
+
+    # Parametrizing the noise level.
     if noise:
-        if hd:
-            noise_level = 100000
-        else:
-            noise_level = 100
+        noise_level = 100000 if hd else 100
     else:
         noise_level = 0
+
+    # Choosing the list of optimizers.
     optims: tp.List[str] = ["chainMetaModelSQP", "NGOpt8", "chainCMASQP", "MetaModel", "CMA", "CMandAS2"]
     if noise:
         optims += ["TBPSA", "SQP", "NoisyDiscreteOnePlusOne"]
     if hd:
         optims += ["OnePlusOne"]
-
+        optims += get_optimizers("splitters", seed=next(seedg))  # type: ignore
     if default_optims is not None:
         optims = default_optims
+
+    # List of objective functions.
     functions = [
         ArtificialFunction(name, block_dimension=d, rotation=rotation, noise_level=noise_level, split=split) for name in names
         for rotation in [True, False]
-        for num_blocks in [1]
+        for num_blocks in ([1] if not split else [7, 12])
         for d in ([100, 1000, 3000] if hd else [2, 10, 50])
     ]
+
+    # We possibly add constraints.
     max_num_constraints = 4
     constraints_list: tp.List[tp.Any] = [_Constraint(name, as_bool)
         for as_bool in [False, True]
@@ -598,16 +605,14 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
     assert constraints < len(constraints_list) + max_num_constraints, (
         "constraints should be in 0, 1, ..., {len(constraints_list) + max_num_constraints - 1} (0 = no constraint).")
     for func in functions:
-        for u in range(len(constraints_list)):
-            if u < constraints and constraints - max_num_constraints <= u:  # we add the constraints with index u in {constraints-max, ..., constraints-1}
-                func.parametrization.register_cheap_constraint(constraints_list[u % len(constraints_list)])
-    budgets = [50, 200, 800, 3200, 12800]
-    if (big and not noise):
-        budgets = [40000, 80000, 160000, 320000]
-    elif (small and not noise):
+        # We add a window of the list of constraints. This windows finishes at "constraints" (hence, is empty if
+        # constraints=0).
+        for constraint in constraints_list[max(0, constraints - max_num_constraints):constraints]:
+            func.parametrization.register_cheap_constraint(constraint)
+
+    budgets = [40000, 80000, 160000, 320000] if (big and not noise) else [50, 200, 800, 3200, 12800]
+    if (small and not noise):
         budgets = [10, 20, 40]
-    if hd:
-        optims += get_optimizers("splitters", seed=next(seedg))  # type: ignore
     for optim in optims:
         for function in functions:
             for budget in budgets:
@@ -622,7 +627,7 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
 def yaconstrainedbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with higher dimensions."""
     step = 8 # only one test case out of 8, due to computational cost.
-    slices = [itertools.islice(yabbob(seed, constraints=i), 0, None, step) for i in range(8)]
+    slices = [itertools.islice(yabbob(seed, constraints=i), 0, None, step) for i in range(step)]
     return itertools.chain.from_iterables(slices)
 
 
