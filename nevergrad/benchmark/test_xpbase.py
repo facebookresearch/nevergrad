@@ -4,17 +4,15 @@
 # LICENSE file in the root directory of this source tree.
 
 import sys
-import numbers
 import contextlib
 from unittest.mock import patch
 import numpy as np
 import nevergrad.common.typing as tp
-from nevergrad.parametrization import parameter as p
 from nevergrad.common import testing
 from nevergrad.optimization import test_base
 from nevergrad.functions import ArtificialFunction
-from nevergrad.functions import ExperimentFunction
 from nevergrad.functions.base import MultiExperiment
+from nevergrad.functions.test_base import ExampleFunction
 from nevergrad.functions.test_functionlib import DESCRIPTION_KEYS as ARTIFICIAL_KEYS
 from . import xpbase
 
@@ -97,29 +95,13 @@ def test_seed_generator(seed: tp.Optional[int], randsize: int, expected: tp.List
     np.testing.assert_array_equal(output, expected)
 
 
-class Function(ExperimentFunction):
-
-    def __init__(self, dimension: int, default: int = 12):  # pylint: disable=unused-argument
-        # unused argument is used to check that it is automatically added as descriptor
-        super().__init__(self.oracle_call, p.Array(shape=(dimension,)))
-
-    def oracle_call(self, x: np.ndarray) -> float:
-        return float(x[0])
-
-    # pylint: disable=unused-argument
-    def compute_pseudotime(self, input_parameter: tp.Any, loss: tp.Loss) -> float:
-        assert isinstance(loss, numbers.Number)
-        return 5 - loss
-
-
 @testing.parametrized(
     w3_batch=(True, ['s0', 's1', 's2', 'u0', 'u1', 'u2', 's3', 's4', 'u3', 'u4']),
     w3_steady=(False, ['s0', 's1', 's2', 'u2', 's3', 'u1', 's4', 'u0', 'u3', 'u4']),  # u0 and u1 are delayed
 )
 def test_batch_mode_parameter(batch_mode: bool, expected: tp.List[str]) -> None:
-    func = Function(dimension=1)
+    func = ExampleFunction(dimension=1, number=3)
     optim = test_base.LoggingOptimizer(3)
-    assert "default" in func.descriptors
     with patch.object(xpbase.OptimizerSettings, "instantiate", return_value=optim):
         xp = xpbase.Experiment(func, optimizer="OnePlusOne", budget=10, num_workers=3, batch_mode=batch_mode)
         xp._run_with_error()
