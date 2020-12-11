@@ -41,6 +41,8 @@ MilliCMA = ParametrizedCMA(scale=1e-3).set_name("MilliCMA", register=True)
 MicroCMA = ParametrizedCMA(scale=1e-6).set_name("MicroCMA", register=True)
 FCMAs03 = ParametrizedCMA(fcmaes=True, scale=0.3).set_name("FCMAs03", register=True)
 FCMAp13 = ParametrizedCMA(fcmaes=True, scale=0.1, popsize=13).set_name("FCMAp13", register=True)
+ECMA = ParametrizedCMA(elitist=True).set_name("ECMA", register=True)
+FCMA = ParametrizedCMA(fcmaes=True).set_name("FCMA", register=True)
 
 # OnePlusOne
 FastGADiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="fastga").set_name(
