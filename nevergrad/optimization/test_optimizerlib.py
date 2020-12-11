@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import re
+import sys
 import time
 import random
 import inspect
@@ -29,6 +30,13 @@ from . import experimentalvariants as xpvariants
 from .recaster import FinishedUnderlyingOptimizerWarning
 from .optimizerlib import registry
 from .optimizerlib import NGOptBase
+
+
+# decorators to be used when testing on Windows is unecessary
+# or cumbersome
+skip_win_perf = pytest.mark.skipif(
+    sys.platform == "win32", reason="Slow, and no need to test performance on all platforms"
+)
 
 
 class Fitness:
@@ -129,8 +137,10 @@ SLOW = [
 UNSEEDABLE: tp.List[str] = []
 
 
+@skip_win_perf  # type: ignore
 @pytest.mark.parametrize("name", registry)  # type: ignore
 def test_optimizers(name: str) -> None:
+    """Checks that each optimizer is able to converge on a simple test case"""
     optimizer_cls = registry[name]
     if isinstance(optimizer_cls, base.ConfiguredOptimizer):
         assert any(
@@ -415,6 +425,7 @@ def test_parallel_es() -> None:
             opt.tell(cand, 1)
 
 
+@skip_win_perf  # type: ignore
 @pytest.mark.parametrize(
     "dimension, num_workers, scale, budget, ellipsoid",
     [
@@ -457,7 +468,7 @@ def test_metamodel(dimension: int, num_workers: int, scale: float, budget: int, 
     for name in ("MetaModel", "CMA" if dimension > 1 else "OnePlusOne"):
         opt = registry[name](dimension, contextual_budget, num_workers=num_workers)
         recommendations.append(opt.minimize(_target).value)
-    metamodel_recom, default_recom = recommendations
+    metamodel_recom, default_recom = recommendations  # pylint: disable=unbalanced-tuple-unpacking
 
     # Let us assert that MetaModel is better.
     assert _target(default_recom) > _target(metamodel_recom)
@@ -479,7 +490,7 @@ def test_metamodel(dimension: int, num_workers: int, scale: float, budget: int, 
     ],
 )
 def test_constrained_optimization(penalization: bool, expected: tp.List[float]) -> None:
-    def constraint(i):
+    def constraint(i: tp.Any) -> tp.Union[bool, float]:
         return i[1]["x"][0] >= 1
 
     parametrization = ng.p.Instrumentation(x=ng.p.Array(shape=(1,)), y=ng.p.Scalar())
@@ -488,12 +499,12 @@ def test_constrained_optimization(penalization: bool, expected: tp.List[float]) 
     if penalization:
         optimizer._constraints_manager.update(max_trials=2, penalty_factor=10)
 
-        def constraint(i):
+        def constraint(i: tp.Any) -> tp.Union[bool, float]:  # pylint: disable=function-redefined
             return -abs(i[1]["x"][0] - 1)
 
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", category=UserWarning)
-        optimizer.parametrization.register_cheap_constraint(constraint)  # type:ignore
+        optimizer.parametrization.register_cheap_constraint(constraint)
     recom = optimizer.minimize(_square)
     np.testing.assert_array_almost_equal([recom.kwargs["x"][0], recom.kwargs["y"]], expected)
 
@@ -584,6 +595,7 @@ def test_bo_ordering() -> None:
     optim.provide_recommendation()
 
 
+@skip_win_perf  # type: ignore
 @pytest.mark.parametrize(  # type: ignore
     "name,fake_learning,budget,expected",
     [
@@ -611,6 +623,7 @@ def test_ngo_split_optimizer(name: str, fake_learning: bool, budget: int, expect
     assert names == expected
 
 
+@skip_win_perf  # type: ignore
 @pytest.mark.parametrize(  # type: ignore
     "budget,with_int",
     [
