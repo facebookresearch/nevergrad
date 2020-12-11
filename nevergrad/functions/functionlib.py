@@ -58,9 +58,9 @@ class ArtificialVariable:
                 )
             )
 
-    def process(
+    def process(  # pylint: disable=unused-argument
         self, data: tp.ArrayLike, deterministic: bool = True
-    ) -> np.ndarray:  # pylint: disable=unused-argument
+    ) -> np.ndarray:
         if not self._transforms:
             self._initialize()
         if self.hashing:
@@ -130,11 +130,11 @@ class ArtificialFunction(ExperimentFunction):
     - the noise formula is: noise_level * N(0, 1) * (f(x + N(0, 1)) - f(x))
     """
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         name: str,
         block_dimension: int,
-        num_blocks: int = 1,  # pylint: disable=too-many-arguments
+        num_blocks: int = 1,
         useless_variables: int = 0,
         noise_level: float = 0,
         noise_dissymmetry: bool = False,

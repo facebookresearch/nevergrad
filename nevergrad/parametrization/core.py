@@ -447,9 +447,9 @@ class Constant(Parameter):
                 f'Constant value can only be updated to the same value (in this case "{self._value}")'
             )
 
-    def get_standardized_data(
+    def get_standardized_data(  # pylint: disable=unused-argument
         self: P, *, reference: tp.Optional[P] = None
-    ) -> np.ndarray:  # pylint: disable=unused-argument
+    ) -> np.ndarray:
         return np.array([])
 
     # pylint: disable=unused-argument
@@ -520,7 +520,9 @@ class Dict(Parameter):
         ] = {}  # hacky undocumented way to bypass boring representations
 
     def _sanity_check(self, parameters: tp.List[Parameter]) -> None:
-        """Check that all parameters are different"""  # TODO: this is first order, in practice we would need to test all the different parameter levels together
+        """Check that all parameters are different"""
+        # TODO: this is first order, in practice we would need to test all the different
+        # parameter levels together
         if parameters:
             assert all(isinstance(p, Parameter) for p in parameters)
             ids = {id(p) for p in parameters}

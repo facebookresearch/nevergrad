@@ -70,28 +70,27 @@ class Mutation(core.Parameter):
     Recombinations should take several
     """
 
+    # pylint: disable=unused-argument
+
     @property
     def value(self) -> tp.Callable[[tp.Sequence["Array"]], None]:
         return self.apply
 
     @value.setter
-    def value(self, value: tp.Any) -> None:  # pylint: disable=unused-argument
+    def value(self, value: tp.Any) -> None:
         raise RuntimeError("Mutation cannot be set.")
 
     def apply(self, arrays: tp.Sequence["Array"]) -> None:
         new_value = self._apply_array([a._value for a in arrays])
         arrays[0]._value = new_value
 
-    def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:  # pylint: disable=unused-argument
+    def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:
         raise RuntimeError("Mutation._apply_array should either be implementer or bypassed in Mutation.apply")
         return np.array([])  # pylint: disable=unreachable
 
-    def get_standardized_data(
-        self, *, reference: tp.Optional[P] = None
-    ) -> np.ndarray:  # pylint: disable=unused-argument
+    def get_standardized_data(self, *, reference: tp.Optional[P] = None) -> np.ndarray:
         return np.array([])
 
-    # pylint: disable=unused-argument
     def set_standardized_data(
         self: P, data: tp.ArrayLike, *, reference: tp.Optional[P] = None, deterministic: bool = False
     ) -> P:
