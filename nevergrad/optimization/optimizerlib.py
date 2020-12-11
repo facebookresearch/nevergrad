@@ -2434,7 +2434,9 @@ class NGOpt4(NGOptBase):
             else:
                 if self.has_noise and self.fully_continuous:
                     if budget > 100:
-                        optimClass = OnePlusOne if self.noise_from_instrumentation or self.num_workers > 1 else SQP
+                        optimClass = (
+                            OnePlusOne if self.noise_from_instrumentation or self.num_workers > 1 else SQP
+                        )
                     else:
                         optimClass = OnePlusOne
                 else:

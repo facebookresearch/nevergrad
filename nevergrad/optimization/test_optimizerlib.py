@@ -626,7 +626,7 @@ def test_ngo_split_optimizer(
             architecture=ng.p.Choice(["conv", "fc"]),
         )
         if fake_learning
-        else ng.p.Choice(["const", ng.p.Array(init=[1, 2, 3])])
+        else ng.p.Choice(["const", ng.p.Array(init=list(range(dimension)))])
     )
     opt: tp.Union[base.ConfiguredOptimizer, tp.Type[base.Optimizer]] = (
         xpvariants.MetaNGOpt8
