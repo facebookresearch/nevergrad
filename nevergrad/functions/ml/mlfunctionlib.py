@@ -17,7 +17,7 @@ from nevergrad.parametrization import parameter as p
 from ..base import ExperimentFunction
 
 
-# pylint: disable=too-many-instance-attributes,too-many-locals,too-many-arguments
+# pylint: disable=too-many-instance-attributes,too-many-locals,too-many-arguments,too-many-statements
 class MLTuning(ExperimentFunction):
     """Class for generating ML hyperparameter tuning problems.
     We propose different possible regressors and different dimensionalities.
@@ -234,12 +234,12 @@ class MLTuning(ExperimentFunction):
         if not dataset.startswith("artificial"):
             assert dataset in ["boston", "diabetes", "kerasBoston", "auto-mpg", "red-wine", "white-wine"]
             assert data_dimension is None
-            sets_url = {"auto-mpg":"http://www-lisic.univ-littoral.fr/~teytaud/files/Cours/Apprentissage/data/auto-mpg.data",
-                        "red-wine":"http://www-lisic.univ-littoral.fr/~teytaud/files/Cours/Apprentissage/data/winequality-red.csv",
-                        "white-wine":"http://www-lisic.univ-littoral.fr/~teytaud/files/Cours/Apprentissage/data/winequality-white.csv"}
-            sets_tag = {"auto-mpg":"mpg",
-                        "red-wine":"quality",
-                        "white-wine":"quality"}
+            sets_url = {
+                "auto-mpg": "http://www-lisic.univ-littoral.fr/~teytaud/files/Cours/Apprentissage/data/auto-mpg.data",
+                "red-wine": "http://www-lisic.univ-littoral.fr/~teytaud/files/Cours/Apprentissage/data/winequality-red.csv",
+                "white-wine": "http://www-lisic.univ-littoral.fr/~teytaud/files/Cours/Apprentissage/data/winequality-white.csv",
+            }
+            sets_tag = {"auto-mpg": "mpg", "red-wine": "quality", "white-wine": "quality"}
             if dataset == "kerasBoston":
                 try:
                     from tensorflow import keras  # pylint: disable=import-outside-toplevel
@@ -259,10 +259,12 @@ class MLTuning(ExperimentFunction):
             # Half the dataset for training.
             test_ratio = 0.5
             if dataset == "kerasBoston":
-                (self.X_train, self.y_train), (self.X_test, self.y_test) = data.load_data(test_split=test_ratio, seed=42)
+                (self.X_train, self.y_train), (self.X_test, self.y_test) = data.load_data(
+                    test_split=test_ratio, seed=42
+                )
             elif dataset in sets_url:
                 if dataset == "auto-mpg":
-                    data.drop('name', 1, inplace=True)
+                    data.drop("name", 1, inplace=True)
                 train, test = train_test_split(data, test_size=test_ratio)
                 self.y_train = train[sets_tag[dataset]].to_numpy()
                 self.y_test = test[sets_tag[dataset]].to_numpy()
@@ -272,7 +274,9 @@ class MLTuning(ExperimentFunction):
                 self.X_test = test.to_numpy()
             else:
                 rng.shuffle(data[0].T)  # We randomly shuffle the columns.
-                self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(data[0], data[1], test_size=test_ratio, random_state=42)
+                self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
+                    data[0], data[1], test_size=test_ratio, random_state=42
+                )
 
             num_train_data = len(self.X_train)
             self.num_data = num_train_data
