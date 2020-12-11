@@ -625,13 +625,9 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
 @registry.register
 def yaconstrainedbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with higher dimensions."""
-    for i in range(8):
-        internal_generator = yabbob(seed, constraints=i)
-        j = 0
-        for xp in internal_generator:
-            j = j + 1
-            if j % 8 == i:  # We use only one test case out of 4, due to computational cost.
-                yield xp
+    step = 8 # only one test case out of 8, due to computational cost.
+    slices = [itertools.islice(yabbob(seed, constraints=i), 0, None, step) for i in range(8)]
+    return itertools.chain.from_iterables(slices)
 
 
 @registry.register
