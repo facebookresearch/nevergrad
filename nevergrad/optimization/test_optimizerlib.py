@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import re
+import sys
 import time
 import random
 import inspect
@@ -29,6 +30,13 @@ from . import experimentalvariants as xpvariants
 from .recaster import FinishedUnderlyingOptimizerWarning
 from .optimizerlib import registry
 from .optimizerlib import NGOptBase
+
+
+# decorators to be used when testing on Windows is unecessary
+# or cumbersome
+skip_win_perf = pytest.mark.skipif(
+    sys.platform == "win32", reason="Slow, and no need to test performance on all platforms"
+)
 
 
 class Fitness:
@@ -127,8 +135,11 @@ SLOW = [
 UNSEEDABLE: tp.List[str] = []
 
 
+@skip_win_perf  # type: ignore
 @pytest.mark.parametrize("name", registry)  # type: ignore
 def test_optimizers(name: str) -> None:
+    """Checks that each optimizer is able to converge on a simple test case
+    """
     optimizer_cls = registry[name]
     if isinstance(optimizer_cls, base.ConfiguredOptimizer):
         assert any(hasattr(mod, name) for mod in (optlib, xpvariants))  # make sure registration matches name in optlib/xpvariants
@@ -405,6 +416,7 @@ def test_parallel_es() -> None:
             opt.tell(cand, 1)
 
 
+@skip_win_perf  # type: ignore
 @pytest.mark.parametrize(
     "dimension, num_workers, scale, budget, ellipsoid",
     [
@@ -445,7 +457,7 @@ def test_metamodel(dimension: int, num_workers: int, scale: float, budget: int, 
     for name in ("MetaModel", "CMA" if dimension > 1 else "OnePlusOne"):
         opt = registry[name](dimension, contextual_budget, num_workers=num_workers)
         recommendations.append(opt.minimize(_target).value)
-    metamodel_recom, default_recom = recommendations
+    metamodel_recom, default_recom = recommendations  # pylint: disable=unbalanced-tuple-unpacking
 
     # Let us assert that MetaModel is better.
     assert _target(default_recom) > _target(metamodel_recom)
@@ -459,23 +471,26 @@ def test_metamodel(dimension: int, num_workers: int, scale: float, budget: int, 
         assert _target(default_recom) > 7. * _target(metamodel_recom)
 
 
-@pytest.mark.parametrize(
+@pytest.mark.parametrize(  # type: ignore
     "penalization,expected", [
         (False, [1.005573e+00, 3.965783e-04]),
         (True, [0.999987, -0.322118]),
     ]
 )
 def test_constrained_optimization(penalization: bool, expected: tp.List[float]) -> None:
-    def constraint(i): return i[1]["x"][0] >= 1
+    def constraint(i: tp.Any) -> tp.Union[bool, float]:
+        return i[1]["x"][0] >= 1
     parametrization = ng.p.Instrumentation(x=ng.p.Array(shape=(1,)), y=ng.p.Scalar())
     optimizer = optlib.OnePlusOne(parametrization, budget=100)
     optimizer.parametrization.random_state.seed(12)
     if penalization:
         optimizer._constraints_manager.update(max_trials=2, penalty_factor=10)
-        def constraint(i): return -abs(i[1]["x"][0] - 1)
+
+        def constraint(i: tp.Any) -> tp.Union[bool, float]:  # pylint: disable=function-redefined
+            return -abs(i[1]["x"][0] - 1)
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", category=UserWarning)
-        optimizer.parametrization.register_cheap_constraint(constraint)  # type:ignore
+        optimizer.parametrization.register_cheap_constraint(constraint)
     recom = optimizer.minimize(_square)
     np.testing.assert_array_almost_equal([recom.kwargs["x"][0], recom.kwargs["y"]], expected)
 
@@ -550,21 +565,22 @@ def test_bo_ordering() -> None:
     optim.provide_recommendation()
 
 
+@skip_win_perf  # type: ignore
 @pytest.mark.parametrize(  # type: ignore
     "name,fake_learning,budget,expected", [
         ("NGOpt8", False, 100, ["OnePlusOne", "OnePlusOne"]),
         ("NGOpt8", False, 200, ["SQP", "SQP"]),
         ("NGOpt8", True, 1000, ['SQP', 'monovariate', 'monovariate']),
-        ]
+    ]
 )
 def test_ngo_split_optimizer(name: str, fake_learning: bool, budget: int, expected: tp.List[str]) -> None:
     param = ng.p.Instrumentation(
-      # a log-distributed scalar between 0.001 and 1.0
-      learning_rate=ng.p.Log(lower=0.001, upper=1.0),
-      # an integer from 1 to 12
-      batch_size=ng.p.Scalar(lower=1, upper=12).set_integer_casting(),
-      # either "conv" or "fc"
-      architecture=ng.p.Choice(["conv", "fc"])
+        # a log-distributed scalar between 0.001 and 1.0
+        learning_rate=ng.p.Log(lower=0.001, upper=1.0),
+        # an integer from 1 to 12
+        batch_size=ng.p.Scalar(lower=1, upper=12).set_integer_casting(),
+        # either "conv" or "fc"
+        architecture=ng.p.Choice(["conv", "fc"])
     ) if fake_learning else ng.p.Choice(["const", ng.p.Array(init=[1, 2, 3])])
     Opt = optlib.registry[name]
     opt = optlib.ConfSplitOptimizer(multivariate_optimizer=Opt)(param, budget=budget)
@@ -572,41 +588,36 @@ def test_ngo_split_optimizer(name: str, fake_learning: bool, budget: int, expect
     assert names == expected
 
 
+@skip_win_perf  # type: ignore
 @pytest.mark.parametrize(  # type: ignore
     "budget,with_int", [
-    (150, True),
-    (300, True),
-    (1000, True),
-    (3000, True),
-    (100, False),
-    (300, False),
-    (1000, False),
-    (3000, False),
+        (150, True),
+        (300, True),
+        (1000, True),
+        (3000, True),
+        (100, False),
+        (300, False),
+        (1000, False),
+        (3000, False),
     ]
 )
 def test_ngopt_on_simple_realistic_scenario(budget: int, with_int: bool) -> None:
     def fake_training(learning_rate: float, batch_size: int, architecture: str) -> float:
-      # optimal for learning_rate=0.2, batch_size=4, architecture="conv"
-      return (learning_rate - 0.2)**2 + (batch_size - 4)**2 + (0 if architecture == "conv" else 10)
-    
+        # optimal for learning_rate=0.2, batch_size=4, architecture="conv"
+        return (learning_rate - 0.2)**2 + (batch_size - 4)**2 + (0 if architecture == "conv" else 10)
+
     # Instrumentation class is used for functions with multiple inputs
     # (positional and/or keywords)
     parametrization = ng.p.Instrumentation(
-      # a log-distributed scalar between 0.001 and 1.0
-      learning_rate=ng.p.Log(lower=0.001, upper=1.0),
-      # an integer from 1 to 12
-      batch_size=ng.p.Scalar(lower=1, upper=12).set_integer_casting() if with_int else ng.p.Scalar(lower=1, upper=12),
-      # either "conv" or "fc"
-      architecture=ng.p.Choice(["conv", "fc"])
+        # a log-distributed scalar between 0.001 and 1.0
+        learning_rate=ng.p.Log(lower=0.001, upper=1.0),
+        # an integer from 1 to 12
+        batch_size=ng.p.Scalar(lower=1, upper=12).set_integer_casting() if with_int else ng.p.Scalar(lower=1, upper=12),
+        # either "conv" or "fc"
+        architecture=ng.p.Choice(["conv", "fc"])
     )
- 
+
     optimizer = ng.optimizers.NGOpt(parametrization=parametrization, budget=budget)
     recommendation = optimizer.minimize(fake_training)
     result = fake_training(**recommendation.kwargs)
     assert result < 5e-2 if with_int else 5e-3, f"{result} not < {5e-2 if with_int else 5e-3}"
-
-
-
-
-
-
