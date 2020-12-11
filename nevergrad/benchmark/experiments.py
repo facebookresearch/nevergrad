@@ -1253,7 +1253,7 @@ def far_optimum_es(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def photonics(seed: tp.Optional[int] = None, as_tuple: bool=False) -> tp.Iterator[Experiment]:
+def photonics(seed: tp.Optional[int] = None, as_tuple: bool = False) -> tp.Iterator[Experiment]:
     """Too small for being interesting: Bragg mirror + Chirped + Morpho butterfly."""
     seedg = create_seed_generator(seed)
     popsizes = [20, 40, 80]
