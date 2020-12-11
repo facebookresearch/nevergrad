@@ -263,7 +263,7 @@ def test_constraints(name: str) -> None:
 def test_torus() -> None:
     param = par.Torus(init=2 * np.ones((3, 5))).set_mutation(sigma=1.)
     param2 = par.Torus(init=2 * np.ones((3, 5))).set_mutation(sigma=1.)
-    assert param.value == param2.value
+    np.testing.assert_array_almost_equal(param.value, param2.value)
 
 def test_torus_recombination() -> None:
     param = par.Torus(init=(3.,)).set_mutation(sigma=1.)
