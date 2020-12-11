@@ -9,7 +9,6 @@ import typing as tp
 import itertools
 import numpy as np
 import nevergrad as ng
-from nevergrad.functions.images.core import ImageFromPGAN
 from nevergrad.optimization.base import ConfiguredOptimizer
 import nevergrad.functions.corefuncs as corefuncs
 from nevergrad.functions import ExperimentFunction
@@ -21,7 +20,7 @@ from nevergrad.functions.ml import MLTuning
 from nevergrad.functions import mlda as _mlda
 from nevergrad.functions.photonics import Photonics
 from nevergrad.functions.arcoating import ARCoating
-from nevergrad.functions.images import Image, ImageAdversarial
+from nevergrad.functions.images import Image, ImageAdversarial, ImageFromPGAN
 from nevergrad.functions.powersystems import PowerSystem
 from nevergrad.functions.stsp import STSP
 from nevergrad.functions.rocket import Rocket

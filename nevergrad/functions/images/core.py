@@ -196,13 +196,13 @@ class ImageFromPGAN(base.ExperimentFunction):
         which loss to use for the images
     mutable_sigma: bool
         whether the sigma should be mutable
-    n_mutations: int
+    sigma: int
         number of mutations
     """
 
     def __init__(self, initial_noise: np.ndarray = None, use_gpu: bool = False,
                  loss: imagelosses.ImageLoss = imagelosses.Koncept512(),
-                 mutable_sigma: bool = True, n_mutations: int = 35) -> None:
+                 mutable_sigma: bool = True, sigma: float = 35) -> None:
         if not torch.cuda.is_available():
             use_gpu = False
 
@@ -218,7 +218,7 @@ class ImageFromPGAN(base.ExperimentFunction):
 
         array = ng.p.Array(init=initial_noise, mutable_sigma=mutable_sigma)
         # parametrization
-        array.set_mutation(sigma=n_mutations)
+        array.set_mutation(sigma=sigma)
         array.set_recombination(ng.p.mutation.Crossover(axis=(0, 1))).set_name("")
 
         super().__init__(self._loss, array)
