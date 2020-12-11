@@ -15,6 +15,7 @@ try:
 except ImportError:
     pass  # makes most of this module usable without pytest
 import numpy as np
+import os
 
 
 def assert_set_equal(estimate: tp.Iterable[tp.Any], reference: tp.Iterable[tp.Any], err_msg: str = "") -> None:
