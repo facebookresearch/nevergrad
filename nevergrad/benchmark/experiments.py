@@ -65,10 +65,6 @@ class _Constraint:
         return value > 0 if self.as_bool else value
 
 
-class MissingBenchmarkPackageError(ModuleNotFoundError):
-    pass
-
-
 default_optims: tp.Optional[tp.List[str]] = None  # ["NGO10", "CMA", "Shiwa"]
 
 
