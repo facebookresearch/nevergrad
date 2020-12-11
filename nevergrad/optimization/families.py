@@ -21,5 +21,16 @@ from .oneshot import RandomSearchMaker
 from .oneshot import SamplingSearch
 
 
-__all__ = ["ParametrizedOnePlusOne", "ParametrizedCMA", "ParametrizedBO", "DifferentialEvolution", "EvolutionStrategy",
-           "ScipyOptimizer", "RandomSearchMaker", "SamplingSearch", "Chaining", "EMNA", "ParametrizedTBPSA"]
+__all__ = [
+    "ParametrizedOnePlusOne",
+    "ParametrizedCMA",
+    "ParametrizedBO",
+    "DifferentialEvolution",
+    "EvolutionStrategy",
+    "ScipyOptimizer",
+    "RandomSearchMaker",
+    "SamplingSearch",
+    "Chaining",
+    "EMNA",
+    "ParametrizedTBPSA",
+]

@@ -8,14 +8,16 @@ from . import core
 
 def test_multiobjective_function() -> None:
     mfunc = core.MultiobjectiveFunction(lambda x: x, (100, 100))  # type: ignore
-    tuples = [(110, 110),     # -0 + distance
-              (110, 90),      # -0 + distance
-              (80, 80),       # -400 + distance
-              (50, 50),       # -2500 + distance
-              (50, 50),       # -2500 + distance
-              (80, 80),       # -2500 + distance --> -2470
-              (30, 60),       # [30,50]x[60,100] + [50,100]x[50,100] --> -2500 -800 = -3300
-              (60, 30)]       # [30,50]x[60,100] + [50,100]x[50,100] + [60,100]x[30,50] --> -2500 -800 -800= -4100
+    tuples = [
+        (110, 110),  # -0 + distance
+        (110, 90),  # -0 + distance
+        (80, 80),  # -400 + distance
+        (50, 50),  # -2500 + distance
+        (50, 50),  # -2500 + distance
+        (80, 80),  # -2500 + distance --> -2470
+        (30, 60),  # [30,50]x[60,100] + [50,100]x[50,100] --> -2500 -800 = -3300
+        (60, 30),
+    ]  # [30,50]x[60,100] + [50,100]x[50,100] + [60,100]x[30,50] --> -2500 -800 -800= -4100
     values = []
     for tup in tuples:
         values.append(mfunc(tup))
@@ -33,7 +35,9 @@ def test_doc_multiobjective() -> None:
     from nevergrad.functions import MultiobjectiveFunction
     import numpy as np
 
-    f = MultiobjectiveFunction(multiobjective_function=lambda x: [np.sum(x**2), np.sum((x - 1)**2)], upper_bounds=[2.5, 2.5])
+    f = MultiobjectiveFunction(
+        multiobjective_function=lambda x: [np.sum(x ** 2), np.sum((x - 1) ** 2)], upper_bounds=[2.5, 2.5]
+    )
     print(f(np.array([1.0, 2.0])))
 
     optimizer = ng.optimizers.CMA(parametrization=3, budget=100)  # 3 is the dimension, 100 is the budget.
@@ -54,8 +58,7 @@ def test_doc_multiobjective() -> None:
     assert len(f.pareto_front(2, "random")) == 2
 
     # We can also run without upper_bounds: they are then computed automatically using "_auto_bound".
-    f = MultiobjectiveFunction(multiobjective_function=lambda x: [np.sum(x**2), np.sum((x - 1)**2)])
+    f = MultiobjectiveFunction(multiobjective_function=lambda x: [np.sum(x ** 2), np.sum((x - 1) ** 2)])
     optimizer = ng.optimizers.CMA(parametrization=3, budget=100)  # 3 is the dimension, 100 is the budget.
     optimizer.minimize(f)
     assert len(f.pareto_front()) > 1
-
