@@ -52,11 +52,11 @@ class _Constraint:
     def __call__(self, data: np.ndarray) -> tp.Union[bool, float]:
         if not isinstance(data, np.ndarray):
             raise ValueError(f"Unexpected inputs as np.ndarray, got {data}")
-        if self.name == "positive_sum":
+        if self.name == "sum":
             value = float(np.sum(data))
-        elif self.name == "positive_diff":
+        elif self.name == "diff":
             value = float(np.sum(data[::2]) - np.sum(data[1::2]))
-        elif self.name == "positive_second_diff":
+        elif self.name == "second_diff":
             value = float(2 * np.sum(data[1::2]) - 3 * np.sum(data[::2]))
         elif self.name == "ball":
             value = float(np.sum(np.square(data))) - float(len(data)) - float(np.sqrt(len(data)))  # Most points violate the constraint.
