@@ -32,6 +32,13 @@ from .optimizerlib import registry
 from .optimizerlib import NGOptBase
 
 
+# decorators to be used when testing on Windows is unecessary
+# or cumbersome
+skip_win_perf = pytest.mark.skipif(
+    sys.platform == "win32", reason="Slow, and no need to test performance on all platforms"
+)
+
+
 class Fitness:
     """Simple quadratic fitness function which can be used with dimension up to 4
     """
@@ -406,6 +413,7 @@ def test_parallel_es() -> None:
             opt.tell(cand, 1)
 
 
+@skip_win_perf  # type: ignore
 @pytest.mark.parametrize(
     "dimension, num_workers, scale, budget, ellipsoid",
     [
@@ -554,6 +562,7 @@ def test_bo_ordering() -> None:
     optim.provide_recommendation()
 
 
+@skip_win_perf  # type: ignore
 @pytest.mark.parametrize(  # type: ignore
     "name,fake_learning,budget,expected", [
         ("NGOpt8", False, 100, ["OnePlusOne", "OnePlusOne"]),
@@ -576,8 +585,7 @@ def test_ngo_split_optimizer(name: str, fake_learning: bool, budget: int, expect
     assert names == expected
 
 
-@pytest.mark.skipif(sys.platform == "win32",
-                    reason="Slow, and no need to test performance on all platforms")
+@skip_win_perf  # type: ignore
 @pytest.mark.parametrize(  # type: ignore
     "budget,with_int", [
         (150, True),
