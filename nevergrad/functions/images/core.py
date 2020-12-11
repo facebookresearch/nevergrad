@@ -211,10 +211,10 @@ class ImageFromPGAN(base.ExperimentFunction):
                                'PGAN', model_name='celebAHQ-512',
                                pretrained=True, useGPU=use_gpu)
 
-        self.noise_shape = (1, 512)
+        self.domain_shape = (1, 512)
         if initial_noise is None:
-            initial_noise = np.random.normal(size=self.noise_shape)
-        assert initial_noise.shape == self.noise_shape, f'The shape of the initial noise vector was {initial_noise.shape}, it should be {self.noise_shape}'
+            initial_noise = np.random.normal(size=self.domain_shape)
+        assert initial_noise.shape == self.domain_shape, f'The shape of the initial noise vector was {initial_noise.shape}, it should be {self.domain_shape}'
 
         array = ng.p.Array(init=initial_noise, mutable_sigma=mutable_sigma)
         # parametrization
