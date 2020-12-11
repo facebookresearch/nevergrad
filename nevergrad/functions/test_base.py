@@ -64,12 +64,12 @@ def test_array_experiment_function() -> None:
         p.Array(shape=(10,)).set_bounds(-0.5, 6.0).set_name(""),
         symmetry=111,
     )
-    np.testing.assert_equal(iarrayfunc.dimension, 10)
-    assert iarrayfunc(np.zeros(10)) == iarrayfunc.copy()(np.zeros(10))
-    assert iarrayfunc(np.zeros(10)) == 8.25
-    assert iarrayfunc2(np.zeros(10)) == 11.0
-    assert iarrayfunc(np.ones(10)) != iarrayfunc2(np.ones(10))
-    assert iarrayfunc3(np.ones(10)) == iarrayfunc2(np.ones(10))
+    np.testing.assert_equal(iarrayfuncs[0].dimension, 10)
+    assert iarrayfuncs[0](np.zeros(10)) == iarrayfuncs[0].copy()(np.zeros(10))
+    assert iarrayfuncs[0](np.zeros(10)) == 8.25
+    assert iarrayfuncs[1](np.zeros(10)) == 11.0
+    assert iarrayfuncs[0](np.ones(10)) != iarrayfuncs[1](np.ones(10))
+    assert iarrayfuncs[2](np.ones(10)) == iarrayfuncs[1](np.ones(10))
 
 
 def test_instrumented_function_kwarg_order() -> None:
