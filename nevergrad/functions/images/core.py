@@ -196,7 +196,7 @@ class ImageFromPGAN(base.ExperimentFunction):
     mutable_sigma: bool
         whether the sigma should be mutable
     sigma: int
-        number of mutations
+        standard deviation of the initial mutations
     """
 
     def __init__(self, initial_noise: tp.Optional[np.ndarray] = None,
