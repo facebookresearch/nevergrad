@@ -754,7 +754,7 @@ def constrained_illconditioned_parallel(seed: tp.Optional[int] = None) -> tp.Ite
         in [True, False]
     ]
     for func in functions:
-        func.parametrization.register_cheap_constraint(_Constraint("positive_sum", as_bool=False))
+        func.parametrization.register_cheap_constraint(_Constraint("sum", as_bool=False))
     for function in functions:
         for budget in [400, 4000, 40000]:
             optims: tp.List[str] = get_optimizers("large", seed=next(seedg))  # type: ignore
