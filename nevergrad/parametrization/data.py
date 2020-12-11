@@ -440,15 +440,21 @@ class Torus(Array):
     ----
     set_bounds and set_integer_casting do not work, as they become pointless here.
     """
+    def __init__(
+        self,
+        *,
+        init: tp.Optional[tp.ArrayLike] = None,
+        shape: tp.Optional[tp.Tuple[int, ...]] = None,
+        mutable_sigma: bool = False
+    ) -> None:
+        if init is None:
+            init = (0.0,)
+        super().__init__(init=self.from_angle(init), shape=shape, mutable_sigma=mutable_sigma)
+
     # pylint: disable=unused-argument
     def set_bounds(
         self: A,
-        lower: BoundValue = None,
-        upper: BoundValue = None,
-        method: str = "bouncing",
-        full_range_sampling: tp.Optional[bool] = None,
-        a_min: BoundValue = None,
-        a_max: BoundValue = None,
+        *_,
     ) -> A:
         assert False, "set_bounds is pointless for torus: we are working on angles, which are naturally bounded."
 
@@ -456,11 +462,10 @@ class Torus(Array):
     def set_integer_casting(self: A) -> A:
         assert False, "set_integer_casting is pointless for torus: we are working on angles, which are naturally continuous."
 
-    def single_to_angle(x: np.ndarray) -> float:
-        x = x[0] * np.ndarray([1, 0]) + x[1] * np.ndarray([0, 1]) + x[2] * np.ndarray([-1, 0]) + x[3] * np.ndarray([0, -1])
-        return np.angle(x[0]+x[1]*1j)
+    def single_to_angle(self, x: np.ndarray) -> float:
+        return np.angle(x[0] - x[2] + (x[1] - x[3]) * 1j)
 
-    def single_from_angle(a: float) -> np.ndarray:
+    def single_from_angle(self, a: float) -> np.ndarray:
         """The reverse of single to angle."""
         x = np.cos(a)
         y = np.sin(a)
@@ -469,51 +474,37 @@ class Torus(Array):
         r[2] = max(-x, 0)
         r[1] = max(y, 0)
         r[3] = max(-y, 0)
-        u = single_to_angle(r)
+        u = self.single_to_angle(r)
         assert np.abs(u-a) < 1e-5
         return r
-    
 
-    def to_angle(x: np.ndarray) -> np.ndarray:  
+    def to_angle(self, x: np.ndarray) -> np.ndarray:  
         """x has shape (4, a, b, c), we return something of shape (a, b, c) using single_to_angle for converting an array of shape (4,) to a float."""
-        assert x.shape[0] == 4
+        assert x.shape[0] == 4, x
         out = x[0].copy()
         for cell, x0, x1, x2, x3 in np.nditer([out, x[0], x[1], x[2], x[3]], op_flags=['readwrite']):
-            cell[...] = single_to_angle(x0, x1, x2, x3)
+            cell[...] = self.single_to_angle((x0, x1, x2, x3))
         return cell
 
-    def from_angle(y: np.ndarray) -> np.ndarray:
+    def from_angle(self, y: tp.ArrayLike) -> np.ndarray:
         """Opposite of to_angle."""
-        x = np.tile(y, (4,)+tuple([1] * len(y.shape))).shape
-        for cell, x0, x1, x2, x3 in np.nditer([y, x[0], x[1], x[2], x[3]], op_flags=['readwrite']):
-            r = single_from_angle(cell)
-            x0 = r[0]
-            x1 = r[1]
-            x2 = r[2]
-            x3 = r[3]
+        y = np.asarray(y, dtype=float).copy()
+        assert len(y) > 0
+        x = np.tile(y[None, :], (4,) + y.shape).copy()
+        it = np.nditer(y, flags=['multi_index'], op_flags=['readwrite'])
+        for cell in it:
+            r = self.single_from_angle(cell)
+            for i in range(4):
+                x[i][it.multi_index] = r[i]
         return x
 
     @property
     def value(self) -> np.ndarray:
-        if self.integer:
-            return np.round(self._value)  # type: ignore
-        return to_angle(self._value)
+        return self.to_angle(self._value)
 
     @value.setter
-    def value(self, value: tp.ArrayLike) -> None:
-        self._check_frozen()
-        self._ref_data = None
-        if not isinstance(value, (np.ndarray, tuple, list)):
-            raise TypeError(f"Received a {type(value)} in place of a np.ndarray/tuple/list")
-        value = np.asarray(value)
-        assert isinstance(value, np.ndarray)
-        if self._value.shape != value.shape:
-            raise ValueError(f"Cannot set array of shape {self._value.shape} with value of shape {value.shape}")
-        if not BoundChecker(*self.bounds)(self.value):
-            raise ValueError("New value does not comply with bounds")
-        if self.exponent is not None and np.min(value.ravel()) <= 0:
-            raise ValueError("Logirithmic values cannot be negative")
-        self._value = from_angle(value)
+    def value(self, new_value: tp.ArrayLike) -> None:
+        self._value = self.from_angle(new_value)
 
 
 

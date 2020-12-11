@@ -261,8 +261,19 @@ def test_constraints(name: str) -> None:
 
 
 def test_torus() -> None:
-    param = par.Torus(init=2 * np.ones((2, 3))).set_mutation(sigma=1.)
-    param.set_standardized_data(param.get_standardized_data(reference=param))
+    param = par.Torus(init=2 * np.ones((3, 5))).set_mutation(sigma=1.)
+    param2 = par.Torus(init=2 * np.ones((3, 5))).set_mutation(sigma=1.)
+    assert param.value == param2.value
+
+def test_torus_recombination() -> None:
+    param = par.Torus(init=(3.,)).set_mutation(sigma=1.)
+    param2 = par.Torus(init=(3.,)).set_mutation(sigma=1.)
+    param.value = (1.,)
+    param2.value = (3.,)
+    param.recombine(param2)
+    #assert param.value[0] == 2.0
+    param2.set_standardized_data((param.get_standardized_data(reference=param2) + param2.get_standardized_data(reference=param2)) / 2)
+    #assert param2.value[0] == 2.5
 
 
 @pytest.mark.parametrize(  # type: ignore
