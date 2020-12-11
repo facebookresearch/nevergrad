@@ -31,6 +31,11 @@ from .es import *  # type: ignore  # noqa: F403
 from .oneshot import *  # noqa: F403
 from .recastlib import *  # noqa: F403
 
+try:
+    from .externalbo import HyperOpt  # pylint: disable=unused-import
+except ModuleNotFoundError:
+    pass
+
 # run with LOGLEVEL=DEBUG for more debug information
 logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
 logger = logging.getLogger(__name__)
@@ -45,6 +50,14 @@ class _OnePlusOne(base.Optimizer):
     It was independently rediscovered by Devroye (1972) and Rechenberg (1973).
     We use asynchronous updates, so that the 1+1 can actually be parallel and even
     performs quite well in such a context - this is naturally close to 1+lambda.
+
+    Posssible mutations include gaussian and cauchy for the continuous case, and in the discrete case:
+    discrete, fastga, doublefastga, adaptive, portfolio, discreteBSO, doerr.
+    - discrete is the most classical discrete mutation operator,
+    - doubleFastGA is an adaptation of FastGA to arity > 2, Portfolio corresponds to random mutation rates,
+    - discreteBSO corresponds to a decreasing schedule of mutation rate.
+    - adaptive and doerr correspond to various self-adaptive mutation rates.
+    - coordinatewise_adaptive is the anisotropic counterpart of the adaptive version.
     """
 
     def __init__(
@@ -70,10 +83,13 @@ class _OnePlusOne(base.Optimizer):
                 assert isinstance(noise_handling, tuple), "noise_handling must be a string or  a tuple of type (strategy, factor)"
                 assert noise_handling[1] > 0.0, "the factor must be a float greater than 0"
                 assert noise_handling[0] in ["random", "optimistic"], f"Unkwnown noise handling: '{noise_handling}'"
-        assert mutation in ["gaussian", "cauchy", "discrete", "fastga", "doublefastga", "adaptive",
-                            "portfolio", "discreteBSO", "doerr"], f"Unkwnown mutation: '{mutation}'"
+        assert mutation in ["gaussian", "cauchy", "discrete", "fastga", "doublefastga", "adaptive", "coordinatewise_adaptive",
+                            "portfolio", "discreteBSO", "lengler", "doerr"], f"Unkwnown mutation: '{mutation}'"
         if mutation == "adaptive":
             self._adaptive_mr = 0.5
+        if mutation == "coordinatewise_adaptive":
+            self._velocity = np.random.uniform(size=self.dimension) * arity / 4.
+            self._modified_variables = np.array([True] * self.dimension)
         self.noise_handling = noise_handling
         self.mutation = mutation
         self.crossover = crossover
@@ -141,9 +157,16 @@ class _OnePlusOne(base.Optimizer):
                                                            arity=self.arity_for_discrete_mutation)
             elif mutation == "discreteBSO":
                 assert self.budget is not None, "DiscreteBSO needs a budget."
-                intensity: int = int(self.dimension - self._num_ask * self.dimension / self.budget)
+                intensity = int(self.dimension - self._num_ask * self.dimension / self.budget)
                 if intensity < 1:
                     intensity = 1
+                data = mutator.portfolio_discrete_mutation(pessimistic_data, intensity=intensity, arity=self.arity_for_discrete_mutation)
+            elif mutation == "coordinatewise_adaptive":
+                self._modified_variables = np.array([True] * self.dimension)
+                data = mutator.coordinatewise_mutation(pessimistic_data, self._velocity, self._modified_variables, arity=self.arity_for_discrete_mutation)
+            elif mutation == "lengler":
+                alpha = 1.54468
+                intensity = int(max(1, self.dimension * (alpha * np.log(self.num_ask) / self.num_ask)))
                 data = mutator.portfolio_discrete_mutation(pessimistic_data, intensity=intensity, arity=self.arity_for_discrete_mutation)
             elif mutation == "doerr":
                 # Selection, either random, or greedy, or a mutation rate.
@@ -184,6 +207,10 @@ class _OnePlusOne(base.Optimizer):
         if self.mutation == "adaptive":
             factor = 1.2 if loss <= self.current_bests["pessimistic"].mean else 0.731  # 0.731 = 1.2**(-np.exp(1)-1)
             self._adaptive_mr = min(1., factor * self._adaptive_mr)
+        if self.mutation == "coordinatewise_adaptive":
+            factor = 1.2 if loss < self.current_bests["pessimistic"].mean else 0.731  # 0.731 = 1.2**(-np.exp(1)-1)
+            inds = self._modified_variables
+            self._velocity[inds] = np.clip(self._velocity[inds] * factor, 1., self.arity_for_discrete_mutation / 4.)
 
 
 class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
@@ -214,7 +241,7 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
         - `"doublefastga"`: double-FastGA mutations from the current best (Doerr et al, Fast Genetic Algorithms, 2017)
         - `"portfolio"`: Random number of mutated bits (called niform mixing in
           Dang & Lehre "Self-adaptation of Mutation Rates in Non-elitist Population", 2016)
-
+        - `"lengler"`: specific mutation rate chosen as a function of the dimension and iteration index.
     crossover: bool
         whether to add a genetic crossover step every other iteration.
 
@@ -241,7 +268,11 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
 OnePlusOne = ParametrizedOnePlusOne().set_name("OnePlusOne", register=True)
 NoisyOnePlusOne = ParametrizedOnePlusOne(noise_handling="random").set_name("NoisyOnePlusOne", register=True)
 DiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete").set_name("DiscreteOnePlusOne", register=True)
+DiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(mutation="lengler").set_name("DiscreteLenglerOnePlusOne", register=True)
+
 AdaptiveDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="adaptive").set_name("AdaptiveDiscreteOnePlusOne", register=True)
+AnisotropicAdaptiveDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="coordinatewise_adaptive").set_name("AnisotropicAdaptiveDiscreteOnePlusOne", register=True)
+
 DiscreteBSOOnePlusOne = ParametrizedOnePlusOne(mutation="discreteBSO").set_name("DiscreteBSOOnePlusOne", register=True)
 DiscreteDoerrOnePlusOne = ParametrizedOnePlusOne(mutation="doerr").set_name(
     "DiscreteDoerrOnePlusOne", register=True).no_parallelization = True
@@ -293,7 +324,7 @@ class _CMA(base.Optimizer):
     def es(self) -> tp.Any:  # typing not possible since cmaes not imported :(
         if self._es is None:
             if not self._fcmaes:
-                inopts = {"popsize": self._popsize, "randn": self._rng.randn, "CMA_diagonal": self._diagonal, "verbose": 0}
+                inopts = dict(popsize=self._popsize, randn=self._rng.randn, CMA_diagonal=self._diagonal, verbose=0, seed=np.nan)
                 self._es = cma.CMAEvolutionStrategy(x0=self._rng.normal(size=self.dimension) if self._random_init else np.zeros(
                     self.dimension, dtype=np.float), sigma0=self._scale, inopts=inopts)
             else:
@@ -841,6 +872,45 @@ class SPSA(base.Optimizer):
         return self.avg
 
 
+class _Rescaled(base.Optimizer):
+    """Proposes a version of a base optimizer which works at a different scale."""
+    def __init__(
+            self,
+            parametrization: IntOrParameter,
+            budget: tp.Optional[int] = None,
+            num_workers: int = 1,
+            base_optimizer: base.OptCls = CMA,
+            scale: tp.Optional[float] = None,
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        self._optimizer = base_optimizer(self.parametrization, budget=budget, num_workers=num_workers)
+        self._subcandidates: tp.Dict[str, p.Parameter] = {}
+        if scale is None:
+            assert budget is not None, "Either scale or budget must be known in _Rescaled."
+            scale = np.sqrt(np.log(self.budget) / self.dimension)
+        self.scale = scale
+        assert self.scale != 0., "scale should be non-zero in Rescaler."
+
+    def rescale_candidate(self, candidate: p.Parameter, inverse: bool=False) -> p.Parameter:
+        data = candidate.get_standardized_data(reference=self.parametrization)
+        scale = self.scale if not inverse else 1. / self.scale
+        return self.parametrization.spawn_child().set_standardized_data(scale * data)
+
+    def _internal_ask_candidate(self) -> p.Parameter:
+        candidate = self._optimizer.ask()
+        sent_candidate = self.rescale_candidate(candidate)
+        # We store the version corresponding to the underlying optimizer.
+        self._subcandidates[sent_candidate.uid] = candidate  
+        return sent_candidate
+
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        self._optimizer.tell(self._subcandidates.pop(candidate.uid), loss)
+
+    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        candidate = self.rescale_candidate(candidate, inverse=True)
+        self._optimizer.tell(candidate, loss)
+
+
 class SplitOptimizer(base.Optimizer):
     """Combines optimizers, each of them working on their own variables.
 
@@ -882,7 +952,7 @@ class SplitOptimizer(base.Optimizer):
             num_optims: tp.Optional[int] = None,
             num_vars: tp.Optional[tp.List[int]] = None,
             multivariate_optimizer: base.OptCls = CMA,
-            monovariate_optimizer: base.OptCls = RandomSearch,
+            monovariate_optimizer: base.OptCls = OnePlusOne,
             progressive: bool = False,
             non_deterministic_descriptor: bool = True,
     ) -> None:
@@ -958,6 +1028,28 @@ class SplitOptimizer(base.Optimizer):
             opt.tell(local_candidate, loss)
 
 
+class Rescaled(base.ConfiguredOptimizer):
+    """Configured optimizer for creating rescaled optimization algorithms.
+
+    Parameters
+    ----------
+    base_optimizer: base.OptCls
+        optimization algorithm to be rescaled.
+    scale: how much do we rescale. E.g. 0.001 if we want to focus on the center
+        with std 0.001 (assuming the std of the domain is set to 1).
+    """
+    # pylint: disable=unused-argument
+    def __init__(
+        self,
+        *,
+        base_optimizer: base.OptCls = CMA,
+        scale: tp.Optional[float] = None,
+    ) -> None:
+        super().__init__(_Rescaled, locals())
+
+
+RescaledCMA = Rescaled().set_name("RescaledCMA", register=True)
+
 class ConfSplitOptimizer(base.ConfiguredOptimizer):
     """"Combines optimizers, each of them working on their own variables.
 
@@ -971,7 +1063,7 @@ class ConfSplitOptimizer(base.ConfiguredOptimizer):
         whether we progressively add optimizers.
     non_deterministic_descriptor: bool
         subparts parametrization descriptor is set to noisy function.
-        This can have an impact for optimizer selection for NGOpt optimizers.
+        This can have an impact for optimizer selection for competence maps.
     """
 
     # pylint: disable=unused-argument
@@ -1010,11 +1102,23 @@ class Portfolio(base.Optimizer):
         return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        optim_index: int = candidate._meta["optim_index"]
-        self.optims[optim_index].tell(candidate, loss)
+        for opt in self.optims:
+            try:
+                opt.tell(candidate, loss)
+            except base.TellNotAskedNotSupportedError:
+                pass
+        # Presumably better than self.optims[optim_index].tell(candidate, value)
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        raise base.TellNotAskedNotSupportedError
+        at_least_one_ok = False
+        for opt in self.optims:
+            try:
+                opt.tell(candidate, loss)
+                at_least_one_ok = True
+            except base.TellNotAskedNotSupportedError:
+                pass
+        if not at_least_one_ok:
+            raise base.TellNotAskedNotSupportedError
 
 
 class InfiniteMetaModelOptimum(ValueError):
@@ -1051,17 +1155,47 @@ def learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.Arra
     model = LinearRegression()
     model.fit(X2, y)
 
-    # Find the minimum of the quadratic model.
-    optimizer = OnePlusOne(parametrization=dimension, budget=dimension * dimension + dimension + 500)
+    optimizer = Powell(parametrization=dimension, budget=45 * dimension + 30)
     try:
-        optimizer.minimize(lambda x: float(model.predict(polynomial_features.fit_transform(np.asarray([x])))))
+        minimum = optimizer.minimize(
+            lambda x: float(model.predict(polynomial_features.fit_transform(x[None, :])))).value
     except ValueError:
         raise InfiniteMetaModelOptimum("Infinite meta-model optimum in learn_on_k_best.")
 
-    minimum = optimizer.provide_recommendation().value
     if np.sum(minimum**2) > 1.:
         raise InfiniteMetaModelOptimum("huge meta-model optimum in learn_on_k_best.")
     return middle + normalization * minimum
+
+
+@registry.register
+class MetaModel(base.Optimizer):
+    """Adding a metamodel into CMA."""
+
+    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1,
+                 multivariate_optimizer: tp.Optional[base.OptCls] = None) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        if multivariate_optimizer is None:
+            multivariate_optimizer = CMA if self.dimension > 1 else OnePlusOne
+        self._optim = multivariate_optimizer(self.parametrization, budget,
+                                             num_workers)  # share parametrization and its rng
+
+    def _internal_ask_candidate(self) -> p.Parameter:
+        # We request a bit more points than what is really necessary for our dimensionality (+dimension).
+        sample_size = int((self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1)
+        if (self._num_ask % max(13, self.num_workers, self.dimension) == 0 and
+                len(self.archive) >= sample_size):
+            try:
+                data = learn_on_k_best(self.archive,
+                                       sample_size)
+                candidate = self.parametrization.spawn_child().set_standardized_data(data)
+            except InfiniteMetaModelOptimum:  # The optimum is at infinity. Shit happens.
+                candidate = self._optim.ask()
+        else:
+            candidate = self._optim.ask()
+        return candidate
+
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        self._optim.tell(candidate, loss)
 
 
 @registry.register
@@ -1191,9 +1325,8 @@ class CMandAS2(ASCMADEthird):
             self.optims = [OnePlusOne(self.parametrization, budget=None, num_workers=num_workers)]
         if budget > 50 * self.dimension or num_workers < 30:
             self.optims = [
-                CMA(self.parametrization, budget=None, num_workers=num_workers),  # share parametrization and its rng
-                CMA(self.parametrization, budget=None, num_workers=num_workers),
-                CMA(self.parametrization, budget=None, num_workers=num_workers),
+                MetaModel(self.parametrization, budget=None, num_workers=num_workers)
+                for _ in range(3)
             ]
             self.budget_before_choosing = budget // 10
 
@@ -1605,6 +1738,10 @@ class Chaining(base.ConfiguredOptimizer):
 
 chainCMAPowell = Chaining([CMA, Powell], ["half"]).set_name("chainCMAPowell", register=True)
 chainCMAPowell.no_parallelization = True
+chainMetaModelSQP = Chaining([MetaModel, SQP], ["half"]).set_name("chainMetaModelSQP", register=True)
+chainMetaModelSQP.no_parallelization = True
+chainMetaModelPowell = Chaining([MetaModel, Powell], ["half"]).set_name("chainMetaModelPowell", register=True)
+chainMetaModelPowell.no_parallelization = True
 chainDiagonalCMAPowell = Chaining([DiagonalCMA, Powell], ["half"]).set_name("chainDiagonalCMAPowell", register=True)
 chainDiagonalCMAPowell.no_parallelization = True
 chainNaiveTBPSAPowell = Chaining([NaiveTBPSA, Powell], ["half"]).set_name("chainNaiveTBPSAPowell", register=True)
@@ -1808,33 +1945,6 @@ class EMNA(base.ConfiguredOptimizer):
 NaiveIsoEMNA = EMNA().set_name("NaiveIsoEMNA", register=True)
 
 
-@registry.register
-class MetaModel(base.Optimizer):
-    """Adding a metamodel into CMA."""
-
-    def __init__(self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1,
-                 multivariate_optimizer: base.ConfiguredOptimizer = CMA) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        assert budget is not None
-        self._optim = multivariate_optimizer(self.parametrization, budget, num_workers)  # share parametrization and its rng
-
-    def _internal_ask_candidate(self) -> p.Parameter:
-        # We request a bit more points than what is really necessary for our dimensionality (+dimension).
-        if (self._num_ask % max(self.num_workers, self.dimension) == 0 and
-                len(self.archive) >= (self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1):
-            try:
-                data = learn_on_k_best(self.archive, int((self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1))
-                candidate = self.parametrization.spawn_child().set_standardized_data(data)
-            except InfiniteMetaModelOptimum:  # The optimum is at infinity. Shit happens.
-                candidate = self._optim.ask()
-        else:
-            candidate = self._optim.ask()
-        return candidate
-
-    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        self._optim.tell(candidate, loss)
-
-
 # Discussions with Jialin Liu and Fabien Teytaud helped the following development.
 # This includes discussion at Dagstuhl's 2019 seminars on randomized search heuristics and computational intelligence in games.
 @registry.register
@@ -1846,13 +1956,20 @@ class NGOptBase(base.Optimizer):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         descr = self.parametrization.descriptors
         self.has_noise = not (descr.deterministic and descr.deterministic_function)
+        # The noise coming from discrete variables goes to 0.
+        self.noise_from_instrumentation = self.has_noise and descr.deterministic_function
         self.fully_continuous = descr.continuous
         all_params = paramhelpers.flatten_parameter(self.parametrization)
         choicetags = [p.BaseChoice.ChoiceTag.as_tag(x) for x in all_params.values()]
         self.has_discrete_not_softmax = any(issubclass(ct.cls, p.TransitionChoice) for ct in choicetags)
         self._has_discrete = any(issubclass(ct.cls, p.BaseChoice) for ct in choicetags)
         self._arity = max(ct.arity for ct in choicetags)
+        if self.fully_continuous:
+            self._arity = -1
         self._optim: tp.Optional[base.Optimizer] = None
+        self._constraints_manager.update(
+            max_trials=1000, penalty_factor=1.0, penalty_exponent=1.01,
+        )
 
     @property
     def optim(self) -> base.Optimizer:
@@ -1891,7 +2008,7 @@ class NGOptBase(base.Optimizer):
                                 cls = OnePlusOne if self.dimension > 30 else Cobyla
                             else:
                                 # DE is great in such a case (?).
-                                cls = DE if self.dimension > 2000 else CMA
+                                cls = DE if self.dimension > 2000 else CMA if self.dimension > 1 else OnePlusOne
         return cls
 
     def _internal_ask_candidate(self) -> p.Parameter:
@@ -1930,8 +2047,6 @@ class NGOpt2(NGOptBase):
     """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
 
     def _select_optimizer_cls(self) -> base.OptCls:
-        # override because it is different from NGOptBase (bug?)
-        self.has_discrete_not_softmax = self._has_discrete
         budget, num_workers = self.budget, self.num_workers
         assert budget is not None
         optimClass: base.OptCls
@@ -1994,8 +2109,6 @@ class NGOpt4(NGOptBase):
     """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
 
     def _select_optimizer_cls(self) -> base.OptCls:
-        # override because it is different from NGOptBase (bug?)
-        self.has_discrete_not_softmax = self._has_discrete
         self.fully_continuous = self.fully_continuous and not self.has_discrete_not_softmax and self._arity < 0
         budget, num_workers = self.budget, self.num_workers
         assert budget is not None
@@ -2017,10 +2130,9 @@ class NGOpt4(NGOptBase):
             else:
                 if self.has_noise and self.fully_continuous:
                     if budget > 100:
-                        optimClass = SQP
+                        optimClass = OnePlusOne if self.noise_from_instrumentation else SQP
                     else:
-                        # This is the realm of population control. FIXME: should we pair with a bandit ?
-                        optimClass = TBPSA
+                        optimClass = OnePlusOne
                 else:
                     if self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable or not self.fully_continuous:
                         optimClass = DoubleFastGADiscreteOnePlusOne
@@ -2063,5 +2175,44 @@ class NGOpt4(NGOptBase):
 
 
 @registry.register
-class NGOpt(NGOpt4):
+class NGOpt8(NGOpt4):
+    """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
+
+    def _select_optimizer_cls(self) -> base.OptCls:
+        # Extracting info as far as possible.
+        assert self.budget is not None
+        optimClass: base.OptCls
+        if self.has_noise and (self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable):
+            if self.budget > 10000:
+                optimClass = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
+            else:
+                optimClass = ParametrizedOnePlusOne(crossover=True, mutation="discrete",
+                                                    noise_handling="optimistic")
+        elif self._arity > 0:
+            if self.budget < 1000 and self.num_workers == 1:
+                optimClass = DiscreteBSOOnePlusOne
+            elif self.num_workers > 2:
+                optimClass = CMandAS2  # type: ignore
+            else:
+                optimClass = super()._select_optimizer_cls()
+        else:
+            if not (self.has_noise and self.fully_continuous and self.dimension > 100) and not (
+                    self.has_noise and self.fully_continuous) and not (self.num_workers > self.budget / 5) and (
+                    self.num_workers == 1 and self.budget > 6000 and self.dimension > 7):
+                optimClass = chainMetaModelPowell
+            else:
+                optimClass = super()._select_optimizer_cls()
+
+        return optimClass
+
+    def _num_objectives_set_callback(self) -> None:
+        super()._num_objectives_set_callback()
+        if self.num_objectives > 1:
+            if self.noise_from_instrumentation or not self.has_noise:
+                # override at runtime
+                self._optim = DE(self.parametrization, self.budget, self.num_workers)
+
+
+@registry.register
+class NGOpt(NGOpt8):
     pass

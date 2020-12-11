@@ -9,9 +9,14 @@ import numpy as np
 import PIL.Image
 import torch.nn as nn
 import torch
+import torchvision
+from torchvision.models import resnet50
+import torchvision.transforms as tr
 
 import nevergrad as ng
+import nevergrad.common.typing as tp
 from .. import base
+# pylint: disable=abstract-method
 
 
 class Image(base.ExperimentFunction):
@@ -42,10 +47,7 @@ class Image(base.ExperimentFunction):
         array.set_bounds(lower=0, upper=255.99, method="clipping", full_range_sampling=True)
         max_size = ng.p.Scalar(lower=1, upper=200).set_integer_casting()
         array.set_recombination(ng.p.mutation.Crossover(axis=(0, 1), max_size=max_size)).set_name("")  # type: ignore
-
         super().__init__(self._loss, array)
-        self.register_initialization(problem_name=problem_name, index=index)
-        self._descriptors.update(problem_name=problem_name, index=index)
 
     def _loss(self, x: np.ndarray) -> float:
         assert self.problem_name == "recovering"
@@ -58,16 +60,43 @@ class Image(base.ExperimentFunction):
         return value
 
 
+# #### Adversarial attacks ##### #
+
+
+class Normalize(nn.Module):
+
+    def __init__(self, mean: tp.ArrayLike, std: tp.ArrayLike) -> None:
+        super().__init__()
+        self.mean = torch.Tensor(mean)
+        self.std = torch.Tensor(std)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return (x - self.mean.type_as(x)[None, :, None, None]) / self.std.type_as(x)[None, :, None, None]
+
+
+class Resnet50(nn.Module):
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.norm = Normalize(mean=[0.485, 0.456, 0.406],
+                              std=[0.229, 0.224, 0.225])
+        self.model = resnet50(pretrained=True)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.model(self.norm(x))
+
+
 class TestClassifier(nn.Module):
-    def __init__(self, image_size: int = 224):
+
+    def __init__(self, image_size: int = 224) -> None:
         super().__init__()
         self.model = nn.Linear(image_size * image_size * 3, 10)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.model(x.view(x.shape[0], -1))
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments,too-many-instance-attributes
 class ImageAdversarial(base.ExperimentFunction):
 
     def __init__(self, classifier: nn.Module, image: torch.Tensor, label: int = 0, targeted: bool = False,
@@ -90,44 +119,68 @@ class ImageAdversarial(base.ExperimentFunction):
         array.set_bounds(lower=-self.epsilon, upper=self.epsilon, method="clipping", full_range_sampling=True)
         max_size = ng.p.Scalar(lower=1, upper=200).set_integer_casting()
         array.set_recombination(ng.p.mutation.Crossover(axis=(1, 2), max_size=max_size))  # type: ignore
-
         super().__init__(self._loss, array)
-        self.register_initialization(classifier=classifier, image=image, label=label,
-                                     targeted=targeted, epsilon=epsilon)
-        # classifier and image cant be set as descriptors
-        self.add_descriptors(label=label, targeted=targeted, epsilon=epsilon)
-
-    @classmethod
-    def from_testbed(
-            cls,
-            name: str,
-            label: int = 0,
-            targeted: bool = False,
-            epsilon: float = 0.05
-    ) -> "ImageAdversarial":
-        if name == "test":
-            imsize = 224
-            classifier = TestClassifier(imsize)
-            image = torch.rand((3, imsize, imsize))
-        else:
-            raise ValueError(f'Testbed "{name}" is not implemented, check implementation in {__file__}')
-        func = cls(classifier=classifier, image=image, label=label, targeted=targeted, epsilon=epsilon)
-        # clean up and update decsriptors
-        assert func._initialization_kwargs is not None
-        for d in ["classifier", "image"]:
-            del func._initialization_kwargs[d]
-        func._initialization_kwargs["name"] = name
-        func._initialization_func = cls.from_testbed  # type: ignore
-        func._descriptors.update(name=name)
-        return func
 
     def _loss(self, x: np.ndarray) -> float:
-        x = torch.Tensor(x)
-        image_adv = torch.clamp(self.image + x, 0, 1)
+        output_adv = self._get_classifier_output(x)
+        value = float(self.criterion(output_adv, self.label).item())
+        return value * (1.0 if self.targeted else -1.0)
+
+    def _get_classifier_output(self, x: np.ndarray) -> tp.Any:
+        # call to the classifier given the input array
+        y = torch.Tensor(x)
+        image_adv = torch.clamp(self.image + y, 0, 1)
         image_adv = image_adv.view(1, 3, self.imsize, self.imsize)
-        output_adv = self.classifier(image_adv)
-        if self.targeted:
-            value = self.criterion(output_adv, self.label)
+        return self.classifier(image_adv)
+
+    # pylint: disable=arguments-differ
+    def evaluation_function(self, x: np.ndarray) -> float:  # type: ignore
+        """Returns wether the attack worked or not
+        """
+        output_adv = self._get_classifier_output(x)
+        _, pred = torch.max(output_adv, axis=1)
+        actual = int(self.label)
+        return float(pred == actual if self.targeted else pred != actual)
+
+    @classmethod
+    def make_folder_functions(
+            cls,
+            folder: tp.Optional[tp.PathLike],
+            model: str = "resnet50",
+    ) -> tp.Generator["ImageAdversarial", None, None]:
+        """
+
+        Parameters
+        ----------
+        folder: str or None
+            folder to use for reference images. If None, 1 random image is created.
+        model: str
+            model name to use
+
+        Yields
+        ------
+        ExperimentFunction
+            an experiment function corresponding to 1 of the image of the provided folder dataset.
+        """
+        assert model in {"resnet50", "test"}
+        tags = {"folder": "#FAKE#" if folder is None else Path(folder).name, "model": model}
+        classifier: tp.Any = Resnet50() if model == "resnet50" else TestClassifier()
+        imsize = 224
+        transform = tr.Compose([tr.Resize(imsize), tr.CenterCrop(imsize), tr.ToTensor()])
+        if folder is None:
+            x = torch.zeros(1, 3, 224, 224)
+            _, pred = torch.max(classifier(x), axis=1)
+            data_loader: tp.Iterable[tp.Tuple[tp.Any, tp.Any]] = [(x, pred)]
+        elif Path(folder).is_dir():
+            ifolder = torchvision.datasets.ImageFolder(folder, transform)
+            data_loader = torch.utils.DataLoader(ifolder, batch_size=1, shuffle=True,
+                                                 num_workers=8, pin_memory=True)
         else:
-            value = -self.criterion(output_adv, self.label)
-        return float(value.item())
+            raise ValueError(f"{folder} is not a valid folder.")
+        for data, target in data_loader:
+            _, pred = torch.max(classifier(data), axis=1)
+            if pred == target:
+                func = cls(classifier=classifier, image=data[0],
+                           label=int(target), targeted=False, epsilon=0.05)
+                func.add_descriptors(**tags)
+                yield func

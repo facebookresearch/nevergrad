@@ -95,10 +95,13 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # you can also replace or reinitialize this random state
         self.num_workers = int(num_workers)
         self.budget = budget
+
         # How do we deal with cheap constraints i.e. constraints which are fast and use low resources and easy ?
         # True ==> we penalize them (infinite values for candidates which violate the constraint).
         # False ==> we repeat the ask until we solve the problem.
+        self._constraints_manager = utils.ConstraintManager()
         self._penalize_cheap_violations = False
+
         self.parametrization = (
             parametrization
             if not isinstance(parametrization, (int, np.int))
@@ -124,7 +127,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         self._hypervolume_pareto: tp.Optional[mobj.HypervolumePareto] = None
         # instance state
         self._asked: tp.Set[str] = set()
-        self._first_tell_done = False  # set to True at the beginning of the first tell
+        self._num_objectives = 0
         self._suggestions: tp.Deque[p.Parameter] = deque()
         self._num_ask = 0
         self._num_tell = 0  # increases after each successful tell
@@ -149,9 +152,27 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
 
     @property
     def num_objectives(self) -> int:
-        if not self._first_tell_done:
-            raise RuntimeError('Unknown number of objectives, provide a "tell" first.')
-        return 1 if self._hypervolume_pareto is None else self._hypervolume_pareto.num_objectives
+        """Provides 0 if the number is not known yet, else the number of objectives
+        to optimize upon.
+        """
+        if self._hypervolume_pareto is not None and self._num_objectives != self._hypervolume_pareto.num_objectives:
+            raise RuntimeError("Number of objectives is incorrectly set. Please create a nevergrad issue")
+        return self._num_objectives
+
+    @num_objectives.setter
+    def num_objectives(self, num: int) -> None:
+        num = int(num)
+        if num <= 0:
+            raise ValueError("Number of objectives must be strictly positive")
+        if not self._num_objectives:
+            self._num_objectives = num
+            self._num_objectives_set_callback()
+        elif num != self._num_objectives:
+            raise ValueError(f"Expected {self._num_objectives} loss(es), but received {num}.")
+
+    def _num_objectives_set_callback(self) -> None:
+        """Callback for when num objectives is first known
+        """
 
     @property
     def num_ask(self) -> int:
@@ -299,12 +320,6 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             raise TypeError(
                 f'"tell" method only supports float values but the passed loss was: {loss} (type: {type(loss)}.'
             )
-        # check loss length
-        if self.num_tell:
-            expected = self.num_objectives
-            actual = 1 if isinstance(loss, float) else loss.size
-            if actual != expected:
-                raise ValueError(f"Expected {expected} loss(es) (like previous ones) but received {actual}.")
         # check Parameter
         if not isinstance(candidate, p.Parameter):
             raise TypeError(
@@ -314,9 +329,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 "or optimizer.suggest(*args, **kwargs) to suggest a point that should be used for "
                 "the next ask"
             )
+        # check loss length
+        self.num_objectives = 1 if isinstance(loss, float) else loss.size
         # checks are done, start processing
         candidate.freeze()  # make sure it is not modified somewhere
-        self._first_tell_done = True
         # add reference if provided
         if isinstance(candidate, p.MultiobjectiveReference):
             if self._hypervolume_pareto is not None:
@@ -325,7 +341,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 raise RuntimeError("MultiobjectiveReference must only be used for multiobjective losses")
             self._hypervolume_pareto = mobj.HypervolumePareto(upper_bounds=loss)
             if candidate.value is None:
-                return
+                return  # no value, so stopping processing there
             candidate = candidate.value
         # preprocess multiobjective loss
         if isinstance(loss, np.ndarray):
@@ -339,6 +355,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             # multiobjective reference is not handled :s
             # but this allows obtaining both scalar and multiobjective loss (through losses)
             callback(self, candidate, loss)
+        if not candidate.satisfies_constraints() and self.budget is not None:
+            penalty = self._constraints_manager.penalty(candidate, self.num_ask, self.budget)
+            loss = loss + penalty
         if isinstance(loss, float):
             self._update_archive_and_bests(candidate, loss)
         if candidate.uid in self._asked:
@@ -406,8 +425,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             callback(self)
         current_num_ask = self.num_ask
         # tentatives if a cheap constraint is available
-        MAX_TENTATIVES = 1000
-        for k in range(MAX_TENTATIVES):
+        # TODO: this should be replaced by an optimization algorithm.
+        max_trials = self._constraints_manager.max_trials
+        for k in range(max_trials):
             is_suggestion = False
             if self._suggestions:
                 is_suggestion = True
@@ -417,11 +437,13 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 # only register actual asked points
             if candidate.satisfies_constraints():
                 break  # good to go!
-            if self._penalize_cheap_violations or k == MAX_TENTATIVES - 2:  # a tell may help before last tentative
-                self._internal_tell_candidate(candidate, float("Inf"))
+            if self._penalize_cheap_violations:
+                # TODO using a suboptimizer instead may help remove this
+                self._internal_tell_candidate(candidate, float("Inf"))  # DE requires a tell
             self._num_ask += 1  # this is necessary for some algorithms which need new num to ask another point
-            if k == MAX_TENTATIVES - 1:
-                warnings.warn(f"Could not bypass the constraint after {MAX_TENTATIVES} tentatives, sending candidate anyway.")
+            if k == max_trials - 1:
+                warnings.warn(f"Could not bypass the constraint after {max_trials} tentatives, "
+                              "sending candidate anyway.")
         if not is_suggestion:
             if candidate.uid in self._asked:
                 raise RuntimeError(
