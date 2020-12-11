@@ -16,14 +16,21 @@ import torchvision.transforms as tr
 import nevergrad as ng
 import nevergrad.common.typing as tp
 from .. import base
+from . import imagelosses
+
 # pylint: disable=abstract-method
 
 
 class Image(base.ExperimentFunction):
-    def __init__(self, problem_name: str = "recovering", index: int = 0) -> None:
+    def __init__(
+        self,
+        problem_name: str = "recovering",
+        index: int = 0,
+        loss: tp.Type[imagelosses.ImageLoss] = imagelosses.SumAbsoluteDifferences,
+    ) -> None:
         """
         problem_name: the type of problem we are working on.
-           recovering: we directly try to recover the target image.
+           recovering: we directly try to recover the target image.§
         index: the index of the problem, inside the problem type.
            For example, if problem_name is "recovering" and index == 0,
            we try to recover the face of O. Teytaud.
@@ -47,24 +54,15 @@ class Image(base.ExperimentFunction):
         array.set_bounds(lower=0, upper=255.99, method="clipping", full_range_sampling=True)
         max_size = ng.p.Scalar(lower=1, upper=200).set_integer_casting()
         array.set_recombination(ng.p.mutation.Crossover(axis=(0, 1), max_size=max_size)).set_name("")  # type: ignore
-        super().__init__(self._loss, array)
-
-    def _loss(self, x: np.ndarray) -> float:
-        assert self.problem_name == "recovering"
-        x = np.array(x, copy=False).ravel()
-        x = x.reshape(self.domain_shape)
-        assert x.shape == self.domain_shape, f"Shape = {x.shape} vs {self.domain_shape}"
-        # Define the loss, in case of recovering: the goal is to find the target image.
-        assert self.index == 0
-        value = float(np.sum(np.fabs(np.subtract(x, self.data))))
-        return value
+        super().__init__(loss(reference=self.data), array)
+        self.add_descriptors(loss=loss.__class__.__name__)
+        self.loss_function = loss(reference=self.data)
 
 
 # #### Adversarial attacks ##### #
 
 
 class Normalize(nn.Module):
-
     def __init__(self, mean: tp.ArrayLike, std: tp.ArrayLike) -> None:
         super().__init__()
         self.mean = torch.Tensor(mean)
@@ -75,11 +73,9 @@ class Normalize(nn.Module):
 
 
 class Resnet50(nn.Module):
-
     def __init__(self) -> None:
         super().__init__()
-        self.norm = Normalize(mean=[0.485, 0.456, 0.406],
-                              std=[0.229, 0.224, 0.225])
+        self.norm = Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         self.model = resnet50(pretrained=True)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -87,7 +83,6 @@ class Resnet50(nn.Module):
 
 
 class TestClassifier(nn.Module):
-
     def __init__(self, image_size: int = 224) -> None:
         super().__init__()
         self.model = nn.Linear(image_size * image_size * 3, 10)
@@ -98,9 +93,14 @@ class TestClassifier(nn.Module):
 
 # pylint: disable=too-many-arguments,too-many-instance-attributes
 class ImageAdversarial(base.ExperimentFunction):
-
-    def __init__(self, classifier: nn.Module, image: torch.Tensor, label: int = 0, targeted: bool = False,
-                 epsilon: float = 0.05) -> None:
+    def __init__(
+        self,
+        classifier: nn.Module,
+        image: torch.Tensor,
+        label: int = 0,
+        targeted: bool = False,
+        epsilon: float = 0.05,
+    ) -> None:
         # TODO add crossover params in args + criterion
         """
         params : needs to be detailed
@@ -114,7 +114,10 @@ class ImageAdversarial(base.ExperimentFunction):
         self.criterion = nn.CrossEntropyLoss()
         self.imsize = self.image.shape[1]
 
-        array = ng.p.Array(init=np.zeros(self.image.shape), mutable_sigma=True, ).set_name("")
+        array = ng.p.Array(
+            init=np.zeros(self.image.shape),
+            mutable_sigma=True,
+        ).set_name("")
         array.set_mutation(sigma=self.epsilon / 10)
         array.set_bounds(lower=-self.epsilon, upper=self.epsilon, method="clipping", full_range_sampling=True)
         max_size = ng.p.Scalar(lower=1, upper=200).set_integer_casting()
@@ -135,8 +138,7 @@ class ImageAdversarial(base.ExperimentFunction):
 
     # pylint: disable=arguments-differ
     def evaluation_function(self, x: np.ndarray) -> float:  # type: ignore
-        """Returns wether the attack worked or not
-        """
+        """Returns wether the attack worked or not"""
         output_adv = self._get_classifier_output(x)
         _, pred = torch.max(output_adv, axis=1)
         actual = int(self.label)
@@ -144,9 +146,9 @@ class ImageAdversarial(base.ExperimentFunction):
 
     @classmethod
     def make_folder_functions(
-            cls,
-            folder: tp.Optional[tp.PathLike],
-            model: str = "resnet50",
+        cls,
+        folder: tp.Optional[tp.PathLike],
+        model: str = "resnet50",
     ) -> tp.Generator["ImageAdversarial", None, None]:
         """
 
@@ -173,14 +175,86 @@ class ImageAdversarial(base.ExperimentFunction):
             data_loader: tp.Iterable[tp.Tuple[tp.Any, tp.Any]] = [(x, pred)]
         elif Path(folder).is_dir():
             ifolder = torchvision.datasets.ImageFolder(folder, transform)
-            data_loader = torch.utils.DataLoader(ifolder, batch_size=1, shuffle=True,
-                                                 num_workers=8, pin_memory=True)
+            data_loader = torch.utils.DataLoader(
+                ifolder, batch_size=1, shuffle=True, num_workers=8, pin_memory=True
+            )
         else:
             raise ValueError(f"{folder} is not a valid folder.")
         for data, target in data_loader:
             _, pred = torch.max(classifier(data), axis=1)
             if pred == target:
-                func = cls(classifier=classifier, image=data[0],
-                           label=int(target), targeted=False, epsilon=0.05)
+                func = cls(
+                    classifier=classifier, image=data[0], label=int(target), targeted=False, epsilon=0.05
+                )
                 func.add_descriptors(**tags)
                 yield func
+
+
+class ImageFromPGAN(base.ExperimentFunction):
+    """
+    Creates face images using a GAN from pytorch GAN zoo trained on celebAHQ and optimizes the noise vector of the GAN
+
+    Parameters
+    ----------
+    problem_name: str
+        the type of problem we are working on.
+    initial_noise: np.ndarray
+        the initial noise of the GAN. It should be of dimension (1, 512). If None, it is defined randomly.
+    use_gpu: bool
+        whether to use gpus to compute the images
+    loss: ImageLoss
+        which loss to use for the images (default: Koncept512)
+    mutable_sigma: bool
+        whether the sigma should be mutable
+    sigma: float
+        standard deviation of the initial mutations
+    """
+
+    def __init__(
+        self,
+        initial_noise: tp.Optional[np.ndarray] = None,
+        use_gpu: bool = False,
+        loss: tp.Optional[imagelosses.ImageLoss] = None,
+        mutable_sigma: bool = True,
+        sigma: float = 35,
+    ) -> None:
+        if loss is None:
+            loss = imagelosses.Koncept512()
+        if not torch.cuda.is_available():
+            use_gpu = False
+        # Storing high level information..
+        self.pgan_model = torch.hub.load(
+            "facebookresearch/pytorch_GAN_zoo:hub",
+            "PGAN",
+            model_name="celebAHQ-512",
+            pretrained=True,
+            useGPU=use_gpu,
+        )
+
+        self.domain_shape = (1, 512)
+        if initial_noise is None:
+            initial_noise = np.random.normal(size=self.domain_shape)
+        assert initial_noise.shape == self.domain_shape, (
+            f"The shape of the initial noise vector was {initial_noise.shape}, "
+            f"it should be {self.domain_shape}"
+        )
+
+        array = ng.p.Array(init=initial_noise, mutable_sigma=mutable_sigma)
+        # parametrization
+        array.set_mutation(sigma=sigma)
+        array.set_recombination(ng.p.mutation.Crossover(axis=(0, 1))).set_name("")
+
+        super().__init__(self._loss, array)
+        self.loss_function = loss
+        self._descriptors.pop("use_gpu", None)
+        self.add_descriptors(loss=loss.__class__.__name__)
+
+    def _loss(self, x: np.ndarray) -> float:
+        image = self._generate_images(x)
+        loss = self.loss_function(image)
+        return loss
+
+    def _generate_images(self, x: np.ndarray) -> np.ndarray:
+        # pylint: disable=not-callable
+        noise = torch.tensor(x.astype("float32"))
+        return self.pgan_model.test(noise).permute(0, 2, 3, 1).cpu().numpy()  # type: ignore

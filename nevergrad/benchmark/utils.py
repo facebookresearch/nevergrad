@@ -11,8 +11,7 @@ from nevergrad.common import testing
 
 
 class Selector(pd.DataFrame):  # type: ignore
-    """Pandas dataframe class with a simplified selection function
-    """
+    """Pandas dataframe class with a simplified selection function"""
 
     @property
     def _constructor_expanddim(self) -> tp.Type["Selector"]:
@@ -48,14 +47,17 @@ class Selector(pd.DataFrame):  # type: ignore
             df = df.loc[selected, :]
         return Selector(df)
 
-    def select_and_drop(self, **kwargs: tp.Union[str, tp.Sequence[str], tp.Callable[[tp.Any], bool]]) -> "Selector":
-        """Same as select, but drops the columns used for selection
-        """
+    def select_and_drop(
+        self, **kwargs: tp.Union[str, tp.Sequence[str], tp.Callable[[tp.Any], bool]]
+    ) -> "Selector":
+        """Same as select, but drops the columns used for selection"""
         df = self.select(**kwargs)
         columns = [x for x in df.columns if x not in kwargs]
         return Selector(df.loc[:, columns])
 
-    def unique(self, column_s: tp.Union[str, tp.Sequence[str]]) -> tp.Union[tp.Tuple[tp.Any, ...], tp.Set[tp.Tuple[tp.Any, ...]]]:
+    def unique(
+        self, column_s: tp.Union[str, tp.Sequence[str]]
+    ) -> tp.Union[tp.Tuple[tp.Any, ...], tp.Set[tp.Tuple[tp.Any, ...]]]:
         """Returns the set of unique values or set of values for a column or columns
 
         Parameter

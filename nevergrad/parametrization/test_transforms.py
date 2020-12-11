@@ -33,11 +33,11 @@ def test_back_and_forth(transform: transforms.Transform, string: str) -> None:
 @testing.parametrized(
     affine=(transforms.Affine(3, 4), [0, 1, 2], [4, 7, 10]),
     reverted=(transforms.Affine(3, 4).reverted(), [4, 7, 10], [0, 1, 2]),
-    exponentiate=(transforms.Exponentiate(10, -1.), [0, 1, 2], [1, .1, .01]),
+    exponentiate=(transforms.Exponentiate(10, -1.0), [0, 1, 2], [1, 0.1, 0.01]),
     tanh=(transforms.TanhBound(3, 5), [-100000, 100000, 0], [3, 5, 4]),
     arctan=(transforms.ArctanBound(3, 5), [-100000, 100000, 0], [3, 5, 4]),
     bouncing=(transforms.Clipping(0, 10, bounce=True), [-1, 22, 3], [1, 0, 3]),
-    cumdensity=(transforms.CumulativeDensity(), [-10, 0, 10], [0, .5, 1]),
+    cumdensity=(transforms.CumulativeDensity(), [-10, 0, 10], [0, 0.5, 1]),
     cumdensity_bounds=(transforms.CumulativeDensity(2, 4), [-10, 0, 10], [2, 3, 4]),
 )
 def test_vals(transform: transforms.Transform, x: tp.List[float], expected: tp.List[float]) -> None:
@@ -52,10 +52,12 @@ def test_vals(transform: transforms.Transform, x: tp.List[float], expected: tp.L
     clipping_err=(transforms.Clipping(0), [-2, 4, 6], ValueError),
     arctan=(transforms.ArctanBound(0, 5), [2, 4, 5], None),
     arctan_err=(transforms.ArctanBound(0, 5), [-1, 4, 5], ValueError),
-    cumdensity=(transforms.CumulativeDensity(), [0, .5], None),
-    cumdensity_err=(transforms.CumulativeDensity(), [-0.1, .5], ValueError),
+    cumdensity=(transforms.CumulativeDensity(), [0, 0.5], None),
+    cumdensity_err=(transforms.CumulativeDensity(), [-0.1, 0.5], ValueError),
 )
-def test_out_of_bound(transform: transforms.Transform, x: tp.List[float], expected: tp.Optional[tp.Type[Exception]]) -> None:
+def test_out_of_bound(
+    transform: transforms.Transform, x: tp.List[float], expected: tp.Optional[tp.Type[Exception]]
+) -> None:
     if expected is None:
         transform.backward(np.array(x))
     else:
@@ -64,7 +66,7 @@ def test_out_of_bound(transform: transforms.Transform, x: tp.List[float], expect
 
 
 @testing.parametrized(
-    tanh=(transforms.TanhBound, [1., 100.]),
+    tanh=(transforms.TanhBound, [1.0, 100.0]),
     arctan=(transforms.ArctanBound, [0.9968, 99.65]),
     clipping=(transforms.Clipping, [1, 90]),
 )
@@ -86,8 +88,8 @@ def test_multibounds(transform_cls: tp.Type[transforms.BoundTransform], expected
 
 
 @testing.parametrized(
-    both_sides=(transforms.Clipping(0, 1), [0, 1.]),
-    one_side=(transforms.Clipping(a_max=1), [-3, 1.]),
+    both_sides=(transforms.Clipping(0, 1), [0, 1.0]),
+    one_side=(transforms.Clipping(a_max=1), [-3, 1.0]),
 )
 def test_clipping(transform: transforms.Transform, expected: tp.List[float]) -> None:
     y = transform.forward(np.array([-3, 5]))

@@ -10,8 +10,7 @@ from . import base
 
 
 class JamesBond:
-    """Holds the state of a player of DoubleOSeven
-    """
+    """Holds the state of a player of DoubleOSeven"""
 
     actions = ["fire", "protect", "reload"]
     max_consecutive_protect = 4
@@ -21,8 +20,7 @@ class JamesBond:
         self.consecutive_protect = 0
 
     def update_with_action(self, action: str) -> None:
-        """Update the current state with an authorized action.
-        """
+        """Update the current state with an authorized action."""
         if action not in self.actions:
             raise ValueError(f"Unauthorized action {action}, authorized are {self.actions}")
         if action == "fire":
@@ -106,7 +104,9 @@ class DoubleOSeven(base.MultiAgentEnv):
         info: tp.Dict[tp.Any, tp.Any] = {}
         rew = {"player_0": 0, "player_1": 0}
         # change impossible actions
-        actions = ["reload" if a == "fire" and not p.ammunitions else a for p, a in zip(self.players, actions)]
+        actions = [
+            "reload" if a == "fire" and not p.ammunitions else a for p, a in zip(self.players, actions)
+        ]
         # update players
         for player, action in zip(self.players, actions):
             player.update_with_action(action)

@@ -10,7 +10,6 @@ from . import decorators
 
 
 class DecoratorTests(TestCase):
-
     def test_registry(self) -> None:
         functions: decorators.Registry[tp.Callable[[], int]] = decorators.Registry()
         other: decorators.Registry[tp.Callable[[], int]] = decorators.Registry()

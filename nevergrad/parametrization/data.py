@@ -10,6 +10,7 @@ import nevergrad.common.typing as tp
 from . import core
 from . import utils
 from . import transforms as trans
+
 # pylint: disable=no-value-for-parameter
 
 
@@ -69,27 +70,30 @@ class Mutation(core.Parameter):
     Recombinations should take several
     """
 
+    # pylint: disable=unused-argument
+
     @property
     def value(self) -> tp.Callable[[tp.Sequence["Array"]], None]:
         return self.apply
 
     @value.setter
-    def value(self, value: tp.Any) -> None:  # pylint: disable=unused-argument
+    def value(self, value: tp.Any) -> None:
         raise RuntimeError("Mutation cannot be set.")
 
     def apply(self, arrays: tp.Sequence["Array"]) -> None:
         new_value = self._apply_array([a._value for a in arrays])
         arrays[0]._value = new_value
 
-    def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:  # pylint: disable=unused-argument
+    def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:
         raise RuntimeError("Mutation._apply_array should either be implementer or bypassed in Mutation.apply")
         return np.array([])  # pylint: disable=unreachable
 
-    def get_standardized_data(self, *, reference: tp.Optional[P] = None) -> np.ndarray:  # pylint: disable=unused-argument
+    def get_standardized_data(self, *, reference: tp.Optional[P] = None) -> np.ndarray:
         return np.array([])
 
-    # pylint: disable=unused-argument
-    def set_standardized_data(self: P, data: tp.ArrayLike, *, reference: tp.Optional[P] = None, deterministic: bool = False) -> P:
+    def set_standardized_data(
+        self: P, data: tp.ArrayLike, *, reference: tp.Optional[P] = None, deterministic: bool = False
+    ) -> P:
         if np.array(data, copy=False).size:
             raise ValueError(f"Constant dimension should be 0 (got data: {data})")
         return self
@@ -115,11 +119,11 @@ class Array(core.Parameter):
     """
 
     def __init__(
-            self,
-            *,
-            init: tp.Optional[tp.ArrayLike] = None,
-            shape: tp.Optional[tp.Tuple[int, ...]] = None,
-            mutable_sigma: bool = False
+        self,
+        *,
+        init: tp.Optional[tp.ArrayLike] = None,
+        shape: tp.Optional[tp.Tuple[int, ...]] = None,
+        mutable_sigma: bool = False,
     ) -> None:
         sigma = Log(init=1.0, exponent=2.0, mutable_sigma=False) if mutable_sigma else 1.0
         super().__init__(sigma=sigma, recombination="average", mutation="gaussian")
@@ -130,7 +134,9 @@ class Array(core.Parameter):
                 raise ValueError(err_msg)
             self._value = np.array(init, copy=False)
         elif shape is not None:
-            assert isinstance(shape, tuple) and all(isinstance(n, int) for n in shape), f"Shape incorrect: {shape}."
+            assert isinstance(shape, tuple) and all(
+                isinstance(n, int) for n in shape
+            ), f"Shape incorrect: {shape}."
             self._value = np.zeros(shape)
         else:
             raise ValueError(err_msg)
@@ -146,8 +152,11 @@ class Array(core.Parameter):
 
     def _get_name(self) -> str:
         cls = self.__class__.__name__
-        descriptors: tp.List[str] = (["int"] if self.integer else
-                                     ([str(self._value.shape).replace(" ", "")] if self._value.shape != (1,) else []))
+        descriptors: tp.List[str] = (
+            ["int"]
+            if self.integer
+            else ([str(self._value.shape).replace(" ", "")] if self._value.shape != (1,) else [])
+        )
         descriptors += [f"exp={self.exponent}"] if self.exponent is not None else []
         descriptors += [f"{self.bound_transform.name}"] if self.bound_transform is not None else []
         descriptors += ["constr"] if self._constraint_checkers else []
@@ -158,8 +167,7 @@ class Array(core.Parameter):
 
     @property
     def sigma(self) -> tp.Union["Array", "Scalar"]:
-        """Value for the standard deviation used to mutate the parameter
-        """
+        """Value for the standard deviation used to mutate the parameter"""
         return self.parameters["sigma"]  # type: ignore
 
     @property
@@ -177,7 +185,9 @@ class Array(core.Parameter):
         value = np.asarray(value)
         assert isinstance(value, np.ndarray)
         if self._value.shape != value.shape:
-            raise ValueError(f"Cannot set array of shape {self._value.shape} with value of shape {value.shape}")
+            raise ValueError(
+                f"Cannot set array of shape {self._value.shape} with value of shape {value.shape}"
+            )
         if not BoundChecker(*self.bounds)(self.value):
             raise ValueError("New value does not comply with bounds")
         if self.exponent is not None and np.min(value.ravel()) <= 0:
@@ -243,7 +253,10 @@ class Array(core.Parameter):
         - only "clipping" accepts partial bounds (None values)
         """  # TODO improve description of methods
         lower, upper = _a_min_max_deprecation(**locals())
-        bounds = tuple(a if isinstance(a, np.ndarray) or a is None else np.array([a], dtype=float) for a in (lower, upper))
+        bounds = tuple(
+            a if isinstance(a, np.ndarray) or a is None else np.array([a], dtype=float)
+            for a in (lower, upper)
+        )
         both_bounds = all(b is not None for b in bounds)
         if full_range_sampling is None:
             full_range_sampling = both_bounds
@@ -259,8 +272,12 @@ class Array(core.Parameter):
             if (bounds[0] >= bounds[1]).any():  # type: ignore
                 raise ValueError(f"Lower bounds {lower} should be strictly smaller than upper bounds {upper}")
         # update instance
-        transforms = dict(clipping=trans.Clipping, arctan=trans.ArctanBound, tanh=trans.TanhBound,
-                          gaussian=trans.CumulativeDensity)
+        transforms = dict(
+            clipping=trans.Clipping,
+            arctan=trans.ArctanBound,
+            tanh=trans.TanhBound,
+            gaussian=trans.CumulativeDensity,
+        )
         transforms["bouncing"] = functools.partial(trans.Clipping, bounce=True)  # type: ignore
         if method in transforms:
             if self.exponent is not None and method not in ("clipping", "bouncing"):
@@ -278,25 +295,29 @@ class Array(core.Parameter):
             std_bounds = tuple(self._to_reduced_space(b) for b in self.bounds)  # type: ignore
             min_dist = np.min(np.abs(std_bounds[0] - std_bounds[1]).ravel())
             if min_dist < 3.0:
-                warnings.warn(f"Bounds are {min_dist} sigma away from each other at the closest, "
-                              "you should aim for at least 3 for better quality.")
+                warnings.warn(
+                    f"Bounds are {min_dist} sigma away from each other at the closest, "
+                    "you should aim for at least 3 for better quality."
+                )
         return self
 
     def set_recombination(self: A, recombination: tp.Union[None, str, core.Parameter]) -> A:
         assert self._parameters is not None
-        self._parameters._content["recombination"] = (recombination if isinstance(recombination, core.Parameter)
-                                                      else core.Constant(recombination))
+        self._parameters._content["recombination"] = (
+            recombination if isinstance(recombination, core.Parameter) else core.Constant(recombination)
+        )
         return self
 
     def mutate(self) -> None:
-        """Mutate parameters of the instance, and then its value
-        """
+        """Mutate parameters of the instance, and then its value"""
         self._check_frozen()
         self.parameters.mutate()
         mutation = self.parameters["mutation"].value
         if isinstance(mutation, str):
             if mutation in ["gaussian", "cauchy"]:
-                func = (self.random_state.normal if mutation == "gaussian" else self.random_state.standard_cauchy)
+                func = (
+                    self.random_state.normal if mutation == "gaussian" else self.random_state.standard_cauchy
+                )
                 self.set_standardized_data(func(size=self.dimension), deterministic=False)
             else:
                 raise NotImplementedError('Mutation "{mutation}" is not implemented')
@@ -311,7 +332,7 @@ class Array(core.Parameter):
         self: A,
         sigma: tp.Optional[tp.Union[float, core.Parameter]] = None,
         exponent: tp.Optional[float] = None,
-        custom: tp.Optional[tp.Union[str, core.Parameter]] = None
+        custom: tp.Optional[tp.Union[str, core.Parameter]] = None,
     ) -> A:
         """Output will be cast to integer(s) through deterministic rounding.
 
@@ -335,18 +356,24 @@ class Array(core.Parameter):
         """
         if sigma is not None:
             # just replace if an actual Parameter is provided as sigma, else update value (parametrized or not)
-            if isinstance(sigma, core.Parameter) or isinstance(self.parameters._content["sigma"], core.Constant):
+            if isinstance(sigma, core.Parameter) or isinstance(
+                self.parameters._content["sigma"], core.Constant
+            ):
                 self.parameters._content["sigma"] = core.as_parameter(sigma)
             else:
                 self.sigma.value = sigma  # type: ignore
         if exponent is not None:
             if self.bound_transform is not None and not isinstance(self.bound_transform, trans.Clipping):
-                raise RuntimeError(f"Cannot set logarithmic transform with bounding transform {self.bound_transform}, "
-                                   "only clipping and constraint bounding methods can accept itp.")
+                raise RuntimeError(
+                    f"Cannot set logarithmic transform with bounding transform {self.bound_transform}, "
+                    "only clipping and constraint bounding methods can accept itp."
+                )
             if exponent <= 1.0:
                 raise ValueError("Only exponents strictly higher than 1.0 are allowed")
             if np.min(self._value.ravel()) <= 0:
-                raise RuntimeError("Cannot convert to logarithmic mode with current non-positive value, please update it firstp.")
+                raise RuntimeError(
+                    "Cannot convert to logarithmic mode with current non-positive value, please update it firstp."
+                )
             self.exponent = exponent
         if custom is not None:
             self.parameters._content["mutation"] = core.as_parameter(custom)
@@ -369,19 +396,23 @@ class Array(core.Parameter):
         return self
 
     # pylint: disable=unused-argument
-    def _internal_set_standardized_data(self: A, data: np.ndarray, reference: A, deterministic: bool = False) -> None:
+    def _internal_set_standardized_data(
+        self: A, data: np.ndarray, reference: A, deterministic: bool = False
+    ) -> None:
         assert isinstance(data, np.ndarray)
         sigma = reference.sigma.value
         data_reduc = sigma * (data + reference._get_ref_data()).reshape(reference._value.shape)
-        self._value = data_reduc if reference.exponent is None else reference.exponent**data_reduc
+        self._value = data_reduc if reference.exponent is None else reference.exponent ** data_reduc
         self._ref_data = None
         if reference.bound_transform is not None:
             self._value = reference.bound_transform.forward(self._value)
 
     def _internal_spawn_child(self) -> "Array":
         child = self.__class__(init=self.value)
-        child.parameters._content = {k: v.spawn_child() if isinstance(v, core.Parameter) else v
-                                     for k, v in self.parameters._content.items()}
+        child.parameters._content = {
+            k: v.spawn_child() if isinstance(v, core.Parameter) else v
+            for k, v in self.parameters._content.items()
+        }
         for name in ["integer", "exponent", "bounds", "bound_transform", "full_range_sampling"]:
             setattr(child, name, getattr(self, name))
         return child
@@ -452,7 +483,7 @@ class Scalar(Array):
         *,
         lower: tp.Optional[float] = None,
         upper: tp.Optional[float] = None,
-        mutable_sigma: bool = True
+        mutable_sigma: bool = True,
     ) -> None:
         bounded = all(a is not None for a in (lower, upper))
         no_init = init is None
@@ -481,11 +512,7 @@ class Scalar(Array):
 
 # pylint: disable=unused-argument
 def _a_min_max_deprecation(
-    a_min: tp.Any,
-    a_max: tp.Any,
-    lower: tp.Any,
-    upper: tp.Any,
-    **kwargs: tp.Any
+    a_min: tp.Any, a_max: tp.Any, lower: tp.Any, upper: tp.Any, **kwargs: tp.Any
 ) -> tp.Tuple[tp.Any, tp.Any]:
     if a_min is not None:
         warnings.warn('"a_min" is deprecated in favor of "lower" for clarity', DeprecationWarning)
@@ -539,7 +566,9 @@ class Log(Scalar):
             if init is None:
                 init = float(np.sqrt(lower * upper))  # type: ignore
             if exponent is None:
-                exponent = float(np.exp((np.log(upper) - np.log(lower)) / 6.0))  # 99.7% of values within the bounds
+                exponent = float(
+                    np.exp((np.log(upper) - np.log(lower)) / 6.0)
+                )  # 99.7% of values within the bounds
         if init is None:
             raise ValueError("You must define either a init value or both lower and upper bounds")
         if exponent is None:
