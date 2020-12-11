@@ -559,7 +559,7 @@ def test_bo_ordering() -> None:
         (None, 3, 20, False, 1000, ["MetaModel", "MetaModel"]),
         ]
 )
-def test_ngo_split_optimizer( name: str, dimension: int, num_workers: int, fake_learning: bool, budget: int, expected: tp.List[str]) -> None:
+def test_ngo_split_optimizer(name: tp.Optional[str], dimension: int, num_workers: int, fake_learning: bool, budget: int, expected: tp.List[str]) -> None:
     param = ng.p.Instrumentation(
       # a log-distributed scalar between 0.001 and 1.0
       learning_rate=ng.p.Log(lower=0.001, upper=1.0),
