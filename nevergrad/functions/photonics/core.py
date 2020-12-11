@@ -137,9 +137,9 @@ class Photonics(base.ExperimentFunction):
     # pylint: disable=arguments-differ
     def evaluation_function(self,  *args: tp.Any, **kwargs: tp.Any) -> float:  # type: ignore
         assert len(kwargs.items()) == 0
-        x = np.concatenate([a for a in args])
+        x = args[0]
         if self._as_tuple:
-            x = np.transpose(x)
+            x = np.transpose(np.concatenate([a for a in args]))
         # pylint: disable=not-callable
         loss = self.function(x)
         assert isinstance(loss, float)
@@ -160,4 +160,3 @@ class Photonics(base.ExperimentFunction):
         if np.isnan(output):
             output = float("inf")
         return output
-
