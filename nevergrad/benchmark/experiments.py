@@ -61,7 +61,7 @@ def keras_tuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: b
             function = MLTuning(regressor="keras_dense_nn", data_dimension=dimension, dataset=dataset,
                                 overfitter=overfitter)
             for budget in [50, 150, 500]:
-                for num_workers in [1] if seq else [1, 10, 50, 100]:  # Seq for sequential optimization experiments.
+                for num_workers in [1, budget // 4] if seq else [budget]:  # Seq for sequential optimization experiments.
                     for optim in optims:
                         xp = Experiment(function, optim, num_workers=num_workers,
                                         budget=budget, seed=next(seedg))
@@ -84,7 +84,7 @@ def mltuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool 
                 function = MLTuning(regressor=regressor, data_dimension=dimension, dataset=dataset,
                                     overfitter=overfitter)
                 for budget in [50, 150, 500]:
-                    for num_workers in [1] if seq else [1, 10, 50, 100]:  # Seq for sequential optimization experiments.
+                    for num_workers in [1, budget // 4] if seq else [budget]:  # Seq for sequential optimization experiments.
                         for optim in optims:
                             xp = Experiment(function, optim, num_workers=num_workers,
                                             budget=budget, seed=next(seedg))
@@ -100,7 +100,7 @@ def naivemltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 # We register only the sequential counterparts for the moment.
 @registry.register
 def seq_keras_tuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Sequential counterpart of mltuning."""
+    """Sequential counterpart of keras tuning."""
     return keras_tuning(seed, overfitter=False, seq=True)
 
 
