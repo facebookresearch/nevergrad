@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import numpy as np
-from nevergrad.functions.images import imagelosses
+from . import imagelosses
 
 from . import core
 
