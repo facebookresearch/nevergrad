@@ -11,7 +11,7 @@ from nevergrad.parametrization import parameter as p
 from . import functionlib
 
 
-DESCRIPTION_KEYS = {"function_class", "name", "block_dimension", "useful_dimensions", "useless_variables", "translation_factor",
+DESCRIPTION_KEYS = {"split", "function_class", "name", "block_dimension", "useful_dimensions", "useless_variables", "translation_factor",
                     "num_blocks", "rotation", "noise_level", "dimension", "discrete", "aggregator", "hashing",
                     "parametrization", "noise_dissymmetry"}
 
@@ -42,15 +42,14 @@ def test_ptb_no_overfitting() -> None:
     # We do a gradient descent.
     value = [func(- 15. * np.ones(2)) for _ in range(1500)]
     # We check that the values are becoming better and better.
-    assert value[-1] < value[len(value) // 2]
-    assert value[0] > value[len(value) // 2]
+    assert value[-1] < value[len(value) // 2]  # type: ignore
+    assert value[0] > value[len(value) // 2]  # type: ignore
 
 
 @testing.parametrized(
     sphere=({"name": "sphere", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2}, 9.630),
     cigar=({"name": "cigar", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2}, 3527289.665),
     cigar_rot=({"rotation": True, "name": "cigar", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2}, 5239413.576),
-    no_transform=({"name": "leadingones5", "block_dimension": 50, "useless_variables": 10}, 9.0),
     hashed=({"name": "sphere", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2, "hashing": True}, 12.44),
     noisy_sphere=({"name": "sphere", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2, "noise_level": .2}, 9.576),
     noisy_very_sphere=({"name": "sphere", "block_dimension": 3, "useless_variables": 6,
@@ -117,13 +116,6 @@ def test_functionlib_copy() -> None:
     assert func.equivalent_to(func2)
     assert func._parameters["noise_level"] == func2._parameters["noise_level"]
     assert func is not func2
-
-
-def test_artifificial_function_with_jump() -> None:
-    func1 = functionlib.ArtificialFunction("sphere", 5)
-    func2 = functionlib.ArtificialFunction("jump5", 5)
-    np.testing.assert_equal(func1.transform_var.only_index_transform, False)
-    np.testing.assert_equal(func2.transform_var.only_index_transform, True)
 
 
 def test_compute_pseudotime() -> None:

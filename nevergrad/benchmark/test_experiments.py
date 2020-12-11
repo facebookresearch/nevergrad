@@ -7,6 +7,7 @@ import inspect
 import itertools
 import typing as tp
 from pathlib import Path
+from unittest import SkipTest
 import pytest
 import numpy as np
 from nevergrad.optimization import registry as optregistry
@@ -24,8 +25,7 @@ from . import optgroups
 def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> None:
     with datasets.mocked_data():  # mock mlda data that should be downloaded
         check_maker(maker)  # this is to extract the function for reuse if other external packages need it
-    if name not in {"realworld_oneshot", "mlda", "mldaas", "realworld", "rocket", "mldakmeans",
-                    "naivemltuning", "seqmltuning", "naiveseqmltuning", "mltuning"}:
+    if name not in ["rocket", "control_problem"] and not any(x in name for x in ["tuning", "mlda", "realworld"]):
         check_seedable(maker, "mltuning" in name)  # this is a basic test on first elements, do not fully rely on it
 
 
@@ -53,7 +53,10 @@ def test_groups_registry(name: str, recorder: tp.Dict[str, tp.List[optgroups.Opt
 def check_maker(maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> None:
     generators = [maker() for _ in range(2)]
     # check 1 sample
-    sample = next(maker())
+    try:
+        sample = next(maker())
+    except experiments.MissingBenchmarkPackageError as e:
+        raise SkipTest("Skipping because of missing package") from e
     assert isinstance(sample, experiments.Experiment)
     # check names, coherence and non-randomness
     for k, (elem1, elem2) in enumerate(itertools.zip_longest(*generators)):
@@ -65,7 +68,7 @@ def check_maker(maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> 
                 elem1.get_description(),
                 elem2.get_description(),
                 err_msg=f"Two paths on the generator differed (see element #{k})\n"
-                "Generators need to be deterministic in order to split the workload!",
+                        "Generators need to be deterministic in order to split the workload!",
             )
 
 
@@ -85,12 +88,15 @@ def check_seedable(maker: tp.Any, short: bool = False) -> None:
     for seed in [random_seed, random_seed, random_seed + 1]:
         print(f"\nStarting with {seed % 100}")  # useful debug info when this test fails
         xps = list(itertools.islice(maker(seed), 0, 1 if short else 2))
-        simplified = [Experiment(xp.function, algo, budget=2, num_workers=min(2, xp.optimsettings.num_workers), seed=xp.seed) for xp in xps]
+        simplified = [
+            Experiment(xp.function, algo, budget=2, num_workers=min(2, xp.optimsettings.num_workers), seed=xp.seed) for
+            xp in xps]
         np.random.shuffle(simplified)  # compute in any order
         selector = Selector(data=[xp.run() for xp in simplified])
         results.append(Selector(selector.loc[:, ["loss", "seed", "error"]]))  # elapsed_time can vary...
         assert results[-1].unique("error") == {""}, f"An error was raised during optimization:\n{results[-1]}"
     results[0].assert_equivalent(results[1], f"Non identical outputs for seed={random_seed}")
     np.testing.assert_raises(
-        AssertionError, results[1].assert_equivalent, results[2], f"Identical output with different seeds (seed={random_seed})"
+        AssertionError, results[1].assert_equivalent, results[2],
+        f"Identical output with different seeds (seed={random_seed})"
     )

@@ -395,10 +395,8 @@ class Game(ExperimentFunction):
         self.game_object = _Game()
         dimension = self.game_object.play_game(self.game) * 2  # times 2 because we consider both players separately.
         super().__init__(self._simulate_game, p.Array(shape=(dimension,)))
-        self.register_initialization(game=game)
         self.parametrization.descriptors.deterministic_function = False
         self.parametrization.descriptors.metrizable = game not in ["war", "batawaf"]
-        self._descriptors.update(game=game)
 
     def _simulate_game(self, x: np.ndarray) -> float:
         # FIXME: an adaptive opponent, e.g. bandit, would be better.
@@ -412,3 +410,9 @@ class Game(ExperimentFunction):
         p2 = x[(self.dimension // 2):]
         r = self.game_object.play_game(self.game, p1, p2)
         return (result + (0. if r == 2 else 0.5 if r == 0 else 1.)) / 2
+
+    def evaluation_function(self, x: np.ndarray) -> float:  # type: ignore
+        # pylint: disable=not-callable
+        loss = sum([self.function(x) for _ in range(42)]) / 42.
+        assert isinstance(loss, float)
+        return loss

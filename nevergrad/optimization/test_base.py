@@ -35,7 +35,8 @@ class LoggingOptimizer(base.Optimizer):
         self.logs.append(f"s{self._num_ask}")  # s for suggest
         return np.array((float(self._num_ask),))
 
-    def _internal_tell(self, x: tp.ArrayLike, value: float) -> None:
+    # pylint: disable=unused-argument
+    def _internal_tell(self, x: tp.ArrayLike, loss: float) -> None:
         self.logs.append(f"u{int(x[0])}")  # u for update
 
 
@@ -65,7 +66,7 @@ def test_batch_and_steady_optimization(num_workers: int, batch_mode: bool, expec
     int64_val=(np.int64(3), False),
     float64_val=(np.float64(3), False),
     float32_val=(np.float32(3), False),
-    list_val=([3, 5], True),
+    list_val=([3, 5], False),
     complex_val=(1j, True),
     object_val=(object(), True),
 )

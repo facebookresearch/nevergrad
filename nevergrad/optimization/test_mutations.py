@@ -12,11 +12,25 @@ from .mutations import Mutator
 from .differentialevolution import Crossover
 
 
+def test_significantly_mutate() -> None:
+    rng = np.random.RandomState(12)
+    output = Mutator(rng).significantly_mutate(0.3, 2)
+    np.testing.assert_almost_equal(output, -0.68142, decimal=4)
+    output = Mutator(rng).significantly_mutate(0.3, 2)
+    np.testing.assert_almost_equal(output, -1.70073, decimal=4)
+    output = Mutator(rng).significantly_mutate(0.3, 3)
+    np.testing.assert_almost_equal(output, 0.75314, decimal=4)
+    for _ in range(10):
+        output = Mutator(rng).significantly_mutate(0.1, 2)
+        np.testing.assert_array_less([output], [0.])
+        output = Mutator(rng).significantly_mutate(output, 2)
+        np.testing.assert_array_less([0.], [output])
+        
 def test_discrete_mutation() -> None:
     data = [0.1, -.1, 1]
     rng = np.random.RandomState(12)
     output = Mutator(rng).discrete_mutation(data)
-    np.testing.assert_almost_equal(output, [-.33, -.1, .02], decimal=2)
+    np.testing.assert_almost_equal(output, [-.33, -.1, -.42], decimal=2)
 
 
 def test_crossover() -> None:

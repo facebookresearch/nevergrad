@@ -10,6 +10,7 @@ import tempfile
 import subprocess
 import typing as tp
 from pathlib import Path
+import numpy as np
 from nevergrad.common import tools as ngtools
 
 
@@ -23,8 +24,6 @@ class Descriptors:
         self,
         deterministic: bool = True,
         deterministic_function: bool = True,
-        monoobjective: bool = True,
-        not_manyobjective: bool = True,
         continuous: bool = True,
         metrizable: bool = True,
         ordered: bool = True,
@@ -34,8 +33,6 @@ class Descriptors:
         self.continuous = continuous
         self.metrizable = metrizable
         self.ordered = ordered
-        self.monoobjective = monoobjective
-        self.not_manyobjective = not_manyobjective
 
     def __and__(self, other: "Descriptors") -> "Descriptors":
         values = {field: getattr(self, field) & getattr(other, field) for field in self.__dict__}
@@ -153,3 +150,14 @@ class CommandFunction:
                 subprocess_error = subprocess.CalledProcessError(retcode, process.args, output=stdout, stderr=stderr)
                 raise FailedJobError(stderr.decode()) from subprocess_error
         return stdout
+
+
+def float_penalty(x: tp.Union[bool, float]) -> float:
+    """Unifies penalties as float (bool=False becomes 1).
+    The value is positive for unsatisfied penality else 0.
+    """
+    if isinstance(x, (bool, np.bool_)):
+        return float(not x)
+    elif isinstance(x, (float, np.float)):
+        return -min(0, x)
+    raise TypeError(f"Only bools and floats are supported for check constaint, but got: {x} ({type(x)})")

@@ -14,9 +14,11 @@ from nevergrad.parametrization import parameter as p
 from nevergrad.common import tools as ngtools
 from nevergrad.common.decorators import Registry
 from . import utils
+from . import multiobjective as mobj
 
 
-registry: Registry[tp.Union["ConfiguredOptimizer", tp.Type["Optimizer"]]] = Registry()
+OptCls = tp.Union["ConfiguredOptimizer", tp.Type["Optimizer"]]
+registry: Registry[OptCls] = Registry()
 _OptimCallBack = tp.Union[tp.Callable[["Optimizer", "p.Parameter", float], None], tp.Callable[["Optimizer"], None]]
 X = tp.TypeVar("X", bound="Optimizer")
 Y = tp.TypeVar("Y")
@@ -24,7 +26,14 @@ IntOrParameter = tp.Union[int, p.Parameter]
 _PruningCallable = tp.Callable[[utils.Archive[utils.MultiValue]], utils.Archive[utils.MultiValue]]
 
 
-def load(cls: tp.Type[X], filepath: tp.Union[str, Path]) -> X:
+def _loss(param: p.Parameter) -> float:
+    """Returns the loss if available, or inf otherwise.
+    Used to simplify handling of losses
+    """
+    return param.loss if param.loss is not None else float('inf')
+
+
+def load(cls: tp.Type[X], filepath: tp.PathLike) -> X:
     """Loads a pickle file and checks that it contains an optimizer.
     The optimizer class is not always fully reliable though (e.g.: optimizer families) so the user is responsible for it.
     """
@@ -48,7 +57,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
     """Algorithm framework with 3 main functions:
 
     - :code:`ask()` which provides a candidate on which to evaluate the function to optimize.
-    - :code:`tell(candidate, value)` which lets you provide the values associated to points.
+    - :code:`tell(candidate, loss)` which lets you provide the loss associated to points.
     - :code:`provide_recommendation()` which provides the best final candidate.
 
     Typically, one would call :code:`ask()` num_workers times, evaluate the
@@ -86,10 +95,13 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # you can also replace or reinitialize this random state
         self.num_workers = int(num_workers)
         self.budget = budget
+
         # How do we deal with cheap constraints i.e. constraints which are fast and use low resources and easy ?
         # True ==> we penalize them (infinite values for candidates which violate the constraint).
         # False ==> we repeat the ask until we solve the problem.
+        self._constraints_manager = utils.ConstraintManager()
         self._penalize_cheap_violations = False
+
         self.parametrization = (
             parametrization
             if not isinstance(parametrization, (int, np.int))
@@ -110,16 +122,20 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         self.pruning: tp.Optional[_PruningCallable] = utils.Pruning.sensible_default(
             num_workers=num_workers, dimension=self.parametrization.dimension
         )
+        # multiobjective
+        self._MULTIOBJECTIVE_AUTO_BOUND = mobj.AUTO_BOUND
+        self._hypervolume_pareto: tp.Optional[mobj.HypervolumePareto] = None
         # instance state
         self._asked: tp.Set[str] = set()
+        self._num_objectives = 0
         self._suggestions: tp.Deque[p.Parameter] = deque()
         self._num_ask = 0
-        self._num_tell = 0
+        self._num_tell = 0  # increases after each successful tell
         self._num_tell_not_asked = 0
         self._callbacks: tp.Dict[str, tp.List[tp.Any]] = {}
         # to make optimize function stoppable halway through
-        self._running_jobs: tp.List[tp.Tuple[p.Parameter, tp.JobLike[float]]] = []
-        self._finished_jobs: tp.Deque[tp.Tuple[p.Parameter, tp.JobLike[float]]] = deque()
+        self._running_jobs: tp.List[tp.Tuple[p.Parameter, tp.JobLike[tp.Loss]]] = []
+        self._finished_jobs: tp.Deque[tp.Tuple[p.Parameter, tp.JobLike[tp.Loss]]] = deque()
 
     @property
     def _rng(self) -> np.random.RandomState:
@@ -133,6 +149,30 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         """int: Dimension of the optimization space.
         """
         return self.parametrization.dimension
+
+    @property
+    def num_objectives(self) -> int:
+        """Provides 0 if the number is not known yet, else the number of objectives
+        to optimize upon.
+        """
+        if self._hypervolume_pareto is not None and self._num_objectives != self._hypervolume_pareto.num_objectives:
+            raise RuntimeError("Number of objectives is incorrectly set. Please create a nevergrad issue")
+        return self._num_objectives
+
+    @num_objectives.setter
+    def num_objectives(self, num: int) -> None:
+        num = int(num)
+        if num <= 0:
+            raise ValueError("Number of objectives must be strictly positive")
+        if not self._num_objectives:
+            self._num_objectives = num
+            self._num_objectives_set_callback()
+        elif num != self._num_objectives:
+            raise ValueError(f"Expected {self._num_objectives} loss(es), but received {num}.")
+
+    def _num_objectives_set_callback(self) -> None:
+        """Callback for when num objectives is first known
+        """
 
     @property
     def num_ask(self) -> int:
@@ -152,6 +192,37 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         (or were suggested).
         """
         return self._num_tell_not_asked
+
+    def pareto_front(
+        self,
+        size: tp.Optional[int] = None,
+        subset: str = "random",
+        subset_tentatives: int = 12
+    ) -> tp.List[p.Parameter]:
+        """Pareto front, as a list of Parameter. The losses can be accessed through
+        parameter.losses
+
+        Parameters
+        ------------
+        size:  int (optional)
+            if provided, selects a subset of the full pareto front with the given maximum size
+        subset: str
+            method for selecting the subset ("random, "loss-covering", "domain-covering", "hypervolume")
+        subset_tentatives: int
+            number of random tentatives for finding a better subset
+
+        Returns
+        --------
+        list
+            the list of Parameter of the pareto front
+
+        Note
+        ----
+        During non-multiobjective optimization, this returns the current pessimistic best
+        """
+        if self._hypervolume_pareto is None:
+            return [self.current_bests["pessimistic"].parameter]
+        return self._hypervolume_pareto.pareto_front(size=size, subset=subset, subset_tentatives=subset_tentatives)
 
     def dump(self, filepath: tp.Union[str, Path]) -> None:
         """Pickles the optimizer into a file.
@@ -215,15 +286,16 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             new_value = args[0]
         self._suggestions.append(self.parametrization.spawn_child(new_value=new_value))
 
-    def tell(self, candidate: p.Parameter, value: float) -> None:
+    # pylint: disable=too-many-branches
+    def tell(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         """Provides the optimizer with the evaluation of a fitness value for a candidate.
 
         Parameters
         ----------
         x: np.ndarray
             point where the function was evaluated
-        value: float
-            value of the function
+        loss: float/list/np.ndarray
+            loss of the function (or multi-objective function
 
         Note
         ----
@@ -238,6 +310,17 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         Alternatively, you can provide a suggestion with :code:`optimizer.suggest(*args, **kwargs)`, the next :code:`ask`
         will use this suggestion.
         """
+        # Check loss type
+        if isinstance(loss, (Real, float)):
+            # using "float" along "Real" because mypy does not understand "Real" for now Issue #3186
+            loss = float(loss)
+        elif isinstance(loss, (tuple, list, np.ndarray)):
+            loss = np.array(loss, copy=False, dtype=float).ravel() if len(loss) != 1 else loss[0]
+        elif not isinstance(loss, np.ndarray):
+            raise TypeError(
+                f'"tell" method only supports float values but the passed loss was: {loss} (type: {type(loss)}.'
+            )
+        # check Parameter
         if not isinstance(candidate, p.Parameter):
             raise TypeError(
                 "'tell' must be provided with the candidate.\n"
@@ -246,37 +329,67 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 "or optimizer.suggest(*args, **kwargs) to suggest a point that should be used for "
                 "the next ask"
             )
-        candidate.loss = value
+        # check loss length
+        self.num_objectives = 1 if isinstance(loss, float) else loss.size
+        # checks are done, start processing
         candidate.freeze()  # make sure it is not modified somewhere
+        # add reference if provided
+        if isinstance(candidate, p.MultiobjectiveReference):
+            if self._hypervolume_pareto is not None:
+                raise RuntimeError("MultiobjectiveReference can only be provided before the first tell.")
+            if not isinstance(loss, np.ndarray):
+                raise RuntimeError("MultiobjectiveReference must only be used for multiobjective losses")
+            self._hypervolume_pareto = mobj.HypervolumePareto(upper_bounds=loss)
+            if candidate.value is None:
+                return  # no value, so stopping processing there
+            candidate = candidate.value
+        # preprocess multiobjective loss
+        if isinstance(loss, np.ndarray):
+            candidate._losses = loss
+        if not isinstance(loss, float):
+            loss = self._preprocess_multiobjective(candidate)
         # call callbacks for logging etc...
+        candidate.loss = loss
+        assert isinstance(loss, float)
         for callback in self._callbacks.get("tell", []):
-            callback(self, candidate, value)
-        self._update_archive_and_bests(candidate, value)
+            # multiobjective reference is not handled :s
+            # but this allows obtaining both scalar and multiobjective loss (through losses)
+            callback(self, candidate, loss)
+        if not candidate.satisfies_constraints() and self.budget is not None:
+            penalty = self._constraints_manager.penalty(candidate, self.num_ask, self.budget)
+            loss = loss + penalty
+        if isinstance(loss, float):
+            self._update_archive_and_bests(candidate, loss)
         if candidate.uid in self._asked:
-            self._internal_tell_candidate(candidate, value)
+            self._internal_tell_candidate(candidate, loss)
             self._asked.remove(candidate.uid)
         else:
-            self._internal_tell_not_asked(candidate, value)
+            self._internal_tell_not_asked(candidate, loss)
             self._num_tell_not_asked += 1
         self._num_tell += 1
 
-    def _update_archive_and_bests(self, candidate: p.Parameter, value: float) -> None:
+    def _preprocess_multiobjective(self, candidate: p.Parameter) -> tp.FloatLoss:
+        if self._hypervolume_pareto is None:
+            self._hypervolume_pareto = mobj.HypervolumePareto(auto_bound=self._MULTIOBJECTIVE_AUTO_BOUND)
+        return self._hypervolume_pareto.add(candidate)
+
+    def _update_archive_and_bests(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         x = candidate.get_standardized_data(reference=self.parametrization)
-        if not isinstance(value, (Real, float)):  # using "float" along "Real" because mypy does not understand "Real" for now Issue #3186
-            raise TypeError(f'"tell" method only supports float values but the passed value was: {value} (type: {type(value)}.')
-        if np.isnan(value) or value == np.inf:
-            warnings.warn(f"Updating fitness with {value} value")
+        if not isinstance(loss, (Real, float)):  # using "float" along "Real" because mypy does not understand "Real" for now Issue #3186
+            raise TypeError(f'"tell" method only supports float values but the passed loss was: {loss} (type: {type(loss)}.')
+        if np.isnan(loss) or loss == np.inf:
+            warnings.warn(f"Updating fitness with {loss} value")
         mvalue: tp.Optional[utils.MultiValue] = None
         if x not in self.archive:
-            self.archive[x] = utils.MultiValue(candidate, value, reference=self.parametrization)
+            self.archive[x] = utils.MultiValue(candidate, loss, reference=self.parametrization)
         else:
             mvalue = self.archive[x]
-            mvalue.add_evaluation(value)
+            mvalue.add_evaluation(loss)
             # both parameters should be non-None
             if mvalue.parameter.loss > candidate.loss:  # type: ignore
                 mvalue.parameter = candidate   # keep best candidate
         # update current best records
-        # this may have to be improved if we want to keep more kinds of best values
+        # this may have to be improved if we want to keep more kinds of best losss
 
         for name in ["optimistic", "pessimistic", "average"]:
             if mvalue is self.current_bests[name]:  # reboot
@@ -287,7 +400,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 if self.archive[x].get_estimation(name) <= self.current_bests[name].get_estimation(name):
                     self.current_bests[name] = self.archive[x]
                 # deactivated checks
-                # if not (np.isnan(value) or value == np.inf):
+                # if not (np.isnan(loss) or loss == np.inf):
                 #     if not self.current_bests[name].x in self.archive:
                 #         bval = self.current_bests[name].get_estimation(name)
                 #         avals = (min(v.get_estimation(name) for v in self.archive.values()),
@@ -312,8 +425,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             callback(self)
         current_num_ask = self.num_ask
         # tentatives if a cheap constraint is available
-        MAX_TENTATIVES = 1000
-        for k in range(MAX_TENTATIVES):
+        # TODO: this should be replaced by an optimization algorithm.
+        max_trials = self._constraints_manager.max_trials
+        for k in range(max_trials):
             is_suggestion = False
             if self._suggestions:
                 is_suggestion = True
@@ -323,11 +437,13 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 # only register actual asked points
             if candidate.satisfies_constraints():
                 break  # good to go!
-            if self._penalize_cheap_violations or k == MAX_TENTATIVES - 2:  # a tell may help before last tentative
-                self._internal_tell_candidate(candidate, float("Inf"))
+            if self._penalize_cheap_violations:
+                # TODO using a suboptimizer instead may help remove this
+                self._internal_tell_candidate(candidate, float("Inf"))  # DE requires a tell
             self._num_ask += 1  # this is necessary for some algorithms which need new num to ask another point
-            if k == MAX_TENTATIVES - 1:
-                warnings.warn(f"Could not bypass the constraint after {MAX_TENTATIVES} tentatives, sending candidate anyway.")
+            if k == max_trials - 1:
+                warnings.warn(f"Could not bypass the constraint after {max_trials} tentatives, "
+                              "sending candidate anyway.")
         if not is_suggestion:
             if candidate.uid in self._asked:
                 raise RuntimeError(
@@ -357,7 +473,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         Returns
         -------
         p.Parameter
-            The candidate with minimal value. :code:`p.Parameters` have field :code:`args` and :code:`kwargs` which can be directly used
+            The candidate with minimal loss. :code:`p.Parameters` have field :code:`args` and :code:`kwargs` which can be directly used
             on the function (:code:`objective_function(*candidate.args, **candidate.kwargs)`).
         """
         recom_data = self._internal_provide_recommendation()  # pylint: disable=assignment-from-none
@@ -365,23 +481,23 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             return self.current_bests["pessimistic"].parameter
         return self.parametrization.spawn_child().set_standardized_data(recom_data, deterministic=True)
 
-    def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
+    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         """Called whenever calling :code:`tell` on a candidate that was not "asked".
         Defaults to the standard tell pipeline.
         """
-        self._internal_tell_candidate(candidate, value)
+        self._internal_tell_candidate(candidate, loss)
 
-    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         """Called whenever calling :code:`tell` on a candidate that was "asked".
         """
         data = candidate.get_standardized_data(reference=self.parametrization)
-        self._internal_tell(data, value)
+        self._internal_tell(data, loss)
 
     def _internal_ask_candidate(self) -> p.Parameter:
         return self.parametrization.spawn_child().set_standardized_data(self._internal_ask())
 
     # Internal methods which can be overloaded (or must be, in the case of _internal_ask)
-    def _internal_tell(self, x: tp.ArrayLike, value: float) -> None:
+    def _internal_tell(self, x: tp.ArrayLike, loss: tp.FloatLoss) -> None:
         pass
 
     def _internal_ask(self) -> tp.ArrayLike:
@@ -394,7 +510,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
 
     def minimize(
         self,
-        objective_function: tp.Callable[..., float],
+        objective_function: tp.Callable[..., tp.Loss],
         executor: tp.Optional[tp.ExecutorLike] = None,
         batch_mode: bool = False,
         verbosity: int = 0,
@@ -435,8 +551,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             if self.num_workers > 1:
                 warnings.warn(f"num_workers = {self.num_workers} > 1 is suboptimal when run sequentially", InefficientSettingsWarning)
         assert executor is not None
-        tmp_runnings: tp.List[tp.Tuple[p.Parameter, tp.JobLike[float]]] = []
-        tmp_finished: tp.Deque[tp.Tuple[p.Parameter, tp.JobLike[float]]] = deque()
+        tmp_runnings: tp.List[tp.Tuple[p.Parameter, tp.JobLike[tp.Loss]]] = []
+        tmp_finished: tp.Deque[tp.Tuple[p.Parameter, tp.JobLike[tp.Loss]]] = deque()
         # go
         sleeper = ngtools.Sleeper()  # manages waiting time depending on execution time of the jobs
         remaining_budget = self.budget - self.num_ask

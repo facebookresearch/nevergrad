@@ -2,14 +2,24 @@
 
 ## master
 
-- `recommend` now provides an evaluated candidate when possible. For non-deterministic parametrization like `Choice`, this means we won't
-  resample, and we will actually recommend the best past evaluated candidate [#668](https://github.com/facebookresearch/nevergrad/pull/668).
-  Still, some optimizers (like `TBPSA`) may recommend a non-evaluated point.
-- `Choice` and `TransitionChoice` can now take a `repetitions` parameters for sampling several times,
-  it is equivalent to :code:`Tuple(*[Choice(options) for _ in range(repetitions)])` but can be be up to 30x faster for large numbers of repetitions [#670](https://github.com/facebookresearch/nevergrad/pull/670) [#696](https://github.com/facebookresearch/nevergrad/pull/696).
-- Defaults for bounds in `Array` is now `bouncing`, which is a variant of `clipping` avoiding over-sompling on the bounds [#684](https://github.com/facebookresearch/nevergrad/pull/684)
-  and [#691](https://github.com/facebookresearch/nevergrad/pull/691).
+**Cautious:** current `master` branch and `0.4.2.postX` version introduce tentative APIs which may be removed in the near future. Use version `0.4.2` for a more stable version.
 
+- as an **experimental** feature we have added some preliminary support for constraint management through penalties.
+  From then on the prefered option for penalty is to register a function returning a positive float when the constraint is satisfied.
+  While we will wait fore more testing before documenting it, this may already cause instabilities and errors when adding cheap constraints.
+  Please open an issue if you encounter a problem.
+- as an **experimental** feature, `tell` method can now receive a list/array of losses for multi-objective optimization [#775](https://github.com/facebookresearch/nevergrad/pull/775). For now it is neither robust, nor scalable, nor stable, nor optimal so be careful when using it. More information in the [documentation](https://facebookresearch.github.io/nevergrad/optimization.html#multiobjective-minimization-with-nevergrad).
+- `DE` and its variants have been updated to make use of the multi-objective losses [#789](https://github.com/facebookresearch/nevergrad/pull/789). This is a **preliminary** fix since the initial `DE` implementaton was ill-suited for this use case.
+- `tell` argument `value` is renamed to `loss` for clarification [#774](https://github.com/facebookresearch/nevergrad/pull/774). This can be breaking when using named arguments!
+- `ExperimentFunction` now automatically records arguments used for their instantiation so that they can both be used to create a new copy, and as descriptors if there are of type  int/bool/float/str [#914](https://github.com/facebookresearch/nevergrad/pull/914 [#914](https://github.com/facebookresearch/nevergrad/pull/914)).
+
+## 0.4.2 (2020-08-04)
+
+- `recommend` now provides an evaluated candidate when possible. For non-deterministic parametrization like `Choice`, this means we won't resample, and we will actually recommend the best past evaluated candidate [#668](https://github.com/facebookresearch/nevergrad/pull/668).  Still, some optimizers (like `TBPSA`) may recommend a non-evaluated point.
+- `Choice` and `TransitionChoice` can now take a `repetitions` parameters for sampling several times, it is equivalent to :code:`Tuple(*[Choice(options) for _ in range(repetitions)])` but can be be up to 30x faster for large numbers of repetitions [#670](https://github.com/facebookresearch/nevergrad/pull/670) [#696](https://github.com/facebookresearch/nevergrad/pull/696).
+- Defaults for bounds in `Array` is now `bouncing`, which is a variant of `clipping` avoiding over-sompling on the bounds [#684](https://github.com/facebookresearch/nevergrad/pull/684) and [#691](https://github.com/facebookresearch/nevergrad/pull/691).
+
+This version should be robust. Following versions may become more unstable as we will add more native multiobjective optimization as an **experimental** feature. We also are in the process of simplifying the naming pattern for the "NGO/Shiwa" type optimizers which may cause some changes in the future.
 
 ## 0.4.1 (2020-05-07)
 

@@ -121,13 +121,12 @@ class Photonics(base.ExperimentFunction):
         self._base_func = {"morpho": photonics.morpho, "bragg": photonics.bragg, "chirped": photonics.chirped}[name]
         param = _make_parametrization(name=name, dimension=dimension, bounding_method=bounding_method, rolling=rolling)
         super().__init__(self._compute, param)
-        self.register_initialization(name=name, dimension=dimension, bounding_method=bounding_method, rolling=rolling)
-        self._descriptors.update(name=name, bounding_method=bounding_method, rolling=rolling)
 
     # pylint: disable=arguments-differ
     def evaluation_function(self, x: np.ndarray) -> float:  # type: ignore
         # pylint: disable=not-callable
         loss = self.function(x)
+        assert isinstance(loss, float)
         base.update_leaderboard(f'{self.name},{self.parametrization.dimension}', loss, x, verbose=True)
         return loss
 

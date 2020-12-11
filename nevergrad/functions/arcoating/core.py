@@ -67,8 +67,6 @@ class ARCoating(base.ExperimentFunction):
         array.set_bounds(self.epmin, self.epf, method=bounding_method, full_range_sampling=True)
         array.set_recombination(ng.p.mutation.Crossover(0)).set_name("")
         super().__init__(self._get_minimum_average_reflexion, array)
-        self.register_initialization(nbslab=nbslab, d_ar=d_ar, bounding_method=bounding_method)
-        self._descriptors.update(nbslab=nbslab, d_ar=d_ar, bounding_method=bounding_method)
 
     def _get_minimum_average_reflexion(self, x: np.ndarray) -> float:
         x = np.array(x, copy=False).ravel()
@@ -84,5 +82,6 @@ class ARCoating(base.ExperimentFunction):
     # pylint: disable=arguments-differ
     def evaluation_function(self, x: np.ndarray) -> float:  # type: ignore
         loss = self.function(x)
+        assert isinstance(loss, float)
         base.update_leaderboard(f'arcoating,{self.parametrization.dimension},{self._descriptors["d_ar"]}', loss, x, verbose=True)
         return loss
