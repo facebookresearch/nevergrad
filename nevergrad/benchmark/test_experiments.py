@@ -11,6 +11,7 @@ from unittest import SkipTest
 import pytest
 import numpy as np
 from nevergrad.optimization import registry as optregistry
+from nevergrad.functions.base import UnsupportedExperiment
 from nevergrad.functions.mlda import datasets
 from nevergrad.functions import rl
 from nevergrad.common import testing
@@ -55,8 +56,8 @@ def check_maker(maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> 
     # check 1 sample
     try:
         sample = next(maker())
-    except experiments.MissingBenchmarkPackageError as e:
-        raise SkipTest("Skipping because of missing package") from e
+    except UnsupportedExperiment as e:
+        raise SkipTest("Skipping because unsupported") from e
     assert isinstance(sample, experiments.Experiment)
     # check names, coherence and non-randomness
     for k, (elem1, elem2) in enumerate(itertools.zip_longest(*generators)):

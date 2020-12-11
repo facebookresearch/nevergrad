@@ -10,20 +10,19 @@ import PIL.Image
 import torch.nn as nn
 import torch
 import torchvision
-from . import imagelosses
 from torchvision.models import resnet50
 import torchvision.transforms as tr
 
 import nevergrad as ng
 import nevergrad.common.typing as tp
 from .. import base
-from typing import Type
+from . import imagelosses
 # pylint: disable=abstract-method
 
 
 class Image(base.ExperimentFunction):
     def __init__(self, problem_name: str = "recovering", index: int = 0,
-                 loss: Type[imagelosses.ImageLoss] = imagelosses.SumAbsoluteDifferences) -> None:
+                 loss: tp.Type[imagelosses.ImageLoss] = imagelosses.SumAbsoluteDifferences) -> None:
         """
         problem_name: the type of problem we are working on.
            recovering: we directly try to recover the target image.§
@@ -200,7 +199,8 @@ class ImageFromPGAN(base.ExperimentFunction):
         number of mutations
     """
 
-    def __init__(self, initial_noise: np.ndarray = None, use_gpu: bool = False,
+    def __init__(self, initial_noise: tp.Optional[np.ndarray] = None,
+                 use_gpu: bool = False,
                  loss: imagelosses.ImageLoss = imagelosses.Koncept512(),
                  mutable_sigma: bool = True, sigma: float = 35) -> None:
         if not torch.cuda.is_available():
@@ -208,13 +208,16 @@ class ImageFromPGAN(base.ExperimentFunction):
 
         # Storing high level information..
         self.pgan_model = torch.hub.load('facebookresearch/pytorch_GAN_zoo:hub',
-                               'PGAN', model_name='celebAHQ-512',
-                               pretrained=True, useGPU=use_gpu)
+                                         'PGAN', model_name='celebAHQ-512',
+                                         pretrained=True, useGPU=use_gpu)
 
         self.domain_shape = (1, 512)
         if initial_noise is None:
             initial_noise = np.random.normal(size=self.domain_shape)
-        assert initial_noise.shape == self.domain_shape, f'The shape of the initial noise vector was {initial_noise.shape}, it should be {self.domain_shape}'
+        assert initial_noise.shape == self.domain_shape, (
+            f'The shape of the initial noise vector was {initial_noise.shape}, '
+            f'it should be {self.domain_shape}'
+        )
 
         array = ng.p.Array(init=initial_noise, mutable_sigma=mutable_sigma)
         # parametrization
@@ -231,6 +234,7 @@ class ImageFromPGAN(base.ExperimentFunction):
         loss = self.loss_function(image)
         return loss
 
-    def _generate_images(self, x: np.ndarray):
+    def _generate_images(self, x: np.ndarray) -> np.ndarray:
+        # pylint: disable=not-callable
         noise = torch.tensor(x.astype('float32'))
-        return self.pgan_model.test(noise).permute(0, 2, 3, 1).cpu().numpy()
+        return self.pgan_model.test(noise).permute(0, 2, 3, 1).cpu().numpy()  # type: ignore
