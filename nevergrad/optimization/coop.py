@@ -3,7 +3,7 @@ from functools import partialmethod
 from itertools import cycle
 import typing as tp
 
-from deap import tools
+from deap import tools  # type: ignore
 import numpy as np
 
 from . import base
