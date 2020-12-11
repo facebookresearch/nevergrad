@@ -12,7 +12,7 @@ from . import core
 def test_impedence_pix() -> None:
     ep0 = 1
     epf = 9
-    x = np.array([3., 5, 1, 9])
+    x = np.array([3.0, 5, 1, 9])
     dpix = 37
     lam = 400
     output = core.impedance_pix(x, dpix, lam, ep0, epf)
@@ -34,7 +34,7 @@ def test_arcoating_recombination() -> None:
         arrays.append(func.parametrization.spawn_child())  # type: ignore
         arrays[-1].value = num * np.ones(arrays[0].value.shape)
     arrays[0].recombine(arrays[1])
-    expected = [3., 3., 3., 5., 3., 3.]
+    expected = [3.0, 3.0, 3.0, 5.0, 3.0, 3.0]
     np.testing.assert_array_equal(arrays[0].value, expected)
 
 

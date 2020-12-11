@@ -55,7 +55,6 @@ def fake_cost_function(x: tp.ArrayLike) -> float:
 
 
 class FakeOptimizer(recaster.SequentialRecastOptimizer):
-
     def get_optimization_function(self) -> tp.Callable[[tp.Callable[..., tp.Any]], tp.ArrayLike]:
         # create a new instance to avoid deadlock
         return self.__class__(self.parametrization, self.budget, self.num_workers)._optim_function
@@ -86,7 +85,9 @@ def test_recast_optimizer_and_stop() -> None:
 
 def test_provide_recommendation() -> None:
     opt = optimizerlib.SQP(parametrization=2, budget=100)
-    assert isinstance(opt.provide_recommendation(), ng.p.Parameter), "Recommendation should be available from start"
+    assert isinstance(
+        opt.provide_recommendation(), ng.p.Parameter
+    ), "Recommendation should be available from start"
     # the recommended solution should be the better one among the told points
     x1 = opt.ask()
     opt.tell(x1, 10)

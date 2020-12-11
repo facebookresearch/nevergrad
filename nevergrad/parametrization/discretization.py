@@ -42,14 +42,20 @@ def threshold_discretization(x: tp.ArrayLike, arity: int = 2) -> tp.List[int]:
 # The function below is the opposite of the function above.
 def inverse_threshold_discretization(indexes: tp.List[int], arity: int = 2) -> np.ndarray:
     indexes_arr = np.array(indexes, copy=True)
+    assert not np.any(np.isnan(indexes_arr))
     pdf_bin_size = 1 / arity
     # We take the center of each bin (in the pdf space)
-    return scipy.stats.norm.ppf(indexes_arr * pdf_bin_size + (pdf_bin_size / 2))  # type: ignore
+    x = scipy.stats.norm.ppf(indexes_arr * pdf_bin_size + (pdf_bin_size / 2))  # type: ignore
+    nan_indices = np.where(np.isnan(x))
+    x[nan_indices] = np.sign(indexes_arr[nan_indices] - (arity / 2.0)) * np.finfo(np.dtype("float")).max
+    return x
 
 
 # The discretization is, by nature, not one to one.
 # In the function below, we randomly draw one of the possible inverse values - this is therefore noisy.
-def noisy_inverse_threshold_discretization(indexes: tp.List[int], arity: int = 2, gen: tp.Any = None) -> np.ndarray:
+def noisy_inverse_threshold_discretization(
+    indexes: tp.List[int], arity: int = 2, gen: tp.Any = None
+) -> np.ndarray:
     indexes_arr = np.array(indexes, copy=True)
     pdf_bin_size = 1 / arity
     # We take a random point in the bin.
@@ -57,8 +63,7 @@ def noisy_inverse_threshold_discretization(indexes: tp.List[int], arity: int = 2
 
 
 def weight_for_reset(arity: int) -> float:
-    """p is an arbitrary probability that the provided arg will be sampled with the returned point
-    """
+    """p is an arbitrary probability that the provided arg will be sampled with the returned point"""
     p = (1 / arity) * 1.5
     w = float(np.log((p * (arity - 1)) / (1 - p)))
     return w
@@ -91,8 +96,7 @@ class Encoder:
         self._rng = rng
 
     def probabilities(self) -> np.ndarray:
-        """Creates the probability matrix from the weights
-        """
+        """Creates the probability matrix from the weights"""
         axis = 1
         maxv = np.max(self.weights, axis=1, keepdims=True)
         hasposinf = np.isposinf(maxv)

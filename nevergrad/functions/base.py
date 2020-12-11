@@ -14,7 +14,12 @@ EF = tp.TypeVar("EF", bound="ExperimentFunction")
 
 
 class ExperimentFunctionCopyError(NotImplementedError):
-    """Raised when the experiment function fails to copy itself (for benchmarks)
+    """Raised when the experiment function fails to copy itself (for benchmarks)"""
+
+
+class UnsupportedExperiment(RuntimeError):
+    """Raised if the experiment is not compatible with the current settings:
+    Eg: missing data, missing import, unsupported OS etc
     """
 
 
@@ -41,22 +46,30 @@ class ExperimentFunction:
     """
 
     def __new__(cls: tp.Type[EF], *args: tp.Any, **kwargs: tp.Any) -> EF:
-        """Identifies initialization parameters during initialization and store them
-        """
+        """Identifies initialization parameters during initialization and store them"""
         inst = object.__new__(cls)
         sig = inspect.signature(cls.__init__)
-        boundargs = sig.bind(inst, *args, **kwargs)
-        boundargs.apply_defaults()  # make sure we get the default non-provided arguments
-        callargs = dict(boundargs.arguments)
-        callargs.pop("self")
+        callargs: tp.Dict[str, tp.Any] = {}
+        try:
+            boundargs = sig.bind(inst, *args, **kwargs)
+        except TypeError:
+            pass  # either a problem which will be caught later or a unpickling
+        else:
+            boundargs.apply_defaults()  # make sure we get the default non-provided arguments
+            callargs = dict(boundargs.arguments)
+            callargs.pop("self")
         inst._auto_init = callargs
-        inst._descriptors = {x: y for x, y in callargs.items() if isinstance(y, (str, tuple, int, float, bool))}
+        inst._descriptors = {
+            x: y for x, y in callargs.items() if isinstance(y, (str, tuple, int, float, bool))
+        }
         inst._descriptors["function_class"] = cls.__name__
         return inst  # type: ignore
 
     def __init__(self: EF, function: tp.Callable[..., tp.Loss], parametrization: p.Parameter) -> None:
         assert callable(function)
-        assert not hasattr(self, "_initialization_kwargs"), '"register_initialization" was called before super().__init__'
+        assert not hasattr(
+            self, "_initialization_kwargs"
+        ), '"register_initialization" was called before super().__init__'
         self._auto_init: tp.Dict[str, tp.Any]  # filled by __new__
         self._descriptors: tp.Dict[str, tp.Any]  # filled by __new__
         self._parametrization: p.Parameter
@@ -64,16 +77,17 @@ class ExperimentFunction:
         self.multiobjective_upper_bounds: tp.Optional[np.ndarray] = None
         self._function = function
         # if this is not a function bound to this very instance, add the function/callable name to the descriptors
-        if not hasattr(function, '__self__') or function.__self__ != self:  # type: ignore
+        if not hasattr(function, "__self__") or function.__self__ != self:  # type: ignore
             name = function.__name__ if hasattr(function, "__name__") else function.__class__.__name__
             self._descriptors.update(name=name)
         if len(self.parametrization.name) > 24:
-            raise RuntimeError(f"For the sake of benchmarking, please rename the current parametrization:\n{self.parametrization!r}\n"
-                               "to a shorter name. This way it will be more readable in the experiments.\n"
-                               'Eg: parametrization.set_name("") to just ignore it\n'
-                               "CAUTION: Make sure you set different names for different parametrization configurations if you want it "
-                               "to be used in order to differentiate between benchmarks cases."
-                               )
+            raise RuntimeError(
+                f"For the sake of benchmarking, please rename the current parametrization:\n{self.parametrization!r}\n"
+                "to a shorter name. This way it will be more readable in the experiments.\n"
+                'Eg: parametrization.set_name("") to just ignore it\n'
+                "CAUTION: Make sure you set different names for different parametrization configurations if you want it "
+                "to be used in order to differentiate between benchmarks cases."
+            )
 
     @property
     def dimension(self) -> int:
@@ -93,14 +107,13 @@ class ExperimentFunction:
         return self._function
 
     def __call__(self, *args: tp.Any, **kwargs: tp.Any) -> tp.Loss:
-        """Call the function directly (equivaluent to parametrized_function.function(*args, **kwargs))
-        """
+        """Call the function directly (equivaluent to parametrized_function.function(*args, **kwargs))"""
         return self._function(*args, **kwargs)
 
     @property
     def descriptors(self) -> tp.Dict[str, tp.Any]:
         """Description of the function parameterization, as a dict. This base class implementation provides function_class,
-            noise_level, transform and dimension
+        noise_level, transform and dimension
         """
         desc = dict(self._descriptors)  # Avoid external modification
         desc.update(parametrization=self.parametrization.name, dimension=self.dimension)
@@ -110,8 +123,7 @@ class ExperimentFunction:
         self._descriptors.update(kwargs)
 
     def __repr__(self) -> str:
-        """Shows the function name and its summary
-        """
+        """Shows the function name and its summary"""
         params = [f"{x}={repr(y)}" for x, y in sorted(self._descriptors.items())]
         return "Instance of {}({})".format(self.__class__.__name__, ", ".join(params))
 
@@ -124,7 +136,10 @@ class ExperimentFunction:
         """
         if other.__class__ != self.__class__:
             return False
-        return bool(self._descriptors == other._descriptors) and self.parametrization.name == other.parametrization.name
+        return (
+            bool(self._descriptors == other._descriptors)
+            and self.parametrization.name == other.parametrization.name
+        )
 
     def copy(self: EF) -> EF:
         """Provides a new equivalent instance of the class, possibly with
@@ -135,8 +150,9 @@ class ExperimentFunction:
         that you provided and which were recorded through the __new__ method of ExperimentFunction
         """
         # auto_init is automatically filled by __new__, aka when creating the instance
-        output: EF = self.__class__(**{x: y.copy() if isinstance(y, p.Parameter) else y
-                                       for x, y in self._auto_init.items()})
+        output: EF = self.__class__(
+            **{x: y.copy() if isinstance(y, p.Parameter) else y for x, y in self._auto_init.items()}
+        )
         # add descriptors present in self but not added by initialization
         # (they must have been added manually)
         keys = set(output.descriptors)
@@ -147,17 +163,23 @@ class ExperimentFunction:
             output.parametrization = self.parametrization.copy()
         # then if there are still differences, something went wrong
         if not output.equivalent_to(self):
-            raise ExperimentFunctionCopyError(f"Copy of\n{self}\nwith descriptors:\n{self._descriptors}\nreturned non-equivalent\n"
-                                              f"{output}\nwith descriptors\n{output._descriptors}.\n\n"
-                                              "This means that the auto-copy behavior of ExperimentFunction does not work.\n"
-                                              "You may want to implement your own copy method, or check implementation of "
-                                              "ExperimentFunction.__new__ and copy to better understand what happens")
+            raise ExperimentFunctionCopyError(
+                f"Copy of\n{self}\nwith descriptors:\n{self._descriptors}\nreturned non-equivalent\n"
+                f"{output}\nwith descriptors\n{output._descriptors}.\n\n"
+                "This means that the auto-copy behavior of ExperimentFunction does not work.\n"
+                "You may want to implement your own copy method, or check implementation of "
+                "ExperimentFunction.__new__ and copy to better understand what happens"
+            )
         # propagate other useful information # TODO a bit hacky
         output.parametrization._constraint_checkers = self.parametrization._constraint_checkers
-        output.multiobjective_upper_bounds = self.multiobjective_upper_bounds  # TODO not sure why this is needed
+        output.multiobjective_upper_bounds = (
+            self.multiobjective_upper_bounds
+        )  # TODO not sure why this is needed
         return output
 
-    def compute_pseudotime(self, input_parameter: tp.Any, loss: tp.Loss) -> float:  # pylint: disable=unused-argument
+    def compute_pseudotime(  # pylint: disable=unused-argument
+        self, input_parameter: tp.Any, loss: tp.Loss
+    ) -> float:
         """Computes a pseudotime used during benchmarks for mocking parallelization in a reproducible way.
         By default, each call takes 1 unit of pseudotime, but this can be modified by overriding this
         function and the pseudo time can be a function of the function inputs and output.
@@ -176,7 +198,7 @@ class ExperimentFunction:
         float
             the pseudo computation time of the call to the actual function
         """
-        return 1.
+        return 1.0
 
     def evaluation_function(self, *args: tp.Any, **kwargs: tp.Any) -> float:
         """Provides a (usually "noisefree") function used at final test/evaluation time in benchmarks.
@@ -187,7 +209,9 @@ class ExperimentFunction:
             same as the actual function
         """
         output = self.function(*args, **kwargs)
-        assert isinstance(output, numbers.Number), "evaluation_function can only be called on monoobjective experiments."
+        assert isinstance(
+            output, numbers.Number
+        ), "evaluation_function can only be called on monoobjective experiments."
         return output
 
 
@@ -209,6 +233,7 @@ def update_leaderboard(identifier: str, loss: float, array: np.ndarray, verbose:
     """
     # pylint: disable=import-outside-toplevel
     import pandas as pd  # lazzy to avoid requiring pandas for using an ExperimentFunction
+
     loss = np.round(loss, decimals=12)  # this is probably already too precise for the machine
     filepath = Path(__file__).with_name("leaderboard.csv")
     bests = pd.DataFrame(columns=["loss", "array"])
@@ -248,8 +273,12 @@ class MultiExperiment(ExperimentFunction):
         xps = list(experiments)
         assert xps
         assert len(xps) == len({id(xp) for xp in xps}), "All experiments must be different instances"
-        assert all(xp.multiobjective_upper_bounds is None for xp in xps), "Packing multiobjective xps is not supported."
-        assert all(xps[0].parametrization.name == xp.parametrization.name for xp in xps[1:]), "Parametrization do not match"
+        assert all(
+            xp.multiobjective_upper_bounds is None for xp in xps
+        ), "Packing multiobjective xps is not supported."
+        assert all(
+            xps[0].parametrization.name == xp.parametrization.name for xp in xps[1:]
+        ), "Parametrization do not match"
         super().__init__(self._multi_func, xps[0].parametrization)
         self.multiobjective_upper_bounds = np.array(upper_bounds)
         self._descriptors.update(name=",".join(xp._descriptors.get("name", "#unknown#") for xp in xps))

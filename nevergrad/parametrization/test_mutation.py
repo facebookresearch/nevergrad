@@ -48,7 +48,7 @@ def test_proba_local_gaussian() -> None:
     init = 4.0 * np.ones((2, 8))
     x = Array(init=np.array(init))
     lg = mutation.ProbaLocalGaussian(axis=1, shape=x.value.shape)
-    lg.parameters["ratio"].value = .3
+    lg.parameters["ratio"].value = 0.3
     pattern = [0, 0, 100, 100, 0, 0, 0, 0]
     lg.parameters["positions"].value = pattern
     lg.apply([x])
