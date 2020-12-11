@@ -125,7 +125,7 @@ class Photonics(base.ExperimentFunction):
       Moosh: A Numerical Swiss Army Knife for the Optics of Multilayers in Octave/Matlab. Journal of Open Research Software, 4(1), p.e13.
     """
 
-    def __init__(self, name: str, dimension: int, bounding_method: str = "clipping", rolling: bool = False, as_tuple=False) -> None:
+    def __init__(self, name: str, dimension: int, bounding_method: str = "clipping", rolling: bool = False, as_tuple: bool = False) -> None:
         assert name in ["bragg", "morpho", "chirped"]
         self.name = name
         self._as_tuple = as_tuple
@@ -160,5 +160,4 @@ class Photonics(base.ExperimentFunction):
         if np.isnan(output):
             output = float("inf")
         return output
-
 
