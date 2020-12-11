@@ -11,6 +11,7 @@ from sklearn.tree import DecisionTreeRegressor
 from sklearn.neural_network import MLPRegressor
 from sklearn.model_selection import train_test_split, KFold
 from sklearn.metrics import mean_squared_error
+import pandas as pd
 
 from nevergrad.parametrization import parameter as p
 from ..base import ExperimentFunction
@@ -231,8 +232,14 @@ class MLTuning(ExperimentFunction):
         # Filling datasets.
         rng = self.parametrization.random_state
         if not dataset.startswith("artificial"):
-            assert dataset in ["boston", "diabetes", "kerasBoston"]
+            assert dataset in ["boston", "diabetes", "kerasBoston", "auto-mpg", "red-wine", "white-wine"]
             assert data_dimension is None
+            sets_url = {"auto-mpg":"http://www-lisic.univ-littoral.fr/~teytaud/files/Cours/Apprentissage/data/auto-mpg.data",
+                        "red-wine":"http://www-lisic.univ-littoral.fr/~teytaud/files/Cours/Apprentissage/data/winequality-red.csv",
+                        "white-wine":"http://www-lisic.univ-littoral.fr/~teytaud/files/Cours/Apprentissage/data/winequality-white.csv"}
+            sets_tag = {"auto-mpg":"mpg",
+                        "red-wine":"quality",
+                        "white-wine":"quality"}
             if dataset == "kerasBoston":
                 try:
                     from tensorflow import keras  # pylint: disable=import-outside-toplevel
@@ -242,21 +249,30 @@ class MLTuning(ExperimentFunction):
                     ) from e
 
                 data = keras.datasets.boston_housing
+            elif dataset in sets_tag:
+                data = pd.read_csv(sets_url[dataset])
             else:
                 data = {"boston": sklearn.datasets.load_boston, "diabetes": sklearn.datasets.load_diabetes,}[
                     dataset
                 ](return_X_y=True)
 
             # Half the dataset for training.
+            test_ratio = 0.5
             if dataset == "kerasBoston":
-                (self.X_train, self.y_train), (self.X_test, self.y_test) = data.load_data(
-                    test_split=0.5, seed=42
-                )
+                (self.X_train, self.y_train), (self.X_test, self.y_test) = data.load_data(test_split=test_ratio, seed=42)
+            elif dataset in sets_url:
+                if dataset == "auto-mpg":
+                    data.drop('name', 1, inplace=True)
+                train, test = train_test_split(data, test_size=test_ratio)
+                self.y_train = train[sets_tag[dataset]].to_numpy()
+                self.y_test = test[sets_tag[dataset]].to_numpy()
+                del train[sets_tag[dataset]]
+                del test[sets_tag[dataset]]
+                self.X_train = train.to_numpy()
+                self.X_test = test.to_numpy()
             else:
                 rng.shuffle(data[0].T)  # We randomly shuffle the columns.
-                self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
-                    data[0], data[1], test_size=0.5, random_state=42
-                )
+                self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(data[0], data[1], test_size=test_ratio, random_state=42)
 
             num_train_data = len(self.X_train)
             self.num_data = num_train_data
