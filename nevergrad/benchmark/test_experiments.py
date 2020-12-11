@@ -11,6 +11,7 @@ from unittest import SkipTest
 import pytest
 import numpy as np
 from nevergrad.optimization import registry as optregistry
+from nevergrad.functions.base import UnsupportedExperiment
 from nevergrad.functions.mlda import datasets
 from nevergrad.functions import rl
 from nevergrad.common import testing
@@ -25,7 +26,7 @@ from . import optgroups
 def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> None:
     with datasets.mocked_data():  # mock mlda data that should be downloaded
         check_maker(maker)  # this is to extract the function for reuse if other external packages need it
-    if name not in ["rocket", "control_problem"] and not any(x in name for x in ["tuning", "mlda", "realworld"]):
+    if name not in ["rocket", "control_problem", 'images_using_gan'] and not any(x in name for x in ["tuning", "mlda", "realworld"]):
         check_seedable(maker, "mltuning" in name)  # this is a basic test on first elements, do not fully rely on it
 
 
@@ -55,8 +56,8 @@ def check_maker(maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> 
     # check 1 sample
     try:
         sample = next(maker())
-    except experiments.MissingBenchmarkPackageError as e:
-        raise SkipTest("Skipping because of missing package") from e
+    except UnsupportedExperiment as e:
+        raise SkipTest("Skipping because unsupported") from e
     assert isinstance(sample, experiments.Experiment)
     # check names, coherence and non-randomness
     for k, (elem1, elem2) in enumerate(itertools.zip_longest(*generators)):
