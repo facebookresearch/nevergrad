@@ -9,6 +9,7 @@ import nevergrad as ng
 from nevergrad.common.tools import pytorch_import_fix
 from . import base
 from . import optimizerlib
+
 pytorch_import_fix()
 
 # pylint: disable=wrong-import-position,wrong-import-order

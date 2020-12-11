@@ -15,6 +15,7 @@ from nevergrad.functions.base import UnsupportedExperiment
 from nevergrad.functions.mlda import datasets
 from nevergrad.functions import rl
 from nevergrad.common import testing
+
 # from nevergrad.common.tools import Selector
 from .xpbase import Experiment
 from .utils import Selector
@@ -26,8 +27,12 @@ from . import optgroups
 def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> None:
     with datasets.mocked_data():  # mock mlda data that should be downloaded
         check_maker(maker)  # this is to extract the function for reuse if other external packages need it
-    if name not in ["rocket", "control_problem", 'images_using_gan'] and not any(x in name for x in ["tuning", "mlda", "realworld"]):
-        check_seedable(maker, "mltuning" in name)  # this is a basic test on first elements, do not fully rely on it
+    if name not in ["rocket", "control_problem", "images_using_gan"] and not any(
+        x in name for x in ["tuning", "mlda", "realworld"]
+    ):
+        check_seedable(
+            maker, "mltuning" in name
+        )  # this is a basic test on first elements, do not fully rely on it
 
 
 @pytest.fixture(scope="module")  # type: ignore
@@ -69,7 +74,7 @@ def check_maker(maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> 
                 elem1.get_description(),
                 elem2.get_description(),
                 err_msg=f"Two paths on the generator differed (see element #{k})\n"
-                        "Generators need to be deterministic in order to split the workload!",
+                "Generators need to be deterministic in order to split the workload!",
             )
 
 
@@ -90,14 +95,19 @@ def check_seedable(maker: tp.Any, short: bool = False) -> None:
         print(f"\nStarting with {seed % 100}")  # useful debug info when this test fails
         xps = list(itertools.islice(maker(seed), 0, 1 if short else 2))
         simplified = [
-            Experiment(xp.function, algo, budget=2, num_workers=min(2, xp.optimsettings.num_workers), seed=xp.seed) for
-            xp in xps]
+            Experiment(
+                xp.function, algo, budget=2, num_workers=min(2, xp.optimsettings.num_workers), seed=xp.seed
+            )
+            for xp in xps
+        ]
         np.random.shuffle(simplified)  # compute in any order
         selector = Selector(data=[xp.run() for xp in simplified])
         results.append(Selector(selector.loc[:, ["loss", "seed", "error"]]))  # elapsed_time can vary...
         assert results[-1].unique("error") == {""}, f"An error was raised during optimization:\n{results[-1]}"
     results[0].assert_equivalent(results[1], f"Non identical outputs for seed={random_seed}")
     np.testing.assert_raises(
-        AssertionError, results[1].assert_equivalent, results[2],
-        f"Identical output with different seeds (seed={random_seed})"
+        AssertionError,
+        results[1].assert_equivalent,
+        results[2],
+        f"Identical output with different seeds (seed={random_seed})",
     )

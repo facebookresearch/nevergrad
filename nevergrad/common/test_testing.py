@@ -46,9 +46,11 @@ def test_assert_markdown_links_not_broken() -> None:
 @testing.parametrized(
     changed=(RuntimeError, platform.system(), unittest.SkipTest),
     wrong_system=(RuntimeError, "blublu", RuntimeError),
-    wrong_error=(AssertionError, platform.system(), RuntimeError)
+    wrong_error=(AssertionError, platform.system(), RuntimeError),
 )
-def test_skip_test_on_system(skipped_error: tp.Type[Exception], system: str, expected_error: tp.Type[Exception]) -> None:
+def test_skip_test_on_system(
+    skipped_error: tp.Type[Exception], system: str, expected_error: tp.Type[Exception]
+) -> None:
     try:
         with pytest.raises(expected_error):
             with testing.skip_error_on_systems(skipped_error, (system,)):

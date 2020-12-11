@@ -6,6 +6,7 @@
 import numpy as np
 from . import core
 
+
 def test_mixsimulator() -> None:
     func = core.OptimizeMix()
     x = 2 * np.random.rand(func.dimension)
