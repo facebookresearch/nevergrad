@@ -87,7 +87,7 @@ def _get_all_markdown_links(folder: tp.Union[str, Path]) -> tp.List[_MarkdownLin
     folder = Path(folder).expanduser().absolute()
     links = []
     for rfilepath in folder.glob("**/*.md"):
-        if "/site-packages/" not in str(rfilepath):
+        if ("/site-packages/" if os.name != 'nt' else "\\site-packages\\") not in str(rfilepath):
             filepath = folder / rfilepath
             with filepath.open("r") as f:
                 text = f.read()
