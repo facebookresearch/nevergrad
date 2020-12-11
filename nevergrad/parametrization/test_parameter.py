@@ -268,12 +268,12 @@ def test_torus() -> None:
 def test_torus_recombination() -> None:
     param = par.Torus(init=(3.,)).set_mutation(sigma=1.)
     param2 = par.Torus(init=(3.,)).set_mutation(sigma=1.)
-    param.value = (1.,)
-    param2.value = (3.,)
+    param.value = np.asarray((1.,))
+    param2.value = np.asarray((3.,))
     param.recombine(param2)
-    #assert param.value[0] == 2.0
+    np.testing.assert_approx_equal(param.value, 2.0, err_msg="Recombination did not produce the expected result.")
     param2.set_standardized_data((param.get_standardized_data(reference=param2) + param2.get_standardized_data(reference=param2)) / 2)
-    #assert param2.value[0] == 2.5
+    np.testing.assert_approx_equal(param2.value, 2.66161993)
 
 
 @pytest.mark.parametrize(  # type: ignore
