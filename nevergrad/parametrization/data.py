@@ -482,7 +482,7 @@ class Torus(Array):
         """x has shape (4, a, b, c), we return something of shape (a, b, c) using single_to_angle for converting an array of shape (4,) to a float."""
         assert x.shape[0] == 4, x
         out = x[0].copy()
-        for cell, x0, x1, x2, x3 in np.nditer([out, x[0], x[1], x[2], x[3]], op_flags=['readwrite']):
+        for cell, x0, x1, x2, x3 in np.nditer([out, x[0], x[1], x[2], x[3]], op_flags=['readwrite']):  # type: ignore
             cell[...] = self.single_to_angle((x0, x1, x2, x3))
         return cell
 
