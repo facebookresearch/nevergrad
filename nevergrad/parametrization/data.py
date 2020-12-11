@@ -498,7 +498,7 @@ class Torus(Array):
         return x
 
     @property
-    def value(self) -> tp.ArrayLike:
+    def value(self) -> np.ndarray:
         return self.to_angle(self._value)
 
     @value.setter
