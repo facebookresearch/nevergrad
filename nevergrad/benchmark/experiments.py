@@ -179,7 +179,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         in [True, False]
     ]
     for func in functions:
-        func.parametrization.register_cheap_constraint(_Constraint("positive_sum", as_bool=False))
+        func.parametrization.register_cheap_constraint(_Constraint("sum", as_bool=False))
 
     # Then, let us build a constraint-free case. We include the noisy case.
     names = ["hm", "rastrigin", "sphere", "doublelinearslope", "ellipsoid"]
