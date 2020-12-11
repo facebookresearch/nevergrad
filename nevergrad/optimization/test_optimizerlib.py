@@ -560,7 +560,7 @@ def test_bo_ordering() -> None:
         ]
 )
 def test_ngo_split_optimizer(name: tp.Optional[str], dimension: int, num_workers: int, fake_learning: bool, budget: int, expected: tp.List[str]) -> None:
-    param = ng.p.Instrumentation(
+    param: ng.p.Parameter = ng.p.Instrumentation(
       # a log-distributed scalar between 0.001 and 1.0
       learning_rate=ng.p.Log(lower=0.001, upper=1.0),
       # an integer from 1 to 12
@@ -570,11 +570,8 @@ def test_ngo_split_optimizer(name: tp.Optional[str], dimension: int, num_workers
     )
     if not fake_learning:
         param = ng.p.Choice(["const", ng.p.Array(init=list(range(1, dimension+1)))])
-    if name is not None:
-        Opt = optlib.registry[name]
-        opt = optlib.ConfSplitOptimizer(multivariate_optimizer=Opt)
-    else:
-        opt = xpvariants.MetaNGOpt8
+    opt: tp.Union[base.ConfiguredOptimizer, tp.Type[base.Optimizer]] = xpvariants.MetaNGOpt8 if name is None else (
+        optlib.ConfSplitOptimizer(multivariate_optimizer=optlib.registry[name]))
     optimizer = opt(param, budget=budget, num_workers=num_workers)
     names = [o.optim.name if o.dimension != 1 or name is None else "monovariate" for o in optimizer.optims]  # type: ignore
     assert names == expected
