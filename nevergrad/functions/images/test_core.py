@@ -45,7 +45,7 @@ def test_image_from_pgan_with_k512() -> None:
     try:
         func = core.ImageFromPGAN(initial_noise=None, use_gpu=False, loss=imagelosses.Koncept512())
     except base.UnsupportedExperiment as e:
-        pytest.skip(e)
+        pytest.skip(str(e))
     x = np.fabs(np.random.normal(size=func.domain_shape))
     value = func(x)
     assert value < np.inf
