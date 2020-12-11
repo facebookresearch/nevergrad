@@ -138,7 +138,7 @@ UNSEEDABLE: tp.List[str] = []
 @skip_win_perf  # type: ignore
 @pytest.mark.parametrize("name", registry)  # type: ignore
 def test_optimizers(name: str) -> None:
-    """Checks that each optimizers is able to converge on a simple test case
+    """Checks that each optimizer is able to converge on a simple test case
     """
     optimizer_cls = registry[name]
     if isinstance(optimizer_cls, base.ConfiguredOptimizer):
