@@ -13,7 +13,6 @@ registry: Registry[tp.Callable[[np.ndarray], float]] = Registry()
 
 
 class DiscreteFunction:
-
     def __init__(self, name: str, arity: int = 2) -> None:
         """Returns a classical discrete function for test, in the domain {0,1,...,arity-1}^d.
         The name can be onemax, leadingones, or jump.
@@ -23,7 +22,7 @@ class DiscreteFunction:
         and returns len(x) - number of ones. However, the present function perturbates the location of the
         optimum, so that tests can not be easily biased by a wrong initialization. So the optimum,
         instead of being located at (1,1,...,1), is located at (0,1,2,...,arity-1,0,1,2,...).
-        
+
         leadingones is the second most classical discrete function, adapted for minimization.
         Before perturbation of the location of the optimum as above,
         it returns len(x) - number of initial 1. I.e.
@@ -33,7 +32,7 @@ class DiscreteFunction:
         The present Leadingones function uses a perturbation as documented above for OneMax: we count the number
         of initial correct values, a correct values being 0 for variable 1, 1 for variable 2, 2 for variable 3, and
         so on.
-        
+
         There exists variants of jump functions: the principle of a jump function is that local descent does not succeed.
         Jumps are necessary. We are here in minimization, hence a formulation slightly different from most discrete optimization
         papers, which usually assume maximization. We use the same perturbation as detailed above for leadingones and onemax,
@@ -72,11 +71,12 @@ def _styblinksitang(x: np.ndarray, noise: float) -> float:
 
 
 class DelayedSphere:
-
     def __call__(self, x: np.ndarray) -> float:
         return float(np.sum(x ** 2))
 
-    def compute_pseudotime(self, input_parameter: tp.Any, value: float) -> float:  # pylint: disable=unused-argument
+    def compute_pseudotime(  # pylint: disable=unused-argument
+        self, input_parameter: tp.Any, value: float
+    ) -> float:
         x = input_parameter[0][0]
         return float(abs(1.0 / x[0]) / 1000.0) if x[0] != 0.0 else 0.0
 
@@ -149,17 +149,22 @@ def cigar(x: np.ndarray) -> float:
 @registry.register
 def bentcigar(x: np.ndarray) -> float:
     """Classical example of ill conditioned function, but bent."""
-    y = np.asarray([x[i] ** (1 + .5 * np.sqrt(x[i]) * (i - 1) / (len(x) - 1)) if x[i] > 0. else x[i] for i in range(len(x))])
+    y = np.asarray(
+        [
+            x[i] ** (1 + 0.5 * np.sqrt(x[i]) * (i - 1) / (len(x) - 1)) if x[i] > 0.0 else x[i]
+            for i in range(len(x))
+        ]
+    )
     return float(y[0]) ** 2 + 1000000.0 * sphere(y[1:])
 
 
 @registry.register
 def multipeak(x: np.ndarray) -> float:
     """Inspired by M. Gallagher's Gaussian peaks function."""
-    v = 10000.
+    v = 10000.0
     for a in range(101):
         x_ = np.asarray([np.cos(a + np.sqrt(i)) for i in range(len(x))])
-        v = min(v, a / 101. + np.exp(sphere(x - x_)))
+        v = min(v, a / 101.0 + np.exp(sphere(x - x_)))
     return v
 
 
@@ -208,7 +213,12 @@ def rastrigin(x: np.ndarray) -> float:
 @registry.register
 def bucherastrigin(x: np.ndarray) -> float:
     """Classical multimodal function. No box-constraint penalization here."""
-    s = np.asarray([x[i] * (10 if x[i] > 0. and i % 2 else 1) * (10**((i - 1) / (2 * (len(x) - 1)))) for i in range(len(x))])
+    s = np.asarray(
+        [
+            x[i] * (10 if x[i] > 0.0 and i % 2 else 1) * (10 ** ((i - 1) / (2 * (len(x) - 1))))
+            for i in range(len(x))
+        ]
+    )
     cosi = float(np.sum(np.cos(2 * np.pi * s)))
     return float(10 * (len(x) - cosi) + sphere(s))
 
@@ -266,7 +276,9 @@ def deceptiveillcond(x: np.ndarray) -> float:
     The condition number increases to infinity as we get closer to the optimum."""
     assert len(x) >= 2
     return float(
-        max(np.abs(np.arctan(x[1] / x[0])), np.sqrt(x[0] ** 2.0 + x[1] ** 2.0), 1.0 if x[0] > 0 else 0.0) if x[0] != 0.0 else float("inf")
+        max(np.abs(np.arctan(x[1] / x[0])), np.sqrt(x[0] ** 2.0 + x[1] ** 2.0), 1.0 if x[0] > 0 else 0.0)
+        if x[0] != 0.0
+        else float("inf")
     )
 
 

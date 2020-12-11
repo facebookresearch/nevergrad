@@ -265,11 +265,7 @@ def test_update_coordinate_bounds() -> None:
 
 
 def test_sort_by_index() -> None:
-    nodes = [
-        VectorNode(3, [1, 2, 3]),
-        VectorNode(3, [2, 3, 1]),
-        VectorNode(3, [3, 1, 2])
-    ]
+    nodes = [VectorNode(3, [1, 2, 3]), VectorNode(3, [2, 3, 1]), VectorNode(3, [3, 1, 2])]
     new_nodes = VectorLinkedList.sort_by_index(nodes, 0)
     assert new_nodes == nodes
 
@@ -282,11 +278,7 @@ def test_sort_by_index() -> None:
 
 def test_create_sorted() -> None:
     dimension = 3
-    coordinates = [
-        [1, 2, 3],
-        [2, 3, 1],
-        [3, 1, 2]
-    ]
+    coordinates = [[1, 2, 3], [2, 3, 1], [3, 1, 2]]
     linked_list = VectorLinkedList.create_sorted(dimension, coordinates)
     assert isinstance(linked_list, VectorLinkedList)
     assert list(linked_list.sentinel.next[0].coordinates) == [1, 2, 3]
@@ -302,14 +294,7 @@ def test_version_consistency() -> None:
     reference = np.array([79, 89, 99])
     hv = HypervolumeIndicator(reference)
     front = np.array(
-        [
-            (110, 110, 100),
-            (110, 90, 87),
-            (80, 80, 36),
-            (50, 50, 55),
-            (105, 30, 43),
-            (110, 110, 100)
-        ]
+        [(110, 110, 100), (110, 90, 87), (80, 80, 36), (50, 50, 55), (105, 30, 43), (110, 110, 100)]
     )
     volume = hv.compute(front)
     assert volume == 11113.0

@@ -14,7 +14,7 @@ import numpy as np
 
 
 class VectorNode:
-    """ A node object of the VectorLinkedList.
+    """A node object of the VectorLinkedList.
     A VectorNode is a point in a space with dim = `dimension`, and an optional
     `coordinate` (which can be assigned after the VectorNode initialization).
     The VectorNode object points to two arrays with self.next and self.prev attributes.
@@ -29,7 +29,9 @@ class VectorNode:
     The VectorNode data structure is introduced in section III.A of the original paper..
     """
 
-    def __init__(self, dimension: int, coordinates: tp.Optional[tp.Union[np.ndarray, tp.List[float]]] = None) -> None:
+    def __init__(
+        self, dimension: int, coordinates: tp.Optional[tp.Union[np.ndarray, tp.List[float]]] = None
+    ) -> None:
         self.dimension = dimension
         self.coordinates = np.array(coordinates, copy=False)
         self._next: tp.List["VectorNode"] = [self for _ in range(self.dimension)]
@@ -47,9 +49,7 @@ class VectorNode:
 
     def configure_area(self, dimension: int) -> None:
         self.area[0] = 1.0
-        self.area[1: dimension + 1] = [
-            -self.area[i] * self.coordinates[i] for i in range(dimension)
-        ]
+        self.area[1 : dimension + 1] = [-self.area[i] * self.coordinates[i] for i in range(dimension)]
 
     @property
     def next(self) -> tp.List["VectorNode"]:
@@ -60,7 +60,7 @@ class VectorNode:
         return self._prev
 
     def pop(self, index: int) -> None:
-        """ Assigns the references of the self predecessor and successor at
+        """Assigns the references of the self predecessor and successor at
         `index` index to each other, removes the links to the `self` node.
         """
         predecessor = self.prev[index]
@@ -79,7 +79,7 @@ class VectorLinkedList:
 
     @classmethod
     def create_sorted(cls, dimension: int, points: tp.Any) -> "VectorLinkedList":
-        """ Instantiate a VectorLinkedList of dimension `dimension`. The list is
+        """Instantiate a VectorLinkedList of dimension `dimension`. The list is
         populated by nodes::VectorNode created from `points`. The nodes are sorted
         by i-th coordinate attribute in i-th row."""
         linked_list = cls(dimension)
@@ -91,15 +91,12 @@ class VectorLinkedList:
 
     @staticmethod
     def sort_by_index(node_list: tp.List[VectorNode], dimension_index: int) -> tp.List[VectorNode]:
-        """ Returns a sorted list of `VectorNode`, with the sorting key defined by the
+        """Returns a sorted list of `VectorNode`, with the sorting key defined by the
         `dimension_index`-th coordinates of the nodes in the `node_list`."""
         return sorted(node_list, key=lambda node: node.coordinates[dimension_index])
 
     def __str__(self) -> str:
-        string = [
-            str([str(node) for node in self.iterate(dimension)])
-            for dimension in range(self.dimension)
-        ]
+        string = [str([str(node) for node in self.iterate(dimension)]) for dimension in range(self.dimension)]
         return "\n".join(string)
 
     def __len__(self) -> int:
@@ -119,24 +116,20 @@ class VectorLinkedList:
         current_last.next[index] = node
 
     def extend(self, nodes: tp.List[VectorNode], index: int) -> None:
-        """ Extends the VectorLinkedList with a list of nodes
+        """Extends the VectorLinkedList with a list of nodes
         at `index` position"""
         for node in nodes:
             self.append(node, index)
 
     @staticmethod
-    def update_coordinate_bounds(
-            bounds: np.ndarray,
-            node: VectorNode,
-            index: int
-    ) -> np.ndarray:
+    def update_coordinate_bounds(bounds: np.ndarray, node: VectorNode, index: int) -> np.ndarray:
         for i in range(index):
             if bounds[i] > node.coordinates[i]:
                 bounds[i] = node.coordinates[i]
         return bounds
 
     def pop(self, node: VectorNode, index: int) -> VectorNode:
-        """ Removes and returns 'node' from all lists at the
+        """Removes and returns 'node' from all lists at the
         positions from 0 in index (exclusively)."""
         for i in range(index):
             node.pop(i)
@@ -176,7 +169,7 @@ class VectorLinkedList:
 
 
 class HypervolumeIndicator:
-    """ Core class to calculate the hypervolme value of a set of points.
+    """Core class to calculate the hypervolme value of a set of points.
     As introduced in the original paper, "the indicator is a measure of
     the region which is simultaneously dominated by a set of points P,
     and bounded by a reference point r = `self.reference_bounds`. It is
@@ -210,8 +203,8 @@ class HypervolumeIndicator:
         return hypervolume
 
     def plane_hypervolume(self) -> float:
-        """ Calculates the hypervolume on a two dimensional plane. The algorithm
-        is described in Section III-A of the original paper. """
+        """Calculates the hypervolume on a two dimensional plane. The algorithm
+        is described in Section III-A of the original paper."""
         dimension = 1
         hypervolume = 0.0
         h = self.multilist.sentinel.next[dimension].coordinates[dimension - 1]
@@ -226,7 +219,7 @@ class HypervolumeIndicator:
         return hypervolume
 
     def recursive_hypervolume(self, dimension: int) -> float:
-        """ Recursive hypervolume computation. The algorithm is provided by Algorithm 3.
+        """Recursive hypervolume computation. The algorithm is provided by Algorithm 3.
         of the original paper."""
         if self.multilist.chain_length(dimension - 1) == 0:
             return 0
@@ -251,8 +244,8 @@ class HypervolumeIndicator:
             assert node is not None
             current_node = node
             if self.multilist.chain_length(dimension - 1) > 1 and (
-                    node.coordinates[dimension] > self.reference_bounds[dimension]
-                    or node.prev[dimension].coordinates[dimension] >= self.reference_bounds[dimension]
+                node.coordinates[dimension] > self.reference_bounds[dimension]
+                or node.prev[dimension].coordinates[dimension] >= self.reference_bounds[dimension]
             ):
                 # Line 9
                 self.reference_bounds = self.multilist.update_coordinate_bounds(

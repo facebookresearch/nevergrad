@@ -13,7 +13,6 @@ from .rocket import rocket as rocket
 
 
 class Rocket(ExperimentFunction):
-
     def __init__(self) -> None:
         super().__init__(self._simulate_rocket, p.Array(shape=(24,)))
 

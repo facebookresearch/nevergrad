@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import re
+import sys
 import time
 import random
 import inspect
@@ -31,9 +32,15 @@ from .optimizerlib import registry
 from .optimizerlib import NGOptBase
 
 
+# decorators to be used when testing on Windows is unecessary
+# or cumbersome
+skip_win_perf = pytest.mark.skipif(
+    sys.platform == "win32", reason="Slow, and no need to test performance on all platforms"
+)
+
+
 class Fitness:
-    """Simple quadratic fitness function which can be used with dimension up to 4
-    """
+    """Simple quadratic fitness function which can be used with dimension up to 4"""
 
     def __init__(self, x0: tp.ArrayLike) -> None:
         self.x0 = np.array(x0, copy=True)
@@ -53,9 +60,9 @@ class Fitness:
 
 # pylint: disable=too-many-locals
 def check_optimizer(
-        optimizer_cls: tp.Union[base.ConfiguredOptimizer, tp.Type[base.Optimizer]],
-        budget: int = 300,
-        verify_value: bool = True
+    optimizer_cls: tp.Union[base.ConfiguredOptimizer, tp.Type[base.Optimizer]],
+    budget: int = 300,
+    verify_value: bool = True,
 ) -> None:
     # recast optimizer do not support num_workers > 1, and respect no_parallelization.
     num_workers = 1 if optimizer_cls.recast or optimizer_cls.no_parallelization else 2
@@ -65,7 +72,9 @@ def check_optimizer(
     for k in range(1, num_attempts + 1):
         fitness = Fitness(optimum)
         optimizer = optimizer_cls(parametrization=len(optimum), budget=budget, num_workers=num_workers)
-        assert isinstance(optimizer.provide_recommendation(), ng.p.Parameter), "Recommendation should be available from start"
+        assert isinstance(
+            optimizer.provide_recommendation(), ng.p.Parameter
+        ), "Recommendation should be available from start"
         with warnings.catch_warnings():
             # tests do not need to be efficient
             warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)
@@ -101,7 +110,8 @@ def check_optimizer(
     except Exception as e:  # pylint: disable=broad-except
         if not isinstance(e, base.TellNotAskedNotSupportedError):
             raise AssertionError(
-                "Optimizers should raise base.TellNotAskedNotSupportedError " "at when telling unasked points if they do not support it"
+                "Optimizers should raise base.TellNotAskedNotSupportedError "
+                "at when telling unasked points if they do not support it"
             ) from e
     else:
         assert optimizer.num_tell == budget + 1
@@ -127,16 +137,27 @@ SLOW = [
 UNSEEDABLE: tp.List[str] = []
 
 
+@skip_win_perf  # type: ignore
 @pytest.mark.parametrize("name", registry)  # type: ignore
 def test_optimizers(name: str) -> None:
+    """Checks that each optimizer is able to converge on a simple test case"""
     optimizer_cls = registry[name]
     if isinstance(optimizer_cls, base.ConfiguredOptimizer):
-        assert any(hasattr(mod, name) for mod in (optlib, xpvariants))  # make sure registration matches name in optlib/xpvariants
-        assert optimizer_cls.__class__(**optimizer_cls._config) == optimizer_cls, "Similar configuration are not equal"
+        assert any(
+            hasattr(mod, name) for mod in (optlib, xpvariants)
+        )  # make sure registration matches name in optlib/xpvariants
+        assert (
+            optimizer_cls.__class__(**optimizer_cls._config) == optimizer_cls
+        ), "Similar configuration are not equal"
     # some classes of optimizer are eigher slow or not good with small budgets:
     nameparts = ["Many", "chain", "BO", "Discrete"]
     is_ngopt = inspect.isclass(optimizer_cls) and issubclass(optimizer_cls, NGOptBase)  # type: ignore
-    verify = not optimizer_cls.one_shot and name not in SLOW and not any(x in name for x in nameparts) and not is_ngopt
+    verify = (
+        not optimizer_cls.one_shot
+        and name not in SLOW
+        and not any(x in name for x in nameparts)
+        and not is_ngopt
+    )
     budget = 300 if "BO" not in name and not is_ngopt else 4
     # the following context manager speeds up BO tests
     patched = partial(acq_max, n_warmup=10000, n_iter=2)
@@ -364,8 +385,7 @@ def test_bo_parametrization_and_parameters() -> None:
 def test_bo_init() -> None:
     arg = ng.p.Scalar(init=4, lower=1, upper=10).set_integer_casting()
     # The test was flaky with normalize_y=True.
-    gp_param = {'alpha': 1e-5, 'normalize_y': False,
-                'n_restarts_optimizer': 1, 'random_state': None}
+    gp_param = {"alpha": 1e-5, "normalize_y": False, "n_restarts_optimizer": 1, "random_state": None}
     my_opt = ng.optimizers.ParametrizedBO(gp_parameters=gp_param, initialization=None)
     optimizer = my_opt(parametrization=arg, budget=10)
     optimizer.minimize(np.abs)
@@ -405,12 +425,13 @@ def test_parallel_es() -> None:
             opt.tell(cand, 1)
 
 
+@skip_win_perf  # type: ignore
 @pytest.mark.parametrize(
     "dimension, num_workers, scale, budget, ellipsoid",
     [
-        (2, 8, 1., 120, False),
-        (2, 3, 8., 130, True),
-        (5, 1, 1., 150, False),
+        (2, 8, 1.0, 120, False),
+        (2, 3, 8.0, 130, True),
+        (5, 1, 1.0, 150, False),
         # Interesting tests removed for flakiness:
         # (8, 27, 8., 380, True),
         # (2, 1, 8., 120, True),
@@ -424,20 +445,22 @@ def test_parallel_es() -> None:
         # (5, 3, 8., 500, True),
         # (9, 27, 8., 700, True),
         # (10, 27, 8., 400, False),
-    ]
+    ],
 )
 def test_metamodel(dimension: int, num_workers: int, scale: float, budget: int, ellipsoid: bool) -> None:
     """The test can operate on the sphere or on an elliptic funciton."""
+
     def _square(x: np.ndarray) -> float:
         return sum((-scale + x) ** 2)
 
     def _ellips(x: np.ndarray) -> float:
-        return sum(((-scale + x) * (np.arange(1, dimension + 1)**2)) ** 2)
+        return sum(((-scale + x) * (np.arange(1, dimension + 1) ** 2)) ** 2)
+
     _target = _ellips if ellipsoid else _square
 
     # In both cases we compare MetaModel and CMA for a same given budget.
     # But we expect MetaModel to be clearly better only for a larger budget in the ellipsoid case.
-    contextual_budget = (budget if ellipsoid else 3 * budget)
+    contextual_budget = budget if ellipsoid else 3 * budget
     contextual_budget *= int(max(1, np.sqrt(scale)))
 
     # Let us run the comparison.
@@ -445,37 +468,43 @@ def test_metamodel(dimension: int, num_workers: int, scale: float, budget: int, 
     for name in ("MetaModel", "CMA" if dimension > 1 else "OnePlusOne"):
         opt = registry[name](dimension, contextual_budget, num_workers=num_workers)
         recommendations.append(opt.minimize(_target).value)
-    metamodel_recom, default_recom = recommendations
+    metamodel_recom, default_recom = recommendations  # pylint: disable=unbalanced-tuple-unpacking
 
     # Let us assert that MetaModel is better.
     assert _target(default_recom) > _target(metamodel_recom)
 
     # With large budget, the difference should be significant.
     if budget > 60 * dimension:
-        assert _target(default_recom) > 4. * _target(metamodel_recom)
+        assert _target(default_recom) > 4.0 * _target(metamodel_recom)
 
     # ... even more in the non ellipsoid case.
     if budget > 60 * dimension and not ellipsoid:
-        assert _target(default_recom) > 7. * _target(metamodel_recom)
+        assert _target(default_recom) > 7.0 * _target(metamodel_recom)
 
 
 @pytest.mark.parametrize(
-    "penalization,expected", [
-        (False, [1.005573e+00, 3.965783e-04]),
+    "penalization,expected",
+    [
+        (False, [1.005573e00, 3.965783e-04]),
         (True, [0.999987, -0.322118]),
-    ]
+    ],
 )
 def test_constrained_optimization(penalization: bool, expected: tp.List[float]) -> None:
-    def constraint(i): return i[1]["x"][0] >= 1
+    def constraint(i: tp.Any) -> tp.Union[bool, float]:
+        return i[1]["x"][0] >= 1
+
     parametrization = ng.p.Instrumentation(x=ng.p.Array(shape=(1,)), y=ng.p.Scalar())
     optimizer = optlib.OnePlusOne(parametrization, budget=100)
     optimizer.parametrization.random_state.seed(12)
     if penalization:
         optimizer._constraints_manager.update(max_trials=2, penalty_factor=10)
-        def constraint(i): return -abs(i[1]["x"][0] - 1)
+
+        def constraint(i: tp.Any) -> tp.Union[bool, float]:  # pylint: disable=function-redefined
+            return -abs(i[1]["x"][0] - 1)
+
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", category=UserWarning)
-        optimizer.parametrization.register_cheap_constraint(constraint)  # type:ignore
+        optimizer.parametrization.register_cheap_constraint(constraint)
     recom = optimizer.minimize(_square)
     np.testing.assert_array_almost_equal([recom.kwargs["x"][0], recom.kwargs["y"]], expected)
 
@@ -493,7 +522,9 @@ def test_parametrization_offset(name: str) -> None:
         optimizer = registry[name](parametrization, budget=100, num_workers=1)
     for k in range(10 if "BO" not in name else 2):
         candidate = optimizer.ask()
-        assert candidate.args[0][0] > 100, f"Candidate value[0] at iteration #{k} is below 100: {candidate.value}"
+        assert (
+            candidate.args[0][0] > 100
+        ), f"Candidate value[0] at iteration #{k} is below 100: {candidate.value}"
         optimizer.tell(candidate, 0)
 
 
@@ -515,19 +546,34 @@ def test_shiwa_dim1() -> None:
 
 @pytest.mark.parametrize(  # type: ignore
     "name,param,budget,num_workers,expected",
-    [("Shiwa", 1, 10, 1, "Cobyla"),
-     ("Shiwa", 1, 10, 2, "OnePlusOne"),
-     ("Shiwa", ng.p.Log(lower=1, upper=1000).set_integer_casting(), 10, 2, "DoubleFastGADiscreteOnePlusOne"),
-     ("NGOpt", 1, 10, 1, "MetaModel"),
-     ("NGOpt", 1, 10, 2, "MetaModel"),
-     ("NGOpt", ng.p.Log(lower=1, upper=1000).set_integer_casting(), 10, 2, "DoubleFastGADiscreteOnePlusOne"),
-     ("NGOpt", ng.p.TransitionChoice(range(30), repetitions=10), 10, 2, "CMandAS2"),
-     ("NGOpt", ng.p.TransitionChoice(range(3), repetitions=10), 10, 2, "AdaptiveDiscreteOnePlusOne"),
-     ("NGO", 1, 10, 1, "Cobyla"),
-     ("NGO", 1, 10, 2, "OnePlusOne"),
-     ]  # pylint: disable=too-many-arguments
+    [
+        ("Shiwa", 1, 10, 1, "Cobyla"),
+        ("Shiwa", 1, 10, 2, "OnePlusOne"),
+        (
+            "Shiwa",
+            ng.p.Log(lower=1, upper=1000).set_integer_casting(),
+            10,
+            2,
+            "DoubleFastGADiscreteOnePlusOne",
+        ),
+        ("NGOpt", 1, 10, 1, "MetaModel"),
+        ("NGOpt", 1, 10, 2, "MetaModel"),
+        (
+            "NGOpt",
+            ng.p.Log(lower=1, upper=1000).set_integer_casting(),
+            10,
+            2,
+            "DoubleFastGADiscreteOnePlusOne",
+        ),
+        ("NGOpt", ng.p.TransitionChoice(range(30), repetitions=10), 10, 2, "CMandAS2"),
+        ("NGOpt", ng.p.TransitionChoice(range(3), repetitions=10), 10, 2, "AdaptiveDiscreteOnePlusOne"),
+        ("NGO", 1, 10, 1, "Cobyla"),
+        ("NGO", 1, 10, 2, "OnePlusOne"),
+    ],  # pylint: disable=too-many-arguments
 )
-def test_shiwa_selection(name: str, param: tp.Any, budget: int, num_workers: int, expected: str, caplog: tp.Any) -> None:
+def test_shiwa_selection(
+    name: str, param: tp.Any, budget: int, num_workers: int, expected: str, caplog: tp.Any
+) -> None:
     with caplog.at_level(logging.DEBUG, logger="nevergrad.optimization.optimizerlib"):
         # pylint: disable=expression-not-assigned
         optlib.registry[name](param, budget=budget, num_workers=num_workers).optim  # type: ignore
@@ -541,72 +587,75 @@ def test_bo_ordering() -> None:
     with warnings.catch_warnings():
         # tests do not need to be efficient
         warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)
-        optim = ng.optimizers.ParametrizedBO(initialization='Hammersley')(
-            parametrization=ng.p.Choice(range(12)),
-            budget=10
+        optim = ng.optimizers.ParametrizedBO(initialization="Hammersley")(
+            parametrization=ng.p.Choice(range(12)), budget=10
         )
     cand = optim.ask()
     optim.tell(cand, 12)
     optim.provide_recommendation()
 
 
+@skip_win_perf  # type: ignore
 @pytest.mark.parametrize(  # type: ignore
-    "name,fake_learning,budget,expected", [
+    "name,fake_learning,budget,expected",
+    [
         ("NGOpt8", False, 100, ["OnePlusOne", "OnePlusOne"]),
         ("NGOpt8", False, 200, ["SQP", "SQP"]),
-        ("NGOpt8", True, 1000, ['SQP', 'monovariate', 'monovariate']),
-        ]
+        ("NGOpt8", True, 1000, ["SQP", "monovariate", "monovariate"]),
+    ],
 )
 def test_ngo_split_optimizer(name: str, fake_learning: bool, budget: int, expected: tp.List[str]) -> None:
-    param = ng.p.Instrumentation(
-      # a log-distributed scalar between 0.001 and 1.0
-      learning_rate=ng.p.Log(lower=0.001, upper=1.0),
-      # an integer from 1 to 12
-      batch_size=ng.p.Scalar(lower=1, upper=12).set_integer_casting(),
-      # either "conv" or "fc"
-      architecture=ng.p.Choice(["conv", "fc"])
-    ) if fake_learning else ng.p.Choice(["const", ng.p.Array(init=[1, 2, 3])])
+    param = (
+        ng.p.Instrumentation(
+            # a log-distributed scalar between 0.001 and 1.0
+            learning_rate=ng.p.Log(lower=0.001, upper=1.0),
+            # an integer from 1 to 12
+            batch_size=ng.p.Scalar(lower=1, upper=12).set_integer_casting(),
+            # either "conv" or "fc"
+            architecture=ng.p.Choice(["conv", "fc"]),
+        )
+        if fake_learning
+        else ng.p.Choice(["const", ng.p.Array(init=[1, 2, 3])])
+    )
     Opt = optlib.registry[name]
     opt = optlib.ConfSplitOptimizer(multivariate_optimizer=Opt)(param, budget=budget)
     names = [o.optim.name if o.dimension != 1 else "monovariate" for o in opt.optims]  # type: ignore
     assert names == expected
 
 
+@skip_win_perf  # type: ignore
 @pytest.mark.parametrize(  # type: ignore
-    "budget,with_int", [
-    (150, True),
-    (300, True),
-    (1000, True),
-    (3000, True),
-    (100, False),
-    (300, False),
-    (1000, False),
-    (3000, False),
-    ]
+    "budget,with_int",
+    [
+        (150, True),
+        (300, True),
+        (1000, True),
+        (3000, True),
+        (100, False),
+        (300, False),
+        (1000, False),
+        (3000, False),
+    ],
 )
 def test_ngopt_on_simple_realistic_scenario(budget: int, with_int: bool) -> None:
     def fake_training(learning_rate: float, batch_size: int, architecture: str) -> float:
-      # optimal for learning_rate=0.2, batch_size=4, architecture="conv"
-      return (learning_rate - 0.2)**2 + (batch_size - 4)**2 + (0 if architecture == "conv" else 10)
-    
+        # optimal for learning_rate=0.2, batch_size=4, architecture="conv"
+        return (learning_rate - 0.2) ** 2 + (batch_size - 4) ** 2 + (0 if architecture == "conv" else 10)
+
     # Instrumentation class is used for functions with multiple inputs
     # (positional and/or keywords)
     parametrization = ng.p.Instrumentation(
-      # a log-distributed scalar between 0.001 and 1.0
-      learning_rate=ng.p.Log(lower=0.001, upper=1.0),
-      # an integer from 1 to 12
-      batch_size=ng.p.Scalar(lower=1, upper=12).set_integer_casting() if with_int else ng.p.Scalar(lower=1, upper=12),
-      # either "conv" or "fc"
-      architecture=ng.p.Choice(["conv", "fc"])
+        # a log-distributed scalar between 0.001 and 1.0
+        learning_rate=ng.p.Log(lower=0.001, upper=1.0),
+        # an integer from 1 to 12
+        batch_size=ng.p.Scalar(lower=1, upper=12).set_integer_casting()
+        if with_int
+        else ng.p.Scalar(lower=1, upper=12),
+        # either "conv" or "fc"
+        architecture=ng.p.Choice(["conv", "fc"]),
     )
- 
+
     optimizer = ng.optimizers.NGOpt(parametrization=parametrization, budget=budget)
     recommendation = optimizer.minimize(fake_training)
     result = fake_training(**recommendation.kwargs)
     assert result < 5e-2 if with_int else 5e-3, f"{result} not < {5e-2 if with_int else 5e-3}"
-
-
-
-
-
-

@@ -14,6 +14,7 @@ from typing import Type as Type
 from typing import TypeVar as TypeVar
 from typing import Optional as Optional
 from typing import Union as Union
+
 # containers
 from typing import Dict as Dict
 from typing import Tuple as Tuple
@@ -23,10 +24,12 @@ from typing import Deque as Deque
 from typing import Sequence as Sequence
 from typing import NamedTuple as NamedTuple
 from typing import MutableMapping as MutableMapping
+
 # iterables
 from typing import Iterator as Iterator
 from typing import Iterable as Iterable
 from typing import Generator as Generator
+
 # others
 from typing import ValuesView as ValuesView
 from typing import Callable as Callable
@@ -34,6 +37,7 @@ from typing import Hashable as Hashable
 from typing import Match as Match
 from pathlib import Path as Path
 from typing_extensions import Protocol
+
 #
 import numpy as _np
 
@@ -47,7 +51,7 @@ Loss = Union[float, ArrayLike]
 
 # %% Protocol definitions for executor typing
 
-X = TypeVar('X', covariant=True)
+X = TypeVar("X", covariant=True)
 
 
 class JobLike(Protocol[X]):
