@@ -12,6 +12,9 @@
 - `DE` and its variants have been updated to make use of the multi-objective losses [#789](https://github.com/facebookresearch/nevergrad/pull/789). This is a **preliminary** fix since the initial `DE` implementaton was ill-suited for this use case.
 - `tell` argument `value` is renamed to `loss` for clarification [#774](https://github.com/facebookresearch/nevergrad/pull/774). This can be breaking when using named arguments!
 - `ExperimentFunction` now automatically records arguments used for their instantiation so that they can both be used to create a new copy, and as descriptors if there are of type  int/bool/float/str [#914](https://github.com/facebookresearch/nevergrad/pull/914 [#914](https://github.com/facebookresearch/nevergrad/pull/914)).
+- from now on, code formatting needs to be [`black`](https://black.readthedocs.io/en/stable/) compliant. This is
+  simply performed by running `black nevergrad`. A continuous integration checks that PRs are compliant, and the
+  precommit hooks have been adapted.
 
 ## 0.4.2 (2020-08-04)
 
