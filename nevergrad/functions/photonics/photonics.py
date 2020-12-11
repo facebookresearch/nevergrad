@@ -18,7 +18,6 @@
 import typing as tp
 import numpy as np
 from scipy.linalg import toeplitz
-
 # pylint: disable=blacklisted-name,too-many-locals,too-many-arguments
 
 
@@ -117,9 +116,7 @@ def marche(a: float, b: float, p: float, n: int, x: float) -> np.ndarray:
     return T  # type: ignore
 
 
-def creneau(
-    k0: float, a0: float, pol: float, e1: float, e2: float, a: float, n: int, x0: float
-) -> tp.Tuple[np.ndarray, np.ndarray]:
+def creneau(k0: float, a0: float, pol: float, e1: float, e2: float, a: float, n: int, x0: float) -> tp.Tuple[np.ndarray, np.ndarray]:
     nmod = int(n / 2)
     alpha = np.diag(a0 + 2 * np.pi * np.arange(-nmod, nmod + 1))
     if pol == 0:
@@ -147,7 +144,9 @@ def creneau(
 
 def homogene(k0: float, a0: float, pol: float, epsilon: float, n: int) -> tp.Tuple[np.ndarray, np.ndarray]:
     nmod = int(n / 2)
-    valp = np.sqrt(epsilon * k0 * k0 - (a0 + 2 * np.pi * np.arange(-nmod, nmod + 1)) ** 2 + 0j)
+    valp = np.sqrt(
+        epsilon * k0 * k0 - (a0 + 2 * np.pi * np.arange(-nmod, nmod + 1)) ** 2 + 0j
+    )
     valp = valp * (1 - 2 * (valp < 0)) * (pol / epsilon + (1 - pol))
     P = np.block([[np.eye(n)], [np.diag(valp)]])
     return P, valp
@@ -156,7 +155,11 @@ def homogene(k0: float, a0: float, pol: float, epsilon: float, n: int) -> tp.Tup
 def interface(P: np.ndarray, Q: np.ndarray) -> np.ndarray:
     n = int(P.shape[1])
     S = np.matmul(
-        np.linalg.inv(np.block([[P[0:n, 0:n], -Q[0:n, 0:n]], [P[n : 2 * n, 0:n], Q[n : 2 * n, 0:n]]])),
+        np.linalg.inv(
+            np.block(
+                [[P[0:n, 0:n], -Q[0:n, 0:n]], [P[n : 2 * n, 0:n], Q[n : 2 * n, 0:n]]]
+            )
+        ),
         np.block([[-P[0:n, 0:n], Q[0:n, 0:n]], [P[n : 2 * n, 0:n], Q[n : 2 * n, 0:n]]]),
     )
     return S  # type: ignore
@@ -179,7 +182,9 @@ def morpho(X: np.ndarray) -> float:
     l = lam / d  # noqa
     k0 = 2 * np.pi / l
     P, V = homogene(k0, 0, pol, 1, n)
-    S = np.block([[np.zeros([n, n]), np.eye(n, dtype=np.complex)], [np.eye(n), np.zeros([n, n])]])
+    S = np.block(
+        [[np.zeros([n, n]), np.eye(n, dtype=np.complex)], [np.eye(n), np.zeros([n, n])]]
+    )
     for j in range(0, n_motifs):
         Pc, Vc = creneau(k0, 0, pol, e2, 1, a[j], n, x0[j])
         S = cascade(S, interface(P, Pc))
