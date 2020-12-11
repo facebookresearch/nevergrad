@@ -1282,6 +1282,7 @@ def photonics2(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     for xp in internal_generator:
         yield xp
 
+
 @registry.register
 def bragg_structure(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Too small for being interesting: Bragg mirror."""
