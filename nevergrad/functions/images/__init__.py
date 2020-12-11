@@ -5,3 +5,4 @@
 
 from .core import Image as Image
 from .core import ImageAdversarial as ImageAdversarial
+from .core import ImageFromPGAN as ImageFromPGAN
