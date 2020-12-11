@@ -11,7 +11,7 @@ from nevergrad.parametrization import parameter as p
 from . import functionlib
 
 
-DESCRIPTION_KEYS = {"function_class", "name", "block_dimension", "useful_dimensions", "useless_variables", "translation_factor",
+DESCRIPTION_KEYS = {"split", "function_class", "name", "block_dimension", "useful_dimensions", "useless_variables", "translation_factor",
                     "num_blocks", "rotation", "noise_level", "dimension", "discrete", "aggregator", "hashing",
                     "parametrization", "noise_dissymmetry"}
 
