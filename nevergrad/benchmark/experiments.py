@@ -596,7 +596,7 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
         for d in ([100, 1000, 3000] if hd else [2, 10, 50])
     ]
     assert constraints < 8, "We have only four possible constraints."
-    constraints_list = [_Constraint(name, as_bool)
+    constraints_list: tp.List[tp.Any] = [_Constraint(name, as_bool)
         for as_bool in [False, True]
         for name in ["positive_sum", "positive_diff", "positive_second_diff", "ball"]
         ]
