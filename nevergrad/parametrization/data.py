@@ -462,7 +462,7 @@ class Torus(Array):
     def set_integer_casting(self: A) -> A:
         assert False, "set_integer_casting is pointless for torus: we are working on angles, which are naturally continuous."
 
-    def single_to_angle(self, x: np.ndarray) -> float:
+    def single_to_angle(self, x: tp.ArrayLike) -> float:
         return np.angle(x[0] - x[2] + (x[1] - x[3]) * 1j)
 
     def single_from_angle(self, a: float) -> np.ndarray:
