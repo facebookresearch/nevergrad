@@ -10,8 +10,9 @@ import nevergrad.common.typing as tp
 from nevergrad.parametrization import transforms
 from nevergrad.parametrization import parameter as p
 
-import hyperopt # type: ignore
-from hyperopt import hp, Trials, Domain, tpe # type: ignore
+import hyperopt  # type: ignore
+from hyperopt import hp, Trials, Domain, tpe  # type: ignore
+
 
 def _hp_parametrization_to_dict(x, **kwargs):
     if isinstance(x, p.Instrumentation):
@@ -47,12 +48,12 @@ def _get_search_space(param_name, param):
     if isinstance(param, p.Instrumentation):
         space = {}
         space["args"] = {
-                str(idx_param): _get_search_space(str(idx_param), param[0][idx_param]) # type: ignore
-                for idx_param in range(len(param[0].value))
+            str(idx_param): _get_search_space(str(idx_param), param[0][idx_param])  # type: ignore
+            for idx_param in range(len(param[0].value))
         }
         space["kwargs"] = {
-                param_name: _get_search_space(param_name, param[1][param_name]) # type: ignore
-                for param_name in param[1].value.keys()
+            param_name: _get_search_space(param_name, param[1][param_name])  # type: ignore
+            for param_name in param[1].value.keys()
         }
         return space
 
@@ -62,27 +63,31 @@ def _get_search_space(param_name, param):
                 return hp.lognormal(label=param_name, mu=0, sigma=1)
             raise ValueError(f"Scalar {param_name} not bounded.")
         elif isinstance(param, p.Log):
-            return hp.loguniform(label=param_name,
-                                 low=np.log(param.bounds[0][0]),
-                                 high=np.log(param.bounds[1][0]))
+            return hp.loguniform(
+                label=param_name, low=np.log(param.bounds[0][0]), high=np.log(param.bounds[1][0])
+            )
         elif isinstance(param, p.Scalar):
             if param.integer:
-                return hp.randint(label=param_name,
-                                  low=int(param.bounds[0][0]),
-                                  high=int(param.bounds[1][0]))
+                return hp.randint(label=param_name, low=int(param.bounds[0][0]), high=int(param.bounds[1][0]))
             else:
-                return hp.uniform(label=param_name,
-                                  low=param.bounds[0][0],
-                                  high=param.bounds[1][0])
+                return hp.uniform(label=param_name, low=param.bounds[0][0], high=param.bounds[1][0])
 
     elif isinstance(param, p.Choice):
-        list_types = [type(param.choices[i]) for i in range(len(param.choices))
-                      if not isinstance(param.choices[i], (p.Instrumentation, p.Constant))]
+        list_types = [
+            type(param.choices[i])
+            for i in range(len(param.choices))
+            if not isinstance(param.choices[i], (p.Instrumentation, p.Constant))
+        ]
 
-        if len(list_types) != len(set(list_types)): raise NotImplementedError
-        return hp.choice(param_name,
-                         [_get_search_space(param_name + "__" + str(i), param.choices[i])
-                          for i in range(len(param.choices))])
+        if len(list_types) != len(set(list_types)):
+            raise NotImplementedError
+        return hp.choice(
+            param_name,
+            [
+                _get_search_space(param_name + "__" + str(i), param.choices[i])
+                for i in range(len(param.choices))
+            ],
+        )
 
     elif isinstance(param, p.Constant):
         return param.value
@@ -93,19 +98,23 @@ def _get_search_space(param_name, param):
 
 class _HyperOpt(base.Optimizer):
     # pylint: disable=too-many-instance-attributes
-    def __init__(self, parametrization: IntOrParameter,
-                 budget: tp.Optional[int] = None,
-                 num_workers: int = 1,
-                 *,
-                 prior_weight: float = 1.0,
-                 n_startup_jobs: int = 20,
-                 n_EI_candidates: int = 24,
-                 gamma: float = 0.25,
-                 verbose: bool = False) -> None:
+    def __init__(
+        self,
+        parametrization: IntOrParameter,
+        budget: tp.Optional[int] = None,
+        num_workers: int = 1,
+        *,
+        prior_weight: float = 1.0,
+        n_startup_jobs: int = 20,
+        n_EI_candidates: int = 24,
+        gamma: float = 0.25,
+        verbose: bool = False,
+    ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         try:
             # try to convert parametrization to hyperopt search space
-            if not isinstance(self.parametrization, p.Instrumentation): raise NotImplementedError
+            if not isinstance(self.parametrization, p.Instrumentation):
+                raise NotImplementedError
             self.space = _get_search_space(self.parametrization.name, self.parametrization)
             self._transform = None
         except NotImplementedError:
@@ -119,14 +128,15 @@ class _HyperOpt(base.Optimizer):
             "n_startup_jobs": n_startup_jobs,
             "n_EI_candidates": n_EI_candidates,
             "gamma": gamma,
-            "verbose": verbose
+            "verbose": verbose,
         }
 
     def _internal_ask_candidate(self) -> p.Parameter:
         # Inspired from FMinIter class (hyperopt)
         next_id = self.trials.new_trial_ids(1)
-        new_trial = tpe.suggest(next_id, self.domain, self.trials,
-                                self._rng.randint(2 ** 31 - 1), **self.tpe_args)[0]
+        new_trial = tpe.suggest(
+            next_id, self.domain, self.trials, self._rng.randint(2 ** 31 - 1), **self.tpe_args
+        )[0]
         self.trials.insert_trial_doc(new_trial)
         self.trials.refresh()
 
@@ -138,8 +148,13 @@ class _HyperOpt(base.Optimizer):
 
             # For consistency, we need to update hyperopt history
             # when standardized data is changed
-            if any(data != self._transform.forward(candidate.get_standardized_data(reference=self.parametrization))):
-                for it, val in enumerate(self._transform.forward(candidate.get_standardized_data(reference=self.parametrization))):
+            if any(
+                data
+                != self._transform.forward(candidate.get_standardized_data(reference=self.parametrization))
+            ):
+                for it, val in enumerate(
+                    self._transform.forward(candidate.get_standardized_data(reference=self.parametrization))
+                ):
                     self.trials._dynamic_trials[next_id[0]]["misc"]["vals"][f"x_{it}"][0] = val
         else:
             spec = hyperopt.base.spec_from_misc(new_trial["misc"])
@@ -165,9 +180,7 @@ class _HyperOpt(base.Optimizer):
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: float) -> None:
         next_id = self.trials.new_trial_ids(1)
-        new_trial = hyperopt.rand.suggest(next_id,
-                                          self.domain,
-                                          self.trials, self._rng.randint(2 ** 31 - 1))
+        new_trial = hyperopt.rand.suggest(next_id, self.domain, self.trials, self._rng.randint(2 ** 31 - 1))
         self.trials.insert_trial_docs(new_trial)
         self.trials.refresh()
         tid = next_id[0]
@@ -228,8 +241,9 @@ class ParametrizedHyperOpt(base.ConfiguredOptimizer):
         n_startup_jobs: int = 20,
         n_EI_candidates: int = 24,
         gamma: float = 0.25,
-        verbose: bool = False
+        verbose: bool = False,
     ) -> None:
         super().__init__(_HyperOpt, locals())
+
 
 HyperOpt = ParametrizedHyperOpt().set_name("HyperOpt", register=True)

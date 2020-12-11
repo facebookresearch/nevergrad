@@ -68,7 +68,7 @@ def test_folder_instantiator(clean_copy: bool) -> None:
     testing.printed_assert_equal(ifolder.placeholders, _EXPECTED)
     np.testing.assert_equal(len(ifolder.file_functions), 1)
     with testing.skip_error_on_systems(OSError, systems=("Windows",)):
-        with ifolder.instantiate(value1=12, value2=110., string="") as tmp:
+        with ifolder.instantiate(value1=12, value2=110.0, string="") as tmp:
             with (tmp / "script.py").open("r") as f:
                 lines = f.readlines()
     np.testing.assert_equal(lines[10], "value2 = 110.0\n")
@@ -77,7 +77,10 @@ def test_folder_instantiator(clean_copy: bool) -> None:
 @testing.parametrized(
     void=("bvcebsl\nsoefn", []),
     unique_no_comment=("bfseibf\nbsfei NG_ARG{machin}", [("machin", None)]),
-    several=("bfkes\nsgrdgrgbdrkNG_ARG{truc|blublu}sehnNG_ARG{bidule}", [("truc", "blublu"), ("bidule", None)]),
+    several=(
+        "bfkes\nsgrdgrgbdrkNG_ARG{truc|blublu}sehnNG_ARG{bidule}",
+        [("truc", "blublu"), ("bidule", None)],
+    ),
 )
 def test_placeholder(text: str, name_comments: tp.List[tp.Tuple[str, tp.Optional[str]]]) -> None:
     placeholders = Placeholder.finditer(text)
@@ -100,7 +103,9 @@ def test_placeholder_substitution() -> None:
     output = Placeholder.sub(text, ".py", {"truc": "#12#", "bidule": 24})
     np.testing.assert_equal(output, expected)
     np.testing.assert_raises(KeyError, Placeholder.sub, text, ".py", {"truc": "#12#"})
-    np.testing.assert_raises(RuntimeError, Placeholder.sub, text, ".py", {"truc": "#12#", "bidule": 24, "chouette": 2})
+    np.testing.assert_raises(
+        RuntimeError, Placeholder.sub, text, ".py", {"truc": "#12#", "bidule": 24, "chouette": 2}
+    )
     text = "bfkes\nsgrdgrgbdrkNG_ARG{truc|blublu}sehnNG_ARG{bidule}NG_ARG{bidule|bis}"
     np.testing.assert_raises(RuntimeError, Placeholder.sub, text, ".py", {"truc": "#12#", "bidule": 24})
 

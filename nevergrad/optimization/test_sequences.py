@@ -23,6 +23,7 @@ def test_get_first_primes() -> None:
         for k in range(3, 1 + int(np.sqrt(value)), 2):
             assert value % k, f"Value {value} obtained with num={num} can be divided by {k}"
 
+
 @testing.parametrized(**{name: (sampler,) for name, sampler in samplers.items()})
 def test_samplers(sampler_cls: tp.Type[sequences.Sampler]) -> None:
     sampler = sampler_cls(144, 4)
@@ -81,7 +82,9 @@ def test_rescaler_on_hammersley() -> None:
     sampler.reinitialize()
     samples2 = list(sampler)
     sampler.reinitialize()
-    np.testing.assert_array_equal(samples, samples2, "Not repeatable")  # test repeatability of hammersley first
+    np.testing.assert_array_equal(
+        samples, samples2, "Not repeatable"
+    )  # test repeatability of hammersley first
     rescaler = sequences.Rescaler(sampler)
     sampler.reinitialize()
     rescaled_samples = [rescaler.apply(x) for x in sampler]
