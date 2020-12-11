@@ -282,12 +282,12 @@ class Parameter:
             max constraint violation.
         """
         if self._parameters is not None and not self.parameters.satisfies_constraints():
-            return 1.
+            return 1.0
         if not self._constraint_checkers:
-            return 0.
+            return 0.0
         val = self.value
         return max(utils.float_penalty(func(val)) for func in self._constraint_checkers)
-        
+
     def satisfies_constraints(self) -> bool:
         """Whether the instance satisfies the constraints added through
         the `register_cheap_constraint` method
@@ -297,7 +297,7 @@ class Parameter:
         bool
             True iff the constraint is satisfied
         """
-        return self.constraint_violation() <= 0.
+        return self.constraint_violation() <= 0.0
 
     def register_cheap_constraint(
         self, func: tp.Union[tp.Callable[[tp.Any], bool], tp.Callable[[tp.Any], float]]

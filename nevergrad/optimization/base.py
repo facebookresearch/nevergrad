@@ -436,7 +436,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # - no memory of previous iterations.
         # - just projection to constraint satisfaction.
         # We try using the normal tool during half constraint budget, in order to reduce the impact on the normal run.
-        use_auxiliary_optimizer = True  
+        use_auxiliary_optimizer = True
         auxiliary_optimizer = None
         original_candidate = None
         for k in range(max_trials):
@@ -448,7 +448,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 if use_auxiliary_optimizer and k > max_trials / 2 and not auxiliary_optimizer:
                     auxiliary_optimizer = registry["OnePlusOne"](self.parametrization, num_workers=1)
                 if auxiliary_optimizer:
-                    candidate = auxiliary_optimizer.recommend() if k == max_trials - 1 else auxiliary_optimizer.ask()
+                    candidate = (
+                        auxiliary_optimizer.recommend() if k == max_trials - 1 else auxiliary_optimizer.ask()
+                    )
                 else:
                     candidate = self._internal_ask_candidate()
                 # only register actual asked points
@@ -458,9 +460,14 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 break  # good to go!
             if auxiliary_optimizer:
                 violation = candidate.constraint_violation()
+                # We have a dissimilarity measure <= 1 by design.
                 distance_penalization = np.tanh(np.sum((candidate.value - original_candidate.value) ** 2))
-                auxiliary_optimizer.tell(candidate, (
-                    distance_penalization + 1. + violation) if violation > 0. else distance_penalization)
+                # Our objective function is minimum for the point the closest to the original candidate under the
+                # constraints.
+                auxiliary_optimizer.tell(
+                    candidate,
+                    (distance_penalization + 1.0 + violation) if violation > 0.0 else distance_penalization,
+                )
             if self._penalize_cheap_violations and not use_auxiliary_optimizer:
                 # Warning! This might be a tell not asked.
                 self._internal_tell_candidate(candidate, float("Inf"))  # DE requires a tell
