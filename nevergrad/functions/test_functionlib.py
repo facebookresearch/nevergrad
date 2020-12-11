@@ -74,11 +74,29 @@ def test_ptb_no_overfitting() -> None:
 @testing.parametrized(
     sphere=({"name": "sphere", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2}, 9.630),
     cigar=({"name": "cigar", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2}, 3527289.665),
-    cigar_rot=({"rotation": True, "name": "cigar", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2}, 5239413.576),
-    hashed=({"name": "sphere", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2, "hashing": True}, 6.174957533),
-    noisy_sphere=({"name": "sphere", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2, "noise_level": .2}, 9.576),
-    noisy_very_sphere=({"name": "sphere", "block_dimension": 3, "useless_variables": 6,
-                        "num_blocks": 2, "noise_dissymmetry": True, "noise_level": .2}, 7.615),
+    cigar_rot=(
+        {"rotation": True, "name": "cigar", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2},
+        5239413.576,
+    ),
+    hashed=(
+        {"name": "sphere", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2, "hashing": True},
+        6.174957533,
+    ),
+    noisy_sphere=(
+        {"name": "sphere", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2, "noise_level": 0.2},
+        9.576,
+    ),
+    noisy_very_sphere=(
+        {
+            "name": "sphere",
+            "block_dimension": 3,
+            "useless_variables": 6,
+            "num_blocks": 2,
+            "noise_dissymmetry": True,
+            "noise_level": 0.2,
+        },
+        7.615,
+    ),
 )
 def test_testcase_function_value(config: tp.Dict[str, tp.Any], expected: float) -> None:
     # make sure no change is made to the computation
