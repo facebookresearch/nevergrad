@@ -19,7 +19,9 @@ def test_instrumentation_set_standardized_data() -> None:
     instru = p.Instrumentation(*tokens)
     values = instru.spawn_child().set_standardized_data([0, 200, 0, 0, 0, 2]).args
     assert values == (1, 11)
-    np.testing.assert_raises(ValueError, instru.spawn_child().set_standardized_data, [0, 0, 200, 0, 0, 0, 2, 3])
+    np.testing.assert_raises(
+        ValueError, instru.spawn_child().set_standardized_data, [0, 0, 200, 0, 0, 0, 2, 3]
+    )
 
 
 def test_instrumentation() -> None:
@@ -31,7 +33,9 @@ def test_instrumentation() -> None:
     np.testing.assert_array_almost_equal(data, [4, -1.1503, 0, 0, 0, 0.5878], decimal=4)
     args, kwargs = instru.spawn_child().set_standardized_data(data, deterministic=True).value
     testing.printed_assert_equal((args, kwargs), ((4.0, 3), {"a": 0, "b": 3}))
-    assert "3),Dict(a=TransitionChoice(choices=Tuple(0,1,2,3)," in repr(instru), f"Erroneous representation {instru}"
+    assert "3),Dict(a=TransitionChoice(choices=Tuple(0,1,2,3)," in repr(
+        instru
+    ), f"Erroneous representation {instru}"
     # check deterministic
     data = np.array([0.0, 0, 0, 0, 0, 0])
     total = 0
@@ -46,13 +50,17 @@ def test_instrumentation() -> None:
     # instru2 = mvar.Instrumentation(*instru.args, **instru.kwargs)  # TODO: OUCH SILENT FAIL
     instru2.copy()
     data = np.random.normal(0, 1, size=6)
-    testing.printed_assert_equal(instru2.spawn_child().set_standardized_data(data, deterministic=True).value,
-                                 instru.spawn_child().set_standardized_data(data, deterministic=True).value)
+    testing.printed_assert_equal(
+        instru2.spawn_child().set_standardized_data(data, deterministic=True).value,
+        instru.spawn_child().set_standardized_data(data, deterministic=True).value,
+    )
     # check naming
-    instru_str = ("Instrumentation(Tuple(Scalar[sigma=Log{exp=2.0}],3),"
-                  "Dict(a=TransitionChoice(choices=Tuple(0,1,2,3),"
-                  "positions=Array{Cd(0,4)},transitions=[1. 1.]),"
-                  "b=Choice(choices=Tuple(0,1,2,3),weights=Array{(1,4)})))")
+    instru_str = (
+        "Instrumentation(Tuple(Scalar[sigma=Log{exp=2.0}],3),"
+        "Dict(a=TransitionChoice(choices=Tuple(0,1,2,3),"
+        "positions=Array{Cd(0,4)},transitions=[1. 1.]),"
+        "b=Choice(choices=Tuple(0,1,2,3),weights=Array{(1,4)})))"
+    )
     testing.printed_assert_equal(instru.name, instru_str)
     testing.printed_assert_equal("blublu", instru.set_name("blublu").name)
 
@@ -91,7 +99,12 @@ def test_softmax_categorical() -> None:
     token = p.Choice(["blu", "blublu", "blublublu"])
     assert token.spawn_child().set_standardized_data([0.5, 1.0, 1.5]).value == "blublu"
     new_token = token.spawn_child(new_value="blu")
-    assert token.spawn_child().set_standardized_data(new_token.get_standardized_data(reference=token), deterministic=True).value == "blu"
+    assert (
+        token.spawn_child()
+        .set_standardized_data(new_token.get_standardized_data(reference=token), deterministic=True)
+        .value
+        == "blu"
+    )
 
 
 def test_ordered_discrete() -> None:
@@ -99,14 +112,19 @@ def test_ordered_discrete() -> None:
     assert token.spawn_child().set_standardized_data([5]).value == "blublublu"
     assert token.spawn_child().set_standardized_data([0]).value == "blublu"
     new_token = token.spawn_child(new_value="blu")
-    assert token.spawn_child().set_standardized_data(new_token.get_standardized_data(reference=token), deterministic=True).value == "blu"
+    assert (
+        token.spawn_child()
+        .set_standardized_data(new_token.get_standardized_data(reference=token), deterministic=True)
+        .value
+        == "blu"
+    )
 
 
 def test_scalar() -> None:
     token = p.Scalar().set_integer_casting()
-    assert token.spawn_child().set_standardized_data([.7]).value == 1
+    assert token.spawn_child().set_standardized_data([0.7]).value == 1
     new_token = token.spawn_child(new_value=1)
-    assert new_token.get_standardized_data(reference=token).tolist() == [1.]
+    assert new_token.get_standardized_data(reference=token).tolist() == [1.0]
 
 
 # bouncing with large values clips to the other side

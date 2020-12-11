@@ -10,6 +10,7 @@ import inspect
 import contextlib
 from pathlib import Path
 import typing as tp
+
 try:
     import pytest
 except ImportError:
@@ -18,7 +19,9 @@ import numpy as np
 import os
 
 
-def assert_set_equal(estimate: tp.Iterable[tp.Any], reference: tp.Iterable[tp.Any], err_msg: str = "") -> None:
+def assert_set_equal(
+    estimate: tp.Iterable[tp.Any], reference: tp.Iterable[tp.Any], err_msg: str = ""
+) -> None:
     """Asserts that both sets are equals, with comprehensive error message.
     This function should only be used in tests.
     Parameters
@@ -36,7 +39,7 @@ def assert_set_equal(estimate: tp.Iterable[tp.Any], reference: tp.Iterable[tp.An
         raise AssertionError("\n".join(messages))
 
 
-def printed_assert_equal(actual: tp.Any, desired: tp.Any, err_msg: str = '') -> None:
+def printed_assert_equal(actual: tp.Any, desired: tp.Any, err_msg: str = "") -> None:
     try:
         np.testing.assert_equal(actual, desired, err_msg=err_msg)
     except AssertionError as e:
@@ -82,13 +85,12 @@ class _MarkdownLink:
 
 
 def _get_all_markdown_links(folder: tp.Union[str, Path]) -> tp.List[_MarkdownLink]:
-    """Returns a list of all existing markdown links
-    """
+    """Returns a list of all existing markdown links"""
     pattern = re.compile(r"\[(?P<string>.+?)\]\((?P<link>\S+?)\)")
     folder = Path(folder).expanduser().absolute()
     links = []
     for rfilepath in folder.glob("**/*.md"):
-        if ("/site-packages/" if os.name != 'nt' else "\\site-packages\\") not in str(rfilepath):
+        if ("/site-packages/" if os.name != "nt" else "\\site-packages\\") not in str(rfilepath):
             filepath = folder / rfilepath
             with filepath.open("r") as f:
                 text = f.read()
@@ -121,7 +123,8 @@ class parametrized:
         names = list(inspect.signature(func).parameters.keys())
         assert len(names) == self.num_params, f"Parameter names: {names}"
         return pytest.mark.parametrize(
-            ",".join(names), self.params if self.num_params > 1 else [p[0] for p in self.params], ids=self.ids)(func)
+            ",".join(names), self.params if self.num_params > 1 else [p[0] for p in self.params], ids=self.ids
+        )(func)
 
 
 @contextlib.contextmanager

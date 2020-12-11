@@ -25,7 +25,9 @@ from . import photonics
 from .. import base
 
 
-def _make_parametrization(name: str, dimension: int, bounding_method: str = "bouncing", rolling: bool = False) -> p.Array:
+def _make_parametrization(
+    name: str, dimension: int, bounding_method: str = "bouncing", rolling: bool = False
+) -> p.Array:
     """Creates appropriate parametrization for a Photonics problem
 
     Parameters
@@ -54,10 +56,22 @@ def _make_parametrization(name: str, dimension: int, bounding_method: str = "bou
         raise NotImplementedError(f"Transform for {name} is not implemented")
     divisor = max(2, len(bounds))
     assert not dimension % divisor, f"points length should be a multiple of {divisor}, got {dimension}"
-    assert shape[0] * shape[1] == dimension, f"Cannot work with dimension {dimension} for {name}: not divisible by {shape[0]}."
+    assert (
+        shape[0] * shape[1] == dimension
+    ), f"Cannot work with dimension {dimension} for {name}: not divisible by {shape[0]}."
     b_array = np.array(bounds)
     assert b_array.shape[0] == shape[0]  # pylint: disable=unsubscriptable-object
-    init = np.sum(b_array, axis=1, keepdims=True).dot(np.ones((1, shape[1],))) / 2
+    init = (
+        np.sum(b_array, axis=1, keepdims=True).dot(
+            np.ones(
+                (
+                    1,
+                    shape[1],
+                )
+            )
+        )
+        / 2
+    )
     array = p.Array(init=init)
     if bounding_method not in ("arctan", "tanh"):
         # sigma must be adapted for clipping and constraint methods
@@ -115,11 +129,19 @@ class Photonics(base.ExperimentFunction):
       Moosh: A Numerical Swiss Army Knife for the Optics of Multilayers in Octave/Matlab. Journal of Open Research Software, 4(1), p.e13.
     """
 
-    def __init__(self, name: str, dimension: int, bounding_method: str = "clipping", rolling: bool = False) -> None:
+    def __init__(
+        self, name: str, dimension: int, bounding_method: str = "clipping", rolling: bool = False
+    ) -> None:
         assert name in ["bragg", "morpho", "chirped"]
         self.name = name
-        self._base_func = {"morpho": photonics.morpho, "bragg": photonics.bragg, "chirped": photonics.chirped}[name]
-        param = _make_parametrization(name=name, dimension=dimension, bounding_method=bounding_method, rolling=rolling)
+        self._base_func = {
+            "morpho": photonics.morpho,
+            "bragg": photonics.bragg,
+            "chirped": photonics.chirped,
+        }[name]
+        param = _make_parametrization(
+            name=name, dimension=dimension, bounding_method=bounding_method, rolling=rolling
+        )
         super().__init__(self._compute, param)
 
     # pylint: disable=arguments-differ
@@ -127,7 +149,7 @@ class Photonics(base.ExperimentFunction):
         # pylint: disable=not-callable
         loss = self.function(x)
         assert isinstance(loss, float)
-        base.update_leaderboard(f'{self.name},{self.parametrization.dimension}', loss, x, verbose=True)
+        base.update_leaderboard(f"{self.name},{self.parametrization.dimension}", loss, x, verbose=True)
         return loss
 
     def _compute(self, x: np.ndarray) -> float:
