@@ -134,12 +134,13 @@ class Photonics(base.ExperimentFunction):
             bounding_method=bounding_method, rolling=rolling, as_tuple=as_tuple)
         super().__init__(self._compute, param)
 
+    def to_ndarray(self, x: tp.Any) -> np.ndarray:
+        return np.transpose(np.concatenate([a for a in args])) if self._as_tuple else x
+
     # pylint: disable=arguments-differ
     def evaluation_function(self,  *args: tp.Any, **kwargs: tp.Any) -> float:  # type: ignore
         assert len(kwargs.items()) == 0
-        x = args[0]
-        if self._as_tuple:
-            x = np.transpose(np.concatenate([a for a in args]))
+        x = self.to_ndarray(args[0])
         # pylint: disable=not-callable
         loss = self.function(x)
         assert isinstance(loss, float)
@@ -148,9 +149,7 @@ class Photonics(base.ExperimentFunction):
 
     def _compute(self,  *args: tp.Any, **kwargs: tp.Any) -> float:  # type: ignore
         assert len(kwargs.items()) == 0
-        x = np.concatenate([a for a in args])
-        if self._as_tuple:
-            x = np.transpose(x)
+        x = self.to_ndarray(args[0])
         x_cat = np.array(x, copy=False).ravel()
         assert x_cat.size == self.dimension
         try:
