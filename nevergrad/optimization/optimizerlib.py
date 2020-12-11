@@ -383,7 +383,8 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
     scale: float
         scale of the search
     elitist: bool
-        whether we switch to elitist mode
+        whether we switch to elitist mode, i.e. mode + instead of comma,
+        i.e. mode in which we always keep the best point in the population.
     popsize: Optional[int] = None
         population size, should be n * self.num_workers for int n >= 1.
         default is max(self.num_workers, 4 + int(3 * np.log(self.dimension)))
