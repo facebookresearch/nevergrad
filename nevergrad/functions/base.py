@@ -18,6 +18,12 @@ class ExperimentFunctionCopyError(NotImplementedError):
     """
 
 
+class UnsupportedExperiment(RuntimeError):
+    """Raised if the experiment is not compatible with the current settings:
+    Eg: missing data, missing import, unsupported OS etc
+    """
+
+
 # pylint: disable=too-many-instance-attributes
 class ExperimentFunction:
     """Combines a function and its parametrization for running experiments (see benchmark subpackage)
