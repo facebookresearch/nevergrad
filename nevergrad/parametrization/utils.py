@@ -45,13 +45,15 @@ class Descriptors:
         return Descriptors(**values)
 
     def __repr__(self) -> str:
-        diff = ",".join(f"{x}={y}" for x, y in sorted(ngtools.different_from_defaults(instance=self, check_mismatches=True).items()))
+        diff = ",".join(
+            f"{x}={y}"
+            for x, y in sorted(ngtools.different_from_defaults(instance=self, check_mismatches=True).items())
+        )
         return f"{self.__class__.__name__}({diff})"
 
 
 class NotSupportedError(RuntimeError):
-    """This type of operation is not supported by the parameter.
-    """
+    """This type of operation is not supported by the parameter."""
 
 
 class TemporaryDirectoryCopy(tempfile.TemporaryDirectory):  # type: ignore
@@ -89,8 +91,7 @@ class TemporaryDirectoryCopy(tempfile.TemporaryDirectory):  # type: ignore
 
 
 class FailedJobError(RuntimeError):
-    """Job failed during processing
-    """
+    """Job failed during processing"""
 
 
 class CommandFunction:
@@ -113,8 +114,13 @@ class CommandFunction:
        Everything that has been sent to stdout
     """
 
-    def __init__(self, command: tp.List[str], verbose: bool = False, cwd: tp.Optional[tp.Union[str, Path]] = None,
-                 env: tp.Optional[tp.Dict[str, str]] = None) -> None:
+    def __init__(
+        self,
+        command: tp.List[str],
+        verbose: bool = False,
+        cwd: tp.Optional[tp.Union[str, Path]] = None,
+        env: tp.Optional[tp.Dict[str, str]] = None,
+    ) -> None:
         if not isinstance(command, list):
             raise TypeError("The command must be provided as a list")
         self.command = command
@@ -129,15 +135,23 @@ class CommandFunction:
         Errors are provided with the internal stderr
         """
         # TODO make the following command more robust (probably fails in multiple cases)
-        full_command = self.command + [str(x) for x in args] + ["--{}={}".format(x, y) for x, y in kwargs.items()]
+        full_command = (
+            self.command + [str(x) for x in args] + ["--{}={}".format(x, y) for x, y in kwargs.items()]
+        )
         if self.verbose:
             print(f"The following command is sent: {full_command}")
         outlines: tp.List[str] = []
-        with subprocess.Popen(full_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                              shell=False, cwd=self.cwd, env=self.env) as process:
+        with subprocess.Popen(
+            full_command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            shell=False,
+            cwd=self.cwd,
+            env=self.env,
+        ) as process:
             try:
                 assert process.stdout is not None
-                for line in iter(process.stdout.readline, b''):
+                for line in iter(process.stdout.readline, b""):
                     if not line:
                         break
                     outlines.append(line.decode().strip())
@@ -153,7 +167,9 @@ class CommandFunction:
             if stderr and (retcode or self.verbose):
                 print(stderr.decode(), file=sys.stderr)
             if retcode:
-                subprocess_error = subprocess.CalledProcessError(retcode, process.args, output=stdout, stderr=stderr)
+                subprocess_error = subprocess.CalledProcessError(
+                    retcode, process.args, output=stdout, stderr=stderr
+                )
                 raise FailedJobError(stderr.decode()) from subprocess_error
         return stdout
 
