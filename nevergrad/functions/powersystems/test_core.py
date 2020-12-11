@@ -8,11 +8,14 @@ import numpy as np
 from . import core
 
 
-def test_powersystem() -> None:
-    func = core.PowerSystem()
-    x = 7 * np.random.rand(func.dimension)
-    value = func.function(x)  # should not touch boundaries, so value should be < np.inf
-    assert value < np.inf
+def test_powersystem_small() -> None:
+    np.random.seed(12)
+    dams = 2
+    func = core.PowerSystem(num_dams=dams, num_years=0.2)
+    x = [np.random.rand(func.dimension // dams) for _ in range(dams)]
+    value = func.function(*x)
+    np.testing.assert_almost_equal(value, 4265.2452009)
+
 
 @patch(f"{__name__}.core.plt")
 def test_make_plots(mock_plt):
@@ -22,4 +25,3 @@ def test_make_plots(mock_plt):
     assert mock_plt.clf.call_count == 1
     assert mock_plt.subplot.call_count == 4
     assert mock_plt.savefig.call_count == 1
-    

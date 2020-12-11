@@ -23,9 +23,8 @@ def test_get_first_primes() -> None:
         for k in range(3, 1 + int(np.sqrt(value)), 2):
             assert value % k, f"Value {value} obtained with num={num} can be divided by {k}"
 
-
-@testing.parametrized(**{name: (name, sampler,) for name, sampler in samplers.items()})
-def test_samplers(name: str, sampler_cls: tp.Type[sequences.Sampler]) -> None:
+@testing.parametrized(**{name: (sampler,) for name, sampler in samplers.items()})
+def test_samplers(sampler_cls: tp.Type[sequences.Sampler]) -> None:
     sampler = sampler_cls(144, 4)
     np.testing.assert_equal(sampler.index, 0)
     output = sampler()

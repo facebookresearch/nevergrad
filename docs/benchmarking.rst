@@ -66,8 +66,11 @@ In this case, please refer to these [guidelines](adding_an_algorithm.md).
 Functions used for the experiments must derive from :code:`nevergrad.functions.ExperimentFunction`. This class implements features necessary for the benchmarks:
 
 - keeps the parametrization of the function, used for instantiating the optimizers.
-- keeping a dictionary of descriptors of your function settings through the :code:`_descriptors` attribute,  which is used to create the columns of the data file produced by the experiments
+- keeping a dictionary of descriptors of your function settings through the :code:`descriptors` attribute,  which is used to create the columns of the data file produced by the experiments.
+  Descriptors are automatically filled up based on int/bool/float/str variables you used to initialize the function, but you can add more used :code:`add_descriptors`
 - let's you override methods allowing custom behaviors such as :code:`evaluation_function` called at evaluation time to possibly avoid noise when possible, and :code:`compute_pseudotime` to mock computation time during benchkmarks.
+- implements a :code:`copy` method for creating a new instance, using the same parameters you provided to initialize the function. The initilization of functions may draw random variables
+  so that two copies can differ, providing more robustness to benchmarks.
 
 See the docstrings for more information, and `arcoating/core.py <https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/functions/arcoating/core.py>`_ and `example.py <https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/benchmark/additional/example.py>`_ for examples.
 

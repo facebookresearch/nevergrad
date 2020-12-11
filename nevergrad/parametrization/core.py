@@ -30,18 +30,36 @@ class Parameter:
         # Main features
         self.uid = uuid.uuid4().hex
         self.parents_uids: tp.List[str] = []
-        self.heritage: tp.Dict[str, tp.Any] = {"lineage": self.uid}  # passed through to children
+        self.heritage: tp.Dict[tp.Hashable, tp.Any] = {"lineage": self.uid}  # passed through to children
         self.loss: tp.Optional[float] = None  # associated loss
+        self._losses: tp.Optional[np.ndarray] = None  # associated losses (multiobjective) as an array
         self._parameters = None if not parameters else Dict(**parameters)  # internal/model parameters
         self._dimension: tp.Optional[int] = None
         # Additional convenient features
         self._random_state: tp.Optional[np.random.RandomState] = None  # lazy initialization
         self._generation = 0
-        self._constraint_checkers: tp.List[tp.Callable[[tp.Any], bool]] = []
+        #self._constraint_checkers: tp.List[tp.Union[tp.Callable[[tp.Any], bool], tp.Callable[[tp.Any], float]]] = []
+        self._constraint_checkers: tp.List[tp.Callable[[tp.Any], tp.Union[bool, float]]] = []
         self._name: tp.Optional[str] = None
         self._frozen = False
         self._descriptors: tp.Optional[utils.Descriptors] = None
-        self._meta: tp.Dict[str, tp.Any] = {}  # for anything algorithm related
+        self._meta: tp.Dict[tp.Hashable, tp.Any] = {}  # for anything algorithm related
+
+    @property
+    def losses(self) -> np.ndarray:
+        """Possibly multiobjective losses which were told
+        to the optimizer along this parameter.
+        In case of mono-objective loss, losses is the array containing this loss as sole element
+
+        Note
+        ----
+        This API is highly experimental
+        """
+        if self._losses is not None:
+            return self._losses
+        if self.loss is not None:
+            return np.array([self.loss], dtype=float)
+        raise RuntimeError("No loss was provided")
 
     @property
     def value(self) -> tp.Any:
@@ -259,15 +277,16 @@ class Parameter:
         if not self._constraint_checkers:
             return True
         val = self.value
-        return all(func(val) for func in self._constraint_checkers)
+        return all(utils.float_penalty(func(val)) <= 0 for func in self._constraint_checkers)
 
-    def register_cheap_constraint(self, func: tp.Callable[[tp.Any], bool]) -> None:
+    def register_cheap_constraint(self, func: tp.Union[tp.Callable[[tp.Any], bool], tp.Callable[[tp.Any], float]]) -> None:
         """Registers a new constraint on the parameter values.
 
         Parameters
         ----------
         func: Callable
-            function which, given the value of the instance, returns whether it satisfies the constraints.
+            function which, given the value of the instance, returns whether it satisfies the constraints (if output = bool),
+            or a float which is >= 0 if the constraint is satisfied.
 
         Note
         ----
@@ -382,7 +401,7 @@ class Constant(Parameter):
 
     def __init__(self, value: tp.Any) -> None:
         super().__init__()
-        if isinstance(value, Parameter):
+        if isinstance(value, Parameter) and not isinstance(self, MultiobjectiveReference):
             raise TypeError("Only non-parameters can be wrapped in a Constant")
         self._value = value
 
@@ -440,6 +459,15 @@ def as_parameter(param: tp.Any) -> Parameter:
         return param
     else:
         return Constant(param)
+
+
+class MultiobjectiveReference(Constant):
+
+    def __init__(self, parameter: tp.Optional[Parameter] = None) -> None:
+        if parameter is not None and not isinstance(parameter, Parameter):
+            raise TypeError("MultiobjectiveReference should either take no argument or a parameter which will "
+                            f"be used by the optimizer.\n(received {parameter} of type {type(parameter)})")
+        super().__init__(parameter)
 
 
 class Dict(Parameter):
