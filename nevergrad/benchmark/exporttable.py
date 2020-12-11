@@ -10,7 +10,7 @@ import typing as t
 
 def remove_parens(data: t.List[t.List[str]]) -> t.List[t.List[str]]:
     # If data[i][j] contains a "(", we keep only the part before that "(".
-    return [[d[:d.index("(")] if "(" in d else d for d in datarow] for datarow in data]
+    return [[d[: d.index("(")] if "(" in d else d for d in datarow] for datarow in data]
 
 
 def export_table(filename: str, rows: t.List[t.Any], cols: t.List[t.Any], data: t.List[t.List[str]]) -> None:
@@ -53,7 +53,9 @@ def export_table(filename: str, rows: t.List[t.Any], cols: t.List[t.Any], data: 
         f.write("\\sloppy\n")
         p = str(1.0 / (2 + len(cols)))
         # f.write("\\begin{landscape}\n")
-        f.write("\\begin{tabular}{|P{" + p + "\\textwidth}|" + ("P{" + p + "\\textwidth}|") * len(cols) + "}\n")
+        f.write(
+            "\\begin{tabular}{|P{" + p + "\\textwidth}|" + ("P{" + p + "\\textwidth}|") * len(cols) + "}\n"
+        )
         f.write("\\hline\n")
         f.write(" & " + "&".join(cols) + "\\\\\n")
         f.write("\\hline\n")

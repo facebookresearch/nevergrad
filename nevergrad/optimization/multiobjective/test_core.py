@@ -16,14 +16,16 @@ from . import core
 
 def test_hypervolume_pareto_function() -> None:
     hvol = core.HypervolumePareto((100, 100))
-    tuples = [(110, 110),     # -0 + distance
-              (110, 90),      # -0 + distance
-              (80, 80),       # -400 + distance
-              (50, 50),       # -2500 + distance
-              (50, 50),       # -2500 + distance
-              (80, 80),       # -2500 + distance --> -2470
-              (30, 60),       # [30,50]x[60,100] + [50,100]x[50,100] --> -2500 -800 = -3300
-              (60, 30)]       # [30,50]x[60,100] + [50,100]x[50,100] + [60,100]x[30,50] --> -2500 -800 -800= -4100
+    tuples = [
+        (110, 110),  # -0 + distance
+        (110, 90),  # -0 + distance
+        (80, 80),  # -400 + distance
+        (50, 50),  # -2500 + distance
+        (50, 50),  # -2500 + distance
+        (80, 80),  # -2500 + distance --> -2470
+        (30, 60),  # [30,50]x[60,100] + [50,100]x[50,100] --> -2500 -800 = -3300
+        (60, 30),
+    ]  # [30,50]x[60,100] + [50,100]x[50,100] + [60,100]x[30,50] --> -2500 -800 -800= -4100
     values = []
     for tup in tuples:
         param = ng.p.Tuple(*(ng.p.Scalar(x) for x in tup))
@@ -38,9 +40,7 @@ def test_hypervolume_pareto_function() -> None:
 
 def test_hypervolume_pareto_with_no_good_point() -> None:
     hvol = core.HypervolumePareto((100, 100))
-    tuples = [(110, 110),
-              (110, 90),
-              (90, 110)]
+    tuples = [(110, 110), (110, 90), (90, 110)]
     values = []
     for tup in tuples:
         param = ng.p.Tuple(*(ng.p.Scalar(x) for x in tup))
@@ -94,7 +94,7 @@ def test_doc_multiobjective() -> None:
     import numpy as np
 
     def multiobjective(x):
-        return [np.sum(x**2), np.sum((x - 1)**2)]
+        return [np.sum(x ** 2), np.sum((x - 1) ** 2)]
 
     print("Example: ", multiobjective(np.array([1.0, 2.0, 0])))
     # >>> Example: [5.0, 2.0]
@@ -124,7 +124,7 @@ def test_doc_multiobjective() -> None:
     print("Loss-covering subset:", optimizer.pareto_front(2, subset="loss-covering"))
     print("Domain-covering subset:", optimizer.pareto_front(2, subset="domain-covering"))
     print("EPS subset:", optimizer.pareto_front(2, subset="EPS"))
-    
+
     # DOC_MULTIOBJ_OPT_1
     assert len(optimizer.pareto_front()) > 1
     assert len(optimizer.pareto_front(2, "loss-covering")) == 2

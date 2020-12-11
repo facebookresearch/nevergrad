@@ -146,6 +146,7 @@ jobs:
 
       - run:
           name: "Run mypy"
+          when: always
           command: |
             . venv/bin/activate
             mypy --version
@@ -153,10 +154,19 @@ jobs:
 
       - run:
           name: "Run basic pylint"
+          when: always
           command: |
             . venv/bin/activate
             pylint --version
             pylint nevergrad --disable=all --enable=unused-import,unused-argument,unused-variable,undefined-loop-variable,redefined-builtin,used-before-assignment,super-init-not-called
+
+      - run:
+          name: "Run black"
+          when: always
+          command: |
+            . venv/bin/activate
+            black --version
+            black nevergrad --check
 
 
   pytests:
@@ -237,7 +247,7 @@ jobs:
           name: pytest
           command: |
             . ./venv/Scripts/activate
-            pytest nevergrad -v --exitfirst
+            pytest nevergrad -v --exitfirst --durations=20
 
 
   pypi-deploy:
