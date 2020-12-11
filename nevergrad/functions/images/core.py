@@ -195,7 +195,7 @@ class ImageFromPGAN(base.ExperimentFunction):
         which loss to use for the images
     mutable_sigma: bool
         whether the sigma should be mutable
-    sigma: int
+    sigma: float
         standard deviation of the initial mutations
     """
 
