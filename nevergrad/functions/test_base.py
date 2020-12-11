@@ -49,16 +49,19 @@ def test_experiment_function() -> None:
 
 
 def test_array_experiment_function() -> None:
-    iarrayfunc = base.ArrayExperimentFunction(lambda x: sum(x),   # type: ignore
-        p.Array(shape=(10,)).set_bounds(-0.5, 6.).set_name(""),
+    iarrayfunc = base.ArrayExperimentFunction(
+        lambda x: sum(x),  # type: ignore
+        p.Array(shape=(10,)).set_bounds(-0.5, 6.0).set_name(""),
         symmetry=247,
     )
-    iarrayfunc2 = base.ArrayExperimentFunction(lambda x: sum(x),   # type: ignore
-        p.Array(shape=(10,)).set_bounds(-0.5, 6.).set_name(""),
+    iarrayfunc2 = base.ArrayExperimentFunction(
+        lambda x: sum(x),  # type: ignore
+        p.Array(shape=(10,)).set_bounds(-0.5, 6.0).set_name(""),
         symmetry=111,
     )
-    iarrayfunc3 = base.ArrayExperimentFunction(lambda x: sum(x),   # type: ignore
-        p.Array(shape=(10,)).set_bounds(-0.5, 6.).set_name(""),
+    iarrayfunc3 = base.ArrayExperimentFunction(
+        lambda x: sum(x),  # type: ignore
+        p.Array(shape=(10,)).set_bounds(-0.5, 6.0).set_name(""),
         symmetry=111,
     )
     np.testing.assert_equal(iarrayfunc.dimension, 10)

@@ -268,7 +268,9 @@ class ArrayExperimentFunction(ExperimentFunction):
         number parametrizing how we symmetrize the function.
     """
 
-    def __init__(self, function: tp.Callable[..., tp.Loss], parametrization: p.Parameter, symmetry: int = 0) -> None:
+    def __init__(
+        self, function: tp.Callable[..., tp.Loss], parametrization: p.Parameter, symmetry: int = 0
+    ) -> None:
         """Adds a "symmetry" parameter, which allows the creation of many symmetries of a given function.
 
         symmetry: an int, 0 by default.
@@ -277,7 +279,9 @@ class ArrayExperimentFunction(ExperimentFunction):
         Makes sense if and only if (1) the input is a single ndarray (2) the domains are symmetric."""
         self._inner_function = function
         super().__init__(self.symmetrized_function, parametrization)
-        assert isinstance(parametrization, p.Array), f"{type(parametrization)} is not p.Array; {parametrization.parameters}."
+        assert isinstance(
+            parametrization, p.Array
+        ), f"{type(parametrization)} is not p.Array; {parametrization.parameters}."
         assert (parametrization.bounds[0] is None) == (parametrization.bounds[1] is None)
         assert len(parametrization._constraint_checkers) == 0
         assert symmetry >= 0
@@ -293,13 +297,13 @@ class ArrayExperimentFunction(ExperimentFunction):
         assert isinstance(x, np.ndarray), "symmetry != 0 works only when the input is an array."
         assert len(x.shape) == 1, "only one-dimensional arrays for now."
         y = np.array(x, copy=True)
-        symmetry: int = self._symmetry  # type: ignore
-        for i in range(len(y)):
+        symmetry = self._symmetry
+        for i in range(len(y)):  # pylint: disable=consider-using-enumerate
             if symmetry % 2 == 1:
                 if self.parametrization.bounds[0] is not None and self.parametrization.bounds[1] is not None:  # type: ignore
-                    middle = (self.parametrization.bounds[0][0] + self.parametrization.bounds[1][0]) / 2.  # type: ignore
+                    middle = (self.parametrization.bounds[0][0] + self.parametrization.bounds[1][0]) / 2.0  # type: ignore
                 else:
-                    middle = 0.
+                    middle = 0.0
                 y[i] = middle - x[i]  # We should rather symmetrize w.r.t the center of Parameter. TODO
             symmetry = symmetry // 2
         return self._inner_function(y)  # type: ignore
