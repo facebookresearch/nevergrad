@@ -239,7 +239,9 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
         recom = optim.minimize(fitness)
     if name not in recomkeeper.recommendations.index:
         recomkeeper.recommendations.loc[name, :dimension] = tuple(recom.value)
-        raise ValueError(f'Recorded the value for optimizer "{name}", please rerun this test locally.')
+        raise ValueError(
+            f'Recorded the value {tuple(recom.value)} for optimizer "{name}", please rerun this test locally.'
+        )
     # BO slightly differs from a computer to another
     decimal = 2 if isinstance(optimizer_cls, optlib.ParametrizedBO) or "BO" in name else 5
     np.testing.assert_array_almost_equal(
