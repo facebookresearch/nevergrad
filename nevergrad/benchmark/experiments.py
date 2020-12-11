@@ -1278,9 +1278,7 @@ def photonics(seed: tp.Optional[int] = None, as_tuple: bool = False) -> tp.Itera
 @registry.register
 def photonics2(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with higher dimensions."""
-    internal_generator = photonics(seed, as_tuple=True)
-    for xp in internal_generator:
-        yield xp
+    return photonics(seed, as_tuple=True)
 
 
 @registry.register
