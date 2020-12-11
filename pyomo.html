@@ -176,7 +176,7 @@ In a <code class="code docutils literal notranslate"><span class="pre">ConcreteM
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyomo</span>
 
 <span class="k">def</span> <span class="nf">square</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">pyomo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">((</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">pyomo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">((</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">)</span>
 
 <span class="n">model</span> <span class="o">=</span> <span class="n">pyomo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">()</span>
 <span class="n">model</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyomo</span><span class="o">.</span><span class="n">Var</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyomo</span><span class="o">.</span><span class="n">Reals</span><span class="p">)</span>
@@ -192,6 +192,7 @@ Note that only single objective model is supported by the utility.
 To do this, you should first import new module.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nevergrad</span> <span class="k">as</span> <span class="nn">ng</span>
 <span class="kn">import</span> <span class="nn">nevergrad.functions.pyomo</span> <span class="k">as</span> <span class="nn">ng_pyomo</span>
+
 </pre></div>
 </div>
 <p>In our example as shown below, <code class="code docutils literal notranslate"><span class="pre">OnePlusOne</span></code> optimizer is used to minimize the objective function:</p>
@@ -201,8 +202,8 @@ To do this, you should first import new module.</p>
 </pre></div>
 </div>
 <p>Finally, the result can be read using</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">recommendation</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;x[0]&#39;</span><span class="p">])</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">recommendation</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;x[1]&#39;</span><span class="p">])</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">recommendation</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;x[0]&quot;</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">recommendation</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;x[1]&quot;</span><span class="p">])</span>
 </pre></div>
 </div>
 </div>

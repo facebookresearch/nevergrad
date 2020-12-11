@@ -200,7 +200,7 @@ the <code class="code docutils literal notranslate"><span class="pre">[all]</spa
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nevergrad</span> <span class="k">as</span> <span class="nn">ng</span>
 
 <span class="k">def</span> <span class="nf">square</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
-    <span class="k">return</span> <span class="nb">sum</span><span class="p">((</span><span class="n">x</span> <span class="o">-</span> <span class="o">.</span><span class="mi">5</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">sum</span><span class="p">((</span><span class="n">x</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
 
 <span class="c1"># optimization on x as an array of shape (2,)</span>
 <span class="n">optimizer</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">OnePlusOne</span><span class="p">(</span><span class="n">parametrization</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">budget</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
@@ -215,6 +215,7 @@ See the <a class="reference internal" href="parametrization.html#parametrizing">
 directly accessed through <code class="code docutils literal notranslate"><span class="pre">recommendation.value</span></code> which is here a <code class="code docutils literal notranslate"><span class="pre">np.ndarray</span></code> of size 2.</p>
 <p>You can print the full list of optimizers with:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nevergrad</span> <span class="k">as</span> <span class="nn">ng</span>
+
 <span class="nb">print</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">ng</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">registry</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
 </pre></div>
 </div>

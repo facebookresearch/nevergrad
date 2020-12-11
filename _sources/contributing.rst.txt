@@ -37,7 +37,14 @@ If you are however familiar with type hints, you can check with the strict mode:
 
 Unit tests and type checks (in non-strict mode) will be automatically run every time a pull request is submitted/updated.
 
-Finally, we use pre-commit hooks to make sure the code follows the same coding style. We currently use  `autpep8` and :code:`pylint`. To install them, just run :code:`pre-commit install` once, and they will be activated for all your commits on this repository.
+Finally, we use pre-commit hooks to make sure the code follows the same coding style. We currently use  `black` and :code:`pylint`. To install them, just run :code:`pre-commit install` once, and they will be activated for all your commits on this repository.
+
+:code:`black` compliance is automatically checked on all PRs. If you do not use precommit hooks, you
+can install :code:`black` with :code:`pip install black` make your code compliant by running:
+
+.. code-block:: bash
+
+    black nevergrad
 
 
 Pull Requests

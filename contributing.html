@@ -214,7 +214,12 @@ and rerun <code class="code docutils literal notranslate"><span class="pre">neve
 If we consider it useful to have correct typing, we will update the code after your pull request is merged.
 If you are however familiar with type hints, you can check with the strict mode: <code class="code docutils literal notranslate"><span class="pre">mypy</span> <span class="pre">--implicit-reexport</span> <span class="pre">--strict</span> <span class="pre">nevergrad</span></code>, but at any given moment all the code is not guaranteed to pass the test (we try to work on it regularly, see #409).</p>
 <p>Unit tests and type checks (in non-strict mode) will be automatically run every time a pull request is submitted/updated.</p>
-<p>Finally, we use pre-commit hooks to make sure the code follows the same coding style. We currently use  <cite>autpep8</cite> and <code class="code docutils literal notranslate"><span class="pre">pylint</span></code>. To install them, just run <code class="code docutils literal notranslate"><span class="pre">pre-commit</span> <span class="pre">install</span></code> once, and they will be activated for all your commits on this repository.</p>
+<p>Finally, we use pre-commit hooks to make sure the code follows the same coding style. We currently use  <cite>black</cite> and <code class="code docutils literal notranslate"><span class="pre">pylint</span></code>. To install them, just run <code class="code docutils literal notranslate"><span class="pre">pre-commit</span> <span class="pre">install</span></code> once, and they will be activated for all your commits on this repository.</p>
+<p><code class="code docutils literal notranslate"><span class="pre">black</span></code> compliance is automatically checked on all PRs. If you do not use precommit hooks, you
+can install <code class="code docutils literal notranslate"><span class="pre">black</span></code> with <code class="code docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">black</span></code> make your code compliant by running:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>black nevergrad
+</pre></div>
+</div>
 </div>
 <div class="section" id="pull-requests">
 <h3>Pull Requests<a class="headerlink" href="#pull-requests" title="Permalink to this headline">¶</a></h3>
