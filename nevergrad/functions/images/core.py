@@ -192,7 +192,7 @@ class ImageFromPGAN(base.ExperimentFunction):
     use_gpu: bool
         whether to use gpus to compute the images
     loss: ImageLoss
-        which loss to use for the images
+        which loss to use for the images (default: Koncept512)
     mutable_sigma: bool
         whether the sigma should be mutable
     sigma: float
@@ -201,11 +201,12 @@ class ImageFromPGAN(base.ExperimentFunction):
 
     def __init__(self, initial_noise: tp.Optional[np.ndarray] = None,
                  use_gpu: bool = False,
-                 loss: imagelosses.ImageLoss = imagelosses.Koncept512(),
+                 loss: tp.Optional[imagelosses.ImageLoss] = None,
                  mutable_sigma: bool = True, sigma: float = 35) -> None:
+        if loss is None:
+            loss = imagelosses.Koncept512()
         if not torch.cuda.is_available():
             use_gpu = False
-
         # Storing high level information..
         self.pgan_model = torch.hub.load('facebookresearch/pytorch_GAN_zoo:hub',
                                          'PGAN', model_name='celebAHQ-512',
