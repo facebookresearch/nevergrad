@@ -567,7 +567,9 @@ def test_ngo_split_optimizer(name: tp.Optional[str], dimension: int, num_workers
       batch_size=ng.p.Scalar(lower=1, upper=12).set_integer_casting(),
       # either "conv" or "fc"
       architecture=ng.p.Choice(["conv", "fc"])
-    ) if fake_learning else ng.p.Choice(["const", ng.p.Array(init=list(range(1, dimension+1)))])
+    )
+    if not fake_learning 
+        param = ng.p.Choice(["const", ng.p.Array(init=list(range(1, dimension+1)))])
     if name is not None:
         Opt = optlib.registry[name]
         opt = optlib.ConfSplitOptimizer(multivariate_optimizer=Opt)
