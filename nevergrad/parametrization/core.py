@@ -11,6 +11,7 @@ from collections import OrderedDict
 import numpy as np
 import nevergrad.common.typing as tp
 from . import utils
+
 # pylint: disable=no-value-for-parameter
 
 
@@ -38,7 +39,8 @@ class Parameter:
         # Additional convenient features
         self._random_state: tp.Optional[np.random.RandomState] = None  # lazy initialization
         self._generation = 0
-        self._constraint_checkers: tp.List[tp.Callable[[tp.Any], bool]] = []
+        # self._constraint_checkers: tp.List[tp.Union[tp.Callable[[tp.Any], bool], tp.Callable[[tp.Any], float]]] = []
+        self._constraint_checkers: tp.List[tp.Callable[[tp.Any], tp.Union[bool, float]]] = []
         self._name: tp.Optional[str] = None
         self._frozen = False
         self._descriptors: tp.Optional[utils.Descriptors] = None
@@ -86,8 +88,7 @@ class Parameter:
 
     @property
     def parameters(self) -> "Dict":
-        """Internal/model parameters for this parameter
-        """
+        """Internal/model parameters for this parameter"""
         if self._parameters is None:  # delayed instantiation to avoid infinte loop
             assert self.__class__ != Dict, "parameters of Parameters dict should never be called"
             self._parameters = Dict()
@@ -107,8 +108,7 @@ class Parameter:
         return self._dimension
 
     def mutate(self) -> None:
-        """Mutate parameters of the instance, and then its value
-        """
+        """Mutate parameters of the instance, and then its value"""
         self._check_frozen()
         self.parameters.mutate()
         self.set_standardized_data(self.random_state.normal(size=self.dimension), deterministic=False)
@@ -160,13 +160,17 @@ class Parameter:
           by the same reference in the exact same state (no mutation)
         - to make the code more explicit, the "reference" parameter is enforced as a keyword-only parameter.
         """
-        assert reference is None or isinstance(reference, self.__class__), f"Expected {type(self)} but got {type(reference)} as reference"
+        assert reference is None or isinstance(
+            reference, self.__class__
+        ), f"Expected {type(self)} but got {type(reference)} as reference"
         return self._internal_get_standardized_data(self if reference is None else reference)
 
     def _internal_get_standardized_data(self: P, reference: P) -> np.ndarray:
         raise utils.NotSupportedError(f"Export to standardized data space is not implemented for {self.name}")
 
-    def set_standardized_data(self: P, data: tp.ArrayLike, *, reference: tp.Optional[P] = None, deterministic: bool = False) -> P:
+    def set_standardized_data(
+        self: P, data: tp.ArrayLike, *, reference: tp.Optional[P] = None, deterministic: bool = False
+    ) -> P:
         """Updates the value of the provided reference (or self) using the standardized data.
 
         Parameters
@@ -190,25 +194,31 @@ class Parameter:
         """
         assert isinstance(deterministic, bool)
         sent_reference = self if reference is None else reference
-        assert isinstance(sent_reference, self.__class__), f"Expected {type(self)} but got {type(sent_reference)} as reference"
+        assert isinstance(
+            sent_reference, self.__class__
+        ), f"Expected {type(self)} but got {type(sent_reference)} as reference"
         self._check_frozen()
-        self._internal_set_standardized_data(np.array(data, copy=False), reference=sent_reference, deterministic=deterministic)
+        self._internal_set_standardized_data(
+            np.array(data, copy=False), reference=sent_reference, deterministic=deterministic
+        )
         return self
 
-    def _internal_set_standardized_data(self: P, data: np.ndarray, reference: P, deterministic: bool = False) -> None:
-        raise utils.NotSupportedError(f"Import from standardized data space is not implemented for {self.name}")
+    def _internal_set_standardized_data(
+        self: P, data: np.ndarray, reference: P, deterministic: bool = False
+    ) -> None:
+        raise utils.NotSupportedError(
+            f"Import from standardized data space is not implemented for {self.name}"
+        )
 
     # PART 2 - Additional features
 
     @property
     def generation(self) -> int:
-        """Generation of the parameter (children are current generation + 1)
-        """
+        """Generation of the parameter (children are current generation + 1)"""
         return self._generation
 
     def get_value_hash(self) -> tp.Hashable:
-        """Hashable object representing the current value of the instance
-        """
+        """Hashable object representing the current value of the instance"""
         val = self.value
         if isinstance(val, (str, bytes, float, int)):
             return val
@@ -276,15 +286,18 @@ class Parameter:
         if not self._constraint_checkers:
             return True
         val = self.value
-        return all(func(val) for func in self._constraint_checkers)
+        return all(utils.float_penalty(func(val)) <= 0 for func in self._constraint_checkers)
 
-    def register_cheap_constraint(self, func: tp.Callable[[tp.Any], bool]) -> None:
+    def register_cheap_constraint(
+        self, func: tp.Union[tp.Callable[[tp.Any], bool], tp.Callable[[tp.Any], float]]
+    ) -> None:
         """Registers a new constraint on the parameter values.
 
         Parameters
         ----------
         func: Callable
-            function which, given the value of the instance, returns whether it satisfies the constraints.
+            function which, given the value of the instance, returns whether it satisfies the constraints (if output = bool),
+            or a float which is >= 0 if the constraint is satisfied.
 
         Note
         ----
@@ -349,20 +362,25 @@ class Parameter:
         return child
 
     def freeze(self) -> None:
-        """Prevents the parameter from changing value again (through value, mutate etc...)
-        """
+        """Prevents the parameter from changing value again (through value, mutate etc...)"""
         self._frozen = True
         if self._parameters is not None:
             self._parameters.freeze()
 
     def _check_frozen(self) -> None:
-        if self._frozen and not isinstance(self, Constant):  # nevermind constants (since they dont spawn children)
-            raise RuntimeError(f"Cannot modify frozen Parameter {self}, please spawn a child and modify it instead"
-                               "(optimizers freeze the parametrization and all asked and told candidates to avoid border effects)")
+        if self._frozen and not isinstance(
+            self, Constant
+        ):  # nevermind constants (since they dont spawn children)
+            raise RuntimeError(
+                f"Cannot modify frozen Parameter {self}, please spawn a child and modify it instead"
+                "(optimizers freeze the parametrization and all asked and told candidates to avoid border effects)"
+            )
 
     def _internal_spawn_child(self: P) -> P:
         # default implem just forwards params
-        inputs = {k: v.spawn_child() if isinstance(v, Parameter) else v for k, v in self.parameters._content.items()}
+        inputs = {
+            k: v.spawn_child() if isinstance(v, Parameter) else v for k, v in self.parameters._content.items()
+        }
         child = self.__class__(**inputs)
         return child
 
@@ -425,13 +443,19 @@ class Constant(Parameter):
         elif not (value == self._value or value is self._value):
             different = True
         if different:
-            raise ValueError(f'Constant value can only be updated to the same value (in this case "{self._value}")')
+            raise ValueError(
+                f'Constant value can only be updated to the same value (in this case "{self._value}")'
+            )
 
-    def get_standardized_data(self: P, *, reference: tp.Optional[P] = None) -> np.ndarray:  # pylint: disable=unused-argument
+    def get_standardized_data(  # pylint: disable=unused-argument
+        self: P, *, reference: tp.Optional[P] = None
+    ) -> np.ndarray:
         return np.array([])
 
     # pylint: disable=unused-argument
-    def set_standardized_data(self: P, data: tp.ArrayLike, *, reference: tp.Optional[P] = None, deterministic: bool = False) -> P:
+    def set_standardized_data(
+        self: P, data: tp.ArrayLike, *, reference: tp.Optional[P] = None, deterministic: bool = False
+    ) -> P:
         if np.array(data, copy=False).size:
             raise ValueError(f"Constant dimension should be 0 (got data: {data})")
         return self
@@ -460,11 +484,12 @@ def as_parameter(param: tp.Any) -> Parameter:
 
 
 class MultiobjectiveReference(Constant):
-
     def __init__(self, parameter: tp.Optional[Parameter] = None) -> None:
         if parameter is not None and not isinstance(parameter, Parameter):
-            raise TypeError("MultiobjectiveReference should either take no argument or a parameter which will "
-                            f"be used by the optimizer.\n(received {parameter} of type {type(parameter)})")
+            raise TypeError(
+                "MultiobjectiveReference should either take no argument or a parameter which will "
+                f"be used by the optimizer.\n(received {parameter} of type {type(parameter)})"
+            )
         super().__init__(parameter)
 
 
@@ -490,11 +515,14 @@ class Dict(Parameter):
         self._content: tp.Dict[tp.Any, Parameter] = {k: as_parameter(p) for k, p in parameters.items()}
         self._sizes: tp.Optional[tp.Dict[str, int]] = None
         self._sanity_check(list(self._content.values()))
-        self._ignore_in_repr: tp.Dict[str, str] = {}  # hacky undocumented way to bypass boring representations
+        self._ignore_in_repr: tp.Dict[
+            str, str
+        ] = {}  # hacky undocumented way to bypass boring representations
 
     def _sanity_check(self, parameters: tp.List[Parameter]) -> None:
-        """Check that all parameters are different
-        """  # TODO: this is first order, in practice we would need to test all the different parameter levels together
+        """Check that all parameters are different"""
+        # TODO: this is first order, in practice we would need to test all the different
+        # parameter levels together
         if parameters:
             assert all(isinstance(p, Parameter) for p in parameters)
             ids = {id(p) for p in parameters}
@@ -512,8 +540,11 @@ class Dict(Parameter):
         return len(self._content)
 
     def _get_parameters_str(self) -> str:
-        params = sorted((k, p.name) for k, p in self._content.items()
-                        if p.name != self._ignore_in_repr.get(k, "#ignoredrepr#"))
+        params = sorted(
+            (k, p.name)
+            for k, p in self._content.items()
+            if p.name != self._ignore_in_repr.get(k, "#ignoredrepr#")
+        )
         return ",".join(f"{k}={n}" for k, n in params)
 
     def _get_name(self) -> str:
@@ -529,7 +560,9 @@ class Dict(Parameter):
         if not isinstance(value, dict):
             raise TypeError(f"{cls} value must be a dict, got: {value}\nCurrent value: {self.value}")
         if set(value) != set(self._content):
-            raise ValueError(f"Got input keys {set(value)} for {cls} but expected {set(self._content)}\nCurrent value: {self.value}")
+            raise ValueError(
+                f"Got input keys {set(value)} for {cls} but expected {set(self._content)}\nCurrent value: {self.value}"
+            )
         for key, val in value.items():
             as_parameter(self._content[key]).value = val
 
@@ -546,17 +579,23 @@ class Dict(Parameter):
             return np.array([])
         return data_list[0] if len(data_list) == 1 else np.concatenate(data_list)  # type: ignore
 
-    def _internal_set_standardized_data(self: D, data: np.ndarray, reference: D, deterministic: bool = False) -> None:
+    def _internal_set_standardized_data(
+        self: D, data: np.ndarray, reference: D, deterministic: bool = False
+    ) -> None:
         if self._sizes is None:
             self.get_standardized_data(reference=self)
         assert self._sizes is not None
         if data.size != sum(v for v in self._sizes.values()):
-            raise ValueError(f"Unexpected shape {data.shape} for {self} with dimension {self.dimension}:\n{data}")
+            raise ValueError(
+                f"Unexpected shape {data.shape} for {self} with dimension {self.dimension}:\n{data}"
+            )
         data = data.ravel()
         start, end = 0, 0
         for name, size in self._sizes.items():
             end = start + size
-            self._content[name].set_standardized_data(data[start: end], reference=reference[name], deterministic=deterministic)
+            self._content[name].set_standardized_data(
+                data[start:end], reference=reference[name], deterministic=deterministic
+            )
             start = end
         assert end == len(data), f"Finished at {end} but expected {len(data)}"
 
@@ -594,7 +633,9 @@ class Dict(Parameter):
 
     def satisfies_constraints(self) -> bool:
         compliant = super().satisfies_constraints()
-        return compliant and all(param.satisfies_constraints() for param in self._content.values() if isinstance(param, Parameter))
+        return compliant and all(
+            param.satisfies_constraints() for param in self._content.values() if isinstance(param, Parameter)
+        )
 
     def freeze(self) -> None:
         super().freeze()
