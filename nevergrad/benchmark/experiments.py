@@ -598,7 +598,7 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
     max_num_constraints = 4
     constraints_list: tp.List[tp.Any] = [_Constraint(name, as_bool)
         for as_bool in [False, True]
-        for name in ["positive_sum", "positive_diff", "positive_second_diff", "ball"]
+        for name in ["sum", "diff", "second_diff", "ball"]
         ]
     assert constraints < len(constraints_list) + max_num_constraints, (
         "constraints should be in 0, 1, ..., {len(constraints_list) + max_num_constraints - 1} (0 = no constraint).")
