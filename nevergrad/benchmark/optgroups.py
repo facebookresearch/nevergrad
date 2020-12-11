@@ -105,10 +105,7 @@ def splitters() -> tp.Sequence[Optim]:
         for str_optim in ["CMA", "ECMA", "DE", "TwoPointsDE"]:
             optim = optimizerlib_registry[str_optim]
             name = "Split" + str_optim + ("Auto" if num_optims is None else str(num_optims))
-            opt = ConfSplitOptimizer(
-                    multivariate_optimizer=optim,
-                    num_optims=num_optims
-                ).set_name(name)
+            opt = ConfSplitOptimizer(multivariate_optimizer=optim, num_optims=num_optims).set_name(name)
             optims.append(opt)
     return optims
 

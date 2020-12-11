@@ -357,21 +357,23 @@ RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
 # pylint: too-many-arguments,too-many-instance-attributes
 class _CMA(base.Optimizer):
     def __init__(
-            self,
-            parametrization: IntOrParameter,
-            budget: tp.Optional[int] = None,
-            num_workers: int = 1,
-            scale: float = 1.0,
-            elitist: bool = False,
-            popsize: tp.Optional[int] = None,
-            diagonal: bool = False,
-            fcmaes: bool = False,
-            random_init: bool = False,
+        self,
+        parametrization: IntOrParameter,
+        budget: tp.Optional[int] = None,
+        num_workers: int = 1,
+        scale: float = 1.0,
+        elitist: bool = False,
+        popsize: tp.Optional[int] = None,
+        diagonal: bool = False,
+        fcmaes: bool = False,
+        random_init: bool = False,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._scale = scale
         self._elitist = elitist
-        self._popsize = max(self.num_workers, 4 + int(3 * np.log(self.dimension))) if popsize is None else popsize
+        self._popsize = (
+            max(self.num_workers, 4 + int(3 * np.log(self.dimension))) if popsize is None else popsize
+        )
         self._diagonal = diagonal
         self._fcmaes = fcmaes
         self._random_init = random_init
@@ -387,10 +389,21 @@ class _CMA(base.Optimizer):
     def es(self) -> tp.Any:  # typing not possible since cmaes not imported :(
         if self._es is None:
             if not self._fcmaes:
-                inopts = dict(popsize=self._popsize, randn=self._rng.randn, CMA_diagonal=self._diagonal, verbose=0, seed=np.nan,
-                              CMA_elitist=self._elitist)
-                self._es = cma.CMAEvolutionStrategy(x0=self._rng.normal(size=self.dimension) if self._random_init else np.zeros(
-                    self.dimension, dtype=np.float), sigma0=self._scale, inopts=inopts)
+                inopts = dict(
+                    popsize=self._popsize,
+                    randn=self._rng.randn,
+                    CMA_diagonal=self._diagonal,
+                    verbose=0,
+                    seed=np.nan,
+                    CMA_elitist=self._elitist,
+                )
+                self._es = cma.CMAEvolutionStrategy(
+                    x0=self._rng.normal(size=self.dimension)
+                    if self._random_init
+                    else np.zeros(self.dimension, dtype=np.float),
+                    sigma0=self._scale,
+                    inopts=inopts,
+                )
             else:
                 try:
                     from fcmaes import cmaes  # pylint: disable=import-outside-toplevel
@@ -485,6 +498,7 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
 CMA = ParametrizedCMA().set_name("CMA", register=True)
 DiagonalCMA = ParametrizedCMA(diagonal=True).set_name("DiagonalCMA", register=True)
 FCMA = ParametrizedCMA(fcmaes=True).set_name("FCMA", register=True)
+
 
 class _PopulationSizeController:
     """Population control scheme for TBPSA and EDA"""
