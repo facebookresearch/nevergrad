@@ -14,9 +14,7 @@ from . import data as pdata
 
 
 def flatten_parameter(
-        parameter: core.Parameter,
-        with_containers: bool = True,
-        order: int = 0
+    parameter: core.Parameter, with_containers: bool = True, order: int = 0
 ) -> tp.Dict[str, core.Parameter]:
     """List all the instances involved as parameter (not as subparameter/
     endogeneous parameter)
@@ -51,18 +49,27 @@ def flatten_parameter(
         for c in content_to_add:
             for k, p in c._content.items():
                 content = flatten_parameter(p, with_containers=with_containers, order=order)
-                flat.update({str(k) + ("" if not x else ("." if not x.startswith("#") else "") + x): y for x, y in content.items()})
+                flat.update(
+                    {
+                        str(k) + ("" if not x else ("." if not x.startswith("#") else "") + x): y
+                        for x, y in content.items()
+                    }
+                )
     if order > 0 and parameter._parameters is not None:
         subparams = flatten_parameter(parameter.parameters, with_containers=False, order=order - 1)
         flat.update({"#" + str(x): y for x, y in subparams.items()})
     if not with_containers:
-        flat = {x: y for x, y in flat.items() if not isinstance(y, (core.Dict, core.Constant)) or isinstance(y, choice.BaseChoice)}
+        flat = {
+            x: y
+            for x, y in flat.items()
+            if not isinstance(y, (core.Dict, core.Constant)) or isinstance(y, choice.BaseChoice)
+        }
     return flat
 
 
 # pylint: disable=too-many-locals
 def split_as_data_parameters(
-        parameter: core.Parameter,
+    parameter: core.Parameter,
 ) -> tp.List[tp.Tuple[str, pdata.Array]]:
     """List all the instances involved as parameter (not as subparameter/
     endogeneous parameter)
@@ -81,12 +88,16 @@ def split_as_data_parameters(
     ----
     This function is experimental, its output will probably evolve before converging.
     """
-    err_msg = (f"Could not figure out the data order for: {parameter} "
-               "(please open an issue on nevergrad github repository)")
+    err_msg = (
+        f"Could not figure out the data order for: {parameter} "
+        "(please open an issue on nevergrad github repository)"
+    )
     copied = parameter.copy()
     ref = parameter.copy()
-    flatp, flatc, flatref = ({x: y for x, y in flatten_parameter(pa).items() if isinstance(y, pdata.Array)}
-                             for pa in (parameter, copied, ref))
+    flatp, flatc, flatref = (
+        {x: y for x, y in flatten_parameter(pa).items() if isinstance(y, pdata.Array)}
+        for pa in (parameter, copied, ref)
+    )
     keys = list(flatp.keys())
     random.shuffle(keys)  # makes it safer to test!
     # remove transforms for both ref and copied parameters and set index

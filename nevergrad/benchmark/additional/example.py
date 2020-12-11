@@ -7,6 +7,7 @@ import nevergrad as ng
 from nevergrad import functions as ngfuncs
 from nevergrad.benchmark import registry as xpregistry
 from nevergrad.benchmark import Experiment
+
 # this file implements:
 # - an additional test function: CustomFunction
 # - an additional optimizer: NewOptimizer
@@ -15,8 +16,7 @@ from nevergrad.benchmark import Experiment
 
 
 class CustomFunction(ngfuncs.ExperimentFunction):
-    """Example of a new test function
-    """
+    """Example of a new test function"""
 
     def __init__(self, offset):
         super().__init__(self.oracle_call, ng.p.Scalar().set_name(""))
@@ -30,7 +30,7 @@ class CustomFunction(ngfuncs.ExperimentFunction):
         """Implements the call of the function.
         Under the hood, __call__ delegates to oracle_call + add some noise if noise_level > 0.
         """
-        return (x - self.offset)**2
+        return (x - self.offset) ** 2
 
 
 @ng.optimizers.registry.register  # register optimizers in the optimization registry
