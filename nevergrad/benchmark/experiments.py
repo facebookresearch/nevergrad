@@ -94,44 +94,34 @@ def mltuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool 
 
 def naivemltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of mltuning with overfitting of valid loss, i.e. train/valid/valid instead of train/valid/test."""
-    internal_generator = mltuning(seed, overfitter=True)
-    for xp in internal_generator:
-        yield xp
+    return mltuning(seed, overfitter=True)
 
 
 # We register only the sequential counterparts for the moment.
 @registry.register
 def seq_keras_tuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Sequential counterpart of mltuning."""
-    internal_generator = keras_tuning(seed, overfitter=False, seq=True)
-    for xp in internal_generator:
-        yield xp
+    return keras_tuning(seed, overfitter=False, seq=True)
 
 
 # We register only the sequential counterparts for the moment.
 @registry.register
 def naive_seq_keras_tuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Sequential counterpart of mltuning."""
-    internal_generator = keras_tuning(seed, overfitter=True, seq=True)
-    for xp in internal_generator:
-        yield xp
+    return keras_tuning(seed, overfitter=True, seq=True)
 
 
 # We register only the sequential counterparts for the moment.
 @registry.register
 def seqmltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Sequential counterpart of mltuning."""
-    internal_generator = mltuning(seed, overfitter=False, seq=True)
-    for xp in internal_generator:
-        yield xp
+    return mltuning(seed, overfitter=False, seq=True)
 
 
 @registry.register
 def naiveseqmltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Sequential counterpart of mltuning with overfitting of valid loss, i.e. train/valid/valid instead of train/valid/test."""
-    internal_generator = mltuning(seed, overfitter=True, seq=True)
-    for xp in internal_generator:
-        yield xp
+    return mltuning(seed, overfitter=True, seq=True)
 
 
 # pylint:disable=too-many-branches
@@ -523,9 +513,7 @@ def hdmultimodal(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 @registry.register
 def paramultimodal(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Parallel counterpart of the multimodal experiment: 1000 workers."""
-    internal_generator = multimodal(seed, para=True)
-    for xp in internal_generator:
-        yield xp
+    return multimodal(seed, para=True)
 
 
 # pylint: disable=redefined-outer-name,too-many-arguments
@@ -584,61 +572,46 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
                     yield xp
 
 
-
 @registry.register
 def yahdnoisybbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with higher dimensions."""
-    internal_generator = yabbob(seed, hd=True, noise=True)
-    for xp in internal_generator:
-        yield xp
+    return yabbob(seed, hd=True, noise=True)
 
 
 @registry.register
 def yabigbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with more budget."""
-    internal_generator = yabbob(seed, parallel=False, big=True)
-    for xp in internal_generator:
-        yield xp
+    return yabbob(seed, parallel=False, big=True)
 
 
 @registry.register
 def yasplitbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with more budget."""
-    internal_generator = yabbob(seed, parallel=False, split=True)
-    for xp in internal_generator:
-        yield xp
+    return yabbob(seed, parallel=False, split=True)
 
 
 @registry.register
 def yahdsplitbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with more budget."""
-    internal_generator = yabbob(seed, hd=True, split=True)
-    for xp in internal_generator:
-        yield xp
+    return yabbob(seed, hd=True, split=True)
 
 
 @registry.register
 def yasmallbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with less budget."""
-    internal_generator = yabbob(seed, parallel=False, big=False, small=True)
-    for xp in internal_generator:
-        yield xp
+    return yabbob(seed, parallel=False, big=False, small=True)
 
 
 @registry.register
 def yahdbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with higher dimensions."""
-    internal_generator = yabbob(seed, hd=True)
-    for xp in internal_generator:
-        yield xp
+    return yabbob(seed, hd=True)
 
 
 @registry.register
 def yaparabbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Parallel optimization counterpart of yabbob."""
-    internal_generator = yabbob(seed, parallel=True, big=False)
-    for xp in internal_generator:
-        yield xp
+    return yabbob(seed, parallel=True, big=False)
 
 
 @registry.register
@@ -648,9 +621,7 @@ def yanoisybbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     optimization: we distinguish recommendations and exploration.
     This is different from the original BBOB/COCO from that point of view.
     """
-    internal_generator = yabbob(seed, noise=True)
-    for xp in internal_generator:
-        yield xp
+    return yabbob(seed, noise=True)
 
 
 @registry.register
@@ -1340,7 +1311,7 @@ def bragg_structure(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 @registry.register
 def adversarial_attack(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Pretrained ResNes50 under black-box attacked.
-    Square attacks: 
+    Square attacks:
     100 queries ==> 0.1743119266055046
     200 queries ==> 0.09043250327653997
     300 queries ==> 0.05111402359108781
