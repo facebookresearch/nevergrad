@@ -32,7 +32,7 @@ from .oneshot import *  # noqa: F403
 from .recastlib import *  # noqa: F403
 
 try:
-    from .externalbo import HyperOpt # pylint: disable=unused-import
+    from .externalbo import HyperOpt  # pylint: disable=unused-import
 except ModuleNotFoundError:
     pass
 
@@ -53,11 +53,11 @@ class _OnePlusOne(base.Optimizer):
 
     Posssible mutations include gaussian and cauchy for the continuous case, and in the discrete case:
     discrete, fastga, doublefastga, adaptive, portfolio, discreteBSO, doerr.
-
-    Discrete is the most classical discrete mutation operator,
-    DoubleFastGA is an adaptation of FastGA to arity > 2, Portfolio corresponds to random mutation rates,
-    DiscreteBSO corresponds to a decreasing schedule of mutation rate.
-    Adaptive and Doerr correspond to various self-adaptive mutation rates.
+    - discrete is the most classical discrete mutation operator,
+    - doubleFastGA is an adaptation of FastGA to arity > 2, Portfolio corresponds to random mutation rates,
+    - discreteBSO corresponds to a decreasing schedule of mutation rate.
+    - adaptive and doerr correspond to various self-adaptive mutation rates.
+    - coordinatewise_adaptive is the anisotropic counterpart of the adaptive version.
     """
 
     def __init__(
@@ -83,10 +83,13 @@ class _OnePlusOne(base.Optimizer):
                 assert isinstance(noise_handling, tuple), "noise_handling must be a string or  a tuple of type (strategy, factor)"
                 assert noise_handling[1] > 0.0, "the factor must be a float greater than 0"
                 assert noise_handling[0] in ["random", "optimistic"], f"Unkwnown noise handling: '{noise_handling}'"
-        assert mutation in ["gaussian", "cauchy", "discrete", "fastga", "doublefastga", "adaptive",
+        assert mutation in ["gaussian", "cauchy", "discrete", "fastga", "doublefastga", "adaptive", "coordinatewise_adaptive",
                             "portfolio", "discreteBSO", "lengler", "doerr"], f"Unkwnown mutation: '{mutation}'"
         if mutation == "adaptive":
             self._adaptive_mr = 0.5
+        if mutation == "coordinatewise_adaptive":
+            self._velocity = np.random.uniform(size=self.dimension) * arity / 4.
+            self._modified_variables = np.array([True] * self.dimension)
         self.noise_handling = noise_handling
         self.mutation = mutation
         self.crossover = crossover
@@ -158,6 +161,9 @@ class _OnePlusOne(base.Optimizer):
                 if intensity < 1:
                     intensity = 1
                 data = mutator.portfolio_discrete_mutation(pessimistic_data, intensity=intensity, arity=self.arity_for_discrete_mutation)
+            elif mutation == "coordinatewise_adaptive":
+                self._modified_variables = np.array([True] * self.dimension)
+                data = mutator.coordinatewise_mutation(pessimistic_data, self._velocity, self._modified_variables, arity=self.arity_for_discrete_mutation)
             elif mutation == "lengler":
                 alpha = 1.54468
                 intensity = int(max(1, self.dimension * (alpha * np.log(self.num_ask) / self.num_ask)))
@@ -201,6 +207,10 @@ class _OnePlusOne(base.Optimizer):
         if self.mutation == "adaptive":
             factor = 1.2 if loss <= self.current_bests["pessimistic"].mean else 0.731  # 0.731 = 1.2**(-np.exp(1)-1)
             self._adaptive_mr = min(1., factor * self._adaptive_mr)
+        if self.mutation == "coordinatewise_adaptive":
+            factor = 1.2 if loss < self.current_bests["pessimistic"].mean else 0.731  # 0.731 = 1.2**(-np.exp(1)-1)
+            inds = self._modified_variables
+            self._velocity[inds] = np.clip(self._velocity[inds] * factor, 1., self.arity_for_discrete_mutation / 4.)
 
 
 class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
@@ -261,6 +271,8 @@ DiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete").set_name("Discr
 DiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(mutation="lengler").set_name("DiscreteLenglerOnePlusOne", register=True)
 
 AdaptiveDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="adaptive").set_name("AdaptiveDiscreteOnePlusOne", register=True)
+AnisotropicAdaptiveDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="coordinatewise_adaptive").set_name("AnisotropicAdaptiveDiscreteOnePlusOne", register=True)
+
 DiscreteBSOOnePlusOne = ParametrizedOnePlusOne(mutation="discreteBSO").set_name("DiscreteBSOOnePlusOne", register=True)
 DiscreteDoerrOnePlusOne = ParametrizedOnePlusOne(mutation="doerr").set_name(
     "DiscreteDoerrOnePlusOne", register=True).no_parallelization = True
@@ -860,6 +872,45 @@ class SPSA(base.Optimizer):
         return self.avg
 
 
+class _Rescaled(base.Optimizer):
+    """Proposes a version of a base optimizer which works at a different scale."""
+    def __init__(
+            self,
+            parametrization: IntOrParameter,
+            budget: tp.Optional[int] = None,
+            num_workers: int = 1,
+            base_optimizer: base.OptCls = CMA,
+            scale: tp.Optional[float] = None,
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        self._optimizer = base_optimizer(self.parametrization, budget=budget, num_workers=num_workers)
+        self._subcandidates: tp.Dict[str, p.Parameter] = {}
+        if scale is None:
+            assert budget is not None, "Either scale or budget must be known in _Rescaled."
+            scale = np.sqrt(np.log(self.budget) / self.dimension)
+        self.scale = scale
+        assert self.scale != 0., "scale should be non-zero in Rescaler."
+
+    def rescale_candidate(self, candidate: p.Parameter, inverse: bool=False) -> p.Parameter:
+        data = candidate.get_standardized_data(reference=self.parametrization)
+        scale = self.scale if not inverse else 1. / self.scale
+        return self.parametrization.spawn_child().set_standardized_data(scale * data)
+
+    def _internal_ask_candidate(self) -> p.Parameter:
+        candidate = self._optimizer.ask()
+        sent_candidate = self.rescale_candidate(candidate)
+        # We store the version corresponding to the underlying optimizer.
+        self._subcandidates[sent_candidate.uid] = candidate  
+        return sent_candidate
+
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        self._optimizer.tell(self._subcandidates.pop(candidate.uid), loss)
+
+    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        candidate = self.rescale_candidate(candidate, inverse=True)
+        self._optimizer.tell(candidate, loss)
+
+
 class SplitOptimizer(base.Optimizer):
     """Combines optimizers, each of them working on their own variables.
 
@@ -901,7 +952,7 @@ class SplitOptimizer(base.Optimizer):
             num_optims: tp.Optional[int] = None,
             num_vars: tp.Optional[tp.List[int]] = None,
             multivariate_optimizer: base.OptCls = CMA,
-            monovariate_optimizer: base.OptCls = RandomSearch,
+            monovariate_optimizer: base.OptCls = OnePlusOne,
             progressive: bool = False,
             non_deterministic_descriptor: bool = True,
     ) -> None:
@@ -977,6 +1028,28 @@ class SplitOptimizer(base.Optimizer):
             opt.tell(local_candidate, loss)
 
 
+class Rescaled(base.ConfiguredOptimizer):
+    """Configured optimizer for creating rescaled optimization algorithms.
+
+    Parameters
+    ----------
+    base_optimizer: base.OptCls
+        optimization algorithm to be rescaled.
+    scale: how much do we rescale. E.g. 0.001 if we want to focus on the center
+        with std 0.001 (assuming the std of the domain is set to 1).
+    """
+    # pylint: disable=unused-argument
+    def __init__(
+        self,
+        *,
+        base_optimizer: base.OptCls = CMA,
+        scale: tp.Optional[float] = None,
+    ) -> None:
+        super().__init__(_Rescaled, locals())
+
+
+RescaledCMA = Rescaled().set_name("RescaledCMA", register=True)
+
 class ConfSplitOptimizer(base.ConfiguredOptimizer):
     """"Combines optimizers, each of them working on their own variables.
 
@@ -990,7 +1063,7 @@ class ConfSplitOptimizer(base.ConfiguredOptimizer):
         whether we progressively add optimizers.
     non_deterministic_descriptor: bool
         subparts parametrization descriptor is set to noisy function.
-        This can have an impact for optimizer selection for NGOpt optimizers.
+        This can have an impact for optimizer selection for competence maps.
     """
 
     # pylint: disable=unused-argument
@@ -1082,7 +1155,7 @@ def learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.Arra
     model = LinearRegression()
     model.fit(X2, y)
 
-    optimizer = Powell(parametrization=dimension, budget=45*dimension+30)
+    optimizer = Powell(parametrization=dimension, budget=45 * dimension + 30)
     try:
         minimum = optimizer.minimize(
             lambda x: float(model.predict(polynomial_features.fit_transform(x[None, :])))).value
@@ -1883,13 +1956,16 @@ class NGOptBase(base.Optimizer):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         descr = self.parametrization.descriptors
         self.has_noise = not (descr.deterministic and descr.deterministic_function)
-        self.noise_from_instrumentation = self.has_noise and descr.deterministic_function  # The noise coming from discrete variables goes to 0.
+        # The noise coming from discrete variables goes to 0.
+        self.noise_from_instrumentation = self.has_noise and descr.deterministic_function
         self.fully_continuous = descr.continuous
         all_params = paramhelpers.flatten_parameter(self.parametrization)
         choicetags = [p.BaseChoice.ChoiceTag.as_tag(x) for x in all_params.values()]
         self.has_discrete_not_softmax = any(issubclass(ct.cls, p.TransitionChoice) for ct in choicetags)
         self._has_discrete = any(issubclass(ct.cls, p.BaseChoice) for ct in choicetags)
         self._arity = max(ct.arity for ct in choicetags)
+        if self.fully_continuous:
+            self._arity = -1
         self._optim: tp.Optional[base.Optimizer] = None
         self._constraints_manager.update(
             max_trials=1000, penalty_factor=1.0, penalty_exponent=1.01,
@@ -2128,6 +2204,13 @@ class NGOpt8(NGOpt4):
                 optimClass = super()._select_optimizer_cls()
 
         return optimClass
+
+    def _num_objectives_set_callback(self) -> None:
+        super()._num_objectives_set_callback()
+        if self.num_objectives > 1:
+            if self.noise_from_instrumentation or not self.has_noise:
+                # override at runtime
+                self._optim = DE(self.parametrization, self.budget, self.num_workers)
 
 
 @registry.register
