@@ -684,9 +684,8 @@ class _TBPSA(base.Optimizer):
             self.parents = self.children[: self.popsize.mu]
             self.children = []
             self.current_center = (
-                sum(
-                    c.get_standardized_data(reference=self.parametrization)  # type: ignore
-                    for c in self.parents
+                sum(  # type: ignore
+                    c.get_standardized_data(reference=self.parametrization) for c in self.parents
                 )
                 / self.popsize.mu
             )
@@ -2119,9 +2118,8 @@ class _EMNA(base.Optimizer):
             self.parents = self.children[: self.popsize.mu]
             self.children = []
             self.current_center = (
-                sum(
-                    c.get_standardized_data(reference=self.parametrization)  # type: ignore
-                    for c in self.parents
+                sum(  # type: ignore
+                    c.get_standardized_data(reference=self.parametrization) for c in self.parents
                 )
                 / self.popsize.mu
             )
