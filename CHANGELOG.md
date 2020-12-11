@@ -14,7 +14,7 @@
 - `ExperimentFunction` now automatically records arguments used for their instantiation so that they can both be used to create a new copy, and as descriptors if there are of type  int/bool/float/str [#914](https://github.com/facebookresearch/nevergrad/pull/914 [#914](https://github.com/facebookresearch/nevergrad/pull/914)).
 - from now on, code formatting needs to be [`black`](https://black.readthedocs.io/en/stable/) compliant. This is
   simply performed by running `black nevergrad`. A continuous integration checks that PRs are compliant, and the
-  precommit hooks have been adapted.
+  precommit hooks have been adapted. For PRs branching from an old master, you can run `black --line-length=110 nevergrad/<path_to_modified_file>` to make your code easier to merge.
 
 ## 0.4.2 (2020-08-04)
 
