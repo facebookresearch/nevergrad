@@ -15,6 +15,7 @@ try:
 except ImportError:
     pass  # makes most of this module usable without pytest
 import numpy as np
+import os
 
 
 def assert_set_equal(estimate: tp.Iterable[tp.Any], reference: tp.Iterable[tp.Any], err_msg: str = "") -> None:
@@ -87,11 +88,12 @@ def _get_all_markdown_links(folder: tp.Union[str, Path]) -> tp.List[_MarkdownLin
     folder = Path(folder).expanduser().absolute()
     links = []
     for rfilepath in folder.glob("**/*.md"):
-        filepath = folder / rfilepath
-        with filepath.open("r") as f:
-            text = f.read()
-        for match in pattern.finditer(text):
-            links.append(_MarkdownLink(folder, rfilepath, match.group("string"), match.group("link")))
+        if ("/site-packages/" if os.name != 'nt' else "\\site-packages\\") not in str(rfilepath):
+            filepath = folder / rfilepath
+            with filepath.open("r") as f:
+                text = f.read()
+            for match in pattern.finditer(text):
+                links.append(_MarkdownLink(folder, rfilepath, match.group("string"), match.group("link")))
     return links
 
 

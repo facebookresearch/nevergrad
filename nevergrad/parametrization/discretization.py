@@ -42,9 +42,13 @@ def threshold_discretization(x: tp.ArrayLike, arity: int = 2) -> tp.List[int]:
 # The function below is the opposite of the function above.
 def inverse_threshold_discretization(indexes: tp.List[int], arity: int = 2) -> np.ndarray:
     indexes_arr = np.array(indexes, copy=True)
+    assert not np.any(np.isnan(indexes_arr))
     pdf_bin_size = 1 / arity
     # We take the center of each bin (in the pdf space)
-    return scipy.stats.norm.ppf(indexes_arr * pdf_bin_size + (pdf_bin_size / 2))  # type: ignore
+    x = scipy.stats.norm.ppf(indexes_arr * pdf_bin_size + (pdf_bin_size / 2))  # type: ignore
+    nan_indices = np.where(np.isnan(x))
+    x[nan_indices] = np.sign(indexes_arr[nan_indices] - (arity / 2.)) * np.finfo(np.dtype('float')).max
+    return x
 
 
 # The discretization is, by nature, not one to one.

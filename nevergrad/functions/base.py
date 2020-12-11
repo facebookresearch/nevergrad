@@ -18,6 +18,12 @@ class ExperimentFunctionCopyError(NotImplementedError):
     """
 
 
+class UnsupportedExperiment(RuntimeError):
+    """Raised if the experiment is not compatible with the current settings:
+    Eg: missing data, missing import, unsupported OS etc
+    """
+
+
 # pylint: disable=too-many-instance-attributes
 class ExperimentFunction:
     """Combines a function and its parametrization for running experiments (see benchmark subpackage)
@@ -45,10 +51,15 @@ class ExperimentFunction:
         """
         inst = object.__new__(cls)
         sig = inspect.signature(cls.__init__)
-        boundargs = sig.bind(inst, *args, **kwargs)
-        boundargs.apply_defaults()  # make sure we get the default non-provided arguments
-        callargs = dict(boundargs.arguments)
-        callargs.pop("self")
+        callargs: tp.Dict[str, tp.Any] = {}
+        try:
+            boundargs = sig.bind(inst, *args, **kwargs)
+        except TypeError:
+            pass  # either a problem which will be caught later or a unpickling
+        else:
+            boundargs.apply_defaults()  # make sure we get the default non-provided arguments
+            callargs = dict(boundargs.arguments)
+            callargs.pop("self")
         inst._auto_init = callargs
         inst._descriptors = {x: y for x, y in callargs.items() if isinstance(y, (str, tuple, int, float, bool))}
         inst._descriptors["function_class"] = cls.__name__

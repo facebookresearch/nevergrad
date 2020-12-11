@@ -11,8 +11,8 @@ import numpy as np
 import nevergrad as ng
 from nevergrad.optimization.base import ConfiguredOptimizer
 import nevergrad.functions.corefuncs as corefuncs
+from nevergrad.functions import base as fbase
 from nevergrad.functions import ExperimentFunction
-from nevergrad.functions.base import MultiExperiment
 from nevergrad.functions import ArtificialFunction
 from nevergrad.functions import FarOptimumFunction
 from nevergrad.functions import PBT
@@ -20,7 +20,7 @@ from nevergrad.functions.ml import MLTuning
 from nevergrad.functions import mlda as _mlda
 from nevergrad.functions.photonics import Photonics
 from nevergrad.functions.arcoating import ARCoating
-from nevergrad.functions.images import Image, ImageAdversarial
+from nevergrad.functions import images as imagesxp
 from nevergrad.functions.powersystems import PowerSystem
 from nevergrad.functions.stsp import STSP
 from nevergrad.functions.rocket import Rocket
@@ -43,10 +43,6 @@ from . import frozenexperiments  # noqa # pylint: disable=unused-import
 # fmt: off
 
 
-class MissingBenchmarkPackageError(ModuleNotFoundError):
-    pass
-
-
 default_optims: tp.Optional[tp.List[str]] = None  # ["NGO10", "CMA", "Shiwa"]
 
 
@@ -60,25 +56,24 @@ def keras_tuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: b
     if default_optims is not None:
         optims = default_optims
     for dimension in [None]:
-        for regressor in ["kerasDenseNN"]:
-            for dataset in (
-                    ["kerasBoston"]):
-                function = MLTuning(regressor=regressor, data_dimension=dimension, dataset=dataset,
-                                    overfitter=overfitter)
-                for budget in [50, 150, 500]:
-                    for num_workers in [1] if seq else [budget]:  # Seq for sequential optimization experiments.
-                        for optim in optims:
-                            xp = Experiment(function, optim, num_workers=num_workers,
-                                            budget=budget, seed=next(seedg))
-                            if not xp.is_incoherent:
-                                yield xp
+        for dataset in (
+                ["kerasBoston", "boston", "diabetes"]):
+            function = MLTuning(regressor="keras_dense_nn", data_dimension=dimension, dataset=dataset,
+                                overfitter=overfitter)
+            for budget in [50, 150, 500]:
+                for num_workers in [1] if seq else [budget]:  # Seq for sequential optimization experiments.
+                    for optim in optims:
+                        xp = Experiment(function, optim, num_workers=num_workers,
+                                        budget=budget, seed=next(seedg))
+                        if not xp.is_incoherent:
+                            yield xp
 
 
 def mltuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool = False) -> tp.Iterator[Experiment]:
     """Machine learning hyperparameter tuning experiment. Based on scikit models."""
     seedg = create_seed_generator(seed)
-    optims: tp.List[str]  = get_optimizers("basics", seed=next(seedg))  # type: ignore
-             
+    optims: tp.List[str] = get_optimizers("basics", seed=next(seedg))  # type: ignore
+
     if default_optims is not None:
         optims = default_optims
     for dimension in [None, 1, 2, 3]:
@@ -165,12 +160,14 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
     # names += ["deceptiveillcond", "deceptivemultimodal", "deceptivepath"]
     functions += [
-        ArtificialFunction(name, block_dimension=d, rotation=rotation, noise_level=nl) for name in names
-        for rotation in [True, False]
-        for nl in [0., 100.]
-        for num_blocks in [1]
-        for d in [2, 40, 3000]
-    ]
+        ArtificialFunction(name, block_dimension=d, rotation=rotation, noise_level=nl, split=split)
+        for name in names              # period 5
+        for rotation in [True, False]  # period 2
+        for nl in [0., 100.]           # period 2
+        for num_blocks in [1, 8]       # period 2
+        for d in [2, 40, 3000, 10000]  # period 4
+        for split in [True, False]     # period 2
+    ][::13]  # 13 is coprime with all periods above so we sample correctly the possibilities.
     # This problem is intended as a stable basis forever.
     # The list of optimizers should contain only the basic for comparison and "baselines".
     optims: tp.List[str] = ["NGOpt8"] + get_optimizers("baselines", seed=next(seedg))  # type: ignore
@@ -195,22 +192,22 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                     for budget in [500, 5000]:
                         for nw in [1, 100]:
                             yield Experiment(dfunc, optim, num_workers=nw, budget=budget, seed=next(seedg))
-                            
+
     # The multiobjective case.
     # TODO the upper bounds are really not well set for this experiment with cigar
-    mofuncs: tp.List[MultiExperiment] = []
+    mofuncs: tp.List[fbase.MultiExperiment] = []
     for name1 in ["sphere", "ellipsoid"]:
         for name2 in ["sphere", "hm"]:
-            mofuncs += [MultiExperiment([ArtificialFunction(name1, block_dimension=7),
-                                         ArtificialFunction(name2, block_dimension=7)],
-                                        upper_bounds=np.array((100., 100.)))]
+            mofuncs += [fbase.MultiExperiment([ArtificialFunction(name1, block_dimension=7),
+                                               ArtificialFunction(name2, block_dimension=7)],
+                                              upper_bounds=np.array((100., 100.)))]
     for name1 in ["sphere", "ellipsoid"]:
         for name2 in ["sphere", "hm"]:
             for name3 in ["sphere", "hm"]:
-                mofuncs += [MultiExperiment([ArtificialFunction(name1, block_dimension=7),
-                                             ArtificialFunction(name2, block_dimension=7),
-                                             ArtificialFunction(name3, block_dimension=7)],
-                                             upper_bounds=np.array((100., 100., 100.)))]
+                mofuncs += [fbase.MultiExperiment([ArtificialFunction(name1, block_dimension=7),
+                                                   ArtificialFunction(name2, block_dimension=7),
+                                                   ArtificialFunction(name3, block_dimension=7)],
+                                                  upper_bounds=np.array((100., 100., 100.)))]
     for mofunc in mofuncs:
         for optim in optims:
             for budget in [2000, 8000]:
@@ -257,7 +254,7 @@ def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     optims = ["DiscreteOnePlusOne", "Shiwa", "CMA", "PSO", "TwoPointsDE", "DE", "OnePlusOne",
               "AdaptiveDiscreteOnePlusOne",
               "CMandAS2", "PortfolioDiscreteOnePlusOne", "DoubleFastGADiscreteOnePlusOne", "MultiDiscrete",
-              "DiscreteBSOOnePlusOne", "DiscreteLenglerOnePlusOne"]
+              "DiscreteBSOOnePlusOne", "AnisotropicAdaptiveDiscreteOnePlusOne", "DiscreteLenglerOnePlusOne"]
 
     if default_optims is not None:
         optims = default_optims
@@ -291,7 +288,8 @@ def sequential_instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Ex
     """Sequential counterpart of instrum_discrete."""
     # Discrete, unordered.
     optims = ["DiscreteOnePlusOne", "DiscreteDoerrOnePlusOne", "DiscreteLenglerOnePlusOne", "FastGADiscreteOnePlusOne",
-              "DiscreteBSOOnePlusOne", "PortfolioDiscreteOnePlusOne", "DoubleFastGADiscreteOnePlusOne"]
+              "DiscreteBSOOnePlusOne", "PortfolioDiscreteOnePlusOne", "DoubleFastGADiscreteOnePlusOne",
+              "AnisotropicAdaptiveDiscreteOnePlusOne"]
 
     seedg = create_seed_generator(seed)
     for nv in [10, 50, 200, 1000, 5000]:
@@ -444,7 +442,7 @@ def newdoe(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
             for budget in budgets:
                 yield Experiment(func, optim, budget=budget, num_workers=budget, seed=next(seedg))
 
-                
+
 @registry.register
 def fiveshots(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Five-shots optimization of 3 classical objective functions (sphere, rastrigin, cigar).
@@ -533,7 +531,7 @@ def paramultimodal(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 # pylint: disable=redefined-outer-name,too-many-arguments
 @registry.register
 def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = False, small: bool = False,
-           noise: bool = False, hd: bool = False) -> tp.Iterator[Experiment]:
+           noise: bool = False, hd: bool = False, split: bool = False) -> tp.Iterator[Experiment]:
     """Yet Another Black-Box Optimization Benchmark.
     Related to, but without special effort for exactly sticking to, the BBOB/COCO dataset.
     Dimension 2, 10 and 50.
@@ -565,7 +563,7 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
     if default_optims is not None:
         optims = default_optims
     functions = [
-        ArtificialFunction(name, block_dimension=d, rotation=rotation, noise_level=noise_level) for name in names
+        ArtificialFunction(name, block_dimension=d, rotation=rotation, noise_level=noise_level, split=split) for name in names
         for rotation in [True, False]
         for num_blocks in [1]
         for d in ([100, 1000, 3000] if hd else [2, 10, 50])
@@ -586,6 +584,7 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
                     yield xp
 
 
+
 @registry.register
 def yahdnoisybbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with higher dimensions."""
@@ -598,6 +597,22 @@ def yahdnoisybbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 def yabigbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with more budget."""
     internal_generator = yabbob(seed, parallel=False, big=True)
+    for xp in internal_generator:
+        yield xp
+
+
+@registry.register
+def yasplitbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with more budget."""
+    internal_generator = yabbob(seed, parallel=False, split=True)
+    for xp in internal_generator:
+        yield xp
+
+
+@registry.register
+def yahdsplitbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with more budget."""
+    internal_generator = yabbob(seed, hd=True, split=True)
     for xp in internal_generator:
         yield xp
 
@@ -715,7 +730,7 @@ def ranknoisy(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """
     seedg = create_seed_generator(seed)
     optims: tp.List[str] = get_optimizers("progressive", seed=next(seedg)) + [  # type: ignore
-            "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
+        "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
     if default_optims is not None:
         optims = default_optims
     # optims += ["NGO", "Shiwa", "DiagonalCMA"] + sorted(
@@ -748,7 +763,7 @@ def noisy(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """
     seedg = create_seed_generator(seed)
     optims: tp.List[str] = get_optimizers("progressive", seed=next(seedg)) + [  # type: ignore
-            "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
+        "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
     optims += ["NGO", "Shiwa", "DiagonalCMA"] + sorted(
         x for x, y in ng.optimizers.registry.items() if
         ("SPSA" in x or "TBPSA" in x or "ois" in x or "epea" in x or "Random" in x)
@@ -1068,7 +1083,7 @@ def powersystems(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     optims = ["NaiveTBPSA", "ScrHammersleySearch", "PSO", "OnePlusOne",
               "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
               "RandomScaleRandomSearch", "MiniDE",
-              "NGO", "Shiwa", "DiagonalCMA"] 
+              "NGO", "Shiwa", "DiagonalCMA"]
     if default_optims is not None:
         optims = default_optims
     optims += ["OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne", "OnePlusOne"]
@@ -1160,13 +1175,27 @@ def images(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     optims = ["CMA", "NGOpt8", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
     if default_optims is not None:
         optims = default_optims
+    func = imagesxp.Image()
     for budget in [100 * 5 ** k for k in range(3)]:
         for num_workers in [1]:
             for algo in optims:
-                for func in [Image()]:
-                    xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
-                    if not xp.is_incoherent:
-                        yield xp
+                xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
+                if not xp.is_incoherent:
+                    yield xp
+
+
+@registry.register
+def images_using_gan(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Optimizing an image using koncept512 and a GAN"""
+    seedg = create_seed_generator(seed)
+    optims = ["CMA", "Shiwa", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "NSGAIIES", "ParametrizationDE"]
+    func = imagesxp.ImageFromPGAN()
+    num_workers = 1
+    for budget in [100 * 5 ** k for k in range(3)]:
+        for algo in optims:
+            xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
+            if not xp.is_incoherent:
+                yield xp
 
 
 @registry.register
@@ -1207,15 +1236,15 @@ def multiobjective_example(seed: tp.Optional[int] = None) -> tp.Iterator[Experim
     optims += [ng.families.DifferentialEvolution(multiobjective_adaptation=False).set_name("DE-noadapt"),
                ng.families.DifferentialEvolution(crossover="twopoints", multiobjective_adaptation=False).set_name(
                    "TwoPointsDE-noadapt")]
-    mofuncs: tp.List[MultiExperiment] = []
+    mofuncs: tp.List[fbase.MultiExperiment] = []
     for name1, name2 in itertools.product(["sphere"], ["sphere", "hm"]):
-        mofuncs.append(MultiExperiment([ArtificialFunction(name1, block_dimension=7),
-                                        ArtificialFunction(name2, block_dimension=7)],
-                                       upper_bounds=[100, 100]))
-        mofuncs.append(MultiExperiment([ArtificialFunction(name1, block_dimension=6),
-                                        ArtificialFunction("sphere", block_dimension=6),
-                                        ArtificialFunction(name2, block_dimension=6)],
-                                       upper_bounds=[100, 100, 100.]))
+        mofuncs.append(fbase.MultiExperiment([ArtificialFunction(name1, block_dimension=7),
+                                              ArtificialFunction(name2, block_dimension=7)],
+                                             upper_bounds=[100, 100]))
+        mofuncs.append(fbase.MultiExperiment([ArtificialFunction(name1, block_dimension=6),
+                                              ArtificialFunction("sphere", block_dimension=6),
+                                              ArtificialFunction(name2, block_dimension=6)],
+                                             upper_bounds=[100, 100, 100.]))
     for mofunc in mofuncs:
         for optim in optims:
             for budget in [100, 200, 400, 800, 1600, 3200]:
@@ -1310,13 +1339,21 @@ def bragg_structure(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 @registry.register
 def adversarial_attack(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Pretrained ResNes50 under black-box attacked.
+    Square attacks: 
+    100 queries ==> 0.1743119266055046
+    200 queries ==> 0.09043250327653997
+    300 queries ==> 0.05111402359108781
+    400 queries ==> 0.04325032765399738
+    1700 queries ==> 0.001310615989515072
+    """
     seedg = create_seed_generator(seed)
     optims = ["DiagonalCMA", "MetaModel", "CMA", "NGOpt8", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
     folder = os.environ.get("NEVERGRAD_ADVERSARIAL_EXPERIMENT_FOLDER", None)
     if folder is None:
         warnings.warn("Using random images, set variable NEVERGRAD_ADVERSARIAL_EXPERIMENT_FOLDER to specify a folder")
-    for func in ImageAdversarial.make_folder_functions(folder=folder):
-        for budget in [10]:
+    for func in imagesxp.ImageAdversarial.make_folder_functions(folder=folder):
+        for budget in [100, 200, 300, 400, 1700]:
             for num_workers in [1]:
                 for algo in optims:
                     xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
@@ -1333,8 +1370,8 @@ def pbo_suite(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
             for iid in range(1, 5):
                 try:
                     func = iohprofiler.PBOFunction(fid, iid, dim)
-                except ModuleNotFoundError:
-                    raise MissingBenchmarkPackageError("IOHexperimenter needs to be installed")
+                except ModuleNotFoundError as e:
+                    raise fbase.UnsupportedExperiment("IOHexperimenter needs to be installed") from e
                 for optim in ["DiscreteOnePlusOne", "Shiwa", "CMA", "PSO", "TwoPointsDE", "DE", "OnePlusOne", "AdaptiveDiscreteOnePlusOne",
                               "CMandAS2", "PortfolioDiscreteOnePlusOne", "DoubleFastGADiscreteOnePlusOne", "MultiDiscrete", "cGA", dde]:
                     for nw in [1, 10]:

@@ -117,7 +117,7 @@ class ArtificialFunction(ExperimentFunction):
     def __init__(self, name: str, block_dimension: int, num_blocks: int = 1,  # pylint: disable=too-many-arguments
                  useless_variables: int = 0, noise_level: float = 0, noise_dissymmetry: bool = False,
                  rotation: bool = False, translation_factor: float = 1., hashing: bool = False,
-                 aggregator: str = "max") -> None:
+                 aggregator: str = "max", split: bool = False) -> None:
         # pylint: disable=too-many-locals
         self.name = name
         self._parameters = {x: y for x, y in locals().items() if x not in ["__class__", "self"]}
@@ -146,7 +146,10 @@ class ArtificialFunction(ExperimentFunction):
         self.transform_var = ArtificialVariable(dimension=self._dimension, num_blocks=num_blocks, block_dimension=block_dimension,
                                                 translation_factor=translation_factor, rotation=rotation, hashing=hashing,
                                                 only_index_transform=only_index_transform)
-        parametrization = p.Array(shape=(1,) if hashing else (self._dimension,)).set_name("")
+        assert not (split and hashing)
+        assert not (split and useless_variables > 0)
+        parametrization = p.Array(shape=(1,) if hashing else (self._dimension,)).set_name("") if not split else (
+            p.Instrumentation(*[p.Array(shape=(block_dimension,)) for _ in range(num_blocks)]).set_name("split"))
         if noise_level > 0:
             parametrization.descriptors.deterministic_function = False
         super().__init__(self.noisy_function, parametrization)
