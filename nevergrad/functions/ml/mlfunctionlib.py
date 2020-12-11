@@ -205,6 +205,12 @@ class MLTuning(ExperimentFunction):
         if not dataset.startswith("artificial"):
             assert dataset in ["boston", "diabetes", "kerasBoston", "auto-mpg", "red-wine", "white-wine"]
             assert data_dimension is None
+            sets_url = {"auto-mpg":"http://www-lisic.univ-littoral.fr/~teytaud/files/Cours/Apprentissage/data/auto-mpg.data",
+                        "red-wine":"http://www-lisic.univ-littoral.fr/~teytaud/files/Cours/Apprentissage/data/winequality-red.csv",
+                        "white-wine":"http://www-lisic.univ-littoral.fr/~teytaud/files/Cours/Apprentissage/data/winequality-white.csv"}
+            sets_tag = {"auto-mpg":"mpg",
+                        "red-wine":"quality",
+                        "white-wine":"quality"}
             if dataset == "kerasBoston":
                 try:
                     from tensorflow import keras  # pylint: disable=import-outside-toplevel
@@ -212,15 +218,8 @@ class MLTuning(ExperimentFunction):
                     raise ImportError("Please install keras (pip install keras) to use keras ml tuning") from e
 
                 data = keras.datasets.boston_housing
-            elif dataset == "auto-mpg":
-                mpg_url="http://www-lisic.univ-littoral.fr/~teytaud/files/Cours/Apprentissage/data/auto-mpg.data"
-                data = pd.read_csv(mpg_url)
-            elif dataset == "red-wine":
-                red_url="http://www-lisic.univ-littoral.fr/~teytaud/files/Cours/Apprentissage/data/winequality-red.csv"
-                data = pd.read_csv(red_url)
-            elif dataset == "white-wine":
-                white_url="http://www-lisic.univ-littoral.fr/~teytaud/files/Cours/Apprentissage/data/winequality-white.csv"
-                data = pd.read_csv(white_url)
+            elif dataset in sets_tag:
+                data = pd.read_csv(sets_url[dataset])
             else:
                 data = {"boston": sklearn.datasets.load_boston,
                         "diabetes": sklearn.datasets.load_diabetes,
@@ -230,31 +229,16 @@ class MLTuning(ExperimentFunction):
             test_ratio = 0.5
             if dataset == "kerasBoston":
                 (self.X_train, self.y_train), (self.X_test, self.y_test) = data.load_data(test_split=test_ratio, seed=42)
-            elif dataset == "auto-mpg":
-                data.drop('name', 1, inplace=True)
+            elif dataset in sets_url:
+                if dataset == "auto-mpg":
+                    data.drop('name', 1, inplace=True)
                 train, test = train_test_split(data, test_size=test_ratio)
-                self.X_train = train
-                self.y_train = train['mpg']
-                del(self.X_train['mpg'])
-                self.X_test = test
-                self.y_test = test['mpg']
-                del(self.X_test['mpg'])
-                self.X_train = self.X_train.to_numpy()
-                self.X_test = self.X_test.to_numpy()
-                self.y_train = self.y_train.to_numpy()
-                self.y_test = self.y_test.to_numpy()
-            elif dataset == "red-wine" or dataset == "white-wine":
-                train, test = train_test_split(data, test_size=test_ratio)
-                self.X_train = train
-                self.y_train = train['quality']
-                del(self.X_train['quality'])
-                self.X_test = test
-                self.y_test = test['quality']
-                del(self.X_test['quality'])
-                self.X_train = self.X_train.to_numpy()
-                self.X_test = self.X_test.to_numpy()
-                self.y_train = self.y_train.to_numpy()
-                self.y_test = self.y_test.to_numpy()
+                self.y_train = train[sets_tag[dataset]].to_numpy()
+                self.y_test = test[sets_tag[dataset]].to_numpy()
+                del train[sets_tag[dataset]]
+                del test[sets_tag[dataset]]
+                self.X_train = train.to_numpy()
+                self.X_test = test.to_numpy()
             else:
                 rng.shuffle(data[0].T)  # We randomly shuffle the columns.
                 self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(data[0], data[1], test_size=test_ratio, random_state=42)

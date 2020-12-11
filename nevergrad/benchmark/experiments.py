@@ -73,7 +73,6 @@ def keras_tuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: b
                             yield xp
 
 
-
 def mltuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool = False) -> tp.Iterator[Experiment]:
     """Machine learning hyperparameter tuning experiment. Based on scikit models."""
     seedg = create_seed_generator(seed)

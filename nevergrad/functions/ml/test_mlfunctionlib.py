@@ -58,6 +58,7 @@ from . import mlfunctionlib
         0.001891651,
     ),
 )
+
 def test_mltuning_values(cls_params: tp.Dict[str, tp.Any], func_params: tp.Dict[str, tp.Any], expected: float) -> None:
     np.random.seed(12)
     func = mlfunctionlib.MLTuning(**cls_params)
