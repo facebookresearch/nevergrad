@@ -489,8 +489,7 @@ class Torus(Array):
     def from_angle(self, y: tp.ArrayLike) -> np.ndarray:
         """Opposite of to_angle."""
         y = np.asarray(y, dtype=float).copy()
-        assert len(y) > 0
-        x = np.tile(y[None, :], (4,) + y.shape).copy()
+        x = np.tile(y[None, :], (4,) + y.shape).copy()  # type: ignore
         it = np.nditer(y, flags=['multi_index'], op_flags=['readwrite'])
         for cell in it:
             r = self.single_from_angle(cell)
@@ -499,7 +498,7 @@ class Torus(Array):
         return x
 
     @property
-    def value(self) -> np.ndarray:
+    def value(self) -> tp.ArrayLike:
         return self.to_angle(self._value)
 
     @value.setter
