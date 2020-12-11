@@ -25,7 +25,8 @@ class MLTuning(ExperimentFunction):
     Parameters
     ----------
     regressor: str
-        type of function we can use for doing the regression. Can be "mlp", "decision_tree", "decision_tree_depth", "any".
+        type of function we can use for doing the regression. Can be "mlp", "decision_tree", "decision_tree_depth",
+        "keras_dense_nn", "any".
         "any" means that the regressor has one more parameter which is a discrete choice among possibilities.
     data_dimension: int
         dimension of the data we generate. None if not an artificial dataset.
@@ -64,7 +65,7 @@ class MLTuning(ExperimentFunction):
             regr = MLPRegressor(
                 alpha=alpha, activation=activation, solver=solver, learning_rate=learning_rate, random_state=0
             )
-        elif regressor == "kerasDenseNN":
+        elif regressor == "keras_dense_nn":
             try:
                 from tensorflow import keras  # pylint: disable=import-outside-toplevel
             except ImportError as e:
@@ -80,10 +81,12 @@ class MLTuning(ExperimentFunction):
         else:
             raise ValueError(f"Unknown regressor {regressor}.")
 
+        fit_additional_params = dict(verbose=0, epochs=350) if regressor == "keras_dense_nn" else {}
+
         if noise_free:  # noise_free is True when we want the result on the test set.
             X_test = self.X_test
             y_test = self.y_test
-            regr.fit(self.X_train, self.y_train)
+            regr.fit(self.X_train, self.y_train, **fit_additional_params)
             pred_test = regr.predict(self.X_test)
             return mean_squared_error(self.y_test, pred_test)
 
@@ -91,8 +94,7 @@ class MLTuning(ExperimentFunction):
         for X, y, X_test, y_test in zip(self.X_train_cv, self.y_train_cv, self.X_valid_cv, self.y_valid_cv):
             assert isinstance(depth, int), f"depth has class {type(depth)} and value {depth}."
 
-            regr.fit(X, y)
-
+            regr.fit(X, y, **fit_additional_params)
             # Predict
             pred_test = regr.predict(X_test)
             result += mean_squared_error(y_test, pred_test)
@@ -156,7 +158,7 @@ class MLTuning(ExperimentFunction):
                 min_samples_split=p.Log(
                     lower=0.0000001, upper=1
                 ),  # Min ratio of samples in a node for splitting.
-                regressor=p.Choice(["mlp", "decision_tree", "kerasDenseNN"]),  # Type of regressor.
+                regressor=p.Choice(["mlp", "decision_tree", "keras_dense_nn"]),  # Type of regressor.
                 activation=p.Choice(
                     ["identity", "logistic", "tanh", "relu"]
                 ),  # Activation function, in case we use a net.
@@ -193,11 +195,11 @@ class MLTuning(ExperimentFunction):
                 alpha=p.Log(lower=0.0000001, upper=1.0),
             )
             params = dict(noise_free=False, regressor="mlp", depth=-3, criterion="no", min_samples_split=0.1)
-        elif regressor == "kerasDenseNN":
+        elif regressor == "keras_dense_nn":
             parametrization = p.Instrumentation(
                 activation=p.Choice(["selu", "sigmoid", "tanh", "relu"]),
                 solver=p.Choice(["Adadelta", "RMSprop", "adam"]),
-                regressor="kerasDenseNN",
+                regressor="keras_dense_nn",
                 # metrics=p.Choice(["mae", "mse"]),
             )
             params = dict(
