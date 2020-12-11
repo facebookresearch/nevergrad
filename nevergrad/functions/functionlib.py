@@ -117,7 +117,7 @@ class ArtificialFunction(ExperimentFunction):
     def __init__(self, name: str, block_dimension: int, num_blocks: int = 1,  # pylint: disable=too-many-arguments
                  useless_variables: int = 0, noise_level: float = 0, noise_dissymmetry: bool = False,
                  rotation: bool = False, translation_factor: float = 1., hashing: bool = False,
-                 aggregator: str = "max") -> None:
+                 aggregator: str = "max", split: bool = False) -> None:
         # pylint: disable=too-many-locals
         self.name = name
         self._parameters = {x: y for x, y in locals().items() if x not in ["__class__", "self"]}
@@ -146,19 +146,18 @@ class ArtificialFunction(ExperimentFunction):
         self.transform_var = ArtificialVariable(dimension=self._dimension, num_blocks=num_blocks, block_dimension=block_dimension,
                                                 translation_factor=translation_factor, rotation=rotation, hashing=hashing,
                                                 only_index_transform=only_index_transform)
-        parametrization = p.Array(shape=(1,) if hashing else (self._dimension,)).set_name("")
+        assert not (split and hashing)
+        assert not (split and useless_variables > 0)
+        parametrization = p.Array(shape=(1,) if hashing else (self._dimension,)).set_name("") if not split else (
+            p.Instrumentation(*[p.Array(shape=(block_dimension,)) for _ in range(num_blocks)]).set_name("split"))
         if noise_level > 0:
             parametrization.descriptors.deterministic_function = False
         super().__init__(self.noisy_function, parametrization)
-        self.register_initialization(**self._parameters)
         self._aggregator = {"max": np.max, "mean": np.mean, "sum": np.sum}[aggregator]
         info = corefuncs.registry.get_info(self._parameters["name"])
         # add descriptors
-        self._descriptors.update(**self._parameters, useful_dimensions=block_dimension * num_blocks,
-                                 discrete=any(x in name for x in ["onemax", "leadingones", "jump"]))
-        # transforms are initialized at runtime to avoid slow init
-        if hasattr(self._func, "get_postponing_delay"):
-            raise RuntimeError('"get_posponing_delay" has been replaced by "compute_pseudotime" and has been  aggressively deprecated')
+        self.add_descriptors(useful_dimensions=block_dimension * num_blocks,
+                             discrete=any(x in name for x in ["onemax", "leadingones", "jump"]))
 
     @property
     def dimension(self) -> int:
@@ -249,10 +248,6 @@ class FarOptimumFunction(ExperimentFunction):
         parametrization.set_recombination("average" if recombination == "average" else p.mutation.Crossover())
         self._multiobjective = MultiobjectiveFunction(self._multifunc, 2 * self._optimum)
         super().__init__(self._multiobjective if multiobjective else self._monofunc, parametrization.set_name(""))  # type: ignore
-        descr = dict(independent_sigma=independent_sigma, mutable_sigma=mutable_sigma,
-                     multiobjective=multiobjective, optimum=optimum, recombination=recombination)
-        self._descriptors.update(descr)
-        self.register_initialization(**descr)
 
     def _multifunc(self, x: np.ndarray) -> np.ndarray:
         return np.abs(x - self._optimum)  # type: ignore
