@@ -273,9 +273,8 @@ class Parameter:
     # %% Constraint management
 
     def constraint_violation(self) -> float:
-        """Returns maximum of constraint values.u
-        Uses 1 for True, constraint violation for float, negative numbers ok
-        when inside the satisfaction domain.
+        """Returns the maximum of the constraint values.
+        This function returns something > 0 if and only if at least one constraint is violated.
 
         Returns
         -------
