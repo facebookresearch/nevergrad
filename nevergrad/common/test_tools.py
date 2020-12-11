@@ -26,7 +26,7 @@ def test_roundrobin() -> None:
 
 
 def test_grouper() -> None:
-    output = list(tools.grouper('ABCDEFG', 3, 'x'))
+    output = list(tools.grouper("ABCDEFG", 3, "x"))
     testing.printed_assert_equal(output, [list(x) for x in ["ABC", "DEF", "Gxx"]])
 
 

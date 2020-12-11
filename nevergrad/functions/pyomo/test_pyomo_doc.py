@@ -5,6 +5,7 @@
 
 from pathlib import Path
 import numpy as np
+
 # pylint: disable=reimported,redefined-outer-name,unused-variable,unsubscriptable-object, unused-argument
 # pylint: disable=import-outside-toplevel
 
@@ -14,7 +15,7 @@ def test_concrete_model_example() -> None:
     import pyomo.environ as pyomo
 
     def square(m):
-        return pyomo.quicksum((m.x[i] - 0.5)**2 for i in m.x)
+        return pyomo.quicksum((m.x[i] - 0.5) ** 2 for i in m.x)
 
     model = pyomo.ConcreteModel()
     model.x = pyomo.Var([0, 1], domain=pyomo.Reals)
@@ -26,6 +27,7 @@ def test_concrete_model_example() -> None:
     # DOC_CONCRETE_10
     import nevergrad as ng
     import nevergrad.functions.pyomo as ng_pyomo
+
     # DOC_CONCRETE_11
 
     # DOC_CONCRETE_100
@@ -35,19 +37,19 @@ def test_concrete_model_example() -> None:
     # DOC_CONCRETE_101
 
     # DOC_CONCRETE_1000
-    print(recommendation.kwargs['x[0]'])
-    print(recommendation.kwargs['x[1]'])
+    print(recommendation.kwargs["x[0]"])
+    print(recommendation.kwargs["x[1]"])
     # DOC_CONCRETE_1001
 
-    np.testing.assert_almost_equal(recommendation.kwargs['x[0]'], 1.0, decimal=1)
-    np.testing.assert_almost_equal(recommendation.kwargs['x[1]'], 0.8, decimal=1)
+    np.testing.assert_almost_equal(recommendation.kwargs["x[0]"], 1.0, decimal=1)
+    np.testing.assert_almost_equal(recommendation.kwargs["x[1]"], 0.8, decimal=1)
 
 
 def test_abstract_model_example() -> None:
     import pyomo.environ as pyomo
 
     def square(m):
-        return pyomo.quicksum((m.x[i] - 0.5)**2 for i in m.x)
+        return pyomo.quicksum((m.x[i] - 0.5) ** 2 for i in m.x)
 
     abstract_model = pyomo.AbstractModel()
     abstract_model.F = pyomo.Set()
@@ -73,4 +75,6 @@ def test_abstract_model_example() -> None:
     recommendation = optimizer.minimize(func.function)
 
     np.testing.assert_almost_equal(recommendation.kwargs['x["New York"]'], model.Xmin["New York"], decimal=1)
-    np.testing.assert_almost_equal(recommendation.kwargs['x["Hong Kong"]'], model.Xmin["Hong Kong"], decimal=1)
+    np.testing.assert_almost_equal(
+        recommendation.kwargs['x["Hong Kong"]'], model.Xmin["Hong Kong"], decimal=1
+    )

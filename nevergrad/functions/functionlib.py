@@ -21,8 +21,16 @@ class ArtificialVariable:
     # TODO: refactor, this is not more used for parametrization, so using the
     # Variable framework is not necessary
 
-    def __init__(self, dimension: int, num_blocks: int, block_dimension: int,
-                 translation_factor: float, rotation: bool, hashing: bool, only_index_transform: bool) -> None:
+    def __init__(
+        self,
+        dimension: int,
+        num_blocks: int,
+        block_dimension: int,
+        translation_factor: float,
+        rotation: bool,
+        hashing: bool,
+        only_index_transform: bool,
+    ) -> None:
         self._dimension = dimension
         self._transforms: tp.List[utils.Transform] = []
         self.rotation = rotation
@@ -39,19 +47,27 @@ class ArtificialVariable:
         This functions creates the random transform used upon each block (translation + optional rotation).
         """
         # use random indices for blocks
-        indices = np.random.choice(self._dimension, self.block_dimension * self.num_blocks, replace=False).tolist()
+        indices = np.random.choice(
+            self._dimension, self.block_dimension * self.num_blocks, replace=False
+        ).tolist()
         indices.sort()  # keep the indices sorted sorted so that blocks do not overlap
         for transform_inds in tools.grouper(indices, n=self.block_dimension):
-            self._transforms.append(utils.Transform(transform_inds, translation_factor=self.translation_factor, rotation=self.rotation))
+            self._transforms.append(
+                utils.Transform(
+                    transform_inds, translation_factor=self.translation_factor, rotation=self.rotation
+                )
+            )
 
-    def process(self, data: tp.ArrayLike, deterministic: bool = True) -> np.ndarray:  # pylint: disable=unused-argument
+    def process(  # pylint: disable=unused-argument
+        self, data: tp.ArrayLike, deterministic: bool = True
+    ) -> np.ndarray:
         if not self._transforms:
             self._initialize()
         if self.hashing:
             state = np.random.get_state()
             y = data[0]  # should be a string... or something...
             np.random.seed(int(int(hashlib.md5(y.encode()).hexdigest(), 16) % 500000))  # type: ignore
-            data = np.random.normal(0., 1., len(y))  # type: ignore
+            data = np.random.normal(0.0, 1.0, len(y))  # type: ignore
             np.random.set_state(state)
         data = np.array(data, copy=False)
         output = []
@@ -114,10 +130,20 @@ class ArtificialFunction(ExperimentFunction):
     - the noise formula is: noise_level * N(0, 1) * (f(x + N(0, 1)) - f(x))
     """
 
-    def __init__(self, name: str, block_dimension: int, num_blocks: int = 1,  # pylint: disable=too-many-arguments
-                 useless_variables: int = 0, noise_level: float = 0, noise_dissymmetry: bool = False,
-                 rotation: bool = False, translation_factor: float = 1., hashing: bool = False,
-                 aggregator: str = "max", split: bool = False) -> None:
+    def __init__(  # pylint: disable=too-many-arguments
+        self,
+        name: str,
+        block_dimension: int,
+        num_blocks: int = 1,
+        useless_variables: int = 0,
+        noise_level: float = 0,
+        noise_dissymmetry: bool = False,
+        rotation: bool = False,
+        translation_factor: float = 1.0,
+        hashing: bool = False,
+        aggregator: str = "max",
+        split: bool = False,
+    ) -> None:
         # pylint: disable=too-many-locals
         self.name = name
         self._parameters = {x: y for x, y in locals().items() if x not in ["__class__", "self"]}
@@ -143,30 +169,46 @@ class ArtificialFunction(ExperimentFunction):
         info = corefuncs.registry.get_info(self._parameters["name"])
         only_index_transform = info.get("no_transform", False)
         # variable
-        self.transform_var = ArtificialVariable(dimension=self._dimension, num_blocks=num_blocks, block_dimension=block_dimension,
-                                                translation_factor=translation_factor, rotation=rotation, hashing=hashing,
-                                                only_index_transform=only_index_transform)
+        self.transform_var = ArtificialVariable(
+            dimension=self._dimension,
+            num_blocks=num_blocks,
+            block_dimension=block_dimension,
+            translation_factor=translation_factor,
+            rotation=rotation,
+            hashing=hashing,
+            only_index_transform=only_index_transform,
+        )
         assert not (split and hashing)
         assert not (split and useless_variables > 0)
-        parametrization = p.Array(shape=(1,) if hashing else (self._dimension,)).set_name("") if not split else (
-            p.Instrumentation(*[p.Array(shape=(block_dimension,)) for _ in range(num_blocks)]).set_name("split"))
+        parametrization = (
+            p.Array(shape=(1,) if hashing else (self._dimension,)).set_name("")
+            if not split
+            else (
+                p.Instrumentation(*[p.Array(shape=(block_dimension,)) for _ in range(num_blocks)]).set_name(
+                    "split"
+                )
+            )
+        )
         if noise_level > 0:
             parametrization.descriptors.deterministic_function = False
         super().__init__(self.noisy_function, parametrization)
         self._aggregator = {"max": np.max, "mean": np.mean, "sum": np.sum}[aggregator]
         info = corefuncs.registry.get_info(self._parameters["name"])
         # add descriptors
-        self.add_descriptors(useful_dimensions=block_dimension * num_blocks,
-                             discrete=any(x in name for x in ["onemax", "leadingones", "jump"]))
+        self.add_descriptors(
+            useful_dimensions=block_dimension * num_blocks,
+            discrete=any(x in name for x in ["onemax", "leadingones", "jump"]),
+        )
 
     @property
     def dimension(self) -> int:
-        return self._dimension  # bypass the parametrization one (because of the "hashing" case)  # TODO: remove
+        return (
+            self._dimension
+        )  # bypass the parametrization one (because of the "hashing" case)  # TODO: remove
 
     @staticmethod
     def list_sorted_function_names() -> tp.List[str]:
-        """Returns a sorted list of function names that can be used for the blocks
-        """
+        """Returns a sorted list of function names that can be used for the blocks"""
         return sorted(corefuncs.registry)
 
     def _transform(self, x: tp.ArrayLike) -> np.ndarray:
@@ -191,26 +233,35 @@ class ArtificialFunction(ExperimentFunction):
         return self.function_from_transform(data)
 
     def noisy_function(self, x: tp.ArrayLike) -> float:
-        return _noisy_call(x=np.array(x, copy=False), transf=self._transform, func=self.function_from_transform,
-                           noise_level=self._parameters["noise_level"], noise_dissymmetry=self._parameters["noise_dissymmetry"])
+        return _noisy_call(
+            x=np.array(x, copy=False),
+            transf=self._transform,
+            func=self.function_from_transform,
+            noise_level=self._parameters["noise_level"],
+            noise_dissymmetry=self._parameters["noise_dissymmetry"],
+        )
 
     def compute_pseudotime(self, input_parameter: tp.Any, loss: tp.Loss) -> float:
-        """Delay before returning results in steady state mode benchmarks (fake execution time)
-        """
+        """Delay before returning results in steady state mode benchmarks (fake execution time)"""
         args, kwargs = input_parameter
         assert not kwargs
         assert len(args) == 1
         if hasattr(self._func, "compute_pseudotime"):
             data = self._transform(args[0])
-            total = 0.
+            total = 0.0
             for block in data:
                 total += self._func.compute_pseudotime(((block,), {}), loss)  # type: ignore
             return total
-        return 1.
+        return 1.0
 
 
-def _noisy_call(x: np.ndarray, transf: tp.Callable[[np.ndarray], np.ndarray], func: tp.Callable[[np.ndarray], float],
-                noise_level: float, noise_dissymmetry: bool) -> float:  # pylint: disable=unused-argument
+def _noisy_call(
+    x: np.ndarray,
+    transf: tp.Callable[[np.ndarray], np.ndarray],
+    func: tp.Callable[[np.ndarray], float],
+    noise_level: float,
+    noise_dissymmetry: bool,
+) -> float:  # pylint: disable=unused-argument
     x_transf = transf(x)
     fx = func(x_transf)
     noise = 0
@@ -218,32 +269,28 @@ def _noisy_call(x: np.ndarray, transf: tp.Callable[[np.ndarray], np.ndarray], fu
         if not noise_dissymmetry or x_transf.ravel()[0] <= 0:
             side_point = transf(x + np.random.normal(0, 1, size=len(x)))
             if noise_dissymmetry:
-                noise_level *= (1. + x_transf.ravel()[0] * 100.)
+                noise_level *= 1.0 + x_transf.ravel()[0] * 100.0
             noise = noise_level * np.random.normal(0, 1) * (func(side_point) - fx)
     return fx + noise
 
 
 class FarOptimumFunction(ExperimentFunction):
-    """Very simple 2D norm-1 function with optimal value at (x_optimum, 100)
-    """
+    """Very simple 2D norm-1 function with optimal value at (x_optimum, 100)"""
 
     # pylint: disable=too-many-arguments
     def __init__(
-            self,
-            independent_sigma: bool = True,
-            mutable_sigma: bool = True,
-            multiobjective: bool = False,
-            recombination: str = "crossover",
-            optimum: tp.Tuple[int, int] = (80, 100)
+        self,
+        independent_sigma: bool = True,
+        mutable_sigma: bool = True,
+        multiobjective: bool = False,
+        recombination: str = "crossover",
+        optimum: tp.Tuple[int, int] = (80, 100),
     ) -> None:
         assert recombination in ("crossover", "average")
         self._optimum = np.array(optimum, dtype=float)
         parametrization = p.Array(shape=(2,), mutable_sigma=mutable_sigma)
         init = np.array([1.0, 1.0] if independent_sigma else [1.0], dtype=float)
-        sigma = (
-            p.Array(init=init).set_mutation(exponent=2.0)
-            if mutable_sigma else p.Constant(init)
-        )
+        sigma = p.Array(init=init).set_mutation(exponent=2.0) if mutable_sigma else p.Constant(init)
         parametrization.set_mutation(sigma=sigma)
         parametrization.set_recombination("average" if recombination == "average" else p.mutation.Crossover())
         self._multiobjective = MultiobjectiveFunction(self._multifunc, 2 * self._optimum)
@@ -260,12 +307,13 @@ class FarOptimumFunction(ExperimentFunction):
 
     @classmethod
     def itercases(cls) -> tp.Iterator["FarOptimumFunction"]:
-        options = dict(independent_sigma=[True, False],
-                       mutable_sigma=[True, False],
-                       multiobjective=[True, False],
-                       recombination=["average", "crossover"],
-                       optimum=[(.8, 1), (80, 100), (.8, 100)]
-                       )
+        options = dict(
+            independent_sigma=[True, False],
+            mutable_sigma=[True, False],
+            multiobjective=[True, False],
+            recombination=["average", "crossover"],
+            optimum=[(0.8, 1), (80, 100), (0.8, 100)],
+        )
         keys = sorted(options)
         select = itertools.product(*(options[k] for k in keys))  # type: ignore
         cases = (dict(zip(keys, s)) for s in select)

@@ -26,15 +26,16 @@ def import_additional_module(filepath: tp.PathLike) -> None:
         the file to import
     """
     filepath = Path(filepath)
-    spec = importlib.util.spec_from_file_location("nevergrad.additionalimport." + filepath.with_suffix("").name, str(filepath))
+    spec = importlib.util.spec_from_file_location(
+        "nevergrad.additionalimport." + filepath.with_suffix("").name, str(filepath)
+    )
     module = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
     spec.loader.exec_module(module)  # type: ignore
 
 
 def save_or_append_to_csv(df: pd.DataFrame, path: Path) -> None:
-    """Saves a dataframe to a file in append mode
-    """
+    """Saves a dataframe to a file in append mode"""
     if path.exists():
         print("Appending to existing file")
         predf = pd.read_csv(str(path))
@@ -65,7 +66,10 @@ class Moduler:
         self.total_length = total_length
 
     def split(self, number: int) -> tp.List["Moduler"]:
-        return [Moduler(self.modulo * number, self.index + k * self.modulo, self.total_length) for k in range(number)]
+        return [
+            Moduler(self.modulo * number, self.index + k * self.modulo, self.total_length)
+            for k in range(number)
+        ]
 
     def __len__(self) -> int:
         if self.total_length is None:
@@ -96,7 +100,13 @@ class BenchmarkChunk:
     """
 
     # pylint: disable=too-many-instance-attributes
-    def __init__(self, name: str, repetitions: int = 1, seed: tp.Optional[int] = None, cap_index: tp.Optional[int] = None) -> None:
+    def __init__(
+        self,
+        name: str,
+        repetitions: int = 1,
+        seed: tp.Optional[int] = None,
+        cap_index: tp.Optional[int] = None,
+    ) -> None:
         self.name = name
         self.seed = seed
         self.cap_index = None if cap_index is None else max(1, int(cap_index))
@@ -113,26 +123,31 @@ class BenchmarkChunk:
     @property
     def moduler(self) -> Moduler:
         if self._moduler is None:
-            total_length = sum(1 for _ in itertools.islice(registry[self.name](), 0, self.cap_index)) * self.repetitions
+            total_length = (
+                sum(1 for _ in itertools.islice(registry[self.name](), 0, self.cap_index)) * self.repetitions
+            )
             self._moduler = Moduler(1, 0, total_length=total_length)
         return self._moduler
 
     @property
     def id(self) -> str:
-        """Unique ID which can be used to print in a file for instance
-        """
+        """Unique ID which can be used to print in a file for instance"""
         return f"{self._id}_i{self.moduler.index}m{self.moduler.modulo}"
 
     def __iter__(self) -> tp.Iterator[tp.Tuple[int, Experiment]]:
         maker = registry[self.name]
         seeds: tp.Iterable[tp.Optional[int]] = (
-            (None for _ in range(self.repetitions)) if self.seed is None else range(self.seed, self.seed + self.repetitions)
+            (None for _ in range(self.repetitions))
+            if self.seed is None
+            else range(self.seed, self.seed + self.repetitions)
         )
         # check experiments.py to see seedable xp
         generators = [maker() if seed is None else maker(seed=seed) for seed in seeds]
         generators = [itertools.islice(g, 0, self.cap_index) for g in generators]
         # pylint: disable=not-callable
-        enumerated_selection = ((k, s) for (k, s) in enumerate(itertools.chain.from_iterable(generators)) if self.moduler(k))
+        enumerated_selection = (
+            (k, s) for (k, s) in enumerate(itertools.chain.from_iterable(generators)) if self.moduler(k)
+        )
         return enumerated_selection
 
     def split(self, number: int) -> tp.List["BenchmarkChunk"]:
@@ -150,7 +165,9 @@ class BenchmarkChunk:
         """
         chunks = []
         for submoduler in self.moduler.split(number):
-            chunk = BenchmarkChunk(name=self.name, repetitions=self.repetitions, seed=self.seed, cap_index=self.cap_index)
+            chunk = BenchmarkChunk(
+                name=self.name, repetitions=self.repetitions, seed=self.seed, cap_index=self.cap_index
+            )
             chunk._moduler = submoduler
             chunk._id = self._id
             chunks.append(chunk)
@@ -162,7 +179,9 @@ class BenchmarkChunk:
     def __len__(self) -> int:
         return len(self.moduler)
 
-    def compute(self, process_function: tp.Optional[tp.Callable[["BenchmarkChunk", Experiment], None]] = None) -> utils.Selector:
+    def compute(
+        self, process_function: tp.Optional[tp.Callable[["BenchmarkChunk", Experiment], None]] = None
+    ) -> utils.Selector:
         """Run all the experiments and returns the result dataframe.
 
         Parameters

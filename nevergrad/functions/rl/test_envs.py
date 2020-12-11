@@ -26,7 +26,9 @@ def test_player() -> None:
 def test_doubleoseven_observations() -> None:
     game = envs.DoubleOSeven()
     game.reset()
-    obs = game.step({"player_0": 0, "player_1": 1})[0]  # p0 fires (reloads since no ammunition) and p1 protects
+    obs = game.step({"player_0": 0, "player_1": 1})[
+        0
+    ]  # p0 fires (reloads since no ammunition) and p1 protects
     expected = {
         "player_0": np.array([1, 0, 0, 1]),  # p0 1 ammu 0 protect, p1 0 ammu 1 protect
         "player_1": np.array([0, 1, 1, 0]),
@@ -46,7 +48,10 @@ def test_doubleoseven_observations() -> None:
         {"player_0": 1, "player_1": 0},
     ),
     max_protections=([("protect", "protect")] * 100, {"player_0": 0, "player_1": 0}),
-    double_fire=([("reload", "reload"), ("reload", "reload"), ("fire", "fire"), ("fire", "reload")], {"player_0": 1, "player_1": 0}),
+    double_fire=(
+        [("reload", "reload"), ("reload", "reload"), ("fire", "fire"), ("fire", "reload")],
+        {"player_0": 1, "player_1": 0},
+    ),
 )
 def test_doubleoseven(base_sequence: tp.List[tp.Tuple[str, str]], base_expected: tp.Dict[str, int]) -> None:
     game = envs.DoubleOSeven()
@@ -65,8 +70,12 @@ def test_doubleoseven(base_sequence: tp.List[tp.Tuple[str, str]], base_expected:
             actions_dict = {f"player_{k}": envs.JamesBond.actions.index(a) for k, a in enumerate(actions)}
             _, rew, done, _ = game.step(actions_dict)
             if k != len(sequence) - 1 and done["__all__"]:
-                raise AssertionError(f"The game should not have finished at step {k} with actions {actions} ({case})")
+                raise AssertionError(
+                    f"The game should not have finished at step {k} with actions {actions} ({case})"
+                )
         if not done["__all__"]:
             # pylint: disable=undefined-loop-variable
-            raise AssertionError(f"The game should have finished at last step with actions {actions} ({case})")
+            raise AssertionError(
+                f"The game should have finished at last step with actions {actions} ({case})"
+            )
         assert rew == expected, f"Wrong output for case: {case}"

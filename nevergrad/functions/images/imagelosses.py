@@ -34,9 +34,10 @@ class Koncept512(ImageLoss):
 
     def __init__(self, reference: tp.Optional[np.ndarray] = None) -> None:
         super().__init__()  # reference is useless in this case
-        if os.name != 'nt':
+        if os.name != "nt":
             # pylint: disable=import-outside-toplevel
             from koncept.models import Koncept512 as K512Model
+
             self.koncept = K512Model()
         else:
             raise UnsupportedExperiment("Koncept512 is not working properly under Windows")
