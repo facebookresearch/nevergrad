@@ -130,6 +130,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # multiobjective
         self._MULTIOBJECTIVE_AUTO_BOUND = mobj.AUTO_BOUND
         self._hypervolume_pareto: tp.Optional[mobj.HypervolumePareto] = None
+        self.__pareto_front_extractor = "random"
         # instance state
         self._asked: tp.Set[str] = set()
         self._num_objectives = 0
@@ -148,6 +149,14 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         It can be seeded or updated directly on the parametrization instance (`optimizer.parametrization.random_state`)
         """
         return self.parametrization.random_state
+
+    @property
+    def pareto_front_extractor(self) -> str:
+        return self.__pareto_front_extractor
+
+    @pareto_front_extractor.setter
+    def pareto_front_extractor(self, pareto_front_extractor: str):
+        self.__pareto_front_extractor: str = pareto_front_extractor
 
     @property
     def dimension(self) -> int:
@@ -198,7 +207,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         return self._num_tell_not_asked
 
     def pareto_front(
-        self, size: tp.Optional[int] = None, subset: str = "random", subset_tentatives: int = 12
+        self, size: tp.Optional[int] = None, subset: str = "default", subset_tentatives: int = 12
     ) -> tp.List[p.Parameter]:
         """Pareto front, as a list of Parameter. The losses can be accessed through
         parameter.losses
@@ -208,7 +217,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         size:  int (optional)
             if provided, selects a subset of the full pareto front with the given maximum size
         subset: str
-            method for selecting the subset ("random, "loss-covering", "domain-covering", "hypervolume")
+            method for selecting the subset ("random, "loss-covering", "domain-covering", "hypervolume", "default")
         subset_tentatives: int
             number of random tentatives for finding a better subset
 
@@ -221,6 +230,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         ----
         During non-multiobjective optimization, this returns the current pessimistic best
         """
+        if method == "default":
+            method = self.pareto_front_extractor
         if self._hypervolume_pareto is None:
             return [self.current_bests["pessimistic"].parameter]
         return self._hypervolume_pareto.pareto_front(
