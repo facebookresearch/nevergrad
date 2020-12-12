@@ -1155,6 +1155,13 @@ def image_similarity(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                     yield xp
 
 
+imagelosses = [imagesxp.imagelosses.SumAbsoluteDifferences,
+                imagesxp.imagelosses.LpipsAlex,
+                imagesxp.imagelosses.LpipsVgg,
+                imagesxp.imagelosses.SumSquareDifferences,
+                imagesxp.imagelosses.HistogramDifference]
+
+
 @registry.register
 def image_multi_similarity(seed: tp.Optional[int] = None, cross_valid: bool=False) -> tp.Iterator[Experiment]:
     """Optimizing images: artificial criterion for now."""
@@ -1185,28 +1192,26 @@ def image_with_similarity_cv(seed: tp.Optional[int] = None) -> tp.Iterator[Exper
     return image_with_similarity(seed, cross_valid=True)
 
 
+
 @registry.register
-def image_similarity_and_quality(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def image_similarity_and_quality(seed: tp.Optional[int] = None, cross_val: bool=False) -> tp.Iterator[Experiment]:
     """Optimizing images: artificial criterion for now."""
     seedg = create_seed_generator(seed)
-    optims = ["CMA", "NGOpt8", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
+    optims = get_optimizers("images")
     if default_optims is not None:
         optims = default_optims
 
-    funcs = [imagesxp.Image(loss=loss) for loss in [
-                imagesxp.imagelosses.SumAbsoluteDifferences,
-                imagesxp.imagelosses.lpips_alex,
-                imagesxp.imagelosses.lpips_vgg,
-                imagesxp.imagelosses.SumSquareDifferences,
-                imagesxp.imagelosses.HistogramDifference]]
     
-    # 2 losses functions.
+    # 3 losses functions including 2 iqas.
     func_iqa = imagesxp.Image(loss=imagesxp.imagelosses.Koncept512)
-    for func in funcs:
+    func_blur = imagesxp.Image(loss=imagesxp.imagelosses.Blur)
+    base_blur_value = func_blur(func_blur.parametrization.sample().value)
+    for func in funcs = [imagesxp.Image(loss=loss) for loss in imagelosses]
     
         # Creating a reference value.
         base_value = func(func.parametrization.sample().value)
-        mofunc = fbase.MultiExperiment([func, func_iqa], upper_bounds=[base_value, 100.])
+        mofunc = fbase.MultiExperiments([func, func_blur, func_iqa], upper_bounds=[base_value, base_blur_value, 100.], no_cross_val=[1, 2]) if cross_val else [
+                fbase.MultiExperiments([func, func_blur, func_iqa], upper_bounds=[base_value, base_blur_value, 100.])
         for budget in [100 * 5 ** k for k in range(3)]:
             for num_workers in [1]:
                 for algo in optims:
@@ -1214,12 +1219,18 @@ def image_similarity_and_quality(seed: tp.Optional[int] = None) -> tp.Iterator[E
                     yield xp
 
 
-# GAN counterparts of the above.
+@registry.register
+def image_similarity_and_quality_cv(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of image_multi_similarity with cross-validation."""
+    return image_similarity_and_quality_cv(seed, cross_valid=True)
+
+
+# TODO: GAN counterparts of the above ?
 @registry.register
 def images_using_gan(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Optimizing an image using koncept512 and a GAN"""
     seedg = create_seed_generator(seed)
-    optims = ["CMA", "Shiwa", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "NSGAIIES", "ParametrizationDE"]
+    optims = get_optimizers("images")
     func = imagesxp.ImageFromPGAN()
     num_workers = 1
     for budget in [100 * 5 ** k for k in range(3)]:

@@ -1,3 +1,4 @@
+import cv2
 import lpips
 import os
 import torch
@@ -28,7 +29,7 @@ class SumAbsoluteDifferences(ImageLoss):
         return value
 
 
-class lpips_alex(SumAbsoluteDifferences):
+class LpipsAlex(SumAbsoluteDifferences):
     def __init__(self, reference: np.ndarray) -> None:
         super().__init__(reference)
         self.loss_fn = lpips.LPIPS(net="alex")
@@ -43,7 +44,7 @@ class lpips_alex(SumAbsoluteDifferences):
         return self.loss_fn(img0, img1)
 
 
-class lpips_vgg(lpips_alex):
+class LpipsVgg(lpips_alex):
     def __init__(self, reference: np.ndarray) -> None:
         super().__init__(reference)
         self.loss_fn = lpips.LPIPS(net="vgg")
@@ -85,3 +86,12 @@ class Koncept512(ImageLoss):
     def __call__(self, img: np.ndarray) -> float:
         loss = self.koncept.assess(img)
         return float(loss)
+
+class Blur(ImageLoss):
+    """
+    This estimates bluriness
+    """
+
+    def __call__(self, img: np.ndarray) -> float:
+        return cv2.Laplacian(image, cv2.CV_64F).var()
+
