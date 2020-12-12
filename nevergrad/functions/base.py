@@ -304,7 +304,7 @@ class ArrayExperimentFunction(ExperimentFunction):
                     middle = (self.parametrization.bounds[0][0] + self.parametrization.bounds[1][0]) / 2.0  # type: ignore
                 else:
                     middle = 0.0
-                y[i] = middle - x[i]  # We should rather symmetrize w.r.t the center of Parameter. TODO
+                y[i] = 2 * middle - x[i]  # We should rather symmetrize w.r.t the center of Parameter. TODO
             symmetry = symmetry // 2
         return self._inner_function(y)  # type: ignore
 
