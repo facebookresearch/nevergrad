@@ -59,8 +59,8 @@ def test_array_experiment_function() -> None:
     ]
     np.testing.assert_equal(iarrayfuncs[0].dimension, 10)
     assert iarrayfuncs[0](np.zeros(10)) == iarrayfuncs[0].copy()(np.zeros(10))
-    assert iarrayfuncs[0](np.zeros(10)) == 8.25
-    assert iarrayfuncs[1](np.zeros(10)) == 11.0
+    assert iarrayfuncs[0](np.zeros(10)) == 16.5
+    assert iarrayfuncs[1](np.zeros(10)) == 22.0
     assert iarrayfuncs[0](np.ones(10)) != iarrayfuncs[1](np.ones(10))
     assert iarrayfuncs[2](np.ones(10)) == iarrayfuncs[1](np.ones(10))
 
