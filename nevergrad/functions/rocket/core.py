@@ -13,7 +13,7 @@ from .rocket import rocket as rocket
 
 
 class Rocket(ArrayExperimentFunction):
-    def __init__(self, symmetry: int) -> None:
+    def __init__(self, symmetry: int = 0) -> None:
         super().__init__(self._simulate_rocket, parametrization=p.Array(shape=(24,)), symmetry=symmetry)
 
     def _simulate_rocket(self, x: np.ndarray) -> float:
