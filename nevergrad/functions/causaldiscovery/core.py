@@ -3,7 +3,6 @@ import networkx as nx
 import cdt
 from cdt.metrics import (precision_recall, SHD)
 import nevergrad as ng
-from nevergrad.parametrization import parameter as p
 from ..base import ExperimentFunction
 
 
