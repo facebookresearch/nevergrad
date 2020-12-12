@@ -1164,15 +1164,18 @@ def image_multi_similarity(seed: tp.Optional[int] = None) -> tp.Iterator[Experim
         optims = default_optims
     funcs = [imagesxp.Image(loss=loss) for loss in [
                 imagesxp.imagelosses.SumAbsoluteDifferences,
+                imagesxp.imagelosses.lpips_alex,
+                imagesxp.imagelosses.lpips_vgg,
                 imagesxp.imagelosses.SumSquareDifferences,
                 imagesxp.imagelosses.HistogramDifference]]
-    base_values = [func.copy()(func.parametrization.sample().value) for func in funcs]
-    mofunc = fbase.MultiExperiment(funcs, upper_bounds=base_values)
+    base_values = [func(func.parametrization.sample().value) for func in funcs]
+    mofuncs = fbase.MultiExperiments(funcs, upper_bounds=base_values)
     for budget in [100 * 5 ** k for k in range(3)]:
         for num_workers in [1]:
             for algo in optims:
-                xp = Experiment(mofunc, algo, budget, num_workers=num_workers, seed=next(seedg))
-                yield xp
+                for func in mofuncs:
+                    xp = Experiment(mofunc, algo, budget, num_workers=num_workers, seed=next(seedg))
+                    yield xp
 
 
 # TODO: more criteria + MOO cross-validation
@@ -1189,8 +1192,7 @@ def image_similarity_and_quality(seed: tp.Optional[int] = None) -> tp.Iterator[E
     func_iqa = imagesxp.Image(loss=imagesxp.imagelosses.Koncept512)
 
     # Creating a reference value.
-    func_for_initial_value = func.copy()
-    base_value = func_for_initial_value(func_for_initial_value.parametrization.sample().value)
+    base_value = func(func.parametrization.sample().value)
     mofunc = fbase.MultiExperiment([func, func_iqa], upper_bounds=[base_value, 100.])
     for budget in [100 * 5 ** k for k in range(3)]:
         for num_workers in [1]:
