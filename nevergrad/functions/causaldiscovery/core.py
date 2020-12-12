@@ -63,13 +63,11 @@ class CausalDiscovery(ExperimentFunction):
         param_links = ng.p.Choice([-1, 0, 1], repetitions=self._nvars*(self._nvars-1)//2)
         instru = ng.p.Instrumentation(network_links=param_links).set_name("")
         super().__init__(self.objective, instru)
-        self._min_score_so_far = None #Debugging
 
 
     def objective(self, network_links: tp.Tuple[int]) -> float:
         output_graph = self.choices_to_graph(network_links)
         score = self.graph_score(output_graph)
-        self._min_score_so_far = -score if self._min_score_so_far is None else min(self._min_score_so_far, -score)
         return -score
 
 
