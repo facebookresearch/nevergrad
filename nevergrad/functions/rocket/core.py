@@ -8,13 +8,13 @@
 
 import numpy as np
 from nevergrad.parametrization import parameter as p
-from ..base import ExperimentFunction
+from ..base import ArrayExperimentFunction
 from .rocket import rocket as rocket
 
 
-class Rocket(ExperimentFunction):
-    def __init__(self) -> None:
-        super().__init__(self._simulate_rocket, p.Array(shape=(24,)))
+class Rocket(ArrayExperimentFunction):
+    def __init__(self, symmetry: int) -> None:
+        super().__init__(self._simulate_rocket, parametrization=p.Array(shape=(24,)), symmetry=symmetry)
 
     def _simulate_rocket(self, x: np.ndarray) -> float:
         return rocket(x)

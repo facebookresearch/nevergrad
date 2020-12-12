@@ -926,7 +926,7 @@ def rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Rocket simulator. Maximize max altitude by choosing the thrust schedule, given a total thrust.
     Budget 25, 50, ..., 1600.
     Sequential or 30 workers."""
-    funcs = [Rocket()]
+    funcs = [Rocket(i) for i in range(17)]
     seedg = create_seed_generator(seed)
     optims = ["DiagonalCMA", "MetaModel", "CMA", "DE", "NGOpt8"]
     if default_optims is not None:
