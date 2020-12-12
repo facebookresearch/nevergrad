@@ -10,3 +10,15 @@ from nevergrad.functions.images import imagelosses
 def test_l1_loss() -> None:
     loss = imagelosses.SumAbsoluteDifferences(reference=np.zeros((3, 2)))
     assert loss(np.ones((3, 2))) == 6
+
+
+def all_losses() -> None:
+    for loss in [
+        imagelosses.SumAbsoluteDifferences,
+        imagelosses.lpips_alex,
+        imagelosses.lpips_vgg,
+        imagelosses.SumSquareDifferences,
+        imagelosses.HistogramDifference,
+        imagelosses.Koncept512,
+    ]:
+        assert loss(reference=np.zeros((3, 2)))(np.ones(3, 2)) > 0.0

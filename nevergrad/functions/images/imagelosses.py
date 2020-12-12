@@ -1,4 +1,6 @@
+import lpips
 import os
+import torch
 import typing as tp
 import numpy as np
 from nevergrad.functions.base import UnsupportedExperiment
@@ -23,6 +25,44 @@ class SumAbsoluteDifferences(ImageLoss):
     def __call__(self, x: np.ndarray) -> float:
         assert x.shape == self.domain_shape, f"Shape = {x.shape} vs {self.domain_shape}"
         value = float(np.sum(np.fabs(x - self.reference)))
+        return value
+
+
+class lpips_alex(SumAbsoluteDifferences):
+    def __init__(self, reference: np.ndarray) -> None:
+        super().__init__(reference)
+        self.loss_fn = lpips.LPIPS(net="alex")
+
+    def __call__(self, img: np.ndarray) -> float:
+        img0 = torch.clamp(torch.Tensor(img), 0, 1) * 2.0 - 1.0
+        img1 = torch.clamp(torch.Tensor(self.reference), 0, 1) * 2.0 - 1.0
+        assert len(img0.shape) == 4 and img0.shape[0] == 1
+        assert len(img1.shape) == 4 and img1.shape[0] == 1
+        assert all(np.fabs(img0.ravel()) <= 1.0)
+        assert all(np.fabs(img1.ravel()) <= 1.0)
+        return self.loss_fn(img0, img1)
+
+
+class lpips_vgg(lpips_alex):
+    def __init__(self, reference: np.ndarray) -> None:
+        super().__init__(reference)
+        self.loss_fn = lpips.LPIPS(net="vgg")
+
+
+class SumSquareDifferences(SumAbsoluteDifferences):
+    def __call__(self, x: np.ndarray) -> float:
+        assert x.shape == self.domain_shape, f"Shape = {x.shape} vs {self.domain_shape}"
+        value = float(np.sum((x - self.reference) ** 2))
+        return value
+
+
+class HistogramDifference(SumAbsoluteDifferences):
+    def __call__(self, x: np.ndarray) -> float:
+        assert x.shape == self.domain_shape, f"Shape = {x.shape} vs {self.domain_shape}"
+        assert x.shape[2] == 3
+        x_gray_1d = np.sum(x, 2).ravel()
+        ref_gray_1d = np.sum(self.reference, 2).ravel()
+        value = float(np.sum(np.sort(x_gray_1d) - np.sort(ref_gray_1d)))
         return value
 
 

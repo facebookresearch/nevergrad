@@ -55,6 +55,7 @@ class Image(base.ExperimentFunction):
         max_size = ng.p.Scalar(lower=1, upper=200).set_integer_casting()
         array.set_recombination(ng.p.mutation.Crossover(axis=(0, 1), max_size=max_size)).set_name("")  # type: ignore
         super().__init__(loss(reference=self.data), array)
+        assert self.multiobjective_upper_bounds is None
         self.add_descriptors(loss=loss.__class__.__name__)
         self.loss_function = loss(reference=self.data)
 
