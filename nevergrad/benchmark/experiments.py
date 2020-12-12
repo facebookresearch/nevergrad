@@ -1154,9 +1154,9 @@ def image_similarity(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                 if not xp.is_incoherent:
                     yield xp
 
-# TODO: more criteria + MOO cross-validation
+
 @registry.register
-def image_multi_similarity(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def image_multi_similarity(seed: tp.Optional[int] = None, cross_valid: bool=False) -> tp.Iterator[Experiment]:
     """Optimizing images: artificial criterion for now."""
     seedg = create_seed_generator(seed)
     optims = ["CMA", "NGOpt8", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
@@ -1169,7 +1169,8 @@ def image_multi_similarity(seed: tp.Optional[int] = None) -> tp.Iterator[Experim
                 imagesxp.imagelosses.SumSquareDifferences,
                 imagesxp.imagelosses.HistogramDifference]]
     base_values = [func(func.parametrization.sample().value) for func in funcs]
-    mofuncs = fbase.MultiExperiments(funcs, upper_bounds=base_values)
+    mofuncs = fbase.MultiExperiments(funcs, upper_bounds=base_values) if cross_valid else [
+            fbase.MultiExperiment(funcs, upper_bounds=base_values)]
     for budget in [100 * 5 ** k for k in range(3)]:
         for num_workers in [1]:
             for algo in optims:
@@ -1178,7 +1179,12 @@ def image_multi_similarity(seed: tp.Optional[int] = None) -> tp.Iterator[Experim
                     yield xp
 
 
-# TODO: more criteria + MOO cross-validation
+@registry.register
+def image_with_similarity_cv(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of image_multi_similarity with cross-validation."""
+    return image_with_similarity(seed, cross_valid=True)
+
+
 @registry.register
 def image_similarity_and_quality(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Optimizing images: artificial criterion for now."""
@@ -1187,18 +1193,25 @@ def image_similarity_and_quality(seed: tp.Optional[int] = None) -> tp.Iterator[E
     if default_optims is not None:
         optims = default_optims
 
+    funcs = [imagesxp.Image(loss=loss) for loss in [
+                imagesxp.imagelosses.SumAbsoluteDifferences,
+                imagesxp.imagelosses.lpips_alex,
+                imagesxp.imagelosses.lpips_vgg,
+                imagesxp.imagelosses.SumSquareDifferences,
+                imagesxp.imagelosses.HistogramDifference]]
+    
     # 2 losses functions.
-    func = imagesxp.Image()
     func_iqa = imagesxp.Image(loss=imagesxp.imagelosses.Koncept512)
-
-    # Creating a reference value.
-    base_value = func(func.parametrization.sample().value)
-    mofunc = fbase.MultiExperiment([func, func_iqa], upper_bounds=[base_value, 100.])
-    for budget in [100 * 5 ** k for k in range(3)]:
-        for num_workers in [1]:
-            for algo in optims:
-                xp = Experiment(mofunc, algo, budget, num_workers=num_workers, seed=next(seedg))
-                yield xp
+    for func in funcs:
+    
+        # Creating a reference value.
+        base_value = func(func.parametrization.sample().value)
+        mofunc = fbase.MultiExperiment([func, func_iqa], upper_bounds=[base_value, 100.])
+        for budget in [100 * 5 ** k for k in range(3)]:
+            for num_workers in [1]:
+                for algo in optims:
+                    xp = Experiment(mofunc, algo, budget, num_workers=num_workers, seed=next(seedg))
+                    yield xp
 
 
 # GAN counterparts of the above.

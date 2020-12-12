@@ -271,7 +271,7 @@ def MultiExperiments(xps: tp.Iterable[ExperimentFunction], upper_bounds: tp.Arra
         moo_xp = MultiExperiment(xps[training], upper_bounds[training])
         moo_xp.evaluation_by_best_of_pareto_front = pareto_size
         moo_xp.evaluation_function = xps[i].evaluation_function
-        assert len(xps[training]) + 1 = len(xps)
+        assert len(xps[training]) + 1 == len(xps)
         experiment_functions.append(moo_xp)
     return experiment_functions
 
