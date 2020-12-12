@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 """Groups of optimizers for use in benchmarks
 """
+from copy import deepcopy
 import typing as tp
 import numpy as np
 import nevergrad as ng
@@ -180,7 +181,8 @@ def images() -> tp.Sequence[Optim]:
     moo_image_optimizers: tp.Sequence[Optim] = []
     for pareto_extractor in ["random", "loss-covering", "EPS", "domain-covering", "hypervolume"]
         for cls in my_classes:
-            moo_cls = cls.deepcopy()
+            moo_cls = copy.deepcopy(cls)
+            moo_cls.__name__ = cls.name + "__pareto_" + pareto_extractor
             moo_cls.pareto_front_extractor = pareto_extractor  # Dirt hack which is temporary, this can not stay that way :-)
             moo_image_optimizers.append(moo_cls)
 
