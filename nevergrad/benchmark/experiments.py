@@ -1197,7 +1197,7 @@ def image_with_similarity_cv(seed: tp.Optional[int] = None) -> tp.Iterator[Exper
 def image_similarity_and_quality(seed: tp.Optional[int] = None, cross_val: bool=False) -> tp.Iterator[Experiment]:
     """Optimizing images: artificial criterion for now."""
     seedg = create_seed_generator(seed)
-    optims = get_optimizers("images")
+    optims = get_optimizers("structured_moo")
     if default_optims is not None:
         optims = default_optims
 
@@ -1230,7 +1230,7 @@ def image_similarity_and_quality_cv(seed: tp.Optional[int] = None) -> tp.Iterato
 def images_using_gan(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Optimizing an image using koncept512 and a GAN"""
     seedg = create_seed_generator(seed)
-    optims = get_optimizers("images")
+    optims = get_optimizers("structured_moo")
     func = imagesxp.ImageFromPGAN()
     num_workers = 1
     for budget in [100 * 5 ** k for k in range(3)]:
