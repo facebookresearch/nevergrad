@@ -10,6 +10,7 @@ from . import utils
 from . import core
 from .container import Tuple
 from .data import Array
+
 # weird pylint issue on "Descriptors"
 # pylint: disable=no-value-for-parameter
 
@@ -19,7 +20,6 @@ T = tp.TypeVar("T", bound="TransitionChoice")
 
 
 class BaseChoice(core.Dict):
-
     class ChoiceTag(tp.NamedTuple):
         cls: tp.Type[core.Parameter]
         arity: int
@@ -35,11 +35,7 @@ class BaseChoice(core.Dict):
             return cls(type(param), arity)
 
     def __init__(
-        self,
-        *,
-        choices: tp.Iterable[tp.Any],
-        repetitions: tp.Optional[int] = None,
-        **kwargs: tp.Any
+        self, *, choices: tp.Iterable[tp.Any], repetitions: tp.Optional[int] = None, **kwargs: tp.Any
     ) -> None:
         assert repetitions is None or isinstance(repetitions, int)  # avoid silent issues
         self._repetitions = repetitions
@@ -52,31 +48,29 @@ class BaseChoice(core.Dict):
     def _compute_descriptors(self) -> utils.Descriptors:
         deterministic = getattr(self, "_deterministic", True)
         ordered = not hasattr(self, "_deterministic")
-        internal = utils.Descriptors(deterministic=deterministic, continuous=not deterministic, ordered=ordered)
+        internal = utils.Descriptors(
+            deterministic=deterministic, continuous=not deterministic, ordered=ordered
+        )
         return self.choices.descriptors & internal
 
     def __len__(self) -> int:
-        """Number of choices
-        """
+        """Number of choices"""
         return len(self.choices)
 
     @property
     def index(self) -> int:  # delayed choice
-        """Index of the chosen option
-        """
+        """Index of the chosen option"""
         assert self.indices.size == 1
         return int(self.indices[0])
 
     @property
     def indices(self) -> np.ndarray:
-        """Indices of the chosen options
-        """
+        """Indices of the chosen options"""
         raise NotImplementedError  # TODO remove index?
 
     @property
     def choices(self) -> Tuple:
-        """The different options, as a Tuple Parameter
-        """
+        """The different options, as a Tuple Parameter"""
         return self["choices"]  # type: ignore
 
     @property
@@ -159,16 +153,19 @@ class Choice(BaseChoice):
     """
 
     def __init__(
-            self,
-            choices: tp.Iterable[tp.Any],
-            repetitions: tp.Optional[int] = None,
-            deterministic: bool = False,
+        self,
+        choices: tp.Iterable[tp.Any],
+        repetitions: tp.Optional[int] = None,
+        deterministic: bool = False,
     ) -> None:
         assert not isinstance(choices, Tuple)
         lchoices = list(choices)
         rep = 1 if repetitions is None else repetitions
-        super().__init__(choices=lchoices, repetitions=repetitions,
-                         weights=Array(shape=(rep, len(lchoices)), mutable_sigma=False))
+        super().__init__(
+            choices=lchoices,
+            repetitions=repetitions,
+            weights=Array(shape=(rep, len(lchoices)), mutable_sigma=False),
+        )
         self.weights.heritage[BaseChoice.ChoiceTag] = BaseChoice.ChoiceTag(self.__class__, len(lchoices))
         self._deterministic = deterministic
         self._indices: tp.Optional[np.ndarray] = None
@@ -178,13 +175,12 @@ class Choice(BaseChoice):
         cls = self.__class__.__name__
         assert name.startswith(cls)
         if self._deterministic:
-            name = cls + "{det}" + name[len(cls):]
+            name = cls + "{det}" + name[len(cls) :]
         return name
 
     @property
     def indices(self) -> np.ndarray:  # delayed choice
-        """Index of the chosen option
-        """
+        """Index of the chosen option"""
         if self._indices is None:
             self._draw(deterministic=self._deterministic)
         assert self._indices is not None
@@ -192,14 +188,12 @@ class Choice(BaseChoice):
 
     @property
     def weights(self) -> Array:
-        """The weights used to draw the value
-        """
+        """The weights used to draw the value"""
         return self["weights"]  # type: ignore
 
     @property
     def probabilities(self) -> np.ndarray:
-        """The probabilities used to draw the value
-        """
+        """The probabilities used to draw the value"""
         exp = np.exp(self.weights.value)
         return exp / np.sum(exp)  # type: ignore
 
@@ -219,13 +213,15 @@ class Choice(BaseChoice):
         encoder = discretization.Encoder(self.weights.value, rng=self.random_state)
         self._indices = encoder.encode(deterministic=deterministic or self._deterministic)
 
-    def _internal_set_standardized_data(self: C, data: np.ndarray, reference: C, deterministic: bool = False) -> None:
+    def _internal_set_standardized_data(
+        self: C, data: np.ndarray, reference: C, deterministic: bool = False
+    ) -> None:
         super()._internal_set_standardized_data(data, reference=reference, deterministic=deterministic)
         self._draw(deterministic=deterministic)
 
     def mutate(self) -> None:
         # force random_state sync
-        self.random_state   # pylint: disable=pointless-statement
+        self.random_state  # pylint: disable=pointless-statement
         self.weights.mutate()
         self._draw(deterministic=self._deterministic)
         indices = set(self.indices)
@@ -234,7 +230,9 @@ class Choice(BaseChoice):
 
     def _internal_spawn_child(self: C) -> C:
         choices = (y for x, y in sorted(self.choices.spawn_child()._content.items()))
-        child = self.__class__(choices=choices, deterministic=self._deterministic, repetitions=self._repetitions)
+        child = self.__class__(
+            choices=choices, deterministic=self._deterministic, repetitions=self._repetitions
+        )
         child._content["weights"] = self.weights.spawn_child()
         return child
 
@@ -263,19 +261,21 @@ class TransitionChoice(BaseChoice):
     """
 
     def __init__(
-            self,
-            choices: tp.Iterable[tp.Any],
-            transitions: tp.Union[tp.ArrayLike, Array] = (1.0, 1.0),
-            repetitions: tp.Optional[int] = None,
+        self,
+        choices: tp.Iterable[tp.Any],
+        transitions: tp.Union[tp.ArrayLike, Array] = (1.0, 1.0),
+        repetitions: tp.Optional[int] = None,
     ) -> None:
         choices = list(choices)
         positions = Array(init=len(choices) / 2.0 * np.ones((repetitions if repetitions is not None else 1,)))
         positions.set_bounds(0, len(choices), method="gaussian")
         positions.heritage[BaseChoice.ChoiceTag] = BaseChoice.ChoiceTag(self.__class__, len(choices))
-        super().__init__(choices=choices,
-                         repetitions=repetitions,
-                         positions=positions,
-                         transitions=transitions if isinstance(transitions, Array) else np.array(transitions, copy=False))
+        super().__init__(
+            choices=choices,
+            repetitions=repetitions,
+            positions=positions,
+            transitions=transitions if isinstance(transitions, Array) else np.array(transitions, copy=False),
+        )
         assert self.transitions.value.ndim == 1
 
     @property
@@ -292,32 +292,30 @@ class TransitionChoice(BaseChoice):
 
     @property
     def transitions(self) -> Array:
-        """The weights used to draw the step to the next value
-        """
+        """The weights used to draw the step to the next value"""
         return self["transitions"]  # type: ignore
 
     @property
     def position(self) -> Array:
-        """The continuous version of the index (used when working with standardized space)
-        """
-        warnings.warn("position is replaced by positions in order to allow for repetitions", DeprecationWarning)
+        """The continuous version of the index (used when working with standardized space)"""
+        warnings.warn(
+            "position is replaced by positions in order to allow for repetitions", DeprecationWarning
+        )
         return self.positions
 
     @property
     def positions(self) -> Array:
-        """The continuous version of the index (used when working with standardized space)
-        """
+        """The continuous version of the index (used when working with standardized space)"""
         return self["positions"]  # type: ignore
 
     def mutate(self) -> None:
         # force random_state sync
-        self.random_state   # pylint: disable=pointless-statement
+        self.random_state  # pylint: disable=pointless-statement
         transitions = core.as_parameter(self.transitions)
         transitions.mutate()
         rep = 1 if self._repetitions is None else self._repetitions
         #
-        enc = discretization.Encoder(np.ones((rep, 1)) * np.log(self.transitions.value),
-                                     self.random_state)
+        enc = discretization.Encoder(np.ones((rep, 1)) * np.log(self.transitions.value), self.random_state)
         moves = enc.encode()
         signs = self.random_state.choice([-1, 1], size=rep)
         new_index = np.clip(self.indices + signs * moves, 0, len(self) - 1)
