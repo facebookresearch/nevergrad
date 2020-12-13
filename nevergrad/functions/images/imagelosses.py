@@ -44,7 +44,7 @@ class LpipsAlex(SumAbsoluteDifferences):
         return self.loss_fn(img0, img1)
 
 
-class LpipsVgg(lpips_alex):
+class LpipsVgg(LpipsAlex):
     def __init__(self, reference: np.ndarray) -> None:
         super().__init__(reference)
         self.loss_fn = lpips.LPIPS(net="vgg")
