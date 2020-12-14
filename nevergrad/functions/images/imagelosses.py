@@ -1,4 +1,5 @@
 import cv2
+import imquality.brisque as brisque
 import lpips
 import os
 import torch
@@ -123,7 +124,9 @@ class Blur(ImageLoss):
         super().__init__()  # No reference needed! Just blur estimation.
 
     def __call__(self, img: np.ndarray) -> float:
-        return cv2.Laplacian(image, cv2.CV_64F).var()
+        assert img.shape[2] == 3
+        assert len(img.shape) == 3
+        return cv2.Laplacian(img, cv2.CV_64F).var()
 
 
 @registry.register
