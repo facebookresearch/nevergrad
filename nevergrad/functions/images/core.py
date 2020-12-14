@@ -5,18 +5,20 @@
 
 from pathlib import Path
 
-import numpy as np
 import PIL.Image
-import torch.nn as nn
-import torch
-import torchvision
-from torchvision.models import resnet50
-import torchvision.transforms as tr
-
 import nevergrad as ng
 import nevergrad.common.typing as tp
-from .. import base
+import numpy as np
+import torch
+import torch.nn as nn
+import torchvision
+import torchvision.transforms as tr
+from torchvision.models import resnet50
+
 from . import imagelosses
+from .. import base
+
+
 # pylint: disable=abstract-method
 
 
@@ -52,6 +54,7 @@ class Image(base.ExperimentFunction):
         super().__init__(loss(reference=self.data), array)
         self.add_descriptors(loss=loss.__class__.__name__)
         self.loss_function = loss(reference=self.data)
+
 
 # #### Adversarial attacks ##### #
 
@@ -236,6 +239,7 @@ class ImageFromPGAN(base.ExperimentFunction):
         return loss
 
     def _generate_images(self, x: np.ndarray) -> np.ndarray:
+        """ generates images tensor of shape [nb_images, x, y, 3] with pixels between 0 and 255"""
         # pylint: disable=not-callable
         noise = torch.tensor(x.astype('float32'))
-        return self.pgan_model.test(noise).permute(0, 2, 3, 1).cpu().numpy()  # type: ignore
+        return ((self.pgan_model.test(noise).clamp(min=-1, max=1) + 1) * 255 / 2).permute(0, 2, 3, 1).cpu().numpy()  # type: ignore

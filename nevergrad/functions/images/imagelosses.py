@@ -29,7 +29,7 @@ class SumAbsoluteDifferences(ImageLoss):
 class Koncept512(ImageLoss):
     """
     This loss uses the neural network Koncept512 to score images
-    It takes one image or a list of images of shape [x, y, 3] and returns a score
+    It takes one image or a list of images of shape [x, y, 3], with each pixel between 0 and 255, and returns a score
     """
 
     def __init__(self, reference: tp.Optional[np.ndarray] = None) -> None:
