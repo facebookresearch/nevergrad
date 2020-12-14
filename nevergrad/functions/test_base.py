@@ -178,6 +178,6 @@ def test_multiexperiments() -> None:
         objective_functions,
         upper_bounds=np.array((50.0, 50.0)),
         pareto_size=16,
-        ):
+    ):
         candidate = func.parametrization.sample()
         assert func.copy()(candidate.value()) == func(candidate.value())
