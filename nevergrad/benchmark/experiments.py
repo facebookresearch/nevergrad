@@ -1017,12 +1017,12 @@ def neuro_control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experime
     """MuJoCo testbed. Learn neural policies."""
     seedg = create_seed_generator(seed)
     num_rollouts = 1
-    funcs = [control.NeuroSwimmer(num_rollouts=num_rollouts, random_state=seed),
-             control.NeuroHalfCheetah(num_rollouts=num_rollouts, random_state=seed),
-             control.NeuroHopper(num_rollouts=num_rollouts, random_state=seed),
-             control.NeuroWalker2d(num_rollouts=num_rollouts, random_state=seed),
-             control.NeuroAnt(num_rollouts=num_rollouts, random_state=seed),
-             control.NeuroHumanoid(num_rollouts=num_rollouts, random_state=seed)
+    funcs = [control.Swimmer(num_rollouts=num_rollouts, intermediate_layer_dim=(50,), random_state=seed),
+             control.HalfCheetah(num_rollouts=num_rollouts, intermediate_layer_dim=(50,), random_state=seed),
+             control.Hopper(num_rollouts=num_rollouts, intermediate_layer_dim=(50,), random_state=seed),
+             control.Walker2d(num_rollouts=num_rollouts, intermediate_layer_dim=(50,), random_state=seed),
+             control.Ant(num_rollouts=num_rollouts, intermediate_layer_dim=(50,), random_state=seed),
+             control.Humanoid(num_rollouts=num_rollouts, intermediate_layer_dim=(50,), random_state=seed)
              ]
 
     optims = ["CMA", "NGOpt4", "DiagonalCMA", "NGOpt8", "MetaModel", "chainCMAPowell"]

@@ -20,19 +20,24 @@ class GenericMujocoEnv:
         Standard deviation of state values of multiple independent runs.
     num_rollouts: int
         number of independent runs.
+    activation: str:
+        activation function
+    layer_rescaling_coef: float
+        Scaling coefficient of output layers
     random_state: int or None
         random state for reproducibility in Gym environment.
     """
 
     def __init__(self, env_name, state_mean, state_std, num_rollouts,
-                 activation, layer_rescaling_coef, random_state):
+                 activation, layer_rescaling_coef, noise_level, random_state):
         self.mean = state_mean
         self.std = state_std
         self.env = gym.make(env_name)
         self.num_rollouts = num_rollouts
-        self.env.seed(random_state)
+        self.random_state = random_state
         self.activation = activation
         self.layer_rescaling_coef = layer_rescaling_coef
+        self.noise_level = noise_level
 
     def _activation(self, x):
         if self.activation == 'tanh':
@@ -48,6 +53,7 @@ class GenericMujocoEnv:
         returns = []
         for _ in range(self.num_rollouts):
             obs = self.env.reset()
+            print(obs)
             done = False
             totalr = 0.
             while not done:
@@ -55,6 +61,8 @@ class GenericMujocoEnv:
                 action = action * self.layer_rescaling_coef[0]
                 for x, r_coef in zip(layers[1:], self.layer_rescaling_coef[1:]):
                     action = np.matmul(self._activation(action) + 1.e-3, x) * r_coef
+                if self.noise_level > 0.:
+                    action += action * self.noise_level * self.random_state.normal(size=action.shape)
                 obs, r, done, _ = self.env.step(action)
                 totalr += r
             returns.append(totalr)
