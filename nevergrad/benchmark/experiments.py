@@ -1194,6 +1194,27 @@ def image_with_similarity_cv(seed: tp.Optional[int] = None) -> tp.Iterator[Exper
 
 
 @registry.register
+def image_quality(seed: tp.Optional[int] = None, cross_val: bool=False) -> tp.Iterator[Experiment]:
+    """Optimizing images: artificial criterion for now."""
+    seedg = create_seed_generator(seed)
+    optims = get_optimizers("structured_moo")
+    if default_optims is not None:
+        optims = default_optims
+
+    
+    # We optimize func_blur and check performance on func_iqa.
+    func_iqa = imagesxp.Image(loss=imagesxp.imagelosses.Koncept512)
+    func_blur = imagesxp.Image(loss=imagesxp.imagelosses.Blur)
+    func_blur.evaluation_function = func_iqa.evaluation_function 
+    
+    for budget in [100 * 5 ** k for k in range(3)]:
+        for num_workers in [1]:
+            for algo in optims:
+                xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
+                yield xp
+
+
+@registry.register
 def image_similarity_and_quality(seed: tp.Optional[int] = None, cross_val: bool=False) -> tp.Iterator[Experiment]:
     """Optimizing images: artificial criterion for now."""
     seedg = create_seed_generator(seed)

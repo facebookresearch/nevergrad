@@ -84,7 +84,7 @@ class Koncept512(ImageLoss):
             raise UnsupportedExperiment("Koncept512 is not working properly under Windows")
 
     def __call__(self, img: np.ndarray) -> float:
-        loss = self.koncept.assess(img)
+        loss = - self.koncept.assess(img)
         return float(loss)
 
 class Blur(ImageLoss):
