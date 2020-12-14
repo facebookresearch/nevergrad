@@ -1254,7 +1254,7 @@ def image_quality_proxy(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment
         for num_workers in [1]:
             for algo in optims:
                 for func in [func_blur.copy(), func_brisque.copy()]:
-                    func.evaluation_function = func_iqa.evaluation_function
+                    func.special_evaluation_function = func_iqa.evaluation_function
                     xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
                     yield xp
 
@@ -1275,7 +1275,7 @@ def image_quality(seed: tp.Optional[int] = None, cross_val: bool=False) -> tp.It
             imagesxp.Image(loss=imagesxp.imagelosses.Blur),
             imagesxp.Image(loss=imagesxp.imagelosses.NegBrisque),
             ]
-    upper_bounds: tp.List[float] = [func(func.parametrization.sample().value) for func in funcs]
+    upper_bounds: tp.List[tp.Any] = [func(func.parametrization.sample().value) for func in funcs]
     # TODO: add the proxy info in the parametrization.
     for budget in [100 * 5 ** k for k in range(3)]:
         for num_workers in [1]:
@@ -1309,13 +1309,14 @@ def image_similarity_and_quality(seed: tp.Optional[int] = None, cross_val: bool=
     
         # Creating a reference value.
         base_value = func(func.parametrization.sample().value)
-        mofunc = fbase.multi_experiments([func, func_blur, func_iqa], upper_bounds=[base_value, base_blur_value, 100.], no_crossval=[1, 2], pareto_size=16) if cross_val else [
+        mofuncs = fbase.multi_experiments([func, func_blur, func_iqa], upper_bounds=[base_value, base_blur_value, 100.], no_crossval=[1, 2], pareto_size=16) if cross_val else [
                 fbase.MultiExperiment([func, func_blur, func_iqa], upper_bounds=[base_value, base_blur_value, 100.])]
         for budget in [100 * 5 ** k for k in range(3)]:
             for num_workers in [1]:
                 for algo in optims:
-                    xp = Experiment(mofunc, algo, budget, num_workers=num_workers, seed=next(seedg))
-                    yield xp
+                    for mofunc in mofuncs:
+                        xp = Experiment(mofunc, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        yield xp
 
 
 @registry.register
