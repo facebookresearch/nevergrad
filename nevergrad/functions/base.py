@@ -65,7 +65,7 @@ class ExperimentFunction:
         inst._descriptors["function_class"] = cls.__name__
         return inst  # type: ignore
 
-    def __init__(self: EF, function: tp.Callable[..., tp.Loss], parametrization: p.Parameter) -> None:
+    def __init__(self: EF, function: tp.Callable[..., tp.Loss], parametrization: p.Parameter, special_evaluation_function: tp.Optional[tp.Callable[..., tp.Loss]] = None) -> None:
         assert callable(function)
         assert not hasattr(
             self, "_initialization_kwargs"
@@ -75,6 +75,7 @@ class ExperimentFunction:
         self._parametrization: p.Parameter
         self.parametrization = parametrization
         self.multiobjective_upper_bounds: tp.Optional[np.ndarray] = None
+        self.special_evaluation_function = special_evaluation_function
         self._function = function
         # if this is not a function bound to this very instance, add the function/callable name to the descriptors
         if not hasattr(function, "__self__") or function.__self__ != self:  # type: ignore
@@ -208,7 +209,7 @@ class ExperimentFunction:
         *args, **kwargs
             same as the actual function
         """
-        output = self.function(*args, **kwargs)
+        output = self.function(*args, **kwargs) if self.special_evaluation_function is None else self.special_evaluation_function(*args, **kwargs)
         assert isinstance(
             output, numbers.Number
         ), "evaluation_function can only be called on monoobjective experiments."
@@ -280,9 +281,8 @@ def multi_experiments(
     for i, xp in enumerate(xps):
         if i not in no_crossval:
             training = list(range(i)) + list(range(i + 1, len(xps)))
-            moo_xp = MultiExperiment([xps[i] for i in training], [upper_bounds[i] for i in training])
+            moo_xp = MultiExperiment([xps[i] for i in training], [upper_bounds[i] for i in training], special_evaluation_function=xp.evaluation_function)
             moo_xp.evaluation_by_best_of_pareto_front = pareto_size
-            moo_xp.evaluation_function = xp.evaluation_function
             assert len(training) + 1 == len(xps)
             experiment_functions.append(moo_xp)
     return experiment_functions
@@ -303,7 +303,7 @@ class MultiExperiment(ExperimentFunction):
     - there is no descriptor for the packed functions, except the name (concatenetion of packed function names).
     """
 
-    def __init__(self, experiments: tp.Iterable[ExperimentFunction], upper_bounds: tp.ArrayLike) -> None:
+    def __init__(self, experiments: tp.Iterable[ExperimentFunction], upper_bounds: tp.ArrayLike, special_evaluation_function: tp.Optional[tp.Callable[..., tp.Loss]] = None) -> None:
         xps = list(experiments)
         assert xps
         assert len(xps) == len({id(xp) for xp in xps}), "All experiments must be different instances"
@@ -318,6 +318,7 @@ class MultiExperiment(ExperimentFunction):
         self._descriptors.update(name=",".join(xp._descriptors.get("name", "#unknown#") for xp in xps))
         self._experiments = xps
         self.evaluation_by_best_of_pareto_front = 0
+        self.special_evaluation_function = special_evaluation_function
 
     def _multi_func(self, *args: tp.Any, **kwargs: tp.Any) -> np.ndarray:
         outputs = [f(*args, **kwargs) for f in self._experiments]
