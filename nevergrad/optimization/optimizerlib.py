@@ -1174,6 +1174,7 @@ class Rescaled(base.ConfiguredOptimizer):
         *,
         base_optimizer: base.OptCls = CMA,
         scale: tp.Optional[float] = None,
+        pareto_front_extractor: tp.Optional[str] = None,
     ) -> None:
         super().__init__(_Rescaled, locals())
 

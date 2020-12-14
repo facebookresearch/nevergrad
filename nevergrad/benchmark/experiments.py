@@ -1321,7 +1321,7 @@ def image_similarity_and_quality(seed: tp.Optional[int] = None, cross_val: bool=
 @registry.register
 def image_similarity_and_quality_cv(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of image_multi_similarity with cross-validation."""
-    return image_similarity_and_quality_cv(seed, cross_valid=True)
+    return image_similarity_and_quality(seed, cross_valid=True)
 
 
 # TODO: GAN counterparts of the above ?
