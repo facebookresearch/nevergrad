@@ -615,7 +615,7 @@ def yaconstrainedbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with higher dimensions."""
     step = 8 # only one test case out of 8, due to computational cost.
     slices = [itertools.islice(yabbob(seed, constraint_case=i), 0, None, step) for i in range(step)]
-    return itertools.chain.from_iterable(slices)
+    return itertools.chain(*slices)
 
 
 @registry.register
