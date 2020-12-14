@@ -27,9 +27,9 @@ class ImageLossWithReference(ImageLoss):
         self.reference = reference
         super().__init__(reference)
         assert len(self.reference.shape) == 3, self.reference.shape
-        assert self.reference.min() >= 0.
-        assert self.reference.max() <= 255.
-        assert self.reference.max() > 3.  # Not totally sure but entirely black images are not very cool.
+        assert self.reference.min() >= 0.0
+        assert self.reference.max() <= 255.0
+        assert self.reference.max() > 3.0  # Not totally sure but entirely black images are not very cool.
         self.domain_shape = self.reference.shape
 
 
@@ -134,7 +134,7 @@ class Blur(ImageLoss):
     def __call__(self, img: np.ndarray) -> float:
         assert img.shape[2] == 3
         assert len(img.shape) == 3
-        return cv2.Laplacian(img, cv2.CV_64F).var()
+        return -cv2.Laplacian(img, cv2.CV_64F).var()
 
 
 @registry.register
