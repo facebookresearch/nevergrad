@@ -491,7 +491,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         """
         recom_data = self._internal_provide_recommendation()  # pylint: disable=assignment-from-none
         if recom_data is None:
-            return self.current_bests["pessimistic"].parameter
+            name = "average" if self.parametrization.descriptors.deterministic_function else "pessimistic"
+            return self.current_bests[name].parameter
         return self.parametrization.spawn_child().set_standardized_data(recom_data, deterministic=True)
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
