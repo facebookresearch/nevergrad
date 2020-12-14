@@ -9,6 +9,7 @@ import numbers
 import numpy as np
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
+from nevergrad.optimization import multiobjective as mobj
 
 EF = tp.TypeVar("EF", bound="ExperimentFunction")
 
@@ -75,7 +76,7 @@ class ExperimentFunction:
         self._parametrization: p.Parameter
         self.parametrization = parametrization
         self.multiobjective_upper_bounds: tp.Optional[np.ndarray] = None
-        self._function = function
+        self.__function = function  # __ to prevent overrides
         # if this is not a function bound to this very instance, add the function/callable name to the descriptors
         if not hasattr(function, "__self__") or function.__self__ != self:  # type: ignore
             name = function.__name__ if hasattr(function, "__name__") else function.__class__.__name__
@@ -104,11 +105,11 @@ class ExperimentFunction:
 
     @property
     def function(self) -> tp.Callable[..., tp.Loss]:
-        return self._function
+        return self.__function
 
     def __call__(self, *args: tp.Any, **kwargs: tp.Any) -> tp.Loss:
         """Call the function directly (equivaluent to parametrized_function.function(*args, **kwargs))"""
-        return self._function(*args, **kwargs)
+        return self.function(*args, **kwargs)
 
     @property
     def descriptors(self) -> tp.Dict[str, tp.Any]:
@@ -213,6 +214,19 @@ class ExperimentFunction:
             output, numbers.Number
         ), "evaluation_function can only be called on monoobjective experiments."
         return output
+
+    def pareto_evaluation_function(self, *pareto: p.Parameter) -> float:
+        """Provides the evaluation of a multiobjective function
+
+        Parameters
+        ----------
+        *pareto: Parameter
+            pareto front provided by the optimizer
+        """
+        hypervolume = mobj.HypervolumePareto(upper_bounds=self.multiobjective_upper_bounds)
+        for candidate in pareto:
+            hypervolume.add(candidate)
+        return -hypervolume.best_volume
 
 
 def update_leaderboard(identifier: str, loss: float, array: np.ndarray, verbose: bool = True) -> None:

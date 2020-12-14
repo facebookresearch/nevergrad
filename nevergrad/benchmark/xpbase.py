@@ -211,13 +211,14 @@ class Experiment:
         # make a final evaluation with oracle (no noise, but function may still be stochastic)
         assert self.recommendation is not None
         reco = self.recommendation
-        assert self._optimizer is not None
-        if self._optimizer._hypervolume_pareto is None:
+        opt = self._optimizer
+        assert opt is not None
+        if opt.num_objectives == 1:
             # ExperimentFunction can directly override this if need be
             self.result["loss"] = pfunc.evaluation_function(*reco.args, **reco.kwargs)
         else:
             # in multiobjective case, use best hypervolume so far
-            self.result["loss"] = -self._optimizer._hypervolume_pareto._best_volume
+            self.result["loss"] = pfunc.pareto_evaluation_function(*opt.pareto_front())
         self.result["elapsed_budget"] = num_calls
         if num_calls > self.optimsettings.budget:
             raise RuntimeError(
@@ -239,7 +240,7 @@ class Experiment:
                 self.seed
             )  # seeds both functions and parametrization (for which random state init is lazy)
             random.seed(self.seed)
-            torch.manual_seed(self.seed)  # type: ignore
+            torch.manual_seed(self.seed)
         pfunc = self.function.copy()
         # check constraints are propagated
         assert len(pfunc.parametrization._constraint_checkers) == len(
