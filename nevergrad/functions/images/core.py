@@ -260,4 +260,3 @@ class ImageFromPGAN(base.ExperimentFunction):
         # pylint: disable=not-callable
         noise = torch.tensor(x.astype("float32"))
         return ((self.pgan_model.test(noise).clamp(min=-1, max=1) + 1) * 255 / 2).permute(0, 2, 3, 1).cpu().numpy()  # type: ignore
-

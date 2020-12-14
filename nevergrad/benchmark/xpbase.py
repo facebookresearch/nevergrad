@@ -185,8 +185,8 @@ class Experiment:
 
     @evaluation_by_best_of_pareto_front.setter
     def evaluation_by_best_of_pareto_front(self, pareto_size: int):
-        assert pareto_size >= 0.
-        self.__evaluation_by_best_of_pareto_front = pareto_size 
+        assert pareto_size >= 0.0
+        self.__evaluation_by_best_of_pareto_front = pareto_size
 
     def run(self) -> tp.Dict[str, tp.Any]:
         """Run an experiment with the provided settings
@@ -222,9 +222,10 @@ class Experiment:
         reco = self.recommendation
         assert self._optimizer is not None
         if self.evaluation_by_best_of_pareto_front > 0:
-            self.result["loss"] = min(pfunc.evaluation_functions(*c.args, **c.kwargs)
-                for c in self._optimizer.pareto_front(
-                    size=self.evaluation_by_best_of_pareto_front))
+            self.result["loss"] = min(
+                pfunc.evaluation_functions(*c.args, **c.kwargs)
+                for c in self._optimizer.pareto_front(size=self.evaluation_by_best_of_pareto_front)
+            )
         elif self._optimizer._hypervolume_pareto is None:
             # ExperimentFunction can directly override this if need be
             self.result["loss"] = pfunc.evaluation_function(*reco.args, **reco.kwargs)

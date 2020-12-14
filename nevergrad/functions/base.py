@@ -254,7 +254,12 @@ def update_leaderboard(identifier: str, loss: float, array: np.ndarray, verbose:
         pass  # better avoir bugs for this
 
 
-def multi_experiments(xps: tp.Iterable[ExperimentFunction], upper_bounds: tp.ArrayLike, pareto_size: int, no_crossval: tp.List[tp.Any] = []) -> tp.Iterable[ExperimentFunction]:
+def multi_experiments(
+    xps: tp.Iterable[ExperimentFunction],
+    upper_bounds: tp.ArrayLike,
+    pareto_size: int,
+    no_crossval: tp.List[tp.Any] = [],
+) -> tp.Iterable[ExperimentFunction]:
     """Returns a list of MultiExperiment, corresponding to MOO cross-validation.
     The idea is that, given n objective functions,
     we evaluate the ability of the algorithm to optimize n-1 objective functions, and to provide an approximate Pareto front p
@@ -274,13 +279,14 @@ def multi_experiments(xps: tp.Iterable[ExperimentFunction], upper_bounds: tp.Arr
     experiment_functions: tp.List[ExperimentFunction] = []
     for i in range(len(xps)):
         if i not in no_crossval:
-            training = list(range(i)) + list(range(i+1, len(xps)))
+            training = list(range(i)) + list(range(i + 1, len(xps)))
             moo_xp = MultiExperiment(xps[training], upper_bounds[training])
             moo_xp.evaluation_by_best_of_pareto_front = pareto_size
             moo_xp.evaluation_function = xps[i].evaluation_function
             assert len(xps[training]) + 1 == len(xps)
             experiment_functions.append(moo_xp)
     return experiment_functions
+
 
 class MultiExperiment(ExperimentFunction):
     """Pack several mono-objective experiments into a multiobjective experiment

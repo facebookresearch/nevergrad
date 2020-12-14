@@ -12,7 +12,6 @@ registry: Registry[tp.Any] = Registry()
 
 
 class ImageLoss:
-
     def __init__(self, reference: tp.Optional[np.ndarray] = None) -> None:
         pass
 
@@ -21,7 +20,6 @@ class ImageLoss:
 
 
 class ImageLossWithReference(ImageLoss):
-
     def __init__(self, reference: np.ndarray) -> None:
         if reference is None:
             raise ValueError("A reference is required")
@@ -30,9 +28,9 @@ class ImageLossWithReference(ImageLoss):
         assert len(self.reference.shape) == 3, self.reference.shape
         self.domain_shape = self.reference.shape
 
+
 @registry.register
 class SumAbsoluteDifferences(ImageLossWithReference):
-
     def __init__(self, reference: tp.Optional[np.ndarray] = None) -> None:
         super().__init__(reference)
 
@@ -44,18 +42,20 @@ class SumAbsoluteDifferences(ImageLossWithReference):
 
 @registry.register
 class LpipsAlex(ImageLossWithReference):
-
     def __init__(self, reference: np.ndarray) -> None:
         super().__init__(reference)
         self.loss_fn = lpips.LPIPS(net="alex")
 
     def __call__(self, img: np.ndarray) -> float:
-        img0 = torch.clamp(torch.Tensor(img).permute(2, 0, 1) / 255., 0, 1) * 2.0 - 1.0
-        img1 = torch.clamp(torch.Tensor(self.reference).permute(2, 0, 1) / 255., 0, 1) * 2.0 - 1.0
-        assert len(img0.shape) == 3, img0.shape
-        assert img0.shape[0] == 3, img0.shape
-        assert len(img1.shape) == 3, img1.shape
-        assert img1.shape[0] == 3, img1.shape
+        assert img.shape[2] == 3
+        assert len(img.shape) == 3
+        img0 = np.expand_dims(img, 0)
+        assert img0.shape[3] == 3
+        assert img0.shape[0] == 1
+        assert len(img0.shape) == 4
+        img1 = np.expand_dims(self.reference, 0)
+        img0 = torch.clamp(torch.Tensor(img0).permute(0, 3, 1, 2) / 255.0, 0, 1) * 2.0 - 1.0
+        img1 = torch.clamp(torch.Tensor(img1).permute(0, 3, 1, 2) / 255.0, 0, 1) * 2.0 - 1.0
         return self.loss_fn(img0, img1)
 
 
@@ -68,7 +68,6 @@ class LpipsVgg(LpipsAlex):
 
 @registry.register
 class SumSquareDifferences(ImageLossWithReference):
-
     def __init__(self, reference: tp.Optional[np.ndarray] = None) -> None:
         super().__init__(reference)
 
@@ -80,7 +79,6 @@ class SumSquareDifferences(ImageLossWithReference):
 
 @registry.register
 class HistogramDifference(ImageLossWithReference):
-
     def __init__(self, reference: tp.Optional[np.ndarray] = None) -> None:
         super().__init__(reference)
 
@@ -111,7 +109,7 @@ class Koncept512(ImageLoss):
             raise UnsupportedExperiment("Koncept512 is not working properly under Windows")
 
     def __call__(self, img: np.ndarray) -> float:
-        loss = - self.koncept.assess(img)
+        loss = -self.koncept.assess(img)
         return float(loss)
 
 
@@ -133,9 +131,9 @@ class NegBrisque(ImageLoss):
     """
     This estimates the negated Brisque score.
     """
+
     def __init__(self, reference: tp.Optional[np.ndarray] = None) -> None:
         super().__init__()  # No reference needed! Just Brisque estimation.
 
     def __call__(self, img: np.ndarray) -> float:
         return brisque.score(img)
-

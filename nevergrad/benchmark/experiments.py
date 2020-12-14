@@ -1287,7 +1287,7 @@ def image_quality(seed: tp.Optional[int] = None, cross_val: bool=False) -> tp.It
 
 
 @registry.register
-def image_quality_cv(seed: tp.Optional[int] = None, cross_val: bool=False) -> tp.Iterator[Experiment]:
+def image_quality_cv(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of image_quality with cross-validation."""
     return image_quality(seed, cross_valid=True)
 

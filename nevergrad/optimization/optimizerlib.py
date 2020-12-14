@@ -1181,7 +1181,6 @@ class Rescaled(base.ConfiguredOptimizer):
 RescaledCMA = Rescaled().set_name("RescaledCMA", register=True)
 
 
-
 class ConfSplitOptimizer(base.ConfiguredOptimizer):
     """ "Combines optimizers, each of them working on their own variables.
 
