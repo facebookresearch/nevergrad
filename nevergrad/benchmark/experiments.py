@@ -592,9 +592,11 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
         ]
     assert constraint_case < len(constraints) + max_num_constraints, (
         "constraint_case should be in 0, 1, ..., {len(constraints) + max_num_constraints - 1} (0 = no constraint).")
-    for func in functions:
+    # We reduce the number of tests when there are constraints, as the number of cases
+    # is already multiplied by the number of constraint_case.
+    for func in functions[::13 if constraint_case > 0 else 1]:
         # We add a window of the list of constraints. This windows finishes at "constraints" (hence, is empty if
-        # constraints=0).
+        # constraint_case=0).
         for constraint in constraints[max(0, constraint_case - max_num_constraints):constraint_case]:
             func.parametrization.register_cheap_constraint(constraint)
 
@@ -613,9 +615,9 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
 @registry.register
 def yaconstrainedbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with higher dimensions."""
-    step = 8 # only one test case out of 8, due to computational cost.
-    slices = [itertools.islice(yabbob(seed, constraints=i), 0, None, step) for i in range(step)]
-    return itertools.chain.from_iterable(slices)
+    cases = 8 # total number of cases (skip 0, as it's constraint-free)
+    slices = [yabbob(seed, constraint_case=i) for i in range(1, cases)]
+    return itertools.chain(*slices)
 
 
 @registry.register
@@ -1278,8 +1280,8 @@ def image_quality(seed: tp.Optional[int] = None, cross_val: bool=False) -> tp.It
     for budget in [100 * 5 ** k for k in range(3)]:
         for num_workers in [1]:
             for algo in optims:
-                mofuncs = fbase.MultiExperiments(funcs, upper_bounds=upper_bounds, no_cross_val=[1, 2]) if cross_val else [fbase.MultiExperiments(funcs, upper_bounds=upper_bounds)
-                for func in mofuncs
+                mofuncs = fbase.MultiExperiments(funcs, upper_bounds=upper_bounds, no_cross_val=[1, 2]) if cross_val else [fbase.MultiExperiments(funcs, upper_bounds=upper_bounds)]
+                for func in mofuncs:
                     xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
                     yield xp
 
@@ -1303,12 +1305,12 @@ def image_similarity_and_quality(seed: tp.Optional[int] = None, cross_val: bool=
     func_iqa = imagesxp.Image(loss=imagesxp.imagelosses.Koncept512)
     func_blur = imagesxp.Image(loss=imagesxp.imagelosses.Blur)
     base_blur_value = func_blur(func_blur.parametrization.sample().value)
-    for func in funcs = [imagesxp.Image(loss=loss) for loss in imagelosses]
+    for func in [imagesxp.Image(loss=loss) for loss in imagelosses]:
     
         # Creating a reference value.
         base_value = func(func.parametrization.sample().value)
         mofunc = fbase.MultiExperiments([func, func_blur, func_iqa], upper_bounds=[base_value, base_blur_value, 100.], no_cross_val=[1, 2]) if cross_val else [
-                fbase.MultiExperiments([func, func_blur, func_iqa], upper_bounds=[base_value, base_blur_value, 100.])
+                fbase.MultiExperiments([func, func_blur, func_iqa], upper_bounds=[base_value, base_blur_value, 100.])]
         for budget in [100 * 5 ** k for k in range(3)]:
             for num_workers in [1]:
                 for algo in optims:
