@@ -222,7 +222,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         During non-multiobjective optimization, this returns the current pessimistic best
         """
         if self._hypervolume_pareto is None:
-            return [self.current_bests["pessimistic"].parameter]
+            return [self.provide_recommendation()]
         return self._hypervolume_pareto.pareto_front(
             size=size, subset=subset, subset_tentatives=subset_tentatives
         )
