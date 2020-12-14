@@ -7,15 +7,16 @@ import numpy as np
 from nevergrad.functions.base import UnsupportedExperiment
 from nevergrad.common.decorators import Registry
 
+
 registry: Registry[tp.Any] = Registry()
 
-@registry.register
+
 class ImageLoss:
     def __init__(self, reference: tp.Optional[np.ndarray] = None) -> None:
         pass
 
     def __call__(self, img: np.ndarray) -> float:
-        raise NotImplementedError
+        raise NotImplementedError(f"__call__ undefined in class {type(self)}")
 
 
 @registry.register
