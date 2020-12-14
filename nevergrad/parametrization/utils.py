@@ -17,6 +17,23 @@ from nevergrad.common import tools as ngtools
 class Descriptors:
     """Provides access to a set of descriptors for the parametrization
     This can be used within optimizers.
+
+    Parameters
+    ----------
+    deterministic: bool
+        whether the function equipped with its instrumentation is deterministic.
+        Can be false if the function is not deterministic or if the instrumentation
+        contains a softmax.
+    deterministic_function: bool
+        whether the objective function is deterministic.
+    non_proxy_function: bool
+        whether the objective function is not a proxy of a more interesting objective function.
+    continuous:
+        whether the domain is entirely continuous.
+    metrizable:
+        whether the domain is naturally equipped with a metric.
+    ordered:
+        whether all domains and subdomains are ordered.
     """  # TODO add repr
 
     # pylint: disable=too-many-arguments
