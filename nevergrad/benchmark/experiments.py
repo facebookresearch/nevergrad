@@ -1218,7 +1218,7 @@ def image_multi_similarity(seed: tp.Optional[int] = None, cross_valid: bool=Fals
                 imagesxp.imagelosses.SumSquareDifferences,
                 imagesxp.imagelosses.HistogramDifference]]
     base_values = [func(func.parametrization.sample().value) for func in funcs]
-    mofuncs = fbase.MultiExperiments(funcs, upper_bounds=base_values) if cross_valid else [
+    mofuncs = fbase.multi_experiments(funcs, upper_bounds=base_values) if cross_valid else [
             fbase.MultiExperiment(funcs, upper_bounds=base_values)]
     for budget in [100 * 5 ** k for k in range(3)]:
         for num_workers in [1]:
@@ -1280,7 +1280,7 @@ def image_quality(seed: tp.Optional[int] = None, cross_val: bool=False) -> tp.It
     for budget in [100 * 5 ** k for k in range(3)]:
         for num_workers in [1]:
             for algo in optims:
-                mofuncs = fbase.MultiExperiments(funcs, upper_bounds=upper_bounds, no_cross_val=[1, 2]) if cross_val else [fbase.MultiExperiments(funcs, upper_bounds=upper_bounds)]
+                mofuncs = fbase.multi_experiments(funcs, upper_bounds=upper_bounds, no_cross_val=[1, 2]) if cross_val else [fbase.multi_experiments(funcs, upper_bounds=upper_bounds)]
                 for func in mofuncs:
                     xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
                     yield xp
@@ -1309,8 +1309,8 @@ def image_similarity_and_quality(seed: tp.Optional[int] = None, cross_val: bool=
     
         # Creating a reference value.
         base_value = func(func.parametrization.sample().value)
-        mofunc = fbase.MultiExperiments([func, func_blur, func_iqa], upper_bounds=[base_value, base_blur_value, 100.], no_cross_val=[1, 2]) if cross_val else [
-                fbase.MultiExperiments([func, func_blur, func_iqa], upper_bounds=[base_value, base_blur_value, 100.])]
+        mofunc = fbase.multi_experiments([func, func_blur, func_iqa], upper_bounds=[base_value, base_blur_value, 100.], no_cross_val=[1, 2]) if cross_val else [
+                fbase.multi_experiments([func, func_blur, func_iqa], upper_bounds=[base_value, base_blur_value, 100.])]
         for budget in [100 * 5 ** k for k in range(3)]:
             for num_workers in [1]:
                 for algo in optims:
