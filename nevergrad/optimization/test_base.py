@@ -167,13 +167,11 @@ class MinStorageFunc:
 
 
 def test_recommendation_correct() -> None:
+    # Run this several times to debug:
     # pytest nevergrad/optimization/test_base.py::test_recommendation_correct --count=20 --exitfirst
     func = MinStorageFunc()
     choice_size = 20
     param = ng.p.Choice(range(choice_size)).set_name(f"Choice{choice_size}")
     optimizer = optimizerlib.OnePlusOne(parametrization=param, budget=300, num_workers=1)
     recommendation = optimizer.minimize(func)
-    print(optimizer.current_bests)
-    print(optimizer.current_bests["pessimistic"].parameter.weights)
-    print((func.min_loss, recommendation.value))
     assert func.min_loss == recommendation.value
