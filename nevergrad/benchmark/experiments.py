@@ -1247,7 +1247,7 @@ def image_quality_proxy(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment
     # We optimize func_blur or func_brisque and check performance on func_iqa.
     func_iqa = imagesxp.Image(loss=imagesxp.imagelosses.Koncept512)
     func_blur = imagesxp.Image(loss=imagesxp.imagelosses.Blur)
-    func_brisque = imagesxp.Image(loss=imagesxp.imagelosses.NegBrisque)
+    func_brisque = imagesxp.Image(loss=imagesxp.imagelosses.Brisque)
     
     # TODO: add the proxy info in the parametrization.
     for budget in [100 * 5 ** k for k in range(3)]:
@@ -1273,7 +1273,7 @@ def image_quality(seed: tp.Optional[int] = None, cross_val: bool=False) -> tp.It
     funcs: tp.List[ExperimentFunction] = [
             imagesxp.Image(loss=imagesxp.imagelosses.Koncept512),
             imagesxp.Image(loss=imagesxp.imagelosses.Blur),
-            imagesxp.Image(loss=imagesxp.imagelosses.NegBrisque),
+            imagesxp.Image(loss=imagesxp.imagelosses.Brisque),
             ]
     upper_bounds: tp.List[tp.Any] = [func(func.parametrization.sample().value) for func in funcs]
     # TODO: add the proxy info in the parametrization.

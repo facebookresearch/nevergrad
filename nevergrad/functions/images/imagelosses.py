@@ -45,10 +45,10 @@ class SumAbsoluteDifferences(ImageLossWithReference):
 
 
 @registry.register
-class LpipsAlex(ImageLossWithReference):
-    def __init__(self, reference: np.ndarray) -> None:
+class Lpips(ImageLossWithReference):
+    def __init__(self, reference: np.ndarray, net: str) -> None:
         super().__init__(reference)
-        self.loss_fn = lpips.LPIPS(net="alex")
+        self.loss_fn = lpips.LPIPS(net=net)
 
     def __call__(self, img: np.ndarray) -> float:
         assert img.shape[2] == 3
@@ -64,10 +64,15 @@ class LpipsAlex(ImageLossWithReference):
 
 
 @registry.register
-class LpipsVgg(LpipsAlex):
+class LpipsAlex(Lpips):
     def __init__(self, reference: np.ndarray) -> None:
-        super().__init__(reference)
-        self.loss_fn = lpips.LPIPS(net="vgg")
+        super().__init__(reference, "alex")
+
+
+@registry.register
+class LpipsVgg(Lpips):
+    def __init__(self, reference: np.ndarray) -> None:
+        super().__init__(reference, "vgg")
 
 
 @registry.register
@@ -133,7 +138,7 @@ class Blur(ImageLoss):
 
 
 @registry.register
-class NegBrisque(ImageLoss):
+class Brisque(ImageLoss):
     """
     This estimates the Brisque score (lower is better).
     """

@@ -7,6 +7,7 @@ import pickle
 import numpy as np
 import pytest
 from nevergrad.parametrization import parameter as p
+from nevergrad.function import ArtificialFunction
 from nevergrad.common import testing
 import nevergrad.common.typing as tp
 from . import base
@@ -165,3 +166,9 @@ def test_function_descriptors_all_default() -> None:
     with pytest.raises(TypeError):
         # make sure unexpected keyword still works
         ExampleFunctionAllDefault(blublu=12)  # type: ignore
+
+def test_multiexperiments() -> None:
+    # Checking MOO in cross-validation.
+    objective_functions: tp.List[tp.Any] = [ArtificialFunction("sphere", block_dimension=7), ArtificialFunction("cigar", block_dimension=7)]
+    xpbase.multi_experiments(objective_functions, upper_bounds=np.array((50.0, 50.0)),)
+
