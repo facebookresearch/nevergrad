@@ -50,12 +50,12 @@ class LpipsAlex(ImageLossWithReference):
         self.loss_fn = lpips.LPIPS(net="alex")
 
     def __call__(self, img: np.ndarray) -> float:
-        img0 = torch.clamp(torch.Tensor(img), 0, 1) * 2.0 - 1.0
-        img1 = torch.clamp(torch.Tensor(self.reference), 0, 1) * 2.0 - 1.0
-        assert len(img0.shape) == 4 and img0.shape[0] == 1
-        assert len(img1.shape) == 4 and img1.shape[0] == 1
-        assert all(np.fabs(img0.ravel()) <= 1.0)
-        assert all(np.fabs(img1.ravel()) <= 1.0)
+        img0 = torch.clamp(torch.Tensor(img).permute(1, 2, 0) / 255., 0, 1) * 2.0 - 1.0
+        img1 = torch.clamp(torch.Tensor(self.reference).permute(1, 2, 0) / 255., 0, 1) * 2.0 - 1.0
+        assert len(img0.shape) == 3, img0.shape
+        assert img0.shape[0] == 3, img0.shape
+        assert len(img1.shape) == 3, img1.shape
+        assert img1.shape[0] == 3, img1.shape
         return self.loss_fn(img0, img1)
 
 
