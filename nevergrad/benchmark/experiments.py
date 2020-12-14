@@ -592,6 +592,8 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
         ]
     assert constraint_case < len(constraints) + max_num_constraints, (
         "constraint_case should be in 0, 1, ..., {len(constraints) + max_num_constraints - 1} (0 = no constraint).")
+    # We reduce the number of tests when there are constraints, as the number of cases
+    # is already multiplied by the number of constraint_case.
     for func in functions[::13 if constraint_case > 0 else 1]:
         # We add a window of the list of constraints. This windows finishes at "constraints" (hence, is empty if
         # constraint_case=0).
@@ -613,7 +615,7 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
 @registry.register
 def yaconstrainedbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with higher dimensions."""
-    step = 8 # only one test case out of 8, due to computational cost.
+    step = 8  # The number of constraint_case we consider.
     slices = [yabbob(seed, constraint_case=i) for i in range(step)]
     return itertools.chain(*slices)
 
