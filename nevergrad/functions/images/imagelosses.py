@@ -1,6 +1,6 @@
-import cv2
-import imquality.brisque as brisque
-import lpips
+import cv2  # type: ignore
+import imquality.brisque as brisque  # type: ignore
+import lpips  # type: ignore
 import os
 import torch
 import typing as tp
@@ -21,7 +21,7 @@ class ImageLoss:
 
 
 class ImageLossWithReference(ImageLoss):
-    def __init__(self, reference: np.ndarray) -> None:
+    def __init__(self, reference: tp.Optional[np.ndarray] = None) -> None:
         if reference is None:
             raise ValueError("A reference is required")
         self.reference = reference
