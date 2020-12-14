@@ -1211,14 +1211,14 @@ def image_multi_similarity(seed: tp.Optional[int] = None, cross_valid: bool=Fals
     optims = ["CMA", "NGOpt8", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
     if default_optims is not None:
         optims = default_optims
-    funcs = [imagesxp.Image(loss=loss) for loss in [
+    funcs:tp.List[ExperimentFunction] = [imagesxp.Image(loss=loss) for loss in [
                 imagesxp.imagelosses.SumAbsoluteDifferences,
                 imagesxp.imagelosses.LpipsAlex,
                 imagesxp.imagelosses.LpipsVgg,
                 imagesxp.imagelosses.SumSquareDifferences,
                 imagesxp.imagelosses.HistogramDifference]]
     base_values: tp.List[tp.Any] = [func(func.parametrization.sample().value) for func in funcs]
-    mofuncs: tp.List[tp.Any] = fbase.multi_experiments(funcs, upper_bounds=base_values) if cross_valid else [
+    mofuncs: tp.List[tp.Any] = fbase.multi_experiments(funcs, upper_bounds=base_values, pareto_size=25) if cross_valid else [
             fbase.MultiExperiment(funcs, upper_bounds=base_values)]
     for budget in [100 * 5 ** k for k in range(3)]:
         for num_workers in [1]:

@@ -269,7 +269,7 @@ def multi_experiments(
     upper_bounds: tp.ArrayLike,
     pareto_size: int,
     no_crossval: tp.List[tp.Any] = [],
-) -> tp.Iterable[ExperimentFunction]:
+) -> tp.List[ExperimentFunction]:
     """Returns a list of MultiExperiment, corresponding to MOO cross-validation.
     The idea is that, given n objective functions,
     we evaluate the ability of the algorithm to optimize n-1 objective functions, and to provide an approximate Pareto front p

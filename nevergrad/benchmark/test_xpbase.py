@@ -12,6 +12,7 @@ from nevergrad.common import testing
 from nevergrad.optimization import test_base
 from nevergrad.functions import ArtificialFunction
 from nevergrad.functions.base import MultiExperiment
+from nevergrad.functions.base import multi_experiments
 from nevergrad.functions.test_base import ExampleFunction
 from nevergrad.functions.test_functionlib import DESCRIPTION_KEYS as ARTIFICIAL_KEYS
 from . import xpbase
@@ -137,3 +138,7 @@ def test_multiobjective_experiment() -> None:
     summary = xp.run()
     loss: float = summary["loss"]
     assert loss < 1e9
+    # Checking MOO in cross-validation.
+    objective_functions: tp.List[tp.Any] = [ArtificialFunction("sphere", block_dimension=7), ArtificialFunction("cigar", block_dimension=7)]
+    xpbase.multi_experiments(objective_functions, upper_bounds=np.array((50.0, 50.0)),)
+
