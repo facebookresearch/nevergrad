@@ -4,6 +4,7 @@
 
 **Cautious:** current `master` branch and `0.4.2.postX` version introduce tentative APIs which may be removed in the near future. Use version `0.4.2` for a more stable version.
 
+- By default, the optimizer now returns the best set of parameter as recommendation [#951](https://github.com/facebookresearch/nevergrad/pull/951), considering that the function is deterministic. The previous behavior would use an estimation of noise to provide the pessimistic best point, leading to unexpected behaviors [#947](https://github.com/facebookresearch/nevergrad/pull/947). You can can back to this behavior by specifying: :code:`parametrization.descriptors.deterministic_function = False`
 - as an **experimental** feature we have added some preliminary support for constraint management through penalties.
   From then on the prefered option for penalty is to register a function returning a positive float when the constraint is satisfied.
   While we will wait fore more testing before documenting it, this may already cause instabilities and errors when adding cheap constraints.
