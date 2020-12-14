@@ -7,6 +7,7 @@ import pickle
 import numpy as np
 import pytest
 from nevergrad.parametrization import parameter as p
+from nevergrad import optimizers
 from nevergrad.common import testing
 import nevergrad.common.typing as tp
 from . import base

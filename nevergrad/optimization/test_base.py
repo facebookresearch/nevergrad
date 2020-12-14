@@ -8,6 +8,7 @@ from pathlib import Path
 import numpy as np
 import nevergrad.common.typing as tp
 from nevergrad.common import testing
+import nevergrad as ng
 from . import optimizerlib
 from . import experimentalvariants as xpvariants
 from . import base
@@ -152,3 +153,27 @@ def test_naming() -> None:
     np.testing.assert_equal(
         repr(opt), f"Instance of BlubluOptimizer(parametrization={instru_str}, budget=4, num_workers=1)"
     )
+
+
+class MinStorageFunc:
+    """Stores the minimum value obtained so far"""
+
+    def __init__(self) -> None:
+        self.min_loss = float("inf")
+
+    def __call__(self, score: int) -> float:
+        self.min_loss = min(score, self.min_loss)
+        return score
+
+
+def test_recommendation_correct() -> None:
+    # pytest nevergrad/optimization/test_base.py::test_recommendation_correct --count=20 --exitfirst
+    func = MinStorageFunc()
+    choice_size = 20
+    param = ng.p.Choice(range(choice_size)).set_name(f"Choice{choice_size}")
+    optimizer = optimizerlib.OnePlusOne(parametrization=param, budget=300, num_workers=1)
+    recommendation = optimizer.minimize(func)
+    print(optimizer.current_bests)
+    print(optimizer.current_bests["pessimistic"].parameter.weights)
+    print((func.min_loss, recommendation.value))
+    assert func.min_loss == recommendation.value

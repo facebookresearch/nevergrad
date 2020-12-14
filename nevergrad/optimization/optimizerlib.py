@@ -247,6 +247,7 @@ class _OnePlusOne(base.Optimizer):
         if self.mutation == "doerr":
             self._doerr_current_best = min(self._doerr_current_best, loss)
         self._sigma *= 2.0 if loss <= self.current_bests["pessimistic"].mean else 0.84
+        print("sigma", self._sigma)
         if self.mutation == "adaptive":
             factor = (
                 1.2 if loss <= self.current_bests["pessimistic"].mean else 0.731

@@ -381,6 +381,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             raise TypeError(
                 f'"tell" method only supports float values but the passed loss was: {loss} (type: {type(loss)}.'
             )
+        print(f"Updating with loss {loss}, {candidate.loss}")
         if np.isnan(loss) or loss == np.inf:
             warnings.warn(f"Updating fitness with {loss} value")
         mvalue: tp.Optional[utils.MultiValue] = None
@@ -391,6 +392,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             mvalue.add_evaluation(loss)
             # both parameters should be non-None
             if mvalue.parameter.loss > candidate.loss:  # type: ignore
+                print(f"Updating with new loss {candidate.loss}")
                 mvalue.parameter = candidate  # keep best candidate
         # update current best records
         # this may have to be improved if we want to keep more kinds of best losss
@@ -402,6 +404,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 self.current_bests[name] = best
             else:
                 if self.archive[x].get_estimation(name) <= self.current_bests[name].get_estimation(name):
+                    print(f"Updating current best to {self.archive[x].parameter.loss}")
                     self.current_bests[name] = self.archive[x]
                 # deactivated checks
                 # if not (np.isnan(loss) or loss == np.inf):
