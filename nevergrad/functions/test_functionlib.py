@@ -80,7 +80,7 @@ def test_ptb_no_overfitting() -> None:
     ),
     hashed=(
         {"name": "sphere", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2, "hashing": True},
-        12.44,
+        6.174957533,
     ),
     noisy_sphere=(
         {"name": "sphere", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2, "noise_level": 0.2},
@@ -105,8 +105,6 @@ def test_testcase_function_value(config: tp.Dict[str, tp.Any], expected: float) 
     np.random.seed(2)  # initialization is delayed
     x = np.random.normal(0, 1, func.dimension)
     x *= -1 if config.get("noise_dissymmetry", False) else 1  # change sign to activate noise dissymetry
-    if config.get("hashing", False):
-        x = [str(x)]
     np.random.seed(12)  # function randomness comes at first call
     value = func(x)
     np.testing.assert_almost_equal(value, expected, decimal=3)
@@ -114,7 +112,7 @@ def test_testcase_function_value(config: tp.Dict[str, tp.Any], expected: float) 
 
 @testing.parametrized(
     random=(np.random.normal(0, 1, 12), False),
-    hashed=(["abcdefghijkl"], True),
+    hashed=(np.ones(12), True),
 )
 def test_test_function(x: tp.Any, hashing: bool) -> None:
     config: tp.Dict[str, tp.Any] = {
