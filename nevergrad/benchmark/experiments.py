@@ -541,7 +541,7 @@ def paramultimodal(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 # pylint: disable=redefined-outer-name,too-many-arguments
 @registry.register
 def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = False, small: bool = False,
-           noise: bool = False, hd: bool = False, constraints: int = 0, split: bool = False) -> tp.Iterator[Experiment]:
+           noise: bool = False, hd: bool = False, constraint_case: int = 0, split: bool = False) -> tp.Iterator[Experiment]:
     """Yet Another Black-Box Optimization Benchmark.
     Related to, but without special effort for exactly sticking to, the BBOB/COCO dataset.
     Dimension 2, 10 and 50.
@@ -586,16 +586,16 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
 
     # We possibly add constraints.
     max_num_constraints = 4
-    constraints_list: tp.List[tp.Any] = [_Constraint(name, as_bool)
+    constraints: tp.List[tp.Any] = [_Constraint(name, as_bool)
         for as_bool in [False, True]
         for name in ["sum", "diff", "second_diff", "ball"]
         ]
-    assert constraints < len(constraints_list) + max_num_constraints, (
-        "constraints should be in 0, 1, ..., {len(constraints_list) + max_num_constraints - 1} (0 = no constraint).")
+    assert constraint_case < len(constraints) + max_num_constraints, (
+        "constraint_case should be in 0, 1, ..., {len(constraints) + max_num_constraints - 1} (0 = no constraint).")
     for func in functions:
         # We add a window of the list of constraints. This windows finishes at "constraints" (hence, is empty if
-        # constraints=0).
-        for constraint in constraints_list[max(0, constraints - max_num_constraints):constraints]:
+        # constraint_case=0).
+        for constraint in constraints[max(0, constraint_case - max_num_constraints):constraint_case]:
             func.parametrization.register_cheap_constraint(constraint)
 
     budgets = [40000, 80000, 160000, 320000] if (big and not noise) else [50, 200, 800, 3200, 12800]
@@ -614,7 +614,7 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
 def yaconstrainedbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with higher dimensions."""
     step = 8 # only one test case out of 8, due to computational cost.
-    slices = [itertools.islice(yabbob(seed, constraints=i), 0, None, step) for i in range(step)]
+    slices = [itertools.islice(yabbob(seed, constraint_case=i), 0, None, step) for i in range(step)]
     return itertools.chain.from_iterable(slices)
 
 
