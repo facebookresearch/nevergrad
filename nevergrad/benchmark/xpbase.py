@@ -214,8 +214,9 @@ class Experiment:
         reco = self.recommendation
         assert self._optimizer is not None
         if self.evaluation_by_best_of_pareto_front > 0:
+            assert pfunc.special_evaluation_function is not None
             self.result["loss"] = min(
-                pfunc.evaluation_functions(*c.args, **c.kwargs)
+                pfunc.evaluation_function(*c.args, **c.kwargs)
                 for c in self._optimizer.pareto_front(size=self.evaluation_by_best_of_pareto_front)
             )
         elif self._optimizer._hypervolume_pareto is None:

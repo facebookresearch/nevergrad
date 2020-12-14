@@ -65,7 +65,12 @@ class ExperimentFunction:
         inst._descriptors["function_class"] = cls.__name__
         return inst  # type: ignore
 
-    def __init__(self: EF, function: tp.Callable[..., tp.Loss], parametrization: p.Parameter, special_evaluation_function: tp.Optional[tp.Callable[..., tp.Loss]] = None) -> None:
+    def __init__(
+        self: EF,
+        function: tp.Callable[..., tp.Loss],
+        parametrization: p.Parameter,
+        special_evaluation_function: tp.Optional[tp.Callable[..., tp.Loss]] = None,
+    ) -> None:
         assert callable(function)
         assert not hasattr(
             self, "_initialization_kwargs"
@@ -209,7 +214,11 @@ class ExperimentFunction:
         *args, **kwargs
             same as the actual function
         """
-        output = self.function(*args, **kwargs) if self.special_evaluation_function is None else self.special_evaluation_function(*args, **kwargs)
+        output = (
+            self.function(*args, **kwargs)
+            if self.special_evaluation_function is None
+            else self.special_evaluation_function(*args, **kwargs)
+        )
         assert isinstance(
             output, numbers.Number
         ), "evaluation_function can only be called on monoobjective experiments."
@@ -281,7 +290,11 @@ def multi_experiments(
     for i, xp in enumerate(xps):
         if i not in no_crossval:
             training = list(range(i)) + list(range(i + 1, len(xps)))
-            moo_xp = MultiExperiment([xps[i] for i in training], [upper_bounds[i] for i in training], special_evaluation_function=xp.evaluation_function)
+            moo_xp = MultiExperiment(
+                [xps[i] for i in training],
+                [upper_bounds[i] for i in training],
+                special_evaluation_function=xp.evaluation_function,
+            )
             moo_xp.evaluation_by_best_of_pareto_front = pareto_size
             assert len(training) + 1 == len(xps)
             experiment_functions.append(moo_xp)
@@ -303,7 +316,12 @@ class MultiExperiment(ExperimentFunction):
     - there is no descriptor for the packed functions, except the name (concatenetion of packed function names).
     """
 
-    def __init__(self, experiments: tp.Iterable[ExperimentFunction], upper_bounds: tp.ArrayLike, special_evaluation_function: tp.Optional[tp.Callable[..., tp.Loss]] = None) -> None:
+    def __init__(
+        self,
+        experiments: tp.Iterable[ExperimentFunction],
+        upper_bounds: tp.ArrayLike,
+        special_evaluation_function: tp.Optional[tp.Callable[..., tp.Loss]] = None,
+    ) -> None:
         xps = list(experiments)
         assert xps
         assert len(xps) == len({id(xp) for xp in xps}), "All experiments must be different instances"
