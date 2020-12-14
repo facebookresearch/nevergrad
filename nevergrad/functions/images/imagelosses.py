@@ -135,7 +135,7 @@ class Blur(ImageLoss):
 @registry.register
 class NegBrisque(ImageLoss):
     """
-    This estimates the negated Brisque score.
+    This estimates the Brisque score (lower is better).
     """
 
     def __init__(self, reference: tp.Optional[np.ndarray] = None) -> None:
