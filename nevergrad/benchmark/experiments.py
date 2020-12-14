@@ -43,6 +43,28 @@ from . import frozenexperiments  # noqa # pylint: disable=unused-import
 # fmt: off
 
 
+class _Constraint:
+
+    def __init__(self, name: str, as_bool: bool) -> None:
+         self.name = name
+         self.as_bool = as_bool
+
+    def __call__(self, data: np.ndarray) -> tp.Union[bool, float]:
+        if not isinstance(data, np.ndarray):
+            raise ValueError(f"Unexpected inputs as np.ndarray, got {data}")
+        if self.name == "sum":
+            value = float(np.sum(data))
+        elif self.name == "diff":
+            value = float(np.sum(data[::2]) - np.sum(data[1::2]))
+        elif self.name == "second_diff":
+            value = float(2 * np.sum(data[1::2]) - 3 * np.sum(data[::2]))
+        elif self.name == "ball":
+            value = float(np.sum(np.square(data))) - float(len(data)) - float(np.sqrt(len(data)))  # Most points violate the constraint.
+        else:
+            raise NotImplementedError(f"Unknown function {self.name}")
+        return value > 0 if self.as_bool else value
+
+
 default_optims: tp.Optional[tp.List[str]] = None  # ["NGO10", "CMA", "Shiwa"]
 
 
@@ -143,7 +165,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         in [True, False]
     ]
     for func in functions:
-        func.parametrization.register_cheap_constraint(_positive_sum)
+        func.parametrization.register_cheap_constraint(_Constraint("sum", as_bool=False))
 
     # Then, let us build a constraint-free case. We include the noisy case.
     names = ["hm", "rastrigin", "sphere", "doublelinearslope", "ellipsoid"]
@@ -519,7 +541,7 @@ def paramultimodal(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 # pylint: disable=redefined-outer-name,too-many-arguments
 @registry.register
 def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = False, small: bool = False,
-           noise: bool = False, hd: bool = False, split: bool = False) -> tp.Iterator[Experiment]:
+           noise: bool = False, hd: bool = False, constraints: int = 0, split: bool = False) -> tp.Iterator[Experiment]:
     """Yet Another Black-Box Optimization Benchmark.
     Related to, but without special effort for exactly sticking to, the BBOB/COCO dataset.
     Dimension 2, 10 and 50.
@@ -527,6 +549,8 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
     Both rotated or not rotated.
     """
     seedg = create_seed_generator(seed)
+
+    # List of objective functions.
     names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal", "bucherastrigin",
              "multipeak"]
     names += ["sphere", "doublelinearslope", "stepdoublelinearslope"]
@@ -535,34 +559,48 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
     # Deceptive path is related to the sharp ridge function; there is a long path to the optimum.
     # Deceptive illcond is related to the difference of powers function; the conditioning varies as we get closer to the optimum.
     # Deceptive multimodal is related to the Weierstrass function and to the Schaffers function.
+
+    # Parametrizing the noise level.
     if noise:
-        if hd:
-            noise_level = 100000
-        else:
-            noise_level = 100
+        noise_level = 100000 if hd else 100
     else:
         noise_level = 0
+
+    # Choosing the list of optimizers.
     optims: tp.List[str] = ["chainMetaModelSQP", "NGOpt8", "chainCMASQP", "MetaModel", "CMA", "CMandAS2"]
     if noise:
         optims += ["TBPSA", "SQP", "NoisyDiscreteOnePlusOne"]
     if hd:
         optims += ["OnePlusOne"]
-
+        optims += get_optimizers("splitters", seed=next(seedg))  # type: ignore
     if default_optims is not None:
         optims = default_optims
+
+    # List of objective functions.
     functions = [
         ArtificialFunction(name, block_dimension=d, rotation=rotation, noise_level=noise_level, split=split) for name in names
         for rotation in [True, False]
-        for num_blocks in [1]
+        for num_blocks in ([1] if not split else [7, 12])
         for d in ([100, 1000, 3000] if hd else [2, 10, 50])
     ]
-    budgets = [50, 200, 800, 3200, 12800]
-    if (big and not noise):
-        budgets = [40000, 80000, 160000, 320000]
-    elif (small and not noise):
+
+    # We possibly add constraints.
+    max_num_constraints = 4
+    constraints_list: tp.List[tp.Any] = [_Constraint(name, as_bool)
+        for as_bool in [False, True]
+        for name in ["sum", "diff", "second_diff", "ball"]
+        ]
+    assert constraints < len(constraints_list) + max_num_constraints, (
+        "constraints should be in 0, 1, ..., {len(constraints_list) + max_num_constraints - 1} (0 = no constraint).")
+    for func in functions:
+        # We add a window of the list of constraints. This windows finishes at "constraints" (hence, is empty if
+        # constraints=0).
+        for constraint in constraints_list[max(0, constraints - max_num_constraints):constraints]:
+            func.parametrization.register_cheap_constraint(constraint)
+
+    budgets = [40000, 80000, 160000, 320000] if (big and not noise) else [50, 200, 800, 3200, 12800]
+    if (small and not noise):
         budgets = [10, 20, 40]
-    if hd:
-        optims += get_optimizers("splitters", seed=next(seedg))  # type: ignore
     for optim in optims:
         for function in functions:
             for budget in budgets:
@@ -570,6 +608,14 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
                                 budget=budget, seed=next(seedg))
                 if not xp.is_incoherent:
                     yield xp
+
+
+@registry.register
+def yaconstrainedbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with higher dimensions."""
+    step = 8 # only one test case out of 8, due to computational cost.
+    slices = [itertools.islice(yabbob(seed, constraints=i), 0, None, step) for i in range(step)]
+    return itertools.chain.from_iterable(slices)
 
 
 @registry.register
@@ -665,12 +711,6 @@ def illcondipara(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                     yield xp
 
 
-def _positive_sum(data: np.ndarray) -> bool:
-    if not isinstance(data, np.ndarray):
-        raise ValueError(f"Unexpected inputs as np.ndarray, got {data}")
-    return float(np.sum(data)) > 0
-
-
 @registry.register
 def constrained_illconditioned_parallel(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Many optimizers on ill cond problems with constraints.
@@ -681,7 +721,7 @@ def constrained_illconditioned_parallel(seed: tp.Optional[int] = None) -> tp.Ite
         in [True, False]
     ]
     for func in functions:
-        func.parametrization.register_cheap_constraint(_positive_sum)
+        func.parametrization.register_cheap_constraint(_Constraint("sum", as_bool=False))
     for function in functions:
         for budget in [400, 4000, 40000]:
             optims: tp.List[str] = get_optimizers("large", seed=next(seedg))  # type: ignore
