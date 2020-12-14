@@ -28,11 +28,11 @@ class Descriptors:
         whether the objective function is deterministic.
     non_proxy_function: bool
         whether the objective function is not a proxy of a more interesting objective function.
-    continuous:
+    continuous: bool
         whether the domain is entirely continuous.
-    metrizable:
+    metrizable: bool
         whether the domain is naturally equipped with a metric.
-    ordered:
+    ordered: bool
         whether all domains and subdomains are ordered.
     """  # TODO add repr
 
