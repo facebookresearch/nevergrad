@@ -50,8 +50,8 @@ class LpipsAlex(ImageLossWithReference):
         self.loss_fn = lpips.LPIPS(net="alex")
 
     def __call__(self, img: np.ndarray) -> float:
-        img0 = torch.clamp(torch.Tensor(img).permute(1, 2, 0) / 255., 0, 1) * 2.0 - 1.0
-        img1 = torch.clamp(torch.Tensor(self.reference).permute(1, 2, 0) / 255., 0, 1) * 2.0 - 1.0
+        img0 = torch.clamp(torch.Tensor(img).permute(2, 0, 1) / 255., 0, 1) * 2.0 - 1.0
+        img1 = torch.clamp(torch.Tensor(self.reference).permute(2, 0, 1) / 255., 0, 1) * 2.0 - 1.0
         assert len(img0.shape) == 3, img0.shape
         assert img0.shape[0] == 3, img0.shape
         assert len(img1.shape) == 3, img1.shape
