@@ -223,6 +223,10 @@ class ExperimentFunction:
         *pareto: Parameter
             pareto front provided by the optimizer
         """
+        if self.multiobjective_upper_bounds is None:
+            assert len(pareto) == 1
+            return self.evaluation_function(*pareto[0].args, **pareto[0].kwargs)
+        # multiobjective case
         hypervolume = mobj.HypervolumePareto(upper_bounds=self.multiobjective_upper_bounds)
         for candidate in pareto:
             hypervolume.add(candidate)
