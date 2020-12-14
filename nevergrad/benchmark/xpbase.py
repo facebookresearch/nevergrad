@@ -213,8 +213,8 @@ class Experiment:
         reco = self.recommendation
         opt = self._optimizer
         assert opt is not None
-        if opt.num_objectives == 1:
-            # ExperimentFunction can directly override this if need be
+        # ExperimentFunction can directly override the corresponding evaluation function if need be
+        if pfunc.multiobjective_upper_bounds is None:
             self.result["loss"] = pfunc.evaluation_function(*reco.args, **reco.kwargs)
         else:
             # in multiobjective case, use best hypervolume so far
