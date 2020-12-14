@@ -615,8 +615,8 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
 @registry.register
 def yaconstrainedbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with higher dimensions."""
-    step = 8  # The number of constraint_case we consider.
-    slices = [yabbob(seed, constraint_case=i) for i in range(step)]
+    cases = 8 # total number of cases (skip 0, as it's constraint-free)
+    slices = [yabbob(seed, constraint_case=i) for i in range(1, cases)]
     return itertools.chain(*slices)
 
 
