@@ -25,6 +25,7 @@ def test_value_and_point() -> None:
     np.testing.assert_almost_equal(v.variance, 0.3536, decimal=4)
     assert v.optimistic_confidence_bound < v.pessimistic_confidence_bound
     assert v.get_estimation("optimistic") < v.get_estimation("pessimistic")
+    assert v.get_estimation("minimum") == 3
     np.testing.assert_raises(NotImplementedError, v.get_estimation, "blublu")
     repr(v)
     assert v.parameter.value == 12
