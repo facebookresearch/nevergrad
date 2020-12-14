@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import sys
 import unittest
 import platform
 import subprocess
@@ -11,6 +12,10 @@ from pathlib import Path
 import pytest
 import numpy as np
 from . import testing
+
+
+# decorators for tests which do not need to be run on Windows
+skip_win = pytest.mark.skipif(sys.platform == "win32", reason="Internals")
 
 
 @testing.parametrized(
@@ -37,6 +42,7 @@ def test_printed_assert_equal() -> None:
     np.testing.assert_raises(AssertionError, testing.printed_assert_equal, 0, 1)
 
 
+@skip_win  # type: ignore
 def test_assert_markdown_links_not_broken() -> None:
     folder = Path(__file__).parents[2].expanduser().absolute()
     assert (folder / "README.md").exists(), f"Wrong root folder: {folder}"
@@ -60,6 +66,7 @@ def test_skip_test_on_system(
         raise AssertionError("Should not have skipped the test!") from e
 
 
+@skip_win  # type: ignore
 def test_header() -> None:
     header = Path(__file__).read_text().splitlines()[0]
     repopath = Path(__file__).parents[1]
