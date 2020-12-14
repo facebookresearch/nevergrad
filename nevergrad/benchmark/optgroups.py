@@ -185,6 +185,7 @@ def structured_moo() -> tp.Sequence[Optim]:
     for pareto_extractor in ["random", "loss-covering", "EPS", "domain-covering", "hypervolume"]
         for cls in my_classes:
             moo_cls = Rescaled(base_optimizer=cls, scale=1., pareto_front_extractor = pareto_extractor)
+            moo_cls.set_name(f"{cls}_{pareto_extractor}")
             moo_image_optimizers.append(moo_cls)
 
     return my_classes + my_classes
