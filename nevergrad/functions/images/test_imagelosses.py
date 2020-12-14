@@ -13,14 +13,5 @@ def test_l1_loss() -> None:
 
 
 def all_losses() -> None:
-    for loss in [
-        imagelosses.SumAbsoluteDifferences,
-        imagelosses.Lpips_alex,
-        imagelosses.Lpips_vgg,
-        imagelosses.SumSquareDifferences,
-        imagelosses.HistogramDifference,
-        imagelosses.Koncept512,
-        imagelosses.Blur,
-        imagelosses.NegBrisque,
-    ]:
+    for loss in imageslosses.registry:[
         assert loss(reference=np.zeros((3, 2)))(np.ones(3, 2)) > 0.0

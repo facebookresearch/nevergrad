@@ -5,8 +5,11 @@ import torch
 import typing as tp
 import numpy as np
 from nevergrad.functions.base import UnsupportedExperiment
+from nevergrad.common.decorators import Registry
 
+registry: Registry[tp.Any] = Registry()
 
+@registry.register
 class ImageLoss:
     def __init__(self, reference: tp.Optional[np.ndarray] = None) -> None:
         pass
@@ -15,6 +18,7 @@ class ImageLoss:
         raise NotImplementedError
 
 
+@registry.register
 class SumAbsoluteDifferences(ImageLoss):
     def __init__(self, reference: np.ndarray) -> None:
         if reference is None:
@@ -29,6 +33,7 @@ class SumAbsoluteDifferences(ImageLoss):
         return value
 
 
+@registry.register
 class LpipsAlex(SumAbsoluteDifferences):
     def __init__(self, reference: np.ndarray) -> None:
         super().__init__(reference)
@@ -44,12 +49,14 @@ class LpipsAlex(SumAbsoluteDifferences):
         return self.loss_fn(img0, img1)
 
 
+@registry.register
 class LpipsVgg(LpipsAlex):
     def __init__(self, reference: np.ndarray) -> None:
         super().__init__(reference)
         self.loss_fn = lpips.LPIPS(net="vgg")
 
 
+@registry.register
 class SumSquareDifferences(SumAbsoluteDifferences):
     def __call__(self, x: np.ndarray) -> float:
         assert x.shape == self.domain_shape, f"Shape = {x.shape} vs {self.domain_shape}"
@@ -57,6 +64,7 @@ class SumSquareDifferences(SumAbsoluteDifferences):
         return value
 
 
+@registry.register
 class HistogramDifference(SumAbsoluteDifferences):
     def __call__(self, x: np.ndarray) -> float:
         assert x.shape == self.domain_shape, f"Shape = {x.shape} vs {self.domain_shape}"
@@ -67,10 +75,11 @@ class HistogramDifference(SumAbsoluteDifferences):
         return value
 
 
+@registry.register
 class Koncept512(ImageLoss):
     """
     This loss uses the neural network Koncept512 to score images
-    It takes one image or a list of images of shape [x, y, 3] and returns a score
+    It takes one image or a list of images of shape [x, y, 3], with each pixel between 0 and 255, and returns a score.
     """
 
     def __init__(self, reference: tp.Optional[np.ndarray] = None) -> None:
@@ -87,6 +96,8 @@ class Koncept512(ImageLoss):
         loss = - self.koncept.assess(img)
         return float(loss)
 
+
+@registry.register
 class Blur(ImageLoss):
     """
     This estimates bluriness
@@ -95,6 +106,8 @@ class Blur(ImageLoss):
     def __call__(self, img: np.ndarray) -> float:
         return cv2.Laplacian(image, cv2.CV_64F).var()
 
+
+@registry.register
 class NegBrisque(ImageLoss):
     """
     This estimates bluriness
