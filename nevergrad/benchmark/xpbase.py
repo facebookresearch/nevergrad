@@ -185,8 +185,8 @@ class Experiment:
 
     @evaluation_by_best_of_pareto_front.setter
     def evaluation_by_best_of_pareto_front(self, pareto_size: int):
-        assert pareto_size >= 0.0
-        self.__evaluation_by_best_of_pareto_front = pareto_size
+        assert pareto_size >= 0.
+        self.__evaluation_by_best_of_pareto_front = pareto_size 
 
     def run(self) -> tp.Dict[str, tp.Any]:
         """Run an experiment with the provided settings

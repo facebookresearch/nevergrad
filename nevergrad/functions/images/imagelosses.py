@@ -18,7 +18,7 @@ class ImageLoss:
     def __call__(self, img: np.ndarray) -> float:
         raise NotImplementedError(f"__call__ undefined in class {type(self)}")
 
-
+        
 class ImageLossWithReference(ImageLoss):
     def __init__(self, reference: np.ndarray) -> None:
         if reference is None:
@@ -56,12 +56,6 @@ class LpipsAlex(ImageLossWithReference):
         img1 = np.expand_dims(self.reference, 0)
         img0 = torch.clamp(torch.Tensor(img0).permute(0, 3, 1, 2) / 255.0, 0, 1) * 2.0 - 1.0
         img1 = torch.clamp(torch.Tensor(img1).permute(0, 3, 1, 2) / 255.0, 0, 1) * 2.0 - 1.0
-        # assert len(img0.shape) == 4, img0.shape
-        # assert img0.shape[0] == 1, img0.shape
-        # assert img0.shape[1] == 3, img0.shape
-        # assert len(img1.shape) == 4, img1.shape
-        # assert img1.shape[0] == 1, img1.shape
-        # assert img1.shape[1] == 3, img0.shape
         return self.loss_fn(img0, img1)
 
 
