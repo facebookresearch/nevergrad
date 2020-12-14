@@ -95,3 +95,12 @@ class Blur(ImageLoss):
     def __call__(self, img: np.ndarray) -> float:
         return cv2.Laplacian(image, cv2.CV_64F).var()
 
+class NegBrisque(ImageLoss):
+    """
+    This estimates bluriness
+    """
+
+    def __call__(self, img: np.ndarray) -> float:
+        # TODO: not sure at all this image is in the right format: https://pypi.org/project/image-quality/
+        return brisque.score(img)
+
