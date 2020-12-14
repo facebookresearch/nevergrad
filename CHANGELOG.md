@@ -4,6 +4,7 @@
 
 **Cautious:** current `master` branch and `0.4.2.postX` version introduce tentative APIs which may be removed in the near future. Use version `0.4.2` for a more stable version.
 
+- By default, the optimizer now returns the best set of parameter as recommendation [#951](https://github.com/facebookresearch/nevergrad/pull/951), considering that the function is deterministic. The previous behavior would use an estimation of noise to provide the pessimistic best point, leading to unexpected behaviors [#947](https://github.com/facebookresearch/nevergrad/pull/947). You can can back to this behavior by specifying: :code:`parametrization.descriptors.deterministic_function = False`
 - as an **experimental** feature we have added some preliminary support for constraint management through penalties.
   From then on the prefered option for penalty is to register a function returning a positive float when the constraint is satisfied.
   While we will wait fore more testing before documenting it, this may already cause instabilities and errors when adding cheap constraints.
@@ -12,6 +13,9 @@
 - `DE` and its variants have been updated to make use of the multi-objective losses [#789](https://github.com/facebookresearch/nevergrad/pull/789). This is a **preliminary** fix since the initial `DE` implementaton was ill-suited for this use case.
 - `tell` argument `value` is renamed to `loss` for clarification [#774](https://github.com/facebookresearch/nevergrad/pull/774). This can be breaking when using named arguments!
 - `ExperimentFunction` now automatically records arguments used for their instantiation so that they can both be used to create a new copy, and as descriptors if there are of type  int/bool/float/str [#914](https://github.com/facebookresearch/nevergrad/pull/914 [#914](https://github.com/facebookresearch/nevergrad/pull/914)).
+- from now on, code formatting needs to be [`black`](https://black.readthedocs.io/en/stable/) compliant. This is
+  simply performed by running `black nevergrad`. A continuous integration checks that PRs are compliant, and the
+  precommit hooks have been adapted. For PRs branching from an old master, you can run `black --line-length=110 nevergrad/<path_to_modified_file>` to make your code easier to merge.
 
 ## 0.4.2 (2020-08-04)
 

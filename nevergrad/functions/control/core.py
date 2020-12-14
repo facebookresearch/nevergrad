@@ -109,6 +109,11 @@ class BaseFunction(ExperimentFunction):
         return loss
 
 
+# pylint: disable=line-too-long
+# for black (since lists are way too long...)
+# fmt: off
+
+
 class Ant(BaseFunction):
     env_name = 'Ant-v2'
     policy_dim: tp.Tuple[int, ...] = (111, 8)
