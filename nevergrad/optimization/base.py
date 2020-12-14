@@ -156,7 +156,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
 
     @pareto_front_extractor.setter
     def pareto_front_extractor(self, pareto_front_extractor: str):
-        self.__pareto_front_extractor: str = pareto_front_extractor
+        self.__pareto_front_extractor = pareto_front_extractor
 
     @property
     def dimension(self) -> int:
@@ -230,8 +230,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         ----
         During non-multiobjective optimization, this returns the current pessimistic best
         """
-        if method == "default":
-            method = self.pareto_front_extractor
+        if subset == "default":
+            subset = self.pareto_front_extractor
         if self._hypervolume_pareto is None:
             return [self.current_bests["pessimistic"].parameter]
         return self._hypervolume_pareto.pareto_front(

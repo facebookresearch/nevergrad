@@ -255,7 +255,7 @@ def update_leaderboard(identifier: str, loss: float, array: np.ndarray, verbose:
 
 
 def multi_experiments(
-    xps: tp.Iterable[ExperimentFunction],
+    xps: tp.List[ExperimentFunction],
     upper_bounds: tp.ArrayLike,
     pareto_size: int,
     no_crossval: tp.List[tp.Any] = [],
@@ -277,13 +277,13 @@ def multi_experiments(
     the best solution in the approximate Pareto front for the excluded ExperimentFunction.
     """
     experiment_functions: tp.List[ExperimentFunction] = []
-    for i in range(len(xps)):
+    for i, xp in enumerate(xps):
         if i not in no_crossval:
             training = list(range(i)) + list(range(i + 1, len(xps)))
-            moo_xp = MultiExperiment(xps[training], upper_bounds[training])
+            moo_xp = MultiExperiment([xps[i] for i in training], [upper_bounds[i] for i in training])
             moo_xp.evaluation_by_best_of_pareto_front = pareto_size
-            moo_xp.evaluation_function = xps[i].evaluation_function
-            assert len(xps[training]) + 1 == len(xps)
+            moo_xp.evaluation_function = xp.evaluation_function
+            assert len(training) + 1 == len(xps)
             experiment_functions.append(moo_xp)
     return experiment_functions
 
@@ -317,6 +317,7 @@ class MultiExperiment(ExperimentFunction):
         self.multiobjective_upper_bounds = np.array(upper_bounds)
         self._descriptors.update(name=",".join(xp._descriptors.get("name", "#unknown#") for xp in xps))
         self._experiments = xps
+        self.evaluation_by_best_of_pareto_front = 0
 
     def _multi_func(self, *args: tp.Any, **kwargs: tp.Any) -> np.ndarray:
         outputs = [f(*args, **kwargs) for f in self._experiments]

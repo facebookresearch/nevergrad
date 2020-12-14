@@ -1223,15 +1223,15 @@ def image_multi_similarity(seed: tp.Optional[int] = None, cross_valid: bool=Fals
     for budget in [100 * 5 ** k for k in range(3)]:
         for num_workers in [1]:
             for algo in optims:
-                for func in mofuncs:
+                for mofunc in mofuncs:
                     xp = Experiment(mofunc, algo, budget, num_workers=num_workers, seed=next(seedg))
                     yield xp
 
 
 @registry.register
-def image_with_similarity_cv(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def image_multi_similarity_cv(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of image_multi_similarity with cross-validation."""
-    return image_with_similarity(seed, cross_valid=True)
+    return image_multi_similarity(seed, cross_valid=True)
 
 
 
@@ -1265,22 +1265,22 @@ def image_quality(seed: tp.Optional[int] = None, cross_val: bool=False) -> tp.It
     TODO
     """
     seedg = create_seed_generator(seed)
-    optims = get_optimizers("structured_moo")
+    optims: tp.List[tp.Any] = get_optimizers("structured_moo")
     if default_optims is not None:
         optims = default_optims
     
     # We optimize func_blur or func_brisque and check performance on func_iqa.
-    funcs = [
+    funcs: tp.List[ExperimentFunction] = [
             imagesxp.Image(loss=imagesxp.imagelosses.Koncept512),
             imagesxp.Image(loss=imagesxp.imagelosses.Blur),
             imagesxp.Image(loss=imagesxp.imagelosses.NegBrisque),
             ]
-    upper_bounds = [func(func.parametrization.sample().value) for func in funcs]
+    upper_bounds: tp.List[float] = [func(func.parametrization.sample().value) for func in funcs]
     # TODO: add the proxy info in the parametrization.
     for budget in [100 * 5 ** k for k in range(3)]:
         for num_workers in [1]:
             for algo in optims:
-                mofuncs = fbase.multi_experiments(funcs, upper_bounds=upper_bounds, no_crossval=[1, 2]) if cross_val else [fbase.MultiExperiment(funcs, upper_bounds=upper_bounds)]
+                mofuncs = fbase.multi_experiments(funcs, upper_bounds=upper_bounds, no_crossval=[1, 2], pareto_size=16) if cross_val else [fbase.MultiExperiment(funcs, upper_bounds=upper_bounds)]
                 for func in mofuncs:
                     xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
                     yield xp
@@ -1296,7 +1296,7 @@ def image_quality_cv(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 def image_similarity_and_quality(seed: tp.Optional[int] = None, cross_val: bool=False) -> tp.Iterator[Experiment]:
     """Optimizing images: artificial criterion for now."""
     seedg = create_seed_generator(seed)
-    optims = get_optimizers("structured_moo")
+    optims: tp.List[tp.Any] = get_optimizers("structured_moo")
     if default_optims is not None:
         optims = default_optims
 
@@ -1309,7 +1309,7 @@ def image_similarity_and_quality(seed: tp.Optional[int] = None, cross_val: bool=
     
         # Creating a reference value.
         base_value = func(func.parametrization.sample().value)
-        mofunc = fbase.multi_experiments([func, func_blur, func_iqa], upper_bounds=[base_value, base_blur_value, 100.], no_crossval=[1, 2]) if cross_val else [
+        mofunc = fbase.multi_experiments([func, func_blur, func_iqa], upper_bounds=[base_value, base_blur_value, 100.], no_crossval=[1, 2], pareto_size=16) if cross_val else [
                 fbase.MultiExperiment([func, func_blur, func_iqa], upper_bounds=[base_value, base_blur_value, 100.])]
         for budget in [100 * 5 ** k for k in range(3)]:
             for num_workers in [1]:

@@ -187,7 +187,7 @@ def structured_moo() -> tp.Sequence[Optim]:
             "TwoPointsDE-noadapt"
         ),
     ]
-    moo_image_optimizers: tp.Sequence[Optim] = []
+    moo_image_optimizers: tp.List[Optim] = []
     for pareto_extractor in ["random", "loss-covering", "EPS", "domain-covering", "hypervolume"]:
         for cls in my_classes:
             moo_cls = Rescaled(base_optimizer=cls, scale=1.0, pareto_front_extractor=pareto_extractor)
