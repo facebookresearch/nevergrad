@@ -1213,11 +1213,11 @@ def image_multi_similarity(seed: tp.Optional[int] = None, cross_valid: bool=Fals
         optims = default_optims
     funcs = [imagesxp.Image(loss=loss) for loss in [
                 imagesxp.imagelosses.SumAbsoluteDifferences,
-                imagesxp.imagelosses.lpips_alex,
-                imagesxp.imagelosses.lpips_vgg,
+                imagesxp.imagelosses.LpipsAlex,
+                imagesxp.imagelosses.LpipsVgg,
                 imagesxp.imagelosses.SumSquareDifferences,
                 imagesxp.imagelosses.HistogramDifference]]
-    base_values = [func(func.parametrization.sample().value) for func in funcs]
+    base_values: tp.List[tp.Any] = [func(func.parametrization.sample().value) for func in funcs]
     mofuncs = fbase.multi_experiments(funcs, upper_bounds=base_values) if cross_valid else [
             fbase.MultiExperiment(funcs, upper_bounds=base_values)]
     for budget in [100 * 5 ** k for k in range(3)]:
@@ -1239,7 +1239,7 @@ def image_with_similarity_cv(seed: tp.Optional[int] = None) -> tp.Iterator[Exper
 def image_quality_proxy(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Optimizing images: artificial criterion for now."""
     seedg = create_seed_generator(seed)
-    optims = get_optimizers("structured_moo")
+    optims: tp.List[tp.Any] = get_optimizers("structured_moo")
     if default_optims is not None:
         optims = default_optims
 
@@ -1254,7 +1254,7 @@ def image_quality_proxy(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment
         for num_workers in [1]:
             for algo in optims:
                 for func in [func_blur.copy(), func_brisque.copy()]:
-                    func.evaluation_function = func_iqa
+                    func.evaluation_function = func_iqa.evaluation_function
                     xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
                     yield xp
 
@@ -1280,7 +1280,7 @@ def image_quality(seed: tp.Optional[int] = None, cross_val: bool=False) -> tp.It
     for budget in [100 * 5 ** k for k in range(3)]:
         for num_workers in [1]:
             for algo in optims:
-                mofuncs = fbase.multi_experiments(funcs, upper_bounds=upper_bounds, no_cross_val=[1, 2]) if cross_val else [fbase.MultiExperiment(funcs, upper_bounds=upper_bounds)]
+                mofuncs = fbase.multi_experiments(funcs, upper_bounds=upper_bounds, no_crossval=[1, 2]) if cross_val else [fbase.MultiExperiment(funcs, upper_bounds=upper_bounds)]
                 for func in mofuncs:
                     xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
                     yield xp
@@ -1309,7 +1309,7 @@ def image_similarity_and_quality(seed: tp.Optional[int] = None, cross_val: bool=
     
         # Creating a reference value.
         base_value = func(func.parametrization.sample().value)
-        mofunc = fbase.multi_experiments([func, func_blur, func_iqa], upper_bounds=[base_value, base_blur_value, 100.], no_cross_val=[1, 2]) if cross_val else [
+        mofunc = fbase.multi_experiments([func, func_blur, func_iqa], upper_bounds=[base_value, base_blur_value, 100.], no_crossval=[1, 2]) if cross_val else [
                 fbase.MultiExperiment([func, func_blur, func_iqa], upper_bounds=[base_value, base_blur_value, 100.])]
         for budget in [100 * 5 ** k for k in range(3)]:
             for num_workers in [1]:
