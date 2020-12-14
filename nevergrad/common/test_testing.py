@@ -5,6 +5,7 @@
 
 import unittest
 import platform
+import subprocess
 import typing as tp
 from pathlib import Path
 import pytest
@@ -24,7 +25,7 @@ def test_assert_set_equal(estimate: tp.Iterable[int], message: str) -> None:
         testing.assert_set_equal(estimate, reference)
     except AssertionError as error:
         if not message:
-            raise AssertionError("An error has been raised while it should not.")
+            raise AssertionError("An error has been raised while it should not.") from error
         np.testing.assert_equal(error.args[0].split("\n")[1:], message)
     else:
         if message:
@@ -55,5 +56,22 @@ def test_skip_test_on_system(
         with pytest.raises(expected_error):
             with testing.skip_error_on_systems(skipped_error, (system,)):
                 raise RuntimeError("Testing skip")
-    except unittest.SkipTest:  # prevents SkipTest from just skipping the test and making it useless
-        raise AssertionError("Should not have skipped the test!")
+    except unittest.SkipTest as e:  # prevents SkipTest from just skipping the test and making it useless
+        raise AssertionError("Should not have skipped the test!") from e
+
+
+def test_header() -> None:
+    header = Path(__file__).read_text().splitlines()[0]
+    repopath = Path(__file__).parents[1]
+    assert repopath.name == "nevergrad"
+    assert (repopath.parent / "setup.py").exists()
+    output = subprocess.check_output(["find", str(repopath), "-name", "*.py"], shell=False).decode()
+    missing: tp.List[str] = []
+    for filepath in output.splitlines():
+        if not Path(filepath).read_text().startswith(header):
+            missing.append(filepath)
+    if missing:
+        missing_str = "\n - ".join(missing)
+        raise AssertionError(
+            f"Following files are missing standard header (see other files):\n - {missing_str}"
+        )
