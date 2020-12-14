@@ -182,7 +182,7 @@ def structured_moo() -> tp.Sequence[Optim]:
                    ng.families.DifferentialEvolution(crossover="twopoints", multiobjective_adaptation=False).set_name(
                        "TwoPointsDE-noadapt")]
     moo_image_optimizers: tp.Sequence[Optim] = []
-    for pareto_extractor in ["random", "loss-covering", "EPS", "domain-covering", "hypervolume"]
+    for pareto_extractor in ["random", "loss-covering", "EPS", "domain-covering", "hypervolume"]:
         for cls in my_classes:
             moo_cls = Rescaled(base_optimizer=cls, scale=1., pareto_front_extractor = pareto_extractor)
             moo_cls.set_name(f"{cls}_{pareto_extractor}")
