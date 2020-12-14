@@ -4,7 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 """Groups of optimizers for use in benchmarks
 """
-from copy import deepcopy
 import typing as tp
 import numpy as np
 import nevergrad as ng
@@ -14,7 +13,6 @@ from nevergrad.optimization import base as obase
 from nevergrad.optimization.optimizerlib import ConfSplitOptimizer
 from nevergrad.optimization.optimizerlib import registry as optimizerlib_registry
 from nevergrad.optimization.optimizerlib import ParametrizedOnePlusOne
-import nevergrad.optimization.optimizerlib
 
 Optim = tp.Union[obase.ConfiguredOptimizer, str]
 registry: Registry[tp.Callable[[], tp.Iterable[Optim]]] = Registry()
@@ -175,20 +173,6 @@ def competitive() -> tp.Sequence[Optim]:
 def all_bo() -> tp.Sequence[Optim]:
     return sorted(x for x in ng.optimizers.registry if "BO" in x)
 
-@registry.register
-def structured_moo() -> tp.Sequence[Optim]:
-    my_classes = [optimizerlib_registry[name] for name in ["CMA", "NGOpt8", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]]
-    my_classes += [ng.families.DifferentialEvolution(multiobjective_adaptation=False).set_name("DE-noadapt"),
-                   ng.families.DifferentialEvolution(crossover="twopoints", multiobjective_adaptation=False).set_name(
-                       "TwoPointsDE-noadapt")]
-    moo_image_optimizers: tp.Sequence[Optim] = []
-    for pareto_extractor in ["random", "loss-covering", "EPS", "domain-covering", "hypervolume"]:
-        for cls in my_classes:
-            moo_cls = Rescaled(base_optimizer=cls, scale=1., pareto_front_extractor = pareto_extractor)
-            moo_cls.set_name(f"{cls}_{pareto_extractor}")
-            moo_image_optimizers.append(moo_cls)
-
-    return my_classes + my_classes
 
 @registry.register
 def structured_moo() -> tp.Sequence[Optim]:
@@ -209,7 +193,7 @@ def structured_moo() -> tp.Sequence[Optim]:
             moo_cls.set_name(f"{cls}_{pareto_extractor}")
             moo_image_optimizers.append(moo_cls)
 
-    return my_classes + my_classes
+    return moo_image_optimizers
 
 
 @registry.register

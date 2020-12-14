@@ -19,8 +19,6 @@ def test_consistency_losses_with_oteytaud() -> None:
     image = PIL.Image.open(path).resize((256, 256), PIL.Image.ANTIALIAS)
     data = np.asarray(image)[:, :, :3]  # 4th Channel is pointless here, only 255.
     for loss_name, loss_class in imagelosses.registry.items():
-        loss = loss_class(reference = data)
-        random_data = np.random.uniform(low=0., high=255., size=data.size)
+        loss = loss_class(reference=data)
+        random_data = np.random.uniform(low=0.0, high=255.0, size=data.size)
         assert loss(data) < loss(random_data), f"Loss {loss_name} fails on oteytaud's photo."
-
-

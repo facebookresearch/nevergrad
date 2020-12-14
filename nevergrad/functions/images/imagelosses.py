@@ -18,7 +18,7 @@ class ImageLoss:
     def __call__(self, img: np.ndarray) -> float:
         raise NotImplementedError(f"__call__ undefined in class {type(self)}")
 
-        
+
 class ImageLossWithReference(ImageLoss):
     def __init__(self, reference: np.ndarray) -> None:
         if reference is None:
