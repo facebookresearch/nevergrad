@@ -219,7 +219,7 @@ class MLTuning(ExperimentFunction):
             evalparams = dict(params)
         # For the evaluation we remove the noise (unless overfitter)
         evalparams["noise_free"] = not overfitter
-        parametrization.descriptors.no_reality_gap = overfitter
+        parametrization.descriptors.non_proxy_function = overfitter
         super().__init__(partial(self._ml_parametrization, **params), parametrization.set_name(""))
         self._evalparams = evalparams
 

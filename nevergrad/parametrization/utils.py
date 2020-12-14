@@ -24,14 +24,14 @@ class Descriptors:
         self,
         deterministic: bool = True,
         deterministic_function: bool = True,
-        no_reality_gap: bool = True,
+        non_proxy_function: bool = True,
         continuous: bool = True,
         metrizable: bool = True,
         ordered: bool = True,
     ) -> None:
         self.deterministic = deterministic
         self.deterministic_function = deterministic_function
-        self.no_reality_gap = no_reality_gap
+        self.non_proxy_function = non_proxy_function
         self.continuous = continuous
         self.metrizable = metrizable
         self.ordered = ordered

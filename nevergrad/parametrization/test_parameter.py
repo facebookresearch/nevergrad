@@ -145,12 +145,12 @@ def check_parameter_features(param: par.Parameter) -> None:
     assert param.descriptors.deterministic_function
     param.descriptors.deterministic_function = False
     assert not param.descriptors.deterministic_function
-    assert param.descriptors.no_reality_gap
-    param.descriptors.no_reality_gap = False
-    assert not param.descriptors.no_reality_gap
+    assert param.descriptors.non_proxy_function
+    param.descriptors.non_proxy_function = False
+    assert not param.descriptors.non_proxy_function
     descr_child = param.spawn_child()
     assert not descr_child.descriptors.deterministic_function
-    assert not descr_child.descriptors.no_reality_gap
+    assert not descr_child.descriptors.non_proxy_function
 
 
 def check_parameter_freezable(param: par.Parameter) -> None:
