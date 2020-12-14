@@ -120,7 +120,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         ] = utils.Archive()  # dict like structure taking np.ndarray as keys and Value as values
         self.current_bests = {
             x: utils.MultiValue(self.parametrization, np.inf, reference=self.parametrization)
-            for x in ["optimistic", "pessimistic", "average"]
+            for x in ["optimistic", "pessimistic", "average", "minimum"]
         }
         # pruning function, called at each "tell"
         # this can be desactivated or modified by each implementation
@@ -381,7 +381,6 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             raise TypeError(
                 f'"tell" method only supports float values but the passed loss was: {loss} (type: {type(loss)}.'
             )
-        print(f"Updating with loss {loss}, {candidate.loss}")
         if np.isnan(loss) or loss == np.inf:
             warnings.warn(f"Updating fitness with {loss} value")
         mvalue: tp.Optional[utils.MultiValue] = None
@@ -392,19 +391,17 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             mvalue.add_evaluation(loss)
             # both parameters should be non-None
             if mvalue.parameter.loss > candidate.loss:  # type: ignore
-                print(f"Updating with new loss {candidate.loss}")
                 mvalue.parameter = candidate  # keep best candidate
         # update current best records
         # this may have to be improved if we want to keep more kinds of best losss
 
-        for name in ["optimistic", "pessimistic", "average"]:
+        for name in self.current_bests:
             if mvalue is self.current_bests[name]:  # reboot
                 best = min(self.archive.values(), key=lambda mv, n=name: mv.get_estimation(n))  # type: ignore
                 # rebuild best point may change, and which value did not track the updated value anyway
                 self.current_bests[name] = best
             else:
                 if self.archive[x].get_estimation(name) <= self.current_bests[name].get_estimation(name):
-                    print(f"Updating current best to {self.archive[x].parameter.loss}")
                     self.current_bests[name] = self.archive[x]
                 # deactivated checks
                 # if not (np.isnan(loss) or loss == np.inf):
@@ -491,7 +488,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         """
         recom_data = self._internal_provide_recommendation()  # pylint: disable=assignment-from-none
         if recom_data is None:
-            name = "average" if self.parametrization.descriptors.deterministic_function else "pessimistic"
+            name = "minimum" if self.parametrization.descriptors.deterministic_function else "pessimistic"
             return self.current_bests[name].parameter
         return self.parametrization.spawn_child().set_standardized_data(recom_data, deterministic=True)
 
