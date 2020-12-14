@@ -28,7 +28,7 @@ class MLTuning(ExperimentFunction):
     regressor: str
         type of function we can use for doing the regression. Can be "mlp", "decision_tree", "decision_tree_depth",
         "keras_dense_nn", "any".
-        "any" means that the regressor has one more parameter which is a discrete choice among scikitlearn possibilities.
+        "any" means that the regressor has one more parameter which is a discrete choice among possibilities.
     data_dimension: int
         dimension of the data we generate. None if not an artificial dataset.
     dataset: str
@@ -219,6 +219,7 @@ class MLTuning(ExperimentFunction):
             evalparams = dict(params)
         # For the evaluation we remove the noise (unless overfitter)
         evalparams["noise_free"] = not overfitter
+        parametrization.descriptors.non_proxy_function = overfitter
         super().__init__(partial(self._ml_parametrization, **params), parametrization.set_name(""))
         self._evalparams = evalparams
 
