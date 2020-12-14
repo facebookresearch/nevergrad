@@ -20,6 +20,7 @@ def all_losses() -> None:
         imagelosses.SumSquareDifferences,
         imagelosses.HistogramDifference,
         imagelosses.Koncept512,
-        imagelosses.Blur
+        imagelosses.Blur,
+        imagelosses.NegBrisque,
     ]:
         assert loss(reference=np.zeros((3, 2)))(np.ones(3, 2)) > 0.0
