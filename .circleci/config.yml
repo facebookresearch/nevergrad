@@ -158,7 +158,7 @@ jobs:
           command: |
             . venv/bin/activate
             pylint --version
-            pylint nevergrad --disable=all --enable=unused-import,unused-argument,unused-variable,undefined-loop-variable,redefined-builtin,used-before-assignment,super-init-not-called
+            pylint nevergrad --disable=all --enable=unused-import,unused-argument,unused-variable,undefined-loop-variable,redefined-builtin,used-before-assignment,super-init-not-called,useless-super-delegation
 
       - run:
           name: "Run black"
