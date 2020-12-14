@@ -544,9 +544,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
 
         Returns
         -------
-        p.Parameter
-            The candidate with minimal value. :code:`p.Parameters` have field :code:`args` and :code:`kwargs` which can be directly used
-            on the function (:code:`objective_function(*candidate.args, **candidate.kwargs)`).
+        ng.p.Parameter
+            The candidate with minimal value. :code:`ng.p.Parameters` have field :code:`args` and :code:`kwargs` which can
+            be directly used on the function (:code:`objective_function(*candidate.args, **candidate.kwargs)`).
 
         Note
         ----
