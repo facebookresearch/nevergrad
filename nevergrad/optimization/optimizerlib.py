@@ -362,6 +362,7 @@ class _CMA(base.Optimizer):
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
         scale: float = 1.0,
+        elitist: bool = False,
         popsize: tp.Optional[int] = None,
         diagonal: bool = False,
         fcmaes: bool = False,
@@ -369,6 +370,7 @@ class _CMA(base.Optimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._scale = scale
+        self._elitist = elitist
         self._popsize = (
             max(self.num_workers, 4 + int(3 * np.log(self.dimension))) if popsize is None else popsize
         )
@@ -393,6 +395,7 @@ class _CMA(base.Optimizer):
                     CMA_diagonal=self._diagonal,
                     verbose=0,
                     seed=np.nan,
+                    CMA_elitist=self._elitist,
                 )
                 self._es = cma.CMAEvolutionStrategy(
                     x0=self._rng.normal(size=self.dimension)
@@ -460,6 +463,9 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
     ----------
     scale: float
         scale of the search
+    elitist: bool
+        whether we switch to elitist mode, i.e. mode + instead of comma,
+        i.e. mode in which we always keep the best point in the population.
     popsize: Optional[int] = None
         population size, should be n * self.num_workers for int n >= 1.
         default is max(self.num_workers, 4 + int(3 * np.log(self.dimension)))
@@ -477,6 +483,7 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         self,
         *,
         scale: float = 1.0,
+        elitist: bool = False,
         popsize: tp.Optional[int] = None,
         diagonal: bool = False,
         fcmaes: bool = False,
@@ -2427,7 +2434,9 @@ class NGOpt4(NGOptBase):
             else:
                 if self.has_noise and self.fully_continuous:
                     if budget > 100:
-                        optimClass = OnePlusOne if self.noise_from_instrumentation else SQP
+                        optimClass = (
+                            OnePlusOne if self.noise_from_instrumentation or self.num_workers > 1 else SQP
+                        )
                     else:
                         optimClass = OnePlusOne
                 else:
