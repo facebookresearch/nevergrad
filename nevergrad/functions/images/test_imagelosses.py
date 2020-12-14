@@ -10,13 +10,13 @@ from nevergrad.functions.images import imagelosses
 
 
 def test_l1_loss() -> None:
-    loss = imagelosses.SumAbsoluteDifferences(reference=np.zeros((3, 2)))
-    assert loss(np.ones((3, 2))) == 6
+    loss = imagelosses.SumAbsoluteDifferences(reference=np.zeros((3, 4, 3)))
+    assert loss(np.ones((3, 4, 3))) == 36.0
 
 
 def test_all_losses() -> None:
-    for loss in imagelosses.registry:
-        assert loss(reference=np.zeros((3, 2)))(np.ones(3, 2)) > 0.0
+    for loss in imagelosses.registry.values():
+        assert loss(reference=np.zeros((64, 64, 3)))(np.ones((64, 64, 3))) > 0.0
 
 
 def test_consistency_losses_with_oteytaud() -> None:

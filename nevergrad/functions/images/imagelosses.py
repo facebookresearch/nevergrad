@@ -12,6 +12,7 @@ registry: Registry[tp.Any] = Registry()
 
 
 class ImageLoss:
+
     def __init__(self, reference: tp.Optional[np.ndarray] = None) -> None:
         pass
 
@@ -19,14 +20,21 @@ class ImageLoss:
         raise NotImplementedError(f"__call__ undefined in class {type(self)}")
 
 
-@registry.register
-class SumAbsoluteDifferences(ImageLoss):
+class ImageLossWithReference(ImageLoss):
+
     def __init__(self, reference: np.ndarray) -> None:
         if reference is None:
             raise ValueError("A reference is required")
         self.reference = reference
         super().__init__(reference)
+        assert len(self.reference.shape) == 3, self.reference.shape
         self.domain_shape = self.reference.shape
+
+@registry.register
+class SumAbsoluteDifferences(ImageLossWithReference):
+
+    def __init__(self, reference: tp.Optional[np.ndarray] = None) -> None:
+        super().__init__(reference)
 
     def __call__(self, x: np.ndarray) -> float:
         assert x.shape == self.domain_shape, f"Shape = {x.shape} vs {self.domain_shape}"
@@ -35,7 +43,8 @@ class SumAbsoluteDifferences(ImageLoss):
 
 
 @registry.register
-class LpipsAlex(SumAbsoluteDifferences):
+class LpipsAlex(ImageLossWithReference):
+
     def __init__(self, reference: np.ndarray) -> None:
         super().__init__(reference)
         self.loss_fn = lpips.LPIPS(net="alex")
@@ -58,7 +67,11 @@ class LpipsVgg(LpipsAlex):
 
 
 @registry.register
-class SumSquareDifferences(SumAbsoluteDifferences):
+class SumSquareDifferences(ImageLossWithReference):
+
+    def __init__(self, reference: tp.Optional[np.ndarray] = None) -> None:
+        super().__init__(reference)
+
     def __call__(self, x: np.ndarray) -> float:
         assert x.shape == self.domain_shape, f"Shape = {x.shape} vs {self.domain_shape}"
         value = float(np.sum((x - self.reference) ** 2))
@@ -66,7 +79,11 @@ class SumSquareDifferences(SumAbsoluteDifferences):
 
 
 @registry.register
-class HistogramDifference(SumAbsoluteDifferences):
+class HistogramDifference(ImageLossWithReference):
+
+    def __init__(self, reference: tp.Optional[np.ndarray] = None) -> None:
+        super().__init__(reference)
+
     def __call__(self, x: np.ndarray) -> float:
         assert x.shape == self.domain_shape, f"Shape = {x.shape} vs {self.domain_shape}"
         assert x.shape[2] == 3
@@ -104,6 +121,9 @@ class Blur(ImageLoss):
     This estimates bluriness
     """
 
+    def __init__(self, reference: tp.Optional[np.ndarray] = None) -> None:
+        super().__init__()  # No reference needed! Just blur estimation.
+
     def __call__(self, img: np.ndarray) -> float:
         return cv2.Laplacian(image, cv2.CV_64F).var()
 
@@ -111,10 +131,11 @@ class Blur(ImageLoss):
 @registry.register
 class NegBrisque(ImageLoss):
     """
-    This estimates bluriness
+    This estimates the negated Brisque score.
     """
+    def __init__(self, reference: tp.Optional[np.ndarray] = None) -> None:
+        super().__init__()  # No reference needed! Just Brisque estimation.
 
     def __call__(self, img: np.ndarray) -> float:
-        # TODO: not sure at all this image is in the right format: https://pypi.org/project/image-quality/
         return brisque.score(img)
 
