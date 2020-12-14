@@ -67,7 +67,7 @@ class BaseFunction(ExperimentFunction):
         self.noise_level = noise_level
         self.deterministic_sim = deterministic_sim
         self.layer_rescaling_coef = layer_rescaling_coef
-        if layer_rescaling_coef is None: self.layer_rescaling_coef = np.ones(len(self.policy_dim) - 1)
+        if layer_rescaling_coef is None: self.layer_rescaling_coef = np.ones(len(self.policy_dim) - 1) # type: ignore
         self.add_descriptors(num_rollouts=num_rollouts, intermediate_layer_dim=intermediate_layer_dim,
                              activation=activation, states_normalization=states_normalization,
                              noise_level=self.noise_level, deterministic_sim=deterministic_sim)
