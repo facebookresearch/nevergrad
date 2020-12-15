@@ -18,7 +18,8 @@ def test_PBO(fid: int) -> None:
     x = func.parametrization.sample()
     value = func(x.value)
     assert isinstance(value, float), "All output of the iohprofiler-functions should be float"
-    assert value <= 0.0, f"PBO should return only non-positive values: pb for fid={fid}."
+    assert value <= 0.0 or fid > 18, f"PBO should return only non-positive values for fid={fid}."
+    assert value >= 0.0 or fid < 19, f"PBO should return only non-negative values for fid={fid}."
     assert np.isfinite(value)
 
 
