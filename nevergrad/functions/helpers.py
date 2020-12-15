@@ -5,6 +5,9 @@ from . import base
 
 
 class SpecialEvaluationExperiment(base.ExperimentFunction):
+    """Experiment which uses one experiment for the optimization,
+    and another for the evaluation
+    """
 
     # pylint: disable=too-many-arguments
     def __init__(
@@ -63,6 +66,7 @@ class SpecialEvaluationExperiment(base.ExperimentFunction):
         """
         desc = dict(self._descriptors)
         desc.update(self._experiment.descriptors)
+        # TODO descriptors for the evaluation function?
         return desc
 
     @classmethod
