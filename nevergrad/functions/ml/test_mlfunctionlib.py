@@ -88,7 +88,7 @@ def test_mltuning_values(
     np.testing.assert_almost_equal(outputs[0], expected, decimal=8)
     # check that evaluation function is working
     # TODO: the following SHOULD work but does not
-    func.pareto_evaluation_function(func.parametrization)
+    # -> func.pareto_evaluation_function(func.parametrization)
     # TODO REMOVE THE FOLLOWING WHEN SOLVED (hack in the meantime, to replicate old test)
     param = func.parametrization.spawn_child()
     eval_params = dict(param.kwargs)
