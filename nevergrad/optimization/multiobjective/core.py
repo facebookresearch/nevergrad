@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import random
 import numpy as np
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
@@ -26,6 +25,8 @@ class HypervolumePareto:
     auto_bound: int
         if no upper bounds are provided, number of initial points used to estimate the upper bounds. Their
         loss will be 0 (except if they are uniformly worse than the previous points).
+    seed: optional int or RandomState
+        seed to use for selecting random subsamples of the pareto
 
     Notes
     -----
@@ -37,13 +38,19 @@ class HypervolumePareto:
       remotely, and aggregate locally. This is what happens in the "minimize" method of optimizers.
     """
 
-    def __init__(self, upper_bounds: tp.Optional[tp.ArrayLike] = None, auto_bound: int = AUTO_BOUND) -> None:
+    def __init__(
+        self,
+        upper_bounds: tp.Optional[tp.ArrayLike] = None,
+        auto_bound: int = AUTO_BOUND,
+        seed: tp.Optional[tp.Union[int, np.random.RandomState]] = None,
+    ) -> None:
         self._auto_bound = 0
         self._upper_bounds = (
             np.array([-float("inf")]) if upper_bounds is None else np.array(upper_bounds, copy=False)
         )
         if upper_bounds is None:
             self._auto_bound = auto_bound
+        self._rng = seed if isinstance(seed, np.random.RandomState) else np.random.RandomState(seed)
         self._pareto: tp.List[p.Parameter] = []
         self._best_volume = -float("Inf")
         self._hypervolume: tp.Optional[HypervolumeIndicator] = None
@@ -153,8 +160,8 @@ class HypervolumePareto:
         if size is None or size >= len(self._pareto):  # No limit: we return the full set.
             return self._pareto
         if subset == "random":
-            return random.sample(self._pareto, size)
-        tentatives = [random.sample(self._pareto, size) for _ in range(subset_tentatives)]
+            return self._rng.sample(self._pareto, size)
+        tentatives = [self._rng.sample(self._pareto, size) for _ in range(subset_tentatives)]
         if self._hypervolume is None:
             raise RuntimeError("Hypervolume not initialized, not supported")  # TODO fix
         hypervolume = self._hypervolume
