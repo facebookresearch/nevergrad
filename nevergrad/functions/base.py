@@ -89,7 +89,6 @@ class ExperimentFunction:
                 "CAUTION: Make sure you set different names for different parametrization configurations if you want it "
                 "to be used in order to differentiate between benchmarks cases."
             )
-        assert not hasattr(self, "evaluation_function")
 
     @property
     def dimension(self) -> int:
@@ -202,7 +201,7 @@ class ExperimentFunction:
         """
         return 1.0
 
-    def pareto_evaluation_function(self, *recommendations: p.Parameter) -> float:
+    def evaluation_function(self, *recommendations: p.Parameter) -> float:
         """Provides the evaluation crieterion for the experiment.
         In case of mono-objective, it defers to evaluation_function
         Otherwise, it uses the hypervolume.

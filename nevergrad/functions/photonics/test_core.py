@@ -72,7 +72,7 @@ def test_photonics_custom_mutation() -> None:
         param.mutate()
     # as tuple
     func = core.Photonics("morpho", 16, rolling=True, as_tuple=True)
-    func.pareto_evaluation_function(func.parametrization)
+    func.evaluation_function(func.parametrization)
 
 
 def test_photonics_error() -> None:
@@ -157,4 +157,4 @@ def test_photonics_values_random(name: str, expected: float, data: tp.Optional[t
     else:
         candidate = photo.parametrization.spawn_child(new_value=[data])
     np.testing.assert_almost_equal(photo(candidate.value), expected, decimal=4)
-    np.testing.assert_almost_equal(photo.pareto_evaluation_function(candidate), expected, decimal=4)
+    np.testing.assert_almost_equal(photo.evaluation_function(candidate), expected, decimal=4)

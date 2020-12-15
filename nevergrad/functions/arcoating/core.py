@@ -82,7 +82,7 @@ class ARCoating(base.ExperimentFunction):
             value = value + RE / len(self.lambdas)
         return value
 
-    def pareto_evaluation_function(self, *recommendations: ng.p.Parameter) -> float:
+    def evaluation_function(self, *recommendations: ng.p.Parameter) -> float:
         assert len(recommendations) == 1, "Should not be a pareto set for a monoobjective function"
         x = recommendations[0].value
         loss = self.function(x)

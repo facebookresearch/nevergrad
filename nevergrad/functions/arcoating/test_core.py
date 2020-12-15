@@ -47,4 +47,4 @@ def test_arcoating_transform_and_call() -> None:
     assert value < np.inf
     param = func.parametrization.spawn_child().set_standardized_data(np.arange(8))
     np.testing.assert_almost_equal(func(param.value), 16.5538936)
-    np.testing.assert_almost_equal(func.pareto_evaluation_function(param), 16.5538936)
+    np.testing.assert_almost_equal(func.evaluation_function(param), 16.5538936)

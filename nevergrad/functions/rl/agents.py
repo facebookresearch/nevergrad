@@ -159,7 +159,7 @@ class TorchAgentFunction(ExperimentFunction):
         assert isinstance(reward, (int, float))
         return self.reward_postprocessing(reward)
 
-    def pareto_evaluation_function(self, *recommendations: p.Parameter) -> float:
+    def evaluation_function(self, *recommendations: p.Parameter) -> float:
         """Implements the call of the function.
         Under the hood, __call__ delegates to oracle_call + add some noise if noise_level > 0.
         """

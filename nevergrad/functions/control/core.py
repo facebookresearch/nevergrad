@@ -71,7 +71,7 @@ class BaseFunction(ExperimentFunction):
     def policy_dim(self):
         raise NotImplementedError
 
-    def pareto_evaluation_function(self, *recommendations: p.Parameter) -> float:
+    def evaluation_function(self, *recommendations: p.Parameter) -> float:
         assert len(recommendations) == 1, "Should not be a pareto set for a monoobjective function"
         x = recommendations[0].value
         # pylint: disable=not-callable

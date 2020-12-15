@@ -167,7 +167,7 @@ class Photonics(base.ExperimentFunction):
     def to_ndarray(self, *args: tp.Any) -> np.ndarray:
         return np.concatenate(args).T if self._as_tuple else args[0]  # type: ignore
 
-    def pareto_evaluation_function(self, *recommendations: p.Parameter) -> float:
+    def evaluation_function(self, *recommendations: p.Parameter) -> float:
         assert len(recommendations) == 1, "Should not be a pareto set for a monoobjective function"
         assert len(recommendations[0].kwargs.items()) == 0
         x = self.to_ndarray(*recommendations[0].args)

@@ -226,7 +226,7 @@ class ArtificialFunction(ExperimentFunction):
             results.append(self._func(block))
         return float(self._aggregator(results))
 
-    def pareto_evaluation_function(self, *recommendations: p.Parameter) -> float:
+    def evaluation_function(self, *recommendations: p.Parameter) -> float:
         """Implements the call of the function.
         Under the hood, __call__ delegates to oracle_call + add some noise if noise_level > 0.
         """
@@ -305,7 +305,7 @@ class FarOptimumFunction(ExperimentFunction):
     def _monofunc(self, x: np.ndarray) -> float:
         return float(np.sum(self._multifunc(x)))
 
-    def pareto_evaluation_function(self, *recommendations: p.Parameter) -> float:
+    def evaluation_function(self, *recommendations: p.Parameter) -> float:
         assert len(recommendations) == 1, "Should not be a pareto set for a monoobjective function"
         assert len(recommendations[0].args) == 1 and not recommendations[0].kwargs
         return self._monofunc(recommendations[0].args[0])

@@ -140,9 +140,9 @@ def test_oracle() -> None:
     y2 = func(x)  # returns a different float since the function is noisy
     np.testing.assert_raises(AssertionError, np.testing.assert_array_almost_equal, y1, y2)
     reco = p.Array(init=x)
-    y3 = func.pareto_evaluation_function(reco)  # returns a float
+    y3 = func.evaluation_function(reco)  # returns a float
     # returns the same float (no noise for oracles + sphere function is deterministic)
-    y4 = func.pareto_evaluation_function(reco)
+    y4 = func.evaluation_function(reco)
     np.testing.assert_array_almost_equal(y3, y4)  # should be equal
 
 

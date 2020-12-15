@@ -432,7 +432,7 @@ class Game(ExperimentFunction):
         r = self.game_object.play_game(self.game, p1, p2)
         return (result + (0.0 if r == 2 else 0.5 if r == 0 else 1.0)) / 2
 
-    def pareto_evaluation_function(self, *recommendations: p.Parameter) -> float:
+    def evaluation_function(self, *recommendations: p.Parameter) -> float:
         assert len(recommendations) == 1, "Should not be a pareto set for a monoobjective function"
         x = recommendations[0].value
         # pylint: disable=not-callable

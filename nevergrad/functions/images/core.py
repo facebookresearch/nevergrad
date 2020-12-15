@@ -136,7 +136,7 @@ class ImageAdversarial(base.ExperimentFunction):
         image_adv = image_adv.view(1, 3, self.imsize, self.imsize)
         return self.classifier(image_adv)
 
-    def pareto_evaluation_function(self, *recommendations: ng.p.Parameter) -> float:
+    def evaluation_function(self, *recommendations: ng.p.Parameter) -> float:
         """Returns wether the attack worked or not"""
         assert len(recommendations) == 1, "Should not be a pareto set for a monoobjective function"
         x = recommendations[0].value

@@ -223,7 +223,7 @@ class MLTuning(ExperimentFunction):
         super().__init__(partial(self._ml_parametrization, **params), parametrization.set_name(""))
         self._evalparams = evalparams
 
-    def pareto_evaluation_function(self, *recommendations: p.Parameter) -> float:
+    def evaluation_function(self, *recommendations: p.Parameter) -> float:
         assert len(recommendations) == 1, "Should not be a pareto set for a monoobjective function"
         assert not recommendations[0].args
         kwargs = dict(recommendations[0].kwargs)
