@@ -89,6 +89,7 @@ class ExperimentFunction:
                 "CAUTION: Make sure you set different names for different parametrization configurations if you want it "
                 "to be used in order to differentiate between benchmarks cases."
             )
+        assert not hasattr(self, "evaluation_function")
 
     @property
     def dimension(self) -> int:
@@ -201,21 +202,7 @@ class ExperimentFunction:
         """
         return 1.0
 
-    def evaluation_function(self, *args: tp.Any, **kwargs: tp.Any) -> float:
-        """Provides a (usually "noisefree") function used at final test/evaluation time in benchmarks.
-
-        Parameters
-        ----------
-        *args, **kwargs
-            same as the actual function
-        """
-        output = self.function(*args, **kwargs)
-        assert isinstance(
-            output, numbers.Number
-        ), "evaluation_function can only be called on monoobjective experiments."
-        return output
-
-    def pareto_evaluation_function(self, *pareto: p.Parameter) -> float:
+    def pareto_evaluation_function(self, *recommendations: p.Parameter) -> float:
         """Provides the evaluation crieterion for the experiment.
         In case of mono-objective, it defers to evaluation_function
         Otherwise, it uses the hypervolume.
@@ -227,11 +214,15 @@ class ExperimentFunction:
             pareto front provided by the optimizer
         """
         if self.multiobjective_upper_bounds is None:  # monoobjective case
-            assert len(pareto) == 1
-            return self.evaluation_function(*pareto[0].args, **pareto[0].kwargs)
+            assert len(recommendations) == 1
+            output = self.function(*recommendations[0].args, **recommendations[0].kwargs)
+            assert isinstance(
+                output, numbers.Number
+            ), "evaluation_function can only be called on monoobjective experiments."
+            return output
         # multiobjective case
         hypervolume = mobj.HypervolumePareto(upper_bounds=self.multiobjective_upper_bounds)
-        for candidate in pareto:
+        for candidate in recommendations:
             hypervolume.add(candidate)
         return -hypervolume.best_volume
 

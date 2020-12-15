@@ -19,16 +19,20 @@
 #   Mihailovic, M., Centeno, E., Ciracì, C., Smith, D.R. and Moreau, A., 2016.
 #   Moosh: A Numerical Swiss Army Knife for the Optics of Multilayers in Octave/Matlab. Journal of Open Research Software, 4(1), p.e13.
 
-import numpy as np
 import typing as tp
+import numpy as np
 from nevergrad.parametrization import parameter as p
 from . import photonics
 from .. import base
 
 
 def _make_parametrization(
-    name: str, dimension: int, bounding_method: str = "bouncing", rolling: bool = False, 
-    as_tuple: bool=False) -> p.Parameter:
+    name: str,
+    dimension: int,
+    bounding_method: str = "bouncing",
+    rolling: bool = False,
+    as_tuple: bool = False,
+) -> p.Parameter:
     """Creates appropriate parametrization for a Photonics problem
 
     Parameters
@@ -59,13 +63,31 @@ def _make_parametrization(
         raise NotImplementedError(f"Transform for {name} is not implemented")
     divisor = max(2, len(bounds))
     assert not dimension % divisor, f"points length should be a multiple of {divisor}, got {dimension}"
-    assert shape[0] * shape[1] == dimension, f"Cannot work with dimension {dimension} for {name}: not divisible by {shape[0]}."
+    assert (
+        shape[0] * shape[1] == dimension
+    ), f"Cannot work with dimension {dimension} for {name}: not divisible by {shape[0]}."
     b_array = np.array(bounds)
     assert b_array.shape[0] == shape[0]  # pylint: disable=unsubscriptable-object
-    init = np.sum(b_array, axis=1, keepdims=True).dot(np.ones((1, shape[1],))) / 2
+    init = (
+        np.sum(b_array, axis=1, keepdims=True).dot(
+            np.ones(
+                (
+                    1,
+                    shape[1],
+                )
+            )
+        )
+        / 2
+    )
     if as_tuple:
-        instrum = p.Instrumentation(*[p.Array(init=init[:, i]).set_bounds(b_array[:, 0], b_array[:, 1],
-            method=bounding_method, full_range_sampling=True) for i in range(init.shape[1])]).set_name("as_tuple")
+        instrum = p.Instrumentation(
+            *[
+                p.Array(init=init[:, i]).set_bounds(
+                    b_array[:, 0], b_array[:, 1], method=bounding_method, full_range_sampling=True
+                )
+                for i in range(init.shape[1])
+            ]
+        ).set_name("as_tuple")
         assert instrum.dimension == dimension, instrum
         return instrum
     array = p.Array(init=init)
@@ -125,29 +147,46 @@ class Photonics(base.ExperimentFunction):
       Moosh: A Numerical Swiss Army Knife for the Optics of Multilayers in Octave/Matlab. Journal of Open Research Software, 4(1), p.e13.
     """
 
-    def __init__(self, name: str, dimension: int, bounding_method: str = "clipping", rolling: bool = False, as_tuple: bool = False) -> None:
+    # pylint: disable=too-many-arguments
+    def __init__(
+        self,
+        name: str,
+        dimension: int,
+        bounding_method: str = "clipping",
+        rolling: bool = False,
+        as_tuple: bool = False,
+    ) -> None:
         assert name in ["bragg", "morpho", "chirped"]
         self.name = name
         self._as_tuple = as_tuple
-        self._base_func = {"morpho": photonics.morpho, "bragg": photonics.bragg, "chirped": photonics.chirped}[name]
-        param = _make_parametrization(name=name, dimension=dimension,
-            bounding_method=bounding_method, rolling=rolling, as_tuple=as_tuple)
+        self._base_func = {
+            "morpho": photonics.morpho,
+            "bragg": photonics.bragg,
+            "chirped": photonics.chirped,
+        }[name]
+        param = _make_parametrization(
+            name=name,
+            dimension=dimension,
+            bounding_method=bounding_method,
+            rolling=rolling,
+            as_tuple=as_tuple,
+        )
         super().__init__(self._compute, param)
 
     def to_ndarray(self, *args: tp.Any) -> np.ndarray:
-        return np.transpose(np.concatenate([a for a in args])) if self._as_tuple else args[0]
+        return np.concatenate(a for a in args).T if self._as_tuple else args[0]  # type: ignore
 
-    # pylint: disable=arguments-differ
-    def evaluation_function(self,  *args: tp.Any, **kwargs: tp.Any) -> float:  # type: ignore
-        assert len(kwargs.items()) == 0
-        x = self.to_ndarray(*args)
+    def pareto_evaluation_function(self, *recommendations: p.Parameter) -> float:
+        assert len(recommendations) == 1, "Should not be a pareto set for a monoobjective function"
+        assert len(recommendations[0].kwargs.items()) == 0
+        x = self.to_ndarray(*recommendations[0].args)
         # pylint: disable=not-callable
         loss = self.function(x)
         assert isinstance(loss, float)
-        base.update_leaderboard(f'{self.name},{self.parametrization.dimension}', loss, x, verbose=True)
+        base.update_leaderboard(f"{self.name},{self.parametrization.dimension}", loss, x, verbose=True)
         return loss
 
-    def _compute(self,  *args: tp.Any, **kwargs: tp.Any) -> float:  # type: ignore
+    def _compute(self, *args: tp.Any, **kwargs: tp.Any) -> float:
         assert len(kwargs.items()) == 0
         x = self.to_ndarray(*args)
         x_cat = np.array(x, copy=False).ravel()

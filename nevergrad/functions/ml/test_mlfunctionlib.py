@@ -87,4 +87,4 @@ def test_mltuning_values(
     assert outputs[0] == outputs[1]  # function is deterministic once initialized
     np.testing.assert_almost_equal(outputs[0], expected, decimal=8)
     # check that evaluation function is working
-    func.evaluation_function(**func_params)
+    func.pareto_evaluation_function(func.parametrization)
