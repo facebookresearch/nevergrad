@@ -160,8 +160,8 @@ class HypervolumePareto:
         if size is None or size >= len(self._pareto):  # No limit: we return the full set.
             return self._pareto
         if subset == "random":
-            return self._rng.sample(self._pareto, size)
-        tentatives = [self._rng.sample(self._pareto, size) for _ in range(subset_tentatives)]
+            return self._rng.choice(self._pareto, size)  # type: ignore
+        tentatives = [self._rng.choice(self._pareto, size) for _ in range(subset_tentatives)]
         if self._hypervolume is None:
             raise RuntimeError("Hypervolume not initialized, not supported")  # TODO fix
         hypervolume = self._hypervolume
