@@ -1253,7 +1253,7 @@ def image_quality_proxy(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment
     for budget in [100 * 5 ** k for k in range(3)]:
         for num_workers in [1]:
             for algo in optims:
-                for func in [func_blur.copy(), func_brisque.copy()]:
+                for func in [func_blur, func_brisque]:
                     func.special_evaluation_function = func_iqa.evaluation_function
                     xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
                     yield xp
