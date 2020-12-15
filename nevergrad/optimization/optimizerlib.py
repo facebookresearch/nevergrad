@@ -1002,7 +1002,7 @@ class _Rescaled(base.Optimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if pareto_front_extractor is not None:
-            self.__pareto_front_extractor = pareto_front_extractor
+            self._pareto_front_extractor = pareto_front_extractor
         self._optimizer = base_optimizer(self.parametrization, budget=budget, num_workers=num_workers)
         self._subcandidates: tp.Dict[str, p.Parameter] = {}
         if scale is None:
