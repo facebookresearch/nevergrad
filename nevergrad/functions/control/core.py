@@ -78,8 +78,8 @@ class BaseFunction(ExperimentFunction):
         return loss
 
 
-# pylint: disable=line-too-long    
-# for black (since lists are way too long...)    
+# pylint: disable=line-too-long
+# for black (since lists are way too long...)
 # fmt: off
 
 
