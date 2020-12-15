@@ -12,6 +12,7 @@ from nevergrad.parametrization import parameter as p
 from nevergrad.optimization import multiobjective as mobj
 
 EF = tp.TypeVar("EF", bound="ExperimentFunction")
+ME = tp.TypeVar("ME", bound="MultiExperiment")
 
 
 class ExperimentFunctionCopyError(NotImplementedError):
@@ -302,69 +303,12 @@ class MultiExperiment(ExperimentFunction):
         self.multiobjective_upper_bounds = np.array(upper_bounds)
         self._descriptors.update(name=",".join(xp._descriptors.get("name", "#unknown#") for xp in xps))
         self._experiments = xps
-        self.evaluation_by_best_of_pareto_front = 0
-        self._evaluation_function_override: tp.Optional[tp.Callable[..., float]] = None
 
     def _multi_func(self, *args: tp.Any, **kwargs: tp.Any) -> np.ndarray:
         outputs = [f(*args, **kwargs) for f in self._experiments]
         return np.array(outputs)
 
-    def copy(self) -> "MultiExperiment":
+    def copy(self: ME) -> ME:
         me = super().copy()
         self._experiments = [xp.copy() for xp in self._experiments]
-        me._evaluation_function_override = self._evaluation_function_override
         return me
-
-    def evaluation_function(self, *recommendations: p.Parameter) -> float:
-        if self._evaluation_function_override is None:
-            return super().evaluation_function(*recommendations)
-        # pylint: disable=not-callable
-        return self._evaluation_function_override(*recommendations)
-
-    # pylint: disable=too-many-arguments
-    @classmethod
-    def create_moo_crossvalidation_experiments(
-        cls,
-        xps: tp.Sequence[ExperimentFunction],
-        upper_bounds: tp.ArrayLike,
-        pareto_size: int,
-        pareto_method: str,
-        no_crossval: tp.Sequence[tp.Any] = (),
-    ) -> tp.Generator[ExperimentFunction, None, None]:
-        """Returns a list of MultiExperiment, corresponding to MOO cross-validation.
-        The idea is that, given n objective functions,
-        we evaluate the ability of the algorithm to optimize n-1 objective functions,
-        and to provide an approximate Pareto front p
-        such that at least one candidate in p is good for the n^th objective function.
-
-        Parameters
-        ----------
-        xps: ExperimentFunction
-            iterable of experiment functions.
-        upper_bounds: Array-like
-            reference point.
-        pareto_size: int
-            size of approximate Pareto front used for comparing methods.
-        pareto_method: str
-            method used to select a subset of the pareto
-        no_crossval: sequence of ints
-            list of indices i such that xps[i] should not be used as a pivot for
-            cross-validation (i.e. as a test).
-
-        Typically no_crossval includes the criteria that are not likely to mimic something to be
-        evaluated by a human.
-
-        The experiments consist in optimizing all but one of the input ExperimentFunction's,
-        and then considering that the score is the performance of the best solution in the
-        approximate Pareto front for the excluded ExperimentFunction.
-        """
-        for i, xp in enumerate(xps):
-            if i not in no_crossval:
-                training = list(range(i)) + list(range(i + 1, len(xps)))
-                moo_xp = MultiExperiment(
-                    [xps[i] for i in training],
-                    [upper_bounds[i] for i in training],
-                )
-                moo_xp.evaluation_by_best_of_pareto_front = pareto_size
-                assert len(training) + 1 == len(xps)
-                yield moo_xp
