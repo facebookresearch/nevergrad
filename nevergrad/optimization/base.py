@@ -225,7 +225,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         if subset == "default":
             subset = self.pareto_front_extractor
         if self._hypervolume_pareto is None:
-            return [self.current_bests["pessimistic"].parameter]
+            return [self.provide_recommendation()]
         return self._hypervolume_pareto.pareto_front(
             size=size, subset=subset, subset_tentatives=subset_tentatives
         )
@@ -547,9 +547,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
 
         Returns
         -------
-        p.Parameter
-            The candidate with minimal value. :code:`p.Parameters` have field :code:`args` and :code:`kwargs` which can be directly used
-            on the function (:code:`objective_function(*candidate.args, **candidate.kwargs)`).
+        ng.p.Parameter
+            The candidate with minimal value. :code:`ng.p.Parameters` have field :code:`args` and :code:`kwargs` which can
+            be directly used on the function (:code:`objective_function(*candidate.args, **candidate.kwargs)`).
 
         Note
         ----
