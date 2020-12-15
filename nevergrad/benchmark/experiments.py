@@ -1218,7 +1218,7 @@ def image_multi_similarity(seed: tp.Optional[int] = None, cross_valid: bool=Fals
                 imagesxp.imagelosses.SumSquareDifferences,
                 imagesxp.imagelosses.HistogramDifference]]
     base_values: tp.List[tp.Any] = [func(func.parametrization.sample().value) for func in funcs]
-    mofuncs: tp.List[tp.Any] = fbase.multi_experiments(funcs, upper_bounds=base_values, pareto_size=25) if cross_valid else [
+    mofuncs: tp.List[tp.Any] = fbase.MultiExperiment.create_moo_crossvalidation_experiments(funcs, upper_bounds=base_values, pareto_size=25) if cross_valid else [
             fbase.MultiExperiment(funcs, upper_bounds=base_values)]
     for budget in [100 * 5 ** k for k in range(3)]:
         for num_workers in [1]:
@@ -1277,7 +1277,7 @@ def image_quality(seed: tp.Optional[int] = None, cross_val: bool=False) -> tp.It
             ]
     upper_bounds: tp.List[tp.Any] = [func(func.parametrization.sample().value) for func in funcs]
     # TODO: add the proxy info in the parametrization.
-    mofuncs = fbase.multi_experiments(funcs, upper_bounds=upper_bounds, no_crossval=[1, 2], pareto_size=16) if cross_val else [fbase.MultiExperiment(funcs, upper_bounds=upper_bounds)]
+    mofuncs = fbase.MultiExperiment.create_moo_crossvalidation_experiments(funcs, upper_bounds=upper_bounds, no_crossval=[1, 2], pareto_size=16) if cross_val else [fbase.MultiExperiment(funcs, upper_bounds=upper_bounds)]
     for budget in [100 * 5 ** k for k in range(3)]:
         for num_workers in [1]:
             for algo in optims:
@@ -1309,7 +1309,7 @@ def image_similarity_and_quality(seed: tp.Optional[int] = None, cross_val: bool=
     
         # Creating a reference value.
         base_value = func(func.parametrization.sample().value)
-        mofuncs = fbase.multi_experiments([func, func_blur, func_iqa], upper_bounds=[base_value, base_blur_value, 100.], no_crossval=[1, 2], pareto_size=16) if cross_val else [
+        mofuncs = fbase.MultiExperiment.create_moo_crossvalidation_experiments([func, func_blur, func_iqa], upper_bounds=[base_value, base_blur_value, 100.], no_crossval=[1, 2], pareto_size=16) if cross_val else [
                 fbase.MultiExperiment([func, func_blur, func_iqa], upper_bounds=[base_value, base_blur_value, 100.])]
         for budget in [100 * 5 ** k for k in range(3)]:
             for num_workers in [1]:
