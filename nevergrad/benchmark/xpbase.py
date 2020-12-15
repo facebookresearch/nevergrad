@@ -129,7 +129,7 @@ class Experiment:
     ----------
     function: ExperimentFunction
         the function to run the experiment on. It must inherit from ExperimentFunction to implement
-        necessary functionalities (parametrization, descriptors, pareto_evaluation_function, pseudotime etc)
+        necessary functionalities (parametrization, descriptors, evaluation_function, pseudotime etc)
 
     Note
     ----
@@ -211,8 +211,8 @@ class Experiment:
         opt = self._optimizer
         assert opt is not None
         # ExperimentFunction can directly override this evaluation function if need be
-        # pareto_evaluation_function defers to evaluation_function if not multiobjective
-        self.result["loss"] = pfunc.pareto_evaluation_function(*opt.pareto_front())
+        # (pareto_front returns only the recommendation in monoobjective)
+        self.result["loss"] = pfunc.evaluation_function(*opt.pareto_front())
         self.result["elapsed_budget"] = num_calls
         if num_calls > self.optimsettings.budget:
             raise RuntimeError(
