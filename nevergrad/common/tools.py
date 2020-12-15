@@ -21,7 +21,7 @@ def pytorch_import_fix() -> None:
     """
     try:
         for packages in site.getsitepackages():
-            for lib in glob.glob(f'{packages}/torch/lib/libgomp*.so*'):
+            for lib in glob.glob(f"{packages}/torch/lib/libgomp*.so*"):
                 ctypes.cdll.LoadLibrary(lib)
     except Exception:  # pylint: disable=broad-except
         pass
@@ -51,8 +51,7 @@ def grouper(iterable: tp.Iterable[tp.Any], n: int, fillvalue: tp.Any = None) -> 
 
 
 def roundrobin(*iterables: tp.Iterable[tp.Any]) -> tp.Iterator[tp.Any]:
-    """roundrobin('ABC', 'D', 'EF') --> A D E B F C
-    """
+    """roundrobin('ABC', 'D', 'EF') --> A D E B F C"""
     # Recipe credited to George Sakkis
     num_active = len(iterables)
     nexts = itertools.cycle(iter(it).__next__ for it in iterables)
@@ -121,7 +120,7 @@ class OrderedSet(tp.MutableSet[X]):
     """
 
     def __init__(self, keys: tp.Optional[tp.Iterable[X]] = None) -> None:
-        self._data: 'collections.OrderedDict[X, int]' = collections.OrderedDict()
+        self._data: "collections.OrderedDict[X, int]" = collections.OrderedDict()
         self._global_index = 0  # keep track of insertion global index if need be
         if keys is not None:
             for key in keys:
@@ -153,7 +152,7 @@ def different_from_defaults(
     *,
     instance: tp.Any,
     instance_dict: tp.Optional[tp.Dict[str, tp.Any]] = None,
-    check_mismatches: bool = False
+    check_mismatches: bool = False,
 ) -> tp.Dict[str, tp.Any]:
     """Checks which attributes are different from defaults arguments
 
@@ -171,7 +170,9 @@ def different_from_defaults(
     This is convenient for short repr of data structures
     """
     defaults = {
-        x: y.default for x, y in inspect.signature(instance.__class__.__init__).parameters.items() if x not in ["self", "__class__"]
+        x: y.default
+        for x, y in inspect.signature(instance.__class__.__init__).parameters.items()
+        if x not in ["self", "__class__"]
     }
     if instance_dict is None:
         instance_dict = instance.__dict__
@@ -182,4 +183,6 @@ def different_from_defaults(
     else:
         defaults = {x: y for x, y in defaults.items() if x in instance.__dict__}
     # only print non defaults
-    return {x: instance_dict[x] for x, y in defaults.items() if y != instance_dict[x] and not x.startswith("_")}
+    return {
+        x: instance_dict[x] for x, y in defaults.items() if y != instance_dict[x] and not x.startswith("_")
+    }

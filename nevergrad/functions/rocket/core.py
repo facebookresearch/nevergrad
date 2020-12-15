@@ -11,12 +11,10 @@ from nevergrad.parametrization import parameter as p
 from ..base import ExperimentFunction
 from .rocket import rocket as rocket
 
-class Rocket(ExperimentFunction):
 
+class Rocket(ExperimentFunction):
     def __init__(self) -> None:
         super().__init__(self._simulate_rocket, p.Array(shape=(24,)))
-        self.register_initialization()
 
     def _simulate_rocket(self, x: np.ndarray) -> float:
         return rocket(x)
-
