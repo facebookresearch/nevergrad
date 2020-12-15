@@ -130,7 +130,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # multiobjective
         self._MULTIOBJECTIVE_AUTO_BOUND = mobj.AUTO_BOUND
         self._hypervolume_pareto: tp.Optional[mobj.HypervolumePareto] = None
-        self._pareto_front_extractor = "random"
+        self.pareto_front_extractor = "random"
         # instance state
         self._asked: tp.Set[str] = set()
         self._num_objectives = 0
@@ -149,14 +149,6 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         It can be seeded or updated directly on the parametrization instance (`optimizer.parametrization.random_state`)
         """
         return self.parametrization.random_state
-
-    @property
-    def pareto_front_extractor(self) -> str:
-        return self._pareto_front_extractor
-
-    @pareto_front_extractor.setter
-    def pareto_front_extractor(self, pareto_front_extractor: str):
-        self._pareto_front_extractor = pareto_front_extractor
 
     @property
     def dimension(self) -> int:
