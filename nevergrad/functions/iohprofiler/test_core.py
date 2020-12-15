@@ -18,11 +18,15 @@ def test_PBO(fid: int) -> None:
     values = []
     for _ in range(30):
         x = func.parametrization.sample()
+        for i in range(len(x.value)):
+            assert x.value[i] == 0 or x.value[i] == 1, f"Non binary sample {x}."
         value = func(x.value)
         assert isinstance(value, float), "All output of the iohprofiler-functions should be float"
         assert np.isfinite(value)
         values.append(value)
-    assert fid in [20, 21, 22, 23] or min(values) >= 0. or max(values) <= 0., f"IOH profile functions should have constant sign: pb with fid={fid}."
+    assert (
+        fid in [20, 21, 22, 23] or min(values) >= 0.0 or max(values) <= 0.0
+    ), f"IOH profile functions should have constant sign: pb with fid={fid}."
 
 
 @pytest.mark.parametrize("instrumentation", ["Softmax", "Ordered"])  # type: ignore
