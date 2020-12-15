@@ -78,11 +78,6 @@ class BaseFunction(ExperimentFunction):
         return loss
 
 
-# pylint: disable=line-too-long
-# for black (since lists are way too long...)
-# fmt: off
-
-
 class Ant(BaseFunction):
     env_name = 'Ant-v2'
     policy_dim = (8, 111)
