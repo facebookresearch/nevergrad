@@ -15,13 +15,14 @@ def test_PBO(fid: int) -> None:
         func = core.PBOFunction(fid, 0, 16)
     except ModuleNotFoundError:
         raise SkipTest("IOH is not installed")
+    values = []
     for _ in range(30):
         x = func.parametrization.sample()
         value = func(x.value)
         assert isinstance(value, float), "All output of the iohprofiler-functions should be float"
-        assert value <= 0.0 or fid > 18, f"PBO should return only non-positive values for fid={fid}."
-        assert value >= 0.0 or fid < 19, f"PBO should return only non-negative values for fid={fid}."
         assert np.isfinite(value)
+        values.append(value)
+    assert fid in [20, 21, 22, 23] or min(values) >= 0. or max(values) <= 0., f"IOH profile functions should have constant sign: pb with fid={fid}."
 
 
 @pytest.mark.parametrize("instrumentation", ["Softmax", "Ordered"])  # type: ignore
