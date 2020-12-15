@@ -216,7 +216,10 @@ class ExperimentFunction:
         return output
 
     def pareto_evaluation_function(self, *pareto: p.Parameter) -> float:
-        """Provides the evaluation of a multiobjective function
+        """Provides the evaluation crieterion for the experiment.
+        In case of mono-objective, it defers to evaluation_function
+        Otherwise, it uses the hypervolume.
+        This function can be overriden to provide custom behaviors.
 
         Parameters
         ----------
