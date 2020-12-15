@@ -68,17 +68,8 @@ def _make_parametrization(
     ), f"Cannot work with dimension {dimension} for {name}: not divisible by {shape[0]}."
     b_array = np.array(bounds)
     assert b_array.shape[0] == shape[0]  # pylint: disable=unsubscriptable-object
-    init = (
-        np.sum(b_array, axis=1, keepdims=True).dot(
-            np.ones(
-                (
-                    1,
-                    shape[1],
-                )
-            )
-        )
-        / 2
-    )
+    ones = np.ones((1, shape[1]))
+    init = np.sum(b_array, axis=1, keepdims=True).dot(ones) / 2
     if as_tuple:
         instrum = p.Instrumentation(
             *[
@@ -174,7 +165,7 @@ class Photonics(base.ExperimentFunction):
         super().__init__(self._compute, param)
 
     def to_ndarray(self, *args: tp.Any) -> np.ndarray:
-        return np.concatenate(a for a in args).T if self._as_tuple else args[0]  # type: ignore
+        return np.concatenate(args).T if self._as_tuple else args[0]  # type: ignore
 
     def pareto_evaluation_function(self, *recommendations: p.Parameter) -> float:
         assert len(recommendations) == 1, "Should not be a pareto set for a monoobjective function"

@@ -70,6 +70,9 @@ def test_photonics_custom_mutation() -> None:
     param = func.parametrization.spawn_child()
     for _ in range(10):
         param.mutate()
+    # as tuple
+    func = core.Photonics("morpho", 16, rolling=True, as_tuple=True)
+    func.pareto_evaluation_function(func.parametrization)
 
 
 def test_photonics_error() -> None:
