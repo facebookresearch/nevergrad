@@ -7,6 +7,7 @@ from unittest import SkipTest
 import pytest
 import numpy as np
 from . import core
+from nevergrad.optimization.optimizerlib import OnePlusOne
 
 
 @pytest.mark.parametrize("fid", range(1, 24))  # type: ignore
@@ -24,9 +25,13 @@ def test_PBO(fid: int) -> None:
         assert isinstance(value, float), "All output of the iohprofiler-functions should be float"
         assert np.isfinite(value)
         values.append(value)
+    optim = OnePlusOne(func.parametrization, budget=100)
+    recom = optim.minimize(func)
+    values.append(func(recom.value))
     assert (
-        fid in [20, 21, 22, 23] or min(values) >= 0.0 or max(values) <= 0.0
+        fid in [19, 20, 21, 22, 23] or min(values) >= 0.0 or max(values) <= 0.0
     ), f"IOH profile functions should have constant sign: pb with fid={fid}."
+
 
 
 @pytest.mark.parametrize("instrumentation", ["Softmax", "Ordered"])  # type: ignore
