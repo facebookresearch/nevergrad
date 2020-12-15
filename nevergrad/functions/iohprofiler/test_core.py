@@ -33,7 +33,6 @@ def test_PBO(fid: int) -> None:
     ), f"IOH profile functions should have constant sign: pb with fid={fid}."
 
 
-
 @pytest.mark.parametrize("instrumentation", ["Softmax", "Ordered"])  # type: ignore
 def test_PBO_parameterization(instrumentation: str) -> None:
     try:
