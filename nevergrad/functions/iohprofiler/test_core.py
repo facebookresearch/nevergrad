@@ -27,7 +27,7 @@ def test_PBO(fid: int) -> None:
         values.append(value)
     optim = OnePlusOne(func.parametrization, budget=100)
     recom = optim.minimize(func)
-    values.append(func(recom.value))
+    values.append(func(recom.value))  # type: ignore
     assert (
         fid in [19, 20, 21, 22, 23] or min(values) >= 0.0 or max(values) <= 0.0
     ), f"IOH profile functions should have constant sign: pb with fid={fid}."
