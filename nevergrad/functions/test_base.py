@@ -11,7 +11,7 @@ from nevergrad.common import testing
 from nevergrad.functions import ArtificialFunction
 import nevergrad.common.typing as tp
 from . import base
-from . import multixp
+from . import helpers
 
 
 def _arg_return(*args: tp.Any, **kwargs: tp.Any) -> float:
@@ -176,8 +176,8 @@ def test_pareto_experiment() -> None:
         ArtificialFunction("sphere", block_dimension=7),
         ArtificialFunction("cigar", block_dimension=7),
     ]
-    xps = list(
-        multixp.ParetoExperiment.create_crossvalidation_experiments(objective_functions, pareto_size=16)
+    xps = helpers.SpecialEvaluationExperiment.create_crossvalidation_experiments(
+        objective_functions, pareto_size=16
     )
     assert len(xps) == 3
     param = xps[0].parametrization
