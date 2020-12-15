@@ -100,12 +100,16 @@ class BaseFunction(ExperimentFunction):
     def state_std(self):
         raise NotImplementedError
 
-    # pylint: disable=arguments-differ
-    def evaluation_function(self, x) -> float:  # type: ignore
+    def policy_dim(self):
+        raise NotImplementedError
+
+    def evaluation_function(self, *recommendations: p.Parameter) -> float:
+        assert len(recommendations) == 1, "Should not be a pareto set for a monoobjective function"
+        x = recommendations[0].value
         # pylint: disable=not-callable
         loss = self.function(x)
         assert isinstance(loss, float)
-        base.update_leaderboard(f'{self.env_name},{self.parametrization.dimension}', loss, x, verbose=True)
+        base.update_leaderboard(f"{self.env_name},{self.parametrization.dimension}", loss, x, verbose=True)
         return loss
 
 
