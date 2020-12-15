@@ -44,9 +44,8 @@ class SumAbsoluteDifferences(ImageLossWithReference):
         return value
 
 
-@registry.register
 class Lpips(ImageLossWithReference):
-    def __init__(self, reference: np.ndarray, net: str) -> None:
+    def __init__(self, reference: tp.Optional[np.ndarray] = None, net: str = "") -> None:
         super().__init__(reference)
         self.loss_fn = lpips.LPIPS(net=net)
 
@@ -66,13 +65,13 @@ class Lpips(ImageLossWithReference):
 @registry.register
 class LpipsAlex(Lpips):
     def __init__(self, reference: np.ndarray) -> None:
-        super().__init__(reference, "alex")
+        super().__init__(reference, net="alex")
 
 
 @registry.register
 class LpipsVgg(Lpips):
     def __init__(self, reference: np.ndarray) -> None:
-        super().__init__(reference, "vgg")
+        super().__init__(reference, net="vgg")
 
 
 @registry.register
@@ -128,9 +127,6 @@ class Blur(ImageLoss):
     This estimates bluriness
     """
 
-    def __init__(self, reference: tp.Optional[np.ndarray] = None) -> None:
-        super().__init__()  # No reference needed! Just blur estimation.
-
     def __call__(self, img: np.ndarray) -> float:
         assert img.shape[2] == 3
         assert len(img.shape) == 3
@@ -142,9 +138,6 @@ class Brisque(ImageLoss):
     """
     This estimates the Brisque score (lower is better).
     """
-
-    def __init__(self, reference: tp.Optional[np.ndarray] = None) -> None:
-        super().__init__()  # No reference needed! Just Brisque estimation.
 
     def __call__(self, img: np.ndarray) -> float:
         return brisque.score(img)
