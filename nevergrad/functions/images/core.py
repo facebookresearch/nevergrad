@@ -37,7 +37,7 @@ class Image(base.ExperimentFunction):
         """
 
         # Storing high level information.
-        self.domain_shape = (256, 256, 3)
+        self.domain_shape = (226, 226, 3)
         self.problem_name = problem_name
         self.index = index
 
