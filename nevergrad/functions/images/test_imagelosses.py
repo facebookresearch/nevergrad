@@ -32,6 +32,8 @@ def test_consistency_losses_with_oteytaud(loss_name: str) -> None:
     loss = loss_class(reference=data)
     random_data = np.random.uniform(low=0.0, high=255.0, size=data.shape)
     loss_data = loss(data)
+    assert loss_data < 1000.0
+    assert loss_data > -1000.0
     assert loss_data == loss(data)
     assert isinstance(loss_data, numbers.Number)
     loss_random_data = loss(random_data)
