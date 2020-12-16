@@ -1314,16 +1314,12 @@ def image_similarity_and_quality(seed: tp.Optional[int] = None, cross_val: bool=
     # 3 losses functions including 2 iqas.
     func_iqa = imagesxp.Image(loss=imagesxp.imagelosses.Koncept512)
     func_blur = imagesxp.Image(loss=imagesxp.imagelosses.Blur)
-    for func in [imagesxp.Image(loss=loss) for loss in imagelosses]:
+    for func in [imagesxp.Image(loss=loss) for loss in imagesxp.imageslosses if isinstance(loss, imagesxp.imagelosses.ImageLossWithReference)]:
 
         # Creating a reference value.
         base_value = func(func.parametrization.sample().value)
-<<<<<<< HEAD
         mofuncs = helpers.SpecialEvaluationFunction.create_crossvalidation_experiments(
                 experiments=[func, func_blur, func_iqa], pareto_size=16) if cross_val else [
-=======
-        mofuncs = helpers.SpecialEvaluationExperiment.create_crossvalidation_experiments([func, func_blur, func_iqa], pareto_size=16) if cross_val else [
->>>>>>> 51063e7017da5d581178f1d994c040d03c46c170
                 fbase.MultiExperiment([func, func_blur, func_iqa], upper_bounds=[base_value, base_blur_value, 100.])]
         for budget in [100 * 5 ** k for k in range(3)]:
             for num_workers in [1]:
