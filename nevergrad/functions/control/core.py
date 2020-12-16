@@ -55,7 +55,7 @@ class BaseFunction(ExperimentFunction):
                  deterministic_sim: bool = True, noise_level: float = 0., states_normalization: bool = True,
                  layer_rescaling_coef: tp.Optional[tuple] = None, random_state: tp.Optional[int] = None) -> None:
         if intermediate_layer_dim is not None:
-            self.policy_dim: tp.Tuple[int, ...] = (self.policy_dim[0],) + intermediate_layer_dim + (self.policy_dim[1],)
+            self.policy_dim = (self.policy_dim[0],) + intermediate_layer_dim + (self.policy_dim[1],) # type: ignore
         list_parametrizations = [p.Array(shape=(a, b)).set_name(r"layer_{a}_{b}") for a, b in
                                  zip(self.policy_dim[:-1], self.policy_dim[1:])]
         parametrization = p.Instrumentation(*list_parametrizations).set_name(self.env_name)
@@ -100,6 +100,7 @@ class BaseFunction(ExperimentFunction):
     def state_std(self):
         raise NotImplementedError
 
+    @property
     def policy_dim(self):
         raise NotImplementedError
 
