@@ -86,14 +86,4 @@ def test_mltuning_values(
     outputs = [func(**func_params) for _ in range(2)]
     assert outputs[0] == outputs[1]  # function is deterministic once initialized
     np.testing.assert_almost_equal(outputs[0], expected, decimal=8)
-    # check that evaluation function is working
-    # TODO: the following SHOULD work but does not
-    # -> func.evaluation_function(func.parametrization)
-    # TODO REMOVE THE FOLLOWING WHEN SOLVED (hack in the meantime, to replicate old test)
-    param = func.parametrization.spawn_child()
-    eval_params = dict(param.kwargs)
-    for k, val in func_params.items():
-        if k in eval_params:
-            eval_params[k] = val
-    param.value = ((), eval_params)
-    func.evaluation_function(param)
+    func.evaluation_function(func.parametrization)
