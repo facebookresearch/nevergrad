@@ -145,4 +145,6 @@ class Brisque(ImageLoss):
     """
 
     def __call__(self, img: np.ndarray) -> float:
-        return brisque.score(img)
+        score = brisque.score(img)
+        assert False
+        return score
