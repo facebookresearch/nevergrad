@@ -177,24 +177,7 @@ def all_bo() -> tp.Sequence[Optim]:
 
 @registry.register
 def structured_moo() -> tp.Sequence[Optim]:
-    my_classes = [
-        optimizerlib_registry[name]
-        for name in ["CMA", "NGOpt8", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
-    ]
-    my_classes += [
-        ng.families.DifferentialEvolution(multiobjective_adaptation=False).set_name("DE-noadapt"),
-        ng.families.DifferentialEvolution(crossover="twopoints", multiobjective_adaptation=False).set_name(
-            "TwoPointsDE-noadapt"
-        ),
-    ]
-    moo_image_optimizers: tp.List[Optim] = []
-    for pareto_extractor in ["random", "loss-covering", "EPS", "domain-covering", "hypervolume"]:
-        for cls in my_classes:
-            moo_cls = Rescaled(base_optimizer=cls, scale=1.0, pareto_front_extractor=pareto_extractor)
-            moo_cls.set_name(f"{cls}_{pareto_extractor}")
-            moo_image_optimizers.append(moo_cls)
-
-    return moo_image_optimizers
+    return ["CMA", "NGOpt8", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
 
 
 @registry.register
