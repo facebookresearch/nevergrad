@@ -198,7 +198,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         return self._num_tell_not_asked
 
     def pareto_front(
-        self, size: tp.Optional[int] = None, subset: str = "default", subset_tentatives: int = 12
+        self, size: tp.Optional[int] = None, subset: str = "random", subset_tentatives: int = 12
     ) -> tp.List[p.Parameter]:
         """Pareto front, as a list of Parameter. The losses can be accessed through
         parameter.losses
@@ -208,7 +208,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         size:  int (optional)
             if provided, selects a subset of the full pareto front with the given maximum size
         subset: str
-            method for selecting the subset ("random, "loss-covering", "domain-covering", "hypervolume", "default")
+            method for selecting the subset ("random, "loss-covering", "domain-covering", "hypervolume")
         subset_tentatives: int
             number of random tentatives for finding a better subset
 
