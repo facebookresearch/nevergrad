@@ -1219,7 +1219,7 @@ def image_multi_similarity(seed: tp.Optional[int] = None, cross_valid: bool=Fals
                 imagesxp.imagelosses.SumSquareDifferences,
                 imagesxp.imagelosses.HistogramDifference]]
     base_values: tp.List[tp.Any] = [func(func.parametrization.sample().value) for func in funcs]
-    mofuncs: tp.List[tp.Any] = helpers.create_crossvalidation_experiments(funcs, pareto_size=25) if cross_valid else [
+    mofuncs: tp.List[tp.Any] = helpers.SpecialEvaluationExperiment.create_crossvalidation_experiments(funcs, pareto_size=25) if cross_valid else [
             fbase.MultiExperiment(funcs, upper_bounds=base_values)]
     for budget in [100 * 5 ** k for k in range(3)]:
         for num_workers in [1]:
@@ -1283,7 +1283,7 @@ def image_quality(seed: tp.Optional[int] = None, cross_val: bool=False) -> tp.It
         upper_bounds = [func(func.parametrization.value) for func in funcs]
         mofuncs = [fbase.MultiExperiment(funcs, upper_bounds=upper_bounds)]  # type: ignore
     else:
-        mofuncs = helpers.SpecialEvaluationFunction.create_crossvalidation_experiments(
+        mofuncs = helpers.SpecialEvaluationExperiment.create_crossvalidation_experiments(
             experiments=[funcs[0, 2]],
             training_only_experiments=[funcs[1]],  # Blur is not good enough as an IQA for being in the list.
             pareto_size=16,
@@ -1318,7 +1318,7 @@ def image_similarity_and_quality(seed: tp.Optional[int] = None, cross_val: bool=
 
         # Creating a reference value.
         base_value = func(func.parametrization.sample().value)
-        mofuncs = helpers.SpecialEvaluationFunction.create_crossvalidation_experiments(
+        mofuncs = helpers.SpecialEvaluationExperiment.create_crossvalidation_experiments(
                 experiments=[func, func_blur, func_iqa], pareto_size=16) if cross_val else [
                 fbase.MultiExperiment([func, func_blur, func_iqa], upper_bounds=[base_value, base_blur_value, 100.])]
         for budget in [100 * 5 ** k for k in range(3)]:
