@@ -179,7 +179,7 @@ def test_pareto_experiment() -> None:
     xps = helpers.SpecialEvaluationExperiment.create_crossvalidation_experiments(
         objective_functions, pareto_size=16
     )
-    assert len(xps) == 3
+    assert len(xps) == 15  # 3 xps, multiplied by 5 Pareto extractors
     param = xps[0].parametrization
     out = xps[0](*param.args, **param.kwargs)
     assert isinstance(out, np.ndarray) and out.size == 2
