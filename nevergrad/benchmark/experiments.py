@@ -1314,7 +1314,7 @@ def image_similarity_and_quality(seed: tp.Optional[int] = None, cross_val: bool=
     # 3 losses functions including 2 iqas.
     func_iqa = imagesxp.Image(loss=imagesxp.imagelosses.Koncept512)
     func_blur = imagesxp.Image(loss=imagesxp.imagelosses.Blur)
-    for func in [imagesxp.Image(loss=loss) for loss in imagesxp.imagelosses if isinstance(loss, imagesxp.imagelosses.ImageLossWithReference)]:
+    for func in [imagesxp.Image(loss=loss) for loss in imagesxp.imagelosses.registry if issubclass(loss, imagesxp.imagelosses.ImageLossWithReference)]:
 
         # Creating a reference value.
         base_value = func(func.parametrization.sample().value)

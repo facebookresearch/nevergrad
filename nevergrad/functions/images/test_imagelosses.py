@@ -16,6 +16,10 @@ def test_l1_loss() -> None:
     assert loss(np.ones((300, 400, 3))) == 44280000.0
 
 
+def test_image_losses_with_reference() -> None:
+    assert len([l for l in imagelosses.registry.values() if issubclass(l, imagelosses.ImageLossWithReference)]) > 2
+
+
 @pytest.mark.parametrize("loss_name", imagelosses.registry)  # type: ignore
 def test_consistency_losses_with_oteytaud(loss_name: str) -> None:
     path = Path(__file__).with_name("headrgb_olivier.png")
