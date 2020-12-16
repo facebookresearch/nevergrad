@@ -54,13 +54,14 @@ class Lpips(ImageLossWithReference):
     def __call__(self, img: np.ndarray) -> float:
         assert img.shape[2] == 3
         assert len(img.shape) == 3
-        img0 = np.expand_dims(img, 0)  # type: ignore
-        img1 = np.expand_dims(self.reference, 0)  # type: ignore
-        assert img0.shape[3] == 3
-        assert img0.shape[0] == 1
-        assert len(img0.shape) == 4
-        img0 = torch.clamp(torch.Tensor(img0).permute(0, 3, 1, 2) / 255.0, 0, 1) * 2.0 - 1.0
-        img1 = torch.clamp(torch.Tensor(img1).permute(0, 3, 1, 2) / 255.0, 0, 1) * 2.0 - 1.0
+        assert img.max() <= 255.0
+        assert img.min() >= 0.0
+        assert img.max() > 3.0
+        img0 = torch.clamp(torch.Tensor(img).unsqueeze(0).permute(0, 3, 1, 2) / 255.0, 0, 1) * 2.0 - 1.0
+        img1 = (
+            torch.clamp(torch.Tensor(self.reference).unsqueeze(0).permute(0, 3, 1, 2) / 255.0, 0, 1) * 2.0
+            - 1.0
+        )
         return float(self.loss_fn(img0, img1))
 
 
