@@ -130,7 +130,6 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # multiobjective
         self._MULTIOBJECTIVE_AUTO_BOUND = mobj.AUTO_BOUND
         self._hypervolume_pareto: tp.Optional[mobj.HypervolumePareto] = None
-        self.pareto_front_extractor = "random"
         # instance state
         self._asked: tp.Set[str] = set()
         self._num_objectives = 0
@@ -222,10 +221,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         ----
         During non-multiobjective optimization, this returns the current pessimistic best
         """
-        if subset == "default":
-            subset = self.pareto_front_extractor
         if self._hypervolume_pareto is None:
-            return [self.current_bests["pessimistic"].parameter]
+            return [self.provide_recommendation()]
         return self._hypervolume_pareto.pareto_front(
             size=size, subset=subset, subset_tentatives=subset_tentatives
         )
@@ -547,9 +544,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
 
         Returns
         -------
-        p.Parameter
-            The candidate with minimal value. :code:`p.Parameters` have field :code:`args` and :code:`kwargs` which can be directly used
-            on the function (:code:`objective_function(*candidate.args, **candidate.kwargs)`).
+        ng.p.Parameter
+            The candidate with minimal value. :code:`ng.p.Parameters` have field :code:`args` and :code:`kwargs` which can
+            be directly used on the function (:code:`objective_function(*candidate.args, **candidate.kwargs)`).
 
         Note
         ----

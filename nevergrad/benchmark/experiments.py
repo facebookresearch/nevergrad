@@ -29,6 +29,7 @@ from nevergrad.functions import control
 from nevergrad.functions import rl
 from nevergrad.functions.games import game
 from nevergrad.functions import iohprofiler
+from nevergrad.functions import helpers
 from .xpbase import Experiment as Experiment
 from .xpbase import create_seed_generator
 from .xpbase import registry as registry  # noqa
@@ -46,8 +47,8 @@ from . import frozenexperiments  # noqa # pylint: disable=unused-import
 class _Constraint:
 
     def __init__(self, name: str, as_bool: bool) -> None:
-         self.name = name
-         self.as_bool = as_bool
+        self.name = name
+        self.as_bool = as_bool
 
     def __call__(self, data: np.ndarray) -> tp.Union[bool, float]:
         if not isinstance(data, np.ndarray):
@@ -1234,7 +1235,6 @@ def image_multi_similarity_cv(seed: tp.Optional[int] = None) -> tp.Iterator[Expe
     return image_multi_similarity(seed, cross_valid=True)
 
 
-
 @registry.register
 def image_quality_proxy(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Optimizing images: artificial criterion for now."""
@@ -1242,21 +1242,22 @@ def image_quality_proxy(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment
     optims: tp.List[tp.Any] = get_optimizers("structured_moo")
     if default_optims is not None:
         optims = default_optims
-
-    
-    # We optimize func_blur or func_brisque and check performance on func_iqa.
-    func_iqa = imagesxp.Image(loss=imagesxp.imagelosses.Koncept512)
-    func_blur = imagesxp.Image(loss=imagesxp.imagelosses.Blur)
-    func_brisque = imagesxp.Image(loss=imagesxp.imagelosses.Brisque)
-    
+    iqa, blur, brisque = [
+        imagesxp.Image(loss=loss)
+        for loss in (
+            imagesxp.imagelosses.Koncept512,
+            imagesxp.imagelosses.Blur,
+            imagesxp.imagelosses.Brisque
+        )
+    ]
     # TODO: add the proxy info in the parametrization.
     for budget in [100 * 5 ** k for k in range(3)]:
-        for num_workers in [1]:
-            for algo in optims:
-                for func in [func_blur, func_brisque]:
-                    func.special_evaluation_function = func_iqa.evaluation_function
-                    xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
-                    yield xp
+        for algo in optims:
+            for func in [blur, brisque]:
+                # We optimize on blur or brisque and check performance on iqa.
+                sfunc = helpers.SpecialEvaluationExperiment(func, evaluation=iqa)
+                xp = Experiment(sfunc, algo, budget, num_workers=1, seed=next(seedg))
+                yield xp
 
 
 @registry.register
@@ -1268,16 +1269,25 @@ def image_quality(seed: tp.Optional[int] = None, cross_val: bool=False) -> tp.It
     optims: tp.List[tp.Any] = get_optimizers("structured_moo")
     if default_optims is not None:
         optims = default_optims
-    
+
     # We optimize func_blur or func_brisque and check performance on func_iqa.
     funcs: tp.List[ExperimentFunction] = [
-            imagesxp.Image(loss=imagesxp.imagelosses.Koncept512),
-            imagesxp.Image(loss=imagesxp.imagelosses.Blur),
-            imagesxp.Image(loss=imagesxp.imagelosses.Brisque),
-            ]
-    upper_bounds: tp.List[tp.Any] = [func(func.parametrization.sample().value) for func in funcs]
+        imagesxp.Image(loss=loss) for loss in (
+            imagesxp.imagelosses.Koncept512,
+            imagesxp.imagelosses.Blur,
+            imagesxp.imagelosses.Brisque,
+        )
+    ]
     # TODO: add the proxy info in the parametrization.
-    mofuncs = fbase.MultiExperiment.create_moo_crossvalidation_experiments(funcs, upper_bounds=upper_bounds, no_crossval=[1, 2], pareto_size=16) if cross_val else [fbase.MultiExperiment(funcs, upper_bounds=upper_bounds)]
+    if cross_val:
+        upper_bounds = [func(func.parametrization.value) for func in funcs]
+        mofuncs = [fbase.MultiExperiment(funcs, upper_bounds=upper_bounds)]  # type: ignore
+    else:
+        mofuncs = helpers.SpecialEvaluationFunction.create_crossvalidation_experiments(
+            funcs,
+            pareto_size=16,
+            pareto_subset="random",
+        )
     for budget in [100 * 5 ** k for k in range(3)]:
         for num_workers in [1]:
             for algo in optims:
@@ -1300,13 +1310,13 @@ def image_similarity_and_quality(seed: tp.Optional[int] = None, cross_val: bool=
     if default_optims is not None:
         optims = default_optims
 
-    
+
     # 3 losses functions including 2 iqas.
     func_iqa = imagesxp.Image(loss=imagesxp.imagelosses.Koncept512)
     func_blur = imagesxp.Image(loss=imagesxp.imagelosses.Blur)
     base_blur_value = func_blur(func_blur.parametrization.sample().value)
     for func in [imagesxp.Image(loss=loss) for loss in imagelosses]:
-    
+
         # Creating a reference value.
         base_value = func(func.parametrization.sample().value)
         mofuncs = fbase.MultiExperiment.create_moo_crossvalidation_experiments([func, func_blur, func_iqa], upper_bounds=[base_value, base_blur_value, 100.], no_crossval=[1, 2], pareto_size=16) if cross_val else [

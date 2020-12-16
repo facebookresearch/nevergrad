@@ -53,9 +53,19 @@ class HypervolumePareto:
     def num_objectives(self) -> int:
         return self._upper_bounds.size
 
+    @property
+    def best_volume(self) -> float:
+        return self._best_volume
+
     def _add_to_pareto(self, parameter: p.Parameter) -> None:
         self._pareto.append(parameter)
         self._pareto_needs_filtering = True
+
+    def extend(self, parameters: tp.Sequence[p.Parameter]) -> float:
+        output = 0.0
+        for param in parameters:
+            output = self.add(param)
+        return output
 
     def add(self, parameter: p.Parameter) -> float:
         """Given parameters and the multiobjective loss, this computes the hypervolume
@@ -121,6 +131,7 @@ class HypervolumePareto:
         self._pareto = new_pareto
         self._pareto_needs_filtering = False
 
+    # pylint: disable=too-many-branches
     def pareto_front(
         self, size: tp.Optional[int] = None, subset: str = "random", subset_tentatives: int = 12
     ) -> tp.List[p.Parameter]:

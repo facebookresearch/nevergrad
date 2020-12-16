@@ -11,6 +11,7 @@ from nevergrad.common import testing
 from nevergrad.functions import ArtificialFunction
 import nevergrad.common.typing as tp
 from . import base
+from . import helpers
 
 
 def _arg_return(*args: tp.Any, **kwargs: tp.Any) -> float:
@@ -168,16 +169,20 @@ def test_function_descriptors_all_default() -> None:
         ExampleFunctionAllDefault(blublu=12)  # type: ignore
 
 
-def test_multiexperiments() -> None:
+def test_pareto_experiment() -> None:
     # Checking MOO in cross-validation.
     objective_functions: tp.List[tp.Any] = [
         ArtificialFunction("sphere", block_dimension=7),
+        ArtificialFunction("sphere", block_dimension=7),
         ArtificialFunction("cigar", block_dimension=7),
     ]
-    for func in base.multi_experiments(
-        objective_functions,
-        upper_bounds=np.array((50.0, 50.0)),
-        pareto_size=16,
-    ):
-        candidate = func.parametrization.sample()
-        assert func.copy()(candidate.value()) == func(candidate.value())
+    xps = helpers.SpecialEvaluationExperiment.create_crossvalidation_experiments(
+        objective_functions, pareto_size=16
+    )
+    assert len(xps) == 3
+    param = xps[0].parametrization
+    out = xps[0](*param.args, **param.kwargs)
+    assert isinstance(out, np.ndarray) and out.size == 2
+    param._losses = out  # hack for testing
+    evaluation = xps[0].evaluation_function(param, param, param)
+    assert isinstance(evaluation, float)

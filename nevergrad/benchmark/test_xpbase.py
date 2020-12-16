@@ -58,11 +58,12 @@ def test_noisy_artificial_function_loss() -> None:
     xp.run()
     loss_ref = xp.result["loss"]
     # now with copy
-    reco = xp.recommendation
+    assert xp._optimizer is not None
+    reco = xp._optimizer.provide_recommendation()
     assert reco is not None
     np.random.seed(seed)
     pfunc = func.copy()
-    np.testing.assert_equal(pfunc.evaluation_function(*reco.args, **reco.kwargs), loss_ref)
+    np.testing.assert_equal(pfunc.evaluation_function(reco), loss_ref)
     np.random.seed(None)
 
 
