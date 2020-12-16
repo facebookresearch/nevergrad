@@ -145,6 +145,8 @@ class Brisque(ImageLoss):
     """
 
     def __call__(self, img: np.ndarray) -> float:
-        score = brisque.score(img)
-        assert False
+        try:
+            score = brisque.score(img)
+        except AssertionError:  # oh my god, brisque can raise an assert when the data is too weird.
+            score = float("inf")
         return score
