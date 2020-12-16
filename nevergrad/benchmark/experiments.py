@@ -1219,7 +1219,8 @@ def image_multi_similarity(seed: tp.Optional[int] = None, cross_valid: bool=Fals
                 imagesxp.imagelosses.SumSquareDifferences,
                 imagesxp.imagelosses.HistogramDifference]]
     base_values: tp.List[tp.Any] = [func(func.parametrization.sample().value) for func in funcs]
-    mofuncs: tp.List[tp.Any] = fbase.MultiExperiment.create_moo_crossvalidation_experiments(funcs, upper_bounds=base_values, pareto_size=25) if cross_valid else [
+    mofuncs: tp.List[tp.Any] = helpers.SpecialEvaluationExperiment.create_crossvalidation_experiments(
+        funcs, pareto_size=25) if cross_valid else [
             fbase.MultiExperiment(funcs, upper_bounds=base_values)]
     for budget in [100 * 5 ** k for k in range(3)]:
         for num_workers in [1]:
@@ -1283,7 +1284,7 @@ def image_quality(seed: tp.Optional[int] = None, cross_val: bool=False) -> tp.It
         upper_bounds = [func(func.parametrization.value) for func in funcs]
         mofuncs = [fbase.MultiExperiment(funcs, upper_bounds=upper_bounds)]  # type: ignore
     else:
-        mofuncs = helpers.SpecialEvaluationFunction.create_crossvalidation_experiments(
+        mofuncs = helpers.SpecialEvaluationExperiment.create_crossvalidation_experiments(
             funcs,
             pareto_size=16,
             pareto_subset="random",
@@ -1332,7 +1333,7 @@ def image_similarity_and_quality(seed: tp.Optional[int] = None, cross_val: bool=
 @registry.register
 def image_similarity_and_quality_cv(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of image_multi_similarity with cross-validation."""
-    return image_similarity_and_quality(seed, cross_valid=True)
+    return image_similarity_and_quality(seed, cross_val=True)
 
 
 # TODO: GAN counterparts of the above ?

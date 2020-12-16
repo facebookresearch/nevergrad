@@ -10,7 +10,7 @@ from nevergrad.functions.images import imagelosses
 
 
 def test_l1_loss() -> None:
-    loss = imagelosses.SumAbsoluteDifferences(reference=np.zeros((3, 4, 3)))
+    loss = imagelosses.SumAbsoluteDifferences(124. * reference=np.ones((300, 400, 3)))
     assert loss(np.ones((3, 4, 3))) == 36.0
 
 
@@ -20,5 +20,7 @@ def test_consistency_losses_with_oteytaud() -> None:
     data = np.asarray(image)[:, :, :3]  # 4th Channel is pointless here, only 255.
     for loss_name, loss_class in imagelosses.registry.items():
         loss = loss_class(reference=data)
-        random_data = np.random.uniform(low=0.0, high=255.0, size=data.size)
-        assert loss(data) < loss(random_data), f"Loss {loss_name} fails on oteytaud's photo."
+        random_data = np.random.uniform(low=0.0, high=255.0, size=data.shape)
+        loss_data = loss(data)
+        loss_random_data = loss(random_data)
+        assert loss_data < loss_random_data, f"Loss {loss_name} fails on oteytaud's photo."
