@@ -1220,7 +1220,7 @@ def image_multi_similarity(seed: tp.Optional[int] = None, cross_valid: bool=Fals
                 imagesxp.imagelosses.HistogramDifference]]
     base_values: tp.List[tp.Any] = [func(func.parametrization.sample().value) for func in funcs]
     mofuncs: tp.List[tp.Any] = helpers.SpecialEvaluationExperiment.create_crossvalidation_experiments(funcs, pareto_size=25) if cross_valid else [
-            fbase.MultiExperiment(funcs, upper_bounds=base_values)]
+            fbase.MultiExperiment(funcs, upper_bounds=base_values)]  # type: ignore
     for budget in [100 * 5 ** k for k in range(3)]:
         for num_workers in [1]:
             for algo in optims:
@@ -1281,10 +1281,10 @@ def image_quality(seed: tp.Optional[int] = None, cross_val: bool=False) -> tp.It
     # TODO: add the proxy info in the parametrization.
     if cross_val:
         upper_bounds = [func(func.parametrization.value) for func in funcs]
-        mofuncs = [fbase.MultiExperiment(funcs, upper_bounds=upper_bounds)]  # type: ignore
+        mofuncs: tp.Sequence[ExperimentFunction] = [fbase.MultiExperiment(funcs, upper_bounds=upper_bounds)]  # type: ignore
     else:
         mofuncs = helpers.SpecialEvaluationExperiment.create_crossvalidation_experiments(
-            experiments=[funcs[0, 2]],
+            experiments=[funcs[0], funcs[2]],
             training_only_experiments=[funcs[1]],  # Blur is not good enough as an IQA for being in the list.
             pareto_size=16,
         )
@@ -1314,10 +1314,11 @@ def image_similarity_and_quality(seed: tp.Optional[int] = None, cross_val: bool=
     # 3 losses functions including 2 iqas.
     func_iqa = imagesxp.Image(loss=imagesxp.imagelosses.Koncept512)
     func_blur = imagesxp.Image(loss=imagesxp.imagelosses.Blur)
+    base_blur_value = func_blur(func_blur.parametrization.value)
     for func in [imagesxp.Image(loss=loss) for loss in imagesxp.imagelosses.registry.values() if issubclass(loss, imagesxp.imagelosses.ImageLossWithReference)]:
 
         # Creating a reference value.
-        base_value = func(func.parametrization.sample().value)
+        base_value = func(func.parametrization.value)
         mofuncs = helpers.SpecialEvaluationExperiment.create_crossvalidation_experiments(
                 training_only_experiments=[func, func_blur], experiments=[func_iqa], pareto_size=16) if cross_val else [
                 fbase.MultiExperiment([func, func_blur, func_iqa], upper_bounds=[base_value, base_blur_value, 100.])]
