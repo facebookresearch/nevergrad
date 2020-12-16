@@ -52,10 +52,3 @@ def test_image_from_pgan_with_k512() -> None:
     other_func = func.copy()
     value2 = other_func(x)
     assert value == value2
-
-
-def test_l1_loss() -> None:
-    ref = np.random.normal(size=(1, 512, 512, 3))
-    loss = imagelosses.SumAbsoluteDifferences(reference=ref)
-    x = ref - np.ones(loss.domain_shape)
-    assert loss(x) == 3 * 512 ** 2
