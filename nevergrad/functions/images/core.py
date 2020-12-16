@@ -181,9 +181,13 @@ class ImageAdversarial(base.ExperimentFunction):
             )
         else:
             raise ValueError(f"{folder} is not a valid folder.")
+        index = 0
         for data, target in data_loader:
             _, pred = torch.max(classifier(data), axis=1)
             if pred == target:
+                index += 1
+                if index > 100:
+                    break
                 func = cls(
                     classifier=classifier, image=data[0], label=int(target), targeted=False, epsilon=0.05
                 )
