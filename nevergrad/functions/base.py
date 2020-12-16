@@ -226,7 +226,9 @@ class ExperimentFunction:
             ), f"evaluation_function can only be called on monoobjective experiments (output={output}) function={self.function}."
             return output
         # multiobjective case
-        hypervolume = mobj.HypervolumePareto(upper_bounds=self.multiobjective_upper_bounds)
+        hypervolume = mobj.HypervolumePareto(
+            upper_bounds=self.multiobjective_upper_bounds, seed=self.parametrization.random_state
+        )
         for candidate in recommendations:
             hypervolume.add(candidate)
         return -hypervolume.best_volume
