@@ -33,7 +33,7 @@ class ImageLossWithReference(ImageLoss):
         super().__init__(reference)
         assert len(self.reference.shape) == 3, self.reference.shape
         assert self.reference.min() >= 0.0
-        assert self.reference.max() <= 256.0, f"Image max = {img.max()}"
+        assert self.reference.max() <= 256.0, f"Image max = {self.reference.max()}"
         assert self.reference.max() > 3.0  # Not totally sure but entirely black images are not very cool.
         self.domain_shape = self.reference.shape
 
