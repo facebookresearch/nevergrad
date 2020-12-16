@@ -74,9 +74,7 @@ class CausalDiscovery(ExperimentFunction):
             self._data, self._ground_truth_graph = _generator.generate()
 
         self._nvars = self._data.shape[1]
-        param_links = ng.p.Choice(
-            [-1, 0, 1], repetitions=self._nvars * (self._nvars - 1) // 2
-        )
+        param_links = ng.p.Choice([-1, 0, 1], repetitions=self._nvars * (self._nvars - 1) // 2)
         instru = ng.p.Instrumentation(network_links=param_links).set_name("")
         super().__init__(self.objective, instru)
 

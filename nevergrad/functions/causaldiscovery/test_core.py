@@ -11,9 +11,7 @@ def test_causal_discovery_using_data_func() -> None:
     func = core.CausalDiscovery(generator="sachs")
     assert func._nvars == 11
     # Prepare recommendation
-    param_links = ng.p.Choice(
-        [-1, 0, 1], repetitions=func._nvars * (func._nvars - 1) // 2
-    )
+    param_links = ng.p.Choice([-1, 0, 1], repetitions=func._nvars * (func._nvars - 1) // 2)
     param_links.set_standardized_data([i % 2 for i in range(0, param_links.dimension)])
     result = func(network_links=param_links.value)
     assert np.isclose(17.425619834710744, result, atol=1e-10)
@@ -22,17 +20,12 @@ def test_causal_discovery_using_data_func() -> None:
 def test_causal_discovery_using_data_minimize() -> None:
     # Optimization should return the same result since the true graph is not random and small
     func = core.CausalDiscovery(generator="sachs")
-    optimizer = ng.optimizers.OnePlusOne(
-        parametrization=func.parametrization, budget=500
-    )
+    optimizer = ng.optimizers.OnePlusOne(parametrization=func.parametrization, budget=500)
     optimizer.parametrization.random_state = np.random.RandomState(12)
     recommendation = optimizer.minimize(func)
     recommendation_score = func(**recommendation.kwargs)
     assert np.isclose(17.425619834710744, recommendation_score, atol=1e-10)  # Optimal
-    assert (
-        len(recommendation.kwargs["network_links"])
-        == func._nvars * (func._nvars - 1) // 2
-    )
+    assert len(recommendation.kwargs["network_links"]) == func._nvars * (func._nvars - 1) // 2
 
 
 def test_causal_discovery_using_generator() -> None:
