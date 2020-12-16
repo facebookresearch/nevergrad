@@ -75,13 +75,7 @@ class SpecialEvaluationExperiment(base.ExperimentFunction):
         experiments: tp.List[base.ExperimentFunction],
         training_only_experiments: tp.Optional[tp.List[base.ExperimentFunction]] = None,
         pareto_size: int = 12,
-        pareto_subset_methods: tp.List[str] = [
-            "random",
-            "loss-covering",
-            "EPS",
-            "domain-covering",
-            "hypervolume",
-        ],
+        pareto_subset_methods: tp.List[str] = None,
     ) -> tp.List["SpecialEvaluationExperiment"]:
         """Returns a list of MultiExperiment, corresponding to MOO cross-validation:
         Each experiments consist in optimizing all but one of the input ExperimentFunction's,
@@ -101,6 +95,8 @@ class SpecialEvaluationExperiment(base.ExperimentFunction):
 
         """
         funcs: tp.List["SpecialEvaluationExperiment"] = []
+        if pareto_subset_methods is None:
+            pareto_subset_methods = ["random", "loss-covering", "EPS", "domain-covering", "hypervolume"]
         for pareto_subset in pareto_subset_methods:
             params: tp.Dict[str, tp.Any] = dict(pareto_size=pareto_size, pareto_subset=pareto_subset)
             for eval_xp in experiments:
