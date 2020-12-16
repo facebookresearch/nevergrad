@@ -1,1 +1,1 @@
-emna_variants = ['IsoEMNA', 'NaiveIsoEMNA', 'AnisoEMNA', 'NaiveAnisoEMNA', 'CMA', 'NaiveTBPSA', 'NaiveIsoEMNATBPSA', 'IsoEMNATBPSA', 'NaiveAnisoEMNATBPSA', 'AnisoEMNATBPSA']
+splitters = [SplitCMAAuto, SplitECMAAuto, SplitDEAuto, SplitTwoPointsDEAuto, SplitCMA3, SplitECMA3, SplitDE3, SplitTwoPointsDE3, SplitCMA5, SplitECMA5, SplitDE5, SplitTwoPointsDE5, SplitCMA9, SplitECMA9, SplitDE9, SplitTwoPointsDE9, SplitCMA13, SplitECMA13, SplitDE13, SplitTwoPointsDE13]

@@ -33,7 +33,7 @@ class ImageLossWithReference(ImageLoss):
         super().__init__(reference)
         assert len(self.reference.shape) == 3, self.reference.shape
         assert self.reference.min() >= 0.0
-        assert self.reference.max() <= 255.0
+        assert self.reference.max() <= 255.0, f"Image max = {img.max()}"
         assert self.reference.max() > 3.0  # Not totally sure but entirely black images are not very cool.
         self.domain_shape = self.reference.shape
 
@@ -54,7 +54,7 @@ class Lpips(ImageLossWithReference):
     def __call__(self, img: np.ndarray) -> float:
         assert img.shape[2] == 3
         assert len(img.shape) == 3
-        assert img.max() <= 255.0
+        assert img.max() <= 255.0, f"Image max = {img.max()}"
         assert img.min() >= 0.0
         assert img.max() > 3.0
         img0 = torch.clamp(torch.Tensor(img).unsqueeze(0).permute(0, 3, 1, 2) / 255.0, 0, 1) * 2.0 - 1.0
