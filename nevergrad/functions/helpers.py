@@ -72,8 +72,8 @@ class SpecialEvaluationExperiment(base.ExperimentFunction):
     @classmethod
     def create_crossvalidation_experiments(
         cls,
-        experiments: tp.Sequence[base.ExperimentFunction],
-        training_only_experiments: tp.Sequence[base.ExperimentFunction] = [],
+        experiments: tp.List[base.ExperimentFunction],
+        training_only_experiments: tp.List[base.ExperimentFunction] = [],
         pareto_size: int = 12,
         pareto_subset_methods: tp.List[str] = [
             "random",
