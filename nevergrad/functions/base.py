@@ -218,7 +218,6 @@ class ExperimentFunction:
             pareto front provided by the optimizer
         """
 
-
         if self.multiobjective_upper_bounds is None:  # monoobjective case
             assert len(recommendations) == 1
             output = self.function(*recommendations[0].args, **recommendations[0].kwargs)
