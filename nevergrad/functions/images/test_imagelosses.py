@@ -10,7 +10,7 @@ from nevergrad.functions.images import imagelosses
 
 
 def test_l1_loss() -> None:
-    loss = imagelosses.SumAbsoluteDifferences(124. * reference=np.ones((300, 400, 3)))
+    loss = imagelosses.SumAbsoluteDifferences(reference=124. * np.ones((300, 400, 3)))
     assert loss(np.ones((3, 4, 3))) == 36.0
 
 
