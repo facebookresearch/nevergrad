@@ -986,10 +986,7 @@ class SPSA(base.Optimizer):
 
 
 class _Rescaled(base.Optimizer):
-    """
-    Proposes a version of a base optimizer which works at a different scale.
-    Can also reparametrize the Pareto front extractor.
-    """
+    """Proposes a version of a base optimizer which works at a different scale."""
 
     def __init__(
         self,
@@ -998,11 +995,8 @@ class _Rescaled(base.Optimizer):
         num_workers: int = 1,
         base_optimizer: base.OptCls = CMA,
         scale: tp.Optional[float] = None,
-        pareto_front_extractor: tp.Optional[str] = None,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        if pareto_front_extractor is not None:
-            self.pareto_front_extractor = pareto_front_extractor
         self._optimizer = base_optimizer(self.parametrization, budget=budget, num_workers=num_workers)
         self._subcandidates: tp.Dict[str, p.Parameter] = {}
         if scale is None:
@@ -1174,7 +1168,6 @@ class Rescaled(base.ConfiguredOptimizer):
         *,
         base_optimizer: base.OptCls = CMA,
         scale: tp.Optional[float] = None,
-        pareto_front_extractor: tp.Optional[str] = None,
     ) -> None:
         super().__init__(_Rescaled, locals())
 
