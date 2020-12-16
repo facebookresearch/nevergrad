@@ -1287,7 +1287,6 @@ def image_quality(seed: tp.Optional[int] = None, cross_val: bool=False) -> tp.It
             experiments=[funcs[0, 2]],
             training_only_experiments=[funcs[1]],  # Blur is not good enough as an IQA for being in the list.
             pareto_size=16,
-            pareto_subset="random",
         )
     for budget in [100 * 5 ** k for k in range(3)]:
         for num_workers in [1]:
@@ -1319,8 +1318,12 @@ def image_similarity_and_quality(seed: tp.Optional[int] = None, cross_val: bool=
 
         # Creating a reference value.
         base_value = func(func.parametrization.sample().value)
+<<<<<<< HEAD
         mofuncs = helpers.SpecialEvaluationFunction.create_crossvalidation_experiments(
                 experiments=[func, func_blur, func_iqa], pareto_size=16) if cross_val else [
+=======
+        mofuncs = helpers.SpecialEvaluationExperiment.create_crossvalidation_experiments([func, func_blur, func_iqa], pareto_size=16) if cross_val else [
+>>>>>>> 51063e7017da5d581178f1d994c040d03c46c170
                 fbase.MultiExperiment([func, func_blur, func_iqa], upper_bounds=[base_value, base_blur_value, 100.])]
         for budget in [100 * 5 ** k for k in range(3)]:
             for num_workers in [1]:
@@ -1333,7 +1336,7 @@ def image_similarity_and_quality(seed: tp.Optional[int] = None, cross_val: bool=
 @registry.register
 def image_similarity_and_quality_cv(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of image_multi_similarity with cross-validation."""
-    return image_similarity_and_quality(seed, cross_valid=True)
+    return image_similarity_and_quality(seed, cross_val=True)
 
 
 # TODO: GAN counterparts of the above ?
