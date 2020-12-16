@@ -33,7 +33,7 @@ class ImageLossWithReference(ImageLoss):
         super().__init__(reference)
         assert len(self.reference.shape) == 3, self.reference.shape
         assert self.reference.min() >= 0.0
-        assert self.reference.max() <= 255.0, f"Image max = {img.max()}"
+        assert self.reference.max() <= 256.0, f"Image max = {img.max()}"
         assert self.reference.max() > 3.0  # Not totally sure but entirely black images are not very cool.
         self.domain_shape = self.reference.shape
 
@@ -54,12 +54,12 @@ class Lpips(ImageLossWithReference):
     def __call__(self, img: np.ndarray) -> float:
         assert img.shape[2] == 3
         assert len(img.shape) == 3
-        assert img.max() <= 255.0, f"Image max = {img.max()}"
+        assert img.max() <= 256.0, f"Image max = {img.max()}"
         assert img.min() >= 0.0
         assert img.max() > 3.0
-        img0 = torch.clamp(torch.Tensor(img).unsqueeze(0).permute(0, 3, 1, 2) / 255.0, 0, 1) * 2.0 - 1.0
+        img0 = torch.clamp(torch.Tensor(img).unsqueeze(0).permute(0, 3, 1, 2) / 256.0, 0, 1) * 2.0 - 1.0
         img1 = (
-            torch.clamp(torch.Tensor(self.reference).unsqueeze(0).permute(0, 3, 1, 2) / 255.0, 0, 1) * 2.0
+            torch.clamp(torch.Tensor(self.reference).unsqueeze(0).permute(0, 3, 1, 2) / 256.0, 0, 1) * 2.0
             - 1.0
         )
         return float(self.loss_fn(img0, img1))
@@ -100,7 +100,7 @@ class HistogramDifference(ImageLossWithReference):
 class Koncept512(ImageLoss):
     """
     This loss uses the neural network Koncept512 to score images
-    It takes one image or a list of images of shape [x, y, 3], with each pixel between 0 and 255, and returns a score.
+    It takes one image or a list of images of shape [x, y, 3], with each pixel between 0 and 256, and returns a score.
     """
 
     def __init__(self, reference: tp.Optional[np.ndarray] = None) -> None:
