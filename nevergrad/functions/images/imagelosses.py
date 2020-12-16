@@ -40,8 +40,6 @@ class ImageLossWithReference(ImageLoss):
 
 @registry.register
 class SumAbsoluteDifferences(ImageLossWithReference):
-    def __init__(self, reference: tp.Optional[np.ndarray] = None) -> None:
-        super().__init__(reference)
 
     def __call__(self, x: np.ndarray) -> float:
         assert x.shape == self.domain_shape, f"Shape = {x.shape} vs {self.domain_shape}"
@@ -81,8 +79,6 @@ class LpipsVgg(Lpips):
 
 @registry.register
 class SumSquareDifferences(ImageLossWithReference):
-    def __init__(self, reference: tp.Optional[np.ndarray] = None) -> None:
-        super().__init__(reference)
 
     def __call__(self, x: np.ndarray) -> float:
         assert x.shape == self.domain_shape, f"Shape = {x.shape} vs {self.domain_shape}"
@@ -92,8 +88,6 @@ class SumSquareDifferences(ImageLossWithReference):
 
 @registry.register
 class HistogramDifference(ImageLossWithReference):
-    def __init__(self, reference: tp.Optional[np.ndarray] = None) -> None:
-        super().__init__(reference)
 
     def __call__(self, x: np.ndarray) -> float:
         assert x.shape == self.domain_shape, f"Shape = {x.shape} vs {self.domain_shape}"

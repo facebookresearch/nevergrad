@@ -73,7 +73,7 @@ class SpecialEvaluationExperiment(base.ExperimentFunction):
     def create_crossvalidation_experiments(
         cls,
         experiments: tp.List[base.ExperimentFunction],
-        training_only_experiments: tp.List[base.ExperimentFunction] = [],
+        training_only_experiments: tp.Optional[tp.List[base.ExperimentFunction]] = None,
         pareto_size: int = 12,
         pareto_subset_methods: tp.List[str] = [
             "random",
@@ -101,6 +101,7 @@ class SpecialEvaluationExperiment(base.ExperimentFunction):
 
         """
         funcs: tp.List["SpecialEvaluationExperiment"] = []
+        training_only_experiments = training_only_experiments if training_only_experiments is not None else []
         for pareto_subset in pareto_subset_methods:
             params: tp.Dict[str, tp.Any] = dict(pareto_size=pareto_size, pareto_subset=pareto_subset)
             for eval_xp in experiments:

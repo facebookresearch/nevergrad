@@ -17,7 +17,10 @@ def test_l1_loss() -> None:
 
 
 def test_image_losses_with_reference() -> None:
-    assert len([l for l in imagelosses.registry.values() if issubclass(l, imagelosses.ImageLossWithReference)]) > 2
+    assert (
+        len([l for l in imagelosses.registry.values() if issubclass(l, imagelosses.ImageLossWithReference)])
+        > 2
+    )
 
 
 @pytest.mark.parametrize("loss_name", imagelosses.registry)  # type: ignore
