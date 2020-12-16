@@ -1319,7 +1319,7 @@ def image_similarity_and_quality(seed: tp.Optional[int] = None, cross_val: bool=
         # Creating a reference value.
         base_value = func(func.parametrization.sample().value)
         mofuncs = helpers.SpecialEvaluationExperiment.create_crossvalidation_experiments(
-                experiments=[func, func_blur, func_iqa], pareto_size=16) if cross_val else [
+                training_only_experiments=[func, func_blur], experiments=[func_iqa], pareto_size=16) if cross_val else [
                 fbase.MultiExperiment([func, func_blur, func_iqa], upper_bounds=[base_value, base_blur_value, 100.])]
         for budget in [100 * 5 ** k for k in range(3)]:
             for num_workers in [1]:
