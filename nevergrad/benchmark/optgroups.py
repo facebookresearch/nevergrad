@@ -13,7 +13,6 @@ from nevergrad.optimization import base as obase
 from nevergrad.optimization.optimizerlib import ConfSplitOptimizer
 from nevergrad.optimization.optimizerlib import registry as optimizerlib_registry
 from nevergrad.optimization.optimizerlib import ParametrizedOnePlusOne
-from nevergrad.optimization.optimizerlib import Rescaled
 
 Optim = tp.Union[obase.ConfiguredOptimizer, str]
 registry: Registry[tp.Callable[[], tp.Iterable[Optim]]] = Registry()
