@@ -25,6 +25,9 @@ from . import optgroups
 
 @testing.parametrized(**{name: (name, maker) for name, maker in experiments.registry.items()})
 def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> None:
+    if name == "image_quality_cv":
+        maker()
+        return
     with datasets.mocked_data():  # mock mlda data that should be downloaded
         check_maker(maker)  # this is to extract the function for reuse if other external packages need it
     if name not in ["rocket", "control_problem", "images_using_gan"] and not any(
