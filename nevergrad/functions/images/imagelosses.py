@@ -64,7 +64,7 @@ class Lpips(ImageLossWithReference):
         img1 = np.expand_dims(self.reference, 0)
         img0 = torch.clamp(torch.Tensor(img0).permute(0, 3, 1, 2) / 255.0, 0, 1) * 2.0 - 1.0
         img1 = torch.clamp(torch.Tensor(img1).permute(0, 3, 1, 2) / 255.0, 0, 1) * 2.0 - 1.0
-        return self.loss_fn(img0, img1)
+        return float(self.loss_fn(img0, img1))
 
 
 @registry.register

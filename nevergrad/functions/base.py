@@ -224,7 +224,7 @@ class ExperimentFunction:
             output = self.function(*recommendations[0].args, **recommendations[0].kwargs)
             assert isinstance(
                 output, numbers.Number
-            ), "evaluation_function can only be called on monoobjective experiments (output={output})."
+            ), f"evaluation_function can only be called on monoobjective experiments (output={output}) function={self.function}."
             return output
         # multiobjective case
         hypervolume = mobj.HypervolumePareto(upper_bounds=self.multiobjective_upper_bounds)
