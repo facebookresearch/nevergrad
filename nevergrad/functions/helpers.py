@@ -73,8 +73,9 @@ class SpecialEvaluationExperiment(base.ExperimentFunction):
     def create_crossvalidation_experiments(
         cls,
         experiments: tp.Sequence[base.ExperimentFunction],
+        training_only_experiments: tp.Sequence[base.ExperimentFunction] = [],
         pareto_size: int = 12,
-        pareto_subset: str = "random",
+        pareto_subset_methods: tp.List[str] = ["random", "loss-covering", "EPS", "domain-covering", "hypervolume"],
     ) -> tp.List["SpecialEvaluationExperiment"]:
         """Returns a list of MultiExperiment, corresponding to MOO cross-validation:
         Each experiments consist in optimizing all but one of the input ExperimentFunction's,
@@ -83,8 +84,10 @@ class SpecialEvaluationExperiment(base.ExperimentFunction):
 
         Parameters
         ----------
-        xps: ExperimentFunction
-            iterable of experiment functions.
+        experiments: sequence of ExperimentFunction
+            iterable of experiment functions, used for creating the crossvalidation.
+        training_only_experiments: sequence of ExperimentFunction
+            iterable of experiment functions, used only as training functions in the crossvalidation and never for test..
         pareto_size: int
             if provided, selects a subset of the full pareto front with the given maximum size
         subset: str
@@ -92,15 +95,16 @@ class SpecialEvaluationExperiment(base.ExperimentFunction):
 
         """
         funcs: tp.List["SpecialEvaluationExperiment"] = []
-        params: tp.Dict[str, tp.Any] = dict(pareto_size=pareto_size, pareto_subset=pareto_subset)
-        for eval_xp in experiments:
-            trainxps = [xp for xp in experiments if xp != eval_xp]
-            if len(trainxps) == 1:  # monoobjective
-                experiment = trainxps[0]
-            else:  # multiobjective
-                # uses origin as upper bound
-                param = eval_xp.parametrization
-                upper_bounds = [xp(*param.args, **param.kwargs) for xp in trainxps]
-                experiment = base.MultiExperiment(trainxps, upper_bounds)  # type: ignore
-            funcs.append(cls(experiment, eval_xp, **params))
+        for pareto_subset in pareto_subset_methods:
+            params: tp.Dict[str, tp.Any] = dict(pareto_size=pareto_size, pareto_subset=pareto_subset)
+            for eval_xp in experiments:
+                trainxps = [xp for xp in experiments if xp != eval_xp] + training_only_experiments
+                if len(trainxps) == 1:  # monoobjective
+                    experiment = trainxps[0]
+                else:  # multiobjective
+                    # uses origin as upper bound
+                    param = eval_xp.parametrization
+                    upper_bounds = [xp(*param.args, **param.kwargs) for xp in trainxps]
+                    experiment = base.MultiExperiment(trainxps, upper_bounds)  # type: ignore
+                funcs.append(cls(experiment, eval_xp, **params))
         return funcs

@@ -1219,7 +1219,7 @@ def image_multi_similarity(seed: tp.Optional[int] = None, cross_valid: bool=Fals
                 imagesxp.imagelosses.SumSquareDifferences,
                 imagesxp.imagelosses.HistogramDifference]]
     base_values: tp.List[tp.Any] = [func(func.parametrization.sample().value) for func in funcs]
-    mofuncs: tp.List[tp.Any] = fbase.MultiExperiment.create_moo_crossvalidation_experiments(funcs, upper_bounds=base_values, pareto_size=25) if cross_valid else [
+    mofuncs: tp.List[tp.Any] = helpers.create_crossvalidation_experiments(funcs, pareto_size=25) if cross_valid else [
             fbase.MultiExperiment(funcs, upper_bounds=base_values)]
     for budget in [100 * 5 ** k for k in range(3)]:
         for num_workers in [1]:
@@ -1284,7 +1284,8 @@ def image_quality(seed: tp.Optional[int] = None, cross_val: bool=False) -> tp.It
         mofuncs = [fbase.MultiExperiment(funcs, upper_bounds=upper_bounds)]  # type: ignore
     else:
         mofuncs = helpers.SpecialEvaluationFunction.create_crossvalidation_experiments(
-            funcs,
+            experiments=[funcs[0, 2]],
+            training_only_experiments=[funcs[1]],  # Blur is not good enough as an IQA for being in the list.
             pareto_size=16,
             pareto_subset="random",
         )
@@ -1314,12 +1315,12 @@ def image_similarity_and_quality(seed: tp.Optional[int] = None, cross_val: bool=
     # 3 losses functions including 2 iqas.
     func_iqa = imagesxp.Image(loss=imagesxp.imagelosses.Koncept512)
     func_blur = imagesxp.Image(loss=imagesxp.imagelosses.Blur)
-    base_blur_value = func_blur(func_blur.parametrization.sample().value)
     for func in [imagesxp.Image(loss=loss) for loss in imagelosses]:
 
         # Creating a reference value.
         base_value = func(func.parametrization.sample().value)
-        mofuncs = fbase.MultiExperiment.create_moo_crossvalidation_experiments([func, func_blur, func_iqa], upper_bounds=[base_value, base_blur_value, 100.], no_crossval=[1, 2], pareto_size=16) if cross_val else [
+        mofuncs = helpers.SpecialEvaluationFunction.create_crossvalidation_experiments(
+                experiments=[func, func_blur, func_iqa], pareto_size=16) if cross_val else [
                 fbase.MultiExperiment([func, func_blur, func_iqa], upper_bounds=[base_value, base_blur_value, 100.])]
         for budget in [100 * 5 ** k for k in range(3)]:
             for num_workers in [1]:
