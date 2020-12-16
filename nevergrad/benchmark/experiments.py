@@ -1198,13 +1198,6 @@ def image_similarity(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                     yield xp
 
 
-imagelosses = [imagesxp.imagelosses.SumAbsoluteDifferences,
-                imagesxp.imagelosses.LpipsAlex,
-                imagesxp.imagelosses.LpipsVgg,
-                imagesxp.imagelosses.SumSquareDifferences,
-                imagesxp.imagelosses.HistogramDifference]
-
-
 @registry.register
 def image_multi_similarity(seed: tp.Optional[int] = None, cross_valid: bool=False) -> tp.Iterator[Experiment]:
     """Optimizing images: artificial criterion for now."""
