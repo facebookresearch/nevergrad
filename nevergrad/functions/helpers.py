@@ -101,11 +101,12 @@ class SpecialEvaluationExperiment(base.ExperimentFunction):
 
         """
         funcs: tp.List["SpecialEvaluationExperiment"] = []
-        training_only_experiments = training_only_experiments if training_only_experiments is not None else []
         for pareto_subset in pareto_subset_methods:
             params: tp.Dict[str, tp.Any] = dict(pareto_size=pareto_size, pareto_subset=pareto_subset)
             for eval_xp in experiments:
-                trainxps = [xp for xp in experiments if xp != eval_xp] + training_only_experiments
+                trainxps = [xp for xp in experiments if xp != eval_xp]
+                if training_only_experiments is not None:
+                    trainxps += training_only_experiments
                 if len(trainxps) == 1:  # monoobjective
                     experiment = trainxps[0]
                 else:  # multiobjective

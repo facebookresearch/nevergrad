@@ -40,7 +40,6 @@ class ImageLossWithReference(ImageLoss):
 
 @registry.register
 class SumAbsoluteDifferences(ImageLossWithReference):
-
     def __call__(self, x: np.ndarray) -> float:
         assert x.shape == self.domain_shape, f"Shape = {x.shape} vs {self.domain_shape}"
         value = float(np.sum(np.fabs(x - self.reference)))
@@ -79,7 +78,6 @@ class LpipsVgg(Lpips):
 
 @registry.register
 class SumSquareDifferences(ImageLossWithReference):
-
     def __call__(self, x: np.ndarray) -> float:
         assert x.shape == self.domain_shape, f"Shape = {x.shape} vs {self.domain_shape}"
         value = float(np.sum((x - self.reference) ** 2))
@@ -88,7 +86,6 @@ class SumSquareDifferences(ImageLossWithReference):
 
 @registry.register
 class HistogramDifference(ImageLossWithReference):
-
     def __call__(self, x: np.ndarray) -> float:
         assert x.shape == self.domain_shape, f"Shape = {x.shape} vs {self.domain_shape}"
         assert x.shape[2] == 3
