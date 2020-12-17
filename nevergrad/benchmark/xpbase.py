@@ -166,7 +166,6 @@ class Experiment:
         # make sure the random_state of the base function is created, so that spawning copy does not
         # trigger a seed for the base function, but only for the copied function
         self.function.parametrization.random_state  # pylint: disable=pointless-statement
-        self.evaluation_by_best_of_pareto_front = 0
 
     def __repr__(self) -> str:
         return f"Experiment: {self.optimsettings} (dim={self.function.dimension}) on {self.function} with seed {self.seed}"
