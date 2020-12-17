@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import os
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
 from nevergrad.optimization import multiobjective as mobj
@@ -109,7 +110,8 @@ class SpecialEvaluationExperiment(base.ExperimentFunction):
 
         """
         funcs: tp.List["SpecialEvaluationExperiment"] = []
-
+        if "PYTEST_NEVERGRAD" in os.environ:
+            pareto_subset_methods = ("random",)  # override for speed
         for pareto_subset in pareto_subset_methods:
             params: tp.Dict[str, tp.Any] = dict(pareto_size=pareto_size, pareto_subset=pareto_subset)
             for eval_xp in experiments:

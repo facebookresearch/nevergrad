@@ -151,20 +151,26 @@ class ExperimentFunction:
             and self.parametrization.name == other.parametrization.name
         )
 
-    def copy(self: EF) -> EF:
-        """Provides a new equivalent instance of the class, possibly with
-        different random initialization, to provide different equivalent test cases
-        when using different seeds.
-
-        This is "black magic" which creates a new instance using the same init parameters
+    def _internal_copy(self: EF) -> EF:
+        """This is "black magic" which creates a new instance using the same init parameters
         that you provided and which were recorded through the __new__ method of ExperimentFunction
         """
         # auto_init is automatically filled by __new__, aka when creating the instance
         output: EF = self.__class__(
             **{x: y.copy() if isinstance(y, p.Parameter) else y for x, y in self._auto_init.items()}
         )
+        return output
+
+    def copy(self: EF) -> EF:
+        """Provides a new equivalent instance of the class, possibly with
+        different random initialization, to provide different equivalent test cases
+        when using different seeds.
+        This also checks that parametrization and descriptors are correct.
+        You should preferably override _internal_copy
+        """
         # add descriptors present in self but not added by initialization
         # (they must have been added manually)
+        output = self._internal_copy()
         keys = set(output.descriptors)
         output.add_descriptors(**{x: y for x, y in self.descriptors.items() if x not in keys})
         # parametrization may have been overriden, so let's always update it
@@ -315,7 +321,6 @@ class MultiExperiment(ExperimentFunction):
         outputs = [f(*args, **kwargs) for f in self._experiments]
         return np.array(outputs)
 
-    def copy(self: ME) -> ME:
-        me = super().copy()
-        self._experiments = [xp.copy() for xp in self._experiments]
-        return me
+    def _internal_copy(self) -> "MultiExperiment":
+        assert self.multiobjective_upper_bounds is not None
+        return MultiExperiment([f.copy() for f in self._experiments], self.multiobjective_upper_bounds)

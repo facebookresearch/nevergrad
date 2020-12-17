@@ -3,18 +3,19 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import cv2
-import imquality.brisque as brisque
-import lpips  # type: ignore
 import os
-import torch
 import typing as tp
+import torch
 import numpy as np
+import imquality.brisque as brisque
+import lpips
+import cv2
 from nevergrad.functions.base import UnsupportedExperiment
 from nevergrad.common.decorators import Registry
 
 
 registry: Registry[tp.Any] = Registry()
+MODELS: tp.Dict[str, tp.Any] = {}
 
 
 class ImageLoss:
@@ -103,15 +104,18 @@ class Koncept512(ImageLoss):
     It takes one image or a list of images of shape [x, y, 3], with each pixel between 0 and 256, and returns a score.
     """
 
-    def __init__(self, reference: tp.Optional[np.ndarray] = None) -> None:
-        super().__init__()  # reference is useless in this case
-        if os.name != "nt":
-            # pylint: disable=import-outside-toplevel
-            from koncept.models import Koncept512 as K512Model
+    @property
+    def koncept(self) -> tp.Any:  # cache the model
+        key = "koncept"
+        if key not in MODELS:
+            if os.name != "nt":
+                # pylint: disable=import-outside-toplevel
+                from koncept.models import Koncept512 as K512Model
 
-            self.koncept = K512Model()
-        else:
-            raise UnsupportedExperiment("Koncept512 is not working properly under Windows")
+                MODELS[key] = K512Model()
+            else:
+                raise UnsupportedExperiment("Koncept512 is not working properly under Windows")
+        return MODELS[key]
 
     def __call__(self, img: np.ndarray) -> float:
         loss = -self.koncept.assess(img)
