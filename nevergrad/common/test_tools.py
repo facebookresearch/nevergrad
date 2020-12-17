@@ -69,4 +69,4 @@ def test_mutable_set() -> None:
 def test_set_env() -> None:
     with tools.set_env(BLUBLU=1):
         assert os.environ.get("BLUBLU", None) == "1"
-        assert os.environ.get("BLUBLU", None) is None
+    assert os.environ.get("BLUBLU", None) is None
