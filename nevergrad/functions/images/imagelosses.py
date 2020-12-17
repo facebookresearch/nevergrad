@@ -50,9 +50,12 @@ class SumAbsoluteDifferences(ImageLossWithReference):
 class Lpips(ImageLossWithReference):
     def __init__(self, reference: tp.Optional[np.ndarray] = None, net: str = "") -> None:
         super().__init__(reference)
-        self.loss_fn = lpips.LPIPS(net=net)
+        self.net = net
 
     def __call__(self, img: np.ndarray) -> float:
+        if self.net not in MODELS:
+            MODELS[self.net] = lpips.LPIPS(net=self.net)
+        loss_fn = MODELS[self.net]
         assert img.shape[2] == 3
         assert len(img.shape) == 3
         assert img.max() <= 256.0, f"Image max = {img.max()}"
@@ -63,7 +66,7 @@ class Lpips(ImageLossWithReference):
             torch.clamp(torch.Tensor(self.reference).unsqueeze(0).permute(0, 3, 1, 2) / 256.0, 0, 1) * 2.0
             - 1.0
         )
-        return float(self.loss_fn(img0, img1))
+        return float(loss_fn(img0, img1))
 
 
 @registry.register
@@ -131,7 +134,7 @@ class Blur(ImageLoss):
     def __call__(self, img: np.ndarray) -> float:
         assert img.shape[2] == 3
         assert len(img.shape) == 3
-        return -cv2.Laplacian(img, cv2.CV_64F).var()
+        return -float(cv2.Laplacian(img, cv2.CV_64F).var())
 
 
 @registry.register
