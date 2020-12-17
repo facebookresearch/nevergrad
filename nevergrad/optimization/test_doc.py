@@ -140,7 +140,7 @@ def test_doc_constrained_optimization() -> None:
         # define a constraint on first variable of x:
         optimizer.parametrization.register_cheap_constraint(lambda x: x[0] >= 1)
 
-        recommendation = optimizer.minimize(square)
+        recommendation = optimizer.minimize(square, verbosity=2)
         print(recommendation.value)
         # >>> [1.00037625, 0.50683314]
         # DOC_CONSTRAINED_1
