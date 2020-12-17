@@ -5,7 +5,6 @@
 
 from pathlib import Path
 import PIL.Image
-import numbers
 import numpy as np
 import pytest
 from nevergrad.functions.images import imagelosses
@@ -29,13 +28,16 @@ def test_consistency_losses_with_oteytaud(loss_name: str) -> None:
     image = PIL.Image.open(path).resize((256, 256), PIL.Image.ANTIALIAS)
     data = np.asarray(image)[:, :, :3]  # 4th Channel is pointless here, only 255.
     loss_class = imagelosses.registry[loss_name]
-    loss = loss_class(reference=data)
+    try:
+        loss = loss_class(reference=data)
+    except imagelosses.UnsupportedExperiment as e:
+        raise pytest.skip(str(e))
     random_data = np.random.uniform(low=0.0, high=255.0, size=data.shape)
     loss_data = loss(data)
     assert loss_data < 1000.0
     assert loss_data > -1000.0
     assert loss_data == loss(data)
-    assert isinstance(loss_data, numbers.Number)
+    assert isinstance(loss_data, float)
     loss_random_data = loss(random_data)
     assert loss_random_data == loss(random_data)
     assert "Blur" in loss_name or loss_data < loss_random_data, f"Loss {loss_name} fails on oteytaud's photo."

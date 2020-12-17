@@ -10,7 +10,7 @@ import numpy as np
 import imquality.brisque as brisque
 import lpips
 import cv2
-from nevergrad.functions.base import UnsupportedExperiment
+from nevergrad.functions.base import UnsupportedExperiment as UnsupportedExperiment
 from nevergrad.common.decorators import Registry
 
 
