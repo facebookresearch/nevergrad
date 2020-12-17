@@ -120,7 +120,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         ] = utils.Archive()  # dict like structure taking np.ndarray as keys and Value as values
         self.current_bests = {
             x: utils.MultiValue(self.parametrization, np.inf, reference=self.parametrization)
-            for x in ["optimistic", "pessimistic", "average"]
+            for x in ["optimistic", "pessimistic", "average", "minimum"]
         }
         # pruning function, called at each "tell"
         # this can be desactivated or modified by each implementation
@@ -222,7 +222,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         During non-multiobjective optimization, this returns the current pessimistic best
         """
         if self._hypervolume_pareto is None:
-            return [self.current_bests["pessimistic"].parameter]
+            return [self.provide_recommendation()]
         return self._hypervolume_pareto.pareto_front(
             size=size, subset=subset, subset_tentatives=subset_tentatives
         )
@@ -339,7 +339,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 raise RuntimeError("MultiobjectiveReference can only be provided before the first tell.")
             if not isinstance(loss, np.ndarray):
                 raise RuntimeError("MultiobjectiveReference must only be used for multiobjective losses")
-            self._hypervolume_pareto = mobj.HypervolumePareto(upper_bounds=loss)
+            self._hypervolume_pareto = mobj.HypervolumePareto(upper_bounds=loss, seed=self._rng)
             if candidate.value is None:
                 return  # no value, so stopping processing there
             candidate = candidate.value
@@ -395,7 +395,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # update current best records
         # this may have to be improved if we want to keep more kinds of best losss
 
-        for name in ["optimistic", "pessimistic", "average"]:
+        for name in self.current_bests:
             if mvalue is self.current_bests[name]:  # reboot
                 best = min(self.archive.values(), key=lambda mv, n=name: mv.get_estimation(n))  # type: ignore
                 # rebuild best point may change, and which value did not track the updated value anyway
@@ -515,7 +515,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         """
         recom_data = self._internal_provide_recommendation()  # pylint: disable=assignment-from-none
         if recom_data is None:
-            return self.current_bests["pessimistic"].parameter
+            name = "minimum" if self.parametrization.descriptors.deterministic_function else "pessimistic"
+            return self.current_bests[name].parameter
         return self.parametrization.spawn_child().set_standardized_data(recom_data, deterministic=True)
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
@@ -570,9 +571,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
 
         Returns
         -------
-        p.Parameter
-            The candidate with minimal value. :code:`p.Parameters` have field :code:`args` and :code:`kwargs` which can be directly used
-            on the function (:code:`objective_function(*candidate.args, **candidate.kwargs)`).
+        ng.p.Parameter
+            The candidate with minimal value. :code:`ng.p.Parameters` have field :code:`args` and :code:`kwargs` which can
+            be directly used on the function (:code:`objective_function(*candidate.args, **candidate.kwargs)`).
 
         Note
         ----

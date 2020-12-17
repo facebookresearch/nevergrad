@@ -70,6 +70,9 @@ def test_photonics_custom_mutation() -> None:
     param = func.parametrization.spawn_child()
     for _ in range(10):
         param.mutate()
+    # as tuple
+    func = core.Photonics("morpho", 16, rolling=True, as_tuple=True)
+    func.evaluation_function(func.parametrization)
 
 
 def test_photonics_error() -> None:
@@ -101,7 +104,6 @@ def test_photonics_values(name: str, value: float, expected: float) -> None:
         raise SkipTest("Too slow in CircleCI")
     photo = core.Photonics(name, 16)
     np.testing.assert_almost_equal(photo(value * np.ones(16)), expected, decimal=4)
-    np.testing.assert_almost_equal(photo.evaluation_function(value * np.ones(16)), expected, decimal=4)
 
 
 GOOD_CHIRPED = [
@@ -154,5 +156,5 @@ def test_photonics_values_random(name: str, expected: float, data: tp.Optional[t
         candidate = photo.parametrization.spawn_child().set_standardized_data(x)
     else:
         candidate = photo.parametrization.spawn_child(new_value=[data])
-    for func in [photo, photo.evaluation_function]:
-        np.testing.assert_almost_equal(func(candidate.value), expected, decimal=4)  # type: ignore
+    np.testing.assert_almost_equal(photo(candidate.value), expected, decimal=4)
+    np.testing.assert_almost_equal(photo.evaluation_function(candidate), expected, decimal=4)

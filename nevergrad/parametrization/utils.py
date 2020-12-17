@@ -17,6 +17,23 @@ from nevergrad.common import tools as ngtools
 class Descriptors:
     """Provides access to a set of descriptors for the parametrization
     This can be used within optimizers.
+
+    Parameters
+    ----------
+    deterministic: bool
+        whether the function equipped with its instrumentation is deterministic.
+        Can be false if the function is not deterministic or if the instrumentation
+        contains a softmax.
+    deterministic_function: bool
+        whether the objective function is deterministic.
+    non_proxy_function: bool
+        whether the objective function is not a proxy of a more interesting objective function.
+    continuous: bool
+        whether the domain is entirely continuous.
+    metrizable: bool
+        whether the domain is naturally equipped with a metric.
+    ordered: bool
+        whether all domains and subdomains are ordered.
     """  # TODO add repr
 
     # pylint: disable=too-many-arguments
@@ -24,12 +41,14 @@ class Descriptors:
         self,
         deterministic: bool = True,
         deterministic_function: bool = True,
+        non_proxy_function: bool = True,
         continuous: bool = True,
         metrizable: bool = True,
         ordered: bool = True,
     ) -> None:
         self.deterministic = deterministic
         self.deterministic_function = deterministic_function
+        self.non_proxy_function = non_proxy_function
         self.continuous = continuous
         self.metrizable = metrizable
         self.ordered = ordered
@@ -173,7 +192,7 @@ def float_penalty(x: tp.Union[bool, float]) -> float:
     The value is positive for unsatisfied penality else 0.
     """
     if isinstance(x, (bool, np.bool_)):
-        return float(not x)
+        return float(not x)  # False ==> 1.
     elif isinstance(x, (float, np.float)):
-        return -min(0, x)
+        return -min(0, x)  # Negative ==> >0
     raise TypeError(f"Only bools and floats are supported for check constaint, but got: {x} ({type(x)})")

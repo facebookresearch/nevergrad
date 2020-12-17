@@ -9,6 +9,7 @@ import numbers
 import numpy as np
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
+from nevergrad.optimization import multiobjective as mobj
 
 EF = tp.TypeVar("EF", bound="ExperimentFunction")
 
@@ -74,8 +75,9 @@ class ExperimentFunction:
         self._descriptors: tp.Dict[str, tp.Any]  # filled by __new__
         self._parametrization: p.Parameter
         self.parametrization = parametrization
+        # force random state initialization
         self.multiobjective_upper_bounds: tp.Optional[np.ndarray] = None
-        self._function = function
+        self.__function = function  # __ to prevent overrides
         # if this is not a function bound to this very instance, add the function/callable name to the descriptors
         if not hasattr(function, "__self__") or function.__self__ != self:  # type: ignore
             name = function.__name__ if hasattr(function, "__name__") else function.__class__.__name__
@@ -101,14 +103,17 @@ class ExperimentFunction:
     def parametrization(self, parametrization: p.Parameter) -> None:
         self._parametrization = parametrization
         self._parametrization.freeze()
+        # pylint: disable=pointless-statement
+        self._parametrization.random_state  # force initialization for synchronization of random state
+        # # TODO investigate why this synchronization is needed
 
     @property
     def function(self) -> tp.Callable[..., tp.Loss]:
-        return self._function
+        return self.__function
 
     def __call__(self, *args: tp.Any, **kwargs: tp.Any) -> tp.Loss:
         """Call the function directly (equivaluent to parametrized_function.function(*args, **kwargs))"""
-        return self._function(*args, **kwargs)
+        return self.function(*args, **kwargs)
 
     @property
     def descriptors(self) -> tp.Dict[str, tp.Any]:
@@ -200,19 +205,31 @@ class ExperimentFunction:
         """
         return 1.0
 
-    def evaluation_function(self, *args: tp.Any, **kwargs: tp.Any) -> float:
-        """Provides a (usually "noisefree") function used at final test/evaluation time in benchmarks.
+    def evaluation_function(self, *recommendations: p.Parameter) -> float:
+        """Provides the evaluation crieterion for the experiment.
+        In case of mono-objective, it defers to evaluation_function
+        Otherwise, it uses the hypervolume.
+        This function can be overriden to provide custom behaviors.
 
         Parameters
         ----------
-        *args, **kwargs
-            same as the actual function
+        *pareto: Parameter
+            pareto front provided by the optimizer
         """
-        output = self.function(*args, **kwargs)
-        assert isinstance(
-            output, numbers.Number
-        ), "evaluation_function can only be called on monoobjective experiments."
-        return output
+        if self.multiobjective_upper_bounds is None:  # monoobjective case
+            assert len(recommendations) == 1
+            output = self.function(*recommendations[0].args, **recommendations[0].kwargs)
+            assert isinstance(
+                output, numbers.Number
+            ), "evaluation_function can only be called on monoobjective experiments."
+            return output
+        # multiobjective case
+        hypervolume = mobj.HypervolumePareto(
+            upper_bounds=self.multiobjective_upper_bounds, seed=self.parametrization.random_state
+        )
+        for candidate in recommendations:
+            hypervolume.add(candidate)
+        return -hypervolume.best_volume
 
 
 def update_leaderboard(identifier: str, loss: float, array: np.ndarray, verbose: bool = True) -> None:

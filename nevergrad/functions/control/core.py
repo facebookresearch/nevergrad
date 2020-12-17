@@ -71,8 +71,9 @@ class BaseFunction(ExperimentFunction):
     def policy_dim(self):
         raise NotImplementedError
 
-    # pylint: disable=arguments-differ
-    def evaluation_function(self, x: np.ndarray) -> float:  # type: ignore
+    def evaluation_function(self, *recommendations: p.Parameter) -> float:
+        assert len(recommendations) == 1, "Should not be a pareto set for a monoobjective function"
+        x = recommendations[0].value
         # pylint: disable=not-callable
         loss = self.function(x)
         assert isinstance(loss, float)
@@ -81,7 +82,7 @@ class BaseFunction(ExperimentFunction):
 
 
 # pylint: disable=line-too-long
-# for black (since lists are way too long...):
+# for black (since lists are way too long...)
 # fmt: off
 
 
