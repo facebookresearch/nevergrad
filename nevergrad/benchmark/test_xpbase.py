@@ -63,6 +63,7 @@ def test_noisy_artificial_function_loss() -> None:
     assert reco is not None
     np.random.seed(seed)
     pfunc = func.copy()
+    np.testing.assert_equal(func.evaluation_function(reco), loss_ref)
     np.testing.assert_equal(pfunc.evaluation_function(reco), loss_ref)
     np.random.seed(None)
 
