@@ -48,7 +48,9 @@ def test_run_packed_artificial_function() -> None:
     )
     xp = xpbase.Experiment(func, optimizer="OnePlusOne", budget=24, num_workers=2, batch_mode=True, seed=14)
     summary = xp.run()
-    np.testing.assert_almost_equal(summary["loss"], -9980.544191006393, decimal=1)  # makes sure seeding works!
+    np.testing.assert_almost_equal(
+        summary["loss"], -9980.544191006393, decimal=1
+    )  # makes sure seeding works!
 
 
 def test_noisy_artificial_function_loss() -> None:
