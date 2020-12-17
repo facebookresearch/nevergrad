@@ -55,8 +55,8 @@ class MultiobjectiveFunction:
         """
         losses = np.array(losses, copy=False)
         if self._auto_bound > 0:
-            self._auto_upper_bounds = np.maximum(self._auto_upper_bounds, losses)  # type: ignore
-            self._auto_lower_bounds = np.minimum(self._auto_lower_bounds, losses)  # type: ignore
+            self._auto_upper_bounds = np.maximum(self._auto_upper_bounds, losses)
+            self._auto_lower_bounds = np.minimum(self._auto_lower_bounds, losses)
             self._auto_bound -= 1
             if self._auto_bound == 0:
                 self._upper_bounds = self._auto_upper_bounds + 0.0 * (

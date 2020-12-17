@@ -1,3 +1,8 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 import numpy as np
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
@@ -86,8 +91,8 @@ class CrowdingDistance:
             front[1]._meta["crowding_distance"] = float("inf")
             return
 
-        for i in range(len(front)):
-            front[i]._meta["crowding_distance"] = 0.0
+        for f in front:
+            f._meta["crowding_distance"] = 0.0
 
         if isinstance(front[0].losses, np.ndarray) and front[0].losses.shape != ():
             number_of_objectives = len(front[0].losses)
@@ -108,9 +113,6 @@ class CrowdingDistance:
 class FastNonDominatedRanking:
     """ Non-dominated ranking of NSGA-II proposed by Deb et al., see [Deb2002] """
 
-    def __init__(self):
-        super(FastNonDominatedRanking, self).__init__()
-
     def compare(self, candidate1: p.Parameter, candidate2: p.Parameter) -> int:
         """Compare the domainance relation of two candidates.
 
@@ -125,6 +127,7 @@ class FastNonDominatedRanking:
             return 1
         return 0
 
+    # pylint: disable=too-many-locals
     def compute_ranking(
         self, candidates: tp.List[p.Parameter], k: int = None
     ) -> tp.List[tp.List[p.Parameter]]:

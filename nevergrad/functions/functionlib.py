@@ -39,7 +39,7 @@ class ArtificialVariable:
         self.block_dimension = block_dimension
         self.only_index_transform = only_index_transform
         self.hashing = hashing
-        self.dimension = self._dimension if not self.hashing else 1  # external dim?
+        self.dimension = self._dimension
 
     def _initialize(self) -> None:
         """Delayed initialization of the transforms to avoid slowing down the instance creation
@@ -64,11 +64,13 @@ class ArtificialVariable:
         if not self._transforms:
             self._initialize()
         if self.hashing:
+            data2 = np.array(data, copy=True)
             state = np.random.get_state()
-            y = data[0]  # should be a string... or something...
-            np.random.seed(int(int(hashlib.md5(y.encode()).hexdigest(), 16) % 500000))  # type: ignore
-            data = np.random.normal(0.0, 1.0, len(y))  # type: ignore
+            for i, y in enumerate(data):
+                np.random.seed(int(hashlib.md5(str(y).encode()).hexdigest(), 16) % 500000)  # type: ignore
+                data2[i] = np.random.normal(0.0, 1.0)  # type: ignore
             np.random.set_state(state)
+            data = data2
         data = np.array(data, copy=False)
         output = []
         for transform in self._transforms:
@@ -224,12 +226,13 @@ class ArtificialFunction(ExperimentFunction):
             results.append(self._func(block))
         return float(self._aggregator(results))
 
-    def evaluation_function(self, *args: tp.Any, **kwargs: tp.Any) -> float:
+    def evaluation_function(self, *recommendations: p.Parameter) -> float:
         """Implements the call of the function.
         Under the hood, __call__ delegates to oracle_call + add some noise if noise_level > 0.
         """
-        assert len(args) == 1 and not kwargs
-        data = self._transform(args[0])
+        assert len(recommendations) == 1, "Should not be a pareto set for a monoobjective function"
+        assert len(recommendations[0].args) == 1 and not recommendations[0].kwargs
+        data = self._transform(recommendations[0].args[0])
         return self.function_from_transform(data)
 
     def noisy_function(self, x: tp.ArrayLike) -> float:
@@ -302,8 +305,10 @@ class FarOptimumFunction(ExperimentFunction):
     def _monofunc(self, x: np.ndarray) -> float:
         return float(np.sum(self._multifunc(x)))
 
-    def evaluation_function(self, *args: tp.Any, **kwargs: tp.Any) -> float:
-        return self._monofunc(args[0])
+    def evaluation_function(self, *recommendations: p.Parameter) -> float:
+        assert len(recommendations) == 1, "Should not be a pareto set for a monoobjective function"
+        assert len(recommendations[0].args) == 1 and not recommendations[0].kwargs
+        return self._monofunc(recommendations[0].args[0])
 
     @classmethod
     def itercases(cls) -> tp.Iterator["FarOptimumFunction"]:

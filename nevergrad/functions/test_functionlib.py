@@ -80,7 +80,7 @@ def test_ptb_no_overfitting() -> None:
     ),
     hashed=(
         {"name": "sphere", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2, "hashing": True},
-        12.44,
+        6.174957533,
     ),
     noisy_sphere=(
         {"name": "sphere", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2, "noise_level": 0.2},
@@ -105,8 +105,6 @@ def test_testcase_function_value(config: tp.Dict[str, tp.Any], expected: float) 
     np.random.seed(2)  # initialization is delayed
     x = np.random.normal(0, 1, func.dimension)
     x *= -1 if config.get("noise_dissymmetry", False) else 1  # change sign to activate noise dissymetry
-    if config.get("hashing", False):
-        x = [str(x)]
     np.random.seed(12)  # function randomness comes at first call
     value = func(x)
     np.testing.assert_almost_equal(value, expected, decimal=3)
@@ -114,7 +112,7 @@ def test_testcase_function_value(config: tp.Dict[str, tp.Any], expected: float) 
 
 @testing.parametrized(
     random=(np.random.normal(0, 1, 12), False),
-    hashed=(["abcdefghijkl"], True),
+    hashed=(np.ones(12), True),
 )
 def test_test_function(x: tp.Any, hashing: bool) -> None:
     config: tp.Dict[str, tp.Any] = {
@@ -141,10 +139,10 @@ def test_oracle() -> None:
     y1 = func(x)  # returns a float
     y2 = func(x)  # returns a different float since the function is noisy
     np.testing.assert_raises(AssertionError, np.testing.assert_array_almost_equal, y1, y2)
-    y3 = func.evaluation_function(x)  # returns a float
-    y4 = func.evaluation_function(
-        x
-    )  # returns the same float (no noise for oracles + sphere function is deterministic)
+    reco = p.Array(init=x)
+    y3 = func.evaluation_function(reco)  # returns a float
+    # returns the same float (no noise for oracles + sphere function is deterministic)
+    y4 = func.evaluation_function(reco)
     np.testing.assert_array_almost_equal(y3, y4)  # should be equal
 
 
@@ -175,7 +173,7 @@ def test_compute_pseudotime() -> None:
     np.testing.assert_equal(func.compute_pseudotime(((x,), {}), 3), 1.0)
     np.random.seed(12)
     func = functionlib.ArtificialFunction("DelayedSphere", 2)
-    np.testing.assert_almost_equal(func.compute_pseudotime(((x,), {}), 3), 0.0010534)
+    np.testing.assert_almost_equal(func.compute_pseudotime(((x,), {}), 3), 0.00034702)
     # check minimum
     np.random.seed(None)
     func = functionlib.ArtificialFunction("DelayedSphere", 2)
