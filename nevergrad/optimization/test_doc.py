@@ -128,6 +128,7 @@ def test_parametrization() -> None:
 
 
 def test_doc_constrained_optimization() -> None:
+    np.random.seed(12)  # avoid flakiness
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", category=UserWarning)
         # DOC_CONSTRAINED_0
