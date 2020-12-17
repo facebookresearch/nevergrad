@@ -107,10 +107,6 @@ class SpecialEvaluationExperiment(base.ExperimentFunction):
 
         """
         funcs: tp.List["SpecialEvaluationExperiment"] = []
-        if pareto_subset_methods is None:
-            pareto_subset_methods = ["random", "loss-covering", "EPS", "domain-covering", "hypervolume"]
-            if "home/circleci/repo/venv" in str(pathlib.Path().absolute()):
-                pareto_subset_methods = ["random"]  # faster test in circleci.
 
         for pareto_subset in pareto_subset_methods:
             params: tp.Dict[str, tp.Any] = dict(pareto_size=pareto_size, pareto_subset=pareto_subset)
