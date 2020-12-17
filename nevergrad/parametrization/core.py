@@ -273,19 +273,18 @@ class Parameter:
     # %% Constraint management
 
     def constraint_penalties(self) -> tp.List[float]:
-        """Returns the maximum of the constraint values.
-        This function returns something > 0 if and only if at least one constraint is violated.
+        """Returns the list of constraint penalties penalties
 
         Returns
         -------
-        float
-            max constraint violation.
+        list of float
+            the list of penalties for each constraint
         """
         val = self.value
-        violations = [utils.float_penalty(func(val)) for func in self._constraint_checkers]
+        penalties = [utils.float_penalty(func(val)) for func in self._constraint_checkers]
         if self._parameters is not None:
-            violations += self.parameters.constraint_penalties()
-        return violations
+            penalties += self.parameters.constraint_penalties()
+        return penalties
 
     def satisfies_constraints(self) -> bool:
         """Whether the instance satisfies the constraints added through
@@ -297,10 +296,7 @@ class Parameter:
             True iff the constraint is satisfied
         """
         violations = self.constraint_penalties()
-        print(violations)
-        out = max(violations, default=0) <= 0.0
-        print("satisfies:", out)
-        return out
+        return max(violations, default=0) <= 0.0
 
     def register_cheap_constraint(
         self, func: tp.Union[tp.Callable[[tp.Any], bool], tp.Callable[[tp.Any], float]]
