@@ -1212,8 +1212,10 @@ def image_multi_similarity(seed: tp.Optional[int] = None, cross_valid: bool=Fals
                 imagesxp.imagelosses.SumSquareDifferences,
                 imagesxp.imagelosses.HistogramDifference]]
     base_values: tp.List[tp.Any] = [func(func.parametrization.sample().value) for func in funcs]
-    mofuncs: tp.List[tp.Any] = helpers.SpecialEvaluationExperiment.create_crossvalidation_experiments(funcs, pareto_size=25) if cross_valid else [
-            fbase.MultiExperiment(funcs, upper_bounds=base_values)]  # type: ignore
+    if cross_valid:
+        mofuncs: tp.List[tp.Any] = helpers.SpecialEvaluationExperiment.create_crossvalidation_experiments(funcs, pareto_size=25) 
+    else:
+        mofuncs = [fbase.MultiExperiment(funcs, upper_bounds=base_values)]  # type: ignore
     for budget in [100 * 5 ** k for k in range(3)]:
         for num_workers in [1]:
             for algo in optims:
@@ -1273,14 +1275,14 @@ def image_quality(seed: tp.Optional[int] = None, cross_val: bool=False) -> tp.It
     ]
     # TODO: add the proxy info in the parametrization.
     if cross_val:
-        upper_bounds = [func(func.parametrization.value) for func in funcs]
-        mofuncs: tp.Sequence[ExperimentFunction] = [fbase.MultiExperiment(funcs, upper_bounds=upper_bounds)]  # type: ignore
-    else:
         mofuncs = helpers.SpecialEvaluationExperiment.create_crossvalidation_experiments(
             experiments=[funcs[0], funcs[2]],
             training_only_experiments=[funcs[1]],  # Blur is not good enough as an IQA for being in the list.
             pareto_size=16,
         )
+    else:
+        upper_bounds = [func(func.parametrization.value) for func in funcs]
+        mofuncs: tp.Sequence[ExperimentFunction] = [fbase.MultiExperiment(funcs, upper_bounds=upper_bounds)]  # type: ignore
     for budget in [100 * 5 ** k for k in range(3)]:
         for num_workers in [1]:
             for algo in optims:
