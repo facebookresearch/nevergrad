@@ -25,7 +25,7 @@ from . import optgroups
 
 @testing.parametrized(**{name: (name, maker) for name, maker in experiments.registry.items()})
 def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> None:
-    if "image_" in name and "/circleci/" in str(Path(__file)):
+    if "image_" in name and "/circleci/" in str(Path(__file__)):
         maker()
         return
 
