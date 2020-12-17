@@ -365,7 +365,7 @@ We basically repeat mutations until we get a satisfiable point.</p>
 <span class="c1"># define a constraint on first variable of x:</span>
 <span class="n">optimizer</span><span class="o">.</span><span class="n">parametrization</span><span class="o">.</span><span class="n">register_cheap_constraint</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">)</span>
 
-<span class="n">recommendation</span> <span class="o">=</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="n">square</span><span class="p">)</span>
+<span class="n">recommendation</span> <span class="o">=</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="n">square</span><span class="p">,</span> <span class="n">verbosity</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">recommendation</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
 <span class="c1"># &gt;&gt;&gt; [1.00037625, 0.50683314]</span>
 </pre></div>
