@@ -44,9 +44,6 @@ class SpecialEvaluationExperiment(base.ExperimentFunction):
         for name in [
             "_experiment",
             "_evaluation",
-            "_pareto_size",
-            "_pareto_subset",
-            "_pareto_subset_tentatives",
         ]:
             setattr(instance, name, getattr(self, name).copy())
         return instance
