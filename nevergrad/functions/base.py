@@ -75,6 +75,7 @@ class ExperimentFunction:
         self._descriptors: tp.Dict[str, tp.Any]  # filled by __new__
         self._parametrization: p.Parameter
         self.parametrization = parametrization
+        # force random state initialization
         self.multiobjective_upper_bounds: tp.Optional[np.ndarray] = None
         self.__function = function  # __ to prevent overrides
         # if this is not a function bound to this very instance, add the function/callable name to the descriptors
@@ -102,6 +103,9 @@ class ExperimentFunction:
     def parametrization(self, parametrization: p.Parameter) -> None:
         self._parametrization = parametrization
         self._parametrization.freeze()
+        # pylint: disable=pointless-statement
+        self._parametrization.random_state  # force initialization for synchronization of random state
+        # # TODO investigate why this synchronization is needed
 
     @property
     def function(self) -> tp.Callable[..., tp.Loss]:
