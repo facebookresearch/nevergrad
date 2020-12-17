@@ -3,8 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import cv2  # type: ignore
-import imquality.brisque as brisque  # type: ignore
+import cv2
+import imquality.brisque as brisque
 import lpips  # type: ignore
 import os
 import torch
