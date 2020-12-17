@@ -42,7 +42,7 @@ class SpecialEvaluationExperiment(base.ExperimentFunction):
     def copy(self) -> "SpecialEvaluationExperiment":
         """Creates with new experiments and evaluations"""
         instance = super().copy()
-        for name in ["_experiment", "_evaluation"]:
+        for name in ["_experiment", "_evaluation", "_pareto_size", "_pareto_subset", "_pareto_subset_tentatives"]:
             setattr(instance, name, getattr(self, name).copy())
         return instance
 
