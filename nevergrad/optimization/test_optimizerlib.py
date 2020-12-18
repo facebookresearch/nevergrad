@@ -163,6 +163,8 @@ def test_infnan(name: str) -> None:
         and "BO" not in name  # Our BO does weird things sometimes
         and "Noisy" not in name  # Dedicated to noisy optimization
         and "chain" not in name  # Sometimes chaining is not adapted, let us remove all of them
+        and "NGOptBase" != name
+        and "NGOpt2" != name
     ):
         optim = optim_cls(parametrization=2, budget=70)
         recom = optim.minimize(buggy_function)
