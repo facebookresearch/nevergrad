@@ -430,55 +430,36 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         current_num_ask = self.num_ask
         # tentatives if a cheap constraint is available
         # TODO: this should be replaced by an optimization algorithm.
-        max_trials = self._constraints_manager.max_trials
+        max_trials = max(
+            1, self._constraints_manager.max_trials // 2
+        )  # half will be used for sub-optimization
         # Very simple constraint solver:
         # - we use a simple algorithm.
         # - no memory of previous iterations.
         # - just projection to constraint satisfaction.
         # We try using the normal tool during half constraint budget, in order to reduce the impact on the normal run.
-        use_auxiliary_optimizer = True
-        auxiliary_optimizer = None
-        original_candidate = None
-        for k in range(max_trials):
+        for _ in range(max_trials):
             is_suggestion = False
-            if self._suggestions:
+            if self._suggestions:  # use suggestions if available
                 is_suggestion = True
                 candidate = self._suggestions.pop()
             else:
-                if use_auxiliary_optimizer and k > max_trials / 2 and not auxiliary_optimizer:
-                    auxiliary_optimizer = registry["OnePlusOne"](self.parametrization, num_workers=1)
-                if auxiliary_optimizer:
-                    candidate = (
-                        auxiliary_optimizer.recommend() if k == max_trials - 1 else auxiliary_optimizer.ask()
-                    )
-                else:
-                    candidate = self._internal_ask_candidate()
-                # only register actual asked points
-            if not original_candidate:
-                original_candidate = candidate
+                candidate = self._internal_ask_candidate()
             if candidate.satisfies_constraints():
                 break  # good to go!
-            if auxiliary_optimizer:
-                violation = candidate.constraint_violation()
-                # We have a dissimilarity measure <= 1 by design.
-                distance_penalization = np.tanh(np.sum((candidate.value - original_candidate.value) ** 2))
-                # Our objective function is minimum for the point the closest to the original candidate under the
-                # constraints.
-                auxiliary_optimizer.tell(
-                    candidate,
-                    (distance_penalization + 1.0 + violation) if violation > 0.0 else distance_penalization,
-                )
-            if self._penalize_cheap_violations and not use_auxiliary_optimizer:
+            if self._penalize_cheap_violations:
                 # Warning! This might be a tell not asked.
                 self._internal_tell_candidate(candidate, float("Inf"))  # DE requires a tell
             self._num_ask += (
                 1  # this is necessary for some algorithms which need new num to ask another point
             )
-            if k == max_trials - 1:
-                warnings.warn(
-                    f"Could not bypass the constraint after {max_trials} tentatives, "
-                    "sending candidate anyway."
-                )
+        if self._constraints_manager.max_trials > 1 and not candidate.satisfies_constraints():
+            # still not solving, let's run sub-optimization
+            candidate = _constraint_solver(candidate, budget=max_trials)
+        if not candidate.satisfies_constraints():
+            warnings.warn(
+                f"Could not bypass the constraint after {max_trials} tentatives, " "sending candidate anyway."
+            )
         if not is_suggestion:
             if candidate.uid in self._asked:
                 raise RuntimeError(
@@ -755,3 +736,22 @@ class ConfiguredOptimizer:
             if self._config == other._config:
                 return True
         return False
+
+
+def _constraint_solver(parameter: p.Parameter, budget: int) -> p.Parameter:
+    """Runs a suboptimization to solve the parameter constraints"""
+    opt = registry["OnePlusOne"](parameter, num_workers=1, budget=budget)
+    opt._constraints_manager.max_trials = 1
+    for _ in range(budget):
+        cand = opt.ask()
+        # Our objective function is minimum for the point the closest to
+        # the original candidate under the constraints.
+        penalty = sum(cand.constraint_penalties())
+        if not penalty:  # constraints are satisfied
+            return cand
+        # TODO: this may not scale well with dimension
+        distance = np.tanh(np.sum(cand.get_standardized_data(reference=parameter) ** 2))
+        # TODO: because of the return whenever constraints are satisfied, the first case never arises
+        loss = distance if penalty <= 0 else penalty + distance + 1.0
+        opt.tell(cand, loss)
+    return opt.recommend()

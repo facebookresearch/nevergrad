@@ -272,21 +272,19 @@ class Parameter:
 
     # %% Constraint management
 
-    def constraint_violation(self) -> float:
-        """Returns the maximum of the constraint values.
-        This function returns something > 0 if and only if at least one constraint is violated.
+    def constraint_penalties(self) -> tp.List[float]:
+        """Returns the list of constraint penalties penalties
 
         Returns
         -------
-        float
-            max constraint violation.
+        list of float
+            the list of penalties for each constraint
         """
-        if self._parameters is not None and not self.parameters.satisfies_constraints():
-            return 1.0
-        if not self._constraint_checkers:
-            return 0.0
         val = self.value
-        return max(utils.float_penalty(func(val)) for func in self._constraint_checkers)
+        penalties = [utils.float_penalty(func(val)) for func in self._constraint_checkers]
+        if self._parameters is not None:
+            penalties += self.parameters.constraint_penalties()
+        return penalties
 
     def satisfies_constraints(self) -> bool:
         """Whether the instance satisfies the constraints added through
@@ -297,7 +295,8 @@ class Parameter:
         bool
             True iff the constraint is satisfied
         """
-        return self.constraint_violation() <= 0.0
+        violations = self.constraint_penalties()
+        return max(violations, default=0) <= 0.0
 
     def register_cheap_constraint(
         self, func: tp.Union[tp.Callable[[tp.Any], bool], tp.Callable[[tp.Any], float]]
@@ -642,11 +641,12 @@ class Dict(Parameter):
             if isinstance(param, Parameter):
                 param._set_random_state(random_state)
 
-    def satisfies_constraints(self) -> bool:
-        compliant = super().satisfies_constraints()
-        return compliant and all(
-            param.satisfies_constraints() for param in self._content.values() if isinstance(param, Parameter)
-        )
+    def constraint_penalties(self) -> tp.List[float]:
+        violations = super().constraint_penalties()
+        for param in self._content.values():
+            if isinstance(param, Parameter):
+                violations.extend(param.constraint_penalties())
+        return violations
 
     def freeze(self) -> None:
         super().freeze()
