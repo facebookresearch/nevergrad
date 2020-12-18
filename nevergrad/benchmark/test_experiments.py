@@ -29,8 +29,8 @@ def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[expe
     with tools.set_env(NEVERGRAD_PYTEST=1):
         with datasets.mocked_data():  # mock mlda data that should be downloaded
             check_maker(maker)  # this is to extract the function for reuse if other external packages need it
-    if name not in ["rocket", "control_problem", "multiobjective_example"] and not any(
-        x in name for x in ["tuning", "mlda", "realworld", "images_", "image_"]
+    if name not in ["rocket", "images_using_gan", "control_problem"] and not any(
+        x in name for x in ["tuning", "mlda", "realworld", "image_"]
     ):
         check_seedable(
             maker, "mltuning" in name

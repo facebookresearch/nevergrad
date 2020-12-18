@@ -1205,12 +1205,7 @@ def image_multi_similarity(seed: tp.Optional[int] = None, cross_valid: bool=Fals
     optims = ["CMA", "NGOpt8", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
     if default_optims is not None:
         optims = default_optims
-    funcs:tp.List[ExperimentFunction] = [imagesxp.Image(loss=loss) for loss in [
-                imagesxp.imagelosses.SumAbsoluteDifferences,
-                imagesxp.imagelosses.LpipsAlex,
-                imagesxp.imagelosses.LpipsVgg,
-                imagesxp.imagelosses.SumSquareDifferences,
-                imagesxp.imagelosses.HistogramDifference]]
+    funcs:tp.List[ExperimentFunction] = [imagesxp.Image(loss=loss) for loss in imagesxp.imagelosses.registry.values() if loss.REQUIRES_REFERENCE]
     base_values: tp.List[tp.Any] = [func(func.parametrization.sample().value) for func in funcs]
     if cross_valid:
         mofuncs: tp.List[tp.Any] = helpers.SpecialEvaluationExperiment.create_crossvalidation_experiments(funcs, pareto_size=25) 
@@ -1310,7 +1305,7 @@ def image_similarity_and_quality(seed: tp.Optional[int] = None, cross_val: bool=
     func_iqa = imagesxp.Image(loss=imagesxp.imagelosses.Koncept512)
     func_blur = imagesxp.Image(loss=imagesxp.imagelosses.Blur)
     base_blur_value = func_blur(func_blur.parametrization.value)
-    for func in [imagesxp.Image(loss=loss) for loss in imagesxp.imagelosses.registry.values() if issubclass(loss, imagesxp.imagelosses.ImageLossWithReference)]:
+    for func in [imagesxp.Image(loss=loss) for loss in imagesxp.imagelosses.registry.values() if loss.REQUIRES_REFERENCE]:
 
         # Creating a reference value.
         base_value = func(func.parametrization.value)

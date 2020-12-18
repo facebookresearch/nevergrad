@@ -22,7 +22,7 @@ class SpecialEvaluationExperiment(base.ExperimentFunction):
         evaluation: base.ExperimentFunction,
         pareto_size: tp.Optional[int] = None,
         pareto_subset: str = "random",
-        pareto_subset_tentatives: int = 12,
+        pareto_subset_tentatives: int = 30,
     ) -> None:
         self._experiment = experiment
         self._evaluation = evaluation

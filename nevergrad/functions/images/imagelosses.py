@@ -19,35 +19,32 @@ MODELS: tp.Dict[str, tp.Any] = {}
 
 
 class ImageLoss:
+
+    REQUIRES_REFERENCE = True
+
     def __init__(self, reference: tp.Optional[np.ndarray] = None) -> None:
+        if reference is not None:
+            self.reference = reference
+            assert len(self.reference.shape) == 3, self.reference.shape
+            assert self.reference.min() >= 0.0
+            assert self.reference.max() <= 256.0, f"Image max = {self.reference.max()}"
+            assert self.reference.max() > 3.0  # Not totally sure but entirely black images are not very cool.
+            self.domain_shape = self.reference.shape
         pass
 
     def __call__(self, img: np.ndarray) -> float:
         raise NotImplementedError(f"__call__ undefined in class {type(self)}")
 
 
-class ImageLossWithReference(ImageLoss):
-    def __init__(self, reference: tp.Optional[np.ndarray] = None) -> None:
-        if reference is None:
-            raise ValueError("A reference is required")
-        self.reference = reference
-        super().__init__(reference)
-        assert len(self.reference.shape) == 3, self.reference.shape
-        assert self.reference.min() >= 0.0
-        assert self.reference.max() <= 256.0, f"Image max = {self.reference.max()}"
-        assert self.reference.max() > 3.0  # Not totally sure but entirely black images are not very cool.
-        self.domain_shape = self.reference.shape
-
-
 @registry.register
-class SumAbsoluteDifferences(ImageLossWithReference):
+class SumAbsoluteDifferences(ImageLoss):
     def __call__(self, x: np.ndarray) -> float:
         assert x.shape == self.domain_shape, f"Shape = {x.shape} vs {self.domain_shape}"
         value = float(np.sum(np.fabs(x - self.reference)))
         return value
 
 
-class Lpips(ImageLossWithReference):
+class Lpips(ImageLoss):
     def __init__(self, reference: tp.Optional[np.ndarray] = None, net: str = "") -> None:
         super().__init__(reference)
         self.net = net
@@ -82,7 +79,7 @@ class LpipsVgg(Lpips):
 
 
 @registry.register
-class SumSquareDifferences(ImageLossWithReference):
+class SumSquareDifferences(ImageLoss):
     def __call__(self, x: np.ndarray) -> float:
         assert x.shape == self.domain_shape, f"Shape = {x.shape} vs {self.domain_shape}"
         value = float(np.sum((x - self.reference) ** 2))
@@ -90,7 +87,7 @@ class SumSquareDifferences(ImageLossWithReference):
 
 
 @registry.register
-class HistogramDifference(ImageLossWithReference):
+class HistogramDifference(ImageLoss):
     def __call__(self, x: np.ndarray) -> float:
         assert x.shape == self.domain_shape, f"Shape = {x.shape} vs {self.domain_shape}"
         assert x.shape[2] == 3
@@ -106,6 +103,8 @@ class Koncept512(ImageLoss):
     This loss uses the neural network Koncept512 to score images
     It takes one image or a list of images of shape [x, y, 3], with each pixel between 0 and 256, and returns a score.
     """
+
+    REQUIRES_REFERENCE = False
 
     @property
     def koncept(self) -> tp.Any:  # cache the model
@@ -128,8 +127,10 @@ class Koncept512(ImageLoss):
 @registry.register
 class Blur(ImageLoss):
     """
-    This estimates bluriness
+    This estimates bluriness.
     """
+
+    REQUIRES_REFERENCE = False
 
     def __call__(self, img: np.ndarray) -> float:
         assert img.shape[2] == 3
@@ -142,6 +143,8 @@ class Brisque(ImageLoss):
     """
     This estimates the Brisque score (lower is better).
     """
+
+    REQUIRES_REFERENCE = False
 
     def __call__(self, img: np.ndarray) -> float:
         try:
