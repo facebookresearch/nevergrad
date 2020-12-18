@@ -138,5 +138,5 @@ class WModelFunction(base.ExperimentFunction):
 
     def _evaluation_internal(self, x: np.ndarray) -> float:
         assert len(x) == self.f_internal.number_of_variables
-        assert not set(x) - {0, 1},  f"Pb with input {x} in PBO: not binary."
+        assert not set(x) - {0, 1}, f"Pb with input {x} in PBO: not binary."
         return -float(self.f_internal(x))
