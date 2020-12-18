@@ -28,7 +28,7 @@ from nevergrad.functions.mixsimulator import OptimizeMix
 from nevergrad.functions import control
 from nevergrad.functions import rl
 from nevergrad.functions.games import game
-from nevergrad.functions.causaldiscovery import CausalDiscovery
+from nevergrad.functions import causaldiscovery
 from nevergrad.functions import iohprofiler
 from .xpbase import Experiment as Experiment
 from .xpbase import create_seed_generator
@@ -1406,7 +1406,7 @@ def causal_similarity(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     optims = ["CMA", "NGOpt8", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
     if default_optims is not None:
         optims = default_optims
-    func = CausalDisccovery()
+    func = causaldiscovery.CausalDisccovery()
     for budget in [100 * 5 ** k for k in range(3)]:
         for num_workers in [1]:
             for algo in optims:
