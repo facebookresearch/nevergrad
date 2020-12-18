@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 from pathlib import Path
+import itertools
 
 import numpy as np
 import PIL.Image
