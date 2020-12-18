@@ -149,11 +149,23 @@ def buggy_function(x: np.ndarray) -> float:
 @pytest.mark.parametrize("name", registry)  # type: ignore
 def test_infnan(name: str) -> None:
     optim_cls = registry[name]
-    if "Cobyla" not in name and "Powell" not in name:
+    if (
+        "Cobyla" not in name
+        and "Powell" not in name
+        and "SPSA" != name
+        and "EDA" not in name
+        and "CMandAS3" != name
+        and "CMA" not in name
+        and "Stupid" not in name
+        and "Large" not in name
+    ):
         optim = optim_cls(parametrization=2, budget=500)
         recom = optim.minimize(buggy_function)
         result = buggy_function(recom.value)
-        assert result < 0.4 if "Large" not in name else 15.0, f"{name} failed and got {result}."
+        if "NoisyBandit" != name and "and" not in name:
+            assert result < 0.4, f"{name} failed and got {result} with {recom.value}."
+        else:
+            assert result < 50.0, f"{name} failed and got {result} with {recom.value}."
 
 
 @skip_win_perf  # type: ignore

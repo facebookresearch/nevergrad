@@ -489,7 +489,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             on the function (:code:`objective_function(*candidate.args, **candidate.kwargs)`).
         """
         recom_data = self._internal_provide_recommendation()  # pylint: disable=assignment-from-none
-        if recom_data is None:
+        if recom_data is None or any(np.isnan(recom_data)):
             name = "minimum" if self.parametrization.descriptors.deterministic_function else "pessimistic"
             return self.current_bests[name].parameter
         return self.parametrization.spawn_child().set_standardized_data(recom_data, deterministic=True)
