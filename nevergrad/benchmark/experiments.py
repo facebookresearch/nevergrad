@@ -30,6 +30,7 @@ from nevergrad.functions import rl
 from nevergrad.functions.games import game
 from nevergrad.functions import causaldiscovery
 from nevergrad.functions import iohprofiler
+from nevergrad.functions import helpers
 from .xpbase import Experiment as Experiment
 from .xpbase import create_seed_generator
 from .xpbase import registry as registry  # noqa
@@ -47,8 +48,8 @@ from . import frozenexperiments  # noqa # pylint: disable=unused-import
 class _Constraint:
 
     def __init__(self, name: str, as_bool: bool) -> None:
-         self.name = name
-         self.as_bool = as_bool
+        self.name = name
+        self.as_bool = as_bool
 
     def __call__(self, data: np.ndarray) -> tp.Union[bool, float]:
         if not isinstance(data, np.ndarray):
@@ -1183,7 +1184,7 @@ def arcoating(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def images(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def image_similarity(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Optimizing images: artificial criterion for now."""
     seedg = create_seed_generator(seed)
     optims = ["CMA", "NGOpt8", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
@@ -1199,10 +1200,139 @@ def images(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
+def image_multi_similarity(seed: tp.Optional[int] = None, cross_valid: bool=False) -> tp.Iterator[Experiment]:
+    """Optimizing images: artificial criterion for now."""
+    seedg = create_seed_generator(seed)
+    optims = ["CMA", "NGOpt8", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
+    if default_optims is not None:
+        optims = default_optims
+    funcs:tp.List[ExperimentFunction] = [imagesxp.Image(loss=loss) for loss in imagesxp.imagelosses.registry.values() if loss.REQUIRES_REFERENCE]
+    base_values: tp.List[tp.Any] = [func(func.parametrization.sample().value) for func in funcs]
+    if cross_valid:
+        mofuncs: tp.List[tp.Any] = helpers.SpecialEvaluationExperiment.create_crossvalidation_experiments(funcs, pareto_size=25) 
+    else:
+        mofuncs = [fbase.MultiExperiment(funcs, upper_bounds=base_values)]  # type: ignore
+    for budget in [100 * 5 ** k for k in range(3)]:
+        for num_workers in [1]:
+            for algo in optims:
+                for mofunc in mofuncs:
+                    xp = Experiment(mofunc, algo, budget, num_workers=num_workers, seed=next(seedg))
+                    yield xp
+
+
+@registry.register
+def image_multi_similarity_cv(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of image_multi_similarity with cross-validation."""
+    return image_multi_similarity(seed, cross_valid=True)
+
+
+@registry.register
+def image_quality_proxy(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Optimizing images: artificial criterion for now."""
+    seedg = create_seed_generator(seed)
+    optims: tp.List[tp.Any] = get_optimizers("structured_moo")
+    if default_optims is not None:
+        optims = default_optims
+    iqa, blur, brisque = [
+        imagesxp.Image(loss=loss)
+        for loss in (
+            imagesxp.imagelosses.Koncept512,
+            imagesxp.imagelosses.Blur,
+            imagesxp.imagelosses.Brisque
+        )
+    ]
+    # TODO: add the proxy info in the parametrization.
+    for budget in [100 * 5 ** k for k in range(3)]:
+        for algo in optims:
+            for func in [blur, brisque]:
+                # We optimize on blur or brisque and check performance on iqa.
+                sfunc = helpers.SpecialEvaluationExperiment(func, evaluation=iqa)
+                xp = Experiment(sfunc, algo, budget, num_workers=1, seed=next(seedg))
+                yield xp
+
+
+@registry.register
+def image_quality(seed: tp.Optional[int] = None, cross_val: bool=False) -> tp.Iterator[Experiment]:
+    """Optimizing images for quality:
+    TODO
+    """
+    seedg = create_seed_generator(seed)
+    optims: tp.List[tp.Any] = get_optimizers("structured_moo")
+    if default_optims is not None:
+        optims = default_optims
+
+    # We optimize func_blur or func_brisque and check performance on func_iqa.
+    funcs: tp.List[ExperimentFunction] = [
+        imagesxp.Image(loss=loss) for loss in (
+            imagesxp.imagelosses.Koncept512,
+            imagesxp.imagelosses.Blur,
+            imagesxp.imagelosses.Brisque,
+        )
+    ]
+    # TODO: add the proxy info in the parametrization.
+    if cross_val:
+        mofuncs = helpers.SpecialEvaluationExperiment.create_crossvalidation_experiments(
+            experiments=[funcs[0], funcs[2]],
+            training_only_experiments=[funcs[1]],  # Blur is not good enough as an IQA for being in the list.
+            pareto_size=16,
+        )
+    else:
+        upper_bounds = [func(func.parametrization.value) for func in funcs]
+        mofuncs: tp.Sequence[ExperimentFunction] = [fbase.MultiExperiment(funcs, upper_bounds=upper_bounds)]  # type: ignore
+    for budget in [100 * 5 ** k for k in range(3)]:
+        for num_workers in [1]:
+            for algo in optims:
+                for func in mofuncs:
+                    xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
+                    yield xp
+
+
+@registry.register
+def image_quality_cv(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of image_quality with cross-validation."""
+    return image_quality(seed, cross_val=True)
+
+
+@registry.register
+def image_similarity_and_quality(seed: tp.Optional[int] = None, cross_val: bool=False) -> tp.Iterator[Experiment]:
+    """Optimizing images: artificial criterion for now."""
+    seedg = create_seed_generator(seed)
+    optims: tp.List[tp.Any] = get_optimizers("structured_moo")
+    if default_optims is not None:
+        optims = default_optims
+
+
+    # 3 losses functions including 2 iqas.
+    func_iqa = imagesxp.Image(loss=imagesxp.imagelosses.Koncept512)
+    func_blur = imagesxp.Image(loss=imagesxp.imagelosses.Blur)
+    base_blur_value = func_blur(func_blur.parametrization.value)
+    for func in [imagesxp.Image(loss=loss) for loss in imagesxp.imagelosses.registry.values() if loss.REQUIRES_REFERENCE]:
+
+        # Creating a reference value.
+        base_value = func(func.parametrization.value)
+        mofuncs = helpers.SpecialEvaluationExperiment.create_crossvalidation_experiments(
+                training_only_experiments=[func, func_blur], experiments=[func_iqa], pareto_size=16) if cross_val else [
+                fbase.MultiExperiment([func, func_blur, func_iqa], upper_bounds=[base_value, base_blur_value, 100.])]  # type: ignore
+        for budget in [100 * 5 ** k for k in range(3)]:
+            for num_workers in [1]:
+                for algo in optims:
+                    for mofunc in mofuncs:
+                        xp = Experiment(mofunc, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        yield xp
+
+
+@registry.register
+def image_similarity_and_quality_cv(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of image_multi_similarity with cross-validation."""
+    return image_similarity_and_quality(seed, cross_val=True)
+
+
+# TODO: GAN counterparts of the above ?
+@registry.register
 def images_using_gan(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Optimizing an image using koncept512 and a GAN"""
     seedg = create_seed_generator(seed)
-    optims = ["CMA", "Shiwa", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "NSGAIIES", "ParametrizationDE"]
+    optims = get_optimizers("structured_moo")
     func = imagesxp.ImageFromPGAN()
     num_workers = 1
     for budget in [100 * 5 ** k for k in range(3)]:

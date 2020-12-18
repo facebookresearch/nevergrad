@@ -37,7 +37,7 @@ class Image(base.ExperimentFunction):
         """
 
         # Storing high level information.
-        self.domain_shape = (256, 256, 3)
+        self.domain_shape = (226, 226, 3)
         self.problem_name = problem_name
         self.index = index
 
@@ -55,6 +55,7 @@ class Image(base.ExperimentFunction):
         max_size = ng.p.Scalar(lower=1, upper=200).set_integer_casting()
         array.set_recombination(ng.p.mutation.Crossover(axis=(0, 1), max_size=max_size)).set_name("")  # type: ignore
         super().__init__(loss(reference=self.data), array)
+        assert self.multiobjective_upper_bounds is None
         self.add_descriptors(loss=loss.__class__.__name__)
         self.loss_function = loss(reference=self.data)
 
@@ -256,6 +257,7 @@ class ImageFromPGAN(base.ExperimentFunction):
         return loss
 
     def _generate_images(self, x: np.ndarray) -> np.ndarray:
+        """ Generates images tensor of shape [nb_images, x, y, 3] with pixels between 0 and 255"""
         # pylint: disable=not-callable
         noise = torch.tensor(x.astype("float32"))
-        return self.pgan_model.test(noise).permute(0, 2, 3, 1).cpu().numpy()  # type: ignore
+        return ((self.pgan_model.test(noise).clamp(min=-1, max=1) + 1) * 255.99 / 2).permute(0, 2, 3, 1).cpu().numpy()  # type: ignore
