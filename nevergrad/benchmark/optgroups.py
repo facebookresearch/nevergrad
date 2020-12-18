@@ -175,6 +175,11 @@ def all_bo() -> tp.Sequence[Optim]:
 
 
 @registry.register
+def structured_moo() -> tp.Sequence[Optim]:
+    return ["CMA", "NGOpt8", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
+
+
+@registry.register
 def spsa() -> tp.Sequence[Optim]:
     # return sorted(x for x, y in ng.optimizers.registry.items() if (any(e in x for e in "TBPSA SPSA".split()) and "iscr" not in x))
     return ["NaiveTBPSA", "SPSA", "TBPSA"]
