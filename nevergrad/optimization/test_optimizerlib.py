@@ -150,8 +150,9 @@ def buggy_function(x: np.ndarray) -> float:
 def test_infnan(name: str) -> None:
     optim_cls = registry[name]
     if (
-        "Cobyla" not in name  # Cobyla and Powell don't like nan or plateaus..
+        "Cobyla" not in name  # Scipy doesn't like nan or plateaus..
         and "Powell" not in name
+        and "SQP" not in name
         and "EDA" not in name  # Those ones rely on specific recommendations... could be fixed though
         and "EMNA" not in name  # Those ones rely on specific recommendations... could be fixed though
         and "CMandAS3" != name
