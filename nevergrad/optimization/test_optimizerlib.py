@@ -138,9 +138,9 @@ UNSEEDABLE: tp.List[str] = []
 
 
 def buggy_function(x: np.ndarray) -> float:
-    if any(x[::2] > 0.):
+    if any(x[::2] > 0.0):
         return float("nan")
-    if any(x > 0.):
+    if any(x > 0.0):
         return float("inf")
     return np.sum(x ** 2)
 
