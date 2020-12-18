@@ -11,27 +11,27 @@ from nevergrad.optimization.optimizerlib import OnePlusOne
 
 
 @pytest.mark.parametrize("fid", range(1, 24))  # type: ignore
-def test_PBO(fid: int) -> None:
-    for iid in range(1, 5):
-        values = []
-        try:
-            func = core.PBOFunction(fid, iid, 16)
-        except ModuleNotFoundError:
-            raise SkipTest("IOH is not installed")
-        for _ in range(30):
-            x = func.parametrization.sample()
-            for i in range(len(x.value)):
-                assert x.value[i] == 0 or x.value[i] == 1, f"Non binary sample {x}."
-            value = func(x.value)
-            assert isinstance(value, float), "All output of the iohprofiler-functions should be float"
-            assert np.isfinite(value)
-            values.append(value)
-        optim = OnePlusOne(func.parametrization, budget=100)
-        recom = optim.minimize(func)
-        values.append(func(recom.value))  # type: ignore
+@pytest.mark.parametrize("iid", range(1, 6))  # type: ignore
+def test_PBO(fid: int, iid: int) -> None:
+    values = []
+    try:
+        func = core.PBOFunction(fid, iid, 16)
+    except ModuleNotFoundError:
+        raise SkipTest("IOH is not installed")
+    for _ in range(30):
+        x = func.parametrization.sample()
+        for i in range(len(x.value)):
+            assert x.value[i] == 0 or x.value[i] == 1, f"Non binary sample {x}."
+        value = func(x.value)
+        assert isinstance(value, float), "All output of the iohprofiler-functions should be float"
+        assert np.isfinite(value)
+        values.append(value)
+    optim = OnePlusOne(func.parametrization, budget=100)
+    recom = optim.minimize(func)
+    values.append(func(recom.value))  # type: ignore
     assert (
         fid in [19, 20, 21, 22, 23] or min(values) >= 0.0 or max(values) <= 0.0
-    ), f"IOH profile functions should have constant sign: pb with fid={fid}."
+    ), f"IOH profile functions should have constant sign: pb with fid={fid},iid={iid}."
 
 
 @pytest.mark.parametrize("instrumentation", ["Softmax", "Ordered"])  # type: ignore
