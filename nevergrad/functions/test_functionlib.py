@@ -139,10 +139,10 @@ def test_oracle() -> None:
     y1 = func(x)  # returns a float
     y2 = func(x)  # returns a different float since the function is noisy
     np.testing.assert_raises(AssertionError, np.testing.assert_array_almost_equal, y1, y2)
-    y3 = func.evaluation_function(x)  # returns a float
-    y4 = func.evaluation_function(
-        x
-    )  # returns the same float (no noise for oracles + sphere function is deterministic)
+    reco = p.Array(init=x)
+    y3 = func.evaluation_function(reco)  # returns a float
+    # returns the same float (no noise for oracles + sphere function is deterministic)
+    y4 = func.evaluation_function(reco)
     np.testing.assert_array_almost_equal(y3, y4)  # should be equal
 
 
@@ -173,7 +173,7 @@ def test_compute_pseudotime() -> None:
     np.testing.assert_equal(func.compute_pseudotime(((x,), {}), 3), 1.0)
     np.random.seed(12)
     func = functionlib.ArtificialFunction("DelayedSphere", 2)
-    np.testing.assert_almost_equal(func.compute_pseudotime(((x,), {}), 3), 0.0010534)
+    np.testing.assert_almost_equal(func.compute_pseudotime(((x,), {}), 3), 0.00034702)
     # check minimum
     np.random.seed(None)
     func = functionlib.ArtificialFunction("DelayedSphere", 2)

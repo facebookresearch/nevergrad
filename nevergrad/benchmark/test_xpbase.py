@@ -48,7 +48,7 @@ def test_run_packed_artificial_function() -> None:
     )
     xp = xpbase.Experiment(func, optimizer="OnePlusOne", budget=24, num_workers=2, batch_mode=True, seed=14)
     summary = xp.run()
-    np.testing.assert_almost_equal(summary["loss"], -9961.7, decimal=1)  # makes sure seeding works!
+    np.testing.assert_almost_equal(summary["loss"], -9676.5, decimal=1)  # makes sure seeding works!
 
 
 def test_noisy_artificial_function_loss() -> None:
@@ -58,11 +58,12 @@ def test_noisy_artificial_function_loss() -> None:
     xp.run()
     loss_ref = xp.result["loss"]
     # now with copy
-    reco = xp.recommendation
+    assert xp._optimizer is not None
+    reco = xp._optimizer.provide_recommendation()
     assert reco is not None
     np.random.seed(seed)
     pfunc = func.copy()
-    np.testing.assert_equal(pfunc.evaluation_function(*reco.args, **reco.kwargs), loss_ref)
+    np.testing.assert_equal(pfunc.evaluation_function(reco), loss_ref)
     np.random.seed(None)
 
 

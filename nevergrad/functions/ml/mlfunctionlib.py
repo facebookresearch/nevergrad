@@ -28,7 +28,7 @@ class MLTuning(ExperimentFunction):
     regressor: str
         type of function we can use for doing the regression. Can be "mlp", "decision_tree", "decision_tree_depth",
         "keras_dense_nn", "any".
-        "any" means that the regressor has one more parameter which is a discrete choice among possibilities.
+        "any" means that the regressor has one more parameter which is a discrete choice among sklearn possibilities.
     data_dimension: int
         dimension of the data we generate. None if not an artificial dataset.
     dataset: str
@@ -159,7 +159,7 @@ class MLTuning(ExperimentFunction):
                 min_samples_split=p.Log(
                     lower=0.0000001, upper=1
                 ),  # Min ratio of samples in a node for splitting.
-                regressor=p.Choice(["mlp", "decision_tree", "keras_dense_nn"]),  # Type of regressor.
+                regressor=p.Choice(["mlp", "decision_tree"]),  # Type of regressor.
                 activation=p.Choice(
                     ["identity", "logistic", "tanh", "relu"]
                 ),  # Activation function, in case we use a net.
@@ -223,8 +223,10 @@ class MLTuning(ExperimentFunction):
         super().__init__(partial(self._ml_parametrization, **params), parametrization.set_name(""))
         self._evalparams = evalparams
 
-    def evaluation_function(self, *args: tp.Any, **kwargs: tp.Any) -> float:
-        assert not args
+    def evaluation_function(self, *recommendations: p.Parameter) -> float:
+        assert len(recommendations) == 1, "Should not be a pareto set for a monoobjective function"
+        assert not recommendations[0].args
+        kwargs = dict(recommendations[0].kwargs)
         # override with eval parameters (with partial, the eval parameters would be overriden by kwargs)
         kwargs.update(self._evalparams)
         return self._ml_parametrization(**kwargs)
