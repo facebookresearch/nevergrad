@@ -149,10 +149,11 @@ def buggy_function(x: np.ndarray) -> float:
 @pytest.mark.parametrize("name", registry)  # type: ignore
 def test_infnan(name: str) -> None:
     optim_cls = registry[name]
-    optim = optim_cls(parametrization=2, budget=1500)
-    recom = optim.minimize(buggy_function)
-    result = buggy_function(recom.value)
-    assert result < 0.2
+    if not optim_cls.one_shot:
+        optim = optim_cls(parametrization=2, budget=1500)
+        recom = optim.minimize(buggy_function)
+        result = buggy_function(recom.value)
+        assert result < 0.2
 
 
 @skip_win_perf  # type: ignore
