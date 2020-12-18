@@ -42,20 +42,13 @@ def test_images() -> None:
 
 
 def test_image_from_pgan_with_k512() -> None:
+    func = core.ImageFromPGAN(initial_noise=None, use_gpu=False, loss=imagelosses.Koncept512())
+    x = np.fabs(np.random.normal(size=func.domain_shape))
     try:
-        func = core.ImageFromPGAN(initial_noise=None, use_gpu=False, loss=imagelosses.Koncept512())
+        value = func(x)
     except base.UnsupportedExperiment as e:
         pytest.skip(str(e))
-    x = np.fabs(np.random.normal(size=func.domain_shape))
-    value = func(x)
     assert value < np.inf
     other_func = func.copy()
     value2 = other_func(x)
     assert value == value2
-
-
-def test_l1_loss() -> None:
-    ref = np.random.normal(size=(1, 512, 512, 3))
-    loss = imagelosses.SumAbsoluteDifferences(reference=ref)
-    x = ref - np.ones(loss.domain_shape)
-    assert loss(x) == 3 * 512 ** 2

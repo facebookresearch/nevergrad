@@ -17,6 +17,7 @@ from nevergrad.functions import rl
 from nevergrad.common import testing
 
 # from nevergrad.common.tools import Selector
+from nevergrad.common import tools
 from .xpbase import Experiment
 from .utils import Selector
 from . import experiments
@@ -25,10 +26,11 @@ from . import optgroups
 
 @testing.parametrized(**{name: (name, maker) for name, maker in experiments.registry.items()})
 def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> None:
-    with datasets.mocked_data():  # mock mlda data that should be downloaded
-        check_maker(maker)  # this is to extract the function for reuse if other external packages need it
-    if name not in ["rocket", "control_problem", "images_using_gan"] and not any(
-        x in name for x in ["tuning", "mlda", "realworld"]
+    with tools.set_env(NEVERGRAD_PYTEST=1):
+        with datasets.mocked_data():  # mock mlda data that should be downloaded
+            check_maker(maker)  # this is to extract the function for reuse if other external packages need it
+    if name not in ["rocket", "images_using_gan", "control_problem"] and not any(
+        x in name for x in ["tuning", "mlda", "realworld", "image_"]
     ):
         check_seedable(
             maker, "mltuning" in name
