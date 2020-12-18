@@ -152,7 +152,7 @@ def test_infnan(name: str) -> None:
     optim = optim_cls(parametrization=2, budget=1500)
     recom = optim.minimize(buggy_function)
     result = buggy_function(recom.value)
-    assert result < 0.1
+    assert result < 0.2
 
 
 @skip_win_perf  # type: ignore
