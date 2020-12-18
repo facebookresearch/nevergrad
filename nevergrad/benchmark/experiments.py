@@ -1515,7 +1515,7 @@ def pbo_suite(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     dde = ng.optimizers.DifferentialEvolution(crossover="dimension").set_name("DiscreteDE")
     seedg = create_seed_generator(seed)
     for dim in [16, 64, 100]:
-        for fid in [1]: #range(1, 24):
+        for fid in range(1, 24):
             for iid in range(1, 5):
                 try:
                     func = iohprofiler.PBOFunction(fid, iid, dim)
