@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 from pathlib import Path
+import itertools
 
 import numpy as np
 import PIL.Image
@@ -182,7 +183,7 @@ class ImageAdversarial(base.ExperimentFunction):
             )
         else:
             raise ValueError(f"{folder} is not a valid folder.")
-        for data, target in data_loader:
+        for data, target in itertools.islice(data_loader, 0, 100):
             _, pred = torch.max(classifier(data), axis=1)
             if pred == target:
                 func = cls(
