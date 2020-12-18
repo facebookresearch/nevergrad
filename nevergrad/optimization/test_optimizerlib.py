@@ -164,16 +164,14 @@ def test_infnan(name: str) -> None:
         and "Noisy" not in name  # Dedicated to noisy optimization
         and "chain" not in name  # Sometimes chaining is not adapted, let us remove all of them
         and "NGOptBase" != name
+        and "Shiwa" != name
         and "NGOpt2" != name
         and "NGO" != name
     ):
         optim = optim_cls(parametrization=2, budget=70)
         recom = optim.minimize(buggy_function)
         result = buggy_function(recom.value)
-        if "NoisyBandit" != name and "and" not in name:
-            assert result < 2.0, f"{name} failed and got {result} with {recom.value}."
-        else:
-            assert result < 50.0, f"{name} failed and got {result} with {recom.value}."
+        assert result < 2.0, f"{name} failed and got {result} with {recom.value}."
 
 
 @skip_win_perf  # type: ignore
