@@ -1205,12 +1205,8 @@ def image_multi_similarity(seed: tp.Optional[int] = None, cross_valid: bool=Fals
     optims = ["CMA", "NGOpt8", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
     if default_optims is not None:
         optims = default_optims
-    funcs:tp.List[ExperimentFunction] = [imagesxp.Image(loss=loss) for loss in [
-                imagesxp.imagelosses.SumAbsoluteDifferences,
-                imagesxp.imagelosses.LpipsAlex,
-                imagesxp.imagelosses.LpipsVgg,
-                imagesxp.imagelosses.SumSquareDifferences,
-                imagesxp.imagelosses.HistogramDifference]]
+    funcs:tp.List[ExperimentFunction] = [imagesxp.Image(loss=loss) for loss in imagesxp.imagelosses.registry.values() if
+        issubclasss(loss, imagessxp.imagelosses.ImageLossWithReference)]
     base_values: tp.List[tp.Any] = [func(func.parametrization.sample().value) for func in funcs]
     if cross_valid:
         mofuncs: tp.List[tp.Any] = helpers.SpecialEvaluationExperiment.create_crossvalidation_experiments(funcs, pareto_size=25) 
