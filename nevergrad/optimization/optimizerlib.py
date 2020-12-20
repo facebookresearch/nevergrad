@@ -2539,6 +2539,8 @@ class NGOpt8(NGOpt4):
                 # override at runtime
                 self._optim = DE(self.parametrization, self.budget, self.num_workers)
 
+    def recommend(self) -> p.Parameter:
+        return Optimizer().recommend(self)
 
 @registry.register
 class NGOpt(NGOpt8):
