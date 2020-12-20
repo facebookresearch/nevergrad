@@ -2540,7 +2540,7 @@ class NGOpt8(NGOpt4):
                 self._optim = DE(self.parametrization, self.budget, self.num_workers)
 
     def recommend(self) -> p.Parameter:
-        return base.Optimizer().recommend(self)
+        return base.Optimizer.recommend(self)
 
 @registry.register
 class NGOpt(NGOpt8):
