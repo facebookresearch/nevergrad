@@ -2542,6 +2542,7 @@ class NGOpt8(NGOpt4):
     def recommend(self) -> p.Parameter:
         return base.Optimizer.recommend(self)
 
+
 @registry.register
 class NGOpt(NGOpt8):
     pass
