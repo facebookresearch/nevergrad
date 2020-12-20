@@ -642,14 +642,14 @@ def test_ngo_split_optimizer(
 @pytest.mark.parametrize(  # type: ignore
     "budget,with_int",
     [
-        (150, True),
-        (300, True),
-        (1000, True),
-        (3000, True),
-        (100, False),
-        (300, False),
-        (1000, False),
-        (3000, False),
+        (100, True),
+        (200, True),
+        (666, True),
+        (2000, True),
+        (66, False),
+        (200, False),
+        (666, False),
+        (2000, False),
     ],
 )
 def test_ngopt_on_simple_realistic_scenario(budget: int, with_int: bool) -> None:

@@ -226,12 +226,13 @@ class ArtificialFunction(ExperimentFunction):
             results.append(self._func(block))
         return float(self._aggregator(results))
 
-    def evaluation_function(self, *args: tp.Any, **kwargs: tp.Any) -> float:
+    def evaluation_function(self, *recommendations: p.Parameter) -> float:
         """Implements the call of the function.
         Under the hood, __call__ delegates to oracle_call + add some noise if noise_level > 0.
         """
-        assert len(args) == 1 and not kwargs
-        data = self._transform(args[0])
+        assert len(recommendations) == 1, "Should not be a pareto set for a monoobjective function"
+        assert len(recommendations[0].args) == 1 and not recommendations[0].kwargs
+        data = self._transform(recommendations[0].args[0])
         return self.function_from_transform(data)
 
     def noisy_function(self, x: tp.ArrayLike) -> float:
@@ -304,8 +305,10 @@ class FarOptimumFunction(ExperimentFunction):
     def _monofunc(self, x: np.ndarray) -> float:
         return float(np.sum(self._multifunc(x)))
 
-    def evaluation_function(self, *args: tp.Any, **kwargs: tp.Any) -> float:
-        return self._monofunc(args[0])
+    def evaluation_function(self, *recommendations: p.Parameter) -> float:
+        assert len(recommendations) == 1, "Should not be a pareto set for a monoobjective function"
+        assert len(recommendations[0].args) == 1 and not recommendations[0].kwargs
+        return self._monofunc(recommendations[0].args[0])
 
     @classmethod
     def itercases(cls) -> tp.Iterator["FarOptimumFunction"]:

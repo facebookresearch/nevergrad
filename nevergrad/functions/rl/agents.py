@@ -159,12 +159,13 @@ class TorchAgentFunction(ExperimentFunction):
         assert isinstance(reward, (int, float))
         return self.reward_postprocessing(reward)
 
-    def evaluation_function(self, *args: tp.Any, **kwargs: tp.Any) -> float:
+    def evaluation_function(self, *recommendations: p.Parameter) -> float:
         """Implements the call of the function.
         Under the hood, __call__ delegates to oracle_call + add some noise if noise_level > 0.
         """
+        assert len(recommendations) == 1, "Should not be a pareto set for a monoobjective function"
         num_tests = max(1, int(self._num_test_evaluations / self.runner.num_repetitions))
-        return sum(self.compute(**kwargs) for _ in range(num_tests)) / num_tests
+        return sum(self.compute(**recommendations[0].kwargs) for _ in range(num_tests)) / num_tests
 
 
 class Perceptron(nn.Module):

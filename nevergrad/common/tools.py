@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import os
 import site
 import glob
 import ctypes
@@ -10,6 +11,7 @@ import time
 import inspect
 import warnings
 import itertools
+import contextlib
 import collections
 import typing as tp
 import numpy as np
@@ -186,3 +188,20 @@ def different_from_defaults(
     return {
         x: instance_dict[x] for x, y in defaults.items() if y != instance_dict[x] and not x.startswith("_")
     }
+
+
+@contextlib.contextmanager
+def set_env(**environ: tp.Any) -> tp.Generator[None, None, None]:
+    """Temporarily changes environment variables."""
+    old_environ = {x: os.environ.get(x, None) for x in environ}
+    for x in environ:
+        if x != x.upper():
+            raise ValueError(f"Only capitalized environment variable are allowed, but got {x!r}")
+    os.environ.update({x: str(y) for x, y in environ.items()})
+    try:
+        yield
+    finally:
+        for k, val in old_environ.items():
+            os.environ.pop(k)
+            if val is not None:
+                os.environ[k] = val
