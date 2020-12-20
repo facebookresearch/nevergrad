@@ -447,8 +447,6 @@ def fiveshots(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         for bd in [3, 25]
         for uv_factor in [0, 5]
     ]
-
-
     for func in functions:
         for optim in optims:
             for budget in [30, 100, 3000]:
@@ -468,8 +466,6 @@ def multimodal(seed: tp.Optional[int] = None, para: bool = False) -> tp.Iterator
     names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal"]
     # Keep in mind that Rosenbrock is multimodal in high dimension http://ieeexplore.ieee.org/document/6792472/.
     optims = ["NGOpt8", "CMandAS", "DiagonalCMA", "CMA", "TripleCMA", "CMandAS2", "PSO"]
-
-
     if not para:
         optims += ["RSQP", "RCobyla", "RPowell", "SQPCMA", "SQP", "Cobyla", "Powell"]
     # + list(sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x or "BO" in x))
@@ -495,8 +491,6 @@ def hdmultimodal(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # Keep in mind that Rosenbrock is multimodal in high dimension http://ieeexplore.ieee.org/document/6792472/.
     optims = ["NGOpt8", "MultiCMA", "RPowell", "CMA", "TripleCMA"]
     optims = ["NaiveTBPSA"]
-
-
     # + list(sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x or "BO" in x))
     functions = [
         ArtificialFunction(name, block_dimension=bd)
@@ -551,8 +545,6 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
     if hd:
         optims += ["OnePlusOne"]
         optims += get_optimizers("splitters", seed=next(seedg))  # type: ignore
-
-
 
     # List of objective functions.
     functions = [
@@ -660,8 +652,6 @@ def illcondi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """
     seedg = create_seed_generator(seed)
     optims = ["NGOpt8", "Cobyla", "SQP", "OnePlusOne", "DiagonalCMA", "MiniDE"]
-
-
     functions = [
         ArtificialFunction(name, block_dimension=50, rotation=rotation) for name in ["cigar", "ellipsoid"] for rotation
         in [True, False]
@@ -949,8 +939,6 @@ def rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     funcs = [Rocket()]
     seedg = create_seed_generator(seed)
     optims = ["DiagonalCMA", "MetaModel", "CMA", "DE", "NGOpt8"]
-
-
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
         for num_workers in [1, 30]:
             if num_workers < budget:
@@ -1030,8 +1018,6 @@ def simpletsp(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     funcs = [STSP(10), STSP(100), STSP(1000), STSP(10000)]
     seedg = create_seed_generator(seed)
     optims = ["PortfolioDiscreteOnePlusOne", "NGOpt8", "OnePlusOne", "DiagonalCMA"]
-
-
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600]:
         for num_workers in [1]:  # , 10, 100]:
             if num_workers < budget:
@@ -1075,8 +1061,6 @@ def powersystems(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
               "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
               "RandomScaleRandomSearch", "MiniDE",
               "NGO", "Shiwa", "DiagonalCMA"]
-
-
     optims += ["OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne", "OnePlusOne"]
     optims += get_optimizers("splitters", "progressive", seed=next(seedg))  # type: ignore
     budgets = [3200, 6400, 12800]
@@ -1106,8 +1090,6 @@ def mlda(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     funcs += [_mlda.Landscape(transform) for transform in [None, "square", "gaussian"]]
     seedg = create_seed_generator(seed)
     optims = ["DiagonalCMA", "MetaModel", "NGOpt8", "CMandAS2", "OnePlusOne", "TwoPointsDE"]
-
-
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
         for num_workers in [1, 10, 100]:
             if num_workers < budget:
@@ -1130,8 +1112,6 @@ def mldakmeans(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
     optims = ["OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne", "CMA", "TBPSA", "NaiveTBPSA", "SPSA"]
     optims += get_optimizers("progressive", seed=next(seedg))  # type: ignore
-
-
     for budget in [1000, 10000]:
         for num_workers in [1, 10, 100]:
             if num_workers < budget:
@@ -1164,8 +1144,6 @@ def image_similarity(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Optimizing images: artificial criterion for now."""
     seedg = create_seed_generator(seed)
     optims = ["CMA", "NGOpt8", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
-
-
     func = imagesxp.Image()
     for budget in [100 * 5 ** k for k in range(3)]:
         for num_workers in [1]:
@@ -1180,8 +1158,6 @@ def image_multi_similarity(seed: tp.Optional[int] = None, cross_valid: bool=Fals
     """Optimizing images: artificial criterion for now."""
     seedg = create_seed_generator(seed)
     optims = ["CMA", "NGOpt8", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
-
-
     funcs:tp.List[ExperimentFunction] = [imagesxp.Image(loss=loss) for loss in imagesxp.imagelosses.registry.values() if loss.REQUIRES_REFERENCE]
     base_values: tp.List[tp.Any] = [func(func.parametrization.sample().value) for func in funcs]
     if cross_valid:
@@ -1207,8 +1183,6 @@ def image_quality_proxy(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment
     """Optimizing images: artificial criterion for now."""
     seedg = create_seed_generator(seed)
     optims: tp.List[tp.Any] = get_optimizers("structured_moo")
-
-
     iqa, blur, brisque = [
         imagesxp.Image(loss=loss)
         for loss in (
@@ -1234,8 +1208,6 @@ def image_quality(seed: tp.Optional[int] = None, cross_val: bool=False) -> tp.It
     """
     seedg = create_seed_generator(seed)
     optims: tp.List[tp.Any] = get_optimizers("structured_moo")
-
-
 
     # We optimize func_blur or func_brisque and check performance on func_iqa.
     funcs: tp.List[ExperimentFunction] = [
@@ -1274,9 +1246,6 @@ def image_similarity_and_quality(seed: tp.Optional[int] = None, cross_val: bool=
     """Optimizing images: artificial criterion for now."""
     seedg = create_seed_generator(seed)
     optims: tp.List[tp.Any] = get_optimizers("structured_moo")
-
-
-
 
     # 3 losses functions including 2 iqas.
     func_iqa = imagesxp.Image(loss=imagesxp.imagelosses.Koncept512)
@@ -1412,8 +1381,6 @@ def photonics(seed: tp.Optional[int] = None, as_tuple: bool = False) -> tp.Itera
     optims = ["TwoPointsDE", "DE", "PSO", "NGOpt8"] + es  # type: ignore
 
     optims += get_optimizers("splitters")  # type: ignore
-
-
     for method in ["clipping", "tanh"]:  # , "arctan"]:
         for name in ["bragg", "chirped", "morpho"]:
             func = Photonics(name, 60 if name == "morpho" else 80, bounding_method=method, as_tuple=as_tuple)
