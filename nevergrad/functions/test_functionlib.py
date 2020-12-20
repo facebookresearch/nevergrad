@@ -173,7 +173,7 @@ def test_compute_pseudotime() -> None:
     np.testing.assert_equal(func.compute_pseudotime(((x,), {}), 3), 1.0)
     np.random.seed(12)
     func = functionlib.ArtificialFunction("DelayedSphere", 2)
-    np.testing.assert_almost_equal(func.compute_pseudotime(((x,), {}), 3), 0.0010534)
+    np.testing.assert_almost_equal(func.compute_pseudotime(((x,), {}), 3), 0.00034702)
     # check minimum
     np.random.seed(None)
     func = functionlib.ArtificialFunction("DelayedSphere", 2)

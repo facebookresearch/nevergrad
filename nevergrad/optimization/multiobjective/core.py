@@ -68,6 +68,12 @@ class HypervolumePareto:
         self._pareto.append(parameter)
         self._pareto_needs_filtering = True
 
+    def extend(self, parameters: tp.Sequence[p.Parameter]) -> float:
+        output = 0.0
+        for param in parameters:
+            output = self.add(param)
+        return output
+
     def add(self, parameter: p.Parameter) -> float:
         """Given parameters and the multiobjective loss, this computes the hypervolume
         and update the state of the function with new points if it belongs to the pareto front
