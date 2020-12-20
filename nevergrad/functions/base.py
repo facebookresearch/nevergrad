@@ -287,26 +287,27 @@ class ArrayExperimentFunction(ExperimentFunction):
         assert symmetry >= 0
         assert symmetry < 2 ** self.dimension
         # The number 11111111111111111111111 is prime (using a prime is an overkill but ok).
-        self._symmetry = (symmetry * 11111111111111111111111) % (2 ** self.dimension)
-        if self._symmetry != 0:
+        symmetry = (symmetry * 11111111111111111111111) % (2 ** self.dimension)
+        if symmetry != 0:
             self._function = self.symmetrized_function
+            self.threshold_coefficients = np.zeros(self.dimension)
+            self.slope_coefficients = np.ones(self.dimension)
+            for i in range(self.dimension):  # pylint: disable=consider-using-enumerate
+                if symmetry % 2 == 1:
+                    if self.parametrization.bounds[0] is not None and self.parametrization.bounds[1] is not None:  # type: ignore
+                        middle = (self.parametrization.bounds[0][0] + self.parametrization.bounds[1][0]) / 2.0  # type: ignore
+                    else:
+                        middle = 0.0
+                    self.threshold_coefficients[i] = 2.0 * middle  # Otherwise we keep 0.
+                    self.slope_coefficients[i] = -1.0  # Otherwise we keep 1.
+                symmetry = symmetry // 2
         else:
             self._function = function
 
     def symmetrized_function(self, x: np.ndarray) -> tp.Loss:
         assert isinstance(x, np.ndarray), "symmetry != 0 works only when the input is an array."
         assert len(x.shape) == 1, "only one-dimensional arrays for now."
-        y = np.array(x, copy=True)
-        symmetry = self._symmetry
-        for i in range(len(y)):  # pylint: disable=consider-using-enumerate
-            if symmetry % 2 == 1:
-                if self.parametrization.bounds[0] is not None and self.parametrization.bounds[1] is not None:  # type: ignore
-                    middle = (self.parametrization.bounds[0][0] + self.parametrization.bounds[1][0]) / 2.0  # type: ignore
-                else:
-                    middle = 0.0
-                y[i] = 2 * middle - x[i]  # We should rather symmetrize w.r.t the center of Parameter. TODO
-            symmetry = symmetry // 2
-        return self._inner_function(y)  # type: ignore
+        return self._inner_function(self.threshold_coefficients + self.slope_coefficients * x)  # type: ignore
 
 
 class MultiExperiment(ExperimentFunction):
