@@ -303,6 +303,8 @@ class ArrayExperimentFunction(ExperimentFunction):
                 symmetry = symmetry // 2
         else:
             self._function = function
+            self.threshold_coefficients = np.zeros(self.dimension)
+            self.slope_coefficients = np.ones(self.dimension)
 
     def symmetrized_function(self, x: np.ndarray) -> tp.Loss:
         assert isinstance(x, np.ndarray), "symmetry != 0 works only when the input is an array."
