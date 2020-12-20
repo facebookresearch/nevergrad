@@ -8,8 +8,10 @@ import numpy as np
 import pytest
 from nevergrad.parametrization import parameter as p
 from nevergrad.common import testing
+from nevergrad.functions import ArtificialFunction
 import nevergrad.common.typing as tp
 from . import base
+from . import helpers
 
 
 def _arg_return(*args: tp.Any, **kwargs: tp.Any) -> float:
@@ -182,3 +184,22 @@ def test_function_descriptors_all_default() -> None:
     with pytest.raises(TypeError):
         # make sure unexpected keyword still works
         ExampleFunctionAllDefault(blublu=12)  # type: ignore
+
+
+def test_pareto_experiment() -> None:
+    # Checking MOO in cross-validation.
+    objective_functions: tp.List[tp.Any] = [
+        ArtificialFunction("sphere", block_dimension=7),
+        ArtificialFunction("sphere", block_dimension=7),
+        ArtificialFunction("cigar", block_dimension=7),
+    ]
+    xps = helpers.SpecialEvaluationExperiment.create_crossvalidation_experiments(
+        objective_functions, pareto_size=16
+    )
+    assert len(xps) == 15  # 3 xps, multiplied by 5 Pareto extractors
+    param = xps[0].parametrization
+    out = xps[0](*param.args, **param.kwargs)
+    assert isinstance(out, np.ndarray) and out.size == 2
+    param._losses = out  # hack for testing
+    evaluation = xps[0].evaluation_function(param, param, param)
+    assert isinstance(evaluation, float)

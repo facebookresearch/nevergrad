@@ -129,7 +129,13 @@ def check_parameter_features(param: par.Parameter) -> None:
     pickle.loads(string)
     # array info transfer:
     if isinstance(param, par.Array):
-        for name in ("integer", "exponent", "bounds", "bound_transform", "full_range_sampling"):
+        for name in (
+            "integer",
+            "exponent",
+            "bounds",
+            "bound_transform",
+            "full_range_sampling",
+        ):
             assert getattr(param, name) == getattr(child, name)
     # sampling
     samp_param = param.sample()
@@ -139,8 +145,12 @@ def check_parameter_features(param: par.Parameter) -> None:
     assert param.descriptors.deterministic_function
     param.descriptors.deterministic_function = False
     assert not param.descriptors.deterministic_function
+    assert param.descriptors.non_proxy_function
+    param.descriptors.non_proxy_function = False
+    assert not param.descriptors.non_proxy_function
     descr_child = param.spawn_child()
     assert not descr_child.descriptors.deterministic_function
+    assert not descr_child.descriptors.non_proxy_function
 
 
 def check_parameter_freezable(param: par.Parameter) -> None:
@@ -173,7 +183,10 @@ def check_parameter_freezable(param: par.Parameter) -> None:
             "Instrumentation(Tuple(Array{(2,)}),Dict(string=blublu,truc=plop))",
         ),
         (par.Choice([1, 12]), "Choice(choices=Tuple(1,12),weights=Array{(1,2)})"),
-        (par.Choice([1, 12], deterministic=True), "Choice{det}(choices=Tuple(1,12),weights=Array{(1,2)})"),
+        (
+            par.Choice([1, 12], deterministic=True),
+            "Choice{det}(choices=Tuple(1,12),weights=Array{(1,2)})",
+        ),
         (
             par.TransitionChoice([1, 12]),
             "TransitionChoice(choices=Tuple(1,12),positions=Array{Cd(0,2)}" ",transitions=[1. 1.])",
@@ -191,7 +204,12 @@ def test_parameter_names(param: par.Parameter, name: str) -> None:
         (par.Choice([True, False]), True, False, False),
         (par.Choice([True, False], deterministic=True), False, True, False),
         (par.Choice([True, par.Scalar().set_integer_casting()]), False, False, False),
-        (par.Dict(constant=12, data=par.Scalar().set_integer_casting()), False, True, True),
+        (
+            par.Dict(constant=12, data=par.Scalar().set_integer_casting()),
+            False,
+            True,
+            True,
+        ),
     ],
 )
 def test_parameter_descriptors(

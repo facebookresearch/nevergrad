@@ -36,6 +36,7 @@ class MultiValue:
     def __init__(self, parameter: p.Parameter, y: float, *, reference: p.Parameter) -> None:
         self.count = 1
         self.mean = y
+        self._minimum = y
         self.square = y * y
         # TODO May be safer to use a default variance which depends on y for scale invariance?
         self.variance = 1.0e6
@@ -61,6 +62,8 @@ class MultiValue:
             return self.optimistic_confidence_bound
         elif name == "pessimistic":
             return self.pessimistic_confidence_bound
+        elif name == "minimum":
+            return self._minimum
         elif name == "average":
             return self.mean
         else:
@@ -74,6 +77,7 @@ class MultiValue:
         y: float
             the new evaluation
         """
+        self._minimum = min(self._minimum, y)
         self.mean = (self.count * self.mean + y) / float(self.count + 1)
         self.square = (self.count * self.square + y * y) / float(self.count + 1)
         self.square = max(self.square, self.mean ** 2)

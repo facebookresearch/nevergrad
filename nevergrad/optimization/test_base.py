@@ -8,6 +8,7 @@ from pathlib import Path
 import numpy as np
 import nevergrad.common.typing as tp
 from nevergrad.common import testing
+import nevergrad as ng
 from . import optimizerlib
 from . import experimentalvariants as xpvariants
 from . import base
@@ -89,6 +90,8 @@ def test_tell_types(value: tp.Any, error: bool) -> None:
 
 def test_base_optimizer() -> None:
     zeroptim = xpvariants.Zero(parametrization=2, budget=4, num_workers=1)
+    # add descriptor to replicate old behavior, returning pessimistic best
+    zeroptim.parametrization.descriptors.deterministic_function = False
     representation = repr(zeroptim)
     expected = "parametrization=Array{(2,)}"
     assert expected in representation, f"Unexpected representation: {representation}"
@@ -152,3 +155,25 @@ def test_naming() -> None:
     np.testing.assert_equal(
         repr(opt), f"Instance of BlubluOptimizer(parametrization={instru_str}, budget=4, num_workers=1)"
     )
+
+
+class MinStorageFunc:
+    """Stores the minimum value obtained so far"""
+
+    def __init__(self) -> None:
+        self.min_loss = float("inf")
+
+    def __call__(self, score: int) -> float:
+        self.min_loss = min(score, self.min_loss)
+        return score
+
+
+def test_recommendation_correct() -> None:
+    # Run this several times to debug:
+    # pytest nevergrad/optimization/test_base.py::test_recommendation_correct --count=20 --exitfirst
+    func = MinStorageFunc()
+    choice_size = 20
+    param = ng.p.Choice(range(choice_size)).set_name(f"Choice{choice_size}")
+    optimizer = optimizerlib.OnePlusOne(parametrization=param, budget=300, num_workers=1)
+    recommendation = optimizer.minimize(func)
+    assert func.min_loss == recommendation.value
