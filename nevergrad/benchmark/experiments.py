@@ -1234,7 +1234,7 @@ def image_multi_similarity_pgan(seed: tp.Optional[int] = None) -> tp.Iterator[Ex
 @registry.register
 def image_multi_similarity_cv(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of image_multi_similarity with cross-validation."""
-    return image_multi_similarity(seed, cross_valid=True, with_pgan=True)
+    return image_multi_similarity(seed, cross_valid=True)
 
 
 @registry.register
