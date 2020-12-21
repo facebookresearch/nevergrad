@@ -1183,19 +1183,25 @@ def arcoating(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def image_similarity(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def image_similarity(seed: tp.Optional[int] = None, with_pgan: bool=False) -> tp.Iterator[Experiment]:
     """Optimizing images: artificial criterion for now."""
     seedg = create_seed_generator(seed)
     optims = ["CMA", "NGOpt8", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
     if default_optims is not None:
         optims = default_optims
-    func = imagesxp.Image()
+    func = imagesxp.Image(with_pgan=with_pgan)
     for budget in [100 * 5 ** k for k in range(3)]:
         for num_workers in [1]:
             for algo in optims:
                 xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
                 if not xp.is_incoherent:
                     yield xp
+
+
+@registry.register
+def image_similarity_pgan(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of image_similarity, using PGan as a representation."""
+    return image_similarity(seed, with_pgan=True)
 
 
 @registry.register

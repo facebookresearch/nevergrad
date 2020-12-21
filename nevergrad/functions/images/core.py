@@ -28,6 +28,7 @@ class Image(base.ExperimentFunction):
         problem_name: str = "recovering",
         index: int = 0,
         loss: tp.Type[imagelosses.ImageLoss] = imagelosses.SumAbsoluteDifferences,
+        with_pgan: bool = False,
     ) -> None:
         """
         problem_name: the type of problem we are working on.
@@ -41,6 +42,7 @@ class Image(base.ExperimentFunction):
         self.domain_shape = (226, 226, 3)
         self.problem_name = problem_name
         self.index = index
+        self.with_pgan = with_pgan
 
         # Storing data necessary for the problem at hand.
         assert problem_name == "recovering"  # For the moment we have only this one.
@@ -50,16 +52,44 @@ class Image(base.ExperimentFunction):
         image = PIL.Image.open(path).resize((self.domain_shape[0], self.domain_shape[1]), PIL.Image.ANTIALIAS)
         self.data = np.asarray(image)[:, :, :3]  # 4th Channel is pointless here, only 255.
         # parametrization
-        array = ng.p.Array(init=128 * np.ones(self.domain_shape), mutable_sigma=True)
-        array.set_mutation(sigma=35)
-        array.set_bounds(lower=0, upper=255.99, method="clipping", full_range_sampling=True)
-        max_size = ng.p.Scalar(lower=1, upper=200).set_integer_casting()
-        array.set_recombination(ng.p.mutation.Crossover(axis=(0, 1), max_size=max_size)).set_name("")  # type: ignore
-        super().__init__(loss(reference=self.data), array)
+        if not with_pgan:
+            array = ng.p.Array(init=128 * np.ones(self.domain_shape), mutable_sigma=True)
+            array.set_mutation(sigma=35)
+            array.set_bounds(lower=0, upper=255.99, method="clipping", full_range_sampling=True)
+            max_size = ng.p.Scalar(lower=1, upper=200).set_integer_casting()
+            array.set_recombination(ng.p.mutation.Crossover(axis=(0, 1), max_size=max_size)).set_name("")  # type: ignore
+            super().__init__(loss(reference=self.data), array)
+        else:
+            self.pgan_model = torch.hub.load(
+                "facebookresearch/pytorch_GAN_zoo:hub",
+                "PGAN",
+                model_name="celebAHQ-512",
+                pretrained=True,
+                useGPU=use_gpu,
+            )
+            self.domain_shape = (1, 512)
+            initial_noise = np.random.normal(size=self.domain_shape)
+            array = ng.p.Array(init=initial_noise, mutable_sigma=mutable_sigma)
+            array.set_mutation(sigma=35.)
+            array.set_recombination(ng.p.mutation.Crossover(axis=(0, 1))).set_name("")
+            self._descriptors.pop("use_gpu", None)
+            super().__init__(self._loss, array)
+
         assert self.multiobjective_upper_bounds is None
         self.add_descriptors(loss=loss.__class__.__name__)
         self.loss_function = loss(reference=self.data)
 
+    def _generate_images(self, x: np.ndarray) -> np.ndarray:
+        """ Generates images tensor of shape [nb_images, x, y, 3] with pixels between 0 and 255"""
+        # pylint: disable=not-callable
+        noise = torch.tensor(x.astype("float32"))
+        return ((self.pgan_model.test(noise).clamp(min=-1, max=1) + 1) * 255.99 / 2).permute(0, 2, 3, 1).cpu().numpy()  # type: ignore
+
+    def _loss(self, x: np.ndarray) -> float:
+        image = self._generate_images(x)
+        assert x.shape == (226, 226, 3), f"{x.shape} != {(226, 226, 3)}"
+        loss = self.loss_function(image)
+        return loss
 
 # #### Adversarial attacks ##### #
 
@@ -250,6 +280,7 @@ class ImageFromPGAN(base.ExperimentFunction):
         super().__init__(self._loss, array)
         self.loss_function = loss
         self._descriptors.pop("use_gpu", None)
+
         self.add_descriptors(loss=loss.__class__.__name__)
 
     def _loss(self, x: np.ndarray) -> float:
