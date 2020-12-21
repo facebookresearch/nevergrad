@@ -35,8 +35,6 @@ def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[expe
     # Our IQAs and our ScikitLearn are not well guaranteed on Windows.
     if "image" in name and "quality" in name and platform.system() == "Windows":
         raise SkipTest("Image quality not guaranteed on Windows.")
-    if "tuning" in name and platform.system() == "Windows":
-        raise SkipTest("Image quality not guaranteed on Windows.")
 
     # Basic test.
     with tools.set_env(NEVERGRAD_PYTEST=1):
