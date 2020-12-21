@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import cv2
 from pathlib import Path
 import itertools
 
@@ -86,8 +87,9 @@ class Image(base.ExperimentFunction):
         return ((self.pgan_model.test(noise).clamp(min=-1, max=1) + 1) * 255.99 / 2).permute(0, 2, 3, 1).cpu().numpy()  # type: ignore
 
     def _loss(self, x: np.ndarray) -> float:
-        image = self._generate_images(x)
-        assert x.shape == (226, 226, 3), f"{x.shape} != {(226, 226, 3)}"
+        image = self._generate_images(x).squeeze(0)
+        image = cv2.resize(image, dsize=(226, 226), interpolation=cv2.INTER_NEAREST)
+        assert image.shape == (226, 226, 3), f"{x.shape} != {(226, 226, 3)}"
         loss = self.loss_function(image)
         return loss
 

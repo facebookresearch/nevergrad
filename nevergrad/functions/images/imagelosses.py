@@ -135,6 +135,7 @@ class Blur(ImageLoss):
     def __call__(self, img: np.ndarray) -> float:
         assert img.shape[2] == 3
         assert len(img.shape) == 3
+        img = np.asarray(img, dtype=np.float64)
         return -float(cv2.Laplacian(img, cv2.CV_64F).var())
 
 

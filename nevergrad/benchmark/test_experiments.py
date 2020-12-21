@@ -29,12 +29,12 @@ def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[expe
     with tools.set_env(NEVERGRAD_PYTEST=1):
         with datasets.mocked_data():  # mock mlda data that should be downloaded
             check_maker(maker)  # this is to extract the function for reuse if other external packages need it
-    if name not in ["rocket", "images_using_gan", "control_problem"] and not any(
-        x in name for x in ["tuning", "mlda", "realworld", "image_"]
-    ):
-        check_seedable(
-            maker, "mltuning" in name
-        )  # this is a basic test on first elements, do not fully rely on it
+    check_seedable(
+        maker,
+        "mltuning" in name,
+        skip_seed=(name in ["rocket", "images_using_gan", "control_problem"])
+        or any(x in name for x in ["tuning", "mlda", "realworld", "image_"]),
+    )  # this is a basic test on first elements, do not fully rely on it
 
 
 @pytest.fixture(scope="module")  # type: ignore
@@ -80,7 +80,7 @@ def check_maker(maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> 
             )
 
 
-def check_seedable(maker: tp.Any, short: bool = False) -> None:
+def check_seedable(maker: tp.Any, short: bool = False, skip_seed: bool = False) -> None:
     """Randomized check of seedability for 8 first elements
     This test does not prove the complete seedability of the generator!  (would be way too slow)
     """
@@ -106,6 +106,8 @@ def check_seedable(maker: tp.Any, short: bool = False) -> None:
         selector = Selector(data=[xp.run() for xp in simplified])
         results.append(Selector(selector.loc[:, ["loss", "seed", "error"]]))  # elapsed_time can vary...
         assert results[-1].unique("error") == {""}, f"An error was raised during optimization:\n{results[-1]}"
+    if skip_seed:
+        return
     results[0].assert_equivalent(results[1], f"Non identical outputs for seed={random_seed}")
     np.testing.assert_raises(
         AssertionError,
