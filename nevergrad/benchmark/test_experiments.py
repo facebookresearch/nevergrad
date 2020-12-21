@@ -6,6 +6,7 @@
 import inspect
 import itertools
 import os
+import platform
 import typing as tp
 from pathlib import Path
 from unittest import SkipTest
@@ -31,14 +32,19 @@ def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[expe
     if "_pgan" in name and os.environ.get("CIRCLECI", False):  # raaaa no idea why this detection fails
         raise SkipTest("Too slow in CircleCI")
 
+    # Our IQAs are not well guaranteed on Windows.
+    if "image" in name and "quality" in name and platform.system() == "Windows":
+        raise SkipTest("Image quality not guaranteed on Windows.")
+
     # Basic test.
     with tools.set_env(NEVERGRAD_PYTEST=1):
         with datasets.mocked_data():  # mock mlda data that should be downloaded
             check_maker(maker)  # this is to extract the function for reuse if other external packages need it
 
+    # Some tests are skipped on CircleCI (but they do work well locally, if memory enough).
     if ("images_using_gan" == name or "mlda" == name or "realworld" == name) and os.environ.get(
         "CIRCLECI", False
-    ):  # raaaa no idea why this detection fails
+    ):
         raise SkipTest("Too slow in CircleCI")
 
     # No Mujoco on CircleCI and possibly for some users.
@@ -48,8 +54,7 @@ def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[expe
     check_seedable(
         maker,
         "mltuning" in name,
-        skip_seed=(name in ["rocket", "images_using_gan", "control_problem"])
-        or any(x in name for x in ["tuning", "mlda", "realworld", "image_"]),
+        skip_seed=(name in ["rocket", "images_using_gan"]) or any(x in name for x in ["tuning", "image_"]),
     )  # this is a basic test on first elements, do not fully rely on it
 
 
