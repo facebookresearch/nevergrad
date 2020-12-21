@@ -30,8 +30,10 @@ def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[expe
     with tools.set_env(NEVERGRAD_PYTEST=1):
         with datasets.mocked_data():  # mock mlda data that should be downloaded
             check_maker(maker)  # this is to extract the function for reuse if other external packages need it
-    if name == "control_problem" or "_pgan" in name:  # No Mujoco on CircleCI
+    if name == "control_problem":  # No Mujoco on CircleCI
         return
+    if "_pgan" in name and os.environ.get("CIRCLECI", False):
+        raise SkipTest("Too slow in CircleCI")
     check_seedable(
         maker,
         "mltuning" in name,
