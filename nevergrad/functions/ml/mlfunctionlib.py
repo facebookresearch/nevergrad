@@ -80,6 +80,7 @@ class MLTuning(ExperimentFunction):
             )
             regr.compile(optimizer=solver, loss="mse", metrics=["mae"])
         else:
+            assert False, f"{regressor} fails"
             raise ValueError(f"Unknown regressor {regressor}.")
 
         fit_additional_params = dict(verbose=0, epochs=350) if regressor == "keras_dense_nn" else {}
@@ -98,9 +99,10 @@ class MLTuning(ExperimentFunction):
             regr.fit(X, y, **fit_additional_params)
             # Predict
             pred_test = regr.predict(X_test)
-            result += mean_squared_error(y_test, pred_test)
-        if np.isnan(result):
-            result = 5.e40
+            try:
+                result += mean_squared_error(y_test, pred_test)
+            except ValueError:
+                result += 5.0e20
 
         return result / self._cross_val_num  # We return a num_cv-fold validation error.
 
