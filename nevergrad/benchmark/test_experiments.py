@@ -29,12 +29,15 @@ def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[expe
     with tools.set_env(NEVERGRAD_PYTEST=1):
         with datasets.mocked_data():  # mock mlda data that should be downloaded
             check_maker(maker)  # this is to extract the function for reuse if other external packages need it
+    if name == "control_problem":  # We do need want the Mujoco dependency in circleci
+        return
     check_seedable(
         maker,
         "mltuning" in name,
         skip_seed=(name in ["rocket", "images_using_gan", "control_problem"])
         or any(x in name for x in ["tuning", "mlda", "realworld", "image_"]),
     )  # this is a basic test on first elements, do not fully rely on it
+       
 
 
 @pytest.fixture(scope="module")  # type: ignore
