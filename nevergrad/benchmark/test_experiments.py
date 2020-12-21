@@ -32,7 +32,7 @@ def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[expe
             check_maker(maker)  # this is to extract the function for reuse if other external packages need it
     if name == "control_problem":  # No Mujoco on CircleCI
         return
-    if "_pgan" in name and os.environ.get("CIRCLECI", False):
+    if "_pgan" in name:  # and os.environ.get("CIRCLECI", False):   # raaaa no idea why this detection fails
         raise SkipTest("Too slow in CircleCI")
     check_seedable(
         maker,
