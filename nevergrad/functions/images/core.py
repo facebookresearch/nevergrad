@@ -65,12 +65,12 @@ class Image(base.ExperimentFunction):
                 "PGAN",
                 model_name="celebAHQ-512",
                 pretrained=True,
-                useGPU=use_gpu,
+                useGPU=False,
             )
-            self.domain_shape = (1, 512)
+            self.domain_shape = (1, 512)  # type: ignore
             initial_noise = np.random.normal(size=self.domain_shape)
-            array = ng.p.Array(init=initial_noise, mutable_sigma=mutable_sigma)
-            array.set_mutation(sigma=35.)
+            array = ng.p.Array(init=initial_noise, mutable_sigma=True)
+            array.set_mutation(sigma=35.0)
             array.set_recombination(ng.p.mutation.Crossover(axis=(0, 1))).set_name("")
             self._descriptors.pop("use_gpu", None)
             super().__init__(self._loss, array)
@@ -90,6 +90,7 @@ class Image(base.ExperimentFunction):
         assert x.shape == (226, 226, 3), f"{x.shape} != {(226, 226, 3)}"
         loss = self.loss_function(image)
         return loss
+
 
 # #### Adversarial attacks ##### #
 
