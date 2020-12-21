@@ -27,13 +27,22 @@ from . import optgroups
 
 @testing.parametrized(**{name: (name, maker) for name, maker in experiments.registry.items()})
 def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> None:
-    if "_pgan" in name and os.environ.get("CIRCLECI", False):  # raaaa no idea why this detection fails
-        raise SkipTest("Too slow in CircleCI")
     with tools.set_env(NEVERGRAD_PYTEST=1):
         with datasets.mocked_data():  # mock mlda data that should be downloaded
             check_maker(maker)  # this is to extract the function for reuse if other external packages need it
-    if name == "control_problem":  # No Mujoco on CircleCI
+
+    # Our PGAN is not well accepted by circleci.
+    if "_pgan" in name and os.environ.get("CIRCLECI", False):  # raaaa no idea why this detection fails
+        raise SkipTest("Too slow in CircleCI")
+    if "images_using_gan" == name and os.environ.get(
+        "CIRCLECI", False
+    ):  # raaaa no idea why this detection fails
+        raise SkipTest("Too slow in CircleCI")
+
+    # No Mujoco on CircleCI and possibly for some users.
+    if name == "control_problem":
         return
+
     check_seedable(
         maker,
         "mltuning" in name,
