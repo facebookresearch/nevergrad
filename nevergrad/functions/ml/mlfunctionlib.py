@@ -99,6 +99,9 @@ class MLTuning(ExperimentFunction):
             # Predict
             pred_test = regr.predict(X_test)
             result += mean_squared_error(y_test, pred_test)
+        if np.isnan(result):
+            result = 5.e40
+
         return result / self._cross_val_num  # We return a num_cv-fold validation error.
 
     def __init__(
