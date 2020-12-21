@@ -30,14 +30,16 @@ def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[expe
     # Our PGAN is not well accepted by circleci.
     if "_pgan" in name and os.environ.get("CIRCLECI", False):  # raaaa no idea why this detection fails
         raise SkipTest("Too slow in CircleCI")
-    if "images_using_gan" == name and os.environ.get(
-        "CIRCLECI", False
-    ):  # raaaa no idea why this detection fails
-        raise SkipTest("Too slow in CircleCI")
 
+    # Basic test.
     with tools.set_env(NEVERGRAD_PYTEST=1):
         with datasets.mocked_data():  # mock mlda data that should be downloaded
             check_maker(maker)  # this is to extract the function for reuse if other external packages need it
+
+    if ("images_using_gan" == name or "mlda" == name or "realworld" == name) and os.environ.get(
+        "CIRCLECI", False
+    ):  # raaaa no idea why this detection fails
+        raise SkipTest("Too slow in CircleCI")
 
     # No Mujoco on CircleCI and possibly for some users.
     if name == "control_problem":
