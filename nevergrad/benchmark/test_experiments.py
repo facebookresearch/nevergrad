@@ -29,11 +29,13 @@ from . import optgroups
 @testing.parametrized(**{name: (name, maker) for name, maker in experiments.registry.items()})
 def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> None:
     # Our PGAN is not well accepted by circleci.
-    if "_pgan" in name and os.environ.get("CIRCLECI", False):  # raaaa no idea why this detection fails
+    if "_pgan" in name and os.environ.get("CIRCLECI", False):
         raise SkipTest("Too slow in CircleCI")
 
-    # Our IQAs are not well guaranteed on Windows.
+    # Our IQAs and our ScikitLearn are not well guaranteed on Windows.
     if "image" in name and "quality" in name and platform.system() == "Windows":
+        raise SkipTest("Image quality not guaranteed on Windows.")
+    if "tuning" in name and platform.system() == "Windows":
         raise SkipTest("Image quality not guaranteed on Windows.")
 
     # Basic test.
