@@ -6,11 +6,14 @@
 import numpy as np
 from . import core
 
+
 def test_unit_commitment_p1() -> None:
     np.random.seed(0)
     T = 10
     N = 5
-    func = core.UnitCommitmentProblem(problem_name='semi-continuous', num_timepoints=T, num_generators=N)
+    func = core.UnitCommitmentProblem(
+        problem_name="semi-continuous", num_timepoints=T, num_generators=N
+    )
     op_out = np.ones((N, T))
     op_states = np.ones((N, T))
     value = func.function(operational_output=op_out, operational_states=op_states)
