@@ -1401,6 +1401,7 @@ def pbo_suite(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 @registry.register
 def unit_commitment(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Unit commitment problem."""
     seedg = create_seed_generator(seed)
     optims = ["CMA", "NGOpt8", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
     for num_timepoint in [5, 10, 20]:
