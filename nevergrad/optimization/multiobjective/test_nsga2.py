@@ -1,3 +1,8 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 import random
 import numpy as np
 import nevergrad as ng
@@ -8,10 +13,9 @@ from . import nsga2
 # pylint: disable=reimported,redefined-outer-name,unused-variable,unsubscriptable-object, unused-argument
 # pylint: disable=import-outside-toplevel
 
+
 def test_crowding_distance() -> None:
-    params = ng.p.Tuple(
-        ng.p.Scalar(lower=0, upper=2),
-        ng.p.Scalar(lower=0, upper=2))
+    params = ng.p.Tuple(ng.p.Scalar(lower=0, upper=2), ng.p.Scalar(lower=0, upper=2))
 
     candidates: tp.List[p.Parameter] = []
     v = sorted([random.uniform(0.01, 0.99) for i in range(4)])
@@ -30,16 +34,14 @@ def test_crowding_distance() -> None:
     cdist_1 += (loss_values[0][1] - loss_values[2][1]) / abs(loss_values[0][1] - loss_values[-1][1])
     cdist_2 += (loss_values[1][1] - loss_values[3][1]) / abs(loss_values[0][1] - loss_values[-1][1])
 
-    assert candidates[0]._meta["crowding_distance"] == float('inf')
+    assert candidates[0]._meta["crowding_distance"] == float("inf")
     np.testing.assert_almost_equal(candidates[1]._meta["crowding_distance"], cdist_1, decimal=3)
     np.testing.assert_almost_equal(candidates[2]._meta["crowding_distance"], cdist_2, decimal=3)
-    assert candidates[3]._meta["crowding_distance"] == float('inf')
+    assert candidates[3]._meta["crowding_distance"] == float("inf")
 
 
 def test_fast_non_dominated_ranking() -> None:
-    params = ng.p.Tuple(
-        ng.p.Scalar(lower=0, upper=2),
-        ng.p.Scalar(lower=0, upper=2))
+    params = ng.p.Tuple(ng.p.Scalar(lower=0, upper=2), ng.p.Scalar(lower=0, upper=2))
 
     loss_values = [[[0.0, 2.0], [1.0, 1.0]], [[0.0, 4.0], [1.0, 3.0], [3.0, 1.0]], [[2.0, 3.0], [4.0, 2.0]]]
 
@@ -59,12 +61,10 @@ def test_fast_non_dominated_ranking() -> None:
     assert set(frontiers[0]) == set(expected_frontiers[0])
     assert set(frontiers[1]) == set(expected_frontiers[1])
     assert set(frontiers[2]) == set(expected_frontiers[2])
-    
+
 
 def get_nsga2_test_case_data():
-    params = ng.p.Tuple(
-        ng.p.Scalar(lower=0, upper=2),
-        ng.p.Scalar(lower=0, upper=2))
+    params = ng.p.Tuple(ng.p.Scalar(lower=0, upper=2), ng.p.Scalar(lower=0, upper=2))
 
     loss_values = [[[0.0, 2.0], [1.0, 1.0]], [[0.0, 4.0], [1.0, 3.0], [3.0, 1.0]], [[2.0, 3.0], [4.0, 2.0]]]
 
@@ -95,7 +95,7 @@ def test_nsga2_ranking() -> None:
 def test_nsga2_ranking_2() -> None:
     candidates, expected_frontiers = get_nsga2_test_case_data()
     ranking_method = nsga2.NSGA2Ranking()
-    n_selected = len(expected_frontiers[0]) + len(expected_frontiers[1])-1
+    n_selected = len(expected_frontiers[0]) + len(expected_frontiers[1]) - 1
     rank_result = ranking_method.rank(candidates, n_selected)
 
     assert len(rank_result) == n_selected
@@ -111,17 +111,17 @@ def test_nsga2_ranking_2() -> None:
         if c.uid in rank_result:
             n_cand_in_frontier2 += 1
             assert rank_result[c.uid][0] > max_rank_frontier1
-    assert n_cand_in_frontier2 == len(expected_frontiers[1])-1
+    assert n_cand_in_frontier2 == len(expected_frontiers[1]) - 1
 
 
 def test_nsga2_ranking_3() -> None:
     candidates, expected_frontiers = get_nsga2_test_case_data()
     ranking_method = nsga2.NSGA2Ranking()
     rank_result = ranking_method.rank(candidates, None)
-    
+
     assert len(rank_result) == len(candidates)
     for i, frontier in enumerate(expected_frontiers):
-        expect_n_non_inf = max(0, len(frontier)-2)
+        expect_n_non_inf = max(0, len(frontier) - 2)
         n_non_inf = 0
         for c in frontier:
             assert rank_result[c.uid][1] == i
@@ -143,7 +143,7 @@ def test_nsga2_ranking_4():
 
     n_selected = 3
     rank_result = ranking_method.rank(candidates, n_selected)
-    candidates.sort(key=lambda x: rank_result[x.uid][0] if x.uid in rank_result else float('inf'))
+    candidates.sort(key=lambda x: rank_result[x.uid][0] if x.uid in rank_result else float("inf"))
     loss_from_rank = [r.loss for r in candidates[:n_selected]]
     loss_from_sorted = [np.array(v) for v in sorted(loss_values)[:n_selected]]
     assert loss_from_rank == loss_from_sorted

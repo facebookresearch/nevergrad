@@ -44,7 +44,9 @@ def _make_pyomo_range_set_to_parametrization(
             raise NotImplementedError(f"Cannot handle range type {type(ranges[0])}")
     elif isinstance(domain, pyomo.FiniteSimpleRangeSet):
         # Need to handle step size
-        params[params_name] = p.Choice([range(*r) for r in domain.ranges()])  # Assume the ranges do not overlapped
+        params[params_name] = p.Choice(
+            [range(*r) for r in domain.ranges()]
+        )  # Assume the ranges do not overlapped
     else:
         raise NotImplementedError(f"Cannot handle domain type {type(domain)}")
     return params
@@ -103,7 +105,9 @@ class Pyomo(base.ExperimentFunction):
         if isinstance(model, pyomo.ConcreteModel):
             self._model_instance = model.clone()  # To enable the objective function to run in parallel
         else:
-            raise NotImplementedError("AbstractModel is not supported. Please use create_instance() in Pyomo to create a model instance.")
+            raise NotImplementedError(
+                "AbstractModel is not supported. Please use create_instance() in Pyomo to create a model instance."
+            )
 
         instru_params: ParamDict = {}
         self.all_vars: tp.List[pyomo.Var] = []
@@ -136,13 +140,14 @@ class Pyomo(base.ExperimentFunction):
         instru = p.Instrumentation(**instru_params).set_name("")
         for c_idx in range(0, len(self.all_constraints)):
             instru.register_cheap_constraint(partial(self._pyomo_constraint_wrapper, c_idx))
-        super().__init__(function=partial(self._pyomo_obj_function_wrapper, 0), parametrization=instru)  # Single objective
+        super().__init__(
+            function=partial(self._pyomo_obj_function_wrapper, 0), parametrization=instru
+        )  # Single objective
 
         exp_tag = ",".join([n.name for n in self.all_objectives])
         exp_tag += "|" + ",".join([n.name for n in self.all_vars])
         exp_tag += "|" + ",".join([n.name for n in self.all_constraints])
-        self.register_initialization(name=exp_tag, model=self._model_instance)
-        self._descriptors.update(name=exp_tag)
+        self.add_descriptors(name=exp_tag)
 
     def _pyomo_value_assignment(self, k_model_variables: tp.Dict[str, tp.Any]) -> None:
         if self._value_assignment_code_obj == "":
@@ -155,7 +160,9 @@ class Pyomo(base.ExperimentFunction):
 
     def _pyomo_obj_function_wrapper(self, i: int, **k_model_variables: tp.Dict[str, tp.Any]) -> float:
         self._pyomo_value_assignment(k_model_variables)
-        return float(pyomo.value(self.all_objectives[i] * self.all_objectives[i].sense))  # Single objective assumption
+        return float(
+            pyomo.value(self.all_objectives[i] * self.all_objectives[i].sense)
+        )  # Single objective assumption
 
     def _pyomo_constraint_wrapper(self, i: int, instru: tp.ArgsKwargs) -> bool:
         k_model_variables = instru[1]
@@ -171,4 +178,6 @@ class Pyomo(base.ExperimentFunction):
                     break
             return ret
         else:
-            raise NotImplementedError(f"Constraint type {self.all_constraints[i].ctype} is not supported yet.")
+            raise NotImplementedError(
+                f"Constraint type {self.all_constraints[i].ctype} is not supported yet."
+            )

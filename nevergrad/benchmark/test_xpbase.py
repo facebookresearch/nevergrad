@@ -4,30 +4,38 @@
 # LICENSE file in the root directory of this source tree.
 
 import sys
-import numbers
 import contextlib
 from unittest.mock import patch
 import numpy as np
 import nevergrad.common.typing as tp
-from nevergrad.parametrization import parameter as p
 from nevergrad.common import testing
 from nevergrad.optimization import test_base
 from nevergrad.functions import ArtificialFunction
-from nevergrad.functions import ExperimentFunction
 from nevergrad.functions.base import MultiExperiment
+from nevergrad.functions.test_base import ExampleFunction
 from nevergrad.functions.test_functionlib import DESCRIPTION_KEYS as ARTIFICIAL_KEYS
 from . import xpbase
 
 
-DESCRIPTION_KEYS = {"seed", "elapsed_time", "elapsed_budget", "loss", "optimizer_name", "pseudotime",
-                    "num_workers", "budget", "error", "batch_mode"} | ARTIFICIAL_KEYS
+DESCRIPTION_KEYS = {
+    "seed",
+    "elapsed_time",
+    "elapsed_budget",
+    "loss",
+    "optimizer_name",
+    "pseudotime",
+    "num_workers",
+    "budget",
+    "error",
+    "batch_mode",
+} | ARTIFICIAL_KEYS
 
 
 def test_run_artificial_function() -> None:
     func = ArtificialFunction(name="sphere", block_dimension=2)
     xp = xpbase.Experiment(func, optimizer="OnePlusOne", budget=24, num_workers=2, batch_mode=True, seed=12)
     summary = xp.run()
-    assert summary["elapsed_time"] < .5  # should be much faster
+    assert summary["elapsed_time"] < 0.5  # should be much faster
     np.testing.assert_almost_equal(summary["loss"], 0.00078544)  # makes sure seeding works!
     testing.assert_set_equal(summary.keys(), DESCRIPTION_KEYS)
     np.testing.assert_equal(summary["elapsed_budget"], 24)
@@ -35,25 +43,27 @@ def test_run_artificial_function() -> None:
 
 
 def test_run_packed_artificial_function() -> None:
-    func = MultiExperiment([ArtificialFunction(name="sphere", block_dimension=2) for _ in range(2)],
-                           [100, 100])
+    func = MultiExperiment(
+        [ArtificialFunction(name="sphere", block_dimension=2) for _ in range(2)], [100, 100]
+    )
     xp = xpbase.Experiment(func, optimizer="OnePlusOne", budget=24, num_workers=2, batch_mode=True, seed=14)
     summary = xp.run()
-    np.testing.assert_almost_equal(summary["loss"], -9961.7, decimal=1)  # makes sure seeding works!
+    np.testing.assert_almost_equal(summary["loss"], -9676.5, decimal=1)  # makes sure seeding works!
 
 
 def test_noisy_artificial_function_loss() -> None:
-    func = ArtificialFunction(name="sphere", block_dimension=5, noise_level=.3)
+    func = ArtificialFunction(name="sphere", block_dimension=5, noise_level=0.3)
     seed = np.random.randint(99999)
     xp = xpbase.Experiment(func, optimizer="OnePlusOne", budget=5, seed=seed)
     xp.run()
     loss_ref = xp.result["loss"]
     # now with copy
-    reco = xp.recommendation
+    assert xp._optimizer is not None
+    reco = xp._optimizer.provide_recommendation()
     assert reco is not None
     np.random.seed(seed)
     pfunc = func.copy()
-    np.testing.assert_equal(pfunc.evaluation_function(*reco.args, **reco.kwargs), loss_ref)
+    np.testing.assert_equal(pfunc.evaluation_function(reco), loss_ref)
     np.random.seed(None)
 
 
@@ -67,7 +77,9 @@ def test_run_with_error() -> None:
     testing.assert_set_equal(summary.keys(), DESCRIPTION_KEYS)
     np.testing.assert_equal(summary["error"], "ValueError")
     assert xp._optimizer is not None
-    np.testing.assert_equal(xp._optimizer.num_tell, 0)  # make sure optimizer is kept in case we need to restart (eg.: KeyboardInterrupt)
+    np.testing.assert_equal(
+        xp._optimizer.num_tell, 0
+    )  # make sure optimizer is kept in case we need to restart (eg.: KeyboardInterrupt)
     assert not np.isnan(summary["loss"]), "Loss should be recorded with the current recommendation"
 
 
@@ -97,27 +109,12 @@ def test_seed_generator(seed: tp.Optional[int], randsize: int, expected: tp.List
     np.testing.assert_array_equal(output, expected)
 
 
-class Function(ExperimentFunction):
-
-    def __init__(self, dimension: int):
-        super().__init__(self.oracle_call, p.Array(shape=(dimension,)))
-        self.register_initialization(dimension=dimension)
-
-    def oracle_call(self, x: np.ndarray) -> float:
-        return float(x[0])
-
-    # pylint: disable=unused-argument
-    def compute_pseudotime(self, input_parameter: tp.Any, loss: tp.Loss) -> float:
-        assert isinstance(loss, numbers.Number)
-        return 5 - loss
-
-
 @testing.parametrized(
-    w3_batch=(True, ['s0', 's1', 's2', 'u0', 'u1', 'u2', 's3', 's4', 'u3', 'u4']),
-    w3_steady=(False, ['s0', 's1', 's2', 'u2', 's3', 'u1', 's4', 'u0', 'u3', 'u4']),  # u0 and u1 are delayed
+    w3_batch=(True, ["s0", "s1", "s2", "u0", "u1", "u2", "s3", "s4", "u3", "u4"]),
+    w3_steady=(False, ["s0", "s1", "s2", "u2", "s3", "u1", "s4", "u0", "u3", "u4"]),  # u0 and u1 are delayed
 )
 def test_batch_mode_parameter(batch_mode: bool, expected: tp.List[str]) -> None:
-    func = Function(dimension=1)
+    func = ExampleFunction(dimension=1, number=3)
     optim = test_base.LoggingOptimizer(3)
     with patch.object(xpbase.OptimizerSettings, "instantiate", return_value=optim):
         xp = xpbase.Experiment(func, optimizer="OnePlusOne", budget=10, num_workers=3, batch_mode=batch_mode)
@@ -133,9 +130,10 @@ def test_equality() -> None:
 
 
 def test_multiobjective_experiment() -> None:
-    mofunc = MultiExperiment([ArtificialFunction("sphere", block_dimension=7),
-                              ArtificialFunction("cigar", block_dimension=7)],
-                             upper_bounds=np.array((50., 50.)))
+    mofunc = MultiExperiment(
+        [ArtificialFunction("sphere", block_dimension=7), ArtificialFunction("cigar", block_dimension=7)],
+        upper_bounds=np.array((50.0, 50.0)),
+    )
     xp = xpbase.Experiment(mofunc, optimizer="TwoPointsDE", budget=100, num_workers=1)
     summary = xp.run()
     loss: float = summary["loss"]

@@ -51,7 +51,7 @@ def test_torch_agent_function() -> None:
     args, kwargs = instru.spawn_child().set_standardized_data([0] * instru.dimension).value
     assert not args
     value = agentfunction.compute(**kwargs)
-    assert value in [0, -1]   # negated reward, for minimization
+    assert value in [0, -1]  # negated reward, for minimization
     # optimization
     opt = optimizerlib.OnePlusOne(instru, budget=10)
     opt.minimize(agentfunction.compute)

@@ -19,10 +19,12 @@ def _func(x: tp.Any, y: tp.Any, blublu: str, array: tp.Any, multiobjective: bool
 def test_log_parameters(tmp_path: Path) -> None:
     filepath = tmp_path / "logs.txt"
     cases = [0, np.int(1), np.float(2.0), np.nan, float("inf"), np.inf]
-    instrum = ng.p.Instrumentation(ng.p.Array(shape=(1,)).set_mutation(custom=ng.p.mutation.Translation()),
-                                   ng.p.Scalar(),
-                                   blublu=ng.p.Choice(cases),
-                                   array=ng.p.Array(shape=(3, 2)))
+    instrum = ng.p.Instrumentation(
+        ng.p.Array(shape=(1,)).set_mutation(custom=ng.p.mutation.Translation()),
+        ng.p.Scalar(),
+        blublu=ng.p.Choice(cases),
+        array=ng.p.Array(shape=(3, 2)),
+    )
     optimizer = optimizerlib.NoisyOnePlusOne(parametrization=instrum, budget=32)
     optimizer.register_callback("tell", ng.callbacks.ParametersLogger(filepath, append=False))
     optimizer.minimize(_func, verbosity=2)
@@ -41,11 +43,9 @@ def test_log_parameters(tmp_path: Path) -> None:
 
 def test_multiobjective_log_parameters(tmp_path: Path) -> None:
     filepath = tmp_path / "logs.txt"
-    instrum = ng.p.Instrumentation(None,
-                                   2.0,
-                                   blublu="blublu",
-                                   array=ng.p.Array(shape=(3, 2)),
-                                   multiobjective=True)
+    instrum = ng.p.Instrumentation(
+        None, 2.0, blublu="blublu", array=ng.p.Array(shape=(3, 2)), multiobjective=True
+    )
     optimizer = optimizerlib.OnePlusOne(parametrization=instrum, budget=2)
     optimizer.register_callback("tell", ng.callbacks.ParametersLogger(filepath, append=False))
     optimizer.minimize(_func, verbosity=2)

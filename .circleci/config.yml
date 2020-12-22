@@ -27,15 +27,16 @@ commands:
       - restore_cache:
           name: "[all] Restore cache"
           keys:
-          - v5-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          - v6-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
           # fallback to installing main requirements
-          - v5-dependencies-main-{{ checksum "requirements/main.txt"}}
+          - v6-dependencies-main-{{ checksum "requirements/main.txt"}}
 
       - run:
           name: "[all] Install dependencies"
           command: |
             python3 -m venv venv
             . venv/bin/activate
+            pip install -U pip
             pip install -e .[all]
             # master numpy-stubs adds a lot of messy warnings :s
             pip install git+https://github.com/numpy/numpy-stubs@2c8d8f26adb1eef54571ccc85ef8ad4f2fb90c4c
@@ -52,7 +53,7 @@ jobs:
       - restore_cache:
           name: "[no-extra] Restore cache"
           keys:
-          - v5-dependencies-main-{{ checksum "requirements/main.txt"}}
+          - v6-dependencies-main-{{ checksum "requirements/main.txt"}}
           # fallback to using the latest cache if no exact match is found
 
       - run:
@@ -79,7 +80,7 @@ jobs:
           name: "[no-extra] Save cache"
           paths:
             - ./venv
-          key: v5-dependencies-main-{{ checksum "requirements/main.txt"}}
+          key: v6-dependencies-main-{{ checksum "requirements/main.txt"}}
 
       - run:
           name: "[no-extra] Run basic tests (checking dependencies)"
@@ -94,7 +95,7 @@ jobs:
           name: "[all] Save cache"
           paths:
             - ./venv
-          key: v5-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          key: v6-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
 
       - run:
           name: "[all] Print installation"
@@ -145,6 +146,7 @@ jobs:
 
       - run:
           name: "Run mypy"
+          when: always
           command: |
             . venv/bin/activate
             mypy --version
@@ -152,10 +154,19 @@ jobs:
 
       - run:
           name: "Run basic pylint"
+          when: always
           command: |
             . venv/bin/activate
             pylint --version
-            pylint nevergrad --disable=all --enable=unused-import,unused-argument,unused-variable,undefined-loop-variable,redefined-builtin,used-before-assignment,super-init-not-called
+            pylint nevergrad --disable=all --enable=unused-import,unused-argument,unused-variable,undefined-loop-variable,redefined-builtin,used-before-assignment,super-init-not-called,useless-super-delegation,dangerous-default-value
+
+      - run:
+          name: "Run black"
+          when: always
+          command: |
+            . venv/bin/activate
+            black --version
+            black nevergrad --check
 
 
   pytests:
@@ -215,7 +226,7 @@ jobs:
       - restore_cache:
           name: "[all] Restore cache"
           keys:
-          - v5-win-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          - v6-win-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
 
       - run:
           name: Setup nevergrad in virtualenv
@@ -230,13 +241,13 @@ jobs:
           name: "[all] Save cache"
           paths:
             - ./venv
-          key: v5-win-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          key: v6-win-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
 
       - run:
           name: pytest
           command: |
             . ./venv/Scripts/activate
-            pytest nevergrad -v --exitfirst
+            pytest nevergrad -v --exitfirst --durations=20
 
 
   pypi-deploy:

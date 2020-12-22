@@ -24,7 +24,7 @@ def impedance_pix(x: tp.ArrayLike, dpix: float, lam: float, ep0: float, epf: flo
     for n in reversed(np.sqrt(x)):  # refraction index slab
         etha = 1 / n  # bulk impedance slab
         Z = etha * (Z + 1j * etha * tan(k0d * n)) / (etha + 1j * Z * tan(k0d * n))
-    R = abs((Z - 1 / sqrt(ep0)) / (Z + 1 / sqrt(ep0)))**2 * 100  # reflection in %
+    R = abs((Z - 1 / sqrt(ep0)) / (Z + 1 / sqrt(ep0))) ** 2 * 100  # reflection in %
     return R
 
 
@@ -62,28 +62,32 @@ class ARCoating(base.ExperimentFunction):
         self.epmin = 1
         init = (self.epmin + self.epf) / 2.0 * np.ones((nbslab,))
         sigma = (self.epf - self.ep0) / 6
-        array = ng.p.Array(init=init, mutable_sigma=True,)
+        array = ng.p.Array(
+            init=init,
+            mutable_sigma=True,
+        )
         array.set_mutation(sigma=sigma)
         array.set_bounds(self.epmin, self.epf, method=bounding_method, full_range_sampling=True)
         array.set_recombination(ng.p.mutation.Crossover(0)).set_name("")
         super().__init__(self._get_minimum_average_reflexion, array)
-        self.register_initialization(nbslab=nbslab, d_ar=d_ar, bounding_method=bounding_method)
-        self._descriptors.update(nbslab=nbslab, d_ar=d_ar, bounding_method=bounding_method)
 
     def _get_minimum_average_reflexion(self, x: np.ndarray) -> float:
         x = np.array(x, copy=False).ravel()
         assert len(x) == self.dimension, f"Expected dimension {self.dimension}, got {len(x)}"
         if np.min(x) < self.epmin or np.max(x) > self.epf:  # acceptability
-            return float('inf')
-        value = 0.
+            return float("inf")
+        value = 0.0
         for lam in self.lambdas:
             RE = impedance_pix(x, self.dpix, lam, self.ep0, self.epf)  # only normal incidence
             value = value + RE / len(self.lambdas)
         return value
 
-    # pylint: disable=arguments-differ
-    def evaluation_function(self, x: np.ndarray) -> float:  # type: ignore
+    def evaluation_function(self, *recommendations: ng.p.Parameter) -> float:
+        assert len(recommendations) == 1, "Should not be a pareto set for a monoobjective function"
+        x = recommendations[0].value
         loss = self.function(x)
         assert isinstance(loss, float)
-        base.update_leaderboard(f'arcoating,{self.parametrization.dimension},{self._descriptors["d_ar"]}', loss, x, verbose=True)
+        base.update_leaderboard(
+            f'arcoating,{self.parametrization.dimension},{self._descriptors["d_ar"]}', loss, x, verbose=True
+        )
         return loss
