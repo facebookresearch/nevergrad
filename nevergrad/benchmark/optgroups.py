@@ -176,7 +176,7 @@ def all_bo() -> tp.Sequence[Optim]:
 
 @registry.register
 def structured_moo() -> tp.Sequence[Optim]:
-    return ["CMA", "NGOpt8", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
+    return ["NGOpt8"]
 
 
 @registry.register
