@@ -314,7 +314,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         if isinstance(loss, (Real, float)):
             # using "float" along "Real" because mypy does not understand "Real" for now Issue #3186
             loss = float(loss)
+            # Non-sense values including NaNs should not be accepted.
+            # We do not use max-float as various later transformations could lead to greater values.
             if not (loss < 5.0e20):
+                warning.warn(f"Pathological value {loss} in tell.")
                 loss = 5.0e20  # sys.float_info.max leads to numerical problems so let us do this.
         elif isinstance(loss, (tuple, list, np.ndarray)):
             loss = np.array(loss, copy=False, dtype=float).ravel() if len(loss) != 1 else loss[0]
