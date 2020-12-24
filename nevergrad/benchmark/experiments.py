@@ -180,8 +180,6 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # The list of optimizers should contain only the basic for comparison and "baselines".
     optims: tp.List[str] = ["NGOpt8"] + get_optimizers("baselines", seed=next(seedg))  # type: ignore
     optims += ["CMA", "DiagonalCMA", "CMandAS2", "Shiwa"]
-    if default_optims is not None:
-        optims = default_optims
     optims += ["NGOpt10", "NGOpt9", "NGOpt8"]
     for optim in optims:
         for function in functions:
