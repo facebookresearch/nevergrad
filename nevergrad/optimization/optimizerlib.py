@@ -2539,18 +2539,6 @@ class NGOpt8(NGOpt4):
                 # override at runtime
                 self._optim = DE(self.parametrization, self.budget, self.num_workers)
 
-    def recommend(self) -> p.Parameter:
-        """Provides the best candidate to use as a minimum, given the budget that was used.
-
-        Returns
-        -------
-        p.Parameter
-            The candidate with minimal loss. :code:`p.Parameters` have field :code:`args` and :code:`kwargs` which can be directly used
-            on the function (:code:`objective_function(*candidate.args, **candidate.kwargs)`).
-        """
-        name = "minimum" if self.parametrization.descriptors.deterministic_function else "pessimistic"
-        return self.current_bests[name].parameter
-
 
 @registry.register
 class NGOpt(NGOpt8):
