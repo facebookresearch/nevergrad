@@ -155,31 +155,37 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
     # First, a few functions with constraints.
     functions = [
-        ArtificialFunction(name, block_dimension=50, rotation=rotation) for name in ["cigar", "ellipsoid"] for rotation
-        in [True, False]
+        ArtificialFunction(name, block_dimension=50, rotation=rotation, translation_factor=tf) for name in ["cigar", "ellipsoid"] for rotation
+        in [True, False] for tf in [0.1, 10.0]
     ]
-    for func in functions:
-        func.parametrization.register_cheap_constraint(_Constraint("sum", as_bool=False))
+    for i, func in enumerate(functions):
+        func.parametrization.register_cheap_constraint(_Constraint("sum", as_bool=i % 2 == 0))
 
     # Then, let us build a constraint-free case. We include the noisy case.
     names = ["hm", "rastrigin", "sphere", "doublelinearslope", "ellipsoid"]
 
     # names += ["deceptiveillcond", "deceptivemultimodal", "deceptivepath"]
     functions += [
-        ArtificialFunction(name, block_dimension=d, rotation=rotation, noise_level=nl, split=split)
+        ArtificialFunction(name, block_dimension=d, rotation=rotation, noise_level=nl, split=split,
+        translation_factor=tf)
         for name in names              # period 5
         for rotation in [True, False]  # period 2
         for nl in [0., 100.]           # period 2
+        for tf in [0.1, 10.0]
         for num_blocks in [1, 8]       # period 2
         for d in [2, 40, 3000, 10000]  # period 4
         for split in [True, False]     # period 2
-    ][::13]  # 13 is coprime with all periods above so we sample correctly the possibilities.
+    ][::23]  # 23 is coprime with all periods above so we sample correctly the possibilities.
     # This problem is intended as a stable basis forever.
     # The list of optimizers should contain only the basic for comparison and "baselines".
     optims: tp.List[str] = ["NGOpt8"] + get_optimizers("baselines", seed=next(seedg))  # type: ignore
+    optims += ["CMA", "DiagonalCMA", "CMandAS2", "Shiwa"]
+    if default_optims is not None:
+        optims = default_optims
+    optims += ["NGOpt10", "NGOpt9", "NGOpt8"]
     for optim in optims:
         for function in functions:
-            for budget in [50, 1500, 50000]:
+            for budget in [50, 250, 1500, 6000, 25000]:
                 for nw in [1, budget] + ([] if budget <= 300 else [300]):
                     xp = Experiment(function, optim, num_workers=nw,
                                     budget=budget, seed=next(seedg))
@@ -202,21 +208,29 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     mofuncs: tp.List[fbase.MultiExperiment] = []
     for name1 in ["sphere", "ellipsoid"]:
         for name2 in ["sphere", "hm"]:
+          for tf in [0.25, 4.]:
             mofuncs += [fbase.MultiExperiment([ArtificialFunction(name1, block_dimension=7),
-                                               ArtificialFunction(name2, block_dimension=7)],
+                                               ArtificialFunction(name2, block_dimension=7, translation_factor=tf)],
                                               upper_bounds=np.array((100., 100.)))]
+            mofuncs[-1].add_descriptors(num_objectives=2)
     for name1 in ["sphere", "ellipsoid"]:
         for name2 in ["sphere", "hm"]:
             for name3 in ["sphere", "hm"]:
-                mofuncs += [fbase.MultiExperiment([ArtificialFunction(name1, block_dimension=7),
-                                                   ArtificialFunction(name2, block_dimension=7),
+              for tf in [0.25, 4.]:
+                mofuncs += [fbase.MultiExperiment([ArtificialFunction(name1, block_dimension=7, translation_factor=1./tf),
+                                                   ArtificialFunction(name2, block_dimension=7, translation_factor=tf),
                                                    ArtificialFunction(name3, block_dimension=7)],
                                                   upper_bounds=np.array((100., 100., 100.)))]
-    for mofunc in mofuncs:
-        for optim in optims:
-            for budget in [2000, 8000]:
-                for nw in [1, 100]:
-                    yield Experiment(mofunc, optim, budget=budget, num_workers=nw, seed=next(seedg))
+                mofuncs[-1].add_descriptors(num_objectives=3)
+    index = 0
+    for mofunc in mofuncs[::3]:
+        for budget in [2000, 8000]:
+            for nw in [1, 100]:
+                index += 1
+                if index % 5 == 0:
+                    for optim in optims:
+                        yield Experiment(mofunc, optim, budget=budget, num_workers=nw, seed=next(seedg))
+
 
 
 # pylint: disable=redefined-outer-name
@@ -580,6 +594,18 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
                                 budget=budget, seed=next(seedg))
                 if not xp.is_incoherent:
                     yield xp
+
+
+@registry.register
+def yanoisysplitbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with more budget."""
+    return yabbob(seed, noise=True, parallel=False, split=True)
+
+
+@registry.register
+def yahdnoisysplitbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with more budget."""
+    return yabbob(seed, hd=True, noise=True, parallel=False, split=True)
 
 
 @registry.register
