@@ -158,7 +158,7 @@ def competence_map() -> tp.Sequence[Optim]:
 @registry.register
 def competitive() -> tp.Sequence[Optim]:
     return get_optimizers("cma", "competence_map") + [
-        "MetaNGOpt8",
+        "MetaNGOpt10",
         "NaiveTBPSA",
         "PSO",
         "DE",
@@ -181,7 +181,7 @@ def discrete() -> tp.Sequence[Optim]:
 
 @registry.register
 def structured_moo() -> tp.Sequence[Optim]:
-    return ["CMA", "NGOpt10", "MetaNGOpt8", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
+    return ["CMA", "NGOpt10", "MetaNGOpt10", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
 
 
 @registry.register

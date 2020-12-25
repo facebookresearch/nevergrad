@@ -611,19 +611,16 @@ class EDA(base.Optimizer):
         raise base.TellNotAskedNotSupportedError
 
 
-@registry.register
 class PCEDA(EDA):
     _POPSIZE_ADAPTATION = True
     _COVARIANCE_MEMORY = False
 
 
-@registry.register
 class MPCEDA(EDA):
     _POPSIZE_ADAPTATION = True
     _COVARIANCE_MEMORY = True
 
 
-@registry.register
 class MEDA(EDA):
     _POPSIZE_ADAPTATION = False
     _COVARIANCE_MEMORY = True
@@ -1344,7 +1341,6 @@ class MetaModel(base.Optimizer):
         self._optim.tell(candidate, loss)
 
 
-@registry.register
 class ParaPortfolio(Portfolio):
     """Passive portfolio of CMA, 2-pt DE, PSO, SQP and Scr-Hammersley."""
 
@@ -1383,7 +1379,6 @@ class ParaPortfolio(Portfolio):
         return candidate
 
 
-@registry.register
 class SQPCMA(ParaPortfolio):
     """Passive portfolio of CMA and many SQP."""
 
@@ -1403,73 +1398,6 @@ class SQPCMA(ParaPortfolio):
             self.optims += [SQP(self.parametrization, num_workers=1)]  # noqa: F405
             if i > 0:
                 self.optims[-1].initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
-
-
-@registry.register
-class ASCMADEthird(Portfolio):
-    """Algorithm selection, with CMA and Lhs-DE. Active selection at 1/3."""
-
-    def __init__(
-        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
-    ) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        assert budget is not None
-        self.optims = [
-            CMA(
-                self.parametrization, budget=None, num_workers=num_workers
-            ),  # share parametrization and its rng
-            LhsDE(self.parametrization, budget=None, num_workers=num_workers),
-        ]  # noqa: F405
-        self.budget_before_choosing = budget // 3
-        self.best_optim = -1
-
-    def _internal_ask_candidate(self) -> p.Parameter:
-        if self.budget_before_choosing > 0:
-            self.budget_before_choosing -= 1
-            optim_index = self._num_ask % len(self.optims)
-        else:
-            if self.best_optim is None:
-                best_loss = float("inf")
-                optim_index = -1
-                for i, optim in enumerate(self.optims):
-                    val = optim.current_bests["pessimistic"].get_estimation("pessimistic")
-                    if not val > best_loss:
-                        optim_index = i
-                        best_loss = val
-                self.best_optim = optim_index
-            optim_index = self.best_optim
-        candidate = self.optims[optim_index].ask()
-        candidate._meta["optim_index"] = optim_index
-        return candidate
-
-
-@registry.register
-class ASCMADEQRthird(ASCMADEthird):
-    """Algorithm selection, with CMA, ScrHalton and Lhs-DE. Active selection at 1/3."""
-
-    def __init__(
-        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
-    ) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        self.optims = [
-            CMA(self.parametrization, budget=None, num_workers=num_workers),
-            LhsDE(self.parametrization, budget=None, num_workers=num_workers),  # noqa: F405
-            ScrHaltonSearch(self.parametrization, budget=None, num_workers=num_workers),
-        ]  # noqa: F405
-
-
-@registry.register
-class ASCMA2PDEthird(ASCMADEQRthird):
-    """Algorithm selection, with CMA and 2pt-DE. Active selection at 1/3."""
-
-    def __init__(
-        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
-    ) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        self.optims = [
-            CMA(self.parametrization, budget=None, num_workers=num_workers),
-            TwoPointsDE(self.parametrization, budget=None, num_workers=num_workers),
-        ]  # noqa: F405
 
 
 @registry.register
@@ -1523,29 +1451,6 @@ class CMandAS3(ASCMADEthird):
                     CMA(self.parametrization, budget=None, num_workers=num_workers),
                 ]
             self.budget_before_choosing = budget // 10
-
-
-@registry.register
-class CMandAS(CMandAS2):
-    """Competence map, with algorithm selection in one of the cases (2 CMAs)."""
-
-    def __init__(
-        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
-    ) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        self.optims = [TwoPointsDE(self.parametrization, budget=None, num_workers=num_workers)]  # noqa: F405
-        assert budget is not None
-        self.budget_before_choosing = 2 * budget
-        if budget < 201:
-            # share parametrization and its rng
-            self.optims = [OnePlusOne(self.parametrization, budget=None, num_workers=num_workers)]
-            self.budget_before_choosing = 2 * budget
-        if budget > 50 * self.dimension or num_workers < 30:
-            self.optims = [
-                CMA(self.parametrization, budget=None, num_workers=num_workers),
-                CMA(self.parametrization, budget=None, num_workers=num_workers),
-            ]
-            self.budget_before_choosing = budget // 3
 
 
 @registry.register
@@ -1626,23 +1531,6 @@ class TripleCMA(CM):
 
 
 @registry.register
-class ManyCMA(CM):
-    """Combining 3 CMAs. Exactly identical. Active selection at 1/3 of the budget."""
-
-    def __init__(
-        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
-    ) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        assert budget is not None
-        self.optims = [
-            ParametrizedCMA(random_init=True)(self.parametrization, budget=None, num_workers=num_workers)
-            for _ in range(int(np.sqrt(budget)))
-        ]
-
-        self.budget_before_choosing = budget // 3
-
-
-@registry.register
 class PolyCMA(CM):
     """Combining 20 CMAs. Exactly identical. Active selection at 1/3 of the budget."""
 
@@ -1656,24 +1544,6 @@ class PolyCMA(CM):
             for _ in range(20)
         ]
 
-        self.budget_before_choosing = budget // 3
-
-
-@registry.register
-class ManySmallCMA(CM):
-    """Combining 3 CMAs. Exactly identical. Active selection at 1/3 of the budget."""
-
-    def __init__(
-        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
-    ) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        assert budget is not None
-        self.optims = [
-            ParametrizedCMA(scale=1e-6, random_init=i > 0)(
-                self.parametrization, budget=None, num_workers=num_workers
-            )
-            for i in range(int(np.sqrt(budget)))
-        ]
         self.budget_before_choosing = budget // 3
 
 
@@ -2320,85 +2190,6 @@ class Shiwa(NGOptBase):
 @registry.register
 class NGO(NGOptBase):  # compatibility
     pass
-
-
-@registry.register
-class NGOpt2(NGOptBase):
-    """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
-
-    def _select_optimizer_cls(self) -> base.OptCls:
-        budget, num_workers = self.budget, self.num_workers
-        assert budget is not None
-        optimClass: base.OptCls
-        if self.has_noise and (
-            self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable
-        ):
-            optimClass = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
-        elif self._arity > 0:
-            optimClass = DiscreteBSOOnePlusOne if self._arity > 5 else CMandAS2
-        else:
-            # pylint: disable=too-many-nested-blocks
-            if self.has_noise and self.has_discrete_not_softmax:
-                # noise and discrete: let us merge evolution and bandits.
-                optimClass = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
-            else:
-                if self.has_noise and self.fully_continuous:
-                    # This is the real of population control. FIXME: should we pair with a bandit ?
-                    optimClass = TBPSA
-                else:
-                    if (
-                        self.has_discrete_not_softmax
-                        or not self.parametrization.descriptors.metrizable
-                        or not self.fully_continuous
-                    ):
-                        optimClass = DoubleFastGADiscreteOnePlusOne
-                    else:
-                        if num_workers > budget / 5:
-                            if num_workers > budget / 2.0 or budget < self.dimension:
-                                optimClass = MetaTuneRecentering
-                            elif self.dimension < 5 and budget < 100:
-                                optimClass = DiagonalCMA
-                            elif self.dimension < 5 and budget < 500:
-                                optimClass = Chaining([DiagonalCMA, MetaModel], [100])
-                            else:
-                                optimClass = NaiveTBPSA
-                        else:
-                            # Possibly a good idea to go memetic for large budget, but something goes wrong for the moment.
-                            if (
-                                num_workers == 1 and budget > 6000 and self.dimension > 7
-                            ):  # Let us go memetic.
-                                optimClass = chainNaiveTBPSACMAPowell  # type: ignore
-                            else:
-                                if num_workers == 1 and budget < self.dimension * 30:
-                                    if (
-                                        self.dimension > 30
-                                    ):  # One plus one so good in large ratio "dimension / budget".
-                                        optimClass = OnePlusOne
-                                    elif self.dimension < 5:
-                                        optimClass = MetaModel
-                                    else:
-                                        optimClass = Cobyla
-                                else:
-                                    if self.dimension > 2000:  # DE is great in such a case (?).
-                                        optimClass = DE
-                                    else:
-                                        if self.dimension < 10 and budget < 500:
-                                            optimClass = MetaModel
-                                        else:
-                                            if (
-                                                self.dimension > 40
-                                                and num_workers > self.dimension
-                                                and budget < 7 * self.dimension ** 2
-                                            ):
-                                                optimClass = DiagonalCMA
-                                            elif (
-                                                3 * num_workers > self.dimension ** 2
-                                                and budget > self.dimension ** 2
-                                            ):
-                                                optimClass = MetaModel
-                                            else:
-                                                optimClass = CMA
-        return optimClass
 
 
 @registry.register
