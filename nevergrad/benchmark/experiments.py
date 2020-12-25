@@ -72,7 +72,7 @@ def keras_tuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: b
     # Continuous case,
 
     # First, a few functions with constraints.
-    optims = ["PSO", "OnePlusOne"]
+    optims = ["PSO", "OnePlusOne"] + get_optimizers("basics", seed=next(seedg))
     for dimension in [None]:
         for dataset in (
                 ["kerasBoston", "diabetes", "auto-mpg", "red-wine", "white-wine"]):
@@ -179,8 +179,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # This problem is intended as a stable basis forever.
     # The list of optimizers should contain only the basic for comparison and "baselines".
     optims: tp.List[str] = ["NGOpt8"] + get_optimizers("baselines", seed=next(seedg))  # type: ignore
-    optims += ["CMA", "DiagonalCMA", "CMandAS2", "Shiwa"]
-    optims += ["NGOpt10", "NGOpt9", "NGOpt8"]
+    optims += get_optimizers("basics", seed=next(seedg))
     for optim in optims:
         for function in functions:
             for budget in [50, 250, 1500, 6000, 25000]:
@@ -301,9 +300,7 @@ def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 def sequential_instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Sequential counterpart of instrum_discrete."""
     # Discrete, unordered.
-    optims = ["DiscreteOnePlusOne", "DiscreteDoerrOnePlusOne", "DiscreteLenglerOnePlusOne", "FastGADiscreteOnePlusOne",
-              "DiscreteBSOOnePlusOne", "PortfolioDiscreteOnePlusOne", "DoubleFastGADiscreteOnePlusOne",
-              "AnisotropicAdaptiveDiscreteOnePlusOne"]
+    optims = get_optimizers("discrete", seed=next(seedg))
 
     seedg = create_seed_generator(seed)
     for nv in [10, 50, 200, 1000, 5000]:
@@ -326,7 +323,7 @@ def deceptive(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     Looks somehow fractal."""
     seedg = create_seed_generator(seed)
     names = ["deceptivemultimodal", "deceptiveillcond", "deceptivepath"]
-    optims = ["NGO", "Shiwa", "DiagonalCMA", "PSO", "MiniQrDE", "MiniLhsDE", "MiniDE", "CMA", "QrDE", "DE", "LhsDE"]
+    optims = get_optimizers("basics", seed=next(seedg))
     functions = [
         ArtificialFunction(name, block_dimension=2, num_blocks=n_blocks, rotation=rotation, aggregator=aggregator)
         for name in names
@@ -365,7 +362,7 @@ def harderparallel(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Parallel optimization on 4 classical objective functions. More distinct settings than << parallel >>."""
     seedg = create_seed_generator(seed)
     names = ["sphere", "rastrigin", "cigar", "ellipsoid"]
-    optims = ["NGOpt8"] + get_optimizers("emna_variants", seed=next(seedg))  # type: ignore
+    optims = ["NGOpt10"] + get_optimizers("emna_variants", seed=next(seedg))  # type: ignore
     functions = [
         ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
         for name in names
@@ -452,7 +449,7 @@ def fiveshots(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     names = ["sphere", "rastrigin", "cigar"]
     optims = sorted(x for x, y in ng.optimizers.registry.items() if y.one_shot)
-    optims += ["CMA", "NGOpt8", "DE"]
+    optims += ["CMA", "NGOpt10", "DE"]
     functions = [
         ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
         for name in names
@@ -477,7 +474,7 @@ def multimodal(seed: tp.Optional[int] = None, para: bool = False) -> tp.Iterator
     seedg = create_seed_generator(seed)
     names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal"]
     # Keep in mind that Rosenbrock is multimodal in high dimension http://ieeexplore.ieee.org/document/6792472/.
-    optims = ["NGOpt8", "CMandAS", "DiagonalCMA", "CMA", "TripleCMA", "CMandAS2", "PSO"]
+    optims = ["NGOpt10", "CMandAS", "DiagonalCMA", "CMA", "TripleCMA", "CMandAS2", "PSO"]
     if not para:
         optims += ["RSQP", "RCobyla", "RPowell", "SQPCMA", "SQP", "Cobyla", "Powell"]
     # + list(sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x or "BO" in x))
@@ -501,7 +498,7 @@ def hdmultimodal(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal"]
     # Keep in mind that Rosenbrock is multimodal in high dimension http://ieeexplore.ieee.org/document/6792472/.
-    optims = ["NGOpt8", "MultiCMA", "RPowell", "CMA", "TripleCMA"]
+    optims = ["NGOpt10", "MultiCMA", "RPowell", "CMA", "TripleCMA"]
     optims = ["NaiveTBPSA"]
     # + list(sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x or "BO" in x))
     functions = [
@@ -551,7 +548,7 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
         noise_level = 0
 
     # Choosing the list of optimizers.
-    optims: tp.List[str] = ["chainMetaModelSQP", "NGOpt8", "chainCMASQP", "MetaModel", "CMA", "CMandAS2"]
+    optims: tp.List[str] = get_optimizers("competitive", seed=next(seedg))
     if noise:
         optims += ["TBPSA", "SQP", "NoisyDiscreteOnePlusOne"]
     if hd:
@@ -675,7 +672,7 @@ def illcondi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     Dimension 50.
     """
     seedg = create_seed_generator(seed)
-    optims = ["NGOpt8", "Cobyla", "SQP", "OnePlusOne", "DiagonalCMA", "MiniDE"]
+    optims = ["NGOpt10", "Cobyla", "SQP", "OnePlusOne", "DiagonalCMA", "MiniDE"]
     functions = [
         ArtificialFunction(name, block_dimension=50, rotation=rotation) for name in ["cigar", "ellipsoid"] for rotation
         in [True, False]
@@ -696,7 +693,7 @@ def illcondipara(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         ArtificialFunction(name, block_dimension=50, rotation=rotation) for name in ["cigar", "ellipsoid"] for rotation
         in [True, False]
     ]
-    optims = ["DiagonalCMA", "MetaModel", "NGOpt8", "CMA"]
+    optims = get_optimizers("competitive", seed=next(seedg))
     for function in functions:
         for budget in [100, 1000, 10000]:
             for optim in optims:
@@ -735,7 +732,7 @@ def ranknoisy(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """
     seedg = create_seed_generator(seed)
     optims: tp.List[str] = get_optimizers("progressive", seed=next(seedg)) + [  # type: ignore
-        "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
+        "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne", "NGOpt10"]
 
 
     # optims += ["NGO", "Shiwa", "DiagonalCMA"] + sorted(
@@ -769,7 +766,7 @@ def noisy(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     optims: tp.List[str] = get_optimizers("progressive", seed=next(seedg)) + [  # type: ignore
         "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
-    optims += ["NGO", "Shiwa", "DiagonalCMA"] + sorted(
+    optims += ["NGOpt10", "Shiwa", "DiagonalCMA"] + sorted(
         x for x, y in ng.optimizers.registry.items() if
         ("SPSA" in x or "TBPSA" in x or "ois" in x or "epea" in x or "Random" in x)
     )
@@ -942,7 +939,7 @@ def realworld(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         func = rl.agents.TorchAgentFunction(agents[archi], runner, reward_postprocessing=lambda x: 1 - x)
         funcs += [func]
     seedg = create_seed_generator(seed)
-    optims = ["NGOpt8", "CMA", "DE"]
+    optims = ["NGOpt10", "CMA", "DE"]
 
 
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
@@ -1018,7 +1015,7 @@ def control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         f.parametrization.freeze()
         funcs2.append(f)
 
-    optims = ["CMA", "DiagonalCMA", "NGOpt8"]
+    optims = ["NGOpt10"]
 
     for budget in [50, 75, 100, 150, 200, 250, 300, 400, 500, 1000, 3000, 5000, 8000, 16000, 32000, 64000]:
         for num_workers in [1]:
@@ -1041,7 +1038,7 @@ def simpletsp(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """
     funcs = [STSP(10), STSP(100), STSP(1000), STSP(10000)]
     seedg = create_seed_generator(seed)
-    optims = ["PortfolioDiscreteOnePlusOne", "NGOpt8", "OnePlusOne", "DiagonalCMA"]
+    optims = ["PortfolioDiscreteOnePlusOne", "NGOpt10", "OnePlusOne", "DiagonalCMA"]
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600]:
         for num_workers in [1]:  # , 10, 100]:
             if num_workers < budget:
@@ -1059,7 +1056,7 @@ def sequential_fastgames(seed: tp.Optional[int] = None) -> tp.Iterator[Experimen
     Games: War, Batawaf, Flip, GuessWho,  BigGuessWho."""
     funcs = [game.Game(name) for name in ["war", "batawaf", "flip", "guesswho", "bigguesswho"]]
     seedg = create_seed_generator(seed)
-    optims = ["CMA", "DiagonalCMA", "NGOpt8",
+    optims = ["CMA", "DiagonalCMA", "NGOpt10",
               "OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne"]
     optims += get_optimizers("splitters", "progressive", seed=next(seedg))  # type: ignore
 
@@ -1084,7 +1081,7 @@ def powersystems(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     optims = ["NaiveTBPSA", "ScrHammersleySearch", "PSO", "OnePlusOne",
               "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
               "RandomScaleRandomSearch", "MiniDE",
-              "NGO", "Shiwa", "DiagonalCMA"]
+              "NGOpt10", "Shiwa", "DiagonalCMA"]
     optims += ["OptimisticNoisyOnePlusOne", "OptimisticDiscreteOnePlusOne", "OnePlusOne"]
     optims += get_optimizers("splitters", "progressive", seed=next(seedg))  # type: ignore
     budgets = [3200, 6400, 12800]
@@ -1113,7 +1110,7 @@ def mlda(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     funcs += [_mlda.Perceptron.from_mlda(name) for name in ["quadratic", "sine", "abs", "heaviside"]]
     funcs += [_mlda.Landscape(transform) for transform in [None, "square", "gaussian"]]
     seedg = create_seed_generator(seed)
-    optims = ["DiagonalCMA", "MetaModel", "NGOpt8", "CMandAS2", "OnePlusOne", "TwoPointsDE"]
+    optims = ["DiagonalCMA", "MetaModel", "NGOpt10", "CMandAS2", "OnePlusOne", "TwoPointsDE"]
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
         for num_workers in [1, 10, 100]:
             if num_workers < budget:
@@ -1150,7 +1147,7 @@ def mldakmeans(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 def arcoating(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """AR coating. Problems about optical properties of nanolayers."""
     seedg = create_seed_generator(seed)
-    optims = ["NGOpt8", "PortfolioDiscreteOnePlusOne", "CMA"]
+    optims = ["NGOpt10", "PortfolioDiscreteOnePlusOne", "CMA"]
 
 
     # for budget in [50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
@@ -1167,7 +1164,7 @@ def arcoating(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 def image_similarity(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Optimizing images: artificial criterion for now."""
     seedg = create_seed_generator(seed)
-    optims = ["CMA", "NGOpt8", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
+    optims = get_optimizers("structured_moo")
     func = imagesxp.Image()
     for budget in [100 * 5 ** k for k in range(3)]:
         for num_workers in [1]:
@@ -1181,7 +1178,7 @@ def image_similarity(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 def image_multi_similarity(seed: tp.Optional[int] = None, cross_valid: bool=False) -> tp.Iterator[Experiment]:
     """Optimizing images: artificial criterion for now."""
     seedg = create_seed_generator(seed)
-    optims = ["CMA", "NGOpt8", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
+    optims = get_optimizers("structured_moo")
     funcs:tp.List[ExperimentFunction] = [imagesxp.Image(loss=loss) for loss in imagesxp.imagelosses.registry.values() if loss.REQUIRES_REFERENCE]
     base_values: tp.List[tp.Any] = [func(func.parametrization.sample().value) for func in funcs]
     if cross_valid:
@@ -1345,7 +1342,7 @@ def multiobjective_example(seed: tp.Optional[int] = None) -> tp.Iterator[Experim
     """
     seedg = create_seed_generator(seed)
     optims: tp.List[tp.Any] = ["NaiveTBPSA", "PSO", "DE", "LhsDE", "RandomSearch", "NGO", "Shiwa", "DiagonalCMA",
-                               "CMA", "OnePlusOne", "TwoPointsDE", "NGOpt8"]
+                               "CMA", "OnePlusOne", "TwoPointsDE", "NGOpt10"]
     optims += [ng.families.DifferentialEvolution(multiobjective_adaptation=False).set_name("DE-noadapt"),
                ng.families.DifferentialEvolution(crossover="twopoints", multiobjective_adaptation=False).set_name(
                    "TwoPointsDE-noadapt")]
@@ -1387,7 +1384,7 @@ def far_optimum_es(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     es += [ng.families.EvolutionStrategy(recombination_ratio=recomb, only_offsprings=only, popsize=pop,
                                          offsprings=10 if pop == 5 else 60)
            for only in [True, False] for recomb in [0, 1] for pop in popsizes]
-    optimizers = ["CMA", "TwoPointsDE", "NGOpt8"] + es  # type: ignore
+    optimizers = ["CMA", "TwoPointsDE", "NGOpt10"] + es  # type: ignore
     for func in FarOptimumFunction.itercases():
         for optim in optimizers:
             for budget in [100, 400, 1000, 4000, 10000]:
@@ -1402,7 +1399,7 @@ def photonics(seed: tp.Optional[int] = None, as_tuple: bool = False) -> tp.Itera
     es = [ng.families.EvolutionStrategy(recombination_ratio=recomb, only_offsprings=only, popsize=pop,
                                         offsprings=pop * 5)
           for only in [True, False] for recomb in [0.1, .5] for pop in popsizes]
-    optims = ["TwoPointsDE", "DE", "PSO", "NGOpt8"] + es  # type: ignore
+    optims = ["TwoPointsDE", "DE", "PSO", "NGOpt10"] + es  # type: ignore
 
     optims += get_optimizers("splitters")  # type: ignore
     for method in ["clipping", "tanh"]:  # , "arctan"]:
@@ -1429,7 +1426,7 @@ def bragg_structure(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         ng.families.EvolutionStrategy(recombination_ratio=0.1, popsize=40).set_name("Pairwise-ES"),
         ng.families.DifferentialEvolution(crossover="parametrization").set_name("Param-DE")
     ]
-    optims = ["TwoPointsDE", "DE", "CMA", "NaiveTBPSA", "DiagonalCMA", "NGOpt8", "OnePlusOne"]
+    optims = ["TwoPointsDE", "DE", "CMA", "NaiveTBPSA", "DiagonalCMA", "NGOpt10", "OnePlusOne"]
     optims += get_optimizers("splitters")  # type: ignore
     func = Photonics("bragg", 80, bounding_method="clipping")
     func.parametrization.set_name("layer")
@@ -1465,7 +1462,7 @@ def adversarial_attack(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]
     1700 queries ==> 0.001310615989515072
     """
     seedg = create_seed_generator(seed)
-    optims = ["DiagonalCMA", "MetaModel", "CMA", "NGOpt8", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
+    optims = ["DiagonalCMA", "MetaModel", "CMA", "NGOpt10", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
     folder = os.environ.get("NEVERGRAD_ADVERSARIAL_EXPERIMENT_FOLDER", None)
     if folder is None:
         warnings.warn("Using random images, set variable NEVERGRAD_ADVERSARIAL_EXPERIMENT_FOLDER to specify a folder")
