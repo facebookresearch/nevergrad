@@ -71,7 +71,6 @@ def large() -> tp.Sequence[Optim]:
         "RSQP",
         "RCobyla",
         "RPowell",
-        "SQPCMA",
         "MetaModel",
         "PolyCMA",
         "ManyCMA",
