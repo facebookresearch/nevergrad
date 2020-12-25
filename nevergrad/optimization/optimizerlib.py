@@ -1399,6 +1399,43 @@ class SQPCMA(ParaPortfolio):
             if i > 0:
                 self.optims[-1].initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
 
+@registry.register
+class ASCMADEthird(Portfolio):
+    """Algorithm selection, with CMA and Lhs-DE. Active selection at 1/3."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        self.optims = [
+            CMA(
+                self.parametrization, budget=None, num_workers=num_workers
+            ),  # share parametrization and its rng
+            LhsDE(self.parametrization, budget=None, num_workers=num_workers),
+        ]  # noqa: F405
+        self.budget_before_choosing = budget // 3
+        self.best_optim = -1
+
+    def _internal_ask_candidate(self) -> p.Parameter:
+        if self.budget_before_choosing > 0:
+            self.budget_before_choosing -= 1
+            optim_index = self._num_ask % len(self.optims)
+        else:
+            if self.best_optim is None:
+                best_loss = float("inf")
+                optim_index = -1
+                for i, optim in enumerate(self.optims):
+                    val = optim.current_bests["pessimistic"].get_estimation("pessimistic")
+                    if not val > best_loss:
+                        optim_index = i
+                        best_loss = val
+                self.best_optim = optim_index
+            optim_index = self.best_optim
+        candidate = self.optims[optim_index].ask()
+        candidate._meta["optim_index"] = optim_index
+        return candidate
+
 
 @registry.register
 class CMandAS2(ASCMADEthird):
