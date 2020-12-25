@@ -475,7 +475,7 @@ def multimodal(seed: tp.Optional[int] = None, para: bool = False) -> tp.Iterator
     seedg = create_seed_generator(seed)
     names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal"]
     # Keep in mind that Rosenbrock is multimodal in high dimension http://ieeexplore.ieee.org/document/6792472/.
-    optims = ["NGOpt10", "CMandAS", "DiagonalCMA", "CMA", "TripleCMA", "CMandAS2", "PSO"]
+    optims = ["NGOpt10", "DiagonalCMA", "CMA", "TripleCMA", "CMandAS2", "PSO"]
     if not para:
         optims += ["RSQP", "RCobyla", "RPowell", "SQPCMA", "SQP", "Cobyla", "Powell"]
     # + list(sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x or "BO" in x))
