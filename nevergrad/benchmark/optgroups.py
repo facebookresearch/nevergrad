@@ -63,9 +63,6 @@ def large() -> tp.Sequence[Optim]:
         "AlmostRotationInvariantDE",
         "RotationInvariantDE",
         "Portfolio",
-        "ASCMADEthird",
-        "ASCMADEQRthird",
-        "ASCMA2PDEthird",
         "CMandAS2",
         "CMandAS",
         "CM",
@@ -181,7 +178,17 @@ def discrete() -> tp.Sequence[Optim]:
 
 @registry.register
 def structured_moo() -> tp.Sequence[Optim]:
-    return ["CMA", "NGOpt10", "MetaNGOpt10", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
+    return [
+        "CMA",
+        "NGOpt10",
+        "MetaNGOpt10",
+        "DE",
+        "PSO",
+        "RecES",
+        "RecMixES",
+        "RecMutDE",
+        "ParametrizationDE",
+    ]
 
 
 @registry.register

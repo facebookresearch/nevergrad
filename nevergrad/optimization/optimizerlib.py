@@ -1399,6 +1399,7 @@ class SQPCMA(ParaPortfolio):
             if i > 0:
                 self.optims[-1].initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
 
+
 @registry.register
 class ASCMADEthird(Portfolio):
     """Algorithm selection, with CMA and Lhs-DE. Active selection at 1/3."""
