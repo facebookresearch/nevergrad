@@ -72,7 +72,7 @@ def keras_tuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: b
     # Continuous case,
 
     # First, a few functions with constraints.
-    optims = ["PSO", "OnePlusOne"] + get_optimizers("basics", seed=next(seedg))
+    optims: tp.List[str] = ["PSO", "OnePlusOne"] + get_optimizers("basics", seed=next(seedg))  # type: ignore
     for dimension in [None]:
         for dataset in (
                 ["kerasBoston", "diabetes", "auto-mpg", "red-wine", "white-wine"]):
@@ -179,7 +179,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # This problem is intended as a stable basis forever.
     # The list of optimizers should contain only the basic for comparison and "baselines".
     optims: tp.List[str] = ["NGOpt8"] + get_optimizers("baselines", seed=next(seedg))  # type: ignore
-    optims += get_optimizers("basics", seed=next(seedg))
+    optims += get_optimizers("basics", seed=next(seedg))  # type: ignore
     for optim in optims:
         for function in functions:
             for budget in [50, 250, 1500, 6000, 25000]:
@@ -299,10 +299,10 @@ def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 @registry.register
 def sequential_instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Sequential counterpart of instrum_discrete."""
-    # Discrete, unordered.
-    optims = get_optimizers("discrete", seed=next(seedg))
 
     seedg = create_seed_generator(seed)
+    # Discrete, unordered.
+    optims = get_optimizers("discrete", seed=next(seedg))
     for nv in [10, 50, 200, 1000, 5000]:
         for arity in [2, 3, 7, 30]:
             for instrum_str in ["Unordered"]:
@@ -548,7 +548,7 @@ def yabbob(seed: tp.Optional[int] = None, parallel: bool = False, big: bool = Fa
         noise_level = 0
 
     # Choosing the list of optimizers.
-    optims: tp.List[str] = get_optimizers("competitive", seed=next(seedg))
+    optims: tp.List[str] = get_optimizers("competitive", seed=next(seedg))  # type: ignore
     if noise:
         optims += ["TBPSA", "SQP", "NoisyDiscreteOnePlusOne"]
     if hd:

@@ -176,7 +176,7 @@ def all_bo() -> tp.Sequence[Optim]:
 
 @registry.register
 def discrete() -> tp.Sequence[Optim]:
-    return [name for name, _ in optimizerlib_registry if "iscrete" in name and "oisy" not in name]
+    return [name for name in optimizerlib_registry.keys() if "iscrete" in name and "oisy" not in name]
 
 
 @registry.register
