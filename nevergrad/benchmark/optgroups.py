@@ -130,7 +130,7 @@ def progressive() -> tp.Sequence[Optim]:
 
 @registry.register
 def basics() -> tp.Sequence[Optim]:
-    return ["NGOpt10", "CMandAS2", "CMA", "DE", "MetaModel", "BO"]
+    return ["NGOpt10", "CMandAS2", "CMA", "DE", "MetaModel"]
 
 
 @registry.register

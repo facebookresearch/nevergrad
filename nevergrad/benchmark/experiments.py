@@ -180,6 +180,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # The list of optimizers should contain only the basic for comparison and "baselines".
     optims: tp.List[str] = ["NGOpt8"] + get_optimizers("baselines", seed=next(seedg))  # type: ignore
     optims += get_optimizers("basics", seed=next(seedg))  # type: ignore
+
     for optim in optims:
         for function in functions:
             for budget in [50, 250, 1500, 6000, 25000]:
