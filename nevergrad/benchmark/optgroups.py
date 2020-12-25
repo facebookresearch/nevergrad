@@ -64,7 +64,6 @@ def large() -> tp.Sequence[Optim]:
         "RotationInvariantDE",
         "Portfolio",
         "CMandAS2",
-        "CMandAS",
         "CM",
         "MultiCMA",
         "TripleCMA",
