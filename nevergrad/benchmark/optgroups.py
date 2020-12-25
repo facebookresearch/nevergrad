@@ -130,7 +130,7 @@ def progressive() -> tp.Sequence[Optim]:
 
 @registry.register
 def basics() -> tp.Sequence[Optim]:
-    return ["NGOpt8", "CMandAS2", "CMA", "DE", "MetaModel", "BO"]
+    return ["NGOpt10", "CMandAS2", "CMA", "DE", "MetaModel", "BO"]
 
 
 @registry.register
@@ -142,7 +142,7 @@ def baselines() -> tp.Sequence[Optim]:
 
 @registry.register
 def parallel_basics() -> tp.Sequence[Optim]:
-    return ["NGOpt8", "CMandAS2", "CMA", "DE", "MetaModel"]
+    return ["NGOpt10", "CMandAS2", "CMA", "DE", "MetaModel"]
 
 
 @registry.register
@@ -158,7 +158,7 @@ def competence_map() -> tp.Sequence[Optim]:
 @registry.register
 def competitive() -> tp.Sequence[Optim]:
     return get_optimizers("cma", "competence_map") + [
-        "MetaNGOpt8",
+        "MetaNGOpt10",
         "NaiveTBPSA",
         "PSO",
         "DE",
@@ -181,7 +181,7 @@ def discrete() -> tp.Sequence[Optim]:
 
 @registry.register
 def structured_moo() -> tp.Sequence[Optim]:
-    return ["CMA", "NGOpt8", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
+    return ["CMA", "NGOpt10", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
 
 
 @registry.register
