@@ -175,6 +175,11 @@ def all_bo() -> tp.Sequence[Optim]:
 
 
 @registry.register
+def discrete() -> tp.Sequence[Optim]:
+    return [name for name, _ in optimizerlib_registry if "iscrete" in name and "oisy" not in name]
+
+
+@registry.register
 def structured_moo() -> tp.Sequence[Optim]:
     return ["CMA", "NGOpt8", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
 
