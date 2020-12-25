@@ -13,7 +13,7 @@ from .optimizerlib import (
     ConfSplitOptimizer,
     ParametrizedBO,
     EMNA,
-    NGOpt8,
+    NGOpt10,
 )
 from .optimizerlib import CMA, Chaining, PSO, BO
 
@@ -280,5 +280,5 @@ HCHAvgCauchyLHSSearch = SamplingSearch(
 
 # Split on top of competence map.
 MetaNGOpt10 = ConfSplitOptimizer(
-    multivariate_optimizer=NGOpt10, monovariate_optimizer=NGOpt8, non_deterministic_descriptor=False
+    multivariate_optimizer=NGOpt10, monovariate_optimizer=NGOpt10, non_deterministic_descriptor=False
 ).set_name("MetaNGOpt10", register=True)
