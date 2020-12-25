@@ -477,7 +477,7 @@ def multimodal(seed: tp.Optional[int] = None, para: bool = False) -> tp.Iterator
     # Keep in mind that Rosenbrock is multimodal in high dimension http://ieeexplore.ieee.org/document/6792472/.
     optims = ["NGOpt10", "DiagonalCMA", "CMA", "TripleCMA", "CMandAS2", "PSO"]
     if not para:
-        optims += ["RSQP", "RCobyla", "RPowell", "SQPCMA", "SQP", "Cobyla", "Powell"]
+        optims += ["RSQP", "RCobyla", "RPowell", "SQP", "Cobyla", "Powell"]
     # + list(sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x or "BO" in x))
     functions = [
         ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
