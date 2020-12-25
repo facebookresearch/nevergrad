@@ -567,8 +567,10 @@ def test_shiwa_dim1() -> None:
             2,
             "DoubleFastGADiscreteOnePlusOne",
         ),
-        ("NGOpt", ng.p.TransitionChoice(range(30), repetitions=10), 10, 2, "CMandAS2"),
-        ("NGOpt", ng.p.TransitionChoice(range(3), repetitions=10), 10, 2, "AdaptiveDiscreteOnePlusOne"),
+        ("NGOpt8", ng.p.TransitionChoice(range(30), repetitions=10), 10, 2, "CMandAS2"),
+        ("NGOpt8", ng.p.TransitionChoice(range(3), repetitions=10), 10, 2, "AdaptiveDiscreteOnePlusOne"),
+        ("NGOpt", ng.p.TransitionChoice(range(30), repetitions=10), 10, 2, "DiscreteLenglerOnePlusOne"),
+        ("NGOpt", ng.p.TransitionChoice(range(3), repetitions=10), 10, 2, "DiscreteLenglerOnePlusOne"),
         ("NGO", 1, 10, 1, "Cobyla"),
         ("NGO", 1, 10, 2, "OnePlusOne"),
     ],  # pylint: disable=too-many-arguments
@@ -642,7 +644,7 @@ def test_ngo_split_optimizer(
 @pytest.mark.parametrize(  # type: ignore
     "budget,with_int",
     [
-        (100, True),
+        (115, True),
         (200, True),
         (666, True),
         (2000, True),

@@ -2,7 +2,7 @@ all_bo = ['BO', 'LBO', 'MidQRBO', 'QRBO', 'RBO', 'chainBOwithLHS', 'chainBOwithL
 
 baselines = ['OnePlusOne', 'DiscreteOnePlusOne', 'NoisyDiscreteOnePlusOne', 'PSO', 'DE', 'TwoPointsDE']
 
-basics = ['NGOpt8', 'CMandAS2', 'CMA', 'DE', 'MetaModel', 'BO']
+basics = ['NGOpt10', 'CMandAS2', 'CMA', 'DE', 'MetaModel']
 
 cma = ['DiagonalCMA', 'CMA']
 
@@ -10,11 +10,13 @@ competence_map = ['NGO', 'Shiwa']
 
 competitive = ['DiagonalCMA', 'CMA', 'NGO', 'Shiwa', 'MetaNGOpt8', 'NaiveTBPSA', 'PSO', 'DE', 'LhsDE', 'RandomSearch', 'OnePlusOne', 'TwoPointsDE']
 
+discrete = ['DiscreteOnePlusOne', 'DiscreteLenglerOnePlusOne', 'AdaptiveDiscreteOnePlusOne', 'AnisotropicAdaptiveDiscreteOnePlusOne', 'DiscreteBSOOnePlusOne', 'DiscreteDoerrOnePlusOne', 'OptimisticDiscreteOnePlusOne', 'DoubleFastGADiscreteOnePlusOne', 'MultiDiscrete', 'FastGADiscreteOnePlusOne', 'PortfolioDiscreteOnePlusOne']
+
 emna_variants = ['IsoEMNA', 'NaiveIsoEMNA', 'AnisoEMNA', 'NaiveAnisoEMNA', 'CMA', 'NaiveTBPSA', 'NaiveIsoEMNATBPSA', 'IsoEMNATBPSA', 'NaiveAnisoEMNATBPSA', 'AnisoEMNATBPSA']
 
 large = ['NGO', 'Shiwa', 'DiagonalCMA', 'CMA', 'PSO', 'DE', 'MiniDE', 'QrDE', 'MiniQrDE', 'LhsDE', 'OnePlusOne', 'SQP', 'Cobyla', 'Powell', 'TwoPointsDE', 'OnePointDE', 'AlmostRotationInvariantDE', 'RotationInvariantDE', 'Portfolio', 'ASCMADEthird', 'ASCMADEQRthird', 'ASCMA2PDEthird', 'CMandAS2', 'CMandAS', 'CM', 'MultiCMA', 'TripleCMA', 'MultiScaleCMA', 'RSQP', 'RCobyla', 'RPowell', 'SQPCMA', 'MetaModel', 'PolyCMA', 'ManyCMA']
 
-parallel_basics = ['NGOpt8', 'CMandAS2', 'CMA', 'DE', 'MetaModel']
+parallel_basics = ['NGOpt10', 'CMandAS2', 'CMA', 'DE', 'MetaModel']
 
 progressive = [ProgDiscAuto, ProgDisc13, ProgDiscInf, ProgAuto, Prog13, ProgInf]
 
@@ -22,4 +24,4 @@ splitters = [SplitCMAAuto, SplitECMAAuto, SplitDEAuto, SplitTwoPointsDEAuto, Spl
 
 spsa = ['NaiveTBPSA', 'SPSA', 'TBPSA']
 
-structured_moo = ['CMA', 'NGOpt8', 'DE', 'PSO', 'RecES', 'RecMixES', 'RecMutDE', 'ParametrizationDE']
+structured_moo = ['CMA', 'NGOpt10', 'MetaNGOpt8', 'DE', 'PSO', 'RecES', 'RecMixES', 'RecMutDE', 'ParametrizationDE']
