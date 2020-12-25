@@ -181,7 +181,7 @@ def discrete() -> tp.Sequence[Optim]:
 
 @registry.register
 def structured_moo() -> tp.Sequence[Optim]:
-    return ["CMA", "NGOpt10", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
+    return ["CMA", "NGOpt10", "MetaNGOpt8", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
 
 
 @registry.register
