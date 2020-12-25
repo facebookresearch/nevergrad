@@ -644,7 +644,7 @@ def test_ngo_split_optimizer(
 @pytest.mark.parametrize(  # type: ignore
     "budget,with_int",
     [
-        (100, True),
+        (115, True),
         (200, True),
         (666, True),
         (2000, True),
