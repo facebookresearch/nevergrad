@@ -30,6 +30,7 @@ class ArtificialVariable:
         rotation: bool,
         hashing: bool,
         only_index_transform: bool,
+        random_state: np.random.RandomState,
     ) -> None:
         self._dimension = dimension
         self._transforms: tp.List[utils.Transform] = []
@@ -40,6 +41,7 @@ class ArtificialVariable:
         self.only_index_transform = only_index_transform
         self.hashing = hashing
         self.dimension = self._dimension
+        self.random_state = random_state
 
     def _initialize(self) -> None:
         """Delayed initialization of the transforms to avoid slowing down the instance creation
@@ -47,14 +49,17 @@ class ArtificialVariable:
         This functions creates the random transform used upon each block (translation + optional rotation).
         """
         # use random indices for blocks
-        indices = np.random.choice(
+        indices = self.random_state.choice(
             self._dimension, self.block_dimension * self.num_blocks, replace=False
         ).tolist()
         indices.sort()  # keep the indices sorted sorted so that blocks do not overlap
         for transform_inds in tools.grouper(indices, n=self.block_dimension):
             self._transforms.append(
                 utils.Transform(
-                    transform_inds, translation_factor=self.translation_factor, rotation=self.rotation
+                    transform_inds,
+                    translation_factor=self.translation_factor,
+                    rotation=self.rotation,
+                    random_state=self.random_state,
                 )
             )
 
@@ -65,9 +70,9 @@ class ArtificialVariable:
             self._initialize()
         if self.hashing:
             data2 = np.array(data, copy=True)
-            state = np.random.get_state()
+            state = np.random.get_state()  # Paco
             for i, y in enumerate(data):
-                np.random.seed(int(hashlib.md5(str(y).encode()).hexdigest(), 16) % 500000)  # type: ignore
+                self.random_state.seed(int(hashlib.md5(str(y).encode()).hexdigest(), 16) % 500000)  # type: ignore
                 data2[i] = np.random.normal(0.0, 1.0)  # type: ignore
             np.random.set_state(state)
             data = data2
@@ -170,16 +175,7 @@ class ArtificialFunction(ExperimentFunction):
         # special case
         info = corefuncs.registry.get_info(self._parameters["name"])
         only_index_transform = info.get("no_transform", False)
-        # variable
-        self.transform_var = ArtificialVariable(
-            dimension=self._dimension,
-            num_blocks=num_blocks,
-            block_dimension=block_dimension,
-            translation_factor=translation_factor,
-            rotation=rotation,
-            hashing=hashing,
-            only_index_transform=only_index_transform,
-        )
+
         assert not (split and hashing)
         assert not (split and useless_variables > 0)
         parametrization = (
@@ -194,6 +190,17 @@ class ArtificialFunction(ExperimentFunction):
         if noise_level > 0:
             parametrization.descriptors.deterministic_function = False
         super().__init__(self.noisy_function, parametrization)
+        # variable, must come after super().__init__(...) to bind the random_state
+        self.transform_var = ArtificialVariable(
+            dimension=self._dimension,
+            num_blocks=num_blocks,
+            block_dimension=block_dimension,
+            translation_factor=translation_factor,
+            rotation=rotation,
+            hashing=hashing,
+            only_index_transform=only_index_transform,
+            random_state=self._parametrization.random_state,
+        )
         self._aggregator = {"max": np.max, "mean": np.mean, "sum": np.sum}[aggregator]
         info = corefuncs.registry.get_info(self._parameters["name"])
         # add descriptors
@@ -242,6 +249,7 @@ class ArtificialFunction(ExperimentFunction):
             func=self.function_from_transform,
             noise_level=self._parameters["noise_level"],
             noise_dissymmetry=self._parameters["noise_dissymmetry"],
+            random_state=self._parametrization.random_state,
         )
 
     def compute_pseudotime(self, input_parameter: tp.Any, loss: tp.Loss) -> float:
@@ -264,16 +272,17 @@ def _noisy_call(
     func: tp.Callable[[np.ndarray], float],
     noise_level: float,
     noise_dissymmetry: bool,
+    random_state: np.random.RandomState = None,
 ) -> float:  # pylint: disable=unused-argument
     x_transf = transf(x)
     fx = func(x_transf)
     noise = 0
     if noise_level:
         if not noise_dissymmetry or x_transf.ravel()[0] <= 0:
-            side_point = transf(x + np.random.normal(0, 1, size=len(x)))
+            side_point = transf(x + random_state.normal(0, 1, size=len(x)))
             if noise_dissymmetry:
                 noise_level *= 1.0 + x_transf.ravel()[0] * 100.0
-            noise = noise_level * np.random.normal(0, 1) * (func(side_point) - fx)
+            noise = noise_level * random_state.normal(0, 1) * (func(side_point) - fx)
     return fx + noise
 
 

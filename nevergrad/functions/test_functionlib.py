@@ -197,6 +197,7 @@ def test_noisy_call(x: int, noise: bool, noise_dissymmetry: bool, expect_noisy: 
         func=lambda y: np.arctanh(y)[0],  # type: ignore
         noise_level=float(noise),
         noise_dissymmetry=noise_dissymmetry,
+        random_state=np.random.get_state(),
     )
     assert not np.isnan(fx)  # noise addition should not get out of function domain
     if expect_noisy:

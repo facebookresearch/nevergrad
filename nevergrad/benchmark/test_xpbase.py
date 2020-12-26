@@ -55,14 +55,16 @@ def test_noisy_artificial_function_loss() -> None:
     func = ArtificialFunction(name="sphere", block_dimension=5, noise_level=0.3)
     seed = np.random.randint(99999)
     xp = xpbase.Experiment(func, optimizer="OnePlusOne", budget=5, seed=seed)
+    # Because copy() can have different random initialization for the parameters
+    # The function should be copied early.
+    np.random.seed(seed)
+    pfunc = func.copy()
     xp.run()
     loss_ref = xp.result["loss"]
     # now with copy
     assert xp._optimizer is not None
     reco = xp._optimizer.provide_recommendation()
     assert reco is not None
-    np.random.seed(seed)
-    pfunc = func.copy()
     np.testing.assert_equal(pfunc.evaluation_function(reco), loss_ref)
     np.random.seed(None)
 

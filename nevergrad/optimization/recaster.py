@@ -208,7 +208,7 @@ class RecastOptimizer(base.Optimizer):
                 FinishedUnderlyingOptimizerWarning,
             )
             self._check_error()
-            data = np.random.normal(0, 1, self.dimension)
+            data = self._rng.normal(0, 1, self.dimension)
             return self.parametrization.spawn_child().set_standardized_data(data)
         message = messages[0]  # take oldest message
         message.meta["asked"] = True  # notify that it has been asked so that it is not selected again
