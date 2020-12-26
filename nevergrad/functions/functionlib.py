@@ -189,6 +189,7 @@ class ArtificialFunction(ExperimentFunction):
             parametrization.descriptors.deterministic_function = False
         super().__init__(self.noisy_function, parametrization)
         # variable, must come after super().__init__(...) to bind the random_state
+        # may consider having its a local random_state instead but less reproducible
         self.transform_var = ArtificialVariable(
             dimension=self._dimension,
             num_blocks=num_blocks,
@@ -270,7 +271,7 @@ def _noisy_call(
     func: tp.Callable[[np.ndarray], float],
     noise_level: float,
     noise_dissymmetry: bool,
-    random_state: np.random.RandomState = None,
+    random_state: np.random.RandomState,
 ) -> float:  # pylint: disable=unused-argument
     x_transf = transf(x)
     fx = func(x_transf)
