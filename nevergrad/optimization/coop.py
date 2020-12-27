@@ -3,7 +3,6 @@ from functools import partialmethod
 from itertools import cycle
 from operator import itemgetter
 
-from deap import tools  # type: ignore
 import numpy as np
 
 from . import base
