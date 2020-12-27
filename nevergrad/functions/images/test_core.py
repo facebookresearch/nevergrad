@@ -4,7 +4,11 @@
 # LICENSE file in the root directory of this source tree.
 
 import numpy as np
+import pytest
+
+from .. import base
 from . import core
+from . import imagelosses
 
 
 def test_images_adversarial() -> None:
@@ -19,10 +23,10 @@ def test_images_adversarial() -> None:
 
 def test_image_adversarial_eval() -> None:
     func = next(core.ImageAdversarial.make_folder_functions(None, model="test"))
-    output = func.evaluation_function(func.parametrization.value)
+    output = func.evaluation_function(func.parametrization)
     assert output == 0
     func.targeted = True
-    output = func.evaluation_function(func.parametrization.value)
+    output = func.evaluation_function(func.parametrization)
     assert output == 1
 
 
@@ -31,6 +35,19 @@ def test_images() -> None:
     x = 7 * np.fabs(np.random.normal(size=func.domain_shape))
     # data = func.parametrization.spawn_child().set_standardized_data(x.flatten()).value
     value = func(x)  # should not touch boundaries, so value should be < np.inf
+    assert value < np.inf
+    other_func = func.copy()
+    value2 = other_func(x)
+    assert value == value2
+
+
+def test_image_from_pgan_with_k512() -> None:
+    func = core.ImageFromPGAN(initial_noise=None, use_gpu=False, loss=imagelosses.Koncept512())
+    x = np.fabs(np.random.normal(size=func.domain_shape))
+    try:
+        value = func(x)
+    except base.UnsupportedExperiment as e:
+        pytest.skip(str(e))
     assert value < np.inf
     other_func = func.copy()
     value2 = other_func(x)

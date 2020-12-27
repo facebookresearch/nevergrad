@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import random
 import numpy as np
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
@@ -26,6 +25,8 @@ class HypervolumePareto:
     auto_bound: int
         if no upper bounds are provided, number of initial points used to estimate the upper bounds. Their
         loss will be 0 (except if they are uniformly worse than the previous points).
+    seed: optional int or RandomState
+        seed to use for selecting random subsamples of the pareto
 
     Notes
     -----
@@ -37,11 +38,19 @@ class HypervolumePareto:
       remotely, and aggregate locally. This is what happens in the "minimize" method of optimizers.
     """
 
-    def __init__(self, upper_bounds: tp.Optional[tp.ArrayLike] = None, auto_bound: int = AUTO_BOUND) -> None:
+    def __init__(
+        self,
+        upper_bounds: tp.Optional[tp.ArrayLike] = None,
+        auto_bound: int = AUTO_BOUND,
+        seed: tp.Optional[tp.Union[int, np.random.RandomState]] = None,
+    ) -> None:
         self._auto_bound = 0
-        self._upper_bounds = np.array([-float('inf')]) if upper_bounds is None else np.array(upper_bounds, copy=False)
+        self._upper_bounds = (
+            np.array([-float("inf")]) if upper_bounds is None else np.array(upper_bounds, copy=False)
+        )
         if upper_bounds is None:
             self._auto_bound = auto_bound
+        self._rng = seed if isinstance(seed, np.random.RandomState) else np.random.RandomState(seed)
         self._pareto: tp.List[p.Parameter] = []
         self._best_volume = -float("Inf")
         self._hypervolume: tp.Optional[HypervolumeIndicator] = None
@@ -51,26 +60,40 @@ class HypervolumePareto:
     def num_objectives(self) -> int:
         return self._upper_bounds.size
 
+    @property
+    def best_volume(self) -> float:
+        return self._best_volume
+
     def _add_to_pareto(self, parameter: p.Parameter) -> None:
         self._pareto.append(parameter)
         self._pareto_needs_filtering = True
+
+    def extend(self, parameters: tp.Sequence[p.Parameter]) -> float:
+        output = 0.0
+        for param in parameters:
+            output = self.add(param)
+        return output
 
     def add(self, parameter: p.Parameter) -> float:
         """Given parameters and the multiobjective loss, this computes the hypervolume
         and update the state of the function with new points if it belongs to the pareto front
         """
         if not isinstance(parameter, p.Parameter):
-            raise TypeError(f"{self.__class__.__name__}.add should receive a ng.p.Parameter, but got: {parameter}.")
+            raise TypeError(
+                f"{self.__class__.__name__}.add should receive a ng.p.Parameter, but got: {parameter}."
+            )
         losses = parameter.losses
         if not isinstance(losses, np.ndarray):
-            raise TypeError(f"Parameter should have multivalue as losses, but parameter.losses={losses} ({type(losses)}).")
+            raise TypeError(
+                f"Parameter should have multivalue as losses, but parameter.losses={losses} ({type(losses)})."
+            )
         if self._auto_bound > 0:
             self._auto_bound -= 1
             if (self._upper_bounds > -float("inf")).all() and (losses > self._upper_bounds).all():
-                return float('inf')  # Avoid uniformly worst points
+                return float("inf")  # Avoid uniformly worst points
             self._upper_bounds = np.maximum(self._upper_bounds, losses)
             self._add_to_pareto(parameter)
-            return 0.
+            return 0.0
         if self._hypervolume is None:
             self._hypervolume = HypervolumeIndicator(self._upper_bounds)
         # get rid of points over the upper bounds
@@ -102,8 +125,7 @@ class HypervolumePareto:
             return -new_volume + distance_to_pareto
 
     def _filter_pareto_front(self) -> None:
-        """Filters the Pareto front
-        """
+        """Filters the Pareto front"""
         new_pareto: tp.List[p.Parameter] = []
         for param in self._pareto:  # quadratic :(
             should_be_added = True
@@ -116,11 +138,9 @@ class HypervolumePareto:
         self._pareto = new_pareto
         self._pareto_needs_filtering = False
 
+    # pylint: disable=too-many-branches
     def pareto_front(
-        self,
-        size: tp.Optional[int] = None,
-        subset: str = "random",
-        subset_tentatives: int = 12
+        self, size: tp.Optional[int] = None, subset: str = "random", subset_tentatives: int = 12
     ) -> tp.List[p.Parameter]:
         """Pareto front, as a list of Parameter. The losses can be accessed through
         parameter.losses
@@ -146,8 +166,8 @@ class HypervolumePareto:
         if size is None or size >= len(self._pareto):  # No limit: we return the full set.
             return self._pareto
         if subset == "random":
-            return random.sample(self._pareto, size)
-        tentatives = [random.sample(self._pareto, size) for _ in range(subset_tentatives)]
+            return self._rng.choice(self._pareto, size)  # type: ignore
+        tentatives = [self._rng.choice(self._pareto, size) for _ in range(subset_tentatives)]
         if self._hypervolume is None:
             raise RuntimeError("Hypervolume not initialized, not supported")  # TODO fix
         hypervolume = self._hypervolume
@@ -156,16 +176,18 @@ class HypervolumePareto:
             if subset == "hypervolume":
                 scores += [-hypervolume.compute([pa.losses for pa in tentative])]
             else:
-                score: float = 0.
+                score: float = 0.0
                 for v in self._pareto:
-                    best_score = float("inf") if subset != "EPS" else 0.
+                    best_score = float("inf") if subset != "EPS" else 0.0
                     for pa in tentative:
                         if subset == "loss-covering":  # equivalent to IGD.
                             best_score = min(best_score, np.linalg.norm(pa.losses - v.losses))
                         elif subset == "EPS":
                             best_score = max(best_score, max(pa.losses - v.losses))
                         elif subset == "domain-covering":
-                            best_score = min(best_score, np.linalg.norm(pa.get_standardized_data(reference=v)))  # TODO verify
+                            best_score = min(
+                                best_score, np.linalg.norm(pa.get_standardized_data(reference=v))
+                            )  # TODO verify
                         else:
                             raise ValueError(f'Unknown subset for Pareto-Set subsampling: "{subset}"')
                     score += best_score ** 2 if subset != "EPS" else max(score, best_score)

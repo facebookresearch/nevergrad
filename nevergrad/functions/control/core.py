@@ -46,11 +46,13 @@ class BaseFunction(ExperimentFunction):
         self._descriptors.pop("random_state", None)  # remove it from automatically added descriptors
 
     def _simulate(self, x: np.ndarray) -> float:
-        env = GenericMujocoEnv(env_name=self.env_name,
-                               state_mean=self.state_mean,
-                               state_std=self.state_std,
-                               num_rollouts=self.num_rollouts,
-                               random_state=self.random_state)
+        env = GenericMujocoEnv(
+            env_name=self.env_name,
+            state_mean=self.state_mean,
+            state_std=self.state_std,
+            num_rollouts=self.num_rollouts,
+            random_state=self.random_state,
+        )
         return env(x)
 
     @property
@@ -69,13 +71,19 @@ class BaseFunction(ExperimentFunction):
     def policy_dim(self):
         raise NotImplementedError
 
-    # pylint: disable=arguments-differ
-    def evaluation_function(self, x: np.ndarray) -> float:  # type: ignore
+    def evaluation_function(self, *recommendations: p.Parameter) -> float:
+        assert len(recommendations) == 1, "Should not be a pareto set for a monoobjective function"
+        x = recommendations[0].value
         # pylint: disable=not-callable
         loss = self.function(x)
         assert isinstance(loss, float)
-        base.update_leaderboard(f'{self.env_name},{self.parametrization.dimension}', loss, x, verbose=True)
+        base.update_leaderboard(f"{self.env_name},{self.parametrization.dimension}", loss, x, verbose=True)
         return loss
+
+
+# pylint: disable=line-too-long
+# for black (since lists are way too long...)
+# fmt: off
 
 
 class Ant(BaseFunction):

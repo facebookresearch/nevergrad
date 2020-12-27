@@ -20,34 +20,34 @@ COMMENT_CHARS = {".c": "//", ".h": "//", ".cpp": "//", ".hpp": "//", ".py": "#",
 
 
 def _convert_to_string(data: tp.Any, extension: str) -> str:
-    """Converts the data into a string to be injected in a file
-    """
+    """Converts the data into a string to be injected in a file"""
     if isinstance(data, np.ndarray):
         string = repr(data.tolist())
     else:
         string = repr(data)
-    if extension in [".h", ".hpp", ".cpp", ".c"] and isinstance(data, np.ndarray):  # TODO: custom extensions are handled as python
+    if extension in [".h", ".hpp", ".cpp", ".c"] and isinstance(
+        data, np.ndarray
+    ):  # TODO: custom extensions are handled as python
         string = string.replace("[", "{").replace("]", "}")
     return string
 
 
 class Placeholder:
-    """Placeholder tokens to for external code instrumentation
-    """
+    """Placeholder tokens to for external code instrumentation"""
 
-    pattern = r'NG_ARG' + r'{(?P<name>\w+?)(\|(?P<comment>.+?))?}'
+    pattern = r"NG_ARG" + r"{(?P<name>\w+?)(\|(?P<comment>.+?))?}"
 
     def __init__(self, name: str, comment: tp.Optional[str]) -> None:
         self.name = name
         self.comment = comment
 
     @classmethod
-    def finditer(cls, text: str) -> tp.List['Placeholder']:
+    def finditer(cls, text: str) -> tp.List["Placeholder"]:
         prog = re.compile(cls.pattern)
         return [cls(x.group("name"), x.group("comment")) for x in prog.finditer(text)]
 
     def __repr__(self) -> str:
-        return f'{self.__class__.__name__}({self.name!a}, {self.comment!a})'
+        return f"{self.__class__.__name__}({self.name!a}, {self.comment!a})"
 
     def __eq__(self, other: tp.Any) -> bool:
         if self.__class__ == other.__class__:
@@ -92,16 +92,20 @@ def symlink_folder_tree(folder: tp.Union[Path, str], shadow_folder: tp.Union[Pat
 
 def uncomment_line(line: str, extension: str) -> str:
     if extension not in COMMENT_CHARS:
-        raise RuntimeError(f'Unknown file type: {extension}\nDid you register it using {FolderFunction.register_file_type.__name__}?')
-    pattern = r'^(?P<indent> *)'
-    pattern += r'(?P<linetoken>' + COMMENT_CHARS[extension] + r" *" + LINETOKEN + r" *)"
-    pattern += r'(?P<command>.*)'
+        raise RuntimeError(
+            f"Unknown file type: {extension}\nDid you register it using {FolderFunction.register_file_type.__name__}?"
+        )
+    pattern = r"^(?P<indent> *)"
+    pattern += r"(?P<linetoken>" + COMMENT_CHARS[extension] + r" *" + LINETOKEN + r" *)"
+    pattern += r"(?P<command>.*)"
     lineseg = re.search(pattern, line)
     if lineseg is not None:
         line = lineseg.group("indent") + lineseg.group("command")
     if LINETOKEN in line:
-        raise RuntimeError(f"Uncommenting failed for line of {extension} file (a {LINETOKEN} tag remains):\n{line}\n"
-                           f"Did you follow the pattern indent+comment+{LINETOKEN}+code (with nothing before the indent)?")
+        raise RuntimeError(
+            f"Uncommenting failed for line of {extension} file (a {LINETOKEN} tag remains):\n{line}\n"
+            f"Did you follow the pattern indent+comment+{LINETOKEN}+code (with nothing before the indent)?"
+        )
     return line
 
 
@@ -117,10 +121,12 @@ class FileTextFunction:
             text = f.read()
         deprecated_placeholders = ["NG_G{", "NG_OD{", "NG_SC{"]
         if any(x in text for x in deprecated_placeholders):
-            raise RuntimeError(f"Found one of deprecated placeholders {deprecated_placeholders}. The API has now evolved to "
-                               "a single placeholder NG_ARG{name|comment}, and FolderFunction now takes as many kwargs "
-                               "as placeholders and must be instrumented before optimization.\n"
-                               "Please refer to the README, PR #73 or issue #45 for more information")
+            raise RuntimeError(
+                f"Found one of deprecated placeholders {deprecated_placeholders}. The API has now evolved to "
+                "a single placeholder NG_ARG{name|comment}, and FolderFunction now takes as many kwargs "
+                "as placeholders and must be instrumented before optimization.\n"
+                "Please refer to the README, PR #73 or issue #45 for more information"
+            )
         if LINETOKEN in text:
             lines = text.splitlines()
             ext = filepath.suffix.lower()
@@ -133,7 +139,9 @@ class FileTextFunction:
             if x.name not in self.parameters:
                 self.parameters.add(x.name)
             else:
-                raise RuntimeError(f'Found duplicate placeholder (names must be unique) with name "{x.name}" in file:\n{self.filepath}')
+                raise RuntimeError(
+                    f'Found duplicate placeholder (names must be unique) with name "{x.name}" in file:\n{self.filepath}'
+                )
 
     def __call__(self, **kwargs: tp.Any) -> str:
         testing.assert_set_equal(kwargs, self.parameters, err_msg="Wrong input parameters.")
@@ -179,7 +187,9 @@ class FolderInstantiator:
                 fnames = {ph.name for ph in file_func.placeholders}
                 if fnames:
                     if fnames & names:
-                        raise RuntimeError(f"Found {fp} placeholders in another file (names must be unique): {fnames & names}")
+                        raise RuntimeError(
+                            f"Found {fp} placeholders in another file (names must be unique): {fnames & names}"
+                        )
                     self.file_functions.append(file_func)
         assert self.file_functions, "Found no file with placeholders"
         self.file_functions = sorted(self.file_functions, key=operator.attrgetter("filepath"))
@@ -192,7 +202,9 @@ class FolderInstantiator:
         return [p for f in self.file_functions for p in f.placeholders]
 
     def instantiate_to_folder(self, outfolder: tp.Union[Path, str], kwargs: tp.Dict[str, tp.Any]) -> None:
-        testing.assert_set_equal(kwargs, {x.name for x in self.placeholders}, err_msg="Wrong input parameters.")
+        testing.assert_set_equal(
+            kwargs, {x.name for x in self.placeholders}, err_msg="Wrong input parameters."
+        )
         outfolder = Path(outfolder).expanduser().absolute()
         assert outfolder != self.folder, "Do not instantiate on same folder!"
         symlink_folder_tree(self.folder, outfolder)
@@ -250,7 +262,13 @@ class FolderFunction:
     """
 
     # pylint: disable=too-many-arguments
-    def __init__(self, folder: tp.Union[Path, str], command: tp.List[str], verbose: bool = False, clean_copy: bool = False) -> None:
+    def __init__(
+        self,
+        folder: tp.Union[Path, str],
+        command: tp.List[str],
+        verbose: bool = False,
+        clean_copy: bool = False,
+    ) -> None:
         self.command = command
         self.verbose = verbose
         self.postprocessings = [get_last_line_as_float]

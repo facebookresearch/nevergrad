@@ -1,5 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
-# verify
+#
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
@@ -13,7 +13,6 @@ from . import recaster
 
 
 class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
-
     def __init__(
         self,
         parametrization: IntOrParameter,
@@ -21,7 +20,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         num_workers: int = 1,
         *,
         method: str = "Nelder-Mead",
-        random_restart: bool = False
+        random_restart: bool = False,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.multirun = 1  # work in progress
@@ -31,7 +30,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         self.method = method
         self.random_restart = random_restart
 
-#    def _internal_tell_not_asked(self, x: base.ArrayLike, value: float) -> None:
+    #    def _internal_tell_not_asked(self, x: base.ArrayLike, value: float) -> None:
     def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
         """Called whenever calling "tell" on a candidate that was not "asked".
         Defaults to the standard tell pipeline.
@@ -45,7 +44,8 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
             budget=self.budget,
             num_workers=self.num_workers,
             method=self.method,
-            random_restart=self.random_restart)
+            random_restart=self.random_restart,
+        )
         subinstance.archive = self.archive
         subinstance.current_bests = self.current_bests
         return subinstance._optimization_function
@@ -101,12 +101,7 @@ class ScipyOptimizer(base.ConfiguredOptimizer):
     no_parallelization = True
 
     # pylint: disable=unused-argument
-    def __init__(
-        self,
-        *,
-        method: str = "Nelder-Mead",
-        random_restart: bool = False
-    ) -> None:
+    def __init__(self, *, method: str = "Nelder-Mead", random_restart: bool = False) -> None:
         super().__init__(_ScipyMinimizeBase, locals())
 
 

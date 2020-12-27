@@ -32,11 +32,15 @@ class MultiobjectiveFunction:
       remotely, and aggregate locally. This is what happens in the "minimize" method of optimizers.
     """
 
-    def __init__(self, multiobjective_function: tp.Callable[..., tp.ArrayLike], upper_bounds: tp.Optional[tp.ArrayLike] = None) -> None:
+    def __init__(
+        self,
+        multiobjective_function: tp.Callable[..., tp.ArrayLike],
+        upper_bounds: tp.Optional[tp.ArrayLike] = None,
+    ) -> None:
         self.multiobjective_function = multiobjective_function
         self._auto_bound = 0
-        self._auto_upper_bounds = np.array([-float('inf')])
-        self._auto_lower_bounds = np.array([float('inf')])
+        self._auto_upper_bounds = np.array([-float("inf")])
+        self._auto_lower_bounds = np.array([float("inf")])
         if upper_bounds is None:
             self._auto_bound = 15
         else:
@@ -51,14 +55,16 @@ class MultiobjectiveFunction:
         """
         losses = np.array(losses, copy=False)
         if self._auto_bound > 0:
-            self._auto_upper_bounds = np.maximum(self._auto_upper_bounds, losses)  # type: ignore
-            self._auto_lower_bounds = np.minimum(self._auto_lower_bounds, losses)  # type: ignore
+            self._auto_upper_bounds = np.maximum(self._auto_upper_bounds, losses)
+            self._auto_lower_bounds = np.minimum(self._auto_lower_bounds, losses)
             self._auto_bound -= 1
             if self._auto_bound == 0:
-                self._upper_bounds = self._auto_upper_bounds + 0. * (self._auto_upper_bounds - self._auto_lower_bounds)
+                self._upper_bounds = self._auto_upper_bounds + 0.0 * (
+                    self._auto_upper_bounds - self._auto_lower_bounds
+                )
                 self._hypervolume = HypervolumeIndicator(self._upper_bounds)  # type: ignore
             self._points.append(((args, kwargs), np.array(losses)))
-            return 0.
+            return 0.0
         # We compute the hypervolume
         if (losses - self._upper_bounds > 0).any():
             return np.max(losses - self._upper_bounds)  # type: ignore
@@ -86,8 +92,7 @@ class MultiobjectiveFunction:
         return self.compute_aggregate_loss(losses, *args, **kwargs)
 
     def _filter_pareto_front(self) -> None:
-        """filters the Pareto front, as a list of args and kwargs (tuple of a tuple and a dict).
-        """
+        """filters the Pareto front, as a list of args and kwargs (tuple of a tuple and a dict)."""
         new_points: tp.List[tp.Tuple[tp.ArgsKwargs, np.ndarray]] = []
         for argskwargs, losses in self._points:
             should_be_added = True
@@ -126,14 +131,16 @@ class MultiobjectiveFunction:
             if subset == "hypervolume":
                 scores += [-self._hypervolume.compute([y for _, y in possibilities[-1]])]
             else:
-                score: float = 0.
+                score: float = 0.0
                 for v, vloss in self._points:
                     best_score = float("inf")
                     for p, ploss in possibilities[-1]:
                         if subset == "loss-covering":
                             best_score = min(best_score, np.linalg.norm(ploss - vloss))
                         elif subset == "domain-covering":
-                            best_score = min(best_score, np.linalg.norm(tuple(i - j for i, j in zip(p[0][0], v[0][0]))))
+                            best_score = min(
+                                best_score, np.linalg.norm(tuple(i - j for i, j in zip(p[0][0], v[0][0])))
+                            )
                         else:
                             raise ValueError(f'Unknown subset for Pareto-Set subsampling: "{subset}"')
                     score += best_score ** 2

@@ -12,7 +12,7 @@ from . import core
 def test_impedence_pix() -> None:
     ep0 = 1
     epf = 9
-    x = np.array([3., 5, 1, 9])
+    x = np.array([3.0, 5, 1, 9])
     dpix = 37
     lam = 400
     output = core.impedance_pix(x, dpix, lam, ep0, epf)
@@ -34,7 +34,7 @@ def test_arcoating_recombination() -> None:
         arrays.append(func.parametrization.spawn_child())  # type: ignore
         arrays[-1].value = num * np.ones(arrays[0].value.shape)
     arrays[0].recombine(arrays[1])
-    expected = [3., 3., 3., 5., 3., 3.]
+    expected = [3.0, 3.0, 3.0, 5.0, 3.0, 3.0]
     np.testing.assert_array_equal(arrays[0].value, expected)
 
 
@@ -45,6 +45,6 @@ def test_arcoating_transform_and_call() -> None:
     data = func.parametrization.spawn_child().set_standardized_data(x).args[0]
     value = func(data)  # should not touch boundaries, so value should be < np.inf
     assert value < np.inf
-    data = func.parametrization.spawn_child().set_standardized_data(np.arange(8)).args[0]
-    for f in [func, func.evaluation_function]:
-        np.testing.assert_almost_equal(f(data), 16.5538936)  # type: ignore
+    param = func.parametrization.spawn_child().set_standardized_data(np.arange(8))
+    np.testing.assert_almost_equal(func(param.value), 16.5538936)
+    np.testing.assert_almost_equal(func.evaluation_function(param), 16.5538936)
