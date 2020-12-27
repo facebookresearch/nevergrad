@@ -1,142 +1,97 @@
 
 from functools import partialmethod
 from itertools import cycle
-import typing as tp
+from operator import itemgetter
 
 from deap import tools  # type: ignore
 import numpy as np
 
 from . import base
+from .base import registry
+from . import optimizerlib
 from ..parametrization import parameter as p
-from ..common.typetools import ArrayLike
+from ..common import typing as tp
+from ..parametrization import helpers as paramhelpers
 
 
-class Mutation:
+OptimizerOrListOfOptimizer = tp.Union[base.OptCls, tp.Sequence[base.OptCls]]
+
+@registry.register
+class CoopOptimizer(optimizerlib.SplitOptimizer):
     def __init__(
-        self,
-        random_state: np.random.RandomState,
-        mutation: str,
-        mutation_args: tp.Optional[tp.Mapping]
-    ):
-        pass
+            self,
+            parametrization: base.IntOrParameter,
+            budget: tp.Optional[int] = None,
+            num_workers: int = 1,
+            num_optims: tp.Optional[int] = None,
+            num_vars: tp.Optional[tp.List[int]] = None,
+            multivariate_optimizer: base.OptCls = optimizerlib.CMA,
+            monovariate_optimizer: base.OptCls = optimizerlib.OnePlusOne,
+            non_deterministic_descriptor: bool = True,
+            optimizer_selection: str = "None"
+    ) -> None:
+        super().__init__(
+            parametrization=parametrization,
+            budget=budget,
+            num_workers=num_workers,
+            num_optims=num_optims,
+            num_vars=num_vars,
+            multivariate_optimizer=multivariate_optimizer,
+            monovariate_optimizer=monovariate_optimizer,
+            progressive=False,
+            non_deterministic_descriptor=non_deterministic_descriptor
+        )
 
-
-class Crossover:
-    def __init__(
-        self,
-        random_state: np.random.RandomState,
-        crossover: str,
-        crossover_args: tp.Optional[tp.Mapping] = None
-    ):
-        pass
-
-
-# def _resursive_find_groups(parametrization: p.Parameter):
-#     for param in parametrization.value:
-#         if isinstance(param, (p.Tuple)):
-
-
-#     current_groups =
-
-def split_candidate(groups: tp.List[int], values: ArrayLike):
-    pass
-
-
-class _CooperativeOptimization(base.Optimizer):
-    def __init__(
-        self,
-        parametrization: base.IntOrParameter,
-        budget: tp.Optional[int] = None,
-        num_workers: int = 1,
-        *,
-        config: tp.Optional["CooperativeOptimization"] = None
-    ):
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        self._config = CooperativeOptimization() if config is None else config
-        self.num_species = 10
-        pop_choice = {"standard": 0, "dimension": self.dimension + 1, "large": 7 * self.dimension}
-        if isinstance(self._config.popsize, int):
-            self.llambda = self._config.popsize
-        else:
-            self.llambda = max(30, self.num_workers, pop_choice[self._config.popsize])
-
-        # TODO: Initialize groups strategically
-        if self._config.groups is None:
-            self.species = list(self.parametrization._content.values())
-
-        self.species_iterator = cycle(range(len(self.species)))
-        self._uid_queue = base.utils.UidQueue()
-        self.populations: tp.List[tp.List[p.Parameter]] = [
-            [] for _ in range(len(self.species))
-        ]
-        self.candidates: tp.Dict[str, p.Parameter] = {}
-        self.representatives: tp.List[p.Parameter] = []
+        # TODO: Add bandit selection
+        self.next_optimizer_index = cycle(range(len(self.optims)))
 
     def _internal_ask_candidate(self) -> p.Parameter:
-        idx = next(self.species_iterator)
-        current_species = self.species[idx]
-        current_population = self.populations[idx]
+        candidates: tp.List[tp.Tuple[p.Parameter, bool]] = []
+        current_optim_index = next(self.next_optimizer_index)
+        initialization = self.num_ask < len(self.optims)
 
-        # Generate a representative of each species
-        if not self.representatives:
-            for sp, pop in zip(self.species, self.populations):
-                init_values = self._rng.normal(0, 1, sp.dimension)
-                rep = sp.spawn_child().set_standardized_data(init_values)
-                rep.heritage["lineage"] = rep.uid  # new lineage
-                self.representatives.append(rep)
-                pop[rep.uid] = rep
-
-            # TODO: Make this line work for Instrumentation
-            candidate_value = tuple(v.value for v in self.representatives)
-
-        # Random initialization
-        elif len(current_population) < self.llambda:  # initialization phase
-            init_values = self._rng.normal(0, 1, current_species.dimension)
-            candidate = current_species.spawn_child().set_standardized_data(init_values)
-
-            candidate.heritage["lineage"] = candidate.uid  # new lineage
-            current_population.append(candidate)
-            self.candidates[candidate.uid] = candidate
-            self._uid_queue.asked.add(candidate.uid)
-
-            # TODO: Make this work with Instrumentation
-            candidate_value = tuple(v.value for v in self.representatives[:idx]) \
-                              + (candidate.value,) \
-                              + tuple(v.value for v in self.representatives[idx+1:])
-
-        # Crossover
-        elif self._rng.random() < 0.5:
-            pass
-
-        # Mutate
-        else:
-            pass
+        for i, opt in enumerate(self.optims):
+            if i == current_optim_index or initialization:
+                # Ask new candidate from current optimizer
+                # On True, accept new fitness
+                candidates.append((opt.ask(), True))
+            else:
+                # Take best candidates from other optimizers unless
+                # initialization phase
+                # On False, keep old fitness
+                candidates.append((opt.recommend(), False))
 
 
-        full_candidate = self.parametrization.spawn_child(new_value=candidate_value)
-        full_candidate.uid = candidate.uid
+        data = np.concatenate([c.get_standardized_data(reference=opt.parametrization)
+                               for (c, _), opt in zip(candidates, self.optims)], axis=0)
+        cand = self.parametrization.spawn_child().set_standardized_data(data)
 
-    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
-        pass
+        # Filter candidates that should not be evaluated
+        self._subcandidates[cand.uid] = [c if b else None for c, b in candidates]
+        return cand
 
-    def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
-        pass
-
-
-class CooperativeOptimization(base.ConfiguredOptimizer, ):
-    def __init__(
-        self,
-        *,
-        groups: tp.Union[str, tp.List[tp.Tuple[tp.Union[int, str]]], None] = None,
-        crossover: str = "sbx",
-        mutation: str = "polynomial",
-        popsize: tp.Union[str, int] = "standard"
-    ):
-        super().__init__(_CooperativeOptimization, locals(), as_config=True)
-        self.groups = groups
-        self.crossover = crossover
-        self.mutation = mutation
-        self.popsize = popsize
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        candidates = self._subcandidates.pop(candidate.uid)
+        for cand, opt in zip(candidates, self.optims):
+            # Make sure we tell the right candidates
+            if cand is not None:
+                opt.tell(cand, loss)
 
 
-Coop = CooperativeOptimization().set_name("Coop", register=True)
+# class CooperativeOptimization(base.ConfiguredOptimizer, ):
+#     def __init__(
+#         self,
+#         *,
+#         groups: tp.Union[str, tp.List[tp.Tuple[tp.Union[int, str]]], None] = None,
+#         crossover: str = "sbx",
+#         mutation: str = "polynomial",
+#         popsize: tp.Union[str, int] = "standard"
+#     ):
+#         super().__init__(_CooperativeOptimization, locals(), as_config=True)
+#         self.groups = groups
+#         self.crossover = crossover
+#         self.mutation = mutation
+#         self.popsize = popsize
+
+
+# Coop = CoopOptimizer().set_name("Coop", register=True)

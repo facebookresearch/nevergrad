@@ -900,7 +900,7 @@ class _Rescaled(base.Optimizer):
         candidate = self._optimizer.ask()
         sent_candidate = self.rescale_candidate(candidate)
         # We store the version corresponding to the underlying optimizer.
-        self._subcandidates[sent_candidate.uid] = candidate  
+        self._subcandidates[sent_candidate.uid] = candidate
         return sent_candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
@@ -2216,3 +2216,6 @@ class NGOpt8(NGOpt4):
 @registry.register
 class NGOpt(NGOpt8):
     pass
+
+# TODO: REPLACE THIS BY COOP DIRECTLY
+from .coop import *
