@@ -865,7 +865,7 @@ def hdbo4d(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """
     seedg = create_seed_generator(seed)
     for budget in [25, 31, 37, 43, 50, 60]:
-        for optim in get_optimizers("all_bo"):
+        for optim in get_optimizers("all_bo", seed=next(seedg)):
             for rotation in [False]:
                 for d in [20]:
                     for name in ["sphere", "cigar", "hm", "ellipsoid"]:
@@ -885,7 +885,7 @@ def spsa_benchmark(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     Sphere, Sphere4, Cigar.
     """
     seedg = create_seed_generator(seed)
-    optims: tp.List[str] = get_optimizers("spsa")  # type: ignore
+    optims: tp.List[str] = get_optimizers("spsa", seed=next(seedg))  # type: ignore
     for budget in [500, 1000, 2000, 4000, 8000, 16000, 32000, 64000, 128000]:
         for optim in optims:
             for rotation in [True, False]:
@@ -1165,7 +1165,7 @@ def arcoating(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 def image_similarity(seed: tp.Optional[int] = None, with_pgan: bool = False) -> tp.Iterator[Experiment]:
     """Optimizing images: artificial criterion for now."""
     seedg = create_seed_generator(seed)
-    optims = get_optimizers("structured_moo")
+    optims = get_optimizers("structured_moo", seed=next(seedg))
     func = imagesxp.Image(with_pgan=with_pgan)
     for budget in [100 * 5 ** k for k in range(3)]:
         for num_workers in [1]:
@@ -1185,7 +1185,7 @@ def image_similarity_pgan(seed: tp.Optional[int] = None) -> tp.Iterator[Experime
 def image_multi_similarity(seed: tp.Optional[int] = None, cross_valid: bool = False, with_pgan: bool = False) -> tp.Iterator[Experiment]:
     """Optimizing images: artificial criterion for now."""
     seedg = create_seed_generator(seed)
-    optims = get_optimizers("structured_moo")
+    optims = get_optimizers("structured_moo", seed=next(seedg))
     funcs:tp.List[ExperimentFunction] = [imagesxp.Image(loss=loss, with_pgan=with_pgan) for loss in imagesxp.imagelosses.registry.values() if loss.REQUIRES_REFERENCE]
     base_values: tp.List[tp.Any] = [func(func.parametrization.sample().value) for func in funcs]
     if cross_valid:
@@ -1222,7 +1222,7 @@ def image_multi_similarity_pgan_cv(seed: tp.Optional[int] = None) -> tp.Iterator
 def image_quality_proxy(seed: tp.Optional[int] = None, with_pgan:bool=False) -> tp.Iterator[Experiment]:
     """Optimizing images: artificial criterion for now."""
     seedg = create_seed_generator(seed)
-    optims: tp.List[tp.Any] = get_optimizers("structured_moo")
+    optims: tp.List[tp.Any] = get_optimizers("structured_moo", seed=next(seedg))
     iqa, blur, brisque = [
         imagesxp.Image(loss=loss, with_pgan=with_pgan)
         for loss in (
@@ -1252,7 +1252,7 @@ def image_quality(seed: tp.Optional[int] = None, cross_val: bool=False, with_pga
     TODO
     """
     seedg = create_seed_generator(seed)
-    optims: tp.List[tp.Any] = get_optimizers("structured_moo")
+    optims: tp.List[tp.Any] = get_optimizers("structured_moo", seed=next(seedg))
 
     # We optimize func_blur or func_brisque and check performance on func_iqa.
     funcs: tp.List[ExperimentFunction] = [
@@ -1302,7 +1302,7 @@ def image_quality_cv_pgan(seed: tp.Optional[int] = None) -> tp.Iterator[Experime
 def image_similarity_and_quality(seed: tp.Optional[int] = None, cross_val: bool=False, with_pgan: bool = False) -> tp.Iterator[Experiment]:
     """Optimizing images: artificial criterion for now."""
     seedg = create_seed_generator(seed)
-    optims: tp.List[tp.Any] = get_optimizers("structured_moo")
+    optims: tp.List[tp.Any] = get_optimizers("structured_moo", seed=next(seedg))
 
     # 3 losses functions including 2 iqas.
     func_iqa = imagesxp.Image(loss=imagesxp.imagelosses.Koncept512, with_pgan=with_pgan)
@@ -1346,7 +1346,7 @@ def image_similarity_and_quality_cv_pgan(seed: tp.Optional[int] = None) -> tp.It
 def images_using_gan(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Optimizing an image using koncept512 and a GAN"""
     seedg = create_seed_generator(seed)
-    optims = get_optimizers("structured_moo")
+    optims = get_optimizers("structured_moo", seed=next(seedg))
     func = imagesxp.ImageFromPGAN()
     num_workers = 1
     for budget in [100 * 5 ** k for k in range(3)]:
@@ -1449,7 +1449,7 @@ def photonics(seed: tp.Optional[int] = None, as_tuple: bool = False) -> tp.Itera
           for only in [True, False] for recomb in [0.1, .5] for pop in popsizes]
     optims = ["TwoPointsDE", "DE", "PSO", "NGOpt10"] + es  # type: ignore
 
-    optims += get_optimizers("splitters")  # type: ignore
+    optims += get_optimizers("splitters", seed=next(seedg))  # type: ignore
     for method in ["clipping", "tanh"]:  # , "arctan"]:
         for name in ["bragg", "chirped", "morpho"]:
             func = Photonics(name, 60 if name == "morpho" else 80, bounding_method=method, as_tuple=as_tuple)
@@ -1475,7 +1475,7 @@ def bragg_structure(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         ng.families.DifferentialEvolution(crossover="parametrization").set_name("Param-DE")
     ]
     optims = ["TwoPointsDE", "DE", "CMA", "NaiveTBPSA", "DiagonalCMA", "NGOpt10", "OnePlusOne"]
-    optims += get_optimizers("splitters")  # type: ignore
+    optims += get_optimizers("splitters", seed=next(seedg))  # type: ignore
     func = Photonics("bragg", 80, bounding_method="clipping")
     func.parametrization.set_name("layer")
     #
