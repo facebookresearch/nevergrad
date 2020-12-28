@@ -865,7 +865,7 @@ def hdbo4d(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """
     seedg = create_seed_generator(seed)
     for budget in [25, 31, 37, 43, 50, 60]:
-        for optim in get_optimizers("all_bo", seeed=next(seedg)):
+        for optim in get_optimizers("all_bo", seed=next(seedg)):
             for rotation in [False]:
                 for d in [20]:
                     for name in ["sphere", "cigar", "hm", "ellipsoid"]:
