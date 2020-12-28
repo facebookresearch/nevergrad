@@ -51,7 +51,7 @@ def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[expe
     if name == "control_problem":
         return
 
-    check_seedable(
+    check_experiment(
         maker,
         "mltuning" in name,
         skip_seed=(name in ["rocket", "images_using_gan"]) or any(x in name for x in ["tuning", "image_"]),
@@ -101,7 +101,7 @@ def check_maker(maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> 
             )
 
 
-def check_seedable(maker: tp.Any, short: bool = False, skip_seed: bool = False) -> None:
+def check_experiment(maker: tp.Any, short: bool = False, skip_seed: bool = False) -> None:
     """Randomized check of seedability for 8 first elements
     This test does not prove the complete seedability of the generator!  (would be way too slow)
     """
