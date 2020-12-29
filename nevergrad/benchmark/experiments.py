@@ -129,13 +129,13 @@ def naive_seq_keras_tuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experim
 
 # We register only the sequential counterparts for the moment.
 @registry.register
-def seqmltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def seq_mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Sequential counterpart of mltuning."""
     return mltuning(seed, overfitter=False, seq=True)
 
 
 @registry.register
-def naiveseqmltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def naive_seq_mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Sequential counterpart of mltuning with overfitting of valid loss, i.e. train/valid/valid instead of train/valid/test."""
     return mltuning(seed, overfitter=True, seq=True)
 
@@ -1162,11 +1162,11 @@ def arcoating(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def image_similarity(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def image_similarity(seed: tp.Optional[int] = None, with_pgan: bool = False) -> tp.Iterator[Experiment]:
     """Optimizing images: artificial criterion for now."""
     seedg = create_seed_generator(seed)
     optims = get_optimizers("structured_moo", seed=next(seedg))
-    func = imagesxp.Image()
+    func = imagesxp.Image(with_pgan=with_pgan)
     for budget in [100 * 5 ** k for k in range(3)]:
         for num_workers in [1]:
             for algo in optims:
@@ -1176,11 +1176,17 @@ def image_similarity(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def image_multi_similarity(seed: tp.Optional[int] = None, cross_valid: bool=False) -> tp.Iterator[Experiment]:
+def image_similarity_pgan(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of image_similarity, using PGan as a representation."""
+    return image_similarity(seed, with_pgan=True)
+
+
+@registry.register
+def image_multi_similarity(seed: tp.Optional[int] = None, cross_valid: bool = False, with_pgan: bool = False) -> tp.Iterator[Experiment]:
     """Optimizing images: artificial criterion for now."""
     seedg = create_seed_generator(seed)
     optims = get_optimizers("structured_moo", seed=next(seedg))
-    funcs:tp.List[ExperimentFunction] = [imagesxp.Image(loss=loss) for loss in imagesxp.imagelosses.registry.values() if loss.REQUIRES_REFERENCE]
+    funcs:tp.List[ExperimentFunction] = [imagesxp.Image(loss=loss, with_pgan=with_pgan) for loss in imagesxp.imagelosses.registry.values() if loss.REQUIRES_REFERENCE]
     base_values: tp.List[tp.Any] = [func(func.parametrization.sample().value) for func in funcs]
     if cross_valid:
         mofuncs: tp.List[tp.Any] = helpers.SpecialEvaluationExperiment.create_crossvalidation_experiments(funcs, pareto_size=25) 
@@ -1195,18 +1201,30 @@ def image_multi_similarity(seed: tp.Optional[int] = None, cross_valid: bool=Fals
 
 
 @registry.register
+def image_multi_similarity_pgan(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of image_similarity, using PGan as a representation."""
+    return image_multi_similarity(seed, with_pgan=True)
+
+
+@registry.register
 def image_multi_similarity_cv(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of image_multi_similarity with cross-validation."""
     return image_multi_similarity(seed, cross_valid=True)
 
 
 @registry.register
-def image_quality_proxy(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def image_multi_similarity_pgan_cv(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of image_multi_similarity with cross-validation."""
+    return image_multi_similarity(seed, cross_valid=True, with_pgan=True)
+
+
+@registry.register
+def image_quality_proxy(seed: tp.Optional[int] = None, with_pgan:bool=False) -> tp.Iterator[Experiment]:
     """Optimizing images: artificial criterion for now."""
     seedg = create_seed_generator(seed)
     optims: tp.List[tp.Any] = get_optimizers("structured_moo", seed=next(seedg))
     iqa, blur, brisque = [
-        imagesxp.Image(loss=loss)
+        imagesxp.Image(loss=loss, with_pgan=with_pgan)
         for loss in (
             imagesxp.imagelosses.Koncept512,
             imagesxp.imagelosses.Blur,
@@ -1219,12 +1237,18 @@ def image_quality_proxy(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment
             for func in [blur, brisque]:
                 # We optimize on blur or brisque and check performance on iqa.
                 sfunc = helpers.SpecialEvaluationExperiment(func, evaluation=iqa)
+                sfunc.add_descriptors(non_proxy_function=False)
                 xp = Experiment(sfunc, algo, budget, num_workers=1, seed=next(seedg))
                 yield xp
 
 
 @registry.register
-def image_quality(seed: tp.Optional[int] = None, cross_val: bool=False) -> tp.Iterator[Experiment]:
+def image_quality_proxy_pgan(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    return image_quality_proxy(seed, with_pgan=True)
+
+
+@registry.register
+def image_quality(seed: tp.Optional[int] = None, cross_val: bool=False, with_pgan: bool = False) -> tp.Iterator[Experiment]:
     """Optimizing images for quality:
     TODO
     """
@@ -1233,7 +1257,7 @@ def image_quality(seed: tp.Optional[int] = None, cross_val: bool=False) -> tp.It
 
     # We optimize func_blur or func_brisque and check performance on func_iqa.
     funcs: tp.List[ExperimentFunction] = [
-        imagesxp.Image(loss=loss) for loss in (
+        imagesxp.Image(loss=loss, with_pgan=with_pgan) for loss in (
             imagesxp.imagelosses.Koncept512,
             imagesxp.imagelosses.Blur,
             imagesxp.imagelosses.Brisque,
@@ -1264,16 +1288,28 @@ def image_quality_cv(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def image_similarity_and_quality(seed: tp.Optional[int] = None, cross_val: bool=False) -> tp.Iterator[Experiment]:
+def image_quality_pgan(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of image_quality with cross-validation."""
+    return image_quality(seed, with_pgan=True)
+
+
+@registry.register
+def image_quality_cv_pgan(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of image_quality with cross-validation."""
+    return image_quality(seed, cross_val=True, with_pgan=True)
+
+
+@registry.register
+def image_similarity_and_quality(seed: tp.Optional[int] = None, cross_val: bool=False, with_pgan: bool = False) -> tp.Iterator[Experiment]:
     """Optimizing images: artificial criterion for now."""
     seedg = create_seed_generator(seed)
     optims: tp.List[tp.Any] = get_optimizers("structured_moo", seed=next(seedg))
 
     # 3 losses functions including 2 iqas.
-    func_iqa = imagesxp.Image(loss=imagesxp.imagelosses.Koncept512)
-    func_blur = imagesxp.Image(loss=imagesxp.imagelosses.Blur)
+    func_iqa = imagesxp.Image(loss=imagesxp.imagelosses.Koncept512, with_pgan=with_pgan)
+    func_blur = imagesxp.Image(loss=imagesxp.imagelosses.Blur, with_pgan=with_pgan)
     base_blur_value = func_blur(func_blur.parametrization.value)
-    for func in [imagesxp.Image(loss=loss) for loss in imagesxp.imagelosses.registry.values() if loss.REQUIRES_REFERENCE]:
+    for func in [imagesxp.Image(loss=loss, with_pgan=with_pgan) for loss in imagesxp.imagelosses.registry.values() if loss.REQUIRES_REFERENCE]:
 
         # Creating a reference value.
         base_value = func(func.parametrization.value)
@@ -1281,17 +1317,28 @@ def image_similarity_and_quality(seed: tp.Optional[int] = None, cross_val: bool=
                 training_only_experiments=[func, func_blur], experiments=[func_iqa], pareto_size=16) if cross_val else [
                 fbase.MultiExperiment([func, func_blur, func_iqa], upper_bounds=[base_value, base_blur_value, 100.])]  # type: ignore
         for budget in [100 * 5 ** k for k in range(3)]:
-            for num_workers in [1]:
-                for algo in optims:
-                    for mofunc in mofuncs:
-                        xp = Experiment(mofunc, algo, budget, num_workers=num_workers, seed=next(seedg))
-                        yield xp
+            for algo in optims:
+                for mofunc in mofuncs:
+                    xp = Experiment(mofunc, algo, budget, num_workers=1, seed=next(seedg))
+                    yield xp
 
 
 @registry.register
 def image_similarity_and_quality_cv(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Counterpart of image_multi_similarity with cross-validation."""
+    """Counterpart of image_similarity_and_quality with cross-validation."""
     return image_similarity_and_quality(seed, cross_val=True)
+
+
+@registry.register
+def image_similarity_and_quality_pgan(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of image_similarity_and_quality with cross-validation."""
+    return image_similarity_and_quality(seed, with_pgan=True)
+
+
+@registry.register
+def image_similarity_and_quality_cv_pgan(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of image_similarity_and_quality with cross-validation."""
+    return image_similarity_and_quality(seed, cross_val=True, with_pgan=True)
 
 
 # TODO: GAN counterparts of the above ?
