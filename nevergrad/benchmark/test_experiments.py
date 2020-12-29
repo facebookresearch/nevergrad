@@ -114,7 +114,7 @@ def check_experiment(maker: tp.Any, short: bool = False, skip_seed: bool = False
     results = []
     algo = "OnePlusOne"  # for simplifying the test
     rl.agents.TorchAgentFunction._num_test_evaluations = 1  # patch for faster evaluation
-    for seed in [random_seed, random_seed, random_seed + 1]:
+    for seed in [random_seed] if skip_seed else [random_seed, random_seed, random_seed + 1]:
         print(f"\nStarting with {seed % 100}")  # useful debug info when this test fails
         xps = list(itertools.islice(maker(seed), 0, 1 if short else 2))
         simplified = [

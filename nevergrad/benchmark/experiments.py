@@ -1237,6 +1237,7 @@ def image_quality_proxy(seed: tp.Optional[int] = None, with_pgan:bool=False) -> 
             for func in [blur, brisque]:
                 # We optimize on blur or brisque and check performance on iqa.
                 sfunc = helpers.SpecialEvaluationExperiment(func, evaluation=iqa)
+                sfunc.add_descriptors(non_proxy_function=False)
                 xp = Experiment(sfunc, algo, budget, num_workers=1, seed=next(seedg))
                 yield xp
 
