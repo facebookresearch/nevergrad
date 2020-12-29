@@ -74,7 +74,7 @@ class Image(base.ExperimentFunction):
             array.set_mutation(sigma=35.0)
             array.set_recombination(ng.p.mutation.Crossover(axis=(0, 1))).set_name("")
             self._descriptors.pop("use_gpu", None)
-            super().__init__(self._loss, array)
+            super().__init__(self._loss_with_pgan, array)
 
         assert self.multiobjective_upper_bounds is None
         self.add_descriptors(loss=loss.__class__.__name__)
@@ -86,7 +86,7 @@ class Image(base.ExperimentFunction):
         noise = torch.tensor(x.astype("float32"))
         return ((self.pgan_model.test(noise).clamp(min=-1, max=1) + 1) * 255.99 / 2).permute(0, 2, 3, 1).cpu().numpy()  # type: ignore
 
-    def _loss(self, x: np.ndarray) -> float:
+    def _loss_with_pgan(self, x: np.ndarray) -> float:
         image = self._generate_images(x).squeeze(0)
         image = cv2.resize(image, dsize=(226, 226), interpolation=cv2.INTER_NEAREST)
         assert image.shape == (226, 226, 3), f"{x.shape} != {(226, 226, 3)}"
