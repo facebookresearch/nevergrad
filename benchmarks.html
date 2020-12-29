@@ -473,7 +473,7 @@ Dimension 50.</p>
 
 <dl class="py function">
 <dt id="nevergrad.benchmark.experiments.image_multi_similarity">
-<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">image_multi_similarity</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">cross_valid</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.image_multi_similarity" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">image_multi_similarity</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">cross_valid</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">with_pgan</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.image_multi_similarity" title="Permalink to this definition">¶</a></dt>
 <dd><p>Optimizing images: artificial criterion for now.</p>
 </dd></dl>
 
@@ -484,8 +484,20 @@ Dimension 50.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt id="nevergrad.benchmark.experiments.image_multi_similarity_pgan">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">image_multi_similarity_pgan</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.image_multi_similarity_pgan" title="Permalink to this definition">¶</a></dt>
+<dd><p>Counterpart of image_similarity, using PGan as a representation.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="nevergrad.benchmark.experiments.image_multi_similarity_pgan_cv">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">image_multi_similarity_pgan_cv</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.image_multi_similarity_pgan_cv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Counterpart of image_multi_similarity with cross-validation.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt id="nevergrad.benchmark.experiments.image_quality">
-<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">image_quality</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">cross_val</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.image_quality" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">image_quality</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">cross_val</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">with_pgan</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.image_quality" title="Permalink to this definition">¶</a></dt>
 <dd><p>Optimizing images for quality:
 TODO</p>
 </dd></dl>
@@ -497,27 +509,62 @@ TODO</p>
 </dd></dl>
 
 <dl class="py function">
+<dt id="nevergrad.benchmark.experiments.image_quality_cv_pgan">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">image_quality_cv_pgan</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.image_quality_cv_pgan" title="Permalink to this definition">¶</a></dt>
+<dd><p>Counterpart of image_quality with cross-validation.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="nevergrad.benchmark.experiments.image_quality_pgan">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">image_quality_pgan</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.image_quality_pgan" title="Permalink to this definition">¶</a></dt>
+<dd><p>Counterpart of image_quality with cross-validation.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt id="nevergrad.benchmark.experiments.image_quality_proxy">
-<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">image_quality_proxy</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.image_quality_proxy" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">image_quality_proxy</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">with_pgan</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.image_quality_proxy" title="Permalink to this definition">¶</a></dt>
 <dd><p>Optimizing images: artificial criterion for now.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt id="nevergrad.benchmark.experiments.image_quality_proxy_pgan">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">image_quality_proxy_pgan</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.image_quality_proxy_pgan" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
 <dt id="nevergrad.benchmark.experiments.image_similarity">
-<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">image_similarity</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.image_similarity" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">image_similarity</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">with_pgan</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.image_similarity" title="Permalink to this definition">¶</a></dt>
 <dd><p>Optimizing images: artificial criterion for now.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt id="nevergrad.benchmark.experiments.image_similarity_and_quality">
-<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">image_similarity_and_quality</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">cross_val</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.image_similarity_and_quality" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">image_similarity_and_quality</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">cross_val</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">with_pgan</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.image_similarity_and_quality" title="Permalink to this definition">¶</a></dt>
 <dd><p>Optimizing images: artificial criterion for now.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt id="nevergrad.benchmark.experiments.image_similarity_and_quality_cv">
 <code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">image_similarity_and_quality_cv</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.image_similarity_and_quality_cv" title="Permalink to this definition">¶</a></dt>
-<dd><p>Counterpart of image_multi_similarity with cross-validation.</p>
+<dd><p>Counterpart of image_similarity_and_quality with cross-validation.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="nevergrad.benchmark.experiments.image_similarity_and_quality_cv_pgan">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">image_similarity_and_quality_cv_pgan</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.image_similarity_and_quality_cv_pgan" title="Permalink to this definition">¶</a></dt>
+<dd><p>Counterpart of image_similarity_and_quality with cross-validation.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="nevergrad.benchmark.experiments.image_similarity_and_quality_pgan">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">image_similarity_and_quality_pgan</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.image_similarity_and_quality_pgan" title="Permalink to this definition">¶</a></dt>
+<dd><p>Counterpart of image_similarity_and_quality with cross-validation.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="nevergrad.benchmark.experiments.image_similarity_pgan">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">image_similarity_pgan</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.image_similarity_pgan" title="Permalink to this definition">¶</a></dt>
+<dd><p>Counterpart of image_similarity, using PGan as a representation.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -591,15 +638,15 @@ Budget 100 to 3200</p>
 </dd></dl>
 
 <dl class="py function">
-<dt id="nevergrad.benchmark.experiments.naivemltuning">
-<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">naivemltuning</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.naivemltuning" title="Permalink to this definition">¶</a></dt>
-<dd><p>Counterpart of mltuning with overfitting of valid loss, i.e. train/valid/valid instead of train/valid/test.</p>
+<dt id="nevergrad.benchmark.experiments.naive_seq_mltuning">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">naive_seq_mltuning</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.naive_seq_mltuning" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sequential counterpart of mltuning with overfitting of valid loss, i.e. train/valid/valid instead of train/valid/test.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt id="nevergrad.benchmark.experiments.naiveseqmltuning">
-<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">naiveseqmltuning</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.naiveseqmltuning" title="Permalink to this definition">¶</a></dt>
-<dd><p>Sequential counterpart of mltuning with overfitting of valid loss, i.e. train/valid/valid instead of train/valid/test.</p>
+<dt id="nevergrad.benchmark.experiments.naivemltuning">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">naivemltuning</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.naivemltuning" title="Permalink to this definition">¶</a></dt>
+<dd><p>Counterpart of mltuning with overfitting of valid loss, i.e. train/valid/valid instead of train/valid/test.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -742,8 +789,8 @@ Sequential or 30 workers.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt id="nevergrad.benchmark.experiments.seqmltuning">
-<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">seqmltuning</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.seqmltuning" title="Permalink to this definition">¶</a></dt>
+<dt id="nevergrad.benchmark.experiments.seq_mltuning">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">seq_mltuning</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.seq_mltuning" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sequential counterpart of mltuning.</p>
 </dd></dl>
 
