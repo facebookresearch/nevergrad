@@ -1316,28 +1316,27 @@ def image_similarity_and_quality(seed: tp.Optional[int] = None, cross_val: bool=
                 training_only_experiments=[func, func_blur], experiments=[func_iqa], pareto_size=16) if cross_val else [
                 fbase.MultiExperiment([func, func_blur, func_iqa], upper_bounds=[base_value, base_blur_value, 100.])]  # type: ignore
         for budget in [100 * 5 ** k for k in range(3)]:
-            for num_workers in [1]:
-                for algo in optims:
-                    for mofunc in mofuncs:
-                        xp = Experiment(mofunc, algo, budget, num_workers=num_workers, seed=next(seedg))
-                        yield xp
+            for algo in optims:
+                for mofunc in mofuncs:
+                    xp = Experiment(mofunc, algo, budget, num_workers=1, seed=next(seedg))
+                    yield xp
 
 
 @registry.register
 def image_similarity_and_quality_cv(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Counterpart of image_multi_similarity with cross-validation."""
+    """Counterpart of image_similarity_and_quality with cross-validation."""
     return image_similarity_and_quality(seed, cross_val=True)
 
 
 @registry.register
 def image_similarity_and_quality_pgan(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Counterpart of image_multi_similarity with cross-validation."""
+    """Counterpart of image_similarity_and_quality with cross-validation."""
     return image_similarity_and_quality(seed, with_pgan=True)
 
 
 @registry.register
 def image_similarity_and_quality_cv_pgan(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Counterpart of image_multi_similarity with cross-validation."""
+    """Counterpart of image_similarity_and_quality with cross-validation."""
     return image_similarity_and_quality(seed, cross_val=True, with_pgan=True)
 
 
