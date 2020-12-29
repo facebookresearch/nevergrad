@@ -80,7 +80,6 @@ class MLTuning(ExperimentFunction):
             )
             regr.compile(optimizer=solver, loss="mse", metrics=["mae"])
         else:
-            assert False, f"{regressor} fails"
             raise ValueError(f"Unknown regressor {regressor}.")
 
         fit_additional_params = dict(verbose=0, epochs=350) if regressor == "keras_dense_nn" else {}
