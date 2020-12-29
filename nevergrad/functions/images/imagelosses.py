@@ -60,7 +60,8 @@ class Lpips(ImageLoss):
         assert img.max() > 3.0
         img0 = torch.clamp(torch.Tensor(img).unsqueeze(0).permute(0, 3, 1, 2) / 256.0, 0, 1) * 2.0 - 1.0
         img1 = (
-            torch.clamp(torch.Tensor(self.reference.copy()).unsqueeze(0).permute(0, 3, 1, 2) / 256.0, 0, 1) * 2.0
+            torch.clamp(torch.Tensor(self.reference.copy()).unsqueeze(0).permute(0, 3, 1, 2) / 256.0, 0, 1)
+            * 2.0
             - 1.0
         )  # The copy operation is here because of a warning otherwise, as Torch does not support non-writable numpy arrays.
         return float(loss_fn(img0, img1))

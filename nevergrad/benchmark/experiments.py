@@ -129,13 +129,13 @@ def naive_seq_keras_tuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experim
 
 # We register only the sequential counterparts for the moment.
 @registry.register
-def seqmltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def seq_mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Sequential counterpart of mltuning."""
     return mltuning(seed, overfitter=False, seq=True)
 
 
 @registry.register
-def naiveseqmltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def naive_seq_mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Sequential counterpart of mltuning with overfitting of valid loss, i.e. train/valid/valid instead of train/valid/test."""
     return mltuning(seed, overfitter=True, seq=True)
 
