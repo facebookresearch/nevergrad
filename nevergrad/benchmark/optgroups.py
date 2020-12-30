@@ -191,4 +191,7 @@ def spsa() -> tp.Sequence[Optim]:
 
 # Let us register everything that should be registered.
 for name in registry:
-    get_optimizers(name)
+    try:
+        get_optimizers(name)
+    except RuntimeError as e:
+        assert "registered" in e.message  # already registered.
