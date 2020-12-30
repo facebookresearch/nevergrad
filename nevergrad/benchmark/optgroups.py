@@ -195,4 +195,4 @@ for name in registry:
     try:
         get_optimizers(name)
     except RuntimeError as e:
-        assert "registered" in e.message  # already registered.
+        assert "collision" in e.message  # already registered.
