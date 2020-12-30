@@ -130,7 +130,7 @@ def progressive() -> tp.Sequence[Optim]:
 
 @registry.register
 def basics() -> tp.Sequence[Optim]:
-    return ["NGOpt8", "CMandAS2", "CMA", "DE", "MetaModel", "BO"]
+    return ["NGOpt10", "CMandAS2", "CMA", "DE", "MetaModel"]
 
 
 @registry.register
@@ -142,7 +142,7 @@ def baselines() -> tp.Sequence[Optim]:
 
 @registry.register
 def parallel_basics() -> tp.Sequence[Optim]:
-    return ["NGOpt8", "CMandAS2", "CMA", "DE", "MetaModel"]
+    return ["NGOpt10", "CMandAS2", "CMA", "DE", "MetaModel"]
 
 
 @registry.register
@@ -172,6 +172,16 @@ def competitive() -> tp.Sequence[Optim]:
 @registry.register
 def all_bo() -> tp.Sequence[Optim]:
     return sorted(x for x in ng.optimizers.registry if "BO" in x)
+
+
+@registry.register
+def discrete() -> tp.Sequence[Optim]:
+    return [name for name in optimizerlib_registry.keys() if "iscrete" in name and "oisy" not in name]
+
+
+@registry.register
+def structured_moo() -> tp.Sequence[Optim]:
+    return ["CMA", "NGOpt10", "MetaNGOpt8", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
 
 
 @registry.register
