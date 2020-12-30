@@ -12,6 +12,7 @@ from nevergrad.common.decorators import Registry
 from nevergrad.optimization import base as obase
 from nevergrad.optimization.optimizerlib import ConfSplitOptimizer
 from nevergrad.optimization.optimizerlib import registry as optimizerlib_registry
+import nevergrad.optimization.experimentalvariants
 from nevergrad.optimization.optimizerlib import ParametrizedOnePlusOne
 
 Optim = tp.Union[obase.ConfiguredOptimizer, str]
