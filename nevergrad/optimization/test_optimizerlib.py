@@ -149,7 +149,7 @@ def buggy_function(x: np.ndarray) -> float:
 @pytest.mark.parametrize("name", registry)  # type: ignore
 def test_infnan(name: str) -> None:
     optim_cls = registry[name]
-    assert issubclass(optim_cls, object), f"{optim_cls} is not a class."
+    optim = optim_cls(parametrization=2, budget=70)
     if not (
         any(
             x in name
@@ -165,13 +165,12 @@ def test_infnan(name: str) -> None:
             ]
         )
         or any(x == name for x in ["SPSA", "NGOptBase", "Shiwa", "NGOpt2", "NGO"])
-        or issubclass(optim_cls, optlib.Portfolio)  # type: ignore
-        or issubclass(optim_cls, optlib.ScipyOptimizer)  # type: ignore
+        or isinstance(optim, optlib.Portfolio)  # type: ignore
+        or isinstance(optim, optlib.recaster.SequentialRecastOptimizer)  # type: ignore
     ):
-        optim = optim_cls(parametrization=2, budget=70)
         recom = optim.minimize(buggy_function)
         result = buggy_function(recom.value)
-        assert result < 2.0, f"{name} failed and got {result} with {recom.value}."
+        assert result < 2.0, f"{name} failed and got {result} with {recom.value} (type is {type(optim)})."
 
 
 @skip_win_perf  # type: ignore
