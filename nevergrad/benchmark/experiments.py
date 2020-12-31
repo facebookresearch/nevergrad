@@ -9,7 +9,6 @@ import typing as tp
 import itertools
 import numpy as np
 import nevergrad as ng
-from nevergrad.optimization.base import ConfiguredOptimizer
 import nevergrad.functions.corefuncs as corefuncs
 from nevergrad.functions import base as fbase
 from nevergrad.functions import ExperimentFunction
@@ -1409,11 +1408,7 @@ def photonics(seed: tp.Optional[int] = None, as_tuple: bool = False) -> tp.Itera
     """Too small for being interesting: Bragg mirror + Chirped + Morpho butterfly."""
     seedg = create_seed_generator(seed)
     popsizes = [20, 40, 80]
-    es = [ng.families.EvolutionStrategy(recombination_ratio=recomb, only_offsprings=only, popsize=pop,
-                                        offsprings=pop * 5)
-          for only in [True, False] for recomb in [0.1, .5] for pop in popsizes]
-
-    optims = get_optimizers("basics", "splitters", seed=next(seedg))  # type: ignore
+    optims = get_optimizers("es", "basics", "splitters", seed=next(seedg))  # type: ignore
     for method in ["clipping", "tanh"]:  # , "arctan"]:
         for name in ["bragg", "chirped", "morpho"]:
             func = Photonics(name, 60 if name == "morpho" else 80, bounding_method=method, as_tuple=as_tuple)

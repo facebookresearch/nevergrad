@@ -198,6 +198,13 @@ def small_discrete() -> tp.Sequence[Optim]:
 def scipy() -> tp.Sequence[Optim]:
     return ["RSQP", "RCobyla", "RPowell", "SQPCMA", "SQP", "Cobyla", "Powell"]
 
+@registry.register
+def es() -> tp.Sequence[Optim]:
+    es = [ng.families.EvolutionStrategy(recombination_ratio=recomb, only_offsprings=only, popsize=pop,
+                                        offsprings=pop * 5)
+          for only in [True, False] for recomb in [0.1, .5] for pop in popsizes]
+    return es
+
 
 @registry.register
 def multimodal() -> tp.Sequence[Optim]:
