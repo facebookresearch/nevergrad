@@ -153,9 +153,6 @@ def test_infnan(name: str) -> None:
         any(
             x in name
             for x in [
-                "Cobyla",
-                "Powell",
-                "SQP",
                 "EDA",
                 "EMNA",
                 "Stupid",
@@ -166,7 +163,9 @@ def test_infnan(name: str) -> None:
                 "chain",
             ]
         )
-        or any(x == name for x in ["CMandAS3", "SPSA", "NGOptBase", "Shiwa", "NGOpt2", "NGO"])
+        or any(x == name for x in ["SPSA", "NGOptBase", "Shiwa", "NGOpt2", "NGO"])
+        or issubclass(optim_cls, optlib.Portfolio)
+        or issubclass(optim_cls, optlib.ScipyOptimizer)
     ):
         optim = optim_cls(parametrization=2, budget=70)
         recom = optim.minimize(buggy_function)
