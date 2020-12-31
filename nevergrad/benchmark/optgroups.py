@@ -106,7 +106,9 @@ def splitters() -> tp.Sequence[Optim]:
         for str_optim in ["CMA", "ECMA", "DE", "TwoPointsDE"]:
             optim = optimizerlib_registry[str_optim]
             name = "Split" + str_optim + ("Auto" if num_optims is None else str(num_optims))
-            opt = ConfSplitOptimizer(multivariate_optimizer=optim, num_optims=num_optims).set_name(name, register=True)
+            opt = ConfSplitOptimizer(multivariate_optimizer=optim, num_optims=num_optims).set_name(
+                name, register=True
+            )
             optims.append(opt)
     return optims
 
@@ -189,6 +191,7 @@ def structured_moo() -> tp.Sequence[Optim]:
 def spsa() -> tp.Sequence[Optim]:
     # return sorted(x for x, y in ng.optimizers.registry.items() if (any(e in x for e in "TBPSA SPSA".split()) and "iscr" not in x))
     return ["NaiveTBPSA", "SPSA", "TBPSA"]
+
 
 # Let us register everything that should be registered.
 for name in registry:
