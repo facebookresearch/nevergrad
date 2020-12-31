@@ -1046,7 +1046,7 @@ def sequential_fastgames(seed: tp.Optional[int] = None) -> tp.Iterator[Experimen
     Games: War, Batawaf, Flip, GuessWho,  BigGuessWho."""
     funcs = [game.Game(name) for name in ["war", "batawaf", "flip", "guesswho", "bigguesswho"]]
     seedg = create_seed_generator(seed)
-    optims += get_optimizers("noisy", "splitters", "progressive", seed=next(seedg))  # type: ignore
+    optims = get_optimizers("noisy", "splitters", "progressive", seed=next(seedg))  # type: ignore
 
 
     for budget in [12800, 25600, 51200, 102400]:
@@ -1390,15 +1390,9 @@ def pbt(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 def far_optimum_es(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
-    popsizes = [5, 40]
-    es = [ng.families.EvolutionStrategy(recombination_ratio=recomb, only_offsprings=False, popsize=pop)
-          for recomb in [0, 1] for pop in popsizes]
-    es += [ng.families.EvolutionStrategy(recombination_ratio=recomb, only_offsprings=only, popsize=pop,
-                                         offsprings=10 if pop == 5 else 60)
-           for only in [True, False] for recomb in [0, 1] for pop in popsizes]
-    optimizers = ["CMA", "TwoPointsDE", "NGOpt10"] + es  # type: ignore
+    optims = get_optimizers("es", "basics", seed=next(seedg))  # type: ignore
     for func in FarOptimumFunction.itercases():
-        for optim in optimizers:
+        for optim in optims:
             for budget in [100, 400, 1000, 4000, 10000]:
                 yield Experiment(func, optim, budget=budget, seed=next(seedg))
 
@@ -1407,7 +1401,6 @@ def far_optimum_es(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 def photonics(seed: tp.Optional[int] = None, as_tuple: bool = False) -> tp.Iterator[Experiment]:
     """Too small for being interesting: Bragg mirror + Chirped + Morpho butterfly."""
     seedg = create_seed_generator(seed)
-    popsizes = [20, 40, 80]
     optims = get_optimizers("es", "basics", "splitters", seed=next(seedg))  # type: ignore
     for method in ["clipping", "tanh"]:  # , "arctan"]:
         for name in ["bragg", "chirped", "morpho"]:
