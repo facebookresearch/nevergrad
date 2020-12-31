@@ -166,6 +166,7 @@ def test_infnan(name: str) -> None:
         )
         or any(x == name for x in ["SPSA", "NGOptBase", "Shiwa", "NGOpt2", "NGO"])
         or isinstance(optim, optlib.Portfolio)  # type: ignore
+        or isinstance(optim, optlib._CMA)  # type: ignore
         or isinstance(optim, optlib.recaster.SequentialRecastOptimizer)  # type: ignore
     ):
         recom = optim.minimize(buggy_function)
