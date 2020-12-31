@@ -164,8 +164,8 @@ def test_infnan(name: str) -> None:
             ]
         )
         or any(x == name for x in ["SPSA", "NGOptBase", "Shiwa", "NGOpt2", "NGO"])
-        or issubclass(optim_cls, optlib.Portfolio)
-        or issubclass(optim_cls, optlib.ScipyOptimizer)
+        or issubclass(optim_cls, optlib.Portfolio)  # type: ignore
+        or issubclass(optim_cls, optlib.ScipyOptimizer)  # type: ignore
     ):
         optim = optim_cls(parametrization=2, budget=70)
         recom = optim.minimize(buggy_function)
