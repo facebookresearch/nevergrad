@@ -149,6 +149,7 @@ def buggy_function(x: np.ndarray) -> float:
 @pytest.mark.parametrize("name", registry)  # type: ignore
 def test_infnan(name: str) -> None:
     optim_cls = registry[name]
+    assert issubclass(optim_cls, object), f"{optim_cls} is not a class."
     if not (
         any(
             x in name
