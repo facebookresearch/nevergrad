@@ -5,6 +5,8 @@
 
 import inspect
 import itertools
+import os
+import platform
 import typing as tp
 from pathlib import Path
 from unittest import SkipTest
@@ -26,15 +28,34 @@ from . import optgroups
 
 @testing.parametrized(**{name: (name, maker) for name, maker in experiments.registry.items()})
 def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> None:
+    # Our PGAN is not well accepted by circleci.
+    if "_pgan" in name and os.environ.get("CIRCLECI", False):
+        raise SkipTest("Too slow in CircleCI")
+
+    # Our IQAs and our ScikitLearn are not well guaranteed on Windows.
+    if "image" in name and "quality" in name and platform.system() == "Windows":
+        raise SkipTest("Image quality not guaranteed on Windows.")
+
+    # Basic test.
     with tools.set_env(NEVERGRAD_PYTEST=1):
         with datasets.mocked_data():  # mock mlda data that should be downloaded
             check_maker(maker)  # this is to extract the function for reuse if other external packages need it
-    if name not in ["rocket", "images_using_gan", "control_problem"] and not any(
-        x in name for x in ["tuning", "mlda", "realworld", "image_"]
+
+    # Some tests are skipped on CircleCI (but they do work well locally, if memory enough).
+    if ("images_using_gan" == name or "mlda" == name or "realworld" == name) and os.environ.get(
+        "CIRCLECI", False
     ):
-        check_seedable(
-            maker, "mltuning" in name
-        )  # this is a basic test on first elements, do not fully rely on it
+        raise SkipTest("Too slow in CircleCI")
+
+    # No Mujoco on CircleCI and possibly for some users.
+    if name == "control_problem":
+        return
+
+    check_experiment(
+        maker,
+        "mltuning" in name,
+        skip_seed=(name in ["rocket", "images_using_gan"]) or any(x in name for x in ["tuning", "image_"]),
+    )  # this is a basic test on first elements, do not fully rely on it
 
 
 @pytest.fixture(scope="module")  # type: ignore
@@ -80,7 +101,7 @@ def check_maker(maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> 
             )
 
 
-def check_seedable(maker: tp.Any, short: bool = False) -> None:
+def check_experiment(maker: tp.Any, short: bool = False, skip_seed: bool = False) -> None:
     """Randomized check of seedability for 8 first elements
     This test does not prove the complete seedability of the generator!  (would be way too slow)
     """
@@ -93,7 +114,7 @@ def check_seedable(maker: tp.Any, short: bool = False) -> None:
     results = []
     algo = "OnePlusOne"  # for simplifying the test
     rl.agents.TorchAgentFunction._num_test_evaluations = 1  # patch for faster evaluation
-    for seed in [random_seed, random_seed, random_seed + 1]:
+    for seed in [random_seed] if skip_seed else [random_seed, random_seed, random_seed + 1]:
         print(f"\nStarting with {seed % 100}")  # useful debug info when this test fails
         xps = list(itertools.islice(maker(seed), 0, 1 if short else 2))
         simplified = [
@@ -106,6 +127,8 @@ def check_seedable(maker: tp.Any, short: bool = False) -> None:
         selector = Selector(data=[xp.run() for xp in simplified])
         results.append(Selector(selector.loc[:, ["loss", "seed", "error"]]))  # elapsed_time can vary...
         assert results[-1].unique("error") == {""}, f"An error was raised during optimization:\n{results[-1]}"
+    if skip_seed:
+        return
     results[0].assert_equivalent(results[1], f"Non identical outputs for seed={random_seed}")
     np.testing.assert_raises(
         AssertionError,
