@@ -149,9 +149,24 @@ def buggy_function(x: np.ndarray) -> float:
 @pytest.mark.parametrize("name", registry)  # type: ignore
 def test_infnan(name: str) -> None:
     optim_cls = registry[name]
-    if (
-        not any(x in name for x in ["Cobyla", "Powell", "SQP", "EDA", "EMNA", "Stupid", "Large", "TBPSA", "BO", "Noisy", "chain"])
-        and not any(x == name for x in ["CMandAS3", "SPSA", "NGOptBase", "Shiwa", "NGOpt2", "NGO"])                                  
+    if not (
+        any(
+            x in name
+            for x in [
+                "Cobyla",
+                "Powell",
+                "SQP",
+                "EDA",
+                "EMNA",
+                "Stupid",
+                "Large",
+                "TBPSA",
+                "BO",
+                "Noisy",
+                "chain",
+            ]
+        )
+        or any(x == name for x in ["CMandAS3", "SPSA", "NGOptBase", "Shiwa", "NGOpt2", "NGO"])
     ):
         optim = optim_cls(parametrization=2, budget=70)
         recom = optim.minimize(buggy_function)
