@@ -1147,12 +1147,12 @@ def image_similarity_pgan(seed: tp.Optional[int] = None) -> tp.Iterator[Experime
 
 @registry.register
 def image_quality(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Counterpart of image_similarity, using PGan as a representation."""
+    """Counterpart of image_similarity, but based on image quality assessment."""
     return image_similarity(seed, with_pgan=False, similarity=False)
 
 @registry.register
 def image_quality_pgan(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Counterpart of image_similarity, using PGan as a representation."""
+    """Counterpart of image_similarity_pgan, but based on image quality assessment."""
     return image_similarity(seed, with_pgan=True, similarity=False)
 
 
