@@ -1126,15 +1126,15 @@ def mldakmeans(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def image_similarity(seed: tp.Optional[int] = None, with_pgan: bool = False) -> tp.Iterator[Experiment]:
+def image_similarity(seed: tp.Optional[int] = None, with_pgan: bool = False, similariry: bool = True) -> tp.Iterator[Experiment]:
     """Optimizing images: artificial criterion for now."""
     seedg = create_seed_generator(seed)
     optims = get_optimizers("structured_moo", seed=next(seedg))
-    func = imagesxp.Image(with_pgan=with_pgan)
+    funcs:tp.List[ExperimentFunction] = [imagesxp.Image(loss=loss, with_pgan=with_pgan) for loss in imagesxp.imagelosses.registry.values() if loss.REQUIRES_REFERENCE == similarity]
     for budget in [100 * 5 ** k for k in range(3)]:
-        for num_workers in [1]:
+        for func in funcs:
             for algo in optims:
-                xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
+                xp = Experiment(func, algo, budget, num_workers=1, seed=next(seedg))
                 if not xp.is_incoherent:
                     yield xp
 
@@ -1143,6 +1143,17 @@ def image_similarity(seed: tp.Optional[int] = None, with_pgan: bool = False) -> 
 def image_similarity_pgan(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of image_similarity, using PGan as a representation."""
     return image_similarity(seed, with_pgan=True)
+
+
+@registry.register
+def image_quality(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of image_similarity, using PGan as a representation."""
+    return image_similarity(seed, with_pgan=False, similarity=False)
+
+@registry.register
+def image_quality_pgan(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of image_similarity, using PGan as a representation."""
+    return image_similarity(seed, with_pgan=True, similarity=False)
 
 
 @registry.register
