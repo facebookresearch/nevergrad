@@ -1126,7 +1126,7 @@ def mldakmeans(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def image_similarity(seed: tp.Optional[int] = None, with_pgan: bool = False, similariry: bool = True) -> tp.Iterator[Experiment]:
+def image_similarity(seed: tp.Optional[int] = None, with_pgan: bool = False, similarity: bool = True) -> tp.Iterator[Experiment]:
     """Optimizing images: artificial criterion for now."""
     seedg = create_seed_generator(seed)
     optims = get_optimizers("structured_moo", seed=next(seedg))
