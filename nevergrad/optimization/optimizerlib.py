@@ -1354,6 +1354,8 @@ class ParaPortfolio(Portfolio):
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        self.restricted_budget = True
 
         def intshare(n: int, m: int) -> tp.Tuple[int, ...]:
             x = [n // m] * m
@@ -1392,6 +1394,8 @@ class SQPCMA(ParaPortfolio):
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        self.restricted_budget = True
         nw = num_workers // 2
         self.which_optim = [0] * nw
         for i in range(num_workers - nw):
@@ -1413,6 +1417,8 @@ class ASCMADEthird(Portfolio):
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        self.restricted_budget = True
         self.optims = [
             CMA(
                 self.parametrization, budget=None, num_workers=num_workers
@@ -1480,6 +1486,8 @@ class CMandAS2(ASCMADEthird):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.optims = [TwoPointsDE(self.parametrization, budget=None, num_workers=num_workers)]  # noqa: F405
+        assert budget is not None
+        self.restricted_budget = True
         self.budget_before_choosing = 2 * budget
         if budget < 201:
             self.optims = [OnePlusOne(self.parametrization, budget=None, num_workers=num_workers)]
@@ -1499,6 +1507,8 @@ class CMandAS3(ASCMADEthird):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.optims = [TwoPointsDE(self.parametrization, budget=None, num_workers=num_workers)]  # noqa: F405
+        assert budget is not None
+        self.restricted_budget = True
         self.budget_before_choosing = 2 * budget
         if budget < 201:
             self.optims = [OnePlusOne(self.parametrization, budget=None, num_workers=num_workers)]
@@ -1531,6 +1541,8 @@ class CMandAS(CMandAS2):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.optims = [TwoPointsDE(self.parametrization, budget=None, num_workers=num_workers)]  # noqa: F405
+        assert budget is not None
+        self.restricted_budget = True
         self.budget_before_choosing = 2 * budget
         if budget < 201:
             # share parametrization and its rng
@@ -1552,6 +1564,8 @@ class CM(CMandAS2):
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        self.restricted_budget = True
         # share parametrization and its random number generator between all underlying optimizers
         self.optims = [TwoPointsDE(self.parametrization, budget=None, num_workers=num_workers)]  # noqa: F405
         self.budget_before_choosing = 2 * budget
@@ -1569,6 +1583,8 @@ class MultiCMA(CM):
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        self.restricted_budget = True
         self.optims = [
             CMA(
                 self.parametrization, budget=None, num_workers=num_workers
@@ -1587,6 +1603,8 @@ class MultiDiscrete(CM):
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        self.restricted_budget = True
         self.optims = [
             DiscreteOnePlusOne(
                 self.parametrization, budget=budget // 12, num_workers=num_workers
@@ -1607,6 +1625,8 @@ class TripleCMA(CM):
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        self.restricted_budget = True
         self.optims = [
             ParametrizedCMA(random_init=True)(
                 self.parametrization, budget=None, num_workers=num_workers
@@ -1625,6 +1645,8 @@ class ManyCMA(CM):
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        self.restricted_budget = True
         self.optims = [
             ParametrizedCMA(random_init=True)(self.parametrization, budget=None, num_workers=num_workers)
             for _ in range(int(np.sqrt(budget)))
@@ -1641,6 +1663,8 @@ class PolyCMA(CM):
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        self.restricted_budget = True
         self.optims = [
             ParametrizedCMA(random_init=True)(self.parametrization, budget=None, num_workers=num_workers)
             for _ in range(20)
@@ -1657,6 +1681,8 @@ class ManySmallCMA(CM):
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        assert budget is not None
+        self.restricted_budget = True
         self.optims = [
             ParametrizedCMA(scale=1e-6, random_init=i > 0)(
                 self.parametrization, budget=None, num_workers=num_workers
@@ -1685,6 +1711,8 @@ class MultiScaleCMA(CM):
                 self.parametrization, budget=None, num_workers=num_workers
             ),
         ]
+        assert budget is not None
+        self.restricted_budget = True
         self.budget_before_choosing = budget // 3
 
 
@@ -2210,8 +2238,6 @@ class NGOptBase(base.Optimizer):
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        assert budget is not None
-        self.restricted_budget = True
         descr = self.parametrization.descriptors
         self.has_noise = not (descr.deterministic and descr.deterministic_function)
         # The noise coming from discrete variables goes to 0.
@@ -2318,6 +2344,8 @@ class NGOpt2(NGOptBase):
 
     def _select_optimizer_cls(self) -> base.OptCls:
         budget, num_workers = self.budget, self.num_workers
+        assert budget is not None
+        self.restricted_budget = True
         optimClass: base.OptCls
         if self.has_noise and (
             self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable
@@ -2399,6 +2427,8 @@ class NGOpt4(NGOptBase):
             self.fully_continuous and not self.has_discrete_not_softmax and self._arity < 0
         )
         budget, num_workers = self.budget, self.num_workers
+        assert budget is not None
+        self.restricted_budget = True
         optimClass: base.OptCls
         if self.has_noise and (
             self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable
