@@ -88,6 +88,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
     one_shot = False  # algorithm designed to suggest all budget points at once
     no_parallelization = False  # algorithm which is designed to run sequentially only
     hashed = False
+    needs_budget = False
 
     def __init__(
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
@@ -98,6 +99,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # you can also replace or reinitialize this random state
         self.num_workers = int(num_workers)
         self.budget = budget
+        if self.needs_budget:
+            assert budget is not None
 
         # How do we deal with cheap constraints i.e. constraints which are fast and use low resources and easy ?
         # True ==> we penalize them (infinite values for candidates which violate the constraint).
@@ -621,6 +624,12 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
 
 
 # Adding a comparison-only functionality to an optimizer.
+# Can be used as follows:
+# SQPOptimizer = SQP(50)   # Creates a SQP optimizer in a continuous domain for dimension 50 without constraints. 
+# addCompare(SQPOptimizer)
+#
+# Then, SQPOptimizer can be used with SQPOptimize.compare([c1,c2,c3], [bc1, bc2, bc3]) instead of using "tell":
+# it will asssume that candidates c1, c2, c3 are better than candidates bc1, bc2, bc3.
 def addCompare(optimizer: Optimizer) -> None:
     def compare(self: Optimizer, winners: tp.List[p.Parameter], losers: tp.List[p.Parameter]) -> None:
         # This means that for any i and j, winners[i] is better than winners[i+1], and better than losers[j].
@@ -668,6 +677,7 @@ class ConfiguredOptimizer:
     one_shot = False  # algorithm designed to suggest all budget points at once
     no_parallelization = False  # algorithm which is designed to run sequentially only
     hashed = False
+    needs_budget = False
 
     def __init__(
         self, OptimizerClass: tp.Type[Optimizer], config: tp.Dict[str, tp.Any], as_config: bool = False
