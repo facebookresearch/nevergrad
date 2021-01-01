@@ -258,6 +258,7 @@ class _SamplingSearch(OneShotOptimizer):
                 "LHS": sequences.LHSSampler,
                 "Random": sequences.RandomSampler,
             }
+            self.restricted_budget = self._sampler != "Random"
             internal_budget = (
                 (budget + 1) // 2 if budget and (self.opposition_mode in ["quasi", "opposite"]) else budget
             )
