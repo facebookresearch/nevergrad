@@ -88,7 +88,6 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
     one_shot = False  # algorithm designed to suggest all budget points at once
     no_parallelization = False  # algorithm which is designed to run sequentially only
     hashed = False
-    needs_budget = False
 
     def __init__(
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
@@ -99,8 +98,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # you can also replace or reinitialize this random state
         self.num_workers = int(num_workers)
         self.budget = budget
-        if self.needs_budget:
-            assert budget is not None
+        self.restricted_budget = False  # False if we can extend the number of ask.
 
         # How do we deal with cheap constraints i.e. constraints which are fast and use low resources and easy ?
         # True ==> we penalize them (infinite values for candidates which violate the constraint).
@@ -677,7 +675,6 @@ class ConfiguredOptimizer:
     one_shot = False  # algorithm designed to suggest all budget points at once
     no_parallelization = False  # algorithm which is designed to run sequentially only
     hashed = False
-    needs_budget = False
 
     def __init__(
         self, OptimizerClass: tp.Type[Optimizer], config: tp.Dict[str, tp.Any], as_config: bool = False
