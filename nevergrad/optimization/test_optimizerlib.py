@@ -170,7 +170,7 @@ def test_infnan(name: str) -> None:
         if result < 2.0:
             return
         assert (  # The "bad" algorithms, most of them originating in CMA's recommendation rule.
-            any(x == name for x in ["SPSA", "NGOptBase", "Shiwa", "NGO"])
+            any(x == name for x in ["WidePSO", "SPSA", "NGOptBase", "Shiwa", "NGO"])
             or isinstance(optim, optlib.Portfolio)
             or isinstance(optim, optlib._CMA)
             or isinstance(optim, optlib._Rescaled)
