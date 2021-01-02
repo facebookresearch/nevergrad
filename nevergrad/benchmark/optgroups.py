@@ -193,8 +193,9 @@ def spsa() -> tp.Sequence[Optim]:
 
 
 # Let us register everything that should be registered.
-for name in registry:
-    try:
-        get_optimizers(name)
-    except RuntimeError as e:
-        assert "ollision" in str(e)  # Collisions are ok.
+def register_all() -> None:
+    for name in registry:
+        try:
+            get_optimizers(name)
+        except RuntimeError as e:
+            assert "ollision" in str(e)  # Collisions are ok.
