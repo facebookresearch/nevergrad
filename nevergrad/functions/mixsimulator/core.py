@@ -26,10 +26,7 @@ class OptimizeMix(ExperimentFunction):
     """
 
     def __init__(self, time: int = 168) -> None:
-        try:
-            self._mix = MixSimulator()
-        except AttributeError as e:
-            assert "optimizerlib" not in str(e)
+        self._mix = MixSimulator()
         self._mix.set_data_to("Toamasina")
         self._mix.set_penalisation_cost(100)
         self._mix.set_carbon_cost(10)
