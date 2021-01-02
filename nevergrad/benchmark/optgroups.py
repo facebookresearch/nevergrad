@@ -105,9 +105,7 @@ def splitters() -> tp.Sequence[Optim]:
         for str_optim in ["CMA", "ECMA", "DE", "TwoPointsDE"]:
             optim = optimizerlib_registry[str_optim]
             name = "Split" + str_optim + ("Auto" if num_optims is None else str(num_optims))
-            opt = ConfSplitOptimizer(multivariate_optimizer=optim, num_optims=num_optims).set_name(
-                name, register=True
-            )
+            opt = ConfSplitOptimizer(multivariate_optimizer=optim, num_optims=num_optims).set_name(name)
             optims.append(opt)
     return optims
 
@@ -125,7 +123,7 @@ def progressive() -> tp.Sequence[Optim]:
             mv = ParametrizedOnePlusOne(noise_handling="optimistic", mutation=mutation)
             opt = ConfSplitOptimizer(
                 num_optims=num_optims, progressive=True, multivariate_optimizer=mv
-            ).set_name(name, register=True)
+            ).set_name(name)
             optims.append(opt)
     return optims
 
@@ -195,7 +193,7 @@ def spsa() -> tp.Sequence[Optim]:
 # Let us register everything that should be registered.
 def register_all() -> None:
     for name in registry:
-        try:
-            get_optimizers(name)
-        except RuntimeError as e:
-            assert "ollision" in str(e)  # Collisions are ok.
+        optims = get_optimizers(name)
+        for o in optims:
+            if type(o) != str:
+                o.register()

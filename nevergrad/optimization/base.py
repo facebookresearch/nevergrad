@@ -719,6 +719,10 @@ class ConfiguredOptimizer:
             registry.register_name(name, self)
         return self
 
+    def register(self) -> None:
+        if self.name not in registry:
+            registry.register_name(self.name, self)
+
     def load(self, filepath: tp.Union[str, Path]) -> "Optimizer":
         """Loads a pickle and checks that it is an Optimizer."""
         return self._OptimizerClass.load(filepath)
