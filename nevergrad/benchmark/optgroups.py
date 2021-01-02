@@ -173,7 +173,7 @@ def all_bo() -> tp.Sequence[Optim]:
 def discrete() -> tp.Sequence[Optim]:
     return [name for name in optimizerlib_registry.keys() if "iscrete" in name and "oisy" not in name]
 
-  
+
 def noisy() -> tp.Sequence[Optim]:
     return ["OptimisticDiscreteOnePlusOne", "OptimisticNoisyOnePlusOne", "TBPSA", "SPSA", "NGOpt10"]
 
@@ -255,6 +255,7 @@ def structured_moo() -> tp.Sequence[Optim]:
         "RecMutDE",
         "ParametrizationDE",
     ]
+
 
 @registry.register
 def spsa() -> tp.Sequence[Optim]:
