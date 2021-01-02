@@ -980,7 +980,6 @@ try:  # Dirty try/except because MixSimulator is not up to date.
                             yield xp
 except AttributeError as e:
     assert "optimizerlib" in str(e), e
-    return
 
 @registry.register
 def control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
