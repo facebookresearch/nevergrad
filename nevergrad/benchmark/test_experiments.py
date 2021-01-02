@@ -50,15 +50,12 @@ def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[expe
     # No Mujoco on CircleCI and possibly for some users.
     if name == "control_problem":
         return
-    try:  # Dirty try/except because MixSimulator is not up to date.
-        check_experiment(
-            maker,
-            "mltuning" in name,
-            skip_seed=(name in ["rocket", "images_using_gan"])
-            or any(x in name for x in ["tuning", "image_"]),
-        )  # this is a basic test on first elements, do not fully rely on it
-    except AttributeError as e:
-        assert "optimizerlib" not in str(e) and "mixsimulator" in name, e
+    check_experiment(
+        maker,
+        "mltuning" in name,
+        skip_seed=(name in ["rocket", "images_using_gan"])
+        or any(x in name for x in ["tuning", "image_"]),
+    )  # this is a basic test on first elements, do not fully rely on it
 
 
 @pytest.fixture(scope="module")  # type: ignore

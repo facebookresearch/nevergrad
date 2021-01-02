@@ -965,20 +965,21 @@ def mixsimulator(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """MixSimulator of power plants
     Budget 20, 40, ..., 1600.
     Sequential or 30 workers."""
-    funcs = [OptimizeMix()]
+    try:  # Dirty try/except because MixSimulator is not up to date.
+        fu = OptimizeMix()
+    except AttributeError as e:
+        assert "optimizerlib" in str(e), e
+        return
     seedg = create_seed_generator(seed)
     optims: tp.List[str] = get_optimizers("basics", seed=next(seedg))  # type: ignore
-
-
     seq = np.arange(0, 1601, 20)
     for budget in seq:
         for num_workers in [1, 30]:
             if num_workers < budget:
                 for algo in optims:
-                    for fu in funcs:
-                        xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
-                        if not xp.is_incoherent:
-                            yield xp
+                    xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
+                    if not xp.is_incoherent:
+                        yield xp
 
 
 @registry.register
