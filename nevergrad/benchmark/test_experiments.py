@@ -54,7 +54,8 @@ def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[expe
         check_experiment(
             maker,
             "mltuning" in name,
-            skip_seed=(name in ["rocket", "images_using_gan"]) or any(x in name for x in ["tuning", "image_"]),
+            skip_seed=(name in ["rocket", "images_using_gan"])
+            or any(x in name for x in ["tuning", "image_"]),
         )  # this is a basic test on first elements, do not fully rely on it
     except AttributeError as e:
         assert "optimizerlib" not in str(e) and "mixsimulator" in name, e
