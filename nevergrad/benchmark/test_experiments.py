@@ -50,7 +50,7 @@ def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[expe
     # No Mujoco on CircleCI and possibly for some users.
     if name == "control_problem":
         return
-    try:
+    try:  # Dirty try/except because MixSimulator is not up to date.
         check_experiment(
             maker,
             "mltuning" in name,
