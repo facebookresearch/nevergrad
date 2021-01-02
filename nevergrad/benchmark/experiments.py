@@ -967,7 +967,7 @@ try:  # Dirty try/except because MixSimulator is not up to date.
         """MixSimulator of power plants
         Budget 20, 40, ..., 1600.
         Sequential or 30 workers."""
-            fu = OptimizeMix()
+        fu = OptimizeMix()
         seedg = create_seed_generator(seed)
         optims: tp.List[str] = get_optimizers("basics", seed=next(seedg))  # type: ignore
         seq = np.arange(0, 1601, 20)
