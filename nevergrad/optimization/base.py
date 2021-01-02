@@ -623,7 +623,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
 
 # Adding a comparison-only functionality to an optimizer.
 # Can be used as follows:
-# SQPOptimizer = SQP(50)   # Creates a SQP optimizer in a continuous domain for dimension 50 without constraints. 
+# SQPOptimizer = SQP(50)   # Creates a SQP optimizer in a continuous domain for dimension 50 without constraints.
 # addCompare(SQPOptimizer)
 #
 # Then, SQPOptimizer can be used with SQPOptimize.compare([c1,c2,c3], [bc1, bc2, bc3]) instead of using "tell":
