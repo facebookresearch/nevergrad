@@ -196,4 +196,4 @@ def register_all() -> None:
         optims = get_optimizers(name)
         for o in optims:
             if type(o) != str:
-                o.register()
+                o.register_if_needed()

@@ -719,7 +719,7 @@ class ConfiguredOptimizer:
             registry.register_name(name, self)
         return self
 
-    def register(self) -> None:
+    def register_if_needed(self) -> None:
         if self.name not in registry:
             registry.register_name(self.name, self)
 
