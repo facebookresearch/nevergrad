@@ -195,5 +195,5 @@ def register_all() -> None:
     for name in registry:
         optims = get_optimizers(name)
         for o in optims:
-            if type(o) != str:
+            if not isinstance(o, str):
                 o.register_if_needed()
