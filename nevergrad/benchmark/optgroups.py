@@ -130,7 +130,7 @@ def progressive() -> tp.Sequence[Optim]:
 
 @registry.register
 def basics() -> tp.Sequence[Optim]:
-    return ["NGOpt8", "CMandAS2", "CMA", "DE", "MetaModel", "BO"]
+    return ["NGOpt10", "CMandAS2", "CMA", "DE", "MetaModel"]
 
 
 @registry.register
@@ -142,7 +142,7 @@ def baselines() -> tp.Sequence[Optim]:
 
 @registry.register
 def parallel_basics() -> tp.Sequence[Optim]:
-    return ["NGOpt8", "CMandAS2", "CMA", "DE", "MetaModel"]
+    return ["NGOpt10", "CMandAS2", "CMA", "DE", "MetaModel"]
 
 
 @registry.register
@@ -172,6 +172,85 @@ def competitive() -> tp.Sequence[Optim]:
 @registry.register
 def all_bo() -> tp.Sequence[Optim]:
     return sorted(x for x in ng.optimizers.registry if "BO" in x)
+
+
+@registry.register
+def discrete() -> tp.Sequence[Optim]:
+    return [name for name in optimizerlib_registry.keys() if "iscrete" in name and "oisy" not in name]
+
+
+@registry.register
+def noisy() -> tp.Sequence[Optim]:
+    return ["OptimisticDiscreteOnePlusOne", "OptimisticNoisyOnePlusOne", "TBPSA", "SPSA", "NGOpt10"]
+
+
+@registry.register
+def structure() -> tp.Sequence[Optim]:
+    return ["RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
+
+
+@registry.register
+def small_discrete() -> tp.Sequence[Optim]:
+    return [
+        "DiscreteOnePlusOne",
+        "Shiwa",
+        "CMA",
+        "PSO",
+        "TwoPointsDE",
+        "DE",
+        "OnePlusOne",
+        "AdaptiveDiscreteOnePlusOne",
+        "CMandAS2",
+        "PortfolioDiscreteOnePlusOne",
+        "DoubleFastGADiscreteOnePlusOne",
+        "MultiDiscrete",
+        "DiscreteBSOOnePlusOne",
+        "AnisotropicAdaptiveDiscreteOnePlusOne",
+        "DiscreteLenglerOnePlusOne",
+    ]
+
+
+@registry.register
+def scipy() -> tp.Sequence[Optim]:
+    return ["RSQP", "RCobyla", "RPowell", "SQPCMA", "SQP", "Cobyla", "Powell"]
+
+
+@registry.register
+def es() -> tp.Sequence[Optim]:
+    es = [
+        ng.families.EvolutionStrategy(
+            recombination_ratio=recomb, only_offsprings=only, popsize=pop, offsprings=pop * 5
+        )
+        for only in [True, False]
+        for recomb in [0.1, 0.5]
+        for pop in [20, 40, 80]
+    ]
+    return es
+
+
+@registry.register
+def multimodal() -> tp.Sequence[Optim]:
+    return ["NaiveTBPSA", "MultiCMA", "TripleCMA", "MultiScaleCMA", "PolyCMA", "ManyCMA", "QORandomSearch"]
+
+
+# TODO(oteytaud): we should simplify the following.
+@registry.register
+def oneshot() -> tp.Sequence[Optim]:
+    return sorted(
+        x
+        for x, y in optimizerlib_registry.items()
+        if y.one_shot
+        and "4" not in x
+        and "7" not in x
+        and "LHS" not in x
+        and "alton" not in x
+        and ("ando" not in x or "QO" in x)
+    )  # QORandomSearch is the only valid variant of RandomSearch.
+
+
+@registry.register
+def structured_moo() -> tp.Sequence[Optim]:
+    return ["CMA", "NGOpt10", "MetaNGOpt8", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
 
 
 @registry.register

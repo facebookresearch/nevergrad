@@ -951,7 +951,7 @@ class SPSA(base.Optimizer):
         # then set c = standard deviation. 1e-1 is arbitrary.
         self.c = 1e-1
         # TODO: We should chose a to be inversely proportional to
-        # the magnitude of gradient and propotional to (1+A)^0.602
+        # the magnitude of gradient and proportional to (1+A)^0.602
         # we should spend some burn-in iterations to estimate the
         # magnitude of the gradient. 1e-5 is arbitrary.
         self.a = 1e-5
@@ -2541,5 +2541,23 @@ class NGOpt8(NGOpt4):
 
 
 @registry.register
-class NGOpt(NGOpt8):
+class NGOpt9(NGOpt8):
+    def recommend(self) -> p.Parameter:
+        return base.Optimizer.recommend(self)
+
+
+@registry.register
+class NGOpt10(NGOpt9):
+    def _select_optimizer_cls(self) -> base.OptCls:
+        if not self.has_noise and self._arity > 0:
+            return DiscreteLenglerOnePlusOne
+        else:
+            return super()._select_optimizer_cls()
+
+    def recommend(self) -> p.Parameter:
+        return base.Optimizer.recommend(self)
+
+
+@registry.register
+class NGOpt(NGOpt10):
     pass
