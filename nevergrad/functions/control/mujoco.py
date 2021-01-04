@@ -53,11 +53,11 @@ class GenericMujocoEnv:
         returns = []
         for _ in range(self.num_rollouts):
             obs = self.env.reset()
-            print(obs)
             done = False
             totalr = 0.
             while not done:
-                action = np.matmul(obs, layers[0]) if (self.mean is None) else (np.matmul((obs - self.mean) / self.std, layers[0]))
+                action = np.matmul(obs, layers[0]) if (self.mean is None) else (
+                    np.matmul((obs - self.mean) / self.std, layers[0]))
                 action = action * self.layer_rescaling_coef[0]
                 for x, r_coef in zip(layers[1:], self.layer_rescaling_coef[1:]):
                     action = np.matmul(self._activation(action) + 1.e-3, x) * r_coef

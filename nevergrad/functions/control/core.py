@@ -55,10 +55,10 @@ class BaseFunction(ExperimentFunction):
                  deterministic_sim: bool = True, noise_level: float = 0., states_normalization: bool = True,
                  layer_rescaling_coef: tp.Optional[tuple] = None, random_state: tp.Optional[int] = None) -> None:
         if intermediate_layer_dim is not None:
-            self.policy_dim = (self.policy_dim[0],) + intermediate_layer_dim + (self.policy_dim[1],) # type: ignore
+            self.policy_dim = (self.policy_dim[0],) + intermediate_layer_dim + (self.policy_dim[1],)  # type: ignore
         list_parametrizations = [p.Array(shape=(a, b)).set_name(r"layer_{a}_{b}") for a, b in
                                  zip(self.policy_dim[:-1], self.policy_dim[1:])]
-        parametrization = p.Instrumentation(*list_parametrizations).set_name(self.env_name)
+        parametrization: p.Tuple = p.Tuple(*list_parametrizations).set_name(self.env_name)
         super().__init__(self._simulate, parametrization)
         self.num_rollouts = num_rollouts
         self.random_state = random_state
@@ -67,7 +67,7 @@ class BaseFunction(ExperimentFunction):
         self.noise_level = noise_level
         self.deterministic_sim = deterministic_sim
         self.layer_rescaling_coef = layer_rescaling_coef
-        if layer_rescaling_coef is None: self.layer_rescaling_coef = np.ones(len(self.policy_dim) - 1) # type: ignore
+        if layer_rescaling_coef is None: self.layer_rescaling_coef = np.ones(len(self.policy_dim) - 1)  # type: ignore
         self.add_descriptors(num_rollouts=num_rollouts, intermediate_layer_dim=intermediate_layer_dim,
                              activation=activation, states_normalization=states_normalization,
                              noise_level=self.noise_level, deterministic_sim=deterministic_sim)
@@ -84,7 +84,7 @@ class BaseFunction(ExperimentFunction):
                                noise_level=self.noise_level,
                                random_state=self.parametrization.random_state)
         env.env.seed(self.random_state if self.deterministic_sim else self.parametrization.random_state.randint(10000))
-        loss = env(x[0])
+        loss = env(x)
         # base.update_leaderboard(f'{self.env_name},{self.parametrization.dimension}', loss, x, verbose=True)
         return loss
 
