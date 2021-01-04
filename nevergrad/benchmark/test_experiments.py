@@ -43,7 +43,7 @@ def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[expe
 
     # Some tests are skipped on CircleCI (but they do work well locally, if memory enough).
     if ("images_using_gan" == name or "mlda" == name or "realworld" == name) and os.environ.get(
-            "CIRCLECI", False
+        "CIRCLECI", False
     ):
         raise SkipTest("Too slow in CircleCI")
 
@@ -97,7 +97,7 @@ def check_maker(maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> 
                 elem1.get_description(),
                 elem2.get_description(),
                 err_msg=f"Two paths on the generator differed (see element #{k})\n"
-                        "Generators need to be deterministic in order to split the workload!",
+                "Generators need to be deterministic in order to split the workload!",
             )
 
 
