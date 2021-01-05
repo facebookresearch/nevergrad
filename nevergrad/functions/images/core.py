@@ -178,7 +178,7 @@ class ImageAdversarial(base.ExperimentFunction):
         output_adv = self._get_classifier_output(x)
         _, pred = torch.max(output_adv, axis=1)
         actual = int(self.label)
-        return float(1-(pred == actual) if self.targeted else pred != actual)
+        return float(pred != actual if self.targeted else pred == actual)
 
     @classmethod
     def make_folder_functions(
