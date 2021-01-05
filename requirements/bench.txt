@@ -18,7 +18,6 @@ mixsimulator>=0.2.9.5
 hyperopt>=0.2.5
 IOHexperimenter==0.2.8.7
 koncept>=0.2.2
-tensorflow==2.3.1
 tensorflow-estimator==2.3.0
 tensorflow>=2.3.1
 image-quality==1.2.6
