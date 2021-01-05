@@ -6,6 +6,7 @@
 import inspect
 from pathlib import Path
 import numbers
+import unittest
 import numpy as np
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
@@ -19,9 +20,10 @@ class ExperimentFunctionCopyError(NotImplementedError):
     """Raised when the experiment function fails to copy itself (for benchmarks)"""
 
 
-class UnsupportedExperiment(RuntimeError):
+class UnsupportedExperiment(RuntimeError, unittest.SkipTest):
     """Raised if the experiment is not compatible with the current settings:
     Eg: missing data, missing import, unsupported OS etc
+    This automatically skips tests.
     """
 
 

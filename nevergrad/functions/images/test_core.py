@@ -4,9 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import numpy as np
-import pytest
 
-from .. import base
 from . import core
 from . import imagelosses
 
@@ -44,10 +42,7 @@ def test_images() -> None:
 def test_image_from_pgan_with_k512() -> None:
     func = core.ImageFromPGAN(initial_noise=None, use_gpu=False, loss=imagelosses.Koncept512())
     x = np.fabs(np.random.normal(size=func.domain_shape))
-    try:
-        value = func(x)
-    except base.UnsupportedExperiment as e:
-        pytest.skip(str(e))
+    value = func(x)
     assert value < np.inf
     other_func = func.copy()
     value2 = other_func(x)
