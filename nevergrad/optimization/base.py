@@ -317,7 +317,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             # Non-sense values including NaNs should not be accepted.
             # We do not use max-float as various later transformations could lead to greater values.
             if not (loss < 5.0e20):
-                warnings.warn(f"Pathological value {loss} in tell.")
+                warnings.warn(f"Clipping very high value {loss} in tell (rescale the cost function?).")
                 loss = 5.0e20  # sys.float_info.max leads to numerical problems so let us do this.
         elif isinstance(loss, (tuple, list, np.ndarray)):
             loss = np.array(loss, copy=False, dtype=float).ravel() if len(loss) != 1 else loss[0]
