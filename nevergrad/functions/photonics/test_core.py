@@ -11,6 +11,7 @@ import pytest
 import numpy as np
 from nevergrad.common import testing
 from . import core
+from . import photonics
 
 
 @testing.parametrized(
