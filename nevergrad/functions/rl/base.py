@@ -9,23 +9,19 @@ import gym
 
 
 StepReturn = tp.Tuple[
-    tp.Dict[str, tp.Any],
-    tp.Dict[str, int],
-    tp.Dict[str, bool],
-    tp.Dict[str, tp.Any]
+    tp.Dict[str, tp.Any], tp.Dict[str, int], tp.Dict[str, bool], tp.Dict[str, tp.Any]
 ]  # ray-like multi-agent return type
 
 
 class StepOutcome:
-    """Handle for dealing with environment (and especially multi-agent) outputs more easily
-    """
+    """Handle for dealing with environment (and especially multi-agent) outputs more easily"""
 
     def __init__(
         self,
         observation: tp.Any,
         reward: tp.Any = None,
         done: bool = False,
-        info: tp.Optional[tp.Dict[tp.Any, tp.Any]] = None
+        info: tp.Optional[tp.Dict[tp.Any, tp.Any]] = None,
     ) -> None:
         self.observation = observation
         self.reward = reward
@@ -40,10 +36,19 @@ class StepOutcome:
 
     @classmethod
     def from_multiagent_step(
-        cls, obs: tp.Dict[str, tp.Any], reward: tp.Dict[str, tp.Any], done: tp.Dict[str, bool], info: tp.Dict[str, tp.Dict[tp.Any, tp.Any]]
+        cls,
+        obs: tp.Dict[str, tp.Any],
+        reward: tp.Dict[str, tp.Any],
+        done: tp.Dict[str, bool],
+        info: tp.Dict[str, tp.Dict[tp.Any, tp.Any]],
     ) -> tp.Tuple[tp.Dict[str, "StepOutcome"], bool]:
         outcomes = {
-            agent: cls(obs[agent], reward.get(agent, None), done.get(agent, done.get("__all__", False)), info.get(agent, {}))
+            agent: cls(
+                obs[agent],
+                reward.get(agent, None),
+                done.get(agent, done.get("__all__", False)),
+                info.get(agent, {}),
+            )
             for agent in obs
         }
         return outcomes, done.get("__all__", False)
@@ -51,16 +56,23 @@ class StepOutcome:
     @staticmethod
     def to_multiagent_step(outcomes: tp.Dict[str, "StepOutcome"], done: bool = False) -> StepReturn:
         names = ["observation", "reward", "done", "info"]
-        obs, reward, done_dict, info = ({agent: getattr(outcome, name) for agent, outcome in outcomes.items()} for name in names)
+        obs, reward, done_dict, info = (
+            {agent: getattr(outcome, name) for agent, outcome in outcomes.items()} for name in names
+        )
         done_dict["__all__"] = done
         return obs, reward, done_dict, info
 
 
 class Agent:
-    """Base class for an Agent operating in an environment.
-    """
+    """Base class for an Agent operating in an environment."""
 
-    def act(self, observation: tp.Any, reward: tp.Any, done: bool, info: tp.Optional[tp.Dict[tp.Any, tp.Any]] = None) -> tp.Any:
+    def act(
+        self,
+        observation: tp.Any,
+        reward: tp.Any,
+        done: bool,
+        info: tp.Optional[tp.Dict[tp.Any, tp.Any]] = None,
+    ) -> tp.Any:
         raise NotImplementedError
 
     def reset(self) -> None:
@@ -71,8 +83,7 @@ class Agent:
 
 
 class MultiAgentEnv:
-    """Base class for an multi-agent environment (in a ray-like fashion).
-    """
+    """Base class for an multi-agent environment (in a ray-like fashion)."""
 
     observation_space: gym.Space
     action_space: gym.Space
@@ -89,8 +100,7 @@ class MultiAgentEnv:
         raise NotImplementedError
 
     def copy(self) -> "MultiAgentEnv":
-        """Used to create new instances of Ray MultiAgentEnv
-        """
+        """Used to create new instances of Ray MultiAgentEnv"""
         raise NotImplementedError
 
     def with_agent(self, **agents: Agent) -> "PartialMultiAgentEnv":
@@ -98,8 +108,7 @@ class MultiAgentEnv:
 
 
 class PartialMultiAgentEnv(MultiAgentEnv):
-    """Multi agent environement for which some of the agents have been fixed
-    """
+    """Multi agent environement for which some of the agents have been fixed"""
 
     def __init__(self, env: MultiAgentEnv, **agents: Agent) -> None:
         self.env = env.copy()
@@ -127,7 +136,9 @@ class PartialMultiAgentEnv(MultiAgentEnv):
         full_action_dict.update(action_dict)
         outcomes, done = StepOutcome.from_multiagent_step(*self.env.step(full_action_dict))
         self._agents_outcome = {name: outcomes[name] for name in self.agents}
-        return StepOutcome.to_multiagent_step({name: outcomes[name] for name in outcomes if name not in self.agents}, done)
+        return StepOutcome.to_multiagent_step(
+            {name: outcomes[name] for name in outcomes if name not in self.agents}, done
+        )
 
     def copy(self) -> "PartialMultiAgentEnv":
         return self.__class__(self.env, **self.agents)
@@ -177,10 +188,7 @@ class EnvironmentRunner:
     """
 
     def __init__(
-            self,
-            env: tp.Union[gym.Env, MultiAgentEnv],
-            num_repetitions: int = 1,
-            max_step: float = float("inf")
+        self, env: tp.Union[gym.Env, MultiAgentEnv], num_repetitions: int = 1, max_step: float = float("inf")
     ) -> None:
         self.env = env
         self.num_repetitions = num_repetitions
@@ -244,4 +252,6 @@ class EnvironmentRunner:
         return reward_sum
 
     def copy(self) -> "EnvironmentRunner":
-        return EnvironmentRunner(self.env.copy(), num_repetitions=self.num_repetitions, max_step=self.max_step)
+        return EnvironmentRunner(
+            self.env.copy(), num_repetitions=self.num_repetitions, max_step=self.max_step
+        )
