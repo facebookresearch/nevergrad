@@ -33,7 +33,7 @@ def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[expe
         raise SkipTest("Too slow in CircleCI")
 
     # Our IQAs and our ScikitLearn are not well guaranteed on Windows.
-    if "image" in name and "quality" in name and platform.system() == "Windows":
+    if all(x in name for x in ["image", "quality"]) and platform.system() == "Windows":
         raise SkipTest("Image quality not guaranteed on Windows.")
 
     # Basic test.
@@ -42,14 +42,9 @@ def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[expe
             check_maker(maker)  # this is to extract the function for reuse if other external packages need it
 
     # Some tests are skipped on CircleCI (but they do work well locally, if memory enough).
-    if ("images_using_gan" == name or "mlda" == name or "realworld" == name) and os.environ.get(
-        "CIRCLECI", False
-    ):
-        raise SkipTest("Too slow in CircleCI")
-
-    # No Mujoco on CircleCI and possibly for some users.
-    if name in ["control_problem", "neuro_control_problem"]:
-        return
+    if os.environ.get("CIRCLECI", False):
+        if any(name == x for x in ["images_using_gan", "mlda", "realworld"]):
+            raise SkipTest("Too slow in CircleCI")
 
     check_experiment(
         maker,

@@ -193,8 +193,8 @@ class Experiment:
         """
         try:
             self._run_with_error()
-        except fbase.ExperimentFunctionCopyError as c_e:
-            raise c_e
+        except (fbase.ExperimentFunctionCopyError, fbase.UnsupportedExperiment) as ex:
+            raise ex
         except Exception as e:  # pylint: disable=broad-except
             # print the case and the traceback
             self.result["error"] = e.__class__.__name__

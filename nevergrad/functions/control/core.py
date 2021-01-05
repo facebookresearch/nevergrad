@@ -6,15 +6,15 @@
 # Trained policies were extracted from https://github.com/modestyachts/ARS
 # under their own license. See ARS_LICENSE file in this file's directory
 
-import typing as tp
 import numpy as np
+import gym
+import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
-from ..base import ExperimentFunction
 from .. import base
 from .mujoco import GenericMujocoEnv
 
 
-class BaseFunction(ExperimentFunction):
+class BaseFunction(base.ExperimentFunction):
     """This (abstract) class is a generic wrapper of OpenAI Gym env for policy evaluation.
     Attributes need to be override accordingly to have concrete working function.
 
@@ -50,6 +50,11 @@ class BaseFunction(ExperimentFunction):
     random_state: int or None
         random state for reproducibility in Gym environment.
     """
+    
+    env_name: str
+    state_mean: tp.Any
+    state_std: tp.Any
+    policy_dim: tp.Tuple[int, ...]
 
     def __init__(self, num_rollouts: int, activation: str = "tanh", intermediate_layer_dim: tp.Optional[tuple] = None,
                  deterministic_sim: bool = True, noise_level: float = 0., states_normalization: bool = True,
@@ -75,34 +80,21 @@ class BaseFunction(ExperimentFunction):
         self._descriptors.pop("random_state", None)  # remove it from automatically added descriptors
 
     def _simulate(self, x: tp.Tuple) -> float:
-        env = GenericMujocoEnv(env_name=self.env_name,
-                               state_mean=self.state_mean if self.states_normalization else None,
-                               state_std=self.state_std if self.states_normalization else None,
-                               num_rollouts=self.num_rollouts,
-                               activation=self.activation,
-                               layer_rescaling_coef=self.layer_rescaling_coef,
-                               noise_level=self.noise_level,
-                               random_state=self.parametrization.random_state)
+        try:
+            env = GenericMujocoEnv(env_name=self.env_name,
+                                   state_mean=self.state_mean if self.states_normalization else None,
+                                   state_std=self.state_std if self.states_normalization else None,
+                                   num_rollouts=self.num_rollouts,
+                                   activation=self.activation,
+                                   layer_rescaling_coef=self.layer_rescaling_coef,
+                                   noise_level=self.noise_level,
+                                   random_state=self.parametrization.random_state)
+        except gym.error.DependencyNotInstalled as e:
+            raise base.UnsupportedExperiment("Missing mujoco_py") from e
         env.env.seed(self.random_state if self.deterministic_sim else self.parametrization.random_state.randint(10000))
         loss = env(x)
         # base.update_leaderboard(f'{self.env_name},{self.parametrization.dimension}', loss, x, verbose=True)
         return loss
-
-    @property
-    def env_name(self) -> str:
-        raise NotImplementedError
-
-    @property
-    def state_mean(self):
-        raise NotImplementedError
-
-    @property
-    def state_std(self):
-        raise NotImplementedError
-
-    @property
-    def policy_dim(self):
-        raise NotImplementedError
 
     def evaluation_function(self, *recommendations: p.Parameter) -> float:
         assert len(recommendations) == 1, "Should not be a pareto set for a monoobjective function"

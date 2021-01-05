@@ -54,7 +54,7 @@ class GenericMujocoEnv:
         for _ in range(self.num_rollouts):
             obs = self.env.reset()
             done = False
-            totalr = 0.
+            totalr = 0.0
             while not done:
                 action = np.matmul(obs, layers[0]) if (self.mean is None) else (
                     np.matmul((obs - self.mean) / self.std, layers[0]))
