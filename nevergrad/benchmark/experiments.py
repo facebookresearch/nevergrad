@@ -1169,6 +1169,7 @@ def image_multi_similarity(seed: tp.Optional[int] = None, cross_valid: bool = Fa
     ]
     base_values: tp.List[tp.Any] = [func(func.parametrization.sample().value) for func in funcs]
     if cross_valid:
+        skip_ci(reason="Too slow")
         mofuncs: tp.List[tp.Any] = helpers.SpecialEvaluationExperiment.create_crossvalidation_experiments(funcs, pareto_size=25)
     else:
         mofuncs = [fbase.MultiExperiment(funcs, upper_bounds=base_values)]
@@ -1177,8 +1178,6 @@ def image_multi_similarity(seed: tp.Optional[int] = None, cross_valid: bool = Fa
             for algo in optims:
                 for mofunc in mofuncs:
                     xp = Experiment(mofunc, algo, budget, num_workers=num_workers, seed=next(seedg))
-                    if cross_valid:
-                        skip_ci(reason="Too slow")
                     yield xp
 
 
