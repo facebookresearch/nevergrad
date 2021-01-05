@@ -40,8 +40,8 @@ class BaseFunction(base.ExperimentFunction):
     """
 
     env_name: str
-    state_mean: tp.ArrayLike
-    state_std: tp.ArrayLike
+    state_mean: tp.Any
+    state_std: tp.Any
     policy_dim: tp.Tuple[int, ...]
 
     def __init__(self, num_rollouts: int, random_state: tp.Optional[int] = None) -> None:
