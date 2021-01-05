@@ -3,9 +3,9 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
   
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
   <title>Examples of benchmarks &mdash; nevergrad  documentation</title>
   
@@ -16,7 +16,10 @@
 
   
   
+
   
+  
+
   
 
   
@@ -29,7 +32,6 @@
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
         <script src="_static/doctools.js"></script>
-        <script src="_static/language_data.js"></script>
     
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
@@ -51,7 +53,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home" alt="Documentation Home"> nevergrad
+            <a href="index.html" class="icon icon-home"> nevergrad
           
 
           
@@ -150,6 +152,8 @@
 
 
 
+
+
 <div role="navigation" aria-label="breadcrumbs navigation">
 
   <ul class="wy-breadcrumbs">
@@ -161,7 +165,7 @@
     
       <li class="wy-breadcrumbs-aside">
         
-            
+          
             <a href="_sources/benchmarks.rst.txt" rel="nofollow"> View page source</a>
           
         
@@ -807,6 +811,15 @@ Budgets doubling from 25, 50, 100, 200, … up  to 25600</p>
 </dd></dl>
 
 <dl class="py function">
+<dt id="nevergrad.benchmark.experiments.skip_ci">
+<code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">skip_ci</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">reason</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#nevergrad.benchmark.experiments.skip_ci" title="Permalink to this definition">¶</a></dt>
+<dd><p>Only use this if there is a good reason for not testing the xp,
+such as very slow for instance (&gt;1min) with no way to make it faster.
+This is dangereous because it won’t test reproducibility and the experiment
+may therefore be corrupted with no way to notice it automatically.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt id="nevergrad.benchmark.experiments.spsa_benchmark">
 <code class="sig-prename descclassname">nevergrad.benchmark.experiments.</code><code class="sig-name descname">spsa_benchmark</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span>nevergrad.benchmark.xpbase.Experiment<span class="p">]</span><a class="headerlink" href="#nevergrad.benchmark.experiments.spsa_benchmark" title="Permalink to this definition">¶</a></dt>
 <dd><p>Some optimizers on a noisy optimization problem. This benchmark is based on the noisy benchmark.
@@ -912,37 +925,29 @@ and parallel.</p>
            
           </div>
           <footer>
-  
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="pyomo.html" class="btn btn-neutral float-right" title="Examples - Working with Pyomo model" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
-      
-      
-        <a href="benchmarking.html" class="btn btn-neutral float-left" title="Running algorithm benchmarks" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
-      
+        <a href="pyomo.html" class="btn btn-neutral float-right" title="Examples - Working with Pyomo model" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="benchmarking.html" class="btn btn-neutral float-left" title="Running algorithm benchmarks" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
-  
 
   <hr/>
 
   <div role="contentinfo">
     <p>
-        
-        &copy; Copyright 2019, Facebook AI Research
+        &#169; Copyright 2019, Facebook AI Research.
 
     </p>
   </div>
     
     
     
-    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     
-    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     
     provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
-
         </div>
       </div>
 
