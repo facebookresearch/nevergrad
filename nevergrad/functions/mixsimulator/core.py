@@ -26,10 +26,10 @@ class OptimizeMix(base.ExperimentFunction):
     """
 
     def __init__(self, time: int = 168) -> None:
-        self._mix = MixSimulator()
         try:
+            self._mix = MixSimulator()
             self._mix.set_data_to("Toamasina")
-        except Exception as e:  # pylint: disable=broad-except
+        except (KeyError, AttributeError) as e:
             # send a skip error so that this does not break the test suit
             raise base.UnsupportedExperiment("mixsimulator dependency issue") from e
         self._mix.set_penalisation_cost(100)
