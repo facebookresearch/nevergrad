@@ -39,12 +39,19 @@ from . import frozenexperiments  # noqa # pylint: disable=unused-import
 
 # pylint: disable=stop-iteration-return, too-many-nested-blocks, too-many-locals, line-too-long
 # pylint: disable=too-many-lines
-# for black (since lists are way too long...):
-# fmt: off
+
+
+def skip_ci(*, reason: str) -> None:
+    """Only use this if there is a good reason for not testing the xp,
+    such as very slow for instance (>1min) with no way to make it faster.
+    This is dangereous because it won't test reproducibility and the experiment
+    may therefore be corrupted with no way to notice it automatically.
+    """
+    if os.environ.get("NEVERGRAD_PYTEST", False):  # break here for tests
+        raise fbase.UnsupportedExperiment("Skipping CI: " + reason)
 
 
 class _Constraint:
-
     def __init__(self, name: str, as_bool: bool) -> None:
         self.name = name
         self.as_bool = as_bool
@@ -59,11 +66,15 @@ class _Constraint:
         elif self.name == "second_diff":
             value = float(2 * np.sum(data[1::2]) - 3 * np.sum(data[::2]))
         elif self.name == "ball":
-            value = float(np.sum(np.square(data))) - float(len(data)) - float(np.sqrt(len(data)))  # Most points violate the constraint.
+            # Most points violate the constraint.
+            value = float(np.sum(np.square(data)) - len(data) - np.sqrt(len(data)))
         else:
             raise NotImplementedError(f"Unknown function {self.name}")
         return value > 0 if self.as_bool else value
 
+
+# for black (since lists are way too long...):
+# fmt: off
 
 def keras_tuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool = False) -> tp.Iterator[Experiment]:
     """Machine learning hyperparameter tuning experiment. Based on scikit models."""
@@ -82,8 +93,7 @@ def keras_tuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: b
                     for optim in optims:
                         xp = Experiment(function, optim, num_workers=num_workers,
                                         budget=budget, seed=next(seedg))
-                        if os.environ.get("NEVERGRAD_PYTEST", False):  # break here for tests
-                            raise fbase.UnsupportedExperiment("Too slow in CircleCI")
+                        skip_ci(reason="too slow")
                         if not xp.is_incoherent:
                             yield xp
 
@@ -107,8 +117,7 @@ def mltuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool 
                         for optim in optims:
                             xp = Experiment(function, optim, num_workers=num_workers,
                                             budget=budget, seed=next(seedg))
-                            if os.environ.get("NEVERGRAD_PYTEST", False):  # break here for tests
-                                raise fbase.UnsupportedExperiment("Too slow in CircleCI")
+                            skip_ci(reason="too slow")
                             if not xp.is_incoherent:
                                 yield xp
 
@@ -1138,8 +1147,7 @@ def image_similarity(seed: tp.Optional[int] = None, with_pgan: bool = False) -> 
         for num_workers in [1]:
             for algo in optims:
                 xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
-                if os.environ.get("NEVERGRAD_PYTEST", False):  # break here for tests
-                    raise fbase.UnsupportedExperiment("Too slow in CircleCI")
+                skip_ci(reason="too slow")
                 if not xp.is_incoherent:
                     yield xp
 
@@ -1169,6 +1177,8 @@ def image_multi_similarity(seed: tp.Optional[int] = None, cross_valid: bool = Fa
             for algo in optims:
                 for mofunc in mofuncs:
                     xp = Experiment(mofunc, algo, budget, num_workers=num_workers, seed=next(seedg))
+                    if cross_valid:
+                        skip_ci(reason="Too slow")
                     yield xp
 
 
