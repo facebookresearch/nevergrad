@@ -132,3 +132,19 @@ def test_photonics_values_random(name: str, expected: float, data: tp.Optional[t
         candidate = photo.parametrization.spawn_child(new_value=[data])
     for func in [photo, photo.evaluation_function]:
         np.testing.assert_almost_equal(func(candidate.value), expected, decimal=4)  # type: ignore
+
+def test_photosic_reference() -> None:
+    debut = np.array([79, 102])
+    fin = np.array([100, 70])
+    dbr = np.tile(np.array([147, 120]), 3)
+    X = np.concatenate([debut, dbr, fin])
+    cf_test = photonics.cf_photosic_reference(X)
+    np.testing.assert_almost_equal(cf_test, 0.09069397)
+
+
+def test_photosic_realist() -> None:
+    eps_and_d = np.array([2.0000, 3.0000, 2.1076, 2.0000, 3.0000, 2.5783, 2.0000, 3.0000,
+                          2.0000, 3.0000, 90.0231, 78.9789, 72.8369, 99.9577, 82.7487,
+                          62.7583, 104.1682, 139.9002, 93.3356, 75.6039])
+    cf_test = photonics.cf_photosic_realist(eps_and_d)
+    np.testing.assert_almost_equal(cf_test, 0.08602574254532869)
