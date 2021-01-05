@@ -82,8 +82,9 @@ class ARCoating(base.ExperimentFunction):
             value = value + RE / len(self.lambdas)
         return value
 
-    # pylint: disable=arguments-differ
-    def evaluation_function(self, x: np.ndarray) -> float:  # type: ignore
+    def evaluation_function(self, *recommendations: ng.p.Parameter) -> float:
+        assert len(recommendations) == 1, "Should not be a pareto set for a monoobjective function"
+        x = recommendations[0].value
         loss = self.function(x)
         assert isinstance(loss, float)
         base.update_leaderboard(

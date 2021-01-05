@@ -160,7 +160,6 @@ class Experiment:
             optimizer=optimizer, num_workers=num_workers, budget=budget, batch_mode=batch_mode
         )
         self.result = {"loss": np.nan, "elapsed_budget": np.nan, "elapsed_time": np.nan, "error": ""}
-        self.recommendation: tp.Optional[p.Parameter] = None
         self._optimizer: tp.Optional[
             obase.Optimizer
         ] = None  # to be able to restore stopped/checkpointed optimizer
@@ -209,15 +208,11 @@ class Experiment:
         self.result["elapsed_time"] = time.time() - t0
         self.result["pseudotime"] = self.optimsettings.executor.time
         # make a final evaluation with oracle (no noise, but function may still be stochastic)
-        assert self.recommendation is not None
-        reco = self.recommendation
-        assert self._optimizer is not None
-        if self._optimizer._hypervolume_pareto is None:
-            # ExperimentFunction can directly override this if need be
-            self.result["loss"] = pfunc.evaluation_function(*reco.args, **reco.kwargs)
-        else:
-            # in multiobjective case, use best hypervolume so far
-            self.result["loss"] = -self._optimizer._hypervolume_pareto._best_volume
+        opt = self._optimizer
+        assert opt is not None
+        # ExperimentFunction can directly override this evaluation function if need be
+        # (pareto_front returns only the recommendation in monoobjective)
+        self.result["loss"] = pfunc.evaluation_function(*opt.pareto_front())
         self.result["elapsed_budget"] = num_calls
         if num_calls > self.optimsettings.budget:
             raise RuntimeError(
@@ -239,7 +234,7 @@ class Experiment:
                 self.seed
             )  # seeds both functions and parametrization (for which random state init is lazy)
             random.seed(self.seed)
-            torch.manual_seed(self.seed)  # type: ignore
+            torch.manual_seed(self.seed)
         pfunc = self.function.copy()
         # check constraints are propagated
         assert len(pfunc.parametrization._constraint_checkers) == len(
@@ -265,16 +260,13 @@ class Experiment:
             try:
                 # call the actual Optimizer.minimize method because overloaded versions could alter the worklflow
                 # and provide unfair comparisons  (especially for parallelized settings)
-                self.recommendation = obase.Optimizer.minimize(
+                obase.Optimizer.minimize(
                     self._optimizer,
                     pfunc,
                     batch_mode=executor.batch_mode,
                     executor=executor,
                 )
             except Exception as e:  # pylint: disable=broad-except
-                self.recommendation = (
-                    self._optimizer.provide_recommendation()
-                )  # get the recommendation anyway
                 self._log_results(pfunc, t0, self._optimizer.num_ask)
                 raise e
         self._log_results(pfunc, t0, self._optimizer.num_ask)

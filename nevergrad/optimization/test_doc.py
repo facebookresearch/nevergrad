@@ -128,6 +128,7 @@ def test_parametrization() -> None:
 
 
 def test_doc_constrained_optimization() -> None:
+    np.random.seed(12)  # avoid flakiness
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", category=UserWarning)
         # DOC_CONSTRAINED_0
@@ -140,7 +141,7 @@ def test_doc_constrained_optimization() -> None:
         # define a constraint on first variable of x:
         optimizer.parametrization.register_cheap_constraint(lambda x: x[0] >= 1)
 
-        recommendation = optimizer.minimize(square)
+        recommendation = optimizer.minimize(square, verbosity=2)
         print(recommendation.value)
         # >>> [1.00037625, 0.50683314]
         # DOC_CONSTRAINED_1

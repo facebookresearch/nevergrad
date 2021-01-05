@@ -222,7 +222,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         During non-multiobjective optimization, this returns the current pessimistic best
         """
         if self._hypervolume_pareto is None:
-            return [self.current_bests["pessimistic"].parameter]
+            return [self.provide_recommendation()]
         return self._hypervolume_pareto.pareto_front(
             size=size, subset=subset, subset_tentatives=subset_tentatives
         )
@@ -339,7 +339,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 raise RuntimeError("MultiobjectiveReference can only be provided before the first tell.")
             if not isinstance(loss, np.ndarray):
                 raise RuntimeError("MultiobjectiveReference must only be used for multiobjective losses")
-            self._hypervolume_pareto = mobj.HypervolumePareto(upper_bounds=loss)
+            self._hypervolume_pareto = mobj.HypervolumePareto(upper_bounds=loss, seed=self._rng)
             if candidate.value is None:
                 return  # no value, so stopping processing there
             candidate = candidate.value
@@ -544,9 +544,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
 
         Returns
         -------
-        p.Parameter
-            The candidate with minimal value. :code:`p.Parameters` have field :code:`args` and :code:`kwargs` which can be directly used
-            on the function (:code:`objective_function(*candidate.args, **candidate.kwargs)`).
+        ng.p.Parameter
+            The candidate with minimal value. :code:`ng.p.Parameters` have field :code:`args` and :code:`kwargs` which can
+            be directly used on the function (:code:`objective_function(*candidate.args, **candidate.kwargs)`).
 
         Note
         ----

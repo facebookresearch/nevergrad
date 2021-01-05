@@ -66,7 +66,7 @@ class _Game:
         else:
             choice = self.guesswho_play_noturn([decks[1], decks[0]], policy)
         choice = max(1, min(choice, decks[turn] - 1))
-        decks = [d for d in decks]
+        decks = list(decks)
         decks[turn] = choice if np.random.randint(decks[turn]) <= choice else decks[turn] - choice
         return decks
 
@@ -396,7 +396,7 @@ class _Game:
             return cards
         state = np.random.RandomState(hash(seed) % (2 ** 32))
         state.shuffle(cards)
-        return [c for c in cards]
+        return list(cards)
 
 
 # Real life is more complicated! This is a very simple model.
@@ -432,7 +432,9 @@ class Game(ExperimentFunction):
         r = self.game_object.play_game(self.game, p1, p2)
         return (result + (0.0 if r == 2 else 0.5 if r == 0 else 1.0)) / 2
 
-    def evaluation_function(self, x: np.ndarray) -> float:  # type: ignore
+    def evaluation_function(self, *recommendations: p.Parameter) -> float:
+        assert len(recommendations) == 1, "Should not be a pareto set for a monoobjective function"
+        x = recommendations[0].value
         # pylint: disable=not-callable
         loss = sum([self.function(x) for _ in range(42)]) / 42.0
         assert isinstance(loss, float)
