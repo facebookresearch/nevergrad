@@ -39,12 +39,19 @@ from . import frozenexperiments  # noqa # pylint: disable=unused-import
 
 # pylint: disable=stop-iteration-return, too-many-nested-blocks, too-many-locals, line-too-long
 # pylint: disable=too-many-lines
-# for black (since lists are way too long...):
-# fmt: off
+
+
+def skip_ci(*, reason: str) -> None:
+    """Only use this if there is a good reason for not testing the xp,
+    such as very slow for instance (>1min) with no way to make it faster.
+    This is dangereous because it won't test reproducibility and the experiment
+    may therefore be corrupted with no way to notice it automatically.
+    """
+    if os.environ.get("NEVERGRAD_PYTEST", False):  # break here for tests
+        raise fbase.UnsupportedExperiment("Skipping CI: " + reason)
 
 
 class _Constraint:
-
     def __init__(self, name: str, as_bool: bool) -> None:
         self.name = name
         self.as_bool = as_bool
@@ -59,11 +66,15 @@ class _Constraint:
         elif self.name == "second_diff":
             value = float(2 * np.sum(data[1::2]) - 3 * np.sum(data[::2]))
         elif self.name == "ball":
-            value = float(np.sum(np.square(data))) - float(len(data)) - float(np.sqrt(len(data)))  # Most points violate the constraint.
+            # Most points violate the constraint.
+            value = float(np.sum(np.square(data)) - len(data) - np.sqrt(len(data)))
         else:
             raise NotImplementedError(f"Unknown function {self.name}")
         return value > 0 if self.as_bool else value
 
+
+# for black (since lists are way too long...):
+# fmt: off
 
 def keras_tuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool = False) -> tp.Iterator[Experiment]:
     """Machine learning hyperparameter tuning experiment. Based on scikit models."""
@@ -72,9 +83,9 @@ def keras_tuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: b
 
     # First, a few functions with constraints.
     optims: tp.List[str] = ["PSO", "OnePlusOne"] + get_optimizers("basics", seed=next(seedg))  # type: ignore
+    datasets = ["kerasBoston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
     for dimension in [None]:
-        for dataset in (
-                ["kerasBoston", "diabetes", "auto-mpg", "red-wine", "white-wine"]):
+        for dataset in datasets:
             function = MLTuning(regressor="keras_dense_nn", data_dimension=dimension, dataset=dataset,
                                 overfitter=overfitter)
             for budget in [50, 150, 500]:
@@ -82,6 +93,7 @@ def keras_tuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: b
                     for optim in optims:
                         xp = Experiment(function, optim, num_workers=num_workers,
                                         budget=budget, seed=next(seedg))
+                        skip_ci(reason="too slow")
                         if not xp.is_incoherent:
                             yield xp
 
@@ -92,10 +104,12 @@ def mltuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool 
     optims: tp.List[str] = get_optimizers("basics", seed=next(seedg))  # type: ignore
 
     for dimension in [None, 1, 2, 3]:
+        if dimension is None:
+            datasets = ["boston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
+        else:
+            datasets = ["artificialcos", "artificial", "artificialsquare"]
         for regressor in ["mlp", "decision_tree", "decision_tree_depth"]:
-            for dataset in (
-                    ["boston", "diabetes", "auto-mpg", "red-wine", "white-wine"] if dimension is None else ["artificialcos", "artificial",
-                                                                      "artificialsquare"]):
+            for dataset in datasets:
                 function = MLTuning(regressor=regressor, data_dimension=dimension, dataset=dataset,
                                     overfitter=overfitter)
                 for budget in [50, 150, 500]:
@@ -103,6 +117,7 @@ def mltuning(seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool 
                         for optim in optims:
                             xp = Experiment(function, optim, num_workers=num_workers,
                                             budget=budget, seed=next(seedg))
+                            skip_ci(reason="too slow")
                             if not xp.is_incoherent:
                                 yield xp
 
@@ -205,20 +220,20 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     mofuncs: tp.List[fbase.MultiExperiment] = []
     for name1 in ["sphere", "ellipsoid"]:
         for name2 in ["sphere", "hm"]:
-          for tf in [0.25, 4.]:
-            mofuncs += [fbase.MultiExperiment([ArtificialFunction(name1, block_dimension=7),
-                                               ArtificialFunction(name2, block_dimension=7, translation_factor=tf)],
-                                              upper_bounds=np.array((100., 100.)))]
-            mofuncs[-1].add_descriptors(num_objectives=2)
+            for tf in [0.25, 4.]:
+                mofuncs += [fbase.MultiExperiment([ArtificialFunction(name1, block_dimension=7),
+                                                   ArtificialFunction(name2, block_dimension=7, translation_factor=tf)],
+                                                  upper_bounds=np.array((100., 100.)))]
+                mofuncs[-1].add_descriptors(num_objectives=2)
     for name1 in ["sphere", "ellipsoid"]:
         for name2 in ["sphere", "hm"]:
             for name3 in ["sphere", "hm"]:
-              for tf in [0.25, 4.]:
-                mofuncs += [fbase.MultiExperiment([ArtificialFunction(name1, block_dimension=7, translation_factor=1./tf),
-                                                   ArtificialFunction(name2, block_dimension=7, translation_factor=tf),
-                                                   ArtificialFunction(name3, block_dimension=7)],
-                                                  upper_bounds=np.array((100., 100., 100.)))]
-                mofuncs[-1].add_descriptors(num_objectives=3)
+                for tf in [0.25, 4.]:
+                    mofuncs += [fbase.MultiExperiment([ArtificialFunction(name1, block_dimension=7, translation_factor=1./tf),
+                                                       ArtificialFunction(name2, block_dimension=7, translation_factor=tf),
+                                                       ArtificialFunction(name3, block_dimension=7)],
+                                                      upper_bounds=np.array((100., 100., 100.)))]
+                    mofuncs[-1].add_descriptors(num_objectives=3)
     index = 0
     for mofunc in mofuncs[::3]:
         for budget in [2000, 8000]:
@@ -1046,9 +1061,7 @@ def sequential_fastgames(seed: tp.Optional[int] = None) -> tp.Iterator[Experimen
     Games: War, Batawaf, Flip, GuessWho,  BigGuessWho."""
     funcs = [game.Game(name) for name in ["war", "batawaf", "flip", "guesswho", "bigguesswho"]]
     seedg = create_seed_generator(seed)
-    optims = get_optimizers("noisy", "splitters", "progressive", seed=next(seedg))  # type: ignore
-
-
+    optims = get_optimizers("noisy", "splitters", "progressive", seed=next(seedg))
     for budget in [12800, 25600, 51200, 102400]:
         for num_workers in [1]:
             if num_workers < budget:
@@ -1066,7 +1079,7 @@ def powersystems(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     for dams in [3, 5, 9, 13]:
         funcs += [PowerSystem(dams, depth=2, width=3)]
     seedg = create_seed_generator(seed)
-    optims = get_optimizers("basics", "noisy", "splitters", "progressive", seed=next(seedg))  # type: ignore
+    optims = get_optimizers("basics", "noisy", "splitters", "progressive", seed=next(seedg))
     budgets = [3200, 6400, 12800]
     for budget in budgets:
         for num_workers in [1, 10, 100]:
@@ -1113,8 +1126,7 @@ def mldakmeans(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         rescale in [True, False]
     ]
     seedg = create_seed_generator(seed)
-
-    optims = get_optimizers("splitters", "progressive", seed=next(seedg))  # type: ignore
+    optims = get_optimizers("splitters", "progressive", seed=next(seedg))
     for budget in [1000, 10000]:
         for num_workers in [1, 10, 100]:
             if num_workers < budget:
@@ -1135,6 +1147,7 @@ def image_similarity(seed: tp.Optional[int] = None, with_pgan: bool = False, sim
         for func in funcs:
             for algo in optims:
                 xp = Experiment(func, algo, budget, num_workers=1, seed=next(seedg))
+                skip_ci(reason="too slow")
                 if not xp.is_incoherent:
                     yield xp
 
@@ -1161,12 +1174,16 @@ def image_multi_similarity(seed: tp.Optional[int] = None, cross_valid: bool = Fa
     """Optimizing images: artificial criterion for now."""
     seedg = create_seed_generator(seed)
     optims = get_optimizers("structured_moo", seed=next(seedg))
-    funcs:tp.List[ExperimentFunction] = [imagesxp.Image(loss=loss, with_pgan=with_pgan) for loss in imagesxp.imagelosses.registry.values() if loss.REQUIRES_REFERENCE]
+    funcs: tp.List[ExperimentFunction] = [
+        imagesxp.Image(loss=loss, with_pgan=with_pgan) for loss in imagesxp.imagelosses.registry.values()
+        if loss.REQUIRES_REFERENCE
+    ]
     base_values: tp.List[tp.Any] = [func(func.parametrization.sample().value) for func in funcs]
     if cross_valid:
-        mofuncs: tp.List[tp.Any] = helpers.SpecialEvaluationExperiment.create_crossvalidation_experiments(funcs, pareto_size=25) 
+        skip_ci(reason="Too slow")
+        mofuncs: tp.List[tp.Any] = helpers.SpecialEvaluationExperiment.create_crossvalidation_experiments(funcs, pareto_size=25)
     else:
-        mofuncs = [fbase.MultiExperiment(funcs, upper_bounds=base_values)]  # type: ignore
+        mofuncs = [fbase.MultiExperiment(funcs, upper_bounds=base_values)]
     for budget in [100 * 5 ** k for k in range(3)]:
         for num_workers in [1]:
             for algo in optims:
@@ -1194,7 +1211,7 @@ def image_multi_similarity_pgan_cv(seed: tp.Optional[int] = None) -> tp.Iterator
 
 
 @registry.register
-def image_quality_proxy(seed: tp.Optional[int] = None, with_pgan:bool=False) -> tp.Iterator[Experiment]:
+def image_quality_proxy(seed: tp.Optional[int] = None, with_pgan: bool = False) -> tp.Iterator[Experiment]:
     """Optimizing images: artificial criterion for now."""
     seedg = create_seed_generator(seed)
     optims: tp.List[tp.Any] = get_optimizers("structured_moo", seed=next(seedg))
@@ -1223,7 +1240,7 @@ def image_quality_proxy_pgan(seed: tp.Optional[int] = None) -> tp.Iterator[Exper
 
 
 @registry.register
-def image_quality(seed: tp.Optional[int] = None, cross_val: bool=False, with_pgan: bool = False) -> tp.Iterator[Experiment]:
+def image_quality(seed: tp.Optional[int] = None, cross_val: bool = False, with_pgan: bool = False) -> tp.Iterator[Experiment]:
     """Optimizing images for quality:
     TODO
     """
@@ -1275,7 +1292,7 @@ def image_quality_cv_pgan(seed: tp.Optional[int] = None) -> tp.Iterator[Experime
 
 
 @registry.register
-def image_similarity_and_quality(seed: tp.Optional[int] = None, cross_val: bool=False, with_pgan: bool = False) -> tp.Iterator[Experiment]:
+def image_similarity_and_quality(seed: tp.Optional[int] = None, cross_val: bool = False, with_pgan: bool = False) -> tp.Iterator[Experiment]:
     """Optimizing images: artificial criterion for now."""
     seedg = create_seed_generator(seed)
     optims: tp.List[tp.Any] = get_optimizers("structured_moo", seed=next(seedg))

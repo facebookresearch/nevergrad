@@ -6,15 +6,15 @@
 # Trained policies were extracted from https://github.com/modestyachts/ARS
 # under their own license. See ARS_LICENSE file in this file's directory
 
-import typing as tp
 import numpy as np
+import gym
+import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
-from ..base import ExperimentFunction
 from .. import base
 from .mujoco import GenericMujocoEnv
 
 
-class BaseFunction(ExperimentFunction):
+class BaseFunction(base.ExperimentFunction):
     """This (abstract) class is a generic wrapper of OpenAI Gym env for policy evaluation.
     Attributes need to be override accordingly to have concrete working function.
 
@@ -39,6 +39,11 @@ class BaseFunction(ExperimentFunction):
         random state for reproducibility in Gym environment.
     """
 
+    env_name: str
+    state_mean: tp.Any
+    state_std: tp.Any
+    policy_dim: tp.Tuple[int, ...]
+
     def __init__(self, num_rollouts: int, random_state: tp.Optional[int] = None) -> None:
         super().__init__(self._simulate, p.Array(shape=self.policy_dim))
         self.num_rollouts = num_rollouts
@@ -46,30 +51,17 @@ class BaseFunction(ExperimentFunction):
         self._descriptors.pop("random_state", None)  # remove it from automatically added descriptors
 
     def _simulate(self, x: np.ndarray) -> float:
-        env = GenericMujocoEnv(
-            env_name=self.env_name,
-            state_mean=self.state_mean,
-            state_std=self.state_std,
-            num_rollouts=self.num_rollouts,
-            random_state=self.random_state,
-        )
-        return env(x)
-
-    @property
-    def env_name(self) -> str:
-        raise NotImplementedError
-
-    @property
-    def state_mean(self):
-        raise NotImplementedError
-
-    @property
-    def state_std(self):
-        raise NotImplementedError
-
-    @property
-    def policy_dim(self):
-        raise NotImplementedError
+        try:
+            env = GenericMujocoEnv(  # type: ignore
+                env_name=self.env_name,
+                state_mean=self.state_mean,
+                state_std=self.state_std,
+                num_rollouts=self.num_rollouts,
+                random_state=self.random_state,
+            )
+        except gym.error.DependencyNotInstalled as e:
+            raise base.UnsupportedExperiment("Missing mujoco_py") from e
+        return float(env(x))
 
     def evaluation_function(self, *recommendations: p.Parameter) -> float:
         assert len(recommendations) == 1, "Should not be a pareto set for a monoobjective function"
