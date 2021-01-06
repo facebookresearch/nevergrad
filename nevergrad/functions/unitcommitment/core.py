@@ -21,7 +21,7 @@ class UnitCommitmentProblem(ExperimentFunction):
 
     def __init__(
         self,
-        problem_name="semi-continuous",
+        problem_name: str = "semi-continuous",
         num_timepoints: int = 13,
         num_generators: int = 3,
         penalty_weight: float = 10000,
