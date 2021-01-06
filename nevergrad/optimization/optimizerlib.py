@@ -2562,11 +2562,14 @@ class NGOpt10(NGOpt9):
 class NGOpt(NGOpt10):
     pass
 
-#Variants dedicated to multiobjective optimization by multiple monoobjective optimization.
+
+# Variants dedicated to multiobjective optimization by multiple monoobjective optimization.
 @registry.register
 class NGOpt10_16(CM):
     """This code applies 16 copies of NGOpt10 with random weights for the different objective functions."""
+
     num_optims = 16
+
     def __init__(
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
@@ -2574,10 +2577,9 @@ class NGOpt10_16(CM):
         assert budget is not None
         self.optims = [
             NGOpt10(self.parametrization, budget=1 + (budget // self.num_optims), num_workers=num_workers)
-            for _ in range(self.num_optims)]
-        self.coeffs = [
-            np.random.uniform(size=self.num_objectives)
-            for _ in range(self.num_optims)]
+            for _ in range(self.num_optims)
+        ]
+        self.coeffs = [np.random.uniform(size=self.num_objectives) for _ in range(self.num_optims)]
         self.budget_before_choosing = budget
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
@@ -2594,6 +2596,7 @@ class NGOpt10_16(CM):
 class NGOpt10_25(NGOpt10_16):
 
     num_optims = 25
+
 
 @registry.register
 class NGOpt10_9(NGOpt10_25):
