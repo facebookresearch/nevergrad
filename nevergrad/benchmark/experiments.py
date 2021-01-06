@@ -24,6 +24,7 @@ from nevergrad.functions.powersystems import PowerSystem
 from nevergrad.functions.stsp import STSP
 from nevergrad.functions.rocket import Rocket
 from nevergrad.functions.mixsimulator import OptimizeMix
+from nevergrad.functions.unitcommitment import UnitCommitmentProblem
 from nevergrad.functions import control
 from nevergrad.functions import rl
 from nevergrad.functions.games import game
@@ -1472,3 +1473,18 @@ def pbo_suite(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                     for nw in [1, 10]:
                         for budget in [100, 1000, 10000]:
                             yield Experiment(func, optim, num_workers=nw, budget=budget, seed=next(seedg))  # type: ignore
+
+
+@registry.register
+def unit_commitment(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Unit commitment problem."""
+    seedg = create_seed_generator(seed)
+    optims = ["CMA", "NGOpt8", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
+    for num_timepoint in [5, 10, 20]:
+        for num_generator in [3, 8]:
+            func = UnitCommitmentProblem(num_timepoints=num_timepoint, num_generators=num_generator)
+            for budget in [100 * 5 ** k for k in range(3)]:
+                for algo in optims:
+                    xp = Experiment(func, algo, budget, num_workers=1, seed=next(seedg))
+                    if not xp.is_incoherent:
+                        yield xp
