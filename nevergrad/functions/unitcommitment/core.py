@@ -29,7 +29,6 @@ class UnitCommitmentProblem(ExperimentFunction):
         if problem_name not in ["semi-continuous"]:
             raise NotImplementedError
 
-        params = {x: y for x, y in locals().items() if x not in ["self", "__class__"]}  # for copying
         # Demand for certain time period
         self.num_timepoints = num_timepoints
         self.demands = np.random.uniform(low=100, high=200, size=(self.num_timepoints,))
