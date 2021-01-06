@@ -183,6 +183,10 @@
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install git+https://github.com/facebookresearch/nevergrad@master#egg<span class="o">=</span>nevergrad
 </pre></div>
 </div>
+<p>A conda-forge version is also <a class="reference external" href="https://github.com/conda-forge/nevergrad-feedstock">available</a> thanks to &#64;oblute:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda install -c conda-forge nevergrad
+</pre></div>
+</div>
 <p>Alternatively, you can clone the repository and run <code class="code docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-e</span> <span class="pre">.</span></code> from inside the repository folder.</p>
 <p>By default, this only installs requirements for the optimization and parametrization subpackages. If you are also interested in the benchmarking part,
 you should install with the <code class="code docutils literal notranslate"><span class="pre">[benchmark]</span></code> flag (example: <code class="code docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">nevergrad[benchmark]</span></code>), and if you also want the test tools, use
