@@ -54,7 +54,6 @@ class UnitCommitmentProblem(ExperimentFunction):
             operational_states=param_operational_states,
         ).set_name("")
         super().__init__(self.unit_commitment_obj_with_penalization, instru)
-        self._descriptors.update(num_timepoints=self.num_timepoints, num_generators=self.num_generators)
 
     def unit_commitment_obj_with_penalization(self, operational_output, operational_states):
         operational_states = np.array(operational_states).reshape(self.num_generators, self.num_timepoints)
