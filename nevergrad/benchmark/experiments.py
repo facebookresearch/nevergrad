@@ -232,20 +232,20 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     mofuncs: tp.List[fbase.MultiExperiment] = []
     for name1 in ["sphere", "ellipsoid"]:
         for name2 in ["sphere", "hm"]:
-          for tf in [0.25, 4.]:
-            mofuncs += [fbase.MultiExperiment([ArtificialFunction(name1, block_dimension=7),
-                                               ArtificialFunction(name2, block_dimension=7, translation_factor=tf)],
-                                              upper_bounds=np.array((100., 100.)))]
-            mofuncs[-1].add_descriptors(num_objectives=2)
+            for tf in [0.25, 4.]:
+                mofuncs += [fbase.MultiExperiment([ArtificialFunction(name1, block_dimension=7),
+                                                   ArtificialFunction(name2, block_dimension=7, translation_factor=tf)],
+                                                  upper_bounds=np.array((100., 100.)))]
+                mofuncs[-1].add_descriptors(num_objectives=2)
     for name1 in ["sphere", "ellipsoid"]:
         for name2 in ["sphere", "hm"]:
             for name3 in ["sphere", "hm"]:
-              for tf in [0.25, 4.]:
-                mofuncs += [fbase.MultiExperiment([ArtificialFunction(name1, block_dimension=7, translation_factor=1./tf),
-                                                   ArtificialFunction(name2, block_dimension=7, translation_factor=tf),
-                                                   ArtificialFunction(name3, block_dimension=7)],
-                                                  upper_bounds=np.array((100., 100., 100.)))]
-                mofuncs[-1].add_descriptors(num_objectives=3)
+                for tf in [0.25, 4.]:
+                    mofuncs += [fbase.MultiExperiment([ArtificialFunction(name1, block_dimension=7, translation_factor=1./tf),
+                                                       ArtificialFunction(name2, block_dimension=7, translation_factor=tf),
+                                                       ArtificialFunction(name3, block_dimension=7)],
+                                                      upper_bounds=np.array((100., 100., 100.)))]
+                    mofuncs[-1].add_descriptors(num_objectives=3)
     index = 0
     for mofunc in mofuncs[::3]:
         for budget in [2000, 8000]:
