@@ -506,7 +506,6 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         """Called whenever calling :code:`tell` on a candidate that was "asked"."""
         data = candidate.get_standardized_data(reference=self.parametrization)
-
         self._internal_tell(data, loss)
 
     def _internal_ask_candidate(self) -> p.Parameter:
