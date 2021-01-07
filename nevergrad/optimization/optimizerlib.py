@@ -1379,6 +1379,7 @@ class ParaPortfolio(Portfolio):
         return candidate
 
 
+@registry.register
 class SQPCMA(ParaPortfolio):
     """Passive portfolio of CMA and many SQP."""
 
