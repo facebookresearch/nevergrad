@@ -34,10 +34,7 @@ def test_consistency_losses_with_oteytaud(loss_name: str) -> None:
     loss_class = imagelosses.registry[loss_name]
     loss = loss_class(reference=data)
     random_data = np.random.uniform(low=0.0, high=255.0, size=data.shape)
-    try:
-        loss_data = loss(data)
-    except imagelosses.UnsupportedExperiment as e:
-        raise pytest.skip(str(e))
+    loss_data = loss(data)
     assert loss_data < 1000.0
     assert loss_data > -1000.0
     assert loss_data == loss(data)
