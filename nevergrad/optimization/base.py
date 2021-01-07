@@ -131,6 +131,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         self._MULTIOBJECTIVE_AUTO_BOUND = mobj.AUTO_BOUND
         self._hypervolume_pareto: tp.Optional[mobj.HypervolumePareto] = None
         # instance state
+        self._asked_data: tp.Set[str] = set()
         self._asked: tp.Set[str] = set()
         self._num_objectives = 0
         self._suggestions: tp.Deque[p.Parameter] = deque()
@@ -439,7 +440,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             else:
                 candidate = self._internal_ask_candidate()
                 # only register actual asked points
-            if candidate.satisfies_constraints():
+            determinism_failure = str(candidate.value) in self._asked_data and self.parametrization.descriptors.deterministic_function
+            if self.parametrization.descriptors.deterministic_function:
+                self._asked_data.add(str(candidate.value))
+            if candidate.satisfies_constraints() and not determinism_failure:
                 break  # good to go!
             if self._penalize_cheap_violations:
                 # TODO using a suboptimizer instead may help remove this
@@ -501,6 +505,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         """Called whenever calling :code:`tell` on a candidate that was "asked"."""
         data = candidate.get_standardized_data(reference=self.parametrization)
+
         self._internal_tell(data, loss)
 
     def _internal_ask_candidate(self) -> p.Parameter:
