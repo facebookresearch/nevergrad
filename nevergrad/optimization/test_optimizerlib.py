@@ -631,7 +631,7 @@ def test_ngo_split_optimizer(
         else ng.p.Choice(["const", ng.p.Array(init=list(range(dimension)))])
     )
     opt: tp.Union[base.ConfiguredOptimizer, tp.Type[base.Optimizer]] = (
-        xpvariants.MetaNGOpt8
+        xpvariants.MetaNGOpt10
         if name is None
         else (optlib.ConfSplitOptimizer(multivariate_optimizer=optlib.registry[name]))
     )
