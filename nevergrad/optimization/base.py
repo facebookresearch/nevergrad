@@ -623,18 +623,19 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
 
 def add_compare(optimizer: Optimizer) -> None:
     """Adding a comparison-only functionality to an optimizer.
-    
+
     Parameters
     ----------
     optimizer: Optimizer
         class of the optimizer to modify.
-        
+
     Can be used as follows:
     SQPOptimizer = SQP(50)   # Creates a SQP optimizer in a continuous domain for dimension 50 without constraints.
     add_compare(SQPOptimizer)
     Then, SQPOptimizer can be used with SQPOptimize.compare([c1,c2,c3], [bc1, bc2, bc3]) instead of using "tell":
     it will asssume that candidates c1, c2, c3 are better than candidates bc1, bc2, bc3.
     """
+
     def compare(self: Optimizer, winners: tp.List[p.Parameter], losers: tp.List[p.Parameter]) -> None:
         # This means that for any i and j, winners[i] is better than winners[i+1], and better than losers[j].
         # This is for cases in which we do not know fitness values, we just know comparisons.

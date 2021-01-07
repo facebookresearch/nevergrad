@@ -14,4 +14,6 @@ def test_mixsimulator() -> None:
         value = func(x)  # should not touch boundaries, so value should be < np.inf
         assert value < np.inf
     except AttributeError as e:
-        assert "optimizerlib" in str(e)  # MixSimulator makes a wrong assumption about Nevergrad's list of optimization methods.
+        assert "optimizerlib" in str(
+            e
+        )  # MixSimulator makes a wrong assumption about Nevergrad's list of optimization methods.
