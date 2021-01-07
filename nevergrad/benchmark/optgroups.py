@@ -173,6 +173,7 @@ def discrete() -> tp.Sequence[Optim]:
     return [name for name in optimizerlib_registry.keys() if "iscrete" in name and "oisy" not in name]
 
 
+@registry.register
 def noisy() -> tp.Sequence[Optim]:
     return ["OptimisticDiscreteOnePlusOne", "OptimisticNoisyOnePlusOne", "TBPSA", "SPSA", "NGOpt10"]
 
