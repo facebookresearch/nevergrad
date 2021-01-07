@@ -631,7 +631,7 @@ def add_compare(optimizer: Optimizer) -> None:
         
     Can be used as follows:
     SQPOptimizer = SQP(50)   # Creates a SQP optimizer in a continuous domain for dimension 50 without constraints.
-    addCompare(SQPOptimizer)
+    add_compare(SQPOptimizer)
     Then, SQPOptimizer can be used with SQPOptimize.compare([c1,c2,c3], [bc1, bc2, bc3]) instead of using "tell":
     it will asssume that candidates c1, c2, c3 are better than candidates bc1, bc2, bc3.
     """

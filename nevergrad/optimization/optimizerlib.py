@@ -18,7 +18,7 @@ from nevergrad.parametrization import helpers as paramhelpers
 from . import base
 from . import mutations
 from .base import registry as registry
-from .base import addCompare  # pylint: disable=unused-import
+from .base import add_compare  # pylint: disable=unused-import
 from .base import InefficientSettingsWarning as InefficientSettingsWarning
 from .base import IntOrParameter
 from . import sequences
