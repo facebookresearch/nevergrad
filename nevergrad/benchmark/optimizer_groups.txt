@@ -1,1 +1,1 @@
-spsa = ['NaiveTBPSA', 'SPSA', 'TBPSA']
+parallel_basics = ['NGOpt10', 'CMandAS2', 'CMA', 'DE', 'MetaModel']

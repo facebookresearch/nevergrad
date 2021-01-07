@@ -146,7 +146,7 @@ class Translation(Mutation):
     def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:
         assert len(arrays) == 1
         data = arrays[0]
-        axis = tuple(range(data.dim)) if self.axis is None else self.axis
+        axis = tuple(range(len(data))) if self.axis is None else self.axis
         shifts = [self.random_state.randint(data.shape[a]) for a in axis]
         return np.roll(data, shifts, axis=axis)  # type: ignore
 
