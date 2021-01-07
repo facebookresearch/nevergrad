@@ -440,7 +440,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             else:
                 candidate = self._internal_ask_candidate()
                 # only register actual asked points
-            determinism_failure = str(candidate.value) in self._asked_data and self.parametrization.descriptors.deterministic_function
+            determinism_failure = (
+                str(candidate.value) in self._asked_data
+                and self.parametrization.descriptors.deterministic_function
+            )
             if self.parametrization.descriptors.deterministic_function:
                 self._asked_data.add(str(candidate.value))
             if candidate.satisfies_constraints() and not determinism_failure:
