@@ -447,7 +447,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 num_determinism_failures += 1
                 if num_determinism_failures >= 10:
                     break
-                candidate.mutate()
+                candidate = candidate.spawn_child().mutate()
 
             if self.parametrization.descriptors.deterministic_function:
                 self._forbidden_value.add(candidate.get_value_hash())
