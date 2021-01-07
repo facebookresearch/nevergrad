@@ -975,7 +975,6 @@ def rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                             yield xp
 
 
-OptimizeMix()
 @registry.register
 def mixsimulator(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """MixSimulator of power plants
