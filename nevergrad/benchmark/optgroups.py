@@ -73,7 +73,6 @@ def large() -> tp.Sequence[Optim]:
         "RPowell",
         "MetaModel",
         "PolyCMA",
-        "ManyCMA",
     ]
 
 
@@ -224,7 +223,7 @@ def es() -> tp.Sequence[Optim]:
 
 @registry.register
 def multimodal() -> tp.Sequence[Optim]:
-    return ["NaiveTBPSA", "MultiCMA", "TripleCMA", "MultiScaleCMA", "PolyCMA", "ManyCMA", "QORandomSearch"]
+    return ["NaiveTBPSA", "MultiCMA", "TripleCMA", "MultiScaleCMA", "PolyCMA", "QORandomSearch"]
 
 
 # TODO(oteytaud): we should simplify the following.
