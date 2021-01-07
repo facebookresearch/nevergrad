@@ -148,7 +148,7 @@ class Photonics(base.ExperimentFunction):
         as_tuple: bool = False,
     ) -> None:
         assert name in ["bragg", "morpho", "chirped"]
-        self.name = name
+        self.name = name + ("_as_tuple" if as_tuple else "")
         self._as_tuple = as_tuple
         self._base_func = {
             "morpho": photonics.morpho,
