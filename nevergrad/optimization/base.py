@@ -131,7 +131,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         self._MULTIOBJECTIVE_AUTO_BOUND = mobj.AUTO_BOUND
         self._hypervolume_pareto: tp.Optional[mobj.HypervolumePareto] = None
         # instance state
-        self._asked_data: tp.Set[str] = set()
+        self._forbidden_value: tp.Set[str] = set()
         self._asked: tp.Set[str] = set()
         self._num_objectives = 0
         self._suggestions: tp.Deque[p.Parameter] = deque()
@@ -440,13 +440,11 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             else:
                 candidate = self._internal_ask_candidate()
                 # only register actual asked points
-            determinism_failure = (
-                str(candidate.value) in self._asked_data
-                and self.parametrization.descriptors.deterministic_function
-            )
+            while candidate.get_value_hash() in self._forbidden_value:
+                candidate.mutate()
             if self.parametrization.descriptors.deterministic_function:
-                self._asked_data.add(str(candidate.value))
-            if candidate.satisfies_constraints() and not determinism_failure:
+                self._forbidden_value.add(candidate.get_value_hash())
+            if candidate.satisfies_constraints():
                 break  # good to go!
             if self._penalize_cheap_violations:
                 # TODO using a suboptimizer instead may help remove this

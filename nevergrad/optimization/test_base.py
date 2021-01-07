@@ -129,7 +129,7 @@ def test_optimize_and_dump(tmp_path: Path) -> None:
 
 
 def test_compare() -> None:
-    optimizer = optimizerlib.CMA(parametrization=3, budget=1000, num_workers=5)
+    optimizer = optimizerlib.NGOpt(parametrization=3, budget=1000, num_workers=5)
     optimizerlib.addCompare(optimizer)
     for _ in range(1000):  # TODO make faster test
         x: tp.List[tp.Any] = []
@@ -138,7 +138,6 @@ def test_compare() -> None:
         winners = sorted(x, key=lambda x_: np.linalg.norm(x_.value - np.array((1.0, 1.0, 1.0))))
         optimizer.compare(winners[:3], winners[3:])  # type: ignore
     result = optimizer.provide_recommendation()
-    print(result)
     np.testing.assert_almost_equal(result.value[0], 1.0, decimal=2)
 
 
