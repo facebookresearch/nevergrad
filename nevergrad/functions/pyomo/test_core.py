@@ -78,7 +78,7 @@ def test_pyomo_set() -> None:
     model.constraint1 = pyomo.Constraint(rule=lambda m: m.x >= 2)
 
     func = core.Pyomo(model)
-    optimizer = ng.optimizers.OnePlusOne(parametrization=func.parametrization, budget=100)
+    optimizer = ng.optimizers.OnePlusOne(parametrization=func.parametrization, budget=20)
     recommendation = optimizer.minimize(func.function)
 
     np.testing.assert_almost_equal(recommendation.kwargs["x"], 2.0, decimal=1)

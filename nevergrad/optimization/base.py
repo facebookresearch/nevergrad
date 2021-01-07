@@ -440,8 +440,15 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             else:
                 candidate = self._internal_ask_candidate()
                 # only register actual asked points
+
+            # In the deterministic case, possibly mutate.
+            num_determinism_failures = 0
             while candidate.get_value_hash() in self._forbidden_value:
+                num_determinism_failures += 1
+                if num_determinism_failures >= 10:
+                    break
                 candidate.mutate()
+
             if self.parametrization.descriptors.deterministic_function:
                 self._forbidden_value.add(candidate.get_value_hash())
             if candidate.satisfies_constraints():
