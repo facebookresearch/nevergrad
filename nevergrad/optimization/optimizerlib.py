@@ -611,19 +611,16 @@ class EDA(base.Optimizer):
         raise base.TellNotAskedNotSupportedError
 
 
-@registry.register
 class PCEDA(EDA):
     _POPSIZE_ADAPTATION = True
     _COVARIANCE_MEMORY = False
 
 
-@registry.register
 class MPCEDA(EDA):
     _POPSIZE_ADAPTATION = True
     _COVARIANCE_MEMORY = True
 
 
-@registry.register
 class MEDA(EDA):
     _POPSIZE_ADAPTATION = False
     _COVARIANCE_MEMORY = True
@@ -1344,7 +1341,6 @@ class MetaModel(base.Optimizer):
         self._optim.tell(candidate, loss)
 
 
-@registry.register
 class ParaPortfolio(Portfolio):
     """Passive portfolio of CMA, 2-pt DE, PSO, SQP and Scr-Hammersley."""
 
@@ -1444,35 +1440,6 @@ class ASCMADEthird(Portfolio):
 
 
 @registry.register
-class ASCMADEQRthird(ASCMADEthird):
-    """Algorithm selection, with CMA, ScrHalton and Lhs-DE. Active selection at 1/3."""
-
-    def __init__(
-        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
-    ) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        self.optims = [
-            CMA(self.parametrization, budget=None, num_workers=num_workers),
-            LhsDE(self.parametrization, budget=None, num_workers=num_workers),  # noqa: F405
-            ScrHaltonSearch(self.parametrization, budget=None, num_workers=num_workers),
-        ]  # noqa: F405
-
-
-@registry.register
-class ASCMA2PDEthird(ASCMADEQRthird):
-    """Algorithm selection, with CMA and 2pt-DE. Active selection at 1/3."""
-
-    def __init__(
-        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
-    ) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        self.optims = [
-            CMA(self.parametrization, budget=None, num_workers=num_workers),
-            TwoPointsDE(self.parametrization, budget=None, num_workers=num_workers),
-        ]  # noqa: F405
-
-
-@registry.register
 class CMandAS2(ASCMADEthird):
     """Competence map, with algorithm selection in one of the cases (3 CMAs)."""
 
@@ -1523,29 +1490,6 @@ class CMandAS3(ASCMADEthird):
                     CMA(self.parametrization, budget=None, num_workers=num_workers),
                 ]
             self.budget_before_choosing = budget // 10
-
-
-@registry.register
-class CMandAS(CMandAS2):
-    """Competence map, with algorithm selection in one of the cases (2 CMAs)."""
-
-    def __init__(
-        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
-    ) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        self.optims = [TwoPointsDE(self.parametrization, budget=None, num_workers=num_workers)]  # noqa: F405
-        assert budget is not None
-        self.budget_before_choosing = 2 * budget
-        if budget < 201:
-            # share parametrization and its rng
-            self.optims = [OnePlusOne(self.parametrization, budget=None, num_workers=num_workers)]
-            self.budget_before_choosing = 2 * budget
-        if budget > 50 * self.dimension or num_workers < 30:
-            self.optims = [
-                CMA(self.parametrization, budget=None, num_workers=num_workers),
-                CMA(self.parametrization, budget=None, num_workers=num_workers),
-            ]
-            self.budget_before_choosing = budget // 3
 
 
 @registry.register
@@ -1626,23 +1570,6 @@ class TripleCMA(CM):
 
 
 @registry.register
-class ManyCMA(CM):
-    """Combining 3 CMAs. Exactly identical. Active selection at 1/3 of the budget."""
-
-    def __init__(
-        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
-    ) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        assert budget is not None
-        self.optims = [
-            ParametrizedCMA(random_init=True)(self.parametrization, budget=None, num_workers=num_workers)
-            for _ in range(int(np.sqrt(budget)))
-        ]
-
-        self.budget_before_choosing = budget // 3
-
-
-@registry.register
 class PolyCMA(CM):
     """Combining 20 CMAs. Exactly identical. Active selection at 1/3 of the budget."""
 
@@ -1656,24 +1583,6 @@ class PolyCMA(CM):
             for _ in range(20)
         ]
 
-        self.budget_before_choosing = budget // 3
-
-
-@registry.register
-class ManySmallCMA(CM):
-    """Combining 3 CMAs. Exactly identical. Active selection at 1/3 of the budget."""
-
-    def __init__(
-        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
-    ) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        assert budget is not None
-        self.optims = [
-            ParametrizedCMA(scale=1e-6, random_init=i > 0)(
-                self.parametrization, budget=None, num_workers=num_workers
-            )
-            for i in range(int(np.sqrt(budget)))
-        ]
         self.budget_before_choosing = budget // 3
 
 
