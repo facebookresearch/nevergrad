@@ -431,7 +431,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # tentatives if a cheap constraint is available
         # TODO: this should be replaced by an optimization algorithm.
         max_trials = max(
-            1, self._constraints_manager.max_trials // 2 if self.budget is None else 0
+            1, self._constraints_manager.max_trials // 2 if self.budget is None else (self.budget - self.num_ask) 
         )  # half will be used for sub-optimization --- if the optimization method does not need/use a budget.
         # TODO(oteytaud): actually we could do this even when the budget is known, if we are sure that exceeding the budget is not a problem.
         # Very simple constraint solver:
