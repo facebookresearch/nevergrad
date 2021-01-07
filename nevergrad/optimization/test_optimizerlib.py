@@ -171,10 +171,7 @@ def test_infnan(name: str) -> None:
             return
         assert (  # The "bad" algorithms, most of them originating in CMA's recommendation rule.
             any(x == name for x in ["WidePSO", "SPSA", "NGOptBase", "Shiwa", "NGO"])
-            or isinstance(optim, optlib.Portfolio)
-            or isinstance(optim, optlib._CMA)
-            or isinstance(optim, optlib._Rescaled)
-            or isinstance(optim, optlib.recaster.SequentialRecastOptimizer)
+            or isinstance(optim, (optlib.Portfolio, optlib._CMA, optlib._Rescale, optlib.recaster.SequentialRecastOptimizer))
             or "NGOpt" in name
         )  # Second chance!
         recom = optim.minimize(buggy_function)
