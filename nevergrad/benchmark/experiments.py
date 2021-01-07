@@ -506,6 +506,7 @@ def hdmultimodal(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal"]
     # Keep in mind that Rosenbrock is multimodal in high dimension http://ieeexplore.ieee.org/document/6792472/.
+
     optims = get_optimizers("basics", "multimodal", seed=next(seedg))
     functions = [
         ArtificialFunction(name, block_dimension=bd)
@@ -946,8 +947,6 @@ def realworld(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         funcs += [func]
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", seed=next(seedg))
-
-
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
         for num_workers in [1, 10, 100]:
             if num_workers < budget:
@@ -1020,7 +1019,6 @@ def control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         f.parametrization = param
         f.parametrization.freeze()
         funcs2.append(f)
-
     optims = get_optimizers("basics")
 
     for budget in [50, 75, 100, 150, 200, 250, 300, 400, 500, 1000, 3000, 5000, 8000, 16000, 32000, 64000]:
@@ -1247,7 +1245,6 @@ def image_quality(seed: tp.Optional[int] = None, cross_val: bool = False, with_p
     """
     seedg = create_seed_generator(seed)
     optims: tp.List[tp.Any] = get_optimizers("structured_moo", seed=next(seedg))
-
     # We optimize func_blur or func_brisque and check performance on func_iqa.
     funcs: tp.List[ExperimentFunction] = [
         imagesxp.Image(loss=loss, with_pgan=with_pgan) for loss in (
