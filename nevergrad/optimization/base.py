@@ -131,7 +131,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         self._MULTIOBJECTIVE_AUTO_BOUND = mobj.AUTO_BOUND
         self._hypervolume_pareto: tp.Optional[mobj.HypervolumePareto] = None
         # instance state
-        self._forbidden_value: tp.Set[str] = set()
+        self._forbidden_value: tp.Set[tp.Hashable] = set()
         self._asked: tp.Set[str] = set()
         self._num_objectives = 0
         self._suggestions: tp.Deque[p.Parameter] = deque()
