@@ -268,8 +268,8 @@ def absorption(
     mu: np.ndarray,
     type_: np.ndarray,
     hauteur: np.ndarray,
-    pol: float,
-    theta: int,
+    pol: int,
+    theta: float,
 ) -> np.ndarray:
     f = mu if not pol else epsilon
     k0 = 2 * np.pi / lam
@@ -347,6 +347,9 @@ def absorption(
 
 
 def cf_photosic_reference(X: np.ndarray) -> float:
+    """vector X is only the thicknesses of each layers, because the materials (so the epislon)
+    are imposed by the function. This is similar in the chirped function.
+    """
     lam_min = 375
     lam_max = 750
     n_lam = 100
@@ -372,6 +375,13 @@ def cf_photosic_reference(X: np.ndarray) -> float:
 
 
 def cf_photosic_realistic(eps_and_d: np.ndarray) -> float:
+    """eps_and_d is a vector composed in a first part with the epsilon values
+    (the material used in each one of the layers), and in a second part with the
+    thicknesses of each one of the layers, like in Bragg.
+    Any number of layers can work. Basically I used between 4 and 50 layers,
+    and the best results are generally obtained when the structure has between 10 and 20 layers.
+    The epsilon values are generally comprised between 1.00 and 9.00.
+    """
     dimension = int(eps_and_d.size / 2)
     eps = eps_and_d[0:dimension]
     d = eps_and_d[dimension : dimension * 2]
