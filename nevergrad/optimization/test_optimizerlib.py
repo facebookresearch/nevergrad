@@ -631,7 +631,7 @@ def test_ngo_split_optimizer(
         else ng.p.Choice(["const", ng.p.Array(init=list(range(dimension)))])
     )
     opt: tp.Union[base.ConfiguredOptimizer, tp.Type[base.Optimizer]] = (
-        xpvariants.MetaNGOpt8
+        xpvariants.MetaNGOpt10
         if name is None
         else (optlib.ConfSplitOptimizer(multivariate_optimizer=optlib.registry[name]))
     )
@@ -644,7 +644,7 @@ def test_ngo_split_optimizer(
 @pytest.mark.parametrize(  # type: ignore
     "budget,with_int",
     [
-        (130, True),
+        (150, True),
         (200, True),
         (666, True),
         (2000, True),

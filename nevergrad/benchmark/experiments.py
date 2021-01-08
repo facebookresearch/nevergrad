@@ -24,6 +24,7 @@ from nevergrad.functions.powersystems import PowerSystem
 from nevergrad.functions.stsp import STSP
 from nevergrad.functions.rocket import Rocket
 from nevergrad.functions.mixsimulator import OptimizeMix
+from nevergrad.functions.unitcommitment import UnitCommitmentProblem
 from nevergrad.functions import control
 from nevergrad.functions import rl
 from nevergrad.functions.games import game
@@ -505,6 +506,7 @@ def hdmultimodal(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "lunacek", "deceptivemultimodal"]
     # Keep in mind that Rosenbrock is multimodal in high dimension http://ieeexplore.ieee.org/document/6792472/.
+
     optims = get_optimizers("basics", "multimodal", seed=next(seedg))
     functions = [
         ArtificialFunction(name, block_dimension=bd)
@@ -945,8 +947,6 @@ def realworld(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         funcs += [func]
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", seed=next(seedg))
-
-
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
         for num_workers in [1, 10, 100]:
             if num_workers < budget:
@@ -1020,7 +1020,6 @@ def control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         f.parametrization = param
         f.parametrization.freeze()
         funcs2.append(f)
-
     optims = get_optimizers("basics")
 
     for budget in [50, 75, 100, 150, 200, 250, 300, 400, 500, 1000, 3000, 5000, 8000, 16000, 32000, 64000]:
@@ -1158,15 +1157,15 @@ def mldakmeans(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def image_similarity(seed: tp.Optional[int] = None, with_pgan: bool = False) -> tp.Iterator[Experiment]:
+def image_similarity(seed: tp.Optional[int] = None, with_pgan: bool = False, similarity: bool = True) -> tp.Iterator[Experiment]:
     """Optimizing images: artificial criterion for now."""
     seedg = create_seed_generator(seed)
     optims = get_optimizers("structured_moo", seed=next(seedg))
-    func = imagesxp.Image(with_pgan=with_pgan)
+    funcs:tp.List[ExperimentFunction] = [imagesxp.Image(loss=loss, with_pgan=with_pgan) for loss in imagesxp.imagelosses.registry.values() if loss.REQUIRES_REFERENCE == similarity]
     for budget in [100 * 5 ** k for k in range(3)]:
-        for num_workers in [1]:
+        for func in funcs:
             for algo in optims:
-                xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
+                xp = Experiment(func, algo, budget, num_workers=1, seed=next(seedg))
                 skip_ci(reason="too slow")
                 if not xp.is_incoherent:
                     yield xp
@@ -1176,6 +1175,17 @@ def image_similarity(seed: tp.Optional[int] = None, with_pgan: bool = False) -> 
 def image_similarity_pgan(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of image_similarity, using PGan as a representation."""
     return image_similarity(seed, with_pgan=True)
+
+
+@registry.register
+def image_single_quality(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of image_similarity, but based on image quality assessment."""
+    return image_similarity(seed, with_pgan=False, similarity=False)
+
+@registry.register
+def image_single_quality_pgan(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of image_similarity_pgan, but based on image quality assessment."""
+    return image_similarity(seed, with_pgan=True, similarity=False)
 
 
 @registry.register
@@ -1255,7 +1265,6 @@ def image_quality(seed: tp.Optional[int] = None, cross_val: bool = False, with_p
     """
     seedg = create_seed_generator(seed)
     optims: tp.List[tp.Any] = get_optimizers("structured_moo", seed=next(seedg))
-
     # We optimize func_blur or func_brisque and check performance on func_iqa.
     funcs: tp.List[ExperimentFunction] = [
         imagesxp.Image(loss=loss, with_pgan=with_pgan) for loss in (
@@ -1495,3 +1504,18 @@ def pbo_suite(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                     for nw in [1, 10]:
                         for budget in [100, 1000, 10000]:
                             yield Experiment(func, optim, num_workers=nw, budget=budget, seed=next(seedg))  # type: ignore
+
+
+@registry.register
+def unit_commitment(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Unit commitment problem."""
+    seedg = create_seed_generator(seed)
+    optims = ["CMA", "NGOpt8", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
+    for num_timepoint in [5, 10, 20]:
+        for num_generator in [3, 8]:
+            func = UnitCommitmentProblem(num_timepoints=num_timepoint, num_generators=num_generator)
+            for budget in [100 * 5 ** k for k in range(3)]:
+                for algo in optims:
+                    xp = Experiment(func, algo, budget, num_workers=1, seed=next(seedg))
+                    if not xp.is_incoherent:
+                        yield xp
