@@ -171,8 +171,29 @@ def test_photosic_reference() -> None:
 
 
 def test_photosic_realist() -> None:
-    eps_and_d = np.array([2.0000, 3.0000, 2.1076, 2.0000, 3.0000, 2.5783, 2.0000, 3.0000,
-                          2.0000, 3.0000, 90.0231, 78.9789, 72.8369, 99.9577, 82.7487,
-                          62.7583, 104.1682, 139.9002, 93.3356, 75.6039])
-    cf_test = photonics.cf_photosic_realist(eps_and_d)
+    eps_and_d = np.array(
+        [
+            2.0000,
+            3.0000,
+            2.1076,
+            2.0000,
+            3.0000,
+            2.5783,
+            2.0000,
+            3.0000,
+            2.0000,
+            3.0000,
+            90.0231,
+            78.9789,
+            72.8369,
+            99.9577,
+            82.7487,
+            62.7583,
+            104.1682,
+            139.9002,
+            93.3356,
+            75.6039,
+        ]
+    )
+    cf_test = photonics.cf_photosic_realistic(eps_and_d)
     np.testing.assert_almost_equal(cf_test, 0.08602574254532869)
