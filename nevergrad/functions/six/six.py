@@ -48,15 +48,26 @@ class Six:
     def cost(self, i: int) -> int:
         return 7 if (i % 11 == 0) else 3 if (i % 10 == 0) else 2 if (i % 5 == 0) else 1
 
-    def get_representation(self, player: int) -> float:
+    def get_representation1(self, player: int) -> np.ndarray:
         my_desk = [1 if i in self.players[player] else 0 for i in range(1, 105)]
         past = [1 if i in self.past else 0 for i in range(1, 105)]
         current = [i in self.current[j] for j in range(4) for i in range(1, 105)]
         x = np.asarray(my_desk + past + current)
         return np.matmul(x.reshape(-1, 1), x.reshape(1, -1)).ravel()
 
-    def dimension(self) -> int:
-        return len(self.get_representation(0))
+    def get_representation2(self, player: int) -> np.ndarray:
+        my_desk = [1 if i in self.players[player] else 0 for i in range(1, 105)]
+        past = [1 if i in self.past else 0 for i in range(1, 105)]
+        current = [i in self.current[j] for j in range(4) for i in range(1, 105)]
+        x = np.asarray(my_desk + past + current)
+        y = np.random.RandomState(1).random.rand(300, len(x))
+        return np.matmul(y, x).ravel()
+
+    def get_representation(self, player: int) -> np.ndarray:
+        return np.concatenate(self.get_representation1(player), self.get_representation2(player))
+
+    def dimension(self) -> tuple:
+        return (len(self.get_representation1(0)), len(self.get_representation2(0)))
 
     def value_function(self, player: int):
         state = self.get_representation(player)
@@ -182,7 +193,7 @@ class Six:
         return self.losses
 
 
-def dimension(num_players: int = 5):
+def dimension(num_players: int = 5) -> tuple:
     return Six(num_players=num_players).dimension()
 
 
