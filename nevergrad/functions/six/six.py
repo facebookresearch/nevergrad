@@ -16,7 +16,7 @@ class Six:
         self.players = [{self.cards.pop() for _ in range(10)} for p in range(num_players)]
         self.past = []
         self.losses = [0 for _ in range(num_players)]
-        self.ai_coefficients = np.zeros(self.dimension())
+        self.ai_coefficients = np.zeros(sum(self.dimension()))
         self.policies = [self.ai_play, self.random_play, self.min_play, self.max_play, self.naive_play]
         self.consistency()
 
@@ -60,11 +60,11 @@ class Six:
         past = [1 if i in self.past else 0 for i in range(1, 105)]
         current = [i in self.current[j] for j in range(4) for i in range(1, 105)]
         x = np.asarray(my_desk + past + current)
-        y = np.random.RandomState(1).random.rand(300, len(x))
+        y = np.random.RandomState(1).rand(300, len(x))
         return np.matmul(y, x).ravel()
 
     def get_representation(self, player: int) -> np.ndarray:
-        return np.concatenate(self.get_representation1(player), self.get_representation2(player))
+        return np.concatenate((self.get_representation1(player), self.get_representation2(player)))
 
     def dimension(self) -> tuple:
         return (len(self.get_representation1(0)), len(self.get_representation2(0)))
@@ -72,7 +72,7 @@ class Six:
     def value_function(self, player: int):
         state = self.get_representation(player)
         coefficients = self.ai_coefficients
-        assert state.shape == coefficients.shape
+        assert state.shape == coefficients.shape, f"{state.shape} vs {coefficients.shape}"
         return sum(state * coefficients)
 
     def ai_play(self, player: int) -> int:
@@ -186,7 +186,7 @@ class Six:
         self.play_moves(moves)
 
     def play_game(self, policy: np.asarray) -> float:
-        assert len(policy) == self.dimension()
+        assert len(policy) == sum(self.dimension()), f"{len(policy)}, {self.dimension()}"
         for _ in range(10):
             self.consistency()
             self.next()
@@ -198,6 +198,10 @@ def dimension(num_players: int = 5) -> tuple:
 
 
 def play_games(policy: np.array, num_players: int = 5, num_games: int = 1):
+    policy = np.concatenate((policy[0], policy[1]))
+    assert len(policy) == sum(
+        dimension(num_players=num_players)
+    ), f"{len(policy)}, {dimension(num_players=num_players)}"
     results = np.zeros(num_players)
     for _ in range(num_games):
         game = Six(num_players)

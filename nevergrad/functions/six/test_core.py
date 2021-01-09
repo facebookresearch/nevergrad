@@ -9,6 +9,6 @@ from . import core
 
 def test_six() -> None:
     func = core.SixGame()
-    x = 0 * np.random.rand(func.dimension)
-    value = func(x)  # should not touch boundaries, so value should be < np.inf
+    x = func.parametrization.sample()
+    value = func(x.value)
     np.testing.assert_almost_equal(value, 199)
