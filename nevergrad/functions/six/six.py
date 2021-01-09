@@ -60,7 +60,7 @@ class Six:
         past = [1 if i in self.past else 0 for i in range(1, 105)]
         current = [i in self.current[j] for j in range(4) for i in range(1, 105)]
         x = np.asarray(my_desk + past + current)
-        y = np.random.RandomState(1).rand(300, len(x))
+        y = np.random.RandomState(1).rand(3000, len(x))
         return np.matmul(y, x).ravel()
 
     def get_representation(self, player: int) -> np.ndarray:
