@@ -14,7 +14,6 @@ from .six import play_games as play_games
 
 
 class SixGame(ExperimentFunction):
-
     def __init__(self, num_players: int = 5) -> None:
         self.num_players = num_players
         super().__init__(self._simulate_six, p.Array(shape=(dimension(num_players=num_players),)))
