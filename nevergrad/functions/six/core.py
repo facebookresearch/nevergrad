@@ -14,8 +14,17 @@ from .six import play_games as play_games
 
 
 class SixGame(ExperimentFunction):
-    def __init__(self, num_players: int = 5) -> None:
+    """Game of 6nimmt.
+
+    Parameters:
+       num_players : int
+           the number of players per game.
+       config: int
+           the index, in {0, 1, 2, 3, 4}, of the set of players.
+    """
+    def __init__(self, num_players: int = 5, config: int = 0) -> None:
         self.num_players = num_players
+        self.config = config
         dim = dimension(num_players=num_players)
         super().__init__(
             self._simulate_six, p.Tuple(p.Array(shape=(dim[0],)), p.Array(shape=(dim[1],))).set_name("tuple")
@@ -23,4 +32,4 @@ class SixGame(ExperimentFunction):
         assert self.dimension == sum(dim)
 
     def _simulate_six(self, x: np.ndarray) -> float:
-        return play_games(x, self.num_players)[0]
+        return play_games(x, num_players=self.num_players, config=self.config)[0]

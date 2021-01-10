@@ -9,7 +9,9 @@ import copy
 
 
 class Six:
-    def __init__(self, num_players=5):
+    def __init__(self, num_players: int = 5, config: int = 0):
+        assert config >= 0 and config
+        assert config < 5
         self.num_players = num_players
         self.cards = list(np.random.permutation(list(range(1, 105))))
         self.current = [[self.cards.pop()] for _ in range(4)]
@@ -18,6 +20,14 @@ class Six:
         self.losses = [0 for _ in range(num_players)]
         self.ai_coefficients = np.zeros(sum(self.dimension()))
         self.policies = [self.ai_play, self.random_play, self.min_play, self.max_play, self.naive_play]
+        if config == 1:
+            self.policies = [self.ai_play] + ([self.naive_play] * 4)
+        if config == 2:
+            self.policies = [self.ai_play, self.ai_play] + ([self.naive_play] * 3)
+        if config == 3:
+            self.policies = [self.ai_play, self.min_play] + ([self.naive_play] * 3)
+        if config == 4:
+            self.policies = [self.ai_play, self.max_play] + ([self.naive_play] * 3)
         self.consistency()
 
     def consistency(self, verbose: bool = False) -> None:
@@ -197,14 +207,14 @@ def dimension(num_players: int = 5) -> tuple:
     return Six(num_players=num_players).dimension()
 
 
-def play_games(policy: np.array, num_players: int = 5, num_games: int = 1):
+def play_games(policy: np.array, num_players: int = 5, num_games: int = 1, config: int = 0):
     policy = np.concatenate((policy[0], policy[1]))
     assert len(policy) == sum(
         dimension(num_players=num_players)
     ), f"{len(policy)}, {dimension(num_players=num_players)}"
     results = np.zeros(num_players)
     for _ in range(num_games):
-        game = Six(num_players)
+        game = Six(num_players, config)
         result = np.asarray(game.play_game(policy=policy))
         results += result
     return results / num_games
