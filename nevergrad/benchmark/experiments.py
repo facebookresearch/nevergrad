@@ -982,16 +982,17 @@ def six_cv(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     Budget 25, 50, ..., 1600.
     Sequential or 30 workers."""
     funcs = [SixGame(config=i) for i in range(5)]
+    mofuncs: tp.List[tp.Any] = helpers.SpecialEvaluationExperiment.create_crossvalidation_experiments(funcs, pareto_size=25)
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", "noisy", seed=next(seedg))
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
-        for num_workers in [1, 30]:
-            if num_workers < budget:
-                for algo in optims:
-                    mofuncs: tp.List[tp.Any] = helpers.SpecialEvaluationExperiment.create_crossvalidation_experiments(funcs, pareto_size=25)
-                    xp = Experiment(mofuncs, algo, budget, num_workers=num_workers, seed=next(seedg))
-                    if not xp.is_incoherent:
-                        yield xp
+        for mofunc in mofuncs:
+            for num_workers in [1, 30]:
+                if num_workers < budget:
+                    for algo in optims:
+                        xp = Experiment(mofunc, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        if not xp.is_incoherent:
+                            yield xp
 
 
 @registry.register
