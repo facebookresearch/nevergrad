@@ -22,6 +22,7 @@ class SixGame(ExperimentFunction):
        config: int
            the index, in {0, 1, 2, 3, 4}, of the set of players.
     """
+
     def __init__(self, num_players: int = 5, config: int = 0) -> None:
         self.num_players = num_players
         self.config = config
