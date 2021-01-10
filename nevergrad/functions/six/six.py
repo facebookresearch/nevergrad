@@ -10,7 +10,7 @@ import copy
 
 class Six:
     def __init__(self, num_players: int = 5, config: int = 0):
-        assert config >= 0 and config
+        assert config >= 0
         assert config < 5
         self.num_players = num_players
         self.cards = list(np.random.permutation(list(range(1, 105))))
