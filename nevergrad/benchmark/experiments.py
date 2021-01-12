@@ -981,7 +981,7 @@ def six_cv(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Rocket simulator. Maximize max altitude by choosing the thrust schedule, given a total thrust.
     Budget 25, 50, ..., 1600.
     Sequential or 30 workers."""
-    funcs = [SixGame(config=i) for i in range(5)]
+    funcs = [SixGame(config=i) for i in range(4)]
     mofuncs: tp.List[tp.Any] = helpers.SpecialEvaluationExperiment.create_crossvalidation_experiments(funcs, pareto_size=25)
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", "noisy", seed=next(seedg))
