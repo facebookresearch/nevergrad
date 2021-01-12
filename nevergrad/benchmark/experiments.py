@@ -1420,19 +1420,19 @@ def multiobjective_example(seed: tp.Optional[int] = None, hd: bool = False, many
 
 @registry.register
 def multiobjective_example_hd(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Counterpart of image_similarity_and_quality with cross-validation."""
+    """Counterpart of moo with high dimension."""
     return multiobjective_example(seed, hd=True)
 
 
 @registry.register
 def multiobjective_example_many_hd(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Counterpart of image_similarity_and_quality with cross-validation."""
+    """Counterpart of moo with high dimension and more objective functions."""
     return multiobjective_example(seed, hd=True, many=True)
 
 
 @registry.register
 def multiobjective_example_many(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Counterpart of image_similarity_and_quality with cross-validation."""
+    """Counterpart of moo with more objective functions."""
     return multiobjective_example(seed, many=True)
 
 
