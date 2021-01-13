@@ -346,6 +346,7 @@ def test_speed_fcma(dim: int) -> None:
     instrum = ng.p.Instrumentation(ng.p.Array(shape=(dim,)), y=ng.p.Scalar())
     elapsed: tp.Dict[str, float] = {}
     speed_request = 1.01
+    speed_request_fcma = 1.5
     num_tests = 37
 
     ok_cma = 0
@@ -356,7 +357,7 @@ def test_speed_fcma(dim: int) -> None:
             start = time.time()
             recom = optimizer.minimize(_square)
             elapsed[name] = time.time() - start
-        if speed_request * elapsed["FCMA"] < elapsed["CMA"]:
+        if (speed_request_fcma if dim < 150 else speed_request) * elapsed["FCMA"] < elapsed["CMA"]:
             ok_fcma += 1
         if speed_request * elapsed["CMA"] < elapsed["FCMA"]:
             ok_cma += 1
