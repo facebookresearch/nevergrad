@@ -128,7 +128,6 @@ class _DE(base.Optimizer):
             )
             candidate = self.parametrization.spawn_child().set_standardized_data(new_guy)
             candidate.heritage["lineage"] = candidate.uid  # new lineage
-            candidate.loss = float("inf")
             self.population[candidate.uid] = candidate
             self._uid_queue.asked.add(candidate.uid)
             return candidate
@@ -170,9 +169,8 @@ class _DE(base.Optimizer):
             return
         self._uid_queue.tell(uid)  # only add to queue if not a "tell_not_asked" (from a removed parent)
         parent = self.population[uid]
-        parent_value: float = parent.loss  # type: ignore
         mo_adapt = self._config.multiobjective_adaptation and self.num_objectives > 1
-        if not mo_adapt and loss <= parent_value:
+        if not mo_adapt and loss <= base._loss(parent):
             self.population[uid] = candidate
         elif mo_adapt and (
             parent._losses is None or np.mean(candidate.losses < parent.losses) > self._rng.rand()
