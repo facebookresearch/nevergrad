@@ -341,6 +341,25 @@ def _square(x: np.ndarray, y: float = 12) -> float:
     return sum((x - 0.5) ** 2) + abs(y)
 
 
+@pytest.mark.parametrize("dim", [(10 ** k) // 2 for k in range(1, 4)])  # type: ignore
+def test_speed_fcma(dim: int) -> None:
+    instrum = ng.p.Instrumentation(ng.p.Array(shape=(dim,)), y=ng.p.Scalar())
+    elapsed: tp.Dict[str, float] = {}
+    speed_request = 1.
+    num_tests = 37
+
+    ok = 0
+    for _ in range(num_tests):
+        for name in ["CMA", "FCMA"]:
+            optimizer = optlib.registry[name](parametrization=instrum, budget=500)
+            start = time.time()
+            recom = optimizer.minimize(_square)
+            elapsed[name] = time.time() - start
+        if speed_request * elapsed["FCMA"] < elapsed["CMA"]:
+            ok += 1
+    assert ok > num_tests // 2
+
+
 def test_optimization_doc_parametrization_example() -> None:
     instrum = ng.p.Instrumentation(ng.p.Array(shape=(2,)), y=ng.p.Scalar())
     optimizer = optlib.OnePlusOne(parametrization=instrum, budget=100)
