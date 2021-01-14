@@ -362,7 +362,7 @@ def test_speed_fcma(dim: int) -> None:
         if speed_request * elapsed["CMA"] < elapsed["FCMA"]:
             ok_cma += 1
     assert (
-        (ok_fcma > num_tests // 2) if dim < 500 else (ok_cma > num_tests // 2)
+        (ok_fcma > num_tests // 2) if True else (ok_cma > num_tests // 2)
     ), f"FCMA ok {ok_fcma} times and CMA ok {ok_cma} times in dim {dim}."
 
 
