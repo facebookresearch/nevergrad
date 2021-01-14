@@ -497,13 +497,7 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
 
 CMA = ParametrizedCMA().set_name("CMA", register=True)
 DiagonalCMA = ParametrizedCMA(diagonal=True).set_name("DiagonalCMA", register=True)
-try:
-    import fcmaes
-    assert fcmaes.__version__[0] == '1' 
-    F_CMA = ParametrizedCMA(fcmaes=True).set_name("F_CMA", register=True)
-except ImportError:
-except AssertionError:
-    FCMA = ParametrizedCMA(fcmaes=True).set_name("FCMA", register=True)
+FCMA = ParametrizedCMA(fcmaes=True).set_name("FCMA", register=True)
     
 
 class _PopulationSizeController:
