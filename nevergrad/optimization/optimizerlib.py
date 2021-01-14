@@ -501,7 +501,8 @@ try:
     import fcmaes
     assert fcmaes.__version__[0] == '1' 
     F_CMA = ParametrizedCMA(fcmaes=True).set_name("F_CMA", register=True)
-except ImportError, AssertionError:
+except ImportError:
+except AssertionError:
     FCMA = ParametrizedCMA(fcmaes=True).set_name("FCMA", register=True)
     
 
