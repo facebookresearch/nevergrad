@@ -498,7 +498,7 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
 CMA = ParametrizedCMA().set_name("CMA", register=True)
 DiagonalCMA = ParametrizedCMA(diagonal=True).set_name("DiagonalCMA", register=True)
 FCMA = ParametrizedCMA(fcmaes=True).set_name("FCMA", register=True)
-    
+
 
 class _PopulationSizeController:
     """Population control scheme for TBPSA and EDA"""
