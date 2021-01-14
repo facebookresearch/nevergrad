@@ -347,15 +347,15 @@ def test_speed_fcma(dim: int) -> None:
     elapsed: tp.Dict[str, float] = {}
     speed_request = 1.01
     speed_request_fcma = 1.1   # Actually on a real machine instead of CircleCI we get much better.
-    num_tests = 37
+    num_tests = 17
 
     ok_cma = 0
     ok_fcma = 0
     for _ in range(num_tests):
         for name in ["CMA", "FCMA"]:
-            optimizer = optlib.registry[name](parametrization=instrum, budget=50)
+            optimizer = optlib.registry[name](parametrization=instrum, budget=150)
             start = time.time()
-            recom = optimizer.minimize(_square)
+            optimizer.minimize(_square)
             elapsed[name] = time.time() - start
         if (speed_request_fcma if dim < 150 else speed_request) * elapsed["FCMA"] < elapsed["CMA"]:
             ok_fcma += 1
