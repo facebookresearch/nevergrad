@@ -693,5 +693,5 @@ def test_mo_constrained_de() -> None:
 
     optimizer.parametrization.register_cheap_constraint(constraint)
     optimizer.minimize(_multiobjective)
-    point = optimizer.parametrization.spawn_child(new_value=np.array([1.0, 1.0]))
+    point = optimizer.parametrization.spawn_child(new_value=np.array([1.0, 1.0]))  # on the pareto
     optimizer.tell(point, _multiobjective(point.value))
