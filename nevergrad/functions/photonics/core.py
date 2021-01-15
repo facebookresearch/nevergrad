@@ -53,6 +53,12 @@ def _make_parametrization(
     if name == "bragg":
         shape = (2, dimension // 2)
         bounds = [(2, 3), (30, 180)]
+    elif name == "cf_photosic_realistic":
+        shape = (2, dimension // 2)
+        bounds = [(1, 9), (30, 180)]
+    elif name == "cf_photosic_reference":
+        shape = (1, dimension)
+        bounds = [(30, 180)]
     elif name == "chirped":
         shape = (1, dimension)
         bounds = [(30, 180)]
@@ -147,14 +153,16 @@ class Photonics(base.ExperimentFunction):
         rolling: bool = False,
         as_tuple: bool = False,
     ) -> None:
-        assert name in ["bragg", "morpho", "chirped"]
+        assert name in [
+            "bragg",
+            "morpho",
+            "chirped",
+            "cf_photosic_reference",
+            "cf_photosic_realistic",
+        ], f"Unknown {name}"
         self.name = name + ("_as_tuple" if as_tuple else "")
         self._as_tuple = as_tuple
-        self._base_func = {
-            "morpho": photonics.morpho,
-            "bragg": photonics.bragg,
-            "chirped": photonics.chirped,
-        }[name]
+        self._base_func: tp.Callable[[np.ndarray], float] = getattr(photonics, name)
         param = _make_parametrization(
             name=name,
             dimension=dimension,
