@@ -199,7 +199,7 @@ class _DE(base.Optimizer):
         if discardable is not None:  # if we found a point to kick, kick it
             del self.population[discardable]
             self._uid_queue.discard(discardable)
-        if len(self.population) >= self.llambda:  # if there is space, add the new point
+        if len(self.population) < self.llambda:  # if there is space, add the new point
             candidate.heritage["lineage"] = candidate.uid  # new lineage
             self.population[candidate.uid] = candidate
             self._uid_queue.tell(candidate.uid)
