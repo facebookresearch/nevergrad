@@ -150,7 +150,7 @@ class HypervolumePareto:
         size:  int (optional)
             if provided, selects a subset of the full pareto front with the given maximum size
         subset: str
-            method for selecting the subset ("random, "loss-covering", "EPS", "domain-covering", "hypervolume")
+            method for selecting the subset ("random, "loss-covering", "EPS", "EPS2", "domain-covering", "hypervolume")
             EPS is the epsilon indicator described e.g.
                 here: https://hal.archives-ouvertes.fr/hal-01159961v2/document
         subset_tentatives: int
@@ -184,6 +184,8 @@ class HypervolumePareto:
                             best_score = min(best_score, np.linalg.norm(pa.losses - v.losses))
                         elif subset == "EPS":
                             best_score = max(best_score, max(pa.losses - v.losses))
+                        elif subset == "EPS2":
+                            best_score = min(best_score, max(pa.losses - v.losses))
                         elif subset == "domain-covering":
                             best_score = min(
                                 best_score, np.linalg.norm(pa.get_standardized_data(reference=v))
