@@ -1491,8 +1491,6 @@ def causal_similarity(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Finding the best causal graph"""
     seedg = create_seed_generator(seed)
     optims = ["CMA", "NGOpt8", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
-    if default_optims is not None:
-        optims = default_optims
     func = CausalDiscovery()
     for budget in [100 * 5 ** k for k in range(3)]:
         for num_workers in [1]:
