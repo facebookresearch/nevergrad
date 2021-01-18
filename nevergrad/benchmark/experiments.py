@@ -1053,7 +1053,7 @@ def neuro_control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experime
                             
                             
 @registry.register
-def simpletsp(seed: tp.Optional[int] = None, complex: bool = False) -> tp.Iterator[Experiment]:
+def simpletsp(seed: tp.Optional[int] = None, complex_tsp: bool = False) -> tp.Iterator[Experiment]:
     """Simple TSP problems. Please note that the methods we use could be applied or complex variants, whereas
     specialized methods can not always do it; therefore this comparisons from a black-box point of view makes sense
     even if white-box methods are not included though they could do this more efficiently.
@@ -1061,7 +1061,7 @@ def simpletsp(seed: tp.Optional[int] = None, complex: bool = False) -> tp.Iterat
     Budgets doubling from 25, 50, 100, 200, ... up  to 25600
 
     """
-    funcs = [STSP(10, complex), STSP(100, complex), STSP(1000, complex), STSP(10000, complex)]
+    funcs = [STSP(10, complex_tsp), STSP(100, complex_tsp), STSP(1000, complex_tsp), STSP(10000, complex_tsp)]
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", "noisy", seed=next(seedg))
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600]:
@@ -1077,7 +1077,7 @@ def simpletsp(seed: tp.Optional[int] = None, complex: bool = False) -> tp.Iterat
 @registry.register
 def complextsp(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of simpletsp with non-planar term."""
-    return simpletsp(seed, complex=True)
+    return simpletsp(seed, complex_tsp=True)
 
 
 @registry.register
