@@ -261,6 +261,7 @@ class Pruning:
         return self._prune(archive)
 
     def _prune(self, archive: Archive[MultiValue]) -> Archive[MultiValue]:
+        # separate function to ease profiling
         quantiles: tp.Dict[str, float] = {}
         threshold = float(self.min_len + 1) / len(archive)
         names = ["optimistic", "pessimistic", "average"]
