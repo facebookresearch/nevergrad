@@ -8,7 +8,7 @@ from . import core
 
 
 def test_stsp() -> None:
-    for func in [core.STSP(), core.STSP(complex=True)]:
+    for func in [core.STSP(), core.STSP(complex_tsp=True)]:
         x = 7 * np.random.rand(func.dimension)
         value = func(x)  # should not touch boundaries, so value should be < np.inf
         assert value < np.inf
