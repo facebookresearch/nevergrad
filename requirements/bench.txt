@@ -9,12 +9,13 @@ torch>=1.2.0
 hiplot
 fcmaes>=0.9.5.6
 pandas>=0.23.4
+openpyxl>=3.0.0  # mlda data (for pandas)
 pyproj>=2.6.1
 Pillow
 tqdm
 torchvision
 pyomo>=5.7
-mixsimulator>=0.2.9.5
+mixsimulator>=0.2.9.9
 hyperopt>=0.2.5
 IOHexperimenter==0.2.8.7
 cdt>=0.5
