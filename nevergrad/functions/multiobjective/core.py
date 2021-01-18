@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import random
+import warnings
 import numpy as np
 import nevergrad.common.typing as tp
 from nevergrad.optimization.multiobjective import HypervolumeIndicator
@@ -37,6 +38,13 @@ class MultiobjectiveFunction:
         multiobjective_function: tp.Callable[..., tp.ArrayLike],
         upper_bounds: tp.Optional[tp.ArrayLike] = None,
     ) -> None:
+        warnings.warn(
+            "MultiobjectiveFunction is deprecated and will be removed in v0.4.3 "
+            "because it is no more needed. You should just pass a multiobjective loss to "
+            "optimizer.tell.\nSee https://facebookresearch.github.io/nevergrad/"
+            "optimization.html#multiobjective-minimization-with-nevergrad\n",
+            DeprecationWarning,
+        )
         self.multiobjective_function = multiobjective_function
         self._auto_bound = 0
         self._auto_upper_bounds = np.array([-float("inf")])
