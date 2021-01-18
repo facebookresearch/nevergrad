@@ -16,9 +16,10 @@ from ..base import ExperimentFunction
 
 
 class STSP(ExperimentFunction):
-    def __init__(self, dimension: int = 500) -> None:
+    def __init__(self, dimension: int = 500, complex: bool = False) -> None:
         super().__init__(self._simulate_stsp, p.Array(shape=(dimension,)))
         self.order = np.arange(0, self.dimension)
+        self.complex = complex
         self.x = self.parametrization.random_state.normal(size=self.dimension)
         self.y = self.parametrization.random_state.normal(size=self.dimension)
 
@@ -30,6 +31,8 @@ class STSP(ExperimentFunction):
         output = np.sqrt((x[0] - x[-1]) ** 2 + (y[0] - y[-1]) ** 2) + sum(
             np.sqrt((x[i] - x[i + 1]) ** 2 + (y[i] - y[i + 1]) ** 2) for i in range(self.dimension - 1)
         )
+        if self.complex:
+            return float(output) + sum((o[i] - o[i+1]) ** 2 for i in range(self.dimension - 1)) / np.sqrt(self.dimension + 1.)
         return float(output)
 
     def make_plots(self, filename: str = "stsp.png") -> None:
