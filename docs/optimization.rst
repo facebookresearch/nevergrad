@@ -228,18 +228,7 @@ Multiobjective minimization is a **work in progress** in :code:`nevergrad`. It i
 
 In other words, use it at your own risk ;) and provide feedbacks (both positive and negative) if you have any!
 
-
-The initial API that was added into :code:`nevergrad` to work with multiobjective functions uses a function wrapper to convert them into monoobjective functions.
-Let us minimize :code:`f1` and :code:`f2` (two objective functions) assuming that values above 2.5 are of no interest:
-
-.. literalinclude:: ../nevergrad/functions/multiobjective/test_core.py
-    :language: python
-    :dedent: 4
-    :start-after: DOC_MULTIOBJ_0
-    :end-before: DOC_MULTIOBJ_1
-
-
-We are currently working on an **new experimental API** allowing users to directly :code:`tell` the results as an array or list of floats. When this API is stabilized and proved to work, it will probably replace the older one. Here is an example on how to use it:
+To perform multiobjective optimization, you can just provide :code:`tell` with the results as an array or list of floats:
 
 .. literalinclude:: ../nevergrad/optimization/multiobjective/test_core.py
     :language: python
@@ -247,8 +236,10 @@ We are currently working on an **new experimental API** allowing users to direct
     :start-after: DOC_MULTIOBJ_OPT_0
     :end-before: DOC_MULTIOBJ_OPT_1
 
-Note that `DE` and its variants have been updated to make use of the multi-objective losses [#789](https://github.com/facebookresearch/nevergrad/pull/789). This is a **preliminary** fix since the initial `DE` implementaton was ill-suited for this use case.
-
+Currently most optimizers only derive a volume float loss from the multiobjective loss and minimize it.
+:code:`DE` and its variants have however been updated to make use of the full multi-objective losses
+[#789](https://github.com/facebookresearch/nevergrad/pull/789), which make them good candidates for multi-objective minimization (:code:`NGOpt` will
+delegate to DE in the case of multi-objective functions).
 
 Reproducibility
 ---------------
