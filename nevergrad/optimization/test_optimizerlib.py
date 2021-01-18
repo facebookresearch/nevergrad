@@ -718,3 +718,15 @@ def test_ngopt_on_simple_realistic_scenario(budget: int, with_int: bool) -> None
     recommendation = optimizer.minimize(fake_training)
     result = fake_training(**recommendation.kwargs)
     assert result < 5e-2 if with_int else 5e-3, f"{result} not < {5e-2 if with_int else 5e-3}"
+
+
+def test_constrained_de() -> None:
+    optimizer = optlib.DE(2, budget=20)
+    optimizer.parametrization.random_state.seed(12)
+
+    def constraint(arg: tp.Any) -> bool:  # pylint: disable=unused-argument
+        """Random constraint to mess up with the optimizer"""
+        return bool(optimizer.parametrization.random_state.rand() > 0.8)
+
+    optimizer.parametrization.register_cheap_constraint(constraint)
+    optimizer.minimize(_square)
