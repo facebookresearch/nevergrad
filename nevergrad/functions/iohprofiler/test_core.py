@@ -6,8 +6,8 @@
 from unittest import SkipTest
 import pytest
 import numpy as np
-from . import core
 from nevergrad.optimization.optimizerlib import OnePlusOne
+from . import core
 
 
 @pytest.mark.parametrize("fid", range(1, 24))  # type: ignore
@@ -16,12 +16,11 @@ def test_PBO(fid: int, iid: int) -> None:
     values = []
     try:
         func = core.PBOFunction(fid, iid, 16)
-    except ModuleNotFoundError:
-        raise SkipTest("IOH is not installed")
+    except ModuleNotFoundError as e:
+        raise SkipTest("IOH is not installed") from e
     for _ in range(30):
         x = func.parametrization.sample()
-        for i in range(len(x.value)):
-            assert x.value[i] == 0 or x.value[i] == 1, f"Non binary sample {x}."
+        assert not set(x.value) - {0, 1}, f"Non binary sample {x}."
         value = func(x.value)
         assert isinstance(value, float), "All output of the iohprofiler-functions should be float"
         assert np.isfinite(value)
@@ -38,8 +37,8 @@ def test_PBO(fid: int, iid: int) -> None:
 def test_PBO_parameterization(instrumentation: str) -> None:
     try:
         func = core.PBOFunction(1, 0, 16, instrumentation=instrumentation)
-    except ModuleNotFoundError:
-        raise SkipTest("IOH is not installed")
+    except ModuleNotFoundError as e:
+        raise SkipTest("IOH is not installed") from e
     x = func.parametrization.sample()
     value = func(x.value)
     assert isinstance(value, float), "All output of the iohprofiler-functions should be float"
@@ -49,8 +48,8 @@ def test_PBO_parameterization(instrumentation: str) -> None:
 def test_W_model() -> None:
     try:
         func = core.WModelFunction()
-    except ModuleNotFoundError:
-        raise SkipTest("IOH is not installed")
+    except ModuleNotFoundError as e:
+        raise SkipTest("IOH is not installed") from e
     x = func.parametrization.sample()
     func2 = core.PBOFunction(1, 0, 16)
     assert func(x.value) == func2(x.value), "W-model with default setting should equal base_function"
