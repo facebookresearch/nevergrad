@@ -1002,35 +1002,55 @@ def control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     Budget 500, 1000, 3000, 5000."""
     seedg = create_seed_generator(seed)
     num_rollouts = 1
-    funcs = [control.Swimmer(num_rollouts=num_rollouts, random_state=seed),
-             control.HalfCheetah(num_rollouts=num_rollouts, random_state=seed),
-             control.Hopper(num_rollouts=num_rollouts, random_state=seed),
-             control.Walker2d(num_rollouts=num_rollouts, random_state=seed),
-             control.Ant(num_rollouts=num_rollouts, random_state=seed),
-             control.Humanoid(num_rollouts=num_rollouts, random_state=seed)
-             ]
+    funcs = [
+        Env(num_rollouts=num_rollouts, random_state=seed) for Env in [
+            control.Swimmer, control.HalfCheetah, control.Hopper, control.Walker2d, control.Ant, control.Humanoid
+        ]
+    ]
 
     sigmas = [0.1, 0.1, 0.1, 0.1, 0.01, 0.001]
     funcs2 = []
     for sigma, func in zip(sigmas, funcs):
         f = func.copy()
-        param: ng.p.Array = f.parametrization.copy()  # type: ignore
-        param.set_mutation(sigma=sigma).set_name(f"sigma={sigma}")
+        param: ng.p.Tuple = f.parametrization.copy()  # type: ignore
+        for array in param._content.values():
+            array.set_mutation(sigma=sigma) # type: ignore
+        param.set_name(f"sigma={sigma}")
+
         f.parametrization = param
         f.parametrization.freeze()
         funcs2.append(f)
     optims = get_optimizers("basics")
 
     for budget in [50, 75, 100, 150, 200, 250, 300, 400, 500, 1000, 3000, 5000, 8000, 16000, 32000, 64000]:
-        for num_workers in [1]:
-            if num_workers < budget:
-                for algo in optims:
-                    for fu in funcs2:
-                        xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
-                        if not xp.is_incoherent:
-                            yield xp
+        for algo in optims:
+            for fu in funcs2:
+                xp = Experiment(fu, algo, budget, num_workers=1, seed=next(seedg))
+                if not xp.is_incoherent:
+                    yield xp
 
 
+@registry.register
+def neuro_control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """MuJoCo testbed. Learn neural policies."""
+    seedg = create_seed_generator(seed)
+    num_rollouts = 1
+    funcs = [
+        Env(num_rollouts=num_rollouts, intermediate_layer_dim=(50,), random_state=seed) for Env in [
+            control.Swimmer, control.HalfCheetah, control.Hopper, control.Walker2d, control.Ant, control.Humanoid
+        ]
+    ]
+
+    optims = ["CMA", "NGOpt4", "DiagonalCMA", "NGOpt8", "MetaModel", "chainCMAPowell"]
+
+    for budget in [50, 500, 5000, 10000, 20000, 35000, 50000, 100000, 200000]:
+        for algo in optims:
+            for fu in funcs:
+                xp = Experiment(fu, algo, budget, num_workers=1, seed=next(seedg))
+                if not xp.is_incoherent:
+                    yield xp
+                            
+                            
 @registry.register
 def simpletsp(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Simple TSP problems. Please note that the methods we use could be applied or complex variants, whereas
