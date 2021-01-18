@@ -16,6 +16,7 @@
 - from now on, code formatting needs to be [`black`](https://black.readthedocs.io/en/stable/) compliant. This is
   simply performed by running `black nevergrad`. A continuous integration checks that PRs are compliant, and the
   precommit hooks have been adapted. For PRs branching from an old master, you can run `black --line-length=110 nevergrad/<path_to_modified_file>` to make your code easier to merge.
+- Pruning has been patched to make sure it is not activated too often upon convergence [#1014](https://github.com/facebookresearch/nevergrad/pull/1014). The bug used to lead to important slowdown when reaching near convergence.
 
 ## 0.4.2 (2020-08-04)
 
