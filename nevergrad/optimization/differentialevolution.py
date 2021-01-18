@@ -170,6 +170,7 @@ class _DE(base.Optimizer):
         self._uid_queue.tell(uid)  # only add to queue if not a "tell_not_asked" (from a removed parent)
         parent = self.population[uid]
         mo_adapt = self._config.multiobjective_adaptation and self.num_objectives > 1
+        mo_adapt &= candidate._losses is not None  # can happen with bad constraints
         if not mo_adapt and loss <= base._loss(parent):
             self.population[uid] = candidate
         elif mo_adapt and (
@@ -182,18 +183,26 @@ class _DE(base.Optimizer):
             self.population[uid].heritage.update(candidate.heritage)
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        worst: tp.Optional[p.Parameter] = None
+        discardable: tp.Optional[str] = None
         if len(self.population) >= self.llambda:
-            worst = max(self.population.values(), key=base._loss)
-            if worst.loss < loss:  # type: ignore
-                return  # no need to update
-            else:
-                uid = worst.heritage["lineage"]
-                del self.population[uid]
-                self._uid_queue.discard(uid)
-        candidate.heritage["lineage"] = candidate.uid  # new lineage
-        self.population[candidate.uid] = candidate
-        self._uid_queue.tell(candidate.uid)
+            if self.num_objectives == 1:  # monoobjective: replace if better
+                worst = max(self.population.values(), key=base._loss)
+                if loss < base._loss(worst):
+                    discardable = worst.heritage["lineage"]
+            else:  # multiobjective: replace if in pareto and some parents are not
+                pareto_uids = {c.uid for c in self.pareto_front()}
+                if candidate.uid in pareto_uids:
+                    non_pareto_pop = {c.uid for c in self.population.values()} - pareto_uids
+                    if non_pareto_pop:
+                        nonpareto = {c.uid: c for c in self.population.values()}[list(non_pareto_pop)[0]]
+                        discardable = nonpareto.heritage["lineage"]
+        if discardable is not None:  # if we found a point to kick, kick it
+            del self.population[discardable]
+            self._uid_queue.discard(discardable)
+        if len(self.population) < self.llambda:  # if there is space, add the new point
+            candidate.heritage["lineage"] = candidate.uid  # new lineage
+            self.population[candidate.uid] = candidate
+            self._uid_queue.tell(candidate.uid)
 
 
 # pylint: disable=too-many-arguments, too-many-instance-attributes

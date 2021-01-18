@@ -720,8 +720,13 @@ def test_ngopt_on_simple_realistic_scenario(budget: int, with_int: bool) -> None
     assert result < 5e-2 if with_int else 5e-3, f"{result} not < {5e-2 if with_int else 5e-3}"
 
 
-def test_constrained_de() -> None:
-    optimizer = optlib.DE(2, budget=20)
+def _multiobjective(z: np.ndarray) -> tp.Tuple[float, float, float]:
+    x, y = z
+    return (abs(x - 1), abs(y + 1), abs(x - y))
+
+
+def test_mo_constrained_de() -> None:
+    optimizer = optlib.DE(2, budget=60)
     optimizer.parametrization.random_state.seed(12)
 
     def constraint(arg: tp.Any) -> bool:  # pylint: disable=unused-argument
@@ -729,4 +734,6 @@ def test_constrained_de() -> None:
         return bool(optimizer.parametrization.random_state.rand() > 0.8)
 
     optimizer.parametrization.register_cheap_constraint(constraint)
-    optimizer.minimize(_square)
+    optimizer.minimize(_multiobjective)
+    point = optimizer.parametrization.spawn_child(new_value=np.array([1.0, 1.0]))  # on the pareto
+    optimizer.tell(point, _multiobjective(point.value))
