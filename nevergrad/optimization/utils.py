@@ -254,6 +254,7 @@ class Pruning:
     def __init__(self, min_len: int, max_len: int):
         self.min_len = min_len
         self.max_len = max_len
+        self._num_prunings = 0  # for testing it is not called too often
 
     def __call__(self, archive: Archive[MultiValue]) -> Archive[MultiValue]:
         if len(archive) < self.max_len:
@@ -261,6 +262,7 @@ class Pruning:
         return self._prune(archive)
 
     def _prune(self, archive: Archive[MultiValue]) -> Archive[MultiValue]:
+        self._num_prunings += 1
         # separate function to ease profiling
         quantiles: tp.Dict[str, float] = {}
         threshold = float(self.min_len + 1) / len(archive)
