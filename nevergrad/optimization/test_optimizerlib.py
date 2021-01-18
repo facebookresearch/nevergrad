@@ -137,6 +137,48 @@ SLOW = [
 UNSEEDABLE: tp.List[str] = []
 
 
+def buggy_function(x: np.ndarray) -> float:
+    if any(x[::2] > 0.0):
+        return float("nan")
+    if any(x > 0.0):
+        return float("inf")
+    return np.sum(x ** 2)
+
+
+@skip_win_perf  # type: ignore
+@pytest.mark.parametrize("name", registry)  # type: ignore
+def test_infnan(name: str) -> None:
+    optim_cls = registry[name]
+    optim = optim_cls(parametrization=2, budget=70)
+    if not (
+        any(
+            x in name
+            for x in [
+                "EDA",
+                "EMNA",
+                "Stupid",
+                "Large",
+                "TBPSA",
+                "BO",
+                "Noisy",
+                "chain",
+            ]
+        )
+    ):
+        recom = optim.minimize(buggy_function)
+        result = buggy_function(recom.value)
+        if result < 2.0:
+            return
+        assert (  # The "bad" algorithms, most of them originating in CMA's recommendation rule.
+            any(x == name for x in ["WidePSO", "SPSA", "NGOptBase", "Shiwa", "NGO"])
+            or isinstance(optim, (optlib.Portfolio, optlib._CMA, optlib.recaster.SequentialRecastOptimizer))
+            or "NGOpt" in name
+        )  # Second chance!
+        recom = optim.minimize(buggy_function)
+        result = buggy_function(recom.value)
+        result < 2.0, f"{name} failed and got {result} with {recom.value} (type is {type(optim)})."
+
+
 @skip_win_perf  # type: ignore
 @pytest.mark.parametrize("name", registry)  # type: ignore
 def test_optimizers(name: str) -> None:
