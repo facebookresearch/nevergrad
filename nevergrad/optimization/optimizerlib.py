@@ -401,7 +401,7 @@ class _CMA(base.Optimizer):
                     x0=self._rng.normal(size=self.dimension)
                     if self._random_init
                     else np.zeros(self.dimension, dtype=np.float),
-                    sigma0=self._scale,
+                    sigma0=0.3 * self._scale,
                     inopts=inopts,
                 )
             else:
@@ -413,7 +413,7 @@ class _CMA(base.Optimizer):
                     ) from e
                 self._es = cmaes.Cmaes(
                     x0=np.zeros(self.dimension, dtype=np.float),
-                    input_sigma=self._scale,
+                    input_sigma=0.3 * self._scale,
                     popsize=self._popsize,
                     randn=self._rng.randn,
                 )
