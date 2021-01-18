@@ -431,30 +431,7 @@ More precisely, the budget is distributed over several algorithms, and when an o
 </ul>
 </div></blockquote>
 <p>In other words, use it at your own risk ;) and provide feedbacks (both positive and negative) if you have any!</p>
-<p>The initial API that was added into <code class="code docutils literal notranslate"><span class="pre">nevergrad</span></code> to work with multiobjective functions uses a function wrapper to convert them into monoobjective functions.
-Let us minimize <code class="code docutils literal notranslate"><span class="pre">f1</span></code> and <code class="code docutils literal notranslate"><span class="pre">f2</span></code> (two objective functions) assuming that values above 2.5 are of no interest:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nevergrad</span> <span class="k">as</span> <span class="nn">ng</span>
-<span class="kn">from</span> <span class="nn">nevergrad.functions</span> <span class="kn">import</span> <span class="n">MultiobjectiveFunction</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-
-<span class="n">f</span> <span class="o">=</span> <span class="n">MultiobjectiveFunction</span><span class="p">(</span>
-    <span class="n">multiobjective_function</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">x</span> <span class="o">**</span> <span class="mi">2</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">x</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)],</span> <span class="n">upper_bounds</span><span class="o">=</span><span class="p">[</span><span class="mf">2.5</span><span class="p">,</span> <span class="mf">2.5</span><span class="p">]</span>
-<span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">])))</span>
-
-<span class="n">optimizer</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">CMA</span><span class="p">(</span><span class="n">parametrization</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">budget</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>  <span class="c1"># 3 is the dimension, 100 is the budget.</span>
-<span class="n">recommendation</span> <span class="o">=</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
-
-<span class="c1"># The function embeds its Pareto-front:</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;My Pareto front:&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">pareto_front</span><span class="p">()])</span>
-
-<span class="c1"># It can also provide a subset:</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;My Pareto front:&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">pareto_front</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">subset</span><span class="o">=</span><span class="s2">&quot;random&quot;</span><span class="p">)])</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;My Pareto front:&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">pareto_front</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">subset</span><span class="o">=</span><span class="s2">&quot;loss-covering&quot;</span><span class="p">)])</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;My Pareto front:&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">pareto_front</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">subset</span><span class="o">=</span><span class="s2">&quot;domain-covering&quot;</span><span class="p">)])</span>
-</pre></div>
-</div>
-<p>We are currently working on an <strong>new experimental API</strong> allowing users to directly <code class="code docutils literal notranslate"><span class="pre">tell</span></code> the results as an array or list of floats. When this API is stabilized and proved to work, it will probably replace the older one. Here is an example on how to use it:</p>
+<p>To perform multiobjective optimization, you can just provide <code class="code docutils literal notranslate"><span class="pre">tell</span></code> with the results as an array or list of floats:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nevergrad</span> <span class="k">as</span> <span class="nn">ng</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
@@ -466,6 +443,7 @@ Let us minimize <code class="code docutils literal notranslate"><span class="pre
 
 <span class="n">optimizer</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">CMA</span><span class="p">(</span><span class="n">parametrization</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">budget</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
 
+<span class="c1"># for all but DE optimizers, deriving a volume out of the losses,</span>
 <span class="c1"># it&#39;s not strictly necessary but highly advised to provide an</span>
 <span class="c1"># upper bound reference for the losses (if not provided, such upper</span>
 <span class="c1"># bound is automatically inferred with the first few &quot;tell&quot;)</span>
@@ -492,7 +470,10 @@ Let us minimize <code class="code docutils literal notranslate"><span class="pre
 
 </pre></div>
 </div>
-<p>Note that <cite>DE</cite> and its variants have been updated to make use of the multi-objective losses [#789](<a class="reference external" href="https://github.com/facebookresearch/nevergrad/pull/789">https://github.com/facebookresearch/nevergrad/pull/789</a>). This is a <strong>preliminary</strong> fix since the initial <cite>DE</cite> implementaton was ill-suited for this use case.</p>
+<p>Currently most optimizers only derive a volume float loss from the multiobjective loss and minimize it.
+<code class="code docutils literal notranslate"><span class="pre">DE</span></code> and its variants have however been updated to make use of the full multi-objective losses
+[#789](<a class="reference external" href="https://github.com/facebookresearch/nevergrad/pull/789">https://github.com/facebookresearch/nevergrad/pull/789</a>), which make them good candidates for multi-objective minimization (<code class="code docutils literal notranslate"><span class="pre">NGOpt</span></code> will
+delegate to DE in the case of multi-objective functions).</p>
 </div>
 <div class="section" id="reproducibility">
 <h2>Reproducibility<a class="headerlink" href="#reproducibility" title="Permalink to this headline">¶</a></h2>
