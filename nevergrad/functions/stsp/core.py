@@ -32,7 +32,7 @@ class STSP(ExperimentFunction):
             np.sqrt((x[i] - x[i + 1]) ** 2 + (y[i] - y[i + 1]) ** 2) for i in range(self.dimension - 1)
         )
         if self.complex:
-            return float(output) + sum((o[i] - o[i+1]) ** 2 for i in range(self.dimension - 1)) / np.sqrt(self.dimension + 1.)
+            return float(output) + sum((order[i] - order[i+1]) ** 2 for i in range(self.dimension - 1)) / np.sqrt(self.dimension + 1.)
         return float(output)
 
     def make_plots(self, filename: str = "stsp.png") -> None:
