@@ -11,7 +11,7 @@ from enum import Enum
 import nevergrad as ng
 from .rmqservice import RMQService as _RMQService, RMQSettings as _RMQSettings
 from ...functions.base import ExperimentFunction
-
+from .resources import prepare_resources
 class Status(Enum):
     OK = 0
     Failed = 1
@@ -265,7 +265,6 @@ class Perfcap3DServerComm(metaclass = Singleton):
                         and objective function's error term weights)
         """
         self._rmq_service: _RMQService = None
-        self._experiment_set: bool = False
         self._no_of_pending_experiments: int = 0
         self._logger = logging.getLogger("Perfcap3DServerComm")
         self._server_cfg: tp.Dict[str, tp.Any] = server_config
@@ -281,9 +280,6 @@ class Perfcap3DServerComm(metaclass = Singleton):
         after a previous experimenthas already been set, is not supported. In this case, consider restarting
         Perfcap Benchmark Server or start a new Perfcap Benchmark Server instance under different RMQSettings
         """
-
-        # if self._experiment_set:
-        #   return
 
         self._logger.info("Setting experiment to: %d", self._experiment_id)
         self._logger.info("Sending Perfcap bechmark server request to set experiment to %d", self._experiment_id)
@@ -301,13 +297,14 @@ class Perfcap3DServerComm(metaclass = Singleton):
 
             self._logger.info("Reply from benchmark server: %s", msg)
             self._logger.info("Experiment %s set successfully", self._experiment_id)
-            self._experiment_set = True
         except KeyError as ex:
             self._logger.error("Error while parsing reply for set experiment from benchmark server")
             raise ex
 
     def _wait_for_server_ready(self) -> None:
-
+        """
+        Poll server to check if it is ready to process input requests
+        """
         if self._rmq_service is None:
             self._rmq_service = self._setupRMQ()
 
@@ -455,21 +452,27 @@ class Perfcap3DExperimentConfig:
         return self._config["benchmark_server_args"]
 
 class Perfcap3DServerExecutor:
-
+    """
+    Class responsible for executing the benchmark server
+    The execute_server method will first check if a lockfile exists prior executing the benchmark server. The lock file is created
+    in order to avoid multiple executions of the benchmark server executable.
+    This function is invoked by the experiment factory function perfcap_experiment (frozenexperiments.py)
+    """
     @classmethod
     def execute_server(cls, experiment_count : int):
-
-        # TODO: download/extract benchmark server/dataset if not exist
+        logger = logging.getLogger('execute_server')
+        # download/extract benchmark server/dataset if not exist
+        prepare_resources()
 
         exe_folder_path = os.path.join(pathlib.Path(os.path.abspath(__file__)).parent, "resources")
         lock_file_path = os.path.join(exe_folder_path,'.running.lck')
         # if lock file already exists, skipping launching benchmark server
         try:
             # open lockfile for exclusive creation
+            logger.info('checking existence of benchmark server lockfile: %s',lock_file_path)
             with open(lock_file_path,'x'):
                 pass
-                #f.write(str(experiment_count).join("\n"))       # write number of experiments to execute in lockfile
-
+            logger.info('Lockfile does not exist. Executing server.')
             rmq_settings = _RMQSettings.from_json()
             exe_path = os.path.join(exe_folder_path,'performance_capture.exe')
             cmd_args = ['--benchmark_server', '--benchmark_server_rmq_uri', rmq_settings.connection_string,
@@ -480,4 +483,4 @@ class Perfcap3DServerExecutor:
             #exe_path = os.path.join(exe_folder_path,'run_benchmark_server.bat')
             #subprocess.Popen(str(exe_path), cwd=str(exe_folder_path),creationflags = subprocess.CREATE_NEW_CONSOLE)
         except FileExistsError:
-            pass
+            logger.info('Lockfile exists. Server already running. Skipping execution of server')

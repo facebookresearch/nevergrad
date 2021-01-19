@@ -162,6 +162,9 @@ class RMQService:
         await self._exch_out.publish(aio_pika.Message(bytes(json.dumps(fmsg), encoding='utf-8')), routing_key="")
 
     async def _resubmit_poll_request(self, fmsg : dict, ft : Future, repeat_interval : float, call_handler : tp.List[tp.Any]):
+        """
+        Core function to repeatedly poll the benchmark server via RMQ
+        """
         if not ft.done():
             self._logger.info('Polling...')
             await self._exch_out.publish(aio_pika.Message(bytes(json.dumps(fmsg), encoding='utf-8')), routing_key="")
