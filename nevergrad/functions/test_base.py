@@ -187,16 +187,17 @@ def test_pareto_experiment() -> None:
     evaluation = xps[0].evaluation_function(param, param, param)
     assert isinstance(evaluation, float)
 
+
 def test_easy_pareto_experiment() -> None:
     # Checking MOO in cross-validation.
     objective_functions: tp.List[tp.Any] = [
-        ArtificialFunction("sphere", block_dimension=2, translation_factor=0.),
-        ArtificialFunction("sphere", block_dimension=2, translation_factor=0.),
-        ArtificialFunction("sphere", block_dimension=2, translation_factor=0.),
+        ArtificialFunction("sphere", block_dimension=2, translation_factor=0.0),
+        ArtificialFunction("sphere", block_dimension=2, translation_factor=0.0),
+        ArtificialFunction("sphere", block_dimension=2, translation_factor=0.0),
     ]
     xps = helpers.SpecialEvaluationExperiment.create_crossvalidation_experiments(
         objective_functions, pareto_size=16
     )
     optimizer = ng.optimizers.OnePlusOne(parametrization=2, budget=100)
     recom = optimizer.minimize(xps[0])
-    assert xps[0].evaluation_function(recom.value) ** 2 < 0.001
+    assert xps[0].evaluation_function(recom) ** 2 < 0.001
