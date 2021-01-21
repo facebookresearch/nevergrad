@@ -681,7 +681,19 @@ def test_ngo_split_optimizer(
     names = [o.optim.name if o.dimension != 1 or name is None else "monovariate" for o in optimizer.optims]  # type: ignore
     assert names == expected
 
+    
+def test_array_split_optimizer() -> None:
+    full_output: tp.List[str] = []
+    for param in [ng.p.Array((1,5)), ng.p.Array((2,3)), ng.p.Choice(["paf", "pif"])]:
+        for num_optims in [None, 17, 10000]:
+            for nw in [1, 10]:
+                optimizer_class = ConfSplitOptimizer(multivariate_optimizer=FCMA127)
+                optimizer = optimizer_class(param, num_workers=nw)
+                names = [o.optim.name for o in optimizer.optim]
+                full_output.append(f" {param} with {num_optims} optimizers with {nw} workers -> {str(names)}")
+    assert False, full_output
 
+    
 @skip_win_perf  # type: ignore
 @pytest.mark.parametrize(  # type: ignore
     "budget,with_int",
