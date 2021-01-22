@@ -30,6 +30,7 @@ class SpecialEvaluationExperiment(base.ExperimentFunction):
         self._pareto_subset = pareto_subset
         self._pareto_subset_tentatives = pareto_subset_tentatives
         super().__init__(self._delegate_to_experiment, experiment.parametrization)
+        self.add_descriptors(non_proxy_function=False)
         # remove multiobjective descriptors if monoobjective / no pareto subset
         if self._pareto_size is None:
             names = [name for name in self._descriptors if name.startswith("pareto_")]

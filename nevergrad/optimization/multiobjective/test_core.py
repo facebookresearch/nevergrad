@@ -101,6 +101,7 @@ def test_doc_multiobjective() -> None:
 
     optimizer = ng.optimizers.CMA(parametrization=3, budget=100)
 
+    # for all but DE optimizers, deriving a volume out of the losses,
     # it's not strictly necessary but highly advised to provide an
     # upper bound reference for the losses (if not provided, such upper
     # bound is automatically inferred with the first few "tell")

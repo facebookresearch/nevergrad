@@ -254,12 +254,18 @@ class Pruning:
     def __init__(self, min_len: int, max_len: int):
         self.min_len = min_len
         self.max_len = max_len
+        self._num_prunings = 0  # for testing it is not called too often
 
     def __call__(self, archive: Archive[MultiValue]) -> Archive[MultiValue]:
         if len(archive) < self.max_len:
             return archive
+        return self._prune(archive)
+
+    def _prune(self, archive: Archive[MultiValue]) -> Archive[MultiValue]:
+        self._num_prunings += 1
+        # separate function to ease profiling
         quantiles: tp.Dict[str, float] = {}
-        threshold = float(self.min_len) / len(archive)
+        threshold = float(self.min_len + 1) / len(archive)
         names = ["optimistic", "pessimistic", "average"]
         for name in names:
             quantiles[name] = np.quantile(
@@ -269,8 +275,9 @@ class Pruning:
         new_archive.bytesdict = {
             b: v
             for b, v in archive.bytesdict.items()
-            if any(v.get_estimation(n) <= quantiles[n] for n in names)
-        }
+            if any(v.get_estimation(n) < quantiles[n] for n in names)
+        }  # strict comparison to make sure we prune even for values repeated maaany times
+        # this may remove all points though, but nevermind for now
         return new_archive
 
     @classmethod
