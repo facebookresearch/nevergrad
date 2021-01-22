@@ -73,18 +73,18 @@ def test_ptb_no_overfitting() -> None:
 
 @testing.parametrized(
     sphere=({"name": "sphere", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2}, 9.630),
-    cigar=({"name": "cigar", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2}, 3527289.665),
+    cigar=({"name": "cigar", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2}, 10479285.643761903),
     cigar_rot=(
         {"rotation": True, "name": "cigar", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2},
-        5239413.576,
+        28408767.364,
     ),
     hashed=(
         {"name": "sphere", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2, "hashing": True},
-        6.174957533,
+        24.20506897132551,
     ),
     noisy_sphere=(
         {"name": "sphere", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2, "noise_level": 0.2},
-        9.576,
+        12.279229492836906,
     ),
     noisy_very_sphere=(
         {
@@ -95,7 +95,7 @@ def test_ptb_no_overfitting() -> None:
             "noise_dissymmetry": True,
             "noise_level": 0.2,
         },
-        7.615,
+        -15.738918424625231,
     ),
 )
 def test_testcase_function_value(config: tp.Dict[str, tp.Any], expected: float) -> None:
