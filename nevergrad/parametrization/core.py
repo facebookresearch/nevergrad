@@ -318,6 +318,10 @@ class Parameter:
         """
         if self._random_state is None:
             # use the setter, to make sure the random state is propagated to the variables
+            # _state = np.random.get_state()
+            # seed = np.random.randint(2 ** 32, dtype=np.uint32)
+            # self._set_random_state(np.random.RandomState(seed))
+            # np.random.set_state(_state)
             seed = np.random.randint(2 ** 32, dtype=np.uint32)
             self._set_random_state(np.random.RandomState(seed))
         assert self._random_state is not None
