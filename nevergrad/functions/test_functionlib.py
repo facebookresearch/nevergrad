@@ -72,8 +72,14 @@ def test_ptb_no_overfitting() -> None:
 
 
 @testing.parametrized(
-    sphere=({"name": "sphere", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2}, 13.377591870607294),
-    cigar=({"name": "cigar", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2}, 12492378.626191331),
+    sphere=(
+        {"name": "sphere", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2},
+        13.377591870607294,
+    ),
+    cigar=(
+        {"name": "cigar", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2},
+        12492378.626191331,
+    ),
     cigar_rot=(
         {"rotation": True, "name": "cigar", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2},
         2575881.272645816,

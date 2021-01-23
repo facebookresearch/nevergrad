@@ -22,7 +22,8 @@ class Transform:
         dim = len(indices)
         assert dim
         if random_state is None:
-            random_state = np.random.get_state()
+            random_state = np.random.RandomState(0)
+            random_state.set_state(np.random.get_state())
         self.indices = np.asarray(indices)
         self.translation: np.ndarray = random_state.normal(0, 1, dim) * translation_factor
         self.rotation_matrix: tp.Optional[np.ndarray] = None
