@@ -173,7 +173,7 @@ EPS_AND_D = [  # photosic realistic
     photosic_realistic=("cf_photosic_realistic", 0.0860257, np.array(EPS_AND_D).reshape((2, -1))),
     photosic_reference=("cf_photosic_reference", 0.431072, None),
 )
-def test_photonics_values_random(name: str, expected: float, data: tp.Optional[tp.List[float]]) -> None:
+def test_photonics_values_random(name: str, expected: float, data: tp.Optional[np.ndarray]) -> None:
     if name == "morpho" and os.environ.get("CIRCLECI", False):
         raise SkipTest("Too slow in CircleCI")
     size = data.size if data is not None else (16 if name != "morpho" else 4)
