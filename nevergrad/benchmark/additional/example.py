@@ -34,7 +34,7 @@ class CustomFunction(ngfuncs.ExperimentFunction):
 
 
 @ng.optimizers.registry.register  # register optimizers in the optimization registry
-class NewOptimizer(ng.optimizers.registry["NoisyBandit"]):
+class NewOptimizer(ng.optimizers.registry["NoisyBandit"]):  # type: ignore
     pass
 
 
