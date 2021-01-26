@@ -2371,13 +2371,7 @@ class NGOpt8(NGOpt4):
 
 
 @registry.register
-class NGOpt9(NGOpt8):
-    def recommend(self) -> p.Parameter:
-        return base.Optimizer.recommend(self)
-
-
-@registry.register
-class NGOpt10(NGOpt9):
+class NGOpt10(NGOpt8):
     def _select_optimizer_cls(self) -> base.OptCls:
         if not self.has_noise and self._arity > 0:
             return DiscreteLenglerOnePlusOne

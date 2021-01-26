@@ -137,6 +137,48 @@ SLOW = [
 UNSEEDABLE: tp.List[str] = []
 
 
+def buggy_function(x: np.ndarray) -> float:
+    if any(x[::2] > 0.0):
+        return float("nan")
+    if any(x > 0.0):
+        return float("inf")
+    return np.sum(x ** 2)
+
+
+@skip_win_perf  # type: ignore
+@pytest.mark.parametrize("name", registry)  # type: ignore
+def test_infnan(name: str) -> None:
+    optim_cls = registry[name]
+    optim = optim_cls(parametrization=2, budget=70)
+    if not (
+        any(
+            x in name
+            for x in [
+                "EDA",
+                "EMNA",
+                "Stupid",
+                "Large",
+                "TBPSA",
+                "BO",
+                "Noisy",
+                "chain",
+            ]
+        )
+    ):
+        recom = optim.minimize(buggy_function)
+        result = buggy_function(recom.value)
+        if result < 2.0:
+            return
+        assert (  # The "bad" algorithms, most of them originating in CMA's recommendation rule.
+            any(x == name for x in ["WidePSO", "SPSA", "NGOptBase", "Shiwa", "NGO"])
+            or isinstance(optim, (optlib.Portfolio, optlib._CMA, optlib.recaster.SequentialRecastOptimizer))
+            or "NGOpt" in name
+        )  # Second chance!
+        recom = optim.minimize(buggy_function)
+        result = buggy_function(recom.value)
+        result < 2.0, f"{name} failed and got {result} with {recom.value} (type is {type(optim)})."
+
+
 @skip_win_perf  # type: ignore
 @pytest.mark.parametrize("name", registry)  # type: ignore
 def test_optimizers(name: str) -> None:
@@ -676,3 +718,22 @@ def test_ngopt_on_simple_realistic_scenario(budget: int, with_int: bool) -> None
     recommendation = optimizer.minimize(fake_training)
     result = fake_training(**recommendation.kwargs)
     assert result < 5e-2 if with_int else 5e-3, f"{result} not < {5e-2 if with_int else 5e-3}"
+
+
+def _multiobjective(z: np.ndarray) -> tp.Tuple[float, float, float]:
+    x, y = z
+    return (abs(x - 1), abs(y + 1), abs(x - y))
+
+
+def test_mo_constrained_de() -> None:
+    optimizer = optlib.DE(2, budget=60)
+    optimizer.parametrization.random_state.seed(12)
+
+    def constraint(arg: tp.Any) -> bool:  # pylint: disable=unused-argument
+        """Random constraint to mess up with the optimizer"""
+        return bool(optimizer.parametrization.random_state.rand() > 0.8)
+
+    optimizer.parametrization.register_cheap_constraint(constraint)
+    optimizer.minimize(_multiobjective)
+    point = optimizer.parametrization.spawn_child(new_value=np.array([1.0, 1.0]))  # on the pareto
+    optimizer.tell(point, _multiobjective(point.value))
