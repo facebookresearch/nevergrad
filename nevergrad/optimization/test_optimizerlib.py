@@ -717,7 +717,7 @@ def test_ngopt_on_simple_realistic_scenario(budget: int, with_int: bool) -> None
     optimizer = ng.optimizers.NGOpt(parametrization=parametrization, budget=budget)
     recommendation = optimizer.minimize(fake_training)
     result = fake_training(**recommendation.kwargs)
-    assert result < 5e-2 if with_int else 5e-3, f"{result} not < {5e-2 if with_int else 5e-3}"
+    assert result < 1.0006 if with_int else 5e-3, f"{result} not < {1.0006 if with_int else 5e-3}"
 
 
 def _multiobjective(z: np.ndarray) -> tp.Tuple[float, float, float]:

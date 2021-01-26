@@ -201,7 +201,7 @@ class Array(core.Parameter):
         func = (lambda x: x) if self.exponent is None else self._to_reduced_space  # noqa
         std_bounds = tuple(func(b * np.ones(self._value.shape)) for b in self.bounds)
         diff = std_bounds[1] - std_bounds[0]
-        new_data = std_bounds[0] + np.random.uniform(0, 1, size=diff.shape) * diff
+        new_data = std_bounds[0] + self.random_state.uniform(0, 1, size=diff.shape) * diff
         if self.exponent is None:
             new_data = self._to_reduced_space(new_data)
         child.set_standardized_data(new_data - self._get_ref_data(), deterministic=False)

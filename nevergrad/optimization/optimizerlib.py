@@ -110,7 +110,7 @@ class _OnePlusOne(base.Optimizer):
         if mutation == "adaptive":
             self._adaptive_mr = 0.5
         if mutation == "coordinatewise_adaptive":
-            self._velocity = np.random.uniform(size=self.dimension) * arity / 4.0
+            self._velocity = self._rng.uniform(size=self.dimension) * arity / 4.0
             self._modified_variables = np.array([True] * self.dimension)
         self.noise_handling = noise_handling
         self.mutation = mutation
