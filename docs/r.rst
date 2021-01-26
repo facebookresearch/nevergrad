@@ -6,10 +6,14 @@ Examples - Nevergrad for R
 
 .. code-block:: R
 
+     # Library and environment for Reticulate/Nevergrad.
      library("reticulate")
      conda_create("r-reticulate")
      conda_install("r-reticulate", "nevergrad", pip=TRUE)
      use_condaenv("r-reticulate")
+
+     # Only if you use parallelism.
+     library(doParallel)
 
      # Choose your optimization method below.
      optimizer_name <- "NGOpt"
@@ -50,12 +54,17 @@ Examples - Nevergrad for R
             nevergrad_hp_val[j] <- nevergrad_hp[j]$value
          }
 
-         # HERE COMPUTE score[j] the score (to be minimized) corresponding to nevergrad_hp_val[j] ( hopefully in parallel :-) )
-         # For simplicity here we just minimize the norm :-)
-         # (should be parallel using "futures")
-         for (j in 1:num_workers) {  # In a perfect world this would be parallel.
-            score[j] <- norm(nevergrad_hp_val[j]
-         }
+         # Sequential version.
+         # for (j in 1:num_workers) {  # In a perfect world this would be parallel.
+         #    score[j] <- norm(nevergrad_hp_val[j]
+         # }
+         
+         # Parallel version.
+         # Actually this could be asynchronous, Nevergrad is ok for that, you do not have to
+         # do the tell's in the same order as the ask's.
+         registerDoParallel(cores=num_workers)
+         getDoParWorkers()
+         foreach(i=1:num_workers) %dopar% score[j] <- norm(nevergrad_hp_val[j])
 
          for (j in 1:num_workers) {
             optimizer$tell(nevergrad_hp[j], score[j])
@@ -66,4 +75,3 @@ Examples - Nevergrad for R
 Don't forget the "pip=TRUE". I wasted so much time because of this :-)
 
 For other instrumentations (discrete variables, logarithmic continuous variables...), please check `Different instrumentations: <https://github.com/facebookresearch/nevergrad/blob/master/docs/parametrization.rst>`. Or for simple examples for machine learning `machine learning <https://github.com/facebookresearch/nevergrad/blob/master/docs/machinelearning.rst>`.
-
