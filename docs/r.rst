@@ -33,8 +33,8 @@ Examples - Nevergrad for R
      my_tuple <- tuple(17)
      instrumentation <- ng$p$Array(shape=my_tuple)
      instrumentation$set_bounds(0., 1.)
-     num_workers=3  # We want to be able to evaluate 3 hyperparametrizations simultaneously.
-     num_iterations = 100 * num_workers  # Let us say we have a budget of 100xnum_workers hyperparameters to evaluate.
+     num_workers <- 3  # We want to be able to evaluate 3 hyperparametrizations simultaneously.
+     num_iterations <- 100 * num_workers  # Let us say we have a budget of 100xnum_workers hyperparameters to evaluate.
 
      # Let us create a Nevergrad optimization method.
      optimizer <-  ng$optimizers$registry[optimizer_name](instrumentation, budget=num_iterations, num_workers=num_workers)
@@ -44,7 +44,7 @@ Examples - Nevergrad for R
      nevergrad_hp_val <- 0
      score <- 0
 
-     for (i in 1:10) {
+     for (i in 1:num_iterations) {
          for (j in 1:num_workers) {
             nevergrad_hp[j] <- optimizer$ask()
             nevergrad_hp_val[j] <- nevergrad_hp[j]$value
@@ -52,6 +52,7 @@ Examples - Nevergrad for R
 
          # HERE COMPUTE score[j] the score (to be minimized) corresponding to nevergrad_hp_val[j] ( hopefully in parallel :-) )
          # For simplicity here we just minimize the norm :-)
+         # (should be parallel using "futures")
          for (j in 1:num_workers) {  # In a perfect world this would be parallel.
             score[j] <- norm(nevergrad_hp_val[j]
          }
