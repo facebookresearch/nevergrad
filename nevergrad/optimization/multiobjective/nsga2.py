@@ -207,7 +207,6 @@ class NSGA2Ranking:
     ) -> tp.Dict[str, tp.Tuple[int, int, float]]:
         selected_pop: tp.Dict[str, tp.Tuple[int, int, float]] = {}
         frontiers = self._frontier_ranker.compute_ranking(population)
-        print(frontiers)
         count = 0
         next_rank = 0
         for front_i, p_frontier in enumerate(frontiers):
