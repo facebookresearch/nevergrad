@@ -64,5 +64,5 @@ Examples - Nevergrad for R
 
 Don't forget the "pip=TRUE". I wasted so much time because of this :-)
 
-For other instrumentations (discrete variables, logarithmic continuous variables...), please check :ref:`Different instrumentations: <parametrization>.`
+For other instrumentations (discrete variables, logarithmic continuous variables...), please check `Different instrumentations: <https://github.com/facebookresearch/nevergrad/blob/master/docs/parametrization.rst>`.
 
