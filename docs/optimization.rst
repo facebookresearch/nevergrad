@@ -16,7 +16,7 @@ Minimizing a function using an optimizer (here :code:`OnePlusOne`) can be easily
 
 :code:`parametrization=n` is a shortcut to state that the function has only one variable, continuous, of dimension :code:`n`: :code:`ng.p.Array(shape=(n,))`.
 
-**Note**: Make sure to check the :ref:`Parametrization section <parametrizing>` for more complex parametrizations examples,
+**Important**: Make sure to check the :ref:`Parametrization section <parametrizing>` for more complex parametrizations examples,
 and :ref:`Parametrization API section <parametrization_ref>` for the full list of options. Below are a few more advanced cases.
 
 Defining the parametrization (:code:`instrum`) as follows in the code sample will instead optimize on both :code:`x` (continuous, dimension 2, bounded between -12 and 12) and :code:`y` (continuous, dimension 1).
