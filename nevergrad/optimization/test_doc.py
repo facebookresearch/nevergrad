@@ -8,6 +8,8 @@ import nevergrad as ng
 
 # pylint: disable=reimported,redefined-outer-name,unused-variable,unsubscriptable-object, unused-argument
 # pylint: disable=import-outside-toplevel
+# black tends to make too long lines for the doc
+# fmt: off
 
 
 def test_simplest_example() -> None:
@@ -40,7 +42,10 @@ def test_base_example() -> None:
     print(recommendation.value)
     # >>> [0.49971112 0.5002944 ]
     # DOC_BASE_1
-    instrum = ng.p.Instrumentation(ng.p.Array(shape=(2,)).set_bounds(lower=-12, upper=12), y=ng.p.Scalar())
+    instrum = ng.p.Instrumentation(
+        ng.p.Array(shape=(2,)).set_bounds(lower=-12, upper=12),
+        y=ng.p.Scalar()
+    )
     optimizer = ng.optimizers.OnePlusOne(parametrization=instrum, budget=100)
     recommendation = optimizer.minimize(square)
     print(recommendation.value)
