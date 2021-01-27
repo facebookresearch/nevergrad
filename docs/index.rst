@@ -52,10 +52,10 @@ Learn more about parametrization in the :ref:`Parametrization section <parametri
    optimization.rst
    parametrization.rst
    machinelearning.rst
-   r.rst
    optimizers_ref.rst
    parametrization_ref.rst
    benchmarking.rst
+   r.rst
    benchmarks.rst
    pyomo.rst
    windows.md
