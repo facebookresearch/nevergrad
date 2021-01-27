@@ -14,11 +14,12 @@ Minimizing a function using an optimizer (here :code:`OnePlusOne`) can be easily
     :start-after: DOC_BASE_0
     :end-before: DOC_BASE_1
 
-:code:`parametrization=n` is a shortcut to state that the function has only one variable, of dimension :code:`n`,
-See the :ref:`Parametrization section <parametrizing>` for more complex parametrizations.
+:code:`parametrization=n` is a shortcut to state that the function has only one variable, continuous, of dimension :code:`n`: :code:`ng.p.Array(shape=(n,))`.
 
-:code:`parametrization=n` is a shortcut to state that the function has only one variable, continuous, of dimension :code:`n`,
-Defining the following parametrization instead will optimize on both :code:`x` (continuous, dimension 2) and :code:`y` (continuous, dimension 1).
+**Important**: Make sure to check the :ref:`Parametrization section <parametrizing>` for more complex parametrizations examples,
+and :ref:`Parametrization API section <parametrization_ref>` for the full list of options. Below are a few more advanced cases.
+
+Defining the parametrization (:code:`instrum`) as follows in the code sample will instead optimize on both :code:`x` (continuous, dimension 2, bounded between -12 and 12) and :code:`y` (continuous, dimension 1).
 
 
 .. literalinclude:: ../nevergrad/optimization/test_doc.py
@@ -34,6 +35,7 @@ We can work in the discrete case as well, e.g. with the one-max function applied
     :dedent: 4
     :start-after: DOC_BASE_4
     :end-before: DOC_BASE_5
+
 
 
 Using several workers
