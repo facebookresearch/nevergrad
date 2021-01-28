@@ -55,6 +55,7 @@ Learn more about parametrization in the :ref:`Parametrization section <parametri
    optimizers_ref.rst
    parametrization_ref.rst
    benchmarking.rst
+   r.rst
    benchmarks.rst
    pyomo.rst
    windows.md
