@@ -33,8 +33,12 @@ class UnsupportedExperiment(RuntimeError, unittest.SkipTest, NevergradError):
 # warnings
 
 
+class NevergradDeprecationWarning(DeprecationWarning, NevergradWarning):
+    """Deprecated function/class"""
+
+
 class InefficientSettingsWarning(RuntimeWarning, NevergradWarning):
-    pass
+    """Optimization settings are not optimal for the optimizer"""
 
 
 class BadLossWarning(RuntimeWarning, NevergradWarning):
