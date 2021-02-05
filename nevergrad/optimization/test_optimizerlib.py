@@ -176,7 +176,7 @@ def test_infnan(name: str) -> None:
         )  # Second chance!
         recom = optim.minimize(buggy_function)
         result = buggy_function(recom.value)
-        result < 2.0, f"{name} failed and got {result} with {recom.value} (type is {type(optim)})."
+        assert result < 2.0, f"{name} failed and got {result} with {recom.value} (type is {type(optim)})."
 
 
 @skip_win_perf  # type: ignore
