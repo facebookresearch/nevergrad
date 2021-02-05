@@ -120,9 +120,10 @@ def mltuning(
                     regressor=regressor, data_dimension=dimension, dataset=dataset, overfitter=overfitter
                 )
                 for budget in [50, 150, 500]:
-                    for num_workers in (
-                        [1, budget // 4] if seq else [budget]
-                    ):  # Seq for sequential optimization experiments.
+                    # Seq for sequential optimization experiments.
+                    parallelization = [1, budget // 4] if seq else [budget]
+                    for num_workers in parallelization:
+
                         for optim in optims:
                             xp = Experiment(
                                 function, optim, num_workers=num_workers, budget=budget, seed=next(seedg)
