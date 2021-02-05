@@ -1014,8 +1014,8 @@ def control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     for sigma, func in zip(sigmas, funcs):
         f = func.copy()
         param: ng.p.Tuple = f.parametrization.copy()  # type: ignore
-        for array in param._content.values():
-            array.set_mutation(sigma=sigma) # type: ignore
+        for array in param:
+            array.set_mutation(sigma=sigma)  # type: ignore
         param.set_name(f"sigma={sigma}")
 
         f.parametrization = param
@@ -1050,8 +1050,8 @@ def neuro_control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experime
                 xp = Experiment(fu, algo, budget, num_workers=1, seed=next(seedg))
                 if not xp.is_incoherent:
                     yield xp
-                            
-                            
+
+
 @registry.register
 def simpletsp(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Simple TSP problems. Please note that the methods we use could be applied or complex variants, whereas
@@ -1162,7 +1162,9 @@ def image_similarity(seed: tp.Optional[int] = None, with_pgan: bool = False, sim
     """Optimizing images: artificial criterion for now."""
     seedg = create_seed_generator(seed)
     optims = get_optimizers("structured_moo", seed=next(seedg))
-    funcs:tp.List[ExperimentFunction] = [imagesxp.Image(loss=loss, with_pgan=with_pgan) for loss in imagesxp.imagelosses.registry.values() if loss.REQUIRES_REFERENCE == similarity]
+    funcs: tp.List[ExperimentFunction] = [imagesxp.Image(loss=loss, with_pgan=with_pgan)
+                                          for loss in imagesxp.imagelosses.registry.values()
+                                          if loss.REQUIRES_REFERENCE == similarity]
     for budget in [100 * 5 ** k for k in range(3)]:
         for func in funcs:
             for algo in optims:
