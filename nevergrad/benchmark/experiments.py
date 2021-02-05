@@ -1440,7 +1440,7 @@ def image_similarity_and_quality(
     # 3 losses functions including 2 iqas.
     func_iqa = imagesxp.Image(loss=imagesxp.imagelosses.Koncept512, with_pgan=with_pgan)
     func_blur = imagesxp.Image(loss=imagesxp.imagelosses.Blur, with_pgan=with_pgan)
-    base_blur_value = func_blur(func_blur.parametrization.value)
+    base_blur_value: float = func_blur(func_blur.parametrization.value)  # type: ignore
     for func in [
         imagesxp.Image(loss=loss, with_pgan=with_pgan)
         for loss in imagesxp.imagelosses.registry.values()
@@ -1448,18 +1448,18 @@ def image_similarity_and_quality(
     ]:
 
         # Creating a reference value.
-        base_value = func(func.parametrization.value)
-        mofuncs = (
-            helpers.SpecialEvaluationExperiment.create_crossvalidation_experiments(
+        base_value: float = func(func.parametrization.value)  # type: ignore
+        mofuncs: tp.Iterable[fbase.ExperimentFunction]
+        if cross_val:
+            mofuncs = helpers.SpecialEvaluationExperiment.create_crossvalidation_experiments(
                 training_only_experiments=[func, func_blur], experiments=[func_iqa], pareto_size=16
             )
-            if cross_val
-            else [
+        else:
+            mofuncs = [
                 fbase.MultiExperiment(
                     [func, func_blur, func_iqa], upper_bounds=[base_value, base_blur_value, 100.0]
                 )
             ]
-        )  # type: ignore
         for budget in [100 * 5 ** k for k in range(3)]:
             for algo in optims:
                 for mofunc in mofuncs:
@@ -1514,10 +1514,11 @@ def double_o_seven(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         for a, m in modules.items()
     }
     env = base_env.with_agent(player_0=random_agent).as_single_agent()
+    dde = ng.optimizers.DifferentialEvolution(crossover="dimension").set_name("DiscreteDE")
+    optimizers: tp.List[tp.Any] = ["PSO", dde, "MetaTuneRecentering", "DiagonalCMA"]
     for num_repetitions in [1, 10, 100]:
         for archi in ["mono", "multi"]:
-            dde = ng.optimizers.DifferentialEvolution(crossover="dimension").set_name("DiscreteDE")
-            for optim in ["PSO", dde, "MetaTuneRecentering", "DiagonalCMA"]:
+            for optim in optimizers:
                 for env_budget in [5000, 10000, 20000, 40000]:
                     for num_workers in [1, 10, 100]:
                         # careful, not threadsafe
@@ -1532,9 +1533,9 @@ def double_o_seven(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                             func,
                             optim,
                             budget=opt_budget,
-                            num_workers=num_workers,  # type: ignore
+                            num_workers=num_workers,
                             seed=next(seedg),
-                        )  # type: ignore
+                        )
 
 
 @registry.register
