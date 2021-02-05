@@ -64,11 +64,11 @@ class Parameter:
         raise RuntimeError("No loss was provided")
 
     @property
-    def value(self) -> X:
+    def value(self) -> tp.Any:
         raise NotImplementedError
 
     @value.setter
-    def value(self, value: X) -> None:
+    def value(self, value: tp.Any) -> None:
         raise NotImplementedError
 
     @property
