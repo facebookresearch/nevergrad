@@ -494,10 +494,8 @@ class MultiobjectiveReference(Constant):
 
 
 class Container(Parameter):
-    """Dictionary-valued parameter. This Parameter can contain other Parameters,
-    its value is a dict, with keys the ones provided as input, and corresponding values are
-    either directly the provided values if they are not Parameter instances, or the value of those
-    Parameters. It also implements a getter to access the Parameters directly if need be.
+    """Parameter which can hold other parameters.
+    This abstract implementation is based on a dictionary.
 
     Parameters
     ----------
@@ -623,8 +621,24 @@ class Container(Parameter):
 
 
 class Dict(Container):
-    def __iter__(self) -> tp.KeysView[str]:
-        return self.keys()
+    """Dictionary-valued parameter. This Parameter can contain other Parameters,
+    its value is a dict, with keys the ones provided as input, and corresponding values are
+    either directly the provided values if they are not Parameter instances, or the value of those
+    Parameters. It also implements a getter to access the Parameters directly if need be.
+
+    Parameters
+    ----------
+    **parameters: Any
+        the objects or Parameter which will provide values for the dict
+
+    Note
+    ----
+    This is the base structure for all container Parameters, and it is
+    used to hold the internal/model parameters for all Parameter classes.
+    """
+
+    def __iter__(self) -> tp.Iterable[str]:
+        return iter(self.keys())
 
     def keys(self) -> tp.KeysView[str]:
         return self._content.keys()
@@ -635,8 +649,8 @@ class Dict(Container):
     def values(self) -> tp.ValuesView[Parameter]:
         return self._content.values()
 
-    @property  # type: ignore
-    def value(self) -> tp.Dict[str, tp.Any]:  # type: ignore
+    @property
+    def value(self) -> tp.Dict[str, tp.Any]:
         return {k: p.value for k, p in self.items()}
 
     @value.setter
@@ -644,7 +658,7 @@ class Dict(Container):
         cls = self.__class__.__name__
         if not isinstance(value, dict):
             raise TypeError(f"{cls} value must be a dict, got: {value}\nCurrent value: {self.value}")
-        if set(value) != set(self._content):
+        if set(value) != set(self):  # type: ignore
             raise ValueError(
                 f"Got input keys {set(value)} for {cls} but expected {set(self._content)}\nCurrent value: {self.value}"
             )

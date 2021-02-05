@@ -40,8 +40,8 @@ class Tuple(core.Container):
     def __iter__(self) -> tp.Iterator[core.Parameter]:
         return (self._content[k] for k in range(len(self)))
 
-    @property  # type: ignore
-    def value(self) -> tp.Tuple[tp.Any, ...]:  # type: ignore
+    @property
+    def value(self) -> tp.Tuple[tp.Any, ...]:
         return tuple(p.value for p in self)
 
     @value.setter
