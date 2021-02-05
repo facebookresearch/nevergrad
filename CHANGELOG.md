@@ -2,6 +2,8 @@
 
 ## master
 
+- We are starting to move errors and warnings to a specific module `nevergrad.errors`
+
 ## 0.4.3 (2021-01-28)
 
 ### Important changes

@@ -12,6 +12,7 @@ import numpy as np
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
 from nevergrad.common import tools as ngtools
+from nevergrad.common import errors as errors
 from nevergrad.common.decorators import Registry
 from . import utils
 from . import multiobjective as mobj
@@ -44,14 +45,6 @@ def load(cls: tp.Type[X], filepath: tp.PathLike) -> X:
         opt = pickle.load(f)
     assert isinstance(opt, cls), f"You should only load {cls} with this method (found {type(opt)})"
     return opt
-
-
-class InefficientSettingsWarning(RuntimeWarning):
-    pass
-
-
-class TellNotAskedNotSupportedError(NotImplementedError):
-    """To be raised by optimizers which do not support the tell_not_asked interface."""
 
 
 class Optimizer:  # pylint: disable=too-many-instance-attributes
@@ -316,8 +309,11 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             loss = float(loss)
             # Non-sense values including NaNs should not be accepted.
             # We do not use max-float as various later transformations could lead to greater values.
-            if not (loss < 5.0e20):
-                warnings.warn(f"Clipping very high value {loss} in tell (rescale the cost function?).")
+            if not loss < 5.0e20:  # pylint: disable=unneeded-not
+                warnings.warn(
+                    f"Clipping very high value {loss} in tell (rescale the cost function?).",
+                    errors.LossTooLargeWarning,
+                )
                 loss = 5.0e20  # sys.float_info.max leads to numerical problems so let us do this.
         elif isinstance(loss, (tuple, list, np.ndarray)):
             loss = np.array(loss, copy=False, dtype=float).ravel() if len(loss) != 1 else loss[0]
@@ -387,7 +383,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 f'"tell" method only supports float values but the passed loss was: {loss} (type: {type(loss)}.'
             )
         if np.isnan(loss) or loss == np.inf:
-            warnings.warn(f"Updating fitness with {loss} value")
+            warnings.warn(f"Updating fitness with {loss} value", errors.BadLossWarning)
         mvalue: tp.Optional[utils.MultiValue] = None
         if x not in self.archive:
             self.archive[x] = utils.MultiValue(candidate, loss, reference=self.parametrization)
@@ -455,7 +451,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             if k == max_trials - 1:
                 warnings.warn(
                     f"Could not bypass the constraint after {max_trials} tentatives, "
-                    "sending candidate anyway."
+                    "sending candidate anyway.",
+                    errors.FailedConstraintWarning,
                 )
         if not is_suggestion:
             if candidate.uid in self._asked:
@@ -565,7 +562,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             if self.num_workers > 1:
                 warnings.warn(
                     f"num_workers = {self.num_workers} > 1 is suboptimal when run sequentially",
-                    InefficientSettingsWarning,
+                    errors.InefficientSettingsWarning,
                 )
         assert executor is not None
         tmp_runnings: tp.List[tp.Tuple[p.Parameter, tp.JobLike[tp.Loss]]] = []
