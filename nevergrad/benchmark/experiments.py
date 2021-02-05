@@ -74,9 +74,6 @@ class _Constraint:
         return value > 0 if self.as_bool else value
 
 
-# for black (since lists are way too long...):
-
-
 def keras_tuning(
     seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool = False
 ) -> tp.Iterator[Experiment]:
