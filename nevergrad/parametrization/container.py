@@ -12,7 +12,7 @@ Ins = tp.TypeVar("Ins", bound="Instrumentation")
 ArgsKwargs = tp.Tuple[tp.Tuple[tp.Any, ...], tp.Dict[str, tp.Any]]
 
 
-class Tuple(Dict):
+class Tuple(core.Container):
     """Tuple-valued parameter. This Parameter can contain other Parameters,
     its value is tuple which values are either directly the provided values
     if they are not Parameter instances, or the value of those Parameters.
@@ -35,13 +35,14 @@ class Tuple(Dict):
         self._sanity_check(list(self._content.values()))
 
     def _get_parameters_str(self) -> str:
-        params = sorted((k, core.as_parameter(p).name) for k, p in self._content.items())
-        return ",".join(f"{n}" for _, n in params)
+        return ",".join(f"{param.name}" for param in self)
+
+    def __iter__(self) -> tp.Iterator[core.Parameter]:
+        return (self._content[k] for k in range(len(self)))
 
     @property  # type: ignore
     def value(self) -> tp.Tuple[tp.Any, ...]:  # type: ignore
-        param_val = [x[1] for x in sorted(self._content.items(), key=lambda x: int(x[0]))]
-        return tuple(p.value if isinstance(p, core.Parameter) else p for p in param_val)
+        return tuple(p.value for p in self)
 
     @value.setter
     def value(self, value: tp.Tuple[tp.Any]) -> None:

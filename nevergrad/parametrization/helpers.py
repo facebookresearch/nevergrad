@@ -42,8 +42,8 @@ def flatten_parameter(
     This function is experimental, its output will probably evolve before converging.
     """
     flat = {"": parameter}
-    if isinstance(parameter, core.Dict):
-        content_to_add: tp.List[core.Dict] = [parameter]
+    if isinstance(parameter, core.Container):
+        content_to_add: tp.List[core.Container] = [parameter]
         if isinstance(parameter, container.Instrumentation):  # special case: skip internal Tuple and Dict
             content_to_add = [parameter[0], parameter[1]]  # type: ignore
         for c in content_to_add:
@@ -62,7 +62,7 @@ def flatten_parameter(
         flat = {
             x: y
             for x, y in flat.items()
-            if not isinstance(y, (core.Dict, core.Constant)) or isinstance(y, choice.BaseChoice)
+            if not isinstance(y, (core.Container, core.Constant)) or isinstance(y, choice.BaseChoice)
         }
     return flat
 
