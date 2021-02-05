@@ -2,7 +2,7 @@
 
 ## master
 
-- We are starting to move errors and warnings to a specific module `nevergrad.errors`
+- We are starting to move errors and warnings to a specific module `nevergrad.errors` [#1031](https://github.com/facebookresearch/nevergrad/pull/1031).
 
 ## 0.4.3 (2021-01-28)
 
