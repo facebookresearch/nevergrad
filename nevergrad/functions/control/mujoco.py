@@ -28,8 +28,17 @@ class GenericMujocoEnv:
         random state for reproducibility in Gym environment.
     """
 
-    def __init__(self, env_name, state_mean, state_std, num_rollouts,
-                 activation, layer_rescaling_coef, noise_level, random_state):
+    def __init__(
+        self,
+        env_name,
+        state_mean,
+        state_std,
+        num_rollouts,
+        activation,
+        layer_rescaling_coef,
+        noise_level,
+        random_state,
+    ):
         self.mean = state_mean
         self.std = state_std
         self.env = gym.make(env_name)
@@ -40,28 +49,30 @@ class GenericMujocoEnv:
         self.noise_level = noise_level
 
     def _activation(self, x):
-        if self.activation == 'tanh':
+        if self.activation == "tanh":
             return np.tanh(x)
         elif self.activation == "sigmoid":
-            return 1. / (1 + np.exp(-x))
+            return 1.0 / (1 + np.exp(-x))
         else:
             raise NotImplementedError(r"Activation {self.activation} not implemented.")
 
     def __call__(self, layers):
-        """Compute loss (average cumulative negative reward) of a given policy.
-        """
+        """Compute loss (average cumulative negative reward) of a given policy."""
         returns = []
         for _ in range(self.num_rollouts):
             obs = self.env.reset()
             done = False
             totalr = 0.0
             while not done:
-                action = np.matmul(obs, layers[0]) if (self.mean is None) else (
-                    np.matmul((obs - self.mean) / self.std, layers[0]))
+                action = (
+                    np.matmul(obs, layers[0])
+                    if (self.mean is None)
+                    else (np.matmul((obs - self.mean) / self.std, layers[0]))
+                )
                 action = action * self.layer_rescaling_coef[0]
                 for x, r_coef in zip(layers[1:], self.layer_rescaling_coef[1:]):
-                    action = np.matmul(self._activation(action) + 1.e-3, x) * r_coef
-                if self.noise_level > 0.:
+                    action = np.matmul(self._activation(action) + 1.0e-3, x) * r_coef
+                if self.noise_level > 0.0:
                     action += action * self.noise_level * self.random_state.normal(size=action.shape)
                 obs, r, done, _ = self.env.step(action)
                 totalr += r
