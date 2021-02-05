@@ -142,7 +142,7 @@ def buggy_function(x: np.ndarray) -> float:
         return float("nan")
     if any(x > 0.0):
         return float("inf")
-    return np.sum(x ** 2)
+    return float(np.sum(x ** 2))
 
 
 @skip_win_perf  # type: ignore
