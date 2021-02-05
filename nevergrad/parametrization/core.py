@@ -637,7 +637,7 @@ class Dict(Container):
     used to hold the internal/model parameters for all Parameter classes.
     """
 
-    def __iter__(self) -> tp.Iterable[str]:
+    def __iter__(self) -> tp.Iterator[str]:
         return iter(self.keys())
 
     def keys(self) -> tp.KeysView[str]:
@@ -658,7 +658,7 @@ class Dict(Container):
         cls = self.__class__.__name__
         if not isinstance(value, dict):
             raise TypeError(f"{cls} value must be a dict, got: {value}\nCurrent value: {self.value}")
-        if set(value) != set(self):  # type: ignore
+        if set(value) != set(self):
             raise ValueError(
                 f"Got input keys {set(value)} for {cls} but expected {set(self._content)}\nCurrent value: {self.value}"
             )
