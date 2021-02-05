@@ -17,7 +17,6 @@ from . import utils
 
 P = tp.TypeVar("P", bound="Parameter")
 D = tp.TypeVar("D", bound="Container")
-X = tp.TypeVar("X")
 
 
 # pylint: disable=too-many-instance-attributes,too-many-public-methods
