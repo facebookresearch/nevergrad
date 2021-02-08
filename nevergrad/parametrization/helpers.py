@@ -95,7 +95,7 @@ def split_as_data_parameters(
     copied = parameter.copy()
     ref = parameter.copy()
     flatp, flatc, flatref = (
-        {x: y for x, y in flatten_parameter(pa).items() if isinstance(y, pdata.Array)}
+        {x: y for x, y in flatten_parameter(pa).items() if isinstance(y, pdata.Data)}
         for pa in (parameter, copied, ref)
     )
     keys = list(flatp.keys())

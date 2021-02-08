@@ -33,10 +33,10 @@ def test_array_basics() -> None:
     assert "blublu:{'var1" in representation
 
 
-@pytest.mark.parametrize(
+@pytest.mark.parametrize(  # type: ignore
     "param",
     [
-        par.Dict(truc=12),  # type: ignore
+        par.Dict(truc=12),
         par.Tuple(),
         par.Instrumentation(12),
     ],
@@ -105,7 +105,7 @@ def check_parameter_features(param: par.Parameter) -> None:
     assert child_hash.name == "blublu"
     param.value = child.value
     assert param.get_value_hash() == child.get_value_hash()
-    if isinstance(param, par.Array):
+    if isinstance(param, par.Data):
         assert param.get_value_hash() != child_hash.get_value_hash()
         child_hash.value = param.value
         assert not np.any(param.get_standardized_data(reference=child))
@@ -128,7 +128,7 @@ def check_parameter_features(param: par.Parameter) -> None:
     string = pickle.dumps(child)
     pickle.loads(string)
     # array info transfer:
-    if isinstance(param, par.Array):
+    if isinstance(param, par.Data):
         for name in (
             "integer",
             "exponent",

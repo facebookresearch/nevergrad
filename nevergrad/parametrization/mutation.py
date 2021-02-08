@@ -10,7 +10,7 @@ import numpy as np
 from . import core
 from . import transforms
 from .data import Mutation as Mutation
-from .data import Array, Scalar
+from .data import Array, Scalar, Data
 from .choice import Choice
 
 
@@ -58,7 +58,7 @@ class Crossover(Mutation):
     def axis(self) -> tp.Optional[tp.Tuple[int, ...]]:
         return self.parameters["axis"].value  # type: ignore
 
-    def apply(self, arrays: tp.Sequence["Array"]) -> None:
+    def apply(self, arrays: tp.Sequence[Data]) -> None:
         new_value = self._apply_array([a._value for a in arrays])
         bounds = arrays[0].bounds
         if self.parameters["fft"].value and any(x is not None for x in bounds):
@@ -203,7 +203,7 @@ class LocalGaussian(Mutation):
     def axes(self) -> tp.Optional[tp.Tuple[int, ...]]:
         return self.parameters["axes"].value  # type: ignore
 
-    def apply(self, arrays: tp.Sequence[Array]) -> None:
+    def apply(self, arrays: tp.Sequence[Data]) -> None:
         arrays = list(arrays)
         assert len(arrays) == 1
         data = np.zeros(arrays[0].value.shape)
@@ -230,7 +230,7 @@ class ProbaLocalGaussian(Mutation):
     def axes(self) -> tp.Optional[tp.Tuple[int, ...]]:
         return self.parameters["axes"].value  # type: ignore
 
-    def apply(self, arrays: tp.Sequence[Array]) -> None:
+    def apply(self, arrays: tp.Sequence[Data]) -> None:
         arrays = list(arrays)
         assert len(arrays) == 1
         data = np.zeros(arrays[0].value.shape)
