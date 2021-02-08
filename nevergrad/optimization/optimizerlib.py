@@ -1832,7 +1832,9 @@ class _Chain(base.Optimizer):
                 errors.NevergradDeprecationWarning,
             )
 
+    @property
     def no_parallelization(self) -> bool:  # type: ignore
+        print(1, [opt.no_parallelization for opt in self.optimizers])
         return any(opt.no_parallelization for opt in self.optimizers)
 
     def _internal_ask_candidate(self) -> p.Parameter:
@@ -1880,6 +1882,7 @@ class Chaining(base.ConfiguredOptimizer):
 
     @property
     def no_parallelization(self) -> bool:  # type: ignore
+        print(2, [opt.no_parallelization for opt in self._opts])
         return any(opt.no_parallelization for opt in self._opts)
 
 
