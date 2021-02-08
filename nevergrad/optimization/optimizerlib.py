@@ -1771,6 +1771,8 @@ class ParametrizedBO(base.ConfiguredOptimizer):
         dictionnary of parameters for the gaussian process
     """
 
+    no_parallelization = True
+
     # pylint: disable=unused-argument
     def __init__(
         self,
@@ -1869,7 +1871,6 @@ class Chaining(base.ConfiguredOptimizer):
         budgets: tp.Sequence[tp.Union[str, int]],
     ) -> None:
         super().__init__(_Chain, locals())
-        self._opts = optimizers
 
 
 # depreated: old names (need a capital letter for consistency
