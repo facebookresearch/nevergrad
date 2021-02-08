@@ -571,11 +571,6 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         sleeper = ngtools.Sleeper()  # manages waiting time depending on execution time of the jobs
         remaining_budget = self.budget - self.num_ask
         first_iteration = True
-        # multiobjective hack
-        func = objective_function
-        multiobjective = hasattr(func, "multiobjective_function")
-        if multiobjective:
-            func = func.multiobjective_function  # type: ignore
         #
         while remaining_budget or self._running_jobs or self._finished_jobs:
             # # # # # Update optimizer with finished jobs # # # # #
@@ -589,8 +584,6 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 while self._finished_jobs:
                     x, job = self._finished_jobs[0]
                     result = job.result()
-                    if multiobjective:  # hack
-                        result = objective_function.compute_aggregate_loss(job.result(), *x.args, **x.kwargs)  # type: ignore
                     self.tell(x, result)
                     self._finished_jobs.popleft()  # remove it after the tell to make sure it was indeed "told" (in case of interruption)
                     if verbosity:
@@ -608,7 +601,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                     print(f"Launching {new_sugg} jobs with new suggestions")
                 for _ in range(new_sugg):
                     args = self.ask()
-                    self._running_jobs.append((args, executor.submit(func, *args.args, **args.kwargs)))
+                    self._running_jobs.append(
+                        (args, executor.submit(objective_function, *args.args, **args.kwargs))
+                    )
                 if new_sugg:
                     sleeper.start_timer()
             remaining_budget = self.budget - self.num_ask

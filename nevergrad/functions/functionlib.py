@@ -10,7 +10,6 @@ from nevergrad.parametrization import parameter as p
 from nevergrad.common import tools
 import nevergrad.common.typing as tp
 from .base import ExperimentFunction
-from .multiobjective import MultiobjectiveFunction
 from .pbt import PBT as PBT  # pylint: disable=unused-import
 from . import utils
 from . import corefuncs
@@ -304,8 +303,8 @@ class FarOptimumFunction(ExperimentFunction):
         sigma = p.Array(init=init).set_mutation(exponent=2.0) if mutable_sigma else p.Constant(init)
         parametrization.set_mutation(sigma=sigma)
         parametrization.set_recombination("average" if recombination == "average" else p.mutation.Crossover())
-        self._multiobjective = MultiobjectiveFunction(self._multifunc, 2 * self._optimum)
-        super().__init__(self._multiobjective if multiobjective else self._monofunc, parametrization.set_name(""))  # type: ignore
+        self.multiobjective_upper_bounds = np.array(2 * self._optimum) if multiobjective else None
+        super().__init__(self._multifunc if multiobjective else self._monofunc, parametrization.set_name(""))  # type: ignore
 
     def _multifunc(self, x: np.ndarray) -> np.ndarray:
         return np.abs(x - self._optimum)  # type: ignore
@@ -314,9 +313,7 @@ class FarOptimumFunction(ExperimentFunction):
         return float(np.sum(self._multifunc(x)))
 
     def evaluation_function(self, *recommendations: p.Parameter) -> float:
-        assert len(recommendations) == 1, "Should not be a pareto set for a monoobjective function"
-        assert len(recommendations[0].args) == 1 and not recommendations[0].kwargs
-        return self._monofunc(recommendations[0].args[0])
+        return min(self._monofunc(x.args[0]) for x in recommendations)
 
     @classmethod
     def itercases(cls) -> tp.Iterator["FarOptimumFunction"]:

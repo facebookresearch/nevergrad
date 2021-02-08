@@ -35,6 +35,10 @@ class UnsupportedExperiment(RuntimeError, unittest.SkipTest, NevergradError):
     """
 
 
+class NevergradDeprecationError(RuntimeError, NevergradError):
+    """Deprecated function/class"""
+
+
 # warnings
 
 

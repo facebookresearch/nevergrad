@@ -2,14 +2,15 @@
 
 ## master
 
-- We are starting to move errors and warnings to a specific module `nevergrad.errors` [#1031](https://github.com/facebookresearch/nevergrad/pull/1031).
+- :code:`MultiobjectiveFunction` does not exist anymore  [#1034](https://github.com/facebookresearch/nevergrad/pull/1034).
+- the new `nevergrad.errors` module gathers errors and warnings used throughout the package (WIP) [#1031](https://github.com/facebookresearch/nevergrad/pull/1031).
 
 ## 0.4.3 (2021-01-28)
 
 ### Important changes
 
 - `tell` method can now receive a list/array of losses for multi-objective optimization [#775](https://github.com/facebookresearch/nevergrad/pull/775). For now it is neither robust, nor scalable, nor stable, nor optimal so be careful when using it. More information in the [documentation](https://facebookresearch.github.io/nevergrad/optimization.html#multiobjective-minimization-with-nevergrad).
-- The old way to perform multiobjective optimization, through the use of :code:`MultiobjectiveFunction`, is now deprecated and will be removed i n version 0.4.3 [#1017](https://github.com/facebookresearch/nevergrad/pull/1017).
+- The old way to perform multiobjective optimization, through the use of :code:`MultiobjectiveFunction`, is now deprecated and will be removed after version 0.4.3 [#1017](https://github.com/facebookresearch/nevergrad/pull/1017).
 - By default, the optimizer now returns the best set of parameter as recommendation [#951](https://github.com/facebookresearch/nevergrad/pull/951), considering that the function is deterministic. The previous behavior would use an estimation of noise to provide the pessimistic best point, leading to unexpected behaviors [#947](https://github.com/facebookresearch/nevergrad/pull/947). You can can back to this behavior by specifying: :code:`parametrization.descriptors.deterministic_function = False`
 
 ### Other
