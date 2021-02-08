@@ -74,7 +74,7 @@ def test_optimizers_multiobjective(name: str) -> None:  # pylint: disable=redefi
         raise SkipTest("BO is currently failing for unclear reasons")  # TODO solve
     with warnings.catch_warnings():
         # tests do not need to be efficient
-        warnings.simplefilter("ignore", category=base.InefficientSettingsWarning)
+        warnings.simplefilter("ignore", category=base.errors.InefficientSettingsWarning)
         optimizer = registry[name](parametrization=4, budget=100)
         candidate = optimizer.ask()
         optimizer.tell(candidate, mofunc(candidate.value))
