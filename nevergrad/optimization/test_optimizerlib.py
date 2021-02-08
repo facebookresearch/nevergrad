@@ -157,7 +157,7 @@ def test_infnan(name: str) -> None:
                 "TBPSA",
                 "BO",
                 "Noisy",
-                "chain",
+                "Chain",
             ]
         )
     ):
@@ -188,7 +188,7 @@ def test_optimizers(name: str) -> None:
             optimizer_cls.__class__(**optimizer_cls._config) == optimizer_cls
         ), "Similar configuration are not equal"
     # some classes of optimizer are eigher slow or not good with small budgets:
-    nameparts = ["Many", "chain", "BO", "Discrete"]
+    nameparts = ["Many", "Chain", "BO", "Discrete"]
     is_ngopt = inspect.isclass(optimizer_cls) and issubclass(optimizer_cls, NGOptBase)  # type: ignore
     verify = (
         not optimizer_cls.one_shot

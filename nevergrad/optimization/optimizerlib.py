@@ -1829,7 +1829,7 @@ class _Chain(base.Optimizer):
             warnings.warn(
                 "Chain optimizers are renamed with a capital C for consistency. "
                 "Eg: chainCMAPowell becomes ChainCMAPowell",
-                DeprecationWarning,
+                errors.NevergradDeprecationWarning,
             )
 
     def no_parallelization(self) -> bool:  # type: ignore
