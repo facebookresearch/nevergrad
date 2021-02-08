@@ -149,6 +149,6 @@ MixES = EvolutionStrategy(recombination_ratio=0, only_offsprings=False, offsprin
 MutDE = EvolutionStrategy(recombination_ratio=0, only_offsprings=False, offsprings=None).set_name(
     "MutDE", register=True
 )
-# NonNSGAIIES = EvolutionStrategy(
-#     recombination_ratio=0, only_offsprings=True, offsprings=60, ranker="simple"
-# ).set_name("NonNSGAIIES", register=True)
+NonNSGAIIES = EvolutionStrategy(
+    recombination_ratio=0, only_offsprings=True, offsprings=60, ranker="simple"
+).set_name("NonNSGAIIES", register=True)
