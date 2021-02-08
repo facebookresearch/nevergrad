@@ -1896,23 +1896,23 @@ chainNaiveTBPSACMAPowell.no_parallelization = True
 
 # new names
 ChainCMAPowell = Chaining([CMA, Powell], ["half"]).set_name("ChainCMAPowell", register=True)
-chainCMAPowell.no_parallelization = True  # TODO make this automatic
+ChainCMAPowell.no_parallelization = True  # TODO make this automatic
 ChainMetaModelSQP = Chaining([MetaModel, SQP], ["half"]).set_name("ChainMetaModelSQP", register=True)
-chainMetaModelSQP.no_parallelization = True
+ChainMetaModelSQP.no_parallelization = True
 ChainMetaModelPowell = Chaining([MetaModel, Powell], ["half"]).set_name("ChainMetaModelPowell", register=True)
-chainMetaModelPowell.no_parallelization = True
+ChainMetaModelPowell.no_parallelization = True
 ChainDiagonalCMAPowell = Chaining([DiagonalCMA, Powell], ["half"]).set_name(
     "ChainDiagonalCMAPowell", register=True
 )
-chainDiagonalCMAPowell.no_parallelization = True
+ChainDiagonalCMAPowell.no_parallelization = True
 ChainNaiveTBPSAPowell = Chaining([NaiveTBPSA, Powell], ["half"]).set_name(
     "ChainNaiveTBPSAPowell", register=True
 )
-chainNaiveTBPSAPowell.no_parallelization = True
+ChainNaiveTBPSAPowell.no_parallelization = True
 ChainNaiveTBPSACMAPowell = Chaining([NaiveTBPSA, CMA, Powell], ["third", "third"]).set_name(
     "ChainNaiveTBPSACMAPowell", register=True
 )
-chainNaiveTBPSACMAPowell.no_parallelization = True
+ChainNaiveTBPSACMAPowell.no_parallelization = True
 
 
 @registry.register
