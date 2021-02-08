@@ -3,6 +3,9 @@
 ## master
 
 - :code:`MultiobjectiveFunction` does not exist anymore  [#1034](https://github.com/facebookresearch/nevergrad/pull/1034).
+- the new `nevergrad.errors` module gathers errors and warnings used throughout the package (WIP) [#1031](https://github.com/facebookresearch/nevergrad/pull/1031).
+
+>>>>>>> master
 ## 0.4.3 (2021-01-28)
 
 ### Important changes

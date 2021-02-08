@@ -24,10 +24,10 @@ from bayes_opt.util import acq_max
 import nevergrad as ng
 import nevergrad.common.typing as tp
 from nevergrad.common import testing
+from nevergrad.common import errors
 from . import base
 from . import optimizerlib as optlib
 from . import experimentalvariants as xpvariants
-from .recaster import FinishedUnderlyingOptimizerWarning
 from .optimizerlib import registry
 from .optimizerlib import NGOptBase
 
@@ -75,12 +75,7 @@ def check_optimizer(
         assert isinstance(
             optimizer.provide_recommendation(), ng.p.Parameter
         ), "Recommendation should be available from start"
-        with warnings.catch_warnings():
-            # tests do not need to be efficient
-            warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)
-            # some optimizers finish early
-            warnings.filterwarnings("ignore", category=FinishedUnderlyingOptimizerWarning)
-            # now optimize :)
+        with testing.suppress_nevergrad_warnings():
             candidate = optimizer.minimize(fitness)
         raised = False
         if verify_value:
@@ -108,7 +103,7 @@ def check_optimizer(
         candidate = optimizer.parametrization.spawn_child().set_standardized_data(data, deterministic=False)
         optimizer.tell(candidate, 12.0)
     except Exception as e:  # pylint: disable=broad-except
-        if not isinstance(e, base.TellNotAskedNotSupportedError):
+        if not isinstance(e, base.errors.TellNotAskedNotSupportedError):
             raise AssertionError(
                 "Optimizers should raise base.TellNotAskedNotSupportedError "
                 "at when telling unasked points if they do not support it"
@@ -147,6 +142,7 @@ def buggy_function(x: np.ndarray) -> float:
 
 @skip_win_perf  # type: ignore
 @pytest.mark.parametrize("name", registry)  # type: ignore
+@testing.suppress_nevergrad_warnings()  # hides bad loss
 def test_infnan(name: str) -> None:
     optim_cls = registry[name]
     optim = optim_cls(parametrization=2, budget=70)
@@ -230,21 +226,19 @@ def recomkeeper() -> tp.Generator[RecommendationKeeper, None, None]:
     keeper.save()
 
 
+@testing.suppress_nevergrad_warnings()
 @pytest.mark.parametrize("name", registry)  # type: ignore
 def test_optimizers_suggest(name: str) -> None:  # pylint: disable=redefined-outer-name
-    with warnings.catch_warnings():
-        # tests do not need to be efficient
-        warnings.simplefilter("ignore", category=base.InefficientSettingsWarning)
-        optimizer = registry[name](parametrization=4, budget=2)
-        optimizer.suggest(np.array([12.0] * 4))
-        candidate = optimizer.ask()
-        try:
-            optimizer.tell(candidate, 12)
-            # The optimizer should recommend its suggestion, except for a few optimization methods:
-            if name not in ["SPSA", "TBPSA", "StupidRandom"]:
-                np.testing.assert_array_almost_equal(optimizer.provide_recommendation().value, [12.0] * 4)
-        except base.TellNotAskedNotSupportedError:
-            pass
+    optimizer = registry[name](parametrization=4, budget=2)
+    optimizer.suggest(np.array([12.0] * 4))
+    candidate = optimizer.ask()
+    try:
+        optimizer.tell(candidate, 12)
+        # The optimizer should recommend its suggestion, except for a few optimization methods:
+        if name not in ["SPSA", "TBPSA", "StupidRandom"]:
+            np.testing.assert_array_almost_equal(optimizer.provide_recommendation().value, [12.0] * 4)
+    except base.errors.TellNotAskedNotSupportedError:
+        pass
 
 
 # pylint: disable=redefined-outer-name
@@ -267,9 +261,7 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
     dimension = min(16, max(4, int(np.sqrt(budget))))
     # set up problem
     fitness = Fitness([0.5, -0.8, 0, 4] + (5 * np.cos(np.arange(dimension - 4))).tolist())
-    with warnings.catch_warnings():
-        # tests do not need to be efficient
-        warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)
+    with testing.suppress_nevergrad_warnings():
         optim = optimizer_cls(parametrization=dimension, budget=budget, num_workers=1)
         optim.parametrization.random_state.seed(12)
         np.testing.assert_equal(optim.name, name)
@@ -313,13 +305,11 @@ def test_differential_evolution_popsize(name: str, dimension: int, num_workers: 
     np.testing.assert_equal(optim.llambda, expected)  # type: ignore
 
 
+@testing.suppress_nevergrad_warnings()
 def test_portfolio_budget() -> None:
-    with warnings.catch_warnings():
-        # tests do not need to be efficient
-        warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)
-        for k in range(3, 13):
-            optimizer = optlib.Portfolio(parametrization=2, budget=k)
-            np.testing.assert_equal(optimizer.budget, sum(o.budget for o in optimizer.optims))
+    for k in range(3, 13):
+        optimizer = optlib.Portfolio(parametrization=2, budget=k)
+        np.testing.assert_equal(optimizer.budget, sum(o.budget for o in optimizer.optims))
 
 
 def test_optimizer_families_repr() -> None:
@@ -341,9 +331,7 @@ def test_optimizer_families_repr() -> None:
 @pytest.mark.parametrize("name", ["PSO", "DE"])  # type: ignore
 def test_tell_not_asked(name: str) -> None:
     param = ng.p.Scalar()
-    with warnings.catch_warnings():
-        # tests do not need to be efficient
-        warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)
+    with testing.suppress_nevergrad_warnings():
         opt = optlib.registry[name](parametrization=param, budget=2, num_workers=2)
     opt.llambda = 2  # type: ignore
     t_10 = opt.parametrization.spawn_child(new_value=10)
@@ -415,7 +403,7 @@ def test_optim_pickle(name: str) -> None:
 def test_bo_parametrization_and_parameters() -> None:
     # parametrization
     parametrization = ng.p.Instrumentation(ng.p.Choice([True, False]))
-    with pytest.warns(base.InefficientSettingsWarning):
+    with pytest.warns(errors.InefficientSettingsWarning):
         xpvariants.QRBO(parametrization, budget=10)
     with pytest.warns(None) as record:
         opt = optlib.ParametrizedBO(gp_parameters={"alpha": 1})(parametrization, budget=10)
@@ -461,6 +449,7 @@ def test_parametrization_optimizer_reproducibility() -> None:
     np.testing.assert_equal(recom.kwargs["y"], 67)
 
 
+@testing.suppress_nevergrad_warnings()
 def test_parallel_es() -> None:
     opt = optlib.EvolutionStrategy(popsize=3, offsprings=None)(4, budget=20, num_workers=5)
     for k in range(35):
@@ -469,6 +458,7 @@ def test_parallel_es() -> None:
             opt.tell(cand, 1)
 
 
+@testing.suppress_nevergrad_warnings()
 @skip_win_perf  # type: ignore
 @pytest.mark.parametrize(
     "dimension, num_workers, scale, budget, ellipsoid",
@@ -533,6 +523,7 @@ def test_metamodel(dimension: int, num_workers: int, scale: float, budget: int, 
         (True, [0.999987, -0.322118]),
     ],
 )
+@testing.suppress_nevergrad_warnings()  # hides failed constraints
 def test_constrained_optimization(penalization: bool, expected: tp.List[float]) -> None:
     def constraint(i: tp.Any) -> tp.Union[bool, float]:
         return i[1]["x"][0] >= 1
@@ -560,9 +551,7 @@ def test_parametrization_offset(name: str) -> None:
     if "Cobyla" in name and platform.system() == "Windows":
         raise SkipTest("Cobyla is flaky on Windows for unknown reasons")
     parametrization = ng.p.Instrumentation(ng.p.Array(init=[1e12, 1e12]))
-    with warnings.catch_warnings():
-        # tests do not need to be efficient
-        warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)
+    with testing.suppress_nevergrad_warnings():
         optimizer = registry[name](parametrization, budget=100, num_workers=1)
     for k in range(10 if "BO" not in name else 2):
         candidate = optimizer.ask()
@@ -617,6 +606,7 @@ def test_shiwa_dim1() -> None:
         ("NGO", 1, 10, 2, "OnePlusOne"),
     ],  # pylint: disable=too-many-arguments
 )
+@testing.suppress_nevergrad_warnings()
 def test_shiwa_selection(
     name: str, param: tp.Any, budget: int, num_workers: int, expected: str, caplog: tp.Any
 ) -> None:
@@ -630,9 +620,7 @@ def test_shiwa_selection(
 
 
 def test_bo_ordering() -> None:
-    with warnings.catch_warnings():
-        # tests do not need to be efficient
-        warnings.filterwarnings("ignore", category=base.InefficientSettingsWarning)
+    with testing.suppress_nevergrad_warnings():  # tests do not need to be efficient
         optim = ng.optimizers.ParametrizedBO(initialization="Hammersley")(
             parametrization=ng.p.Choice(range(12)), budget=10
         )
@@ -725,6 +713,7 @@ def _multiobjective(z: np.ndarray) -> tp.Tuple[float, float, float]:
     return (abs(x - 1), abs(y + 1), abs(x - y))
 
 
+@testing.suppress_nevergrad_warnings()  # hides bad loss
 def test_mo_constrained_de() -> None:
     optimizer = optlib.DE(2, budget=60)
     optimizer.parametrization.random_state.seed(12)
