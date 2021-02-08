@@ -714,7 +714,7 @@ def _multiobjective(z: np.ndarray) -> tp.Tuple[float, float, float]:
     return (abs(x - 1), abs(y + 1), abs(x - y))
 
 
-@pytest.mark.parametrized("name", ["DE", "ES"])  # type: ignore
+@pytest.mark.parametrize("name", ["DE", "ES"])  # type: ignore
 @testing.suppress_nevergrad_warnings()  # hides bad loss
 def test_mo_constrained(name: str) -> None:
     optimizer = optlib.registry[name](2, budget=60)
@@ -729,4 +729,4 @@ def test_mo_constrained(name: str) -> None:
     point = optimizer.parametrization.spawn_child(new_value=np.array([1.0, 1.0]))  # on the pareto
     optimizer.tell(point, _multiobjective(point.value))
     if isinstance(optimizer, es._EvolutionStrategy):
-        assert optimizer._rank_method is not None
+        assert optimizer._rank_method is not None  # make sure the nsga2 ranker is used
