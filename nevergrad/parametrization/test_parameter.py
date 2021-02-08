@@ -189,7 +189,7 @@ def check_parameter_freezable(param: par.Parameter) -> None:
         ),
         (
             par.TransitionChoice([1, 12]),
-            "TransitionChoice(choices=Tuple(1,12),positions=Array{Cd(0,2)}" ",transitions=[1. 1.])",
+            "TransitionChoice(choices=Tuple(1,12),positions=Array{Cd(0,2)},transitions=[1. 1.])",
         ),
     ],
 )
@@ -228,6 +228,7 @@ def test_instrumentation() -> None:
     scal = par.Scalar()
     with pytest.raises(ValueError):
         inst = par.Instrumentation(scal, blublu=scal)
+    assert set(inst[1]) == {"string", "truc"}  # type: ignore
 
 
 def test_scalar_and_mutable_sigma() -> None:

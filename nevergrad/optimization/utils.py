@@ -388,7 +388,7 @@ class BoundScaler:
             return [parameter]
         elif isinstance(parameter, p.Constant):
             return []
-        if not isinstance(parameter, p.Dict):
+        if not isinstance(parameter, p.Container):
             raise RuntimeError(f"Unsupported parameter {parameter}")
         output: tp.List[p.Array] = []
         for _, subpar in sorted(parameter._content.items()):

@@ -1115,7 +1115,7 @@ def control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     for sigma, func in zip(sigmas, funcs):
         f = func.copy()
         param: ng.p.Tuple = f.parametrization.copy()  # type: ignore
-        for array in param._content.values():
+        for array in param:
             array.set_mutation(sigma=sigma)  # type: ignore
         param.set_name(f"sigma={sigma}")
 

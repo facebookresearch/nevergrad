@@ -29,9 +29,11 @@ from typing import MutableMapping as MutableMapping
 from typing import Iterator as Iterator
 from typing import Iterable as Iterable
 from typing import Generator as Generator
+from typing import KeysView as KeysView
+from typing import ValuesView as ValuesView
+from typing import ItemsView as ItemsView
 
 # others
-from typing import ValuesView as ValuesView
 from typing import Callable as Callable
 from typing import Hashable as Hashable
 from typing import Match as Match
