@@ -11,6 +11,7 @@ import numpy as np
 from bayes_opt import UtilityFunction
 from bayes_opt import BayesianOptimization
 import nevergrad.common.typing as tp
+from nevergrad.common import errors
 from nevergrad.parametrization import parameter as p
 from nevergrad.parametrization import transforms
 from nevergrad.parametrization import discretization
@@ -19,7 +20,6 @@ from . import base
 from . import mutations
 from .base import registry as registry
 from .base import addCompare  # pylint: disable=unused-import
-from .base import InefficientSettingsWarning as InefficientSettingsWarning
 from .base import IntOrParameter
 from . import sequences
 
@@ -608,7 +608,7 @@ class EDA(base.Optimizer):
             self.children = []
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        raise base.TellNotAskedNotSupportedError
+        raise errors.TellNotAskedNotSupportedError
 
 
 class PCEDA(EDA):
@@ -771,7 +771,7 @@ class PSO(base.Optimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if budget is not None and budget < 60:
-            warnings.warn("PSO is inefficient with budget < 60", base.InefficientSettingsWarning)
+            warnings.warn("PSO is inefficient with budget < 60", errors.InefficientSettingsWarning)
         cases: tp.Dict[str, tp.Tuple[tp.Optional[float], transforms.Transform]] = dict(
             arctan=(0, transforms.ArctanBound(0, 1)),
             identity=(None, transforms.Affine(1, 0)),
@@ -1231,7 +1231,7 @@ class Portfolio(base.Optimizer):
         for opt in self.optims:
             try:
                 opt.tell(candidate, loss)
-            except base.TellNotAskedNotSupportedError:
+            except errors.TellNotAskedNotSupportedError:
                 pass
         # Presumably better than self.optims[optim_index].tell(candidate, value)
 
@@ -1241,10 +1241,10 @@ class Portfolio(base.Optimizer):
             try:
                 opt.tell(candidate, loss)
                 at_least_one_ok = True
-            except base.TellNotAskedNotSupportedError:
+            except errors.TellNotAskedNotSupportedError:
                 pass
         if not at_least_one_ok:
-            raise base.TellNotAskedNotSupportedError
+            raise errors.TellNotAskedNotSupportedError
 
 
 class InfiniteMetaModelOptimum(ValueError):
@@ -1680,7 +1680,7 @@ class _BO(base.Optimizer):
                     "(for your parametrization, continuity={cont} and noisy={noisy}).\n"
                     "Find more information on BayesianOptimization's github.\n"
                     "You should then create a new instance of optimizerlib.ParametrizedBO with appropriate parametrization.",
-                    InefficientSettingsWarning,
+                    errors.InefficientSettingsWarning,
                 )
 
     @property
@@ -1991,7 +1991,7 @@ class _EMNA(base.Optimizer):
                 self.popsize.mu = self.popsize.llambda // 4
                 warnings.warn(
                     "Budget may be too small in front of the dimension for EMNA",
-                    base.InefficientSettingsWarning,
+                    errors.InefficientSettingsWarning,
                 )
         self.current_center: np.ndarray = np.zeros(self.dimension)
         # population
@@ -2082,7 +2082,7 @@ class _EMNA(base.Optimizer):
                 self.sigma /= imp
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        raise base.TellNotAskedNotSupportedError
+        raise errors.TellNotAskedNotSupportedError
 
 
 class EMNA(base.ConfiguredOptimizer):
