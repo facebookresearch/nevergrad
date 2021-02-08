@@ -663,8 +663,8 @@ class ConfiguredOptimizer:
     # optimizer qualifiers
     recast = False  # algorithm which were not designed to work with the suggest/update pattern
     one_shot = False  # algorithm designed to suggest all budget points at once
-    no_parallelization = False  # algorithm which is designed to run sequentially only
     hashed = False
+    no_parallelization = False  # algorithm which is designed to run sequentially only
 
     def __init__(
         self, OptimizerClass: tp.Type[Optimizer], config: tp.Dict[str, tp.Any], as_config: bool = False
