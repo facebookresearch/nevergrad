@@ -334,6 +334,7 @@ DiscreteBSOOnePlusOne = ParametrizedOnePlusOne(mutation="discreteBSO").set_name(
 DiscreteDoerrOnePlusOne = ParametrizedOnePlusOne(mutation="doerr").set_name(
     "DiscreteDoerrOnePlusOne", register=True
 )
+DiscreteDoerrOnePlusOne.no_parallelization = True
 CauchyOnePlusOne = ParametrizedOnePlusOne(mutation="cauchy").set_name("CauchyOnePlusOne", register=True)
 OptimisticNoisyOnePlusOne = ParametrizedOnePlusOne(noise_handling="optimistic").set_name(
     "OptimisticNoisyOnePlusOne", register=True
