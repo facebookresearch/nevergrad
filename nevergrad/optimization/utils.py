@@ -380,8 +380,8 @@ class BoundScaler:
         )
 
     @classmethod
-    def list_arrays(cls, parameter: p.Parameter) -> tp.List[p.Array]:
-        """Computes a list of data (Array) parameters in the same order as in
+    def list_arrays(cls, parameter: p.Parameter) -> tp.List[p.Data]:
+        """Computes a list of Data (Array/Scalar) parameters in the same order as in
         the standardized data space.
         """
         if isinstance(parameter, p.Data):

@@ -110,7 +110,7 @@ class ParametersLogger:
             if inspect.ismethod(val):
                 val = repr(val.__self__)  # show mutation class
             data[name if name else "0"] = val.tolist() if isinstance(val, np.ndarray) else val
-            if isinstance(param, p.Array):
+            if isinstance(param, p.Data):
                 val = param.sigma.value
                 data[(name if name else "0") + "#sigma"] = (
                     val.tolist() if isinstance(val, np.ndarray) else val
