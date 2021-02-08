@@ -19,20 +19,24 @@ C = tp.TypeVar("C", bound="Choice")
 T = tp.TypeVar("T", bound="TransitionChoice")
 
 
-class BaseChoice(core.Dict):
-    class ChoiceTag(tp.NamedTuple):
-        cls: tp.Type[core.Parameter]
-        arity: int
+class ChoiceTag(tp.NamedTuple):
+    cls: tp.Type[core.Parameter]
+    arity: int
 
-        @classmethod
-        def as_tag(cls, param: core.Parameter) -> "BaseChoice.ChoiceTag":
-            # arrays inherit tags to identify them as bound to a choice
-            if cls in param.heritage:  # type: ignore
-                output = param.heritage[cls]  # type: ignore
-                assert isinstance(output, cls)
-                return output
-            arity = len(param.choices) if isinstance(param, BaseChoice) else -1
-            return cls(type(param), arity)
+    @classmethod
+    def as_tag(cls, param: core.Parameter) -> "ChoiceTag":
+        # arrays inherit tags to identify them as bound to a choice
+        if cls in param.heritage:  # type: ignore
+            output = param.heritage[cls]  # type: ignore
+            assert isinstance(output, cls)
+            return output
+        arity = len(param.choices) if isinstance(param, BaseChoice) else -1
+        return cls(type(param), arity)
+
+
+class BaseChoice(core.Dict):
+
+    ChoiceTag = ChoiceTag
 
     def __init__(
         self, *, choices: tp.Iterable[tp.Any], repetitions: tp.Optional[int] = None, **kwargs: tp.Any

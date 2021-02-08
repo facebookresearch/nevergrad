@@ -87,7 +87,7 @@ class Mutator:
         discrete_data = discretization.threshold_discretization(parent, arity=arity)
         discrete_data = np.where(
             boolean_vector,
-            discrete_data + np.random.choice([-1.0, 1.0], size=dimension) * velocity,
+            discrete_data + self.random_state.choice([-1.0, 1.0], size=dimension) * velocity,
             discrete_data,
         )
         return discretization.inverse_threshold_discretization(discrete_data)

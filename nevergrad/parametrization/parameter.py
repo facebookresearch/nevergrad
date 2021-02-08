@@ -7,6 +7,7 @@
 # import with "as" to explicitely allow reexport (mypy)
 from .utils import NotSupportedError as NotSupportedError
 from .core import Parameter as Parameter
+from .core import Container as Container
 from .core import Dict as Dict
 from .core import Constant as Constant  # avoid using except for checks
 from .core import (

@@ -10,7 +10,6 @@ from nevergrad.parametrization import parameter as p
 from nevergrad.common import tools
 import nevergrad.common.typing as tp
 from .base import ExperimentFunction
-from .multiobjective import MultiobjectiveFunction
 from .pbt import PBT as PBT  # pylint: disable=unused-import
 from . import utils
 from . import corefuncs
@@ -30,6 +29,7 @@ class ArtificialVariable:
         rotation: bool,
         hashing: bool,
         only_index_transform: bool,
+        random_state: np.random.RandomState,
     ) -> None:
         self._dimension = dimension
         self._transforms: tp.List[utils.Transform] = []
@@ -40,6 +40,7 @@ class ArtificialVariable:
         self.only_index_transform = only_index_transform
         self.hashing = hashing
         self.dimension = self._dimension
+        self.random_state = random_state
 
     def _initialize(self) -> None:
         """Delayed initialization of the transforms to avoid slowing down the instance creation
@@ -47,14 +48,17 @@ class ArtificialVariable:
         This functions creates the random transform used upon each block (translation + optional rotation).
         """
         # use random indices for blocks
-        indices = np.random.choice(
+        indices = self.random_state.choice(
             self._dimension, self.block_dimension * self.num_blocks, replace=False
         ).tolist()
         indices.sort()  # keep the indices sorted sorted so that blocks do not overlap
         for transform_inds in tools.grouper(indices, n=self.block_dimension):
             self._transforms.append(
                 utils.Transform(
-                    transform_inds, translation_factor=self.translation_factor, rotation=self.rotation
+                    transform_inds,
+                    translation_factor=self.translation_factor,
+                    rotation=self.rotation,
+                    random_state=self.random_state,
                 )
             )
 
@@ -65,11 +69,9 @@ class ArtificialVariable:
             self._initialize()
         if self.hashing:
             data2 = np.array(data, copy=True)
-            state = np.random.get_state()
             for i, y in enumerate(data):
-                np.random.seed(int(hashlib.md5(str(y).encode()).hexdigest(), 16) % 500000)  # type: ignore
-                data2[i] = np.random.normal(0.0, 1.0)  # type: ignore
-            np.random.set_state(state)
+                self.random_state.seed(int(hashlib.md5(str(y).encode()).hexdigest(), 16) % 500000)  # type: ignore
+                data2[i] = self.random_state.normal(0.0, 1.0)  # type: ignore
             data = data2
         data = np.array(data, copy=False)
         output = []
@@ -170,16 +172,7 @@ class ArtificialFunction(ExperimentFunction):
         # special case
         info = corefuncs.registry.get_info(self._parameters["name"])
         only_index_transform = info.get("no_transform", False)
-        # variable
-        self.transform_var = ArtificialVariable(
-            dimension=self._dimension,
-            num_blocks=num_blocks,
-            block_dimension=block_dimension,
-            translation_factor=translation_factor,
-            rotation=rotation,
-            hashing=hashing,
-            only_index_transform=only_index_transform,
-        )
+
         assert not (split and hashing)
         assert not (split and useless_variables > 0)
         parametrization = (
@@ -194,6 +187,18 @@ class ArtificialFunction(ExperimentFunction):
         if noise_level > 0:
             parametrization.descriptors.deterministic_function = False
         super().__init__(self.noisy_function, parametrization)
+        # variable, must come after super().__init__(...) to bind the random_state
+        # may consider having its a local random_state instead but less reproducible
+        self.transform_var = ArtificialVariable(
+            dimension=self._dimension,
+            num_blocks=num_blocks,
+            block_dimension=block_dimension,
+            translation_factor=translation_factor,
+            rotation=rotation,
+            hashing=hashing,
+            only_index_transform=only_index_transform,
+            random_state=self._parametrization.random_state,
+        )
         self._aggregator = {"max": np.max, "mean": np.mean, "sum": np.sum}[aggregator]
         info = corefuncs.registry.get_info(self._parameters["name"])
         # add descriptors
@@ -242,6 +247,7 @@ class ArtificialFunction(ExperimentFunction):
             func=self.function_from_transform,
             noise_level=self._parameters["noise_level"],
             noise_dissymmetry=self._parameters["noise_dissymmetry"],
+            random_state=self._parametrization.random_state,
         )
 
     def compute_pseudotime(self, input_parameter: tp.Any, loss: tp.Loss) -> float:
@@ -264,16 +270,17 @@ def _noisy_call(
     func: tp.Callable[[np.ndarray], float],
     noise_level: float,
     noise_dissymmetry: bool,
+    random_state: np.random.RandomState,
 ) -> float:  # pylint: disable=unused-argument
     x_transf = transf(x)
     fx = func(x_transf)
     noise = 0
     if noise_level:
         if not noise_dissymmetry or x_transf.ravel()[0] <= 0:
-            side_point = transf(x + np.random.normal(0, 1, size=len(x)))
+            side_point = transf(x + random_state.normal(0, 1, size=len(x)))
             if noise_dissymmetry:
                 noise_level *= 1.0 + x_transf.ravel()[0] * 100.0
-            noise = noise_level * np.random.normal(0, 1) * (func(side_point) - fx)
+            noise = noise_level * random_state.normal(0, 1) * (func(side_point) - fx)
     return fx + noise
 
 
@@ -296,8 +303,8 @@ class FarOptimumFunction(ExperimentFunction):
         sigma = p.Array(init=init).set_mutation(exponent=2.0) if mutable_sigma else p.Constant(init)
         parametrization.set_mutation(sigma=sigma)
         parametrization.set_recombination("average" if recombination == "average" else p.mutation.Crossover())
-        self._multiobjective = MultiobjectiveFunction(self._multifunc, 2 * self._optimum)
-        super().__init__(self._multiobjective if multiobjective else self._monofunc, parametrization.set_name(""))  # type: ignore
+        self.multiobjective_upper_bounds = np.array(2 * self._optimum) if multiobjective else None
+        super().__init__(self._multifunc if multiobjective else self._monofunc, parametrization.set_name(""))  # type: ignore
 
     def _multifunc(self, x: np.ndarray) -> np.ndarray:
         return np.abs(x - self._optimum)  # type: ignore
@@ -306,9 +313,7 @@ class FarOptimumFunction(ExperimentFunction):
         return float(np.sum(self._multifunc(x)))
 
     def evaluation_function(self, *recommendations: p.Parameter) -> float:
-        assert len(recommendations) == 1, "Should not be a pareto set for a monoobjective function"
-        assert len(recommendations[0].args) == 1 and not recommendations[0].kwargs
-        return self._monofunc(recommendations[0].args[0])
+        return min(self._monofunc(x.args[0]) for x in recommendations)
 
     @classmethod
     def itercases(cls) -> tp.Iterator["FarOptimumFunction"]:

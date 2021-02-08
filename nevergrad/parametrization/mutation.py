@@ -240,7 +240,7 @@ class ProbaLocalGaussian(Mutation):
         # slices
         e_weights = np.exp(rolling_mean(self.parameters["positions"].value, size))
         probas = e_weights / np.sum(e_weights)
-        index = np.random.choice(range(length), p=probas)
+        index = self.random_state.choice(range(length), p=probas)
         # update (inefficient)
         shape = tuple(size if a == self.axis else s for a, s in enumerate(arrays[0].value.shape))
         data[tuple(slice(s) for s in shape)] += self.random_state.normal(0, 1, size=shape)

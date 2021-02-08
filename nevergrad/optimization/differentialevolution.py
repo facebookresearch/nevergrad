@@ -93,7 +93,9 @@ class _DE(base.Optimizer):
             self.llambda = max(30, self.num_workers, pop_choice[self._config.popsize])
         # internals
         if budget is not None and budget < 60:
-            warnings.warn("DE algorithms are inefficient with budget < 60", base.InefficientSettingsWarning)
+            warnings.warn(
+                "DE algorithms are inefficient with budget < 60", base.errors.InefficientSettingsWarning
+            )
         self._MULTIOBJECTIVE_AUTO_BOUND = max(self._MULTIOBJECTIVE_AUTO_BOUND, self.llambda)
         self._penalize_cheap_violations = True
         self._uid_queue = base.utils.UidQueue()

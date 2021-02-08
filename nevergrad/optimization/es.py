@@ -27,7 +27,9 @@ class _EvolutionStrategy(base.Optimizer):
         config: tp.Optional["EvolutionStrategy"] = None,
     ) -> None:
         if budget is not None and budget < 60:
-            warnings.warn("ES algorithms are inefficient with budget < 60", base.InefficientSettingsWarning)
+            warnings.warn(
+                "ES algorithms are inefficient with budget < 60", base.errors.InefficientSettingsWarning
+            )
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._population: tp.Dict[str, p.Parameter] = {}
         self._uid_queue = UidQueue()
@@ -56,15 +58,12 @@ class _EvolutionStrategy(base.Optimizer):
             param.recombine(self._population[selected])
         return param
 
-    def _internal_tell_candidate(self, candidate: p.Parameter, value: tp.FloatLoss) -> None:
-        candidate._meta["value"] = value
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: float) -> None:
         if self._config.offsprings is None:
             uid = candidate.heritage["lineage"]
             self._uid_queue.tell(uid)
-            parent_value = (
-                float("inf") if uid not in self._population else self._population[uid]._meta["value"]
-            )
-            if value < parent_value:
+            parent_value = float("inf") if uid not in self._population else base._loss(self._population[uid])
+            if loss < parent_value:
                 self._population[uid] = candidate
         else:
             if (
@@ -78,13 +77,13 @@ class _EvolutionStrategy(base.Optimizer):
             if len(self._waiting) >= self._config.offsprings:
                 self._select()
 
-    def _select(self):
+    def _select(self) -> None:
         choices = self._waiting + ([] if self._config.only_offsprings else list(self._population.values()))
         if self._ranker is not None:
             choices_rank = self._ranker.rank(choices, n_selected=self._config.popsize)
             choices = [x for x in choices if x.uid in choices_rank]
         else:
-            choices.sort(key=lambda x: x._meta["value"])
+            choices.sort(key=base._loss)
         self._population = {x.uid: x for x in choices[: self._config.popsize]}
         self._uid_queue.clear()
         self._waiting.clear()
