@@ -390,7 +390,7 @@ leaving others untouched</p></li>
 <dl class="py class">
 <dt id="nevergrad.p.Dict">
 <em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">Dict</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">parameters</span><span class="p">:</span> <span class="n">Any</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.Dict" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nevergrad.parametrization.core.Parameter</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nevergrad.parametrization.core.Container</span></code></p>
 <p>Dictionary-valued parameter. This Parameter can contain other Parameters,
 its value is a dict, with keys the ones provided as input, and corresponding values are
 either directly the provided values if they are not Parameter instances, or the value of those
@@ -538,7 +538,7 @@ on this scalar yields a uniform choice of index. This may come to evolve for sim
 <dl class="py class">
 <dt id="nevergrad.p.Tuple">
 <em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">Tuple</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">parameters</span><span class="p">:</span> <span class="n">Any</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.Tuple" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nevergrad.parametrization.core.Dict</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nevergrad.parametrization.core.Container</span></code></p>
 <p>Tuple-valued parameter. This Parameter can contain other Parameters,
 its value is tuple which values are either directly the provided values
 if they are not Parameter instances, or the value of those Parameters.
