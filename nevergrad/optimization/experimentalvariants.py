@@ -93,6 +93,7 @@ MetaCauchyRecentering = SamplingSearch(
 ).set_name("MetaCauchyRecentering", register=True)
 # Chaining
 ChainCMASQP = Chaining([CMA, SQP], ["half"]).set_name("ChainCMASQP", register=True)
+ChainCMASQP.no_parallelization = True
 ChainDEwithR = Chaining([RandomSearch, DE], ["num_workers"]).set_name("ChainDEwithR", register=True)
 ChainDEwithRsqrt = Chaining([RandomSearch, DE], ["sqrt"]).set_name("ChainDEwithRsqrt", register=True)
 ChainDEwithRdim = Chaining([RandomSearch, DE], ["dimension"]).set_name("ChainDEwithRdim", register=True)

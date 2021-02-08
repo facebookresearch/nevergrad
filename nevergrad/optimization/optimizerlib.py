@@ -331,11 +331,9 @@ AnisotropicAdaptiveDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="coordin
 DiscreteBSOOnePlusOne = ParametrizedOnePlusOne(mutation="discreteBSO").set_name(
     "DiscreteBSOOnePlusOne", register=True
 )
-DiscreteDoerrOnePlusOne = (
-    ParametrizedOnePlusOne(mutation="doerr")
-    .set_name("DiscreteDoerrOnePlusOne", register=True)
-    .no_parallelization
-) = True
+DiscreteDoerrOnePlusOne = ParametrizedOnePlusOne(mutation="doerr").set_name(
+    "DiscreteDoerrOnePlusOne", register=True
+)
 CauchyOnePlusOne = ParametrizedOnePlusOne(mutation="cauchy").set_name("CauchyOnePlusOne", register=True)
 OptimisticNoisyOnePlusOne = ParametrizedOnePlusOne(noise_handling="optimistic").set_name(
     "OptimisticNoisyOnePlusOne", register=True
@@ -1773,8 +1771,6 @@ class ParametrizedBO(base.ConfiguredOptimizer):
         dictionnary of parameters for the gaussian process
     """
 
-    no_parallelization = True
-
     # pylint: disable=unused-argument
     def __init__(
         self,
@@ -1832,11 +1828,6 @@ class _Chain(base.Optimizer):
                 errors.NevergradDeprecationWarning,
             )
 
-    @property
-    def no_parallelization(self) -> bool:  # type: ignore
-        print(1, [opt.no_parallelization for opt in self.optimizers])
-        return any(opt.no_parallelization for opt in self.optimizers)
-
     def _internal_ask_candidate(self) -> p.Parameter:
         # Which algorithm are we playing with ?
         sum_budget = 0.0
@@ -1880,39 +1871,46 @@ class Chaining(base.ConfiguredOptimizer):
         super().__init__(_Chain, locals())
         self._opts = optimizers
 
-    @property
-    def no_parallelization(self) -> bool:  # type: ignore
-        print(2, [opt.no_parallelization for opt in self._opts])
-        return any(opt.no_parallelization for opt in self._opts)
-
 
 # depreated: old names (need a capital letter for consistency
 chainCMAPowell = Chaining([CMA, Powell], ["half"]).set_name("chainCMAPowell", register=True)
+chainCMAPowell.no_parallelization = True
 chainMetaModelSQP = Chaining([MetaModel, SQP], ["half"]).set_name("chainMetaModelSQP", register=True)
+chainMetaModelSQP.no_parallelization = True
 chainMetaModelPowell = Chaining([MetaModel, Powell], ["half"]).set_name("chainMetaModelPowell", register=True)
+chainMetaModelPowell.no_parallelization = True
 chainDiagonalCMAPowell = Chaining([DiagonalCMA, Powell], ["half"]).set_name(
     "chainDiagonalCMAPowell", register=True
 )
+chainDiagonalCMAPowell.no_parallelization = True
 chainNaiveTBPSAPowell = Chaining([NaiveTBPSA, Powell], ["half"]).set_name(
     "chainNaiveTBPSAPowell", register=True
 )
+chainNaiveTBPSAPowell.no_parallelization = True
 chainNaiveTBPSACMAPowell = Chaining([NaiveTBPSA, CMA, Powell], ["third", "third"]).set_name(
     "chainNaiveTBPSACMAPowell", register=True
 )
+chainNaiveTBPSACMAPowell.no_parallelization = True
 
 # new names
 ChainCMAPowell = Chaining([CMA, Powell], ["half"]).set_name("ChainCMAPowell", register=True)
+chainCMAPowell.no_parallelization = True  # TODO make this automatic
 ChainMetaModelSQP = Chaining([MetaModel, SQP], ["half"]).set_name("ChainMetaModelSQP", register=True)
+chainMetaModelSQP.no_parallelization = True
 ChainMetaModelPowell = Chaining([MetaModel, Powell], ["half"]).set_name("ChainMetaModelPowell", register=True)
+chainMetaModelPowell.no_parallelization = True
 ChainDiagonalCMAPowell = Chaining([DiagonalCMA, Powell], ["half"]).set_name(
     "ChainDiagonalCMAPowell", register=True
 )
+chainDiagonalCMAPowell.no_parallelization = True
 ChainNaiveTBPSAPowell = Chaining([NaiveTBPSA, Powell], ["half"]).set_name(
     "ChainNaiveTBPSAPowell", register=True
 )
+chainNaiveTBPSAPowell.no_parallelization = True
 ChainNaiveTBPSACMAPowell = Chaining([NaiveTBPSA, CMA, Powell], ["third", "third"]).set_name(
     "ChainNaiveTBPSACMAPowell", register=True
 )
+chainNaiveTBPSACMAPowell.no_parallelization = True
 
 
 @registry.register
