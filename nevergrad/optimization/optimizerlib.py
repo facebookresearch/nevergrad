@@ -331,11 +331,10 @@ AnisotropicAdaptiveDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="coordin
 DiscreteBSOOnePlusOne = ParametrizedOnePlusOne(mutation="discreteBSO").set_name(
     "DiscreteBSOOnePlusOne", register=True
 )
-DiscreteDoerrOnePlusOne = (
-    ParametrizedOnePlusOne(mutation="doerr")
-    .set_name("DiscreteDoerrOnePlusOne", register=True)
-    .no_parallelization
-) = True
+DiscreteDoerrOnePlusOne = ParametrizedOnePlusOne(mutation="doerr").set_name(
+    "DiscreteDoerrOnePlusOne", register=True
+)
+DiscreteDoerrOnePlusOne.no_parallelization = True
 CauchyOnePlusOne = ParametrizedOnePlusOne(mutation="cauchy").set_name("CauchyOnePlusOne", register=True)
 OptimisticNoisyOnePlusOne = ParametrizedOnePlusOne(noise_handling="optimistic").set_name(
     "OptimisticNoisyOnePlusOne", register=True
@@ -1475,11 +1474,11 @@ class CMandAS3(ASCMADEthird):
         if budget > 50 * self.dimension or num_workers < 30:
             if num_workers == 1:
                 self.optims = [
-                    chainCMAPowell(
+                    ChainCMAPowell(
                         self.parametrization, budget=None, num_workers=num_workers
                     ),  # share parametrization and its rng
-                    chainCMAPowell(self.parametrization, budget=None, num_workers=num_workers),
-                    chainCMAPowell(self.parametrization, budget=None, num_workers=num_workers),
+                    ChainCMAPowell(self.parametrization, budget=None, num_workers=num_workers),
+                    ChainCMAPowell(self.parametrization, budget=None, num_workers=num_workers),
                 ]
             else:
                 self.optims = [
@@ -1825,6 +1824,12 @@ class _Chain(base.Optimizer):
         ), str(self.budgets)
         for opt, optbudget in zip(optimizers, self.budgets + [last_budget]):  # type: ignore
             self.optimizers.append(opt(self.parametrization, budget=optbudget, num_workers=self.num_workers))
+        if self.name.startswith("chain"):
+            warnings.warn(
+                "Chain optimizers are renamed with a capital C for consistency. "
+                "Eg: chainCMAPowell becomes ChainCMAPowell",
+                errors.NevergradDeprecationWarning,
+            )
 
     def _internal_ask_candidate(self) -> p.Parameter:
         # Which algorithm are we playing with ?
@@ -1869,6 +1874,7 @@ class Chaining(base.ConfiguredOptimizer):
         super().__init__(_Chain, locals())
 
 
+# depreated: old names (need a capital letter for consistency
 chainCMAPowell = Chaining([CMA, Powell], ["half"]).set_name("chainCMAPowell", register=True)
 chainCMAPowell.no_parallelization = True
 chainMetaModelSQP = Chaining([MetaModel, SQP], ["half"]).set_name("chainMetaModelSQP", register=True)
@@ -1887,6 +1893,26 @@ chainNaiveTBPSACMAPowell = Chaining([NaiveTBPSA, CMA, Powell], ["third", "third"
     "chainNaiveTBPSACMAPowell", register=True
 )
 chainNaiveTBPSACMAPowell.no_parallelization = True
+
+# new names
+ChainCMAPowell = Chaining([CMA, Powell], ["half"]).set_name("ChainCMAPowell", register=True)
+ChainCMAPowell.no_parallelization = True  # TODO make this automatic
+ChainMetaModelSQP = Chaining([MetaModel, SQP], ["half"]).set_name("ChainMetaModelSQP", register=True)
+ChainMetaModelSQP.no_parallelization = True
+ChainMetaModelPowell = Chaining([MetaModel, Powell], ["half"]).set_name("ChainMetaModelPowell", register=True)
+ChainMetaModelPowell.no_parallelization = True
+ChainDiagonalCMAPowell = Chaining([DiagonalCMA, Powell], ["half"]).set_name(
+    "ChainDiagonalCMAPowell", register=True
+)
+ChainDiagonalCMAPowell.no_parallelization = True
+ChainNaiveTBPSAPowell = Chaining([NaiveTBPSA, Powell], ["half"]).set_name(
+    "ChainNaiveTBPSAPowell", register=True
+)
+ChainNaiveTBPSAPowell.no_parallelization = True
+ChainNaiveTBPSACMAPowell = Chaining([NaiveTBPSA, CMA, Powell], ["third", "third"]).set_name(
+    "ChainNaiveTBPSACMAPowell", register=True
+)
+ChainNaiveTBPSACMAPowell.no_parallelization = True
 
 
 @registry.register
@@ -2186,7 +2212,7 @@ class NGOptBase(base.Optimizer):
                         if (
                             self.num_workers == 1 and self.budget > 6000 and self.dimension > 7
                         ):  # Let us go memetic.
-                            cls = chainCMAPowell
+                            cls = ChainCMAPowell
                         else:
                             if self.num_workers == 1 and self.budget < self.dimension * 30:
                                 # One plus one so good in large ratio "dimension / budget".
@@ -2291,7 +2317,7 @@ class NGOpt4(NGOptBase):
                             if (
                                 num_workers == 1 and budget > 6000 and self.dimension > 7
                             ):  # Let us go memetic.
-                                optimClass = chainNaiveTBPSACMAPowell
+                                optimClass = ChainNaiveTBPSACMAPowell
                             else:
                                 if num_workers == 1 and budget < self.dimension * 30:
                                     if (
@@ -2356,7 +2382,7 @@ class NGOpt8(NGOpt4):
                 and not (self.num_workers > self.budget / 5)
                 and (self.num_workers == 1 and self.budget > 6000 and self.dimension > 7)
             ):
-                optimClass = chainMetaModelPowell
+                optimClass = ChainMetaModelPowell
             else:
                 optimClass = super()._select_optimizer_cls()
 
