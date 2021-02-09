@@ -219,9 +219,10 @@ class Parameter:
     def _internal_set_standardized_data(
         self: P, data: np.ndarray, reference: P, deterministic: bool = False
     ) -> None:
-        raise utils.NotSupportedError(
-            f"Import from standardized data space is not implemented for {self.name}"
-        )
+        if data.size:
+            raise utils.NotSupportedError(
+                f"Import from standardized data space is not implemented for {self.name}"
+            )
 
     # PART 2 - Additional features
 
@@ -462,14 +463,6 @@ class Constant(Parameter):
         self: P, *, reference: tp.Optional[P] = None
     ) -> np.ndarray:
         return np.array([])
-
-    # pylint: disable=unused-argument
-    def set_standardized_data(
-        self: P, data: tp.ArrayLike, *, reference: tp.Optional[P] = None, deterministic: bool = False
-    ) -> P:
-        if np.array(data, copy=False).size:
-            raise ValueError(f"Constant dimension should be 0 (got data: {data})")
-        return self
 
     def spawn_child(self: P, new_value: tp.Optional[tp.Any] = None) -> P:
         if new_value is not None:
