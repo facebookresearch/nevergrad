@@ -34,7 +34,7 @@ class ChoiceTag(tp.NamedTuple):
         return cls(type(param), arity)
 
 
-class BaseChoice(core.Dict):
+class BaseChoice(core.Container):
 
     ChoiceTag = ChoiceTag
 
@@ -60,6 +60,14 @@ class BaseChoice(core.Dict):
     def __len__(self) -> int:
         """Number of choices"""
         return len(self.choices)
+
+    def _get_parameters_str(self) -> str:
+        params = sorted(
+            (k, p.name)
+            for k, p in self._content.items()
+            if p.name != self._ignore_in_repr.get(k, "#ignoredrepr#")
+        )
+        return ",".join(f"{k}={n}" for k, n in params)
 
     @property
     def index(self) -> int:  # delayed choice
