@@ -20,7 +20,11 @@ D = tp.TypeVar("D", bound="Container")
 X = tp.TypeVar("X")
 
 
-class ParameterValue(tp.Generic[X]):
+class ValueProperty(tp.Generic[X]):
+    """Typed property (descriptor) object so that the value attribute of
+    Parameter objects fetches _get_value and _set_value methods
+    """
+
     def __get__(self, obj: "Parameter", objtype: tp.Optional[tp.Type[object]] = None) -> X:
         return obj._get_value()  # type: ignore
 
@@ -36,7 +40,7 @@ class Parameter:
     constraint check, hashes, generation and naming.
     """
 
-    value: ParameterValue[tp.Any] = ParameterValue()
+    value: ValueProperty[tp.Any] = ValueProperty()
 
     def __init__(self, **parameters: tp.Any) -> None:
         # Main features
@@ -659,7 +663,7 @@ class Dict(Container):
     def _get_value(self) -> tp.Dict[str, tp.Any]:
         return {k: p.value for k, p in self.items()}
 
-    value: ParameterValue[tp.Dict[str, tp.Any]] = ParameterValue()
+    value: ValueProperty[tp.Dict[str, tp.Any]] = ValueProperty()
 
     def _set_value(self, value: tp.Dict[str, tp.Any]) -> None:
         cls = self.__class__.__name__

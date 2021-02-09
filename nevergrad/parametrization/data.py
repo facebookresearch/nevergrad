@@ -31,7 +31,7 @@ class Mutation(core.Parameter):
     """
 
     # pylint: disable=unused-argument
-    value: core.ParameterValue[tp.Callable[[tp.Sequence[D]], None]] = core.ParameterValue()
+    value: core.ValueProperty[tp.Callable[[tp.Sequence[D]], None]] = core.ValueProperty()
 
     def _get_value(self) -> tp.Callable[[tp.Sequence[D]], None]:
         return self.apply
@@ -391,7 +391,7 @@ class Data(core.Parameter):
 
 class Array(Data):
 
-    value: core.ParameterValue[np.ndarray] = core.ParameterValue()
+    value: core.ValueProperty[np.ndarray] = core.ValueProperty()
 
     def _get_value(self) -> np.ndarray:
         if self.integer:
@@ -439,7 +439,7 @@ class Scalar(Data):
       :code:`set_bounds`, :code:`set_mutation`, :code:`set_integer_casting`
     """
 
-    value: core.ParameterValue[float] = core.ParameterValue()
+    value: core.ValueProperty[float] = core.ValueProperty()
 
     def __init__(
         self,

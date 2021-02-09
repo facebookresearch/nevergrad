@@ -40,7 +40,7 @@ class Tuple(core.Container):
     def __iter__(self) -> tp.Iterator[core.Parameter]:
         return (self._content[k] for k in range(len(self)))
 
-    value: core.ParameterValue[tp.Tuple[tp.Any]] = core.ParameterValue()
+    value: core.ValueProperty[tp.Tuple[tp.Any]] = core.ValueProperty()
 
     def _get_value(self) -> tp.Tuple[tp.Any, ...]:
         return tuple(p.value for p in self)
@@ -89,4 +89,4 @@ class Instrumentation(Tuple):
     def kwargs(self) -> tp.Dict[str, tp.Any]:
         return self[1].value  # type: ignore
 
-    value: core.ParameterValue[tp.Tuple[tp.Tuple[tp.Any, ...], tp.Dict[str, tp.Any]]] = core.ParameterValue()  # type: ignore
+    value: core.ValueProperty[tp.Tuple[tp.Tuple[tp.Any, ...], tp.Dict[str, tp.Any]]] = core.ValueProperty()  # type: ignore
