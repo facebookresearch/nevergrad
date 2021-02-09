@@ -296,7 +296,7 @@ class Data(core.Parameter):
             ):
                 self.parameters._content["sigma"] = core.as_parameter(sigma)
             else:
-                self.sigma.value = sigma
+                self.sigma.value = sigma  # type: ignore
         if exponent is not None:
             if self.bound_transform is not None and not isinstance(self.bound_transform, trans.Clipping):
                 raise RuntimeError(
