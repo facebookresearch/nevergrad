@@ -70,7 +70,7 @@ def flatten_parameter(
 # pylint: disable=too-many-locals
 def split_as_data_parameters(
     parameter: core.Parameter,
-) -> tp.List[tp.Tuple[str, pdata.Array]]:
+) -> tp.List[tp.Tuple[str, pdata.Data]]:
     """List all the instances involved as parameter (not as subparameter/
     endogeneous parameter)
 
