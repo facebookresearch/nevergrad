@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import typing as tp
+import nevergrad.common.typing as tp
 from .core import Dict as Dict  # Dict needs to be implemented in core since it's used in the base class
 from . import core
 
@@ -40,12 +40,12 @@ class Tuple(core.Container):
     def __iter__(self) -> tp.Iterator[core.Parameter]:
         return (self._content[k] for k in range(len(self)))
 
-    @property
-    def value(self) -> tp.Tuple[tp.Any, ...]:
+    value: core.ValueProperty[tp.Tuple[tp.Any]] = core.ValueProperty()
+
+    def _get_value(self) -> tp.Tuple[tp.Any, ...]:
         return tuple(p.value for p in self)
 
-    @value.setter
-    def value(self, value: tp.Tuple[tp.Any]) -> None:
+    def _set_value(self, value: tp.Tuple[tp.Any, ...]) -> None:
         if not isinstance(value, tuple) or not len(value) == len(self):
             cls = self.__class__.__name__
             raise ValueError(
@@ -88,3 +88,5 @@ class Instrumentation(Tuple):
     @property
     def kwargs(self) -> tp.Dict[str, tp.Any]:
         return self[1].value  # type: ignore
+
+    value: core.ValueProperty[tp.ArgsKwargs] = core.ValueProperty()  # type: ignore
