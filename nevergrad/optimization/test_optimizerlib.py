@@ -28,6 +28,7 @@ from nevergrad.common import errors
 from . import base
 from . import optimizerlib as optlib
 from . import experimentalvariants as xpvariants
+from . import es
 from .optimizerlib import registry
 from .optimizerlib import NGOptBase
 
@@ -714,9 +715,10 @@ def _multiobjective(z: np.ndarray) -> tp.Tuple[float, float, float]:
     return (abs(x - 1), abs(y + 1), abs(x - y))
 
 
+@pytest.mark.parametrize("name", ["DE", "ES"])  # type: ignore
 @testing.suppress_nevergrad_warnings()  # hides bad loss
-def test_mo_constrained_de() -> None:
-    optimizer = optlib.DE(2, budget=60)
+def test_mo_constrained(name: str) -> None:
+    optimizer = optlib.registry[name](2, budget=60)
     optimizer.parametrization.random_state.seed(12)
 
     def constraint(arg: tp.Any) -> bool:  # pylint: disable=unused-argument
@@ -727,3 +729,5 @@ def test_mo_constrained_de() -> None:
     optimizer.minimize(_multiobjective)
     point = optimizer.parametrization.spawn_child(new_value=np.array([1.0, 1.0]))  # on the pareto
     optimizer.tell(point, _multiobjective(point.value))
+    if isinstance(optimizer, es._EvolutionStrategy):
+        assert optimizer._rank_method is not None  # make sure the nsga2 ranker is used
