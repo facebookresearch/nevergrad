@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import typing as tp
+import nevergrad.common.typing as tp
 from .core import Dict as Dict  # Dict needs to be implemented in core since it's used in the base class
 from . import core
 
