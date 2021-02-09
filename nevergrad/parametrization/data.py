@@ -31,13 +31,12 @@ class Mutation(core.Parameter):
     """
 
     # pylint: disable=unused-argument
+    value: core.ValueProperty[tp.Callable[[tp.Sequence[D]], None]] = core.ValueProperty()
 
-    @property
-    def value(self) -> tp.Callable[[tp.Sequence[D]], None]:
+    def _get_value(self) -> tp.Callable[[tp.Sequence[D]], None]:
         return self.apply
 
-    @value.setter
-    def value(self, value: tp.Any) -> None:
+    def _set_value(self, value: tp.Any) -> None:
         raise RuntimeError("Mutation cannot be set.")
 
     def apply(self, arrays: tp.Sequence[D]) -> None:
@@ -297,7 +296,7 @@ class Data(core.Parameter):
             ):
                 self.parameters._content["sigma"] = core.as_parameter(sigma)
             else:
-                self.sigma.value = sigma
+                self.sigma.value = sigma  # type: ignore
         if exponent is not None:
             if self.bound_transform is not None and not isinstance(self.bound_transform, trans.Clipping):
                 raise RuntimeError(
@@ -391,14 +390,15 @@ class Data(core.Parameter):
 
 
 class Array(Data):
-    @property
-    def value(self) -> np.ndarray:
+
+    value: core.ValueProperty[np.ndarray] = core.ValueProperty()
+
+    def _get_value(self) -> np.ndarray:
         if self.integer:
             return np.round(self._value)  # type: ignore
         return self._value
 
-    @value.setter
-    def value(self, value: tp.ArrayLike) -> None:
+    def _set_value(self, value: tp.ArrayLike) -> None:
         self._check_frozen()
         self._ref_data = None
         if not isinstance(value, (np.ndarray, tuple, list)):
@@ -439,6 +439,8 @@ class Scalar(Data):
       :code:`set_bounds`, :code:`set_mutation`, :code:`set_integer_casting`
     """
 
+    value: core.ValueProperty[float] = core.ValueProperty()
+
     def __init__(
         self,
         init: tp.Optional[float] = None,
@@ -460,12 +462,10 @@ class Scalar(Data):
         if any(a is not None for a in (lower, upper)):
             self.set_bounds(lower=lower, upper=upper, full_range_sampling=bounded and no_init)
 
-    @property
-    def value(self) -> float:
+    def _get_value(self) -> float:
         return float(self._value[0]) if not self.integer else int(np.round(self._value[0]))
 
-    @value.setter
-    def value(self, value: float) -> None:
+    def _set_value(self, value: float) -> None:
         self._check_frozen()
         if not isinstance(value, (float, int, np.float, np.int)):
             raise TypeError(f"Received a {type(value)} in place of a scalar (float, int)")
