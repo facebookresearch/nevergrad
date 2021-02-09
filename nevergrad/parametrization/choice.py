@@ -43,8 +43,7 @@ class BaseChoice(core.Container):
     ) -> None:
         assert repetitions is None or isinstance(repetitions, int)  # avoid silent issues
         self._repetitions = repetitions
-        assert not isinstance(choices, Tuple)
-        lchoices = list(choices)  # for iterables
+        lchoices = list(choices)  # unroll iterables (includig Tuple instances
         if not lchoices:
             raise ValueError("{self._class__.__name__} received an empty list of options.")
         super().__init__(choices=Tuple(*lchoices), **kwargs)
@@ -105,11 +104,9 @@ class BaseChoice(core.Container):
         values = [values] if self._repetitions is None else values
         self._check_frozen()
         indices: np.ndarray = -1 * np.ones(len(values), dtype=int)
-        nums = sorted(int(k) for k in self.choices._content)
         # try to find where to put this
         for i, value in enumerate(values):
-            for k in nums:
-                choice = self.choices[k]
+            for k, choice in enumerate(self.choices):
                 try:
                     choice.value = value
                     indices[i] = k
@@ -170,7 +167,6 @@ class Choice(BaseChoice):
         repetitions: tp.Optional[int] = None,
         deterministic: bool = False,
     ) -> None:
-        assert not isinstance(choices, Tuple)
         lchoices = list(choices)
         rep = 1 if repetitions is None else repetitions
         super().__init__(
@@ -241,9 +237,10 @@ class Choice(BaseChoice):
             self.choices[ind].mutate()
 
     def _internal_spawn_child(self: C) -> C:
-        choices = (y for x, y in sorted(self.choices.spawn_child()._content.items()))
         child = self.__class__(
-            choices=choices, deterministic=self._deterministic, repetitions=self._repetitions
+            choices=self.choices.spawn_child(),
+            deterministic=self._deterministic,
+            repetitions=self._repetitions,
         )
         child._content["weights"] = self.weights.spawn_child()
         return child
@@ -338,8 +335,7 @@ class TransitionChoice(BaseChoice):
             self.choices[ind].mutate()
 
     def _internal_spawn_child(self: T) -> T:
-        choices = (y for x, y in sorted(self.choices.spawn_child()._content.items()))
-        child = self.__class__(choices=choices, repetitions=self._repetitions)
+        child = self.__class__(choices=self.choices.spawn_child(), repetitions=self._repetitions)
         child._content["positions"] = self.positions.spawn_child()
         child._content["transitions"] = self.transitions.spawn_child()
         return child
