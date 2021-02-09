@@ -216,7 +216,7 @@ class Parameter:
         )
         return self
 
-    def _internal_set_standardized_data(
+    def _internal_set_standardized_data(  # pylint: disable=unused-argument
         self: P, data: np.ndarray, reference: P, deterministic: bool = False
     ) -> None:
         if data.size:
