@@ -84,20 +84,12 @@ class BaseChoice(core.Container):
         """The different options, as a Tuple Parameter"""
         return self["choices"]  # type: ignore
 
-    @property
-    def value(self) -> tp.Any:
-        return self._get_value()
-
-    @value.setter
-    def value(self, value: tp.Any) -> None:
-        self._find_and_set_value(value)
-
     def _get_value(self) -> tp.Any:
         if self._repetitions is None:
             return core.as_parameter(self.choices[self.index]).value
         return tuple(core.as_parameter(self.choices[ind]).value for ind in self.indices)
 
-    def _find_and_set_value(self, values: tp.List[tp.Any]) -> np.ndarray:
+    def _set_value(self, values: tp.List[tp.Any]) -> np.ndarray:
         """Must be adapted to each class
         This handles a list of values, not just one
         """  # TODO this is currenlty very messy, may need some improvement
@@ -205,8 +197,8 @@ class Choice(BaseChoice):
         exp = np.exp(self.weights.value)
         return exp / np.sum(exp)  # type: ignore
 
-    def _find_and_set_value(self, values: tp.Any) -> np.ndarray:
-        indices = super()._find_and_set_value(values)
+    def _set_value(self, values: tp.Any) -> np.ndarray:
+        indices = super()._set_value(values)
         self._indices = indices
         # force new probabilities
         arity = self.weights.value.shape[1]
@@ -291,8 +283,8 @@ class TransitionChoice(BaseChoice):
     def indices(self) -> np.ndarray:
         return np.minimum(len(self) - 1e-9, self.positions.value).astype(int)  # type: ignore
 
-    def _find_and_set_value(self, values: tp.Any) -> np.ndarray:
-        indices = super()._find_and_set_value(values)  # only one value for this class
+    def _set_value(self, values: tp.Any) -> np.ndarray:
+        indices = super()._set_value(values)  # only one value for this class
         self._set_index(indices)
         return indices
 

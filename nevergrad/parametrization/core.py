@@ -17,6 +17,15 @@ from . import utils
 
 P = tp.TypeVar("P", bound="Parameter")
 D = tp.TypeVar("D", bound="Container")
+X = tp.TypeVar("X")
+
+
+class ParameterValue(tp.Generic[X]):
+    def __get__(self, obj: "Parameter", objtype: tp.Optional[tp.Type[object]] = None) -> X:
+        return obj._get_value()  # type: ignore
+
+    def __set__(self, obj: "Parameter", value: X) -> None:
+        obj._set_value(value)
 
 
 # pylint: disable=too-many-instance-attributes,too-many-public-methods
@@ -26,6 +35,8 @@ class Parameter:
     and additional features such as shared random state,
     constraint check, hashes, generation and naming.
     """
+
+    value: ParameterValue[tp.Any] = ParameterValue()
 
     def __init__(self, **parameters: tp.Any) -> None:
         # Main features
@@ -62,12 +73,10 @@ class Parameter:
             return np.array([self.loss], dtype=float)
         raise RuntimeError("No loss was provided")
 
-    @property
-    def value(self) -> tp.Any:
+    def _get_value(self) -> tp.Any:
         raise NotImplementedError
 
-    @value.setter
-    def value(self, value: tp.Any) -> None:
+    def _set_value(self, value: tp.Any) -> tp.Any:
         raise NotImplementedError
 
     @property
@@ -430,12 +439,10 @@ class Constant(Parameter):
         except utils.NotSupportedError:
             return "#non-hashable-constant#"
 
-    @property
-    def value(self) -> tp.Any:
+    def _get_value(self) -> tp.Any:
         return self._value
 
-    @value.setter
-    def value(self, value: tp.Any) -> None:
+    def _set_value(self, value: tp.Any) -> None:
         different = False
         if isinstance(value, np.ndarray):
             if not np.equal(value, self._value).all():
@@ -649,12 +656,12 @@ class Dict(Container):
     def values(self) -> tp.ValuesView[Parameter]:
         return self._content.values()
 
-    @property
-    def value(self) -> tp.Dict[str, tp.Any]:
+    def _get_value(self) -> tp.Dict[str, tp.Any]:
         return {k: p.value for k, p in self.items()}
 
-    @value.setter
-    def value(self, value: tp.Dict[str, tp.Any]) -> None:
+    value: ParameterValue[tp.Dict[str, tp.Any]] = ParameterValue()
+
+    def _set_value(self, value: tp.Dict[str, tp.Any]) -> None:
         cls = self.__class__.__name__
         if not isinstance(value, dict):
             raise TypeError(f"{cls} value must be a dict, got: {value}\nCurrent value: {self.value}")

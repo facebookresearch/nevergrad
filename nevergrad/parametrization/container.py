@@ -40,12 +40,12 @@ class Tuple(core.Container):
     def __iter__(self) -> tp.Iterator[core.Parameter]:
         return (self._content[k] for k in range(len(self)))
 
-    @property
-    def value(self) -> tp.Tuple[tp.Any, ...]:
+    value: core.ParameterValue[tp.Tuple[tp.Any]] = core.ParameterValue()
+
+    def _get_value(self) -> tp.Tuple[tp.Any, ...]:
         return tuple(p.value for p in self)
 
-    @value.setter
-    def value(self, value: tp.Tuple[tp.Any]) -> None:
+    def _set_value(self, value: tp.Tuple[tp.Any, ...]) -> None:
         if not isinstance(value, tuple) or not len(value) == len(self):
             cls = self.__class__.__name__
             raise ValueError(
@@ -88,3 +88,5 @@ class Instrumentation(Tuple):
     @property
     def kwargs(self) -> tp.Dict[str, tp.Any]:
         return self[1].value  # type: ignore
+
+    value: core.ParameterValue[tp.Tuple[tp.Tuple[tp.Any, ...], tp.Dict[str, tp.Any]]] = core.ParameterValue()  # type: ignore
