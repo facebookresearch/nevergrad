@@ -89,4 +89,4 @@ class Instrumentation(Tuple):
     def kwargs(self) -> tp.Dict[str, tp.Any]:
         return self[1].value  # type: ignore
 
-    value: core.ValueProperty[tp.Tuple[tp.Tuple[tp.Any, ...], tp.Dict[str, tp.Any]]] = core.ValueProperty()  # type: ignore
+    value: core.ValueProperty[tp.ArgsKwargs] = core.ValueProperty()  # type: ignore
