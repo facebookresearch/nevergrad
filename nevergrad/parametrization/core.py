@@ -53,7 +53,7 @@ class Parameter:
         self.uid = uuid.uuid4().hex
         self._subobjects = utils.Subobjects(
             self, base=Parameter, attribute="__dict__"
-        )  # registers all attributes
+        )  # registers and apply functions too all (sub-)Parameter attributes
         self.parents_uids: tp.List[str] = []
         self.heritage: tp.Dict[tp.Hashable, tp.Any] = {"lineage": self.uid}  # passed through to children
         self.loss: tp.Optional[float] = None  # associated loss
