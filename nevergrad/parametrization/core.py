@@ -401,14 +401,6 @@ class Parameter:
                 "(optimizers freeze the parametrization and all asked and told candidates to avoid border effects)"
             )
 
-    def _internal_spawn_child(self: P) -> P:
-        # default implem just forwards params
-        # inputs = {
-        #     k: v.spawn_child() if isinstance(v, Parameter) else v for k, v in self.parameters._content.items()
-        # }
-        child = self.__class__()  # **inputs)
-        return child
-
     def copy(self: P) -> P:  # TODO test (see former instrumentation_copy test)
         """Create a child, but remove the random state
         This is used to run multiple experiments
