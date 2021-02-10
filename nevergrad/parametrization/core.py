@@ -41,11 +41,11 @@ class Parameter:
     """
 
     value: ValueProperty[tp.Any] = ValueProperty()
-    _tree_operator = utils.TreeOperator()
 
     def __init__(self, **parameters: tp.Any) -> None:
         # Main features
         self.uid = uuid.uuid4().hex
+        self._treecall = utils.Treecall(self, Parameter)
         self.parents_uids: tp.List[str] = []
         self.heritage: tp.Dict[tp.Hashable, tp.Any] = {"lineage": self.uid}  # passed through to children
         self.loss: tp.Optional[float] = None  # associated loss
@@ -124,7 +124,7 @@ class Parameter:
     def mutate(self) -> None:
         """Mutate parameters of the instance, and then its value"""
         self._check_frozen()
-        self.parameters.mutate()
+        self._treecall("mutate")
         self.set_standardized_data(self.random_state.normal(size=self.dimension), deterministic=False)
 
     def sample(self: P) -> P:
@@ -147,7 +147,11 @@ class Parameter:
         *others: Parameter
             other instances of the same type than this instance.
         """
-        raise utils.NotSupportedError(f"Recombination is not implemented for {self.name}")
+        if not others:
+            return
+        self.random_state  # pylint: disable=pointless-statement
+        assert all(isinstance(o, self.__class__) for o in others)
+        self._treecall("recombine", *others)
 
     def get_standardized_data(self: P, *, reference: P) -> np.ndarray:
         """Get the standardized data representing the value of the instance as an array in the optimization space.
@@ -342,9 +346,9 @@ class Parameter:
     def random_state(self, random_state: np.random.RandomState) -> None:
         self._set_random_state(random_state)
 
-    @_tree_operator.traverse_down
     def _set_random_state(self, random_state: np.random.RandomState) -> None:
         self._random_state = random_state
+        self._treecall("_set_random_state", random_state)
 
     def spawn_child(self: P, new_value: tp.Optional[tp.Any] = None) -> P:
         """Creates a new instance which shares the same random generator than its parent,
@@ -378,8 +382,7 @@ class Parameter:
     def freeze(self) -> None:
         """Prevents the parameter from changing value again (through value, mutate etc...)"""
         self._frozen = True
-        if self._parameters is not None:
-            self._parameters.freeze()
+        self._treecall("freeze")
 
     def _check_frozen(self) -> None:
         if self._frozen and not isinstance(
@@ -514,6 +517,7 @@ class Container(Parameter):
 
     def __init__(self, **parameters: tp.Any) -> None:
         super().__init__()
+        self._treecall = utils.Treecall(self, cls=Parameter, attribute="_content")
         self._content: tp.Dict[tp.Any, Parameter] = {k: as_parameter(p) for k, p in parameters.items()}
         self._sizes: tp.Optional[tp.Dict[str, int]] = None
         self._sanity_check(list(self._content.values()))
@@ -580,26 +584,11 @@ class Container(Parameter):
             start = end
         assert end == len(data), f"Finished at {end} but expected {len(data)}"
 
-    def mutate(self) -> None:
-        # pylint: disable=pointless-statement
-        self.random_state  # make sure to create one before using
-        for param in self._content.values():
-            param.mutate()
-
     def sample(self: D) -> D:
         child = self.spawn_child()
         child._content = {k: p.sample() for k, p in self._content.items()}
         child.heritage["lineage"] = child.uid
         return child
-
-    def recombine(self, *others: D) -> None:
-        if not others:
-            return
-        # pylint: disable=pointless-statement
-        self.random_state  # make sure to create one before using
-        assert all(isinstance(o, self.__class__) for o in others)
-        for k, param in self._content.items():
-            param.recombine(*[o[k] for o in others])
 
     def _internal_spawn_child(self: D) -> D:
         child = self.__class__()
@@ -617,11 +606,6 @@ class Container(Parameter):
         return compliant and all(
             param.satisfies_constraints() for param in self._content.values() if isinstance(param, Parameter)
         )
-
-    def freeze(self) -> None:
-        super().freeze()
-        for p in self._content.values():
-            p.freeze()
 
 
 class Dict(Container):

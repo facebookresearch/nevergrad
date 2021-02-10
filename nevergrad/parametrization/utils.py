@@ -7,7 +7,6 @@ import os
 import sys
 import shutil
 import tempfile
-import functools
 import subprocess
 from pathlib import Path
 import numpy as np
@@ -227,53 +226,33 @@ class CommandFunction:
         return stdout
 
 
-X = tp.TypeVar("X")
-
-
-class TreeOperator:
-    def __init__(self, attribute: str = "__dict__") -> None:
+class Treecall:
+    def __init__(self, obj: tp.Any, cls: tp.Type[tp.Any], attribute: str = "__dict__") -> None:
+        self.obj = obj
+        self.cls = cls
         self.attribute = attribute
-        self.my_name = ""
 
-    def __set_name__(self, owner: tp.Type[tp.Any], name: str) -> None:
-        self.my_name = name
-
-    def _is_instance(self, obj: tp.Any) -> bool:
-        return hasattr(obj, self.my_name) and isinstance(getattr(obj, self.my_name), TreeOperator)
-
-    def _subitems(self, obj: tp.Any) -> tp.Iterator[tp.Tuple[tp.Any, tp.Any]]:
-        container = getattr(obj, self.attribute)
+    def _subitems(self) -> tp.Iterator[tp.Tuple[tp.Any, tp.Any]]:
+        container = getattr(self.obj, self.attribute)
         if not isinstance(container, (list, dict)):
-            raise TypeError("Tree operator can only work on list and dict")
+            raise TypeError("Subcaller only work on list and dict")
         iterator = enumerate(container) if isinstance(container, list) else container.items()
         for key, val in iterator:
-            if self._is_instance(val):
+            if isinstance(val, self.cls):
                 yield key, val
 
     def _get_subitem(self, obj: tp.Any, key: tp.Any) -> tp.Any:
-        if hasattr(obj, self.my_name) and isinstance(obj, TreeOperator):
+        if isinstance(obj, self.cls):
             return getattr(obj, self.attribute)[key]
         return obj
 
-    def traverse_down(self, func: X) -> X:
-        wrapper = functools.partialmethod(self._propagate, _traversed_method=func)
-        return functools.update_wrapper(wrapper, func)  # type: ignore
-
-    def traverse_up(self, func: X) -> X:
-        wrapper = functools.partialmethod(self._propagate, _traversed_method=func, _traverse_down=False)
-        return functools.update_wrapper(wrapper, func)  # type: ignore
-
-    def _propagate(self, obj, *args, _traverse_down: bool = True, _traversed_method=None, **kwargs):  # type: ignore
-        if _traverse_down:
-            out = _traversed_method(obj, *args, **kwargs)
-        name = _traversed_method.__name__
-        for key, subobj in self._subitems(obj):
+    def __call__(self, method: str, *args: tp.Any, **kwargs: tp.Any) -> tp.List[tp.Any]:
+        outputs: tp.List[tp.Any] = []
+        for key, subobj in self._subitems():
             subargs = [self._get_subitem(arg, key) for arg in args]
             subkwargs = {k: self._get_subitem(kwarg, key) for k, kwarg in kwargs.items()}
-            return getattr(subobj, name)(*subargs, **subkwargs)
-        if not _traverse_down:
-            out = _traversed_method(obj, *args, **kwargs)
-        return out
+            outputs.append(getattr(subobj, method)(*subargs, **subkwargs))
+        return outputs
 
 
 def float_penalty(x: tp.Union[bool, float]) -> float:
