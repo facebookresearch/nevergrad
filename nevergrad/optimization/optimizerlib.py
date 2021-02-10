@@ -2602,12 +2602,7 @@ class MultipleSingleRuns(base.ConfiguredOptimizer):
     def __init__(
         self,
         *,
-        scale: float = 1.0,
-        elitist: bool = False,
-        popsize: tp.Optional[int] = None,
-        diagonal: bool = False,
-        fcmaes: bool = False,
-        random_init: bool = False,
+        num_msr: int = 9,
     ) -> None:
         super().__init__(_MSR, locals())
 
