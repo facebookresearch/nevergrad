@@ -369,6 +369,7 @@ class Parameter:
         child._meta = {}
         child.loss = None
         child._losses = None
+        child._constraint_checkers = list(self._constraint_checkers)
         attribute = self._treecall.attribute
         container = getattr(child, self._treecall.attribute)
         if attribute != "__dict__":  # make a copy of the container if different from __dict__
@@ -377,19 +378,7 @@ class Parameter:
         for key, val in self._treecall._subitems():
             container[key] = val.spawn_child()
         child._set_random_state(rng)
-        # print("after", container)
-
-        # rng = self.random_state  # make sure to create one before spawning
-        # child = self._internal_spawn_child()
-        # child._set_random_state(rng)
-        # child._constraint_checkers = list(self._constraint_checkers)
-        # child._generation = self.generation + 1
-        # child._descriptors = self._descriptors
-        # child._name = self._name
-        # child.heritage = dict(self.heritage)
-        # child.parents_uids.append(self.uid)
         if new_value is not None:
-            print("Updating")
             child.value = new_value
         return child
 
