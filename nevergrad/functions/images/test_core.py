@@ -36,4 +36,3 @@ def test_images() -> None:
     other_func = func.copy()
     value2 = other_func(x)
     assert value == value2
-

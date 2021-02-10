@@ -224,5 +224,3 @@ class ImageAdversarial(base.ExperimentFunction):
                 )
                 func.add_descriptors(**tags)
                 yield func
-
-
