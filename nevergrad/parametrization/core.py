@@ -400,6 +400,7 @@ class Parameter:
                 f"Cannot modify frozen Parameter {self}, please spawn a child and modify it instead"
                 "(optimizers freeze the parametrization and all asked and told candidates to avoid border effects)"
             )
+        self._treecall("_check_frozen")
 
     def copy(self: P) -> P:  # TODO test (see former instrumentation_copy test)
         """Create a child, but remove the random state
