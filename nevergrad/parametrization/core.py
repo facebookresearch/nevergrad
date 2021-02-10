@@ -23,6 +23,12 @@ class ValueProperty(tp.Generic[X]):
     Parameter objects fetches _get_value and _set_value methods
     """
 
+    # This uses the descriptor protocol, like a property:
+    # See https://docs.python.org/3/howto/descriptor.html
+    #
+    # Basically parameter.value calls parameter.value.__get__
+    # and then parameter._get_value
+
     def __get__(self, obj: "Parameter", objtype: tp.Optional[tp.Type[object]] = None) -> X:
         return obj._get_value()  # type: ignore
 
