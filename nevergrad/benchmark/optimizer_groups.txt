@@ -24,6 +24,12 @@ noisy = ['OptimisticDiscreteOnePlusOne', 'OptimisticNoisyOnePlusOne', 'TBPSA', '
 
 oneshot = ['AvgHammersleySearch', 'AvgHammersleySearchPlusMiddlePoint', 'AvgMetaRecenteringNoHull', 'CauchyScrHammersleySearch', 'HAvgMetaRecentering', 'HCHAvgCauchyScrHammersleySearch', 'HCHAvgLargeHammersleySearch', 'HCHAvgScrHammersleySearch', 'HCHAvgScrHammersleySearchPlusMiddlePoint', 'HammersleySearch', 'HammersleySearchPlusMiddlePoint', 'MetaCauchyRecentering', 'MetaRecentering', 'MetaTuneRecentering', 'OScrHammersleySearch', 'QORandomSearch', 'QOScrHammersleySearch', 'RescaleScrHammersleySearch', 'ScrHammersleySearch', 'ScrHammersleySearchPlusMiddlePoint', 'TEAvgCauchyScrHammersleySearch', 'TEAvgScrHammersleySearch', 'TEAvgScrHammersleySearchPlusMiddlePoint', 'Zero']
 
+multimodal = ['NaiveTBPSA', 'MultiCMA', 'TripleCMA', 'MultiScaleCMA', 'PolyCMA', 'ManyCMA', 'QORandomSearch']
+
+noisy = ['OptimisticDiscreteOnePlusOne', 'OptimisticNoisyOnePlusOne', 'TBPSA', 'SPSA', 'NGOpt10']
+
+oneshot = ['AvgHammersleySearch', 'AvgHammersleySearchPlusMiddlePoint', 'AvgMetaRecenteringNoHull', 'CauchyScrHammersleySearch', 'HAvgMetaRecentering', 'HCHAvgCauchyScrHammersleySearch', 'HCHAvgLargeHammersleySearch', 'HCHAvgScrHammersleySearch', 'HCHAvgScrHammersleySearchPlusMiddlePoint', 'HammersleySearch', 'HammersleySearchPlusMiddlePoint', 'MetaCauchyRecentering', 'MetaRecentering', 'MetaTuneRecentering', 'OScrHammersleySearch', 'QORandomSearch', 'QOScrHammersleySearch', 'RescaleScrHammersleySearch', 'ScrHammersleySearch', 'ScrHammersleySearchPlusMiddlePoint', 'TEAvgCauchyScrHammersleySearch', 'TEAvgScrHammersleySearch', 'TEAvgScrHammersleySearchPlusMiddlePoint', 'Zero']
+
 parallel_basics = ['NGOpt10', 'CMandAS2', 'CMA', 'DE', 'MetaModel']
 
 progressive = [ProgDiscAuto, ProgDisc13, ProgDiscInf, ProgAuto, Prog13, ProgInf]

@@ -148,10 +148,6 @@ class MessagingThread:
         self.stop()  # del method of the thread class does not work
 
 
-class FinishedUnderlyingOptimizerWarning(Warning):
-    pass
-
-
 class RecastOptimizer(base.Optimizer):
     """Base class for ask and tell optimizer derived from implementations with no ask and tell interface.
     The underlying optimizer implementation is a function which is supposed to call directly the function
@@ -205,10 +201,10 @@ class RecastOptimizer(base.Optimizer):
         if not self._messaging_thread.is_alive():  # In case the algorithm stops before the budget is elapsed.
             warnings.warn(
                 "Underlying optimizer has already converged, returning random points",
-                FinishedUnderlyingOptimizerWarning,
+                base.errors.FinishedUnderlyingOptimizerWarning,
             )
             self._check_error()
-            data = np.random.normal(0, 1, self.dimension)
+            data = self._rng.normal(0, 1, self.dimension)
             return self.parametrization.spawn_child().set_standardized_data(data)
         message = messages[0]  # take oldest message
         message.meta["asked"] = True  # notify that it has been asked so that it is not selected again
@@ -223,7 +219,7 @@ class RecastOptimizer(base.Optimizer):
                     f"Recast optimizer raised an error:\n{self._messaging_thread.error}"
                 ) from self._messaging_thread.error
 
-    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: float) -> None:
         """Returns value for a point which was "asked"
         (none asked point cannot be "tell")
         """
@@ -236,10 +232,10 @@ class RecastOptimizer(base.Optimizer):
         messages = [m for m in messages if m.meta["uid"] == candidate.uid]
         if not messages:
             raise RuntimeError(f"No message for evaluated point {x}: {self._messaging_thread.messages}")
-        messages[0].result = value  # post the value, and the thread will deal with it
+        messages[0].result = loss  # post the value, and the thread will deal with it
 
-    def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
-        raise base.TellNotAskedNotSupportedError
+    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: float) -> None:
+        raise base.errors.TellNotAskedNotSupportedError
 
     def _internal_provide_recommendation(self) -> tp.Optional[tp.ArrayLike]:
         """Returns the underlying optimizer output if provided (ie if the optimizer did finish)
