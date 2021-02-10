@@ -245,7 +245,7 @@ class Data(core.Parameter):
     def mutate(self) -> None:
         """Mutate parameters of the instance, and then its value"""
         self._check_frozen()
-        self._treecall("mutate")
+        self._subobjects.apply("mutate")
         mutation = self.parameters["mutation"].value
         if isinstance(mutation, str):
             if mutation in ["gaussian", "cauchy"]:
@@ -363,7 +363,7 @@ class Data(core.Parameter):
     def recombine(self: D, *others: D) -> None:
         if not others:
             return
-        self._treecall("recombine", *others)
+        self._subobjects.apply("recombine", *others)
         recomb = self.parameters["recombination"].value
         if recomb is None:
             return

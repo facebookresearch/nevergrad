@@ -40,6 +40,10 @@ class Parameter:
     value, internal/model parameters, mutation, recombination
     and additional features such as shared random state,
     constraint check, hashes, generation and naming.
+
+    By default, all Parameter attributes of this Parameter are considered as
+    sub-parameters.
+    Spawning a child creates a shallow copy.
     """
 
     value: ValueProperty[tp.Any] = ValueProperty()
@@ -47,7 +51,9 @@ class Parameter:
     def __init__(self) -> None:
         # Main features
         self.uid = uuid.uuid4().hex
-        self._treecall = utils.Treecall(self, base=Parameter)
+        self._subobjects = utils.Subobjects(
+            self, base=Parameter, attribute="__dict__"
+        )  # registers all attributes
         self.parents_uids: tp.List[str] = []
         self.heritage: tp.Dict[tp.Hashable, tp.Any] = {"lineage": self.uid}  # passed through to children
         self.loss: tp.Optional[float] = None  # associated loss
@@ -116,7 +122,7 @@ class Parameter:
     def mutate(self) -> None:
         """Mutate parameters of the instance, and then its value"""
         self._check_frozen()
-        self._treecall("mutate")
+        self._subobjects.apply("mutate")
         self.set_standardized_data(self.random_state.normal(size=self.dimension), deterministic=False)
 
     def sample(self: P) -> P:
@@ -143,7 +149,7 @@ class Parameter:
             return
         self.random_state  # pylint: disable=pointless-statement
         assert all(isinstance(o, self.__class__) for o in others)
-        self._treecall("recombine", *others)
+        self._subobjects.apply("recombine", *others)
 
     def get_standardized_data(self: P, *, reference: P) -> np.ndarray:
         """Get the standardized data representing the value of the instance as an array in the optimization space.
@@ -296,7 +302,7 @@ class Parameter:
         bool
             True iff the constraint is satisfied
         """
-        inside = self._treecall("satisfies_constraints")
+        inside = self._subobjects.apply("satisfies_constraints")
         if not all(inside.values()):
             return False
         if not self._constraint_checkers:
@@ -345,7 +351,7 @@ class Parameter:
 
     def _set_random_state(self, random_state: np.random.RandomState) -> None:
         self._random_state = random_state
-        self._treecall("_set_random_state", random_state)
+        self._subobjects.apply("_set_random_state", random_state)
 
     def spawn_child(self: P, new_value: tp.Optional[tp.Any] = None) -> P:
         """Creates a new instance which shares the same random generator than its parent,
@@ -370,17 +376,17 @@ class Parameter:
         child._generation += 1
         child.parents_uids = [self.uid]
         child.heritage = dict(self.heritage)
-        child._treecall = self._treecall.new(child)
+        child._subobjects = self._subobjects.new(child)
         child._meta = {}
         child.loss = None
         child._losses = None
         child._constraint_checkers = list(self._constraint_checkers)
-        attribute = self._treecall.attribute
-        container = getattr(child, self._treecall.attribute)
+        attribute = self._subobjects.attribute
+        container = getattr(child, self._subobjects.attribute)
         if attribute != "__dict__":  # make a copy of the container if different from __dict__
             container = dict(container) if isinstance(container, dict) else list(container)
             setattr(child, attribute, container)
-        for key, val in self._treecall.subobjects().items():
+        for key, val in self._subobjects.items():
             container[key] = val.spawn_child()
         child._set_random_state(rng)
         if new_value is not None:
@@ -390,7 +396,7 @@ class Parameter:
     def freeze(self) -> None:
         """Prevents the parameter from changing value again (through value, mutate etc...)"""
         self._frozen = True
-        self._treecall("freeze")
+        self._subobjects.apply("freeze")
 
     def _check_frozen(self) -> None:
         if self._frozen and not isinstance(
@@ -400,7 +406,7 @@ class Parameter:
                 f"Cannot modify frozen Parameter {self}, please spawn a child and modify it instead"
                 "(optimizers freeze the parametrization and all asked and told candidates to avoid border effects)"
             )
-        self._treecall("_check_frozen")
+        self._subobjects.apply("_check_frozen")
 
     def copy(self: P) -> P:  # TODO test (see former instrumentation_copy test)
         """Create a child, but remove the random state
@@ -517,7 +523,7 @@ class Container(Parameter):
 
     def __init__(self, **parameters: tp.Any) -> None:
         super().__init__()
-        self._treecall = utils.Treecall(self, base=Parameter, attribute="_content")
+        self._subobjects = utils.Subobjects(self, base=Parameter, attribute="_content")
         self._content: tp.Dict[tp.Any, Parameter] = {k: as_parameter(p) for k, p in parameters.items()}
         self._sizes: tp.Optional[tp.Dict[str, int]] = None
         self._sanity_check(list(self._content.values()))

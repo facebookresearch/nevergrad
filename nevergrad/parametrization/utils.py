@@ -225,8 +225,10 @@ class CommandFunction:
 X = tp.TypeVar("X")
 
 
-class Treecall(tp.Generic[X]):
-    """
+class Subobjects(tp.Generic[X]):
+    """Identifies suboject of a class and applies
+    functions recursively on them.
+
     Parameters
     ----------
     object: Any
@@ -242,33 +244,38 @@ class Treecall(tp.Generic[X]):
         self.cls = base
         self.attribute = attribute
 
-    def new(self, obj: X) -> "Treecall[X]":
+    def new(self, obj: X) -> "Subobjects[X]":
         """Creates a new instance with same configuratioon
         but for a new object.
         """
-        return Treecall(obj, base=self.cls, attribute=self.attribute)
+        return Subobjects(obj, base=self.cls, attribute=self.attribute)
 
-    def subobjects(self) -> tp.Dict[tp.Any, X]:
+    def items(self) -> tp.Iterator[tp.Tuple[tp.Any, X]]:
         """Returns a dict {key: subobject}"""
         container = getattr(self.obj, self.attribute)
         if not isinstance(container, (list, dict)):
             raise TypeError("Subcaller only work on list and dict")
         iterator = enumerate(container) if isinstance(container, list) else container.items()
-        return {key: val for key, val in iterator if isinstance(val, self.cls)}
+        for key, val in iterator:
+            if isinstance(val, self.cls):
+                yield key, val
 
-    def _get_subitem(self, obj: X, key: tp.Any) -> tp.Any:
+    def _get_subobject(self, obj: X, key: tp.Any) -> tp.Any:
+        """Returns the corresponding subject if obj is from the
+        base class, or directly the object otherwise.
+        """
         if isinstance(obj, self.cls):
             return getattr(obj, self.attribute)[key]
         return obj
 
-    def __call__(self, method: str, *args: tp.Any, **kwargs: tp.Any) -> tp.Dict[tp.Any, tp.Any]:
-        """Calls the named method with the provided input parameters
-        on the sub-objects
+    def apply(self, method: str, *args: tp.Any, **kwargs: tp.Any) -> tp.Dict[tp.Any, tp.Any]:
+        """Calls the named method with the provided input parameters (or their subobjects if
+        from the base class!) on the subobjects.
         """
         outputs: tp.Dict[tp.Any, tp.Any] = {}
-        for key, subobj in self.subobjects().items():
-            subargs = [self._get_subitem(arg, key) for arg in args]
-            subkwargs = {k: self._get_subitem(kwarg, key) for k, kwarg in kwargs.items()}
+        for key, subobj in self.items():
+            subargs = [self._get_subobject(arg, key) for arg in args]
+            subkwargs = {k: self._get_subobject(kwarg, key) for k, kwarg in kwargs.items()}
             outputs[key] = getattr(subobj, method)(*subargs, **subkwargs)
         return outputs
 
