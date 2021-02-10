@@ -41,6 +41,7 @@ class Parameter:
     """
 
     value: ValueProperty[tp.Any] = ValueProperty()
+    _tree_operator = utils.TreeOperator()
 
     def __init__(self, **parameters: tp.Any) -> None:
         # Main features
@@ -341,10 +342,9 @@ class Parameter:
     def random_state(self, random_state: np.random.RandomState) -> None:
         self._set_random_state(random_state)
 
+    @_tree_operator.traverse_down
     def _set_random_state(self, random_state: np.random.RandomState) -> None:
         self._random_state = random_state
-        if self._parameters is not None:
-            self.parameters._set_random_state(random_state)
 
     def spawn_child(self: P, new_value: tp.Optional[tp.Any] = None) -> P:
         """Creates a new instance which shares the same random generator than its parent,
