@@ -218,6 +218,18 @@ The parametrization subpackage will help you do thanks to:</p>
 <dt id="nevergrad.p.Array">
 <em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">Array</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">init</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference internal" href="#nevergrad.p.Tuple" title="nevergrad.p.Tuple">Tuple</a><span class="p">[</span>float<span class="p">, </span><span class="p">…</span><span class="p">]</span><span class="p">, </span>List<span class="p">[</span>float<span class="p">]</span><span class="p">, </span>numpy.ndarray<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">shape</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference internal" href="#nevergrad.p.Tuple" title="nevergrad.p.Tuple">Tuple</a><span class="p">[</span>int<span class="p">, </span><span class="p">…</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">mutable_sigma</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.Array" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nevergrad.parametrization.data.Data</span></code></p>
+<dl class="py attribute">
+<dt id="nevergrad.p.Array.value">
+<code class="sig-name descname">value</code><em class="property">: nevergrad.parametrization.core.ValueProperty<span class="p">[</span>numpy.ndarray<span class="p">]</span></em><a class="headerlink" href="#nevergrad.p.Array.value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Value of the Parameter, which should be sent to the function
+to optimize.</p>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">ng</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">Array</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,))</span><span class="o">.</span><span class="n">value</span>
+<span class="go">array([0., 0.])</span>
+</pre></div>
+</div>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
@@ -281,7 +293,7 @@ leaving others untouched</p></li>
 <dl class="py class">
 <dt id="nevergrad.p.Dict">
 <em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">Dict</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">parameters</span><span class="p">:</span> <span class="n">Any</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.Dict" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nevergrad.parametrization.core.Container</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nevergrad.parametrization.container.Container</span></code></p>
 <p>Dictionary-valued parameter. This Parameter can contain other Parameters,
 its value is a dict, with keys the ones provided as input, and corresponding values are
 either directly the provided values if they are not Parameter instances, or the value of those
@@ -296,6 +308,18 @@ Parameters. It also implements a getter to access the Parameters directly if nee
 <p>This is the base structure for all container Parameters, and it is
 used to hold the internal/model parameters for all Parameter classes.</p>
 </div>
+<dl class="py attribute">
+<dt id="nevergrad.p.Dict.value">
+<code class="sig-name descname">value</code><em class="property">: nevergrad.parametrization.core.ValueProperty<span class="p">[</span><a class="reference internal" href="#nevergrad.p.Dict" title="nevergrad.p.Dict">Dict</a><span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#nevergrad.p.Dict.value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Value of the Parameter, which should be sent to the function
+to optimize.</p>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">ng</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">Array</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,))</span><span class="o">.</span><span class="n">value</span>
+<span class="go">array([0., 0.])</span>
+</pre></div>
+</div>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
@@ -322,6 +346,18 @@ functions call use <cite>func(*param.args, **param.kwargs)</cite> instead of
 <cite>func(param.value)</cite>. This is for simplifying the parametrization of
 multiparameter functions.</p>
 </div>
+<dl class="py attribute">
+<dt id="nevergrad.p.Instrumentation.value">
+<code class="sig-name descname">value</code><em class="property">: nevergrad.parametrization.core.ValueProperty<span class="p">[</span><a class="reference internal" href="#nevergrad.p.Tuple" title="nevergrad.p.Tuple">Tuple</a><span class="p">[</span><a class="reference internal" href="#nevergrad.p.Tuple" title="nevergrad.p.Tuple">Tuple</a><span class="p">[</span>Any<span class="p">, </span><span class="p">…</span><span class="p">]</span><span class="p">, </span><a class="reference internal" href="#nevergrad.p.Dict" title="nevergrad.p.Dict">Dict</a><span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#nevergrad.p.Instrumentation.value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Value of the Parameter, which should be sent to the function
+to optimize.</p>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">ng</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">Array</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,))</span><span class="o">.</span><span class="n">value</span>
+<span class="go">array([0., 0.])</span>
+</pre></div>
+</div>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
@@ -371,6 +407,18 @@ Also, if init is not provided, it will be set to the middle value.</p></li>
 <li><p>More specific behaviors can be obtained throught the following methods:
 <code class="code docutils literal notranslate"><span class="pre">set_bounds</span></code>, <code class="code docutils literal notranslate"><span class="pre">set_mutation</span></code>, <code class="code docutils literal notranslate"><span class="pre">set_integer_casting</span></code></p></li>
 </ul>
+<dl class="py attribute">
+<dt id="nevergrad.p.Scalar.value">
+<code class="sig-name descname">value</code><em class="property">: nevergrad.parametrization.core.ValueProperty<span class="p">[</span>float<span class="p">]</span></em><a class="headerlink" href="#nevergrad.p.Scalar.value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Value of the Parameter, which should be sent to the function
+to optimize.</p>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">ng</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">Array</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,))</span><span class="o">.</span><span class="n">value</span>
+<span class="go">array([0., 0.])</span>
+</pre></div>
+</div>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
@@ -429,7 +477,7 @@ on this scalar yields a uniform choice of index. This may come to evolve for sim
 <dl class="py class">
 <dt id="nevergrad.p.Tuple">
 <em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">Tuple</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">parameters</span><span class="p">:</span> <span class="n">Any</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.Tuple" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nevergrad.parametrization.core.Container</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nevergrad.parametrization.container.Container</span></code></p>
 <p>Tuple-valued parameter. This Parameter can contain other Parameters,
 its value is tuple which values are either directly the provided values
 if they are not Parameter instances, or the value of those Parameters.
@@ -444,6 +492,18 @@ It also implements a getter to access the Parameters directly if need be.</p>
 <p>This is the base structure for all container Parameters, and it is
 used to hold the subparameters for all Parameter classes.</p>
 </div>
+<dl class="py attribute">
+<dt id="nevergrad.p.Tuple.value">
+<code class="sig-name descname">value</code><em class="property">: nevergrad.parametrization.core.ValueProperty<span class="p">[</span><a class="reference internal" href="#nevergrad.p.Tuple" title="nevergrad.p.Tuple">Tuple</a><span class="p">[</span>Any<span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#nevergrad.p.Tuple.value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Value of the Parameter, which should be sent to the function
+to optimize.</p>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">ng</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">Array</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,))</span><span class="o">.</span><span class="n">value</span>
+<span class="go">array([0., 0.])</span>
+</pre></div>
+</div>
+</dd></dl>
+
 </dd></dl>
 
 </div>
@@ -452,13 +512,16 @@ used to hold the subparameters for all Parameter classes.</p>
 <dl class="py class">
 <dt id="nevergrad.p.Parameter">
 <em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">Parameter</code><a class="headerlink" href="#nevergrad.p.Parameter" title="Permalink to this definition">¶</a></dt>
-<dd><p>Abstract class providing the core functionality of a parameter, aka
+<dd><p>Class providing the core functionality of a parameter, aka
 value, internal/model parameters, mutation, recombination
 and additional features such as shared random state,
-constraint check, hashes, generation and naming.</p>
-<p>By default, all Parameter attributes of this Parameter are considered as
-sub-parameters.
-Spawning a child creates a shallow copy.</p>
+constraint check, hashes, generation and naming.
+The value field should sent to the function to optimize.</p>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">ng</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">Array</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,))</span><span class="o">.</span><span class="n">value</span>
+<span class="go">array([0., 0.])</span>
+</pre></div>
+</div>
 <dl class="py method">
 <dt id="nevergrad.p.Parameter.args">
 <em class="property">property </em><code class="sig-name descname">args</code><a class="headerlink" href="#nevergrad.p.Parameter.args" title="Permalink to this definition">¶</a></dt>
@@ -683,6 +746,18 @@ Optionally, a new value will be set after creation</p>
 <dd class="field-odd"><p><a class="reference internal" href="#nevergrad.p.Parameter" title="nevergrad.p.Parameter">Parameter</a></p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="nevergrad.p.Parameter.value">
+<code class="sig-name descname">value</code><em class="property">: nevergrad.parametrization.core.ValueProperty<span class="p">[</span>Any<span class="p">]</span></em><a class="headerlink" href="#nevergrad.p.Parameter.value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Value of the Parameter, which should be sent to the function
+to optimize.</p>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">ng</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">Array</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,))</span><span class="o">.</span><span class="n">value</span>
+<span class="go">array([0., 0.])</span>
+</pre></div>
+</div>
 </dd></dl>
 
 </dd></dl>
