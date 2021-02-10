@@ -28,6 +28,15 @@ class ValueProperty(tp.Generic[X]):
     #
     # Basically parameter.value calls parameter.value.__get__
     # and then parameter._get_value
+    def __init__(self) -> None:
+        self.__doc__ = """Value of the Parameter, which should be sent to the function
+        to optimize.
+
+        Example
+        -------
+        >>> ng.p.Array(shape=(2,)).value
+        array([0., 0.])
+        """
 
     def __get__(self, obj: "Parameter", objtype: tp.Optional[tp.Type[object]] = None) -> X:
         return obj._get_value()  # type: ignore
@@ -38,15 +47,21 @@ class ValueProperty(tp.Generic[X]):
 
 # pylint: disable=too-many-instance-attributes,too-many-public-methods
 class Parameter:
-    """Abstract class providing the core functionality of a parameter, aka
+    """Class providing the core functionality of a parameter, aka
     value, internal/model parameters, mutation, recombination
     and additional features such as shared random state,
     constraint check, hashes, generation and naming.
+    The value field should sent to the function to optimize.
 
-    By default, all Parameter attributes of this Parameter are considered as
-    sub-parameters.
-    Spawning a child creates a shallow copy.
+    Example
+    -------
+    >>> ng.p.Array(shape=(2,)).value
+    array([0., 0.])
     """
+
+    # By default, all Parameter attributes of this Parameter are considered as
+    # sub-parameters.
+    # Spawning a child creates a shallow copy.
 
     value: ValueProperty[tp.Any] = ValueProperty()
 
