@@ -2563,42 +2563,57 @@ class NGOpt(NGOpt10):
     pass
 
 
-# Variants dedicated to multiobjective optimization by multiple monoobjective optimization.
 @registry.register
-class NGOpt10_16(CM):
-    """This code applies 16 copies of NGOpt10 with random weights for the different objective functions."""
+class _MSR(CM):
+    """This code applies 16 copies of NGOpt10 with random weights for the different objective functions.
 
-    num_optims = 16
+    Variants dedicated to multiobjective optimization by multiple monoobjective optimization.
+    """
 
     def __init__(
-        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1, num_msr: int = 9
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
         self.optims = [
-            NGOpt10(self.parametrization, budget=1 + (budget // self.num_optims), num_workers=num_workers)
+            NGOpt(self.parametrization, budget=1 + (budget // self.num_optims), num_workers=num_workers)
             for _ in range(self.num_optims)
         ]
-        self.coeffs = [np.random.uniform(size=self.num_objectives) for _ in range(self.num_optims)]
-        self.budget_before_choosing = budget
+        self.coeffs = [self.parametrization.random.uniform(size=self.num_objectives) for _ in range(self.num_optims)]
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         for i, opt in enumerate(self.optims):
             try:
-                if self.num_objectives > 0:
-                    this_loss = np.sum(loss * self.coeffs[i])
+                this_loss = np.sum(loss * self.coeffs[i])
                 opt.tell(candidate, this_loss)
             except base.TellNotAskedNotSupportedError:
                 pass
 
 
-@registry.register
-class NGOpt10_25(NGOpt10_16):
+class MultipleSingleRuns(base.ConfiguredOptimizer):
+    """CMA-ES optimizer,
+    Parameters
+    ----------
+    num_msr: int
+        number of single runs.
+    """
 
-    num_optims = 25
+    # pylint: disable=unused-argument
+    def __init__(
+        self,
+        *,
+        scale: float = 1.0,
+        elitist: bool = False,
+        popsize: tp.Optional[int] = None,
+        diagonal: bool = False,
+        fcmaes: bool = False,
+        random_init: bool = False,
+    ) -> None:
+        super().__init__(_MSR, locals())
 
 
-@registry.register
-class NGOpt10_9(NGOpt10_25):
+NGOpt10_9 = MultipleSingleRuns(num_msr=9).set_name("NGOpt10_9", register=True)
+NGOpt10_16 = MultipleSingleRuns(num_msr=16).set_name("NGOpt10_16", register=True)
+NGOpt10_25 = MultipleSingleRuns(num_msr=25).set_name("NGOpt10_25", register=True)
 
-    num_optims = 9
+
