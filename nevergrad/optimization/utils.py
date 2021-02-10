@@ -254,12 +254,18 @@ class Pruning:
     def __init__(self, min_len: int, max_len: int):
         self.min_len = min_len
         self.max_len = max_len
+        self._num_prunings = 0  # for testing it is not called too often
 
     def __call__(self, archive: Archive[MultiValue]) -> Archive[MultiValue]:
         if len(archive) < self.max_len:
             return archive
+        return self._prune(archive)
+
+    def _prune(self, archive: Archive[MultiValue]) -> Archive[MultiValue]:
+        self._num_prunings += 1
+        # separate function to ease profiling
         quantiles: tp.Dict[str, float] = {}
-        threshold = float(self.min_len) / len(archive)
+        threshold = float(self.min_len + 1) / len(archive)
         names = ["optimistic", "pessimistic", "average"]
         for name in names:
             quantiles[name] = np.quantile(
@@ -269,8 +275,9 @@ class Pruning:
         new_archive.bytesdict = {
             b: v
             for b, v in archive.bytesdict.items()
-            if any(v.get_estimation(n) <= quantiles[n] for n in names)
-        }
+            if any(v.get_estimation(n) < quantiles[n] for n in names)
+        }  # strict comparison to make sure we prune even for values repeated maaany times
+        # this may remove all points though, but nevermind for now
         return new_archive
 
     @classmethod
@@ -373,17 +380,17 @@ class BoundScaler:
         )
 
     @classmethod
-    def list_arrays(cls, parameter: p.Parameter) -> tp.List[p.Array]:
-        """Computes a list of data (Array) parameters in the same order as in
+    def list_arrays(cls, parameter: p.Parameter) -> tp.List[p.Data]:
+        """Computes a list of Data (Array/Scalar) parameters in the same order as in
         the standardized data space.
         """
-        if isinstance(parameter, p.Array):
+        if isinstance(parameter, p.Data):
             return [parameter]
         elif isinstance(parameter, p.Constant):
             return []
-        if not isinstance(parameter, p.Dict):
+        if not isinstance(parameter, p.Container):
             raise RuntimeError(f"Unsupported parameter {parameter}")
-        output: tp.List[p.Array] = []
+        output: tp.List[p.Data] = []
         for _, subpar in sorted(parameter._content.items()):
             output += cls.list_arrays(subpar)
         return output
