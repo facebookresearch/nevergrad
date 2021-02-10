@@ -1539,40 +1539,73 @@ def double_o_seven(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def multiobjective_example(seed: tp.Optional[int] = None, hd: bool = False, many: bool = False) -> tp.Iterator[Experiment]:
+def multiobjective_example(
+    seed: tp.Optional[int] = None, hd: bool = False, many: bool = False
+) -> tp.Iterator[Experiment]:
     """Optimization of 2 and 3 objective functions in Sphere, Ellipsoid, Cigar, Hm.
     Dimension 6 and 7.
     Budget 100 to 3200
     """
     seedg = create_seed_generator(seed)
     optims = get_optimizers("structure", "structured_moo", seed=next(seedg))
-    optims += [ng.families.DifferentialEvolution(multiobjective_adaptation=False).set_name("DE-noadapt"),
-    ng.families.DifferentialEvolution(crossover="twopoints", multiobjective_adaptation=False).set_name(
-            "TwoPointsDE-noadapt")]
+    optims += [
+        ng.families.DifferentialEvolution(multiobjective_adaptation=False).set_name("DE-noadapt"),
+        ng.families.DifferentialEvolution(crossover="twopoints", multiobjective_adaptation=False).set_name(
+            "TwoPointsDE-noadapt"
+        ),
+    ]
     optims += ["DiscreteOnePlusOne", "DiscreteLenglerOnePlusOne"]
     popsizes = [20, 40, 80]
-    optims += [ng.families.EvolutionStrategy(recombination_ratio=recomb, only_offsprings=only, popsize=pop,
-        offsprings=pop * 5)
-    for only in [True, False] for recomb in [0.1, .5] for pop in popsizes]
+    optims += [
+        ng.families.EvolutionStrategy(
+            recombination_ratio=recomb, only_offsprings=only, popsize=pop, offsprings=pop * 5
+        )
+        for only in [True, False]
+        for recomb in [0.1, 0.5]
+        for pop in popsizes
+    ]
 
     mofuncs: tp.List[fbase.MultiExperiment] = []
     dim = 2000 if hd else 7
     for name1, name2 in itertools.product(["sphere"], ["sphere", "hm"]):
-        mofuncs.append(fbase.MultiExperiment([ArtificialFunction(name1, block_dimension=dim),
-                    ArtificialFunction(name2, block_dimension=dim)] + (
-                        [ArtificialFunction(name1, block_dimension=dim),  # Addendum for many-objective optim.
-                        ArtificialFunction(name2,
-                            block_dimension=dim)] if
-                        many else []),
-                    upper_bounds=[100, 100] * (2 if many else 1)))
-        mofuncs.append(fbase.MultiExperiment([ArtificialFunction(name1, block_dimension=dim-1),
-                    ArtificialFunction("sphere", block_dimension=dim-1),
-                    ArtificialFunction(name2, block_dimension=dim-1)] +
-                    ([ArtificialFunction(name1, block_dimension=dim-1),  # Addendum for many-objective optim.
-                        ArtificialFunction("sphere", block_dimension=dim-1),
-                        ArtificialFunction(name2, block_dimension=dim-1)]
-                     if many else []),
-                    upper_bounds=[100, 100, 100.] * (2 if many else 1)))
+        mofuncs.append(
+            fbase.MultiExperiment(
+                [
+                    ArtificialFunction(name1, block_dimension=dim),
+                    ArtificialFunction(name2, block_dimension=dim),
+                ]
+                + (
+                    [
+                        ArtificialFunction(name1, block_dimension=dim),  # Addendum for many-objective optim.
+                        ArtificialFunction(name2, block_dimension=dim),
+                    ]
+                    if many
+                    else []
+                ),
+                upper_bounds=[100, 100] * (2 if many else 1),
+            )
+        )
+        mofuncs.append(
+            fbase.MultiExperiment(
+                [
+                    ArtificialFunction(name1, block_dimension=dim - 1),
+                    ArtificialFunction("sphere", block_dimension=dim - 1),
+                    ArtificialFunction(name2, block_dimension=dim - 1),
+                ]
+                + (
+                    [
+                        ArtificialFunction(
+                            name1, block_dimension=dim - 1
+                        ),  # Addendum for many-objective optim.
+                        ArtificialFunction("sphere", block_dimension=dim - 1),
+                        ArtificialFunction(name2, block_dimension=dim - 1),
+                    ]
+                    if many
+                    else []
+                ),
+                upper_bounds=[100, 100, 100.0] * (2 if many else 1),
+            )
+        )
     for mofunc in mofuncs:
         for optim in optims:
             for budget in [100, 200, 400, 800, 1600, 3200]:
