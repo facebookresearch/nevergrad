@@ -239,7 +239,7 @@ class Subobjects(tp.Generic[X]):
         the attribute containing the subobjects
     """
 
-    def __init__(self, obj: X, base: tp.Type[X], attribute: str = "__dict__") -> None:
+    def __init__(self, obj: X, base: tp.Type[X], attribute: str) -> None:
         self.obj = obj
         self.cls = base
         self.attribute = attribute
