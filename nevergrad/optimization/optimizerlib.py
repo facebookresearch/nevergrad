@@ -2434,11 +2434,8 @@ class _MSR(CM):
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         for i, opt in enumerate(self.optims):
-            try:
-                this_loss = np.sum(loss * self.coeffs[i])
-                opt.tell(candidate, this_loss)
-            except base.TellNotAskedNotSupportedError:
-                pass
+            this_loss = np.sum(loss * self.coeffs[i])
+            opt.tell(candidate, this_loss)
 
 
 class MultipleSingleRuns(base.ConfiguredOptimizer):
