@@ -6,7 +6,6 @@
 import numpy as np
 
 from . import core
-from . import imagelosses
 
 
 def test_images_adversarial() -> None:
