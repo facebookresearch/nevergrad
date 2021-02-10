@@ -2425,6 +2425,7 @@ class _MSR(CM):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
+        self.num_optims = num_msr
         self.optims = [
             NGOpt(self.parametrization, budget=1 + (budget // self.num_optims), num_workers=num_workers)
             for _ in range(self.num_optims)
