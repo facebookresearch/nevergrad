@@ -47,7 +47,7 @@ class Parameter:
     def __init__(self) -> None:
         # Main features
         self.uid = uuid.uuid4().hex
-        self._treecall = utils.Treecall(self, Parameter)
+        self._treecall = utils.Treecall(self, base=Parameter)
         self.parents_uids: tp.List[str] = []
         self.heritage: tp.Dict[tp.Hashable, tp.Any] = {"lineage": self.uid}  # passed through to children
         self.loss: tp.Optional[float] = None  # associated loss
@@ -297,7 +297,7 @@ class Parameter:
             True iff the constraint is satisfied
         """
         inside = self._treecall("satisfies_constraints")
-        if not all(inside):
+        if not all(inside.values()):
             return False
         if not self._constraint_checkers:
             return True
@@ -380,7 +380,7 @@ class Parameter:
         if attribute != "__dict__":  # make a copy of the container if different from __dict__
             container = dict(container) if isinstance(container, dict) else list(container)
             setattr(child, attribute, container)
-        for key, val in self._treecall._subitems():
+        for key, val in self._treecall.subobjects().items():
             container[key] = val.spawn_child()
         child._set_random_state(rng)
         if new_value is not None:
@@ -516,7 +516,7 @@ class Container(Parameter):
 
     def __init__(self, **parameters: tp.Any) -> None:
         super().__init__()
-        self._treecall = utils.Treecall(self, cls=Parameter, attribute="_content")
+        self._treecall = utils.Treecall(self, base=Parameter, attribute="_content")
         self._content: tp.Dict[tp.Any, Parameter] = {k: as_parameter(p) for k, p in parameters.items()}
         self._sizes: tp.Optional[tp.Dict[str, int]] = None
         self._sanity_check(list(self._content.values()))
