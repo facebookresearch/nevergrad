@@ -47,15 +47,10 @@ class Mutation(core.Parameter):
         raise RuntimeError("Mutation._apply_array should either be implementer or bypassed in Mutation.apply")
         return np.array([])  # pylint: disable=unreachable
 
-    def get_standardized_data(self, *, reference: tp.Optional[P] = None) -> np.ndarray:
+    def get_standardized_data(  # pylint: disable=unused-argument
+        self: P, *, reference: tp.Optional[P] = None
+    ) -> np.ndarray:
         return np.array([])
-
-    def set_standardized_data(
-        self: P, data: tp.ArrayLike, *, reference: tp.Optional[P] = None, deterministic: bool = False
-    ) -> P:
-        if np.array(data, copy=False).size:
-            raise ValueError(f"Constant dimension should be 0 (got data: {data})")
-        return self
 
 
 # pylint: disable=too-many-arguments, too-many-instance-attributes,abstract-method
