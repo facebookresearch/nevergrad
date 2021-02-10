@@ -364,7 +364,8 @@ class Parameter:
             a new instance of the same class, with same content/internal-model parameters/...
             Optionally, a new value will be set after creation
         """
-        rng = self.random_state  # make sure to create one before spawning
+        # make sure to initialize the random state  before spawning children
+        self.random_state  # pylint: disable=pointless-statement
         child = copy.copy(self)
         child.uid = uuid.uuid4().hex
         child._frozen = False
@@ -377,13 +378,12 @@ class Parameter:
         child._losses = None
         child._constraint_checkers = list(self._constraint_checkers)
         attribute = self._subobjects.attribute
-        container = getattr(child, self._subobjects.attribute)
+        container = getattr(child, attribute)
         if attribute != "__dict__":  # make a copy of the container if different from __dict__
             container = dict(container) if isinstance(container, dict) else list(container)
             setattr(child, attribute, container)
         for key, val in self._subobjects.items():
             container[key] = val.spawn_child()
-        child._set_random_state(rng)
         if new_value is not None:
             child.value = new_value
         return child
