@@ -451,11 +451,14 @@ used to hold the subparameters for all Parameter classes.</p>
 <h2>Parameter API<a class="headerlink" href="#parameter-api" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
 <dt id="nevergrad.p.Parameter">
-<em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">Parameter</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">parameters</span><span class="p">:</span> <span class="n">Any</span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.p.Parameter" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.p.</code><code class="sig-name descname">Parameter</code><a class="headerlink" href="#nevergrad.p.Parameter" title="Permalink to this definition">¶</a></dt>
 <dd><p>Abstract class providing the core functionality of a parameter, aka
 value, internal/model parameters, mutation, recombination
 and additional features such as shared random state,
 constraint check, hashes, generation and naming.</p>
+<p>By default, all Parameter attributes of this Parameter are considered as
+sub-parameters.
+Spawning a child creates a shallow copy.</p>
 <dl class="py method">
 <dt id="nevergrad.p.Parameter.args">
 <em class="property">property </em><code class="sig-name descname">args</code><a class="headerlink" href="#nevergrad.p.Parameter.args" title="Permalink to this definition">¶</a></dt>
@@ -560,12 +563,6 @@ In case of mono-objective loss, losses is the array containing this loss as sole
 This is used to keep track of how this Parameter is configured (included through internal/model parameters),
 mostly for reproducibility A default version is always provided, but can be overriden directly
 through the attribute, or through the set_name method (which allows chaining).</p>
-</dd></dl>
-
-<dl class="py method">
-<dt id="nevergrad.p.Parameter.parameters">
-<em class="property">property </em><code class="sig-name descname">parameters</code><a class="headerlink" href="#nevergrad.p.Parameter.parameters" title="Permalink to this definition">¶</a></dt>
-<dd><p>Internal/model parameters for this parameter</p>
 </dd></dl>
 
 <dl class="py method">
