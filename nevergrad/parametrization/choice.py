@@ -228,15 +228,6 @@ class Choice(BaseChoice):
         for ind in indices:
             self.choices[ind].mutate()
 
-    def _internal_spawn_child(self: C) -> C:
-        child = self.__class__(
-            choices=self.choices.spawn_child(),
-            deterministic=self._deterministic,
-            repetitions=self._repetitions,
-        )
-        child._content["weights"] = self.weights.spawn_child()
-        return child
-
 
 class TransitionChoice(BaseChoice):
     """Ordered categorical parameter, choosing one of the provided choice options as a value, with continuous transitions.
@@ -325,9 +316,3 @@ class TransitionChoice(BaseChoice):
         indices = set(self.indices)
         for ind in indices:
             self.choices[ind].mutate()
-
-    def _internal_spawn_child(self: T) -> T:
-        child = self.__class__(choices=self.choices.spawn_child(), repetitions=self._repetitions)
-        child._content["positions"] = self.positions.spawn_child()
-        child._content["transitions"] = self.transitions.spawn_child()
-        return child

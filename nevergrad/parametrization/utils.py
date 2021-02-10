@@ -232,6 +232,9 @@ class Treecall:
         self.cls = cls
         self.attribute = attribute
 
+    def new(self, obj: tp.Any) -> "Treecall":
+        return Treecall(obj, cls=self.cls, attribute=self.attribute)
+
     def _subitems(self) -> tp.Iterator[tp.Tuple[tp.Any, tp.Any]]:
         container = getattr(self.obj, self.attribute)
         if not isinstance(container, (list, dict)):

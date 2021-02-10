@@ -341,16 +341,6 @@ class Data(core.Parameter):
         if reference.bound_transform is not None:
             self._value = reference.bound_transform.forward(self._value)
 
-    def _internal_spawn_child(self: D) -> D:
-        child = self.__class__(init=self.value)
-        child.parameters._content = {
-            k: v.spawn_child() if isinstance(v, core.Parameter) else v
-            for k, v in self.parameters._content.items()
-        }
-        for name in ["integer", "exponent", "bounds", "bound_transform", "full_range_sampling"]:
-            setattr(child, name, getattr(self, name))
-        return child
-
     def _internal_get_standardized_data(self: D, reference: D) -> np.ndarray:
         return reference._to_reduced_space(self._value) - reference._get_ref_data()  # type: ignore
 
@@ -387,6 +377,13 @@ class Data(core.Parameter):
             recomb(all_params)
         else:
             raise ValueError(f'Unknown recombination "{recomb}"')
+
+    def spawn_child(self: D, new_value: tp.Optional[tp.Any] = None) -> D:
+        child = super().spawn_child()  # dont forward the value
+        child._value = np.array(self._value, copy=True)
+        if new_value is not None:
+            child.value = new_value
+        return child
 
 
 class Array(Data):
@@ -428,7 +425,7 @@ class Scalar(Data):
     upper: optional float
         maximum value if any
     mutable_sigma: bool
-        whether the mutation standard deviation must mutate as well (for mutation based algorithms)
+        wheter the mutation standard deviation must mutate as well (for mutation based algorithms)
 
     Notes
     -----
