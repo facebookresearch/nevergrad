@@ -30,6 +30,7 @@ class Image(base.ExperimentFunction):
         index: int = 0,
         loss: tp.Type[imagelosses.ImageLoss] = imagelosses.SumAbsoluteDifferences,
         with_pgan: bool = False,
+        num_images: int = 1,
     ) -> None:
         """
         problem_name: the type of problem we are working on.
@@ -44,6 +45,7 @@ class Image(base.ExperimentFunction):
         self.problem_name = problem_name
         self.index = index
         self.with_pgan = with_pgan
+        self.num_images = num_images
 
         # Storing data necessary for the problem at hand.
         assert problem_name == "recovering"  # For the moment we have only this one.
@@ -54,6 +56,7 @@ class Image(base.ExperimentFunction):
         self.data = np.asarray(image)[:, :, :3]  # 4th Channel is pointless here, only 255.
         # parametrization
         if not with_pgan:
+            assert num_images == 1
             array = ng.p.Array(init=128 * np.ones(self.domain_shape), mutable_sigma=True)
             array.set_mutation(sigma=35)
             array.set_bounds(lower=0, upper=255.99, method="clipping", full_range_sampling=True)
@@ -68,7 +71,7 @@ class Image(base.ExperimentFunction):
                 pretrained=True,
                 useGPU=False,
             )
-            self.domain_shape = (1, 512)  # type: ignore
+            self.domain_shape = (num_images, 512)  # type: ignore
             initial_noise = np.random.normal(size=self.domain_shape)
             array = ng.p.Array(init=initial_noise, mutable_sigma=True)
             array.set_mutation(sigma=35.0)
@@ -87,10 +90,12 @@ class Image(base.ExperimentFunction):
         return ((self.pgan_model.test(noise).clamp(min=-1, max=1) + 1) * 255.99 / 2).permute(0, 2, 3, 1).cpu().numpy()  # type: ignore
 
     def _loss_with_pgan(self, x: np.ndarray) -> float:
-        image = self._generate_images(x).squeeze(0)
-        image = cv2.resize(image, dsize=(226, 226), interpolation=cv2.INTER_NEAREST)
-        assert image.shape == (226, 226, 3), f"{x.shape} != {(226, 226, 3)}"
-        loss = self.loss_function(image)
+        loss = 0.
+        for i in range(self.num_images):
+            image = self._generate_images(x[i]).squeeze(0)
+            image = cv2.resize(image, dsize=(226, 226), interpolation=cv2.INTER_NEAREST)
+            assert image.shape == (226, 226, 3), f"{x.shape} != {(226, 226, 3)}"
+            loss += self.loss_function(image)
         return loss
 
 
