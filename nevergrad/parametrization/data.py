@@ -18,6 +18,14 @@ D = tp.TypeVar("D", bound="Data")
 P = tp.TypeVar("P", bound=core.Parameter)
 
 
+def _param_string(parameters: core.Dict) -> str:
+    """Hacky helper for nice-visualizatioon"""
+    substr = f"[{parameters._get_parameters_str()}]"
+    if substr == "[]":
+        substr = ""
+    return substr
+
+
 class Mutation(core.Parameter):
     """Custom mutation or recombination
     This is an experimental API
@@ -42,6 +50,9 @@ class Mutation(core.Parameter):
 
     def _set_value(self, value: tp.Any) -> None:
         raise RuntimeError("Mutation cannot be set.")
+
+    def _get_name(self) -> str:
+        return super()._get_name() + _param_string(self.parameters)
 
     def apply(self, arrays: tp.Sequence[D]) -> None:
         new_value = self._apply_array([a._value for a in arrays])
@@ -122,7 +133,7 @@ class Data(core.Parameter):
         description = ""
         if descriptors:
             description = "{{{}}}".format(",".join(descriptors))
-        return f"{cls}{description}"
+        return f"{cls}{description}" + _param_string(self.parameters)
 
     @property
     def sigma(self) -> tp.Union["Array", "Scalar"]:

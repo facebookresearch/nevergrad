@@ -263,12 +263,7 @@ class Parameter:
         """
         if self._name is not None:
             return self._name
-        substr = ""
-        if hasattr(self, "parameters"):  # TODO temporary hack
-            substr = f"[{self.parameters._get_parameters_str()}]"  # type: ignore
-            if substr == "[]":
-                substr = ""
-        return f"{self._get_name()}" + substr
+        return self._get_name()
 
     @name.setter
     def name(self, name: str) -> None:
