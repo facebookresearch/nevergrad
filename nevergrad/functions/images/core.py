@@ -90,7 +90,7 @@ class Image(base.ExperimentFunction):
         return ((self.pgan_model.test(noise).clamp(min=-1, max=1) + 1) * 255.99 / 2).permute(0, 2, 3, 1).cpu().numpy()  # type: ignore
 
     def _loss_with_pgan(self, x: np.ndarray) -> float:
-        loss = 0.
+        loss = 0.0
         for i in range(self.num_images):
             image = self._generate_images(x[i]).squeeze(0)
             image = cv2.resize(image, dsize=(226, 226), interpolation=cv2.INTER_NEAREST)
