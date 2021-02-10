@@ -89,7 +89,6 @@ class SpecialEvaluationExperiment(base.ExperimentFunction):
             "random",
             "loss-covering",
             "EPS",
-            "EPS2",
             "domain-covering",
             "hypervolume",
         ),
