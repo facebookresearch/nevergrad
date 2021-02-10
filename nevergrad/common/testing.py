@@ -4,19 +4,29 @@
 # LICENSE file in the root directory of this source tree.
 
 import re
+import os
+import warnings
 import platform
 import unittest
 import inspect
 import contextlib
 from pathlib import Path
 import typing as tp
+import numpy as np
+from . import errors
 
 try:
     import pytest
 except ImportError:
     pass  # makes most of this module usable without pytest
-import numpy as np
-import os
+
+
+@contextlib.contextmanager
+def suppress_nevergrad_warnings() -> tp.Iterator[None]:
+    with warnings.catch_warnings():
+        # tests do not need to be efficient
+        warnings.simplefilter("ignore", category=errors.NevergradWarning)
+        yield
 
 
 def assert_set_equal(

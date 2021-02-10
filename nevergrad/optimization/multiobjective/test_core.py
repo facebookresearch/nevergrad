@@ -74,7 +74,7 @@ def test_optimizers_multiobjective(name: str) -> None:  # pylint: disable=redefi
         raise SkipTest("BO is currently failing for unclear reasons")  # TODO solve
     with warnings.catch_warnings():
         # tests do not need to be efficient
-        warnings.simplefilter("ignore", category=base.InefficientSettingsWarning)
+        warnings.simplefilter("ignore", category=base.errors.InefficientSettingsWarning)
         optimizer = registry[name](parametrization=4, budget=100)
         candidate = optimizer.ask()
         optimizer.tell(candidate, mofunc(candidate.value))
@@ -101,6 +101,7 @@ def test_doc_multiobjective() -> None:
 
     optimizer = ng.optimizers.CMA(parametrization=3, budget=100)
 
+    # for all but DE optimizers, deriving a volume out of the losses,
     # it's not strictly necessary but highly advised to provide an
     # upper bound reference for the losses (if not provided, such upper
     # bound is automatically inferred with the first few "tell")

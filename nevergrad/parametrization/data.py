@@ -14,48 +14,8 @@ from . import transforms as trans
 # pylint: disable=no-value-for-parameter
 
 
-BoundValue = tp.Optional[tp.Union[float, int, np.int, np.float, np.ndarray]]
-A = tp.TypeVar("A", bound="Array")
+D = tp.TypeVar("D", bound="Data")
 P = tp.TypeVar("P", bound=core.Parameter)
-
-
-class BoundChecker:
-    """Simple object for checking whether an array lies
-    between provided bounds.
-
-    Parameter
-    ---------
-    lower: float or None
-        minimum value
-    upper: float or None
-        maximum value
-
-    Note
-    -----
-    Not all bounds are necessary (data can be partially bounded, or not at all actually)
-    """
-
-    def __init__(self, lower: BoundValue = None, upper: BoundValue = None) -> None:
-        self.bounds = (lower, upper)
-
-    def __call__(self, value: np.ndarray) -> bool:
-        """Checks whether the array lies within the bounds
-
-        Parameter
-        ---------
-        value: np.ndarray
-            array to check
-
-        Returns
-        -------
-        bool
-            True iff the array lies within the bounds
-        """
-        for k, bound in enumerate(self.bounds):
-            if bound is not None:
-                if np.any((value > bound) if k else (value < bound)):
-                    return False
-        return True
 
 
 class Mutation(core.Parameter):
@@ -71,16 +31,15 @@ class Mutation(core.Parameter):
     """
 
     # pylint: disable=unused-argument
+    value: core.ValueProperty[tp.Callable[[tp.Sequence[D]], None]] = core.ValueProperty()
 
-    @property
-    def value(self) -> tp.Callable[[tp.Sequence["Array"]], None]:
+    def _get_value(self) -> tp.Callable[[tp.Sequence[D]], None]:
         return self.apply
 
-    @value.setter
-    def value(self, value: tp.Any) -> None:
+    def _set_value(self, value: tp.Any) -> None:
         raise RuntimeError("Mutation cannot be set.")
 
-    def apply(self, arrays: tp.Sequence["Array"]) -> None:
+    def apply(self, arrays: tp.Sequence[D]) -> None:
         new_value = self._apply_array([a._value for a in arrays])
         arrays[0]._value = new_value
 
@@ -88,19 +47,14 @@ class Mutation(core.Parameter):
         raise RuntimeError("Mutation._apply_array should either be implementer or bypassed in Mutation.apply")
         return np.array([])  # pylint: disable=unreachable
 
-    def get_standardized_data(self, *, reference: tp.Optional[P] = None) -> np.ndarray:
+    def get_standardized_data(  # pylint: disable=unused-argument
+        self: P, *, reference: tp.Optional[P] = None
+    ) -> np.ndarray:
         return np.array([])
 
-    def set_standardized_data(
-        self: P, data: tp.ArrayLike, *, reference: tp.Optional[P] = None, deterministic: bool = False
-    ) -> P:
-        if np.array(data, copy=False).size:
-            raise ValueError(f"Constant dimension should be 0 (got data: {data})")
-        return self
 
-
-# pylint: disable=too-many-arguments, too-many-instance-attributes
-class Array(core.Parameter):
+# pylint: disable=too-many-arguments, too-many-instance-attributes,abstract-method
+class Data(core.Parameter):
     """Array parameter with customizable mutation and recombination.
 
     Parameters
@@ -170,38 +124,14 @@ class Array(core.Parameter):
         """Value for the standard deviation used to mutate the parameter"""
         return self.parameters["sigma"]  # type: ignore
 
-    @property
-    def value(self) -> np.ndarray:
-        if self.integer:
-            return np.round(self._value)  # type: ignore
-        return self._value
-
-    @value.setter
-    def value(self, value: tp.ArrayLike) -> None:
-        self._check_frozen()
-        self._ref_data = None
-        if not isinstance(value, (np.ndarray, tuple, list)):
-            raise TypeError(f"Received a {type(value)} in place of a np.ndarray/tuple/list")
-        value = np.asarray(value)
-        assert isinstance(value, np.ndarray)
-        if self._value.shape != value.shape:
-            raise ValueError(
-                f"Cannot set array of shape {self._value.shape} with value of shape {value.shape}"
-            )
-        if not BoundChecker(*self.bounds)(self.value):
-            raise ValueError("New value does not comply with bounds")
-        if self.exponent is not None and np.min(value.ravel()) <= 0:
-            raise ValueError("Logirithmic values cannot be negative")
-        self._value = value
-
-    def sample(self: A) -> A:
+    def sample(self: D) -> D:
         if not self.full_range_sampling:
             return super().sample()
         child = self.spawn_child()
         func = (lambda x: x) if self.exponent is None else self._to_reduced_space  # noqa
         std_bounds = tuple(func(b * np.ones(self._value.shape)) for b in self.bounds)
         diff = std_bounds[1] - std_bounds[0]
-        new_data = std_bounds[0] + np.random.uniform(0, 1, size=diff.shape) * diff
+        new_data = std_bounds[0] + self.random_state.uniform(0, 1, size=diff.shape) * diff
         if self.exponent is None:
             new_data = self._to_reduced_space(new_data)
         child.set_standardized_data(new_data - self._get_ref_data(), deterministic=False)
@@ -210,14 +140,14 @@ class Array(core.Parameter):
 
     # pylint: disable=unused-argument
     def set_bounds(
-        self: A,
-        lower: BoundValue = None,
-        upper: BoundValue = None,
+        self: D,
+        lower: tp.BoundValue = None,
+        upper: tp.BoundValue = None,
         method: str = "bouncing",
         full_range_sampling: tp.Optional[bool] = None,
-        a_min: BoundValue = None,
-        a_max: BoundValue = None,
-    ) -> A:
+        a_min: tp.BoundValue = None,
+        a_max: tp.BoundValue = None,
+    ) -> D:
         """Bounds all real values into [lower, upper] using a provided method
 
         Parameters
@@ -265,7 +195,7 @@ class Array(core.Parameter):
             raise RuntimeError("A bounding method has already been set")
         if full_range_sampling and not both_bounds:
             raise ValueError("Cannot use full range sampling if both bounds are not set")
-        checker = BoundChecker(*bounds)
+        checker = utils.BoundChecker(*bounds)
         if not checker(self.value):
             raise ValueError("Current value is not within bounds, please update it first")
         if not (lower is None or upper is None):
@@ -301,7 +231,7 @@ class Array(core.Parameter):
                 )
         return self
 
-    def set_recombination(self: A, recombination: tp.Union[None, str, core.Parameter]) -> A:
+    def set_recombination(self: D, recombination: tp.Union[None, str, core.Parameter]) -> D:
         assert self._parameters is not None
         self._parameters._content["recombination"] = (
             recombination if isinstance(recombination, core.Parameter) else core.Constant(recombination)
@@ -329,11 +259,11 @@ class Array(core.Parameter):
             raise TypeError("Mutation must be a string, a callable or a Mutation instance")
 
     def set_mutation(
-        self: A,
+        self: D,
         sigma: tp.Optional[tp.Union[float, core.Parameter]] = None,
         exponent: tp.Optional[float] = None,
         custom: tp.Optional[tp.Union[str, core.Parameter]] = None,
-    ) -> A:
+    ) -> D:
         """Output will be cast to integer(s) through deterministic rounding.
 
         Parameters
@@ -379,7 +309,7 @@ class Array(core.Parameter):
             self.parameters._content["mutation"] = core.as_parameter(custom)
         return self
 
-    def set_integer_casting(self: A) -> A:
+    def set_integer_casting(self: D) -> D:
         """Output will be cast to integer(s) through deterministic rounding.
 
         Returns
@@ -397,7 +327,7 @@ class Array(core.Parameter):
 
     # pylint: disable=unused-argument
     def _internal_set_standardized_data(
-        self: A, data: np.ndarray, reference: A, deterministic: bool = False
+        self: D, data: np.ndarray, reference: D, deterministic: bool = False
     ) -> None:
         assert isinstance(data, np.ndarray)
         sigma = reference.sigma.value
@@ -407,7 +337,7 @@ class Array(core.Parameter):
         if reference.bound_transform is not None:
             self._value = reference.bound_transform.forward(self._value)
 
-    def _internal_spawn_child(self) -> "Array":
+    def _internal_spawn_child(self: D) -> D:
         child = self.__class__(init=self.value)
         child.parameters._content = {
             k: v.spawn_child() if isinstance(v, core.Parameter) else v
@@ -417,7 +347,7 @@ class Array(core.Parameter):
             setattr(child, name, getattr(self, name))
         return child
 
-    def _internal_get_standardized_data(self: A, reference: A) -> np.ndarray:
+    def _internal_get_standardized_data(self: D, reference: D) -> np.ndarray:
         return reference._to_reduced_space(self._value) - reference._get_ref_data()  # type: ignore
 
     def _get_ref_data(self) -> np.ndarray:
@@ -436,7 +366,7 @@ class Array(core.Parameter):
         reduced = distribval / sigma
         return reduced.ravel()  # type: ignore
 
-    def recombine(self: A, *others: A) -> None:
+    def recombine(self: D, *others: D) -> None:
         if not others:
             return
         recomb = self.parameters["recombination"].value
@@ -454,7 +384,34 @@ class Array(core.Parameter):
             raise ValueError(f'Unknown recombination "{recomb}"')
 
 
-class Scalar(Array):
+class Array(Data):
+
+    value: core.ValueProperty[np.ndarray] = core.ValueProperty()
+
+    def _get_value(self) -> np.ndarray:
+        if self.integer:
+            return np.round(self._value)  # type: ignore
+        return self._value
+
+    def _set_value(self, value: tp.ArrayLike) -> None:
+        self._check_frozen()
+        self._ref_data = None
+        if not isinstance(value, (np.ndarray, tuple, list)):
+            raise TypeError(f"Received a {type(value)} in place of a np.ndarray/tuple/list")
+        value = np.asarray(value)
+        assert isinstance(value, np.ndarray)
+        if self._value.shape != value.shape:
+            raise ValueError(
+                f"Cannot set array of shape {self._value.shape} with value of shape {value.shape}"
+            )
+        if not utils.BoundChecker(*self.bounds)(self.value):
+            raise ValueError("New value does not comply with bounds")
+        if self.exponent is not None and np.min(value.ravel()) <= 0:
+            raise ValueError("Logirithmic values cannot be negative")
+        self._value = value
+
+
+class Scalar(Data):
     """Parameter representing a scalar.
 
     Parameters
@@ -477,6 +434,8 @@ class Scalar(Array):
       :code:`set_bounds`, :code:`set_mutation`, :code:`set_integer_casting`
     """
 
+    value: core.ValueProperty[float] = core.ValueProperty()
+
     def __init__(
         self,
         init: tp.Optional[float] = None,
@@ -498,12 +457,10 @@ class Scalar(Array):
         if any(a is not None for a in (lower, upper)):
             self.set_bounds(lower=lower, upper=upper, full_range_sampling=bounded and no_init)
 
-    @property  # type: ignore
-    def value(self) -> float:  # type: ignore
+    def _get_value(self) -> float:
         return float(self._value[0]) if not self.integer else int(np.round(self._value[0]))
 
-    @value.setter
-    def value(self, value: float) -> None:
+    def _set_value(self, value: float) -> None:
         self._check_frozen()
         if not isinstance(value, (float, int, np.float, np.int)):
             raise TypeError(f"Received a {type(value)} in place of a scalar (float, int)")
