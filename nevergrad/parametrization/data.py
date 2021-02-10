@@ -379,9 +379,10 @@ class Data(core.Parameter):
             raise ValueError(f'Unknown recombination "{recomb}"')
 
     def spawn_child(self: D, new_value: tp.Optional[tp.Any] = None) -> D:
-        child = super().spawn_child()
-        if new_value is None:
-            child._value = np.array(self._value, copy=True)
+        child = super().spawn_child()  # dont forward the value
+        child._value = np.array(self._value, copy=True)
+        if new_value is not None:
+            child.value = new_value
         return child
 
 
@@ -424,7 +425,7 @@ class Scalar(Data):
     upper: optional float
         maximum value if any
     mutable_sigma: bool
-        whether the mutation standard deviation must mutate as well (for mutation based algorithms)
+        wheter the mutation standard deviation must mutate as well (for mutation based algorithms)
 
     Notes
     -----

@@ -389,6 +389,7 @@ class Parameter:
         # child.heritage = dict(self.heritage)
         # child.parents_uids.append(self.uid)
         if new_value is not None:
+            print("Updating")
             child.value = new_value
         return child
 
