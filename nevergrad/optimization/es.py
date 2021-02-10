@@ -95,7 +95,8 @@ class EvolutionStrategy(base.ConfiguredOptimizer):
     """Experimental evolution-strategy-like algorithm
     The API is going to evolve
 
-    Parameters:
+    Parameters
+    ----------
     recombination_ratio: float
         probability of using a recombination (after the mutation) for generating new offsprings
     popsize: int
