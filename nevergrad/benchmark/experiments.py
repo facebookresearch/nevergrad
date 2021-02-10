@@ -1402,14 +1402,9 @@ def multiobjective_example(seed: tp.Optional[int] = None, hd: bool = False, many
                     ArtificialFunction("sphere", block_dimension=dim-1),
                     ArtificialFunction(name2, block_dimension=dim-1)] +
                     ([ArtificialFunction(name1, block_dimension=dim-1),
-                     ArtificialFunction("sphere",
-                         block_dimension=dim-1),
-                     ArtificialFunction(name2,
-                         block_dimension=dim-1)]
-                     if
-                     many
-                     else
-                     []),
+                        ArtificialFunction("sphere", block_dimension=dim-1),
+                        ArtificialFunction(name2, block_dimension=dim-1)]
+                     if many else []),
                     upper_bounds=[100, 100, 100.] * (2 if many else 1)))
     for mofunc in mofuncs:
         for optim in optims:
