@@ -9,6 +9,7 @@
   [#1029](https://github.com/facebookresearch/nevergrad/pull/1029)
   [#1036](https://github.com/facebookresearch/nevergrad/pull/1036)
   [#1038](https://github.com/facebookresearch/nevergrad/pull/1038)
+  [#1043](https://github.com/facebookresearch/nevergrad/pull/1043)
   and more to come), please open an issue if you encounter any problem. The midterm aim is to allow for simpler constraint management.
 
 ## 0.4.3 (2021-01-28)

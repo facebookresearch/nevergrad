@@ -18,6 +18,14 @@ D = tp.TypeVar("D", bound="Data")
 P = tp.TypeVar("P", bound=core.Parameter)
 
 
+def _param_string(parameters: core.Dict) -> str:
+    """Hacky helper for nice-visualizatioon"""
+    substr = f"[{parameters._get_parameters_str()}]"
+    if substr == "[]":
+        substr = ""
+    return substr
+
+
 class Mutation(core.Parameter):
     """Custom mutation or recombination
     This is an experimental API
@@ -33,11 +41,18 @@ class Mutation(core.Parameter):
     # pylint: disable=unused-argument
     value: core.ValueProperty[tp.Callable[[tp.Sequence[D]], None]] = core.ValueProperty()
 
+    def __init__(self, **kwargs: tp.Any) -> None:
+        super().__init__()
+        self.parameters = core.Dict(**kwargs)
+
     def _get_value(self) -> tp.Callable[[tp.Sequence[D]], None]:
         return self.apply
 
     def _set_value(self, value: tp.Any) -> None:
         raise RuntimeError("Mutation cannot be set.")
+
+    def _get_name(self) -> str:
+        return super()._get_name() + _param_string(self.parameters)
 
     def apply(self, arrays: tp.Sequence[D]) -> None:
         new_value = self._apply_array([a._value for a in arrays])
@@ -80,7 +95,8 @@ class Data(core.Parameter):
         mutable_sigma: bool = False,
     ) -> None:
         sigma = Log(init=1.0, exponent=2.0, mutable_sigma=False) if mutable_sigma else 1.0
-        super().__init__(sigma=sigma, recombination="average", mutation="gaussian")
+        super().__init__()
+        self.parameters = core.Dict(sigma=sigma, recombination="average", mutation="gaussian")
         err_msg = 'Exactly one of "init" or "shape" must be provided'
         self.parameters._ignore_in_repr = dict(sigma="1.0", recombination="average", mutation="gaussian")
         if init is not None:
@@ -117,7 +133,7 @@ class Data(core.Parameter):
         description = ""
         if descriptors:
             description = "{{{}}}".format(",".join(descriptors))
-        return f"{cls}{description}"
+        return f"{cls}{description}" + _param_string(self.parameters)
 
     @property
     def sigma(self) -> tp.Union["Array", "Scalar"]:
@@ -232,8 +248,7 @@ class Data(core.Parameter):
         return self
 
     def set_recombination(self: D, recombination: tp.Union[None, str, core.Parameter]) -> D:
-        assert self._parameters is not None
-        self._parameters._content["recombination"] = (
+        self.parameters._content["recombination"] = (
             recombination if isinstance(recombination, core.Parameter) else core.Constant(recombination)
         )
         return self
@@ -241,7 +256,7 @@ class Data(core.Parameter):
     def mutate(self) -> None:
         """Mutate parameters of the instance, and then its value"""
         self._check_frozen()
-        self.parameters.mutate()
+        self._subobjects.apply("mutate")
         mutation = self.parameters["mutation"].value
         if isinstance(mutation, str):
             if mutation in ["gaussian", "cauchy"]:
@@ -337,16 +352,6 @@ class Data(core.Parameter):
         if reference.bound_transform is not None:
             self._value = reference.bound_transform.forward(self._value)
 
-    def _internal_spawn_child(self: D) -> D:
-        child = self.__class__(init=self.value)
-        child.parameters._content = {
-            k: v.spawn_child() if isinstance(v, core.Parameter) else v
-            for k, v in self.parameters._content.items()
-        }
-        for name in ["integer", "exponent", "bounds", "bound_transform", "full_range_sampling"]:
-            setattr(child, name, getattr(self, name))
-        return child
-
     def _internal_get_standardized_data(self: D, reference: D) -> np.ndarray:
         return reference._to_reduced_space(self._value) - reference._get_ref_data()  # type: ignore
 
@@ -369,10 +374,12 @@ class Data(core.Parameter):
     def recombine(self: D, *others: D) -> None:
         if not others:
             return
+        self._subobjects.apply("recombine", *others)
         recomb = self.parameters["recombination"].value
         if recomb is None:
             return
         all_params = [self] + list(others)
+        print(all_params)
         if isinstance(recomb, str) and recomb == "average":
             all_arrays = [p.get_standardized_data(reference=self) for p in all_params]
             self.set_standardized_data(np.mean(all_arrays, axis=0), deterministic=False)
@@ -382,6 +389,13 @@ class Data(core.Parameter):
             recomb(all_params)
         else:
             raise ValueError(f'Unknown recombination "{recomb}"')
+
+    def spawn_child(self: D, new_value: tp.Optional[tp.Any] = None) -> D:
+        child = super().spawn_child()  # dont forward the value
+        child._value = np.array(self._value, copy=True)
+        if new_value is not None:
+            child.value = new_value
+        return child
 
 
 class Array(Data):

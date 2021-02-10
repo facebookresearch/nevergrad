@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import uuid
+import copy
 import warnings
 import operator
 import functools
@@ -39,18 +40,24 @@ class Parameter:
     value, internal/model parameters, mutation, recombination
     and additional features such as shared random state,
     constraint check, hashes, generation and naming.
+
+    By default, all Parameter attributes of this Parameter are considered as
+    sub-parameters.
+    Spawning a child creates a shallow copy.
     """
 
     value: ValueProperty[tp.Any] = ValueProperty()
 
-    def __init__(self, **parameters: tp.Any) -> None:
+    def __init__(self) -> None:
         # Main features
         self.uid = uuid.uuid4().hex
+        self._subobjects = utils.Subobjects(
+            self, base=Parameter, attribute="__dict__"
+        )  # registers and apply functions too all (sub-)Parameter attributes
         self.parents_uids: tp.List[str] = []
         self.heritage: tp.Dict[tp.Hashable, tp.Any] = {"lineage": self.uid}  # passed through to children
         self.loss: tp.Optional[float] = None  # associated loss
         self._losses: tp.Optional[np.ndarray] = None  # associated losses (multiobjective) as an array
-        self._parameters = None if not parameters else Dict(**parameters)  # internal/model parameters
         self._dimension: tp.Optional[int] = None
         # Additional convenient features
         self._random_state: tp.Optional[np.random.RandomState] = None  # lazy initialization
@@ -101,15 +108,6 @@ class Parameter:
         return {}
 
     @property
-    def parameters(self) -> "Dict":
-        """Internal/model parameters for this parameter"""
-        if self._parameters is None:  # delayed instantiation to avoid infinte loop
-            assert self.__class__ != Dict, "parameters of Parameters dict should never be called"
-            self._parameters = Dict()
-        assert self._parameters is not None
-        return self._parameters
-
-    @property
     def dimension(self) -> int:
         """Dimension of the standardized space for this parameter
         i.e size of the vector returned by get_standardized_data(reference=...)
@@ -124,7 +122,7 @@ class Parameter:
     def mutate(self) -> None:
         """Mutate parameters of the instance, and then its value"""
         self._check_frozen()
-        self.parameters.mutate()
+        self._subobjects.apply("mutate")
         self.set_standardized_data(self.random_state.normal(size=self.dimension), deterministic=False)
 
     def sample(self: P) -> P:
@@ -147,7 +145,11 @@ class Parameter:
         *others: Parameter
             other instances of the same type than this instance.
         """
-        raise errors.UnsupportedParameterOperationError(f"Recombination is not implemented for {self.name}")
+        if not others:
+            return
+        self.random_state  # pylint: disable=pointless-statement
+        assert all(isinstance(o, self.__class__) for o in others)
+        self._subobjects.apply("recombine", *others)
 
     def get_standardized_data(self: P, *, reference: P) -> np.ndarray:
         """Get the standardized data representing the value of the instance as an array in the optimization space.
@@ -240,7 +242,7 @@ class Parameter:
         if isinstance(val, (str, bytes, float, int)):
             return val
         elif isinstance(val, np.ndarray):
-            return val.tobytes()
+            return val.tobytes()  # type: ignore
         else:
             raise errors.UnsupportedParameterOperationError(
                 f"Value hash is not supported for object {self.name}"
@@ -261,12 +263,7 @@ class Parameter:
         """
         if self._name is not None:
             return self._name
-        substr = ""
-        if self._parameters is not None and self.parameters:
-            substr = f"[{self.parameters._get_parameters_str()}]"
-            if substr == "[]":
-                substr = ""
-        return f"{self._get_name()}" + substr
+        return self._get_name()
 
     @name.setter
     def name(self, name: str) -> None:
@@ -300,7 +297,8 @@ class Parameter:
         bool
             True iff the constraint is satisfied
         """
-        if self._parameters is not None and not self.parameters.satisfies_constraints():
+        inside = self._subobjects.apply("satisfies_constraints")
+        if not all(inside.values()):
             return False
         if not self._constraint_checkers:
             return True
@@ -348,8 +346,7 @@ class Parameter:
 
     def _set_random_state(self, random_state: np.random.RandomState) -> None:
         self._random_state = random_state
-        if self._parameters is not None:
-            self.parameters._set_random_state(random_state)
+        self._subobjects.apply("_set_random_state", random_state)
 
     def spawn_child(self: P, new_value: tp.Optional[tp.Any] = None) -> P:
         """Creates a new instance which shares the same random generator than its parent,
@@ -367,15 +364,26 @@ class Parameter:
             a new instance of the same class, with same content/internal-model parameters/...
             Optionally, a new value will be set after creation
         """
-        rng = self.random_state  # make sure to create one before spawning
-        child = self._internal_spawn_child()
-        child._set_random_state(rng)
-        child._constraint_checkers = list(self._constraint_checkers)
-        child._generation = self.generation + 1
-        child._descriptors = self._descriptors
-        child._name = self._name
-        child.parents_uids.append(self.uid)
+        # make sure to initialize the random state  before spawning children
+        self.random_state  # pylint: disable=pointless-statement
+        child = copy.copy(self)
+        child.uid = uuid.uuid4().hex
+        child._frozen = False
+        child._generation += 1
+        child.parents_uids = [self.uid]
         child.heritage = dict(self.heritage)
+        child._subobjects = self._subobjects.new(child)
+        child._meta = {}
+        child.loss = None
+        child._losses = None
+        child._constraint_checkers = list(self._constraint_checkers)
+        attribute = self._subobjects.attribute
+        container = getattr(child, attribute)
+        if attribute != "__dict__":  # make a copy of the container if different from __dict__
+            container = dict(container) if isinstance(container, dict) else list(container)
+            setattr(child, attribute, container)
+        for key, val in self._subobjects.items():
+            container[key] = val.spawn_child()
         if new_value is not None:
             child.value = new_value
         return child
@@ -383,8 +391,7 @@ class Parameter:
     def freeze(self) -> None:
         """Prevents the parameter from changing value again (through value, mutate etc...)"""
         self._frozen = True
-        if self._parameters is not None:
-            self._parameters.freeze()
+        self._subobjects.apply("freeze")
 
     def _check_frozen(self) -> None:
         if self._frozen and not isinstance(
@@ -394,21 +401,13 @@ class Parameter:
                 f"Cannot modify frozen Parameter {self}, please spawn a child and modify it instead"
                 "(optimizers freeze the parametrization and all asked and told candidates to avoid border effects)"
             )
-
-    def _internal_spawn_child(self: P) -> P:
-        # default implem just forwards params
-        inputs = {
-            k: v.spawn_child() if isinstance(v, Parameter) else v for k, v in self.parameters._content.items()
-        }
-        child = self.__class__(**inputs)
-        return child
+        self._subobjects.apply("_check_frozen")
 
     def copy(self: P) -> P:  # TODO test (see former instrumentation_copy test)
         """Create a child, but remove the random state
         This is used to run multiple experiments
         """
         child = self.spawn_child()
-        child._name = self._name
         child.random_state = None
         return child
 
@@ -519,6 +518,7 @@ class Container(Parameter):
 
     def __init__(self, **parameters: tp.Any) -> None:
         super().__init__()
+        self._subobjects = utils.Subobjects(self, base=Parameter, attribute="_content")
         self._content: tp.Dict[tp.Any, Parameter] = {k: as_parameter(p) for k, p in parameters.items()}
         self._sizes: tp.Optional[tp.Dict[str, int]] = None
         self._sanity_check(list(self._content.values()))
@@ -585,48 +585,11 @@ class Container(Parameter):
             start = end
         assert end == len(data), f"Finished at {end} but expected {len(data)}"
 
-    def mutate(self) -> None:
-        # pylint: disable=pointless-statement
-        self.random_state  # make sure to create one before using
-        for param in self._content.values():
-            param.mutate()
-
     def sample(self: D) -> D:
         child = self.spawn_child()
         child._content = {k: p.sample() for k, p in self._content.items()}
         child.heritage["lineage"] = child.uid
         return child
-
-    def recombine(self, *others: D) -> None:
-        if not others:
-            return
-        # pylint: disable=pointless-statement
-        self.random_state  # make sure to create one before using
-        assert all(isinstance(o, self.__class__) for o in others)
-        for k, param in self._content.items():
-            param.recombine(*[o[k] for o in others])
-
-    def _internal_spawn_child(self: D) -> D:
-        child = self.__class__()
-        child._content = {k: v.spawn_child() for k, v in self._content.items()}
-        return child
-
-    def _set_random_state(self, random_state: np.random.RandomState) -> None:
-        super()._set_random_state(random_state)
-        for param in self._content.values():
-            if isinstance(param, Parameter):
-                param._set_random_state(random_state)
-
-    def satisfies_constraints(self) -> bool:
-        compliant = super().satisfies_constraints()
-        return compliant and all(
-            param.satisfies_constraints() for param in self._content.values() if isinstance(param, Parameter)
-        )
-
-    def freeze(self) -> None:
-        super().freeze()
-        for p in self._content.values():
-            p.freeze()
 
 
 class Dict(Container):
