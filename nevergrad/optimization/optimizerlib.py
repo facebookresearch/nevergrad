@@ -11,6 +11,7 @@ import numpy as np
 from bayes_opt import UtilityFunction
 from bayes_opt import BayesianOptimization
 import nevergrad.common.typing as tp
+from nevergrad.common import errors
 from nevergrad.parametrization import parameter as p
 from nevergrad.parametrization import transforms
 from nevergrad.parametrization import discretization
@@ -19,7 +20,6 @@ from . import base
 from . import mutations
 from .base import registry as registry
 from .base import addCompare  # pylint: disable=unused-import
-from .base import InefficientSettingsWarning as InefficientSettingsWarning
 from .base import IntOrParameter
 from . import sequences
 
@@ -110,7 +110,7 @@ class _OnePlusOne(base.Optimizer):
         if mutation == "adaptive":
             self._adaptive_mr = 0.5
         if mutation == "coordinatewise_adaptive":
-            self._velocity = np.random.uniform(size=self.dimension) * arity / 4.0
+            self._velocity = self._rng.uniform(size=self.dimension) * arity / 4.0
             self._modified_variables = np.array([True] * self.dimension)
         self.noise_handling = noise_handling
         self.mutation = mutation
@@ -331,11 +331,10 @@ AnisotropicAdaptiveDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="coordin
 DiscreteBSOOnePlusOne = ParametrizedOnePlusOne(mutation="discreteBSO").set_name(
     "DiscreteBSOOnePlusOne", register=True
 )
-DiscreteDoerrOnePlusOne = (
-    ParametrizedOnePlusOne(mutation="doerr")
-    .set_name("DiscreteDoerrOnePlusOne", register=True)
-    .no_parallelization
-) = True
+DiscreteDoerrOnePlusOne = ParametrizedOnePlusOne(mutation="doerr").set_name(
+    "DiscreteDoerrOnePlusOne", register=True
+)
+DiscreteDoerrOnePlusOne.no_parallelization = True
 CauchyOnePlusOne = ParametrizedOnePlusOne(mutation="cauchy").set_name("CauchyOnePlusOne", register=True)
 OptimisticNoisyOnePlusOne = ParametrizedOnePlusOne(noise_handling="optimistic").set_name(
     "OptimisticNoisyOnePlusOne", register=True
@@ -608,22 +607,19 @@ class EDA(base.Optimizer):
             self.children = []
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        raise base.TellNotAskedNotSupportedError
+        raise errors.TellNotAskedNotSupportedError
 
 
-@registry.register
 class PCEDA(EDA):
     _POPSIZE_ADAPTATION = True
     _COVARIANCE_MEMORY = False
 
 
-@registry.register
 class MPCEDA(EDA):
     _POPSIZE_ADAPTATION = True
     _COVARIANCE_MEMORY = True
 
 
-@registry.register
 class MEDA(EDA):
     _POPSIZE_ADAPTATION = False
     _COVARIANCE_MEMORY = True
@@ -774,7 +770,7 @@ class PSO(base.Optimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if budget is not None and budget < 60:
-            warnings.warn("PSO is inefficient with budget < 60", base.InefficientSettingsWarning)
+            warnings.warn("PSO is inefficient with budget < 60", errors.InefficientSettingsWarning)
         cases: tp.Dict[str, tp.Tuple[tp.Optional[float], transforms.Transform]] = dict(
             arctan=(0, transforms.ArctanBound(0, 1)),
             identity=(None, transforms.Affine(1, 0)),
@@ -1234,7 +1230,7 @@ class Portfolio(base.Optimizer):
         for opt in self.optims:
             try:
                 opt.tell(candidate, loss)
-            except base.TellNotAskedNotSupportedError:
+            except errors.TellNotAskedNotSupportedError:
                 pass
         # Presumably better than self.optims[optim_index].tell(candidate, value)
 
@@ -1244,10 +1240,10 @@ class Portfolio(base.Optimizer):
             try:
                 opt.tell(candidate, loss)
                 at_least_one_ok = True
-            except base.TellNotAskedNotSupportedError:
+            except errors.TellNotAskedNotSupportedError:
                 pass
         if not at_least_one_ok:
-            raise base.TellNotAskedNotSupportedError
+            raise errors.TellNotAskedNotSupportedError
 
 
 class InfiniteMetaModelOptimum(ValueError):
@@ -1344,7 +1340,6 @@ class MetaModel(base.Optimizer):
         self._optim.tell(candidate, loss)
 
 
-@registry.register
 class ParaPortfolio(Portfolio):
     """Passive portfolio of CMA, 2-pt DE, PSO, SQP and Scr-Hammersley."""
 
@@ -1444,35 +1439,6 @@ class ASCMADEthird(Portfolio):
 
 
 @registry.register
-class ASCMADEQRthird(ASCMADEthird):
-    """Algorithm selection, with CMA, ScrHalton and Lhs-DE. Active selection at 1/3."""
-
-    def __init__(
-        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
-    ) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        self.optims = [
-            CMA(self.parametrization, budget=None, num_workers=num_workers),
-            LhsDE(self.parametrization, budget=None, num_workers=num_workers),  # noqa: F405
-            ScrHaltonSearch(self.parametrization, budget=None, num_workers=num_workers),
-        ]  # noqa: F405
-
-
-@registry.register
-class ASCMA2PDEthird(ASCMADEQRthird):
-    """Algorithm selection, with CMA and 2pt-DE. Active selection at 1/3."""
-
-    def __init__(
-        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
-    ) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        self.optims = [
-            CMA(self.parametrization, budget=None, num_workers=num_workers),
-            TwoPointsDE(self.parametrization, budget=None, num_workers=num_workers),
-        ]  # noqa: F405
-
-
-@registry.register
 class CMandAS2(ASCMADEthird):
     """Competence map, with algorithm selection in one of the cases (3 CMAs)."""
 
@@ -1508,11 +1474,11 @@ class CMandAS3(ASCMADEthird):
         if budget > 50 * self.dimension or num_workers < 30:
             if num_workers == 1:
                 self.optims = [
-                    chainCMAPowell(
+                    ChainCMAPowell(
                         self.parametrization, budget=None, num_workers=num_workers
                     ),  # share parametrization and its rng
-                    chainCMAPowell(self.parametrization, budget=None, num_workers=num_workers),
-                    chainCMAPowell(self.parametrization, budget=None, num_workers=num_workers),
+                    ChainCMAPowell(self.parametrization, budget=None, num_workers=num_workers),
+                    ChainCMAPowell(self.parametrization, budget=None, num_workers=num_workers),
                 ]
             else:
                 self.optims = [
@@ -1523,29 +1489,6 @@ class CMandAS3(ASCMADEthird):
                     CMA(self.parametrization, budget=None, num_workers=num_workers),
                 ]
             self.budget_before_choosing = budget // 10
-
-
-@registry.register
-class CMandAS(CMandAS2):
-    """Competence map, with algorithm selection in one of the cases (2 CMAs)."""
-
-    def __init__(
-        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
-    ) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        self.optims = [TwoPointsDE(self.parametrization, budget=None, num_workers=num_workers)]  # noqa: F405
-        assert budget is not None
-        self.budget_before_choosing = 2 * budget
-        if budget < 201:
-            # share parametrization and its rng
-            self.optims = [OnePlusOne(self.parametrization, budget=None, num_workers=num_workers)]
-            self.budget_before_choosing = 2 * budget
-        if budget > 50 * self.dimension or num_workers < 30:
-            self.optims = [
-                CMA(self.parametrization, budget=None, num_workers=num_workers),
-                CMA(self.parametrization, budget=None, num_workers=num_workers),
-            ]
-            self.budget_before_choosing = budget // 3
 
 
 @registry.register
@@ -1626,23 +1569,6 @@ class TripleCMA(CM):
 
 
 @registry.register
-class ManyCMA(CM):
-    """Combining 3 CMAs. Exactly identical. Active selection at 1/3 of the budget."""
-
-    def __init__(
-        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
-    ) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        assert budget is not None
-        self.optims = [
-            ParametrizedCMA(random_init=True)(self.parametrization, budget=None, num_workers=num_workers)
-            for _ in range(int(np.sqrt(budget)))
-        ]
-
-        self.budget_before_choosing = budget // 3
-
-
-@registry.register
 class PolyCMA(CM):
     """Combining 20 CMAs. Exactly identical. Active selection at 1/3 of the budget."""
 
@@ -1656,24 +1582,6 @@ class PolyCMA(CM):
             for _ in range(20)
         ]
 
-        self.budget_before_choosing = budget // 3
-
-
-@registry.register
-class ManySmallCMA(CM):
-    """Combining 3 CMAs. Exactly identical. Active selection at 1/3 of the budget."""
-
-    def __init__(
-        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
-    ) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        assert budget is not None
-        self.optims = [
-            ParametrizedCMA(scale=1e-6, random_init=i > 0)(
-                self.parametrization, budget=None, num_workers=num_workers
-            )
-            for i in range(int(np.sqrt(budget)))
-        ]
         self.budget_before_choosing = budget // 3
 
 
@@ -1771,7 +1679,7 @@ class _BO(base.Optimizer):
                     "(for your parametrization, continuity={cont} and noisy={noisy}).\n"
                     "Find more information on BayesianOptimization's github.\n"
                     "You should then create a new instance of optimizerlib.ParametrizedBO with appropriate parametrization.",
-                    InefficientSettingsWarning,
+                    errors.InefficientSettingsWarning,
                 )
 
     @property
@@ -1916,6 +1824,12 @@ class _Chain(base.Optimizer):
         ), str(self.budgets)
         for opt, optbudget in zip(optimizers, self.budgets + [last_budget]):  # type: ignore
             self.optimizers.append(opt(self.parametrization, budget=optbudget, num_workers=self.num_workers))
+        if self.name.startswith("chain"):
+            warnings.warn(
+                "Chain optimizers are renamed with a capital C for consistency. "
+                "Eg: chainCMAPowell becomes ChainCMAPowell",
+                errors.NevergradDeprecationWarning,
+            )
 
     def _internal_ask_candidate(self) -> p.Parameter:
         # Which algorithm are we playing with ?
@@ -1960,6 +1874,7 @@ class Chaining(base.ConfiguredOptimizer):
         super().__init__(_Chain, locals())
 
 
+# depreated: old names (need a capital letter for consistency
 chainCMAPowell = Chaining([CMA, Powell], ["half"]).set_name("chainCMAPowell", register=True)
 chainCMAPowell.no_parallelization = True
 chainMetaModelSQP = Chaining([MetaModel, SQP], ["half"]).set_name("chainMetaModelSQP", register=True)
@@ -1978,6 +1893,26 @@ chainNaiveTBPSACMAPowell = Chaining([NaiveTBPSA, CMA, Powell], ["third", "third"
     "chainNaiveTBPSACMAPowell", register=True
 )
 chainNaiveTBPSACMAPowell.no_parallelization = True
+
+# new names
+ChainCMAPowell = Chaining([CMA, Powell], ["half"]).set_name("ChainCMAPowell", register=True)
+ChainCMAPowell.no_parallelization = True  # TODO make this automatic
+ChainMetaModelSQP = Chaining([MetaModel, SQP], ["half"]).set_name("ChainMetaModelSQP", register=True)
+ChainMetaModelSQP.no_parallelization = True
+ChainMetaModelPowell = Chaining([MetaModel, Powell], ["half"]).set_name("ChainMetaModelPowell", register=True)
+ChainMetaModelPowell.no_parallelization = True
+ChainDiagonalCMAPowell = Chaining([DiagonalCMA, Powell], ["half"]).set_name(
+    "ChainDiagonalCMAPowell", register=True
+)
+ChainDiagonalCMAPowell.no_parallelization = True
+ChainNaiveTBPSAPowell = Chaining([NaiveTBPSA, Powell], ["half"]).set_name(
+    "ChainNaiveTBPSAPowell", register=True
+)
+ChainNaiveTBPSAPowell.no_parallelization = True
+ChainNaiveTBPSACMAPowell = Chaining([NaiveTBPSA, CMA, Powell], ["third", "third"]).set_name(
+    "ChainNaiveTBPSACMAPowell", register=True
+)
+ChainNaiveTBPSACMAPowell.no_parallelization = True
 
 
 @registry.register
@@ -2082,7 +2017,7 @@ class _EMNA(base.Optimizer):
                 self.popsize.mu = self.popsize.llambda // 4
                 warnings.warn(
                     "Budget may be too small in front of the dimension for EMNA",
-                    base.InefficientSettingsWarning,
+                    errors.InefficientSettingsWarning,
                 )
         self.current_center: np.ndarray = np.zeros(self.dimension)
         # population
@@ -2173,7 +2108,7 @@ class _EMNA(base.Optimizer):
                 self.sigma /= imp
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        raise base.TellNotAskedNotSupportedError
+        raise errors.TellNotAskedNotSupportedError
 
 
 class EMNA(base.ConfiguredOptimizer):
@@ -2277,7 +2212,7 @@ class NGOptBase(base.Optimizer):
                         if (
                             self.num_workers == 1 and self.budget > 6000 and self.dimension > 7
                         ):  # Let us go memetic.
-                            cls = chainCMAPowell
+                            cls = ChainCMAPowell
                         else:
                             if self.num_workers == 1 and self.budget < self.dimension * 30:
                                 # One plus one so good in large ratio "dimension / budget".
@@ -2320,85 +2255,6 @@ class Shiwa(NGOptBase):
 @registry.register
 class NGO(NGOptBase):  # compatibility
     pass
-
-
-@registry.register
-class NGOpt2(NGOptBase):
-    """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
-
-    def _select_optimizer_cls(self) -> base.OptCls:
-        budget, num_workers = self.budget, self.num_workers
-        assert budget is not None
-        optimClass: base.OptCls
-        if self.has_noise and (
-            self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable
-        ):
-            optimClass = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
-        elif self._arity > 0:
-            optimClass = DiscreteBSOOnePlusOne if self._arity > 5 else CMandAS2
-        else:
-            # pylint: disable=too-many-nested-blocks
-            if self.has_noise and self.has_discrete_not_softmax:
-                # noise and discrete: let us merge evolution and bandits.
-                optimClass = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
-            else:
-                if self.has_noise and self.fully_continuous:
-                    # This is the real of population control. FIXME: should we pair with a bandit ?
-                    optimClass = TBPSA
-                else:
-                    if (
-                        self.has_discrete_not_softmax
-                        or not self.parametrization.descriptors.metrizable
-                        or not self.fully_continuous
-                    ):
-                        optimClass = DoubleFastGADiscreteOnePlusOne
-                    else:
-                        if num_workers > budget / 5:
-                            if num_workers > budget / 2.0 or budget < self.dimension:
-                                optimClass = MetaTuneRecentering
-                            elif self.dimension < 5 and budget < 100:
-                                optimClass = DiagonalCMA
-                            elif self.dimension < 5 and budget < 500:
-                                optimClass = Chaining([DiagonalCMA, MetaModel], [100])
-                            else:
-                                optimClass = NaiveTBPSA
-                        else:
-                            # Possibly a good idea to go memetic for large budget, but something goes wrong for the moment.
-                            if (
-                                num_workers == 1 and budget > 6000 and self.dimension > 7
-                            ):  # Let us go memetic.
-                                optimClass = chainNaiveTBPSACMAPowell  # type: ignore
-                            else:
-                                if num_workers == 1 and budget < self.dimension * 30:
-                                    if (
-                                        self.dimension > 30
-                                    ):  # One plus one so good in large ratio "dimension / budget".
-                                        optimClass = OnePlusOne
-                                    elif self.dimension < 5:
-                                        optimClass = MetaModel
-                                    else:
-                                        optimClass = Cobyla
-                                else:
-                                    if self.dimension > 2000:  # DE is great in such a case (?).
-                                        optimClass = DE
-                                    else:
-                                        if self.dimension < 10 and budget < 500:
-                                            optimClass = MetaModel
-                                        else:
-                                            if (
-                                                self.dimension > 40
-                                                and num_workers > self.dimension
-                                                and budget < 7 * self.dimension ** 2
-                                            ):
-                                                optimClass = DiagonalCMA
-                                            elif (
-                                                3 * num_workers > self.dimension ** 2
-                                                and budget > self.dimension ** 2
-                                            ):
-                                                optimClass = MetaModel
-                                            else:
-                                                optimClass = CMA
-        return optimClass
 
 
 @registry.register
@@ -2461,7 +2317,7 @@ class NGOpt4(NGOptBase):
                             if (
                                 num_workers == 1 and budget > 6000 and self.dimension > 7
                             ):  # Let us go memetic.
-                                optimClass = chainNaiveTBPSACMAPowell
+                                optimClass = ChainNaiveTBPSACMAPowell
                             else:
                                 if num_workers == 1 and budget < self.dimension * 30:
                                     if (
@@ -2526,7 +2382,7 @@ class NGOpt8(NGOpt4):
                 and not (self.num_workers > self.budget / 5)
                 and (self.num_workers == 1 and self.budget > 6000 and self.dimension > 7)
             ):
-                optimClass = chainMetaModelPowell
+                optimClass = ChainMetaModelPowell
             else:
                 optimClass = super()._select_optimizer_cls()
 
@@ -2541,13 +2397,7 @@ class NGOpt8(NGOpt4):
 
 
 @registry.register
-class NGOpt9(NGOpt8):
-    def recommend(self) -> p.Parameter:
-        return base.Optimizer.recommend(self)
-
-
-@registry.register
-class NGOpt10(NGOpt9):
+class NGOpt10(NGOpt8):
     def _select_optimizer_cls(self) -> base.OptCls:
         if not self.has_noise and self._arity > 0:
             return DiscreteLenglerOnePlusOne
@@ -2607,8 +2457,8 @@ class MultipleSingleRuns(base.ConfiguredOptimizer):
         super().__init__(_MSR, locals())
 
 
-NGOpt10_9 = MultipleSingleRuns(num_msr=9).set_name("NGOpt10_9", register=True)
-NGOpt10_16 = MultipleSingleRuns(num_msr=16).set_name("NGOpt10_16", register=True)
-NGOpt10_25 = MultipleSingleRuns(num_msr=25).set_name("NGOpt10_25", register=True)
+NGOpt_9 = MultipleSingleRuns(num_msr=9).set_name("NGOpt_9", register=True)
+NGOpt_16 = MultipleSingleRuns(num_msr=16).set_name("NGOpt_16", register=True)
+NGOpt_25 = MultipleSingleRuns(num_msr=25).set_name("NGOpt_25", register=True)
 
 

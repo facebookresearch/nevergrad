@@ -42,8 +42,8 @@ def flatten_parameter(
     This function is experimental, its output will probably evolve before converging.
     """
     flat = {"": parameter}
-    if isinstance(parameter, core.Dict):
-        content_to_add: tp.List[core.Dict] = [parameter]
+    if isinstance(parameter, core.Container):
+        content_to_add: tp.List[core.Container] = [parameter]
         if isinstance(parameter, container.Instrumentation):  # special case: skip internal Tuple and Dict
             content_to_add = [parameter[0], parameter[1]]  # type: ignore
         for c in content_to_add:
@@ -62,7 +62,7 @@ def flatten_parameter(
         flat = {
             x: y
             for x, y in flat.items()
-            if not isinstance(y, (core.Dict, core.Constant)) or isinstance(y, choice.BaseChoice)
+            if not isinstance(y, (core.Container, core.Constant)) or isinstance(y, choice.BaseChoice)
         }
     return flat
 
@@ -70,7 +70,7 @@ def flatten_parameter(
 # pylint: disable=too-many-locals
 def split_as_data_parameters(
     parameter: core.Parameter,
-) -> tp.List[tp.Tuple[str, pdata.Array]]:
+) -> tp.List[tp.Tuple[str, pdata.Data]]:
     """List all the instances involved as parameter (not as subparameter/
     endogeneous parameter)
 
@@ -95,7 +95,7 @@ def split_as_data_parameters(
     copied = parameter.copy()
     ref = parameter.copy()
     flatp, flatc, flatref = (
-        {x: y for x, y in flatten_parameter(pa).items() if isinstance(y, pdata.Array)}
+        {x: y for x, y in flatten_parameter(pa).items() if isinstance(y, pdata.Data)}
         for pa in (parameter, copied, ref)
     )
     keys = list(flatp.keys())

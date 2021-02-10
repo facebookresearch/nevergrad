@@ -8,10 +8,49 @@ import sys
 import shutil
 import tempfile
 import subprocess
-import typing as tp
 from pathlib import Path
 import numpy as np
+from nevergrad.common import typing as tp
 from nevergrad.common import tools as ngtools
+
+
+class BoundChecker:
+    """Simple object for checking whether an array lies
+    between provided bounds.
+
+    Parameter
+    ---------
+    lower: float or None
+        minimum value
+    upper: float or None
+        maximum value
+
+    Note
+    -----
+    Not all bounds are necessary (data can be partially bounded, or not at all actually)
+    """
+
+    def __init__(self, lower: tp.BoundValue = None, upper: tp.BoundValue = None) -> None:
+        self.bounds = (lower, upper)
+
+    def __call__(self, value: np.ndarray) -> bool:
+        """Checks whether the array lies within the bounds
+
+        Parameter
+        ---------
+        value: np.ndarray
+            array to check
+
+        Returns
+        -------
+        bool
+            True iff the array lies within the bounds
+        """
+        for k, bound in enumerate(self.bounds):
+            if bound is not None:
+                if np.any((value > bound) if k else (value < bound)):
+                    return False
+        return True
 
 
 class Descriptors:
@@ -63,10 +102,6 @@ class Descriptors:
             for x, y in sorted(ngtools.different_from_defaults(instance=self, check_mismatches=True).items())
         )
         return f"{self.__class__.__name__}({diff})"
-
-
-class NotSupportedError(RuntimeError):
-    """This type of operation is not supported by the parameter."""
 
 
 class TemporaryDirectoryCopy(tempfile.TemporaryDirectory):  # type: ignore

@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import typing as tp
+import nevergrad.common.typing as tp
 from .core import Dict as Dict  # Dict needs to be implemented in core since it's used in the base class
 from . import core
 
@@ -12,7 +12,7 @@ Ins = tp.TypeVar("Ins", bound="Instrumentation")
 ArgsKwargs = tp.Tuple[tp.Tuple[tp.Any, ...], tp.Dict[str, tp.Any]]
 
 
-class Tuple(Dict):
+class Tuple(core.Container):
     """Tuple-valued parameter. This Parameter can contain other Parameters,
     its value is tuple which values are either directly the provided values
     if they are not Parameter instances, or the value of those Parameters.
@@ -35,16 +35,17 @@ class Tuple(Dict):
         self._sanity_check(list(self._content.values()))
 
     def _get_parameters_str(self) -> str:
-        params = sorted((k, core.as_parameter(p).name) for k, p in self._content.items())
-        return ",".join(f"{n}" for _, n in params)
+        return ",".join(f"{param.name}" for param in self)
 
-    @property  # type: ignore
-    def value(self) -> tp.Tuple[tp.Any, ...]:  # type: ignore
-        param_val = [x[1] for x in sorted(self._content.items(), key=lambda x: int(x[0]))]
-        return tuple(p.value if isinstance(p, core.Parameter) else p for p in param_val)
+    def __iter__(self) -> tp.Iterator[core.Parameter]:
+        return (self._content[k] for k in range(len(self)))
 
-    @value.setter
-    def value(self, value: tp.Tuple[tp.Any]) -> None:
+    value: core.ValueProperty[tp.Tuple[tp.Any]] = core.ValueProperty()
+
+    def _get_value(self) -> tp.Tuple[tp.Any, ...]:
+        return tuple(p.value for p in self)
+
+    def _set_value(self, value: tp.Tuple[tp.Any, ...]) -> None:
         if not isinstance(value, tuple) or not len(value) == len(self):
             cls = self.__class__.__name__
             raise ValueError(
@@ -87,3 +88,5 @@ class Instrumentation(Tuple):
     @property
     def kwargs(self) -> tp.Dict[str, tp.Any]:
         return self[1].value  # type: ignore
+
+    value: core.ValueProperty[tp.ArgsKwargs] = core.ValueProperty()  # type: ignore

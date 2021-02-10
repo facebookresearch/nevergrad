@@ -5,8 +5,8 @@
 
 # pylint: disable=unused-import
 # import with "as" to explicitely allow reexport (mypy)
-from .utils import NotSupportedError as NotSupportedError
 from .core import Parameter as Parameter
+from .core import Container as Container  # abstract
 from .core import Dict as Dict
 from .core import Constant as Constant  # avoid using except for checks
 from .core import (
@@ -14,6 +14,7 @@ from .core import (
 )  # special case for multiobjective optimization
 from .container import Tuple as Tuple
 from .container import Instrumentation as Instrumentation
+from .data import Data as Data  # abstract
 from .data import Array as Array
 from .data import Scalar as Scalar
 from .data import Log as Log
