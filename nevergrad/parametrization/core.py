@@ -42,7 +42,7 @@ class Parameter:
 
     value: ValueProperty[tp.Any] = ValueProperty()
 
-    def __init__(self, **parameters: tp.Any) -> None:
+    def __init__(self) -> None:
         # Main features
         self.uid = uuid.uuid4().hex
         self._treecall = utils.Treecall(self, Parameter)
@@ -50,7 +50,6 @@ class Parameter:
         self.heritage: tp.Dict[tp.Hashable, tp.Any] = {"lineage": self.uid}  # passed through to children
         self.loss: tp.Optional[float] = None  # associated loss
         self._losses: tp.Optional[np.ndarray] = None  # associated losses (multiobjective) as an array
-        self._parameters = None if not parameters else Dict(**parameters)  # internal/model parameters
         self._dimension: tp.Optional[int] = None
         # Additional convenient features
         self._random_state: tp.Optional[np.random.RandomState] = None  # lazy initialization
@@ -99,15 +98,6 @@ class Parameter:
         Use `parameter.Instrumentation` to set `args` and `kwargs` with full freedom.
         """
         return {}
-
-    @property
-    def parameters(self) -> "Dict":
-        """Internal/model parameters for this parameter"""
-        if self._parameters is None:  # delayed instantiation to avoid infinte loop
-            assert self.__class__ != Dict, "parameters of Parameters dict should never be called"
-            self._parameters = Dict()
-        assert self._parameters is not None
-        return self._parameters
 
     @property
     def dimension(self) -> int:
@@ -242,7 +232,7 @@ class Parameter:
         if isinstance(val, (str, bytes, float, int)):
             return val
         elif isinstance(val, np.ndarray):
-            return val.tobytes()
+            return val.tobytes()  # type: ignore
         else:
             raise utils.NotSupportedError(f"Value hash is not supported for object {self.name}")
 
@@ -262,8 +252,8 @@ class Parameter:
         if self._name is not None:
             return self._name
         substr = ""
-        if self._parameters is not None and self.parameters:
-            substr = f"[{self.parameters._get_parameters_str()}]"
+        if hasattr(self, "parameters"):  # TODO temporary hack
+            substr = f"[{self.parameters._get_parameters_str()}]"  # type: ignore
             if substr == "[]":
                 substr = ""
         return f"{self._get_name()}" + substr
@@ -396,10 +386,10 @@ class Parameter:
 
     def _internal_spawn_child(self: P) -> P:
         # default implem just forwards params
-        inputs = {
-            k: v.spawn_child() if isinstance(v, Parameter) else v for k, v in self.parameters._content.items()
-        }
-        child = self.__class__(**inputs)
+        # inputs = {
+        #     k: v.spawn_child() if isinstance(v, Parameter) else v for k, v in self.parameters._content.items()
+        # }
+        child = self.__class__()  # **inputs)
         return child
 
     def copy(self: P) -> P:  # TODO test (see former instrumentation_copy test)

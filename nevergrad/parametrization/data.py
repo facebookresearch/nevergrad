@@ -33,6 +33,10 @@ class Mutation(core.Parameter):
     # pylint: disable=unused-argument
     value: core.ValueProperty[tp.Callable[[tp.Sequence[D]], None]] = core.ValueProperty()
 
+    def __init__(self, **kwargs: tp.Any) -> None:
+        super().__init__()
+        self.parameters = core.Dict(**kwargs)
+
     def _get_value(self) -> tp.Callable[[tp.Sequence[D]], None]:
         return self.apply
 
@@ -80,7 +84,8 @@ class Data(core.Parameter):
         mutable_sigma: bool = False,
     ) -> None:
         sigma = Log(init=1.0, exponent=2.0, mutable_sigma=False) if mutable_sigma else 1.0
-        super().__init__(sigma=sigma, recombination="average", mutation="gaussian")
+        super().__init__()
+        self.parameters = core.Dict(sigma=sigma, recombination="average", mutation="gaussian")
         err_msg = 'Exactly one of "init" or "shape" must be provided'
         self.parameters._ignore_in_repr = dict(sigma="1.0", recombination="average", mutation="gaussian")
         if init is not None:
@@ -232,8 +237,7 @@ class Data(core.Parameter):
         return self
 
     def set_recombination(self: D, recombination: tp.Union[None, str, core.Parameter]) -> D:
-        assert self._parameters is not None
-        self._parameters._content["recombination"] = (
+        self.parameters._content["recombination"] = (
             recombination if isinstance(recombination, core.Parameter) else core.Constant(recombination)
         )
         return self

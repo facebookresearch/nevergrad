@@ -55,8 +55,8 @@ def flatten_parameter(
                         for x, y in content.items()
                     }
                 )
-    if order > 0 and parameter._parameters is not None:
-        subparams = flatten_parameter(parameter.parameters, with_containers=False, order=order - 1)
+    if order > 0 and hasattr(parameter, "parameters"):
+        subparams = flatten_parameter(parameter.parameters, with_containers=False, order=order - 1)  # type: ignore
         flat.update({"#" + str(x): y for x, y in subparams.items()})
     if not with_containers:
         flat = {
