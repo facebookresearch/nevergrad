@@ -8,8 +8,10 @@ import warnings
 import numpy as np
 import nevergrad.common.typing as tp
 from . import core
+from .container import Dict
 from . import utils
 from . import transforms as trans
+
 
 # pylint: disable=no-value-for-parameter
 
@@ -18,7 +20,7 @@ D = tp.TypeVar("D", bound="Data")
 P = tp.TypeVar("P", bound=core.Parameter)
 
 
-def _param_string(parameters: core.Dict) -> str:
+def _param_string(parameters: Dict) -> str:
     """Hacky helper for nice-visualizatioon"""
     substr = f"[{parameters._get_parameters_str()}]"
     if substr == "[]":
@@ -43,7 +45,7 @@ class Mutation(core.Parameter):
 
     def __init__(self, **kwargs: tp.Any) -> None:
         super().__init__()
-        self.parameters = core.Dict(**kwargs)
+        self.parameters = Dict(**kwargs)
 
     def _get_value(self) -> tp.Callable[[tp.Sequence[D]], None]:
         return self.apply
@@ -96,7 +98,7 @@ class Data(core.Parameter):
     ) -> None:
         sigma = Log(init=1.0, exponent=2.0, mutable_sigma=False) if mutable_sigma else 1.0
         super().__init__()
-        self.parameters = core.Dict(sigma=sigma, recombination="average", mutation="gaussian")
+        self.parameters = Dict(sigma=sigma, recombination="average", mutation="gaussian")
         err_msg = 'Exactly one of "init" or "shape" must be provided'
         self.parameters._ignore_in_repr = dict(sigma="1.0", recombination="average", mutation="gaussian")
         if init is not None:
