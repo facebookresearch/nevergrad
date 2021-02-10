@@ -2,8 +2,14 @@
 
 ## master
 
-- :code:`MultiobjectiveFunction` does not exist anymore  [#1034](https://github.com/facebookresearch/nevergrad/pull/1034).
+- `MultiobjectiveFunction` does not exist anymore  [#1034](https://github.com/facebookresearch/nevergrad/pull/1034).
 - the new `nevergrad.errors` module gathers errors and warnings used throughout the package (WIP) [#1031](https://github.com/facebookresearch/nevergrad/pull/1031).
+- `EvolutionStrategy` now defaults to NSGA2 selection in the multiobjective case
+- `Parameter` classes are undergoing heavy changes (
+  [#1029](https://github.com/facebookresearch/nevergrad/pull/1029)
+  [#1036](https://github.com/facebookresearch/nevergrad/pull/1036)
+  [#1038](https://github.com/facebookresearch/nevergrad/pull/1038)
+  and more to come), please open an issue if you encounter any problem. The midterm aim is to allow for simpler constraint management.
 
 ## 0.4.3 (2021-01-28)
 

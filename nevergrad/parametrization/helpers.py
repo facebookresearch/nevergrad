@@ -70,7 +70,7 @@ def flatten_parameter(
 # pylint: disable=too-many-locals
 def split_as_data_parameters(
     parameter: core.Parameter,
-) -> tp.List[tp.Tuple[str, pdata.Array]]:
+) -> tp.List[tp.Tuple[str, pdata.Data]]:
     """List all the instances involved as parameter (not as subparameter/
     endogeneous parameter)
 
@@ -95,7 +95,7 @@ def split_as_data_parameters(
     copied = parameter.copy()
     ref = parameter.copy()
     flatp, flatc, flatref = (
-        {x: y for x, y in flatten_parameter(pa).items() if isinstance(y, pdata.Array)}
+        {x: y for x, y in flatten_parameter(pa).items() if isinstance(y, pdata.Data)}
         for pa in (parameter, copied, ref)
     )
     keys = list(flatp.keys())

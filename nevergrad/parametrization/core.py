@@ -10,6 +10,7 @@ import functools
 from collections import OrderedDict
 import numpy as np
 import nevergrad.common.typing as tp
+from nevergrad.common import errors
 from . import utils
 
 # pylint: disable=no-value-for-parameter
@@ -17,6 +18,19 @@ from . import utils
 
 P = tp.TypeVar("P", bound="Parameter")
 D = tp.TypeVar("D", bound="Container")
+X = tp.TypeVar("X")
+
+
+class ValueProperty(tp.Generic[X]):
+    """Typed property (descriptor) object so that the value attribute of
+    Parameter objects fetches _get_value and _set_value methods
+    """
+
+    def __get__(self, obj: "Parameter", objtype: tp.Optional[tp.Type[object]] = None) -> X:
+        return obj._get_value()  # type: ignore
+
+    def __set__(self, obj: "Parameter", value: X) -> None:
+        obj._set_value(value)
 
 
 # pylint: disable=too-many-instance-attributes,too-many-public-methods
@@ -26,6 +40,8 @@ class Parameter:
     and additional features such as shared random state,
     constraint check, hashes, generation and naming.
     """
+
+    value: ValueProperty[tp.Any] = ValueProperty()
 
     def __init__(self, **parameters: tp.Any) -> None:
         # Main features
@@ -62,12 +78,10 @@ class Parameter:
             return np.array([self.loss], dtype=float)
         raise RuntimeError("No loss was provided")
 
-    @property
-    def value(self) -> tp.Any:
+    def _get_value(self) -> tp.Any:
         raise NotImplementedError
 
-    @value.setter
-    def value(self, value: tp.Any) -> None:
+    def _set_value(self, value: tp.Any) -> tp.Any:
         raise NotImplementedError
 
     @property
@@ -103,7 +117,7 @@ class Parameter:
         if self._dimension is None:
             try:
                 self._dimension = self.get_standardized_data(reference=self).size
-            except utils.NotSupportedError:
+            except errors.UnsupportedParameterOperationError:
                 self._dimension = 0
         return self._dimension
 
@@ -133,7 +147,7 @@ class Parameter:
         *others: Parameter
             other instances of the same type than this instance.
         """
-        raise utils.NotSupportedError(f"Recombination is not implemented for {self.name}")
+        raise errors.UnsupportedParameterOperationError(f"Recombination is not implemented for {self.name}")
 
     def get_standardized_data(self: P, *, reference: P) -> np.ndarray:
         """Get the standardized data representing the value of the instance as an array in the optimization space.
@@ -166,7 +180,9 @@ class Parameter:
         return self._internal_get_standardized_data(self if reference is None else reference)
 
     def _internal_get_standardized_data(self: P, reference: P) -> np.ndarray:
-        raise utils.NotSupportedError(f"Export to standardized data space is not implemented for {self.name}")
+        raise errors.UnsupportedParameterOperationError(
+            f"Export to standardized data space is not implemented for {self.name}"
+        )
 
     def set_standardized_data(
         self: P, data: tp.ArrayLike, *, reference: tp.Optional[P] = None, deterministic: bool = False
@@ -203,12 +219,13 @@ class Parameter:
         )
         return self
 
-    def _internal_set_standardized_data(
+    def _internal_set_standardized_data(  # pylint: disable=unused-argument
         self: P, data: np.ndarray, reference: P, deterministic: bool = False
     ) -> None:
-        raise utils.NotSupportedError(
-            f"Import from standardized data space is not implemented for {self.name}"
-        )
+        if data.size:
+            raise errors.UnsupportedParameterOperationError(
+                f"Import from standardized data space is not implemented for {self.name}"
+            )
 
     # PART 2 - Additional features
 
@@ -225,7 +242,9 @@ class Parameter:
         elif isinstance(val, np.ndarray):
             return val.tobytes()
         else:
-            raise utils.NotSupportedError(f"Value hash is not supported for object {self.name}")
+            raise errors.UnsupportedParameterOperationError(
+                f"Value hash is not supported for object {self.name}"
+            )
 
     def _get_name(self) -> str:
         """Internal implementation of parameter name. This should be value independant, and should not account
@@ -427,15 +446,13 @@ class Constant(Parameter):
     def get_value_hash(self) -> tp.Hashable:
         try:
             return super().get_value_hash()
-        except utils.NotSupportedError:
+        except errors.UnsupportedParameterOperationError:
             return "#non-hashable-constant#"
 
-    @property
-    def value(self) -> tp.Any:
+    def _get_value(self) -> tp.Any:
         return self._value
 
-    @value.setter
-    def value(self, value: tp.Any) -> None:
+    def _set_value(self, value: tp.Any) -> None:
         different = False
         if isinstance(value, np.ndarray):
             if not np.equal(value, self._value).all():
@@ -451,14 +468,6 @@ class Constant(Parameter):
         self: P, *, reference: tp.Optional[P] = None
     ) -> np.ndarray:
         return np.array([])
-
-    # pylint: disable=unused-argument
-    def set_standardized_data(
-        self: P, data: tp.ArrayLike, *, reference: tp.Optional[P] = None, deterministic: bool = False
-    ) -> P:
-        if np.array(data, copy=False).size:
-            raise ValueError(f"Constant dimension should be 0 (got data: {data})")
-        return self
 
     def spawn_child(self: P, new_value: tp.Optional[tp.Any] = None) -> P:
         if new_value is not None:
@@ -649,12 +658,12 @@ class Dict(Container):
     def values(self) -> tp.ValuesView[Parameter]:
         return self._content.values()
 
-    @property
-    def value(self) -> tp.Dict[str, tp.Any]:
+    def _get_value(self) -> tp.Dict[str, tp.Any]:
         return {k: p.value for k, p in self.items()}
 
-    @value.setter
-    def value(self, value: tp.Dict[str, tp.Any]) -> None:
+    value: ValueProperty[tp.Dict[str, tp.Any]] = ValueProperty()
+
+    def _set_value(self, value: tp.Dict[str, tp.Any]) -> None:
         cls = self.__class__.__name__
         if not isinstance(value, dict):
             raise TypeError(f"{cls} value must be a dict, got: {value}\nCurrent value: {self.value}")

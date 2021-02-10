@@ -34,7 +34,7 @@ class ChoiceTag(tp.NamedTuple):
         return cls(type(param), arity)
 
 
-class BaseChoice(core.Dict):
+class BaseChoice(core.Container):
 
     ChoiceTag = ChoiceTag
 
@@ -43,8 +43,7 @@ class BaseChoice(core.Dict):
     ) -> None:
         assert repetitions is None or isinstance(repetitions, int)  # avoid silent issues
         self._repetitions = repetitions
-        assert not isinstance(choices, Tuple)
-        lchoices = list(choices)  # for iterables
+        lchoices = list(choices)  # unroll iterables (includig Tuple instances
         if not lchoices:
             raise ValueError("{self._class__.__name__} received an empty list of options.")
         super().__init__(choices=Tuple(*lchoices), **kwargs)
@@ -60,6 +59,14 @@ class BaseChoice(core.Dict):
     def __len__(self) -> int:
         """Number of choices"""
         return len(self.choices)
+
+    def _get_parameters_str(self) -> str:
+        params = sorted(
+            (k, p.name)
+            for k, p in self._content.items()
+            if p.name != self._ignore_in_repr.get(k, "#ignoredrepr#")
+        )
+        return ",".join(f"{k}={n}" for k, n in params)
 
     @property
     def index(self) -> int:  # delayed choice
@@ -77,31 +84,21 @@ class BaseChoice(core.Dict):
         """The different options, as a Tuple Parameter"""
         return self["choices"]  # type: ignore
 
-    @property
-    def value(self) -> tp.Any:
-        return self._get_value()
-
-    @value.setter
-    def value(self, value: tp.Any) -> None:
-        self._find_and_set_value(value)
-
     def _get_value(self) -> tp.Any:
         if self._repetitions is None:
             return core.as_parameter(self.choices[self.index]).value
         return tuple(core.as_parameter(self.choices[ind]).value for ind in self.indices)
 
-    def _find_and_set_value(self, values: tp.List[tp.Any]) -> np.ndarray:
+    def _set_value(self, values: tp.List[tp.Any]) -> np.ndarray:
         """Must be adapted to each class
         This handles a list of values, not just one
         """  # TODO this is currenlty very messy, may need some improvement
         values = [values] if self._repetitions is None else values
         self._check_frozen()
         indices: np.ndarray = -1 * np.ones(len(values), dtype=int)
-        nums = sorted(int(k) for k in self.choices._content)
         # try to find where to put this
         for i, value in enumerate(values):
-            for k in nums:
-                choice = self.choices[k]
+            for k, choice in enumerate(self.choices):
                 try:
                     choice.value = value
                     indices[i] = k
@@ -162,7 +159,6 @@ class Choice(BaseChoice):
         repetitions: tp.Optional[int] = None,
         deterministic: bool = False,
     ) -> None:
-        assert not isinstance(choices, Tuple)
         lchoices = list(choices)
         rep = 1 if repetitions is None else repetitions
         super().__init__(
@@ -201,8 +197,8 @@ class Choice(BaseChoice):
         exp = np.exp(self.weights.value)
         return exp / np.sum(exp)  # type: ignore
 
-    def _find_and_set_value(self, values: tp.Any) -> np.ndarray:
-        indices = super()._find_and_set_value(values)
+    def _set_value(self, values: tp.Any) -> np.ndarray:
+        indices = super()._set_value(values)
         self._indices = indices
         # force new probabilities
         arity = self.weights.value.shape[1]
@@ -233,9 +229,10 @@ class Choice(BaseChoice):
             self.choices[ind].mutate()
 
     def _internal_spawn_child(self: C) -> C:
-        choices = (y for x, y in sorted(self.choices.spawn_child()._content.items()))
         child = self.__class__(
-            choices=choices, deterministic=self._deterministic, repetitions=self._repetitions
+            choices=self.choices.spawn_child(),
+            deterministic=self._deterministic,
+            repetitions=self._repetitions,
         )
         child._content["weights"] = self.weights.spawn_child()
         return child
@@ -286,8 +283,8 @@ class TransitionChoice(BaseChoice):
     def indices(self) -> np.ndarray:
         return np.minimum(len(self) - 1e-9, self.positions.value).astype(int)  # type: ignore
 
-    def _find_and_set_value(self, values: tp.Any) -> np.ndarray:
-        indices = super()._find_and_set_value(values)  # only one value for this class
+    def _set_value(self, values: tp.Any) -> np.ndarray:
+        indices = super()._set_value(values)  # only one value for this class
         self._set_index(indices)
         return indices
 
@@ -330,8 +327,7 @@ class TransitionChoice(BaseChoice):
             self.choices[ind].mutate()
 
     def _internal_spawn_child(self: T) -> T:
-        choices = (y for x, y in sorted(self.choices.spawn_child()._content.items()))
-        child = self.__class__(choices=choices, repetitions=self._repetitions)
+        child = self.__class__(choices=self.choices.spawn_child(), repetitions=self._repetitions)
         child._content["positions"] = self.positions.spawn_child()
         child._content["transitions"] = self.transitions.spawn_child()
         return child
