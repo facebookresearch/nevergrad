@@ -111,6 +111,7 @@ def split_as_data_parameters(
     # analyze results
     data = copied.get_standardized_data(reference=ref)
     order: tp.List[int] = []
+    print(data)
     for val, _ in itertools.groupby(data):
         num = int(np.round(val))
         if num in order:

@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import uuid
+import copy
 import warnings
 import operator
 import functools
@@ -358,14 +359,35 @@ class Parameter:
             Optionally, a new value will be set after creation
         """
         rng = self.random_state  # make sure to create one before spawning
-        child = self._internal_spawn_child()
-        child._set_random_state(rng)
-        child._constraint_checkers = list(self._constraint_checkers)
-        child._generation = self.generation + 1
-        child._descriptors = self._descriptors
-        child._name = self._name
-        child.parents_uids.append(self.uid)
+        child = copy.copy(self)
+        child.uid = uuid.uuid4().hex
+        child._frozen = False
+        child._generation += 1
+        child.parents_uids = [self.uid]
         child.heritage = dict(self.heritage)
+        child._treecall = self._treecall.new(child)
+        child._meta = {}
+        child.loss = None
+        child._losses = None
+        attribute = self._treecall.attribute
+        container = getattr(child, self._treecall.attribute)
+        if attribute != "__dict__":  # make a copy of the container if different from __dict__
+            container = dict(container) if isinstance(container, dict) else list(container)
+            setattr(child, attribute, container)
+        for key, val in self._treecall._subitems():
+            container[key] = val.spawn_child()
+        child._set_random_state(rng)
+        # print("after", container)
+
+        # rng = self.random_state  # make sure to create one before spawning
+        # child = self._internal_spawn_child()
+        # child._set_random_state(rng)
+        # child._constraint_checkers = list(self._constraint_checkers)
+        # child._generation = self.generation + 1
+        # child._descriptors = self._descriptors
+        # child._name = self._name
+        # child.heritage = dict(self.heritage)
+        # child.parents_uids.append(self.uid)
         if new_value is not None:
             child.value = new_value
         return child
@@ -397,7 +419,6 @@ class Parameter:
         This is used to run multiple experiments
         """
         child = self.spawn_child()
-        child._name = self._name
         child.random_state = None
         return child
 
@@ -579,11 +600,6 @@ class Container(Parameter):
         child = self.spawn_child()
         child._content = {k: p.sample() for k, p in self._content.items()}
         child.heritage["lineage"] = child.uid
-        return child
-
-    def _internal_spawn_child(self: D) -> D:
-        child = self.__class__()
-        child._content = {k: v.spawn_child() for k, v in self._content.items()}
         return child
 
 
