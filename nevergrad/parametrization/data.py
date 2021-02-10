@@ -425,7 +425,7 @@ class Scalar(Data):
     upper: optional float
         maximum value if any
     mutable_sigma: bool
-        wheter the mutation standard deviation must mutate as well (for mutation based algorithms)
+        whether the mutation standard deviation must mutate as well (for mutation based algorithms)
 
     Notes
     -----
