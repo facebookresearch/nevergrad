@@ -104,10 +104,6 @@ class Descriptors:
         return f"{self.__class__.__name__}({diff})"
 
 
-class NotSupportedError(RuntimeError):
-    """This type of operation is not supported by the parameter."""
-
-
 class TemporaryDirectoryCopy(tempfile.TemporaryDirectory):  # type: ignore
     """Creates a full copy of a directory inside a temporary directory
     This class can be used as TemporaryDirectory but:

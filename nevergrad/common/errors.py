@@ -39,6 +39,10 @@ class NevergradDeprecationError(RuntimeError, NevergradError):
     """Deprecated function/class"""
 
 
+class UnsupportedParameterOperationError(RuntimeError, NevergradError):
+    """This type of operation is not supported by the parameter."""
+
+
 # warnings
 
 
