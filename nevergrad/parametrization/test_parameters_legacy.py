@@ -124,7 +124,6 @@ def test_scalar() -> None:
     token = p.Scalar().set_integer_casting()
     assert token.spawn_child().set_standardized_data([0.7]).value == 1
     new_token = token.spawn_child(new_value=1)
-    print(new_token)
     assert new_token.get_standardized_data(reference=token).tolist() == [1.0]
 
 
