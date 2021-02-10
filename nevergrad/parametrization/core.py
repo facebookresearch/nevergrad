@@ -300,7 +300,8 @@ class Parameter:
         bool
             True iff the constraint is satisfied
         """
-        if self._parameters is not None and not self.parameters.satisfies_constraints():
+        inside = self._treecall("satisfies_constraints")
+        if not all(inside):
             return False
         if not self._constraint_checkers:
             return True
@@ -594,18 +595,6 @@ class Container(Parameter):
         child = self.__class__()
         child._content = {k: v.spawn_child() for k, v in self._content.items()}
         return child
-
-    def _set_random_state(self, random_state: np.random.RandomState) -> None:
-        super()._set_random_state(random_state)
-        for param in self._content.values():
-            if isinstance(param, Parameter):
-                param._set_random_state(random_state)
-
-    def satisfies_constraints(self) -> bool:
-        compliant = super().satisfies_constraints()
-        return compliant and all(
-            param.satisfies_constraints() for param in self._content.values() if isinstance(param, Parameter)
-        )
 
 
 class Dict(Container):
