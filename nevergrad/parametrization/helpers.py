@@ -55,8 +55,14 @@ def flatten_parameter(
                         for x, y in content.items()
                     }
                 )
-    if order > 0 and hasattr(parameter, "parameters"):
-        subparams = flatten_parameter(parameter.parameters, with_containers=False, order=order - 1)  # type: ignore
+    if order > 0 and not isinstance(parameter, core.Container):
+        content = dict(parameter._subobjects.items())
+        param = core.Dict(**content)
+        if len(content) == 1:
+            lone_content = next(iter(content.values()))
+            if isinstance(lone_content, core.Dict):
+                param = lone_content  # shorcut subparameters
+        subparams = flatten_parameter(param, with_containers=False, order=order - 1)
         flat.update({"#" + str(x): y for x, y in subparams.items()})
     if not with_containers:
         flat = {
@@ -111,7 +117,6 @@ def split_as_data_parameters(
     # analyze results
     data = copied.get_standardized_data(reference=ref)
     order: tp.List[int] = []
-    print(data)
     for val, _ in itertools.groupby(data):
         num = int(np.round(val))
         if num in order:
