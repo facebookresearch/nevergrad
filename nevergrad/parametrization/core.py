@@ -11,6 +11,7 @@ import functools
 from collections import OrderedDict
 import numpy as np
 import nevergrad.common.typing as tp
+from nevergrad.common import errors
 from . import utils
 
 # pylint: disable=no-value-for-parameter
@@ -108,7 +109,7 @@ class Parameter:
         if self._dimension is None:
             try:
                 self._dimension = self.get_standardized_data(reference=self).size
-            except utils.NotSupportedError:
+            except errors.UnsupportedParameterOperationError:
                 self._dimension = 0
         return self._dimension
 
@@ -175,7 +176,9 @@ class Parameter:
         return self._internal_get_standardized_data(self if reference is None else reference)
 
     def _internal_get_standardized_data(self: P, reference: P) -> np.ndarray:
-        raise utils.NotSupportedError(f"Export to standardized data space is not implemented for {self.name}")
+        raise errors.UnsupportedParameterOperationError(
+            f"Export to standardized data space is not implemented for {self.name}"
+        )
 
     def set_standardized_data(
         self: P, data: tp.ArrayLike, *, reference: tp.Optional[P] = None, deterministic: bool = False
@@ -216,7 +219,7 @@ class Parameter:
         self: P, data: np.ndarray, reference: P, deterministic: bool = False
     ) -> None:
         if data.size:
-            raise utils.NotSupportedError(
+            raise errors.UnsupportedParameterOperationError(
                 f"Import from standardized data space is not implemented for {self.name}"
             )
 
@@ -235,7 +238,9 @@ class Parameter:
         elif isinstance(val, np.ndarray):
             return val.tobytes()  # type: ignore
         else:
-            raise utils.NotSupportedError(f"Value hash is not supported for object {self.name}")
+            raise errors.UnsupportedParameterOperationError(
+                f"Value hash is not supported for object {self.name}"
+            )
 
     def _get_name(self) -> str:
         """Internal implementation of parameter name. This should be value independant, and should not account
@@ -446,7 +451,7 @@ class Constant(Parameter):
     def get_value_hash(self) -> tp.Hashable:
         try:
             return super().get_value_hash()
-        except utils.NotSupportedError:
+        except errors.UnsupportedParameterOperationError:
             return "#non-hashable-constant#"
 
     def _get_value(self) -> tp.Any:
