@@ -114,9 +114,6 @@ class RavelCrossover(Crossover):
         out = super()._apply_array([a.ravel() for a in arrays])
         return out.reshape(shape)
 
-    def _internal_spawn_child(self) -> "RavelCrossover":
-        return RavelCrossover(max_size=self.parameters["max_size"])  # type: ignore
-
 
 def _make_slices(
     shape: tp.Tuple[int, ...], axes: tp.Tuple[int, ...], size: int, rng: np.random.RandomState
@@ -247,14 +244,6 @@ class ProbaLocalGaussian(Mutation):
         data = np.roll(data, shift=index, axis=self.axis)
         arrays[0]._internal_set_standardized_data(data.ravel(), reference=arrays[0])
 
-    def _internal_spawn_child(self) -> "ProbaLocalGaussian":
-        child = self.__class__(axis=self.axis, shape=self.shape)
-        child.parameters._content = {
-            k: v.spawn_child() if isinstance(v, core.Parameter) else v
-            for k, v in self.parameters._content.items()
-        }
-        return child
-
 
 def rolling_mean(vector: np.ndarray, window: int) -> np.ndarray:
     if window >= len(vector):
@@ -285,11 +274,3 @@ class TunedTranslation(Mutation):
         shifts = self.shift.weights.value
         self.shift.weights.value = np.roll(shifts, shift)  # update probas
         return np.roll(data, shift, axis=self.axis)  # type: ignore
-
-    def _internal_spawn_child(self) -> "TunedTranslation":
-        child = self.__class__(axis=self.axis, shape=self.shape)
-        child.parameters._content = {
-            k: v.spawn_child() if isinstance(v, core.Parameter) else v
-            for k, v in self.parameters._content.items()
-        }
-        return child
