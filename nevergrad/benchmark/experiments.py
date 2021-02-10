@@ -1393,7 +1393,7 @@ def multiobjective_example(seed: tp.Optional[int] = None, hd: bool = False, many
     for name1, name2 in itertools.product(["sphere"], ["sphere", "hm"]):
         mofuncs.append(fbase.MultiExperiment([ArtificialFunction(name1, block_dimension=dim),
                     ArtificialFunction(name2, block_dimension=dim)] + (
-                        [ArtificialFunction(name1, block_dimension=dim),
+                        [ArtificialFunction(name1, block_dimension=dim),  # Addendum for many-objective optim.
                         ArtificialFunction(name2,
                             block_dimension=dim)] if
                         many else []),
@@ -1401,7 +1401,7 @@ def multiobjective_example(seed: tp.Optional[int] = None, hd: bool = False, many
         mofuncs.append(fbase.MultiExperiment([ArtificialFunction(name1, block_dimension=dim-1),
                     ArtificialFunction("sphere", block_dimension=dim-1),
                     ArtificialFunction(name2, block_dimension=dim-1)] +
-                    ([ArtificialFunction(name1, block_dimension=dim-1),
+                    ([ArtificialFunction(name1, block_dimension=dim-1),  # Addendum for many-objective optim.
                         ArtificialFunction("sphere", block_dimension=dim-1),
                         ArtificialFunction(name2, block_dimension=dim-1)]
                      if many else []),
