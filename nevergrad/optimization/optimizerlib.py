@@ -2430,7 +2430,7 @@ class _MSR(CM):
             NGOpt(self.parametrization, budget=1 + (budget // self.num_optims), num_workers=num_workers)
             for _ in range(self.num_optims)
         ]
-        self.coeffs = [self.parametrization.random.uniform(size=self.num_objectives) for _ in range(self.num_optims)]
+        self.coeffs = [self.parametrization.random_state.uniform(size=self.num_objectives) for _ in range(self.num_optims)]
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         for i, opt in enumerate(self.optims):
