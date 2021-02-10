@@ -40,7 +40,7 @@ class NevergradDeprecationError(RuntimeError, NevergradError):
 
 
 class UnsupportedParameterOperationError(RuntimeError, NevergradError):
-    """This type of operation is not supported by the parameter."""
+    """This type of operation is not supported by the parameter"""
 
 
 # warnings
