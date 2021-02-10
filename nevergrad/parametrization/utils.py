@@ -237,6 +237,11 @@ class Subobjects(tp.Generic[X]):
         the base class of the subobjects (to filter out other items)
     attribute: str
         the attribute containing the subobjects
+
+    Note
+    ----
+    The current implementation is rather inefficient and could probably be
+    improved a lot if this becomes critical
     """
 
     def __init__(self, obj: X, base: tp.Type[X], attribute: str) -> None:
