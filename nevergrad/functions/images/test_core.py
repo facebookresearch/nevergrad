@@ -38,12 +38,3 @@ def test_images() -> None:
     value2 = other_func(x)
     assert value == value2
 
-
-def test_image_from_pgan_with_k512() -> None:
-    func = core.ImageFromPGAN(initial_noise=None, use_gpu=False, loss=imagelosses.Koncept512())
-    x = np.fabs(np.random.normal(size=func.domain_shape))
-    value = func(x)
-    assert value < np.inf
-    other_func = func.copy()
-    value2 = other_func(x)
-    assert value == value2

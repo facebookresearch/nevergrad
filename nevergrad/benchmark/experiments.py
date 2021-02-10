@@ -1485,21 +1485,6 @@ def image_similarity_and_quality_cv_pgan(seed: tp.Optional[int] = None) -> tp.It
     return image_similarity_and_quality(seed, cross_val=True, with_pgan=True)
 
 
-# TODO: GAN counterparts of the above ?
-@registry.register
-def images_using_gan(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Optimizing an image using koncept512 and a GAN"""
-    seedg = create_seed_generator(seed)
-    optims = get_optimizers("structured_moo", seed=next(seedg))
-    func = imagesxp.ImageFromPGAN()
-    num_workers = 1
-    for budget in [100 * 5 ** k for k in range(3)]:
-        for algo in optims:
-            xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
-            if not xp.is_incoherent:
-                yield xp
-
-
 @registry.register
 def double_o_seven(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Optimization of policies for the 007 game.
