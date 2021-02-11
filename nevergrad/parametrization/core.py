@@ -10,43 +10,14 @@ import numpy as np
 import nevergrad.common.typing as tp
 from nevergrad.common import errors
 from . import utils
-
-# pylint: disable=no-value-for-parameter
+from .utils import ValueProperty as ValueProperty
 
 
 P = tp.TypeVar("P", bound="Parameter")
-X = tp.TypeVar("X")
 
 
-class ValueProperty(tp.Generic[X]):
-    """Typed property (descriptor) object so that the value attribute of
-    Parameter objects fetches _get_value and _set_value methods
-    """
-
-    # This uses the descriptor protocol, like a property:
-    # See https://docs.python.org/3/howto/descriptor.html
-    #
-    # Basically parameter.value calls parameter.value.__get__
-    # and then parameter._get_value
-    def __init__(self) -> None:
-        self.__doc__ = """Value of the Parameter, which should be sent to the function
-        to optimize.
-
-        Example
-        -------
-        >>> ng.p.Array(shape=(2,)).value
-        array([0., 0.])
-        """
-
-    def __get__(self, obj: "Parameter", objtype: tp.Optional[tp.Type[object]] = None) -> X:
-        return obj._get_value()  # type: ignore
-
-    def __set__(self, obj: "Parameter", value: X) -> None:
-        obj._set_value(value)
-
-
-# pylint: disable=too-many-instance-attributes,too-many-public-methods
-class Parameter:
+# pylint: disable=too-many-public-methods
+class Parameter(utils.Overridable):
     """Class providing the core functionality of a parameter, aka
     value, internal/model parameters, mutation, recombination
     and additional features such as shared random state,
@@ -67,6 +38,7 @@ class Parameter:
 
     def __init__(self) -> None:
         # Main features
+        super().__init__(applied_on=None)
         self.uid = uuid.uuid4().hex
         self._subobjects = utils.Subobjects(
             self, base=Parameter, attribute="__dict__"

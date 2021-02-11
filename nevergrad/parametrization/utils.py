@@ -12,6 +12,7 @@ from pathlib import Path
 import numpy as np
 from nevergrad.common import typing as tp
 from nevergrad.common import tools as ngtools
+from nevergrad.common import errors
 
 
 class BoundChecker:
@@ -294,3 +295,47 @@ def float_penalty(x: tp.Union[bool, float]) -> float:
     elif isinstance(x, (float, np.float)):
         return -min(0, x)  # Negative ==> >0
     raise TypeError(f"Only bools and floats are supported for check constaint, but got: {x} ({type(x)})")
+
+
+class Overridable:
+    def __init__(self, applied_on: tp.Optional["Overridable"]) -> None:
+        self._applied_on = applied_on
+
+    def _get_value(self) -> tp.Any:
+        if self._applied_on is None:
+            raise errors.UnsupportedParameterOperationError("_get_value is undefinied")
+        self._applied_on._get_value()
+
+    def _set_value(self, value: tp.Any) -> None:
+        if self._applied_on is None:
+            raise errors.UnsupportedParameterOperationError("_set_value is undefinied")
+        self._applied_on._set_value(value)
+
+
+class ValueProperty(tp.Generic[X]):
+    """Typed property (descriptor) object so that the value attribute of
+    Parameter objects fetches _get_value and _set_value methods
+    """
+
+    # This uses the descriptor protocol, like a property:
+    # See https://docs.python.org/3/howto/descriptor.html
+    #
+    # Basically parameter.value calls parameter.value.__get__
+    # and then parameter._get_value
+    def __init__(self) -> None:
+        self.__doc__ = """Value of the Parameter, which should be sent to the function
+        to optimize.
+
+        Example
+        -------
+        >>> ng.p.Array(shape=(2,)).value
+        array([0., 0.])
+        """
+
+    def __get__(self, obj: Overridable, objtype: tp.Optional[tp.Type[object]] = None) -> X:
+        base = obj if obj._applied_on is None else obj._applied_on
+        return base._get_value()  # type: ignore
+
+    def __set__(self, obj: Overridable, value: X) -> None:
+        base = obj if obj._applied_on is None else obj._applied_on
+        base._set_value(value)
