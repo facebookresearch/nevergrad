@@ -12,7 +12,6 @@ from pathlib import Path
 import numpy as np
 from nevergrad.common import typing as tp
 from nevergrad.common import tools as ngtools
-from nevergrad.common import errors
 
 
 class BoundChecker:
@@ -303,12 +302,12 @@ class Overridable:
 
     def _get_value(self) -> tp.Any:
         if self._applied_on is None:
-            raise errors.UnsupportedParameterOperationError("_get_value is undefinied")
+            raise NotImplementedError
         self._applied_on._get_value()
 
     def _set_value(self, value: tp.Any) -> tp.Any:
         if self._applied_on is None:
-            raise errors.UnsupportedParameterOperationError("_set_value is undefinied")
+            raise NotImplementedError
         self._applied_on._set_value(value)
 
 
