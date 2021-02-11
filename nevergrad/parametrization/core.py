@@ -348,7 +348,7 @@ class Parameter(utils.Layered):
         """
         # make sure to initialize the random state  before spawning children
         self.random_state  # pylint: disable=pointless-statement
-        child = self.copy()
+        child = super().copy()
         child.uid = uuid.uuid4().hex
         child._frozen = False
         child._generation += 1
