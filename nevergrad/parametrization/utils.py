@@ -306,7 +306,7 @@ class Overridable:
             raise errors.UnsupportedParameterOperationError("_get_value is undefinied")
         self._applied_on._get_value()
 
-    def _set_value(self, value: tp.Any) -> None:
+    def _set_value(self, value: tp.Any) -> tp.Any:
         if self._applied_on is None:
             raise errors.UnsupportedParameterOperationError("_set_value is undefinied")
         self._applied_on._set_value(value)
