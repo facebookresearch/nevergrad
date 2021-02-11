@@ -5,11 +5,13 @@
 
 import os
 import sys
+import copy
 import shutil
 import tempfile
 import subprocess
 from pathlib import Path
 import numpy as np
+from nevergrad.common import errors
 from nevergrad.common import typing as tp
 from nevergrad.common import tools as ngtools
 
@@ -296,19 +298,54 @@ def float_penalty(x: tp.Union[bool, float]) -> float:
     raise TypeError(f"Only bools and floats are supported for check constaint, but got: {x} ({type(x)})")
 
 
-class Overridable:
-    def __init__(self, applied_on: tp.Optional["Overridable"]) -> None:
-        self._applied_on = applied_on
+L = tp.TypeVar("L", bound="Layered")
+
+
+class Layered:
+    """Hidden API for overriding/modifying the behavior of a Parameter,
+    which is itself a Layered object.
+    """
+
+    def __init__(self) -> None:
+        self._layers = [self]
+        self._index = 0
+
+    def _get_layer_index(self) -> int:
+        if self._layers[self._index] is not self:
+            raise errors.NevergradRuntimeError(
+                "Layer indexing has changed for an unknown reason. Please open an issue"
+            )
+        return self._index
 
     def _get_value(self) -> tp.Any:
-        if self._applied_on is None:
+        index = self._get_layer_index()
+        if not index:  # roor must have an implementation
             raise NotImplementedError
-        self._applied_on._get_value()
+        self._layers[index - 1]._get_value()
 
     def _set_value(self, value: tp.Any) -> tp.Any:
-        if self._applied_on is None:
+        index = self._get_layer_index()
+        if not index:  # roor must have an implementation
             raise NotImplementedError
-        self._applied_on._set_value(value)
+        self._layers[index - 1]._set_value(value)
+
+    def _del_value(self) -> tp.Any:
+        pass
+
+    def add_layer(self: L, other: "Layered") -> L:
+        if self is not self._layers[0]:
+            raise errors.NevergradRuntimeError("Layers can only be added from the root.")
+        if len(other._layers) > 1:
+            raise errors.NevergradRuntimeError("Cannot append multiple layers at once")
+        other._index = len(self._layers)
+        self._layers.append(other)
+        return self
+
+    def copy(self: L) -> L:
+        new = copy.copy(self)
+        new._layers = [new]
+        self._index = 0
+        return new
 
 
 class ValueProperty(tp.Generic[X]):
@@ -331,10 +368,12 @@ class ValueProperty(tp.Generic[X]):
         array([0., 0.])
         """
 
-    def __get__(self, obj: Overridable, objtype: tp.Optional[tp.Type[object]] = None) -> X:
-        base = obj if obj._applied_on is None else obj._applied_on
-        return base._get_value()  # type: ignore
+    def __get__(self, obj: Layered, objtype: tp.Optional[tp.Type[object]] = None) -> X:
+        return obj._layers[-1]._get_value()  # type: ignore
 
-    def __set__(self, obj: Overridable, value: X) -> None:
-        base = obj if obj._applied_on is None else obj._applied_on
-        base._set_value(value)
+    def __set__(self, obj: Layered, value: X) -> None:
+        obj._layers[-1]._set_value(value)
+
+    def __delete__(self, obj: Layered) -> None:
+        for layer in obj._layers:
+            layer._del_value()

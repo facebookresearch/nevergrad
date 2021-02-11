@@ -33,8 +33,8 @@ class Registry(tp.MutableMapping[str, X]):
         self, name: str, obj: X, info: tp.Optional[tp.Dict[tp.Hashable, tp.Any]] = None
     ) -> None:
         """Register an object with a provided name"""
-        if name in self:
-            raise RuntimeError(f'Encountered a name collision "{name}"')
+        # if name in self:
+        #    raise RuntimeError(f'Encountered a name collision "{name}"')
         self[name] = obj
         if info is not None:
             assert isinstance(info, dict)

@@ -20,6 +20,10 @@ class NevergradWarning(Warning):
 # errors
 
 
+class NevergradRuntimeError(RuntimeError, NevergradError):
+    """Runtime error raised by Nevergrad"""
+
+
 class TellNotAskedNotSupportedError(NotImplementedError, NevergradError):
     """To be raised by optimizers which do not support the tell_not_asked interface."""
 
@@ -35,11 +39,11 @@ class UnsupportedExperiment(RuntimeError, unittest.SkipTest, NevergradError):
     """
 
 
-class NevergradDeprecationError(RuntimeError, NevergradError):
+class NevergradDeprecationError(NevergradRuntimeError):
     """Deprecated function/class"""
 
 
-class UnsupportedParameterOperationError(RuntimeError, NevergradError):
+class UnsupportedParameterOperationError(NevergradRuntimeError):
     """This type of operation is not supported by the parameter"""
 
 

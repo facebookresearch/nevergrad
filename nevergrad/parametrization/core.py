@@ -4,7 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 import uuid
-import copy
 import warnings
 import numpy as np
 import nevergrad.common.typing as tp
@@ -17,7 +16,7 @@ P = tp.TypeVar("P", bound="Parameter")
 
 
 # pylint: disable=too-many-public-methods
-class Parameter(utils.Overridable):
+class Parameter(utils.Layered):
     """Class providing the core functionality of a parameter, aka
     value, internal/model parameters, mutation, recombination
     and additional features such as shared random state,
@@ -38,7 +37,7 @@ class Parameter(utils.Overridable):
 
     def __init__(self) -> None:
         # Main features
-        super().__init__(applied_on=None)
+        super().__init__()
         self.uid = uuid.uuid4().hex
         self._subobjects = utils.Subobjects(
             self, base=Parameter, attribute="__dict__"
@@ -73,12 +72,6 @@ class Parameter(utils.Overridable):
         if self.loss is not None:
             return np.array([self.loss], dtype=float)
         raise RuntimeError("No loss was provided")
-
-    def _get_value(self) -> tp.Any:
-        raise NotImplementedError
-
-    def _set_value(self, value: tp.Any) -> tp.Any:
-        raise NotImplementedError
 
     @property
     def args(self) -> tp.Tuple[tp.Any, ...]:
@@ -355,7 +348,7 @@ class Parameter(utils.Overridable):
         """
         # make sure to initialize the random state  before spawning children
         self.random_state  # pylint: disable=pointless-statement
-        child = copy.copy(self)
+        child = self.copy()
         child.uid = uuid.uuid4().hex
         child._frozen = False
         child._generation += 1
