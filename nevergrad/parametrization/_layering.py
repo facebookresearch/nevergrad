@@ -33,9 +33,6 @@ class Layered:
         self._name: tp.Optional[str] = None
 
     def _get_layer_index(self) -> int:
-        print("self", self.name)
-        print("index", self._index)
-        print("layers", [l.name for l in self._layers])
         if self._layers[self._index] is not self:
             layers = [f"{l.name}({l._index})" for l in self._layers]
             raise errors.NevergradRuntimeError(
