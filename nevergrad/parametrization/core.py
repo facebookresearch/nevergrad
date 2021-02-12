@@ -201,6 +201,7 @@ class Parameter(Layered):
             sent_reference, self.__class__
         ), f"Expected {type(self)} but got {type(sent_reference)} as reference"
         self._check_frozen()
+        del self.value  # remove all cached information
         self._internal_set_standardized_data(
             np.array(data, copy=False), reference=sent_reference, deterministic=deterministic
         )
@@ -227,7 +228,7 @@ class Parameter(Layered):
         if isinstance(val, (str, bytes, float, int)):
             return val
         elif isinstance(val, np.ndarray):
-            return val.tobytes()  # type: ignore
+            return val.tobytes()
         else:
             raise errors.UnsupportedParameterOperationError(
                 f"Value hash is not supported for object {self.name}"
@@ -343,6 +344,7 @@ class Parameter(Layered):
             setattr(child, attribute, container)
         for key, val in self._subobjects.items():
             container[key] = val.spawn_child()
+        del child.value  # clear cache
         if new_value is not None:
             child.value = new_value
         return child
