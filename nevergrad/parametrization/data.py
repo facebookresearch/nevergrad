@@ -401,16 +401,6 @@ class Data(core.Parameter):
             child.value = new_value
         return child
 
-
-class Array(Data):
-
-    value: core.ValueProperty[np.ndarray] = core.ValueProperty()
-
-    def _get_value(self) -> np.ndarray:
-        if self.integer:
-            return np.round(self._value)  # type: ignore
-        return self._value
-
     def _set_value(self, value: tp.ArrayLike) -> None:
         self._check_frozen()
         self._ref_data = None
@@ -427,6 +417,16 @@ class Array(Data):
         if self.exponent is not None and np.min(value.ravel()) <= 0:
             raise ValueError("Logirithmic values cannot be negative")
         self._value = value
+
+
+class Array(Data):
+
+    value: core.ValueProperty[np.ndarray] = core.ValueProperty()
+
+    def _get_value(self) -> np.ndarray:
+        if self.integer:
+            return np.round(self._value)  # type: ignore
+        return self._value
 
 
 class Scalar(Data):
@@ -479,10 +479,9 @@ class Scalar(Data):
         return float(self._value[0]) if not self.integer else int(np.round(self._value[0]))
 
     def _set_value(self, value: float) -> None:
-        self._check_frozen()
         if not isinstance(value, (float, int, np.float, np.int)):
             raise TypeError(f"Received a {type(value)} in place of a scalar (float, int)")
-        self._value = np.array([value], dtype=float)
+        super()._set_value(np.array([value], dtype=float))
 
 
 # pylint: disable=unused-argument
