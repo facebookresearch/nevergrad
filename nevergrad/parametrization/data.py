@@ -340,8 +340,8 @@ class Data(core.Parameter):
         difficult. It is especially ill-advised to use this with a range smaller than 10, or
         a sigma lower than 1. In those cases, you should rather use a TransitionChoice instead.
         """
-        self.add_layer(layers.IntegerCasting())
-        # self.integer = True
+        # self.add_layer(layers.IntegerCasting())
+        self.integer = True
         return self
 
     # pylint: disable=unused-argument
