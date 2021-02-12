@@ -123,13 +123,13 @@ class Data(core.Parameter):
         self._ref_data: tp.Optional[np.ndarray] = None
 
     def _compute_descriptors(self) -> utils.Descriptors:
-        return utils.Descriptors(continuous=not self._integer)
+        return utils.Descriptors(continuous=not self.integer)
 
     def _get_name(self) -> str:
         cls = self.__class__.__name__
         descriptors: tp.List[str] = (
             ["int"]
-            if self._integer
+            if self.integer
             else ([str(self._value.shape).replace(" ", "")] if self._value.shape != (1,) else [])
         )
         descriptors += [f"exp={self.exponent}"] if self.exponent is not None else []
@@ -342,7 +342,7 @@ class Data(core.Parameter):
         return self.add_layer(_layering.IntegerCasting())
 
     @property
-    def _integer(self) -> bool:
+    def integer(self) -> bool:
         return any(isinstance(x, _layering.IntegerCasting) for x in self._layers)
 
     # pylint: disable=unused-argument
