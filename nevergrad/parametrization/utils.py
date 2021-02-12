@@ -321,6 +321,7 @@ class Layered:
         self._name: tp.Optional[str] = None
 
     def _get_layer_index(self) -> int:
+        print(self, self._layers)
         if self._layers[self._index] is not self:
             raise errors.NevergradRuntimeError(
                 "Layer indexing has changed for an unknown reason. Please open an issue"
@@ -356,6 +357,7 @@ class Layered:
             self._layers.insert(ind, other)
             for k, x in enumerate(self._layers):
                 x._index = k
+        other._layers = self._layers
         return self
 
     def copy(self: L) -> L:
@@ -373,6 +375,9 @@ class Layered:
         """
         return self.__class__.__name__
 
+    def __repr__(self) -> str:
+        return self.name
+
     @property
     def name(self) -> str:
         """Name of the parameter
@@ -387,6 +392,17 @@ class Layered:
     @name.setter
     def name(self, name: str) -> None:
         self.set_name(name)  # with_name allows chaining
+
+    def set_name(self: L, name: str) -> L:
+        """Sets a name and return the current instrumentation (for chaining)
+
+        Parameters
+        ----------
+        name: str
+            new name to use to represent the Parameter
+        """
+        self._name = name
+        return self
 
 
 class ValueProperty(tp.Generic[X]):
