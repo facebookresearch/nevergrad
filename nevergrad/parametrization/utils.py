@@ -355,13 +355,10 @@ class Layered:
             raise errors.NevergradRuntimeError("Layers can only be added from the root.")
         if len(other._layers) > 1:
             raise errors.NevergradRuntimeError("Cannot append multiple layers at once")
-        print(f"Inserting {other.name}")
         if other._LAYER_LEVEL >= self._layers[-1]._LAYER_LEVEL:
-            print("ordered")
             other._index = len(self._layers)
             self._layers.append(other)
         else:
-            print("unordered")
             ind = bisect.bisect_right([x._LAYER_LEVEL for x in self._layers], other._LAYER_LEVEL)
             self._layers.insert(ind, other)
             for k, x in enumerate(self._layers):

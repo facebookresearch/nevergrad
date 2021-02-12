@@ -11,7 +11,7 @@ class _ScalarCasting(utils.Layered):
         out = super()._get_value()  # pulls from previous layer
         if not isinstance(out, np.ndarray) or not out.size == 1:
             raise errors.NevergradRuntimeError("Scalar casting can only be applied to size=1 Data parameters")
-        integer = issubclass(out.dtype, np.int)
+        integer = np.issubdtype(out.dtype, np.int)
         out = (int if integer else float)(out[0])
         return out  # type: ignore
 
