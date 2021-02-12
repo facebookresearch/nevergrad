@@ -384,7 +384,6 @@ class Data(core.Parameter):
         if recomb is None:
             return
         all_params = [self] + list(others)
-        print(all_params)
         if isinstance(recomb, str) and recomb == "average":
             all_arrays = [p.get_standardized_data(reference=self) for p in all_params]
             self.set_standardized_data(np.mean(all_arrays, axis=0), deterministic=False)
