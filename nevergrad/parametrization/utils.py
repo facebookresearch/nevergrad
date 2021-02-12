@@ -7,6 +7,7 @@ import os
 import sys
 import copy
 import shutil
+import bisect
 import tempfile
 import subprocess
 from pathlib import Path
@@ -304,7 +305,15 @@ L = tp.TypeVar("L", bound="Layered")
 class Layered:
     """Hidden API for overriding/modifying the behavior of a Parameter,
     which is itself a Layered object.
+
+    Layers can be added and will be ordered depending on their level
+    0: root
+    1-10: bounds
+    11-20: casting
+    21-30: casting
     """
+
+    _LAYER_LEVEL = 1.0
 
     def __init__(self) -> None:
         self._layers = [self]
@@ -319,13 +328,13 @@ class Layered:
 
     def _get_value(self) -> tp.Any:
         index = self._get_layer_index()
-        if not index:  # roor must have an implementation
+        if not index:  # root must have an implementation
             raise NotImplementedError
-        self._layers[index - 1]._get_value()
+        return self._layers[index - 1]._get_value()
 
     def _set_value(self, value: tp.Any) -> tp.Any:
         index = self._get_layer_index()
-        if not index:  # roor must have an implementation
+        if not index:  # root must have an implementation
             raise NotImplementedError
         self._layers[index - 1]._set_value(value)
 
@@ -334,12 +343,18 @@ class Layered:
 
     def add_layer(self: L, other: "Layered") -> L:
         """Adds a layer which will modify the object behavior"""
-        if self is not self._layers[0]:
+        if self is not self._layers[0] or self._LAYER_LEVEL:
             raise errors.NevergradRuntimeError("Layers can only be added from the root.")
         if len(other._layers) > 1:
             raise errors.NevergradRuntimeError("Cannot append multiple layers at once")
-        other._index = len(self._layers)
-        self._layers.append(other)
+        if other._LAYER_LEVEL >= self._layers[-1]._LAYER_LEVEL:
+            other._index = len(self._layers)
+            self._layers.append(other)
+        else:
+            ind = bisect.bisect_right([x._LAYER_LEVEL for x in self._layers], other._LAYER_LEVEL)
+            self._layers.insert(ind, other)
+            for k, x in enumerate(self._layers):
+                x._index = k
         return self
 
     def copy(self: L) -> L:

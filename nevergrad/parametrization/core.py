@@ -33,6 +33,7 @@ class Parameter(utils.Layered):
     # sub-parameters.
     # Spawning a child creates a shallow copy.
 
+    _LAYER_LEVEL = 0.0
     value: ValueProperty[tp.Any] = ValueProperty()
 
     def __init__(self) -> None:
