@@ -41,6 +41,9 @@ class Mutation(core.Parameter):
     Recombinations should take several
     """
 
+    # NOTE: this API should disappear in favor of the layer API
+    # (a layer can modify the mutation scheme)
+
     # pylint: disable=unused-argument
     value: core.ValueProperty[tp.Callable[[tp.Sequence[D]], None]] = core.ValueProperty()
 
@@ -113,7 +116,6 @@ class Data(core.Parameter):
             self._value = np.zeros(shape)
         else:
             raise ValueError(err_msg)
-        self.integer = False
         self.exponent: tp.Optional[float] = None
         self.bounds: tp.Tuple[tp.Optional[np.ndarray], tp.Optional[np.ndarray]] = (None, None)
         self.bound_transform: tp.Optional[trans.BoundTransform] = None
@@ -121,13 +123,13 @@ class Data(core.Parameter):
         self._ref_data: tp.Optional[np.ndarray] = None
 
     def _compute_descriptors(self) -> utils.Descriptors:
-        return utils.Descriptors(continuous=not self.integer)
+        return utils.Descriptors(continuous=not self._integer)
 
     def _get_name(self) -> str:
         cls = self.__class__.__name__
         descriptors: tp.List[str] = (
             ["int"]
-            if self.integer
+            if self._integer
             else ([str(self._value.shape).replace(" ", "")] if self._value.shape != (1,) else [])
         )
         descriptors += [f"exp={self.exponent}"] if self.exponent is not None else []
@@ -337,9 +339,11 @@ class Data(core.Parameter):
         difficult. It is especially ill-advised to use this with a range smaller than 10, or
         a sigma lower than 1. In those cases, you should rather use a TransitionChoice instead.
         """
-        self.add_layer(_layering.IntegerCasting())
-        self.integer = True
-        return self
+        return self.add_layer(_layering.IntegerCasting())
+
+    @property
+    def _integer(self) -> bool:
+        return any(isinstance(x, _layering.IntegerCasting) for x in self._layers)
 
     # pylint: disable=unused-argument
     def _internal_set_standardized_data(

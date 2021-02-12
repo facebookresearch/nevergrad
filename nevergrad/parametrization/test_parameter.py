@@ -51,10 +51,10 @@ def _true(*args: tp.Any, **kwargs: tp.Any) -> bool:  # pylint: disable=unused-ar
     return True
 
 
-@pytest.mark.parametrize(
+@pytest.mark.parametrize(  # type: ignore
     "param",
     [
-        par.Array(shape=(2, 2)),  # type: ignore
+        par.Array(shape=(2, 2)),
         par.Array(init=np.ones(3)).set_mutation(sigma=3, exponent=5),
         par.Scalar(),
         par.Scalar(1.0).set_mutation(exponent=2.0),
@@ -130,7 +130,6 @@ def check_parameter_features(param: par.Parameter) -> None:
     # array info transfer:
     if isinstance(param, par.Data):
         for name in (
-            "integer",
             "exponent",
             "bounds",
             "bound_transform",
