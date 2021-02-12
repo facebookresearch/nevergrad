@@ -402,3 +402,12 @@ def test_array_sampling(method: str, exponent: tp.Optional[float], sigma: float)
         assert np.any(np.abs(val) > 10)
         assert np.all(val <= mbound)
         assert np.all(val >= 1)
+
+
+def test_scalar_module() -> None:
+    ref = par.Scalar()
+    x = par.Scalar(10) % 4
+    assert x.value == 2
+    assert x.get_standardized_data(reference=ref)[0] == 10
+    x.value = 1
+    assert x.get_standardized_data(reference=ref)[0] == 9  # find the closest

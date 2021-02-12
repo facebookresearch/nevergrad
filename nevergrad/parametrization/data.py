@@ -421,6 +421,11 @@ class Data(core.Parameter):
     def _get_value(self) -> np.ndarray:
         return self._value
 
+    def __mod__(self: D, other: tp.Any) -> D:
+        new = self.copy()
+        new.add_layer(_layering.Modulo(other))
+        return new
+
 
 class Array(Data):
 
