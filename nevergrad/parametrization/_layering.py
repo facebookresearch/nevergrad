@@ -162,7 +162,7 @@ class _ScalarCasting(Layered):
         out = super()._get_value()  # pulls from previous layer
         if not isinstance(out, np.ndarray) or not out.size == 1:
             raise errors.NevergradRuntimeError("Scalar casting can only be applied to size=1 Data parameters")
-        integer = np.issubdtype(out.dtype, np.int64)
+        integer = np.issubdtype(out.dtype, np.integer)
         out = (int if integer else float)(out[0])
         return out  # type: ignore
 
@@ -176,6 +176,15 @@ class IntegerCasting(Layered):
     """Cast Data as integer (or integer array)"""
 
     _LAYER_LEVEL = 15
+
+    def _get_value(self) -> np.ndarray:
+        return np.round(super()._get_value()).astype(int)  # type: ignore
+
+
+class Modulo(Layered):
+    """Cast Data as integer (or integer array)"""
+
+    _LAYER_LEVEL = 25
 
     def _get_value(self) -> np.ndarray:
         return np.round(super()._get_value()).astype(int)  # type: ignore
