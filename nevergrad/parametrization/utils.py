@@ -351,6 +351,13 @@ class Layered:
 class ValueProperty(tp.Generic[X]):
     """Typed property (descriptor) object so that the value attribute of
     Parameter objects fetches _get_value and _set_value methods
+
+    Parameters
+    ----------
+    scalar_casting: bool
+        special case for casting an array to a scalar, which must only
+        be applied at the very end, so that scalar and arrays can share
+        the same layers.
     """
 
     # This uses the descriptor protocol, like a property:
@@ -358,7 +365,8 @@ class ValueProperty(tp.Generic[X]):
     #
     # Basically parameter.value calls parameter.value.__get__
     # and then parameter._get_value
-    def __init__(self) -> None:
+    def __init__(self, scalar_casting: bool = False) -> None:
+        self._scalar_casting = scalar_casting
         self.__doc__ = """Value of the Parameter, which should be sent to the function
         to optimize.
 
@@ -369,9 +377,21 @@ class ValueProperty(tp.Generic[X]):
         """
 
     def __get__(self, obj: Layered, objtype: tp.Optional[tp.Type[object]] = None) -> X:
-        return obj._layers[-1]._get_value()  # type: ignore
+        out = obj._layers[-1]._get_value()
+        if self._scalar_casting:
+            if not isinstance(out, np.ndarray) or not out.size == 1:
+                raise errors.NevergradRuntimeError(
+                    "Scalar casting can only be applied to size=1 Data parameters"
+                )
+            integer = issubclass(out.dtype, np.int)
+            out = (int if integer else float)(out[0])
+        return out  # type: ignore
 
     def __set__(self, obj: Layered, value: X) -> None:
+        if self._scalar_casting:
+            if not isinstance(value, (float, int, np.float, np.int)):
+                raise TypeError(f"Received a {type(value)} in place of a scalar (float, int)")
+            value = np.array([value], dtype=float)
         obj._layers[-1]._set_value(value)
 
     def __delete__(self, obj: Layered) -> None:
