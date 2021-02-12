@@ -53,7 +53,6 @@ class Parameter(utils.Layered):
         self._generation = 0
         # self._constraint_checkers: tp.List[tp.Union[tp.Callable[[tp.Any], bool], tp.Callable[[tp.Any], float]]] = []
         self._constraint_checkers: tp.List[tp.Callable[[tp.Any], tp.Union[bool, float]]] = []
-        self._name: tp.Optional[str] = None
         self._frozen = False
         self._descriptors: tp.Optional[utils.Descriptors] = None
         self._meta: tp.Dict[tp.Hashable, tp.Any] = {}  # for anything algorithm related
@@ -231,27 +230,6 @@ class Parameter(utils.Layered):
                 f"Value hash is not supported for object {self.name}"
             )
 
-    def _get_name(self) -> str:
-        """Internal implementation of parameter name. This should be value independant, and should not account
-        for internal/model parameters.
-        """
-        return self.__class__.__name__
-
-    @property
-    def name(self) -> str:
-        """Name of the parameter
-        This is used to keep track of how this Parameter is configured (included through internal/model parameters),
-        mostly for reproducibility A default version is always provided, but can be overriden directly
-        through the attribute, or through the set_name method (which allows chaining).
-        """
-        if self._name is not None:
-            return self._name
-        return self._get_name()
-
-    @name.setter
-    def name(self, name: str) -> None:
-        self.set_name(name)  # with_name allows chaining
-
     def __repr__(self) -> str:
         strings = [self.name]
         if not callable(self.value):  # not a mutation
@@ -362,7 +340,7 @@ class Parameter(utils.Layered):
         child._constraint_checkers = list(self._constraint_checkers)
         # layers
         if self is not self._layers[0]:
-            raise errors.RuntimeError("Something has gone horribly wrong with the layers")
+            raise errors.NevergradRuntimeError("Something has gone horribly wrong with the layers")
         for layer in self._layers[1:]:
             child.add_layer(layer.copy())
         # subparameters

@@ -20,5 +20,5 @@ class _ScalarCasting(utils.Layered):
 
 
 class IntegerCasting(utils.Layered):
-    def _get_value(self) -> np.ndarry:
+    def _get_value(self) -> np.ndarray:
         return np.round(super()._get_value()).astype(int)

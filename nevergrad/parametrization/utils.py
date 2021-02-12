@@ -318,6 +318,7 @@ class Layered:
     def __init__(self) -> None:
         self._layers = [self]
         self._index = 0
+        self._name: tp.Optional[str] = None
 
     def _get_layer_index(self) -> int:
         if self._layers[self._index] is not self:
@@ -363,6 +364,29 @@ class Layered:
         new._layers = [new]
         self._index = 0
         return new
+
+    # naming capacity
+
+    def _get_name(self) -> str:
+        """Internal implementation of parameter name. This should be value independant, and should not account
+        for internal/model parameters.
+        """
+        return self.__class__.__name__
+
+    @property
+    def name(self) -> str:
+        """Name of the parameter
+        This is used to keep track of how this Parameter is configured (included through internal/model parameters),
+        mostly for reproducibility A default version is always provided, but can be overriden directly
+        through the attribute, or through the set_name method (which allows chaining).
+        """
+        if self._name is not None:
+            return self._name
+        return self._get_name()
+
+    @name.setter
+    def name(self, name: str) -> None:
+        self.set_name(name)  # with_name allows chaining
 
 
 class ValueProperty(tp.Generic[X]):
