@@ -5,6 +5,8 @@ from . import utils
 
 
 class _ScalarCasting(utils.Layered):
+    """Cast Array as a scalar"""
+
     def _get_value(self) -> float:
         out = super()._get_value()  # pulls from previous layer
         if not isinstance(out, np.ndarray) or not out.size == 1:
@@ -20,5 +22,7 @@ class _ScalarCasting(utils.Layered):
 
 
 class IntegerCasting(utils.Layered):
+    """Cast Data as integer (or integer array)"""
+
     def _get_value(self) -> np.ndarray:
         return np.round(super()._get_value()).astype(int)

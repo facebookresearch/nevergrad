@@ -53,6 +53,7 @@ class Parameter(utils.Layered):
         self._generation = 0
         # self._constraint_checkers: tp.List[tp.Union[tp.Callable[[tp.Any], bool], tp.Callable[[tp.Any], float]]] = []
         self._constraint_checkers: tp.List[tp.Callable[[tp.Any], tp.Union[bool, float]]] = []
+        self._name: tp.Optional[str] = None
         self._frozen = False
         self._descriptors: tp.Optional[utils.Descriptors] = None
         self._meta: tp.Dict[tp.Hashable, tp.Any] = {}  # for anything algorithm related
@@ -235,17 +236,6 @@ class Parameter(utils.Layered):
         if not callable(self.value):  # not a mutation
             strings.append(str(self.value))
         return ":".join(strings)
-
-    def set_name(self: P, name: str) -> P:
-        """Sets a name and return the current instrumentation (for chaining)
-
-        Parameters
-        ----------
-        name: str
-            new name to use to represent the Parameter
-        """
-        self._name = name
-        return self
 
     # %% Constraint management
 

@@ -321,10 +321,15 @@ class Layered:
         self._name: tp.Optional[str] = None
 
     def _get_layer_index(self) -> int:
-        print(self, self._layers)
+        print("self", self.name)
+        print("index", self._index)
+        print("layers", [l.name for l in self._layers])
         if self._layers[self._index] is not self:
+            layers = [f"{l.name}({l._index})" for l in self._layers]
             raise errors.NevergradRuntimeError(
-                "Layer indexing has changed for an unknown reason. Please open an issue"
+                "Layer indexing has changed for an unknown reason. Please open an issue:\n"
+                f"Caller at index {self._index}: {self.name}"
+                f"Layers: {layers}.\n"
             )
         return self._index
 
@@ -332,6 +337,7 @@ class Layered:
         index = self._get_layer_index()
         if not index:  # root must have an implementation
             raise NotImplementedError
+        print(f"getting {index - 1} from {index}")
         return self._layers[index - 1]._get_value()
 
     def _set_value(self, value: tp.Any) -> tp.Any:
@@ -349,10 +355,13 @@ class Layered:
             raise errors.NevergradRuntimeError("Layers can only be added from the root.")
         if len(other._layers) > 1:
             raise errors.NevergradRuntimeError("Cannot append multiple layers at once")
+        print(f"Inserting {other.name}")
         if other._LAYER_LEVEL >= self._layers[-1]._LAYER_LEVEL:
+            print("ordered")
             other._index = len(self._layers)
             self._layers.append(other)
         else:
+            print("unordered")
             ind = bisect.bisect_right([x._LAYER_LEVEL for x in self._layers], other._LAYER_LEVEL)
             self._layers.insert(ind, other)
             for k, x in enumerate(self._layers):
@@ -364,7 +373,7 @@ class Layered:
         """Creates a new unattached layer with the same behavior"""
         new = copy.copy(self)
         new._layers = [new]
-        self._index = 0
+        new._index = 0
         return new
 
     # naming capacity
