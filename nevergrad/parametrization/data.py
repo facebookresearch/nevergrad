@@ -121,6 +121,7 @@ class Data(core.Parameter):
         self.bound_transform: tp.Optional[trans.BoundTransform] = None
         self.full_range_sampling = False
         self._ref_data: tp.Optional[np.ndarray] = None
+        self.add_layer(_layering.ArrayCasting())
 
     def _compute_descriptors(self) -> utils.Descriptors:
         return utils.Descriptors(continuous=not self.integer)
@@ -401,13 +402,9 @@ class Data(core.Parameter):
             child.value = new_value
         return child
 
-    def _set_value(self, value: tp.ArrayLike) -> None:
+    def _set_value(self, value: np.ndarray) -> None:
         self._check_frozen()
         self._ref_data = None
-        if not isinstance(value, (np.ndarray, tuple, list)):
-            raise TypeError(f"Received a {type(value)} in place of a np.ndarray/tuple/list")
-        value = np.asarray(value)
-        assert isinstance(value, np.ndarray)
         if self._value.shape != value.shape:
             raise ValueError(
                 f"Cannot set array of shape {self._value.shape} with value of shape {value.shape}"

@@ -16,10 +16,15 @@ X = tp.TypeVar("X")
 
 
 class Level(Enum):
-    ROOT = 0.0
-    OPERATION = 10.0
-    CASTING = 90.0
-    FINAL_CASTING = 100.0
+    """Lower level is deeper in the structure"""
+
+    ROOT = 0
+    OPERATION = 10
+    CASTING = 90
+
+    # final
+    ARRAY_CASTING = 900
+    INTEGER_CASTING = 1000  # must be the last layer
 
 
 class Layered:
@@ -27,10 +32,6 @@ class Layered:
     which is itself a Layered object.
 
     Layers can be added and will be ordered depending on their level
-    0: root
-    1-10: bounds
-    11-20: casting
-    21-30: constraints
     """
 
     _LAYER_LEVEL = Level.OPERATION
@@ -165,7 +166,7 @@ class ValueProperty(tp.Generic[X]):
 class _ScalarCasting(Layered):
     """Cast Array as a scalar"""
 
-    _LAYER_LEVEL = Level.FINAL_CASTING  # last layer
+    _LAYER_LEVEL = Level.INTEGER_CASTING
 
     def _get_value(self) -> float:
         out = super()._get_value()  # pulls from previous layer
@@ -179,6 +180,17 @@ class _ScalarCasting(Layered):
         if not isinstance(value, (float, int, np.float, np.int)):
             raise TypeError(f"Received a {type(value)} in place of a scalar (float, int)")
         super()._set_value(np.array([value], dtype=float))
+
+
+class ArrayCasting(Layered):
+    """Cast inputs of type tuple/list etc to array"""
+
+    _LAYER_LEVEL = Level.ARRAY_CASTING
+
+    def _set_value(self, value: tp.ArrayLike) -> None:
+        if not isinstance(value, (np.ndarray, tuple, list)):
+            raise TypeError(f"Received a {type(value)} in place of a np.ndarray/tuple/list")
+        super()._set_value(np.asarray(value))
 
 
 class IntegerCasting(Layered):
