@@ -423,11 +423,6 @@ class Array(Data):
 
     value: core.ValueProperty[np.ndarray] = core.ValueProperty()
 
-    # def _get_value(self) -> np.ndarray:
-    #    if self.integer:
-    #        return np.round(self._value)  # type: ignore
-    #    return self._value
-
 
 class Scalar(Data):
     """Parameter representing a scalar.
@@ -464,7 +459,6 @@ class Scalar(Data):
     ) -> None:
         bounded = all(a is not None for a in (lower, upper))
         no_init = init is None
-        print("bounded", bounded)
         if bounded:
             if init is None:
                 init = (lower + upper) / 2.0  # type: ignore

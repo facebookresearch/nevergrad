@@ -337,7 +337,6 @@ class Layered:
         index = self._get_layer_index()
         if not index:  # root must have an implementation
             raise NotImplementedError
-        print(f"getting {index - 1} from {index}")
         return self._layers[index - 1]._get_value()
 
     def _set_value(self, value: tp.Any) -> tp.Any:
