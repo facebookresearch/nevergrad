@@ -20,7 +20,6 @@ class Level(Enum):
 
     ROOT = 0
     OPERATION = 10
-    CASTING = 90
 
     # final
     ARRAY_CASTING = 900
@@ -41,31 +40,6 @@ class Layered:
         self._index = 0
         self._name: tp.Optional[str] = None
 
-    def _get_layer_index(self) -> int:
-        if self._layers[self._index] is not self:
-            layers = [f"{l.name}({l._index})" for l in self._layers]
-            raise errors.NevergradRuntimeError(
-                "Layer indexing has changed for an unknown reason. Please open an issue:\n"
-                f"Caller at index {self._index}: {self.name}"
-                f"Layers: {layers}.\n"
-            )
-        return self._index
-
-    def _get_value(self) -> tp.Any:
-        index = self._get_layer_index()
-        if not index:  # root must have an implementation
-            raise NotImplementedError
-        return self._layers[index - 1]._get_value()
-
-    def _set_value(self, value: tp.Any) -> tp.Any:
-        index = self._get_layer_index()
-        if not index:  # root must have an implementation
-            raise NotImplementedError
-        self._layers[index - 1]._set_value(value)
-
-    def _del_value(self) -> tp.Any:
-        pass
-
     def add_layer(self: L, other: "Layered") -> L:
         """Adds a layer which will modify the object behavior"""
         if self is not self._layers[0] or self._LAYER_LEVEL != Level.ROOT:
@@ -84,12 +58,41 @@ class Layered:
         other._layers = self._layers
         return self
 
+    def _call_deeper(self, name: str, *args: tp.Any, **kwargs: tp.Any) -> tp.Any:
+        if self._layers[self._index] is not self:
+            layers = [f"{l.name}({l._index})" for l in self._layers]
+            raise errors.NevergradRuntimeError(
+                "Layer indexing has changed for an unknown reason. Please open an issue:\n"
+                f"Caller at index {self._index}: {self.name}"
+                f"Layers: {layers}.\n"
+            )
+        if not self._index:  # root must have an implementation
+            raise NotImplementedError
+        return getattr(self._layers[self._index - 1], name)(*args, **kwargs)
+
+    def _get_value(self) -> tp.Any:
+        return self._call_deeper("_get_value")
+
+    def _set_value(self, value: tp.Any) -> tp.Any:
+        self._call_deeper("_set_value", value)
+
+    def _del_value(self) -> None:
+        self._call_deeper("_del_value")
+
     def copy(self: L) -> L:
         """Creates a new unattached layer with the same behavior"""
         new = copy.copy(self)
         new._layers = [new]
         new._index = 0
         return new
+
+    def sample(self: L) -> L:
+        """Sample a new instance of the parameter.
+        This usually means spawning a child and mutating it.
+        This function should be used in optimizers when creating an initial population,
+        and parameter.heritage["lineage"] is reset to parameter.uid instead of its parent's
+        """
+        return self._call_deeper("sample")
 
     # naming capacity
 
@@ -196,7 +199,7 @@ class ArrayCasting(Layered):
 class IntegerCasting(Layered):
     """Cast Data as integer (or integer array)"""
 
-    _LAYER_LEVEL = Level.CASTING
+    _LAYER_LEVEL = Level.OPERATION
 
     def _get_value(self) -> np.ndarray:
         return np.round(super()._get_value()).astype(int)  # type: ignore
