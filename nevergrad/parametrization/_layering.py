@@ -92,7 +92,7 @@ class Layered:
         This function should be used in optimizers when creating an initial population,
         and parameter.heritage["lineage"] is reset to parameter.uid instead of its parent's
         """
-        return self._call_deeper("sample")
+        return self._call_deeper("sample")  # type: ignore
 
     # naming capacity
 
@@ -203,22 +203,3 @@ class IntegerCasting(Layered):
 
     def _get_value(self) -> np.ndarray:
         return np.round(super()._get_value()).astype(int)  # type: ignore
-
-
-class Modulo(Layered):
-    """Cast Data as integer (or integer array)"""
-
-    _LAYER_LEVEL = Level.OPERATION
-
-    def __init__(self, module: tp.Any) -> None:
-        super().__init__()
-        if not isinstance(module, (np.ndarray, np.float, np.int, float, int)):
-            raise TypeError(f"Unsupported type {type(module)} for module")
-        self._module = module
-
-    def _get_value(self) -> np.ndarray:
-        return super()._get_value() % self._module  # type: ignore
-
-    def _set_value(self, value: np.ndarray) -> None:
-        current = super()._get_value()
-        super()._set_value(current - (current % self._module) + value)

@@ -7,6 +7,7 @@ import functools
 import warnings
 import numpy as np
 import nevergrad.common.typing as tp
+from nevergrad.common import errors
 from . import _layering
 from . import core
 from .container import Dict
@@ -420,7 +421,7 @@ class Data(core.Parameter):
 
     def __mod__(self: D, other: tp.Any) -> D:
         new = self.copy()
-        new.add_layer(_layering.Modulo(other))
+        new.add_layer(Modulo(other))
         return new
 
 
@@ -526,3 +527,74 @@ class Log(Scalar):
         self.set_mutation(sigma=1.0, exponent=exponent)
         if any(a is not None for a in (lower, upper)):
             self.set_bounds(lower, upper, full_range_sampling=bounded and no_init)
+
+
+# LAYERS
+
+
+class BoundLayer(_layering.Layered):
+
+    _LAYER_LEVEL = _layering.Level.OPERATION
+
+    def __init__(
+        self,
+        lower: tp.BoundValue = None,
+        upper: tp.BoundValue = None,
+        full_range_sampling: tp.Optional[bool] = None,
+    ) -> None:
+        """Bounds all real values into [lower, upper]
+
+        Parameters
+        ----------
+        lower: float or None
+            minimum value
+        upper: float or None
+            maximum value
+        method: str
+            One of the following choices:
+        full_range_sampling: Optional bool
+            Changes the default behavior of the "sample" method (aka creating a child and mutating it from the current instance)
+            or the sampling optimizers, to creating a child with a value sampled uniformly (or log-uniformly) within
+            the while range of the bounds. The "sample" method is used by some algorithms to create an initial population.
+            This is activated by default if both bounds are provided.
+        """  # TODO improve description of methods
+        super().__init__()
+        self.bounds = tuple(
+            a if isinstance(a, np.ndarray) or a is None else np.array([a], dtype=float)
+            for a in (lower, upper)
+        )
+        both_bounds = all(b is not None for b in self.bounds)
+        self.full_range_sampling = full_range_sampling
+        if full_range_sampling is None:
+            self.full_range_sampling = both_bounds
+
+    def sample(self) -> D:
+        if not self.full_range_sampling:
+            super().sample()
+        root = self._layers[0]
+        if not isinstance(root, Data):
+            raise errors.NevergradTypeError(f"BoundLayer {self} on a non-Data root {root}")
+        child = root.spawn_child()
+        shape = super()._get_value().shape
+        bounds = tuple(b * np.ones(shape) for b in self.bounds)
+        diff = bounds[1] - bounds[0]
+        super().set_value(bounds[0] + root.random_state.uniform(0, 1, size=shape) * diff)
+        child.heritage["lineage"] = child.uid
+        return child
+
+
+class Modulo(BoundLayer):
+    """Cast Data as integer (or integer array)"""
+
+    def __init__(self, module: tp.Any) -> None:
+        super().__init__(lower=0, upper=module)
+        if not isinstance(module, (np.ndarray, np.float, np.int, float, int)):
+            raise TypeError(f"Unsupported type {type(module)} for module")
+        self._module = module
+
+    def _get_value(self) -> np.ndarray:
+        return super()._get_value() % self._module  # type: ignore
+
+    def _set_value(self, value: np.ndarray) -> None:
+        current = super()._get_value()
+        super()._set_value(current - (current % self._module) + value)
