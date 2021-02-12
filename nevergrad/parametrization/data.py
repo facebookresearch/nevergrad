@@ -418,6 +418,9 @@ class Data(core.Parameter):
             raise ValueError("Logirithmic values cannot be negative")
         self._value = value
 
+    def _get_value(self) -> float:
+        return self._value
+
 
 class Array(Data):
 
@@ -464,6 +467,7 @@ class Scalar(Data):
     ) -> None:
         bounded = all(a is not None for a in (lower, upper))
         no_init = init is None
+        print("bounded", bounded)
         if bounded:
             if init is None:
                 init = (lower + upper) / 2.0  # type: ignore
@@ -471,17 +475,20 @@ class Scalar(Data):
             init = 0.0
         super().__init__(init=np.array([init]), mutable_sigma=mutable_sigma)
         if bounded:
+            print(f"Setting sigma {(upper - lower) / 6}")
             self.set_mutation(sigma=(upper - lower) / 6)  # type: ignore
+        print("sigma", self.sigma)
         if any(a is not None for a in (lower, upper)):
             self.set_bounds(lower=lower, upper=upper, full_range_sampling=bounded and no_init)
+        self.add_layer(layers._ScalarCasting())
 
-    def _get_value(self) -> float:
-        return float(self._value[0]) if not self.integer else int(np.round(self._value[0]))
+    # def _get_value(self) -> float:
+    #    return float(self._value[0]) if not self.integer else int(np.round(self._value[0]))
 
-    def _set_value(self, value: float) -> None:
-        if not isinstance(value, (float, int, np.float, np.int)):
-            raise TypeError(f"Received a {type(value)} in place of a scalar (float, int)")
-        super()._set_value(np.array([value], dtype=float))
+    # def _set_value(self, value: float) -> None:
+    #    if not isinstance(value, (float, int, np.float, np.int)):
+    #        raise TypeError(f"Received a {type(value)} in place of a scalar (float, int)")
+    #    super()._set_value(np.array([value], dtype=float))
 
 
 # pylint: disable=unused-argument

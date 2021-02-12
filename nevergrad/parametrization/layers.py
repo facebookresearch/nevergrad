@@ -7,22 +7,26 @@ from . import utils
 class _ScalarCasting(utils.Layered):
     """Cast Array as a scalar"""
 
+    _LAYER_LEVEL = 20  # last layer
+
     def _get_value(self) -> float:
         out = super()._get_value()  # pulls from previous layer
         if not isinstance(out, np.ndarray) or not out.size == 1:
             raise errors.NevergradRuntimeError("Scalar casting can only be applied to size=1 Data parameters")
-        integer = np.issubdtype(out.dtype, np.int)
+        integer = np.issubdtype(out.dtype, np.int64)
         out = (int if integer else float)(out[0])
         return out  # type: ignore
 
     def _set_value(self, value: tp.Any) -> None:
         if not isinstance(value, (float, int, np.float, np.int)):
             raise TypeError(f"Received a {type(value)} in place of a scalar (float, int)")
-        value = np.array([value], dtype=float)
+        super()._set_value(np.array([value], dtype=float))
 
 
 class IntegerCasting(utils.Layered):
     """Cast Data as integer (or integer array)"""
+
+    _LAYER_LEVEL = 15
 
     def _get_value(self) -> np.ndarray:
         return np.round(super()._get_value()).astype(int)
