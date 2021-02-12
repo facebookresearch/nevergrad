@@ -5,6 +5,7 @@
 
 import copy
 import bisect
+from enum import Enum
 import numpy as np
 from nevergrad.common import errors
 import nevergrad.common.typing as tp
@@ -12,6 +13,13 @@ import nevergrad.common.typing as tp
 
 L = tp.TypeVar("L", bound="Layered")
 X = tp.TypeVar("X")
+
+
+class Level(Enum):
+    ROOT = 0.0
+    OPERATION = 10.0
+    CASTING = 90.0
+    FINAL_CASTING = 100.0
 
 
 class Layered:
@@ -25,7 +33,7 @@ class Layered:
     21-30: constraints
     """
 
-    _LAYER_LEVEL = 1.0
+    _LAYER_LEVEL = Level.OPERATION
 
     def __init__(self) -> None:
         self._layers = [self]
@@ -59,15 +67,16 @@ class Layered:
 
     def add_layer(self: L, other: "Layered") -> L:
         """Adds a layer which will modify the object behavior"""
-        if self is not self._layers[0] or self._LAYER_LEVEL:
+        if self is not self._layers[0] or self._LAYER_LEVEL != Level.ROOT:
             raise errors.NevergradRuntimeError("Layers can only be added from the root.")
         if len(other._layers) > 1:
             raise errors.NevergradRuntimeError("Cannot append multiple layers at once")
-        if other._LAYER_LEVEL >= self._layers[-1]._LAYER_LEVEL:
+        if other._LAYER_LEVEL.value >= self._layers[-1]._LAYER_LEVEL.value:
             other._index = len(self._layers)
             self._layers.append(other)
         else:
-            ind = bisect.bisect_right([x._LAYER_LEVEL for x in self._layers], other._LAYER_LEVEL)
+            levels = [x._LAYER_LEVEL.value for x in self._layers]
+            ind = bisect.bisect_right(levels, other._LAYER_LEVEL.value)
             self._layers.insert(ind, other)
             for k, x in enumerate(self._layers):
                 x._index = k
@@ -156,7 +165,7 @@ class ValueProperty(tp.Generic[X]):
 class _ScalarCasting(Layered):
     """Cast Array as a scalar"""
 
-    _LAYER_LEVEL = 20  # last layer
+    _LAYER_LEVEL = Level.FINAL_CASTING  # last layer
 
     def _get_value(self) -> float:
         out = super()._get_value()  # pulls from previous layer
@@ -175,7 +184,7 @@ class _ScalarCasting(Layered):
 class IntegerCasting(Layered):
     """Cast Data as integer (or integer array)"""
 
-    _LAYER_LEVEL = 15
+    _LAYER_LEVEL = Level.CASTING
 
     def _get_value(self) -> np.ndarray:
         return np.round(super()._get_value()).astype(int)  # type: ignore
@@ -184,7 +193,7 @@ class IntegerCasting(Layered):
 class Modulo(Layered):
     """Cast Data as integer (or integer array)"""
 
-    _LAYER_LEVEL = 4
+    _LAYER_LEVEL = Level.OPERATION
 
     def __init__(self, module: tp.Any) -> None:
         super().__init__()

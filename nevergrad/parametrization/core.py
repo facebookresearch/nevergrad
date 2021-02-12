@@ -11,6 +11,7 @@ from nevergrad.common import errors
 from . import utils
 from ._layering import ValueProperty as ValueProperty
 from ._layering import Layered as Layered
+from ._layering import Level
 
 
 P = tp.TypeVar("P", bound="Parameter")
@@ -34,7 +35,7 @@ class Parameter(Layered):
     # sub-parameters.
     # Spawning a child creates a shallow copy.
 
-    _LAYER_LEVEL = 0.0
+    _LAYER_LEVEL = Level.ROOT
     value: ValueProperty[tp.Any] = ValueProperty()
 
     def __init__(self) -> None:
