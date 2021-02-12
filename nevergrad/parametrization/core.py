@@ -9,14 +9,15 @@ import numpy as np
 import nevergrad.common.typing as tp
 from nevergrad.common import errors
 from . import utils
-from .utils import ValueProperty as ValueProperty
+from ._layering import ValueProperty as ValueProperty
+from ._layering import Layered as Layered
 
 
 P = tp.TypeVar("P", bound="Parameter")
 
 
 # pylint: disable=too-many-public-methods
-class Parameter(utils.Layered):
+class Parameter(Layered):
     """Class providing the core functionality of a parameter, aka
     value, internal/model parameters, mutation, recombination
     and additional features such as shared random state,

@@ -7,8 +7,8 @@ import functools
 import warnings
 import numpy as np
 import nevergrad.common.typing as tp
+from . import _layering
 from . import core
-from . import layers
 from .container import Dict
 from . import utils
 from . import transforms as trans
@@ -337,7 +337,7 @@ class Data(core.Parameter):
         difficult. It is especially ill-advised to use this with a range smaller than 10, or
         a sigma lower than 1. In those cases, you should rather use a TransitionChoice instead.
         """
-        self.add_layer(layers.IntegerCasting())
+        self.add_layer(_layering.IntegerCasting())
         self.integer = True
         return self
 
@@ -469,7 +469,7 @@ class Scalar(Data):
             self.set_mutation(sigma=(upper - lower) / 6)  # type: ignore
         if any(a is not None for a in (lower, upper)):
             self.set_bounds(lower=lower, upper=upper, full_range_sampling=bounded and no_init)
-        self.add_layer(layers._ScalarCasting())
+        self.add_layer(_layering._ScalarCasting())
 
 
 class Log(Scalar):
