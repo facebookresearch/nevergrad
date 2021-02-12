@@ -340,7 +340,7 @@ class Data(core.Parameter):
         difficult. It is especially ill-advised to use this with a range smaller than 10, or
         a sigma lower than 1. In those cases, you should rather use a TransitionChoice instead.
         """
-        # self.add_layer(layers.IntegerCasting())
+        self.add_layer(layers.IntegerCasting())
         self.integer = True
         return self
 
@@ -418,7 +418,7 @@ class Data(core.Parameter):
             raise ValueError("Logirithmic values cannot be negative")
         self._value = value
 
-    def _get_value(self) -> float:
+    def _get_value(self) -> np.ndarray:
         return self._value
 
 
@@ -426,10 +426,10 @@ class Array(Data):
 
     value: core.ValueProperty[np.ndarray] = core.ValueProperty()
 
-    def _get_value(self) -> np.ndarray:
-        if self.integer:
-            return np.round(self._value)  # type: ignore
-        return self._value
+    # def _get_value(self) -> np.ndarray:
+    #    if self.integer:
+    #        return np.round(self._value)  # type: ignore
+    #    return self._value
 
 
 class Scalar(Data):
@@ -475,9 +475,7 @@ class Scalar(Data):
             init = 0.0
         super().__init__(init=np.array([init]), mutable_sigma=mutable_sigma)
         if bounded:
-            print(f"Setting sigma {(upper - lower) / 6}")
             self.set_mutation(sigma=(upper - lower) / 6)  # type: ignore
-        print("sigma", self.sigma)
         if any(a is not None for a in (lower, upper)):
             self.set_bounds(lower=lower, upper=upper, full_range_sampling=bounded and no_init)
         self.add_layer(layers._ScalarCasting())
