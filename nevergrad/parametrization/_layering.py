@@ -178,4 +178,4 @@ class IntegerCasting(Layered):
     _LAYER_LEVEL = 15
 
     def _get_value(self) -> np.ndarray:
-        return np.round(super()._get_value()).astype(int)
+        return np.round(super()._get_value()).astype(int)  # type: ignore
