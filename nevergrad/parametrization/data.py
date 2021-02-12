@@ -164,8 +164,6 @@ class Data(core.Parameter):
         upper: tp.BoundValue = None,
         method: str = "bouncing",
         full_range_sampling: tp.Optional[bool] = None,
-        a_min: tp.BoundValue = None,
-        a_max: tp.BoundValue = None,
     ) -> D:
         """Bounds all real values into [lower, upper] using a provided method
 
@@ -201,7 +199,6 @@ class Data(core.Parameter):
         - "tanh" reaches the boundaries really quickly, while "arctan" is much softer
         - only "clipping" accepts partial bounds (None values)
         """  # TODO improve description of methods
-        lower, upper = _a_min_max_deprecation(**locals())
         bounds = tuple(
             a if isinstance(a, np.ndarray) or a is None else np.array([a], dtype=float)
             for a in (lower, upper)
@@ -480,29 +477,6 @@ class Scalar(Data):
             self.set_bounds(lower=lower, upper=upper, full_range_sampling=bounded and no_init)
         self.add_layer(layers._ScalarCasting())
 
-    # def _get_value(self) -> float:
-    #    return float(self._value[0]) if not self.integer else int(np.round(self._value[0]))
-
-    # def _set_value(self, value: float) -> None:
-    #    if not isinstance(value, (float, int, np.float, np.int)):
-    #        raise TypeError(f"Received a {type(value)} in place of a scalar (float, int)")
-    #    super()._set_value(np.array([value], dtype=float))
-
-
-# pylint: disable=unused-argument
-def _a_min_max_deprecation(
-    a_min: tp.Any, a_max: tp.Any, lower: tp.Any, upper: tp.Any, **kwargs: tp.Any
-) -> tp.Tuple[tp.Any, tp.Any]:
-    if a_min is not None:
-        warnings.warn('"a_min" is deprecated in favor of "lower" for clarity', DeprecationWarning)
-        assert lower is None, "Use only lower, and not a_min"
-        lower = a_min
-    if a_max is not None:
-        warnings.warn('"a_max" is deprecated in favor of "upper" for clarity', DeprecationWarning)
-        assert upper is None, "Use only upper, and not a_max"
-        upper = a_max
-    return lower, upper
-
 
 class Log(Scalar):
     """Parameter representing a positive variable, mutated by Gaussian mutation in log-scale.
@@ -535,10 +509,7 @@ class Log(Scalar):
         lower: tp.Optional[float] = None,
         upper: tp.Optional[float] = None,
         mutable_sigma: bool = False,
-        a_min: tp.Optional[float] = None,
-        a_max: tp.Optional[float] = None,
     ) -> None:
-        lower, upper = _a_min_max_deprecation(**locals())
         no_init = init is None
         bounded = all(a is not None for a in (lower, upper))
         if bounded:
