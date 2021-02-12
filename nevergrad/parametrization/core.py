@@ -359,6 +359,12 @@ class Parameter(utils.Layered):
         child.loss = None
         child._losses = None
         child._constraint_checkers = list(self._constraint_checkers)
+        # layers
+        if self is not self._layers[0]:
+            raise errors.RuntimeError("Something has gone horribly wrong with the layers")
+        for layer in self._layers[1:]:
+            child.add_layer(layer.copy())
+        # subparameters
         attribute = self._subobjects.attribute
         container = getattr(child, attribute)
         if attribute != "__dict__":  # make a copy of the container if different from __dict__
@@ -390,6 +396,8 @@ class Parameter(utils.Layered):
         This is used to run multiple experiments
         """
         child = self.spawn_child()
+        child._generation -= 1
+        child.parents_uids = list(self.parents_uids)
         child.random_state = None
         return child
 
