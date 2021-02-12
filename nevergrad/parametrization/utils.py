@@ -333,6 +333,7 @@ class Layered:
         pass
 
     def add_layer(self: L, other: "Layered") -> L:
+        """Adds a layer which will modify the object behavior"""
         if self is not self._layers[0]:
             raise errors.NevergradRuntimeError("Layers can only be added from the root.")
         if len(other._layers) > 1:
@@ -342,6 +343,7 @@ class Layered:
         return self
 
     def copy(self: L) -> L:
+        """Creates a new unattached layer with the same behavior"""
         new = copy.copy(self)
         new._layers = [new]
         self._index = 0
