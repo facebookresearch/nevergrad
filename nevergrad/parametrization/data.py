@@ -392,11 +392,9 @@ class Data(core.Parameter):
         else:
             raise ValueError(f'Unknown recombination "{recomb}"')
 
-    def spawn_child(self: D, new_value: tp.Optional[tp.Any] = None) -> D:
-        child = super().spawn_child()  # dont forward the value
+    def _inner_copy(self: D, mode: str) -> D:
+        child = super()._inner_copy(mode=mode)
         child._value = np.array(self._value, copy=True)
-        if new_value is not None:
-            child.value = new_value
         return child
 
 

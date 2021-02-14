@@ -148,9 +148,8 @@ class Parameter:
         This function should be used in optimizers when creating an initial population,
         and parameter.heritage["lineage"] is reset to parameter.uid instead of its parent's
         """
-        child = self.spawn_child()
+        child = self._inner_copy(mode="sample")
         child.mutate()
-        child.heritage["lineage"] = child.uid
         return child
 
     def recombine(self: P, *others: P) -> None:
@@ -365,6 +364,38 @@ class Parameter:
         self._random_state = random_state
         self._subobjects.apply("_set_random_state", random_state)
 
+    def _inner_copy(self: P, mode: str) -> P:
+        # make sure to initialize the random state  before spawning children
+        self.random_state  # pylint: disable=pointless-statement
+        child = copy.copy(self)
+        child.uid = uuid.uuid4().hex
+        child._frozen = False
+        child._subobjects = self._subobjects.new(child)
+        child._meta = {}
+        child.parents_uids = []
+        child.heritage = dict()
+        child.loss = None
+        child._losses = None
+        child._constraint_checkers = list(self._constraint_checkers)
+        attribute = self._subobjects.attribute
+        container = getattr(child, attribute)
+        if attribute != "__dict__":  # make a copy of the container if different from __dict__
+            container = dict(container) if isinstance(container, dict) else list(container)
+            setattr(child, attribute, container)
+        for key, val in self._subobjects.items():
+            container[key] = val._inner_copy(mode=mode)
+        if mode == "spawn_child":
+            child._generation += 1
+            child.parents_uids = [self.uid]
+            child.heritage = dict(self.heritage)
+        elif mode == "sample":
+            child.heritage["lineage"] = child.uid
+        elif mode == "copy":
+            child.random_state = None
+        else:
+            raise NotImplementedError(f"No copy mode {mode!r}")
+        return child
+
     def spawn_child(self: P, new_value: tp.Optional[tp.Any] = None) -> P:
         """Creates a new instance which shares the same random generator than its parent,
         is sampled from the same data, and mutates independently from the parentp.
@@ -381,26 +412,7 @@ class Parameter:
             a new instance of the same class, with same content/internal-model parameters/...
             Optionally, a new value will be set after creation
         """
-        # make sure to initialize the random state  before spawning children
-        self.random_state  # pylint: disable=pointless-statement
-        child = copy.copy(self)
-        child.uid = uuid.uuid4().hex
-        child._frozen = False
-        child._generation += 1
-        child.parents_uids = [self.uid]
-        child.heritage = dict(self.heritage)
-        child._subobjects = self._subobjects.new(child)
-        child._meta = {}
-        child.loss = None
-        child._losses = None
-        child._constraint_checkers = list(self._constraint_checkers)
-        attribute = self._subobjects.attribute
-        container = getattr(child, attribute)
-        if attribute != "__dict__":  # make a copy of the container if different from __dict__
-            container = dict(container) if isinstance(container, dict) else list(container)
-            setattr(child, attribute, container)
-        for key, val in self._subobjects.items():
-            container[key] = val.spawn_child()
+        child = self._inner_copy(mode="spawn_child")
         if new_value is not None:
             child.value = new_value
         return child
@@ -424,9 +436,7 @@ class Parameter:
         """Create a child, but remove the random state
         This is used to run multiple experiments
         """
-        child = self.spawn_child()
-        child.random_state = None
-        return child
+        return self._inner_copy(mode="copy")
 
     def _compute_descriptors(self) -> utils.Descriptors:
         return utils.Descriptors()
