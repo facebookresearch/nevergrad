@@ -104,7 +104,7 @@ class Parameter(Layered):
                 self._dimension = 0
         return self._dimension
 
-    def _del_value(self) -> None:
+    def _layered_del_value(self) -> None:
         pass  # used to remove cache, which Parameters should not have
 
     def mutate(self) -> None:
@@ -417,10 +417,10 @@ class Constant(Parameter):
         except errors.UnsupportedParameterOperationError:
             return "#non-hashable-constant#"
 
-    def _get_value(self) -> tp.Any:
+    def _layered_get_value(self) -> tp.Any:
         return self._value
 
-    def _set_value(self, value: tp.Any) -> None:
+    def _layered_set_value(self, value: tp.Any) -> None:
         different = False
         if isinstance(value, np.ndarray):
             if not np.equal(value, self._value).all():

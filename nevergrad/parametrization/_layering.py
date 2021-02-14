@@ -59,6 +59,8 @@ class Layered:
         return self
 
     def _call_deeper(self, name: str, *args: tp.Any, **kwargs: tp.Any) -> tp.Any:
+        if not name.startswith("_layered_"):
+            raise errors.NevergradValueError("For consistency, only _layered functions can be used.")
         if self._layers[self._index] is not self:
             layers = [f"{l.name}({l._index})" for l in self._layers]
             raise errors.NevergradRuntimeError(
@@ -66,18 +68,24 @@ class Layered:
                 f"Caller at index {self._index}: {self.name}"
                 f"Layers: {layers}.\n"
             )
-        if not self._index:  # root must have an implementation
-            raise NotImplementedError
-        return getattr(self._layers[self._index - 1], name)(*args, **kwargs)
+        for index in reversed(range(self._index)):
+            func = getattr(self._layers[index], name)
+            if func.__func__ is not getattr(Layered, name):  # skip unecessary stack calls
+                return func(*args, **kwargs)
+        raise errors.NevergradNotImplementedError(f"No implementation for {name}")
+        # alternative (stacking all calls):
+        # if not self._index:  # root must have an implementation
+        #    raise errors.NevergradNotImplementedError
+        # return getattr(self._layers[self._index - 1], name)(*args, **kwargs)
 
-    def _get_value(self) -> tp.Any:
-        return self._call_deeper("_get_value")
+    def _layered_get_value(self) -> tp.Any:
+        return self._call_deeper("_layered_get_value")
 
-    def _set_value(self, value: tp.Any) -> tp.Any:
-        self._call_deeper("_set_value", value)
+    def _layered_set_value(self, value: tp.Any) -> tp.Any:
+        return self._call_deeper("_layered_set_value", value)
 
-    def _del_value(self) -> None:
-        self._call_deeper("_del_value")
+    def _layered_del_value(self) -> None:
+        self._call_deeper("_layered_del_value")
 
     def copy(self: L) -> L:
         """Creates a new unattached layer with the same behavior"""
@@ -134,14 +142,14 @@ class Layered:
 
 class ValueProperty(tp.Generic[X]):
     """Typed property (descriptor) object so that the value attribute of
-    Parameter objects fetches _get_value and _set_value methods
+    Parameter objects fetches _layered_get_value and _layered_set_value methods
     """
 
     # This uses the descriptor protocol, like a property:
     # See https://docs.python.org/3/howto/descriptor.html
     #
     # Basically parameter.value calls parameter.value.__get__
-    # and then parameter._get_value
+    # and then parameter._layered_get_value
     def __init__(self) -> None:
         self.__doc__ = """Value of the Parameter, which should be sent to the function
         to optimize.
@@ -153,14 +161,14 @@ class ValueProperty(tp.Generic[X]):
         """
 
     def __get__(self, obj: Layered, objtype: tp.Optional[tp.Type[object]] = None) -> X:
-        return obj._layers[-1]._get_value()  # type: ignore
+        return obj._layers[-1]._layered_get_value()  # type: ignore
 
     def __set__(self, obj: Layered, value: X) -> None:
-        obj._layers[-1]._set_value(value)
+        obj._layers[-1]._layered_set_value(value)
 
     def __delete__(self, obj: Layered) -> None:
         for layer in obj._layers:
-            layer._del_value()
+            layer._layered_del_value()
 
 
 # Basic data layers
@@ -171,18 +179,18 @@ class _ScalarCasting(Layered):
 
     _LAYER_LEVEL = Level.INTEGER_CASTING
 
-    def _get_value(self) -> float:
-        out = super()._get_value()  # pulls from previous layer
+    def _layered_get_value(self) -> float:
+        out = super()._layered_get_value()  # pulls from previous layer
         if not isinstance(out, np.ndarray) or not out.size == 1:
             raise errors.NevergradRuntimeError("Scalar casting can only be applied to size=1 Data parameters")
         integer = np.issubdtype(out.dtype, np.integer)
         out = (int if integer else float)(out[0])
         return out  # type: ignore
 
-    def _set_value(self, value: tp.Any) -> None:
+    def _layered_set_value(self, value: tp.Any) -> None:
         if not isinstance(value, (float, int, np.float, np.int)):
             raise TypeError(f"Received a {type(value)} in place of a scalar (float, int)")
-        super()._set_value(np.array([value], dtype=float))
+        super()._layered_set_value(np.array([value], dtype=float))
 
 
 class ArrayCasting(Layered):
@@ -190,10 +198,10 @@ class ArrayCasting(Layered):
 
     _LAYER_LEVEL = Level.ARRAY_CASTING
 
-    def _set_value(self, value: tp.ArrayLike) -> None:
+    def _layered_set_value(self, value: tp.ArrayLike) -> None:
         if not isinstance(value, (np.ndarray, tuple, list)):
             raise TypeError(f"Received a {type(value)} in place of a np.ndarray/tuple/list")
-        super()._set_value(np.asarray(value))
+        super()._layered_set_value(np.asarray(value))
 
 
 class IntegerCasting(Layered):
@@ -201,5 +209,5 @@ class IntegerCasting(Layered):
 
     _LAYER_LEVEL = Level.OPERATION
 
-    def _get_value(self) -> np.ndarray:
-        return np.round(super()._get_value()).astype(int)  # type: ignore
+    def _layered_get_value(self) -> np.ndarray:
+        return np.round(super()._layered_get_value()).astype(int)  # type: ignore

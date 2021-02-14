@@ -7,7 +7,8 @@ import functools
 import warnings
 import numpy as np
 import nevergrad.common.typing as tp
-from nevergrad.common import errors
+
+# from nevergrad.common import errors
 from . import _layering
 from . import core
 from .container import Dict
@@ -20,6 +21,8 @@ from . import transforms as trans
 
 D = tp.TypeVar("D", bound="Data")
 P = tp.TypeVar("P", bound=core.Parameter)
+# L = tp.TypeVar("L", bound=_layering.Layered)
+BL = tp.TypeVar("BL", bound="BoundLayer")
 
 
 def _param_string(parameters: Dict) -> str:
@@ -52,10 +55,10 @@ class Mutation(core.Parameter):
         super().__init__()
         self.parameters = Dict(**kwargs)
 
-    def _get_value(self) -> tp.Callable[[tp.Sequence[D]], None]:
+    def _layered_get_value(self) -> tp.Callable[[tp.Sequence[D]], None]:
         return self.apply
 
-    def _set_value(self, value: tp.Any) -> None:
+    def _layered_set_value(self, value: tp.Any) -> None:
         raise RuntimeError("Mutation cannot be set.")
 
     def _get_name(self) -> str:
@@ -403,7 +406,7 @@ class Data(core.Parameter):
             child.value = new_value
         return child
 
-    def _set_value(self, value: np.ndarray) -> None:
+    def _layered_set_value(self, value: np.ndarray) -> None:
         self._check_frozen()
         self._ref_data = None
         if self._value.shape != value.shape:
@@ -416,7 +419,7 @@ class Data(core.Parameter):
             raise ValueError("Logirithmic values cannot be negative")
         self._value = value
 
-    def _get_value(self) -> np.ndarray:
+    def _layered_get_value(self) -> np.ndarray:
         return self._value
 
     def __mod__(self: D, other: tp.Any) -> D:
@@ -568,19 +571,19 @@ class BoundLayer(_layering.Layered):
         if full_range_sampling is None:
             self.full_range_sampling = both_bounds
 
-    def sample(self: D) -> D:
-        if not self.full_range_sampling:
-            super().sample()
-        root = self._layers[0]
-        if not isinstance(root, Data):
-            raise errors.NevergradTypeError(f"BoundLayer {self} on a non-Data root {root}")
-        child = root.spawn_child()
-        shape = super()._get_value().shape
-        bounds = tuple(b * np.ones(shape) for b in self.bounds)
-        diff = bounds[1] - bounds[0]
-        super()._set_value(bounds[0] + root.random_state.uniform(0, 1, size=shape) * diff)
-        child.heritage["lineage"] = child.uid
-        return child
+    # def sample(self) -> "Data":
+    #     if not self.full_range_sampling:
+    #         super().sample()
+    #     root = self._layers[0]
+    #     if not isinstance(root, Data):
+    #         raise errors.NevergradTypeError(f"BoundLayer {self} on a non-Data root {root}")
+    #     child = root.spawn_child()
+    #     shape = super()._layered_get_value().shape
+    #     bounds = tuple(b * np.ones(shape) for b in self.bounds)
+    #     diff = bounds[1] - bounds[0]
+    #     super()._layered_set_value(bounds[0] + root.random_state.uniform(0, 1, size=shape) * diff)
+    #     child.heritage["lineage"] = child.uid
+    #     return child
 
 
 class Modulo(BoundLayer):
@@ -592,9 +595,9 @@ class Modulo(BoundLayer):
             raise TypeError(f"Unsupported type {type(module)} for module")
         self._module = module
 
-    def _get_value(self) -> np.ndarray:
-        return super()._get_value() % self._module  # type: ignore
+    def _layered_get_value(self) -> np.ndarray:
+        return super()._layered_get_value() % self._module  # type: ignore
 
-    def _set_value(self, value: np.ndarray) -> None:
-        current = super()._get_value()
-        super()._set_value(current - (current % self._module) + value)
+    def _layered_set_value(self, value: np.ndarray) -> None:
+        current = super()._layered_get_value()
+        super()._layered_set_value(current - (current % self._module) + value)

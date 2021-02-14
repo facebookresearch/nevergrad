@@ -139,10 +139,10 @@ class Dict(Container):
     def values(self) -> tp.ValuesView[core.Parameter]:
         return self._content.values()
 
-    def _get_value(self) -> tp.Dict[str, tp.Any]:
+    def _layered_get_value(self) -> tp.Dict[str, tp.Any]:
         return {k: p.value for k, p in self.items()}
 
-    def _set_value(self, value: tp.Dict[str, tp.Any]) -> None:
+    def _layered_set_value(self, value: tp.Dict[str, tp.Any]) -> None:
         cls = self.__class__.__name__
         if not isinstance(value, dict):
             raise TypeError(f"{cls} value must be a dict, got: {value}\nCurrent value: {self.value}")
@@ -190,10 +190,10 @@ class Tuple(Container):
 
     value: core.ValueProperty[tp.Tuple[tp.Any]] = core.ValueProperty()
 
-    def _get_value(self) -> tp.Tuple[tp.Any, ...]:
+    def _layered_get_value(self) -> tp.Tuple[tp.Any, ...]:
         return tuple(p.value for p in self)
 
-    def _set_value(self, value: tp.Tuple[tp.Any, ...]) -> None:
+    def _layered_set_value(self, value: tp.Tuple[tp.Any, ...]) -> None:
         if not isinstance(value, tuple) or not len(value) == len(self):
             cls = self.__class__.__name__
             raise ValueError(
