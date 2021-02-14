@@ -8,7 +8,7 @@ import warnings
 import numpy as np
 import nevergrad.common.typing as tp
 
-# from nevergrad.common import errors
+from nevergrad.common import errors
 from . import _layering
 from . import core
 from .container import Dict
@@ -534,7 +534,7 @@ class Log(Scalar):
             self.set_bounds(lower, upper, full_range_sampling=bounded and no_init)
 
 
-# LAYERS
+# LAYERS # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
 class BoundLayer(_layering.Layered):
@@ -573,19 +573,19 @@ class BoundLayer(_layering.Layered):
         if full_range_sampling is None:
             self.full_range_sampling = both_bounds
 
-    # def sample(self) -> "Data":
-    #     if not self.full_range_sampling:
-    #         super().sample()
-    #     root = self._layers[0]
-    #     if not isinstance(root, Data):
-    #         raise errors.NevergradTypeError(f"BoundLayer {self} on a non-Data root {root}")
-    #     child = root.spawn_child()
-    #     shape = super()._layered_get_value().shape
-    #     bounds = tuple(b * np.ones(shape) for b in self.bounds)
-    #     diff = bounds[1] - bounds[0]
-    #     super()._layered_set_value(bounds[0] + root.random_state.uniform(0, 1, size=shape) * diff)
-    #     child.heritage["lineage"] = child.uid
-    #     return child
+    def _layered_sample(self) -> "Data":
+        if not self.full_range_sampling:
+            return super()._layered_sample()  # type: ignore
+        root = self._layers[0]
+        if not isinstance(root, Data):
+            raise errors.NevergradTypeError(f"BoundLayer {self} on a non-Data root {root}")
+        child = root.spawn_child()
+        shape = super()._layered_get_value().shape
+        bounds = tuple(b * np.ones(shape) for b in self.bounds)
+        diff = bounds[1] - bounds[0]
+        super()._layered_set_value(bounds[0] + root.random_state.uniform(0, 1, size=shape) * diff)
+        child.heritage["lineage"] = child.uid
+        return child
 
 
 class Modulo(BoundLayer):
