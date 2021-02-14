@@ -119,10 +119,12 @@ class Parameter(Layered):
         This function should be used in optimizers when creating an initial population,
         and parameter.heritage["lineage"] is reset to parameter.uid instead of its parent's
         """
-        child = self.spawn_child()
-        child.mutate()
-        child.heritage["lineage"] = child.uid
-        return child
+        # inner working can be overrided by _layer_sample()
+        child = self._layered_sample()
+        if not isinstance(self, type(self)):
+            raise errors.NevergradRuntimeError("Unexpected sample return type")
+        child.heritage["lineage"] = child.uid  # type: ignore
+        return child  # type: ignore
 
     def recombine(self: P, *others: P) -> None:
         """Update value and parameters of this instance by combining it with
@@ -431,6 +433,9 @@ class Constant(Parameter):
             raise ValueError(
                 f'Constant value can only be updated to the same value (in this case "{self._value}")'
             )
+
+    def _layered_sample(self: P) -> P:
+        return self
 
     def get_standardized_data(  # pylint: disable=unused-argument
         self: P, *, reference: tp.Optional[P] = None

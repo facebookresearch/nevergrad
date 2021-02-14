@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.(an
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -150,9 +150,11 @@ class Data(core.Parameter):
         """Value for the standard deviation used to mutate the parameter"""
         return self.parameters["sigma"]  # type: ignore
 
-    def sample(self: D) -> D:
+    def _layered_sample(self: D) -> D:
         if not self.full_range_sampling:
-            return super().sample()
+            child = self.spawn_child()
+            child.mutate()
+            return child
         child = self.spawn_child()
         func = (lambda x: x) if self.exponent is None else self._to_reduced_space  # noqa
         std_bounds = tuple(func(b * np.ones(self._value.shape)) for b in self.bounds)

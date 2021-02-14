@@ -101,10 +101,9 @@ class Container(core.Parameter):
             start = end
         assert end == len(data), f"Finished at {end} but expected {len(data)}"
 
-    def sample(self: D) -> D:
+    def _layered_sample(self: D) -> D:
         child = self.spawn_child()
         child._content = {k: p.sample() for k, p in self._content.items()}
-        child.heritage["lineage"] = child.uid
         return child
 
 

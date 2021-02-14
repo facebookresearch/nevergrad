@@ -72,8 +72,9 @@ class Layered:
             func = getattr(self._layers[index], name)
             if func.__func__ is not getattr(Layered, name):  # skip unecessary stack calls
                 return func(*args, **kwargs)
-        raise errors.NevergradNotImplementedError(f"No implementation for {name}")
-        # alternative (stacking all calls):
+        types = [type(x) for x in self._layers]
+        raise errors.NevergradNotImplementedError(f"No implementation for {name} on layers: {types}.")
+        # ALTERNATIVE (stacking all calls):
         # if not self._index:  # root must have an implementation
         #    raise errors.NevergradNotImplementedError
         # return getattr(self._layers[self._index - 1], name)(*args, **kwargs)
@@ -87,20 +88,15 @@ class Layered:
     def _layered_del_value(self) -> None:
         self._call_deeper("_layered_del_value")
 
+    def _layered_sample(self) -> "Layered":
+        return self._call_deeper("_layered_sample")  # type: ignore
+
     def copy(self: L) -> L:
         """Creates a new unattached layer with the same behavior"""
         new = copy.copy(self)
         new._layers = [new]
         new._index = 0
         return new
-
-    def sample(self: L) -> L:
-        """Sample a new instance of the parameter.
-        This usually means spawning a child and mutating it.
-        This function should be used in optimizers when creating an initial population,
-        and parameter.heritage["lineage"] is reset to parameter.uid instead of its parent's
-        """
-        return self._call_deeper("sample")  # type: ignore
 
     # naming capacity
 
