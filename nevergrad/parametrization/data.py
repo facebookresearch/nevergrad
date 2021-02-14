@@ -568,7 +568,7 @@ class BoundLayer(_layering.Layered):
         if full_range_sampling is None:
             self.full_range_sampling = both_bounds
 
-    def sample(self) -> D:
+    def sample(self: D) -> D:
         if not self.full_range_sampling:
             super().sample()
         root = self._layers[0]
@@ -578,7 +578,7 @@ class BoundLayer(_layering.Layered):
         shape = super()._get_value().shape
         bounds = tuple(b * np.ones(shape) for b in self.bounds)
         diff = bounds[1] - bounds[0]
-        super().set_value(bounds[0] + root.random_state.uniform(0, 1, size=shape) * diff)
+        super()._set_value(bounds[0] + root.random_state.uniform(0, 1, size=shape) * diff)
         child.heritage["lineage"] = child.uid
         return child
 

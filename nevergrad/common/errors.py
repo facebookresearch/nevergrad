@@ -24,6 +24,10 @@ class NevergradRuntimeError(RuntimeError, NevergradError):
     """Runtime error raised by Nevergrad"""
 
 
+class NevergradTypeError(TypeError, NevergradError):
+    """Runtime error raised by Nevergrad"""
+
+
 class TellNotAskedNotSupportedError(NotImplementedError, NevergradError):
     """To be raised by optimizers which do not support the tell_not_asked interface."""
 
