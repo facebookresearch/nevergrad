@@ -2413,7 +2413,6 @@ class NGOpt(NGOpt10):
     pass
 
 
-@registry.register
 class _MSR(CM):
     """This code applies 16 copies of NGOpt10 with random weights for the different objective functions.
 
@@ -2421,7 +2420,11 @@ class _MSR(CM):
     """
 
     def __init__(
-        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1, num_msr: int = 9
+        self,
+        parametrization: IntOrParameter,
+        budget: tp.Optional[int] = None,
+        num_workers: int = 1,
+        num_msr: int = 9,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
@@ -2430,7 +2433,10 @@ class _MSR(CM):
             NGOpt(self.parametrization, budget=1 + (budget // self.num_optims), num_workers=num_workers)
             for _ in range(self.num_optims)
         ]
-        self.coeffs = [self.parametrization.random_state.uniform(size=self.num_objectives) for _ in range(self.num_optims)]
+        self.coeffs = [
+            self.parametrization.random_state.uniform(size=self.num_objectives)
+            for _ in range(self.num_optims)
+        ]
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         for i, opt in enumerate(self.optims):
@@ -2458,5 +2464,3 @@ class MultipleSingleRuns(base.ConfiguredOptimizer):
 NGOpt_9 = MultipleSingleRuns(num_msr=9).set_name("NGOpt_9", register=True)
 NGOpt_16 = MultipleSingleRuns(num_msr=16).set_name("NGOpt_16", register=True)
 NGOpt_25 = MultipleSingleRuns(num_msr=25).set_name("NGOpt_25", register=True)
-
-
