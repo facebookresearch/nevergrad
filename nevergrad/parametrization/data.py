@@ -435,6 +435,15 @@ class Data(core.Parameter):
     def __rpow__(self: D, base: float) -> D:
         return self._new_with_data_layer("Exponent", base)
 
+    def __add__(self: D, offset: tp.Any) -> D:
+        return self._new_with_data_layer("Add", offset)
+
+    def __sub__(self: D, offset: tp.Any) -> D:
+        return self.__add__(-offset)
+
+    def __radd__(self: D, offset: tp.Any) -> D:
+        return self.__add__(offset)
+
 
 class Array(Data):
 

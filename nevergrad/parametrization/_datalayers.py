@@ -134,6 +134,20 @@ class Exponent(_layering.Layered):
         super()._layered_set_value(np.log(value) / np.log(self._base))
 
 
+class Add(_layering.Layered):
+    """Applies an array as exponent of a floar"""
+
+    def __init__(self, offset: tp.Any) -> None:
+        super().__init__()
+        self._offset = offset
+
+    def _layered_get_value(self) -> np.ndarray:
+        return self._offset + super()._layered_get_value()  # type: ignore
+
+    def _layered_set_value(self, value: np.ndarray) -> None:
+        super()._layered_set_value(value - self._offset)
+
+
 class Bound(BoundLayer):
     def __init__(
         self,

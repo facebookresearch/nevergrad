@@ -29,3 +29,9 @@ def test_log_layer() -> None:
     x.value = 16
     assert x.get_standardized_data(reference=ref)[0] == 4  # find the closest
     assert x.value == 16
+
+
+def test_add_layer() -> None:
+    x = ng.p.Scalar() - 4.0
+    y = 6 + x
+    assert y.value == 2
