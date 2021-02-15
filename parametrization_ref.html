@@ -533,8 +533,8 @@ Use <cite>parameter.Instrumentation</cite> to set <cite>args</cite> and <cite>kw
 <dl class="py method">
 <dt id="nevergrad.p.Parameter.copy">
 <code class="sig-name descname">copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; P<a class="headerlink" href="#nevergrad.p.Parameter.copy" title="Permalink to this definition">¶</a></dt>
-<dd><p>Create a child, but remove the random state
-This is used to run multiple experiments</p>
+<dd><p>Creates a full copy of the parameter.
+Use spawn_child instead to make sure to add the parenthood information.</p>
 </dd></dl>
 
 <dl class="py method">
