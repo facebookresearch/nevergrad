@@ -131,11 +131,24 @@ jobs:
             . venv/bin/activate
             cd docs/
             make html
-            make linkcheck
 
       - persist_to_workspace:
           root: docs/_build
           paths: html
+
+  docs-links:
+    executor: ubuntu-python37
+
+    steps:
+
+      - ubuntu_restore_all
+
+      - run:
+          name: "Check links"
+          when: always
+          command: |
+            . venv/bin/activate
+            make linkcheck
 
   static:
     executor: ubuntu-python37
@@ -310,6 +323,14 @@ workflows:
               only: master
             tags:
               only: /(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/
+      - docs-links:
+          requires:
+            - install
+              # filters:
+              #   branches:
+              #     only: master
+              #   tags:
+              #     only: /(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/
       - pypi-deploy:
           requires:
             - install
