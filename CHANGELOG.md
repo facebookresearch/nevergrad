@@ -12,6 +12,7 @@
   [#1043](https://github.com/facebookresearch/nevergrad/pull/1043)
   [#1044](https://github.com/facebookresearch/nevergrad/pull/1044)
   and more to come), please open an issue if you encounter any problem. The midterm aim is to allow for simpler constraint management.
+- `copy()` method of a `Parameter` does not change the parameters's random state anymore (it used to reset it to `None` [#1048](https://github.com/facebookresearch/nevergrad/pull/1048)
 
 ## 0.4.3 (2021-01-28)
 

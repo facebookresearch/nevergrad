@@ -11,7 +11,7 @@ import nevergrad.common.typing as tp
 from nevergrad.common import errors
 from . import utils
 
-# pylint: disable=no-value-for-parameter
+# pylint: disable=no-value-for-parameter,pointless-statement
 
 
 P = tp.TypeVar("P", bound="Parameter")
@@ -148,9 +148,10 @@ class Parameter:
         This function should be used in optimizers when creating an initial population,
         and parameter.heritage["lineage"] is reset to parameter.uid instead of its parent's
         """
-        child = self.spawn_child()
+        self.random_state  # make sure to populate it before copy
+        child = self.copy()
+        child._set_parenthood(None)
         child.mutate()
-        child.heritage["lineage"] = child.uid
         return child
 
     def recombine(self: P, *others: P) -> None:
@@ -259,7 +260,7 @@ class Parameter:
         if isinstance(val, (str, bytes, float, int)):
             return val
         elif isinstance(val, np.ndarray):
-            return val.tobytes()  # type: ignore
+            return val.tobytes()
         else:
             raise errors.UnsupportedParameterOperationError(
                 f"Value hash is not supported for object {self.name}"
@@ -381,16 +382,24 @@ class Parameter:
             a new instance of the same class, with same content/internal-model parameters/...
             Optionally, a new value will be set after creation
         """
-        # make sure to initialize the random state  before spawning children
-        self.random_state  # pylint: disable=pointless-statement
+        self.random_state  # make sure to initialize the random state  before spawning children
+        child = self.copy()
+        child._set_parenthood(self)
+        if new_value is not None:
+            child.value = new_value
+        return child
+
+    def copy(self: P) -> P:
+        """Creates a full copy of the parameter.
+        Use spawn_child instead to make sure to add the parenthood information.
+        """
         child = copy.copy(self)
         child.uid = uuid.uuid4().hex
         child._frozen = False
-        child._generation += 1
-        child.parents_uids = [self.uid]
-        child.heritage = dict(self.heritage)
         child._subobjects = self._subobjects.new(child)
         child._meta = {}
+        child.parents_uids = list(self.parents_uids)
+        child.heritage = dict(self.heritage)
         child.loss = None
         child._losses = None
         child._constraint_checkers = list(self._constraint_checkers)
@@ -400,10 +409,19 @@ class Parameter:
             container = dict(container) if isinstance(container, dict) else list(container)
             setattr(child, attribute, container)
         for key, val in self._subobjects.items():
-            container[key] = val.spawn_child()
-        if new_value is not None:
-            child.value = new_value
+            container[key] = val.copy()
         return child
+
+    def _set_parenthood(self, parent: tp.Optional["Parameter"]) -> None:
+        """Sets the parenthood information to Parameter and subparameters."""
+        if parent is None:
+            self._generation = 0
+            self.heritage = dict(lineage=self.uid)
+            self.parents_uids = []
+        else:
+            self._generation = parent.generation + 1
+            self.parents_uids = [parent.uid]
+        self._subobjects.apply("_set_parenthood", parent)
 
     def freeze(self) -> None:
         """Prevents the parameter from changing value again (through value, mutate etc...)"""
@@ -419,14 +437,6 @@ class Parameter:
                 "(optimizers freeze the parametrization and all asked and told candidates to avoid border effects)"
             )
         self._subobjects.apply("_check_frozen")
-
-    def copy(self: P) -> P:  # TODO test (see former instrumentation_copy test)
-        """Create a child, but remove the random state
-        This is used to run multiple experiments
-        """
-        child = self.spawn_child()
-        child.random_state = None
-        return child
 
     def _compute_descriptors(self) -> utils.Descriptors:
         return utils.Descriptors()
