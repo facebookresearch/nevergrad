@@ -454,7 +454,7 @@ class Parameter:
 
 class Constant(Parameter):
     """Parameter-like object for simplifying management of constant parameters:
-    mutation / recombination do nothing, value cannot be changed, standardize data is an empty array,
+    mutation/recombination do nothing, value cannot be changed, standardize data is an empty array,
     child is the same instance.
 
     Parameter
