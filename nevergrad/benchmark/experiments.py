@@ -1061,7 +1061,7 @@ def simpletsp(seed: tp.Optional[int] = None, complex_tsp: bool = False) -> tp.It
     Budgets doubling from 25, 50, 100, 200, ... up  to 25600
 
     """
-    funcs = [STSP(10, complex_tsp), STSP(100, complex_tsp), STSP(1000, complex_tsp), STSP(10000, complex_tsp)]
+    funcs = [STSP(10**k, complex_tsp) for k in range(2, 6)]
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", "noisy", seed=next(seedg))
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600]:
