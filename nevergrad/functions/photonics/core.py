@@ -53,6 +53,12 @@ def _make_parametrization(
     if name == "bragg":
         shape = (2, dimension // 2)
         bounds = [(2, 3), (30, 180)]
+    elif name == "cf_photosic_realistic":
+        shape = (2, dimension // 2)
+        bounds = [(1, 9), (30, 180)]
+    elif name == "cf_photosic_reference":
+        shape = (1, dimension)
+        bounds = [(30, 180)]
     elif name == "chirped":
         shape = (1, dimension)
         bounds = [(30, 180)]
@@ -147,14 +153,16 @@ class Photonics(base.ExperimentFunction):
         rolling: bool = False,
         as_tuple: bool = False,
     ) -> None:
-        assert name in ["bragg", "morpho", "chirped"]
-        self.name = name
+        assert name in [
+            "bragg",
+            "morpho",
+            "chirped",
+            "cf_photosic_reference",
+            "cf_photosic_realistic",
+        ], f"Unknown {name}"
+        self.name = name + ("_as_tuple" if as_tuple else "")
         self._as_tuple = as_tuple
-        self._base_func = {
-            "morpho": photonics.morpho,
-            "bragg": photonics.bragg,
-            "chirped": photonics.chirped,
-        }[name]
+        self._base_func: tp.Callable[[np.ndarray], float] = getattr(photonics, name)
         param = _make_parametrization(
             name=name,
             dimension=dimension,
@@ -164,26 +172,25 @@ class Photonics(base.ExperimentFunction):
         )
         super().__init__(self._compute, param)
 
-    def to_ndarray(self, *args: tp.Any) -> np.ndarray:
-        return np.concatenate(args).T if self._as_tuple else args[0]  # type: ignore
+    def to_array(self, *args: tp.Any, **kwargs: tp.Any) -> np.ndarray:
+        assert not kwargs
+        data = np.concatenate(args).T if self._as_tuple else args[0]
+        assert data.size == self.dimension
+        return np.array(data, copy=False).ravel()
 
     def evaluation_function(self, *recommendations: p.Parameter) -> float:
         assert len(recommendations) == 1, "Should not be a pareto set for a monoobjective function"
-        assert len(recommendations[0].kwargs.items()) == 0
-        x = self.to_ndarray(*recommendations[0].args)
-        # pylint: disable=not-callable
+        recom = recommendations[0]
+        x = self.to_array(*recom.args, **recom.kwargs)
         loss = self.function(x)
         assert isinstance(loss, float)
         base.update_leaderboard(f"{self.name},{self.parametrization.dimension}", loss, x, verbose=True)
         return loss
 
     def _compute(self, *args: tp.Any, **kwargs: tp.Any) -> float:
-        assert len(kwargs.items()) == 0
-        x = self.to_ndarray(*args)
-        x_cat = np.array(x, copy=False).ravel()
-        assert x_cat.size == self.dimension
+        x = self.to_array(*args, **kwargs)
         try:
-            output = self._base_func(x_cat)
+            output = self._base_func(x)
         except Exception:  # pylint: disable=broad-except
             output = float("inf")
         if np.isnan(output):

@@ -255,7 +255,7 @@ class Experiment:
         executor = self.optimsettings.executor
         with warnings.catch_warnings():
             warnings.filterwarnings(
-                "ignore", category=obase.InefficientSettingsWarning
+                "ignore", category=obase.errors.InefficientSettingsWarning
             )  # benchmark do not need to be efficient
             try:
                 # call the actual Optimizer.minimize method because overloaded versions could alter the worklflow

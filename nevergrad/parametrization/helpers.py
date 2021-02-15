@@ -42,8 +42,8 @@ def flatten_parameter(
     This function is experimental, its output will probably evolve before converging.
     """
     flat = {"": parameter}
-    if isinstance(parameter, core.Dict):
-        content_to_add: tp.List[core.Dict] = [parameter]
+    if isinstance(parameter, container.Container):
+        content_to_add: tp.List[container.Container] = [parameter]
         if isinstance(parameter, container.Instrumentation):  # special case: skip internal Tuple and Dict
             content_to_add = [parameter[0], parameter[1]]  # type: ignore
         for c in content_to_add:
@@ -55,14 +55,20 @@ def flatten_parameter(
                         for x, y in content.items()
                     }
                 )
-    if order > 0 and parameter._parameters is not None:
-        subparams = flatten_parameter(parameter.parameters, with_containers=False, order=order - 1)
+    if order > 0 and not isinstance(parameter, container.Container):
+        content = dict(parameter._subobjects.items())
+        param = container.Dict(**content)
+        if len(content) == 1:
+            lone_content = next(iter(content.values()))
+            if isinstance(lone_content, container.Dict):
+                param = lone_content  # shorcut subparameters
+        subparams = flatten_parameter(param, with_containers=False, order=order - 1)
         flat.update({"#" + str(x): y for x, y in subparams.items()})
     if not with_containers:
         flat = {
             x: y
             for x, y in flat.items()
-            if not isinstance(y, (core.Dict, core.Constant)) or isinstance(y, choice.BaseChoice)
+            if not isinstance(y, (container.Container, core.Constant)) or isinstance(y, choice.BaseChoice)
         }
     return flat
 
@@ -70,7 +76,7 @@ def flatten_parameter(
 # pylint: disable=too-many-locals
 def split_as_data_parameters(
     parameter: core.Parameter,
-) -> tp.List[tp.Tuple[str, pdata.Array]]:
+) -> tp.List[tp.Tuple[str, pdata.Data]]:
     """List all the instances involved as parameter (not as subparameter/
     endogeneous parameter)
 
@@ -95,7 +101,7 @@ def split_as_data_parameters(
     copied = parameter.copy()
     ref = parameter.copy()
     flatp, flatc, flatref = (
-        {x: y for x, y in flatten_parameter(pa).items() if isinstance(y, pdata.Array)}
+        {x: y for x, y in flatten_parameter(pa).items() if isinstance(y, pdata.Data)}
         for pa in (parameter, copied, ref)
     )
     keys = list(flatp.keys())

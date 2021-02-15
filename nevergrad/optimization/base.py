@@ -12,6 +12,7 @@ import numpy as np
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
 from nevergrad.common import tools as ngtools
+from nevergrad.common import errors as errors
 from nevergrad.common.decorators import Registry
 from . import utils
 from . import multiobjective as mobj
@@ -44,14 +45,6 @@ def load(cls: tp.Type[X], filepath: tp.PathLike) -> X:
         opt = pickle.load(f)
     assert isinstance(opt, cls), f"You should only load {cls} with this method (found {type(opt)})"
     return opt
-
-
-class InefficientSettingsWarning(RuntimeWarning):
-    pass
-
-
-class TellNotAskedNotSupportedError(NotImplementedError):
-    """To be raised by optimizers which do not support the tell_not_asked interface."""
 
 
 class Optimizer:  # pylint: disable=too-many-instance-attributes
@@ -87,7 +80,6 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
     recast = False  # algorithm which were not designed to work with the suggest/update pattern
     one_shot = False  # algorithm designed to suggest all budget points at once
     no_parallelization = False  # algorithm which is designed to run sequentially only
-    hashed = False
 
     def __init__(
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
@@ -314,6 +306,14 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         if isinstance(loss, (Real, float)):
             # using "float" along "Real" because mypy does not understand "Real" for now Issue #3186
             loss = float(loss)
+            # Non-sense values including NaNs should not be accepted.
+            # We do not use max-float as various later transformations could lead to greater values.
+            if not loss < 5.0e20:  # pylint: disable=unneeded-not
+                warnings.warn(
+                    f"Clipping very high value {loss} in tell (rescale the cost function?).",
+                    errors.LossTooLargeWarning,
+                )
+                loss = 5.0e20  # sys.float_info.max leads to numerical problems so let us do this.
         elif isinstance(loss, (tuple, list, np.ndarray)):
             loss = np.array(loss, copy=False, dtype=float).ravel() if len(loss) != 1 else loss[0]
         elif not isinstance(loss, np.ndarray):
@@ -382,7 +382,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 f'"tell" method only supports float values but the passed loss was: {loss} (type: {type(loss)}.'
             )
         if np.isnan(loss) or loss == np.inf:
-            warnings.warn(f"Updating fitness with {loss} value")
+            warnings.warn(f"Updating fitness with {loss} value", errors.BadLossWarning)
         mvalue: tp.Optional[utils.MultiValue] = None
         if x not in self.archive:
             self.archive[x] = utils.MultiValue(candidate, loss, reference=self.parametrization)
@@ -450,7 +450,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             if k == max_trials - 1:
                 warnings.warn(
                     f"Could not bypass the constraint after {max_trials} tentatives, "
-                    "sending candidate anyway."
+                    "sending candidate anyway.",
+                    errors.FailedConstraintWarning,
                 )
         if not is_suggestion:
             if candidate.uid in self._asked:
@@ -487,7 +488,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             on the function (:code:`objective_function(*candidate.args, **candidate.kwargs)`).
         """
         recom_data = self._internal_provide_recommendation()  # pylint: disable=assignment-from-none
-        if recom_data is None:
+        if recom_data is None or any(np.isnan(recom_data)):
             name = "minimum" if self.parametrization.descriptors.deterministic_function else "pessimistic"
             return self.current_bests[name].parameter
         return self.parametrization.spawn_child().set_standardized_data(recom_data, deterministic=True)
@@ -560,7 +561,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             if self.num_workers > 1:
                 warnings.warn(
                     f"num_workers = {self.num_workers} > 1 is suboptimal when run sequentially",
-                    InefficientSettingsWarning,
+                    errors.InefficientSettingsWarning,
                 )
         assert executor is not None
         tmp_runnings: tp.List[tp.Tuple[p.Parameter, tp.JobLike[tp.Loss]]] = []
@@ -569,11 +570,6 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         sleeper = ngtools.Sleeper()  # manages waiting time depending on execution time of the jobs
         remaining_budget = self.budget - self.num_ask
         first_iteration = True
-        # multiobjective hack
-        func = objective_function
-        multiobjective = hasattr(func, "multiobjective_function")
-        if multiobjective:
-            func = func.multiobjective_function  # type: ignore
         #
         while remaining_budget or self._running_jobs or self._finished_jobs:
             # # # # # Update optimizer with finished jobs # # # # #
@@ -587,8 +583,6 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 while self._finished_jobs:
                     x, job = self._finished_jobs[0]
                     result = job.result()
-                    if multiobjective:  # hack
-                        result = objective_function.compute_aggregate_loss(job.result(), *x.args, **x.kwargs)  # type: ignore
                     self.tell(x, result)
                     self._finished_jobs.popleft()  # remove it after the tell to make sure it was indeed "told" (in case of interruption)
                     if verbosity:
@@ -606,7 +600,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                     print(f"Launching {new_sugg} jobs with new suggestions")
                 for _ in range(new_sugg):
                     args = self.ask()
-                    self._running_jobs.append((args, executor.submit(func, *args.args, **args.kwargs)))
+                    self._running_jobs.append(
+                        (args, executor.submit(objective_function, *args.args, **args.kwargs))
+                    )
                 if new_sugg:
                     sleeper.start_timer()
             remaining_budget = self.budget - self.num_ask
@@ -667,7 +663,6 @@ class ConfiguredOptimizer:
     recast = False  # algorithm which were not designed to work with the suggest/update pattern
     one_shot = False  # algorithm designed to suggest all budget points at once
     no_parallelization = False  # algorithm which is designed to run sequentially only
-    hashed = False
 
     def __init__(
         self, OptimizerClass: tp.Type[Optimizer], config: tp.Dict[str, tp.Any], as_config: bool = False
