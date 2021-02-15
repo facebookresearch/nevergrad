@@ -20,7 +20,7 @@ ME = tp.TypeVar("ME", bound="MultiExperiment")
 
 
 def _reset_copy(obj: p.Parameter) -> p.Parameter:
-    """Copy a parameter and resets its value"""
+    """Copy a parameter and resets its random state to obtain variability"""
     out = obj.copy()
     out.random_state = None
     return out
