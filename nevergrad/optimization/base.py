@@ -744,7 +744,6 @@ def _constraint_solver(parameter: p.Parameter, budget: int) -> p.Parameter:
     opt = registry["OnePlusOne"](parameter, num_workers=1, budget=budget)
     opt._constraints_manager.max_trials = 1
     for k in range(budget):
-        print(f"{k}/{budget}")
         cand = opt.ask(ignore_constraints = True)
         # Our objective function is minimum for the point the closest to
         # the original candidate under the constraints.
