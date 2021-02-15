@@ -25,22 +25,22 @@ def perfcap_experiment(experiment_filename: str, seed: tp.Optional[int] = None) 
     """
 
     seedg = create_seed_generator(seed)
-    budgets = [2000, 4000, 7000]
-    optimizer_names = [
-        "Shiwa",
-        "RandomSearch",
-        "RealSpacePSO",
-        "Powell",
-        "DiscreteOnePlusOne",
-        "CMA",
-        "NGO",
-        "TBPSA",
-        "chainCMAPowell",
-        "DE",
-    ]
+    # budgets = [2000, 4000, 7000]
+    # optimizer_names = [
+    #     "Shiwa",
+    #     "RandomSearch",
+    #     "RealSpacePSO",
+    #     "Powell",
+    #     "DiscreteOnePlusOne",
+    #     "CMA",
+    #     "NGO",
+    #     "TBPSA",
+    #     "chainCMAPowell",
+    #     "DE",
+    # ]
 
-    # budgets = [10,20]
-    # optimizer_names = ["Shiwa","RandomSearch"]
+    budgets = [10,20]
+    optimizer_names = ["Shiwa","RandomSearch"]
 
     total_experiment_count = len(budgets) * len(optimizer_names)
     perfcap3d.Perfcap3DServerExecutor.execute_server(total_experiment_count)

@@ -198,15 +198,18 @@ class Perfcap3DFunction(ExperimentFunction):
         self._server_comm = Perfcap3DServerComm(cfg.server_config)
         self._experiment_started: bool = False
         params = self._create_parameters(objective_func_cfg)
-        super().__init__(self.oracle_call, ng.p.Instrumentation(*params))
-        self.register_initialization(
-            experiment_filename=experiment_filename, experiment_tag_id=self._experiment_tag_id
-        )  # to create equivalent instances through "copy"
+        parameterization = ng.p.Instrumentation(*params).set_name(experiment_filename[:experiment_filename.find('.')])
+        super().__init__(self.oracle_call, parameterization)
+        self._auto_init['experiment_tag_id'] = self._experiment_tag_id
+        # self.register_initialization(
+        #     experiment_filename=experiment_filename, experiment_tag_id=self._experiment_tag_id
+        # )  # to create equivalent instances through "copy"
 
         # exclude experiment_tag_id from fight descriptors by encapsulating its name inside "{ }"
         # append experiment_tag_id to ExperimentFunction descritors.
         # put name inside "{}", to exclude from fightplots (plotting.py has been updated accordingly)
         self._descriptors[r"{experiment_tag_id}"] = self._experiment_tag_id
+
 
     def compute_pose(self, *args) -> tp.Dict[int, tp.List[float]]:
         """
@@ -242,19 +245,21 @@ class Perfcap3DFunction(ExperimentFunction):
 
         return errors["total"]
 
-    def evaluation_function(self, *args: tp.Any, **kwargs: tp.Any) -> float:
-        """
-        This is called upon benchmark finish to obtain recommendation value
-        and notify benchmark server for the end of the experiment to flush logs
-        """
+    def evaluation_function(self, *recommendations: ng.p.Parameter) -> float:
+        """Provides the evaluation crieterion for the experiment.
+        In case of mono-objective, it defers to evaluation_function
+        Otherwise, it uses the hypervolume.
+        This function can be overriden to provide custom behaviors.
 
-        # pylint: disable=not-callable
-        loss = self.function(*args)  # the last optimizer iteration in the server logs
-        # corresponds to this evaluation call
-        assert isinstance(loss, float)
+        Parameters
+        ----------
+        *pareto: Parameter
+            pareto front provided by the optimizer
+        """
+        loss = super(Perfcap3DFunction, self).evaluation_function(*recommendations)
 
-        self._server_comm.stop_experiment(self._experiment_tag_id, self.compute_pose(*args))
         # this notifies server to flush logs with converged pose equal to args.
+        self._server_comm.stop_experiment(self._experiment_tag_id, self.compute_pose(*recommendations[0].args))
 
         return loss
 
