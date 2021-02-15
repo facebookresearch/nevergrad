@@ -42,8 +42,8 @@ def flatten_parameter(
     This function is experimental, its output will probably evolve before converging.
     """
     flat = {"": parameter}
-    if isinstance(parameter, core.Container):
-        content_to_add: tp.List[core.Container] = [parameter]
+    if isinstance(parameter, container.Container):
+        content_to_add: tp.List[container.Container] = [parameter]
         if isinstance(parameter, container.Instrumentation):  # special case: skip internal Tuple and Dict
             content_to_add = [parameter[0], parameter[1]]  # type: ignore
         for c in content_to_add:
@@ -55,14 +55,20 @@ def flatten_parameter(
                         for x, y in content.items()
                     }
                 )
-    if order > 0 and parameter._parameters is not None:
-        subparams = flatten_parameter(parameter.parameters, with_containers=False, order=order - 1)
+    if order > 0 and not isinstance(parameter, container.Container):
+        content = dict(parameter._subobjects.items())
+        param = container.Dict(**content)
+        if len(content) == 1:
+            lone_content = next(iter(content.values()))
+            if isinstance(lone_content, container.Dict):
+                param = lone_content  # shorcut subparameters
+        subparams = flatten_parameter(param, with_containers=False, order=order - 1)
         flat.update({"#" + str(x): y for x, y in subparams.items()})
     if not with_containers:
         flat = {
             x: y
             for x, y in flat.items()
-            if not isinstance(y, (core.Container, core.Constant)) or isinstance(y, choice.BaseChoice)
+            if not isinstance(y, (container.Container, core.Constant)) or isinstance(y, choice.BaseChoice)
         }
     return flat
 
