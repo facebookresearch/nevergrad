@@ -96,6 +96,9 @@ class Layered:
         new = copy.copy(self)
         new._layers = [new]
         new._index = 0
+        if not self._index:  # attach sublayers if root
+            for layer in self._layers[1:]:
+                new.add_layer(layer.copy())
         return new
 
     # naming capacity

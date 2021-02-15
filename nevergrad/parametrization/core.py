@@ -352,8 +352,6 @@ class Parameter(Layered):
         # layers
         if self is not self._layers[0]:
             raise errors.NevergradRuntimeError("Something has gone horribly wrong with the layers")
-        for layer in self._layers[1:]:
-            child.add_layer(layer.copy())
         # subparameters
         attribute = self._subobjects.attribute
         container = getattr(child, attribute)
