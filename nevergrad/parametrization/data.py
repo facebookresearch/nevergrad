@@ -625,6 +625,8 @@ class Modulo(BoundLayer):
 
 
 class Exponent(_layering.Layered):
+    """Applies an array as exponent of a floar"""
+
     def __init__(self, base: float) -> None:
         super().__init__()
         if base <= 0:
@@ -645,7 +647,7 @@ class Bound(BoundLayer):
         upper: tp.BoundValue = None,
         method: str = "bouncing",
         uniform_sampling: tp.Optional[bool] = None,
-    ) -> D:
+    ) -> None:
         """Bounds all real values into [lower, upper] using a provided method
 
         See Parameter.set_bounds
