@@ -366,7 +366,8 @@ class Parameter:
 
     def _inner_copy(self: P, mode: str) -> P:
         # make sure to initialize the random state  before spawning children
-        self.random_state  # pylint: disable=pointless-statement
+        if mode != "copy":
+            self.random_state  # pylint: disable=pointless-statement
         child = copy.copy(self)
         child.uid = uuid.uuid4().hex
         child._frozen = False
@@ -391,9 +392,7 @@ class Parameter:
             child._generation = 0
             child.heritage = dict(lineage=child.uid)
             child.parents_uids = []
-        elif mode == "copy":
-            child.random_state = None
-        else:
+        elif mode != "copy":
             raise NotImplementedError(f"No copy mode {mode!r}")
         return child
 

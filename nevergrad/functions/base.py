@@ -6,9 +6,12 @@
 import inspect
 from pathlib import Path
 import numbers
-import unittest
 import numpy as np
 import nevergrad.common.typing as tp
+from nevergrad.common import errors
+from nevergrad.common.errors import (  # pylint: disable=unused-import
+    UnsupportedExperiment as UnsupportedExperiment,
+)
 from nevergrad.parametrization import parameter as p
 from nevergrad.optimization import multiobjective as mobj
 
@@ -16,15 +19,12 @@ EF = tp.TypeVar("EF", bound="ExperimentFunction")
 ME = tp.TypeVar("ME", bound="MultiExperiment")
 
 
-class ExperimentFunctionCopyError(NotImplementedError):
-    """Raised when the experiment function fails to copy itself (for benchmarks)"""
-
-
-class UnsupportedExperiment(RuntimeError, unittest.SkipTest):
-    """Raised if the experiment is not compatible with the current settings:
-    Eg: missing data, missing import, unsupported OS etc
-    This automatically skips tests.
-    """
+def _reset_copy(obj: p.Parameter) -> p.Parameter:
+    """Copy a parameter and resets its value"""
+    obj.random_state  # pylint: disable=pointless-statement
+    out = obj.copy()
+    out.random_state = None
+    return out
 
 
 # pylint: disable=too-many-instance-attributes
@@ -159,7 +159,7 @@ class ExperimentFunction:
         """
         # auto_init is automatically filled by __new__, aka when creating the instance
         output: EF = self.__class__(
-            **{x: y.copy() if isinstance(y, p.Parameter) else y for x, y in self._auto_init.items()}
+            **{x: _reset_copy(y) if isinstance(y, p.Parameter) else y for x, y in self._auto_init.items()}
         )
         return output
 
@@ -178,10 +178,10 @@ class ExperimentFunction:
         # parametrization may have been overriden, so let's always update it
         # Caution: only if names differ!
         if output.parametrization.name != self.parametrization.name:
-            output.parametrization = self.parametrization.copy()
+            output.parametrization = _reset_copy(self.parametrization)
         # then if there are still differences, something went wrong
         if not output.equivalent_to(self):
-            raise ExperimentFunctionCopyError(
+            raise errors.ExperimentFunctionCopyError(
                 f"Copy of\n{self}\nwith descriptors:\n{self._descriptors}\nreturned non-equivalent\n"
                 f"{output}\nwith descriptors\n{output._descriptors}.\n\n"
                 "This means that the auto-copy behavior of ExperimentFunction does not work.\n"
