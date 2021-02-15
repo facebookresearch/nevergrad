@@ -460,13 +460,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                     "sending candidate anyway.",
                     errors.FailedConstraintWarning,
                 )
-        if self._constraints_manager.max_trials > 1 and not candidate.satisfies_constraints():
+        if (not ignore_constraints) and not candidate.satisfies_constraints():
             # still not solving, let's run sub-optimization
             candidate = _constraint_solver(candidate, budget=max_trials)
-        if not candidate.satisfies_constraints():
-            warnings.warn(
-                f"Could not bypass the constraint after {max_trials} tentatives, " "sending candidate anyway."
-            )
         if not is_suggestion:
             if candidate.uid in self._asked:
                 raise RuntimeError(
