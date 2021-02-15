@@ -2,11 +2,38 @@
 
 ## master
 
-**Cautious:** current `master` branch and `0.4.2.postX` version introduce tentative APIs which may be removed in the near future. Use version `0.4.2` for a more stable version.
+- `MultiobjectiveFunction` does not exist anymore  [#1034](https://github.com/facebookresearch/nevergrad/pull/1034).
+- the new `nevergrad.errors` module gathers errors and warnings used throughout the package (WIP) [#1031](https://github.com/facebookresearch/nevergrad/pull/1031).
+- `EvolutionStrategy` now defaults to NSGA2 selection in the multiobjective case
+- `Parameter` classes are undergoing heavy changes (
+  [#1029](https://github.com/facebookresearch/nevergrad/pull/1029)
+  [#1036](https://github.com/facebookresearch/nevergrad/pull/1036)
+  [#1038](https://github.com/facebookresearch/nevergrad/pull/1038)
+  [#1043](https://github.com/facebookresearch/nevergrad/pull/1043)
+  [#1044](https://github.com/facebookresearch/nevergrad/pull/1044)
+  and more to come), please open an issue if you encounter any problem. The midterm aim is to allow for simpler constraint management.
 
-- as an **experimental** feature, `tell` method can now receive a list/array of losses for multi-objective optimization [#775](https://github.com/facebookresearch/nevergrad/pull/775). For now it is neither robust, nor scalable, nor stable, nor optimal so be careful when using it. More information in the [documentation](https://facebookresearch.github.io/nevergrad/optimization.html#multiobjective-minimization-with-nevergrad).
-- `DE` and its variants have been updated to make use of the multi-objective losses [#789](https://github.com/facebookresearch/nevergrad/pull/789). This is a **preliminary** fix since the initial `DE` implementaton was ill-suited for this use case.
+## 0.4.3 (2021-01-28)
+
+### Important changes
+
+- `tell` method can now receive a list/array of losses for multi-objective optimization [#775](https://github.com/facebookresearch/nevergrad/pull/775). For now it is neither robust, nor scalable, nor stable, nor optimal so be careful when using it. More information in the [documentation](https://facebookresearch.github.io/nevergrad/optimization.html#multiobjective-minimization-with-nevergrad).
+- The old way to perform multiobjective optimization, through the use of :code:`MultiobjectiveFunction`, is now deprecated and will be removed after version 0.4.3 [#1017](https://github.com/facebookresearch/nevergrad/pull/1017).
+- By default, the optimizer now returns the best set of parameter as recommendation [#951](https://github.com/facebookresearch/nevergrad/pull/951), considering that the function is deterministic. The previous behavior would use an estimation of noise to provide the pessimistic best point, leading to unexpected behaviors [#947](https://github.com/facebookresearch/nevergrad/pull/947). You can can back to this behavior by specifying: :code:`parametrization.descriptors.deterministic_function = False`
+
+### Other
+
+- `DE` and its variants have been updated to make full use of the multi-objective losses [#789](https://github.com/facebookresearch/nevergrad/pull/789). Other optimizers convert multiobjective problems to a volume minimization, which is not always as efficient.
+- as an **experimental** feature we have added some preliminary support for constraint management through penalties.
+  From then on the prefered option for penalty is to register a function returning a positive float when the constraint is satisfied.
+  While we will wait fore more testing before documenting it, this may already cause instabilities and errors when adding cheap constraints.
+  Please open an issue if you encounter a problem.
 - `tell` argument `value` is renamed to `loss` for clarification [#774](https://github.com/facebookresearch/nevergrad/pull/774). This can be breaking when using named arguments!
+- `ExperimentFunction` now automatically records arguments used for their instantiation so that they can both be used to create a new copy, and as descriptors if there are of type  int/bool/float/str [#914](https://github.com/facebookresearch/nevergrad/pull/914 [#914](https://github.com/facebookresearch/nevergrad/pull/914)).
+- from now on, code formatting needs to be [`black`](https://black.readthedocs.io/en/stable/) compliant. This is
+  simply performed by running `black nevergrad`. A continuous integration checks that PRs are compliant, and the
+  precommit hooks have been adapted. For PRs branching from an old master, you can run `black --line-length=110 nevergrad/<path_to_modified_file>` to make your code easier to merge.
+- Pruning has been patched to make sure it is not activated too often upon convergence [#1014](https://github.com/facebookresearch/nevergrad/pull/1014). The bug used to lead to important slowdown when reaching near convergence.
 
 ## 0.4.2 (2020-08-04)
 

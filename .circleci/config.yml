@@ -9,7 +9,6 @@ orbs:
   win: circleci/windows@2.2.0
 
 
-
 # the set up in which the ubuntu jobs will run:
 executors:
   ubuntu-python37:
@@ -28,15 +27,16 @@ commands:
       - restore_cache:
           name: "[all] Restore cache"
           keys:
-          - v5-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          - v6-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
           # fallback to installing main requirements
-          - v5-dependencies-main-{{ checksum "requirements/main.txt"}}
+          - v6-dependencies-main-{{ checksum "requirements/main.txt"}}
 
       - run:
           name: "[all] Install dependencies"
           command: |
             python3 -m venv venv
             . venv/bin/activate
+            pip install -U pip
             pip install -e .[all]
             # master numpy-stubs adds a lot of messy warnings :s
             pip install git+https://github.com/numpy/numpy-stubs@2c8d8f26adb1eef54571ccc85ef8ad4f2fb90c4c
@@ -53,7 +53,7 @@ jobs:
       - restore_cache:
           name: "[no-extra] Restore cache"
           keys:
-          - v5-dependencies-main-{{ checksum "requirements/main.txt"}}
+          - v6-dependencies-main-{{ checksum "requirements/main.txt"}}
           # fallback to using the latest cache if no exact match is found
 
       - run:
@@ -68,6 +68,11 @@ jobs:
           name: "[no-extra] Print installation"
           when: always
           command: |
+            if [[ -z "$CIRCLE_REPOSITORY_URL" ]]; then
+                echo "CIRCLE_REPOSITORY_URL must be provided in environment" 1>&2
+                exit 1
+            fi
+            echo "This is on $CIRCLE_REPOSITORY_URL."
             . venv/bin/activate
             pip freeze
 
@@ -75,7 +80,7 @@ jobs:
           name: "[no-extra] Save cache"
           paths:
             - ./venv
-          key: v5-dependencies-main-{{ checksum "requirements/main.txt"}}
+          key: v6-dependencies-main-{{ checksum "requirements/main.txt"}}
 
       - run:
           name: "[no-extra] Run basic tests (checking dependencies)"
@@ -90,7 +95,7 @@ jobs:
           name: "[all] Save cache"
           paths:
             - ./venv
-          key: v5-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          key: v6-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
 
       - run:
           name: "[all] Print installation"
@@ -126,11 +131,25 @@ jobs:
             . venv/bin/activate
             cd docs/
             make html
-            make linkcheck
 
       - persist_to_workspace:
           root: docs/_build
           paths: html
+
+  docs-links:
+    executor: ubuntu-python37
+
+    steps:
+
+      - ubuntu_restore_all
+
+      - run:
+          name: "Check links"
+          when: always
+          command: |
+            . venv/bin/activate
+            cd docs/
+            make linkcheck
 
   static:
     executor: ubuntu-python37
@@ -141,6 +160,7 @@ jobs:
 
       - run:
           name: "Run mypy"
+          when: always
           command: |
             . venv/bin/activate
             mypy --version
@@ -148,10 +168,19 @@ jobs:
 
       - run:
           name: "Run basic pylint"
+          when: always
           command: |
             . venv/bin/activate
             pylint --version
-            pylint nevergrad --disable=all --enable=unused-import,unused-argument,unused-variable,undefined-loop-variable,redefined-builtin,used-before-assignment,super-init-not-called
+            pylint nevergrad --disable=all --enable=unused-import,unused-argument,unused-variable,undefined-loop-variable,redefined-builtin,used-before-assignment,super-init-not-called,useless-super-delegation,dangerous-default-value
+
+      - run:
+          name: "Run black"
+          when: always
+          command: |
+            . venv/bin/activate
+            black --version
+            black nevergrad --check
 
 
   pytests:
@@ -191,7 +220,12 @@ jobs:
 
       - run:
           name: Deploy docs to gh-pages branch
-          command: gh-pages --dotfiles --message "[skip ci] Updates" --dist docs/_build/html
+          command: |
+            echo "This is on $CIRCLE_REPOSITORY_URL."
+            if [[ "$CIRCLE_REPOSITORY_URL" == *":facebookresearch/"* ]]; then
+              echo "Deploying"
+              gh-pages --dotfiles --message "[skip ci] Updates" --dist docs/_build/html
+            fi
 
 
   windows-pytests:
@@ -206,7 +240,7 @@ jobs:
       - restore_cache:
           name: "[all] Restore cache"
           keys:
-          - v5-win-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          - v6-win-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
 
       - run:
           name: Setup nevergrad in virtualenv
@@ -221,13 +255,13 @@ jobs:
           name: "[all] Save cache"
           paths:
             - ./venv
-          key: v5-win-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          key: v6-win-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
 
       - run:
           name: pytest
           command: |
             . ./venv/Scripts/activate
-            pytest nevergrad -v --exitfirst
+            pytest nevergrad -v --exitfirst --durations=20
 
 
   pypi-deploy:
@@ -255,10 +289,14 @@ jobs:
       - run:
           name: upload to pypi
           command: |
-            . venv/bin/activate
-            du -h nevergrad-build/dist/*
-            twine check nevergrad-build/dist/nevergrad-*
-            twine upload nevergrad-build/dist/nevergrad-* --verbose
+            echo "This is on $CIRCLE_REPOSITORY_URL."
+            if [[ "$CIRCLE_REPOSITORY_URL" == *":facebookresearch/"* ]]; then
+              echo "Deploying"
+              . venv/bin/activate
+              du -h nevergrad-build/dist/*
+              twine check nevergrad-build/dist/nevergrad-*
+              twine upload nevergrad-build/dist/nevergrad-* --verbose
+            fi
 
 
 workflows:
@@ -286,6 +324,12 @@ workflows:
               only: master
             tags:
               only: /(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/
+      - docs-links:  # a bit noisy, so only running on master, and does not stop deployments
+          requires:
+            - install
+          filters:
+            branches:
+              only: master
       - pypi-deploy:
           requires:
             - install

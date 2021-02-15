@@ -19,11 +19,26 @@ def testcorefuncs_function(name: str, func: tp.Callable[..., tp.Any]) -> None:
     np.testing.assert_equal(outputs[0], outputs[1], f"Function {name} is not deterministic")
 
 
-@testing.parametrized(expe1=([6, 4, 2, 1, 9], 4, 5, 3), expe2=([6, 6, 7, 1, 9], 4, 5, 3))  # jump was assumed correct (verify?)
-def test_base_functions(x: tp.List[int], onemax_expected: float, leadingones_expected: float, jump_expected: float) -> None:
-    np.testing.assert_equal(corefuncs.onemax(x), onemax_expected, err_msg="Wrong output for onemax")
-    np.testing.assert_equal(corefuncs.leadingones(x), leadingones_expected, err_msg="Wrong output for leadingones")
-    np.testing.assert_equal(corefuncs.jump(x), jump_expected, err_msg="Wrong output for jump")
+@testing.parametrized(
+    expe1=([6, 4, 2, 1, 9], 4, 5, 3),
+    expe2=([6, 6, 7, 1, 9], 4, 5, 3),
+    expe3=([1, 1, 7, 1, 9], 3, 5, 2),
+    expe4=([0, 0, 7, 1, 9], 3, 4, 2),
+    expe5=([0, 1, 1, 1], 1, 2, 0),
+    expe6=([1, 1, 1, 1], 2, 4, 1),
+    expe7=([1, 0, 0, 0], 3, 4, 2),
+    expe_0lead=([0, 1, 0, 1], 0, 0, -1),
+)  # jump was assumed correct (verify?)
+def test_base_functions(
+    x: tp.List[float], onemax_expected: float, leadingones_expected: float, jump_expected: float
+) -> None:
+    for name, expected in [
+        ("onemax", onemax_expected),
+        ("leadingones", leadingones_expected),
+        ("jump", jump_expected),
+    ]:
+        func = corefuncs.DiscreteFunction(name)
+        np.testing.assert_equal(func(x), expected, err_msg=f"Wrong output for {name}")
 
 
 def test_genzcornerpeak_inf() -> None:
@@ -54,15 +69,12 @@ def test_genzcornerpeak_inf() -> None:
     genzgaussianpeakintegral=(corefuncs.genzgaussianpeakintegral, 0.10427, None),
     minusgenzgaussianpeakintegral=(corefuncs.minusgenzgaussianpeakintegral, -0.10427, None),
     linear=(corefuncs.linear, 0.57969, None),
-    onemax5=(corefuncs.onemax5, 8, np.arange(50)),
-    jump5=(corefuncs.jump5, 6, np.arange(50)),
-    leadingones5=(corefuncs.leadingones5, 10, np.arange(50)),
 )
-def test_core_function_values(func: tp.Callable[[np.ndarray], float], expected: float, data: tp.Optional[tp.List[float]]) -> None:
+def test_core_function_values(
+    func: tp.Callable[[np.ndarray], float], expected: float, data: tp.Optional[tp.List[float]]
+) -> None:
     if data is None:
         data = [0.662, -0.217, -0.968, 1.867, 0.101, 0.575, 0.199, 1.576, 1.006, 0.182, -0.092, 0.466]
-    if func.__name__ in ["onemax5", "jump5", "leadingones5"]:
-        np.random.seed(12)
     value = func(np.array(data))
     np.testing.assert_almost_equal(value, expected, decimal=5)
 

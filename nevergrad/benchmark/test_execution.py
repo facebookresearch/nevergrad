@@ -14,9 +14,8 @@ from . import execution
 
 
 class Function(ExperimentFunction):
-
     def __init__(self) -> None:
-        super().__init__(self._func, ng.p.Instrumentation())
+        super().__init__(self._func, ng.p.Instrumentation().set_name("test"))
 
     def _func(self, x: int, y: int) -> float:
         return x + y
@@ -27,10 +26,7 @@ class Function(ExperimentFunction):
         return 5 - loss
 
 
-@testing.parametrized(
-    simple=(add, list(range(10))),
-    delayed=(Function(), [5, 6, 7, 8, 9, 4, 3, 2, 1, 0])
-)
+@testing.parametrized(simple=(add, list(range(10))), delayed=(Function(), [5, 6, 7, 8, 9, 4, 3, 2, 1, 0]))
 def test_mocked_steady_executor(func: tp.Callable[..., tp.Any], expected: tp.List[int]) -> None:
     executor = execution.MockedTimedExecutor(batch_mode=False)
     jobs: tp.List[execution.MockedTimedJob] = []
@@ -66,7 +62,7 @@ def test_mocked_steady_executor_time() -> None:
     # pylint: disable=unsubscriptable-object
     while new_finished is None or new_finished:
         if new_finished is not None:
-            assert len(new_finished) == 1, f'Weird list: {new_finished}'
+            assert len(new_finished) == 1, f"Weird list: {new_finished}"
             order.append(jobs.index(new_finished[0]))
             new_finished[0].result()
         new_finished = [j for j in jobs if j.done() and not j._is_read]
@@ -93,6 +89,6 @@ def test_functionlib_delayed_job() -> None:
     executor = execution.MockedTimedExecutor(batch_mode=False)
     x0 = func.transform_var._transforms[0].translation  # optimal value
     job0 = executor.submit(func, x0)
-    job1 = executor.submit(func, x0 + 1.)
+    job1 = executor.submit(func, x0 + 1.0)
     assert job0.release_time == 0
     assert job1.release_time > 0

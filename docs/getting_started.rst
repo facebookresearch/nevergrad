@@ -18,6 +18,14 @@ You can also install the master branch instead of the latest release with:
 
     pip install git+https://github.com/facebookresearch/nevergrad@master#egg=nevergrad
 
+
+A conda-forge version is also `available <https://github.com/conda-forge/nevergrad-feedstock>`_ thanks to @oblute:
+
+.. code-block:: bash
+
+    conda install -c conda-forge nevergrad
+
+
 Alternatively, you can clone the repository and run :code:`pip install -e .` from inside the repository folder.
 
 By default, this only installs requirements for the optimization and parametrization subpackages. If you are also interested in the benchmarking part,
@@ -32,7 +40,7 @@ the :code:`[all]` flag (example: :code:`pip install -e .[all]`).
 Installing on Windows
 ---------------------
 
-For Windows installation, please refer to `the Windows documention <./windows.html>`_.
+For Windows installation, please refer to the `Windows documention <windows.html>`_.
 
 Basic optimization example
 --------------------------

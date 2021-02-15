@@ -3,53 +3,63 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import typing as tp
 from math import exp, sqrt, tanh
 import numpy as np
-from nevergrad.parametrization import discretization
+import nevergrad.common.typing as tp
 from nevergrad.common.decorators import Registry
 
 
 registry: Registry[tp.Callable[[np.ndarray], float]] = Registry()
 
 
-def onemax(x: tp.List[int]) -> float:
-    """onemax(x) is the most classical case of discrete functions, adapted to minimization.
+class DiscreteFunction:
+    def __init__(self, name: str, arity: int = 2) -> None:
+        """Returns a classical discrete function for test, in the domain {0,1,...,arity-1}^d.
+        The name can be onemax, leadingones, or jump.
 
-    It is originally designed for lists of bits. It just counts the number of 1,
-    and returns len(x) - number of ones..
-    It also works in the continuous case but in that cases discretizes the
-    input domain by ]0.5,1.5] --> 1 and 0 everywhere else.
-    """
-    return len(x) - sum(1 if int(round(w)) == 1 else 0 for w in x)
+        onemax(x) is the most classical case of discrete functions, adapted to minimization.
+        It is originally designed for lists of bits. It just counts the number of 1,
+        and returns len(x) - number of ones. However, the present function perturbates the location of the
+        optimum, so that tests can not be easily biased by a wrong initialization. So the optimum,
+        instead of being located at (1,1,...,1), is located at (0,1,2,...,arity-1,0,1,2,...).
 
+        leadingones is the second most classical discrete function, adapted for minimization.
+        Before perturbation of the location of the optimum as above,
+        it returns len(x) - number of initial 1. I.e.
+        leadingones([0 1 1 1]) = 4,
+        leadingones([1 1 1 1]) = 0,
+        leadingones([1 0 0 0]) = 3.
+        The present Leadingones function uses a perturbation as documented above for OneMax: we count the number
+        of initial correct values, a correct values being 0 for variable 1, 1 for variable 2, 2 for variable 3, and
+        so on.
 
-def leadingones(x: tp.List[int]) -> float:
-    """leadingones is the second most classical discrete function, adapted for minimization.
+        There exists variants of jump functions: the principle of a jump function is that local descent does not succeed.
+        Jumps are necessary. We are here in minimization, hence a formulation slightly different from most discrete optimization
+        papers, which usually assume maximization. We use the same perturbation as detailed above for leadingones and onemax,
+        i.e. the optimum is located at (0,1,2,...,arity-1,0,1,2,...).
+        """
+        self._arity = arity
+        self._func = dict(onemax=self.onemax, leadingones=self.leadingones, jump=self.jump)[name]
 
-    Returns len(x) - number of initial 1. I.e.
-    leadingones([0 1 1 1]) = 4,
-    leadingones([1 1 1 1]) = 0,
-    leadingones([1 0 0 0]) = 1.
-    """
-    for i, x_ in enumerate(list(x)):
-        if int(round(x_)) != 1:
-            return len(x) - i
-    return 0
+    def __call__(self, x: tp.ArrayLike) -> float:
+        return self._func(x)
 
+    def onemax(self, x: tp.ArrayLike) -> float:
+        diff = np.round(x) - (np.arange(len(x)) % self._arity)
+        return float(np.sum(diff != 0))
 
-def jump(x: tp.List[int]) -> float:  # TODO: docstring?
-    """There exists variants of jump functions; we are in minimization.
+    def leadingones(self, x: tp.ArrayLike) -> float:
+        diff = np.round(x) - (np.arange(len(x)) % self._arity)
+        nonzeros = np.nonzero(diff)[0]
+        return float(len(x) - nonzeros[0] if nonzeros.size else 0)
 
-    The principle of a jump function is that local descent does not succeed.
-    Jumps are necessary.
-    """
-    n = len(x)
-    m = n // 4
-    o = n - onemax(x)
-    if o == n or o <= n - m:
-        return n - m - o
-    return o  # Deceptive part.
+    def jump(self, x: tp.ArrayLike) -> float:
+        n = len(x)
+        m = n // 4
+        o = n - self.onemax(x)
+        if o == n or o <= n - m:
+            return n - m - o
+        return o  # Deceptive part.
 
 
 def _styblinksitang(x: np.ndarray, noise: float) -> float:
@@ -61,11 +71,12 @@ def _styblinksitang(x: np.ndarray, noise: float) -> float:
 
 
 class DelayedSphere:
-
     def __call__(self, x: np.ndarray) -> float:
         return float(np.sum(x ** 2))
 
-    def compute_pseudotime(self, input_parameter: tp.Any, value: float) -> float:  # pylint: disable=unused-argument
+    def compute_pseudotime(  # pylint: disable=unused-argument
+        self, input_parameter: tp.Any, value: float
+    ) -> float:
         x = input_parameter[0][0]
         return float(abs(1.0 / x[0]) / 1000.0) if x[0] != 0.0 else 0.0
 
@@ -138,17 +149,22 @@ def cigar(x: np.ndarray) -> float:
 @registry.register
 def bentcigar(x: np.ndarray) -> float:
     """Classical example of ill conditioned function, but bent."""
-    y = np.asarray([x[i] ** (1 + .5 * np.sqrt(x[i]) * (i - 1) / (len(x) - 1)) if x[i] > 0. else x[i] for i in range(len(x))])
+    y = np.asarray(
+        [
+            x[i] ** (1 + 0.5 * np.sqrt(x[i]) * (i - 1) / (len(x) - 1)) if x[i] > 0.0 else x[i]
+            for i in range(len(x))
+        ]
+    )
     return float(y[0]) ** 2 + 1000000.0 * sphere(y[1:])
 
 
 @registry.register
 def multipeak(x: np.ndarray) -> float:
     """Inspired by M. Gallagher's Gaussian peaks function."""
-    v = 10000.
+    v = 10000.0
     for a in range(101):
         x_ = np.asarray([np.cos(a + np.sqrt(i)) for i in range(len(x))])
-        v = min(v, a / 101. + np.exp(sphere(x - x_)))
+        v = min(v, a / 101.0 + np.exp(sphere(x - x_)))
     return v
 
 
@@ -197,7 +213,12 @@ def rastrigin(x: np.ndarray) -> float:
 @registry.register
 def bucherastrigin(x: np.ndarray) -> float:
     """Classical multimodal function. No box-constraint penalization here."""
-    s = np.asarray([x[i] * (10 if x[i] > 0. and i % 2 else 1) * (10**((i - 1) / (2 * (len(x) - 1)))) for i in range(len(x))])
+    s = np.asarray(
+        [
+            x[i] * (10 if x[i] > 0.0 and i % 2 else 1) * (10 ** ((i - 1) / (2 * (len(x) - 1))))
+            for i in range(len(x))
+        ]
+    )
     cosi = float(np.sum(np.cos(2 * np.pi * s)))
     return float(10 * (len(x) - cosi) + sphere(s))
 
@@ -255,7 +276,9 @@ def deceptiveillcond(x: np.ndarray) -> float:
     The condition number increases to infinity as we get closer to the optimum."""
     assert len(x) >= 2
     return float(
-        max(np.abs(np.arctan(x[1] / x[0])), np.sqrt(x[0] ** 2.0 + x[1] ** 2.0), 1.0 if x[0] > 0 else 0.0) if x[0] != 0.0 else float("inf")
+        max(np.abs(np.arctan(x[1] / x[0])), np.sqrt(x[0] ** 2.0 + x[1] ** 2.0), 1.0 if x[0] > 0 else 0.0)
+        if x[0] != 0.0
+        else float("inf")
     )
 
 
@@ -306,69 +329,6 @@ def lunacek(x: np.ndarray) -> float:
         secondSum += (x[i] - mu2) ** 2
         thirdSum += 1.0 - np.cos(2 * np.pi * (x[i] - mu1))
     return min(firstSum, 1.0 * problemDimensions + secondSum) + 10 * thirdSum
-
-
-# following functions using discretization should not be used with translation/rotation
-
-
-@registry.register_with_info(no_transform=True)
-def hardonemax(y: np.ndarray) -> float:
-    """Onemax, with a discretization in 2 by threshold 0 (>0 or <0)."""
-    return onemax(discretization.threshold_discretization(y))
-
-
-@registry.register_with_info(no_transform=True)
-def hardjump(y: np.ndarray) -> float:
-    """Hardjump, with a discretization in 2 by threshold 0 (>0 or <0)."""
-    return jump(discretization.threshold_discretization(y))
-
-
-@registry.register_with_info(no_transform=True)
-def hardleadingones(y: np.ndarray) -> float:
-    """Leading ones, with a discretization in 2 by threshold 0 (>0 or <0)."""
-    return leadingones(discretization.threshold_discretization(y))
-
-
-@registry.register_with_info(no_transform=True)
-def hardonemax5(y: np.ndarray) -> float:
-    """Hardonemax, with a discretization by 5 with 4 thresholds (quantiles of Gaussian)."""
-    return onemax(discretization.threshold_discretization(y, 5))
-
-
-@registry.register_with_info(no_transform=True)
-def hardjump5(y: np.ndarray) -> float:
-    """Jump, with a discretization by 5 with 4 thresholds (quantiles of Gaussian)."""
-    return jump(discretization.threshold_discretization(y, 5))
-
-
-@registry.register_with_info(no_transform=True)
-def hardleadingones5(y: np.ndarray) -> float:
-    """Leadingones, with a discretization by 5 with 4 thresholds (quantiles of Gaussian)."""
-    return leadingones(discretization.threshold_discretization(y, 5))
-
-
-@registry.register_with_info(no_transform=True)
-def onemax5(y: np.ndarray) -> float:
-    """Softmax discretization of onemax with 5 possibles values.
-
-    This multiplies the dimension by 5."""
-    return onemax(discretization.Encoder(y.reshape(-1, 5), np.random).encode().tolist())
-
-
-@registry.register_with_info(no_transform=True)
-def jump5(y: np.ndarray) -> float:
-    """Softmax discretization of jump with 5 possibles values.
-
-    This multiplies the dimension by 5."""
-    return jump(discretization.Encoder(y.reshape(-1, 5), np.random).encode().tolist())
-
-
-@registry.register_with_info(no_transform=True)
-def leadingones5(y: np.ndarray) -> float:
-    """Softmax discretization of leadingones with 5 possibles values.
-
-    This multiplies the dimension by 5."""
-    return leadingones(discretization.Encoder(y.reshape(-1, 5), np.random).encode().tolist())
 
 
 @registry.register_with_info(no_transform=True)

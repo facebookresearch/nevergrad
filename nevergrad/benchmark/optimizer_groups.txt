@@ -1,11 +1,47 @@
 all_bo = ['BO', 'LBO', 'MidQRBO', 'QRBO', 'RBO', 'chainBOwithLHS', 'chainBOwithLHS30', 'chainBOwithLHSdim', 'chainBOwithLHSsqrt', 'chainBOwithMetaRecentering', 'chainBOwithMetaRecentering30', 'chainBOwithMetaRecenteringdim', 'chainBOwithMetaRecenteringsqrt', 'chainBOwithMetaTuneRecentering', 'chainBOwithMetaTuneRecentering30', 'chainBOwithMetaTuneRecenteringdim', 'chainBOwithMetaTuneRecenteringsqrt', 'chainBOwithR', 'chainBOwithR30', 'chainBOwithRdim', 'chainBOwithRsqrt']
 
+baselines = ['OnePlusOne', 'DiscreteOnePlusOne', 'NoisyDiscreteOnePlusOne', 'PSO', 'DE', 'TwoPointsDE']
+
+basics = ['NGOpt10', 'CMandAS2', 'CMA', 'DE', 'MetaModel']
+
 cma = ['DiagonalCMA', 'CMA']
 
 competence_map = ['NGO', 'Shiwa']
 
-competitive = ['DiagonalCMA', 'CMA', 'NGO', 'Shiwa', 'NaiveTBPSA', 'PSO', 'DE', 'LhsDE', 'RandomSearch', 'OnePlusOne', 'TwoPointsDE']
+competitive = ['DiagonalCMA', 'CMA', 'NGO', 'Shiwa', 'MetaNGOpt10', 'NaiveTBPSA', 'PSO', 'DE', 'LhsDE', 'RandomSearch', 'OnePlusOne', 'TwoPointsDE']
 
-large = ['NGO', 'Shiwa', 'DiagonalCMA', 'CMA', 'PSO', 'DE', 'MiniDE', 'QrDE', 'MiniQrDE', 'LhsDE', 'OnePlusOne', 'SQP', 'Cobyla', 'Powell', 'TwoPointsDE', 'OnePointDE', 'AlmostRotationInvariantDE', 'RotationInvariantDE', 'Portfolio', 'ASCMADEthird', 'ASCMADEQRthird', 'ASCMA2PDEthird', 'CMandAS2', 'CMandAS', 'CM', 'MultiCMA', 'TripleCMA', 'MultiScaleCMA', 'RSQP', 'RCobyla', 'RPowell', 'SQPCMA', 'MetaModel', 'PolyCMA', 'ManyCMA']
+discrete = ['DiscreteOnePlusOne', 'DiscreteLenglerOnePlusOne', 'AdaptiveDiscreteOnePlusOne', 'AnisotropicAdaptiveDiscreteOnePlusOne', 'DiscreteBSOOnePlusOne', 'DiscreteDoerrOnePlusOne', 'OptimisticDiscreteOnePlusOne', 'DoubleFastGADiscreteOnePlusOne', 'MultiDiscrete', 'FastGADiscreteOnePlusOne', 'PortfolioDiscreteOnePlusOne']
+
+emna_variants = ['IsoEMNA', 'NaiveIsoEMNA', 'AnisoEMNA', 'NaiveAnisoEMNA', 'CMA', 'NaiveTBPSA', 'NaiveIsoEMNATBPSA', 'IsoEMNATBPSA', 'NaiveAnisoEMNATBPSA', 'AnisoEMNATBPSA']
+
+es = [EvolutionStrategy(offsprings=100, only_offsprings=True, popsize=20, recombination_ratio=0.1), EvolutionStrategy(offsprings=200, only_offsprings=True, recombination_ratio=0.1), EvolutionStrategy(offsprings=400, only_offsprings=True, popsize=80, recombination_ratio=0.1), EvolutionStrategy(offsprings=100, only_offsprings=True, popsize=20, recombination_ratio=0.5), EvolutionStrategy(offsprings=200, only_offsprings=True, recombination_ratio=0.5), EvolutionStrategy(offsprings=400, only_offsprings=True, popsize=80, recombination_ratio=0.5), EvolutionStrategy(offsprings=100, popsize=20, recombination_ratio=0.1), EvolutionStrategy(offsprings=200, recombination_ratio=0.1), EvolutionStrategy(offsprings=400, popsize=80, recombination_ratio=0.1), EvolutionStrategy(offsprings=100, popsize=20, recombination_ratio=0.5), EvolutionStrategy(offsprings=200, recombination_ratio=0.5), EvolutionStrategy(offsprings=400, popsize=80, recombination_ratio=0.5)]
+
+large = ['NGO', 'Shiwa', 'DiagonalCMA', 'CMA', 'PSO', 'DE', 'MiniDE', 'QrDE', 'MiniQrDE', 'LhsDE', 'OnePlusOne', 'SQP', 'Cobyla', 'Powell', 'TwoPointsDE', 'OnePointDE', 'AlmostRotationInvariantDE', 'RotationInvariantDE', 'Portfolio', 'CMandAS2', 'CM', 'MultiCMA', 'TripleCMA', 'MultiScaleCMA', 'RSQP', 'RCobyla', 'RPowell', 'MetaModel', 'PolyCMA']
+
+multimodal = ['NaiveTBPSA', 'MultiCMA', 'TripleCMA', 'MultiScaleCMA', 'PolyCMA', 'QORandomSearch']
+
+noisy = ['OptimisticDiscreteOnePlusOne', 'OptimisticNoisyOnePlusOne', 'TBPSA', 'SPSA', 'NGOpt10']
+
+oneshot = ['AvgHammersleySearch', 'AvgHammersleySearchPlusMiddlePoint', 'AvgMetaRecenteringNoHull', 'CauchyScrHammersleySearch', 'HAvgMetaRecentering', 'HCHAvgCauchyScrHammersleySearch', 'HCHAvgLargeHammersleySearch', 'HCHAvgScrHammersleySearch', 'HCHAvgScrHammersleySearchPlusMiddlePoint', 'HammersleySearch', 'HammersleySearchPlusMiddlePoint', 'MetaCauchyRecentering', 'MetaRecentering', 'MetaTuneRecentering', 'OScrHammersleySearch', 'QORandomSearch', 'QOScrHammersleySearch', 'RescaleScrHammersleySearch', 'ScrHammersleySearch', 'ScrHammersleySearchPlusMiddlePoint', 'TEAvgCauchyScrHammersleySearch', 'TEAvgScrHammersleySearch', 'TEAvgScrHammersleySearchPlusMiddlePoint', 'Zero']
+
+multimodal = ['NaiveTBPSA', 'MultiCMA', 'TripleCMA', 'MultiScaleCMA', 'PolyCMA', 'ManyCMA', 'QORandomSearch']
+
+noisy = ['OptimisticDiscreteOnePlusOne', 'OptimisticNoisyOnePlusOne', 'TBPSA', 'SPSA', 'NGOpt10']
+
+oneshot = ['AvgHammersleySearch', 'AvgHammersleySearchPlusMiddlePoint', 'AvgMetaRecenteringNoHull', 'CauchyScrHammersleySearch', 'HAvgMetaRecentering', 'HCHAvgCauchyScrHammersleySearch', 'HCHAvgLargeHammersleySearch', 'HCHAvgScrHammersleySearch', 'HCHAvgScrHammersleySearchPlusMiddlePoint', 'HammersleySearch', 'HammersleySearchPlusMiddlePoint', 'MetaCauchyRecentering', 'MetaRecentering', 'MetaTuneRecentering', 'OScrHammersleySearch', 'QORandomSearch', 'QOScrHammersleySearch', 'RescaleScrHammersleySearch', 'ScrHammersleySearch', 'ScrHammersleySearchPlusMiddlePoint', 'TEAvgCauchyScrHammersleySearch', 'TEAvgScrHammersleySearch', 'TEAvgScrHammersleySearchPlusMiddlePoint', 'Zero']
+
+parallel_basics = ['NGOpt10', 'CMandAS2', 'CMA', 'DE', 'MetaModel']
+
+progressive = [ProgDiscAuto, ProgDisc13, ProgDiscInf, ProgAuto, Prog13, ProgInf]
+
+scipy = ['RSQP', 'RCobyla', 'RPowell', 'SQPCMA', 'SQP', 'Cobyla', 'Powell']
+
+small_discrete = ['DiscreteOnePlusOne', 'Shiwa', 'CMA', 'PSO', 'TwoPointsDE', 'DE', 'OnePlusOne', 'AdaptiveDiscreteOnePlusOne', 'CMandAS2', 'PortfolioDiscreteOnePlusOne', 'DoubleFastGADiscreteOnePlusOne', 'MultiDiscrete', 'DiscreteBSOOnePlusOne', 'AnisotropicAdaptiveDiscreteOnePlusOne', 'DiscreteLenglerOnePlusOne']
+
+splitters = [SplitCMAAuto, SplitECMAAuto, SplitDEAuto, SplitTwoPointsDEAuto, SplitCMA3, SplitECMA3, SplitDE3, SplitTwoPointsDE3, SplitCMA5, SplitECMA5, SplitDE5, SplitTwoPointsDE5, SplitCMA9, SplitECMA9, SplitDE9, SplitTwoPointsDE9, SplitCMA13, SplitECMA13, SplitDE13, SplitTwoPointsDE13]
 
 spsa = ['NaiveTBPSA', 'SPSA', 'TBPSA']
+
+structure = ['RecES', 'RecMixES', 'RecMutDE', 'ParametrizationDE']
+
+structured_moo = ['CMA', 'NGOpt10', 'MetaNGOpt10', 'DE', 'PSO', 'RecES', 'RecMixES', 'RecMutDE', 'ParametrizationDE']

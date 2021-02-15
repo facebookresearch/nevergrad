@@ -8,9 +8,9 @@
 import typing as tp
 import numpy as np
 from . import core
-from .import transforms
+from . import transforms
 from .data import Mutation as Mutation
-from .data import Array, Scalar
+from .data import Array, Scalar, Data
 from .choice import Choice
 
 
@@ -48,7 +48,7 @@ class Crossover(Mutation):
         self,
         axis: tp.Optional[tp.Union[int, tp.Iterable[int]]] = None,
         max_size: tp.Optional[int] = None,
-        fft: bool = False
+        fft: bool = False,
     ) -> None:
         if not isinstance(axis, core.Parameter):
             axis = (axis,) if isinstance(axis, int) else tuple(axis) if axis is not None else None
@@ -58,7 +58,7 @@ class Crossover(Mutation):
     def axis(self) -> tp.Optional[tp.Tuple[int, ...]]:
         return self.parameters["axis"].value  # type: ignore
 
-    def apply(self, arrays: tp.Sequence["Array"]) -> None:
+    def apply(self, arrays: tp.Sequence[Data]) -> None:
         new_value = self._apply_array([a._value for a in arrays])
         bounds = arrays[0].bounds
         if self.parameters["fft"].value and any(x is not None for x in bounds):
@@ -69,7 +69,11 @@ class Crossover(Mutation):
         # checks
         if len(arrays) != 2:
             raise Exception("Crossover can only be applied between 2 individuals")
-        transf = transforms.Fourrier(range(arrays[0].dim) if self.axis is None else self.axis) if self.parameters["fft"].value else None
+        transf = (
+            transforms.Fourrier(range(arrays[0].dim) if self.axis is None else self.axis)
+            if self.parameters["fft"].value
+            else None
+        )
         if transf is not None:
             arrays = [transf.forward(a) for a in arrays]
         shape = arrays[0].shape
@@ -77,7 +81,7 @@ class Crossover(Mutation):
         # settings
         axis = tuple(range(len(shape))) if self.axis is None else self.axis
         max_size = self.parameters["max_size"].value
-        max_size = int(((arrays[0].size + 1) / 2)**(1 / len(axis))) if max_size is None else max_size
+        max_size = int(((arrays[0].size + 1) / 2) ** (1 / len(axis))) if max_size is None else max_size
         max_size = min(max_size, *(shape[a] - 1 for a in axis))
         size = 1 if max_size == 1 else self.random_state.randint(1, max_size)
         # slices
@@ -110,15 +114,9 @@ class RavelCrossover(Crossover):
         out = super()._apply_array([a.ravel() for a in arrays])
         return out.reshape(shape)
 
-    def _internal_spawn_child(self) -> "RavelCrossover":
-        return RavelCrossover(max_size=self.parameters["max_size"])  # type: ignore
-
 
 def _make_slices(
-    shape: tp.Tuple[int, ...],
-    axes: tp.Tuple[int, ...],
-    size: int,
-    rng: np.random.RandomState
+    shape: tp.Tuple[int, ...], axes: tp.Tuple[int, ...], size: int, rng: np.random.RandomState
 ) -> tp.List[slice]:
     slices = []
     for a, s in enumerate(shape):
@@ -133,7 +131,6 @@ def _make_slices(
 
 
 class Translation(Mutation):
-
     def __init__(self, axis: tp.Optional[tp.Union[int, tp.Iterable[int]]] = None):
         if not isinstance(axis, core.Parameter):
             axis = (axis,) if isinstance(axis, int) else tuple(axis) if axis is not None else None
@@ -152,7 +149,6 @@ class Translation(Mutation):
 
 
 class AxisSlicedArray:
-
     def __init__(self, array: np.ndarray, axis: int):
         self.array = array
         self.axis = axis
@@ -164,8 +160,7 @@ class AxisSlicedArray:
 
 
 class Jumping(Mutation):
-    """Move a chunk for a position to another in an array
-    """
+    """Move a chunk for a position to another in an array"""
 
     def __init__(self, axis: int, size: int):
         super().__init__(axis=axis, size=size)
@@ -185,8 +180,8 @@ class Jumping(Mutation):
         size = self.random_state.randint(1, self.size)
         asdata = AxisSlicedArray(data, self.axis)
         init = self.random_state.randint(L)
-        chunck = asdata[init: init + size]
-        remain: np.ndarray = np.concatenate([asdata[:init], asdata[init + size:]], axis=self.axis)
+        chunck = asdata[init : init + size]
+        remain: np.ndarray = np.concatenate([asdata[:init], asdata[init + size :]], axis=self.axis)
         # pylint: disable=unsubscriptable-object
         newpos = self.random_state.randint(remain.shape[self.axis])
         asremain = AxisSlicedArray(remain, self.axis)
@@ -194,8 +189,9 @@ class Jumping(Mutation):
 
 
 class LocalGaussian(Mutation):
-
-    def __init__(self, size: tp.Union[int, core.Parameter], axes: tp.Optional[tp.Union[int, tp.Iterable[int]]] = None):
+    def __init__(
+        self, size: tp.Union[int, core.Parameter], axes: tp.Optional[tp.Union[int, tp.Iterable[int]]] = None
+    ):
         if not isinstance(axes, core.Parameter):
             axes = (axes,) if isinstance(axes, int) else tuple(axes) if axes is not None else None
         super().__init__(axes=axes, size=size)
@@ -204,7 +200,7 @@ class LocalGaussian(Mutation):
     def axes(self) -> tp.Optional[tp.Tuple[int, ...]]:
         return self.parameters["axes"].value  # type: ignore
 
-    def apply(self, arrays: tp.Sequence[Array]) -> None:
+    def apply(self, arrays: tp.Sequence[Data]) -> None:
         arrays = list(arrays)
         assert len(arrays) == 1
         data = np.zeros(arrays[0].value.shape)
@@ -219,20 +215,19 @@ class LocalGaussian(Mutation):
 
 
 class ProbaLocalGaussian(Mutation):
-
     def __init__(self, axis: int, shape: tp.Sequence[int]):
         assert isinstance(axis, int)
         self.shape = tuple(shape)
         self.axis = axis
         super().__init__(
             positions=Array(shape=(shape[axis],)),
-            ratio=Scalar(init=1, lower=0, upper=1).set_mutation(sigma=0.05)
+            ratio=Scalar(init=1, lower=0, upper=1).set_mutation(sigma=0.05),
         )
 
     def axes(self) -> tp.Optional[tp.Tuple[int, ...]]:
         return self.parameters["axes"].value  # type: ignore
 
-    def apply(self, arrays: tp.Sequence[Array]) -> None:
+    def apply(self, arrays: tp.Sequence[Data]) -> None:
         arrays = list(arrays)
         assert len(arrays) == 1
         data = np.zeros(arrays[0].value.shape)
@@ -242,18 +237,12 @@ class ProbaLocalGaussian(Mutation):
         # slices
         e_weights = np.exp(rolling_mean(self.parameters["positions"].value, size))
         probas = e_weights / np.sum(e_weights)
-        index = np.random.choice(range(length), p=probas)
+        index = self.random_state.choice(range(length), p=probas)
         # update (inefficient)
         shape = tuple(size if a == self.axis else s for a, s in enumerate(arrays[0].value.shape))
         data[tuple(slice(s) for s in shape)] += self.random_state.normal(0, 1, size=shape)
         data = np.roll(data, shift=index, axis=self.axis)
         arrays[0]._internal_set_standardized_data(data.ravel(), reference=arrays[0])
-
-    def _internal_spawn_child(self) -> "ProbaLocalGaussian":
-        child = self.__class__(axis=self.axis, shape=self.shape)
-        child.parameters._content = {k: v.spawn_child() if isinstance(v, core.Parameter) else v
-                                     for k, v in self.parameters._content.items()}
-        return child
 
 
 def rolling_mean(vector: np.ndarray, window: int) -> np.ndarray:
@@ -261,12 +250,11 @@ def rolling_mean(vector: np.ndarray, window: int) -> np.ndarray:
         return np.sum(vector) * np.ones((len(vector),))  # type: ignore
     if window <= 1:
         return vector
-    cumsum: np.ndarray = np.cumsum(np.concatenate(([0], vector, vector[:window - 1])))
+    cumsum: np.ndarray = np.cumsum(np.concatenate(([0], vector, vector[: window - 1])))
     return cumsum[window:] - cumsum[:-window]  # type: ignore
 
 
 class TunedTranslation(Mutation):
-
     def __init__(self, axis: int, shape: tp.Sequence[int]):
         assert isinstance(axis, int)
         self.shape = tuple(shape)
@@ -286,9 +274,3 @@ class TunedTranslation(Mutation):
         shifts = self.shift.weights.value
         self.shift.weights.value = np.roll(shifts, shift)  # update probas
         return np.roll(data, shift, axis=self.axis)  # type: ignore
-
-    def _internal_spawn_child(self) -> "TunedTranslation":
-        child = self.__class__(axis=self.axis, shape=self.shape)
-        child.parameters._content = {k: v.spawn_child() if isinstance(v, core.Parameter) else v
-                                     for k, v in self.parameters._content.items()}
-        return child

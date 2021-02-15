@@ -17,14 +17,15 @@
 
 import os
 import sys
-sys.path.insert(0, os.path.abspath('..'))
+
+sys.path.insert(0, os.path.abspath(".."))
 
 
 # -- Project information -----------------------------------------------------
 
-project = 'nevergrad'
-copyright = '2019, Facebook AI Research'  # pylint: disable=redefined-builtin
-author = 'Facebook AI Research'
+project = "nevergrad"
+copyright = "2019, Facebook AI Research"  # pylint: disable=redefined-builtin
+author = "Facebook AI Research"
 
 
 # -- General configuration ---------------------------------------------------
@@ -32,21 +33,22 @@ author = 'Facebook AI Research'
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.autodoc',
-              'sphinx.ext.githubpages',
-              'sphinx.ext.coverage',
-              'sphinx.ext.napoleon',
-              'sphinx.ext.autosummary',
-              'recommonmark',
-              ]
+extensions = [
+    "sphinx.ext.autodoc",
+    "sphinx.ext.githubpages",
+    "sphinx.ext.coverage",
+    "sphinx.ext.napoleon",
+    "sphinx.ext.autosummary",
+    "recommonmark",
+]
 
 source_suffix = {
-    '.rst': 'restructuredtext',
-    '.txt': 'markdown',
-    '.md': 'markdown',
+    ".rst": "restructuredtext",
+    ".txt": "markdown",
+    ".md": "markdown",
 }
 
-master_doc = 'index'
+master_doc = "index"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = []
@@ -54,7 +56,7 @@ templates_path = []
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -62,7 +64,7 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'sphinx_rtd_theme'
+html_theme = "sphinx_rtd_theme"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -70,5 +72,11 @@ html_theme = 'sphinx_rtd_theme'
 html_static_path = []
 
 # -- Other --
-linkcheck_ignore = [r'https://gecco-2020.sigevo.org/*',
-                    r'https://arxiv.org/abs/*']  # Transient certificate error :(
+linkcheck_ignore = [
+    r"https://gecco-2020.sigevo.org/*",
+    "windows.html",
+    "https://ieeexplore.ieee.org/*",
+    "https://iohprofiler.liacs.nl/",  # server error: bad gateway
+    "https://www.facebook.com/whitehat/",  # server error: 500
+    r"https://arxiv.org/abs/*",
+]  # Transient certificate error :(

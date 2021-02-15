@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import collections
+from collections import abc
 import numpy as np
 import pandas as pd
 import nevergrad.common.typing as tp
@@ -11,8 +11,7 @@ from nevergrad.common import testing
 
 
 class Selector(pd.DataFrame):  # type: ignore
-    """Pandas dataframe class with a simplified selection function
-    """
+    """Pandas dataframe class with a simplified selection function"""
 
     @property
     def _constructor_expanddim(self) -> tp.Type["Selector"]:
@@ -39,7 +38,7 @@ class Selector(pd.DataFrame):  # type: ignore
         """
         df = self
         for name, criterion in kwargs.items():
-            if isinstance(criterion, collections.abc.Iterable) and not isinstance(criterion, str):
+            if isinstance(criterion, abc.Iterable) and not isinstance(criterion, str):
                 selected = df.loc[:, name].isin(criterion)
             elif callable(criterion):
                 selected = [bool(criterion(x)) for x in df.loc[:, name]]
@@ -48,14 +47,17 @@ class Selector(pd.DataFrame):  # type: ignore
             df = df.loc[selected, :]
         return Selector(df)
 
-    def select_and_drop(self, **kwargs: tp.Union[str, tp.Sequence[str], tp.Callable[[tp.Any], bool]]) -> "Selector":
-        """Same as select, but drops the columns used for selection
-        """
+    def select_and_drop(
+        self, **kwargs: tp.Union[str, tp.Sequence[str], tp.Callable[[tp.Any], bool]]
+    ) -> "Selector":
+        """Same as select, but drops the columns used for selection"""
         df = self.select(**kwargs)
         columns = [x for x in df.columns if x not in kwargs]
         return Selector(df.loc[:, columns])
 
-    def unique(self, column_s: tp.Union[str, tp.Sequence[str]]) -> tp.Union[tp.Tuple[tp.Any, ...], tp.Set[tp.Tuple[tp.Any, ...]]]:
+    def unique(
+        self, column_s: tp.Union[str, tp.Sequence[str]]
+    ) -> tp.Union[tp.Tuple[tp.Any, ...], tp.Set[tp.Tuple[tp.Any, ...]]]:
         """Returns the set of unique values or set of values for a column or columns
 
         Parameter

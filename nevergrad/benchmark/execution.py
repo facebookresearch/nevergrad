@@ -14,8 +14,13 @@ class MockedTimedJob:
     """
 
     # pylint: disable=too-many-instance-attributes
-    def __init__(self, func: tp.Callable[..., tp.Any], args: tp.Tuple[tp.Any, ...], kwargs: tp.Dict[str, tp.Any],
-                 executor: "MockedTimedExecutor") -> None:
+    def __init__(
+        self,
+        func: tp.Callable[..., tp.Any],
+        args: tp.Tuple[tp.Any, ...],
+        kwargs: tp.Dict[str, tp.Any],
+        executor: "MockedTimedExecutor",
+    ) -> None:
         self._executor = executor
         self._time = executor.time  # time at instantiation
         # function
@@ -41,7 +46,7 @@ class MockedTimedJob:
         if self._delay is None:
             self._output = self._func(*self._args, **self._kwargs)
             # compute the delay and add to queue
-            self._delay = 1.
+            self._delay = 1.0
             if isinstance(self._func, ExperimentFunction):
                 self._delay = max(0, self._func.compute_pseudotime((self._args, self._kwargs), self._output))
 
@@ -57,12 +62,12 @@ class MockedTimedJob:
         return self._output
 
     def __repr__(self) -> str:
-        return f'{self.__class__.__name__}<value={self._output}, done={self._done}, read={self._is_read}>)'
+        return f"{self.__class__.__name__}<value={self._output}, done={self._done}, read={self._is_read}>)"
 
 
 class OrderedJobs(tp.NamedTuple):
-    """Handle for sorting jobs by release_time (or submission order in case of tie)
-    """
+    """Handle for sorting jobs by release_time (or submission order in case of tie)"""
+
     release_time: float
     order: int
     job: MockedTimedJob
@@ -82,7 +87,7 @@ class MockedTimedExecutor:
         self._to_be_processed: tp.Deque[MockedTimedJob] = deque()
         self._steady_priority_queue: tp.List[OrderedJobs] = []
         self._order = 0
-        self._time = 0.
+        self._time = 0.0
 
     @property
     def time(self) -> float:
@@ -94,8 +99,7 @@ class MockedTimedExecutor:
         return job
 
     def _process_submissions(self) -> None:
-        """Process all submissions which have not been processed yet.
-        """
+        """Process all submissions which have not been processed yet."""
         while self._to_be_processed:
             job = self._to_be_processed[0]
             job.process()  # trigger computation
@@ -105,8 +109,7 @@ class MockedTimedExecutor:
             self._order += 1
 
     def check_is_done(self, job: MockedTimedJob) -> bool:
-        """Called whenever "done" method is called on a job.
-        """
+        """Called whenever "done" method is called on a job."""
         self._process_submissions()  # make sure everything is up to date
         if self.batch_mode or job._is_read:
             return True

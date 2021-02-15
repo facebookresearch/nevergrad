@@ -8,14 +8,71 @@ import sys
 import shutil
 import tempfile
 import subprocess
-import typing as tp
 from pathlib import Path
+import numpy as np
+from nevergrad.common import typing as tp
 from nevergrad.common import tools as ngtools
+
+
+class BoundChecker:
+    """Simple object for checking whether an array lies
+    between provided bounds.
+
+    Parameter
+    ---------
+    lower: float or None
+        minimum value
+    upper: float or None
+        maximum value
+
+    Note
+    -----
+    Not all bounds are necessary (data can be partially bounded, or not at all actually)
+    """
+
+    def __init__(self, lower: tp.BoundValue = None, upper: tp.BoundValue = None) -> None:
+        self.bounds = (lower, upper)
+
+    def __call__(self, value: np.ndarray) -> bool:
+        """Checks whether the array lies within the bounds
+
+        Parameter
+        ---------
+        value: np.ndarray
+            array to check
+
+        Returns
+        -------
+        bool
+            True iff the array lies within the bounds
+        """
+        for k, bound in enumerate(self.bounds):
+            if bound is not None:
+                if np.any((value > bound) if k else (value < bound)):
+                    return False
+        return True
 
 
 class Descriptors:
     """Provides access to a set of descriptors for the parametrization
     This can be used within optimizers.
+
+    Parameters
+    ----------
+    deterministic: bool
+        whether the function equipped with its instrumentation is deterministic.
+        Can be false if the function is not deterministic or if the instrumentation
+        contains a softmax.
+    deterministic_function: bool
+        whether the objective function is deterministic.
+    non_proxy_function: bool
+        whether the objective function is not a proxy of a more interesting objective function.
+    continuous: bool
+        whether the domain is entirely continuous.
+    metrizable: bool
+        whether the domain is naturally equipped with a metric.
+    ordered: bool
+        whether all domains and subdomains are ordered.
     """  # TODO add repr
 
     # pylint: disable=too-many-arguments
@@ -23,32 +80,28 @@ class Descriptors:
         self,
         deterministic: bool = True,
         deterministic_function: bool = True,
-        monoobjective: bool = True,
-        not_manyobjective: bool = True,
+        non_proxy_function: bool = True,
         continuous: bool = True,
         metrizable: bool = True,
         ordered: bool = True,
     ) -> None:
         self.deterministic = deterministic
         self.deterministic_function = deterministic_function
+        self.non_proxy_function = non_proxy_function
         self.continuous = continuous
         self.metrizable = metrizable
         self.ordered = ordered
-        self.monoobjective = monoobjective
-        self.not_manyobjective = not_manyobjective
 
     def __and__(self, other: "Descriptors") -> "Descriptors":
         values = {field: getattr(self, field) & getattr(other, field) for field in self.__dict__}
         return Descriptors(**values)
 
     def __repr__(self) -> str:
-        diff = ",".join(f"{x}={y}" for x, y in sorted(ngtools.different_from_defaults(instance=self, check_mismatches=True).items()))
+        diff = ",".join(
+            f"{x}={y}"
+            for x, y in sorted(ngtools.different_from_defaults(instance=self, check_mismatches=True).items())
+        )
         return f"{self.__class__.__name__}({diff})"
-
-
-class NotSupportedError(RuntimeError):
-    """This type of operation is not supported by the parameter.
-    """
 
 
 class TemporaryDirectoryCopy(tempfile.TemporaryDirectory):  # type: ignore
@@ -86,8 +139,7 @@ class TemporaryDirectoryCopy(tempfile.TemporaryDirectory):  # type: ignore
 
 
 class FailedJobError(RuntimeError):
-    """Job failed during processing
-    """
+    """Job failed during processing"""
 
 
 class CommandFunction:
@@ -110,8 +162,13 @@ class CommandFunction:
        Everything that has been sent to stdout
     """
 
-    def __init__(self, command: tp.List[str], verbose: bool = False, cwd: tp.Optional[tp.Union[str, Path]] = None,
-                 env: tp.Optional[tp.Dict[str, str]] = None) -> None:
+    def __init__(
+        self,
+        command: tp.List[str],
+        verbose: bool = False,
+        cwd: tp.Optional[tp.Union[str, Path]] = None,
+        env: tp.Optional[tp.Dict[str, str]] = None,
+    ) -> None:
         if not isinstance(command, list):
             raise TypeError("The command must be provided as a list")
         self.command = command
@@ -126,15 +183,23 @@ class CommandFunction:
         Errors are provided with the internal stderr
         """
         # TODO make the following command more robust (probably fails in multiple cases)
-        full_command = self.command + [str(x) for x in args] + ["--{}={}".format(x, y) for x, y in kwargs.items()]
+        full_command = (
+            self.command + [str(x) for x in args] + ["--{}={}".format(x, y) for x, y in kwargs.items()]
+        )
         if self.verbose:
             print(f"The following command is sent: {full_command}")
         outlines: tp.List[str] = []
-        with subprocess.Popen(full_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                              shell=False, cwd=self.cwd, env=self.env) as process:
+        with subprocess.Popen(
+            full_command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            shell=False,
+            cwd=self.cwd,
+            env=self.env,
+        ) as process:
             try:
                 assert process.stdout is not None
-                for line in iter(process.stdout.readline, b''):
+                for line in iter(process.stdout.readline, b""):
                     if not line:
                         break
                     outlines.append(line.decode().strip())
@@ -150,6 +215,82 @@ class CommandFunction:
             if stderr and (retcode or self.verbose):
                 print(stderr.decode(), file=sys.stderr)
             if retcode:
-                subprocess_error = subprocess.CalledProcessError(retcode, process.args, output=stdout, stderr=stderr)
+                subprocess_error = subprocess.CalledProcessError(
+                    retcode, process.args, output=stdout, stderr=stderr
+                )
                 raise FailedJobError(stderr.decode()) from subprocess_error
         return stdout
+
+
+X = tp.TypeVar("X")
+
+
+class Subobjects(tp.Generic[X]):
+    """Identifies suboject of a class and applies
+    functions recursively on them.
+
+    Parameters
+    ----------
+    object: Any
+        an object containing other (sub)objects
+    base: Type
+        the base class of the subobjects (to filter out other items)
+    attribute: str
+        the attribute containing the subobjects
+
+    Note
+    ----
+    The current implementation is rather inefficient and could probably be
+    improved a lot if this becomes critical
+    """
+
+    def __init__(self, obj: X, base: tp.Type[X], attribute: str) -> None:
+        self.obj = obj
+        self.cls = base
+        self.attribute = attribute
+
+    def new(self, obj: X) -> "Subobjects[X]":
+        """Creates a new instance with same configuratioon
+        but for a new object.
+        """
+        return Subobjects(obj, base=self.cls, attribute=self.attribute)
+
+    def items(self) -> tp.Iterator[tp.Tuple[tp.Any, X]]:
+        """Returns a dict {key: subobject}"""
+        container = getattr(self.obj, self.attribute)
+        if not isinstance(container, (list, dict)):
+            raise TypeError("Subcaller only work on list and dict")
+        iterator = enumerate(container) if isinstance(container, list) else container.items()
+        for key, val in iterator:
+            if isinstance(val, self.cls):
+                yield key, val
+
+    def _get_subobject(self, obj: X, key: tp.Any) -> tp.Any:
+        """Returns the corresponding subject if obj is from the
+        base class, or directly the object otherwise.
+        """
+        if isinstance(obj, self.cls):
+            return getattr(obj, self.attribute)[key]
+        return obj
+
+    def apply(self, method: str, *args: tp.Any, **kwargs: tp.Any) -> tp.Dict[tp.Any, tp.Any]:
+        """Calls the named method with the provided input parameters (or their subobjects if
+        from the base class!) on the subobjects.
+        """
+        outputs: tp.Dict[tp.Any, tp.Any] = {}
+        for key, subobj in self.items():
+            subargs = [self._get_subobject(arg, key) for arg in args]
+            subkwargs = {k: self._get_subobject(kwarg, key) for k, kwarg in kwargs.items()}
+            outputs[key] = getattr(subobj, method)(*subargs, **subkwargs)
+        return outputs
+
+
+def float_penalty(x: tp.Union[bool, float]) -> float:
+    """Unifies penalties as float (bool=False becomes 1).
+    The value is positive for unsatisfied penality else 0.
+    """
+    if isinstance(x, (bool, np.bool_)):
+        return float(not x)  # False ==> 1.
+    elif isinstance(x, (float, np.float)):
+        return -min(0, x)  # Negative ==> >0
+    raise TypeError(f"Only bools and floats are supported for check constaint, but got: {x} ({type(x)})")

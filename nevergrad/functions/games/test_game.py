@@ -15,7 +15,7 @@ def test_games(name: str) -> None:
     res: tp.List[tp.Any] = []
     for k in range(200):
         res.append(game._Game().play_game(name, np.random.uniform(0, 1, dimension), None))
-        score = (float(sum(1 if r == 2 else 0 if r == 1 else 0.5 for r in res)) / len(res))
+        score = float(sum(1 if r == 2 else 0 if r == 1 else 0.5 for r in res)) / len(res)
         if k >= 20 and 0.2 <= score <= 0.8:
             break
     assert score >= 0.1

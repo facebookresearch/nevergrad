@@ -12,6 +12,7 @@ from .optimizerlib import ParametrizedOnePlusOne
 from .optimizerlib import EMNA
 from .optimizerlib import ParametrizedTBPSA
 from .optimizerlib import ParametrizedBO
+from .optimizerlib import ParametrizedCMA
 from .optimizerlib import Chaining
 from .differentialevolution import DifferentialEvolution
 from .es import EvolutionStrategy
@@ -20,5 +21,16 @@ from .oneshot import RandomSearchMaker
 from .oneshot import SamplingSearch
 
 
-__all__ = ["ParametrizedOnePlusOne", "ParametrizedBO", "DifferentialEvolution", "EvolutionStrategy",
-           "ScipyOptimizer", "RandomSearchMaker", "SamplingSearch", "Chaining", "EMNA", "ParametrizedTBPSA"]
+__all__ = [
+    "ParametrizedOnePlusOne",
+    "ParametrizedCMA",
+    "ParametrizedBO",
+    "DifferentialEvolution",
+    "EvolutionStrategy",
+    "ScipyOptimizer",
+    "RandomSearchMaker",
+    "SamplingSearch",
+    "Chaining",
+    "EMNA",
+    "ParametrizedTBPSA",
+]
