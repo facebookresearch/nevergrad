@@ -327,9 +327,9 @@ workflows:
       - docs-links:
           requires:
             - install
-              # filters:
-              #   branches:
-              #     only: master
+          filters:
+            branches:
+              only: master
       - pypi-deploy:
           requires:
             - install
