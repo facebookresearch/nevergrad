@@ -389,6 +389,7 @@ class Parameter:
             child.parents_uids = [self.uid]
             child.heritage = dict(self.heritage)
         elif mode == "sample":
+            child._generation = 0
             child.heritage["lineage"] = child.uid
         elif mode == "copy":
             child.random_state = None
