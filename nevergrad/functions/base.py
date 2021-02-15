@@ -21,7 +21,7 @@ ME = tp.TypeVar("ME", bound="MultiExperiment")
 
 def _reset_copy(obj: p.Parameter) -> p.Parameter:
     """Copy a parameter and resets its value"""
-    obj.random_state  # pylint: disable=pointless-statement
+    # obj.random_state  # pylint: disable=pointless-statement
     out = obj.copy()
     out.random_state = None
     return out
