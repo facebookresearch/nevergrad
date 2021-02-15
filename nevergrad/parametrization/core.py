@@ -107,9 +107,6 @@ class Parameter(Layered):
                 self._dimension = 0
         return self._dimension
 
-    def _layered_del_value(self) -> None:
-        pass  # used to remove cache, which Parameters should not have
-
     def mutate(self) -> None:
         """Mutate parameters of the instance, and then its value"""
         self._check_frozen()

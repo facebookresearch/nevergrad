@@ -86,7 +86,7 @@ class Layered:
         return self._call_deeper("_layered_set_value", value)
 
     def _layered_del_value(self) -> None:
-        self._call_deeper("_layered_del_value")
+        pass  # called independently on each layer
 
     def _layered_sample(self) -> "Layered":
         return self._call_deeper("_layered_sample")  # type: ignore

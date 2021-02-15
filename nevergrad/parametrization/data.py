@@ -546,6 +546,7 @@ class BoundLayer(_layering.Layered):
         full_range_sampling: tp.Optional[bool] = None,
     ) -> None:
         """Bounds all real values into [lower, upper]
+        CAUTION: WIP
 
         Parameters
         ----------
@@ -587,7 +588,9 @@ class BoundLayer(_layering.Layered):
 
 
 class Modulo(BoundLayer):
-    """Cast Data as integer (or integer array)"""
+    """Cast Data as integer (or integer array)
+    CAUTION: WIP
+    """
 
     def __init__(self, module: tp.Any) -> None:
         super().__init__(lower=0, upper=module)

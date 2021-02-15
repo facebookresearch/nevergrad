@@ -2,17 +2,30 @@
 
 ## master
 
+### Breaking changes
+
+- `copy()` method of a `Parameter` does not change the parameters's random state anymore (it used to reset it to `None` [#1048](https://github.com/facebookresearch/nevergrad/pull/1048)
 - `MultiobjectiveFunction` does not exist anymore  [#1034](https://github.com/facebookresearch/nevergrad/pull/1034).
-- the new `nevergrad.errors` module gathers errors and warnings used throughout the package (WIP) [#1031](https://github.com/facebookresearch/nevergrad/pull/1031).
-- `EvolutionStrategy` now defaults to NSGA2 selection in the multiobjective case
-- `Parameter` classes are undergoing heavy changes (
+
+### Important changes
+
+- `Parameter` classes are undergoing heavy changes, please open an issue if you encounter any problem.
+  The midterm aim is to allow for simpler constraint management.
+- `Parameter` have been updated  have undergone heavy changes to ease the handling of their tree structure (
   [#1029](https://github.com/facebookresearch/nevergrad/pull/1029)
   [#1036](https://github.com/facebookresearch/nevergrad/pull/1036)
   [#1038](https://github.com/facebookresearch/nevergrad/pull/1038)
   [#1043](https://github.com/facebookresearch/nevergrad/pull/1043)
   [#1044](https://github.com/facebookresearch/nevergrad/pull/1044)
-  and more to come), please open an issue if you encounter any problem. The midterm aim is to allow for simpler constraint management.
-- `copy()` method of a `Parameter` does not change the parameters's random state anymore (it used to reset it to `None` [#1048](https://github.com/facebookresearch/nevergrad/pull/1048)
+  )
+- `Parameter` classes have now a layer structure [#1045](https://github.com/facebookresearch/nevergrad/pull/1045)
+  which simplifies changing their behavior. In future PRs this system will take charge of bounds, other constraints,
+  sampling etc.
+
+### Other changes
+
+- the new `nevergrad.errors` module gathers errors and warnings used throughout the package (WIP) [#1031](https://github.com/facebookresearch/nevergrad/pull/1031).
+- `EvolutionStrategy` now defaults to NSGA2 selection in the multiobjective case
 
 ## 0.4.3 (2021-01-28)
 
