@@ -12,9 +12,12 @@ import nevergrad as ng
 from .rmqservice import RMQService as _RMQService, RMQSettings as _RMQSettings
 from ...functions.base import ExperimentFunction
 from .resources import prepare_resources
+
+
 class Status(Enum):
     OK = 0
     Failed = 1
+
 
 class VarNormalizer:
     """
@@ -43,7 +46,7 @@ class VarNormalizer:
         if not self._normalize:
             return val
         else:
-            return (val+1)*(self._upper_bound-self._lower_bound)/2.0 + self._lower_bound
+            return (val + 1) * (self._upper_bound - self._lower_bound) / 2.0 + self._lower_bound
 
     def normalize(self, val: float) -> float:
         """
@@ -93,7 +96,9 @@ class VarNormalizer:
         """
         return self._normalize
 
+
 # pylint:disable=too-many-instance-attributes
+
 
 class Perfcap3DFunction(ExperimentFunction):
     """
@@ -101,6 +106,7 @@ class Perfcap3DFunction(ExperimentFunction):
     However, under the hood, it does a network request via Perfcap3DServerComm's RMQService to
     the Perfcap Benchmark Server to get the function evaluation at the specified point
     """
+
     # pylint:disable=too-many-locals
 
     def _create_parameters(self, cfg: tp.Dict[str, tp.Any]) -> tp.List[ng.p.Scalar]:
@@ -129,13 +135,19 @@ class Perfcap3DFunction(ExperimentFunction):
 
         initial_pose = self._initial_pose
         dofs_flattened = list(itertools.chain(*map(lambda x: x["DOFs"], variables)))
-        jids_flattened = list(itertools.chain(*map(lambda x: [x["joint_id"]]*len(list(filter(None, x["DOFs"]))), variables)))
+        jids_flattened = list(
+            itertools.chain(*map(lambda x: [x["joint_id"]] * len(list(filter(None, x["DOFs"]))), variables))
+        )
 
         var_indices_flattened = list(range(len(jids_flattened)))
-        dof_indices_flattened = list(itertools.chain(*map(lambda x: [index for index, v in enumerate(x["DOFs"]) if v], variables)))
+        dof_indices_flattened = list(
+            itertools.chain(*map(lambda x: [index for index, v in enumerate(x["DOFs"]) if v], variables))
+        )
         self._variable_to_dof_index_map = dict(zip(var_indices_flattened, dof_indices_flattened))
         self._variable_to_joint_index_map = dict(zip(var_indices_flattened, jids_flattened))
-        initial_values = list(itertools.compress(itertools.chain(*(initial_pose[jid] for jid in jids)), dofs_flattened))
+        initial_values = list(
+            itertools.compress(itertools.chain(*(initial_pose[jid] for jid in jids)), dofs_flattened)
+        )
 
         # initial_values
 
@@ -144,37 +156,52 @@ class Perfcap3DFunction(ExperimentFunction):
         mutation_variances = list(itertools.chain(*map(lambda x: x["mutation_variances"], variables)))
         mutable_mut_var = list(itertools.chain(*map(lambda x: x["mutable_mutation_variances"], variables)))
         # parameter normalizers, one for each parameter
-        self._var_normalizers = [VarNormalizer(lower_bound=x[0], upper_bound=x[1], normalize=self._normalize)
-                                 for x in zip(bounds_min, bounds_max)]
+        self._var_normalizers = [
+            VarNormalizer(lower_bound=x[0], upper_bound=x[1], normalize=self._normalize)
+            for x in zip(bounds_min, bounds_max)
+        ]
         # parameter creation (initial value, bounds, mutable_mutation_var)
-        params = [ng.p.Scalar(init=n.normalize(init), lower=n.active_lower_bound, upper=n.active_upper_bound, mutable_sigma=ms)
-             for (n, ms, init) in zip(self._var_normalizers, mutable_mut_var, initial_values)]
+        params = [
+            ng.p.Scalar(
+                init=n.normalize(init),
+                lower=n.active_lower_bound,
+                upper=n.active_upper_bound,
+                mutable_sigma=ms,
+            )
+            for (n, ms, init) in zip(self._var_normalizers, mutable_mut_var, initial_values)
+        ]
         # leave negative mutation variances to auto / ie. do not set
-        for (v, mv, n) in filter(lambda x: x[1] > 0.0, zip(params, mutation_variances, self._var_normalizers)):
-            v.set_mutation(n.normalize(mv), custom="gaussian")      # set variable mutation
+        for (v, mv, n) in filter(
+            lambda x: x[1] > 0.0, zip(params, mutation_variances, self._var_normalizers)
+        ):
+            v.set_mutation(n.normalize(mv), custom="gaussian")  # set variable mutation
 
         return params
 
-    def __init__(self, experiment_filename : str, **kwargs):
+    def __init__(self, experiment_filename: str, **kwargs):
 
         cfg = Perfcap3DExperimentConfig(experiment_filename)
         objective_func_cfg = cfg.objective_function_config
 
-        self._initial_pose: tp.Dict[int, tp.List[float]] = dict(map(lambda o: (o["joint_id"], o["values"]),
-                                                                    objective_func_cfg["initial_pose"]))
+        self._initial_pose: tp.Dict[int, tp.List[float]] = dict(
+            map(lambda o: (o["joint_id"], o["values"]), objective_func_cfg["initial_pose"])
+        )
 
         self._relative_search_space: bool = objective_func_cfg["relative_search_space"]
         self._normalize: bool = objective_func_cfg["normalize"]
         self._var_normalizers: tp.List[VarNormalizer] = None
         self._variable_to_dof_index_map: tp.Dict[int, int] = None
         self._variable_to_joint_index_map: tp.Dict[int, int] = None
-        self._experiment_tag_id: str = str(uuid_gen()) if 'experiment_tag_id' not in kwargs else kwargs['experiment_tag_id']
+        self._experiment_tag_id: str = (
+            str(uuid_gen()) if "experiment_tag_id" not in kwargs else kwargs["experiment_tag_id"]
+        )
         self._server_comm = Perfcap3DServerComm(cfg.server_config)
-        self._experiment_started : bool = False
+        self._experiment_started: bool = False
         params = self._create_parameters(objective_func_cfg)
         super().__init__(self.oracle_call, ng.p.Instrumentation(*params))
-        self.register_initialization(experiment_filename = experiment_filename,
-                                    experiment_tag_id = self._experiment_tag_id)  # to create equivalent instances through "copy"
+        self.register_initialization(
+            experiment_filename=experiment_filename, experiment_tag_id=self._experiment_tag_id
+        )  # to create equivalent instances through "copy"
 
         # exclude experiment_tag_id from fight descriptors by encapsulating its name inside "{ }"
         # append experiment_tag_id to ExperimentFunction descritors.
@@ -222,13 +249,12 @@ class Perfcap3DFunction(ExperimentFunction):
         """
 
         # pylint: disable=not-callable
-        loss = self.function(*args)             # the last optimizer iteration in the server logs
-                                                # corresponds to this evaluation call
+        loss = self.function(*args)  # the last optimizer iteration in the server logs
+        # corresponds to this evaluation call
         assert isinstance(loss, float)
 
-        self._server_comm.stop_experiment(self._experiment_tag_id,
-                                                self.compute_pose(*args))
-                                                # this notifies server to flush logs with converged pose equal to args.
+        self._server_comm.stop_experiment(self._experiment_tag_id, self.compute_pose(*args))
+        # this notifies server to flush logs with converged pose equal to args.
 
         return loss
 
@@ -240,15 +266,18 @@ class Singleton(type):
     def __call__(cls, *args, **kwargs):
 
         if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton,cls).__call__(*args, **kwargs)
+            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
         return cls._instances[cls]
+
 
 # pylint: disable=too-many-instance-attributes
 
-class Perfcap3DServerComm(metaclass = Singleton):
+
+class Perfcap3DServerComm(metaclass=Singleton):
     """
     Perfcap3DServerComm is responsible for all communications to the Perfcap Benchmark Server
     """
+
     # Perfcap3DFunction class are instantiated with the Perfcap3DServerComm instance injected into it
     # Perfcap3DServerComm uses RMQService to talk with the benchmark server.
     # All communication to the Perfcap Benchmark Server goes through Perfcap3DServerComm
@@ -257,7 +286,7 @@ class Perfcap3DServerComm(metaclass = Singleton):
 
         return _RMQService(_RMQSettings.from_json())
 
-    def __init__(self, server_config : tp.Dict[str,tp.Any]) -> None:
+    def __init__(self, server_config: tp.Dict[str, tp.Any]) -> None:
         """
         Perfcap3DServerComm: Communications with the Benchmark Server
         server_config: Dictionary obtained through Perfcap3DExperimentConfig.server_config
@@ -282,7 +311,9 @@ class Perfcap3DServerComm(metaclass = Singleton):
         """
 
         self._logger.info("Setting experiment to: %d", self._experiment_id)
-        self._logger.info("Sending Perfcap bechmark server request to set experiment to %d", self._experiment_id)
+        self._logger.info(
+            "Sending Perfcap bechmark server request to set experiment to %d", self._experiment_id
+        )
         msg = self._server_cfg.copy()
         msg.update({"action": "set_experiment"})
         res = self._rmq_service.request_forced(msg)
@@ -293,7 +324,9 @@ class Perfcap3DServerComm(metaclass = Singleton):
             if status != Status.OK:
                 self._logger.error("Benchmark server ERROR status: %s", str(status))
                 self._logger.error("Benchmark server ERROR reply: %s", msg)
-                raise Exception("Benchmark server ERROR: Could not set experiment to: {0}".format(self._experiment_id))
+                raise Exception(
+                    "Benchmark server ERROR: Could not set experiment to: {0}".format(self._experiment_id)
+                )
 
             self._logger.info("Reply from benchmark server: %s", msg)
             self._logger.info("Experiment %s set successfully", self._experiment_id)
@@ -309,12 +342,12 @@ class Perfcap3DServerComm(metaclass = Singleton):
             self._rmq_service = self._setupRMQ()
 
         self._logger.info("Polling to see if server is alive...")
-        msg = {
-            "action": "ping"
-        }
+        msg = {"action": "ping"}
 
-        _ = self._rmq_service.poll_request_forced(msg)      # ignore processing of server reply. since we received a message,
-                                                            # this is sufficient to know that server is alive
+        _ = self._rmq_service.poll_request_forced(
+            msg
+        )  # ignore processing of server reply. since we received a message,
+        # this is sufficient to know that server is alive
         self._logger.info("Server alive! Proceeding ...")
 
     def _register_experiment(self, experiment_tag_id) -> None:
@@ -327,10 +360,7 @@ class Perfcap3DServerComm(metaclass = Singleton):
         This Function is called by start_experiment method at the beginning of the experiment
         """
         self._logger.info("Registering experiment with tag id %s", experiment_tag_id)
-        msg = {
-            "action": "start_experiment",
-            "experiment_tag_id": experiment_tag_id
-        }
+        msg = {"action": "start_experiment", "experiment_tag_id": experiment_tag_id}
         res = self._rmq_service.request_forced(msg)
         try:
             status = Status(res["status"])
@@ -339,7 +369,9 @@ class Perfcap3DServerComm(metaclass = Singleton):
             if status != Status.OK:
                 self._logger.error("Benchmark server ERROR status: %s", str(status))
                 self._logger.error("Benchmark server ERROR reply: %s", msg)
-                raise Exception("Benchmark server ERROR: Could not register experiment to: {0}".format(experiment_tag_id))
+                raise Exception(
+                    "Benchmark server ERROR: Could not register experiment to: {0}".format(experiment_tag_id)
+                )
 
             self._logger.info("Reply from benchmark server: %s", msg)
             self._logger.info("Experiment %s registered successfully", experiment_tag_id)
@@ -347,7 +379,9 @@ class Perfcap3DServerComm(metaclass = Singleton):
             self._logger.error("Error while parsing reply for register experiment from benchmark server")
             raise ex
 
-    def _unregister_experiment(self, experiment_tag_id, converged_pose: tp.Union[None,tp.Dict[int, tp.List[float]]]) -> None:
+    def _unregister_experiment(
+        self, experiment_tag_id, converged_pose: tp.Union[None, tp.Dict[int, tp.List[float]]]
+    ) -> None:
         """
         Unregister Experiment, when experiment finishes. This causes benchmark server to flush logs and output meshes
         for this experiment.
@@ -356,11 +390,7 @@ class Perfcap3DServerComm(metaclass = Singleton):
         self._logger.info("Unregistering experiment with tag id %s", experiment_tag_id)
         if converged_pose is not None:
             pose_dict = [{"joint_id": jid, "values": vals} for (jid, vals) in converged_pose.items()]
-            msg = {
-                "action": "stop_experiment",
-                "experiment_tag_id": experiment_tag_id,
-                "pose": pose_dict
-            }
+            msg = {"action": "stop_experiment", "experiment_tag_id": experiment_tag_id, "pose": pose_dict}
         else:
             msg = {
                 "action": "stop_experiment",
@@ -374,7 +404,9 @@ class Perfcap3DServerComm(metaclass = Singleton):
             if status != Status.OK:
                 self._logger.error("Benchmark server ERROR status: %s", str(status))
                 self._logger.error("Benchmark server ERROR reply: %s", msg)
-                raise Exception("Benchmark server ERROR: Could not unregister experiment: {0}".format(experiment_tag_id))
+                raise Exception(
+                    "Benchmark server ERROR: Could not unregister experiment: {0}".format(experiment_tag_id)
+                )
 
             self._logger.info("Reply from benchmark server: %s", msg)
             self._logger.info("Experiment %s unregistered successfully", experiment_tag_id)
@@ -394,7 +426,9 @@ class Perfcap3DServerComm(metaclass = Singleton):
         self._set_experiment()
         self._register_experiment(experiment_tag_id)
 
-    def stop_experiment(self, experiment_tag_id: str, converged_pose: tp.Union[None,tp.Dict[int, tp.List[float]]]):
+    def stop_experiment(
+        self, experiment_tag_id: str, converged_pose: tp.Union[None, tp.Dict[int, tp.List[float]]]
+    ):
         """
         This will unregister the experiment from Perfcap Benchmark Server, causing any server logging to flush.
         This function is called by Perfcap3DFunction at the end of the experiment, when ExperimentFunction.evaluate_function is called.
@@ -405,20 +439,25 @@ class Perfcap3DServerComm(metaclass = Singleton):
             print("Stopping RMQ Service")
             self._rmq_service.stop()
 
-    def request_function_evaluation(self, pose: tp.Dict[int, tp.List[float]], experiment_tag_id: str) -> tp.Dict[str, float]:
+    def request_function_evaluation(
+        self, pose: tp.Dict[int, tp.List[float]], experiment_tag_id: str
+    ) -> tp.Dict[str, float]:
         """
         This function will submit a request to the Perfcap Benchmark Server for an objective function evaluation.
         This function is called by Perfcap3DFunction to request objective function evaluations
         """
 
         pose_dict = [{"joint_id": jid, "values": vals} for (jid, vals) in pose.items()]
-        msg = {"action": "function_evaluation",
-               "experiment_id": self._experiment_id,
-               "experiment_tag_id": experiment_tag_id,
-               "pose": pose_dict}
+        msg = {
+            "action": "function_evaluation",
+            "experiment_id": self._experiment_id,
+            "experiment_tag_id": experiment_tag_id,
+            "pose": pose_dict,
+        }
 
         self._logger.debug("Requesting function evaluation")
         return self._rmq_service.request_forced(msg)
+
 
 class Perfcap3DExperimentConfig:
     """
@@ -426,11 +465,14 @@ class Perfcap3DExperimentConfig:
     Each one of the two properties of this class are given as parameters to Perfcap3DServerComm and Perfcap3DFunction constructors,
     respectively
     """
-    def _load_experiment_file(self, experiment_cfg_filename) -> tp.Dict[str,tp.Any]:
+
+    def _load_experiment_file(self, experiment_cfg_filename) -> tp.Dict[str, tp.Any]:
         """
         Loads an experimentX.json file
         """
-        expfpath = os.path.join(pathlib.Path(os.path.abspath(__file__)).parent, "experiment_config", experiment_cfg_filename)
+        expfpath = os.path.join(
+            pathlib.Path(os.path.abspath(__file__)).parent, "experiment_config", experiment_cfg_filename
+        )
         try:
             with open(expfpath) as f:
                 return json.load(f)
@@ -439,7 +481,7 @@ class Perfcap3DExperimentConfig:
             self._logger.exception(ex)
             raise ex
 
-    def __init__(self, experiment_cfg_filename : str):
+    def __init__(self, experiment_cfg_filename: str):
 
         self._config = self._load_experiment_file(experiment_cfg_filename)
 
@@ -451,6 +493,7 @@ class Perfcap3DExperimentConfig:
     def server_config(self):
         return self._config["benchmark_server_args"]
 
+
 class Perfcap3DServerExecutor:
     """
     Class responsible for executing the benchmark server
@@ -458,29 +501,41 @@ class Perfcap3DServerExecutor:
     in order to avoid multiple executions of the benchmark server executable.
     This function is invoked by the experiment factory function perfcap_experiment (frozenexperiments.py)
     """
+
     @classmethod
-    def execute_server(cls, experiment_count : int):
-        logger = logging.getLogger('execute_server')
+    def execute_server(cls, experiment_count: int):
+        logger = logging.getLogger("execute_server")
         # download/extract benchmark server/dataset if not exist
         prepare_resources()
 
         exe_folder_path = os.path.join(pathlib.Path(os.path.abspath(__file__)).parent, "resources")
-        lock_file_path = os.path.join(exe_folder_path,'.running.lck')
+        lock_file_path = os.path.join(exe_folder_path, ".running.lck")
         # if lock file already exists, skipping launching benchmark server
         try:
             # open lockfile for exclusive creation
-            logger.info('checking existence of benchmark server lockfile: %s',lock_file_path)
-            with open(lock_file_path,'x'):
+            logger.info("checking existence of benchmark server lockfile: %s", lock_file_path)
+            with open(lock_file_path, "x"):
                 pass
-            logger.info('Lockfile does not exist. Executing server.')
+            logger.info("Lockfile does not exist. Executing server.")
             rmq_settings = _RMQSettings.from_json()
-            exe_path = os.path.join(exe_folder_path,'performance_capture.exe')
-            cmd_args = ['--benchmark_server', '--benchmark_server_rmq_uri', rmq_settings.connection_string,
-                        '--benchmark_server_ng_exchange_in', rmq_settings.exchange_in,
-                        '--benchmark_server_ng_exchange_out', rmq_settings.exchange_out,
-                        "--experiment_count", str(experiment_count)]
-            subprocess.Popen([str(exe_path)]+cmd_args, cwd=str(exe_folder_path), creationflags = subprocess.CREATE_NEW_CONSOLE)
-            #exe_path = os.path.join(exe_folder_path,'run_benchmark_server.bat')
-            #subprocess.Popen(str(exe_path), cwd=str(exe_folder_path),creationflags = subprocess.CREATE_NEW_CONSOLE)
+            exe_path = os.path.join(exe_folder_path, "performance_capture.exe")
+            cmd_args = [
+                "--benchmark_server",
+                "--benchmark_server_rmq_uri",
+                rmq_settings.connection_string,
+                "--benchmark_server_ng_exchange_in",
+                rmq_settings.exchange_in,
+                "--benchmark_server_ng_exchange_out",
+                rmq_settings.exchange_out,
+                "--experiment_count",
+                str(experiment_count),
+            ]
+            subprocess.Popen(
+                [str(exe_path)] + cmd_args,
+                cwd=str(exe_folder_path),
+                creationflags=subprocess.CREATE_NEW_CONSOLE,
+            )
+            # exe_path = os.path.join(exe_folder_path,'run_benchmark_server.bat')
+            # subprocess.Popen(str(exe_path), cwd=str(exe_folder_path),creationflags = subprocess.CREATE_NEW_CONSOLE)
         except FileExistsError:
-            logger.info('Lockfile exists. Server already running. Skipping execution of server')
+            logger.info("Lockfile exists. Server already running. Skipping execution of server")

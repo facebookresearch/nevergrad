@@ -9,6 +9,7 @@ from uuid import uuid4 as uuid_gen
 from concurrent.futures import Future
 import aio_pika
 
+
 class RMQSettings:
     def __init__(self, conn_str: str, exchange_in: str, exchange_out: str, routing_key_in: str = None):
         self.connection_string: str = conn_str
@@ -17,9 +18,11 @@ class RMQSettings:
         self.routing_key_in: str = routing_key_in
 
     @classmethod
-    def from_json(cls) -> 'RMQSettings':
+    def from_json(cls) -> "RMQSettings":
 
-        rmqsettings_fpath = os.path.join(pathlib.Path(os.path.abspath(__file__)).parent, "experiment_config\\rmqsettings.json")
+        rmqsettings_fpath = os.path.join(
+            pathlib.Path(os.path.abspath(__file__)).parent, "experiment_config\\rmqsettings.json"
+        )
         with open(rmqsettings_fpath) as f:
             rmq_settings = json.load(f)
 
@@ -27,9 +30,14 @@ class RMQSettings:
         # defines a unique routing_key to receive messages from Perfcap Benchmark Server
         # this routing key is embedded in outgoing messages by RMQService, so that the Perfcap Benchmark Server knows under which
         # routing key to forward the reply.
-        rmq_settings = RMQSettings(conn_str=rmq_settings["uri"], exchange_in=rmq_settings["ng_exchange_in"],
-                                    exchange_out=rmq_settings["ng_exchange_out"], routing_key_in=str(uuid_gen()))
+        rmq_settings = RMQSettings(
+            conn_str=rmq_settings["uri"],
+            exchange_in=rmq_settings["ng_exchange_in"],
+            exchange_out=rmq_settings["ng_exchange_out"],
+            routing_key_in=str(uuid_gen()),
+        )
         return rmq_settings
+
 
 class RMQService:
     """
@@ -75,10 +83,10 @@ class RMQService:
         """
         async with message.process():
             json_msg = json.loads(message.body)
-            tid = json_msg["reply_info"]["transaction_id"]          # get transaction_id from the reply message
-            ft = self._request_futures.pop(tid, None)               # obtain future from dictionary
+            tid = json_msg["reply_info"]["transaction_id"]  # get transaction_id from the reply message
+            ft = self._request_futures.pop(tid, None)  # obtain future from dictionary
             if ft is not None:
-                ft.set_result(json_msg["args"])                     # set future result from received message
+                ft.set_result(json_msg["args"])  # set future result from received message
 
     async def _setup(self, loop: asyncio.AbstractEventLoop):
         """
@@ -88,10 +96,12 @@ class RMQService:
 
             self._connection = await aio_pika.connect(self._rmq_settings.connection_string, loop=loop)
             self._channel = await self._connection.channel()
-            self._exch_in = await self._channel.declare_exchange(self._rmq_settings.exchange_in, type=aio_pika.ExchangeType.FANOUT,
-                                                                 auto_delete=False)
-            self._exch_out = await self._channel.declare_exchange(self._rmq_settings.exchange_out, type=aio_pika.ExchangeType.FANOUT,
-                                                                  auto_delete=True)
+            self._exch_in = await self._channel.declare_exchange(
+                self._rmq_settings.exchange_in, type=aio_pika.ExchangeType.FANOUT, auto_delete=False
+            )
+            self._exch_out = await self._channel.declare_exchange(
+                self._rmq_settings.exchange_out, type=aio_pika.ExchangeType.FANOUT, auto_delete=True
+            )
 
             self._queue_in = await self._channel.declare_queue("", auto_delete=True)
 
@@ -146,45 +156,59 @@ class RMQService:
         Core function to submit requests to Perfcap Benchmark Server through RMQ.
         """
         self._pending_futures.remove(ft)
-        tid = str(uuid_gen())               # generate a transaction_id (i.e. request id)
-        self._request_futures[tid] = ft     # add future to _request_future dictionary under transaction_id key
+        tid = str(uuid_gen())  # generate a transaction_id (i.e. request id)
+        self._request_futures[tid] = ft  # add future to _request_future dictionary under transaction_id key
         request_info: tp.Dict[str, str] = {
             # embed listener's routing key to the message. benchmark server will reply to this request in
             # the routing_key specified in reply_id
-            "reply_id": self._rmq_settings.routing_key_in if self._rmq_settings.routing_key_in is not None else "",
+            "reply_id": self._rmq_settings.routing_key_in
+            if self._rmq_settings.routing_key_in is not None
+            else "",
             # mark transaction with id. this will help identify the reply of the server.
             # The server always embeds transaction_id to its reply message.
-            "transaction_id": tid
+            "transaction_id": tid,
         }
         fmsg = {}
         fmsg["request_info"] = request_info
         fmsg["args"] = msg
-        await self._exch_out.publish(aio_pika.Message(bytes(json.dumps(fmsg), encoding='utf-8')), routing_key="")
+        await self._exch_out.publish(
+            aio_pika.Message(bytes(json.dumps(fmsg), encoding="utf-8")), routing_key=""
+        )
 
-    async def _resubmit_poll_request(self, fmsg : dict, ft : Future, repeat_interval : float, call_handler : tp.List[tp.Any]):
+    async def _resubmit_poll_request(
+        self, fmsg: dict, ft: Future, repeat_interval: float, call_handler: tp.List[tp.Any]
+    ):
         """
         Core function to repeatedly poll the benchmark server via RMQ
         """
         if not ft.done():
-            self._logger.info('Polling...')
-            await self._exch_out.publish(aio_pika.Message(bytes(json.dumps(fmsg), encoding='utf-8')), routing_key="")
-            call_handler[0] = self._event_loop.call_later(repeat_interval,lambda: asyncio.create_task(self._resubmit_poll_request(fmsg,
-                                                            ft, repeat_interval, call_handler)))
+            self._logger.info("Polling...")
+            await self._exch_out.publish(
+                aio_pika.Message(bytes(json.dumps(fmsg), encoding="utf-8")), routing_key=""
+            )
+            call_handler[0] = self._event_loop.call_later(
+                repeat_interval,
+                lambda: asyncio.create_task(
+                    self._resubmit_poll_request(fmsg, ft, repeat_interval, call_handler)
+                ),
+            )
 
-    async def _poll_request(self, msg: tp.Dict[str, tp.Any], ft: Future, repeat_interval : float = 1.0):
+    async def _poll_request(self, msg: tp.Dict[str, tp.Any], ft: Future, repeat_interval: float = 1.0):
         """
         Core function to submit poll requests to Perfcap Benchmark Server through RMQ.
         """
         self._pending_futures.remove(ft)
-        tid = str(uuid_gen())               # generate a transaction_id (i.e. request id)
-        self._request_futures[tid] = ft     # add future to _request_future dictionary under transaction_id key
+        tid = str(uuid_gen())  # generate a transaction_id (i.e. request id)
+        self._request_futures[tid] = ft  # add future to _request_future dictionary under transaction_id key
         request_info: tp.Dict[str, str] = {
             # embed listener's routing key to the message. benchmark server will reply to this request in
             # the routing_key specified in reply_id
-            "reply_id": self._rmq_settings.routing_key_in if self._rmq_settings.routing_key_in is not None else "",
+            "reply_id": self._rmq_settings.routing_key_in
+            if self._rmq_settings.routing_key_in is not None
+            else "",
             # mark transaction with id. this will help identify the reply of the server.
             # The server always embeds transaction_id to its reply message.
-            "transaction_id": tid
+            "transaction_id": tid,
         }
         fmsg = {}
         fmsg["request_info"] = request_info
@@ -192,13 +216,17 @@ class RMQService:
 
         # schedule re-submission
         call_handler = [None]
-        def _on_reply(feat : Future):
+
+        def _on_reply(feat: Future):
             call_handler[0].cancel()
+
         ft.add_done_callback(_on_reply)
 
-        call_handler[0] = self._event_loop.call_later(0.1, lambda: asyncio.create_task(
-            self._resubmit_poll_request(fmsg,ft,repeat_interval, call_handler)))
-        #await self._exch_out.publish(aio_pika.Message(bytes(json.dumps(fmsg), encoding='utf-8')), routing_key="")
+        call_handler[0] = self._event_loop.call_later(
+            0.1,
+            lambda: asyncio.create_task(self._resubmit_poll_request(fmsg, ft, repeat_interval, call_handler)),
+        )
+        # await self._exch_out.publish(aio_pika.Message(bytes(json.dumps(fmsg), encoding='utf-8')), routing_key="")
 
     def _request_safe(self, msg: tp.Dict[str, tp.Any], ft: Future):
         self._pending_futures.add(ft)
@@ -208,7 +236,7 @@ class RMQService:
             # exchange is not ready yet (we are still connecting to RMQ Server). Requeue, for later
             self._event_loop.call_later(0.3, self._request_safe, msg, ft)
 
-    def _poll_request_safe(self, msg: tp.Dict[str, tp.Any], ft: Future, repeat_interval : float = 1.0):
+    def _poll_request_safe(self, msg: tp.Dict[str, tp.Any], ft: Future, repeat_interval: float = 1.0):
         self._pending_futures.add(ft)
         if self._exch_out is not None:  # if nevegrad output exchange has been created enqueue request
             asyncio.create_task(self._poll_request(msg, ft, repeat_interval))
@@ -241,8 +269,9 @@ class RMQService:
         self._event_loop.call_soon_threadsafe(self._request_safe, msg, ft)
         return ft.result()
 
-
-    def poll_request(self, msg: tp.Dict[str, tp.Any], repeat_interval : float = 1.0) -> tp.Union[None, tp.Dict[str, tp.Any]]:
+    def poll_request(
+        self, msg: tp.Dict[str, tp.Any], repeat_interval: float = 1.0
+    ) -> tp.Union[None, tp.Dict[str, tp.Any]]:
         """
         Repeatedly sends a request at a repeat interval of repeat_interval seconds until a reply is received
         This is a blocking call returning the result replied from the server.
@@ -254,7 +283,9 @@ class RMQService:
             return ft.result()
         return None
 
-    def poll_request_forced(self, msg: tp.Dict[str, tp.Any], repeat_interval : float = 1.0) -> tp.Union[None, tp.Dict[str, tp.Any]]:
+    def poll_request_forced(
+        self, msg: tp.Dict[str, tp.Any], repeat_interval: float = 1.0
+    ) -> tp.Union[None, tp.Dict[str, tp.Any]]:
         """
         Repeatedly sends a request at a repeat interval of repeat_interval seconds until a reply is received
         This is a blocking call returning the result replied from the server

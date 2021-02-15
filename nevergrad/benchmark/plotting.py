@@ -239,8 +239,8 @@ def create_plots(
     assert not any("Unnamed: " in x for x in df.columns), f"Remove the unnamed index column:  {df.columns}"
     assert "error " not in df.columns, f"Remove error rows before plotting"
     required = {"optimizer_name", "budget", "loss", "elapsed_time", "elapsed_budget"}
-    #excluded = {x for x in set(df.columns) if x.startswith('{') and x.endswith('}')}  # ignore all descriptors starting enclosed in "{ }"
-    df = df.loc[:,[x for x in df.columns if not (x.startswith('{') and x.endswith('}'))]]
+    # excluded = {x for x in set(df.columns) if x.startswith('{') and x.endswith('}')}  # ignore all descriptors starting enclosed in "{ }"
+    df = df.loc[:, [x for x in df.columns if not (x.startswith("{") and x.endswith("}"))]]
     missing = required - set(df.columns)
     assert not missing, f"Missing fields: {missing}"
     output_folder = Path(output_folder)
