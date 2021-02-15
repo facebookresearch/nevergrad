@@ -8,7 +8,6 @@ import warnings
 import numpy as np
 import nevergrad.common.typing as tp
 
-from nevergrad.common import errors
 from . import _layering
 from . import core
 from .container import Dict
@@ -16,13 +15,12 @@ from . import utils
 from . import transforms as trans
 
 
-# pylint: disable=no-value-for-parameter
+# pylint: disable=no-value-for-parameter,import-outside-toplevel
 
 
 D = tp.TypeVar("D", bound="Data")
 P = tp.TypeVar("P", bound=core.Parameter)
 # L = tp.TypeVar("L", bound=_layering.Layered)
-BL = tp.TypeVar("BL", bound="BoundLayer")
 
 
 def _param_string(parameters: Dict) -> str:
@@ -423,15 +421,19 @@ class Data(core.Parameter):
     def _layered_get_value(self) -> np.ndarray:
         return self._value
 
-    def __mod__(self: D, other: tp.Any) -> D:
+    def _new_with_data_layer(self: D, name: str, *args: tp.Any, **kwargs: tp.Any) -> D:
+        # pylint: disable=cyclic-import
+        from . import _datalayers  # avoid cyclic imports
+
         new = self.copy()
-        new.add_layer(Modulo(other))
+        new.add_layer(getattr(_datalayers, name)(*args, **kwargs))
         return new
 
+    def __mod__(self: D, module: tp.Any) -> D:
+        return self._new_with_data_layer("Modulo", module)
+
     def __rpow__(self: D, base: float) -> D:
-        new = self.copy()
-        new.add_layer(Exponent(base))
-        return new
+        return self._new_with_data_layer("Exponent", base)
 
 
 class Array(Data):
@@ -537,162 +539,3 @@ class Log(Scalar):
         self.set_mutation(sigma=1.0, exponent=exponent)
         if any(a is not None for a in (lower, upper)):
             self.set_bounds(lower, upper, full_range_sampling=bounded and no_init)
-
-
-# LAYERS # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-
-
-class BoundLayer(_layering.Layered):
-
-    _LAYER_LEVEL = _layering.Level.OPERATION
-
-    def __init__(
-        self,
-        lower: tp.BoundValue = None,
-        upper: tp.BoundValue = None,
-        uniform_sampling: tp.Optional[bool] = None,
-    ) -> None:
-        """Bounds all real values into [lower, upper]
-
-        Parameters
-        ----------
-        lower: float or None
-            minimum value
-        upper: float or None
-            maximum value
-        method: str
-            One of the following choices:
-        uniform_sampling: Optional bool
-            Changes the default behavior of the "sample" method (aka creating a child and mutating it from the current instance)
-            or the sampling optimizers, to creating a child with a value sampled uniformly (or log-uniformly) within
-            the while range of the bounds. The "sample" method is used by some algorithms to create an initial population.
-            This is activated by default if both bounds are provided.
-        """  # TODO improve description of methods
-        super().__init__()
-        self.bounds = tuple(
-            a if isinstance(a, np.ndarray) or a is None else np.array([a], dtype=float)
-            for a in (lower, upper)
-        )
-        both_bounds = all(b is not None for b in self.bounds)
-        self.uniform_sampling = uniform_sampling
-        if uniform_sampling is None:
-            self.uniform_sampling = both_bounds
-        if self.uniform_sampling and not both_bounds:
-            raise errors.NevergradValueError("Cannot use full range sampling if both bounds are not set")
-        if not (lower is None or upper is None):
-            if (self.bounds[0] >= self.bounds[1]).any():  # type: ignore
-                raise errors.NevergradValueError(
-                    f"Lower bounds {lower} should be strictly smaller than upper bounds {upper}"
-                )
-
-    def __call__(self, data: D, inplace: bool = False) -> D:
-        """Creates a new Data instance with bounds"""
-        new = data if inplace else data.copy()
-        # if not utils.BoundChecker(*self.bounds)(new.value):
-        #     raise errors.NevergradValueError("Current value is not within bounds, please update it first")
-        value = new.value
-        new.add_layer(self.copy())
-        try:
-            new.value = value
-        except ValueError as e:
-            raise errors.NevergradValueError(
-                "Current value is not within bounds, please update it first"
-            ) from e
-        # TODO warn if sigma is too large for range
-        # if all(x is not None for x in self.bounds):
-        #     std_bounds = tuple(self._to_reduced_space(b) for b in self.bounds)  # type: ignore
-        #     min_dist = np.min(np.abs(std_bounds[0] - std_bounds[1]).ravel())
-        #     if min_dist < 3.0:
-        #         warnings.warn(
-        #             f"Bounds are {min_dist} sigma away from each other at the closest, "
-        #             "you should aim for at least 3 for better quality."
-        #         )
-        return new
-
-    def _layered_sample(self) -> "Data":
-        if not self.uniform_sampling:
-            return super()._layered_sample()  # type: ignore
-        root = self._layers[0]
-        if not isinstance(root, Data):
-            raise errors.NevergradTypeError(f"BoundLayer {self} on a non-Data root {root}")
-        child = root.spawn_child()
-        shape = super()._layered_get_value().shape
-        bounds = tuple(b * np.ones(shape) for b in self.bounds)
-        new_val = root.random_state.uniform(*bounds)
-        # send new val to the layer under this one for the child
-        child._deeper_layers()[-1]._layered_set_value(new_val)
-        return child
-
-    def _check(self, value: np.ndarray) -> None:
-        if not utils.BoundChecker(*self.bounds)(value):
-            raise errors.NevergradValueError("New value does not comply with bounds")
-
-
-class Modulo(BoundLayer):
-    """Applies a modulo operation on the array
-    CAUTION: WIP
-    """
-
-    def __init__(self, module: tp.Any) -> None:
-        super().__init__(lower=0, upper=module)
-        if not isinstance(module, (np.ndarray, np.float, np.int, float, int)):
-            raise TypeError(f"Unsupported type {type(module)} for module")
-        self._module = module
-
-    def _layered_get_value(self) -> np.ndarray:
-        return super()._layered_get_value() % self._module  # type: ignore
-
-    def _layered_set_value(self, value: np.ndarray) -> None:
-        self._check(value)
-        current = super()._layered_get_value()
-        super()._layered_set_value(current - (current % self._module) + value)
-
-
-class Exponent(_layering.Layered):
-    """Applies an array as exponent of a floar"""
-
-    def __init__(self, base: float) -> None:
-        super().__init__()
-        if base <= 0:
-            raise errors.NevergradValueError("Exponent must be strictly positive")
-        self._base = base
-
-    def _layered_get_value(self) -> np.ndarray:
-        return self._base ** super()._layered_get_value()  # type: ignore
-
-    def _layered_set_value(self, value: np.ndarray) -> None:
-        super()._layered_set_value(np.log(value) / np.log(self._base))
-
-
-class Bound(BoundLayer):
-    def __init__(
-        self,
-        lower: tp.BoundValue = None,
-        upper: tp.BoundValue = None,
-        method: str = "bouncing",
-        uniform_sampling: tp.Optional[bool] = None,
-    ) -> None:
-        """Bounds all real values into [lower, upper] using a provided method
-
-        See Parameter.set_bounds
-        """
-        super().__init__(lower=lower, upper=upper, uniform_sampling=uniform_sampling)
-        # update instance
-        transforms = dict(
-            clipping=trans.Clipping,
-            arctan=trans.ArctanBound,
-            tanh=trans.TanhBound,
-            gaussian=trans.CumulativeDensity,
-        )
-        transforms["bouncing"] = functools.partial(trans.Clipping, bounce=True)  # type: ignore
-        if method not in transforms:
-            raise errors.NevergradValueError(
-                f"Unknown method {method}, available are: {transforms.keys()}\nSee docstring for more help."
-            )
-        self._transform = transforms[method](*self.bounds)
-
-    def _layered_get_value(self) -> np.ndarray:
-        return self._transform.forward(super()._layered_get_value())  # type: ignore
-
-    def _layered_set_value(self, value: np.ndarray) -> None:
-        super()._layered_set_value(self._transform.backward(value))

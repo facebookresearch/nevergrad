@@ -1,7 +1,8 @@
+# pylint: disable=cyclic-import
 import pytest
 import numpy as np
 import nevergrad as ng
-from . import data
+from . import _datalayers
 
 
 def test_scalar_module() -> None:
@@ -16,8 +17,8 @@ def test_scalar_module() -> None:
 def test_bound_module() -> None:
     ref = ng.p.Scalar()
     with pytest.raises(ng.errors.NevergradValueError):
-        data.Bound(3, 8, method="arctan")(ref)
-    x = data.Bound(-1, 8, method="arctan")(ref)
+        _datalayers.Bound(3, 8, method="arctan")(ref)
+    x = _datalayers.Bound(-1, 8, method="arctan")(ref)
     x.set_standardized_data([100], reference=ref)
     np.testing.assert_almost_equal(x.value, 7.97135306)
 
