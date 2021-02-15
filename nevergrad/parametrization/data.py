@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.(an
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -7,6 +7,9 @@ import functools
 import warnings
 import numpy as np
 import nevergrad.common.typing as tp
+
+from nevergrad.common import errors
+from . import _layering
 from . import core
 from .container import Dict
 from . import utils
@@ -18,6 +21,8 @@ from . import transforms as trans
 
 D = tp.TypeVar("D", bound="Data")
 P = tp.TypeVar("P", bound=core.Parameter)
+# L = tp.TypeVar("L", bound=_layering.Layered)
+BL = tp.TypeVar("BL", bound="BoundLayer")
 
 
 def _param_string(parameters: Dict) -> str:
@@ -40,6 +45,9 @@ class Mutation(core.Parameter):
     Recombinations should take several
     """
 
+    # NOTE: this API should disappear in favor of the layer API
+    # (a layer can modify the mutation scheme)
+
     # pylint: disable=unused-argument
     value: core.ValueProperty[tp.Callable[[tp.Sequence[D]], None]] = core.ValueProperty()
 
@@ -47,10 +55,10 @@ class Mutation(core.Parameter):
         super().__init__()
         self.parameters = Dict(**kwargs)
 
-    def _get_value(self) -> tp.Callable[[tp.Sequence[D]], None]:
+    def _layered_get_value(self) -> tp.Callable[[tp.Sequence[D]], None]:
         return self.apply
 
-    def _set_value(self, value: tp.Any) -> None:
+    def _layered_set_value(self, value: tp.Any) -> None:
         raise RuntimeError("Mutation cannot be set.")
 
     def _get_name(self) -> str:
@@ -112,12 +120,12 @@ class Data(core.Parameter):
             self._value = np.zeros(shape)
         else:
             raise ValueError(err_msg)
-        self.integer = False
         self.exponent: tp.Optional[float] = None
         self.bounds: tp.Tuple[tp.Optional[np.ndarray], tp.Optional[np.ndarray]] = (None, None)
         self.bound_transform: tp.Optional[trans.BoundTransform] = None
         self.full_range_sampling = False
         self._ref_data: tp.Optional[np.ndarray] = None
+        self.add_layer(_layering.ArrayCasting())
 
     def _compute_descriptors(self) -> utils.Descriptors:
         return utils.Descriptors(continuous=not self.integer)
@@ -142,9 +150,11 @@ class Data(core.Parameter):
         """Value for the standard deviation used to mutate the parameter"""
         return self.parameters["sigma"]  # type: ignore
 
-    def sample(self: D) -> D:
+    def _layered_sample(self: D) -> D:
         if not self.full_range_sampling:
-            return super().sample()
+            child = self.spawn_child()
+            child.mutate()
+            return child
         child = self.spawn_child()
         func = (lambda x: x) if self.exponent is None else self._to_reduced_space  # noqa
         std_bounds = tuple(func(b * np.ones(self._value.shape)) for b in self.bounds)
@@ -163,8 +173,6 @@ class Data(core.Parameter):
         upper: tp.BoundValue = None,
         method: str = "bouncing",
         full_range_sampling: tp.Optional[bool] = None,
-        a_min: tp.BoundValue = None,
-        a_max: tp.BoundValue = None,
     ) -> D:
         """Bounds all real values into [lower, upper] using a provided method
 
@@ -200,7 +208,6 @@ class Data(core.Parameter):
         - "tanh" reaches the boundaries really quickly, while "arctan" is much softer
         - only "clipping" accepts partial bounds (None values)
         """  # TODO improve description of methods
-        lower, upper = _a_min_max_deprecation(**locals())
         bounds = tuple(
             a if isinstance(a, np.ndarray) or a is None else np.array([a], dtype=float)
             for a in (lower, upper)
@@ -339,8 +346,11 @@ class Data(core.Parameter):
         difficult. It is especially ill-advised to use this with a range smaller than 10, or
         a sigma lower than 1. In those cases, you should rather use a TransitionChoice instead.
         """
-        self.integer = True
-        return self
+        return self.add_layer(_layering.IntegerCasting())
+
+    @property
+    def integer(self) -> bool:
+        return any(isinstance(x, _layering.IntegerCasting) for x in self._layers)
 
     # pylint: disable=unused-argument
     def _internal_set_standardized_data(
@@ -381,7 +391,6 @@ class Data(core.Parameter):
         if recomb is None:
             return
         all_params = [self] + list(others)
-        print(all_params)
         if isinstance(recomb, str) and recomb == "average":
             all_arrays = [p.get_standardized_data(reference=self) for p in all_params]
             self.set_standardized_data(np.mean(all_arrays, axis=0), deterministic=False)
@@ -397,23 +406,9 @@ class Data(core.Parameter):
         child._value = np.array(self._value, copy=True)
         return child
 
-
-class Array(Data):
-
-    value: core.ValueProperty[np.ndarray] = core.ValueProperty()
-
-    def _get_value(self) -> np.ndarray:
-        if self.integer:
-            return np.round(self._value)  # type: ignore
-        return self._value
-
-    def _set_value(self, value: tp.ArrayLike) -> None:
+    def _layered_set_value(self, value: np.ndarray) -> None:
         self._check_frozen()
         self._ref_data = None
-        if not isinstance(value, (np.ndarray, tuple, list)):
-            raise TypeError(f"Received a {type(value)} in place of a np.ndarray/tuple/list")
-        value = np.asarray(value)
-        assert isinstance(value, np.ndarray)
         if self._value.shape != value.shape:
             raise ValueError(
                 f"Cannot set array of shape {self._value.shape} with value of shape {value.shape}"
@@ -423,6 +418,19 @@ class Array(Data):
         if self.exponent is not None and np.min(value.ravel()) <= 0:
             raise ValueError("Logirithmic values cannot be negative")
         self._value = value
+
+    def _layered_get_value(self) -> np.ndarray:
+        return self._value
+
+    def __mod__(self: D, other: tp.Any) -> D:
+        new = self.copy()
+        new.add_layer(Modulo(other))
+        return new
+
+
+class Array(Data):
+
+    value: core.ValueProperty[np.ndarray] = core.ValueProperty()
 
 
 class Scalar(Data):
@@ -470,30 +478,7 @@ class Scalar(Data):
             self.set_mutation(sigma=(upper - lower) / 6)  # type: ignore
         if any(a is not None for a in (lower, upper)):
             self.set_bounds(lower=lower, upper=upper, full_range_sampling=bounded and no_init)
-
-    def _get_value(self) -> float:
-        return float(self._value[0]) if not self.integer else int(np.round(self._value[0]))
-
-    def _set_value(self, value: float) -> None:
-        self._check_frozen()
-        if not isinstance(value, (float, int, np.float, np.int)):
-            raise TypeError(f"Received a {type(value)} in place of a scalar (float, int)")
-        self._value = np.array([value], dtype=float)
-
-
-# pylint: disable=unused-argument
-def _a_min_max_deprecation(
-    a_min: tp.Any, a_max: tp.Any, lower: tp.Any, upper: tp.Any, **kwargs: tp.Any
-) -> tp.Tuple[tp.Any, tp.Any]:
-    if a_min is not None:
-        warnings.warn('"a_min" is deprecated in favor of "lower" for clarity', DeprecationWarning)
-        assert lower is None, "Use only lower, and not a_min"
-        lower = a_min
-    if a_max is not None:
-        warnings.warn('"a_max" is deprecated in favor of "upper" for clarity', DeprecationWarning)
-        assert upper is None, "Use only upper, and not a_max"
-        upper = a_max
-    return lower, upper
+        self.add_layer(_layering._ScalarCasting())
 
 
 class Log(Scalar):
@@ -527,10 +512,7 @@ class Log(Scalar):
         lower: tp.Optional[float] = None,
         upper: tp.Optional[float] = None,
         mutable_sigma: bool = False,
-        a_min: tp.Optional[float] = None,
-        a_max: tp.Optional[float] = None,
     ) -> None:
-        lower, upper = _a_min_max_deprecation(**locals())
         no_init = init is None
         bounded = all(a is not None for a in (lower, upper))
         if bounded:
@@ -548,3 +530,77 @@ class Log(Scalar):
         self.set_mutation(sigma=1.0, exponent=exponent)
         if any(a is not None for a in (lower, upper)):
             self.set_bounds(lower, upper, full_range_sampling=bounded and no_init)
+
+
+# LAYERS # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+
+class BoundLayer(_layering.Layered):
+
+    _LAYER_LEVEL = _layering.Level.OPERATION
+
+    def __init__(
+        self,
+        lower: tp.BoundValue = None,
+        upper: tp.BoundValue = None,
+        full_range_sampling: tp.Optional[bool] = None,
+    ) -> None:
+        """Bounds all real values into [lower, upper]
+        CAUTION: WIP
+
+        Parameters
+        ----------
+        lower: float or None
+            minimum value
+        upper: float or None
+            maximum value
+        method: str
+            One of the following choices:
+        full_range_sampling: Optional bool
+            Changes the default behavior of the "sample" method (aka creating a child and mutating it from the current instance)
+            or the sampling optimizers, to creating a child with a value sampled uniformly (or log-uniformly) within
+            the while range of the bounds. The "sample" method is used by some algorithms to create an initial population.
+            This is activated by default if both bounds are provided.
+        """  # TODO improve description of methods
+        super().__init__()
+        self.bounds = tuple(
+            a if isinstance(a, np.ndarray) or a is None else np.array([a], dtype=float)
+            for a in (lower, upper)
+        )
+        both_bounds = all(b is not None for b in self.bounds)
+        self.full_range_sampling = full_range_sampling
+        if full_range_sampling is None:
+            self.full_range_sampling = both_bounds
+
+    def _layered_sample(self) -> "Data":
+        if not self.full_range_sampling:
+            return super()._layered_sample()  # type: ignore
+        root = self._layers[0]
+        if not isinstance(root, Data):
+            raise errors.NevergradTypeError(f"BoundLayer {self} on a non-Data root {root}")
+        child = root.spawn_child()
+        shape = super()._layered_get_value().shape
+        bounds = tuple(b * np.ones(shape) for b in self.bounds)
+        new_val = root.random_state.uniform(*bounds)
+        # send new val to the layer under this one for the child
+        child._layers[self._index - 1]._layered_set_value(new_val)
+        return child
+
+
+class Modulo(BoundLayer):
+    """Cast Data as integer (or integer array)
+    CAUTION: WIP
+    """
+
+    def __init__(self, module: tp.Any) -> None:
+        super().__init__(lower=0, upper=module)
+        if not isinstance(module, (np.ndarray, np.float, np.int, float, int)):
+            raise TypeError(f"Unsupported type {type(module)} for module")
+        self._module = module
+
+    def _layered_get_value(self) -> np.ndarray:
+        return super()._layered_get_value() % self._module  # type: ignore
+
+    def _layered_set_value(self, value: np.ndarray) -> None:
+        current = super()._layered_get_value()
+        super()._layered_set_value(current - (current % self._module) + value)
