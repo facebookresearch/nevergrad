@@ -8,6 +8,8 @@ import nevergrad as ng
 
 # pylint: disable=reimported,redefined-outer-name,unused-variable,unsubscriptable-object, unused-argument
 # pylint: disable=import-outside-toplevel
+# black tends to make too long lines for the doc
+# fmt: off
 
 
 def test_simplest_example() -> None:
@@ -40,7 +42,10 @@ def test_base_example() -> None:
     print(recommendation.value)
     # >>> [0.49971112 0.5002944 ]
     # DOC_BASE_1
-    instrum = ng.p.Instrumentation(ng.p.Array(shape=(2,)), y=ng.p.Scalar())
+    instrum = ng.p.Instrumentation(
+        ng.p.Array(shape=(2,)).set_bounds(lower=-12, upper=12),
+        y=ng.p.Scalar()
+    )
     optimizer = ng.optimizers.OnePlusOne(parametrization=instrum, budget=100)
     recommendation = optimizer.minimize(square)
     print(recommendation.value)
@@ -71,24 +76,22 @@ def test_base_example() -> None:
     # DOC_BASE_4
     import nevergrad as ng
 
-    def onemax(*x):
+    def onemax(x):
         return len(x) - x.count(1)
 
     # Discrete, ordered
-    variables = list(ng.p.TransitionChoice(list(range(7))) for _ in range(10))
-    instrum = ng.p.Instrumentation(*variables)
-    optimizer = ng.optimizers.DiscreteOnePlusOne(parametrization=instrum, budget=100, num_workers=1)
+    param = ng.p.TransitionChoice(range(7), repetitions=10)
+    optimizer = ng.optimizers.DiscreteOnePlusOne(parametrization=param, budget=100, num_workers=1)
 
     recommendation = optimizer.provide_recommendation()
     for _ in range(optimizer.budget):
         x = optimizer.ask()
-        loss = onemax(*x.args, **x.kwargs)
+        # loss = onemax(*x.args, **x.kwargs)  # equivalent to x.value if not using Instrumentation
+        loss = onemax(x.value)
         optimizer.tell(x, loss)
 
     recommendation = optimizer.provide_recommendation()
     print(recommendation.value)
-    # >>> ((1, 1, 0, 1, 1, 4, 1, 1, 1, 1), {})
-    print(recommendation.args)
     # >>> (1, 1, 0, 1, 1, 4, 1, 1, 1, 1)
     # DOC_BASE_5
 

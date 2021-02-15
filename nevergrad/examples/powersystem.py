@@ -38,10 +38,10 @@ power_system_loss = PowerSystem(
     constant_to_year_ratio=constant_to_year_ratio,
 )
 optimizer = ng.optimizers.SplitOptimizer(
-    instrumentation=power_system_loss.dimension, budget=budget, num_workers=10
+    parametrization=power_system_loss.dimension, budget=budget, num_workers=10
 )
 optimizer.minimize(power_system_loss)
-power_system_loss(optimizer.provide_recommendation().data)
+power_system_loss(optimizer.provide_recommendation().value)
 power_system_loss.make_plots(
     f"ps_{num_dams}dams_{depth}_{width}_ytdr{year_to_day_ratio}_btn{back_to_normal}"
     f"_num_thermal_plants{num_thermal_plants}_ctyr{constant_to_year_ratio}_budget{budget}.png"
