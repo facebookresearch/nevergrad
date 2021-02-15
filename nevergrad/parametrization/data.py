@@ -401,11 +401,9 @@ class Data(core.Parameter):
         else:
             raise ValueError(f'Unknown recombination "{recomb}"')
 
-    def spawn_child(self: D, new_value: tp.Optional[tp.Any] = None) -> D:
-        child = super().spawn_child()  # dont forward the value
+    def copy(self: D) -> D:
+        child = super().copy()
         child._value = np.array(self._value, copy=True)
-        if new_value is not None:
-            child.value = new_value
         return child
 
     def _layered_set_value(self, value: np.ndarray) -> None:

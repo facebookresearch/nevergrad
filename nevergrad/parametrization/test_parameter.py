@@ -411,3 +411,12 @@ def test_scalar_module() -> None:
     assert x.get_standardized_data(reference=ref)[0] == 10
     x.value = 1
     assert x.get_standardized_data(reference=ref)[0] == 9  # find the closest
+
+
+def test_parenthood() -> None:
+    param = par.Instrumentation(par.Scalar(init=1.0, mutable_sigma=True).set_mutation(exponent=2.0, sigma=5))
+    sigma_uid = param[0][0].sigma.uid  # type: ignore
+    param_samp = param.sample()
+    param_spawn = param.spawn_child()
+    assert param_samp[0][0].sigma.parents_uids == []  # type: ignore
+    assert param_spawn[0][0].sigma.parents_uids == [sigma_uid]  # type: ignore

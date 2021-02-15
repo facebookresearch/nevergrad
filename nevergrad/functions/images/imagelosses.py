@@ -30,7 +30,6 @@ class ImageLoss:
             assert self.reference.max() <= 256.0, f"Image max = {self.reference.max()}"
             assert self.reference.max() > 3.0  # Not totally sure but entirely black images are not very cool.
             self.domain_shape = self.reference.shape
-        pass
 
     def __call__(self, img: np.ndarray) -> float:
         raise NotImplementedError(f"__call__ undefined in class {type(self)}")

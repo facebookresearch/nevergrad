@@ -14,6 +14,9 @@ from ._layering import Layered as Layered
 from ._layering import Level
 
 
+# pylint: disable=no-value-for-parameter,pointless-statement
+
+
 P = tp.TypeVar("P", bound="Parameter")
 
 
@@ -120,10 +123,11 @@ class Parameter(Layered):
         and parameter.heritage["lineage"] is reset to parameter.uid instead of its parent's
         """
         # inner working can be overrided by _layer_sample()
+        self.random_state  # make sure to populate it before copy
         child = self._layered_sample()
-        if not isinstance(self, type(self)):
+        if not isinstance(child, Parameter) and not isinstance(child, type(self)):
             raise errors.NevergradRuntimeError("Unexpected sample return type")
-        child.heritage["lineage"] = child.uid  # type: ignore
+        child._set_parenthood(None)
         return child  # type: ignore
 
     def recombine(self: P, *others: P) -> None:
@@ -325,14 +329,23 @@ class Parameter(Layered):
         """
         # make sure to initialize the random state  before spawning children
         self.random_state  # pylint: disable=pointless-statement
+        child = self.copy()
+        child._set_parenthood(self)
+        if new_value is not None:
+            child.value = new_value
+        return child
+
+    def copy(self: P) -> P:
+        """Creates a full copy of the parameter.
+        Use spawn_child instead to make sure to add the parenthood information.
+        """
         child = super().copy()
         child.uid = uuid.uuid4().hex
         child._frozen = False
-        child._generation += 1
-        child.parents_uids = [self.uid]
-        child.heritage = dict(self.heritage)
         child._subobjects = self._subobjects.new(child)
         child._meta = {}
+        child.parents_uids = list(self.parents_uids)
+        child.heritage = dict(self.heritage)
         child.loss = None
         child._losses = None
         child._constraint_checkers = list(self._constraint_checkers)
@@ -348,11 +361,20 @@ class Parameter(Layered):
             container = dict(container) if isinstance(container, dict) else list(container)
             setattr(child, attribute, container)
         for key, val in self._subobjects.items():
-            container[key] = val.spawn_child()
+            container[key] = val.copy()
         del child.value  # clear cache
-        if new_value is not None:
-            child.value = new_value
         return child
+
+    def _set_parenthood(self, parent: tp.Optional["Parameter"]) -> None:
+        """Sets the parenthood information to Parameter and subparameters."""
+        if parent is None:
+            self._generation = 0
+            self.heritage = dict(lineage=self.uid)
+            self.parents_uids = []
+        else:
+            self._generation = parent.generation + 1
+            self.parents_uids = [parent.uid]
+        self._subobjects.apply("_set_parenthood", parent)
 
     def freeze(self) -> None:
         """Prevents the parameter from changing value again (through value, mutate etc...)"""
@@ -368,16 +390,6 @@ class Parameter(Layered):
                 "(optimizers freeze the parametrization and all asked and told candidates to avoid border effects)"
             )
         self._subobjects.apply("_check_frozen")
-
-    def copy(self: P) -> P:  # TODO test (see former instrumentation_copy test)
-        """Create a child, but remove the random state
-        This is used to run multiple experiments
-        """
-        child = self.spawn_child()
-        child._generation -= 1
-        child.parents_uids = list(self.parents_uids)
-        child.random_state = None
-        return child
 
     def _compute_descriptors(self) -> utils.Descriptors:
         return utils.Descriptors()
