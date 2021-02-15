@@ -580,9 +580,9 @@ class BoundLayer(_layering.Layered):
         child = root.spawn_child()
         shape = super()._layered_get_value().shape
         bounds = tuple(b * np.ones(shape) for b in self.bounds)
-        diff = bounds[1] - bounds[0]
-        super()._layered_set_value(bounds[0] + root.random_state.uniform(0, 1, size=shape) * diff)
-        child.heritage["lineage"] = child.uid
+        new_val = root.random_state.uniform(*bounds)
+        # send new val to the layer under this one for the child
+        child._layers[self._index - 1]._layered_set_value(new_val)
         return child
 
 

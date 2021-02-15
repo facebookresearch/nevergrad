@@ -336,7 +336,7 @@ class Parameter(Layered):
         return child
 
     def copy(self: P) -> P:
-        """Creates a full copy of the parameter.
+        """Creates a full copy of the parameter (with new unique uid).
         Use spawn_child instead to make sure to add the parenthood information.
         """
         child = super().copy()
