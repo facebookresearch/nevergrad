@@ -373,7 +373,7 @@ class Parameter:
         child._subobjects = self._subobjects.new(child)
         child._meta = {}
         child.parents_uids = []
-        child.heritage = dict()
+        child.heritage = dict(self.heritage)
         child.loss = None
         child._losses = None
         child._constraint_checkers = list(self._constraint_checkers)
@@ -387,11 +387,12 @@ class Parameter:
         if mode == "spawn_child":
             child._generation += 1
             child.parents_uids = [self.uid]
-            child.heritage = dict(self.heritage)
         elif mode == "sample":
             child._generation = 0
-            child.heritage["lineage"] = child.uid
+            child.heritage = dict(lineage=child.uid)
+            child.parents_uids = []
         elif mode == "copy":
+            child.parents_uids = list(self.parents_uids)
             child.random_state = None
         else:
             raise NotImplementedError(f"No copy mode {mode!r}")
