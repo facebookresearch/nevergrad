@@ -743,7 +743,7 @@ def _constraint_solver(parameter: p.Parameter, budget: int) -> p.Parameter:
         cand = opt.ask(ignore_constraints = True)
         # Our objective function is minimum for the point the closest to
         # the original candidate under the constraints.
-        penalty = sum(cand.constraint_penalties())
+        penalty = cand.constraint_penalties()
         if not penalty > 0:  # constraints are satisfied
             return cand
         # TODO: this may not scale well with dimension

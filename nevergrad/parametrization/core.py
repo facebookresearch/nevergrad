@@ -314,10 +314,7 @@ class Parameter:
             the list of penalties for each constraint
         """
         val = self.value
-        penalties = [utils.float_penalty(func(val)) for func in self._constraint_checkers]
-        if self._parameters is not None:
-            penalties += self.parameters.constraint_penalties()
-        return penalties
+        return sum(utils.float_penalty(func(val)) for func in self._constraint_checkers)
 
     def satisfies_constraints(self) -> bool:
         """Whether the instance satisfies the constraints added through
