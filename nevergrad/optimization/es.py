@@ -66,7 +66,7 @@ class _EvolutionStrategy(base.Optimizer):
             if loss < parent_value:
                 self._population[uid] = candidate
         else:
-            no_parent = not candidate.parents_uids or candidate.parents_uids[0] not in self._population
+            no_parent = next(iter(candidate.parents_uids), "#no_parent#") not in self._population
             if no_parent and len(self._population) < self._config.popsize:
                 self._population[candidate.uid] = candidate
                 self._uid_queue.tell(candidate.uid)
