@@ -1053,7 +1053,7 @@ def neuro_control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experime
                             
                             
 @registry.register
-def simpletsp(seed: tp.Optional[int] = None, complex_tsp: bool = False) -> tp.Iterator[Experiment]:
+def simple_tsp(seed: tp.Optional[int] = None, complex_tsp: bool = False) -> tp.Iterator[Experiment]:
     """Simple TSP problems. Please note that the methods we use could be applied or complex variants, whereas
     specialized methods can not always do it; therefore this comparisons from a black-box point of view makes sense
     even if white-box methods are not included though they could do this more efficiently.
@@ -1075,9 +1075,9 @@ def simpletsp(seed: tp.Optional[int] = None, complex_tsp: bool = False) -> tp.It
 
                             
 @registry.register
-def complextsp(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Counterpart of simpletsp with non-planar term."""
-    return simpletsp(seed, complex_tsp=True)
+def complex_tsp(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of simple_tsp with non-planar term."""
+    return simple_tsp(seed, complex_tsp=True)
 
 
 @registry.register
