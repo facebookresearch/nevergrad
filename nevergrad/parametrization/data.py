@@ -392,8 +392,8 @@ class Data(core.Parameter):
         else:
             raise ValueError(f'Unknown recombination "{recomb}"')
 
-    def _inner_copy(self: D, mode: str) -> D:
-        child = super()._inner_copy(mode=mode)
+    def copy(self: D) -> D:
+        child = super().copy()
         child._value = np.array(self._value, copy=True)
         return child
 

@@ -11,7 +11,7 @@ import nevergrad.common.typing as tp
 from nevergrad.common import errors
 from . import utils
 
-# pylint: disable=no-value-for-parameter
+# pylint: disable=no-value-for-parameter,pointless-statement
 
 
 P = tp.TypeVar("P", bound="Parameter")
@@ -148,7 +148,9 @@ class Parameter:
         This function should be used in optimizers when creating an initial population,
         and parameter.heritage["lineage"] is reset to parameter.uid instead of its parent's
         """
-        child = self._inner_copy(mode="sample")
+        self.random_state  # make sure to populate it before copy
+        child = self.copy()
+        child._set_parenthood(None)
         child.mutate()
         return child
 
@@ -258,7 +260,7 @@ class Parameter:
         if isinstance(val, (str, bytes, float, int)):
             return val
         elif isinstance(val, np.ndarray):
-            return val.tobytes()  # type: ignore
+            return val.tobytes()
         else:
             raise errors.UnsupportedParameterOperationError(
                 f"Value hash is not supported for object {self.name}"
@@ -364,38 +366,6 @@ class Parameter:
         self._random_state = random_state
         self._subobjects.apply("_set_random_state", random_state)
 
-    def _inner_copy(self: P, mode: str) -> P:
-        # make sure to initialize the random state  before spawning children
-        if mode != "copy":
-            self.random_state  # pylint: disable=pointless-statement
-        child = copy.copy(self)
-        child.uid = uuid.uuid4().hex
-        child._frozen = False
-        child._subobjects = self._subobjects.new(child)
-        child._meta = {}
-        child.parents_uids = list(self.parents_uids)
-        child.heritage = dict(self.heritage)
-        child.loss = None
-        child._losses = None
-        child._constraint_checkers = list(self._constraint_checkers)
-        attribute = self._subobjects.attribute
-        container = getattr(child, attribute)
-        if attribute != "__dict__":  # make a copy of the container if different from __dict__
-            container = dict(container) if isinstance(container, dict) else list(container)
-            setattr(child, attribute, container)
-        for key, val in self._subobjects.items():
-            container[key] = val._inner_copy(mode=mode)
-        if mode == "spawn_child":
-            child._generation += 1
-            child.parents_uids = [self.uid]
-        elif mode == "sample":
-            child._generation = 0
-            child.heritage = dict(lineage=child.uid)
-            child.parents_uids = []
-        elif mode != "copy":
-            raise NotImplementedError(f"No copy mode {mode!r}")
-        return child
-
     def spawn_child(self: P, new_value: tp.Optional[tp.Any] = None) -> P:
         """Creates a new instance which shares the same random generator than its parent,
         is sampled from the same data, and mutates independently from the parentp.
@@ -412,10 +382,46 @@ class Parameter:
             a new instance of the same class, with same content/internal-model parameters/...
             Optionally, a new value will be set after creation
         """
-        child = self._inner_copy(mode="spawn_child")
+        self.random_state  # make sure to initialize the random state  before spawning children
+        child = self.copy()
+        child._set_parenthood(self)
         if new_value is not None:
             child.value = new_value
         return child
+
+    def copy(self: P) -> P:
+        """Creates a full copy of the parameter.
+        Use spawn_child instead to make sure to add the parenthood information.
+        """
+        child = copy.copy(self)
+        child.uid = uuid.uuid4().hex
+        child._frozen = False
+        child._subobjects = self._subobjects.new(child)
+        child._meta = {}
+        child.parents_uids = list(self.parents_uids)
+        child.heritage = dict(self.heritage)
+        child.loss = None
+        child._losses = None
+        child._constraint_checkers = list(self._constraint_checkers)
+        attribute = self._subobjects.attribute
+        container = getattr(child, attribute)
+        if attribute != "__dict__":  # make a copy of the container if different from __dict__
+            container = dict(container) if isinstance(container, dict) else list(container)
+            setattr(child, attribute, container)
+        for key, val in self._subobjects.items():
+            container[key] = val.copy()
+        return child
+
+    def _set_parenthood(self, parent: tp.Optional["Parameter"]) -> None:
+        """Sets the parenthood information to Parameter and subparameters."""
+        if parent is None:
+            self._generation = 0
+            self.heritage = dict(lineage=self.uid)
+            self.parents_uids = []
+        else:
+            self._generation = parent.generation + 1
+            self.parents_uids = [parent.uid]
+        self._subobjects.apply("_set_parenthood", parent)
 
     def freeze(self) -> None:
         """Prevents the parameter from changing value again (through value, mutate etc...)"""
@@ -431,12 +437,6 @@ class Parameter:
                 "(optimizers freeze the parametrization and all asked and told candidates to avoid border effects)"
             )
         self._subobjects.apply("_check_frozen")
-
-    def copy(self: P) -> P:  # TODO test (see former instrumentation_copy test)
-        """Create a child, but remove the random state
-        This is used to run multiple experiments
-        """
-        return self._inner_copy(mode="copy")
 
     def _compute_descriptors(self) -> utils.Descriptors:
         return utils.Descriptors()
@@ -454,7 +454,7 @@ class Parameter:
 
 class Constant(Parameter):
     """Parameter-like object for simplifying management of constant parameters:
-    mutation/recombination do nothing, value cannot be changed, standardize data is an empty array,
+    mutation / recombination do nothing, value cannot be changed, standardize data is an empty array,
     child is the same instance.
 
     Parameter
