@@ -520,7 +520,7 @@ def test_metamodel(dimension: int, num_workers: int, scale: float, budget: int, 
     "penalization,expected",
     [
         (False, [1.005573e00, 3.965783e-04]),
-        (True, [0.999987, -0.322118]),
+        (True, [1.000029, -1.606446]),
     ],
 )
 @testing.suppress_nevergrad_warnings()  # hides failed constraints
@@ -532,7 +532,7 @@ def test_constrained_optimization(penalization: bool, expected: tp.List[float]) 
     optimizer = optlib.OnePlusOne(parametrization, budget=100)
     optimizer.parametrization.random_state.seed(12)
     if penalization:
-        optimizer._constraints_manager.update(max_trials=2, penalty_factor=10)
+        optimizer._constraints_manager.update(max_trials=8, penalty_factor=10)
 
         def constraint(i: tp.Any) -> tp.Union[bool, float]:  # pylint: disable=function-redefined
             return -abs(i[1]["x"][0] - 1)
@@ -640,7 +640,7 @@ def test_bo_ordering() -> None:
         (None, 3, 20, False, 1000, ["MetaModel", "MetaModel"]),
     ],
 )
-def test_ngo_split_optimizer(
+def test_ngo_split_optimizer(  # pylint: disable=too-many-arguments
     name: tp.Optional[str],
     dimension: int,
     num_workers: int,

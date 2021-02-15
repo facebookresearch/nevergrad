@@ -272,6 +272,20 @@ class Parameter:
 
     # %% Constraint management
 
+    def constraint_penalties(self) -> tp.List[float]:
+        """Returns the list of constraint penalties penalties
+
+        Returns
+        -------
+        list of float
+            the list of penalties for each constraint
+        """
+        val = self.value
+        penalties = [utils.float_penalty(func(val)) for func in self._constraint_checkers]
+        if self._parameters is not None:
+            penalties += self.parameters.constraint_penalties()
+        return penalties
+
     def satisfies_constraints(self) -> bool:
         """Whether the instance satisfies the constraints added through
         the `register_cheap_constraint` method
@@ -281,12 +295,8 @@ class Parameter:
         bool
             True iff the constraint is satisfied
         """
-        if self._parameters is not None and not self.parameters.satisfies_constraints():
-            return False
-        if not self._constraint_checkers:
-            return True
-        val = self.value
-        return all(utils.float_penalty(func(val)) <= 0 for func in self._constraint_checkers)
+        violations = self.constraint_penalties()
+        return max(violations, default=0) <= 0.0
 
     def register_cheap_constraint(
         self, func: tp.Union[tp.Callable[[tp.Any], bool], tp.Callable[[tp.Any], float]]
@@ -608,11 +618,12 @@ class Container(Parameter):
             if isinstance(param, Parameter):
                 param._set_random_state(random_state)
 
-    def satisfies_constraints(self) -> bool:
-        compliant = super().satisfies_constraints()
-        return compliant and all(
-            param.satisfies_constraints() for param in self._content.values() if isinstance(param, Parameter)
-        )
+    def constraint_penalties(self) -> tp.List[float]:
+        violations = super().constraint_penalties()
+        for param in self._content.values():
+            if isinstance(param, Parameter):
+                violations.extend(param.constraint_penalties())
+        return violations
 
     def freeze(self) -> None:
         super().freeze()

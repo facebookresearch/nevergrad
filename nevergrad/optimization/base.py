@@ -415,7 +415,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         if self.pruning is not None:
             self.archive = self.pruning(self.archive)
 
-    def ask(self) -> p.Parameter:
+    def ask(self, ignore_constraints: bool = False) -> p.Parameter:
         """Provides a point to explore.
         This function can be called multiple times to explore several points in parallel
 
@@ -431,29 +431,44 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         current_num_ask = self.num_ask
         # tentatives if a cheap constraint is available
         # TODO: this should be replaced by an optimization algorithm.
-        max_trials = self._constraints_manager.max_trials
+        max_trials = max(
+            1, self._constraints_manager.max_trials // 2 if self.budget is None else (self.budget - self.num_ask) 
+        )  # half will be used for sub-optimization --- if the optimization method does not need/use a budget.
+        # TODO(oteytaud): actually we could do this even when the budget is known, if we are sure that exceeding the budget is not a problem.
+        # Very simple constraint solver:
+        # - we use a simple algorithm.
+        # - no memory of previous iterations.
+        # - just projection to constraint satisfaction.
+        # We try using the normal tool during half constraint budget, in order to reduce the impact on the normal run.
         for k in range(max_trials):
             is_suggestion = False
-            if self._suggestions:
+            if self._suggestions:  # use suggestions if available
                 is_suggestion = True
                 candidate = self._suggestions.pop()
             else:
                 candidate = self._internal_ask_candidate()
-                # only register actual asked points
-            if candidate.satisfies_constraints():
+            if candidate.satisfies_constraints() or ignore_constraints:
                 break  # good to go!
             if self._penalize_cheap_violations:
-                # TODO using a suboptimizer instead may help remove this
+                # Warning! This might be a tell not asked.
                 self._internal_tell_candidate(candidate, float("Inf"))  # DE requires a tell
             self._num_ask += (
                 1  # this is necessary for some algorithms which need new num to ask another point
             )
-            if k == max_trials - 1:
+            if k == max_trials - 1 and not ignore_constraints:
                 warnings.warn(
                     f"Could not bypass the constraint after {max_trials} tentatives, "
                     "sending candidate anyway.",
                     errors.FailedConstraintWarning,
                 )
+        if self._constraints_manager.max_trials > 1 and not candidate.satisfies_constraints():
+            # still not solving, let's run sub-optimization
+            print("sub-optimization!")
+            candidate = _constraint_solver(candidate, budget=max_trials)
+        if not candidate.satisfies_constraints():
+            warnings.warn(
+                f"Could not bypass the constraint after {max_trials} tentatives, " "sending candidate anyway."
+            )
         if not is_suggestion:
             if candidate.uid in self._asked:
                 raise RuntimeError(
@@ -725,3 +740,25 @@ class ConfiguredOptimizer:
             if self._config == other._config:
                 return True
         return False
+
+
+def _constraint_solver(parameter: p.Parameter, budget: int) -> p.Parameter:
+    """Runs a suboptimization to solve the parameter constraints"""
+    opt = registry["OnePlusOne"](parameter, num_workers=1, budget=budget)
+    opt._constraints_manager.max_trials = 1
+    for k in range(budget):
+        print(f"{k}/{budget}")
+        cand = opt.ask(ignore_constraints = True)
+        # Our objective function is minimum for the point the closest to
+        # the original candidate under the constraints.
+        penalty = sum(cand.constraint_penalties())
+        if not penalty > 0:  # constraints are satisfied
+            print("ok!")
+            return cand
+        # TODO: this may not scale well with dimension
+        distance = np.tanh(np.sum(cand.get_standardized_data(reference=parameter) ** 2))
+        # TODO: because of the return whenever constraints are satisfied, the first case never arises
+        loss = distance if penalty <= 0 else penalty + distance + 1.0
+        opt.tell(cand, loss)
+    print("ok done!")
+    return opt.recommend()
