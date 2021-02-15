@@ -125,6 +125,7 @@ class Data(core.Parameter):
         self.bound_transform: tp.Optional[trans.BoundTransform] = None
         self.full_range_sampling = False
         self._ref_data: tp.Optional[np.ndarray] = None
+        self._origin = np.array(self._value, copy=True)
         self.add_layer(_layering.ArrayCasting())
 
     def _compute_descriptors(self) -> utils.Descriptors:
@@ -427,6 +428,11 @@ class Data(core.Parameter):
         new.add_layer(Modulo(other))
         return new
 
+    def __rpow__(self: D, base: float) -> D:
+        new = self.copy()
+        new.add_layer(Exponent(base))
+        return new
+
 
 class Array(Data):
 
@@ -527,6 +533,7 @@ class Log(Scalar):
         if exponent is None:
             exponent = 2.0
         super().__init__(init=init, mutable_sigma=mutable_sigma)
+        # self.add_layer(Exponent(exponent))
         self.set_mutation(sigma=1.0, exponent=exponent)
         if any(a is not None for a in (lower, upper)):
             self.set_bounds(lower, upper, full_range_sampling=bounded and no_init)
@@ -543,10 +550,9 @@ class BoundLayer(_layering.Layered):
         self,
         lower: tp.BoundValue = None,
         upper: tp.BoundValue = None,
-        full_range_sampling: tp.Optional[bool] = None,
+        uniform_sampling: tp.Optional[bool] = None,
     ) -> None:
         """Bounds all real values into [lower, upper]
-        CAUTION: WIP
 
         Parameters
         ----------
@@ -556,7 +562,7 @@ class BoundLayer(_layering.Layered):
             maximum value
         method: str
             One of the following choices:
-        full_range_sampling: Optional bool
+        uniform_sampling: Optional bool
             Changes the default behavior of the "sample" method (aka creating a child and mutating it from the current instance)
             or the sampling optimizers, to creating a child with a value sampled uniformly (or log-uniformly) within
             the while range of the bounds. The "sample" method is used by some algorithms to create an initial population.
@@ -568,12 +574,19 @@ class BoundLayer(_layering.Layered):
             for a in (lower, upper)
         )
         both_bounds = all(b is not None for b in self.bounds)
-        self.full_range_sampling = full_range_sampling
-        if full_range_sampling is None:
-            self.full_range_sampling = both_bounds
+        self.uniform_sampling = uniform_sampling
+        if uniform_sampling is None:
+            self.uniform_sampling = both_bounds
+        if self.uniform_sampling and not both_bounds:
+            raise errors.NevergradValueError("Cannot use full range sampling if both bounds are not set")
+        if not (lower is None or upper is None):
+            if (self.bounds[0] >= self.bounds[1]).any():  # type: ignore
+                raise errors.NevergradValueError(
+                    f"Lower bounds {lower} should be strictly smaller than upper bounds {upper}"
+                )
 
     def _layered_sample(self) -> "Data":
-        if not self.full_range_sampling:
+        if not self.uniform_sampling:
             return super()._layered_sample()  # type: ignore
         root = self._layers[0]
         if not isinstance(root, Data):
@@ -583,12 +596,16 @@ class BoundLayer(_layering.Layered):
         bounds = tuple(b * np.ones(shape) for b in self.bounds)
         new_val = root.random_state.uniform(*bounds)
         # send new val to the layer under this one for the child
-        child._layers[self._index - 1]._layered_set_value(new_val)
+        child._deeper_layers()[-1]._layered_set_value(new_val)
         return child
+
+    def _check(self, value: np.ndarray) -> None:
+        if not utils.BoundChecker(*self.bounds)(value):
+            raise errors.NevergradValueError("New value does not comply with bounds")
 
 
 class Modulo(BoundLayer):
-    """Cast Data as integer (or integer array)
+    """Applies a modulo operation on the array
     CAUTION: WIP
     """
 
@@ -602,5 +619,57 @@ class Modulo(BoundLayer):
         return super()._layered_get_value() % self._module  # type: ignore
 
     def _layered_set_value(self, value: np.ndarray) -> None:
+        self._check(value)
         current = super()._layered_get_value()
         super()._layered_set_value(current - (current % self._module) + value)
+
+
+class Exponent(_layering.Layered):
+    def __init__(self, base: float) -> None:
+        super().__init__()
+        if base <= 0:
+            raise errors.NevergradValueError("Exponent must be strictly positive")
+        self._base = base
+
+    def _layered_get_value(self) -> np.ndarray:
+        return self._base ** super()._layered_get_value()  # type: ignore
+
+    def _layered_set_value(self, value: np.ndarray) -> None:
+        super()._layered_set_value(np.log(value) / np.log(self._base))
+
+
+class Bound(BoundLayer):
+    def __init__(
+        self,
+        lower: tp.BoundValue = None,
+        upper: tp.BoundValue = None,
+        method: str = "bouncing",
+        uniform_sampling: tp.Optional[bool] = None,
+    ) -> D:
+        """Bounds all real values into [lower, upper] using a provided method
+
+        See Parameter.set_bounds
+        """
+        super().__init__(lower=lower, upper=upper, uniform_sampling=uniform_sampling)
+        # update instance
+        transforms = dict(
+            clipping=trans.Clipping,
+            arctan=trans.ArctanBound,
+            tanh=trans.TanhBound,
+            gaussian=trans.CumulativeDensity,
+        )
+        transforms["bouncing"] = functools.partial(trans.Clipping, bounce=True)  # type: ignore
+        if method not in transforms:
+            raise errors.NevergradValueError(
+                f"Unknown method {method}, available are: {transforms.keys()}\nSee docstring for more help."
+            )
+        self._bound_transform = transforms[method](*self.bounds)
+        # warn if sigma is too large for range
+        if all(x is not None for x in self.bounds) and method != "tanh":  # tanh goes to infinity anyway
+            std_bounds = tuple(self._to_reduced_space(b) for b in self.bounds)  # type: ignore
+            min_dist = np.min(np.abs(std_bounds[0] - std_bounds[1]).ravel())
+            if min_dist < 3.0:
+                warnings.warn(
+                    f"Bounds are {min_dist} sigma away from each other at the closest, "
+                    "you should aim for at least 3 for better quality."
+                )

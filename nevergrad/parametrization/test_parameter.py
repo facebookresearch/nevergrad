@@ -413,6 +413,15 @@ def test_scalar_module() -> None:
     assert x.get_standardized_data(reference=ref)[0] == 9  # find the closest
 
 
+def test_log_layer() -> None:
+    ref = par.Scalar()
+    x = 2 ** par.Scalar()
+    assert x.value == 1
+    x.value = 16
+    assert x.get_standardized_data(reference=ref)[0] == 4  # find the closest
+    assert x.value == 16
+
+
 def test_parenthood() -> None:
     param = par.Instrumentation(par.Scalar(init=1.0, mutable_sigma=True).set_mutation(exponent=2.0, sigma=5))
     sigma_uid = param[0][0].sigma.uid  # type: ignore
