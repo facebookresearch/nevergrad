@@ -324,7 +324,7 @@ workflows:
               only: master
             tags:
               only: /(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/
-      - docs-links:
+      - docs-links:  # a bit noisy, so only running on master, and does not stop deployments
           requires:
             - install
           filters:
