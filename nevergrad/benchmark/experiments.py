@@ -209,21 +209,17 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # The list of optimizers should contain only the basic for comparison and "baselines".
     optims: tp.List[str] = ["NGOpt10"] + get_optimizers("baselines", seed=next(seedg))  # type: ignore
 
-    num_xp = 0
     index = 0
     for function in functions:
         for budget in [50, 1500, 25000]:
             for nw in [1, budget] + ([] if budget <= 300 else [300]):
                 index += 1
-                if index % 5 != 0:
-                     continue
-                for optim in optims:
-                    xp = Experiment(function, optim, num_workers=nw,
-                                    budget=budget, seed=next(seedg))
-                    if not xp.is_incoherent:
-                        num_xp += 1
-                        yield xp
-    assert num_xp < 60 * len(optims), str(num_xp // len(optims))
+                if index % 5 == 0:
+                    for optim in optims:
+                        xp = Experiment(function, optim, num_workers=nw,
+                                        budget=budget, seed=next(seedg))
+                        if not xp.is_incoherent:
+                            yield xp
     # Discrete, unordered.
     index = 0
     for nv in [200, 2000]:
@@ -238,9 +234,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                 for optim in optims:
                     for budget in [500, 5000]:
                         for nw in [1, 100]:
-                            num_xp += 1
                             yield Experiment(dfunc, optim, num_workers=nw, budget=budget, seed=next(seedg))
-    assert num_xp < 70 * len(optims)
     # The multiobjective case.
     # TODO the upper bounds are really not well set for this experiment with cigar
     mofuncs: tp.List[fbase.MultiExperiment] = []
@@ -279,9 +273,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                 index += 1
                 if index % 5 == 0:
                     for optim in optims:
-                        num_xp += 1
                         yield Experiment(mofunc, optim, budget=budget, num_workers=nw, seed=next(seedg))
-    assert num_xp <= len(optims) * 100
 
 # pylint: disable=redefined-outer-name
 @registry.register
