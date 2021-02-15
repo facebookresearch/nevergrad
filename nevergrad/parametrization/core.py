@@ -372,7 +372,7 @@ class Parameter:
         child._frozen = False
         child._subobjects = self._subobjects.new(child)
         child._meta = {}
-        child.parents_uids = []
+        child.parents_uids = list(self.parents_uids)
         child.heritage = dict(self.heritage)
         child.loss = None
         child._losses = None
@@ -392,7 +392,6 @@ class Parameter:
             child.heritage = dict(lineage=child.uid)
             child.parents_uids = []
         elif mode == "copy":
-            child.parents_uids = list(self.parents_uids)
             child.random_state = None
         else:
             raise NotImplementedError(f"No copy mode {mode!r}")
