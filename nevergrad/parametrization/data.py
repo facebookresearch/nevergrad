@@ -585,6 +585,30 @@ class BoundLayer(_layering.Layered):
                     f"Lower bounds {lower} should be strictly smaller than upper bounds {upper}"
                 )
 
+    def __call__(self, data: D, inplace: bool = False) -> D:
+        """Creates a new Data instance with bounds"""
+        new = data if inplace else data.copy()
+        # if not utils.BoundChecker(*self.bounds)(new.value):
+        #     raise errors.NevergradValueError("Current value is not within bounds, please update it first")
+        value = new.value
+        new.add_layer(self.copy())
+        try:
+            new.value = value
+        except ValueError as e:
+            raise errors.NevergradValueError(
+                "Current value is not within bounds, please update it first"
+            ) from e
+        # TODO warn if sigma is too large for range
+        # if all(x is not None for x in self.bounds):
+        #     std_bounds = tuple(self._to_reduced_space(b) for b in self.bounds)  # type: ignore
+        #     min_dist = np.min(np.abs(std_bounds[0] - std_bounds[1]).ravel())
+        #     if min_dist < 3.0:
+        #         warnings.warn(
+        #             f"Bounds are {min_dist} sigma away from each other at the closest, "
+        #             "you should aim for at least 3 for better quality."
+        #         )
+        return new
+
     def _layered_sample(self) -> "Data":
         if not self.uniform_sampling:
             return super()._layered_sample()  # type: ignore
@@ -665,13 +689,10 @@ class Bound(BoundLayer):
             raise errors.NevergradValueError(
                 f"Unknown method {method}, available are: {transforms.keys()}\nSee docstring for more help."
             )
-        self._bound_transform = transforms[method](*self.bounds)
-        # warn if sigma is too large for range
-        if all(x is not None for x in self.bounds) and method != "tanh":  # tanh goes to infinity anyway
-            std_bounds = tuple(self._to_reduced_space(b) for b in self.bounds)  # type: ignore
-            min_dist = np.min(np.abs(std_bounds[0] - std_bounds[1]).ravel())
-            if min_dist < 3.0:
-                warnings.warn(
-                    f"Bounds are {min_dist} sigma away from each other at the closest, "
-                    "you should aim for at least 3 for better quality."
-                )
+        self._transform = transforms[method](*self.bounds)
+
+    def _layered_get_value(self) -> np.ndarray:
+        return self._transform.forward(super()._layered_get_value())  # type: ignore
+
+    def _layered_set_value(self, value: np.ndarray) -> None:
+        super()._layered_set_value(self._transform.backward(value))
