@@ -10,7 +10,7 @@ import numpy as np
 from . import core
 from . import transforms
 from .data import Mutation as Mutation
-from .data import Array, Scalar
+from .data import Array, Scalar, Data
 from .choice import Choice
 
 
@@ -58,7 +58,7 @@ class Crossover(Mutation):
     def axis(self) -> tp.Optional[tp.Tuple[int, ...]]:
         return self.parameters["axis"].value  # type: ignore
 
-    def apply(self, arrays: tp.Sequence["Array"]) -> None:
+    def apply(self, arrays: tp.Sequence[Data]) -> None:
         new_value = self._apply_array([a._value for a in arrays])
         bounds = arrays[0].bounds
         if self.parameters["fft"].value and any(x is not None for x in bounds):
@@ -113,9 +113,6 @@ class RavelCrossover(Crossover):
         shape = arrays[0].shape
         out = super()._apply_array([a.ravel() for a in arrays])
         return out.reshape(shape)
-
-    def _internal_spawn_child(self) -> "RavelCrossover":
-        return RavelCrossover(max_size=self.parameters["max_size"])  # type: ignore
 
 
 def _make_slices(
@@ -203,7 +200,7 @@ class LocalGaussian(Mutation):
     def axes(self) -> tp.Optional[tp.Tuple[int, ...]]:
         return self.parameters["axes"].value  # type: ignore
 
-    def apply(self, arrays: tp.Sequence[Array]) -> None:
+    def apply(self, arrays: tp.Sequence[Data]) -> None:
         arrays = list(arrays)
         assert len(arrays) == 1
         data = np.zeros(arrays[0].value.shape)
@@ -230,7 +227,7 @@ class ProbaLocalGaussian(Mutation):
     def axes(self) -> tp.Optional[tp.Tuple[int, ...]]:
         return self.parameters["axes"].value  # type: ignore
 
-    def apply(self, arrays: tp.Sequence[Array]) -> None:
+    def apply(self, arrays: tp.Sequence[Data]) -> None:
         arrays = list(arrays)
         assert len(arrays) == 1
         data = np.zeros(arrays[0].value.shape)
@@ -246,14 +243,6 @@ class ProbaLocalGaussian(Mutation):
         data[tuple(slice(s) for s in shape)] += self.random_state.normal(0, 1, size=shape)
         data = np.roll(data, shift=index, axis=self.axis)
         arrays[0]._internal_set_standardized_data(data.ravel(), reference=arrays[0])
-
-    def _internal_spawn_child(self) -> "ProbaLocalGaussian":
-        child = self.__class__(axis=self.axis, shape=self.shape)
-        child.parameters._content = {
-            k: v.spawn_child() if isinstance(v, core.Parameter) else v
-            for k, v in self.parameters._content.items()
-        }
-        return child
 
 
 def rolling_mean(vector: np.ndarray, window: int) -> np.ndarray:
@@ -285,11 +274,3 @@ class TunedTranslation(Mutation):
         shifts = self.shift.weights.value
         self.shift.weights.value = np.roll(shifts, shift)  # update probas
         return np.roll(data, shift, axis=self.axis)  # type: ignore
-
-    def _internal_spawn_child(self) -> "TunedTranslation":
-        child = self.__class__(axis=self.axis, shape=self.shape)
-        child.parameters._content = {
-            k: v.spawn_child() if isinstance(v, core.Parameter) else v
-            for k, v in self.parameters._content.items()
-        }
-        return child

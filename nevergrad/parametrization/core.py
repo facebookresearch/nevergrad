@@ -4,37 +4,77 @@
 # LICENSE file in the root directory of this source tree.
 
 import uuid
+import copy
 import warnings
-import operator
-import functools
-from collections import OrderedDict
 import numpy as np
 import nevergrad.common.typing as tp
+from nevergrad.common import errors
 from . import utils
 
 # pylint: disable=no-value-for-parameter
 
 
 P = tp.TypeVar("P", bound="Parameter")
-D = tp.TypeVar("D", bound="Container")
+X = tp.TypeVar("X")
+
+
+class ValueProperty(tp.Generic[X]):
+    """Typed property (descriptor) object so that the value attribute of
+    Parameter objects fetches _get_value and _set_value methods
+    """
+
+    # This uses the descriptor protocol, like a property:
+    # See https://docs.python.org/3/howto/descriptor.html
+    #
+    # Basically parameter.value calls parameter.value.__get__
+    # and then parameter._get_value
+    def __init__(self) -> None:
+        self.__doc__ = """Value of the Parameter, which should be sent to the function
+        to optimize.
+
+        Example
+        -------
+        >>> ng.p.Array(shape=(2,)).value
+        array([0., 0.])
+        """
+
+    def __get__(self, obj: "Parameter", objtype: tp.Optional[tp.Type[object]] = None) -> X:
+        return obj._get_value()  # type: ignore
+
+    def __set__(self, obj: "Parameter", value: X) -> None:
+        obj._set_value(value)
 
 
 # pylint: disable=too-many-instance-attributes,too-many-public-methods
 class Parameter:
-    """Abstract class providing the core functionality of a parameter, aka
+    """Class providing the core functionality of a parameter, aka
     value, internal/model parameters, mutation, recombination
     and additional features such as shared random state,
     constraint check, hashes, generation and naming.
+    The value field should sent to the function to optimize.
+
+    Example
+    -------
+    >>> ng.p.Array(shape=(2,)).value
+    array([0., 0.])
     """
 
-    def __init__(self, **parameters: tp.Any) -> None:
+    # By default, all Parameter attributes of this Parameter are considered as
+    # sub-parameters.
+    # Spawning a child creates a shallow copy.
+
+    value: ValueProperty[tp.Any] = ValueProperty()
+
+    def __init__(self) -> None:
         # Main features
         self.uid = uuid.uuid4().hex
+        self._subobjects = utils.Subobjects(
+            self, base=Parameter, attribute="__dict__"
+        )  # registers and apply functions too all (sub-)Parameter attributes
         self.parents_uids: tp.List[str] = []
         self.heritage: tp.Dict[tp.Hashable, tp.Any] = {"lineage": self.uid}  # passed through to children
         self.loss: tp.Optional[float] = None  # associated loss
         self._losses: tp.Optional[np.ndarray] = None  # associated losses (multiobjective) as an array
-        self._parameters = None if not parameters else Dict(**parameters)  # internal/model parameters
         self._dimension: tp.Optional[int] = None
         # Additional convenient features
         self._random_state: tp.Optional[np.random.RandomState] = None  # lazy initialization
@@ -62,12 +102,10 @@ class Parameter:
             return np.array([self.loss], dtype=float)
         raise RuntimeError("No loss was provided")
 
-    @property
-    def value(self) -> tp.Any:
+    def _get_value(self) -> tp.Any:
         raise NotImplementedError
 
-    @value.setter
-    def value(self, value: tp.Any) -> None:
+    def _set_value(self, value: tp.Any) -> tp.Any:
         raise NotImplementedError
 
     @property
@@ -87,15 +125,6 @@ class Parameter:
         return {}
 
     @property
-    def parameters(self) -> "Dict":
-        """Internal/model parameters for this parameter"""
-        if self._parameters is None:  # delayed instantiation to avoid infinte loop
-            assert self.__class__ != Dict, "parameters of Parameters dict should never be called"
-            self._parameters = Dict()
-        assert self._parameters is not None
-        return self._parameters
-
-    @property
     def dimension(self) -> int:
         """Dimension of the standardized space for this parameter
         i.e size of the vector returned by get_standardized_data(reference=...)
@@ -103,14 +132,14 @@ class Parameter:
         if self._dimension is None:
             try:
                 self._dimension = self.get_standardized_data(reference=self).size
-            except utils.NotSupportedError:
+            except errors.UnsupportedParameterOperationError:
                 self._dimension = 0
         return self._dimension
 
     def mutate(self) -> None:
         """Mutate parameters of the instance, and then its value"""
         self._check_frozen()
-        self.parameters.mutate()
+        self._subobjects.apply("mutate")
         self.set_standardized_data(self.random_state.normal(size=self.dimension), deterministic=False)
 
     def sample(self: P) -> P:
@@ -133,7 +162,11 @@ class Parameter:
         *others: Parameter
             other instances of the same type than this instance.
         """
-        raise utils.NotSupportedError(f"Recombination is not implemented for {self.name}")
+        if not others:
+            return
+        self.random_state  # pylint: disable=pointless-statement
+        assert all(isinstance(o, self.__class__) for o in others)
+        self._subobjects.apply("recombine", *others)
 
     def get_standardized_data(self: P, *, reference: P) -> np.ndarray:
         """Get the standardized data representing the value of the instance as an array in the optimization space.
@@ -166,7 +199,9 @@ class Parameter:
         return self._internal_get_standardized_data(self if reference is None else reference)
 
     def _internal_get_standardized_data(self: P, reference: P) -> np.ndarray:
-        raise utils.NotSupportedError(f"Export to standardized data space is not implemented for {self.name}")
+        raise errors.UnsupportedParameterOperationError(
+            f"Export to standardized data space is not implemented for {self.name}"
+        )
 
     def set_standardized_data(
         self: P, data: tp.ArrayLike, *, reference: tp.Optional[P] = None, deterministic: bool = False
@@ -203,12 +238,13 @@ class Parameter:
         )
         return self
 
-    def _internal_set_standardized_data(
+    def _internal_set_standardized_data(  # pylint: disable=unused-argument
         self: P, data: np.ndarray, reference: P, deterministic: bool = False
     ) -> None:
-        raise utils.NotSupportedError(
-            f"Import from standardized data space is not implemented for {self.name}"
-        )
+        if data.size:
+            raise errors.UnsupportedParameterOperationError(
+                f"Import from standardized data space is not implemented for {self.name}"
+            )
 
     # PART 2 - Additional features
 
@@ -223,9 +259,11 @@ class Parameter:
         if isinstance(val, (str, bytes, float, int)):
             return val
         elif isinstance(val, np.ndarray):
-            return val.tobytes()
+            return val.tobytes()  # type: ignore
         else:
-            raise utils.NotSupportedError(f"Value hash is not supported for object {self.name}")
+            raise errors.UnsupportedParameterOperationError(
+                f"Value hash is not supported for object {self.name}"
+            )
 
     def _get_name(self) -> str:
         """Internal implementation of parameter name. This should be value independant, and should not account
@@ -242,12 +280,7 @@ class Parameter:
         """
         if self._name is not None:
             return self._name
-        substr = ""
-        if self._parameters is not None and self.parameters:
-            substr = f"[{self.parameters._get_parameters_str()}]"
-            if substr == "[]":
-                substr = ""
-        return f"{self._get_name()}" + substr
+        return self._get_name()
 
     @name.setter
     def name(self, name: str) -> None:
@@ -295,8 +328,13 @@ class Parameter:
         bool
             True iff the constraint is satisfied
         """
-        violations = self.constraint_penalties()
-        return max(violations, default=0) <= 0.0
+        inside = self._subobjects.apply("satisfies_constraints")
+        if not all(inside.values()):
+            return False
+        if not self._constraint_checkers:
+            return True
+        val = self.value
+        return all(utils.float_penalty(func(val)) <= 0 for func in self._constraint_checkers)
 
     def register_cheap_constraint(
         self, func: tp.Union[tp.Callable[[tp.Any], bool], tp.Callable[[tp.Any], float]]
@@ -339,8 +377,7 @@ class Parameter:
 
     def _set_random_state(self, random_state: np.random.RandomState) -> None:
         self._random_state = random_state
-        if self._parameters is not None:
-            self.parameters._set_random_state(random_state)
+        self._subobjects.apply("_set_random_state", random_state)
 
     def spawn_child(self: P, new_value: tp.Optional[tp.Any] = None) -> P:
         """Creates a new instance which shares the same random generator than its parent,
@@ -358,15 +395,26 @@ class Parameter:
             a new instance of the same class, with same content/internal-model parameters/...
             Optionally, a new value will be set after creation
         """
-        rng = self.random_state  # make sure to create one before spawning
-        child = self._internal_spawn_child()
-        child._set_random_state(rng)
-        child._constraint_checkers = list(self._constraint_checkers)
-        child._generation = self.generation + 1
-        child._descriptors = self._descriptors
-        child._name = self._name
-        child.parents_uids.append(self.uid)
+        # make sure to initialize the random state  before spawning children
+        self.random_state  # pylint: disable=pointless-statement
+        child = copy.copy(self)
+        child.uid = uuid.uuid4().hex
+        child._frozen = False
+        child._generation += 1
+        child.parents_uids = [self.uid]
         child.heritage = dict(self.heritage)
+        child._subobjects = self._subobjects.new(child)
+        child._meta = {}
+        child.loss = None
+        child._losses = None
+        child._constraint_checkers = list(self._constraint_checkers)
+        attribute = self._subobjects.attribute
+        container = getattr(child, attribute)
+        if attribute != "__dict__":  # make a copy of the container if different from __dict__
+            container = dict(container) if isinstance(container, dict) else list(container)
+            setattr(child, attribute, container)
+        for key, val in self._subobjects.items():
+            container[key] = val.spawn_child()
         if new_value is not None:
             child.value = new_value
         return child
@@ -374,8 +422,7 @@ class Parameter:
     def freeze(self) -> None:
         """Prevents the parameter from changing value again (through value, mutate etc...)"""
         self._frozen = True
-        if self._parameters is not None:
-            self._parameters.freeze()
+        self._subobjects.apply("freeze")
 
     def _check_frozen(self) -> None:
         if self._frozen and not isinstance(
@@ -385,21 +432,13 @@ class Parameter:
                 f"Cannot modify frozen Parameter {self}, please spawn a child and modify it instead"
                 "(optimizers freeze the parametrization and all asked and told candidates to avoid border effects)"
             )
-
-    def _internal_spawn_child(self: P) -> P:
-        # default implem just forwards params
-        inputs = {
-            k: v.spawn_child() if isinstance(v, Parameter) else v for k, v in self.parameters._content.items()
-        }
-        child = self.__class__(**inputs)
-        return child
+        self._subobjects.apply("_check_frozen")
 
     def copy(self: P) -> P:  # TODO test (see former instrumentation_copy test)
         """Create a child, but remove the random state
         This is used to run multiple experiments
         """
         child = self.spawn_child()
-        child._name = self._name
         child.random_state = None
         return child
 
@@ -412,6 +451,9 @@ class Parameter:
             self._compute_descriptors()
             self._descriptors = self._compute_descriptors()
         return self._descriptors
+
+
+# Basic types and helpers #
 
 
 class Constant(Parameter):
@@ -437,15 +479,13 @@ class Constant(Parameter):
     def get_value_hash(self) -> tp.Hashable:
         try:
             return super().get_value_hash()
-        except utils.NotSupportedError:
+        except errors.UnsupportedParameterOperationError:
             return "#non-hashable-constant#"
 
-    @property
-    def value(self) -> tp.Any:
+    def _get_value(self) -> tp.Any:
         return self._value
 
-    @value.setter
-    def value(self, value: tp.Any) -> None:
+    def _set_value(self, value: tp.Any) -> None:
         different = False
         if isinstance(value, np.ndarray):
             if not np.equal(value, self._value).all():
@@ -461,14 +501,6 @@ class Constant(Parameter):
         self: P, *, reference: tp.Optional[P] = None
     ) -> np.ndarray:
         return np.array([])
-
-    # pylint: disable=unused-argument
-    def set_standardized_data(
-        self: P, data: tp.ArrayLike, *, reference: tp.Optional[P] = None, deterministic: bool = False
-    ) -> P:
-        if np.array(data, copy=False).size:
-            raise ValueError(f"Constant dimension should be 0 (got data: {data})")
-        return self
 
     def spawn_child(self: P, new_value: tp.Optional[tp.Any] = None) -> P:
         if new_value is not None:
@@ -501,183 +533,3 @@ class MultiobjectiveReference(Constant):
                 f"be used by the optimizer.\n(received {parameter} of type {type(parameter)})"
             )
         super().__init__(parameter)
-
-
-class Container(Parameter):
-    """Parameter which can hold other parameters.
-    This abstract implementation is based on a dictionary.
-
-    Parameters
-    ----------
-    **parameters: Any
-        the objects or Parameter which will provide values for the dict
-
-    Note
-    ----
-    This is the base structure for all container Parameters, and it is
-    used to hold the internal/model parameters for all Parameter classes.
-    """
-
-    def __init__(self, **parameters: tp.Any) -> None:
-        super().__init__()
-        self._content: tp.Dict[tp.Any, Parameter] = {k: as_parameter(p) for k, p in parameters.items()}
-        self._sizes: tp.Optional[tp.Dict[str, int]] = None
-        self._sanity_check(list(self._content.values()))
-        self._ignore_in_repr: tp.Dict[
-            str, str
-        ] = {}  # hacky undocumented way to bypass boring representations
-
-    def _sanity_check(self, parameters: tp.List[Parameter]) -> None:
-        """Check that all parameters are different"""
-        # TODO: this is first order, in practice we would need to test all the different
-        # parameter levels together
-        if parameters:
-            assert all(isinstance(p, Parameter) for p in parameters)
-            ids = {id(p) for p in parameters}
-            if len(ids) != len(parameters):
-                raise ValueError("Don't repeat twice the same parameter")
-
-    def _compute_descriptors(self) -> utils.Descriptors:
-        init = utils.Descriptors()
-        return functools.reduce(operator.and_, [p.descriptors for p in self._content.values()], init)
-
-    def __getitem__(self, name: tp.Any) -> Parameter:
-        return self._content[name]
-
-    def __len__(self) -> int:
-        return len(self._content)
-
-    def _get_parameters_str(self) -> str:
-        raise NotImplementedError
-
-    def _get_name(self) -> str:
-        return f"{self.__class__.__name__}({self._get_parameters_str()})"
-
-    def get_value_hash(self) -> tp.Hashable:
-        return tuple(sorted((x, y.get_value_hash()) for x, y in self._content.items()))
-
-    def _internal_get_standardized_data(self: D, reference: D) -> np.ndarray:
-        data = {k: self[k].get_standardized_data(reference=p) for k, p in reference._content.items()}
-        if self._sizes is None:
-            self._sizes = OrderedDict(sorted((x, y.size) for x, y in data.items()))
-        assert self._sizes is not None
-        data_list = [data[k] for k in self._sizes]
-        if not data_list:
-            return np.array([])
-        return data_list[0] if len(data_list) == 1 else np.concatenate(data_list)  # type: ignore
-
-    def _internal_set_standardized_data(
-        self: D, data: np.ndarray, reference: D, deterministic: bool = False
-    ) -> None:
-        if self._sizes is None:
-            self.get_standardized_data(reference=self)
-        assert self._sizes is not None
-        if data.size != sum(v for v in self._sizes.values()):
-            raise ValueError(
-                f"Unexpected shape {data.shape} for {self} with dimension {self.dimension}:\n{data}"
-            )
-        data = data.ravel()
-        start, end = 0, 0
-        for name, size in self._sizes.items():
-            end = start + size
-            self._content[name].set_standardized_data(
-                data[start:end], reference=reference[name], deterministic=deterministic
-            )
-            start = end
-        assert end == len(data), f"Finished at {end} but expected {len(data)}"
-
-    def mutate(self) -> None:
-        # pylint: disable=pointless-statement
-        self.random_state  # make sure to create one before using
-        for param in self._content.values():
-            param.mutate()
-
-    def sample(self: D) -> D:
-        child = self.spawn_child()
-        child._content = {k: p.sample() for k, p in self._content.items()}
-        child.heritage["lineage"] = child.uid
-        return child
-
-    def recombine(self, *others: D) -> None:
-        if not others:
-            return
-        # pylint: disable=pointless-statement
-        self.random_state  # make sure to create one before using
-        assert all(isinstance(o, self.__class__) for o in others)
-        for k, param in self._content.items():
-            param.recombine(*[o[k] for o in others])
-
-    def _internal_spawn_child(self: D) -> D:
-        child = self.__class__()
-        child._content = {k: v.spawn_child() for k, v in self._content.items()}
-        return child
-
-    def _set_random_state(self, random_state: np.random.RandomState) -> None:
-        super()._set_random_state(random_state)
-        for param in self._content.values():
-            if isinstance(param, Parameter):
-                param._set_random_state(random_state)
-
-    def constraint_penalties(self) -> tp.List[float]:
-        violations = super().constraint_penalties()
-        for param in self._content.values():
-            if isinstance(param, Parameter):
-                violations.extend(param.constraint_penalties())
-        return violations
-
-    def freeze(self) -> None:
-        super().freeze()
-        for p in self._content.values():
-            p.freeze()
-
-
-class Dict(Container):
-    """Dictionary-valued parameter. This Parameter can contain other Parameters,
-    its value is a dict, with keys the ones provided as input, and corresponding values are
-    either directly the provided values if they are not Parameter instances, or the value of those
-    Parameters. It also implements a getter to access the Parameters directly if need be.
-
-    Parameters
-    ----------
-    **parameters: Any
-        the objects or Parameter which will provide values for the dict
-
-    Note
-    ----
-    This is the base structure for all container Parameters, and it is
-    used to hold the internal/model parameters for all Parameter classes.
-    """
-
-    def __iter__(self) -> tp.Iterator[str]:
-        return iter(self.keys())
-
-    def keys(self) -> tp.KeysView[str]:
-        return self._content.keys()
-
-    def items(self) -> tp.ItemsView[str, Parameter]:
-        return self._content.items()
-
-    def values(self) -> tp.ValuesView[Parameter]:
-        return self._content.values()
-
-    @property
-    def value(self) -> tp.Dict[str, tp.Any]:
-        return {k: p.value for k, p in self.items()}
-
-    @value.setter
-    def value(self, value: tp.Dict[str, tp.Any]) -> None:
-        cls = self.__class__.__name__
-        if not isinstance(value, dict):
-            raise TypeError(f"{cls} value must be a dict, got: {value}\nCurrent value: {self.value}")
-        if set(value) != set(self):
-            raise ValueError(
-                f"Got input keys {set(value)} for {cls} but expected {set(self._content)}\nCurrent value: {self.value}"
-            )
-        for key, val in value.items():
-            self._content[key].value = val
-
-    def _get_parameters_str(self) -> str:
-        params = sorted(
-            (k, p.name) for k, p in self.items() if p.name != self._ignore_in_repr.get(k, "#ignoredrepr#")
-        )
-        return ",".join(f"{k}={n}" for k, n in params)
