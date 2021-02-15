@@ -462,7 +462,6 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 )
         if self._constraints_manager.max_trials > 1 and not candidate.satisfies_constraints():
             # still not solving, let's run sub-optimization
-            print("sub-optimization!")
             candidate = _constraint_solver(candidate, budget=max_trials)
         if not candidate.satisfies_constraints():
             warnings.warn(
@@ -751,12 +750,10 @@ def _constraint_solver(parameter: p.Parameter, budget: int) -> p.Parameter:
         # the original candidate under the constraints.
         penalty = sum(cand.constraint_penalties())
         if not penalty > 0:  # constraints are satisfied
-            print("ok!")
             return cand
         # TODO: this may not scale well with dimension
         distance = np.tanh(np.sum(cand.get_standardized_data(reference=parameter) ** 2))
         # TODO: because of the return whenever constraints are satisfied, the first case never arises
         loss = distance if penalty <= 0 else penalty + distance + 1.0
         opt.tell(cand, loss)
-    print("ok done!")
     return opt.recommend()
