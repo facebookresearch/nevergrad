@@ -423,7 +423,7 @@ class Data(core.Parameter):
 
     def _new_with_data_layer(self: D, name: str, *args: tp.Any, **kwargs: tp.Any) -> D:
         # pylint: disable=cyclic-import
-        from . import _datalayers  # avoid cyclic imports
+        from . import _datalayers  # lazy to avoid cyclic imports
 
         new = self.copy()
         new.add_layer(getattr(_datalayers, name)(*args, **kwargs))
