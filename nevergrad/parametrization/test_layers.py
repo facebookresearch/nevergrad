@@ -1,4 +1,3 @@
-# pylint: disable=cyclic-import
 import pytest
 import numpy as np
 import nevergrad as ng
