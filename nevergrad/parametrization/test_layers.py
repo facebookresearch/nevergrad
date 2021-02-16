@@ -35,3 +35,19 @@ def test_add_layer() -> None:
     x = ng.p.Scalar() - 4.0
     y = 6 + x
     assert y.value == 2
+
+
+def test_multiply_layer() -> None:
+    ref = ng.p.Scalar()
+    x = ng.p.Scalar(5) / 5
+    assert x.value == 1
+    x.value = 2
+    assert x.get_standardized_data(reference=ref)[0] == 10
+
+
+def test_power() -> None:
+    ref = ng.p.Scalar()
+    x = 3 / ng.p.Scalar(6)
+    assert x.value == 0.5
+    x.value = 0.25
+    assert x.get_standardized_data(reference=ref)[0] == 12

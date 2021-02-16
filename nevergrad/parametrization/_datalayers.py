@@ -4,6 +4,7 @@ import nevergrad.common.typing as tp
 from nevergrad.common import errors
 from . import _layering
 from .data import Data
+from .core import Parameter
 from . import transforms as trans
 from . import utils
 
@@ -118,11 +119,21 @@ class Modulo(BoundLayer):
         super()._layered_set_value(current - (current % self._module) + value)
 
 
-class Exponent(_layering.Layered):
-    """Applies an array as exponent of a floar"""
+class Operation(_layering.Layered):
+
+    _LAYER_LEVEL = _layering.Level.OPERATION
+
+    def __init__(self, *args: tp.Any, **kwargs: tp.Any) -> None:
+        super().__init__()
+        if any(isinstance(x, Parameter) for x in args + tuple(kwargs.values())):
+            raise errors.NevergradTypeError("Operation with Parameter instances are not supported")
+
+
+class Exponent(Operation):
+    """Applies an array as exponent of a float"""
 
     def __init__(self, base: float) -> None:
-        super().__init__()
+        super().__init__(base)
         if base <= 0:
             raise errors.NevergradValueError("Exponent must be strictly positive")
         self._base = base
@@ -134,11 +145,25 @@ class Exponent(_layering.Layered):
         super()._layered_set_value(np.log(value) / np.log(self._base))
 
 
-class Add(_layering.Layered):
+class Power(Operation):
+    """Applies a float as exponent of a Data parameter"""
+
+    def __init__(self, power: float) -> None:
+        super().__init__(power)
+        self._power = power
+
+    def _layered_get_value(self) -> np.ndarray:
+        return super()._layered_get_value() ** self._power  # type: ignore
+
+    def _layered_set_value(self, value: np.ndarray) -> None:
+        super()._layered_set_value(value ** (1.0 / self._power))
+
+
+class Add(Operation):
     """Applies an array as exponent of a floar"""
 
     def __init__(self, offset: tp.Any) -> None:
-        super().__init__()
+        super().__init__(offset)
         self._offset = offset
 
     def _layered_get_value(self) -> np.ndarray:
@@ -146,6 +171,20 @@ class Add(_layering.Layered):
 
     def _layered_set_value(self, value: np.ndarray) -> None:
         super()._layered_set_value(value - self._offset)
+
+
+class Multiply(Operation):
+    """Applies an array as exponent of a floar"""
+
+    def __init__(self, value: tp.Any) -> None:
+        super().__init__(value)
+        self._value = value
+
+    def _layered_get_value(self) -> np.ndarray:
+        return self._value * super()._layered_get_value()  # type: ignore
+
+    def _layered_set_value(self, value: np.ndarray) -> None:
+        super()._layered_set_value(value / self._value)
 
 
 class Bound(BoundLayer):

@@ -110,12 +110,12 @@ class Data(core.Parameter):
         if init is not None:
             if shape is not None:
                 raise ValueError(err_msg)
-            self._value = np.array(init, copy=False)
+            self._value = np.array(init, dtype=float, copy=False)
         elif shape is not None:
             assert isinstance(shape, tuple) and all(
                 isinstance(n, int) for n in shape
             ), f"Shape incorrect: {shape}."
-            self._value = np.zeros(shape)
+            self._value = np.zeros(shape, dtype=float)
         else:
             raise ValueError(err_msg)
         self.exponent: tp.Optional[float] = None
@@ -443,6 +443,21 @@ class Data(core.Parameter):
 
     def __radd__(self: D, offset: tp.Any) -> D:
         return self.__add__(offset)
+
+    def __mul__(self: D, value: tp.Any) -> D:
+        return self._new_with_data_layer("Multiply", value)
+
+    def __rmul__(self: D, value: tp.Any) -> D:
+        return self.__mul__(value)
+
+    def __truediv__(self: D, value: tp.Any) -> D:
+        return self.__mul__(1.0 / value)
+
+    def __rtruediv__(self: D, value: tp.Any) -> D:
+        return value * (self ** -1)
+
+    def __pow__(self: D, power: float) -> D:
+        return self._new_with_data_layer("Power", power)
 
 
 class Array(Data):
