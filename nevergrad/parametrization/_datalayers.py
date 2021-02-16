@@ -75,9 +75,8 @@ class BoundLayer(_layering.Layered):
             raise errors.NevergradValueError(
                 "Current value is not within bounds, please update it first"
             ) from e
-        # TODO warn if sigma is too large for range
         if all(x is not None for x in self.bounds):
-            tests = [data.copy() for _ in range(2)]
+            tests = [data.copy() for _ in range(2)]  # TODO make it simpler and more efficient?
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", category=RuntimeWarning)
                 for test, bound in zip(tests, self.bounds):
