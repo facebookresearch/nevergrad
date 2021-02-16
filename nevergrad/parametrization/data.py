@@ -153,7 +153,6 @@ class Data(core.Parameter):
 
     def _layered_sample(self: D) -> D:
         if not self.full_range_sampling:
-            raise Exception("should not have been called")
             child = self.spawn_child()
             child.mutate()
             raise Exception("should not have been called")
@@ -212,14 +211,16 @@ class Data(core.Parameter):
         - only "clipping" accepts partial bounds (None values)
         """  # TODO improve description of methods
         from . import _datalayers
-
-        if method == "constraint":
-            method = "bouncing"
+        # if method == "constraint":
+        #     method = "clipping"
         value = self.value
-        print("value")
-        layer = _datalayers.Bound(
-            lower=lower, upper=upper, method=method, uniform_sampling=full_range_sampling
-        )
+        if method == "constraint":
+            layer = _datalayers.BoundLayer(lower=lower, upper=upper, uniform_sampling=full_range_sampling)
+            checker = utils.BoundChecker(*layer.bounds)
+            self.register_cheap_constraint(checker)
+        else:
+            layer = _datalayers.Bound(lower=lower, upper=upper, method=method, uniform_sampling=full_range_sampling)
+            self.bound_name = layer._transform.name
         self.add_layer(layer)
         try:
             self.value = value
@@ -227,8 +228,8 @@ class Data(core.Parameter):
             raise errors.NevergradValueError(
                 "Current value is not within bounds, please update it first"
             ) from e
+
         self.bounds = layer.bounds
-        self.bound_name = method
         self.full_range_sampling = layer.uniform_sampling
 
         # bounds = tuple(
