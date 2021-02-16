@@ -114,6 +114,10 @@ class BoundLayer(_layering.Layered):
         if not utils.BoundChecker(*self.bounds)(value):
             raise errors.NevergradValueError("New value does not comply with bounds")
 
+    @staticmethod
+    def find(parameter: Parameter) -> tp.List["BoundLayer"]:
+        return [x for x in parameter._layers if isinstance(x, BoundLayer)]
+
 
 class Modulo(BoundLayer):
     """Applies a modulo operation on the array

@@ -37,7 +37,7 @@ class Layered:
 
     def __init__(self) -> None:
         self._layers = [self]
-        self._layer_index = 0  # protected, because this is a high risk attribute
+        self._layer_index = 0
         self._name: tp.Optional[str] = None
 
     def add_layer(self: L, other: "Layered") -> L:

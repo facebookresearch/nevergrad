@@ -417,7 +417,7 @@ class BoundScaler:
         start = 0
         for ref in self._ref_arrays:
             end = start + ref.dimension
-            layers = [x for x in ref._layers if isinstance(x, _datalayers.BoundLayer)]  # find bound layers
+            layers = _datalayers.BoundLayer.find(ref)  # find bound layers
             layers = [x for x in layers if x.uniform_sampling]  # keep only uniform sampling
             if not layers:
                 x[start:end] = unbounded_transform(x[start:end])
