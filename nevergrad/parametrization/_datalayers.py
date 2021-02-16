@@ -92,9 +92,7 @@ class BoundLayer(_layering.Layered):
         return new
 
     def _layered_sample(self) -> "Data":
-        print("HERE", self.name)
         if not self.uniform_sampling:
-            print("not uniform, nevermind")
             return super()._layered_sample()  # type: ignore
         root = self._layers[0]
         if not isinstance(root, Data):
