@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import warnings
 import functools
 import numpy as np
 import nevergrad.common.typing as tp
@@ -75,14 +76,15 @@ class BoundLayer(_layering.Layered):
                 "Current value is not within bounds, please update it first"
             ) from e
         # TODO warn if sigma is too large for range
-        # if all(x is not None for x in self.bounds):
-        #     std_bounds = tuple(self._to_reduced_space(b) for b in self.bounds)  # type: ignore
-        #     min_dist = np.min(np.abs(std_bounds[0] - std_bounds[1]).ravel())
-        #     if min_dist < 3.0:
-        #         warnings.warn(
-        #             f"Bounds are {min_dist} sigma away from each other at the closest, "
-        #             "you should aim for at least 3 for better quality."
-        #         )
+        if all(x is not None for x in self.bounds):
+            std_bounds = tuple(data._to_reduced_space(b) for b in self.bounds)  # type: ignore
+            min_dist = np.min(np.abs(std_bounds[0] - std_bounds[1]).ravel())
+            print(min_dist)
+            if min_dist < 3.0:
+                warnings.warn(
+                    f"Bounds are {min_dist} sigma away from each other at the closest, "
+                    "you should aim for at least 3 for better quality."
+                )
         return new
 
     def _layered_sample(self) -> "Data":

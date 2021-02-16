@@ -214,7 +214,7 @@ class Data(core.Parameter):
                 lower=lower, upper=upper, method=method, uniform_sampling=full_range_sampling
             )
             self.bound_name = layer._transform.name
-        self.add_layer(layer)
+        layer(self, inplace=True)
         try:
             self.value = value
         except ValueError as e:
@@ -225,44 +225,6 @@ class Data(core.Parameter):
         self.bounds = layer.bounds
         self.full_range_sampling = layer.uniform_sampling
 
-        # bounds = tuple(
-        #     a if isinstance(a, np.ndarray) or a is None else np.array([a], dtype=float)
-        #     for a in (lower, upper)
-        # )
-        # both_bounds = all(b is not None for b in bounds)
-        # if full_range_sampling is None:
-        #     full_range_sampling = both_bounds
-        # # preliminary checks
-        # if self.bound_transform is not None:
-        #     raise RuntimeError("A bounding method has already been set")
-        # if full_range_sampling and not both_bounds:
-        #     raise ValueError("Cannot use full range sampling if both bounds are not set")
-        # checker = utils.BoundChecker(*bounds)
-        # if not checker(self.value):
-        #     raise ValueError("Current value is not within bounds, please update it first")
-        # if not (lower is None or upper is None):
-        #     if (bounds[0] >= bounds[1]).any():  # type: ignore
-        #         raise ValueError(f"Lower bounds {lower} should be strictly smaller than upper bounds {upper}")
-        # # update instance
-        # transforms = dict(
-        #     clipping=trans.Clipping,
-        #     arctan=trans.ArctanBound,
-        #     tanh=trans.TanhBound,
-        #     gaussian=trans.CumulativeDensity,
-        # )
-        # transforms["bouncing"] = functools.partial(trans.Clipping, bounce=True)  # type: ignore
-        # if method in transforms:
-        #     if self.exponent is not None and method not in ("clipping", "bouncing"):
-        #         raise ValueError(f'Cannot use method "{method}" in logarithmic mode')
-        #     self.bound_transform = transforms[method](*bounds)
-        # elif method == "constraint":
-        #     self.register_cheap_constraint(checker)
-        # else:
-        #     avail = ["constraint"] + list(transforms)
-        #     raise ValueError(f"Unknown method {method}, available are: {avail}\nSee docstring for more help.")
-        # self.bounds = bounds  # type: ignore
-        # self.full_range_sampling = full_range_sampling
-        # # warn if sigma is too large for range
         # if both_bounds and method != "tanh":  # tanh goes to infinity anyway
         #     std_bounds = tuple(self._to_reduced_space(b) for b in self.bounds)  # type: ignore
         #     min_dist = np.min(np.abs(std_bounds[0] - std_bounds[1]).ravel())
