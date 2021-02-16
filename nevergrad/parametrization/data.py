@@ -3,10 +3,11 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import functools
-import warnings
+# import functools
+# import warnings
 import numpy as np
 import nevergrad.common.typing as tp
+from nevergrad.common import errors
 
 from . import _layering
 from . import core
@@ -120,7 +121,8 @@ class Data(core.Parameter):
             raise ValueError(err_msg)
         self.exponent: tp.Optional[float] = None
         self.bounds: tp.Tuple[tp.Optional[np.ndarray], tp.Optional[np.ndarray]] = (None, None)
-        self.bound_transform: tp.Optional[trans.BoundTransform] = None
+        self.bound_name: tp.Optional[str] = None
+        self.bound_transform = None
         self.full_range_sampling = False
         self._ref_data: tp.Optional[np.ndarray] = None
         self._origin = np.array(self._value, copy=True)
@@ -137,7 +139,7 @@ class Data(core.Parameter):
             else ([str(self._value.shape).replace(" ", "")] if self._value.shape != (1,) else [])
         )
         descriptors += [f"exp={self.exponent}"] if self.exponent is not None else []
-        descriptors += [f"{self.bound_transform.name}"] if self.bound_transform is not None else []
+        descriptors += [f"{self.bound_name}"] if self.bound_name is not None else []
         descriptors += ["constr"] if self._constraint_checkers else []
         description = ""
         if descriptors:
@@ -151,8 +153,10 @@ class Data(core.Parameter):
 
     def _layered_sample(self: D) -> D:
         if not self.full_range_sampling:
+            raise Exception("should not have been called")
             child = self.spawn_child()
             child.mutate()
+            raise Exception("should not have been called")
             return child
         child = self.spawn_child()
         func = (lambda x: x) if self.exponent is None else self._to_reduced_space  # noqa
@@ -207,52 +211,72 @@ class Data(core.Parameter):
         - "tanh" reaches the boundaries really quickly, while "arctan" is much softer
         - only "clipping" accepts partial bounds (None values)
         """  # TODO improve description of methods
-        bounds = tuple(
-            a if isinstance(a, np.ndarray) or a is None else np.array([a], dtype=float)
-            for a in (lower, upper)
+        from . import _datalayers
+
+        if method == "constraint":
+            method = "bouncing"
+        value = self.value
+        print("value")
+        layer = _datalayers.Bound(
+            lower=lower, upper=upper, method=method, uniform_sampling=full_range_sampling
         )
-        both_bounds = all(b is not None for b in bounds)
-        if full_range_sampling is None:
-            full_range_sampling = both_bounds
-        # preliminary checks
-        if self.bound_transform is not None:
-            raise RuntimeError("A bounding method has already been set")
-        if full_range_sampling and not both_bounds:
-            raise ValueError("Cannot use full range sampling if both bounds are not set")
-        checker = utils.BoundChecker(*bounds)
-        if not checker(self.value):
-            raise ValueError("Current value is not within bounds, please update it first")
-        if not (lower is None or upper is None):
-            if (bounds[0] >= bounds[1]).any():  # type: ignore
-                raise ValueError(f"Lower bounds {lower} should be strictly smaller than upper bounds {upper}")
-        # update instance
-        transforms = dict(
-            clipping=trans.Clipping,
-            arctan=trans.ArctanBound,
-            tanh=trans.TanhBound,
-            gaussian=trans.CumulativeDensity,
-        )
-        transforms["bouncing"] = functools.partial(trans.Clipping, bounce=True)  # type: ignore
-        if method in transforms:
-            if self.exponent is not None and method not in ("clipping", "bouncing"):
-                raise ValueError(f'Cannot use method "{method}" in logarithmic mode')
-            self.bound_transform = transforms[method](*bounds)
-        elif method == "constraint":
-            self.register_cheap_constraint(checker)
-        else:
-            avail = ["constraint"] + list(transforms)
-            raise ValueError(f"Unknown method {method}, available are: {avail}\nSee docstring for more help.")
-        self.bounds = bounds  # type: ignore
-        self.full_range_sampling = full_range_sampling
-        # warn if sigma is too large for range
-        if both_bounds and method != "tanh":  # tanh goes to infinity anyway
-            std_bounds = tuple(self._to_reduced_space(b) for b in self.bounds)  # type: ignore
-            min_dist = np.min(np.abs(std_bounds[0] - std_bounds[1]).ravel())
-            if min_dist < 3.0:
-                warnings.warn(
-                    f"Bounds are {min_dist} sigma away from each other at the closest, "
-                    "you should aim for at least 3 for better quality."
-                )
+        self.add_layer(layer)
+        try:
+            self.value = value
+        except ValueError as e:
+            raise errors.NevergradValueError(
+                "Current value is not within bounds, please update it first"
+            ) from e
+        self.bounds = layer.bounds
+        self.bound_name = method
+        self.full_range_sampling = layer.uniform_sampling
+
+        # bounds = tuple(
+        #     a if isinstance(a, np.ndarray) or a is None else np.array([a], dtype=float)
+        #     for a in (lower, upper)
+        # )
+        # both_bounds = all(b is not None for b in bounds)
+        # if full_range_sampling is None:
+        #     full_range_sampling = both_bounds
+        # # preliminary checks
+        # if self.bound_transform is not None:
+        #     raise RuntimeError("A bounding method has already been set")
+        # if full_range_sampling and not both_bounds:
+        #     raise ValueError("Cannot use full range sampling if both bounds are not set")
+        # checker = utils.BoundChecker(*bounds)
+        # if not checker(self.value):
+        #     raise ValueError("Current value is not within bounds, please update it first")
+        # if not (lower is None or upper is None):
+        #     if (bounds[0] >= bounds[1]).any():  # type: ignore
+        #         raise ValueError(f"Lower bounds {lower} should be strictly smaller than upper bounds {upper}")
+        # # update instance
+        # transforms = dict(
+        #     clipping=trans.Clipping,
+        #     arctan=trans.ArctanBound,
+        #     tanh=trans.TanhBound,
+        #     gaussian=trans.CumulativeDensity,
+        # )
+        # transforms["bouncing"] = functools.partial(trans.Clipping, bounce=True)  # type: ignore
+        # if method in transforms:
+        #     if self.exponent is not None and method not in ("clipping", "bouncing"):
+        #         raise ValueError(f'Cannot use method "{method}" in logarithmic mode')
+        #     self.bound_transform = transforms[method](*bounds)
+        # elif method == "constraint":
+        #     self.register_cheap_constraint(checker)
+        # else:
+        #     avail = ["constraint"] + list(transforms)
+        #     raise ValueError(f"Unknown method {method}, available are: {avail}\nSee docstring for more help.")
+        # self.bounds = bounds  # type: ignore
+        # self.full_range_sampling = full_range_sampling
+        # # warn if sigma is too large for range
+        # if both_bounds and method != "tanh":  # tanh goes to infinity anyway
+        #     std_bounds = tuple(self._to_reduced_space(b) for b in self.bounds)  # type: ignore
+        #     min_dist = np.min(np.abs(std_bounds[0] - std_bounds[1]).ravel())
+        #     if min_dist < 3.0:
+        #         warnings.warn(
+        #             f"Bounds are {min_dist} sigma away from each other at the closest, "
+        #             "you should aim for at least 3 for better quality."
+        #         )
         return self
 
     def set_recombination(self: D, recombination: tp.Union[None, str, core.Parameter]) -> D:

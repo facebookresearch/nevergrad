@@ -45,12 +45,12 @@ class BoundLayer(_layering.Layered):
             This is activated by default if both bounds are provided.
         """  # TODO improve description of methods
         super().__init__()
-        self.bounds = tuple(
+        self.bounds: tp.Tuple[tp.Optional[np.ndarray], tp.Optional[np.ndarray]] = tuple(  # type: ignore
             a if isinstance(a, np.ndarray) or a is None else np.array([a], dtype=float)
             for a in (lower, upper)
         )
         both_bounds = all(b is not None for b in self.bounds)
-        self.uniform_sampling = uniform_sampling
+        self.uniform_sampling: bool = uniform_sampling  # type: ignore
         if uniform_sampling is None:
             self.uniform_sampling = both_bounds
         if self.uniform_sampling and not both_bounds:
