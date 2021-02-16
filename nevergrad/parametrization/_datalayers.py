@@ -97,13 +97,18 @@ class BoundLayer(_layering.Layered):
         root = self._layers[0]
         if not isinstance(root, Data):
             raise errors.NevergradTypeError(f"BoundLayer {self} on a non-Data root {root}")
-        child = root.spawn_child()
         shape = super()._layered_get_value().shape
-        bounds = tuple(b * np.ones(shape) for b in self.bounds)
-        new_val = root.random_state.uniform(*bounds)
+        child = root.spawn_child()
         # send new val to the layer under this one for the child
-        child._layers[self._layer_index - 1]._layered_set_value(new_val)
+        new_val = root.random_state.uniform(size=shape)
+        child._layers[self._layer_index].set_normalized_value(new_val)  # type: ignore
         return child
+
+    def set_normalized_value(self, value: np.ndarray) -> None:
+        """Sets a value normalized between 0 and 1"""
+        bounds = tuple(b * np.ones(value.shape) for b in self.bounds)
+        new_val = bounds[0] + (bounds[1] - bounds[0]) * value
+        self._layers[self._layer_index]._layered_set_value(new_val)
 
     def _check(self, value: np.ndarray) -> None:
         if not utils.BoundChecker(*self.bounds)(value):
