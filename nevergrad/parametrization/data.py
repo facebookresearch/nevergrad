@@ -3,8 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# import functools
-# import warnings
 import numpy as np
 import nevergrad.common.typing as tp
 from nevergrad.common import errors
@@ -224,15 +222,6 @@ class Data(core.Parameter):
 
         self.bounds = layer.bounds
         self.full_range_sampling = layer.uniform_sampling
-
-        # if both_bounds and method != "tanh":  # tanh goes to infinity anyway
-        #     std_bounds = tuple(self._to_reduced_space(b) for b in self.bounds)  # type: ignore
-        #     min_dist = np.min(np.abs(std_bounds[0] - std_bounds[1]).ravel())
-        #     if min_dist < 3.0:
-        #         warnings.warn(
-        #             f"Bounds are {min_dist} sigma away from each other at the closest, "
-        #             "you should aim for at least 3 for better quality."
-        #         )
         return self
 
     def set_recombination(self: D, recombination: tp.Union[None, str, core.Parameter]) -> D:

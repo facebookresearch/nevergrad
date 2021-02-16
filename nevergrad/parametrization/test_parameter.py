@@ -138,7 +138,6 @@ def check_parameter_features(param: par.Parameter) -> None:
             assert getattr(param, name) == getattr(child, name)
     # sampling
     samp_param = param.sample()
-    print(samp_param.heritage, param.heritage)
     assert samp_param.uid == samp_param.heritage["lineage"]
     # set descriptor
     assert param.descriptors.deterministic_function
@@ -304,7 +303,6 @@ def test_constraints(name: str) -> None:
     ],
 )
 def test_scalar_sampling(param: par.Scalar, expected: bool) -> None:
-    print("layers", [x.name for x in param._layers])
     assert not any(np.abs(param.spawn_child().value) > 100 for _ in range(10))
     assert any(np.abs(param.sample().value) > 100 for _ in range(10)) == expected
 
