@@ -152,20 +152,10 @@ class Data(core.Parameter):
         return self.parameters["sigma"]  # type: ignore
 
     def _layered_sample(self: D) -> D:
-        if not self.full_range_sampling:
-            child = self.spawn_child()
-            child.mutate()
+        if self.full_range_sampling:
             raise Exception("should not have been called")
-            return child
         child = self.spawn_child()
-        func = (lambda x: x) if self.exponent is None else self._to_reduced_space  # noqa
-        std_bounds = tuple(func(b * np.ones(self._value.shape)) for b in self.bounds)
-        diff = std_bounds[1] - std_bounds[0]
-        new_data = std_bounds[0] + self.random_state.uniform(0, 1, size=diff.shape) * diff
-        if self.exponent is None:
-            new_data = self._to_reduced_space(new_data)
-        child.set_standardized_data(new_data - self._get_ref_data(), deterministic=False)
-        child.heritage["lineage"] = child.uid
+        child.mutate()
         return child
 
     # pylint: disable=unused-argument
@@ -211,6 +201,7 @@ class Data(core.Parameter):
         - only "clipping" accepts partial bounds (None values)
         """  # TODO improve description of methods
         from . import _datalayers
+
         # if method == "constraint":
         #     method = "clipping"
         value = self.value
@@ -219,7 +210,9 @@ class Data(core.Parameter):
             checker = utils.BoundChecker(*layer.bounds)
             self.register_cheap_constraint(checker)
         else:
-            layer = _datalayers.Bound(lower=lower, upper=upper, method=method, uniform_sampling=full_range_sampling)
+            layer = _datalayers.Bound(
+                lower=lower, upper=upper, method=method, uniform_sampling=full_range_sampling
+            )
             self.bound_name = layer._transform.name
         self.add_layer(layer)
         try:

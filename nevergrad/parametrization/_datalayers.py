@@ -86,17 +86,20 @@ class BoundLayer(_layering.Layered):
         return new
 
     def _layered_sample(self) -> "Data":
+        print("HERE", self.name)
         if not self.uniform_sampling:
+            print("not uniform, nevermind")
             return super()._layered_sample()  # type: ignore
         root = self._layers[0]
         if not isinstance(root, Data):
             raise errors.NevergradTypeError(f"BoundLayer {self} on a non-Data root {root}")
         child = root.spawn_child()
+        print("child layers", child._layers)
         shape = super()._layered_get_value().shape
         bounds = tuple(b * np.ones(shape) for b in self.bounds)
         new_val = root.random_state.uniform(*bounds)
         # send new val to the layer under this one for the child
-        child._deeper_layers()[-1]._layered_set_value(new_val)
+        child._layers[self._layer_index - 1]._layered_set_value(new_val)
         return child
 
     def _check(self, value: np.ndarray) -> None:
