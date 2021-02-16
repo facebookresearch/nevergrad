@@ -142,6 +142,7 @@ class Exponent(Operation):
         if base <= 0:
             raise errors.NevergradValueError("Exponent must be strictly positive")
         self._base = base
+        self.set_name(f"exp={base}")
 
     def _layered_get_value(self) -> np.ndarray:
         return self._base ** super()._layered_get_value()  # type: ignore
@@ -218,6 +219,7 @@ class Bound(BoundLayer):
                 f"Unknown method {method}, available are: {transforms.keys()}\nSee docstring for more help."
             )
         self._transform = transforms[method](*self.bounds)
+        self.set_name(self._transform.name)
 
     def _layered_get_value(self) -> np.ndarray:
         return self._transform.forward(super()._layered_get_value())  # type: ignore
