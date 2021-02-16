@@ -138,7 +138,6 @@ def check_parameter_features(param: par.Parameter) -> None:
             assert getattr(param, name) == getattr(child, name)
     # sampling
     samp_param = param.sample()
-    print(samp_param.heritage, param.heritage)
     assert samp_param.uid == samp_param.heritage["lineage"]
     # set descriptor
     assert param.descriptors.deterministic_function

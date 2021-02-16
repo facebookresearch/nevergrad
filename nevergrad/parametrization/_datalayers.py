@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import warnings
 import functools
 import numpy as np
 import nevergrad.common.typing as tp
@@ -45,12 +46,12 @@ class BoundLayer(_layering.Layered):
             This is activated by default if both bounds are provided.
         """  # TODO improve description of methods
         super().__init__()
-        self.bounds = tuple(
+        self.bounds: tp.Tuple[tp.Optional[np.ndarray], tp.Optional[np.ndarray]] = tuple(  # type: ignore
             a if isinstance(a, np.ndarray) or a is None else np.array([a], dtype=float)
             for a in (lower, upper)
         )
         both_bounds = all(b is not None for b in self.bounds)
-        self.uniform_sampling = uniform_sampling
+        self.uniform_sampling: bool = uniform_sampling  # type: ignore
         if uniform_sampling is None:
             self.uniform_sampling = both_bounds
         if self.uniform_sampling and not both_bounds:
@@ -74,15 +75,20 @@ class BoundLayer(_layering.Layered):
             raise errors.NevergradValueError(
                 "Current value is not within bounds, please update it first"
             ) from e
-        # TODO warn if sigma is too large for range
-        # if all(x is not None for x in self.bounds):
-        #     std_bounds = tuple(self._to_reduced_space(b) for b in self.bounds)  # type: ignore
-        #     min_dist = np.min(np.abs(std_bounds[0] - std_bounds[1]).ravel())
-        #     if min_dist < 3.0:
-        #         warnings.warn(
-        #             f"Bounds are {min_dist} sigma away from each other at the closest, "
-        #             "you should aim for at least 3 for better quality."
-        #         )
+        if all(x is not None for x in self.bounds):
+            tests = [data.copy() for _ in range(2)]  # TODO make it simpler and more efficient?
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", category=RuntimeWarning)
+                for test, bound in zip(tests, self.bounds):
+                    val = bound * np.ones(value.shape) if isinstance(value, np.ndarray) else bound[0]  # type: ignore
+                    test.value = val
+            state = tests[0].get_standardized_data(reference=tests[1])
+            min_dist = np.min(np.abs(state))
+            if min_dist < 3.0:
+                warnings.warn(
+                    f"Bounds are {min_dist} sigma away from each other at the closest, "
+                    "you should aim for at least 3 for better quality."
+                )
         return new
 
     def _layered_sample(self) -> "Data":
@@ -91,13 +97,18 @@ class BoundLayer(_layering.Layered):
         root = self._layers[0]
         if not isinstance(root, Data):
             raise errors.NevergradTypeError(f"BoundLayer {self} on a non-Data root {root}")
-        child = root.spawn_child()
         shape = super()._layered_get_value().shape
-        bounds = tuple(b * np.ones(shape) for b in self.bounds)
-        new_val = root.random_state.uniform(*bounds)
+        child = root.spawn_child()
         # send new val to the layer under this one for the child
-        child._deeper_layers()[-1]._layered_set_value(new_val)
+        new_val = root.random_state.uniform(size=shape)
+        child._layers[self._layer_index].set_normalized_value(new_val)  # type: ignore
         return child
+
+    def set_normalized_value(self, value: np.ndarray) -> None:
+        """Sets a value normalized between 0 and 1"""
+        bounds = tuple(b * np.ones(value.shape) for b in self.bounds)
+        new_val = bounds[0] + (bounds[1] - bounds[0]) * value
+        self._layers[self._layer_index]._layered_set_value(new_val)
 
     def _check(self, value: np.ndarray) -> None:
         if not utils.BoundChecker(*self.bounds)(value):
@@ -142,6 +153,7 @@ class Exponent(Operation):
         if base <= 0:
             raise errors.NevergradValueError("Exponent must be strictly positive")
         self._base = base
+        self.set_name(f"exp={base}")
 
     def _layered_get_value(self) -> np.ndarray:
         return self._base ** super()._layered_get_value()  # type: ignore
@@ -218,6 +230,7 @@ class Bound(BoundLayer):
                 f"Unknown method {method}, available are: {transforms.keys()}\nSee docstring for more help."
             )
         self._transform = transforms[method](*self.bounds)
+        self.set_name(self._transform.name)
 
     def _layered_get_value(self) -> np.ndarray:
         return self._transform.forward(super()._layered_get_value())  # type: ignore
