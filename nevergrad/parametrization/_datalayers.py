@@ -77,9 +77,14 @@ class BoundLayer(_layering.Layered):
             ) from e
         # TODO warn if sigma is too large for range
         if all(x is not None for x in self.bounds):
-            std_bounds = tuple(data._to_reduced_space(b) for b in self.bounds)  # type: ignore
-            min_dist = np.min(np.abs(std_bounds[0] - std_bounds[1]).ravel())
-            print(min_dist)
+            tests = [data.copy() for _ in range(2)]
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", category=RuntimeWarning)
+                for test, bound in zip(tests, self.bounds):
+                    val = bound * np.ones(value.shape) if isinstance(value, np.ndarray) else bound[0]  # type: ignore
+                    test.value = val
+            state = tests[0].get_standardized_data(reference=tests[1])
+            min_dist = np.min(np.abs(state))
             if min_dist < 3.0:
                 warnings.warn(
                     f"Bounds are {min_dist} sigma away from each other at the closest, "
@@ -96,7 +101,6 @@ class BoundLayer(_layering.Layered):
         if not isinstance(root, Data):
             raise errors.NevergradTypeError(f"BoundLayer {self} on a non-Data root {root}")
         child = root.spawn_child()
-        print("child layers", child._layers)
         shape = super()._layered_get_value().shape
         bounds = tuple(b * np.ones(shape) for b in self.bounds)
         new_val = root.random_state.uniform(*bounds)
