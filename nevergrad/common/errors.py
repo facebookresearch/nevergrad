@@ -20,6 +20,10 @@ class NevergradWarning(Warning):
 # errors
 
 
+class NevergradEarlyStopping(StopIteration, NevergradError):
+    """Stops the minimization loop if raised"""
+
+
 class NevergradRuntimeError(RuntimeError, NevergradError):
     """Runtime error raised by Nevergrad"""
 

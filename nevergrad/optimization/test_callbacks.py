@@ -81,3 +81,14 @@ def test_progressbar_dump(tmp_path: Path) -> None:
     for _ in range(12):
         cand = optimizer.ask()
         optimizer.tell(cand, 0)
+
+
+def test_early_stopping() -> None:
+    instrum = ng.p.Instrumentation(
+        None, 2.0, blublu="blublu", array=ng.p.Array(shape=(3, 2)), multiobjective=True
+    )
+    optimizer = optimizerlib.OnePlusOne(parametrization=instrum, budget=100)
+    early_stopping = ng.callbacks.EarlyStopping(lambda opt: opt.num_ask > 3)
+    optimizer.register_callback("ask", early_stopping)
+    optimizer.minimize(_func, verbosity=2)
+    assert optimizer.num_ask == 4

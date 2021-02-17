@@ -26,6 +26,8 @@
 
 - the new `nevergrad.errors` module gathers errors and warnings used throughout the package (WIP) [#1031](https://github.com/facebookresearch/nevergrad/pull/1031).
 - `EvolutionStrategy` now defaults to NSGA2 selection in the multiobjective case
+- A new experimental callback adds an early stopping mechanism
+  [#1054](https://github.com/facebookresearch/nevergrad/pull/1054).
 
 ## 0.4.3 (2021-01-28)
 
