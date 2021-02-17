@@ -480,3 +480,35 @@ class MultiobjectiveReference(Constant):
                 f"be used by the optimizer.\n(received {parameter} of type {type(parameter)})"
             )
         super().__init__(parameter)
+
+
+class Constraint(Layered):
+
+    _LAYER_LEVEL = Level.CONSTRAINT
+
+    def __init__(self, func: tp.Callable[..., tp.Union[float, tp.ArrayLike]]) -> None:
+        super().__init__()
+        self.func = func
+        self.done = False
+
+    def parameter(self) -> Parameter:
+        param = self._layers[0].copy()
+        # remove last layer and make sure it is the last one
+        if self._index != param._layers.pop()._index:
+            raise RuntimeError("Constraint layer should be unique and placed last")
+        return param  # type: ignore
+
+    def _layered_get_value(self) -> tp.Any:
+        from . import nevergrad as ng
+
+        parameter = self.parameter()
+        val = parameter.value
+        if self.done:
+            return val
+        self.done = True
+        optim = ng.optimizers.NGOpt(parameter, budget=100)
+        recom = optim.minimize(self.func)
+        return val
+
+    def _layered_del_value(self) -> None:
+        self.done = False

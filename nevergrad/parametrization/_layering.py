@@ -22,8 +22,9 @@ class Level(Enum):
     OPERATION = 10
 
     # final
-    ARRAY_CASTING = 900
-    INTEGER_CASTING = 1000  # must be the last layer
+    ARRAY_CASTING = 800
+    INTEGER_CASTING = 900
+    CONSTRAINT = 1000  # must be the last layer
 
 
 class Layered:
