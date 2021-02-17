@@ -588,7 +588,8 @@ class Log(Scalar):
         bounds = tuple(None if x is None else exp_layer.backward(x) for x in raw_bounds)
         init = exp_layer.backward(np.array([init]))
         super().__init__(init=init[0], mutable_sigma=mutable_sigma)  # type: ignore
-        self.bounds = raw_bounds  # TODO remove when out of compatibility mode
+        # TODO remove the next line when all compatibility is done
+        self.bounds = raw_bounds  # type: ignore
         if any(x is not None for x in bounds):
             bound_layer = _datalayers.Bound(*bounds, uniform_sampling=bounded and no_init)  # type: ignore
             bound_layer(self, inplace=True)
