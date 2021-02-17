@@ -11,7 +11,7 @@ from nevergrad.common import errors
 from . import utils
 from ._layering import ValueProperty as ValueProperty
 from ._layering import Layered as Layered
-from ._layering import Level
+from ._layering import Level as Level
 
 
 # pylint: disable=no-value-for-parameter,pointless-statement
@@ -482,53 +482,13 @@ class MultiobjectiveReference(Constant):
         super().__init__(parameter)
 
 
-class Constraint(Layered):
+class Operator(Layered):
+    """Cast Array as a scalar"""
 
-    _LAYER_LEVEL = Level.CONSTRAINT
+    _LAYER_LEVEL = Level.OPERATION
 
-    def __init__(self, func: tp.Callable[..., tp.Union[float, tp.ArrayLike]]) -> None:
-        super().__init__()
-        self._func = func
-        self._value: tp.Any = None
-
-    def function(self, *args: tp.Any, **kwargs: tp.Any) -> tp.Loss:
-        out = self._func(*args, **kwargs)
-        if isinstance(out, (bool, np.bool)):
-            raise errors.NevergradTypeError(
-                "Constraint must be a positive float if unsatisfied constraint (not bool)"
-            )
-        return np.max(0, out)  # type: ignore
-
-    def parameter(self) -> Parameter:
-        param = self._layers[0].copy()
-        # remove last layer and make sure it is the last one
-        if self._index != param._layers.pop()._index:
-            raise RuntimeError("Constraint layer should be unique and placed last")
-        return param  # type: ignore
-
-    def stopping_criterion(self, optimizer: tp.Any) -> bool:
-        best = optimizer.pareto_front()[0]
-        return not np.any(best.losses > 0)
-
-    def _layered_get_value(self) -> tp.Any:
-        # pylint: disable=import-outside-toplevel
-        import nevergrad as ng
-
-        val = super()._layered_get_value()
-        if self._value is not None:
-            return self._value
-        satisfied = False
-        if satisfied:
-            return val
-        parameter = self.parameter()
-        val = parameter.value
-        optim = ng.optimizers.NGOpt(parameter, budget=100)
-        early_stopping = ng.callbacks.EarlyStopping(self.stopping_criterion)
-        optim.register_callback("ask", early_stopping)
-        recom = optim.minimize(self.function)
-        root: Parameter = self._layers[0]  # type: ignore
-        root.set_standardized_data(np.zeros(root.dimension), reference=recom)
-        return val
-
-    def _layered_del_value(self) -> None:
-        self._value = None
+    def __call__(self, parameter: Parameter) -> Parameter:
+        """Applies the operator on a Parameter to create a new Parameter"""
+        new = parameter.copy()
+        new.add_layer(self.copy())
+        return new

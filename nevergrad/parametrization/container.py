@@ -230,10 +230,10 @@ class Instrumentation(Tuple):
 
     @property
     def args(self) -> tp.Tuple[tp.Any, ...]:
-        return self[0].value  # type: ignore
+        return self.value[0]  # type: ignore
 
     @property
     def kwargs(self) -> tp.Dict[str, tp.Any]:
-        return self[1].value  # type: ignore
+        return self.value[1]  # type: ignore
 
     value: core.ValueProperty[tp.ArgsKwargs] = core.ValueProperty()  # type: ignore
