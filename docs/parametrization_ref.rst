@@ -38,3 +38,4 @@ Parameter API
 
 .. autoclass:: nevergrad.p.Parameter
     :members:
+    :inherited-members:
