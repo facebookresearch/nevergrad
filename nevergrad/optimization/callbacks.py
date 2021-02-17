@@ -11,6 +11,7 @@ import datetime
 from pathlib import Path
 import numpy as np
 import nevergrad.common.typing as tp
+from nevergrad.common import errors
 from nevergrad.parametrization import parameter as p
 from nevergrad.parametrization import helpers
 from . import base
@@ -246,3 +247,16 @@ class ProgressBar:
         state = dict(self.__dict__)
         state["_progress_bar"] = None
         return state
+
+
+class EarlyStopping:
+    """Register on ask"""
+
+    def __init__(self, stopping_criterion: tp.Callable[[base.Optimizer], bool]) -> None:
+        self.stopping_criterion = stopping_criterion
+
+    def __call__(self, optimizer: base.Optimizer, *args: tp.Any, **kwargs: tp.Any) -> None:
+        if args or kwargs:
+            raise errors.NevergradRuntimeError("EarlyStopping must be registered on ask method")
+        if self.stopping_criterion(optimizer):
+            raise errors.NevergradEarlyStopping("Early stopping criterion is reached")
