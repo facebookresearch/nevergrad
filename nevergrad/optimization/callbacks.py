@@ -250,7 +250,27 @@ class ProgressBar:
 
 
 class EarlyStopping:
-    """Register on ask"""
+    """Callback for stopping the :code:`minimize` method before the budget is
+    fully used.
+
+    Parameters
+    ----------
+    stopping_criterion: func(optimizer) -> bool
+        function that takes the current optimizer as input and returns True
+        if the minimization must be stopped
+
+    Note
+    ----
+    This callback must be register on the "ask" method only.
+
+    Example
+    -------
+    In the following code, the :code:`minimize` method will be stopped at the 4th "ask"
+
+    >>> early_stopping = ng.callbacks.EarlyStopping(lambda opt: opt.num_ask > 3)
+    >>> optimizer.register_callback("ask", early_stopping)
+    >>> optimizer.minimize(_func, verbosity=2)
+    """
 
     def __init__(self, stopping_criterion: tp.Callable[[base.Optimizer], bool]) -> None:
         self.stopping_criterion = stopping_criterion
