@@ -450,6 +450,30 @@ will use this suggestion.</p>
 <p>Callbacks can be registered through the <code class="code docutils literal notranslate"><span class="pre">optimizer.register_callback</span></code> for call on either <code class="code docutils literal notranslate"><span class="pre">ask</span></code> or <code class="code docutils literal notranslate"><span class="pre">tell</span></code> methods. Two of them are available through the
 <cite>ng.callbacks</cite> namespace.</p>
 <span class="target" id="module-nevergrad.callbacks"></span><dl class="py class">
+<dt id="nevergrad.callbacks.EarlyStopping">
+<em class="property">class </em><code class="sig-prename descclassname">nevergrad.callbacks.</code><code class="sig-name descname">EarlyStopping</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">stopping_criterion</span><span class="p">:</span> <span class="n">Callable<span class="p">[</span><span class="p">[</span>nevergrad.optimization.base.Optimizer<span class="p">]</span><span class="p">, </span>bool<span class="p">]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.callbacks.EarlyStopping" title="Permalink to this definition">¶</a></dt>
+<dd><p>Callback for stopping the <code class="code docutils literal notranslate"><span class="pre">minimize</span></code> method before the budget is
+fully used.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>stopping_criterion</strong> (<em>func</em><em>(</em><em>optimizer</em><em>) </em><em>-&gt; bool</em>) – function that takes the current optimizer as input and returns True
+if the minimization must be stopped</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This callback must be register on the “ask” method only.</p>
+</div>
+<p class="rubric">Example</p>
+<p>In the following code, the <code class="code docutils literal notranslate"><span class="pre">minimize</span></code> method will be stopped at the 4th “ask”</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">early_stopping</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">callbacks</span><span class="o">.</span><span class="n">EarlyStopping</span><span class="p">(</span><span class="k">lambda</span> <span class="n">opt</span><span class="p">:</span> <span class="n">opt</span><span class="o">.</span><span class="n">num_ask</span> <span class="o">&gt;</span> <span class="mi">3</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">optimizer</span><span class="o">.</span><span class="n">register_callback</span><span class="p">(</span><span class="s2">&quot;ask&quot;</span><span class="p">,</span> <span class="n">early_stopping</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">optimizer</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="n">_func</span><span class="p">,</span> <span class="n">verbosity</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py class">
 <dt id="nevergrad.callbacks.OptimizerDump">
 <em class="property">class </em><code class="sig-prename descclassname">nevergrad.callbacks.</code><code class="sig-name descname">OptimizerDump</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filepath</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span>pathlib.Path<span class="p">]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.callbacks.OptimizerDump" title="Permalink to this definition">¶</a></dt>
 <dd><p>Dumps the optimizer to a pickle file at every call.</p>

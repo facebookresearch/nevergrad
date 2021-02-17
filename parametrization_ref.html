@@ -523,6 +523,12 @@ The value field should sent to the function to optimize.</p>
 </pre></div>
 </div>
 <dl class="py method">
+<dt id="nevergrad.p.Parameter.add_layer">
+<code class="sig-name descname">add_layer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">other</span><span class="p">:</span> <span class="n">nevergrad.parametrization._layering.Layered</span></em><span class="sig-paren">)</span> &#x2192; L<a class="headerlink" href="#nevergrad.p.Parameter.add_layer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds a layer which will modify the object behavior</p>
+</dd></dl>
+
+<dl class="py method">
 <dt id="nevergrad.p.Parameter.args">
 <em class="property">property </em><code class="sig-name descname">args</code><a class="headerlink" href="#nevergrad.p.Parameter.args" title="Permalink to this definition">¶</a></dt>
 <dd><p>Value of the positional arguments.
@@ -620,6 +626,15 @@ In case of mono-objective loss, losses is the array containing this loss as sole
 </dd></dl>
 
 <dl class="py method">
+<dt id="nevergrad.p.Parameter.name">
+<em class="property">property </em><code class="sig-name descname">name</code><a class="headerlink" href="#nevergrad.p.Parameter.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Name of the parameter
+This is used to keep track of how this Parameter is configured (included through internal/model parameters),
+mostly for reproducibility A default version is always provided, but can be overriden directly
+through the attribute, or through the set_name method (which allows chaining).</p>
+</dd></dl>
+
+<dl class="py method">
 <dt id="nevergrad.p.Parameter.random_state">
 <em class="property">property </em><code class="sig-name descname">random_state</code><a class="headerlink" href="#nevergrad.p.Parameter.random_state" title="Permalink to this definition">¶</a></dt>
 <dd><p>Random state the instrumentation and the optimizers pull from.
@@ -678,6 +693,17 @@ the <cite>register_cheap_constraint</cite> method</p>
 </dd>
 <dt class="field-even">Return type</dt>
 <dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="nevergrad.p.Parameter.set_name">
+<code class="sig-name descname">set_name</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span> &#x2192; L<a class="headerlink" href="#nevergrad.p.Parameter.set_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets a name and return the current instrumentation (for chaining)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>name</strong> (<em>str</em>) – new name to use to represent the Parameter</p>
 </dd>
 </dl>
 </dd></dl>
