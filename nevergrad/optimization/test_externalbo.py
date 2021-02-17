@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import typing as tp
 import pytest
 import numpy as np
 import nevergrad as ng
@@ -61,7 +62,9 @@ def test_hyperopt(parametrization, has_transform) -> None:
         optim1.tell(cand, 0)  # Tell asked
         del cand._meta["trial_id"]
         optim2.tell(cand, 0)  # Tell not asked
-        assert optim1.trials._dynamic_trials[it]["misc"]["vals"] == optim2.trials._dynamic_trials[it]["misc"]["vals"]  # type: ignore
+        assert flatten(optim1.trials._dynamic_trials[it]["misc"]["vals"]) == pytest.approx(
+            flatten(optim2.trials._dynamic_trials[it]["misc"]["vals"])
+        )  # type: ignore
 
     assert optim1.trials.new_trial_ids(1) == optim2.trials.new_trial_ids(1)  # type: ignore
     assert optim1.trials.new_trial_ids(1)[0] == (it + 2)  # type: ignore
@@ -125,5 +128,24 @@ def test_hyperopt(parametrization, has_transform) -> None:
 def test_hyperopt_helpers(parametrization, values):
     for val, dict_val, hyperopt_val in values:
         parametrization.value = val
-        assert _hp_parametrization_to_dict(parametrization) == dict_val
-        assert _hp_dict_to_parametrization(hyperopt_val) == parametrization.value
+        assert flatten(_hp_parametrization_to_dict(parametrization)) == pytest.approx(flatten(dict_val))
+        assert flatten(_hp_dict_to_parametrization(hyperopt_val)) == pytest.approx(
+            flatten(parametrization.value)
+        )
+
+
+def flatten(container: tp.Any) -> tp.Any:
+    output: tp.Any = {}
+    if isinstance(container, (tuple, list)):
+        iterator = enumerate(container)
+    elif isinstance(container, dict):
+        iterator = container.items()  # type: ignore
+    else:
+        return container
+    for k, val in iterator:
+        content = flatten(val)
+        if isinstance(content, dict):
+            output.update({f"{k}.{x}": y for x, y in content.items()})
+        else:
+            output[str(k)] = val
+    return output

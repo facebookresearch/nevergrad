@@ -20,7 +20,6 @@ from . import transforms as trans
 
 D = tp.TypeVar("D", bound="Data")
 P = tp.TypeVar("P", bound=core.Parameter)
-# L = tp.TypeVar("L", bound=_layering.Layered)
 
 
 def _param_string(parameters: Dict) -> str:
@@ -119,13 +118,13 @@ class Data(core.Parameter):
         else:
             raise ValueError(err_msg)
         self.exponent: tp.Optional[float] = None
-        self.bounds: tp.Tuple[tp.Optional[np.ndarray], tp.Optional[np.ndarray]] = (None, None)
         self.bound_name: tp.Optional[str] = None
         self.bound_transform = None
         self.full_range_sampling = False
         self._ref_data: tp.Optional[np.ndarray] = None
         self._origin = np.array(self._value, copy=True)
         self.add_layer(_layering.ArrayCasting())
+        self.bounds: tp.Tuple[tp.Optional[np.ndarray], tp.Optional[np.ndarray]] = (None, None)
 
     def _compute_descriptors(self) -> utils.Descriptors:
         return utils.Descriptors(continuous=not self.integer)
@@ -585,10 +584,11 @@ class Log(Scalar):
         from . import _datalayers
 
         exp_layer = _datalayers.Exponent(exponent)
-        bounds = tuple(None if x is None else exp_layer.backward(np.array([x])) for x in (lower, upper))
+        raw_bounds = tuple(None if x is None else np.array([x], dtype=float) for x in (lower, upper))
+        bounds = tuple(None if x is None else exp_layer.backward(x) for x in raw_bounds)
         init = exp_layer.backward(np.array([init]))
-        print("init", init)
         super().__init__(init=init[0], mutable_sigma=mutable_sigma)  # type: ignore
+        self.bounds = raw_bounds  # TODO remove when out of compatibility mode
         if any(x is not None for x in bounds):
             bound_layer = _datalayers.Bound(*bounds, uniform_sampling=bounded and no_init)  # type: ignore
             bound_layer(self, inplace=True)

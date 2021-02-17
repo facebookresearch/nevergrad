@@ -133,7 +133,6 @@ class BoundTransform(Transform):  # pylint: disable=abstract-method
         if self.a_min is None and self.a_max is None:
             raise ValueError("At least one bound must be specified")
         self.shape: tp.Tuple[int, ...] = self.a_min.shape if self.a_min is not None else self.a_max.shape
-        self.checker = utils.BoundChecker(a_min, a_max)
 
     def _check_shape(self, x: np.ndarray) -> None:
         for dims in itertools.zip_longest(x.shape, self.shape, fillvalue=1):
@@ -196,6 +195,7 @@ class Clipping(BoundTransform):
         self._bounce = bounce
         b = ",b" if bounce else ""
         self.name = f"Cl({_f(a_min)},{_f(a_max)}{b})"
+        self.checker = utils.BoundChecker(self.a_min, self.a_max)
 
     def forward(self, x: np.ndarray) -> np.ndarray:
         self._check_shape(x)
@@ -235,13 +235,13 @@ class ArctanBound(BoundTransform):
 
     def forward(self, x: np.ndarray) -> np.ndarray:
         self._check_shape(x)
-        return self._b + self._a * np.arctan(x)
+        return self._b + self._a * np.arctan(x)  # type: ignore
 
     def backward(self, y: np.ndarray) -> np.ndarray:
         self._check_shape(y)
         if (y > self.a_max).any() or (y < self.a_min).any():
             raise ValueError(f"Only data between {self.a_min} and {self.a_max} can be transformed back.")
-        return np.tan((y - self._b) / self._a)
+        return np.tan((y - self._b) / self._a)  # type: ignore
 
 
 class CumulativeDensity(BoundTransform):
@@ -257,7 +257,7 @@ class CumulativeDensity(BoundTransform):
         self.name = f"Cd({_f(lower)},{_f(upper)})"
 
     def forward(self, x: np.ndarray) -> np.ndarray:
-        return self._a * stats.norm.cdf(x) + self._b
+        return self._a * stats.norm.cdf(x) + self._b  # type: ignore
 
     def backward(self, y: np.ndarray) -> np.ndarray:
         if (y > self.a_max).any() or (y < self.a_min).any():
