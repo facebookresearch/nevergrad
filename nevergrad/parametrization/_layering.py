@@ -89,7 +89,6 @@ class Layered:
         pass  # called independently on each layer
 
     def _layered_sample(self) -> "Layered":
-        print("default sample in", self.name)
         return self._call_deeper("_layered_sample")  # type: ignore
 
     def copy(self: L) -> L:

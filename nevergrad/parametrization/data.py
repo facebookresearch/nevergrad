@@ -428,6 +428,9 @@ class Data(core.Parameter):
     def __pow__(self: D, power: float) -> D:
         return self._new_with_data_layer("Power", power)
 
+    def __neg__(self: D) -> D:
+        return self.__mul__(-1.0)
+
 
 class Array(Data):
 

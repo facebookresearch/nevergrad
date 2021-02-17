@@ -6,6 +6,8 @@
 import pytest
 import numpy as np
 import nevergrad as ng
+from nevergrad.common import testing
+import nevergrad.common.typing as tp
 from . import _datalayers
 
 
@@ -56,3 +58,22 @@ def test_power() -> None:
     assert x.value == 0.5
     x.value = 0.25
     assert x.get_standardized_data(reference=ref)[0] == 12
+
+
+@testing.parametrized(
+    new_unary=(10 ** -ng.p.Scalar(lower=0, upper=10),),
+    legacy_log=(ng.p.Log(lower=1e-10, upper=1.0, exponent=10),),
+    legacy_array=(
+        ng.p.Array(init=1e-5 * np.ones(100)).set_bounds(lower=1e-10, upper=1.0).set_mutation(exponent=10),
+    ),
+)
+def test_log_sampling(log: ng.p.Data) -> None:
+    values: tp.List[float] = []
+    while len(values) < 100:
+        new = log.sample().value
+        if isinstance(new, np.ndarray):
+            values.extend(new.tolist())
+        else:
+            values.append(new)
+    proba = np.mean(np.array(values) < 0.1)
+    assert proba > 0.5  # should be around 90%
