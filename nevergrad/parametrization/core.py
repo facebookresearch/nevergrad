@@ -488,8 +488,16 @@ class Constraint(Layered):
 
     def __init__(self, func: tp.Callable[..., tp.Union[float, tp.ArrayLike]]) -> None:
         super().__init__()
-        self.func = func
-        self.done = False
+        self._func = func
+        self._value: tp.Any = None
+
+    def function(self, *args: tp.Any, **kwargs: tp.Any) -> tp.Loss:
+        out = self._func(*args, **kwargs)
+        if isinstance(out, (bool, np.bool)):
+            raise errors.NevergradTypeError(
+                "Constraint must be a positive float if unsatisfied constraint (not bool)"
+            )
+        return np.max(0, out)  # type: ignore
 
     def parameter(self) -> Parameter:
         param = self._layers[0].copy()
@@ -498,17 +506,27 @@ class Constraint(Layered):
             raise RuntimeError("Constraint layer should be unique and placed last")
         return param  # type: ignore
 
-    def _layered_get_value(self) -> tp.Any:
-        from . import nevergrad as ng
+    def stopping_criterion(self, optimizer: tp.Any) -> bool:
+        best = optimizer.pareto_front()[0]
+        return not np.any(best.losses > 0)
 
+    def _layered_get_value(self) -> tp.Any:
+        # pylint: disable=import-outside-toplevel
+        import nevergrad as ng
+
+        val = super()._layered_get_value()
+        if self._value is not None:
+            return self._value
+        satisfied = False
+        if satisfied:
+            return val
         parameter = self.parameter()
         val = parameter.value
-        if self.done:
-            return val
-        self.done = True
         optim = ng.optimizers.NGOpt(parameter, budget=100)
-        recom = optim.minimize(self.func)
+        recom = optim.minimize(self.function)
+        root: Parameter = self._layers[0]  # type: ignore
+        root.set_standardized_data([0] * root.dimension, reference=recom)
         return val
 
     def _layered_del_value(self) -> None:
-        self.done = False
+        self._value = None
