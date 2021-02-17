@@ -207,7 +207,9 @@ class Clipping(BoundTransform):
         if (self.a_max is not None and (y > self.a_max).any()) or (
             self.a_min is not None and (y < self.a_min).any()
         ):
-            raise ValueError(f"Only data between {self.a_min} and {self.a_max} " "can be transformed back.")
+            raise ValueError(
+                f"Only data between {self.a_min} and {self.a_max} can be transformed back.\n" f"Got: {y}"
+            )
         return y
 
 

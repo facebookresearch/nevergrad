@@ -61,10 +61,10 @@ def test_power() -> None:
 
 
 @testing.parametrized(
-    new_unary=(10 ** -ng.p.Scalar(lower=0, upper=10),),
-    legacy_log=(ng.p.Log(lower=1e-10, upper=1.0, exponent=10),),
+    new_unary=(10 ** -ng.p.Scalar(lower=0, upper=5),),
+    legacy_log=(ng.p.Log(lower=1e-10, upper=1.0, exponent=5),),
     legacy_array=(
-        ng.p.Array(init=1e-5 * np.ones(100)).set_bounds(lower=1e-10, upper=1.0).set_mutation(exponent=10),
+        ng.p.Array(init=1e-5 * np.ones(100)).set_bounds(lower=1e-5, upper=1.0).set_mutation(exponent=10),
     ),
 )
 def test_log_sampling(log: ng.p.Data) -> None:
@@ -76,4 +76,4 @@ def test_log_sampling(log: ng.p.Data) -> None:
         else:
             values.append(new)
     proba = np.mean(np.array(values) < 0.1)
-    assert proba > 0.5  # should be around 90%
+    assert 0.5 < proba < 1  # should be around 80%

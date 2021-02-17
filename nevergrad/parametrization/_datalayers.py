@@ -16,10 +16,26 @@ from . import utils
 
 
 D = tp.TypeVar("D", bound=Data)
+Op = tp.TypeVar("Op", bound="Operation")
 BL = tp.TypeVar("BL", bound="BoundLayer")
 
 
-class BoundLayer(_layering.Layered):
+class Operation(_layering.Layered):
+
+    _LAYER_LEVEL = _layering.Level.OPERATION
+    _LEGACY = False
+
+    def __init__(self, *args: tp.Any, **kwargs: tp.Any) -> None:
+        super().__init__()
+        if any(isinstance(x, Parameter) for x in args + tuple(kwargs.values())):
+            raise errors.NevergradTypeError("Operation with Parameter instances are not supported")
+
+    @classmethod
+    def filter_from(cls: tp.Type[Op], parameter: Parameter) -> tp.List[Op]:
+        return [x for x in parameter._layers if isinstance(x, cls)]
+
+
+class BoundLayer(Operation):
 
     _LAYER_LEVEL = _layering.Level.OPERATION
 
@@ -45,7 +61,7 @@ class BoundLayer(_layering.Layered):
             the while range of the bounds. The "sample" method is used by some algorithms to create an initial population.
             This is activated by default if both bounds are provided.
         """  # TODO improve description of methods
-        super().__init__()
+        super().__init__(lower, upper, uniform_sampling)
         self.bounds: tp.Tuple[tp.Optional[np.ndarray], tp.Optional[np.ndarray]] = tuple(  # type: ignore
             a if isinstance(a, np.ndarray) or a is None else np.array([a], dtype=float)
             for a in (lower, upper)
@@ -114,10 +130,6 @@ class BoundLayer(_layering.Layered):
         if not utils.BoundChecker(*self.bounds)(value):
             raise errors.NevergradValueError("New value does not comply with bounds")
 
-    @staticmethod
-    def find(parameter: Parameter) -> tp.List["BoundLayer"]:
-        return [x for x in parameter._layers if isinstance(x, BoundLayer)]
-
 
 class Modulo(BoundLayer):
     """Applies a modulo operation on the array
@@ -139,16 +151,6 @@ class Modulo(BoundLayer):
         super()._layered_set_value(current - (current % self._module) + value)
 
 
-class Operation(_layering.Layered):
-
-    _LAYER_LEVEL = _layering.Level.OPERATION
-
-    def __init__(self, *args: tp.Any, **kwargs: tp.Any) -> None:
-        super().__init__()
-        if any(isinstance(x, Parameter) for x in args + tuple(kwargs.values())):
-            raise errors.NevergradTypeError("Operation with Parameter instances are not supported")
-
-
 class Exponent(Operation):
     """Applies an array as exponent of a float"""
 
@@ -157,13 +159,18 @@ class Exponent(Operation):
         if base <= 0:
             raise errors.NevergradValueError("Exponent must be strictly positive")
         self._base = base
-        self.set_name(f"exp={base}")
+
+    def forward(self, value: tp.Any) -> tp.Any:
+        return self._base ** value
+
+    def backward(self, value: tp.Any) -> tp.Any:
+        return np.log(value) / np.log(self._base)
 
     def _layered_get_value(self) -> np.ndarray:
-        return self._base ** super()._layered_get_value()  # type: ignore
+        return self.forward(super()._layered_get_value())  # type: ignore
 
     def _layered_set_value(self, value: np.ndarray) -> None:
-        super()._layered_set_value(np.log(value) / np.log(self._base))
+        super()._layered_set_value(self.backward(value))
 
 
 class Power(Operation):
@@ -233,6 +240,7 @@ class Bound(BoundLayer):
             raise errors.NevergradValueError(
                 f"Unknown method {method}, available are: {transforms.keys()}\nSee docstring for more help."
             )
+        self._method = method
         self._transform = transforms[method](*self.bounds)
         self.set_name(self._transform.name)
 

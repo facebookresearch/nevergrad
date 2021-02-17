@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import warnings
 import numpy as np
 import nevergrad.common.typing as tp
 from nevergrad.common import errors
@@ -212,7 +213,10 @@ class Data(core.Parameter):
                 lower=lower, upper=upper, method=method, uniform_sampling=full_range_sampling
             )
             self.bound_name = layer._transform.name
+        layer._LEGACY = True
         layer(self, inplace=True)
+        _fix_legacy(self)
+        print("Resseting initial prebound value", value)
         try:
             self.value = value
         except ValueError as e:
@@ -285,6 +289,8 @@ class Data(core.Parameter):
             else:
                 self.sigma.value = sigma  # type: ignore
         if exponent is not None:
+            from . import _datalayers
+
             if self.bound_transform is not None and not isinstance(self.bound_transform, trans.Clipping):
                 raise RuntimeError(
                     f"Cannot set logarithmic transform with bounding transform {self.bound_transform}, "
@@ -292,11 +298,20 @@ class Data(core.Parameter):
                 )
             if exponent <= 1.0:
                 raise ValueError("Only exponents strictly higher than 1.0 are allowed")
-            if np.min(self._value.ravel()) <= 0:
-                raise RuntimeError(
-                    "Cannot convert to logarithmic mode with current non-positive value, please update it firstp."
-                )
+            value = self.value
+            print("recording", value)
             self.exponent = exponent
+            layer = _datalayers.Exponent(base=exponent)
+            layer._LEGACY = True
+            self.add_layer(layer)
+            _fix_legacy(self)
+            print("Resseting initial prelog value", value)
+            try:
+                self.value = value
+            except ValueError as e:
+                raise errors.NevergradValueError(
+                    "Cannot convert to logarithmic mode with current non-positive value, please update it firstp."
+                ) from e
         if custom is not None:
             self.parameters._content["mutation"] = core.as_parameter(custom)
         return self
@@ -347,7 +362,7 @@ class Data(core.Parameter):
         sigma = self.sigma.value
         if self.bound_transform is not None:
             value = self.bound_transform.backward(value)
-        distribval = value if self.exponent is None else np.log(value) / np.log(self.exponent)
+        distribval = value
         reduced = distribval / sigma
         return reduced.ravel()  # type: ignore
 
@@ -383,8 +398,6 @@ class Data(core.Parameter):
             )
         if not utils.BoundChecker(*self.bounds)(self.value):
             raise ValueError("New value does not comply with bounds")
-        if self.exponent is not None and np.min(value.ravel()) <= 0:
-            raise ValueError("Logirithmic values cannot be negative")
         self._value = value
 
     def _layered_get_value(self) -> np.ndarray:
@@ -430,6 +443,50 @@ class Data(core.Parameter):
 
     def __neg__(self: D) -> D:
         return self.__mul__(-1.0)
+
+
+def _fix_legacy(parameter: Data) -> None:
+    """Ugly hack for keeping the legacy behaviors with considers bounds always after the exponent
+    and can still sample "before" the exponent (log-uniform).
+    """
+    from . import _datalayers
+
+    legacy = [x for x in _datalayers.Operation.filter_from(parameter) if x._LEGACY]
+    if len(legacy) < 2:
+        return
+    if len(legacy) > 2:
+        raise errors.NevergradRuntimeError("More than 2 legacy layers, this should not happen, open an issue")
+    warnings.warn(
+        "Settings bounds and exponent through the Array/Scalar API will change behavior "
+        " (this is an early warning, more on this asap)",
+        errors.NevergradBehaviorChangesWarning,
+    )
+    value = parameter.value
+    layers_inds = tuple(leg._layer_index for leg in legacy)
+    if abs(layers_inds[0] - layers_inds[1]) > 1:
+        raise errors.NevergradRuntimeError("Non-legacy layers between 2 legacy layers")
+    parameter._layers = [x for x in parameter._layers if x._layer_index not in layers_inds]
+    # fix parameter layers
+    for k, sub in enumerate(parameter._layers):
+        sub._layer_index = k
+        sub._layers = parameter._layers
+    parameter.value = value
+    bound_ind = int(isinstance(legacy[0], _datalayers.Exponent))
+    bound: _datalayers.BoundLayer = legacy[bound_ind]  # type: ignore
+    exp: _datalayers.Exponent = legacy[(bound_ind + 1) % 2]  # type: ignore
+    bound.bounds = tuple(None if b is None else exp.backward(b) for b in bound.bounds)  # type: ignore
+    if isinstance(bound, _datalayers.Bound):
+        bound = _datalayers.Bound(
+            lower=bound.bounds[0],
+            upper=bound.bounds[1],
+            method=bound._method,
+            uniform_sampling=bound.uniform_sampling,
+        )
+    for l in (bound, exp):
+        l._layer_index = 0
+        l._layers = [l]
+        parameter.add_layer(l)
+    return
 
 
 class Array(Data):
