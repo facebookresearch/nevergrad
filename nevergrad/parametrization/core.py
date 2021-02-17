@@ -523,9 +523,11 @@ class Constraint(Layered):
         parameter = self.parameter()
         val = parameter.value
         optim = ng.optimizers.NGOpt(parameter, budget=100)
+        early_stopping = ng.callbacks.EarlyStopping(self.stopping_criterion)
+        optim.register_callback("ask", early_stopping)
         recom = optim.minimize(self.function)
         root: Parameter = self._layers[0]  # type: ignore
-        root.set_standardized_data([0] * root.dimension, reference=recom)
+        root.set_standardized_data(np.zeros(root.dimension), reference=recom)
         return val
 
     def _layered_del_value(self) -> None:
