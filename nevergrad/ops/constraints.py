@@ -7,11 +7,18 @@ from nevergrad import callbacks
 
 
 class Constraint(core.Operator):
-    """Constraint function to apply on a parameter
-    The constraint function must return a float (or a list/tuple/array of floats),
-    positive if the constraint is not satisfied, null or negative otherwise.
-    This function is called exactly the same way as the function to optimize
+    """Operator for applying a constraint on a Parameter
 
+    Parameters
+    ----------
+    func: function
+        the constraint function, taking the same arguments that the function to optimize.
+        This constraint function must return a float (or a list/tuple/array of floats),
+        positive if the constraint is not satisfied, null or negative otherwise.
+    optimizer: str
+        name of the optimizer to use for solving the constraint
+    budget: int
+        the budget to use for applying the constraint
 
     Example
     -------
