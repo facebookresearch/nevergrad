@@ -8,6 +8,7 @@ import itertools
 import numpy as np
 from scipy import stats
 import nevergrad.common.typing as tp
+from . import utils
 
 
 class Transform:
@@ -132,6 +133,7 @@ class BoundTransform(Transform):  # pylint: disable=abstract-method
         if self.a_min is None and self.a_max is None:
             raise ValueError("At least one bound must be specified")
         self.shape: tp.Tuple[int, ...] = self.a_min.shape if self.a_min is not None else self.a_max.shape
+        self.checker = utils.BoundChecker(a_min, a_max)
 
     def _check_shape(self, x: np.ndarray) -> None:
         for dims in itertools.zip_longest(x.shape, self.shape, fillvalue=1):
@@ -197,6 +199,8 @@ class Clipping(BoundTransform):
 
     def forward(self, x: np.ndarray) -> np.ndarray:
         self._check_shape(x)
+        if self.checker(x):
+            return x
         out = np.clip(x, self.a_min, self.a_max)
         if self._bounce:
             out = np.clip(2 * out - x, self.a_min, self.a_max)
@@ -204,9 +208,7 @@ class Clipping(BoundTransform):
 
     def backward(self, y: np.ndarray) -> np.ndarray:
         self._check_shape(y)
-        if (self.a_max is not None and (y > self.a_max).any()) or (
-            self.a_min is not None and (y < self.a_min).any()
-        ):
+        if not self.checker(y):
             raise ValueError(
                 f"Only data between {self.a_min} and {self.a_max} can be transformed back.\n" f"Got: {y}"
             )

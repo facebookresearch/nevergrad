@@ -77,3 +77,12 @@ def test_log_sampling(log: ng.p.Data) -> None:
             values.append(new)
     proba = np.mean(np.array(values) < 0.1)
     assert 0.5 < proba < 1  # should be around 80%
+
+
+def test_clipping_standardized_data() -> None:
+    ref = ng.p.Scalar()
+    x = _datalayers.Bound(-10, 10, method="clipping")(ref)
+    x.set_standardized_data([12])
+    state = x.get_standardized_data(reference=ref)
+    assert state[0] == 10
+    assert x.value == 10

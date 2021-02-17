@@ -216,14 +216,12 @@ class Data(core.Parameter):
         layer._LEGACY = True
         layer(self, inplace=True)
         _fix_legacy(self)
-        print("Resseting initial prebound value", value)
         try:
             self.value = value
         except ValueError as e:
             raise errors.NevergradValueError(
                 "Current value is not within bounds, please update it first"
             ) from e
-
         self.bounds = layer.bounds
         self.full_range_sampling = layer.uniform_sampling
         return self
@@ -238,11 +236,6 @@ class Data(core.Parameter):
         """Mutate parameters of the instance, and then its value"""
         self._check_frozen()
         self._subobjects.apply("mutate")
-        if not isinstance(self.sigma, core.Constant):
-            print("sigma sigma sub", self.sigma.sigma)
-            print("sigma sub", self.sigma)
-            print("sigma val", self.sigma._value)
-        # print("sigma layers", [x.name for x in self.sigma._layers])
         mutation = self.parameters["mutation"].value
         if isinstance(mutation, str):
             if mutation in ["gaussian", "cauchy"]:
@@ -250,7 +243,6 @@ class Data(core.Parameter):
                     self.random_state.normal if mutation == "gaussian" else self.random_state.standard_cauchy
                 )
                 new_state = func(size=self.dimension)
-                print("new_state", new_state)
                 self.set_standardized_data(new_state, deterministic=False)
             else:
                 raise NotImplementedError('Mutation "{mutation}" is not implemented')
@@ -306,13 +298,11 @@ class Data(core.Parameter):
             if exponent <= 1.0:
                 raise ValueError("Only exponents strictly higher than 1.0 are allowed")
             value = self.value
-            print("recording", value)
             self.exponent = exponent
             layer = _datalayers.Exponent(base=exponent)
             layer._LEGACY = True
             self.add_layer(layer)
             _fix_legacy(self)
-            print("Resseting initial prelog value", value)
             try:
                 self.value = value
             except ValueError as e:
@@ -351,6 +341,8 @@ class Data(core.Parameter):
         data_reduc = sigma * (data + reference._get_ref_data()).reshape(reference._value.shape)
         self._value = data_reduc
         self._ref_data = None
+        # make sure _value is updated by the layers getters if need be:
+        self.value  # pylint: disable=pointless-statement
 
     def _internal_get_standardized_data(self: D, reference: D) -> np.ndarray:
         return reference._to_reduced_space(self._value) - reference._get_ref_data()  # type: ignore

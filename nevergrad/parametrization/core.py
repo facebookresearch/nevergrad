@@ -381,7 +381,7 @@ class Parameter(Layered):
             self, Constant
         ):  # nevermind constants (since they dont spawn children)
             raise RuntimeError(
-                f"Cannot modify frozen Parameter {self}, please spawn a child and modify it instead"
+                f"Cannot modify frozen Parameter {self.name}, please spawn a child and modify it instead"
                 "(optimizers freeze the parametrization and all asked and told candidates to avoid border effects)"
             )
         self._subobjects.apply("_check_frozen")
