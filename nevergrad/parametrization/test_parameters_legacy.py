@@ -131,6 +131,8 @@ def test_scalar() -> None:
 @pytest.mark.parametrize("value,expected", [(0, 0.01), (10, 0.001), (-30, 0.002), (20, 0.001)])  # type: ignore
 def test_log(value: float, expected: float) -> None:
     var = p.Log(lower=0.001, upper=0.1)
+    print(var)
+    print("setting std", value)
     out = var.spawn_child().set_standardized_data(np.array([value]))
     np.testing.assert_approx_equal(out.value, expected, significant=4)
     repr(var)

@@ -245,7 +245,13 @@ class Bound(BoundLayer):
         self.set_name(self._transform.name)
 
     def _layered_get_value(self) -> np.ndarray:
-        return self._transform.forward(super()._layered_get_value())  # type: ignore
+        deep_value = super()._layered_get_value()
+        print("got", deep_value, "for bounds", self.bounds)
+        value = self._transform.forward(deep_value)
+        print("transformed to", value)
+        # if self._method in ("clipping", "bouncing"):  # refresh if need be
+        #     super()._layered_set_value(value)
+        return value  # type: ignore
 
     def _layered_set_value(self, value: np.ndarray) -> None:
         super()._layered_set_value(self._transform.backward(value))

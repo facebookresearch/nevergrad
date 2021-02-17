@@ -238,13 +238,20 @@ class Data(core.Parameter):
         """Mutate parameters of the instance, and then its value"""
         self._check_frozen()
         self._subobjects.apply("mutate")
+        if not isinstance(self.sigma, core.Constant):
+            print("sigma sigma sub", self.sigma.sigma)
+            print("sigma sub", self.sigma)
+            print("sigma val", self.sigma._value)
+        # print("sigma layers", [x.name for x in self.sigma._layers])
         mutation = self.parameters["mutation"].value
         if isinstance(mutation, str):
             if mutation in ["gaussian", "cauchy"]:
                 func = (
                     self.random_state.normal if mutation == "gaussian" else self.random_state.standard_cauchy
                 )
-                self.set_standardized_data(func(size=self.dimension), deterministic=False)
+                new_state = func(size=self.dimension)
+                print("new_state", new_state)
+                self.set_standardized_data(new_state, deterministic=False)
             else:
                 raise NotImplementedError('Mutation "{mutation}" is not implemented')
         elif isinstance(mutation, Mutation):
@@ -342,10 +349,8 @@ class Data(core.Parameter):
         assert isinstance(data, np.ndarray)
         sigma = reference.sigma.value
         data_reduc = sigma * (data + reference._get_ref_data()).reshape(reference._value.shape)
-        self._value = data_reduc if reference.exponent is None else reference.exponent ** data_reduc
+        self._value = data_reduc
         self._ref_data = None
-        if reference.bound_transform is not None:
-            self._value = reference.bound_transform.forward(self._value)
 
     def _internal_get_standardized_data(self: D, reference: D) -> np.ndarray:
         return reference._to_reduced_space(self._value) - reference._get_ref_data()  # type: ignore
@@ -396,8 +401,6 @@ class Data(core.Parameter):
             raise ValueError(
                 f"Cannot set array of shape {self._value.shape} with value of shape {value.shape}"
             )
-        if not utils.BoundChecker(*self.bounds)(self.value):
-            raise ValueError("New value does not comply with bounds")
         self._value = value
 
     def _layered_get_value(self) -> np.ndarray:
