@@ -582,8 +582,14 @@ class Log(Scalar):
             raise ValueError("You must define either a init value or both lower and upper bounds")
         if exponent is None:
             exponent = 2.0
-        super().__init__(init=init, mutable_sigma=mutable_sigma)
-        # self.add_layer(Exponent(exponent))
-        self.set_mutation(sigma=1.0, exponent=exponent)
-        if any(a is not None for a in (lower, upper)):
-            self.set_bounds(lower, upper, full_range_sampling=bounded and no_init)
+        from . import _datalayers
+
+        exp_layer = _datalayers.Exponent(exponent)
+        bounds = tuple(None if x is None else exp_layer.backward(np.array([x])) for x in (lower, upper))
+        init = exp_layer.backward(np.array([init]))
+        print("init", init)
+        super().__init__(init=init[0], mutable_sigma=mutable_sigma)  # type: ignore
+        if any(x is not None for x in bounds):
+            bound_layer = _datalayers.Bound(*bounds, uniform_sampling=bounded and no_init)  # type: ignore
+            bound_layer(self, inplace=True)
+        self.add_layer(exp_layer)
