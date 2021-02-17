@@ -66,9 +66,8 @@ class Constraint(core.Operator):
         return not np.any(best.losses > 0)
 
     def _layered_get_value(self) -> tp.Any:
-        # pylint: disable=import-outside-toplevel
-        # TODO: this can be made more efficient (fewer copy) if need be
-        # work with apply_constraint if you can, tampering with this method is tricky
+        # TODO: this can be made more efficient (fewer copy) if need be.
+        # Override only apply_constraint if you can, tampering with this method is tricky
         if self._cache is not None:
             return self._cache
         parameter = self.parameter()
