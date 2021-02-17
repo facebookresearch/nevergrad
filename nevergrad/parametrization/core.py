@@ -483,7 +483,7 @@ class MultiobjectiveReference(Constant):
 
 
 class Operator(Layered):
-    """Cast Array as a scalar"""
+    """Layer object that can be used as an operator on a Parameter"""
 
     _LAYER_LEVEL = Level.OPERATION
 
