@@ -128,7 +128,7 @@ def test_scalar() -> None:
 
 
 # bouncing with large values clips to the other side
-@pytest.mark.parametrize("value,expected", [(0, 0.01), (10, 0.001), (-30, 0.002), (20, 0.001)])  # type: ignore
+@pytest.mark.parametrize("value,expected", [(0, 0.01), (10, 0.001), (-30, 0.1), (20, 0.001)])  # type: ignore
 def test_log(value: float, expected: float) -> None:
     var = p.Log(lower=0.001, upper=0.1)
     print(var)
