@@ -3,10 +3,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import typing as tp
 import pytest
 import numpy as np
 import nevergrad as ng
+from nevergrad.common.tools import flatten
 from .optimizerlib import registry
 from .externalbo import _hp_parametrization_to_dict, _hp_dict_to_parametrization
 
@@ -132,20 +132,3 @@ def test_hyperopt_helpers(parametrization, values):
         assert flatten(_hp_dict_to_parametrization(hyperopt_val)) == pytest.approx(
             flatten(parametrization.value)
         )
-
-
-def flatten(container: tp.Any) -> tp.Any:
-    output: tp.Any = {}
-    if isinstance(container, (tuple, list)):
-        iterator = enumerate(container)
-    elif isinstance(container, dict):
-        iterator = container.items()  # type: ignore
-    else:
-        return container
-    for k, val in iterator:
-        content = flatten(val)
-        if isinstance(content, dict):
-            output.update({f"{k}.{x}": y for x, y in content.items()})
-        else:
-            output[str(k)] = val
-    return output
