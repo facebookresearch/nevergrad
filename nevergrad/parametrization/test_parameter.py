@@ -319,12 +319,12 @@ def test_scalar_sampling(param: par.Scalar, expected: bool) -> None:
 
 
 def test_log() -> None:
-    with pytest.warns(UserWarning):  # as record:
+    with pytest.warns(UserWarning) as record:
         log = par.Log(lower=0.001, upper=0.1, init=0.02, exponent=2.0)
         assert log.value == pytest.approx(0.02)
-        # assert not record, [x.message for x in record]  # TODO readd
+        assert not record, [x.message for x in record]  # TODO readd
         par.Log(lower=0.001, upper=0.1, init=0.01, exponent=10.0)
-        # assert len(record) == 1  # TODO readd
+        assert len(record) == 1, [x.message for x in record]
     # automatic
     log = par.Log(lower=0.001, upper=0.1)
     assert log.value == pytest.approx(0.01)
