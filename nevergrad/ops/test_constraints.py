@@ -25,4 +25,3 @@ def test_constraint(num: int) -> None:
     assert layer.function(*([1] * num)) == 1 if num == 1 else [1] * num
     assert layer.function(*([-1] * num)) == 0 if num == 1 else [0] * num
     assert sum(x < 0 for x in constrained.args) == num, constrained.args
-    raise Exception
