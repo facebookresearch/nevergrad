@@ -183,14 +183,17 @@ class _DE(base.Optimizer):
             self.population[uid] = candidate
         elif self._config.propagate_heritage and loss <= float("inf"):
             self.population[uid].heritage.update(candidate.heritage)
+        # unknown = {uid for uid, cand in self.population.items() if uid != cand.heritage["lineage"]}
+        # if unknown:  # TODO: fix, this happen with ParaPortfolio because of interferences with PSO
+        #     raise Exception(f"pb in normal tell: {unknown}")
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         discardable: tp.Optional[str] = None
         if len(self.population) >= self.llambda:
             if self.num_objectives == 1:  # monoobjective: replace if better
-                worst = max(self.population.values(), key=base._loss)
+                uid, worst = max(self.population.items(), key=lambda p: base._loss(p[1]))
                 if loss < base._loss(worst):
-                    discardable = worst.heritage["lineage"]
+                    discardable = uid
             else:  # multiobjective: replace if in pareto and some parents are not
                 pareto_uids = {c.uid for c in self.pareto_front()}
                 if candidate.uid in pareto_uids:

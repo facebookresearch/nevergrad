@@ -853,14 +853,12 @@ class PSO(base.Optimizer):
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         # nearly same as DE
-        candidate._meta["value"] = loss
         worst: tp.Optional[p.Parameter] = None
         if not len(self.population) < self.llambda:
-            worst = max(self.population.values(), key=lambda p: p._meta.get("value", float("inf")))
-            if worst._meta.get("value", float("inf")) < loss:
+            uid, worst = max(self.population.items(), key=lambda p: base._loss(p[1]))
+            if base._loss(worst) < loss:
                 return  # no need to update
             else:
-                uid = worst.heritage["lineage"]
                 del self.population[uid]
                 self._uid_queue.discard(uid)
         candidate.heritage["lineage"] = candidate.uid  # new lineage
@@ -868,7 +866,7 @@ class PSO(base.Optimizer):
             candidate.heritage["speed"] = self._rng.uniform(-1.0, 1.0, self.parametrization.dimension)
         self.population[candidate.uid] = candidate
         self._uid_queue.tell(candidate.uid)
-        if loss < self._best._meta.get("loss", float("inf")):
+        if loss < base._loss(self._best):
             self._best = candidate
 
 
@@ -2049,13 +2047,12 @@ class _EMNA(base.Optimizer):
         return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        candidate._meta["loss"] = loss
         if self.population_size_adaptation:
             self.popsize.add_value(loss)
         self.children.append(candidate)
         if len(self.children) >= self.popsize.llambda:
             # Sorting the population.
-            self.children.sort(key=lambda c: c._meta["loss"])
+            self.children.sort(key=base._loss)
             # Computing the new parent.
             self.parents = self.children[: self.popsize.mu]
             self.children = []
