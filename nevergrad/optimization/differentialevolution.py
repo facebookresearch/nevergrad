@@ -134,8 +134,10 @@ class _DE(base.Optimizer):
             self._uid_queue.asked.add(candidate.uid)
             return candidate
         # init is done
-        parent = self.population[self._uid_queue.ask()]
+        lineage = self._uid_queue.ask()
+        parent = self.population[lineage]
         candidate = parent.spawn_child()
+        candidate.heritage["lineage"] = lineage  # tell-not-asked may have provided a different lineage
         data = candidate.get_standardized_data(reference=self.parametrization)
         # define all the different parents
         uids = list(self.population)
@@ -188,9 +190,9 @@ class _DE(base.Optimizer):
         discardable: tp.Optional[str] = None
         if len(self.population) >= self.llambda:
             if self.num_objectives == 1:  # monoobjective: replace if better
-                worst = max(self.population.values(), key=base._loss)
+                uid, worst = max(self.population.items(), key=lambda p: base._loss(p[1]))
                 if loss < base._loss(worst):
-                    discardable = worst.heritage["lineage"]
+                    discardable = uid
             else:  # multiobjective: replace if in pareto and some parents are not
                 pareto_uids = {c.uid for c in self.pareto_front()}
                 if candidate.uid in pareto_uids:
@@ -202,8 +204,9 @@ class _DE(base.Optimizer):
             del self.population[discardable]
             self._uid_queue.discard(discardable)
         if len(self.population) < self.llambda:  # if there is space, add the new point
-            candidate.heritage["lineage"] = candidate.uid  # new lineage
             self.population[candidate.uid] = candidate
+            # this candidate lineage is not candidate.uid, but to avoid interfering with other optimizers (eg: PSO)
+            # we should not update the lineage (and lineage of children must therefore be enforced manually)
             self._uid_queue.tell(candidate.uid)
 
 

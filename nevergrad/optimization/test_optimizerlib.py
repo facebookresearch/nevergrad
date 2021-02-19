@@ -731,3 +731,12 @@ def test_mo_constrained(name: str) -> None:
     optimizer.tell(point, _multiobjective(point.value))
     if isinstance(optimizer, es._EvolutionStrategy):
         assert optimizer._rank_method is not None  # make sure the nsga2 ranker is used
+
+
+def test_paraportfolio_de() -> None:
+    workers = 40
+    opt = optlib.ParaPortfolio(12, budget=100 * workers, num_workers=workers)
+    for _ in range(3):
+        cands = [opt.ask() for _ in range(workers)]
+        for cand in cands:
+            opt.tell(cand, np.random.rand())
