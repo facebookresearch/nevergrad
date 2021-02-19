@@ -134,8 +134,10 @@ class _DE(base.Optimizer):
             self._uid_queue.asked.add(candidate.uid)
             return candidate
         # init is done
-        parent = self.population[self._uid_queue.ask()]
+        lineage = self._uid_queue.ask()
+        parent = self.population[lineage]
         candidate = parent.spawn_child()
+        candidate.heritage["lineage"] = lineage  # tell-not-asked may have provided a different lineage
         data = candidate.get_standardized_data(reference=self.parametrization)
         # define all the different parents
         uids = list(self.population)
@@ -183,9 +185,6 @@ class _DE(base.Optimizer):
             self.population[uid] = candidate
         elif self._config.propagate_heritage and loss <= float("inf"):
             self.population[uid].heritage.update(candidate.heritage)
-        # unknown = {uid for uid, cand in self.population.items() if uid != cand.heritage["lineage"]}
-        # if unknown:  # TODO: fix, this happen with ParaPortfolio because of interferences with PSO
-        #     raise Exception(f"pb in normal tell: {unknown}")
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         discardable: tp.Optional[str] = None
@@ -205,8 +204,9 @@ class _DE(base.Optimizer):
             del self.population[discardable]
             self._uid_queue.discard(discardable)
         if len(self.population) < self.llambda:  # if there is space, add the new point
-            candidate.heritage["lineage"] = candidate.uid  # new lineage
             self.population[candidate.uid] = candidate
+            # this candidate lineage is not candidate.uid, but to avoid interfering with other optimizers (eg: PSO)
+            # we should not update the lineage (and lineage of children must therefore be enforced manually)
             self._uid_queue.tell(candidate.uid)
 
 

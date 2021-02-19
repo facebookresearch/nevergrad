@@ -809,6 +809,7 @@ class PSO(base.Optimizer):
             return candidate
         uid = self._uid_queue.ask()
         candidate = self._spawn_mutated_particle(self.population[uid])
+        candidate.heritage["lineage"] = uid  # override in case it was a tell-not-asked
         return candidate
 
     def _get_boxed_data(self, particle: p.Parameter) -> np.ndarray:
@@ -861,7 +862,6 @@ class PSO(base.Optimizer):
             else:
                 del self.population[uid]
                 self._uid_queue.discard(uid)
-        candidate.heritage["lineage"] = candidate.uid  # new lineage
         if "speed" not in candidate.heritage:
             candidate.heritage["speed"] = self._rng.uniform(-1.0, 1.0, self.parametrization.dimension)
         self.population[candidate.uid] = candidate

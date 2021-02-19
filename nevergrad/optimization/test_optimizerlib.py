@@ -735,7 +735,6 @@ def test_mo_constrained(name: str) -> None:
 
 def test_paraportfolio_de() -> None:
     workers = 40
-    # np.random.seed(12)  # PSO/DE interference
     opt = optlib.ParaPortfolio(12, budget=100 * workers, num_workers=workers)
     for _ in range(3):
         cands = [opt.ask() for _ in range(workers)]
