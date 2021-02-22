@@ -123,7 +123,7 @@ class _DE(base.Optimizer):
                 self.sampler = sampler_cls(
                     self.dimension, budget=self.llambda, scrambling=init == "QR", random_state=self._rng
                 )
-            if self.sampler == "parametrization":
+            if init == "parametrization":
                 candidate = self.parametrization.sample()
             else:
                 new_guy = self.scale * (
