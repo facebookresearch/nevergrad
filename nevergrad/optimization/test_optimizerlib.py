@@ -733,10 +733,13 @@ def test_mo_constrained(name: str) -> None:
         assert optimizer._rank_method is not None  # make sure the nsga2 ranker is used
 
 
-def test_mo_one_plus_one_with_nan() -> None:
-    optimizer = optlib.OnePlusOne(2, budget=30)
+@pytest.mark.parametrize("name", ["DE", "ES", "OnePlusOne"])  # type: ignore
+@testing.suppress_nevergrad_warnings()  # hides bad loss
+def test_mo_with_nan(name: str) -> None:
+    param = ng.p.Instrumentation(x=ng.p.Scalar(lower=0, upper=5), y=ng.p.Scalar(lower=0, upper=3))
+    optimizer = optlib.registry[name](param, budget=60)
     optimizer.tell(ng.p.MultiobjectiveReference(), [10, 10, 10])
-    for _ in range(3):
+    for _ in range(50):
         cand = optimizer.ask()
         optimizer.tell(cand, [-38, 0, np.nan])
 

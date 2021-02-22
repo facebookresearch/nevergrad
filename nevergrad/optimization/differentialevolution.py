@@ -117,18 +117,21 @@ class _DE(base.Optimizer):
     def _internal_ask_candidate(self) -> p.Parameter:
         if len(self.population) < self.llambda:  # initialization phase
             init = self._config.initialization
-            if self.sampler is None and init != "gaussian":
+            if self.sampler is None and init not in ["gaussian", "parametrization"]:
                 assert init in ["LHS", "QR"]
                 sampler_cls = sequences.LHSSampler if init == "LHS" else sequences.HammersleySampler
                 self.sampler = sampler_cls(
                     self.dimension, budget=self.llambda, scrambling=init == "QR", random_state=self._rng
                 )
-            new_guy = self.scale * (
-                self._rng.normal(0, 1, self.dimension)
-                if self.sampler is None
-                else stats.norm.ppf(self.sampler())
-            )
-            candidate = self.parametrization.spawn_child().set_standardized_data(new_guy)
+            if self.sampler == "parametrization":
+                candidate = self.parametrization.sample()
+            else:
+                new_guy = self.scale * (
+                    self._rng.normal(0, 1, self.dimension)
+                    if self.sampler is None
+                    else stats.norm.ppf(self.sampler())
+                )
+                candidate = self.parametrization.spawn_child().set_standardized_data(new_guy)
             candidate.heritage["lineage"] = candidate.uid  # new lineage
             self.population[candidate.uid] = candidate
             self._uid_queue.asked.add(candidate.uid)
@@ -146,10 +149,11 @@ class _DE(base.Optimizer):
         # redefine the different parents in case of multiobjective optimization
         if self._config.multiobjective_adaptation and self.num_objectives > 1:
             pareto = self.pareto_front()
+            # can't use choice directly on pareto, because parametrization can be iterable
             if pareto:
-                best = parent if parent in pareto else self._rng.choice(pareto)
+                best = parent if parent in pareto else pareto[self._rng.choice(len(pareto))]
             if len(pareto) > 2:  # otherwise, not enough diversity
-                a, b = self._rng.choice(pareto, size=2, replace=False)
+                a, b = (pareto[idx] for idx in self._rng.choice(len(pareto), size=2, replace=False))
         # define donor
         data_a, data_b, data_best = (
             indiv.get_standardized_data(reference=self.parametrization) for indiv in (a, b, best)
@@ -228,8 +232,9 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
 
     Parameters
     ----------
-    initialization: "LHS", "QR" or "gaussian"
-        algorithm/distribution used for the initialization phase
+    initialization: "parametrization", "LHS" or "QR"
+        algorithm/distribution used for the initialization phase. If "parametrization", this uses the
+        sample method of the parametrization.
     scale: float or str
         scale of random component of the updates
     recommendation: "pessimistic", "optimistic", "mean" or "noisy"
@@ -256,7 +261,7 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
     def __init__(
         self,
         *,
-        initialization: str = "gaussian",
+        initialization: str = "parametrization",
         scale: tp.Union[str, float] = 1.0,
         recommendation: str = "optimistic",
         crossover: tp.Union[str, float] = 0.5,
@@ -268,7 +273,7 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
     ) -> None:
         super().__init__(_DE, locals(), as_config=True)
         assert recommendation in ["optimistic", "pessimistic", "noisy", "mean"]
-        assert initialization in ["gaussian", "LHS", "QR"]
+        assert initialization in ["gaussian", "LHS", "QR", "parametrization"]
         assert isinstance(scale, float) or scale == "mini"
         if not isinstance(popsize, int):
             assert popsize in ["large", "dimension", "standard"]
