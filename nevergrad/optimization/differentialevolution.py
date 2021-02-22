@@ -5,11 +5,10 @@
 
 import warnings
 import numpy as np
-from scipy import stats
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
 from . import base
-from . import sequences
+from . import oneshot
 
 
 class Crossover:
@@ -100,7 +99,7 @@ class _DE(base.Optimizer):
         self._penalize_cheap_violations = True
         self._uid_queue = base.utils.UidQueue()
         self.population: tp.Dict[str, p.Parameter] = {}
-        self.sampler: tp.Optional[sequences.Sampler] = None
+        self.sampler: tp.Optional[base.Optimizer] = None
 
     def recommend(self) -> p.Parameter:  # This is NOT the naive version. We deal with noise.
         if self._config.recommendation != "noisy":
@@ -119,18 +118,15 @@ class _DE(base.Optimizer):
             init = self._config.initialization
             if self.sampler is None and init not in ["gaussian", "parametrization"]:
                 assert init in ["LHS", "QR"]
-                sampler_cls = sequences.LHSSampler if init == "LHS" else sequences.HammersleySampler
-                self.sampler = sampler_cls(
-                    self.dimension, budget=self.llambda, scrambling=init == "QR", random_state=self._rng
-                )
+                self.sampler = oneshot.SamplingSearch(
+                    sampler=init if init == "LHS" else "Hammersley", scrambled=init == "QR"
+                )(self.parametrization, budget=self.llambda)
             if init == "parametrization":
                 candidate = self.parametrization.sample()
+            elif self.sampler is not None:
+                candidate = self.sampler.ask()
             else:
-                new_guy = self.scale * (
-                    self._rng.normal(0, 1, self.dimension)
-                    if self.sampler is None
-                    else stats.norm.ppf(self.sampler())
-                )
+                new_guy = self.scale * self._rng.normal(0, 1, self.dimension)
                 candidate = self.parametrization.spawn_child().set_standardized_data(new_guy)
             candidate.heritage["lineage"] = candidate.uid  # new lineage
             self.population[candidate.uid] = candidate

@@ -744,6 +744,15 @@ def test_mo_with_nan(name: str) -> None:
         optimizer.tell(cand, [-38, 0, np.nan])
 
 
+def test_de_sampling() -> None:
+    param = ng.p.Scalar(lower=-100, upper=100).set_mutation(sigma=1)
+    opt = optlib.LhsDE(param, budget=600, num_workers=100)
+    above_50 = 0
+    for _ in range(100):
+        above_50 += abs(opt.ask().value) > 50
+    assert above_50 > 20  # should be around 50
+
+
 def test_paraportfolio_de() -> None:
     workers = 40
     opt = optlib.ParaPortfolio(12, budget=100 * workers, num_workers=workers)
