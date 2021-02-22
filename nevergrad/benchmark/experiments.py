@@ -1272,6 +1272,7 @@ def image_similarity(
     """Optimizing images: artificial criterion for now."""
     seedg = create_seed_generator(seed)
     optims = get_optimizers("structured_moo", seed=next(seedg))
+    skip_ci(reason="too slow")
     funcs: tp.List[ExperimentFunction] = [
         imagesxp.Image(loss=loss, with_pgan=with_pgan)
         for loss in imagesxp.imagelosses.registry.values()
@@ -1281,7 +1282,6 @@ def image_similarity(
         for func in funcs:
             for algo in optims:
                 xp = Experiment(func, algo, budget, num_workers=1, seed=next(seedg))
-                skip_ci(reason="too slow")
                 if not xp.is_incoherent:
                     yield xp
 
