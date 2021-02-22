@@ -69,9 +69,11 @@ class _OnePlusOne(base.Optimizer):
         noise_handling: tp.Optional[tp.Union[str, tp.Tuple[str, float]]] = None,
         mutation: str = "gaussian",
         crossover: bool = False,
+        use_pareto: bool = True,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._sigma: float = 1
+        self.use_pareto = use_pareto
         all_params = paramhelpers.flatten_parameter(self.parametrization)
         arity = max(
             len(param.choices) if isinstance(param, p.TransitionChoice) else 500
@@ -153,6 +155,9 @@ class _OnePlusOne(base.Optimizer):
         # crossover
         mutator = mutations.Mutator(self._rng)
         pessimistic = self.current_bests["pessimistic"].parameter.spawn_child()
+        if self.num_objectives > 1 and self.use_pareto:  # multiobjective
+            # revert to using a sample of the pareto front (not "pessimistic" though)
+            pessimistic = self._rng.choice(self.pareto_front())
         ref = self.parametrization
         if self.crossover and self._num_ask % 2 == 1 and len(self.archive) > 2:
             data = mutator.crossover(
@@ -293,6 +298,8 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
         - `"lengler"`: specific mutation rate chosen as a function of the dimension and iteration index.
     crossover: bool
         whether to add a genetic crossover step every other iteration.
+    use_pareto: bool
+        whether to restart from a random pareto element in multiobjective mode, instead of the last one added
 
     Notes
     -----
@@ -310,6 +317,7 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
         noise_handling: tp.Optional[tp.Union[str, tp.Tuple[str, float]]] = None,
         mutation: str = "gaussian",
         crossover: bool = False,
+        use_pareto: bool = True,
     ) -> None:
         super().__init__(_OnePlusOne, locals())
 
