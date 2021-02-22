@@ -157,7 +157,7 @@ class _OnePlusOne(base.Optimizer):
         pessimistic = self.current_bests["pessimistic"].parameter.spawn_child()
         if self.num_objectives > 1 and self.use_pareto:  # multiobjective
             # revert to using a sample of the pareto front (not "pessimistic" though)
-            pessimistic = self._rng.choice(self.pareto_front())
+            pessimistic = self._rng.choice(self.pareto_front()).spawn_child()
         ref = self.parametrization
         if self.crossover and self._num_ask % 2 == 1 and len(self.archive) > 2:
             data = mutator.crossover(
