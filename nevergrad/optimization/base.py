@@ -213,11 +213,14 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         ----
         During non-multiobjective optimization, this returns the current pessimistic best
         """
-        if self._hypervolume_pareto is None:
-            return [self.provide_recommendation()]
-        return self._hypervolume_pareto.pareto_front(
-            size=size, subset=subset, subset_tentatives=subset_tentatives
+        pareto = (
+            []
+            if self._hypervolume_pareto is None
+            else self._hypervolume_pareto.pareto_front(
+                size=size, subset=subset, subset_tentatives=subset_tentatives
+            )
         )
+        return pareto if pareto else [self.provide_recommendation()]
 
     def dump(self, filepath: tp.Union[str, Path]) -> None:
         """Pickles the optimizer into a file."""

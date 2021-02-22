@@ -715,7 +715,7 @@ def _multiobjective(z: np.ndarray) -> tp.Tuple[float, float, float]:
     return (abs(x - 1), abs(y + 1), abs(x - y))
 
 
-@pytest.mark.parametrize("name", ["DE", "ES"])  # type: ignore
+@pytest.mark.parametrize("name", ["DE", "ES", "OnePlusOne"])  # type: ignore
 @testing.suppress_nevergrad_warnings()  # hides bad loss
 def test_mo_constrained(name: str) -> None:
     optimizer = optlib.registry[name](2, budget=60)
@@ -731,6 +731,14 @@ def test_mo_constrained(name: str) -> None:
     optimizer.tell(point, _multiobjective(point.value))
     if isinstance(optimizer, es._EvolutionStrategy):
         assert optimizer._rank_method is not None  # make sure the nsga2 ranker is used
+
+
+def test_mo_one_plus_one_with_nan() -> None:
+    optimizer = optlib.OnePlusOne(2, budget=30)
+    optimizer.tell(ng.p.MultiobjectiveReference(), [10, 10, 10])
+    for _ in range(3):
+        cand = optimizer.ask()
+        optimizer.tell(cand, [-38, 0, np.nan])
 
 
 def test_paraportfolio_de() -> None:
