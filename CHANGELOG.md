@@ -21,6 +21,7 @@
 - `Parameter` classes have now a layer structure [#1045](https://github.com/facebookresearch/nevergrad/pull/1045)
   which simplifies changing their behavior. In future PRs this system will take charge of bounds, other constraints,
   sampling etc.
+- `DE` initial sampling as been updated to take bounds into accounts [#1058](https://github.com/facebookresearch/nevergrad/pull/1058)
 
 ### Other changes
 
