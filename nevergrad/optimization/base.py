@@ -220,8 +220,6 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 size=size, subset=subset, subset_tentatives=subset_tentatives
             )
         )
-        print(pareto)
-        print(type(pareto))
         return pareto if pareto else [self.provide_recommendation()]
 
     def dump(self, filepath: tp.Union[str, Path]) -> None:
