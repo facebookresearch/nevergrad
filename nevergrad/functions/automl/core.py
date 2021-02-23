@@ -10,14 +10,9 @@ import nevergrad.common.typing as tp
 import numpy as np
 import openml
 import pynisher
-from ConfigSpace.read_and_write import json
-from autosklearn.pipeline.classification import SimpleClassificationPipeline
 from nevergrad.parametrization import parameter as p
-from sklearn.metrics import get_scorer
-from sklearn.model_selection import StratifiedKFold
-from sklearn.model_selection import cross_val_score
 
-from .ngautosklearn import get_parametrization, get_configuration
+from .ngautosklearn import get_parametrization, get_configuration, _eval_function
 from .. import base
 
 
@@ -27,28 +22,6 @@ def warn(*args, **kwargs):
 
 import warnings
 warnings.warn = warn
-
-
-def _eval_function(config, X, y, scoring_func, cv, random_state, test_data=None):
-    try:
-        classifier = SimpleClassificationPipeline(config=config, random_state=random_state)
-        scorer = get_scorer(scoring_func)
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            if test_data is None:
-                scores = cross_val_score(classifier,
-                                         X,
-                                         y,
-                                         cv=StratifiedKFold(n_splits=cv, random_state=random_state, shuffle=True),
-                                         scoring=scorer,
-                                         n_jobs=1,
-                                         )
-                return 1 - np.mean(scores)
-            else:
-                classifier.fit(X, y)
-                return 1 - scorer(classifier, test_data[0], test_data[1])
-    except Exception:
-        return 1
 
 
 class AutoSKlearnBenchmark(base.ExperimentFunction):

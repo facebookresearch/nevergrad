@@ -1,6 +1,35 @@
 import os
+import pynisher
 import nevergrad as ng
 import ConfigSpace as cs
+from sklearn.metrics import get_scorer
+from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import cross_val_score
+from ConfigSpace.read_and_write import json as json
+from autosklearn.pipeline.classification import SimpleClassificationPipeline
+
+
+def _eval_function(config, X, y, scoring_func, cv, random_state, test_data=None):
+    try:
+        classifier = SimpleClassificationPipeline(config=config, random_state=random_state)
+        scorer = get_scorer(scoring_func)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            if test_data is None:
+                scores = cross_val_score(classifier,
+                                         X,
+                                         y,
+                                         cv=StratifiedKFold(n_splits=cv, random_state=random_state, shuffle=True),
+                                         scoring=scorer,
+                                         n_jobs=1,
+                                         )
+                return 1 - np.mean(scores)
+            else:
+                classifier.fit(X, y)
+                return 1 - scorer(classifier, test_data[0], test_data[1])
+    except Exception:
+        return 1
+
 
 def check_configuration(config_space, values):
     val_dict = to_dict(values[1])
@@ -16,7 +45,6 @@ def get_configuration(values, config_space):
 
 
 def get_config_space():
-    from ConfigSpace.read_and_write import json as json
     with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'configspace.json')) as f:
         jason_string = f.read()
         config_space = json.read(jason_string)

@@ -19,9 +19,9 @@ def test_parametrization():
     optimizer.minimize(func, verbosity=2)
 
 
-def test_experiment():
+def test_automl_experiment():
     func = AutoSKlearnBenchmark(openml_task_id=3, cv=3, time_budget_per_run=360,
                                 memory_limit=7000, scoring_func="balanced_accuracy",
                                 random_state=42)
-    exp = ExperimentAutoML(func, "RandomSearch", 5, num_workers=1)
+    exp = AutoMLExperiment(func, "RandomSearch", 5, num_workers=1)
     exp.run()
