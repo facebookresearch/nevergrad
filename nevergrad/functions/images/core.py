@@ -261,7 +261,7 @@ class ImageFromPGAN(base.ExperimentFunction):
         if not torch.cuda.is_available():
             use_gpu = False
         # Storing high level information..
-        if os.environ("CIRCLECI", False):
+        if os.environ.get("CIRCLECI", False):
             raise errors.UnsupportedExperiment("ImageFromPGAN is not well supported in CircleCI")
         self.pgan_model = torch.hub.load(
             "facebookresearch/pytorch_GAN_zoo:hub",
