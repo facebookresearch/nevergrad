@@ -119,8 +119,11 @@ class _DE(base.Optimizer):
             if self.sampler is None and init not in ["gaussian", "parametrization"]:
                 assert init in ["LHS", "QR"]
                 self.sampler = oneshot.SamplingSearch(
-                    sampler=init if init == "LHS" else "Hammersley", scrambled=init == "QR"
-                )(self.parametrization, budget=self.llambda)
+                    sampler=init if init == "LHS" else "Hammersley", scrambled=init == "QR", scale=self.scale
+                )(
+                    self.parametrization,
+                    budget=self.llambda,
+                )
             if init == "parametrization":
                 candidate = self.parametrization.sample()
             elif self.sampler is not None:

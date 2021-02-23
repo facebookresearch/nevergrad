@@ -75,14 +75,12 @@ def avg_of_k_best(archive: utils.Archive[utils.MultiValue], method: str = "dimfo
         raise ValueError(f"{method} not implemented as a method for choosing k in avg_of_k_best.")
     k = 1 if k < 1 else int(k)
     # Wasted time.
-    first_k_individuals = [
-        k for k in sorted(items, key=lambda indiv: archive[indiv[0]].get_estimation("pessimistic"))[:k]
-    ]
+    first_k_individuals = sorted(items, key=lambda indiv: archive[indiv[0]].get_estimation("pessimistic"))[:k]
     assert len(first_k_individuals) == k
     return np.array(sum(p[0] for p in first_k_individuals) / k)
 
 
-# # # # # classes of optimizers # # # # #
+# # # # # classes of optimizers # # # # #
 
 
 class OneShotOptimizer(base.Optimizer):
@@ -99,7 +97,7 @@ class OneShotOptimizer(base.Optimizer):
 # - Some variants use a rescaling depending on the budget and the dimension.
 
 
-# # # # # One-shot optimizers: all fitness evaluations are in parallel. # # # # #
+# # # # # One-shot optimizers: all fitness evaluations are in parallel. # # # # #
 
 
 # pylint: disable=too-many-arguments,too-many-instance-attributes
