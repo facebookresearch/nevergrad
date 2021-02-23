@@ -14,7 +14,7 @@ from ._layering import Layered as Layered
 from ._layering import Level as Level
 
 
-# pylint: disable=no-value-for-parameter,pointless-statement
+# pylint: disable=no-value-for-parameter,pointless-statement,import-outside-toplevel
 
 
 P = tp.TypeVar("P", bound="Parameter")
@@ -266,7 +266,9 @@ class Parameter(Layered):
         return all(utils.float_penalty(func(val)) <= 0 for func in self._constraint_checkers)
 
     def register_cheap_constraint(
-        self, func: tp.Union[tp.Callable[[tp.Any], bool], tp.Callable[[tp.Any], float]]
+        self,
+        func: tp.Union[tp.Callable[[tp.Any], bool], tp.Callable[[tp.Any], float]],
+        as_layer: bool = False,
     ) -> None:
         """Registers a new constraint on the parameter values.
 
@@ -281,10 +283,23 @@ class Parameter(Layered):
         - this is only for checking after mutation/recombination/etc if the value still satisfy the constraints.
           The constraint is not used in those processes.
         - constraints should be fast to compute.
+        - this function has an additional "as_layer" parameter which is experimental for now, and can have unexpected
+          behavior
         """
         if getattr(func, "__name__", "not lambda") == "<lambda>":  # LambdaType does not work :(
             warnings.warn("Lambda as constraint is not advised because it may not be picklable.")
-        self._constraint_checkers.append(func)
+        if not as_layer:
+            self._constraint_checkers.append(func)
+        else:
+            from nevergrad.ops.constraints import Constraint
+            import nevergrad as ng
+
+            compat_func = (
+                func
+                if not isinstance(self, ng.p.Instrumentation)
+                else utils._ConstraintCompatibilityFunction(func)
+            )
+            self.add_layer(Constraint(compat_func))
 
     # %% random state
 
@@ -381,7 +396,7 @@ class Parameter(Layered):
             self, Constant
         ):  # nevermind constants (since they dont spawn children)
             raise RuntimeError(
-                f"Cannot modify frozen Parameter {self}, please spawn a child and modify it instead"
+                f"Cannot modify frozen Parameter {self.name}, please spawn a child and modify it instead"
                 "(optimizers freeze the parametrization and all asked and told candidates to avoid border effects)"
             )
         self._subobjects.apply("_check_frozen")

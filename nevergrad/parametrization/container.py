@@ -42,6 +42,10 @@ class Container(core.Parameter):
             str, str
         ] = {}  # hacky undocumented way to bypass boring representations
 
+    @property
+    def dimension(self) -> int:
+        return sum(x.dimension for x in self._content.values())
+
     def _sanity_check(self, parameters: tp.List[core.Parameter]) -> None:
         """Check that all parameters are different"""
         # TODO: this is first order, in practice we would need to test all the different
