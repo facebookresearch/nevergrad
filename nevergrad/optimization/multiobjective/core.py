@@ -121,7 +121,6 @@ class HypervolumePareto:
                 # -> +inf if no point is strictly better (but lower if it is)
                 if (stored_losses <= losses).all():
                     distance_to_pareto = min(distance_to_pareto, min(losses - stored_losses))
-                print("dist", distance_to_pareto)
             assert distance_to_pareto >= 0
             return -new_volume + distance_to_pareto
 
