@@ -73,6 +73,7 @@ class _OnePlusOne(base.Optimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._sigma: float = 1
+        self._previous_best_loss = float("inf")
         self.use_pareto = use_pareto
         all_params = paramhelpers.flatten_parameter(self.parametrization)
         arity = max(
@@ -241,9 +242,8 @@ class _OnePlusOne(base.Optimizer):
 
     def _internal_tell(self, x: tp.ArrayLike, loss: tp.FloatLoss) -> None:
         # only used for cauchy and gaussian
-        previous_loss = self.current_bests["pessimistic"].mean
-        if loss != previous_loss:
-            self._sigma *= 2.0 if loss < previous_loss else 0.84
+        if self._previous_best_loss != loss:
+            self._sigma *= 2.0 if loss < self._previous_best_loss else 0.84
         if self.mutation == "doerr" and self._doerr_current_best < float("inf") and self._doerr_index >= 0:
             improvement = max(0.0, self._doerr_current_best - loss)
             # Decay.
@@ -258,14 +258,15 @@ class _OnePlusOne(base.Optimizer):
         if self.mutation == "doerr":
             self._doerr_current_best = min(self._doerr_current_best, loss)
         if self.mutation == "adaptive":
-            factor = 1.2 if loss <= previous_loss else 0.731  # 0.731 = 1.2**(-np.exp(1)-1)
+            factor = 1.2 if loss <= self._previous_best_loss else 0.731  # 0.731 = 1.2**(-np.exp(1)-1)
             self._adaptive_mr = min(1.0, factor * self._adaptive_mr)
         if self.mutation == "coordinatewise_adaptive":
-            factor = 1.2 if loss < previous_loss else 0.731  # 0.731 = 1.2**(-np.exp(1)-1)
+            factor = 1.2 if loss < self._previous_best_loss else 0.731  # 0.731 = 1.2**(-np.exp(1)-1)
             inds = self._modified_variables
             self._velocity[inds] = np.clip(
                 self._velocity[inds] * factor, 1.0, self.arity_for_discrete_mutation / 4.0
             )
+        self._previous_best_loss = self.current_bests["pessimistic"].mean  # could be the current one
 
 
 class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
