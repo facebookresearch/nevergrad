@@ -31,9 +31,6 @@ def test_readme_parametrization() -> None:
         architecture=ng.p.Choice(["conv", "fc"]),
     )
 
-    print("ready")
-    print(parametrization)
-    print("go")
     optimizer = ng.optimizers.OnePlusOne(parametrization=parametrization, budget=100)
     recommendation = optimizer.minimize(fake_training)
 
