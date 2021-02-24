@@ -203,7 +203,7 @@ class ArrayCasting(Layered):
         super()._layered_set_value(np.asarray(value))
 
 
-class IntegerCasting(Layered):
+class Int(Layered):
     """Cast Data as integer (or integer array)"""
 
     _LAYER_LEVEL = Level.OPERATION

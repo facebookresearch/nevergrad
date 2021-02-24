@@ -12,7 +12,6 @@ from . import _layering
 from . import core
 from .container import Dict
 from . import utils
-from . import transforms as trans
 
 
 # pylint: disable=no-value-for-parameter,import-outside-toplevel
@@ -117,10 +116,6 @@ class Data(core.Parameter):
             self._value = np.zeros(shape, dtype=float)
         else:
             raise ValueError(err_msg)
-        self.exponent: tp.Optional[float] = None
-        self.bound_name: tp.Optional[str] = None
-        self.bound_transform = None
-        self.full_range_sampling = False
         self._ref_data: tp.Optional[np.ndarray] = None
         self._origin = np.array(self._value, copy=True)
         self.add_layer(_layering.ArrayCasting())
@@ -131,17 +126,15 @@ class Data(core.Parameter):
 
     def _get_name(self) -> str:
         cls = self.__class__.__name__
-        descriptors: tp.List[str] = (
-            ["int"]
-            if self.integer
-            else ([str(self._value.shape).replace(" ", "")] if self._value.shape != (1,) else [])
-        )
-        descriptors += [f"exp={self.exponent}"] if self.exponent is not None else []
-        descriptors += [f"{self.bound_name}"] if self.bound_name is not None else []
-        descriptors += ["constr"] if self._constraint_checkers else []
-        description = ""
-        if descriptors:
-            description = "{{{}}}".format(",".join(descriptors))
+        descriptors: tp.List[str] = []
+        if self._value.shape != (1,):
+            descriptors.append(str(self._value.shape).replace(" ", ""))
+        descriptors += [
+            layer.name
+            for layer in self._layers[1:]
+            if not isinstance(layer, (_layering.ArrayCasting, _layering._ScalarCasting))
+        ]
+        description = "" if not descriptors else "{{{}}}".format(",".join(descriptors))
         return f"{cls}{description}" + _param_string(self.parameters)
 
     @property
@@ -150,8 +143,6 @@ class Data(core.Parameter):
         return self.parameters["sigma"]  # type: ignore
 
     def _layered_sample(self: D) -> D:
-        if self.full_range_sampling:
-            raise Exception("should not have been called")
         child = self.spawn_child()
         child.mutate()
         return child
@@ -211,7 +202,6 @@ class Data(core.Parameter):
             layer = _datalayers.Bound(
                 lower=lower, upper=upper, method=method, uniform_sampling=full_range_sampling
             )
-            self.bound_name = layer._transform.name
         layer._LEGACY = True
         layer(self, inplace=True)
         _fix_legacy(self)
@@ -222,7 +212,6 @@ class Data(core.Parameter):
                 "Current value is not within bounds, please update it first"
             ) from e
         self.bounds = layer.bounds
-        self.full_range_sampling = layer.uniform_sampling
         return self
 
     def set_recombination(self: D, recombination: tp.Union[None, str, core.Parameter]) -> D:
@@ -289,15 +278,9 @@ class Data(core.Parameter):
         if exponent is not None:
             from . import _datalayers
 
-            if self.bound_transform is not None and not isinstance(self.bound_transform, trans.Clipping):
-                raise RuntimeError(
-                    f"Cannot set logarithmic transform with bounding transform {self.bound_transform}, "
-                    "only clipping and constraint bounding methods can accept itp."
-                )
-            if exponent <= 1.0:
-                raise ValueError("Only exponents strictly higher than 1.0 are allowed")
+            if exponent <= 0.0:
+                raise ValueError("Only exponents strictly higher than 0.0 are allowed")
             value = self.value
-            self.exponent = exponent
             layer = _datalayers.Exponent(base=exponent)
             layer._LEGACY = True
             self.add_layer(layer)
@@ -325,11 +308,11 @@ class Data(core.Parameter):
         difficult. It is especially ill-advised to use this with a range smaller than 10, or
         a sigma lower than 1. In those cases, you should rather use a TransitionChoice instead.
         """
-        return self.add_layer(_layering.IntegerCasting())
+        return self.add_layer(_layering.Int())
 
     @property
     def integer(self) -> bool:
-        return any(isinstance(x, _layering.IntegerCasting) for x in self._layers)
+        return any(isinstance(x, _layering.Int) for x in self._layers)
 
     # pylint: disable=unused-argument
     def _internal_set_standardized_data(
@@ -355,11 +338,7 @@ class Data(core.Parameter):
         """Converts array with appropriate shapes to reduced (uncentered) space
         by applying log scaling and sigma scaling
         """
-        sigma = self.sigma.value
-        if self.bound_transform is not None:
-            value = self.bound_transform.backward(value)
-        distribval = value
-        reduced = distribval / sigma
+        reduced = value / self.sigma.value
         return reduced.ravel()  # type: ignore
 
     def recombine(self: D, *others: D) -> None:
