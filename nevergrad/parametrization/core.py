@@ -299,7 +299,7 @@ class Parameter(Layered):
                 if not isinstance(self, ng.p.Instrumentation)
                 else utils._ConstraintCompatibilityFunction(func)
             )
-            self.add_layer(Constraint(compat_func))
+            self.add_layer(Constraint(compat_func))  # type: ignore
 
     # %% random state
 
