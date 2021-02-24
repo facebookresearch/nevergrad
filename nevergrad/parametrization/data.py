@@ -116,8 +116,6 @@ class Data(core.Parameter):
             self._value = np.zeros(shape, dtype=float)
         else:
             raise ValueError(err_msg)
-        self._ref_data: tp.Optional[np.ndarray] = None
-        self._origin = np.array(self._value, copy=True)
         self.add_layer(_layering.ArrayCasting())
         self.bounds: tp.Tuple[tp.Optional[np.ndarray], tp.Optional[np.ndarray]] = (None, None)
 
@@ -320,24 +318,21 @@ class Data(core.Parameter):
     ) -> None:
         assert isinstance(data, np.ndarray)
         sigma = reference.sigma.value
-        data_reduc = sigma * (data + reference._get_ref_data()).reshape(reference._value.shape)
+        data_reduc = sigma * (data + reference._to_reduced_space()).reshape(reference._value.shape)
         self._value = data_reduc
-        self._ref_data = None
         # make sure _value is updated by the layers getters if need be:
         self.value  # pylint: disable=pointless-statement
 
     def _internal_get_standardized_data(self: D, reference: D) -> np.ndarray:
-        return reference._to_reduced_space(self._value) - reference._get_ref_data()  # type: ignore
+        return reference._to_reduced_space(self._value - reference._value)
 
-    def _get_ref_data(self) -> np.ndarray:
-        if self._ref_data is None:
-            self._ref_data = self._to_reduced_space(self._value)
-        return self._ref_data
-
-    def _to_reduced_space(self, value: np.ndarray) -> np.ndarray:
+    def _to_reduced_space(self, value: tp.Optional[np.ndarray] = None) -> np.ndarray:
         """Converts array with appropriate shapes to reduced (uncentered) space
         by applying log scaling and sigma scaling
         """
+        # TODO this is nearly useless now that the layer system has been added. Remove?
+        if value is None:
+            value = self._value
         reduced = value / self.sigma.value
         return reduced.ravel()  # type: ignore
 
@@ -366,7 +361,6 @@ class Data(core.Parameter):
 
     def _layered_set_value(self, value: np.ndarray) -> None:
         self._check_frozen()
-        self._ref_data = None
         if self._value.shape != value.shape:
             raise ValueError(
                 f"Cannot set array of shape {self._value.shape} with value of shape {value.shape}"
