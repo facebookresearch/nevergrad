@@ -150,7 +150,7 @@ class Six:
         return costs
 
     def naive_play(self, player: int, use_ai: bool = False) -> int:
-        remaining_cards = {i for i in range(1, 105)}
+        remaining_cards = {range(1, 105)}
         # print("WE SIMULATE A RANDOM STEP =============================================")
         # print("All cards:", remaining_cards)
         self.consistency()
