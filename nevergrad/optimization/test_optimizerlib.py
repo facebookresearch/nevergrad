@@ -518,17 +518,19 @@ def test_metamodel(dimension: int, num_workers: int, scale: float, budget: int, 
         assert _target(default_recom) > 7.0 * _target(metamodel_recom)
 
 
-@pytest.mark.parametrize(
-    "penalization,expected",
+@pytest.mark.parametrize(  # type: ignore
+    "penalization,expected,as_layer",
     [
-        (False, [1.005573e00, 3.965783e-04]),
-        (True, [0.999987, -0.322118]),
+        (False, [1.005573e00, 3.965783e-04], False),
+        (True, [0.999987, -0.322118], False),
+        (False, [1.000760, -5.116619e-4], True),
     ],
 )
 @testing.suppress_nevergrad_warnings()  # hides failed constraints
-def test_constrained_optimization(penalization: bool, expected: tp.List[float]) -> None:
+def test_constrained_optimization(penalization: bool, expected: tp.List[float], as_layer: bool) -> None:
     def constraint(i: tp.Any) -> tp.Union[bool, float]:
-        return i[1]["x"][0] >= 1
+        out = i[1]["x"][0] >= 1
+        return out if not as_layer else float(not out)
 
     parametrization = ng.p.Instrumentation(x=ng.p.Array(shape=(1,)), y=ng.p.Scalar())
     optimizer = optlib.OnePlusOne(parametrization, budget=100)
@@ -541,8 +543,8 @@ def test_constrained_optimization(penalization: bool, expected: tp.List[float]) 
 
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", category=UserWarning)
-        optimizer.parametrization.register_cheap_constraint(constraint)
-    recom = optimizer.minimize(_square)
+        optimizer.parametrization.register_cheap_constraint(constraint, as_layer=as_layer)
+    recom = optimizer.minimize(_square, verbosity=2)
     np.testing.assert_array_almost_equal([recom.kwargs["x"][0], recom.kwargs["y"]], expected)
 
 

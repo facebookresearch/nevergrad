@@ -119,6 +119,10 @@ class Data(core.Parameter):
         self.add_layer(_layering.ArrayCasting())
         self.bounds: tp.Tuple[tp.Optional[np.ndarray], tp.Optional[np.ndarray]] = (None, None)
 
+    @property
+    def dimension(self) -> int:
+        return int(np.prod(self._value.shape))
+
     def _compute_descriptors(self) -> utils.Descriptors:
         return utils.Descriptors(continuous=not self.integer)
 

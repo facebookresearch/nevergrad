@@ -11,10 +11,10 @@ from nevergrad.common import errors
 from . import utils
 from ._layering import ValueProperty as ValueProperty
 from ._layering import Layered as Layered
-from ._layering import Level
+from ._layering import Level as Level
 
 
-# pylint: disable=no-value-for-parameter,pointless-statement
+# pylint: disable=no-value-for-parameter,pointless-statement,import-outside-toplevel
 
 
 P = tp.TypeVar("P", bound="Parameter")
@@ -266,7 +266,9 @@ class Parameter(Layered):
         return all(utils.float_penalty(func(val)) <= 0 for func in self._constraint_checkers)
 
     def register_cheap_constraint(
-        self, func: tp.Union[tp.Callable[[tp.Any], bool], tp.Callable[[tp.Any], float]]
+        self,
+        func: tp.Union[tp.Callable[[tp.Any], bool], tp.Callable[[tp.Any], float]],
+        as_layer: bool = False,
     ) -> None:
         """Registers a new constraint on the parameter values.
 
@@ -281,10 +283,23 @@ class Parameter(Layered):
         - this is only for checking after mutation/recombination/etc if the value still satisfy the constraints.
           The constraint is not used in those processes.
         - constraints should be fast to compute.
+        - this function has an additional "as_layer" parameter which is experimental for now, and can have unexpected
+          behavior
         """
         if getattr(func, "__name__", "not lambda") == "<lambda>":  # LambdaType does not work :(
             warnings.warn("Lambda as constraint is not advised because it may not be picklable.")
-        self._constraint_checkers.append(func)
+        if not as_layer:
+            self._constraint_checkers.append(func)
+        else:
+            from nevergrad.ops.constraints import Constraint
+            import nevergrad as ng
+
+            compat_func = (
+                func
+                if not isinstance(self, ng.p.Instrumentation)
+                else utils._ConstraintCompatibilityFunction(func)
+            )
+            self.add_layer(Constraint(compat_func))  # type: ignore
 
     # %% random state
 
@@ -480,3 +495,15 @@ class MultiobjectiveReference(Constant):
                 f"be used by the optimizer.\n(received {parameter} of type {type(parameter)})"
             )
         super().__init__(parameter)
+
+
+class Operator(Layered):
+    """Layer object that can be used as an operator on a Parameter"""
+
+    _LAYER_LEVEL = Level.OPERATION
+
+    def __call__(self, parameter: Parameter) -> Parameter:
+        """Applies the operator on a Parameter to create a new Parameter"""
+        new = parameter.copy()
+        new.add_layer(self.copy())
+        return new
