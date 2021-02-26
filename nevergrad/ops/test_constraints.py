@@ -24,4 +24,6 @@ def test_constraint(num: int) -> None:
     layer: constraints.Constraint = constrained._layers[-1]  # type: ignore
     assert layer.function(*([1] * num)) == 1 if num == 1 else [1] * num
     assert layer.function(*([-1] * num)) == 0 if num == 1 else [0] * num
-    assert np.mean(x < 0.1 for x in constrained.args) > 0.5, constrained.args  # some slack to avoid flakiness
+    assert (
+        np.mean([x < 0.1 for x in constrained.args]) > 0.5
+    ), constrained.args  # some slack to avoid flakiness
