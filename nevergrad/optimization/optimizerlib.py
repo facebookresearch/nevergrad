@@ -69,9 +69,11 @@ class _OnePlusOne(base.Optimizer):
         noise_handling: tp.Optional[tp.Union[str, tp.Tuple[str, float]]] = None,
         mutation: str = "gaussian",
         crossover: bool = False,
+        use_pareto: bool = False,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._sigma: float = 1
+        self.use_pareto = use_pareto
         all_params = paramhelpers.flatten_parameter(self.parametrization)
         arity = max(
             len(param.choices) if isinstance(param, p.TransitionChoice) else 500
@@ -153,6 +155,12 @@ class _OnePlusOne(base.Optimizer):
         # crossover
         mutator = mutations.Mutator(self._rng)
         pessimistic = self.current_bests["pessimistic"].parameter.spawn_child()
+        if self.num_objectives > 1 and self.use_pareto:  # multiobjective
+            # revert to using a sample of the pareto front (not "pessimistic" though)
+            pareto = (
+                self.pareto_front()
+            )  # we can't use choice directly, because numpy does not like iterables
+            pessimistic = pareto[self._rng.choice(len(pareto))].spawn_child()
         ref = self.parametrization
         if self.crossover and self._num_ask % 2 == 1 and len(self.archive) > 2:
             data = mutator.crossover(
@@ -293,6 +301,8 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
         - `"lengler"`: specific mutation rate chosen as a function of the dimension and iteration index.
     crossover: bool
         whether to add a genetic crossover step every other iteration.
+    use_pareto: bool
+        whether to restart from a random pareto element in multiobjective mode, instead of the last one added
 
     Notes
     -----
@@ -310,6 +320,7 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
         noise_handling: tp.Optional[tp.Union[str, tp.Tuple[str, float]]] = None,
         mutation: str = "gaussian",
         crossover: bool = False,
+        use_pareto: bool = False,
     ) -> None:
         super().__init__(_OnePlusOne, locals())
 
@@ -809,6 +820,7 @@ class PSO(base.Optimizer):
             return candidate
         uid = self._uid_queue.ask()
         candidate = self._spawn_mutated_particle(self.population[uid])
+        candidate.heritage["lineage"] = uid  # override in case it was a tell-not-asked
         return candidate
 
     def _get_boxed_data(self, particle: p.Parameter) -> np.ndarray:
@@ -853,22 +865,19 @@ class PSO(base.Optimizer):
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         # nearly same as DE
-        candidate._meta["value"] = loss
         worst: tp.Optional[p.Parameter] = None
         if not len(self.population) < self.llambda:
-            worst = max(self.population.values(), key=lambda p: p._meta.get("value", float("inf")))
-            if worst._meta.get("value", float("inf")) < loss:
+            uid, worst = max(self.population.items(), key=lambda p: base._loss(p[1]))
+            if base._loss(worst) < loss:
                 return  # no need to update
             else:
-                uid = worst.heritage["lineage"]
                 del self.population[uid]
                 self._uid_queue.discard(uid)
-        candidate.heritage["lineage"] = candidate.uid  # new lineage
         if "speed" not in candidate.heritage:
             candidate.heritage["speed"] = self._rng.uniform(-1.0, 1.0, self.parametrization.dimension)
         self.population[candidate.uid] = candidate
         self._uid_queue.tell(candidate.uid)
-        if loss < self._best._meta.get("loss", float("inf")):
+        if loss < base._loss(self._best):
             self._best = candidate
 
 
@@ -2049,13 +2058,12 @@ class _EMNA(base.Optimizer):
         return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        candidate._meta["loss"] = loss
         if self.population_size_adaptation:
             self.popsize.add_value(loss)
         self.children.append(candidate)
         if len(self.children) >= self.popsize.llambda:
             # Sorting the population.
-            self.children.sort(key=lambda c: c._meta["loss"])
+            self.children.sort(key=base._loss)
             # Computing the new parent.
             self.parents = self.children[: self.popsize.mu]
             self.children = []

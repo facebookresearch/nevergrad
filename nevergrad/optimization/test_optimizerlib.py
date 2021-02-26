@@ -715,7 +715,7 @@ def _multiobjective(z: np.ndarray) -> tp.Tuple[float, float, float]:
     return (abs(x - 1), abs(y + 1), abs(x - y))
 
 
-@pytest.mark.parametrize("name", ["DE", "ES"])  # type: ignore
+@pytest.mark.parametrize("name", ["DE", "ES", "OnePlusOne"])  # type: ignore
 @testing.suppress_nevergrad_warnings()  # hides bad loss
 def test_mo_constrained(name: str) -> None:
     optimizer = optlib.registry[name](2, budget=60)
@@ -731,3 +731,32 @@ def test_mo_constrained(name: str) -> None:
     optimizer.tell(point, _multiobjective(point.value))
     if isinstance(optimizer, es._EvolutionStrategy):
         assert optimizer._rank_method is not None  # make sure the nsga2 ranker is used
+
+
+@pytest.mark.parametrize("name", ["DE", "ES", "OnePlusOne"])  # type: ignore
+@testing.suppress_nevergrad_warnings()  # hides bad loss
+def test_mo_with_nan(name: str) -> None:
+    param = ng.p.Instrumentation(x=ng.p.Scalar(lower=0, upper=5), y=ng.p.Scalar(lower=0, upper=3))
+    optimizer = optlib.registry[name](param, budget=60)
+    optimizer.tell(ng.p.MultiobjectiveReference(), [10, 10, 10])
+    for _ in range(50):
+        cand = optimizer.ask()
+        optimizer.tell(cand, [-38, 0, np.nan])
+
+
+def test_de_sampling() -> None:
+    param = ng.p.Scalar(lower=-100, upper=100).set_mutation(sigma=1)
+    opt = optlib.LhsDE(param, budget=600, num_workers=100)
+    above_50 = 0
+    for _ in range(100):
+        above_50 += abs(opt.ask().value) > 50
+    assert above_50 > 20  # should be around 50
+
+
+def test_paraportfolio_de() -> None:
+    workers = 40
+    opt = optlib.ParaPortfolio(12, budget=100 * workers, num_workers=workers)
+    for _ in range(3):
+        cands = [opt.ask() for _ in range(workers)]
+        for cand in cands:
+            opt.tell(cand, np.random.rand())

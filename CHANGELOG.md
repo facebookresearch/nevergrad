@@ -25,11 +25,15 @@
   [#1053](https://github.com/facebookresearch/nevergrad/pull/1053) but may create some instabilities. In particular,
   the representation (`__repr__`) of `Array` has changed, and their `bounds` attribute is no longer reliable for now.
   This change will eventually lead to a new syntax for settings bounds and distribution, but it's not ready yet.
+- `DE` initial sampling as been updated to take bounds into accounts [#1058](https://github.com/facebookresearch/nevergrad/pull/1058)
+
 
 ### Other changes
 
 - the new `nevergrad.errors` module gathers errors and warnings used throughout the package (WIP) [#1031](https://github.com/facebookresearch/nevergrad/pull/1031).
 - `EvolutionStrategy` now defaults to NSGA2 selection in the multiobjective case
+- A new experimental callback adds an early stopping mechanism
+  [#1054](https://github.com/facebookresearch/nevergrad/pull/1054).
 
 ## 0.4.3 (2021-01-28)
 

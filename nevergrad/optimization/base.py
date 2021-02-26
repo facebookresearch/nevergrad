@@ -213,11 +213,14 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         ----
         During non-multiobjective optimization, this returns the current pessimistic best
         """
-        if self._hypervolume_pareto is None:
-            return [self.provide_recommendation()]
-        return self._hypervolume_pareto.pareto_front(
-            size=size, subset=subset, subset_tentatives=subset_tentatives
+        pareto = (
+            []
+            if self._hypervolume_pareto is None
+            else self._hypervolume_pareto.pareto_front(
+                size=size, subset=subset, subset_tentatives=subset_tentatives
+            )
         )
+        return pareto if pareto else [self.provide_recommendation()]
 
     def dump(self, filepath: tp.Union[str, Path]) -> None:
         """Pickles the optimizer into a file."""
@@ -599,13 +602,18 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 if verbosity and new_sugg:
                     print(f"Launching {new_sugg} jobs with new suggestions")
                 for _ in range(new_sugg):
-                    args = self.ask()
+                    try:
+                        args = self.ask()
+                    except errors.NevergradEarlyStopping:
+                        remaining_budget = 0
+                        break
                     self._running_jobs.append(
                         (args, executor.submit(objective_function, *args.args, **args.kwargs))
                     )
                 if new_sugg:
                     sleeper.start_timer()
-            remaining_budget = self.budget - self.num_ask
+            if remaining_budget > 0:  # early stopping sets it to 0
+                remaining_budget = self.budget - self.num_ask
             # split (repopulate finished and runnings in only one loop to avoid
             # weird effects if job finishes in between two list comprehensions)
             tmp_runnings, tmp_finished = [], deque()

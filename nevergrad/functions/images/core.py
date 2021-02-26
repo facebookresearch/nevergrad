@@ -3,10 +3,11 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import cv2
-from pathlib import Path
+import os
 import itertools
+from pathlib import Path
 
+import cv2
 import numpy as np
 import PIL.Image
 import torch.nn as nn
@@ -17,6 +18,7 @@ import torchvision.transforms as tr
 
 import nevergrad as ng
 import nevergrad.common.typing as tp
+from nevergrad.common import errors
 from .. import base
 from . import imagelosses
 
@@ -259,6 +261,8 @@ class ImageFromPGAN(base.ExperimentFunction):
         if not torch.cuda.is_available():
             use_gpu = False
         # Storing high level information..
+        if os.environ.get("CIRCLECI", False):
+            raise errors.UnsupportedExperiment("ImageFromPGAN is not well supported in CircleCI")
         self.pgan_model = torch.hub.load(
             "facebookresearch/pytorch_GAN_zoo:hub",
             "PGAN",
