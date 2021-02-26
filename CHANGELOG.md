@@ -21,6 +21,10 @@
 - `Parameter` classes have now a layer structure [#1045](https://github.com/facebookresearch/nevergrad/pull/1045)
   which simplifies changing their behavior. In future PRs this system will take charge of bounds, other constraints,
   sampling etc.
+- The layer structures allows disentangling bounds and log-distribution. This goal has been reached with
+  [#1053](https://github.com/facebookresearch/nevergrad/pull/1053) but may create some instabilities. In particular,
+  the representation (`__repr__`) of `Array` has changed, and their `bounds` attribute is no longer reliable for now.
+  This change will eventually lead to a new syntax for settings bounds and distribution, but it's not ready yet.
 
 ### Other changes
 

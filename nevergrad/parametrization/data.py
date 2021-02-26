@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import warnings
+# import warnings
 import numpy as np
 import nevergrad.common.typing as tp
 from nevergrad.common import errors
@@ -423,11 +423,11 @@ def _fix_legacy(parameter: Data) -> None:
         return
     if len(legacy) > 2:
         raise errors.NevergradRuntimeError("More than 2 legacy layers, this should not happen, open an issue")
-    warnings.warn(
-        "Settings bounds and exponent through the Array/Scalar API will change behavior "
-        " (this is an early warning, more on this asap)",
-        errors.NevergradBehaviorChangesWarning,
-    )
+    # warnings.warn(
+    #     "Settings bounds and exponent through the Array/Scalar API will change behavior "
+    #     " (this is an early warning, more on this asap)",
+    #     errors.NevergradBehaviorChangesWarning,
+    # )  # TODO activate when ready
     value = parameter.value
     layers_inds = tuple(leg._layer_index for leg in legacy)
     if abs(layers_inds[0] - layers_inds[1]) > 1:
