@@ -42,6 +42,10 @@ class Container(core.Parameter):
             str, str
         ] = {}  # hacky undocumented way to bypass boring representations
 
+    @property
+    def dimension(self) -> int:
+        return sum(x.dimension for x in self._content.values())
+
     def _sanity_check(self, parameters: tp.List[core.Parameter]) -> None:
         """Check that all parameters are different"""
         # TODO: this is first order, in practice we would need to test all the different
@@ -230,10 +234,10 @@ class Instrumentation(Tuple):
 
     @property
     def args(self) -> tp.Tuple[tp.Any, ...]:
-        return self[0].value  # type: ignore
+        return self.value[0]  # type: ignore
 
     @property
     def kwargs(self) -> tp.Dict[str, tp.Any]:
-        return self[1].value  # type: ignore
+        return self.value[1]  # type: ignore
 
     value: core.ValueProperty[tp.ArgsKwargs] = core.ValueProperty()  # type: ignore

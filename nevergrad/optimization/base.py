@@ -467,6 +467,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         assert (
             candidate is not None
         ), f"{self.__class__.__name__}._internal_ask method returned None instead of a point."
+        # make sure to call value getter which may update the value, before we freeze the paremeter
+        candidate.value  # pylint: disable=pointless-statement
         candidate.freeze()  # make sure it is not modified somewhere
         return candidate
 
