@@ -64,7 +64,7 @@ class Constraint(core.Operator):
         """Returns a constraint-free parameter, for the optimization process"""
         param = self._layers[0].copy()
         # remove last layer and make sure it is the last one
-        if self._index != param._layers.pop()._index:
+        if self._layer_index != param._layers.pop()._layer_index:
             raise RuntimeError("Constraint layer should be unique and placed last")
         return param  # type: ignore
 
