@@ -86,3 +86,8 @@ def test_clipping_standardized_data() -> None:
     state = x.get_standardized_data(reference=ref)
     assert state[0] == 10
     assert x.value == 10
+
+
+def test_bound_estimation() -> None:
+    param = (_datalayers.Bound(-10, 10)(ng.p.Scalar()) + 3) * 5
+    assert param.bounds == (-35, 65)

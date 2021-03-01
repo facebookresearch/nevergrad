@@ -117,7 +117,26 @@ class Data(core.Parameter):
         else:
             raise ValueError(err_msg)
         self.add_layer(_layering.ArrayCasting())
-        self.bounds: tp.Tuple[tp.Optional[np.ndarray], tp.Optional[np.ndarray]] = (None, None)
+
+    @property
+    def bounds(self) -> tp.Tuple[tp.Optional[np.ndarray], tp.Optional[np.ndarray]]:
+        """Estimate of the bounds (None if unbounded)
+
+        Note
+        ----
+        This may be inaccurate (WIP)
+        """
+        from . import _datalayers
+
+        bound_layers = _datalayers.BoundLayer.filter_from(self)
+        if not bound_layers:
+            return (None, None)
+        bounds = bound_layers[-1].bounds
+        forwardable = _datalayers.ForwardableOperation.filter_from(self)
+        forwardable = [x for x in forwardable if x._layer_index > bound_layers[-1]._layer_index]
+        for f in forwardable:
+            bounds = tuple(None if b is None else f.forward(b) for b in bounds)  # type: ignore
+        return bounds
 
     @property
     def dimension(self) -> int:
@@ -213,7 +232,6 @@ class Data(core.Parameter):
             raise errors.NevergradValueError(
                 "Current value is not within bounds, please update it first"
             ) from e
-        self.bounds = layer.bounds
         return self
 
     def set_recombination(self: D, recombination: tp.Union[None, str, core.Parameter]) -> D:
@@ -566,7 +584,6 @@ class Log(Scalar):
         init = exp_layer.backward(np.array([init]))
         super().__init__(init=init[0], mutable_sigma=mutable_sigma)  # type: ignore
         # TODO remove the next line when all compatibility is done
-        self.bounds = raw_bounds  # type: ignore
         if any(x is not None for x in bounds):
             bound_layer = _datalayers.Bound(*bounds, uniform_sampling=bounded and no_init)  # type: ignore
             bound_layer(self, inplace=True)

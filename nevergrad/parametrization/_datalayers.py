@@ -151,7 +151,25 @@ class Modulo(BoundLayer):
         super()._layered_set_value(current - (current % self._module) + value)
 
 
-class Exponent(Operation):
+class ForwardableOperation(Operation):
+    """Operation with simple forward and backward methods
+    (simplifies chaining)
+    """
+
+    def _layered_get_value(self) -> np.ndarray:
+        return self.forward(super()._layered_get_value())  # type: ignore
+
+    def _layered_set_value(self, value: np.ndarray) -> None:
+        super()._layered_set_value(self.backward(value))
+
+    def forward(self, value: tp.Any) -> tp.Any:
+        raise NotImplementedError
+
+    def backward(self, value: tp.Any) -> tp.Any:
+        raise NotImplementedError
+
+
+class Exponent(ForwardableOperation):
     """Applies an array as exponent of a float"""
 
     def __init__(self, base: float) -> None:
@@ -167,53 +185,47 @@ class Exponent(Operation):
     def backward(self, value: tp.Any) -> tp.Any:
         return np.log(value) / np.log(self._base)
 
-    def _layered_get_value(self) -> np.ndarray:
-        return self.forward(super()._layered_get_value())  # type: ignore
 
-    def _layered_set_value(self, value: np.ndarray) -> None:
-        super()._layered_set_value(self.backward(value))
-
-
-class Power(Operation):
+class Power(ForwardableOperation):
     """Applies a float as exponent of a Data parameter"""
 
     def __init__(self, power: float) -> None:
         super().__init__(power)
         self._power = power
 
-    def _layered_get_value(self) -> np.ndarray:
-        return super()._layered_get_value() ** self._power  # type: ignore
+    def forward(self, value: tp.Any) -> tp.Any:
+        return value ** self._power
 
-    def _layered_set_value(self, value: np.ndarray) -> None:
-        super()._layered_set_value(value ** (1.0 / self._power))
+    def backward(self, value: tp.Any) -> tp.Any:
+        return value ** (1.0 / self._power)
 
 
-class Add(Operation):
+class Add(ForwardableOperation):
     """Applies an array as exponent of a floar"""
 
     def __init__(self, offset: tp.Any) -> None:
         super().__init__(offset)
         self._offset = offset
 
-    def _layered_get_value(self) -> np.ndarray:
-        return self._offset + super()._layered_get_value()  # type: ignore
+    def forward(self, value: tp.Any) -> tp.Any:
+        return self._offset + value
 
-    def _layered_set_value(self, value: np.ndarray) -> None:
-        super()._layered_set_value(value - self._offset)
+    def backward(self, value: tp.Any) -> tp.Any:
+        return value - self._offset
 
 
-class Multiply(Operation):
+class Multiply(ForwardableOperation):
     """Applies an array as exponent of a floar"""
 
     def __init__(self, value: tp.Any) -> None:
         super().__init__(value)
-        self._value = value
+        self._mult = value
 
-    def _layered_get_value(self) -> np.ndarray:
-        return self._value * super()._layered_get_value()  # type: ignore
+    def forward(self, value: tp.Any) -> tp.Any:
+        return self._mult * value
 
-    def _layered_set_value(self, value: np.ndarray) -> None:
-        super()._layered_set_value(value / self._value)
+    def backward(self, value: tp.Any) -> tp.Any:
+        return value / self._mult
 
 
 class Bound(BoundLayer):
