@@ -121,7 +121,7 @@ class Parameter(Layered):
         """
         # inner working can be overrided by _layer_sample()
         self.random_state  # make sure to populate it before copy
-        child = self._layered_sample()
+        child = self._layers[-1]._layered_sample()
         if not isinstance(child, Parameter) and not isinstance(child, type(self)):
             raise errors.NevergradRuntimeError("Unexpected sample return type")
         child._set_parenthood(None)

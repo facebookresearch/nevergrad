@@ -38,7 +38,7 @@ class Layered:
 
     def __init__(self) -> None:
         self._layers = [self]
-        self._index = 0
+        self._layer_index = 0
         self._name: tp.Optional[str] = None
 
     def add_layer(self: L, other: "Layered") -> L:
@@ -48,37 +48,37 @@ class Layered:
         if len(other._layers) > 1:
             raise errors.NevergradRuntimeError("Cannot append multiple layers at once")
         if other._LAYER_LEVEL.value >= self._layers[-1]._LAYER_LEVEL.value:
-            other._index = len(self._layers)
+            other._layer_index = len(self._layers)
             self._layers.append(other)
         else:
             levels = [x._LAYER_LEVEL.value for x in self._layers]
             ind = bisect.bisect_right(levels, other._LAYER_LEVEL.value)
             self._layers.insert(ind, other)
             for k, x in enumerate(self._layers):
-                x._index = k
+                x._layer_index = k
         other._layers = self._layers
         return self
 
     def _call_deeper(self, name: str, *args: tp.Any, **kwargs: tp.Any) -> tp.Any:
-        if not name.startswith("_layered_"):
-            raise errors.NevergradValueError("For consistency, only _layered functions can be used.")
-        if self._layers[self._index] is not self:
-            layers = [f"{l.name}({l._index})" for l in self._layers]
+        if self._layers[self._layer_index] is not self:
+            layers = [f"{l.name}({l._layer_index})" for l in self._layers]
             raise errors.NevergradRuntimeError(
                 "Layer indexing has changed for an unknown reason. Please open an issue:\n"
-                f"Caller at index {self._index}: {self.name}"
+                f"Caller at index {self._layer_index}: {self.name}"
                 f"Layers: {layers}.\n"
             )
-        for index in reversed(range(self._index)):
-            func = getattr(self._layers[index], name)
+        if not name.startswith("_layered_"):
+            raise errors.NevergradValueError("For consistency, only _layered functions can be used.")
+        for layer in reversed(self._layers[: self._layer_index]):
+            func = getattr(layer, name)
             if func.__func__ is not getattr(Layered, name):  # skip unecessary stack calls
                 return func(*args, **kwargs)
         types = [type(x) for x in self._layers]
         raise errors.NevergradNotImplementedError(f"No implementation for {name} on layers: {types}.")
         # ALTERNATIVE (stacking all calls):
-        # if not self._index:  # root must have an implementation
+        # if not self._layer_index:  # root must have an implementation
         #    raise errors.NevergradNotImplementedError
-        # return getattr(self._layers[self._index - 1], name)(*args, **kwargs)
+        # return getattr(self._layers[self._layer_index - 1], name)(*args, **kwargs)
 
     def _layered_get_value(self) -> tp.Any:
         return self._call_deeper("_layered_get_value")
@@ -96,8 +96,8 @@ class Layered:
         """Creates a new unattached layer with the same behavior"""
         new = copy.copy(self)
         new._layers = [new]
-        new._index = 0
-        if not self._index:  # attach sublayers if root
+        new._layer_index = 0
+        if not self._layer_index:  # attach sublayers if root
             for layer in self._layers[1:]:
                 new.add_layer(layer.copy())
         return new
@@ -204,7 +204,7 @@ class ArrayCasting(Layered):
         super()._layered_set_value(np.asarray(value))
 
 
-class IntegerCasting(Layered):
+class Int(Layered):
     """Cast Data as integer (or integer array)"""
 
     _LAYER_LEVEL = Level.OPERATION

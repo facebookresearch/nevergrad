@@ -18,6 +18,7 @@ class NevergradWarning(Warning):
 
 
 # errors
+# pylint: disable=too-many-ancestors
 
 
 class NevergradEarlyStopping(StopIteration, NevergradError):
@@ -70,11 +71,15 @@ class NevergradDeprecationWarning(DeprecationWarning, NevergradWarning):
     """Deprecated function/class"""
 
 
-class InefficientSettingsWarning(RuntimeWarning, NevergradWarning):
+class NevergradRuntimeWarning(RuntimeWarning, NevergradWarning):
+    """Runtime warning raise by nevergrad"""
+
+
+class InefficientSettingsWarning(NevergradRuntimeWarning):
     """Optimization settings are not optimal for the optimizer"""
 
 
-class BadLossWarning(RuntimeWarning, NevergradWarning):
+class BadLossWarning(NevergradRuntimeWarning):
     """Provided loss is unhelpful"""
 
 
@@ -82,9 +87,13 @@ class LossTooLargeWarning(BadLossWarning):
     """Sent when Loss is clipped because it is too large"""
 
 
-class FinishedUnderlyingOptimizerWarning(RuntimeWarning, NevergradWarning):
+class NevergradBehaviorChangesWarning(NevergradRuntimeWarning):
+    """Notifies a change of behavior"""
+
+
+class FinishedUnderlyingOptimizerWarning(NevergradRuntimeWarning):
     """Underlying scipy optimizer finished"""
 
 
-class FailedConstraintWarning(RuntimeWarning, NevergradWarning):
+class FailedConstraintWarning(NevergradRuntimeWarning):
     """Constraint could not be applied"""

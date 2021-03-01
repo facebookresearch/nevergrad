@@ -106,9 +106,9 @@ def test_pruning() -> None:
     testing.assert_set_equal([x[0] for x in archive2.keys_as_arrays()], [0, 3], err_msg=f"Repetition #{k+1}")
 
 
-@pytest.mark.parametrize(
+@pytest.mark.parametrize(  # type: ignore
     "nw,dimension,expected_min,expected_max",
-    [  # type: ignore
+    [
         (12, 8, 100, 1000),
         (24, 8, 168, 1680),
         (24, 100000, 168, 671),

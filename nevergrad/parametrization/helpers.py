@@ -110,7 +110,7 @@ def split_as_data_parameters(
     for k, key in enumerate(keys):
         for not_ref, flat in enumerate((flatref, flatc)):
             param = flat[key]
-            param.bound_transform = None  # force remove the bound to avoid weird clipping
+            param._layers = param._layers[:1]  # force remove the bound to avoid weird clipping etc
             param.set_mutation(sigma=1.0)  # force mutation sigma to 1 to avoid rounding
             if not_ref:
                 param.set_standardized_data(k * np.ones((param.dimension)))

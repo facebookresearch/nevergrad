@@ -9,6 +9,7 @@ import warnings
 import numpy as np
 from nevergrad.parametrization import parameter as p
 from nevergrad.parametrization.utils import float_penalty as _float_penalty
+from nevergrad.parametrization import _datalayers
 import nevergrad.common.typing as tp
 from nevergrad.common.tools import OrderedSet
 
@@ -416,17 +417,15 @@ class BoundScaler:
         start = 0
         for ref in self._ref_arrays:
             end = start + ref.dimension
-            if any(b is None for b in ref.bounds) or not ref.full_range_sampling:
+            layers = _datalayers.BoundLayer.filter_from(ref)  # find bound layers
+            layers = [x for x in layers if x.uniform_sampling]  # keep only uniform sampling
+            if not layers:
                 x[start:end] = unbounded_transform(x[start:end])
             else:
+                layer_index = layers[-1]._layer_index
                 array = ref.spawn_child()
-                bounds: tp.List[tp.Any] = list(ref.bounds)
-                if array.exponent is not None:
-                    bounds = [np.log(b) for b in bounds]
-                value = bounds[0] + (bounds[1] - bounds[0]) * x[start:end].reshape(ref._value.shape)
-                if array.exponent is not None:
-                    value = np.exp(value)
-                array._value = value
+                normalized = x[start:end].reshape(ref._value.shape)
+                array._layers[layer_index].set_normalized_value(normalized)  # type: ignore
                 x[start:end] = array.get_standardized_data(reference=ref)
             start = end
         return x
