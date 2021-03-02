@@ -9,6 +9,7 @@ import nevergrad as ng
 from nevergrad.common import testing
 import nevergrad.common.typing as tp
 from . import _datalayers
+from . import choice
 
 
 def test_scalar_module() -> None:
@@ -90,4 +91,19 @@ def test_clipping_standardized_data() -> None:
 
 def test_bound_estimation() -> None:
     param = (_datalayers.Bound(-10, 10)(ng.p.Scalar()) + 3) * 5
-    assert param.bounds == (-35, 65)
+    assert param.bounds == (-35, 65)  # type: ignore
+
+
+def test_softmax_layer() -> None:
+    param = ng.p.Array(shape=(4, 3))
+    param.random_state.seed(12)
+    param.add_layer(choice.SoftmaxSampling(arity=3))
+    assert param.value.tolist() == [0, 2, 0, 1]
+    assert param.value.tolist() == [0, 2, 0, 1], "Different indices at the second call"
+    del param.value
+    assert param.value.tolist() == [0, 2, 2, 0], "Same indices after resampling"
+    param.value = [0, 1, 2, 0]  # type: ignore
+    assert param.value.tolist() == [0, 1, 2, 0]
+    coeff = 0.6931
+    expected = [[coeff, 0, 0], [0, coeff, 0], [0, 0, coeff], [coeff, 0, 0]]
+    np.testing.assert_array_almost_equal(param._value, expected, decimal=4)

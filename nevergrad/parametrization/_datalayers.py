@@ -116,7 +116,7 @@ class BoundLayer(Operation):
         shape = super()._layered_get_value().shape
         child = root.spawn_child()
         # send new val to the layer under this one for the child
-        new_val = root.random_state.uniform(size=shape)
+        new_val = self.random_state.uniform(size=shape)
         child._layers[self._layer_index].set_normalized_value(new_val)  # type: ignore
         return child
 

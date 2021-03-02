@@ -9,6 +9,7 @@ from . import discretization
 from . import utils
 from . import core
 from . import container
+from . import _layering
 from .data import Array
 
 # weird pylint issue on "Descriptors"
@@ -17,6 +18,37 @@ from .data import Array
 
 C = tp.TypeVar("C", bound="Choice")
 T = tp.TypeVar("T", bound="TransitionChoice")
+
+
+class SampleLayer(_layering.Layered):
+    def __init__(self, arity: int, deterministic: bool = False) -> None:
+        super().__init__()
+        self.arity = arity
+        self.deterministic = deterministic
+        self._cache: tp.Optional[np.ndarray] = None  # clear cache!
+
+    def _layered_del_value(self) -> None:
+        self._cache = None  # clear cache!
+
+
+class SoftmaxSampling(SampleLayer):
+    def _layered_get_value(self) -> tp.Any:
+        if self._cache is None:
+            value = super()._layered_get_value()
+            if value.ndim != 2 or value.shape[1] != self.arity:
+                raise ValueError(f"Dimension 1 should be the arity {self.arity}")
+            encoder = discretization.Encoder(value, rng=self.random_state)
+            self._cache = encoder.encode(deterministic=self.deterministic)
+        return self._cache
+
+    def _layered_set_value(self, value: tp.Any) -> tp.Any:
+        if not isinstance(value, np.ndarray) and not value.dtype == int:
+            raise TypeError("Expected an integer array, got {value}")
+        self._cache = value
+        out = np.zeros((value.size, self.arity), dtype=float)
+        coeff = discretization.weight_for_reset(self.arity)
+        out[np.arange(value.size, dtype=int), value] = coeff
+        super()._layered_set_value(out)
 
 
 class ChoiceTag(tp.NamedTuple):

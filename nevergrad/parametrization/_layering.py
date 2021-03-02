@@ -92,6 +92,10 @@ class Layered:
     def _layered_sample(self) -> "Layered":
         return self._call_deeper("_layered_sample")  # type: ignore
 
+    @property
+    def random_state(self) -> np.random.RandomState:
+        return self._layers[0].random_state  # use the root random state
+
     def copy(self: L) -> L:
         """Creates a new unattached layer with the same behavior"""
         new = copy.copy(self)
