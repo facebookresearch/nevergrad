@@ -269,7 +269,6 @@ class TransitionChoice(BaseChoice):
 
     @property
     def indices(self) -> np.ndarray:
-        # return np.minimum(len(self) - 1e-9, self.positions.value).astype(int)  # type: ignore
         return np.clip(self.positions.value, 0, len(self) - 1)  # type: ignore
 
     def _layered_set_value(self, value: tp.Any) -> np.ndarray:
