@@ -20,7 +20,7 @@ Op = tp.TypeVar("Op", bound="Operation")
 BL = tp.TypeVar("BL", bound="BoundLayer")
 
 
-class Operation(_layering.Layered):
+class Operation(_layering.Layered, _layering.Filterable):
 
     _LAYER_LEVEL = _layering.Level.OPERATION
     _LEGACY = False
@@ -29,10 +29,6 @@ class Operation(_layering.Layered):
         super().__init__()
         if any(isinstance(x, Parameter) for x in args + tuple(kwargs.values())):
             raise errors.NevergradTypeError("Operation with Parameter instances are not supported")
-
-    @classmethod
-    def filter_from(cls: tp.Type[Op], parameter: Parameter) -> tp.List[Op]:
-        return [x for x in parameter._layers if isinstance(x, cls)]
 
 
 class BoundLayer(Operation):

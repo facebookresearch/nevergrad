@@ -58,7 +58,7 @@ def test_instrumentation() -> None:
     instru_str = (
         "Instrumentation(Tuple(Scalar[sigma=Log{exp=2.0}],3),"
         "Dict(a=TransitionChoice(choices=Tuple(0,1,2,3),"
-        "positions=Array{Cd(0,4),Add},transitions=[1. 1.]),"
+        "positions=Array{Cd(0,4),Add,Int},transitions=[1. 1.]),"
         "b=Choice(choices=Tuple(0,1,2,3),weights=Array{(1,4),SoftmaxSampling})))"
     )
     testing.printed_assert_equal(instru.name, instru_str)

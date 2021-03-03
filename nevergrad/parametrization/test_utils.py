@@ -129,19 +129,6 @@ def test_descriptors() -> None:
 
 
 @testing.parametrized(
-    dict_param=(p.Dict(x=p.Scalar(), y=12), p.Dict, -1),
-    scalar=(p.Scalar(), p.Scalar, -1),
-    array=(p.Array(shape=(3, 2)), p.Array, -1),
-    choice=(p.Choice([1, 2, 3]), p.Choice, 3),
-    choice_weight=(p.Choice([1, 2, 3]).weights, p.Choice, 3),
-)
-def test_parameter_as_choice_tag(param: p.Parameter, cls: tp.Type[p.Parameter], arity: int) -> None:
-    tag = p.BaseChoice.ChoiceTag.as_tag(param)
-    assert tag.cls == cls
-    assert tag.arity == arity
-
-
-@testing.parametrized(
     true=(True, 0.0),
     false=(False, 1.0),
     np_true=(np.bool_(True), 0.0),

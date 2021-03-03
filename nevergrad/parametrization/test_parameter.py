@@ -188,7 +188,7 @@ def check_parameter_freezable(param: par.Parameter) -> None:
         ),
         (
             par.TransitionChoice([1, 12]),
-            "TransitionChoice(choices=Tuple(1,12),positions=Array{Cd(0,2),Add},transitions=[1. 1.])",
+            "TransitionChoice(choices=Tuple(1,12),positions=Array{Cd(0,2),Add,Int},transitions=[1. 1.])",
         ),
     ],
 )

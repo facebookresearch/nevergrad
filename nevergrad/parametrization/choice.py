@@ -47,25 +47,7 @@ class SoftmaxSampling(_layering.Int):
         super()._layered_set_value(out)
 
 
-class ChoiceTag(tp.NamedTuple):
-    cls: tp.Type[core.Parameter]
-    arity: int
-
-    @classmethod
-    def as_tag(cls, param: core.Parameter) -> "ChoiceTag":
-        # arrays inherit tags to identify them as bound to a choice
-        if cls in param.heritage:  # type: ignore
-            output = param.heritage[cls]  # type: ignore
-            assert isinstance(output, cls)
-            return output
-        arity = len(param.choices) if isinstance(param, BaseChoice) else -1
-        return cls(type(param), arity)
-
-
 class BaseChoice(container.Container):
-
-    ChoiceTag = ChoiceTag
-
     def __init__(
         self, *, choices: tp.Iterable[tp.Any], repetitions: tp.Optional[int] = None, **kwargs: tp.Any
     ) -> None:
@@ -191,7 +173,6 @@ class Choice(BaseChoice):
         rep = 1 if repetitions is None else repetitions
         weights = Array(shape=(rep, len(lchoices)), mutable_sigma=False)
         weights.add_layer(SoftmaxSampling(len(lchoices), deterministic=deterministic))
-        weights.heritage[BaseChoice.ChoiceTag] = BaseChoice.ChoiceTag(self.__class__, len(lchoices))
         super().__init__(
             choices=lchoices,
             repetitions=repetitions,
@@ -275,7 +256,9 @@ class TransitionChoice(BaseChoice):
         positions = Array(init=len(choices) / 2.0 * np.ones((repetitions if repetitions is not None else 1,)))
         positions.set_bounds(0, len(choices), method="gaussian")
         positions = positions - 0.5
-        positions.heritage[BaseChoice.ChoiceTag] = BaseChoice.ChoiceTag(self.__class__, len(choices))
+        intcasting = _layering.Int()
+        intcasting.arity = len(choices)
+        positions.add_layer(intcasting)
         super().__init__(
             choices=choices,
             repetitions=repetitions,
@@ -287,7 +270,7 @@ class TransitionChoice(BaseChoice):
     @property
     def indices(self) -> np.ndarray:
         # return np.minimum(len(self) - 1e-9, self.positions.value).astype(int)  # type: ignore
-        return np.round(np.clip(self.positions.value, 0, len(self) - 1)).astype(int)  # type: ignore
+        return np.clip(self.positions.value, 0, len(self) - 1)  # type: ignore
 
     def _layered_set_value(self, value: tp.Any) -> np.ndarray:
         indices = super()._layered_set_value(value)  # only one value for this class

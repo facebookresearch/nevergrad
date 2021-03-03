@@ -12,6 +12,7 @@ import nevergrad.common.typing as tp
 
 
 L = tp.TypeVar("L", bound="Layered")
+F = tp.TypeVar("F", bound="Filterable")
 X = tp.TypeVar("X")
 
 
@@ -209,7 +210,13 @@ class ArrayCasting(Layered):
         super()._layered_set_value(np.asarray(value))
 
 
-class Int(Layered):
+class Filterable:
+    @classmethod
+    def filter_from(cls: tp.Type[F], parameter: Layered) -> tp.List[F]:
+        return [x for x in parameter._layers if isinstance(x, cls)]  # type: ignore
+
+
+class Int(Layered, Filterable):
     """Cast Data as integer (or integer array)"""
 
     _LAYER_LEVEL = Level.INTEGER_CASTING

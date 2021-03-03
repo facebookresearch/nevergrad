@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 import os
 import logging
+import itertools
 from collections import deque
 import warnings
 import cma
@@ -16,6 +17,8 @@ from nevergrad.parametrization import parameter as p
 from nevergrad.parametrization import transforms
 from nevergrad.parametrization import discretization
 from nevergrad.parametrization import helpers as paramhelpers
+from nevergrad.parametrization import _layering
+from nevergrad.parametrization import choice as pchoice
 from . import base
 from . import mutations
 from .base import registry as registry
@@ -2170,10 +2173,16 @@ class NGOptBase(base.Optimizer):
         self.noise_from_instrumentation = self.has_noise and descr.deterministic_function
         self.fully_continuous = descr.continuous
         all_params = paramhelpers.flatten_parameter(self.parametrization)
-        choicetags = [p.BaseChoice.ChoiceTag.as_tag(x) for x in all_params.values()]
-        self.has_discrete_not_softmax = any(issubclass(ct.cls, p.TransitionChoice) for ct in choicetags)
-        self._has_discrete = any(issubclass(ct.cls, p.BaseChoice) for ct in choicetags)
-        self._arity = max(ct.arity for ct in choicetags)
+        int_layers = list(
+            itertools.chain.from_iterable([_layering.Int.filter_from(x) for x in all_params.values()])
+        )
+        int_layers = [x for x in int_layers if x.arity is not None]  # only "Choice" instances for now
+        print(int_layers)
+        self.has_discrete_not_softmax = any(
+            not isinstance(lay, pchoice.SoftmaxSampling) for lay in int_layers
+        )
+        self._has_discrete = bool(int_layers)
+        self._arity: int = max((lay.arity for lay in int_layers), default=-1)  # type: ignore
         if self.fully_continuous:
             self._arity = -1
         self._optim: tp.Optional[base.Optimizer] = None
