@@ -143,7 +143,15 @@ class Data(core.Parameter):
         return int(np.prod(self._value.shape))
 
     def _compute_descriptors(self) -> utils.Descriptors:
-        return utils.Descriptors(continuous=not self.integer)
+        from . import _datalayers
+
+        intlayers = _layering.Int.filter_from(self)
+        deterministic = all(lay.deterministic for lay in intlayers)
+        return utils.Descriptors(
+            deterministic=deterministic,
+            continuous=not (deterministic and bool(intlayers)),
+            ordered=not any(isinstance(lay, _datalayers.SoftmaxSampling) for lay in intlayers),
+        )
 
     def _get_name(self) -> str:
         cls = self.__class__.__name__

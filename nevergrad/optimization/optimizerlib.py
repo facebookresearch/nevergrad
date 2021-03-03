@@ -18,7 +18,7 @@ from nevergrad.parametrization import transforms
 from nevergrad.parametrization import discretization
 from nevergrad.parametrization import helpers as paramhelpers
 from nevergrad.parametrization import _layering
-from nevergrad.parametrization import choice as pchoice
+from nevergrad.parametrization import _datalayers
 from . import base
 from . import mutations
 from .base import registry as registry
@@ -2179,7 +2179,7 @@ class NGOptBase(base.Optimizer):
         )
         int_layers = [x for x in int_layers if x.arity is not None]  # only "Choice" instances for now
         self.has_discrete_not_softmax = any(
-            not isinstance(lay, pchoice.SoftmaxSampling) for lay in int_layers
+            not isinstance(lay, _datalayers.SoftmaxSampling) for lay in int_layers
         )
         self._has_discrete = bool(int_layers)
         self._arity: int = max((lay.arity for lay in int_layers), default=-1)  # type: ignore

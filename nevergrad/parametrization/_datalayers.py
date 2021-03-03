@@ -9,8 +9,10 @@ import numpy as np
 import nevergrad.common.typing as tp
 from nevergrad.common import errors
 from . import _layering
+from ._layering import Int as Int
 from .data import Data
 from .core import Parameter
+from . import discretization
 from . import transforms as trans
 from . import utils
 
@@ -263,3 +265,30 @@ class Bound(BoundLayer):
 
     def _layered_set_value(self, value: np.ndarray) -> None:
         super()._layered_set_value(self._transform.backward(value))
+
+
+class SoftmaxSampling(Int):
+    def __init__(self, arity: int, deterministic: bool = False) -> None:
+        super().__init__()
+        self.arity = arity
+        self.deterministic = deterministic
+
+    def _layered_get_value(self) -> tp.Any:
+        if self._cache is None:
+            value = _layering.Layered._layered_get_value(self)
+            if value.ndim != 2 or value.shape[1] != self.arity:
+                raise ValueError(f"Dimension 1 should be the arity {self.arity}")
+            encoder = discretization.Encoder(value, rng=self.random_state)
+            self._cache = encoder.encode(deterministic=self.deterministic)
+        return self._cache
+
+    def _layered_set_value(self, value: tp.Any) -> tp.Any:
+        if not isinstance(value, np.ndarray) and not value.dtype == int:
+            raise TypeError("Expected an integer array, got {value}")
+        if self.arity is None:
+            raise RuntimeError("Arity is not initialized")
+        self._cache = value
+        out = np.zeros((value.size, self.arity), dtype=float)
+        coeff = discretization.weight_for_reset(self.arity)
+        out[np.arange(value.size, dtype=int), value] = coeff
+        super()._layered_set_value(out)

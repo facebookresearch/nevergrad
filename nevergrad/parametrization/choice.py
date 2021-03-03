@@ -6,10 +6,9 @@ import warnings
 import numpy as np
 import nevergrad.common.typing as tp
 from . import discretization
-from . import utils
 from . import core
 from . import container
-from . import _layering
+from . import _datalayers
 from .data import Array
 
 # weird pylint issue on "Descriptors"
@@ -18,33 +17,6 @@ from .data import Array
 
 C = tp.TypeVar("C", bound="Choice")
 T = tp.TypeVar("T", bound="TransitionChoice")
-
-
-class SoftmaxSampling(_layering.Int):
-    def __init__(self, arity: int, deterministic: bool = False) -> None:
-        super().__init__()
-        self.arity = arity
-        self.deterministic = deterministic
-
-    def _layered_get_value(self) -> tp.Any:
-        if self._cache is None:
-            value = _layering.Layered._layered_get_value(self)
-            if value.ndim != 2 or value.shape[1] != self.arity:
-                raise ValueError(f"Dimension 1 should be the arity {self.arity}")
-            encoder = discretization.Encoder(value, rng=self.random_state)
-            self._cache = encoder.encode(deterministic=self.deterministic)
-        return self._cache
-
-    def _layered_set_value(self, value: tp.Any) -> tp.Any:
-        if not isinstance(value, np.ndarray) and not value.dtype == int:
-            raise TypeError("Expected an integer array, got {value}")
-        if self.arity is None:
-            raise RuntimeError("Arity is not initialized")
-        self._cache = value
-        out = np.zeros((value.size, self.arity), dtype=float)
-        coeff = discretization.weight_for_reset(self.arity)
-        out[np.arange(value.size, dtype=int), value] = coeff
-        super()._layered_set_value(out)
 
 
 class BaseChoice(container.Container):
@@ -57,14 +29,6 @@ class BaseChoice(container.Container):
         if not lchoices:
             raise ValueError("{self._class__.__name__} received an empty list of options.")
         super().__init__(choices=container.Tuple(*lchoices), **kwargs)
-
-    def _compute_descriptors(self) -> utils.Descriptors:
-        deterministic = getattr(self, "_deterministic", True)
-        ordered = not hasattr(self, "_deterministic")
-        internal = utils.Descriptors(
-            deterministic=deterministic, continuous=not deterministic, ordered=ordered
-        )
-        return self.choices.descriptors & internal
 
     def __len__(self) -> int:
         """Number of choices"""
@@ -172,7 +136,7 @@ class Choice(BaseChoice):
         lchoices = list(choices)
         rep = 1 if repetitions is None else repetitions
         weights = Array(shape=(rep, len(lchoices)), mutable_sigma=False)
-        weights.add_layer(SoftmaxSampling(len(lchoices), deterministic=deterministic))
+        weights.add_layer(_datalayers.SoftmaxSampling(len(lchoices), deterministic=deterministic))
         super().__init__(
             choices=lchoices,
             repetitions=repetitions,
@@ -208,7 +172,7 @@ class Choice(BaseChoice):
         self: C, data: np.ndarray, reference: C, deterministic: bool = False
     ) -> None:
         softmax = self["weights"]._layers[-2]
-        assert isinstance(softmax, SoftmaxSampling)
+        assert isinstance(softmax, _datalayers.SoftmaxSampling)
         softmax.deterministic = deterministic or self._deterministic
         super()._internal_set_standardized_data(data, reference=reference, deterministic=deterministic)
         # pylint: disable=pointless-statement
@@ -256,7 +220,7 @@ class TransitionChoice(BaseChoice):
         positions = Array(init=len(choices) / 2.0 * np.ones((repetitions if repetitions is not None else 1,)))
         positions.set_bounds(0, len(choices), method="gaussian")
         positions = positions - 0.5
-        intcasting = _layering.Int()
+        intcasting = _datalayers.Int()
         intcasting.arity = len(choices)
         positions.add_layer(intcasting)
         super().__init__(

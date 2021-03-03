@@ -9,7 +9,6 @@ import nevergrad as ng
 from nevergrad.common import testing
 import nevergrad.common.typing as tp
 from . import _datalayers
-from . import choice
 
 
 def test_scalar_module() -> None:
@@ -97,7 +96,7 @@ def test_bound_estimation() -> None:
 def test_softmax_layer() -> None:
     param = ng.p.Array(shape=(4, 3))
     param.random_state.seed(12)
-    param.add_layer(choice.SoftmaxSampling(arity=3))
+    param.add_layer(_datalayers.SoftmaxSampling(arity=3))
     assert param.value.tolist() == [0, 2, 0, 1]
     assert param.value.tolist() == [0, 2, 0, 1], "Different indices at the second call"
     del param.value
@@ -107,3 +106,10 @@ def test_softmax_layer() -> None:
     expected = np.zeros((4, 3))
     expected[[0, 1, 2, 3], [0, 1, 2, 0]] = 0.6931
     np.testing.assert_array_almost_equal(param._value, expected, decimal=4)
+
+
+def test_deterministic_softmax_layer() -> None:
+    param = ng.p.Array(shape=(1, 100))
+    param.add_layer(_datalayers.SoftmaxSampling(arity=100, deterministic=True))
+    param._value[0, 12] = 1
+    assert param.value.tolist() == [12]
