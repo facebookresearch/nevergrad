@@ -113,3 +113,11 @@ def test_deterministic_softmax_layer() -> None:
     param.add_layer(_datalayers.SoftmaxSampling(arity=100, deterministic=True))
     param._value[0, 12] = 1
     assert param.value.tolist() == [12]
+
+
+def test_bounded_int_casting() -> None:
+    param = _datalayers.Bound(-10.9, 10.9, method="clipping")(ng.p.Scalar())
+    param.add_layer(_datalayers.Int())
+    for move, val in [(2.4, 2), (0.2, 3), (42, 10), (-42, -10)]:
+        param.set_standardized_data([move])
+        assert param.value == val, f"Wrong value after move {move}"

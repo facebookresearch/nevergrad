@@ -232,9 +232,9 @@ class Int(Layered, Filterable):
         out = np.round(super()._layered_get_value()).astype(int)
         # make sure rounding does not go to the bounds
         if bounds[0] is not None:
-            out = np.maximum(bounds[0], out)
+            out = np.maximum(int(np.round(bounds[0] + 0.5)), out)
         if bounds[1] is not None:
-            out = np.minimum(bounds[1], out)
+            out = np.minimum(int(np.round(bounds[1] - 0.5)), out)
         return out  # type: ignore
 
     def _layered_del_value(self) -> None:
