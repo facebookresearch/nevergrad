@@ -21,6 +21,9 @@ T = tp.TypeVar("T", bound="TransitionChoice")
 
 
 class SampleLayer(_layering.Layered):
+
+    _LAYER_LEVEL = _layering.Level.INTEGER_CASTING
+
     def __init__(self, arity: int, deterministic: bool = False) -> None:
         super().__init__()
         self.arity = arity

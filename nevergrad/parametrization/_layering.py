@@ -22,8 +22,9 @@ class Level(Enum):
     OPERATION = 10
 
     # final
-    ARRAY_CASTING = 800
-    INTEGER_CASTING = 900
+    INTEGER_CASTING = 800
+    ARRAY_CASTING = 900
+    SCALAR_CASTING = 950
     CONSTRAINT = 1000  # must be the last layer
 
 
@@ -181,7 +182,7 @@ class ValueProperty(tp.Generic[X]):
 class _ScalarCasting(Layered):
     """Cast Array as a scalar"""
 
-    _LAYER_LEVEL = Level.INTEGER_CASTING
+    _LAYER_LEVEL = Level.SCALAR_CASTING
 
     def _layered_get_value(self) -> float:
         out = super()._layered_get_value()  # pulls from previous layer
@@ -211,7 +212,7 @@ class ArrayCasting(Layered):
 class Int(Layered):
     """Cast Data as integer (or integer array)"""
 
-    _LAYER_LEVEL = Level.OPERATION
+    _LAYER_LEVEL = Level.INTEGER_CASTING
 
     def _layered_get_value(self) -> np.ndarray:
         return np.round(super()._layered_get_value()).astype(int)  # type: ignore
