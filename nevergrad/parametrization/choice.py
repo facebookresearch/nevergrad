@@ -20,37 +20,26 @@ C = tp.TypeVar("C", bound="Choice")
 T = tp.TypeVar("T", bound="TransitionChoice")
 
 
-class SampleLayer(_layering.Layered):
-
-    _LAYER_LEVEL = _layering.Level.INTEGER_CASTING
-
+class SoftmaxSampling(_layering.Int):
     def __init__(self, arity: int, deterministic: bool = False) -> None:
         super().__init__()
         self.arity = arity
         self.deterministic = deterministic
-        self._cache: tp.Optional[np.ndarray] = None  # clear cache!
 
-    def _layered_del_value(self) -> None:
-        print("removing cache")
-        self._cache = None  # clear cache!
-
-
-class SoftmaxSampling(SampleLayer):
     def _layered_get_value(self) -> tp.Any:
-        print("getting value")
         if self._cache is None:
-            print("creating value")
-            value = super()._layered_get_value()
+            value = _layering.Layered._layered_get_value(self)
             if value.ndim != 2 or value.shape[1] != self.arity:
                 raise ValueError(f"Dimension 1 should be the arity {self.arity}")
             encoder = discretization.Encoder(value, rng=self.random_state)
-            print("with deterministic", self.deterministic)
             self._cache = encoder.encode(deterministic=self.deterministic)
         return self._cache
 
     def _layered_set_value(self, value: tp.Any) -> tp.Any:
         if not isinstance(value, np.ndarray) and not value.dtype == int:
             raise TypeError("Expected an integer array, got {value}")
+        if self.arity is None:
+            raise RuntimeError("Arity is not initialized")
         self._cache = value
         out = np.zeros((value.size, self.arity), dtype=float)
         coeff = discretization.weight_for_reset(self.arity)

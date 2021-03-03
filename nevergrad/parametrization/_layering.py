@@ -214,5 +214,14 @@ class Int(Layered):
 
     _LAYER_LEVEL = Level.INTEGER_CASTING
 
+    def __init__(self) -> None:
+        super().__init__()
+        self.arity: tp.Optional[int] = None
+        self.deterministic = True
+        self._cache: tp.Optional[np.ndarray] = None
+
     def _layered_get_value(self) -> np.ndarray:
         return np.round(super()._layered_get_value()).astype(int)  # type: ignore
+
+    def _layered_del_value(self) -> None:
+        self._cache = None  # clear cache!
