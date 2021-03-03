@@ -621,7 +621,6 @@ def test_ngopt_selection(
         match = re.match(pattern, caplog.text.splitlines()[-1])
         assert match is not None, f"Did not detect selection in logs: {caplog.text}"
         assert match.group("name") == expected
-        raise Exception
 
 
 def test_bo_ordering() -> None:

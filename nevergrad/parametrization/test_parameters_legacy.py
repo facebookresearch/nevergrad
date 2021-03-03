@@ -50,9 +50,9 @@ def test_instrumentation() -> None:
     # instru2 = mvar.Instrumentation(*instru.args, **instru.kwargs)  # TODO: OUCH SILENT FAIL
     instru2.copy()
     data = np.random.normal(0, 1, size=6)
-    testing.printed_assert_equal(
-        instru2.spawn_child().set_standardized_data(data, deterministic=True).value,
-        instru.spawn_child().set_standardized_data(data, deterministic=True).value,
+    assert (
+        instru2.spawn_child().set_standardized_data(data, deterministic=True).value
+        == instru.spawn_child().set_standardized_data(data, deterministic=True).value
     )
     # check naming
     instru_str = (
@@ -61,8 +61,8 @@ def test_instrumentation() -> None:
         "positions=Array{Cd(0,4),Add,Int},transitions=[1. 1.]),"
         "b=Choice(choices=Tuple(0,1,2,3),weights=Array{(1,4),SoftmaxSampling})))"
     )
-    testing.printed_assert_equal(instru.name, instru_str)
-    testing.printed_assert_equal("blublu", instru.set_name("blublu").name)
+    assert instru.name == instru_str
+    assert instru.set_name("blublu").name == "blublu"
 
 
 def _false(value: tp.Any) -> bool:  # pylint: disable=unused-argument

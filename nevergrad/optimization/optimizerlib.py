@@ -2173,11 +2173,11 @@ class NGOptBase(base.Optimizer):
         self.noise_from_instrumentation = self.has_noise and descr.deterministic_function
         self.fully_continuous = descr.continuous
         all_params = paramhelpers.flatten_parameter(self.parametrization)
+        # figure out if there is any discretization layers
         int_layers = list(
             itertools.chain.from_iterable([_layering.Int.filter_from(x) for x in all_params.values()])
         )
         int_layers = [x for x in int_layers if x.arity is not None]  # only "Choice" instances for now
-        print(int_layers)
         self.has_discrete_not_softmax = any(
             not isinstance(lay, pchoice.SoftmaxSampling) for lay in int_layers
         )
