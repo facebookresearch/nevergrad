@@ -32,7 +32,7 @@ def test_instrumentation() -> None:
     data = instru2.spawn_child(new_value=((4, 3), dict(a=0, b=3))).get_standardized_data(reference=instru2)
     np.testing.assert_array_almost_equal(data, [4, -1.1503, 0, 0, 0, 0.5878], decimal=4)
     args, kwargs = instru.spawn_child().set_standardized_data(data, deterministic=True).value
-    testing.printed_assert_equal((args, kwargs), ((4.0, 3), {"a": 0, "b": 3}))
+    assert (args, kwargs) == ((4.0, 3), {"a": 0, "b": 3})
     assert "3),Dict(a=TransitionChoice(choices=Tuple(0,1,2,3)," in repr(
         instru
     ), f"Erroneous representation {instru}"
@@ -59,7 +59,7 @@ def test_instrumentation() -> None:
         "Instrumentation(Tuple(Scalar[sigma=Log{exp=2.0}],3),"
         "Dict(a=TransitionChoice(choices=Tuple(0,1,2,3),"
         "positions=Array{Cd(0,4),Add},transitions=[1. 1.]),"
-        "b=Choice(choices=Tuple(0,1,2,3),weights=Array{(1,4)})))"
+        "b=Choice(choices=Tuple(0,1,2,3),weights=Array{(1,4),SoftmaxSampling})))"
     )
     testing.printed_assert_equal(instru.name, instru_str)
     testing.printed_assert_equal("blublu", instru.set_name("blublu").name)

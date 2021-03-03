@@ -104,6 +104,6 @@ def test_softmax_layer() -> None:
     assert param.value.tolist() == [0, 2, 2, 0], "Same indices after resampling"
     param.value = [0, 1, 2, 0]  # type: ignore
     assert param.value.tolist() == [0, 1, 2, 0]
-    coeff = 0.6931
-    expected = [[coeff, 0, 0], [0, coeff, 0], [0, 0, coeff], [coeff, 0, 0]]
+    expected = np.zeros((4, 3))
+    expected[[0, 1, 2, 3], [0, 1, 2, 0]] = 0.6931
     np.testing.assert_array_almost_equal(param._value, expected, decimal=4)

@@ -31,16 +31,20 @@ class SampleLayer(_layering.Layered):
         self._cache: tp.Optional[np.ndarray] = None  # clear cache!
 
     def _layered_del_value(self) -> None:
+        print("removing cache")
         self._cache = None  # clear cache!
 
 
 class SoftmaxSampling(SampleLayer):
     def _layered_get_value(self) -> tp.Any:
+        print("getting value")
         if self._cache is None:
+            print("creating value")
             value = super()._layered_get_value()
             if value.ndim != 2 or value.shape[1] != self.arity:
                 raise ValueError(f"Dimension 1 should be the arity {self.arity}")
             encoder = discretization.Encoder(value, rng=self.random_state)
+            print("with deterministic", self.deterministic)
             self._cache = encoder.encode(deterministic=self.deterministic)
         return self._cache
 
@@ -196,14 +200,20 @@ class Choice(BaseChoice):
     ) -> None:
         lchoices = list(choices)
         rep = 1 if repetitions is None else repetitions
+        weights = Array(shape=(rep, len(lchoices)), mutable_sigma=False)
+        weights.add_layer(SoftmaxSampling(len(lchoices), deterministic=deterministic))
+        weights.heritage[BaseChoice.ChoiceTag] = BaseChoice.ChoiceTag(self.__class__, len(lchoices))
         super().__init__(
             choices=lchoices,
             repetitions=repetitions,
-            weights=Array(shape=(rep, len(lchoices)), mutable_sigma=False),
+            weights=weights,
         )
-        self.weights.heritage[BaseChoice.ChoiceTag] = BaseChoice.ChoiceTag(self.__class__, len(lchoices))
         self._deterministic = deterministic
         self._indices: tp.Optional[np.ndarray] = None
+
+    @property
+    def weights(self) -> Array:
+        return self["weights"]  # type: ignore
 
     def _get_name(self) -> str:
         name = super()._get_name()
@@ -214,53 +224,32 @@ class Choice(BaseChoice):
         return name
 
     @property
-    def indices(self) -> np.ndarray:  # delayed choice
+    def indices(self) -> np.ndarray:
         """Index of the chosen option"""
-        if self._indices is None:
-            self._draw(deterministic=self._deterministic)
-        assert self._indices is not None
-        return self._indices
-
-    @property
-    def weights(self) -> Array:
-        """The weights used to draw the value"""
-        return self["weights"]  # type: ignore
-
-    @property
-    def probabilities(self) -> np.ndarray:
-        """The probabilities used to draw the value"""
-        exp = np.exp(self.weights.value)
-        return exp / np.sum(exp)  # type: ignore
+        return self["weights"].value  # type: ignore
 
     def _layered_set_value(self, value: tp.Any) -> np.ndarray:
         indices = super()._layered_set_value(value)
-        self._indices = indices
         # force new probabilities
-        arity = self.weights.value.shape[1]
-        coeff = discretization.weight_for_reset(arity)
-        self.weights._value.fill(0.0)  # reset since there is no reference
-        out = np.array(self.weights._value, copy=True)  # just a zero matrix
-        out[np.arange(indices.size), indices] = coeff
-        self.weights.set_standardized_data(out.ravel(), deterministic=True)
+        self["weights"].value = indices
         return indices
-
-    def _draw(self, deterministic: bool = True) -> None:
-        encoder = discretization.Encoder(self.weights.value, rng=self.random_state)
-        self._indices = encoder.encode(deterministic=deterministic or self._deterministic)
 
     def _internal_set_standardized_data(
         self: C, data: np.ndarray, reference: C, deterministic: bool = False
     ) -> None:
+        softmax = self["weights"]._layers[-2]
+        assert isinstance(softmax, SoftmaxSampling)
+        softmax.deterministic = deterministic or self._deterministic
         super()._internal_set_standardized_data(data, reference=reference, deterministic=deterministic)
-        self._draw(deterministic=deterministic)
+        # pylint: disable=pointless-statement
+        self.indices  # make sure to draw
+        softmax.deterministic = self._deterministic
 
     def mutate(self) -> None:
         # force random_state sync
         self.random_state  # pylint: disable=pointless-statement
-        self.weights.mutate()
-        self._draw(deterministic=self._deterministic)
-        indices = set(self.indices)
-        for ind in indices:
+        self["weights"].mutate()
+        for ind in self.indices:
             self.choices[ind].mutate()
 
 
