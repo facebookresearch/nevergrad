@@ -230,7 +230,7 @@ class Int(Layered, Filterable):
     def _layered_get_value(self) -> np.ndarray:
         bounds = self._layers[0].bounds  # type: ignore
         out = np.round(super()._layered_get_value()).astype(int)
-        # make sure rounding does not go to the bounds
+        # make sure rounding does not reach beyond the bounds
         if bounds[0] is not None:
             out = np.maximum(int(np.round(bounds[0] + 0.5)), out)
         if bounds[1] is not None:
