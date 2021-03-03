@@ -35,7 +35,7 @@ class Layered:
     Layers can be added and will be ordered depending on their level
     """
 
-    _LAYER_LEVEL = Level.OPERATION
+    _LAYER_LEVEL = Level.OPERATION  # this provides an order for the layers
 
     def __init__(self) -> None:
         self._layers = [self]

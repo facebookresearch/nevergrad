@@ -296,6 +296,7 @@ class TransitionChoice(BaseChoice):
         choices = list(choices)
         positions = Array(init=len(choices) / 2.0 * np.ones((repetitions if repetitions is not None else 1,)))
         positions.set_bounds(0, len(choices), method="gaussian")
+        positions = positions - 0.5
         positions.heritage[BaseChoice.ChoiceTag] = BaseChoice.ChoiceTag(self.__class__, len(choices))
         super().__init__(
             choices=choices,
@@ -307,7 +308,8 @@ class TransitionChoice(BaseChoice):
 
     @property
     def indices(self) -> np.ndarray:
-        return np.minimum(len(self) - 1e-9, self.positions.value).astype(int)  # type: ignore
+        # return np.minimum(len(self) - 1e-9, self.positions.value).astype(int)  # type: ignore
+        return np.round(np.clip(self.positions.value, 0, len(self) - 1)).astype(int)  # type: ignore
 
     def _layered_set_value(self, value: tp.Any) -> np.ndarray:
         indices = super()._layered_set_value(value)  # only one value for this class
@@ -315,7 +317,7 @@ class TransitionChoice(BaseChoice):
         return indices
 
     def _set_index(self, indices: np.ndarray) -> None:
-        self.positions.value = indices + 0.5
+        self.positions.value = indices
 
     @property
     def transitions(self) -> Array:

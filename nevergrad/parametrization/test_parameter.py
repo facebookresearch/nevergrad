@@ -188,7 +188,7 @@ def check_parameter_freezable(param: par.Parameter) -> None:
         ),
         (
             par.TransitionChoice([1, 12]),
-            "TransitionChoice(choices=Tuple(1,12),positions=Array{Cd(0,2)},transitions=[1. 1.])",
+            "TransitionChoice(choices=Tuple(1,12),positions=Array{Cd(0,2),Add},transitions=[1. 1.])",
         ),
     ],
 )
@@ -372,7 +372,7 @@ def test_transition_choice_repetitions() -> None:
     assert len(choice) == 4
     assert choice.value == (2, 2)
     choice.value = (3, 1)
-    np.testing.assert_almost_equal(choice.positions.value, [3.5, 1.5], decimal=3)
+    np.testing.assert_almost_equal(choice.positions.value, [3, 1], decimal=3)
     choice.mutate()
     assert choice.value == (3, 0)
 
