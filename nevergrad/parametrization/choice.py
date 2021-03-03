@@ -2,7 +2,6 @@
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
-import warnings
 import numpy as np
 import nevergrad.common.typing as tp
 from . import discretization
@@ -45,13 +44,14 @@ class BaseChoice(container.Container):
     @property
     def index(self) -> int:  # delayed choice
         """Index of the chosen option"""
-        assert self.indices.size == 1
-        return int(self.indices[0])
+        inds = self.indices.value
+        assert inds.size == 1
+        return int(inds[0])
 
     @property
-    def indices(self) -> np.ndarray:
-        """Indices of the chosen options"""
-        raise NotImplementedError  # TODO remove index?
+    def indices(self) -> Array:
+        """Array of indices of the chosen option"""
+        return self["indices"]  # type: ignore
 
     @property
     def choices(self) -> container.Tuple:
@@ -61,9 +61,9 @@ class BaseChoice(container.Container):
     def _layered_get_value(self) -> tp.Any:
         if self._repetitions is None:
             return core.as_parameter(self.choices[self.index]).value
-        return tuple(core.as_parameter(self.choices[ind]).value for ind in self.indices)
+        return tuple(core.as_parameter(self.choices[ind]).value for ind in self.indices.value)
 
-    def _layered_set_value(self, value: tp.List[tp.Any]) -> np.ndarray:
+    def _layered_set_value(self, value: tp.List[tp.Any]) -> None:
         """Must be adapted to each class
         This handles a list of values, not just one
         """  # TODO this is currenlty very messy, may need some improvement
@@ -81,11 +81,11 @@ class BaseChoice(container.Container):
                     pass
             if indices[i] == -1:
                 raise ValueError(f"Could not figure out where to put value {value}")
-        return indices
+        self.indices.value = indices
 
     def get_value_hash(self) -> tp.Hashable:
         hashes: tp.List[tp.Hashable] = []
-        for ind in self.indices:
+        for ind in self.indices.value:
             c = self.choices[int(ind)]
             const = isinstance(c, core.Constant) or not isinstance(c, core.Parameter)
             hashes.append(int(ind) if const else (int(ind), c.get_value_hash()))
@@ -135,19 +135,15 @@ class Choice(BaseChoice):
     ) -> None:
         lchoices = list(choices)
         rep = 1 if repetitions is None else repetitions
-        weights = Array(shape=(rep, len(lchoices)), mutable_sigma=False)
-        weights.add_layer(_datalayers.SoftmaxSampling(len(lchoices), deterministic=deterministic))
+        indices = Array(shape=(rep, len(lchoices)), mutable_sigma=False)
+        indices.add_layer(_datalayers.SoftmaxSampling(len(lchoices), deterministic=deterministic))
         super().__init__(
             choices=lchoices,
             repetitions=repetitions,
-            weights=weights,
+            indices=indices,
         )
         self._deterministic = deterministic
         self._indices: tp.Optional[np.ndarray] = None
-
-    @property
-    def weights(self) -> Array:
-        return self["weights"]  # type: ignore
 
     def _get_name(self) -> str:
         name = super()._get_name()
@@ -157,21 +153,10 @@ class Choice(BaseChoice):
             name = cls + "{det}" + name[len(cls) :]
         return name
 
-    @property
-    def indices(self) -> np.ndarray:
-        """Index of the chosen option"""
-        return self["weights"].value  # type: ignore
-
-    def _layered_set_value(self, value: tp.Any) -> np.ndarray:
-        indices = super()._layered_set_value(value)
-        # force new probabilities
-        self["weights"].value = indices
-        return indices
-
     def _internal_set_standardized_data(
         self: C, data: np.ndarray, reference: C, deterministic: bool = False
     ) -> None:
-        softmax = self["weights"]._layers[-2]
+        softmax = self.indices._layers[-2]
         assert isinstance(softmax, _datalayers.SoftmaxSampling)
         softmax.deterministic = deterministic or self._deterministic
         super()._internal_set_standardized_data(data, reference=reference, deterministic=deterministic)
@@ -182,8 +167,8 @@ class Choice(BaseChoice):
     def mutate(self) -> None:
         # force random_state sync
         self.random_state  # pylint: disable=pointless-statement
-        self["weights"].mutate()
-        for ind in self.indices:
+        self.indices.mutate()
+        for ind in self.indices.value:
             self.choices[ind].mutate()
 
 
@@ -217,49 +202,23 @@ class TransitionChoice(BaseChoice):
         repetitions: tp.Optional[int] = None,
     ) -> None:
         choices = list(choices)
-        positions = Array(init=len(choices) / 2.0 * np.ones((repetitions if repetitions is not None else 1,)))
-        positions.set_bounds(0, len(choices), method="gaussian")
-        positions = positions - 0.5
+        indices = Array(init=len(choices) / 2.0 * np.ones((repetitions if repetitions is not None else 1,)))
+        indices.set_bounds(0, len(choices), method="gaussian")
+        indices = indices - 0.5
         intcasting = _datalayers.Int()
         intcasting.arity = len(choices)
-        positions.add_layer(intcasting)
+        indices.add_layer(intcasting)
         super().__init__(
             choices=choices,
             repetitions=repetitions,
-            positions=positions,
+            indices=indices,
             transitions=transitions if isinstance(transitions, Array) else np.array(transitions, copy=False),
         )
         assert self.transitions.value.ndim == 1
 
     @property
-    def indices(self) -> np.ndarray:
-        return np.clip(self.positions.value, 0, len(self) - 1)  # type: ignore
-
-    def _layered_set_value(self, value: tp.Any) -> np.ndarray:
-        indices = super()._layered_set_value(value)  # only one value for this class
-        self._set_index(indices)
-        return indices
-
-    def _set_index(self, indices: np.ndarray) -> None:
-        self.positions.value = indices
-
-    @property
     def transitions(self) -> Array:
-        """The weights used to draw the step to the next value"""
         return self["transitions"]  # type: ignore
-
-    @property
-    def position(self) -> Array:
-        """The continuous version of the index (used when working with standardized space)"""
-        warnings.warn(
-            "position is replaced by positions in order to allow for repetitions", DeprecationWarning
-        )
-        return self.positions
-
-    @property
-    def positions(self) -> Array:
-        """The continuous version of the index (used when working with standardized space)"""
-        return self["positions"]  # type: ignore
 
     def mutate(self) -> None:
         # force random_state sync
@@ -268,12 +227,12 @@ class TransitionChoice(BaseChoice):
         transitions.mutate()
         rep = 1 if self._repetitions is None else self._repetitions
         #
-        enc = discretization.Encoder(np.ones((rep, 1)) * np.log(self.transitions.value), self.random_state)
+        enc = discretization.Encoder(np.ones((rep, 1)) * np.log(self["transitions"].value), self.random_state)
         moves = enc.encode()
         signs = self.random_state.choice([-1, 1], size=rep)
-        new_index = np.clip(self.indices + signs * moves, 0, len(self) - 1)
-        self._set_index(new_index.ravel())
+        new_index = np.clip(self.indices.value + signs * moves, 0, len(self) - 1)
+        self.indices.value = new_index
         # mutate corresponding parameter
-        indices = set(self.indices)
+        indices = set(self.indices.value)
         for ind in indices:
             self.choices[ind].mutate()

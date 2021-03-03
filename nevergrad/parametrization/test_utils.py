@@ -49,17 +49,17 @@ def test_command_function() -> None:
     v_tuple_=(True, p.Tuple(p.Scalar(), p.Array(shape=(2,))), ("0", "1")),
     instrumentation=(False, p.Instrumentation(p.Scalar(), y=p.Scalar()), ("", "0", "y")),
     instrumentation_v=(True, p.Instrumentation(p.Scalar(), y=p.Scalar()), ("0", "y")),
-    choice=(False, p.Choice([p.Scalar(), "blublu"]), ("", "choices", "choices.0", "choices.1", "weights")),
-    v_choice=(True, p.Choice([p.Scalar(), "blublu"]), ("", "choices.0", "weights")),
+    choice=(False, p.Choice([p.Scalar(), "blublu"]), ("", "choices", "choices.0", "choices.1", "indices")),
+    v_choice=(True, p.Choice([p.Scalar(), "blublu"]), ("", "choices.0", "indices")),
     tuple_choice_dict=(
         False,
         p.Tuple(p.Choice([p.Dict(x=p.Scalar(), y=12), p.Scalar()])),
-        ("", "0", "0.choices", "0.choices.0", "0.choices.0.x", "0.choices.0.y", "0.choices.1", "0.weights"),
+        ("", "0", "0.choices", "0.choices.0", "0.choices.0.x", "0.choices.0.y", "0.choices.1", "0.indices"),
     ),
     v_tuple_choice_dict=(
         True,
         p.Tuple(p.Choice([p.Dict(x=p.Scalar(), y=12), p.Scalar()])),
-        ("0", "0.choices.0.x", "0.choices.1", "0.weights"),
+        ("0", "0.choices.0.x", "0.choices.1", "0.indices"),
     ),
 )
 def test_flatten_parameter(no_container: bool, param: p.Parameter, keys: tp.Iterable[str]) -> None:
@@ -72,7 +72,7 @@ def test_flatten_parameter(no_container: bool, param: p.Parameter, keys: tp.Iter
     # that everything works as intended
     v_tuple_choice_dict=(
         p.Tuple(p.Choice([p.Dict(x=p.Scalar(), y=12), p.Scalar()])),
-        ["0.choices.0.x", "0.choices.1", "0.weights"],
+        ["0.choices.0.x", "0.choices.1", "0.indices"],
     ),
     multiple=(
         p.Instrumentation(
@@ -81,7 +81,7 @@ def test_flatten_parameter(no_container: bool, param: p.Parameter, keys: tp.Iter
             z=p.Array(init=[12, 12]).set_bounds(lower=12, upper=15),
             y=p.Array(init=[1, 1]),
         ),
-        ["0", "x.choices.1", "x.weights", "y", "z"],
+        ["0", "x.choices.1", "x.indices", "y", "z"],
     ),
 )
 def test_split_as_data_parameters(param: p.Parameter, names: tp.List[str]) -> None:
@@ -90,15 +90,15 @@ def test_split_as_data_parameters(param: p.Parameter, names: tp.List[str]) -> No
 
 
 @testing.parametrized(
-    order_0=(0, ("", "choices.0.x", "choices.1", "weights")),
-    order_1=(1, ("", "choices.0.x", "choices.1", "weights", "choices.1#sigma", "choices.0.x#sigma")),
+    order_0=(0, ("", "choices.0.x", "choices.1", "indices")),
+    order_1=(1, ("", "choices.0.x", "choices.1", "indices", "choices.1#sigma", "choices.0.x#sigma")),
     order_2=(
         2,
         (
             "",
             "choices.0.x",
             "choices.1",
-            "weights",
+            "indices",
             "choices.1#sigma",
             "choices.0.x#sigma",
             "choices.1#sigma#sigma",
@@ -110,7 +110,7 @@ def test_split_as_data_parameters(param: p.Parameter, names: tp.List[str]) -> No
             "",
             "choices.0.x",
             "choices.1",
-            "weights",
+            "indices",
             "choices.1#sigma",
             "choices.0.x#sigma",
             "choices.1#sigma#sigma",

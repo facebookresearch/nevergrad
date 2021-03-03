@@ -57,8 +57,8 @@ def test_instrumentation() -> None:
     instru_str = (
         "Instrumentation(Tuple(Scalar[sigma=Log{exp=2.0}],3),"
         "Dict(a=TransitionChoice(choices=Tuple(0,1,2,3),"
-        "positions=Array{Cd(0,4),Add,Int},transitions=[1. 1.]),"
-        "b=Choice(choices=Tuple(0,1,2,3),weights=Array{(1,4),SoftmaxSampling})))"
+        "indices=Array{Cd(0,4),Add,Int},transitions=[1. 1.]),"
+        "b=Choice(choices=Tuple(0,1,2,3),indices=Array{(1,4),SoftmaxSampling})))"
     )
     assert instru.name == instru_str
     assert instru.set_name("blublu").name == "blublu"

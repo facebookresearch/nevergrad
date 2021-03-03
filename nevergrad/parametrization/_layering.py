@@ -228,7 +228,14 @@ class Int(Layered, Filterable):
         self._cache: tp.Optional[np.ndarray] = None
 
     def _layered_get_value(self) -> np.ndarray:
-        return np.round(super()._layered_get_value()).astype(int)  # type: ignore
+        bounds = self._layers[0].bounds  # type: ignore
+        out = np.round(super()._layered_get_value()).astype(int)
+        # make sure rounding does not go to the bounds
+        if bounds[0] is not None:
+            out = np.maximum(bounds[0], out)
+        if bounds[1] is not None:
+            out = np.minimum(bounds[1], out)
+        return out  # type: ignore
 
     def _layered_del_value(self) -> None:
         self._cache = None  # clear cache!
