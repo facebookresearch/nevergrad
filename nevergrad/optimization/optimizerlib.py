@@ -1112,6 +1112,7 @@ class SplitOptimizer(base.Optimizer):
         if non_deterministic_descriptor:
             for param in subparams:
                 param.descriptors.deterministic_function = False
+        print(subparams, [x.dimension for x in subparams])
         # synchronize random state and create optimizers
         self.optims: tp.List[base.Optimizer] = []
         mono, multi = monovariate_optimizer, multivariate_optimizer

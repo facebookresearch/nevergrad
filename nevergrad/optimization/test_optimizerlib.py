@@ -640,8 +640,8 @@ def test_bo_ordering() -> None:
         ("NGOpt8", 3, 1, False, 100, ["OnePlusOne", "OnePlusOne"]),
         ("NGOpt8", 3, 1, False, 200, ["SQP", "SQP"]),
         ("NGOpt8", 3, 1, True, 1000, ["SQP", "monovariate", "monovariate"]),
-        (None, 3, 1, False, 1000, ["CMA", "CMA"]),
-        (None, 3, 20, False, 1000, ["MetaModel", "MetaModel"]),
+        (None, 3, 1, False, 1000, ["CMA", "OnePlusOne"]),
+        (None, 3, 20, False, 1000, ["MetaModel", "OnePlusOne"]),
     ],
 )
 def test_ngo_split_optimizer(
@@ -664,7 +664,7 @@ def test_ngo_split_optimizer(
         if fake_learning
         else ng.p.Choice(["const", ng.p.Array(init=list(range(dimension)))])
     )
-    opt: tp.Union[base.ConfiguredOptimizer, tp.Type[base.Optimizer]] = (
+    opt: base.OptCls = (
         xpvariants.MetaNGOpt10
         if name is None
         else (optlib.ConfSplitOptimizer(multivariate_optimizer=optlib.registry[name]))

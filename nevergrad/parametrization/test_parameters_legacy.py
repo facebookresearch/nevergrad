@@ -10,7 +10,6 @@ Overall, they may be overly complicated because they were converted from the old
 import typing as tp
 import numpy as np
 import pytest
-from nevergrad.common import testing
 from . import parameter as p
 
 
