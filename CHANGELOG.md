@@ -10,7 +10,9 @@
   `ng.p.Array` (and not an `np.ndarray`) which contains the selected indices (or index) of the `Choice`. The sampling is
   performed by specific "layers" that are applied to `Data` parameters [#1065](https://github.com/facebookresearch/nevergrad/pull/1065).
 - `Parameter.set_standardized_space` does not take a `deterministic` parameter anymore. This is replaced by the more
-  general `with ng.p.helpers.determistic_sampling(parameter)` context  [#1068](https://github.com/facebookresearch/nevergrad/pull/1068)
+  general `with ng.p.helpers.determistic_sampling(parameter)` context. One-shot algorithms are also updated to choose
+  options of `Choice` parameters deterministically, since it is a simpler behavior to expect compared to sampling the
+  standardized space then sampling the option shochastically from there. [#1068](https://github.com/facebookresearch/nevergrad/pull/1068)
 
 ### Important changes
 
