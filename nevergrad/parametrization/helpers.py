@@ -77,6 +77,13 @@ def flatten_parameter(
 
 @contextlib.contextmanager
 def deterministic_sampling(parameter: core.Parameter) -> tp.Iterator[None]:
+    """Temporarily change the behavior of a Parameter to become deterministic
+
+    Parameters
+    ----------
+    parameter: Parameter
+        the parameter which must behave deterministically during the "with" context
+    """
     all_params = flatten_parameter(parameter)
     int_layers = list(
         itertools.chain.from_iterable([_layering.Int.filter_from(x) for x in all_params.values()])
@@ -91,9 +98,8 @@ def deterministic_sampling(parameter: core.Parameter) -> tp.Iterator[None]:
     for lay, det in zip(int_layers, deterministic):
         lay.deterministic = det
 
-    # pylint: disable=too-many-locals
 
-
+# pylint: disable=too-many-locals
 def split_as_data_parameters(
     parameter: core.Parameter,
 ) -> tp.List[tp.Tuple[str, pdata.Data]]:
