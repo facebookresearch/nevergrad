@@ -10,7 +10,6 @@ Overall, they may be overly complicated because they were converted from the old
 import typing as tp
 import numpy as np
 import pytest
-from nevergrad.common import testing
 from . import parameter as p
 
 
@@ -32,7 +31,7 @@ def test_instrumentation() -> None:
     data = instru2.spawn_child(new_value=((4, 3), dict(a=0, b=3))).get_standardized_data(reference=instru2)
     np.testing.assert_array_almost_equal(data, [4, -1.1503, 0, 0, 0, 0.5878], decimal=4)
     args, kwargs = instru.spawn_child().set_standardized_data(data, deterministic=True).value
-    testing.printed_assert_equal((args, kwargs), ((4.0, 3), {"a": 0, "b": 3}))
+    assert (args, kwargs) == ((4.0, 3), {"a": 0, "b": 3})
     assert "3),Dict(a=TransitionChoice(choices=Tuple(0,1,2,3)," in repr(
         instru
     ), f"Erroneous representation {instru}"
@@ -50,19 +49,19 @@ def test_instrumentation() -> None:
     # instru2 = mvar.Instrumentation(*instru.args, **instru.kwargs)  # TODO: OUCH SILENT FAIL
     instru2.copy()
     data = np.random.normal(0, 1, size=6)
-    testing.printed_assert_equal(
-        instru2.spawn_child().set_standardized_data(data, deterministic=True).value,
-        instru.spawn_child().set_standardized_data(data, deterministic=True).value,
+    assert (
+        instru2.spawn_child().set_standardized_data(data, deterministic=True).value
+        == instru.spawn_child().set_standardized_data(data, deterministic=True).value
     )
     # check naming
     instru_str = (
         "Instrumentation(Tuple(Scalar[sigma=Log{exp=2.0}],3),"
         "Dict(a=TransitionChoice(choices=Tuple(0,1,2,3),"
-        "positions=Array{Cd(0,4)},transitions=[1. 1.]),"
-        "b=Choice(choices=Tuple(0,1,2,3),weights=Array{(1,4)})))"
+        "indices=Array{Cd(0,4),Add,Int},transitions=[1. 1.]),"
+        "b=Choice(choices=Tuple(0,1,2,3),indices=Array{(1,4),SoftmaxSampling})))"
     )
-    testing.printed_assert_equal(instru.name, instru_str)
-    testing.printed_assert_equal("blublu", instru.set_name("blublu").name)
+    assert instru.name == instru_str
+    assert instru.set_name("blublu").name == "blublu"
 
 
 def _false(value: tp.Any) -> bool:  # pylint: disable=unused-argument

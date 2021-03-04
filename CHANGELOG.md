@@ -6,6 +6,9 @@
 
 - `copy()` method of a `Parameter` does not change the parameters's random state anymore (it used to reset it to `None` [#1048](https://github.com/facebookresearch/nevergrad/pull/1048)
 - `MultiobjectiveFunction` does not exist anymore  [#1034](https://github.com/facebookresearch/nevergrad/pull/1034).
+- `Choice` and `TransitionChoice` have some of their API changed for uniformization. In particular, `indices` is now an
+  `ng.p.Array` (and not an `np.ndarray`) which contains the selected indices (or index) of the `Choice`. The sampling is
+  performed by specific "layers" that are applied to `Data` parameters [#1065](https://github.com/facebookresearch/nevergrad/pull/1065).
 
 ### Important changes
 

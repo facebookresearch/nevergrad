@@ -90,4 +90,34 @@ def test_clipping_standardized_data() -> None:
 
 def test_bound_estimation() -> None:
     param = (_datalayers.Bound(-10, 10)(ng.p.Scalar()) + 3) * 5
-    assert param.bounds == (-35, 65)
+    assert param.bounds == (-35, 65)  # type: ignore
+
+
+def test_softmax_layer() -> None:
+    param = ng.p.Array(shape=(4, 3))
+    param.random_state.seed(12)
+    param.add_layer(_datalayers.SoftmaxSampling(arity=3))
+    assert param.value.tolist() == [0, 2, 0, 1]
+    assert param.value.tolist() == [0, 2, 0, 1], "Different indices at the second call"
+    del param.value
+    assert param.value.tolist() == [0, 2, 2, 0], "Same indices after resampling"
+    param.value = [0, 1, 2, 0]  # type: ignore
+    assert param.value.tolist() == [0, 1, 2, 0]
+    expected = np.zeros((4, 3))
+    expected[[0, 1, 2, 3], [0, 1, 2, 0]] = 0.6931
+    np.testing.assert_array_almost_equal(param._value, expected, decimal=4)
+
+
+def test_deterministic_softmax_layer() -> None:
+    param = ng.p.Array(shape=(1, 100))
+    param.add_layer(_datalayers.SoftmaxSampling(arity=100, deterministic=True))
+    param._value[0, 12] = 1
+    assert param.value.tolist() == [12]
+
+
+def test_bounded_int_casting() -> None:
+    param = _datalayers.Bound(-10.9, 10.9, method="clipping")(ng.p.Scalar())
+    param.add_layer(_datalayers.Int())
+    for move, val in [(2.4, 2), (0.2, 3), (42, 10), (-42, -10)]:
+        param.set_standardized_data([move])
+        assert param.value == val, f"Wrong value after move {move}"

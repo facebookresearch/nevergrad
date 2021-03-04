@@ -181,14 +181,14 @@ def check_parameter_freezable(param: par.Parameter) -> None:
             par.Instrumentation(par.Array(shape=(2,)), string="blublu", truc="plop"),
             "Instrumentation(Tuple(Array{(2,)}),Dict(string=blublu,truc=plop))",
         ),
-        (par.Choice([1, 12]), "Choice(choices=Tuple(1,12),weights=Array{(1,2)})"),
+        (par.Choice([1, 12]), "Choice(choices=Tuple(1,12),indices=Array{(1,2),SoftmaxSampling})"),
         (
             par.Choice([1, 12], deterministic=True),
-            "Choice{det}(choices=Tuple(1,12),weights=Array{(1,2)})",
+            "Choice{det}(choices=Tuple(1,12),indices=Array{(1,2),SoftmaxSampling})",
         ),
         (
             par.TransitionChoice([1, 12]),
-            "TransitionChoice(choices=Tuple(1,12),positions=Array{Cd(0,2)},transitions=[1. 1.])",
+            "TransitionChoice(choices=Tuple(1,12),indices=Array{Cd(0,2),Add,Int},transitions=[1. 1.])",
         ),
     ],
 )
@@ -360,9 +360,7 @@ def test_choice_repetitions() -> None:
     assert len(choice) == 4
     assert choice.value == (0, 2)
     choice.value = (3, 1)
-    expected = np.zeros((2, 4))
-    expected[[0, 1], [3, 1]] = 0.588
-    np.testing.assert_almost_equal(choice.weights.value, expected, decimal=3)
+    assert choice.indices.value.tolist() == [3, 1]
     choice.mutate()
 
 
@@ -372,7 +370,7 @@ def test_transition_choice_repetitions() -> None:
     assert len(choice) == 4
     assert choice.value == (2, 2)
     choice.value = (3, 1)
-    np.testing.assert_almost_equal(choice.positions.value, [3.5, 1.5], decimal=3)
+    np.testing.assert_almost_equal(choice.indices.value, [3, 1], decimal=3)
     choice.mutate()
     assert choice.value == (3, 0)
 

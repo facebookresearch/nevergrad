@@ -12,6 +12,7 @@ import nevergrad.common.typing as tp
 
 
 L = tp.TypeVar("L", bound="Layered")
+F = tp.TypeVar("F", bound="Filterable")
 X = tp.TypeVar("X")
 
 
@@ -22,8 +23,9 @@ class Level(Enum):
     OPERATION = 10
 
     # final
-    ARRAY_CASTING = 800
-    INTEGER_CASTING = 900
+    INTEGER_CASTING = 800
+    ARRAY_CASTING = 900
+    SCALAR_CASTING = 950
     CONSTRAINT = 1000  # must be the last layer
 
 
@@ -34,7 +36,7 @@ class Layered:
     Layers can be added and will be ordered depending on their level
     """
 
-    _LAYER_LEVEL = Level.OPERATION
+    _LAYER_LEVEL = Level.OPERATION  # this provides an order for the layers
 
     def __init__(self) -> None:
         self._layers = [self]
@@ -91,6 +93,10 @@ class Layered:
 
     def _layered_sample(self) -> "Layered":
         return self._call_deeper("_layered_sample")  # type: ignore
+
+    @property
+    def random_state(self) -> np.random.RandomState:
+        return self._layers[0].random_state  # use the root random state
 
     def copy(self: L) -> L:
         """Creates a new unattached layer with the same behavior"""
@@ -177,7 +183,7 @@ class ValueProperty(tp.Generic[X]):
 class _ScalarCasting(Layered):
     """Cast Array as a scalar"""
 
-    _LAYER_LEVEL = Level.INTEGER_CASTING
+    _LAYER_LEVEL = Level.SCALAR_CASTING
 
     def _layered_get_value(self) -> float:
         out = super()._layered_get_value()  # pulls from previous layer
@@ -204,10 +210,32 @@ class ArrayCasting(Layered):
         super()._layered_set_value(np.asarray(value))
 
 
-class Int(Layered):
+class Filterable:
+    @classmethod
+    def filter_from(cls: tp.Type[F], parameter: Layered) -> tp.List[F]:
+        return [x for x in parameter._layers if isinstance(x, cls)]  # type: ignore
+
+
+class Int(Layered, Filterable):
     """Cast Data as integer (or integer array)"""
 
-    _LAYER_LEVEL = Level.OPERATION
+    _LAYER_LEVEL = Level.INTEGER_CASTING
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.arity: tp.Optional[int] = None
+        self.deterministic = True
+        self._cache: tp.Optional[np.ndarray] = None
 
     def _layered_get_value(self) -> np.ndarray:
-        return np.round(super()._layered_get_value()).astype(int)  # type: ignore
+        bounds = self._layers[0].bounds  # type: ignore
+        out = np.round(super()._layered_get_value()).astype(int)
+        # make sure rounding does not reach beyond the bounds
+        if bounds[0] is not None:
+            out = np.maximum(int(np.round(bounds[0] + 0.5)), out)
+        if bounds[1] is not None:
+            out = np.minimum(int(np.round(bounds[1] - 0.5)), out)
+        return out  # type: ignore
+
+    def _layered_del_value(self) -> None:
+        self._cache = None  # clear cache!

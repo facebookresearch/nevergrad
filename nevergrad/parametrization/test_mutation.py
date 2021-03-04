@@ -84,7 +84,7 @@ def test_tuned_translation() -> None:
     expected = np.array([3, 0, 1, 2])[:, None].dot(np.ones((1, 2)))
     np.testing.assert_array_equal(out, expected)
     roll.mutate()
-    assert np.sum(np.abs(roll.shift.weights.value)) > 0
+    assert np.sum(np.abs(roll.shift.indices._value)) > 0
 
 
 @testing.parametrized(
