@@ -156,13 +156,15 @@ class Choice(BaseChoice):
     def _internal_set_standardized_data(
         self: C, data: np.ndarray, reference: C, deterministic: bool = False
     ) -> None:
-        softmax = self.indices._layers[-2]
-        assert isinstance(softmax, _datalayers.SoftmaxSampling)
-        softmax.deterministic = deterministic or self._deterministic
-        super()._internal_set_standardized_data(data, reference=reference, deterministic=deterministic)
-        # pylint: disable=pointless-statement
-        self.indices  # make sure to draw
-        softmax.deterministic = self._deterministic
+        if deterministic:
+            from . import helpers
+
+            with helpers.deterministic_sampling(self):
+                super()._internal_set_standardized_data(
+                    data, reference=reference, deterministic=deterministic
+                )
+        else:
+            super()._internal_set_standardized_data(data, reference=reference)
 
     def mutate(self) -> None:
         # force random_state sync
