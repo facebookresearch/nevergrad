@@ -353,8 +353,6 @@ class BoundScaler:
     This is used for samplers.
     Code of parametrization and/or this helper should definitely be
     updated to make it simpler and more robust
-
-    It warns in
     """
 
     def __init__(self, reference: p.Parameter) -> None:

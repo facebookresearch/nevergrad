@@ -7,6 +7,7 @@ import numpy as np
 from scipy import stats
 from scipy.spatial import ConvexHull  # pylint: disable=no-name-in-module
 import nevergrad.common.typing as tp
+from nevergrad.parametrization import parameter as p
 from . import sequences
 from . import base
 from .base import IntOrParameter
@@ -86,6 +87,14 @@ def avg_of_k_best(archive: utils.Archive[utils.MultiValue], method: str = "dimfo
 class OneShotOptimizer(base.Optimizer):
     # pylint: disable=abstract-method
     one_shot = True
+
+    def _internal_ask_candidate(self) -> p.Parameter:
+        out = self.parametrization.spawn_child()
+        with p.helpers.deterministic_sampling(out):
+            # the values will be sampled deterministically since there is no reason not to
+            # with one shot algorithms
+            out.set_standardized_data(self._internal_ask())
+        return out
 
 
 # Recentering or center-based counterparts of the original Nevergrad oneshot optimizers:
