@@ -30,3 +30,6 @@ from . import mutation
 # choices
 from .choice import Choice as Choice
 from .choice import TransitionChoice as TransitionChoice
+
+# other
+from . import helpers as helpers

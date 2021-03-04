@@ -16,7 +16,6 @@ from nevergrad.common import errors
 from nevergrad.parametrization import parameter as p
 from nevergrad.parametrization import transforms
 from nevergrad.parametrization import discretization
-from nevergrad.parametrization import helpers as paramhelpers
 from nevergrad.parametrization import _layering
 from nevergrad.parametrization import _datalayers
 from . import base
@@ -78,7 +77,7 @@ class _OnePlusOne(base.Optimizer):
         self._sigma: float = 1
         self._previous_best_loss = float("inf")
         self.use_pareto = use_pareto
-        all_params = paramhelpers.flatten_parameter(self.parametrization)
+        all_params = p.helpers.flatten_parameter(self.parametrization)
         arity = max(
             len(param.choices) if isinstance(param, p.TransitionChoice) else 500
             for param in all_params.values()
@@ -675,9 +674,10 @@ class _TBPSA(base.Optimizer):
             return self.current_bests["optimistic"].parameter
         else:
             # This is NOT the naive version. We deal with noise.
-            return self.parametrization.spawn_child().set_standardized_data(
-                self.current_center, deterministic=True
-            )
+            out = self.parametrization.spawn_child()
+            with p.helpers.deterministic_sampling(out):
+                out.set_standardized_data(self.current_center)
+            return out
 
     def _internal_ask_candidate(self) -> p.Parameter:
         mutated_sigma = self.sigma * np.exp(self._rng.normal(0, 1) / np.sqrt(self.dimension))
@@ -1093,7 +1093,7 @@ class SplitOptimizer(base.Optimizer):
         elif num_optims is None:
             # if no num_vars and no num_optims, try to guess how to split. Otherwise, just assume 2.
             if isinstance(parametrization, p.Parameter):
-                subparams = [x[1] for x in paramhelpers.split_as_data_parameters(parametrization)]
+                subparams = [x[1] for x in p.helpers.split_as_data_parameters(parametrization)]
                 if len(subparams) == 1:
                     subparams.clear()
                 num_optims = len(subparams)
@@ -1944,7 +1944,7 @@ class cGA(base.Optimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if arity is None:
-            all_params = paramhelpers.flatten_parameter(self.parametrization)
+            all_params = p.helpers.flatten_parameter(self.parametrization)
             arity = max(
                 len(param.choices) if isinstance(param, p.TransitionChoice) else 500
                 for param in all_params.values()
@@ -2041,9 +2041,10 @@ class _EMNA(base.Optimizer):
             return self.current_bests["optimistic"].parameter
         else:
             # This is NOT the naive version. We deal with noise.
-            return self.parametrization.spawn_child().set_standardized_data(
-                self.current_center, deterministic=True
-            )
+            out = self.parametrization.spawn_child()
+            with p.helpers.deterministic_sampling(out):
+                out.set_standardized_data(self.current_center)
+            return out
 
     def _internal_ask_candidate(self) -> p.Parameter:
         sigma_tmp = self.sigma
@@ -2173,7 +2174,7 @@ class NGOptBase(base.Optimizer):
         # The noise coming from discrete variables goes to 0.
         self.noise_from_instrumentation = self.has_noise and descr.deterministic_function
         self.fully_continuous = descr.continuous
-        all_params = paramhelpers.flatten_parameter(self.parametrization)
+        all_params = p.helpers.flatten_parameter(self.parametrization)
         # figure out if there is any discretization layers
         int_layers = list(
             itertools.chain.from_iterable([_layering.Int.filter_from(x) for x in all_params.values()])

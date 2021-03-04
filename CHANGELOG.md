@@ -9,6 +9,8 @@
 - `Choice` and `TransitionChoice` have some of their API changed for uniformization. In particular, `indices` is now an
   `ng.p.Array` (and not an `np.ndarray`) which contains the selected indices (or index) of the `Choice`. The sampling is
   performed by specific "layers" that are applied to `Data` parameters [#1065](https://github.com/facebookresearch/nevergrad/pull/1065).
+- `Parameter.set_standardized_space` does not take a `determninistic` parameter anymore. This is replaced by the more
+  general `with ng.p.helpers.determistic_sampling(parameter)` context.
 
 ### Important changes
 

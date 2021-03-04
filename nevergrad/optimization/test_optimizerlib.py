@@ -101,7 +101,7 @@ def check_optimizer(
     assert not optimizer._asked, "All `ask`s  should have been followed by a `tell`"
     try:
         data = np.random.normal(0, 1, size=optimizer.dimension)
-        candidate = optimizer.parametrization.spawn_child().set_standardized_data(data, deterministic=False)
+        candidate = optimizer.parametrization.spawn_child().set_standardized_data(data)
         optimizer.tell(candidate, 12.0)
     except Exception as e:  # pylint: disable=broad-except
         if not isinstance(e, base.errors.TellNotAskedNotSupportedError):
@@ -447,7 +447,9 @@ def test_parametrization_optimizer_reproducibility() -> None:
     # resampling deterministically
     # (this test has been reeeally useful so far, any change of the output must be investigated)
     data = recom.get_standardized_data(reference=optimizer.parametrization)
-    recom = optimizer.parametrization.spawn_child().set_standardized_data(data, deterministic=True)
+    recom = optimizer.parametrization.spawn_child()
+    with ng.p.helpers.deterministic_sampling(recom):
+        recom.set_standardized_data(data)
     np.testing.assert_equal(recom.kwargs["y"], 67)
 
 

@@ -153,19 +153,6 @@ class Choice(BaseChoice):
             name = cls + "{det}" + name[len(cls) :]
         return name
 
-    def _internal_set_standardized_data(
-        self: C, data: np.ndarray, reference: C, deterministic: bool = False
-    ) -> None:
-        if deterministic:
-            from . import helpers
-
-            with helpers.deterministic_sampling(self):
-                super()._internal_set_standardized_data(
-                    data, reference=reference, deterministic=deterministic
-                )
-        else:
-            super()._internal_set_standardized_data(data, reference=reference)
-
     def mutate(self) -> None:
         # force random_state sync
         self.random_state  # pylint: disable=pointless-statement
