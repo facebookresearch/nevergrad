@@ -139,3 +139,10 @@ def test_bounded_int_casting() -> None:
     for move, val in [(2.4, 2), (0.2, 3), (42, 10), (-42, -10)]:
         param.set_standardized_data([move])
         assert param.value == val, f"Wrong value after move {move}"
+
+
+def test_rand_int_casting() -> None:
+    param = _datalayers.Bound(0, 1)(ng.p.Array(shape=(100, 10)) + 0.2)
+    param.add_layer(_datalayers.Int(deterministic=False))
+    total = param.value.ravel().sum()
+    assert 50 < total < 500
