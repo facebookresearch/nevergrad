@@ -441,16 +441,15 @@ def test_chaining() -> None:
 def test_parametrization_optimizer_reproducibility() -> None:
     parametrization = ng.p.Instrumentation(ng.p.Array(shape=(1,)), y=ng.p.Choice(list(range(100))))
     parametrization.random_state.seed(12)
-    optimizer = optlib.RandomSearch(parametrization, budget=10)
-    recom = optimizer.minimize(_square, verbosity=2)
-    np.testing.assert_equal(recom.kwargs["y"], 4)
-    # resampling deterministically
-    # (this test has been reeeally useful so far, any change of the output must be investigated)
+    optimizer = optlib.RandomSearch(parametrization, budget=20)
+    recom = optimizer.minimize(_square)
+    np.testing.assert_equal(recom.kwargs["y"], 1)
+    # resampling deterministically, to make sure it is identical
     data = recom.get_standardized_data(reference=optimizer.parametrization)
     recom = optimizer.parametrization.spawn_child()
     with ng.p.helpers.deterministic_sampling(recom):
         recom.set_standardized_data(data)
-    np.testing.assert_equal(recom.kwargs["y"], 67)
+    np.testing.assert_equal(recom.kwargs["y"], 1)
 
 
 @testing.suppress_nevergrad_warnings()
