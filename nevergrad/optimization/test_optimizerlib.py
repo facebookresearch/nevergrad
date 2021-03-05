@@ -319,8 +319,8 @@ def test_optimizer_families_repr() -> None:
     np.testing.assert_equal(repr(Cls()), "DifferentialEvolution()")
     np.testing.assert_equal(repr(Cls(initialization="LHS")), "DifferentialEvolution(initialization='LHS')")
     #
-    optimrs = optlib.RandomSearchMaker(cauchy=True)
-    np.testing.assert_equal(repr(optimrs), "RandomSearchMaker(cauchy=True)")
+    optimrs = optlib.RandomSearchMaker(sampler="cauchy")
+    np.testing.assert_equal(repr(optimrs), "RandomSearchMaker(sampler='cauchy')")
     #
     optimso = optlib.ScipyOptimizer(method="COBYLA")
     np.testing.assert_equal(repr(optimso), "ScipyOptimizer(method='COBYLA')")
@@ -747,9 +747,10 @@ def test_mo_with_nan(name: str) -> None:
         optimizer.tell(cand, [-38, 0, np.nan])
 
 
-def test_de_sampling() -> None:
+@pytest.mark.parametrize("name", ["LhsDE", "RandomSearch"])  # type: ignore
+def test_uniform_sampling(name: str) -> None:
     param = ng.p.Scalar(lower=-100, upper=100).set_mutation(sigma=1)
-    opt = optlib.LhsDE(param, budget=600, num_workers=100)
+    opt = optlib.registry[name](param, budget=600, num_workers=100)
     above_50 = 0
     for _ in range(100):
         above_50 += abs(opt.ask().value) > 50
