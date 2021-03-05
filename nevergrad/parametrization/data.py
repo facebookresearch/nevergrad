@@ -173,7 +173,10 @@ class Data(core.Parameter):
 
     def _layered_sample(self: D) -> D:
         child = self.spawn_child()
-        child.mutate()
+        from . import helpers
+
+        with helpers.deterministic_sampling(child):
+            child.mutate()
         return child
 
     # pylint: disable=unused-argument
