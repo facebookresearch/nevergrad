@@ -91,7 +91,7 @@ class Image(base.ExperimentFunction):
         noise = torch.tensor(x.astype("float32"))
         return ((self.pgan_model.test(noise).clamp(min=-1, max=1) + 1) * 255.99 / 2).permute(0, 2, 3, 1).cpu().numpy()  # type: ignore
 
-    def interpolate(self, base_image: np.ndarray, target: y: np.ndarray, k: int, num_images: int) -> np.ndarray:
+    def interpolate(self, base_image: np.ndarray, target: np.ndarray, k: int, num_images: int) -> np.ndarray:
         if num_images == 1:
             return target
         coef1 = k / (num_images - 1)
@@ -102,14 +102,22 @@ class Image(base.ExperimentFunction):
         loss = 0.0
         for i in range(self.num_images):
             # We generate num_images images. The last one is close to target, the first one is close to initial if num_images > 1.
-            base_image = self.interpolate(self.initial, self.target, i, self.num_images) + (1. / self.num_images) * x[i]
-            
+            base_image = (
+                self.interpolate(self.initial, self.target, i, self.num_images)
+                + (1.0 / self.num_images) * x[i]
+            )
+
             # We also generate 10 images between the previous image and the current one.
             # We aggregate losses over all those images.
-            previous_base_image = self.interpolate(self.initial, self.target, i - 1, self.num_images) + (1. / self.num_images) * x[i]
+            previous_base_image = (
+                self.interpolate(self.initial, self.target, i - 1, self.num_images)
+                + (1.0 / self.num_images) * x[i]
+            )
             num_intermediates = 1 if i > 0 else 10
             for k in range(num_intermediates):
-                image = self._generate_images(self.interpolate(previous_base_image, base_image, k, num_intermediates)).squeeze(0)
+                image = self._generate_images(
+                    self.interpolate(previous_base_image, base_image, k, num_intermediates)
+                ).squeeze(0)
                 image = cv2.resize(image, dsize=(226, 226), interpolation=cv2.INTER_NEAREST)
                 if export:
                     cv2.imwrite(f"image{i}_{k}_{num_images}.jpg", image)
@@ -117,7 +125,7 @@ class Image(base.ExperimentFunction):
                 loss += self.loss_function(image)
         return loss
 
-    def export_to_images(self, x:np.ndarray):
+    def export_to_images(self, x: np.ndarray):
         self._loss_with_pgan(x, export=True)
 
 
