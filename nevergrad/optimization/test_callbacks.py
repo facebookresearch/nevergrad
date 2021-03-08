@@ -91,4 +91,6 @@ def test_early_stopping() -> None:
     early_stopping = ng.callbacks.EarlyStopping(lambda opt: opt.num_ask > 3)
     optimizer.register_callback("ask", early_stopping)
     optimizer.minimize(_func, verbosity=2)
-    assert optimizer.num_ask == 4
+    # below functions are inlcuded in the docstring
+    assert optimizer.current_bests["minimum"].mean < 12
+    assert optimizer.recommend().loss < 12  # type: ignore
