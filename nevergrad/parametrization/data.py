@@ -147,9 +147,10 @@ class Data(core.Parameter):
 
         intlayers = _layering.Int.filter_from(self)
         deterministic = all(lay.deterministic for lay in intlayers)
+        continuous = not any(lay.deterministic for lay in intlayers)
         return utils.Descriptors(
             deterministic=deterministic,
-            continuous=not (deterministic and bool(intlayers)),
+            continuous=continuous,
             ordered=not any(isinstance(lay, _datalayers.SoftmaxSampling) for lay in intlayers),
         )
 

@@ -218,7 +218,20 @@ class Filterable:
 
 
 class Int(Layered, Filterable):
-    """Cast Data as integer (or integer array)"""
+    """Cast Data as integer (or integer array)
+
+    Parameters
+    ----------
+    deterministic: bool
+        if True, the data is rounded to the closest integer, if False, both surrounded
+        integers can be sampled inversely proportionally to how close the actual value
+        is from the integers.
+
+    Example
+    -------
+    0.2 is cast to 0 in deterministic mode, and either 0 (80% chance) or 1 (20% chance) in
+    non-deterministic mode
+    """
 
     _LAYER_LEVEL = Level.INTEGER_CASTING
 
