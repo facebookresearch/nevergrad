@@ -471,6 +471,12 @@ if the minimization must be stopped</p>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">optimizer</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="n">_func</span><span class="p">,</span> <span class="n">verbosity</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
 </pre></div>
 </div>
+<p>A couple other options (equivalent in case of non-noisy optimization) for stopping
+if the loss is below 12:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">early_stopping</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">callbacks</span><span class="o">.</span><span class="n">EarlyStopping</span><span class="p">(</span><span class="k">lambda</span> <span class="n">opt</span><span class="p">:</span> <span class="n">opt</span><span class="o">.</span><span class="n">recommend</span><span class="p">()</span><span class="o">.</span><span class="n">loss</span> <span class="o">&lt;</span> <span class="mi">12</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">early_stopping</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">callbacks</span><span class="o">.</span><span class="n">EarlyStopping</span><span class="p">(</span><span class="k">lambda</span> <span class="n">opt</span><span class="p">:</span> <span class="n">opt</span><span class="o">.</span><span class="n">current_bests</span><span class="p">[</span><span class="s2">&quot;minimum&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span> <span class="o">&lt;</span> <span class="mi">12</span><span class="p">)</span>
+</pre></div>
+</div>
 </dd></dl>
 
 <dl class="py class">
