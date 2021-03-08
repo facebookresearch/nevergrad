@@ -105,22 +105,22 @@ class Image(base.ExperimentFunction):
         for i in range(num_total_images):
             base_i = i // factor
             # We generate num_images images. The last one is close to target, the first one is close to initial if num_images > 1.
-            base_image = (
-                self.interpolate(self.initial, self.target, i, num_total_images)
-            )
+            base_image = self.interpolate(self.initial, self.target, i, num_total_images)
             movability = 0.5  # If only one image, then we move by 0.5.
             if self.num_images > 1:
-                movability = 4 * (0.25 - (i / (num_total_images - 1) - 0.5) ** 2)  # 1 if i == num_total_images/2, 0 if 0 or num_images-1
+                movability = 4 * (
+                    0.25 - (i / (num_total_images - 1) - 0.5) ** 2
+                )  # 1 if i == num_total_images/2, 0 if 0 or num_images-1
             base_image += movability * np.sqrt(self.dimension) * x[base_i] / np.linalg.norm(x[base_i])
             image = base_image.squeeze(0)
             image = cv2.resize(image, dsize=(226, 226), interpolation=cv2.INTER_NEAREST)
             if export_string:
-                cv2.imwrite(f"{export_string}_image{i}_{k}_{self.num_images}.jpg", image)
+                cv2.imwrite(f"{export_string}_image{i}_{num_total_images}_{self.num_images}.jpg", image)
             assert image.shape == (226, 226, 3), f"{x.shape} != {(226, 226, 3)}"
             loss += self.loss_function(image)
         return loss
 
-    def export_to_images(self, x: np.ndarray, export_string: str="export"):
+    def export_to_images(self, x: np.ndarray, export_string: str = "export"):
         self._loss_with_pgan(x, export_string=export_string)
 
 
