@@ -95,7 +95,9 @@ class Image(base.ExperimentFunction):
         loss = 0.0
         for i in range(self.num_images):
             image = self._generate_images(
-                ((self.num_images - 1 - i) * self.initial + i * self.target) / self.num_images + (0.5 / self.num_images) * x[i]).squeeze(0)
+                ((self.num_images - 1 - i) * self.initial + i * self.target) / self.num_images
+                + (0.5 / self.num_images) * x[i]
+            ).squeeze(0)
             image = cv2.resize(image, dsize=(226, 226), interpolation=cv2.INTER_NEAREST)
             assert image.shape == (226, 226, 3), f"{x.shape} != {(226, 226, 3)}"
             loss += self.loss_function(image)
