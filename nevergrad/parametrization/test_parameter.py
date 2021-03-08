@@ -184,7 +184,7 @@ def check_parameter_freezable(param: par.Parameter) -> None:
         (par.Choice([1, 12]), "Choice(choices=Tuple(1,12),indices=Array{(1,2),SoftmaxSampling})"),
         (
             par.Choice([1, 12], deterministic=True),
-            "Choice{det}(choices=Tuple(1,12),indices=Array{(1,2),SoftmaxSampling})",
+            "Choice(choices=Tuple(1,12),indices=Array{(1,2),SoftmaxSampling{det}})",
         ),
         (
             par.TransitionChoice([1, 12]),

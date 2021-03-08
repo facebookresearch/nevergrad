@@ -9,6 +9,7 @@ import nevergrad as ng
 from nevergrad.common import testing
 import nevergrad.common.typing as tp
 from . import _datalayers
+from . import helpers
 
 
 def test_scalar_module() -> None:
@@ -115,9 +116,33 @@ def test_deterministic_softmax_layer() -> None:
     assert param.value.tolist() == [12]
 
 
+def test_temporary_deterinistic_softmax_layer() -> None:
+    param = ng.p.Array(shape=(1, 100))
+    param.add_layer(_datalayers.SoftmaxSampling(arity=100, deterministic=False))
+    param._value[0, 12] = 1
+    del param.value
+    with helpers.deterministic_sampling(param):
+        assert param.value[0] == 12
+    # the behavior should be stochastic when not using the context
+    different = False
+    for _ in range(10000):
+        del param.value
+        different = param.value[0] != 12
+        if different:
+            break
+    assert different, "At least one sampling should have been different"
+
+
 def test_bounded_int_casting() -> None:
     param = _datalayers.Bound(-10.9, 10.9, method="clipping")(ng.p.Scalar())
     param.add_layer(_datalayers.Int())
     for move, val in [(2.4, 2), (0.2, 3), (42, 10), (-42, -10)]:
         param.set_standardized_data([move])
         assert param.value == val, f"Wrong value after move {move}"
+
+
+def test_rand_int_casting() -> None:
+    param = _datalayers.Bound(0, 1)(ng.p.Array(shape=(100, 10)) + 0.2)
+    param.add_layer(_datalayers.Int(deterministic=False))
+    total = param.value.ravel().sum()
+    assert 50 < total < 500

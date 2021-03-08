@@ -96,16 +96,14 @@ def test_deterministic_data_setter() -> None:
     ifunc = base.ExperimentFunction(_Callable(), instru)
     data = [0.01, 0, 0, 0, 0.01, 0, 0, 0]
     for _ in range(20):
-        args, kwargs = (
-            ifunc.parametrization.spawn_child().set_standardized_data(data, deterministic=True).value
-        )
+        child = ifunc.parametrization.spawn_child()
+        with ng.p.helpers.deterministic_sampling(child):
+            args, kwargs = child.set_standardized_data(data).value
         testing.printed_assert_equal(args, [0])
         testing.printed_assert_equal(kwargs, {"y": 0})
     arg_sum, kwarg_sum = 0, 0
     for _ in range(24):
-        args, kwargs = (
-            ifunc.parametrization.spawn_child().set_standardized_data(data, deterministic=False).value
-        )
+        args, kwargs = ifunc.parametrization.spawn_child().set_standardized_data(data).value
         arg_sum += args[0]
         kwarg_sum += kwargs["y"]
     assert arg_sum != 0

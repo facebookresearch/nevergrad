@@ -147,9 +147,10 @@ class Data(core.Parameter):
 
         intlayers = _layering.Int.filter_from(self)
         deterministic = all(lay.deterministic for lay in intlayers)
+        continuous = not any(lay.deterministic for lay in intlayers)
         return utils.Descriptors(
             deterministic=deterministic,
-            continuous=not (deterministic and bool(intlayers)),
+            continuous=continuous,
             ordered=not any(isinstance(lay, _datalayers.SoftmaxSampling) for lay in intlayers),
         )
 
@@ -173,7 +174,10 @@ class Data(core.Parameter):
 
     def _layered_sample(self: D) -> D:
         child = self.spawn_child()
-        child.mutate()
+        from . import helpers
+
+        with helpers.deterministic_sampling(child):
+            child.mutate()
         return child
 
     # pylint: disable=unused-argument
@@ -259,7 +263,7 @@ class Data(core.Parameter):
                     self.random_state.normal if mutation == "gaussian" else self.random_state.standard_cauchy
                 )
                 new_state = func(size=self.dimension)
-                self.set_standardized_data(new_state, deterministic=False)
+                self.set_standardized_data(new_state)
             else:
                 raise NotImplementedError('Mutation "{mutation}" is not implemented')
         elif isinstance(mutation, Mutation):
@@ -343,9 +347,7 @@ class Data(core.Parameter):
         return any(isinstance(x, _layering.Int) for x in self._layers)
 
     # pylint: disable=unused-argument
-    def _internal_set_standardized_data(
-        self: D, data: np.ndarray, reference: D, deterministic: bool = False
-    ) -> None:
+    def _internal_set_standardized_data(self: D, data: np.ndarray, reference: D) -> None:
         assert isinstance(data, np.ndarray)
         sigma = reference.sigma.value
         data_reduc = sigma * (data + reference._to_reduced_space()).reshape(reference._value.shape)
@@ -376,7 +378,7 @@ class Data(core.Parameter):
         all_params = [self] + list(others)
         if isinstance(recomb, str) and recomb == "average":
             all_arrays = [p.get_standardized_data(reference=self) for p in all_params]
-            self.set_standardized_data(np.mean(all_arrays, axis=0), deterministic=False)
+            self.set_standardized_data(np.mean(all_arrays, axis=0))
         elif isinstance(recomb, Mutation):
             recomb.apply(all_params)
         elif callable(recomb):

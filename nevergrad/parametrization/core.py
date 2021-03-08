@@ -111,7 +111,7 @@ class Parameter(Layered):
         """Mutate parameters of the instance, and then its value"""
         self._check_frozen()
         self._subobjects.apply("mutate")
-        self.set_standardized_data(self.random_state.normal(size=self.dimension), deterministic=False)
+        self.set_standardized_data(self.random_state.normal(size=self.dimension))
 
     def sample(self: P) -> P:
         """Sample a new instance of the parameter.
@@ -177,9 +177,7 @@ class Parameter(Layered):
             f"Export to standardized data space is not implemented for {self.name}"
         )
 
-    def set_standardized_data(
-        self: P, data: tp.ArrayLike, *, reference: tp.Optional[P] = None, deterministic: bool = False
-    ) -> P:
+    def set_standardized_data(self: P, data: tp.ArrayLike, *, reference: tp.Optional[P] = None) -> P:
         """Updates the value of the provided reference (or self) using the standardized data.
 
         Parameters
@@ -188,8 +186,6 @@ class Parameter(Layered):
             the representation of the value in the optimization space
         reference: Parameter
             the reference point for representing the data ("self", if not provided)
-        deterministic: bool
-            whether the value should be deterministically drawn (max probability) in the case of stochastic parameters
 
         Returns
         -------
@@ -198,23 +194,20 @@ class Parameter(Layered):
 
         Note
         ----
-        To make the code more explicit, the "reference" and "deterministic" parameters are enforced
+        To make the code more explicit, the "reference" is enforced
         as keyword-only parameters.
         """
-        assert isinstance(deterministic, bool)
         sent_reference = self if reference is None else reference
         assert isinstance(
             sent_reference, self.__class__
         ), f"Expected {type(self)} but got {type(sent_reference)} as reference"
         self._check_frozen()
         del self.value  # remove all cached information
-        self._internal_set_standardized_data(
-            np.array(data, copy=False), reference=sent_reference, deterministic=deterministic
-        )
+        self._internal_set_standardized_data(np.array(data, copy=False), reference=sent_reference)
         return self
 
     def _internal_set_standardized_data(  # pylint: disable=unused-argument
-        self: P, data: np.ndarray, reference: P, deterministic: bool = False
+        self: P, data: np.ndarray, reference: P
     ) -> None:
         if data.size:
             raise errors.UnsupportedParameterOperationError(

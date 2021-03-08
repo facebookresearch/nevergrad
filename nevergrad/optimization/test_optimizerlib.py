@@ -101,7 +101,7 @@ def check_optimizer(
     assert not optimizer._asked, "All `ask`s  should have been followed by a `tell`"
     try:
         data = np.random.normal(0, 1, size=optimizer.dimension)
-        candidate = optimizer.parametrization.spawn_child().set_standardized_data(data, deterministic=False)
+        candidate = optimizer.parametrization.spawn_child().set_standardized_data(data)
         optimizer.tell(candidate, 12.0)
     except Exception as e:  # pylint: disable=broad-except
         if not isinstance(e, base.errors.TellNotAskedNotSupportedError):
@@ -319,8 +319,8 @@ def test_optimizer_families_repr() -> None:
     np.testing.assert_equal(repr(Cls()), "DifferentialEvolution()")
     np.testing.assert_equal(repr(Cls(initialization="LHS")), "DifferentialEvolution(initialization='LHS')")
     #
-    optimrs = optlib.RandomSearchMaker(cauchy=True)
-    np.testing.assert_equal(repr(optimrs), "RandomSearchMaker(cauchy=True)")
+    optimrs = optlib.RandomSearchMaker(sampler="cauchy")
+    np.testing.assert_equal(repr(optimrs), "RandomSearchMaker(sampler='cauchy')")
     #
     optimso = optlib.ScipyOptimizer(method="COBYLA")
     np.testing.assert_equal(repr(optimso), "ScipyOptimizer(method='COBYLA')")
@@ -441,14 +441,15 @@ def test_chaining() -> None:
 def test_parametrization_optimizer_reproducibility() -> None:
     parametrization = ng.p.Instrumentation(ng.p.Array(shape=(1,)), y=ng.p.Choice(list(range(100))))
     parametrization.random_state.seed(12)
-    optimizer = optlib.RandomSearch(parametrization, budget=10)
+    optimizer = optlib.RandomSearch(parametrization, budget=20)
     recom = optimizer.minimize(_square)
-    np.testing.assert_equal(recom.kwargs["y"], 4)
-    # resampling deterministically
-    # (this test has been reeeally useful so far, any change of the output must be investigated)
+    np.testing.assert_equal(recom.kwargs["y"], 1)
+    # resampling deterministically, to make sure it is identical
     data = recom.get_standardized_data(reference=optimizer.parametrization)
-    recom = optimizer.parametrization.spawn_child().set_standardized_data(data, deterministic=True)
-    np.testing.assert_equal(recom.kwargs["y"], 67)
+    recom = optimizer.parametrization.spawn_child()
+    with ng.p.helpers.deterministic_sampling(recom):
+        recom.set_standardized_data(data)
+    np.testing.assert_equal(recom.kwargs["y"], 1)
 
 
 @testing.suppress_nevergrad_warnings()
@@ -746,9 +747,10 @@ def test_mo_with_nan(name: str) -> None:
         optimizer.tell(cand, [-38, 0, np.nan])
 
 
-def test_de_sampling() -> None:
+@pytest.mark.parametrize("name", ["LhsDE", "RandomSearch"])  # type: ignore
+def test_uniform_sampling(name: str) -> None:
     param = ng.p.Scalar(lower=-100, upper=100).set_mutation(sigma=1)
-    opt = optlib.LhsDE(param, budget=600, num_workers=100)
+    opt = optlib.registry[name](param, budget=600, num_workers=100)
     above_50 = 0
     for _ in range(100):
         above_50 += abs(opt.ask().value) > 50

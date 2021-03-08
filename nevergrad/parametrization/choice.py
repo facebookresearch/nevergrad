@@ -142,27 +142,7 @@ class Choice(BaseChoice):
             repetitions=repetitions,
             indices=indices,
         )
-        self._deterministic = deterministic
         self._indices: tp.Optional[np.ndarray] = None
-
-    def _get_name(self) -> str:
-        name = super()._get_name()
-        cls = self.__class__.__name__
-        assert name.startswith(cls)
-        if self._deterministic:
-            name = cls + "{det}" + name[len(cls) :]
-        return name
-
-    def _internal_set_standardized_data(
-        self: C, data: np.ndarray, reference: C, deterministic: bool = False
-    ) -> None:
-        softmax = self.indices._layers[-2]
-        assert isinstance(softmax, _datalayers.SoftmaxSampling)
-        softmax.deterministic = deterministic or self._deterministic
-        super()._internal_set_standardized_data(data, reference=reference, deterministic=deterministic)
-        # pylint: disable=pointless-statement
-        self.indices  # make sure to draw
-        softmax.deterministic = self._deterministic
 
     def mutate(self) -> None:
         # force random_state sync

@@ -496,7 +496,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         if recom_data is None or any(np.isnan(recom_data)):
             name = "minimum" if self.parametrization.descriptors.deterministic_function else "pessimistic"
             return self.current_bests[name].parameter
-        return self.parametrization.spawn_child().set_standardized_data(recom_data, deterministic=True)
+        out = self.parametrization.spawn_child()
+        with p.helpers.deterministic_sampling(out):
+            out.set_standardized_data(recom_data)
+        return out
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         """Called whenever calling :code:`tell` on a candidate that was not "asked".

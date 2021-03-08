@@ -85,9 +85,7 @@ class Container(core.Parameter):
             return np.array([])
         return data_list[0] if len(data_list) == 1 else np.concatenate(data_list)  # type: ignore
 
-    def _internal_set_standardized_data(
-        self: D, data: np.ndarray, reference: D, deterministic: bool = False
-    ) -> None:
+    def _internal_set_standardized_data(self: D, data: np.ndarray, reference: D) -> None:
         if self._sizes is None:
             self.get_standardized_data(reference=self)
         assert self._sizes is not None
@@ -99,9 +97,7 @@ class Container(core.Parameter):
         start, end = 0, 0
         for name, size in self._sizes.items():
             end = start + size
-            self._content[name].set_standardized_data(
-                data[start:end], reference=reference[name], deterministic=deterministic
-            )
+            self._content[name].set_standardized_data(data[start:end], reference=reference[name])
             start = end
         assert end == len(data), f"Finished at {end} but expected {len(data)}"
 

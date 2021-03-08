@@ -111,7 +111,10 @@ class _DE(base.Optimizer):
         data: tp.Any = sum(
             [g.get_standardized_data(reference=self.parametrization) for g in good_guys]
         ) / len(good_guys)
-        return self.parametrization.spawn_child().set_standardized_data(data, deterministic=True)
+        out = self.parametrization.spawn_child()
+        with p.helpers.deterministic_sampling(out):
+            out.set_standardized_data(data)
+        return out
 
     def _internal_ask_candidate(self) -> p.Parameter:
         if len(self.population) < self.llambda:  # initialization phase
@@ -166,7 +169,7 @@ class _DE(base.Optimizer):
         else:
             crossovers = Crossover(self._rng, 1.0 / self.dimension if co == "dimension" else co)
             crossovers.apply(donor, data)
-            candidate.set_standardized_data(donor, deterministic=False, reference=self.parametrization)
+            candidate.set_standardized_data(donor, reference=self.parametrization)
         return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:

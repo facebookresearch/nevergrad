@@ -9,6 +9,15 @@
 - `Choice` and `TransitionChoice` have some of their API changed for uniformization. In particular, `indices` is now an
   `ng.p.Array` (and not an `np.ndarray`) which contains the selected indices (or index) of the `Choice`. The sampling is
   performed by specific "layers" that are applied to `Data` parameters [#1065](https://github.com/facebookresearch/nevergrad/pull/1065).
+- `Parameter.set_standardized_space` does not take a `deterministic` parameter anymore
+  [#1068](https://github.com/facebookresearch/nevergrad/pull/1068).  This is replaced by the more
+  general `with ng.p.helpers.determistic_sampling(parameter)` context. One-shot algorithms are also updated to choose
+  options of `Choice` parameters deterministically, since it is a simpler behavior to expect compared to sampling the
+  standardized space than sampling the option stochastically from there
+- `RandomSearch` now defaults to sample values using the `parameter.sample()` instead of a Gaussian
+   [#1068](https://github.com/facebookresearch/nevergrad/pull/1068).  The only difference comes with bounded
+  variables since in this case `parameter.sample()` samples uniformly (unless otherwise specified).
+  The previous behavior can be obtained with `RandomSearchMaker(sampler="gaussian")`.
 
 ### Important changes
 

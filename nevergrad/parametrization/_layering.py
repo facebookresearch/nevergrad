@@ -170,6 +170,7 @@ class ValueProperty(tp.Generic[X]):
         return obj._layers[-1]._layered_get_value()  # type: ignore
 
     def __set__(self, obj: Layered, value: X) -> None:
+        self.__delete__(obj)
         obj._layers[-1]._layered_set_value(value)
 
     def __delete__(self, obj: Layered) -> None:
@@ -217,25 +218,50 @@ class Filterable:
 
 
 class Int(Layered, Filterable):
-    """Cast Data as integer (or integer array)"""
+    """Cast Data as integer (or integer array)
+
+    Parameters
+    ----------
+    deterministic: bool
+        if True, the data is rounded to the closest integer, if False, both surrounded
+        integers can be sampled inversely proportionally to how close the actual value
+        is from the integers.
+
+    Example
+    -------
+    0.2 is cast to 0 in deterministic mode, and either 0 (80% chance) or 1 (20% chance) in
+    non-deterministic mode
+    """
 
     _LAYER_LEVEL = Level.INTEGER_CASTING
 
-    def __init__(self) -> None:
+    def __init__(self, deterministic: bool = True) -> None:
         super().__init__()
         self.arity: tp.Optional[int] = None
-        self.deterministic = True
+        self.deterministic = deterministic
         self._cache: tp.Optional[np.ndarray] = None
 
+    def _get_name(self) -> str:
+        tag = "" if self.deterministic else "{rand}"
+        return self.__class__.__name__ + tag
+
     def _layered_get_value(self) -> np.ndarray:
+        if self._cache is not None:
+            return self._cache
         bounds = self._layers[0].bounds  # type: ignore
-        out = np.round(super()._layered_get_value()).astype(int)
+        out = super()._layered_get_value()
+        if not self.deterministic:
+            out += self.random_state.rand(*out.shape) - 0.5
+        out = np.round(out).astype(int)
         # make sure rounding does not reach beyond the bounds
+        eps = 1e-12
         if bounds[0] is not None:
-            out = np.maximum(int(np.round(bounds[0] + 0.5)), out)
+            out = np.maximum(int(np.round(bounds[0] + 0.5 - eps)), out)
         if bounds[1] is not None:
-            out = np.minimum(int(np.round(bounds[1] - 0.5)), out)
-        return out  # type: ignore
+            out = np.minimum(int(np.round(bounds[1] - 0.5 + eps)), out)
+        # return out
+        self._cache = out
+        return self._cache
 
     def _layered_del_value(self) -> None:
         self._cache = None  # clear cache!
