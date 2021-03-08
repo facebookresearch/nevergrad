@@ -120,7 +120,7 @@ class Image(base.ExperimentFunction):
                 ).squeeze(0)
                 image = cv2.resize(image, dsize=(226, 226), interpolation=cv2.INTER_NEAREST)
                 if export:
-                    cv2.imwrite(f"image{i}_{k}_{num_images}.jpg", image)
+                    cv2.imwrite(f"image{i}_{k}_{self.num_images}.jpg", image)
                 assert image.shape == (226, 226, 3), f"{x.shape} != {(226, 226, 3)}"
                 loss += self.loss_function(image)
         return loss
