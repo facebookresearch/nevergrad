@@ -13,9 +13,9 @@
   [#1068](https://github.com/facebookresearch/nevergrad/pull/1068).  This is replaced by the more
   general `with ng.p.helpers.determistic_sampling(parameter)` context. One-shot algorithms are also updated to choose
   options of `Choice` parameters deterministically, since it is a simpler behavior to expect compared to sampling the
-  standardized space then sampling the option shochastically from there
+  standardized space than sampling the option stochastically from there
 - `RandomSearch` now defaults to sample values using the `parameter.sample()` instead of a Gaussian
-   [#1068](https://github.com/facebookresearch/nevergrad/pull/1068).  The only different comes with bounded
+   [#1068](https://github.com/facebookresearch/nevergrad/pull/1068).  The only difference comes with bounded
   variables since in this case `parameter.sample()` samples uniformly (unless otherwise specified).
   The previous behavior can be obtained with `RandomSearchMaker(sampler="gaussian")`.
 
