@@ -24,7 +24,6 @@ from . import mutations
 from .base import registry as registry
 from .base import addCompare  # pylint: disable=unused-import
 from .base import IntOrParameter
-from . import sequences
 
 
 # families of optimizers
