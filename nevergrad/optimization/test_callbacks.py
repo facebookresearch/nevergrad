@@ -92,7 +92,5 @@ def test_early_stopping() -> None:
     optimizer.register_callback("ask", early_stopping)
     optimizer.minimize(_func, verbosity=2)
     # below functions are inlcuded in the docstring
-    print(optimizer.current_bests["minimum"].mean)
-    print(optimizer.recommend().loss)
     assert optimizer.current_bests["minimum"].mean < 12
     assert optimizer.recommend().loss < 12  # type: ignore
