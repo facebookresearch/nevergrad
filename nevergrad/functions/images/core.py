@@ -73,6 +73,8 @@ class Image(base.ExperimentFunction):
             )
             self.domain_shape = (num_images, 512)  # type: ignore
             initial_noise = np.random.normal(size=self.domain_shape)
+            self.initial = np.random.normal(size=self.domain_shape)
+            self.target = np.random.normal(size=self.domain_shape)
             array = ng.p.Array(init=initial_noise, mutable_sigma=True)
             array.set_mutation(sigma=35.0)
             array.set_recombination(ng.p.mutation.Crossover(axis=(0, 1))).set_name("")
@@ -92,7 +94,8 @@ class Image(base.ExperimentFunction):
     def _loss_with_pgan(self, x: np.ndarray) -> float:
         loss = 0.0
         for i in range(self.num_images):
-            image = self._generate_images(x[i]).squeeze(0)
+            image = self._generate_images(
+                ((self.num_images - 1 - i) * self.initial + i * self.target) / self.num_images + (0.5 / self.num_images) * x[i]).squeeze(0)
             image = cv2.resize(image, dsize=(226, 226), interpolation=cv2.INTER_NEAREST)
             assert image.shape == (226, 226, 3), f"{x.shape} != {(226, 226, 3)}"
             loss += self.loss_function(image)
