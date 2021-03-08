@@ -270,6 +270,12 @@ class EarlyStopping:
     >>> early_stopping = ng.callbacks.EarlyStopping(lambda opt: opt.num_ask > 3)
     >>> optimizer.register_callback("ask", early_stopping)
     >>> optimizer.minimize(_func, verbosity=2)
+
+    A couple other options (equivalent in case of non-noisy optimization) for stopping
+    if the loss is below 12:
+
+    >>> early_stopping = ng.callbacks.EarlyStopping(lambda opt: opt.recommend().loss < 12)
+    >>> early_stopping = ng.callbacks.EarlyStopping(lambda opt: opt.current_bests["minimum"].mean < 12)
     """
 
     def __init__(self, stopping_criterion: tp.Callable[[base.Optimizer], bool]) -> None:
