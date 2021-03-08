@@ -98,35 +98,30 @@ class Image(base.ExperimentFunction):
         coef2 = (num_images - 1 - k) / (num_images - 1)
         return coef1 * base_image + coef2 * target
 
-    def _loss_with_pgan(self, x: np.ndarray, export: bool = False) -> float:
+    def _loss_with_pgan(self, x: np.ndarray, export_string: str = "") -> float:
         loss = 0.0
-        for i in range(self.num_images):
+        factor = 1 if self.num_images < 2 else 10  # Number of intermediate images.
+        num_total_images = factor * self.num_images
+        for i in range(num_total_images):
+            base_i = i // factor
             # We generate num_images images. The last one is close to target, the first one is close to initial if num_images > 1.
             base_image = (
-                self.interpolate(self.initial, self.target, i, self.num_images)
-                + (1.0 / self.num_images) * x[i]
+                self.interpolate(self.initial, self.target, i, num_total_images)
             )
-
-            # We also generate 10 images between the previous image and the current one.
-            # We aggregate losses over all those images.
-            previous_base_image = (
-                self.interpolate(self.initial, self.target, i - 1, self.num_images)
-                + (1.0 / self.num_images) * x[i]
-            )
-            num_intermediates = 1 if i > 0 else 10
-            for k in range(num_intermediates):
-                image = self._generate_images(
-                    self.interpolate(previous_base_image, base_image, k, num_intermediates)
-                ).squeeze(0)
-                image = cv2.resize(image, dsize=(226, 226), interpolation=cv2.INTER_NEAREST)
-                if export:
-                    cv2.imwrite(f"image{i}_{k}_{self.num_images}.jpg", image)
-                assert image.shape == (226, 226, 3), f"{x.shape} != {(226, 226, 3)}"
-                loss += self.loss_function(image)
+            movability = 0.5  # If only one image, then we move by 0.5.
+            if self.num_images > 1:
+                movability = 4 * (0.25 - (i / (num_total_images - 1) - 0.5) ** 2)  # 1 if i == num_total_images/2, 0 if 0 or num_images-1
+            base_image += movability * np.sqrt(self.dimension) * x[base_i] / np.linalg.norm(x[base_i])
+            image = base_image.squeeze(0)
+            image = cv2.resize(image, dsize=(226, 226), interpolation=cv2.INTER_NEAREST)
+            if export_string:
+                cv2.imwrite(f"{export_string}_image{i}_{k}_{self.num_images}.jpg", image)
+            assert image.shape == (226, 226, 3), f"{x.shape} != {(226, 226, 3)}"
+            loss += self.loss_function(image)
         return loss
 
-    def export_to_images(self, x: np.ndarray):
-        self._loss_with_pgan(x, export=True)
+    def export_to_images(self, x: np.ndarray, export_string: str="export"):
+        self._loss_with_pgan(x, export_string=export_string)
 
 
 # #### Adversarial attacks ##### #
