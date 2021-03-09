@@ -111,7 +111,8 @@ class Image(base.ExperimentFunction):
                 movability = 4 * (
                     0.25 - (i / (num_total_images - 1) - 0.5) ** 2
                 )  # 1 if i == num_total_images/2, 0 if 0 or num_images-1
-            base_image[0] += movability * np.sqrt(self.dimension) * x[base_i] / np.linalg.norm(x[base_i])
+            moving = movability * np.sqrt(self.dimension) * np.expand_dims(x[base_i], 0) / np.linalg.norm(x[base_i])
+            base_image += moving
             image = self._generate_images(base_image).squeeze(0)
             image = cv2.resize(image, dsize=(226, 226), interpolation=cv2.INTER_NEAREST)
             if export_string:
