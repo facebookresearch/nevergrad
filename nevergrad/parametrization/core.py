@@ -310,8 +310,8 @@ class Parameter:
 
         Returns
         -------
-        list of float
-            the list of penalties for each constraint
+        float
+            the sum of the list of penalties for each constraint
         """
         val = self.value
         return sum(utils.float_penalty(func(val)) for func in self._constraint_checkers)
