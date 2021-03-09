@@ -73,8 +73,8 @@ class Image(base.ExperimentFunction):
             )
             self.domain_shape = (num_images, 512)  # type: ignore
             initial_noise = np.random.normal(size=self.domain_shape)
-            self.initial = np.random.normal(size=self.domain_shape)
-            self.target = np.random.normal(size=self.domain_shape)
+            self.initial = np.random.normal(size=(1, 512))
+            self.target = np.random.normal(size=(1, 512))
             array = ng.p.Array(init=initial_noise, mutable_sigma=True)
             array.set_mutation(sigma=35.0)
             array.set_recombination(ng.p.mutation.Crossover(axis=(0, 1))).set_name("")
@@ -111,8 +111,8 @@ class Image(base.ExperimentFunction):
                 movability = 4 * (
                     0.25 - (i / (num_total_images - 1) - 0.5) ** 2
                 )  # 1 if i == num_total_images/2, 0 if 0 or num_images-1
-            base_image += movability * np.sqrt(self.dimension) * x[base_i] / np.linalg.norm(x[base_i])
-            image = base_image.squeeze(0)
+            base_image[0] += movability * np.sqrt(self.dimension) * x[base_i] / np.linalg.norm(x[base_i])
+            image = self._generate_images(base_image).squeeze(0)
             image = cv2.resize(image, dsize=(226, 226), interpolation=cv2.INTER_NEAREST)
             if export_string:
                 cv2.imwrite(f"{export_string}_image{i}_{num_total_images}_{self.num_images}.jpg", image)
