@@ -18,12 +18,12 @@ from nevergrad.parametrization import transforms
 from nevergrad.parametrization import discretization
 from nevergrad.parametrization import _layering
 from nevergrad.parametrization import _datalayers
+from . import oneshot
 from . import base
 from . import mutations
 from .base import registry as registry
 from .base import addCompare  # pylint: disable=unused-import
 from .base import IntOrParameter
-from . import sequences
 
 
 # families of optimizers
@@ -1669,15 +1669,17 @@ class _BO(base.Optimizer):
         self._transform = transforms.ArctanBound(0, 1)
         self._bo: tp.Optional[BayesianOptimization] = None
         self._fake_function = _FakeFunction(num_digits=len(str(self.dimension)))
+        # initialization
+        init = initialization
+        self._init_budget = init_budget
+        self._middle_point = middle_point
+        if init is None:
+            self._InitOpt: tp.Optional[base.ConfiguredOptimizer] = None
+        elif init == "random":
+            self._InitOpt = oneshot.RandomSearch
+        else:
+            self._InitOpt = oneshot.SamplingSearch(sampler=init, scrambled=init == "Hammersley")
         # configuration
-        assert initialization is None or initialization in [
-            "random",
-            "Hammersley",
-            "LHS",
-        ], f"Unknown init {initialization}"
-        self.initialization = initialization
-        self.init_budget = init_budget
-        self.middle_point = middle_point
         self.utility_kind = utility_kind
         self.utility_kappa = utility_kappa
         self.utility_xi = utility_xi
@@ -1699,30 +1701,21 @@ class _BO(base.Optimizer):
         if self._bo is None:
             bounds = {self._fake_function.key(i): (0.0, 1.0) for i in range(self.dimension)}
             self._bo = BayesianOptimization(self._fake_function, bounds, random_state=self._rng)
-            init_budget = max(2, int(np.sqrt(self.budget) if self.init_budget is None else self.init_budget))
+            init_budget = max(
+                2, int(np.sqrt(self.budget) if self._init_budget is None else self._init_budget)
+            )
             if self.gp_parameters is not None:
                 self._bo.set_gp_params(**self.gp_parameters)
             # init
-            init = self.initialization
-            if self.middle_point:
+            if self._middle_point:
                 self._bo.probe([0.5] * self.dimension, lazy=True)
                 init_budget -= 1
-            if init is not None and init_budget > 0:
-                sampler = {
-                    "Hammersley": sequences.HammersleySampler,
-                    "LHS": sequences.LHSSampler,
-                    "random": sequences.RandomSampler,
-                }[init](
-                    self.dimension,
-                    budget=init_budget,
-                    scrambling=(init == "Hammersley"),
-                    random_state=self._rng,
-                )
-                for k, point in enumerate(sampler):
-                    if not k and self.middle_point and np.linalg.norm(point - 0.5) < 1e-6:
-                        # resampling middle point, this is useless, let's redraw randomly
-                        point = self._bo._space.random_sample()
-                    self._bo.probe(point, lazy=True)
+            if self._InitOpt is not None and init_budget > 0:
+                param = p.Array(shape=(self.dimension,)).set_bounds(lower=0, upper=1.0)
+                param.random_state = self._rng
+                opt = self._InitOpt(param, budget=init_budget)
+                for _ in range(init_budget):
+                    self._bo.probe(opt.ask().value, lazy=True)
             else:  # default
                 for _ in range(init_budget):
                     self._bo.probe(self._bo._space.random_sample(), lazy=True)
