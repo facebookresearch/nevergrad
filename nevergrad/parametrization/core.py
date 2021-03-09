@@ -305,7 +305,7 @@ class Parameter:
 
     # %% Constraint management
 
-    def constraint_penalties(self) -> tp.List[float]:
+    def _constraint_penalties(self) -> tp.List[float]:
         """Returns the list of constraint penalties penalties
 
         Returns

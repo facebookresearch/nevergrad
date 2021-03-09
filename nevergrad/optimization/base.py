@@ -414,7 +414,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         if self.pruning is not None:
             self.archive = self.pruning(self.archive)
 
-    def ask(self, ignore_constraints: bool = False) -> p.Parameter:
+    def ask(self) -> p.Parameter:
         """Provides a point to explore.
         This function can be called multiple times to explore several points in parallel
 
@@ -446,7 +446,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 candidate = self._suggestions.pop()
             else:
                 candidate = self._internal_ask_candidate()
-            if candidate.satisfies_constraints() or ignore_constraints:
+            if candidate.satisfies_constraints():
                 break  # good to go!
             if self._penalize_cheap_violations:
                 # Warning! This might be a tell not asked.
@@ -454,13 +454,13 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             self._num_ask += (
                 1  # this is necessary for some algorithms which need new num to ask another point
             )
-            if k == max_trials - 1 and not ignore_constraints:
+            if k == max_trials - 1:
                 warnings.warn(
                     f"Could not bypass the constraint after {max_trials} tentatives, "
                     "sending candidate anyway.",
                     errors.FailedConstraintWarning,
                 )
-        if (not ignore_constraints) and not candidate.satisfies_constraints():
+        if not candidate.satisfies_constraints():
             # still not solving, let's run sub-optimization
             candidate = _constraint_solver(candidate, budget=max_trials)
         if not is_suggestion:
@@ -737,13 +737,15 @@ class ConfiguredOptimizer:
 
 def _constraint_solver(parameter: p.Parameter, budget: int) -> p.Parameter:
     """Runs a suboptimization to solve the parameter constraints"""
-    opt = registry["OnePlusOne"](parameter, num_workers=1, budget=budget)
+    parameter_without_constraint = parameter.copy()
+    parameter_without_constraint._constraint_checkers = []
+    opt = registry["OnePlusOne"](parameter_without_constraint, num_workers=1, budget=budget)
     opt._constraints_manager.max_trials = 1
     for k in range(budget):
-        cand = opt.ask(ignore_constraints = True)
+        cand = opt.ask()
         # Our objective function is minimum for the point the closest to
         # the original candidate under the constraints.
-        penalty = cand.constraint_penalties()
+        penalty = cand._constraint_penalties()
         if not penalty > 0:  # constraints are satisfied
             return cand
         # TODO: this may not scale well with dimension
@@ -751,4 +753,4 @@ def _constraint_solver(parameter: p.Parameter, budget: int) -> p.Parameter:
         # TODO: because of the return whenever constraints are satisfied, the first case never arises
         loss = distance if penalty <= 0 else penalty + distance + 1.0
         opt.tell(cand, loss)
-    return opt.recommend()
+    return parameter.spawn_child().set_standardized_data(opt.recommend().get_standardized_data())
