@@ -33,7 +33,7 @@ def test_log_parameters(tmp_path: Path) -> None:
     logs = logger.load_flattened()
     assert len(logs) == 32
     assert isinstance(logs[-1]["1"], float)
-    assert len(logs[-1]) == 35
+    assert len(logs[-1]) == 31
     logs = logger.load_flattened(max_list_elements=2)
     assert len(logs[-1]) == 27
     # deletion
@@ -81,3 +81,16 @@ def test_progressbar_dump(tmp_path: Path) -> None:
     for _ in range(12):
         cand = optimizer.ask()
         optimizer.tell(cand, 0)
+
+
+def test_early_stopping() -> None:
+    instrum = ng.p.Instrumentation(
+        None, 2.0, blublu="blublu", array=ng.p.Array(shape=(3, 2)), multiobjective=True
+    )
+    optimizer = optimizerlib.OnePlusOne(parametrization=instrum, budget=100)
+    early_stopping = ng.callbacks.EarlyStopping(lambda opt: opt.num_ask > 3)
+    optimizer.register_callback("ask", early_stopping)
+    optimizer.minimize(_func, verbosity=2)
+    # below functions are inlcuded in the docstring
+    assert optimizer.current_bests["minimum"].mean < 12
+    assert optimizer.recommend().loss < 12  # type: ignore

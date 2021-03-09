@@ -101,7 +101,7 @@ def check_optimizer(
     assert not optimizer._asked, "All `ask`s  should have been followed by a `tell`"
     try:
         data = np.random.normal(0, 1, size=optimizer.dimension)
-        candidate = optimizer.parametrization.spawn_child().set_standardized_data(data, deterministic=False)
+        candidate = optimizer.parametrization.spawn_child().set_standardized_data(data)
         optimizer.tell(candidate, 12.0)
     except Exception as e:  # pylint: disable=broad-except
         if not isinstance(e, base.errors.TellNotAskedNotSupportedError):
@@ -319,8 +319,8 @@ def test_optimizer_families_repr() -> None:
     np.testing.assert_equal(repr(Cls()), "DifferentialEvolution()")
     np.testing.assert_equal(repr(Cls(initialization="LHS")), "DifferentialEvolution(initialization='LHS')")
     #
-    optimrs = optlib.RandomSearchMaker(cauchy=True)
-    np.testing.assert_equal(repr(optimrs), "RandomSearchMaker(cauchy=True)")
+    optimrs = optlib.RandomSearchMaker(sampler="cauchy")
+    np.testing.assert_equal(repr(optimrs), "RandomSearchMaker(sampler='cauchy')")
     #
     optimso = optlib.ScipyOptimizer(method="COBYLA")
     np.testing.assert_equal(repr(optimso), "ScipyOptimizer(method='COBYLA')")
@@ -441,14 +441,15 @@ def test_chaining() -> None:
 def test_parametrization_optimizer_reproducibility() -> None:
     parametrization = ng.p.Instrumentation(ng.p.Array(shape=(1,)), y=ng.p.Choice(list(range(100))))
     parametrization.random_state.seed(12)
-    optimizer = optlib.RandomSearch(parametrization, budget=10)
+    optimizer = optlib.RandomSearch(parametrization, budget=20)
     recom = optimizer.minimize(_square)
-    np.testing.assert_equal(recom.kwargs["y"], 4)
-    # resampling deterministically
-    # (this test has been reeeally useful so far, any change of the output must be investigated)
+    np.testing.assert_equal(recom.kwargs["y"], 1)
+    # resampling deterministically, to make sure it is identical
     data = recom.get_standardized_data(reference=optimizer.parametrization)
-    recom = optimizer.parametrization.spawn_child().set_standardized_data(data, deterministic=True)
-    np.testing.assert_equal(recom.kwargs["y"], 67)
+    recom = optimizer.parametrization.spawn_child()
+    with ng.p.helpers.deterministic_sampling(recom):
+        recom.set_standardized_data(data)
+    np.testing.assert_equal(recom.kwargs["y"], 1)
 
 
 @testing.suppress_nevergrad_warnings()
@@ -518,17 +519,19 @@ def test_metamodel(dimension: int, num_workers: int, scale: float, budget: int, 
         assert _target(default_recom) > 7.0 * _target(metamodel_recom)
 
 
-@pytest.mark.parametrize(
-    "penalization,expected",
+@pytest.mark.parametrize(  # type: ignore
+    "penalization,expected,as_layer",
     [
-        (False, [1.005573e00, 3.965783e-04]),
-        (True, [1.000029, -1.606446]),
+        (False, [1.005573e00, 3.965783e-04], False),
+        (True, [0.999987, -0.322118], False),
+        (False, [1.000760, -5.116619e-4], True),
     ],
 )
 @testing.suppress_nevergrad_warnings()  # hides failed constraints
-def test_constrained_optimization(penalization: bool, expected: tp.List[float]) -> None:
+def test_constrained_optimization(penalization: bool, expected: tp.List[float], as_layer: bool) -> None:
     def constraint(i: tp.Any) -> tp.Union[bool, float]:
-        return i[1]["x"][0] >= 1
+        out = i[1]["x"][0] >= 1
+        return out if not as_layer else float(not out)
 
     parametrization = ng.p.Instrumentation(x=ng.p.Array(shape=(1,)), y=ng.p.Scalar())
     optimizer = optlib.OnePlusOne(parametrization, budget=100)
@@ -541,8 +544,8 @@ def test_constrained_optimization(penalization: bool, expected: tp.List[float]) 
 
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", category=UserWarning)
-        optimizer.parametrization.register_cheap_constraint(constraint)
-    recom = optimizer.minimize(_square)
+        optimizer.parametrization.register_cheap_constraint(constraint, as_layer=as_layer)
+    recom = optimizer.minimize(_square, verbosity=2)
     np.testing.assert_array_almost_equal([recom.kwargs["x"][0], recom.kwargs["y"]], expected)
 
 
@@ -609,7 +612,7 @@ def test_shiwa_dim1() -> None:
     ],  # pylint: disable=too-many-arguments
 )
 @testing.suppress_nevergrad_warnings()
-def test_shiwa_selection(
+def test_ngopt_selection(
     name: str, param: tp.Any, budget: int, num_workers: int, expected: str, caplog: tp.Any
 ) -> None:
     with caplog.at_level(logging.DEBUG, logger="nevergrad.optimization.optimizerlib"):
@@ -638,8 +641,8 @@ def test_bo_ordering() -> None:
         ("NGOpt8", 3, 1, False, 100, ["OnePlusOne", "OnePlusOne"]),
         ("NGOpt8", 3, 1, False, 200, ["SQP", "SQP"]),
         ("NGOpt8", 3, 1, True, 1000, ["SQP", "monovariate", "monovariate"]),
-        (None, 3, 1, False, 1000, ["CMA", "CMA"]),
-        (None, 3, 20, False, 1000, ["MetaModel", "MetaModel"]),
+        (None, 3, 1, False, 1000, ["CMA", "OnePlusOne"]),
+        (None, 3, 20, False, 1000, ["MetaModel", "OnePlusOne"]),
     ],
 )
 def test_ngo_split_optimizer(  # pylint: disable=too-many-arguments
@@ -662,7 +665,7 @@ def test_ngo_split_optimizer(  # pylint: disable=too-many-arguments
         if fake_learning
         else ng.p.Choice(["const", ng.p.Array(init=list(range(dimension)))])
     )
-    opt: tp.Union[base.ConfiguredOptimizer, tp.Type[base.Optimizer]] = (
+    opt: base.OptCls = (
         xpvariants.MetaNGOpt10
         if name is None
         else (optlib.ConfSplitOptimizer(multivariate_optimizer=optlib.registry[name]))
@@ -715,7 +718,7 @@ def _multiobjective(z: np.ndarray) -> tp.Tuple[float, float, float]:
     return (abs(x - 1), abs(y + 1), abs(x - y))
 
 
-@pytest.mark.parametrize("name", ["DE", "ES"])  # type: ignore
+@pytest.mark.parametrize("name", ["DE", "ES", "OnePlusOne"])  # type: ignore
 @testing.suppress_nevergrad_warnings()  # hides bad loss
 def test_mo_constrained(name: str) -> None:
     optimizer = optlib.registry[name](2, budget=60)
@@ -731,3 +734,33 @@ def test_mo_constrained(name: str) -> None:
     optimizer.tell(point, _multiobjective(point.value))
     if isinstance(optimizer, es._EvolutionStrategy):
         assert optimizer._rank_method is not None  # make sure the nsga2 ranker is used
+
+
+@pytest.mark.parametrize("name", ["DE", "ES", "OnePlusOne"])  # type: ignore
+@testing.suppress_nevergrad_warnings()  # hides bad loss
+def test_mo_with_nan(name: str) -> None:
+    param = ng.p.Instrumentation(x=ng.p.Scalar(lower=0, upper=5), y=ng.p.Scalar(lower=0, upper=3))
+    optimizer = optlib.registry[name](param, budget=60)
+    optimizer.tell(ng.p.MultiobjectiveReference(), [10, 10, 10])
+    for _ in range(50):
+        cand = optimizer.ask()
+        optimizer.tell(cand, [-38, 0, np.nan])
+
+
+@pytest.mark.parametrize("name", ["LhsDE", "RandomSearch"])  # type: ignore
+def test_uniform_sampling(name: str) -> None:
+    param = ng.p.Scalar(lower=-100, upper=100).set_mutation(sigma=1)
+    opt = optlib.registry[name](param, budget=600, num_workers=100)
+    above_50 = 0
+    for _ in range(100):
+        above_50 += abs(opt.ask().value) > 50
+    assert above_50 > 20  # should be around 50
+
+
+def test_paraportfolio_de() -> None:
+    workers = 40
+    opt = optlib.ParaPortfolio(12, budget=100 * workers, num_workers=workers)
+    for _ in range(3):
+        cands = [opt.ask() for _ in range(workers)]
+        for cand in cands:
+            opt.tell(cand, np.random.rand())

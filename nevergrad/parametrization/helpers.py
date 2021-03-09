@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import contextlib
 import itertools
 import random
 import typing as tp
@@ -10,6 +11,7 @@ import numpy as np
 from . import core
 from . import container
 from . import choice
+from . import _layering
 from . import data as pdata
 
 
@@ -73,6 +75,30 @@ def flatten_parameter(
     return flat
 
 
+@contextlib.contextmanager
+def deterministic_sampling(parameter: core.Parameter) -> tp.Iterator[None]:
+    """Temporarily change the behavior of a Parameter to become deterministic
+
+    Parameters
+    ----------
+    parameter: Parameter
+        the parameter which must behave deterministically during the "with" context
+    """
+    all_params = flatten_parameter(parameter)
+    int_layers = list(
+        itertools.chain.from_iterable([_layering.Int.filter_from(x) for x in all_params.values()])
+    )
+    # record state and set deterministic to True
+    deterministic = [lay.deterministic for lay in int_layers]
+    for lay in int_layers:
+        lay.deterministic = True
+    yield
+    # sample and reset the previous behavior
+    parameter.value  # pylint: disable=pointless-statement
+    for lay, det in zip(int_layers, deterministic):
+        lay.deterministic = det
+
+
 # pylint: disable=too-many-locals
 def split_as_data_parameters(
     parameter: core.Parameter,
@@ -110,7 +136,7 @@ def split_as_data_parameters(
     for k, key in enumerate(keys):
         for not_ref, flat in enumerate((flatref, flatc)):
             param = flat[key]
-            param.bound_transform = None  # force remove the bound to avoid weird clipping
+            param._layers = param._layers[:1]  # force remove the bound to avoid weird clipping etc
             param.set_mutation(sigma=1.0)  # force mutation sigma to 1 to avoid rounding
             if not_ref:
                 param.set_standardized_data(k * np.ones((param.dimension)))

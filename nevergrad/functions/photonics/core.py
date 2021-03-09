@@ -37,7 +37,7 @@ def _make_parametrization(
 
     Parameters
     name: str
-        problem name, among bragg, chirped and morpho
+        problem name, among bragg, chirped, cf_photosic_realistic, cf_photosic_reference and morpho
     dimension: int
         size of the problem among 16, 40 and 60 (morpho) or 80 (bragg and chirped)
     bounding_method: str
@@ -106,7 +106,7 @@ class Photonics(base.ExperimentFunction):
     Parameters
     ----------
     name: str
-        problem name, among bragg, chirped and morpho
+        problem name, among bragg, chirped, cf_photosic_realistic, cf_photosic_reference and morpho
     dimension: int
         size of the problem among 16, 40 and 60 (morpho) or 80 (bragg and chirped)
     transform: str

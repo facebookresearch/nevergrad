@@ -22,7 +22,7 @@ OnePointDE = DifferentialEvolution(crossover="onepoint").set_name("OnePointDE", 
 ParametrizationDE = DifferentialEvolution(crossover="parametrization").set_name(
     "ParametrizationDE", register=True
 )
-MiniDE = DifferentialEvolution(scale="mini").set_name("MiniDE", register=True)
+MiniDE = DifferentialEvolution(initialization="gaussian", scale="mini").set_name("MiniDE", register=True)
 MiniLhsDE = DifferentialEvolution(initialization="LHS", scale="mini").set_name("MiniLhsDE", register=True)
 MiniQrDE = DifferentialEvolution(initialization="QR", scale="mini").set_name("MiniQrDE", register=True)
 AlmostRotationInvariantDEAndBigPop = DifferentialEvolution(crossover=0.9, popsize="dimension").set_name(
@@ -207,7 +207,7 @@ ChainCMAwithMetaRecentering = Chaining([MetaRecentering, CMA], ["num_workers"]).
 # Random search
 Zero = RandomSearchMaker(scale=0.0).set_name("Zero", register=True)
 StupidRandom = RandomSearchMaker(stupid=True).set_name("StupidRandom", register=True)
-CauchyRandomSearch = RandomSearchMaker(cauchy=True).set_name("CauchyRandomSearch", register=True)
+CauchyRandomSearch = RandomSearchMaker(sampler="cauchy").set_name("CauchyRandomSearch", register=True)
 RandomScaleRandomSearch = RandomSearchMaker(scale="random", middle_point=True).set_name(
     "RandomScaleRandomSearch", register=True
 )

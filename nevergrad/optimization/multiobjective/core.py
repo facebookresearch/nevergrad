@@ -166,8 +166,8 @@ class HypervolumePareto:
         if size is None or size >= len(self._pareto):  # No limit: we return the full set.
             return self._pareto
         if subset == "random":
-            return self._rng.choice(self._pareto, size)  # type: ignore
-        tentatives = [self._rng.choice(self._pareto, size) for _ in range(subset_tentatives)]
+            return self._rng.choice(self._pareto, size).tolist()  # type: ignore
+        tentatives = [self._rng.choice(self._pareto, size).tolist() for _ in range(subset_tentatives)]
         if self._hypervolume is None:
             raise RuntimeError("Hypervolume not initialized, not supported")  # TODO fix
         hypervolume = self._hypervolume
@@ -192,4 +192,4 @@ class HypervolumePareto:
                             raise ValueError(f'Unknown subset for Pareto-Set subsampling: "{subset}"')
                     score += best_score ** 2 if subset != "EPS" else max(score, best_score)
                 scores += [score]
-        return tentatives[scores.index(min(scores))]
+        return tentatives[scores.index(min(scores))]  # type: ignore

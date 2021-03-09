@@ -4,49 +4,24 @@
 # LICENSE file in the root directory of this source tree.
 
 import uuid
-import copy
 import warnings
 import numpy as np
 import nevergrad.common.typing as tp
 from nevergrad.common import errors
 from . import utils
+from ._layering import ValueProperty as ValueProperty
+from ._layering import Layered as Layered
+from ._layering import Level as Level
 
-# pylint: disable=no-value-for-parameter
+
+# pylint: disable=no-value-for-parameter,pointless-statement,import-outside-toplevel
 
 
 P = tp.TypeVar("P", bound="Parameter")
-X = tp.TypeVar("X")
 
 
-class ValueProperty(tp.Generic[X]):
-    """Typed property (descriptor) object so that the value attribute of
-    Parameter objects fetches _get_value and _set_value methods
-    """
-
-    # This uses the descriptor protocol, like a property:
-    # See https://docs.python.org/3/howto/descriptor.html
-    #
-    # Basically parameter.value calls parameter.value.__get__
-    # and then parameter._get_value
-    def __init__(self) -> None:
-        self.__doc__ = """Value of the Parameter, which should be sent to the function
-        to optimize.
-
-        Example
-        -------
-        >>> ng.p.Array(shape=(2,)).value
-        array([0., 0.])
-        """
-
-    def __get__(self, obj: "Parameter", objtype: tp.Optional[tp.Type[object]] = None) -> X:
-        return obj._get_value()  # type: ignore
-
-    def __set__(self, obj: "Parameter", value: X) -> None:
-        obj._set_value(value)
-
-
-# pylint: disable=too-many-instance-attributes,too-many-public-methods
-class Parameter:
+# pylint: disable=too-many-public-methods
+class Parameter(Layered):
     """Class providing the core functionality of a parameter, aka
     value, internal/model parameters, mutation, recombination
     and additional features such as shared random state,
@@ -63,10 +38,12 @@ class Parameter:
     # sub-parameters.
     # Spawning a child creates a shallow copy.
 
+    _LAYER_LEVEL = Level.ROOT
     value: ValueProperty[tp.Any] = ValueProperty()
 
     def __init__(self) -> None:
         # Main features
+        super().__init__()
         self.uid = uuid.uuid4().hex
         self._subobjects = utils.Subobjects(
             self, base=Parameter, attribute="__dict__"
@@ -102,12 +79,6 @@ class Parameter:
             return np.array([self.loss], dtype=float)
         raise RuntimeError("No loss was provided")
 
-    def _get_value(self) -> tp.Any:
-        raise NotImplementedError
-
-    def _set_value(self, value: tp.Any) -> tp.Any:
-        raise NotImplementedError
-
     @property
     def args(self) -> tp.Tuple[tp.Any, ...]:
         """Value of the positional arguments.
@@ -140,7 +111,7 @@ class Parameter:
         """Mutate parameters of the instance, and then its value"""
         self._check_frozen()
         self._subobjects.apply("mutate")
-        self.set_standardized_data(self.random_state.normal(size=self.dimension), deterministic=False)
+        self.set_standardized_data(self.random_state.normal(size=self.dimension))
 
     def sample(self: P) -> P:
         """Sample a new instance of the parameter.
@@ -148,10 +119,13 @@ class Parameter:
         This function should be used in optimizers when creating an initial population,
         and parameter.heritage["lineage"] is reset to parameter.uid instead of its parent's
         """
-        child = self.spawn_child()
-        child.mutate()
-        child.heritage["lineage"] = child.uid
-        return child
+        # inner working can be overrided by _layer_sample()
+        self.random_state  # make sure to populate it before copy
+        child = self._layers[-1]._layered_sample()
+        if not isinstance(child, Parameter) and not isinstance(child, type(self)):
+            raise errors.NevergradRuntimeError("Unexpected sample return type")
+        child._set_parenthood(None)
+        return child  # type: ignore
 
     def recombine(self: P, *others: P) -> None:
         """Update value and parameters of this instance by combining it with
@@ -203,9 +177,7 @@ class Parameter:
             f"Export to standardized data space is not implemented for {self.name}"
         )
 
-    def set_standardized_data(
-        self: P, data: tp.ArrayLike, *, reference: tp.Optional[P] = None, deterministic: bool = False
-    ) -> P:
+    def set_standardized_data(self: P, data: tp.ArrayLike, *, reference: tp.Optional[P] = None) -> P:
         """Updates the value of the provided reference (or self) using the standardized data.
 
         Parameters
@@ -214,8 +186,6 @@ class Parameter:
             the representation of the value in the optimization space
         reference: Parameter
             the reference point for representing the data ("self", if not provided)
-        deterministic: bool
-            whether the value should be deterministically drawn (max probability) in the case of stochastic parameters
 
         Returns
         -------
@@ -224,22 +194,20 @@ class Parameter:
 
         Note
         ----
-        To make the code more explicit, the "reference" and "deterministic" parameters are enforced
+        To make the code more explicit, the "reference" is enforced
         as keyword-only parameters.
         """
-        assert isinstance(deterministic, bool)
         sent_reference = self if reference is None else reference
         assert isinstance(
             sent_reference, self.__class__
         ), f"Expected {type(self)} but got {type(sent_reference)} as reference"
         self._check_frozen()
-        self._internal_set_standardized_data(
-            np.array(data, copy=False), reference=sent_reference, deterministic=deterministic
-        )
+        del self.value  # remove all cached information
+        self._internal_set_standardized_data(np.array(data, copy=False), reference=sent_reference)
         return self
 
     def _internal_set_standardized_data(  # pylint: disable=unused-argument
-        self: P, data: np.ndarray, reference: P, deterministic: bool = False
+        self: P, data: np.ndarray, reference: P
     ) -> None:
         if data.size:
             raise errors.UnsupportedParameterOperationError(
@@ -259,49 +227,17 @@ class Parameter:
         if isinstance(val, (str, bytes, float, int)):
             return val
         elif isinstance(val, np.ndarray):
-            return val.tobytes()  # type: ignore
+            return val.tobytes()
         else:
             raise errors.UnsupportedParameterOperationError(
                 f"Value hash is not supported for object {self.name}"
             )
-
-    def _get_name(self) -> str:
-        """Internal implementation of parameter name. This should be value independant, and should not account
-        for internal/model parameters.
-        """
-        return self.__class__.__name__
-
-    @property
-    def name(self) -> str:
-        """Name of the parameter
-        This is used to keep track of how this Parameter is configured (included through internal/model parameters),
-        mostly for reproducibility A default version is always provided, but can be overriden directly
-        through the attribute, or through the set_name method (which allows chaining).
-        """
-        if self._name is not None:
-            return self._name
-        return self._get_name()
-
-    @name.setter
-    def name(self, name: str) -> None:
-        self.set_name(name)  # with_name allows chaining
 
     def __repr__(self) -> str:
         strings = [self.name]
         if not callable(self.value):  # not a mutation
             strings.append(str(self.value))
         return ":".join(strings)
-
-    def set_name(self: P, name: str) -> P:
-        """Sets a name and return the current instrumentation (for chaining)
-
-        Parameters
-        ----------
-        name: str
-            new name to use to represent the Parameter
-        """
-        self._name = name
-        return self
 
     # %% Constraint management
 
@@ -334,7 +270,9 @@ class Parameter:
         return all(utils.float_penalty(func(val)) <= 0 for func in self._constraint_checkers)
 
     def register_cheap_constraint(
-        self, func: tp.Union[tp.Callable[[tp.Any], bool], tp.Callable[[tp.Any], float]]
+        self,
+        func: tp.Union[tp.Callable[[tp.Any], bool], tp.Callable[[tp.Any], float]],
+        as_layer: bool = False,
     ) -> None:
         """Registers a new constraint on the parameter values.
 
@@ -349,10 +287,23 @@ class Parameter:
         - this is only for checking after mutation/recombination/etc if the value still satisfy the constraints.
           The constraint is not used in those processes.
         - constraints should be fast to compute.
+        - this function has an additional "as_layer" parameter which is experimental for now, and can have unexpected
+          behavior
         """
         if getattr(func, "__name__", "not lambda") == "<lambda>":  # LambdaType does not work :(
             warnings.warn("Lambda as constraint is not advised because it may not be picklable.")
-        self._constraint_checkers.append(func)
+        if not as_layer:
+            self._constraint_checkers.append(func)
+        else:
+            from nevergrad.ops.constraints import Constraint
+            import nevergrad as ng
+
+            compat_func = (
+                func
+                if not isinstance(self, ng.p.Instrumentation)
+                else utils._ConstraintCompatibilityFunction(func)
+            )
+            self.add_layer(Constraint(compat_func))  # type: ignore
 
     # %% random state
 
@@ -394,27 +345,50 @@ class Parameter:
         """
         # make sure to initialize the random state  before spawning children
         self.random_state  # pylint: disable=pointless-statement
-        child = copy.copy(self)
+        child = self.copy()
+        child._set_parenthood(self)
+        if new_value is not None:
+            child.value = new_value
+        return child
+
+    def copy(self: P) -> P:
+        """Creates a full copy of the parameter (with new unique uid).
+        Use spawn_child instead to make sure to add the parenthood information.
+        """
+        child = super().copy()
         child.uid = uuid.uuid4().hex
         child._frozen = False
-        child._generation += 1
-        child.parents_uids = [self.uid]
-        child.heritage = dict(self.heritage)
         child._subobjects = self._subobjects.new(child)
         child._meta = {}
+        child.parents_uids = list(self.parents_uids)
+        child.heritage = dict(self.heritage)
         child.loss = None
         child._losses = None
         child._constraint_checkers = list(self._constraint_checkers)
+        # layers
+        if self is not self._layers[0]:
+            raise errors.NevergradRuntimeError("Something has gone horribly wrong with the layers")
+        # subparameters
         attribute = self._subobjects.attribute
         container = getattr(child, attribute)
         if attribute != "__dict__":  # make a copy of the container if different from __dict__
             container = dict(container) if isinstance(container, dict) else list(container)
             setattr(child, attribute, container)
         for key, val in self._subobjects.items():
-            container[key] = val.spawn_child()
-        if new_value is not None:
-            child.value = new_value
+            container[key] = val.copy()
+        del child.value  # clear cache
         return child
+
+    def _set_parenthood(self, parent: tp.Optional["Parameter"]) -> None:
+        """Sets the parenthood information to Parameter and subparameters."""
+        if parent is None:
+            self._generation = 0
+            self.heritage = dict(lineage=self.uid)
+            self.parents_uids = []
+        else:
+            self._generation = parent.generation + 1
+            self.parents_uids = [parent.uid]
+        self._subobjects.apply("_set_parenthood", parent)
 
     def freeze(self) -> None:
         """Prevents the parameter from changing value again (through value, mutate etc...)"""
@@ -426,18 +400,10 @@ class Parameter:
             self, Constant
         ):  # nevermind constants (since they dont spawn children)
             raise RuntimeError(
-                f"Cannot modify frozen Parameter {self}, please spawn a child and modify it instead"
+                f"Cannot modify frozen Parameter {self.name}, please spawn a child and modify it instead"
                 "(optimizers freeze the parametrization and all asked and told candidates to avoid border effects)"
             )
         self._subobjects.apply("_check_frozen")
-
-    def copy(self: P) -> P:  # TODO test (see former instrumentation_copy test)
-        """Create a child, but remove the random state
-        This is used to run multiple experiments
-        """
-        child = self.spawn_child()
-        child.random_state = None
-        return child
 
     def _compute_descriptors(self) -> utils.Descriptors:
         return utils.Descriptors()
@@ -479,10 +445,10 @@ class Constant(Parameter):
         except errors.UnsupportedParameterOperationError:
             return "#non-hashable-constant#"
 
-    def _get_value(self) -> tp.Any:
+    def _layered_get_value(self) -> tp.Any:
         return self._value
 
-    def _set_value(self, value: tp.Any) -> None:
+    def _layered_set_value(self, value: tp.Any) -> None:
         different = False
         if isinstance(value, np.ndarray):
             if not np.equal(value, self._value).all():
@@ -493,6 +459,9 @@ class Constant(Parameter):
             raise ValueError(
                 f'Constant value can only be updated to the same value (in this case "{self._value}")'
             )
+
+    def _layered_sample(self: P) -> P:
+        return self
 
     def get_standardized_data(  # pylint: disable=unused-argument
         self: P, *, reference: tp.Optional[P] = None
@@ -530,3 +499,15 @@ class MultiobjectiveReference(Constant):
                 f"be used by the optimizer.\n(received {parameter} of type {type(parameter)})"
             )
         super().__init__(parameter)
+
+
+class Operator(Layered):
+    """Layer object that can be used as an operator on a Parameter"""
+
+    _LAYER_LEVEL = Level.OPERATION
+
+    def __call__(self, parameter: Parameter) -> Parameter:
+        """Applies the operator on a Parameter to create a new Parameter"""
+        new = parameter.copy()
+        new.add_layer(self.copy())
+        return new
