@@ -769,4 +769,5 @@ def _constraint_solver(parameter: p.Parameter, budget: int) -> p.Parameter:
         # TODO: because of the return whenever constraints are satisfied, the first case never arises
         loss = distance if penalty <= 0 else penalty + distance + 1.0
         opt.tell(cand, loss)
-    return parameter.spawn_child().set_standardized_data(opt.recommend().get_standardized_data())
+    data = opt.recommend().get_standardized_data(reference=parameter_without_constraint)
+    return parameter.spawn_child().set_standardized_data(data)
