@@ -89,7 +89,7 @@ class Image(base.ExperimentFunction):
         """ Generates images tensor of shape [nb_images, x, y, 3] with pixels between 0 and 255"""
         # pylint: disable=not-callable
         noise = torch.tensor(x.astype("float32"))
-        return ((self.pgan_model.test(noise).clamp(min=-1, max=1) + 1) * 255.99 / 2).permute(0, 2, 3, 1).cpu().numpy()[:,:,:,[2,1,0]]  # type: ignore
+        return ((self.pgan_model.test(noise).clamp(min=-1, max=1) + 1) * 255.99 / 2).permute(0, 2, 3, 1).cpu().numpy()[:, :, :, [2, 1, 0]]  # type: ignore
 
     def interpolate(self, base_image: np.ndarray, target: np.ndarray, k: int, num_images: int) -> np.ndarray:
         if num_images == 1:
@@ -111,7 +111,12 @@ class Image(base.ExperimentFunction):
                 movability = 4 * (
                     0.25 - (i / (num_total_images - 1) - 0.5) ** 2
                 )  # 1 if i == num_total_images/2, 0 if 0 or num_images-1
-            moving = movability * np.sqrt(self.dimension) * np.expand_dims(x[base_i], 0) / np.linalg.norm(x[base_i])
+            moving = (
+                movability
+                * np.sqrt(self.dimension)
+                * np.expand_dims(x[base_i], 0)
+                / np.linalg.norm(x[base_i])
+            )
             base_image += moving
             image = self._generate_images(base_image).squeeze(0)
             image = cv2.resize(image, dsize=(226, 226), interpolation=cv2.INTER_NEAREST)
