@@ -2414,7 +2414,7 @@ class NGOpt(NGOpt10):
 
 
 class _MSR(CM):
-    """This code applies 16 copies of NGOpt10 with random weights for the different objective functions.
+    """This code applies multiple copies of NGOpt with random weights for the different objective functions.
 
     Variants dedicated to multiobjective optimization by multiple monoobjective optimization.
     """
@@ -2433,12 +2433,15 @@ class _MSR(CM):
             NGOpt(self.parametrization, budget=1 + (budget // self.num_optims), num_workers=num_workers)
             for _ in range(self.num_optims)
         ]
-        self.coeffs = [
-            self.parametrization.random_state.uniform(size=self.num_objectives)
-            for _ in range(self.num_optims)
-        ]
+        self.coeff: tp.Optional[tp.List[float]] = None
+
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        if self.coeff is None:
+            self.coeffs = [
+                self.parametrization.random_state.uniform(size=self.num_objectives)
+                for _ in range(self.num_optims)
+            ]        
         for i, opt in enumerate(self.optims):
             this_loss = np.sum(loss * self.coeffs[i])
             opt.tell(candidate, this_loss)
