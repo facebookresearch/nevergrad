@@ -108,20 +108,10 @@ Telling non-asked points, or suggesting points
 ----------------------------------------------
 There are two ways to inoculate information you already have about some points:
 
-- :code:`optimizer.sugggest(*args, **kwargs)`: after suggesting a point, the next :code:`ask` will be a point
-  with the provided :code:`value`.
-- :code:`candidate = optimizer.parametrization.spawn_child(new_value=your_value)`  which you can then use to
-  :code:`tell` the optimizer with the corresponding loss.
+- :code:`optimizer.sugggest(*args, **kwargs)`: after suggesting a point, the next :code:`ask` will be a point with the provided inputs. Make sure you call :code:`optimizer.suggest` the same way (= with the same arguments) that you would call your function to optimize.
+- :code:`candidate = optimizer.parametrization.spawn_child(new_value=your_value)`  which you can then use to :code:`tell` the optimizer with the corresponding loss.
 
 **Examples:**
-
-- parametrized with an :code:`Array`:
-
-.. literalinclude:: ../nevergrad/optimization/test_doc.py
-    :language: python
-    :dedent: 4
-    :start-after: DOC_INOCULATION_0
-    :end-before: DOC_INOCULATION_1
 
 - parametrized with an :code:`ng.p.Instrumentation`
 
@@ -131,6 +121,13 @@ There are two ways to inoculate information you already have about some points:
     :start-after: DOC_INOCULATION_1
     :end-before: DOC_INOCULATION_2
 
+- parametrized with an :code:`Array`:
+
+.. literalinclude:: ../nevergrad/optimization/test_doc.py
+    :language: python
+    :dedent: 4
+    :start-after: DOC_INOCULATION_0
+    :end-before: DOC_INOCULATION_1
 
 **Note:** some optimizers do not support such inoculation. Those will raise a :code:`TellNotAskedNotSupportedError`.
 
