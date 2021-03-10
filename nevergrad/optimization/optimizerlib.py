@@ -2435,13 +2435,12 @@ class _MSR(CM):
         ]
         self.coeff: tp.Optional[tp.List[float]] = None
 
-
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         if self.coeff is None:
             self.coeffs = [
                 self.parametrization.random_state.uniform(size=self.num_objectives)
                 for _ in range(self.num_optims)
-            ]        
+            ]
         for i, opt in enumerate(self.optims):
             this_loss = np.sum(loss * self.coeffs[i])
             opt.tell(candidate, this_loss)
