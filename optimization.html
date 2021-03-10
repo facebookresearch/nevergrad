@@ -303,24 +303,10 @@ Also, <strong>you can print the full list of optimizers</strong> with:</p>
 <h2>Telling non-asked points, or suggesting points<a class="headerlink" href="#telling-non-asked-points-or-suggesting-points" title="Permalink to this headline">¶</a></h2>
 <p>There are two ways to inoculate information you already have about some points:</p>
 <ul class="simple">
-<li><p><code class="code docutils literal notranslate"><span class="pre">optimizer.sugggest(*args,</span> <span class="pre">**kwargs)</span></code>: after suggesting a point, the next <code class="code docutils literal notranslate"><span class="pre">ask</span></code> will be a point
-with the provided <code class="code docutils literal notranslate"><span class="pre">value</span></code>.</p></li>
-<li><p><code class="code docutils literal notranslate"><span class="pre">candidate</span> <span class="pre">=</span> <span class="pre">optimizer.parametrization.spawn_child(new_value=your_value)</span></code>  which you can then use to
-<code class="code docutils literal notranslate"><span class="pre">tell</span></code> the optimizer with the corresponding loss.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">optimizer.sugggest(*args,</span> <span class="pre">**kwargs)</span></code>: after suggesting a point, the next <code class="code docutils literal notranslate"><span class="pre">ask</span></code> will be a point with the provided inputs. Make sure you call <code class="code docutils literal notranslate"><span class="pre">optimizer.suggest</span></code> the same way (= with the same arguments) that you would call your function to optimize.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">candidate</span> <span class="pre">=</span> <span class="pre">optimizer.parametrization.spawn_child(new_value=your_value)</span></code>  which you can then use to <code class="code docutils literal notranslate"><span class="pre">tell</span></code> the optimizer with the corresponding loss.</p></li>
 </ul>
 <p><strong>Examples:</strong></p>
-<ul class="simple">
-<li><p>parametrized with an <code class="code docutils literal notranslate"><span class="pre">Array</span></code>:</p></li>
-</ul>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">optim</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">OnePlusOne</span><span class="p">(</span><span class="n">parametrization</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">budget</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
-<span class="n">optim</span><span class="o">.</span><span class="n">suggest</span><span class="p">([</span><span class="mi">12</span><span class="p">,</span> <span class="mi">12</span><span class="p">])</span>
-<span class="n">candidate</span> <span class="o">=</span> <span class="n">optim</span><span class="o">.</span><span class="n">ask</span><span class="p">()</span>
-<span class="c1"># equivalent to:</span>
-<span class="n">candidate</span> <span class="o">=</span> <span class="n">optim</span><span class="o">.</span><span class="n">parametrization</span><span class="o">.</span><span class="n">spawn_child</span><span class="p">(</span><span class="n">new_value</span><span class="o">=</span><span class="p">[</span><span class="mi">12</span><span class="p">,</span> <span class="mi">12</span><span class="p">])</span>
-<span class="c1"># you can then use to tell the loss</span>
-<span class="n">optim</span><span class="o">.</span><span class="n">tell</span><span class="p">(</span><span class="n">candidate</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">)</span>
-</pre></div>
-</div>
 <ul class="simple">
 <li><p>parametrized with an <code class="code docutils literal notranslate"><span class="pre">ng.p.Instrumentation</span></code></p></li>
 </ul>
@@ -330,6 +316,18 @@ with the provided <code class="code docutils literal notranslate"><span class="p
 <span class="n">candidate</span> <span class="o">=</span> <span class="n">optim</span><span class="o">.</span><span class="n">ask</span><span class="p">()</span>
 <span class="c1"># equivalent to:</span>
 <span class="n">candidate</span> <span class="o">=</span> <span class="n">optim</span><span class="o">.</span><span class="n">parametrization</span><span class="o">.</span><span class="n">spawn_child</span><span class="p">(</span><span class="n">new_value</span><span class="o">=</span><span class="p">((</span><span class="s2">&quot;c&quot;</span><span class="p">,),</span> <span class="p">{</span><span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="mf">0.02</span><span class="p">}))</span>
+<span class="c1"># you can then use to tell the loss</span>
+<span class="n">optim</span><span class="o">.</span><span class="n">tell</span><span class="p">(</span><span class="n">candidate</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>parametrized with an <code class="code docutils literal notranslate"><span class="pre">Array</span></code>:</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">optim</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">OnePlusOne</span><span class="p">(</span><span class="n">parametrization</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">budget</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+<span class="n">optim</span><span class="o">.</span><span class="n">suggest</span><span class="p">([</span><span class="mi">12</span><span class="p">,</span> <span class="mi">12</span><span class="p">])</span>
+<span class="n">candidate</span> <span class="o">=</span> <span class="n">optim</span><span class="o">.</span><span class="n">ask</span><span class="p">()</span>
+<span class="c1"># equivalent to:</span>
+<span class="n">candidate</span> <span class="o">=</span> <span class="n">optim</span><span class="o">.</span><span class="n">parametrization</span><span class="o">.</span><span class="n">spawn_child</span><span class="p">(</span><span class="n">new_value</span><span class="o">=</span><span class="p">[</span><span class="mi">12</span><span class="p">,</span> <span class="mi">12</span><span class="p">])</span>
 <span class="c1"># you can then use to tell the loss</span>
 <span class="n">optim</span><span class="o">.</span><span class="n">tell</span><span class="p">(</span><span class="n">candidate</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">)</span>
 </pre></div>
