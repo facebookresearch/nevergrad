@@ -2422,3 +2422,6 @@ class NGOpt10(NGOpt8):
 @registry.register
 class NGOpt(NGOpt10):
     pass
+
+# TODO: REPLACE THIS BY COOP DIRECTLY
+from .coop import *
