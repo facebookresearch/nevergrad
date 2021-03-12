@@ -79,8 +79,7 @@ class _OnePlusOne(base.Optimizer):
         self.use_pareto = use_pareto
         all_params = p.helpers.flatten_parameter(self.parametrization)
         arity = max(
-            len(param.choices) if isinstance(param, p.TransitionChoice) else 500
-            for param in all_params.values()
+            len(param.choices) if isinstance(param, p.TransitionChoice) else 500 for _, param in all_params
         )
         self.arity_for_discrete_mutation = arity
         # configuration
@@ -1940,7 +1939,7 @@ class cGA(base.Optimizer):
             all_params = p.helpers.flatten_parameter(self.parametrization)
             arity = max(
                 len(param.choices) if isinstance(param, p.TransitionChoice) else 500
-                for param in all_params.values()
+                for _, param in all_params
             )
         self._arity = arity
         self._penalize_cheap_violations = False  # Not sure this is the optimal decision.
@@ -2170,7 +2169,7 @@ class NGOptBase(base.Optimizer):
         all_params = p.helpers.flatten_parameter(self.parametrization)
         # figure out if there is any discretization layers
         int_layers = list(
-            itertools.chain.from_iterable([_layering.Int.filter_from(x) for x in all_params.values()])
+            itertools.chain.from_iterable([_layering.Int.filter_from(x) for _, x in all_params])
         )
         int_layers = [x for x in int_layers if x.arity is not None]  # only "Choice" instances for now
         self.has_discrete_not_softmax = any(

@@ -43,28 +43,26 @@ def test_command_function() -> None:
 
 
 @testing.parametrized(
-    scalar=(False, p.Scalar(), ("",)),
-    v_scalar=(True, p.Scalar(), ("",)),
-    tuple_=(False, p.Tuple(p.Scalar(), p.Array(shape=(2,))), ("", "0", "1")),
-    v_tuple_=(True, p.Tuple(p.Scalar(), p.Array(shape=(2,))), ("0", "1")),
-    instrumentation=(False, p.Instrumentation(p.Scalar(), y=p.Scalar()), ("", "0", "y")),
-    instrumentation_v=(True, p.Instrumentation(p.Scalar(), y=p.Scalar()), ("0", "y")),
-    choice=(False, p.Choice([p.Scalar(), "blublu"]), ("", "choices", "choices.0", "choices.1", "indices")),
-    v_choice=(True, p.Choice([p.Scalar(), "blublu"]), ("", "choices.0", "indices")),
+    scalar=(p.Scalar(), ("",)),
+    v_scalar=(p.Scalar(), ("",)),
+    tuple_=(p.Tuple(p.Scalar(), p.Array(shape=(2,))), ("", "0", "1")),
+    v_tuple_=(p.Tuple(p.Scalar(), p.Array(shape=(2,))), ("0", "1")),
+    instrumentation=(p.Instrumentation(p.Scalar(), y=p.Scalar()), ("", "0", "y")),
+    instrumentation_v=(p.Instrumentation(p.Scalar(), y=p.Scalar()), ("0", "y")),
+    choice=(p.Choice([p.Scalar(), "blublu"]), ("", "choices", "choices.0", "choices.1", "indices")),
+    v_choice=(p.Choice([p.Scalar(), "blublu"]), ("", "choices.0", "indices")),
     tuple_choice_dict=(
-        False,
         p.Tuple(p.Choice([p.Dict(x=p.Scalar(), y=12), p.Scalar()])),
         ("", "0", "0.choices", "0.choices.0", "0.choices.0.x", "0.choices.0.y", "0.choices.1", "0.indices"),
     ),
     v_tuple_choice_dict=(
-        True,
         p.Tuple(p.Choice([p.Dict(x=p.Scalar(), y=12), p.Scalar()])),
         ("0", "0.choices.0.x", "0.choices.1", "0.indices"),
     ),
 )
-def test_flatten_parameter(no_container: bool, param: p.Parameter, keys: tp.Iterable[str]) -> None:
-    flat = helpers.flatten_parameter(param, with_containers=not no_container)
-    assert set(flat) == set(keys), f"Unexpected flattened parameter: {flat}"
+def test_flatten_parameter(param: p.Parameter, keys: tp.Iterable[str]) -> None:
+    flat = helpers.flatten_parameter(param)
+    assert set(x[0] for x in flat) == set(keys), f"Unexpected flattened parameter: {flat}"
 
 
 @testing.parametrized(
@@ -119,8 +117,8 @@ def test_split_as_data_parameters(param: p.Parameter, names: tp.List[str]) -> No
 )
 def test_flatten_parameter_order(order: int, keys: tp.Iterable[str]) -> None:
     param = p.Choice([p.Dict(x=p.Scalar(), y=12), p.Scalar().sigma.set_mutation(sigma=p.Scalar())])
-    flat = helpers.flatten_parameter(param, with_containers=False, order=order)
-    assert set(flat) == set(keys), f"Unexpected flattened parameter: {flat}"
+    flat = helpers.flatten_parameter(param, order=order)
+    assert set(x[0] for x in flat) == set(keys), f"Unexpected flattened parameter: {flat}"
 
 
 def test_descriptors() -> None:

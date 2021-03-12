@@ -10,14 +10,11 @@ import typing as tp
 import numpy as np
 from . import core
 from . import container
-from . import choice
 from . import _layering
 from . import data as pdata
 
 
-def flatten_parameter(
-    parameter: core.Parameter, with_containers: bool = True, order: int = 0
-) -> tp.Dict[str, core.Parameter]:
+def flatten_parameter(parameter: core.Parameter, order: int = 0) -> tp.List[tp.Tuple[str, core.Parameter]]:
     """List all the instances involved as parameter (not as subparameter/
     endogeneous parameter)
 
@@ -25,54 +22,50 @@ def flatten_parameter(
     ---------
     parameter: Parameter
         the parameter to inspect
-    with_container: bool
-        returns only non-container instances (aka no Dict, Tuple, Instrumentation or Constant)
+    only_data: bool
+        returns only data instances
     order: int
         order of model/internal parameters to extract. With 0, no model/internal parameters is
         extracted, with 1, only 1st order are extracted, with 2, so model/internal parameters and
-        their own model/internal parameters etc...
+        their own model/internal parameters etc. Order 1 subparameters/endogeneous parameters
+        include sigma for instance.
+
 
     Returns
     -------
-    dict
-        a dict of all parameters implied in this parameter, i.e all choices, items of dict
-        and tuples etc, but not the subparameters/endogeneous parameters like sigma
-        with keys if type "<index>.<key>" for a tuple containing dicts containing data for instance.
+    list
+        a list of all (name, parameter) implied in this parameter, i.e all choices, items of dict
+        and tuples etc (except if only_data=True). Names have a format "<index>.<key>" for a tuple
+        containing dicts containing data for instance. Supbaramaters have # in their names.
+        The parameters are sorted in the same way they would appear in the standard data.
 
-    Note
-    ----
-    This function is experimental, its output will probably evolve before converging.
     """
-    flat = {"": parameter}
+    flat = [("", parameter)]
     if isinstance(parameter, container.Container):
         content_to_add: tp.List[container.Container] = [parameter]
         if isinstance(parameter, container.Instrumentation):  # special case: skip internal Tuple and Dict
             content_to_add = [parameter[0], parameter[1]]  # type: ignore
         for c in content_to_add:
-            for k, p in c._content.items():
-                content = flatten_parameter(p, with_containers=with_containers, order=order)
-                flat.update(
-                    {
-                        str(k) + ("" if not x else ("." if not x.startswith("#") else "") + x): y
-                        for x, y in content.items()
-                    }
+            for k, p in sorted(c._content.items()):
+                content = flatten_parameter(p, order=order)
+                flat.extend(
+                    (str(k) + ("" if not x else ("." if not x.startswith("#") else "") + x), y)
+                    for x, y in content
                 )
     if order > 0 and not isinstance(parameter, container.Container):
-        content = dict(parameter._subobjects.items())
-        param = container.Dict(**content)
+        subcontent = dict(parameter._subobjects.items())
+        param = container.Dict(**subcontent)
         if len(content) == 1:
-            lone_content = next(iter(content.values()))
+            lone_content = next(iter(subcontent.values()))
             if isinstance(lone_content, container.Dict):
                 param = lone_content  # shorcut subparameters
-        subparams = flatten_parameter(param, with_containers=False, order=order - 1)
-        flat.update({"#" + str(x): y for x, y in subparams.items()})
-    if not with_containers:
-        flat = {
-            x: y
-            for x, y in flat.items()
-            if not isinstance(y, (container.Container, core.Constant)) or isinstance(y, choice.BaseChoice)
-        }
+        subparams = flatten_parameter(param, order=order - 1)
+        flat += [(f"#{x}", y) for x, y in subparams]
     return flat
+
+
+def list_data(parameter: core.Parameter) -> tp.List[tp.Tuple[str, pdata.Data]]:
+    return [x for x in flatten_parameter(parameter, order=0) if isinstance(x[1], pdata.Data)]  # type: ignore
 
 
 @contextlib.contextmanager
@@ -84,10 +77,8 @@ def deterministic_sampling(parameter: core.Parameter) -> tp.Iterator[None]:
     parameter: Parameter
         the parameter which must behave deterministically during the "with" context
     """
-    all_params = flatten_parameter(parameter)
-    int_layers = list(
-        itertools.chain.from_iterable([_layering.Int.filter_from(x) for x in all_params.values()])
-    )
+    all_params = list_data(parameter)
+    int_layers = list(itertools.chain.from_iterable([_layering.Int.filter_from(x[1]) for x in all_params]))
     # record state and set deterministic to True
     deterministic = [lay.deterministic for lay in int_layers]
     for lay in int_layers:
@@ -99,7 +90,25 @@ def deterministic_sampling(parameter: core.Parameter) -> tp.Iterator[None]:
         lay.deterministic = det
 
 
+#     @classmethod
+#     def list_arrays(cls, parameter: p.Parameter) -> tp.List[p.Data]:
+#         """Computes a list of Data (Array/Scalar) parameters in the same order as in
+#         the standardized data space.
+#         """
+#         if isinstance(parameter, p.Data):
+#             return [parameter]
+#         elif isinstance(parameter, p.Constant):
+#             return []
+#         if not isinstance(parameter, p.Container):
+#             raise RuntimeError(f"Unsupported parameter {parameter}")
+#         output: tp.List[p.Data] = []
+#         for _, subpar in sorted(parameter._content.items()):
+#             output += cls.list_arrays(subpar)
+#         return output
+
 # pylint: disable=too-many-locals
+
+
 def split_as_data_parameters(
     parameter: core.Parameter,
 ) -> tp.List[tp.Tuple[str, pdata.Data]]:
@@ -126,10 +135,7 @@ def split_as_data_parameters(
     )
     copied = parameter.copy()
     ref = parameter.copy()
-    flatp, flatc, flatref = (
-        {x: y for x, y in flatten_parameter(pa).items() if isinstance(y, pdata.Data)}
-        for pa in (parameter, copied, ref)
-    )
+    flatp, flatc, flatref = (dict(list_data(pa)) for pa in (parameter, copied, ref))
     keys = list(flatp.keys())
     random.shuffle(keys)  # makes it safer to test!
     # remove transforms for both ref and copied parameters and set index
