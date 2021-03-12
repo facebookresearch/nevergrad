@@ -79,6 +79,27 @@ def list_data(parameter: core.Parameter) -> tp.List[pdata.Data]:
     return [x for _, x in flatten(parameter, order=0) if isinstance(x, pdata.Data)]
 
 
+class ParameterAnalysis(tp.NamedTuple):
+    arity: int
+    deterministic: bool
+    continuous: bool
+    ordered: bool
+
+
+def analyze(parameter: core.Parameter) -> ParameterAnalysis:
+    """Analyzes a parameter to provide useful information about it"""
+    params = list_data(parameter)
+    int_layers = list(itertools.chain.from_iterable([_layering.Int.filter_from(x) for x in params]))
+    return ParameterAnalysis(
+        deterministic=all(lay.deterministic for lay in int_layers),
+        continuous=not any(lay.deterministic for lay in int_layers),
+        ordered=all(lay.ordered for lay in int_layers),
+        arity=max(
+            (lay.arity for lay in int_layers if lay.arity is not None), default=-1
+        ),  # only softmax params for now
+    )
+
+
 @contextlib.contextmanager
 def deterministic_sampling(parameter: core.Parameter) -> tp.Iterator[None]:
     """Temporarily change the behavior of a Parameter to become deterministic

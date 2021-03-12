@@ -53,6 +53,12 @@ class BoundChecker:
         return True
 
 
+class FunctionInfo(tp.NamedTuple):
+    deterministic: bool = True
+    metrizable: bool = True
+    proxy: bool = False
+
+
 class Descriptors:
     """Provides access to a set of descriptors for the parametrization
     This can be used within optimizers.

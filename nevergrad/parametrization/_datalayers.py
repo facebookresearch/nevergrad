@@ -271,6 +271,7 @@ class SoftmaxSampling(Int):
     def __init__(self, arity: int, deterministic: bool = False) -> None:
         super().__init__(deterministic=deterministic)
         self.arity = arity
+        self.ordered = False
 
     def _get_name(self) -> str:
         tag = "{det}" if self.deterministic else ""

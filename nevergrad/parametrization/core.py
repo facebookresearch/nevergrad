@@ -62,6 +62,7 @@ class Parameter(Layered):
         self._frozen = False
         self._descriptors: tp.Optional[utils.Descriptors] = None
         self._meta: tp.Dict[tp.Hashable, tp.Any] = {}  # for anything algorithm related
+        self.function = utils.FunctionInfo()
 
     @property
     def losses(self) -> np.ndarray:
