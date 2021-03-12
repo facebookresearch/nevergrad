@@ -761,7 +761,7 @@ def _constraint_solver(parameter: p.Parameter, budget: int) -> p.Parameter:
         cand = opt.ask()
         # Our objective function is minimum for the point the closest to
         # the original candidate under the constraints.
-        penalty = sum(utils.float_penalty(func(cand.value)) for func in parameter._constraint_checkers)
+        penalty = sum(utils._float_penalty(func(cand.value)) for func in parameter._constraint_checkers)
 
         # TODO: this may not scale well with dimension
         distance = np.tanh(np.sum(cand.get_standardized_data(reference=parameter) ** 2))
