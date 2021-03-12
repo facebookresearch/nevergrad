@@ -5,9 +5,7 @@
 
 import contextlib
 import itertools
-import random
 import typing as tp
-import numpy as np
 from . import core
 from . import container
 from . import _layering
