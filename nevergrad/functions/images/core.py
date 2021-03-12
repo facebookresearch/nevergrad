@@ -117,7 +117,7 @@ class Image(base.ExperimentFunction):
                 * np.expand_dims(x[base_i], 0)
                 / (1e-10 + np.linalg.norm(x[base_i]))
             )
-            base_image = moving if self._num_images == 1 else base_image + moving
+            base_image = moving if self.num_images == 1 else base_image + moving
             image = self._generate_images(base_image).squeeze(0)
             image = cv2.resize(image, dsize=(226, 226), interpolation=cv2.INTER_NEAREST)
             if export_string:
