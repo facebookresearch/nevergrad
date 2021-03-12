@@ -1378,16 +1378,18 @@ def image_quality_proxy_pgan(seed: tp.Optional[int] = None) -> tp.Iterator[Exper
 
 @registry.register
 def image_quality(
-    seed: tp.Optional[int] = None, cross_val: bool = False, with_pgan: bool = False
+    seed: tp.Optional[int] = None, cross_val: bool = False, with_pgan: bool = False, num_images: int = 1
 ) -> tp.Iterator[Experiment]:
     """Optimizing images for quality:
-    TODO
+    we optimize K512, Blur and Brisque.
+
+    With num_images > 1, we are doing morphing.
     """
     seedg = create_seed_generator(seed)
     optims: tp.List[tp.Any] = get_optimizers("structured_moo", seed=next(seedg))
     # We optimize func_blur or func_brisque and check performance on func_iqa.
     funcs: tp.List[ExperimentFunction] = [
-        imagesxp.Image(loss=loss, with_pgan=with_pgan)
+        imagesxp.Image(loss=loss, with_pgan=with_pgan, num_images=num_images)
         for loss in (
             imagesxp.imagelosses.Koncept512,
             imagesxp.imagelosses.Blur,
@@ -1410,6 +1412,11 @@ def image_quality(
                 for func in mofuncs:
                     xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
                     yield xp
+
+
+@registry.register
+def morphing_pgan_quality(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    return image_quality(seed, with_pgan=True, num_images=2)
 
 
 @registry.register
