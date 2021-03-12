@@ -56,8 +56,8 @@ class BoundChecker:
 class FunctionInfo:  # Note: eventually, this should be a dataclass (dropping old Python support)
     """Information about the function
 
-     Parameters
-     ----------
+    Parameters
+    ----------
     deterministic: bool
         whether the function equipped with its instrumentation is deterministic.
         Can be false if the function is not deterministic or if the instrumentation
@@ -181,7 +181,7 @@ class CommandFunction:
         command to run, as a list
     verbose: bool
         prints the command and stdout at runtime
-    cwd: Path / str
+    cwd: Path/str
         path to the location where the command must run from
 
     Returns
@@ -206,7 +206,7 @@ class CommandFunction:
 
     def __call__(self, *args: tp.Any, **kwargs: tp.Any) -> str:
         """Call the cammand line with addidional arguments
-        The keyword arguments will be sent as --{key} = {val}
+        The keyword arguments will be sent as --{key}={val}
         The logs are bufferized. They will be printed if the job fails, or sent as output of the function
         Errors are provided with the internal stderr
         """
@@ -302,7 +302,7 @@ class Subobjects(tp.Generic[X]):
         return obj
 
     def apply(self, method: str, *args: tp.Any, **kwargs: tp.Any) -> tp.Dict[tp.Any, tp.Any]:
-        """Calls the named method with the provided input parameters(or their subobjects if
+        """Calls the named method with the provided input parameters (or their subobjects if
         from the base class!) on the subobjects.
         """
         outputs: tp.Dict[tp.Any, tp.Any] = {}
@@ -314,7 +314,7 @@ class Subobjects(tp.Generic[X]):
 
 
 def float_penalty(x: tp.Union[bool, float]) -> float:
-    """Unifies penalties as float(bool=False becomes 1).
+    """Unifies penalties as float (bool=False becomes 1).
     The value is positive for unsatisfied penality else 0.
     """
     if isinstance(x, (bool, np.bool_)):
