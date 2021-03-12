@@ -881,10 +881,14 @@ class ConfiguredPSO(base.ConfiguredOptimizer):
     ----------
     transform: str
         name of the transform to use to map from PSO optimization space to R-space.
-    wide: bool
-        if True: legacy initialization in [-1,1] box mapped to R
     popsize: int
         population size of the particle swarm. Defaults to max(40, num_workers)
+    omega: float
+        particle swarm optimization parameter
+    phip: float
+        particle swarm optimization parameter
+    phig: float
+        particle swarm optimization parameter
 
     Note
     ----
