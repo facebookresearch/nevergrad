@@ -9,7 +9,6 @@ from .optimizerlib import RandomSearchMaker, SQP, LHSSearch, DE, RandomSearch, M
 from .optimizerlib import (
     ParametrizedOnePlusOne,
     ParametrizedCMA,
-    ConfiguredPSO,
     ConfSplitOptimizer,
     ParametrizedBO,
     EMNA,
