@@ -78,7 +78,7 @@ class _OnePlusOne(base.Optimizer):
         self._sigma: float = 1
         self._previous_best_loss = float("inf")
         self.use_pareto = use_pareto
-        all_params = p.helpers.flatten_parameter(self.parametrization)
+        all_params = p.helpers.flatten(self.parametrization)
         arity = max(
             len(param.choices) if isinstance(param, p.TransitionChoice) else 500 for _, param in all_params
         )
@@ -1092,7 +1092,7 @@ class SplitOptimizer(base.Optimizer):
         elif num_optims is None:
             # if no num_vars and no num_optims, try to guess how to split. Otherwise, just assume 2.
             if isinstance(parametrization, p.Parameter):
-                subparams = [x[1] for x in p.helpers.list_data(parametrization)]
+                subparams = p.helpers.list_data(parametrization)  # type: ignore
                 if len(subparams) == 1:
                     subparams.clear()
                 num_optims = len(subparams)
@@ -1936,7 +1936,7 @@ class cGA(base.Optimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if arity is None:
-            all_params = p.helpers.flatten_parameter(self.parametrization)
+            all_params = p.helpers.flatten(self.parametrization)
             arity = max(
                 len(param.choices) if isinstance(param, p.TransitionChoice) else 500
                 for _, param in all_params
@@ -2166,7 +2166,7 @@ class NGOptBase(base.Optimizer):
         # The noise coming from discrete variables goes to 0.
         self.noise_from_instrumentation = self.has_noise and descr.deterministic_function
         self.fully_continuous = descr.continuous
-        all_params = p.helpers.flatten_parameter(self.parametrization)
+        all_params = p.helpers.flatten(self.parametrization)
         # figure out if there is any discretization layers
         int_layers = list(
             itertools.chain.from_iterable([_layering.Int.filter_from(x) for _, x in all_params])

@@ -13,7 +13,7 @@ from . import data as pdata
 from . import choice as pchoice
 
 
-def flatten_parameter(
+def flatten(
     parameter: core.Parameter, with_containers: bool = True, order: int = 0
 ) -> tp.List[tp.Tuple[str, core.Parameter]]:
     """List all the instances involved as parameter (not as subparameter/
@@ -48,7 +48,7 @@ def flatten_parameter(
             content_to_add = [parameter[0], parameter[1]]  # type: ignore
         for c in content_to_add:
             for k, p in sorted(c._content.items()):
-                content = flatten_parameter(p, with_containers=with_containers, order=order)
+                content = flatten(p, with_containers=with_containers, order=order)
                 flat.extend(
                     (str(k) + ("" if not x else ("." if not x.startswith("#") else "") + x), y)
                     for x, y in content
@@ -60,14 +60,14 @@ def flatten_parameter(
             lone_content = next(iter(subcontent.values()))
             if isinstance(lone_content, container.Dict):
                 param = lone_content  # shorcut subparameters
-        subparams = flatten_parameter(param, with_containers=False, order=order - 1)
+        subparams = flatten(param, with_containers=False, order=order - 1)
         flat += [(f"#{x}", y) for x, y in subparams]
     if not with_containers:
         flat = [(x, y) for x, y in flat if isinstance(y, (pdata.Data, pchoice.BaseChoice))]
     return flat
 
 
-def list_data(parameter: core.Parameter) -> tp.List[tp.Tuple[str, pdata.Data]]:
+def list_data(parameter: core.Parameter) -> tp.List[pdata.Data]:
     """List all the instances involved as parameter (not as subparameter/
     endogeneous parameter) in the order they are defined in the standardized data.
 
@@ -76,7 +76,7 @@ def list_data(parameter: core.Parameter) -> tp.List[tp.Tuple[str, pdata.Data]]:
     parameter: Parameter
         the parameter to inspect
     """
-    return [x for x in flatten_parameter(parameter, order=0) if isinstance(x[1], pdata.Data)]  # type: ignore
+    return [x for _, x in flatten(parameter, order=0) if isinstance(x, pdata.Data)]
 
 
 @contextlib.contextmanager
@@ -88,8 +88,8 @@ def deterministic_sampling(parameter: core.Parameter) -> tp.Iterator[None]:
     parameter: Parameter
         the parameter which must behave deterministically during the "with" context
     """
-    all_params = list_data(parameter)
-    int_layers = list(itertools.chain.from_iterable([_layering.Int.filter_from(x[1]) for x in all_params]))
+    all_data = list_data(parameter)
+    int_layers = list(itertools.chain.from_iterable([_layering.Int.filter_from(x) for x in all_data]))
     # record state and set deterministic to True
     deterministic = [lay.deterministic for lay in int_layers]
     for lay in int_layers:
