@@ -12,9 +12,12 @@ from . import core
 from . import container
 from . import _layering
 from . import data as pdata
+from . import choice as pchoice
 
 
-def flatten_parameter(parameter: core.Parameter, order: int = 0) -> tp.List[tp.Tuple[str, core.Parameter]]:
+def flatten_parameter(
+    parameter: core.Parameter, with_containers: bool = True, order: int = 0
+) -> tp.List[tp.Tuple[str, core.Parameter]]:
     """List all the instances involved as parameter (not as subparameter/
     endogeneous parameter)
 
@@ -22,8 +25,8 @@ def flatten_parameter(parameter: core.Parameter, order: int = 0) -> tp.List[tp.T
     ---------
     parameter: Parameter
         the parameter to inspect
-    only_data: bool
-        returns only data instances
+    with_containers: bool
+        returns all the sub-parameter if True, otherwise only non-pure containers (i.e. only Data and Choice)
     order: int
         order of model/internal parameters to extract. With 0, no model/internal parameters is
         extracted, with 1, only 1st order are extracted, with 2, so model/internal parameters and
@@ -47,7 +50,7 @@ def flatten_parameter(parameter: core.Parameter, order: int = 0) -> tp.List[tp.T
             content_to_add = [parameter[0], parameter[1]]  # type: ignore
         for c in content_to_add:
             for k, p in sorted(c._content.items()):
-                content = flatten_parameter(p, order=order)
+                content = flatten_parameter(p, with_containers=with_containers, order=order)
                 flat.extend(
                     (str(k) + ("" if not x else ("." if not x.startswith("#") else "") + x), y)
                     for x, y in content
@@ -55,12 +58,14 @@ def flatten_parameter(parameter: core.Parameter, order: int = 0) -> tp.List[tp.T
     if order > 0 and not isinstance(parameter, container.Container):
         subcontent = dict(parameter._subobjects.items())
         param = container.Dict(**subcontent)
-        if len(content) == 1:
+        if len(subcontent) == 1:
             lone_content = next(iter(subcontent.values()))
             if isinstance(lone_content, container.Dict):
                 param = lone_content  # shorcut subparameters
-        subparams = flatten_parameter(param, order=order - 1)
+        subparams = flatten_parameter(param, with_containers=False, order=order - 1)
         flat += [(f"#{x}", y) for x, y in subparams]
+    if not with_containers:
+        flat = [(x, y) for x, y in flat if isinstance(y, (pdata.Data, pchoice.BaseChoice))]
     return flat
 
 

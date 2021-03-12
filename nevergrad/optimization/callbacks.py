@@ -6,6 +6,7 @@
 import json
 import time
 import warnings
+import inspect
 import datetime
 from pathlib import Path
 import numpy as np
@@ -105,13 +106,16 @@ class ParametersLogger:
             data["#meta-sigma"] = candidate._meta["sigma"]  # for TBPSA-like algorithms
         if candidate.generation > 1:
             data["#parents_uids"] = candidate.parents_uids
-        for name, param in helpers.flatten_parameter(candidate, order=1):
-            if not isinstance(param, p.Data):
-                continue
+        for name, param in helpers.flatten_parameter(candidate, with_containers=False, order=1):
             val = param.value
+            if inspect.ismethod(val):
+                val = repr(val.__self__)  # show mutation class
             data[name if name else "0"] = val.tolist() if isinstance(val, np.ndarray) else val
-            val = param.sigma.value
-            data[(name if name else "0") + "#sigma"] = val.tolist() if isinstance(val, np.ndarray) else val
+            if isinstance(param, p.Data):
+                val = param.sigma.value
+                data[(name if name else "0") + "#sigma"] = (
+                    val.tolist() if isinstance(val, np.ndarray) else val
+                )
         try:  # avoid bugging as much as possible
             with self._filepath.open("a") as f:
                 f.write(json.dumps(data) + "\n")
