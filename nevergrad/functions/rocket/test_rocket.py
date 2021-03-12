@@ -4,11 +4,11 @@
 # LICENSE file in the root directory of this source tree.
 
 import numpy as np
-from . import core
+from . import rocket
 
 
 def test_rocket() -> None:
-    func = core.Rocket()
+    func = rocket.Rocket()
     x = 0 * np.random.rand(func.dimension)
     value = func(x)  # should not touch boundaries, so value should be < np.inf
     np.testing.assert_almost_equal(value, 0.0)
