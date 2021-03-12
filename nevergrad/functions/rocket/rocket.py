@@ -49,7 +49,8 @@ def rocket(thrust_bias: np.ndarray):
     def alt(Ex, Ey, Ez):
         ecef = pyproj.Proj(proj="geocent", ellps="WGS84", datum="WGS84")
         lla = pyproj.Proj(proj="latlong", ellps="WGS84", datum="WGS84")
-        _, _, alt = pyproj.transform(ecef, lla, Ex, Ey, Ez, radians=True)
+        transformer = pyproj.Transformer.from_proj(ecef, lla)
+        _, _, alt = transformer.transform(Ex, Ey, Ez, radians=True)
         return alt
 
     def grav_force(Ex, Ey, Ez, m):
@@ -149,7 +150,8 @@ def rocket(thrust_bias: np.ndarray):
     # altitude = 0    # Altitude of rocket in meters
     ecef = pyproj.Proj(proj="geocent", ellps="WGS84", datum="WGS84")
     lla = pyproj.Proj(proj="latlong", ellps="WGS84", datum="WGS84")
-    Ex, Ey, Ez = pyproj.transform(lla, ecef, longitude, latitude, altitude, radians=True)
+    transformer = pyproj.Transformer.from_proj(lla, ecef)
+    Ex, Ey, Ez = transformer.transform(longitude, latitude, altitude, radians=True)
     Evx, Evy, Evz = 0, 0, 0
     r_initial = (Ex ** 2 + Ey ** 2 + Ez ** 2) ** 0.5
     # print(Ex, Ey, Ez, r_initial, sep="\t")
