@@ -148,14 +148,15 @@ def test_float_penalty(value: tp.Any, expected: float) -> None:
     assert utils.float_penalty(value) == expected
 
 
-## OLD FUNCTION SERVING AS CHECK FOR DATA ORDER ##
+# # # OLD FUNCTION SERVING AS CHECK FOR DATA ORDER # # #
 
 
+# pylint: disable=too-many-locals
 def split_as_data_parameters(
     parameter: p.Parameter,
 ) -> tp.List[tp.Tuple[str, p.Data]]:
     """List all the instances involved as parameter (not as subparameter/
-    endogeneous parameter)
+    endogeneous parameter) ordered as in standardized data space
 
     Parameter
     ---------
@@ -209,7 +210,7 @@ def split_as_data_parameters(
     return ordered_arrays
 
 
-# END OF CHECK
+# # # END OF CHECK # # #
 
 
 def do_nothing(*args: tp.Any, **kwargs: tp.Any) -> int:

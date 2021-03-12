@@ -158,6 +158,10 @@ def test_bound_scaler() -> None:
         value=p.Scalar(),
         letter=p.Choice("abc"),
     )
+    # make sure the order is preserved using legacy split method
+    expected = [x[0] for x in split_as_data_parameters(ref)]
+    assert [x[0] for x in p.helpers.list_data(ref)] == expected
+    # check the bounds
     param = ref.spawn_child()
     scaler = utils.BoundScaler(param)
     output = scaler.transform([1.0] * param.dimension, lambda x: x)
@@ -174,6 +178,3 @@ def test_bound_scaler() -> None:
     param.set_standardized_data(output)
     np.testing.assert_almost_equal(param.value[1]["lr"], 1.0)
     np.testing.assert_almost_equal(param.value[1]["stuff"], 0.5)
-    # make sure
-    expected = [x[0] for x in split_as_data_parameters(ref)]
-    assert [x[0] for x in p.helpers.list_data(ref)] == expected
