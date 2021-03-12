@@ -13,8 +13,6 @@ import numpy as np
 from nevergrad.common import typing as tp
 from nevergrad.common import tools as ngtools
 
-# pylint: disable=cyclic-import
-
 
 class BoundChecker:
     """Simple object for checking whether an array lies
@@ -114,7 +112,7 @@ class DeprecatedDescriptors:
             return not self._param.function.proxy
         translation = dict(deterministic_function="deterministic", metrizable="metrizable")
         if name not in translation:
-            return super().__getattr__(name)
+            return super().__getattr__(name)  # type: ignore
         return getattr(self._param.function, translation[name])
 
     def __setattr__(self, name: str, value: bool) -> None:
