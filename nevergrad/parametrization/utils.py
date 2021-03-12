@@ -13,6 +13,8 @@ import numpy as np
 from nevergrad.common import typing as tp
 from nevergrad.common import tools as ngtools
 
+# pylint: disable=cyclic-import
+
 
 class BoundChecker:
     """Simple object for checking whether an array lies
@@ -53,61 +55,83 @@ class BoundChecker:
         return True
 
 
-class FunctionInfo(tp.NamedTuple):
-    deterministic: bool = True
-    metrizable: bool = True
-    proxy: bool = False
+class FunctionInfo:  # Note: eventually, this should be a dataclass (dropping old Python support)
+    """Information about the function
 
-
-class Descriptors:
-    """Provides access to a set of descriptors for the parametrization
-    This can be used within optimizers.
-
-    Parameters
-    ----------
+     Parameters
+     ----------
     deterministic: bool
         whether the function equipped with its instrumentation is deterministic.
         Can be false if the function is not deterministic or if the instrumentation
         contains a softmax.
-    deterministic_function: bool
-        whether the objective function is deterministic.
-    non_proxy_function: bool
-        whether the objective function is not a proxy of a more interesting objective function.
-    continuous: bool
-        whether the domain is entirely continuous.
+    proxy: bool
+        whether the objective function is a proxy of a more interesting objective function.
     metrizable: bool
         whether the domain is naturally equipped with a metric.
-    ordered: bool
-        whether all domains and subdomains are ordered.
-    """  # TODO add repr
+    """
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         deterministic: bool = True,
-        deterministic_function: bool = True,
-        non_proxy_function: bool = True,
-        continuous: bool = True,
+        proxy: bool = False,
         metrizable: bool = True,
-        ordered: bool = True,
     ) -> None:
         self.deterministic = deterministic
-        self.deterministic_function = deterministic_function
-        self.non_proxy_function = non_proxy_function
-        self.continuous = continuous
+        self.proxy = proxy
         self.metrizable = metrizable
-        self.ordered = ordered
-
-    def __and__(self, other: "Descriptors") -> "Descriptors":
-        values = {field: getattr(self, field) & getattr(other, field) for field in self.__dict__}
-        return Descriptors(**values)
 
     def __repr__(self) -> str:
-        diff = ",".join(
-            f"{x}={y}"
-            for x, y in sorted(ngtools.different_from_defaults(instance=self, check_mismatches=True).items())
-        )
+        vals = ngtools.different_from_defaults(instance=self, check_mismatches=True)
+        diff = ",".join(f"{x}={y}" for x, y in sorted(vals.items()))
         return f"{self.__class__.__name__}({diff})"
+
+
+class DeprecatedDescriptors:
+    """Provides access to a set of descriptors for the parametrization
+    This can be used within optimizers.
+
+    Deprecated
+    ----------
+    This is replaced by ng.p.helpers.analyze(parameter), and parameter.function
+
+    """
+
+    _ANALYSIS_NAMES = ["deterministic", "continuous", "ordered"]
+
+    # pylint: disable=too-many-arguments
+    def __init__(self, param: tp.Any) -> None:
+        self._param = param
+        self._info: tp.Any = None
+
+    def __getattr__(self, name: str) -> tp.Any:
+        if name in self._ANALYSIS_NAMES:
+            if self._info is None:
+                from . import helpers  # pylint: disable=import-outside-toplevel
+
+                self._info = helpers.analyze(self._param)
+            return getattr(self._info, name)
+        if name == "non_proxy_function":
+            return not self._param.function.proxy
+        translation = dict(deterministic_function="deterministic", metrizable="metrizable")
+        if name not in translation:
+            return super().__getattr__(name)
+        return getattr(self._param.function, translation[name])
+
+    def __setattr__(self, name: str, value: bool) -> None:
+        if name in self._ANALYSIS_NAMES:
+            if self._info is None:
+                from . import helpers  # pylint: disable=import-outside-toplevel
+
+                self._info = helpers.analyze(self._param)
+            setattr(self._info, name, value)
+        if name == "non_proxy_function":
+            self._param.function.proxy = not value
+            return
+        translation = dict(deterministic_function="deterministic", metrizable="metrizable")
+        if name in translation:
+            setattr(self._param.function, translation[name], value)
+            return
+        super().__setattr__(name, value)
 
 
 class TemporaryDirectoryCopy(tempfile.TemporaryDirectory):  # type: ignore
@@ -159,7 +183,7 @@ class CommandFunction:
         command to run, as a list
     verbose: bool
         prints the command and stdout at runtime
-    cwd: Path/str
+    cwd: Path / str
         path to the location where the command must run from
 
     Returns
@@ -184,7 +208,7 @@ class CommandFunction:
 
     def __call__(self, *args: tp.Any, **kwargs: tp.Any) -> str:
         """Call the cammand line with addidional arguments
-        The keyword arguments will be sent as --{key}={val}
+        The keyword arguments will be sent as --{key} = {val}
         The logs are bufferized. They will be printed if the job fails, or sent as output of the function
         Errors are provided with the internal stderr
         """
@@ -238,9 +262,9 @@ class Subobjects(tp.Generic[X]):
     Parameters
     ----------
     object: Any
-        an object containing other (sub)objects
+        an object containing other(sub)objects
     base: Type
-        the base class of the subobjects (to filter out other items)
+        the base class of the subobjects(to filter out other items)
     attribute: str
         the attribute containing the subobjects
 
@@ -280,7 +304,7 @@ class Subobjects(tp.Generic[X]):
         return obj
 
     def apply(self, method: str, *args: tp.Any, **kwargs: tp.Any) -> tp.Dict[tp.Any, tp.Any]:
-        """Calls the named method with the provided input parameters (or their subobjects if
+        """Calls the named method with the provided input parameters(or their subobjects if
         from the base class!) on the subobjects.
         """
         outputs: tp.Dict[tp.Any, tp.Any] = {}
@@ -292,7 +316,7 @@ class Subobjects(tp.Generic[X]):
 
 
 def float_penalty(x: tp.Union[bool, float]) -> float:
-    """Unifies penalties as float (bool=False becomes 1).
+    """Unifies penalties as float(bool=False becomes 1).
     The value is positive for unsatisfied penality else 0.
     """
     if isinstance(x, (bool, np.bool_)):

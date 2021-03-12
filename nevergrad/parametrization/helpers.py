@@ -79,18 +79,34 @@ def list_data(parameter: core.Parameter) -> tp.List[pdata.Data]:
     return [x for _, x in flatten(parameter, order=0) if isinstance(x, pdata.Data)]
 
 
-class ParameterAnalysis(tp.NamedTuple):
+class ParameterInfo(tp.NamedTuple):
+    """Information about a parameter
+
+    Attributes
+    ----------
+    deterministic: bool
+        whether the function equipped with its instrumentation is deterministic.
+        Can be false if the function is not deterministic or if the instrumentation
+        contains a softmax.
+    continuous: bool
+        whether the domain is entirely continuous.
+    ordered: bool
+        whether all domains and subdomains are ordered.
     arity: int
+        number of options for discrete parameters (-1 if continuous)
+    """
+
     deterministic: bool
     continuous: bool
     ordered: bool
+    arity: int
 
 
-def analyze(parameter: core.Parameter) -> ParameterAnalysis:
+def analyze(parameter: core.Parameter) -> ParameterInfo:
     """Analyzes a parameter to provide useful information about it"""
     params = list_data(parameter)
     int_layers = list(itertools.chain.from_iterable([_layering.Int.filter_from(x) for x in params]))
-    return ParameterAnalysis(
+    return ParameterInfo(
         deterministic=all(lay.deterministic for lay in int_layers),
         continuous=not any(lay.deterministic for lay in int_layers),
         ordered=all(lay.ordered for lay in int_layers),

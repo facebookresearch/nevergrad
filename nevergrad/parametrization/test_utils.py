@@ -69,6 +69,11 @@ def test_flatten(no_container: bool, param: p.Parameter, keys: tp.Iterable[str])
     assert set(flat) == set(keys), f"Unexpected flattened parameter: {flat}"
 
 
+def test_function_info() -> None:
+    info = utils.FunctionInfo(deterministic=False)
+    assert repr(info) == "FunctionInfo(deterministic=False)"
+
+
 @testing.parametrized(
     # updating this tests requires checking manually through prints
     # that everything works as intended
@@ -127,11 +132,6 @@ def test_flatten_order(order: int, keys: tp.Iterable[str]) -> None:
     param = p.Choice([p.Dict(x=p.Scalar(), y=12), p.Scalar().sigma.set_mutation(sigma=p.Scalar())])
     flat = dict(helpers.flatten(param, with_containers=False, order=order))
     assert set(flat) == set(keys), f"Unexpected flattened parameter: {flat}"
-
-
-def test_descriptors() -> None:
-    desc = utils.Descriptors(ordered=False)
-    assert repr(desc) == "Descriptors(ordered=False)"
 
 
 @testing.parametrized(
