@@ -80,7 +80,6 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
     recast = False  # algorithm which were not designed to work with the suggest/update pattern
     one_shot = False  # algorithm designed to suggest all budget points at once
     no_parallelization = False  # algorithm which is designed to run sequentially only
-    hashed = False
 
     def __init__(
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
@@ -214,11 +213,14 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         ----
         During non-multiobjective optimization, this returns the current pessimistic best
         """
-        if self._hypervolume_pareto is None:
-            return [self.provide_recommendation()]
-        return self._hypervolume_pareto.pareto_front(
-            size=size, subset=subset, subset_tentatives=subset_tentatives
+        pareto = (
+            []
+            if self._hypervolume_pareto is None
+            else self._hypervolume_pareto.pareto_front(
+                size=size, subset=subset, subset_tentatives=subset_tentatives
+            )
         )
+        return pareto if pareto else [self.provide_recommendation()]
 
     def dump(self, filepath: tp.Union[str, Path]) -> None:
         """Pickles the optimizer into a file."""
@@ -465,6 +467,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         assert (
             candidate is not None
         ), f"{self.__class__.__name__}._internal_ask method returned None instead of a point."
+        # make sure to call value getter which may update the value, before we freeze the paremeter
+        candidate.value  # pylint: disable=pointless-statement
         candidate.freeze()  # make sure it is not modified somewhere
         return candidate
 
@@ -492,7 +496,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         if recom_data is None or any(np.isnan(recom_data)):
             name = "minimum" if self.parametrization.descriptors.deterministic_function else "pessimistic"
             return self.current_bests[name].parameter
-        return self.parametrization.spawn_child().set_standardized_data(recom_data, deterministic=True)
+        out = self.parametrization.spawn_child()
+        with p.helpers.deterministic_sampling(out):
+            out.set_standardized_data(recom_data)
+        return out
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         """Called whenever calling :code:`tell` on a candidate that was not "asked".
@@ -600,13 +607,18 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 if verbosity and new_sugg:
                     print(f"Launching {new_sugg} jobs with new suggestions")
                 for _ in range(new_sugg):
-                    args = self.ask()
+                    try:
+                        args = self.ask()
+                    except errors.NevergradEarlyStopping:
+                        remaining_budget = 0
+                        break
                     self._running_jobs.append(
                         (args, executor.submit(objective_function, *args.args, **args.kwargs))
                     )
                 if new_sugg:
                     sleeper.start_timer()
-            remaining_budget = self.budget - self.num_ask
+            if remaining_budget > 0:  # early stopping sets it to 0
+                remaining_budget = self.budget - self.num_ask
             # split (repopulate finished and runnings in only one loop to avoid
             # weird effects if job finishes in between two list comprehensions)
             tmp_runnings, tmp_finished = [], deque()
@@ -664,7 +676,6 @@ class ConfiguredOptimizer:
     recast = False  # algorithm which were not designed to work with the suggest/update pattern
     one_shot = False  # algorithm designed to suggest all budget points at once
     no_parallelization = False  # algorithm which is designed to run sequentially only
-    hashed = False
 
     def __init__(
         self, OptimizerClass: tp.Type[Optimizer], config: tp.Dict[str, tp.Any], as_config: bool = False

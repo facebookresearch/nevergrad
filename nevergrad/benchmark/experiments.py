@@ -524,7 +524,7 @@ def multimodal(seed: tp.Optional[int] = None, para: bool = False) -> tp.Iterator
     optims = get_optimizers("basics", seed=next(seedg))
     if not para:
         optims += get_optimizers("scipy", seed=next(seedg))
-    # + list(sorted(x for x, y in ng.optimizers.registry.items() if "chain" in x or "BO" in x))
+    # + list(sorted(x for x, y in ng.optimizers.registry.items() if "Chain" in x or "BO" in x))
     functions = [
         ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
         for name in names
@@ -1068,6 +1068,7 @@ def rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                 for algo in optims:
                     for fu in funcs:
                         xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        skip_ci(reason="Too slow")
                         if not xp.is_incoherent:
                             yield xp
 
@@ -1149,7 +1150,7 @@ def neuro_control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experime
         ]
     ]
 
-    optims = ["CMA", "NGOpt4", "DiagonalCMA", "NGOpt8", "MetaModel", "chainCMAPowell"]
+    optims = ["CMA", "NGOpt4", "DiagonalCMA", "NGOpt8", "MetaModel", "ChainCMAPowell"]
 
     for budget in [50, 500, 5000, 10000, 20000, 35000, 50000, 100000, 200000]:
         for algo in optims:
@@ -1613,7 +1614,7 @@ def photonics(seed: tp.Optional[int] = None, as_tuple: bool = False) -> tp.Itera
     seedg = create_seed_generator(seed)
     optims = get_optimizers("es", "basics", "splitters", seed=next(seedg))  # type: ignore
     for method in ["clipping", "tanh"]:  # , "arctan"]:
-        for name in ["bragg", "chirped", "morpho"]:
+        for name in ["bragg", "chirped", "morpho", "cf_photosic_realistic", "cf_photosic_reference"]:
             func = Photonics(name, 60 if name == "morpho" else 80, bounding_method=method, as_tuple=as_tuple)
             for budget in [1e3, 1e4, 1e5, 1e6]:
                 for algo in optims:

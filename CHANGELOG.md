@@ -2,8 +2,51 @@
 
 ## master
 
-- :code:`MultiobjectiveFunction` does not exist anymore  [#1034](https://github.com/facebookresearch/nevergrad/pull/1034).
+### Breaking changes
+
+- `copy()` method of a `Parameter` does not change the parameters's random state anymore (it used to reset it to `None` [#1048](https://github.com/facebookresearch/nevergrad/pull/1048)
+- `MultiobjectiveFunction` does not exist anymore  [#1034](https://github.com/facebookresearch/nevergrad/pull/1034).
+- `Choice` and `TransitionChoice` have some of their API changed for uniformization. In particular, `indices` is now an
+  `ng.p.Array` (and not an `np.ndarray`) which contains the selected indices (or index) of the `Choice`. The sampling is
+  performed by specific "layers" that are applied to `Data` parameters [#1065](https://github.com/facebookresearch/nevergrad/pull/1065).
+- `Parameter.set_standardized_space` does not take a `deterministic` parameter anymore
+  [#1068](https://github.com/facebookresearch/nevergrad/pull/1068).  This is replaced by the more
+  general `with ng.p.helpers.determistic_sampling(parameter)` context. One-shot algorithms are also updated to choose
+  options of `Choice` parameters deterministically, since it is a simpler behavior to expect compared to sampling the
+  standardized space than sampling the option stochastically from there
+- `RandomSearch` now defaults to sample values using the `parameter.sample()` instead of a Gaussian
+   [#1068](https://github.com/facebookresearch/nevergrad/pull/1068).  The only difference comes with bounded
+  variables since in this case `parameter.sample()` samples uniformly (unless otherwise specified).
+  The previous behavior can be obtained with `RandomSearchMaker(sampler="gaussian")`.
+- `PSO` API has been slightly changed [#1073](https://github.com/facebookresearch/nevergrad/pull/1073)
+
+### Important changes
+
+- `Parameter` classes are undergoing heavy changes, please open an issue if you encounter any problem.
+  The midterm aim is to allow for simpler constraint management.
+- `Parameter` have been updated  have undergone heavy changes to ease the handling of their tree structure (
+  [#1029](https://github.com/facebookresearch/nevergrad/pull/1029)
+  [#1036](https://github.com/facebookresearch/nevergrad/pull/1036)
+  [#1038](https://github.com/facebookresearch/nevergrad/pull/1038)
+  [#1043](https://github.com/facebookresearch/nevergrad/pull/1043)
+  [#1044](https://github.com/facebookresearch/nevergrad/pull/1044)
+  )
+- `Parameter` classes have now a layer structure [#1045](https://github.com/facebookresearch/nevergrad/pull/1045)
+  which simplifies changing their behavior. In future PRs this system will take charge of bounds, other constraints,
+  sampling etc.
+- The layer structures allows disentangling bounds and log-distribution. This goal has been reached with
+  [#1053](https://github.com/facebookresearch/nevergrad/pull/1053) but may create some instabilities. In particular,
+  the representation (`__repr__`) of `Array` has changed, and their `bounds` attribute is no longer reliable for now.
+  This change will eventually lead to a new syntax for settings bounds and distribution, but it's not ready yet.
+- `DE` initial sampling as been updated to take bounds into accounts [#1058](https://github.com/facebookresearch/nevergrad/pull/1058)
+
+
+### Other changes
+
 - the new `nevergrad.errors` module gathers errors and warnings used throughout the package (WIP) [#1031](https://github.com/facebookresearch/nevergrad/pull/1031).
+- `EvolutionStrategy` now defaults to NSGA2 selection in the multiobjective case
+- A new experimental callback adds an early stopping mechanism
+  [#1054](https://github.com/facebookresearch/nevergrad/pull/1054).
 
 ## 0.4.3 (2021-01-28)
 

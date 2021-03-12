@@ -3,10 +3,11 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import cv2
-from pathlib import Path
+import os
 import itertools
+from pathlib import Path
 
+import cv2
 import numpy as np
 import PIL.Image
 import torch.nn as nn
@@ -17,6 +18,7 @@ import torchvision.transforms as tr
 
 import nevergrad as ng
 import nevergrad.common.typing as tp
+from nevergrad.common import errors
 from .. import base
 from . import imagelosses
 
@@ -224,3 +226,78 @@ class ImageAdversarial(base.ExperimentFunction):
                 )
                 func.add_descriptors(**tags)
                 yield func
+
+
+
+class ImageFromPGAN(base.ExperimentFunction):
+    """
+    Creates face images using a GAN from pytorch GAN zoo trained on celebAHQ and optimizes the noise vector of the GAN
+
+    Parameters
+    ----------
+    problem_name: str
+        the type of problem we are working on.
+    initial_noise: np.ndarray
+        the initial noise of the GAN. It should be of dimension (1, 512). If None, it is defined randomly.
+    use_gpu: bool
+        whether to use gpus to compute the images
+    loss: ImageLoss
+        which loss to use for the images (default: Koncept512)
+    mutable_sigma: bool
+        whether the sigma should be mutable
+    sigma: float
+        standard deviation of the initial mutations
+    """
+
+    def __init__(
+        self,
+        initial_noise: tp.Optional[np.ndarray] = None,
+        use_gpu: bool = False,
+        loss: tp.Optional[imagelosses.ImageLoss] = None,
+        mutable_sigma: bool = True,
+        sigma: float = 35,
+    ) -> None:
+        if loss is None:
+            loss = imagelosses.Koncept512()
+        if not torch.cuda.is_available():
+            use_gpu = False
+        # Storing high level information..
+        if os.environ.get("CIRCLECI", False):
+            raise errors.UnsupportedExperiment("ImageFromPGAN is not well supported in CircleCI")
+        self.pgan_model = torch.hub.load(
+            "facebookresearch/pytorch_GAN_zoo:hub",
+            "PGAN",
+            model_name="celebAHQ-512",
+            pretrained=True,
+            useGPU=use_gpu,
+        )
+
+        self.domain_shape = (1, 512)
+        if initial_noise is None:
+            initial_noise = np.random.normal(size=self.domain_shape)
+        assert initial_noise.shape == self.domain_shape, (
+            f"The shape of the initial noise vector was {initial_noise.shape}, "
+            f"it should be {self.domain_shape}"
+        )
+
+        array = ng.p.Array(init=initial_noise, mutable_sigma=mutable_sigma)
+        # parametrization
+        array.set_mutation(sigma=sigma)
+        array.set_recombination(ng.p.mutation.Crossover(axis=(0, 1))).set_name("")
+
+        super().__init__(self._loss, array)
+        self.loss_function = loss
+        self._descriptors.pop("use_gpu", None)
+
+        self.add_descriptors(loss=loss.__class__.__name__)
+
+    def _loss(self, x: np.ndarray) -> float:
+        image = self._generate_images(x)
+        loss = self.loss_function(image)
+        return loss
+
+    def _generate_images(self, x: np.ndarray) -> np.ndarray:
+        """ Generates images tensor of shape [nb_images, x, y, 3] with pixels between 0 and 255"""
+        # pylint: disable=not-callable
+        noise = torch.tensor(x.astype("float32"))
+        return ((self.pgan_model.test(noise).clamp(min=-1, max=1) + 1) * 255.99 / 2).permute(0, 2, 3, 1).cpu().numpy()  # type: ignore
