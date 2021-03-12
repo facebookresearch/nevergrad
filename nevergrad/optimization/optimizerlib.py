@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 import os
+import math
 import logging
 import itertools
 from collections import deque
@@ -767,8 +768,7 @@ class NoisyBandit(base.Optimizer):
         return self.current_bests["optimistic"].x
 
 
-@registry.register
-class PSO(base.Optimizer):
+class _PSO(base.Optimizer):
 
     # pylint: disable=too-many-instance-attributes
     def __init__(
@@ -776,11 +776,10 @@ class PSO(base.Optimizer):
         parametrization: IntOrParameter,
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
-        transform: str = "arctan",
-        wide: bool = False,  # legacy, to be removed if not needed anymore
-        popsize: tp.Optional[int] = None,
+        config: tp.Optional["ConfiguredPSO"] = None,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        self._config = ConfiguredPSO() if config is None else config
         if budget is not None and budget < 60:
             warnings.warn("PSO is inefficient with budget < 60", errors.InefficientSettingsWarning)
         cases: tp.Dict[str, tp.Tuple[tp.Optional[float], transforms.Transform]] = dict(
@@ -789,29 +788,18 @@ class PSO(base.Optimizer):
             gaussian=(1e-10, transforms.CumulativeDensity()),
         )
         # eps is used for clipping to make sure it is admissible
-        self._eps, self._transform = cases[transform]
-        self._wide = wide
+        self._eps, self._transform = cases[self._config.transform]
         self.llambda = max(40, num_workers)
-        if popsize is not None:
-            self.llambda = popsize
+        if self._config.popsize is not None:
+            self.llambda = self._config.popsize
         self._uid_queue = base.utils.UidQueue()
         self.population: tp.Dict[str, p.Parameter] = {}
         self._best = self.parametrization.spawn_child()
-        self._omega = 0.5 / np.log(2.0)
-        self._phip = 0.5 + np.log(2.0)
-        self._phig = 0.5 + np.log(2.0)
 
     def _internal_ask_candidate(self) -> p.Parameter:
         # population is increased only if queue is empty (otherwise tell_not_asked does not work well at the beginning)
         if len(self.population) < self.llambda:
-            param = self.parametrization
-            if self._wide:
-                # old initialization below seeds in the while R space, while other algorithms use normal distrib
-                data = self._transform.backward(self._rng.uniform(0, 1, self.dimension))
-                candidate = param.spawn_child().set_standardized_data(data, reference=param)
-                candidate.heritage["lineage"] = candidate.uid
-            else:
-                candidate = param.sample()
+            candidate = self.parametrization.sample()
             self.population[candidate.uid] = candidate
             dim = self.parametrization.dimension
             candidate.heritage["speed"] = (
@@ -840,9 +828,9 @@ class PSO(base.Optimizer):
         rp = self._rng.uniform(0.0, 1.0, size=self.dimension)
         rg = self._rng.uniform(0.0, 1.0, size=self.dimension)
         speed = (
-            self._omega * speed
-            + self._phip * rp * (parent_best_x - x)
-            + self._phig * rg * (global_best_x - x)
+            self._config.omega * speed
+            + self._config.phip * rp * (parent_best_x - x)
+            + self._config.phig * rg * (global_best_x - x)
         )
         data = speed + x
         if self._eps is not None:
@@ -892,10 +880,14 @@ class ConfiguredPSO(base.ConfiguredOptimizer):
     ----------
     transform: str
         name of the transform to use to map from PSO optimization space to R-space.
-    wide: bool
-        if True: legacy initialization in [-1,1] box mapped to R
     popsize: int
         population size of the particle swarm. Defaults to max(40, num_workers)
+    omega: float
+        particle swarm optimization parameter
+    phip: float
+        particle swarm optimization parameter
+    phig: float
+        particle swarm optimization parameter
 
     Note
     ----
@@ -912,14 +904,22 @@ class ConfiguredPSO(base.ConfiguredOptimizer):
     def __init__(
         self,
         transform: str = "identity",
-        wide: bool = False,
         popsize: tp.Optional[int] = None,
+        omega: float = 0.5 / math.log(2.0),
+        phip: float = 0.5 + math.log(2.0),
+        phig: float = 0.5 + math.log(2.0),
     ) -> None:
+        super().__init__(_PSO, locals(), as_config=True)
         assert transform in ["arctan", "gaussian", "identity"]
-        super().__init__(PSO, locals())
+        self.transform = transform
+        self.popsize = popsize
+        self.omega = omega
+        self.phip = phip
+        self.phig = phig
 
 
 RealSpacePSO = ConfiguredPSO().set_name("RealSpacePSO", register=True)
+PSO = ConfiguredPSO(transform="arctan").set_name("PSO", register=True)
 
 
 @registry.register
