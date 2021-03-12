@@ -71,9 +71,6 @@ QRBO = ParametrizedBO(initialization="Hammersley").set_name("QRBO", register=Tru
 MidQRBO = ParametrizedBO(initialization="Hammersley", middle_point=True).set_name("MidQRBO", register=True)
 LBO = ParametrizedBO(initialization="LHS").set_name("LBO", register=True)
 
-# PSO
-WidePSO = ConfiguredPSO(transform="arctan", wide=True).set_name("WidePSO", register=True)  # non-standard init
-
 # EMNA
 IsoEMNA = EMNA(naive=False).set_name("IsoEMNA", register=True)
 NaiveAnisoEMNA = EMNA(isotropic=False).set_name("NaiveAnisoEMNA", register=True)
