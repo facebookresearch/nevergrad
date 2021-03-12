@@ -2465,3 +2465,7 @@ class MultipleSingleRuns(base.ConfiguredOptimizer):
         super().__init__(_MSR, locals())
 
 
+# Multiple single runs for MOO.
+NGOpt9 = MultipleSingleRuns(num_single_runs=9).set_name("NGOpt9", register=True)
+NGOpt16 = MultipleSingleRuns(num_single_runs=16).set_name("NGOpt16", register=True)
+NGOpt25 = MultipleSingleRuns(num_single_runs=25).set_name("NGOpt25", register=True)

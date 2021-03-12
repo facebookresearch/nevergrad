@@ -282,8 +282,3 @@ HCHAvgCauchyLHSSearch = SamplingSearch(
 MetaNGOpt10 = ConfSplitOptimizer(
     multivariate_optimizer=NGOpt10, monovariate_optimizer=NGOpt10, non_deterministic_descriptor=False
 ).set_name("MetaNGOpt10", register=True)
-
-# Multiple single runs for MOO.
-NGOpt9 = MultipleSingleRuns(num_single_runs=9).set_name("NGOpt9", register=True)
-NGOpt16 = MultipleSingleRuns(num_single_runs=16).set_name("NGOpt16", register=True)
-NGOpt25 = MultipleSingleRuns(num_single_runs=25).set_name("NGOpt25", register=True)
