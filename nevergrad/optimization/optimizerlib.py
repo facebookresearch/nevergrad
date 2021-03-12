@@ -1092,7 +1092,7 @@ class SplitOptimizer(base.Optimizer):
         elif num_optims is None:
             # if no num_vars and no num_optims, try to guess how to split. Otherwise, just assume 2.
             if isinstance(parametrization, p.Parameter):
-                subparams = [x[1] for x in p.helpers.split_as_data_parameters(parametrization)]
+                subparams = [x[1] for x in p.helpers.list_data(parametrization)]
                 if len(subparams) == 1:
                     subparams.clear()
                 num_optims = len(subparams)

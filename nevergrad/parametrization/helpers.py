@@ -70,6 +70,14 @@ def flatten_parameter(
 
 
 def list_data(parameter: core.Parameter) -> tp.List[tp.Tuple[str, pdata.Data]]:
+    """List all the instances involved as parameter (not as subparameter/
+    endogeneous parameter) in the order they are defined in the standardized data.
+
+    Parameter
+    ---------
+    parameter: Parameter
+        the parameter to inspect
+    """
     return [x for x in flatten_parameter(parameter, order=0) if isinstance(x[1], pdata.Data)]  # type: ignore
 
 
@@ -93,80 +101,3 @@ def deterministic_sampling(parameter: core.Parameter) -> tp.Iterator[None]:
     parameter.value  # pylint: disable=pointless-statement
     for lay, det in zip(int_layers, deterministic):
         lay.deterministic = det
-
-
-#     @classmethod
-#     def list_arrays(cls, parameter: p.Parameter) -> tp.List[p.Data]:
-#         """Computes a list of Data (Array/Scalar) parameters in the same order as in
-#         the standardized data space.
-#         """
-#         if isinstance(parameter, p.Data):
-#             return [parameter]
-#         elif isinstance(parameter, p.Constant):
-#             return []
-#         if not isinstance(parameter, p.Container):
-#             raise RuntimeError(f"Unsupported parameter {parameter}")
-#         output: tp.List[p.Data] = []
-#         for _, subpar in sorted(parameter._content.items()):
-#             output += cls.list_arrays(subpar)
-#         return output
-
-# pylint: disable=too-many-locals
-
-
-def split_as_data_parameters(
-    parameter: core.Parameter,
-) -> tp.List[tp.Tuple[str, pdata.Data]]:
-    """List all the instances involved as parameter (not as subparameter/
-    endogeneous parameter)
-
-    Parameter
-    ---------
-    parameter: Parameter
-        the parameter to split
-
-    Returns
-    -------
-    list
-        the list and subparameters ordered as in data space
-
-    Note
-    ----
-    This function is experimental, its output will probably evolve before converging.
-    """
-    err_msg = (
-        f"Could not figure out the data order for: {parameter} "
-        "(please open an issue on nevergrad github repository)"
-    )
-    copied = parameter.copy()
-    ref = parameter.copy()
-    flatp, flatc, flatref = (dict(list_data(pa)) for pa in (parameter, copied, ref))
-    keys = list(flatp.keys())
-    random.shuffle(keys)  # makes it safer to test!
-    # remove transforms for both ref and copied parameters and set index
-    for k, key in enumerate(keys):
-        for not_ref, flat in enumerate((flatref, flatc)):
-            param = flat[key]
-            param._layers = param._layers[:1]  # force remove the bound to avoid weird clipping etc
-            param.set_mutation(sigma=1.0)  # force mutation sigma to 1 to avoid rounding
-            if not_ref:
-                param.set_standardized_data(k * np.ones((param.dimension)))
-    # analyze results
-    data = copied.get_standardized_data(reference=ref)
-    order: tp.List[int] = []
-    for val, _ in itertools.groupby(data):
-        num = int(np.round(val))
-        if num in order:
-            if order[-1] != num:
-                raise RuntimeError(err_msg)
-        else:
-            order.append(num)
-    if len(order) != len(flatp):
-        raise RuntimeError(err_msg)
-    # create output and check it
-    ordered_keys = [keys[num] for num in order]
-    ordered_arrays = [(k, flatp[k]) for k in ordered_keys]
-    # print(f"DEBUGGING:\nkeys={keys}\ndata={data}\norder={order}\nordered_key={ordered_keys}")
-    if sum(pa.dimension for _, pa in ordered_arrays) != parameter.dimension:
-        raise RuntimeError(err_msg)
-    return ordered_arrays
