@@ -228,7 +228,6 @@ class ImageAdversarial(base.ExperimentFunction):
                 yield func
 
 
-
 class ImageFromPGAN(base.ExperimentFunction):
     """
     Creates face images using a GAN from pytorch GAN zoo trained on celebAHQ and optimizes the noise vector of the GAN
