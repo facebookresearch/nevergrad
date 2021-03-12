@@ -1068,6 +1068,7 @@ def rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                 for algo in optims:
                     for fu in funcs:
                         xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        skip_ci(reason="Too slow")
                         if not xp.is_incoherent:
                             yield xp
 
