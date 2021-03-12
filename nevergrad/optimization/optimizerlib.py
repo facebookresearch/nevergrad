@@ -2424,13 +2424,14 @@ class _MSR(CM):
         parametrization: IntOrParameter,
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
-        num_msr: int = 9,
+        num_single_runs: int = 9,
+        base_optimizer: base.Optimizer = NGOpt,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
-        self.num_optims = num_msr
+        self.num_optims = num_single_runs
         self.optims = [
-            NGOpt(self.parametrization, budget=1 + (budget // self.num_optims), num_workers=num_workers)
+            base_optimizer(self.parametrization, budget=1 + (budget // self.num_optims), num_workers=num_workers)
             for _ in range(self.num_optims)
         ]
         self.coeff: tp.Optional[tp.List[float]] = None
@@ -2447,10 +2448,10 @@ class _MSR(CM):
 
 
 class MultipleSingleRuns(base.ConfiguredOptimizer):
-    """CMA-ES optimizer,
+    """Multiple single-objective runs, in particular for multi-objective optimization.
     Parameters
     ----------
-    num_msr: int
+    num_single_runs: int
         number of single runs.
     """
 
@@ -2458,11 +2459,12 @@ class MultipleSingleRuns(base.ConfiguredOptimizer):
     def __init__(
         self,
         *,
-        num_msr: int = 9,
+        num_single_runs: int = 9,
+        base_optimizer: base.Optimizer = NGOpt,
     ) -> None:
         super().__init__(_MSR, locals())
 
 
-NGOpt_9 = MultipleSingleRuns(num_msr=9).set_name("NGOpt_9", register=True)
-NGOpt_16 = MultipleSingleRuns(num_msr=16).set_name("NGOpt_16", register=True)
-NGOpt_25 = MultipleSingleRuns(num_msr=25).set_name("NGOpt_25", register=True)
+NGOpt_9 = MultipleSingleRuns(num_single_runs=9).set_name("NGOpt_9", register=True)
+NGOpt_16 = MultipleSingleRuns(num_single_runs=16).set_name("NGOpt_16", register=True)
+NGOpt_25 = MultipleSingleRuns(num_single_runs=25).set_name("NGOpt_25", register=True)
