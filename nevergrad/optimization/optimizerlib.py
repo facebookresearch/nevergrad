@@ -2431,7 +2431,9 @@ class _MSR(CM):
         assert budget is not None
         self.num_optims = num_single_runs
         self.optims = [
-            base_optimizer(self.parametrization, budget=1 + (budget // self.num_optims), num_workers=num_workers)
+            base_optimizer(
+                self.parametrization, budget=1 + (budget // self.num_optims), num_workers=num_workers
+            )
             for _ in range(self.num_optims)
         ]
         self.coeff: tp.Optional[tp.List[float]] = None
