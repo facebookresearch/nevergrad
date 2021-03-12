@@ -756,7 +756,6 @@ def _constraint_solver(parameter: p.Parameter, budget: int) -> p.Parameter:
     parameter_without_constraint = parameter.copy()
     parameter_without_constraint._constraint_checkers.clear()
     opt = registry["OnePlusOne"](parameter_without_constraint, num_workers=1, budget=budget)
-    opt._constraints_manager.max_trials = 1
     for _ in range(budget):
         cand = opt.ask()
         # Our objective function is minimum for the point the closest to
