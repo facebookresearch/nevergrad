@@ -9,6 +9,7 @@ import numpy as np
 import nevergrad as ng
 from nevergrad.common import testing
 from nevergrad.parametrization import parameter as p
+from nevergrad.parametrization.test_utils import split_as_data_parameters
 from .test_base import CounterFunction
 from . import experimentalvariants as xpvariants
 from . import utils
@@ -173,3 +174,6 @@ def test_bound_scaler() -> None:
     param.set_standardized_data(output)
     np.testing.assert_almost_equal(param.value[1]["lr"], 1.0)
     np.testing.assert_almost_equal(param.value[1]["stuff"], 0.5)
+    # make sure
+    expected = [x[0] for x in split_as_data_parameters(ref)]
+    assert [x[0] for x in p.helpers.list_data(ref)] == expected
