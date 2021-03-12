@@ -18,6 +18,7 @@
    [#1068](https://github.com/facebookresearch/nevergrad/pull/1068).  The only difference comes with bounded
   variables since in this case `parameter.sample()` samples uniformly (unless otherwise specified).
   The previous behavior can be obtained with `RandomSearchMaker(sampler="gaussian")`.
+- `PSO` API has been slightly changed [#1073](https://github.com/facebookresearch/nevergrad/pull/1073)
 
 ### Important changes
 

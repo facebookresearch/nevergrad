@@ -9,7 +9,6 @@ from .optimizerlib import RandomSearchMaker, SQP, LHSSearch, DE, RandomSearch, M
 from .optimizerlib import (
     ParametrizedOnePlusOne,
     ParametrizedCMA,
-    ConfiguredPSO,
     ConfSplitOptimizer,
     ParametrizedBO,
     EMNA,
@@ -70,9 +69,6 @@ RBO = ParametrizedBO(initialization="random").set_name("RBO", register=True)
 QRBO = ParametrizedBO(initialization="Hammersley").set_name("QRBO", register=True)
 MidQRBO = ParametrizedBO(initialization="Hammersley", middle_point=True).set_name("MidQRBO", register=True)
 LBO = ParametrizedBO(initialization="LHS").set_name("LBO", register=True)
-
-# PSO
-WidePSO = ConfiguredPSO(transform="arctan", wide=True).set_name("WidePSO", register=True)  # non-standard init
 
 # EMNA
 IsoEMNA = EMNA(naive=False).set_name("IsoEMNA", register=True)
