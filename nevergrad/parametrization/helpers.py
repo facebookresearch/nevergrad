@@ -68,7 +68,7 @@ def flatten(
 
 
 def list_data(parameter: core.Parameter) -> tp.List[pdata.Data]:
-    """List all the instances involved as parameter (not as subparameter/
+    """List all the Data instances involved as parameter (not as subparameter/
     endogeneous parameter) in the order they are defined in the standardized data.
 
     Parameter
