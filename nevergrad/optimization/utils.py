@@ -362,8 +362,10 @@ class BoundScaler:
         parameter = self.reference.spawn_child()
         parameter.set_standardized_data(np.linspace(-1, 1, self.reference.dimension))
         expected = parameter.get_standardized_data(reference=self.reference)
-        self._ref_arrays = self.list_arrays(self.reference)
-        arrays = self.list_arrays(parameter)
+        # self._ref_arrays = self.list_arrays(self.reference)
+        # arrays = self.list_arrays(parameter)
+        self._ref_arrays = [x[1] for x in p.helpers.list_data(self.reference)]
+        arrays = [x[1] for x in p.helpers.list_data(parameter)]
         check = np.concatenate(
             [x.get_standardized_data(reference=y) for x, y in zip(arrays, self._ref_arrays)], axis=0
         )
@@ -377,22 +379,6 @@ class BoundScaler:
             f"Failed to find bounds for {self.reference}, quasi-random optimizer may be inefficient.\n"
             "Please open an issue on Nevergrad github"
         )
-
-    @classmethod
-    def list_arrays(cls, parameter: p.Parameter) -> tp.List[p.Data]:
-        """Computes a list of Data (Array/Scalar) parameters in the same order as in
-        the standardized data space.
-        """
-        if isinstance(parameter, p.Data):
-            return [parameter]
-        elif isinstance(parameter, p.Constant):
-            return []
-        if not isinstance(parameter, p.Container):
-            raise RuntimeError(f"Unsupported parameter {parameter}")
-        output: tp.List[p.Data] = []
-        for _, subpar in sorted(parameter._content.items()):
-            output += cls.list_arrays(subpar)
-        return output
 
     def transform(
         self, x: tp.ArrayLike, unbounded_transform: tp.Callable[[np.ndarray], np.ndarray]

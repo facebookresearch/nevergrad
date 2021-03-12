@@ -9,6 +9,7 @@ import numpy as np
 import nevergrad as ng
 from nevergrad.common import testing
 from nevergrad.parametrization import parameter as p
+from nevergrad.parametrization.test_utils import split_as_data_parameters
 from .test_base import CounterFunction
 from . import experimentalvariants as xpvariants
 from . import utils
@@ -157,6 +158,10 @@ def test_bound_scaler() -> None:
         value=p.Scalar(),
         letter=p.Choice("abc"),
     )
+    # make sure the order is preserved using legacy split method
+    expected = [x[0] for x in split_as_data_parameters(ref)]
+    assert [x[0] for x in p.helpers.list_data(ref)] == expected
+    # check the bounds
     param = ref.spawn_child()
     scaler = utils.BoundScaler(param)
     output = scaler.transform([1.0] * param.dimension, lambda x: x)

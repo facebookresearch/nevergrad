@@ -6,6 +6,8 @@
 # import os
 import sys
 import time
+import random
+import itertools
 import contextlib
 import typing as tp
 from pathlib import Path
@@ -63,7 +65,7 @@ def test_command_function() -> None:
     ),
 )
 def test_flatten_parameter(no_container: bool, param: p.Parameter, keys: tp.Iterable[str]) -> None:
-    flat = helpers.flatten_parameter(param, with_containers=not no_container)
+    flat = dict(helpers.flatten_parameter(param, with_containers=not no_container))
     assert set(flat) == set(keys), f"Unexpected flattened parameter: {flat}"
 
 
@@ -85,7 +87,11 @@ def test_flatten_parameter(no_container: bool, param: p.Parameter, keys: tp.Iter
     ),
 )
 def test_split_as_data_parameters(param: p.Parameter, names: tp.List[str]) -> None:
-    output = helpers.split_as_data_parameters(param)
+    # new version
+    output = helpers.list_data(param)
+    assert [x[0] for x in output] == names
+    # legacy
+    output = split_as_data_parameters(param)
     assert [x[0] for x in output] == names
 
 
@@ -119,7 +125,7 @@ def test_split_as_data_parameters(param: p.Parameter, names: tp.List[str]) -> No
 )
 def test_flatten_parameter_order(order: int, keys: tp.Iterable[str]) -> None:
     param = p.Choice([p.Dict(x=p.Scalar(), y=12), p.Scalar().sigma.set_mutation(sigma=p.Scalar())])
-    flat = helpers.flatten_parameter(param, with_containers=False, order=order)
+    flat = dict(helpers.flatten_parameter(param, with_containers=False, order=order))
     assert set(flat) == set(keys), f"Unexpected flattened parameter: {flat}"
 
 
@@ -142,6 +148,71 @@ def test_float_penalty(value: tp.Any, expected: float) -> None:
     assert utils.float_penalty(value) == expected
 
 
+# # # OLD FUNCTION SERVING AS CHECK FOR DATA ORDER # # #
+
+
+# pylint: disable=too-many-locals
+def split_as_data_parameters(
+    parameter: p.Parameter,
+) -> tp.List[tp.Tuple[str, p.Data]]:
+    """List all the instances involved as parameter (not as subparameter/
+    endogeneous parameter) ordered as in standardized data space
+
+    Parameter
+    ---------
+    parameter: Parameter
+        the parameter to split
+
+    Returns
+    -------
+    list
+        the list and subparameters ordered as in data space
+
+    Note
+    ----
+    This function is experimental, its output will probably evolve before converging.
+    """
+    err_msg = (
+        f"Could not figure out the data order for: {parameter} "
+        "(please open an issue on nevergrad github repository)"
+    )
+    copied = parameter.copy()
+    ref = parameter.copy()
+    flatp, flatc, flatref = (dict(helpers.list_data(pa)) for pa in (parameter, copied, ref))
+    keys = list(flatp.keys())
+    random.shuffle(keys)  # makes it safer to test!
+    # remove transforms for both ref and copied parameters and set index
+    for k, key in enumerate(keys):
+        for not_ref, flat in enumerate((flatref, flatc)):
+            param = flat[key]
+            param._layers = param._layers[:1]  # force remove the bound to avoid weird clipping etc
+            param.set_mutation(sigma=1.0)  # force mutation sigma to 1 to avoid rounding
+            if not_ref:
+                param.set_standardized_data(k * np.ones((param.dimension)))
+    # analyze results
+    data = copied.get_standardized_data(reference=ref)
+    order: tp.List[int] = []
+    for val, _ in itertools.groupby(data):
+        num = int(np.round(val))
+        if num in order:
+            if order[-1] != num:
+                raise RuntimeError(err_msg)
+        else:
+            order.append(num)
+    if len(order) != len(flatp):
+        raise RuntimeError(err_msg)
+    # create output and check it
+    ordered_keys = [keys[num] for num in order]
+    ordered_arrays = [(k, flatp[k]) for k in ordered_keys]
+    # print(f"DEBUGGING:\nkeys={keys}\ndata={data}\norder={order}\nordered_key={ordered_keys}")
+    if sum(pa.dimension for _, pa in ordered_arrays) != parameter.dimension:
+        raise RuntimeError(err_msg)
+    return ordered_arrays
+
+
+# # # END OF CHECK # # #
+
+
 def do_nothing(*args: tp.Any, **kwargs: tp.Any) -> int:
     print("my args", args, flush=True)
     print("my kwargs", kwargs, flush=True)
@@ -159,8 +230,8 @@ if __name__ == "__main__":
     c_args, c_kwargs = [], {}  # oversimplisitic parser
     for argv in sys.argv[1:]:
         if "=" in argv:
-            key, val = argv.split("=")
-            c_kwargs[key.strip("-")] = val
+            key_, val_ = argv.split("=")
+            c_kwargs[key_.strip("-")] = val_
         else:
             c_args.append(argv)
     do_nothing(*c_args, **c_kwargs)
