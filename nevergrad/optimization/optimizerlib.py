@@ -2425,7 +2425,7 @@ class _MSR(CM):
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
         num_single_runs: int = 9,
-        base_optimizer: base.Optimizer = NGOpt,
+        base_optimizer: base.OptCls = NGOpt,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert budget is not None
@@ -2460,7 +2460,7 @@ class MultipleSingleRuns(base.ConfiguredOptimizer):
         self,
         *,
         num_single_runs: int = 9,
-        base_optimizer: base.Optimizer = NGOpt,
+        base_optimizer: base.OptCls = NGOpt,
     ) -> None:
         super().__init__(_MSR, locals())
 
