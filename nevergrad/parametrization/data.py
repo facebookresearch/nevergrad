@@ -93,8 +93,10 @@ class Data(core.Parameter):
 
     Note
     ----
-    More specific behaviors can be obtained throught the following methods:
-    set_bounds, set_mutation, set_integer_casting
+    - More specific behaviors can be obtained throught the following methods:
+      set_bounds, set_mutation, set_integer_casting
+    - if both lower and upper bounds are provided, sigma will be adapted so that the range spans 6 sigma.
+      Also, if init is not provided, it will be set to the middle value.
     """
 
     def __init__(
@@ -106,10 +108,8 @@ class Data(core.Parameter):
         upper: tp.Optional[float] = None,
         mutable_sigma: bool = False,
     ) -> None:
-        sigma = Log(init=1.0, exponent=2.0, mutable_sigma=False) if mutable_sigma else 1.0
         super().__init__()
-        self.parameters = Dict(sigma=sigma, recombination="average", mutation="gaussian")
-        self.parameters._ignore_in_repr = dict(sigma="1.0", recombination="average", mutation="gaussian")
+        sigma_val = np.array([1.0])
         # make sure either shape or
         if sum(x is None for x in [init, shape]) != 1:
             raise ValueError('Exactly one of "init" or "shape" must be provided')
@@ -124,13 +124,27 @@ class Data(core.Parameter):
                 init += (lower + upper) / 2.0
         self._value = init
         self.add_layer(_layering.ArrayCasting())
+        # handle bounds
         num_bounds = sum(x is not None for x in (lower, upper))
+        layer: tp.Any = None
         if num_bounds:
             from . import _datalayers
 
             layer = _datalayers.Bound(
                 lower=lower, upper=upper, uniform_sampling=init is None and num_bounds == 2
             )
+            if num_bounds == 2:
+                sigma_val = (layer.bounds[1] - layer.bounds[0]) / 6
+        # set parameters
+        if not mutable_sigma:
+            sigma: tp.Any = sigma_val[0] if sigma_val.size == 1 else sigma_val
+        elif sigma_val.size == 1:
+            sigma = Log(init=sigma_val[0], exponent=2.0, mutable_sigma=False)
+        else:
+            sigma = Array(init=sigma_val, lower=0, mutable_sigma=False)
+        self.parameters = Dict(sigma=sigma, recombination="average", mutation="gaussian")
+        self.parameters._ignore_in_repr = dict(sigma="1.0", recombination="average", mutation="gaussian")
+        if layer is not None:
             layer(self, inplace=True)
 
     @property
@@ -183,7 +197,7 @@ class Data(core.Parameter):
         return f"{cls}{description}" + _param_string(self.parameters)
 
     @property
-    def sigma(self) -> tp.Union["Array", "Scalar"]:
+    def sigma(self) -> "Data":
         """Value for the standard deviation used to mutate the parameter"""
         return self.parameters["sigma"]  # type: ignore
 
@@ -321,7 +335,7 @@ class Data(core.Parameter):
             ):
                 self.parameters._content["sigma"] = core.as_parameter(sigma)
             else:
-                self.sigma.value = sigma  # type: ignore
+                self.sigma.value = sigma
         if exponent is not None:
             from . import _datalayers
 

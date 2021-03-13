@@ -387,9 +387,11 @@ def test_array_bounded_initialization() -> None:
     array = par.Array(shape=(1,), lower=-1)
     assert array.value[0] == 0
     assert array.bounds == (-1, None)  # type: ignore
-    array = par.Array(shape=(1,), lower=-1, upper=3)
+    assert array.sigma.value == 1.0
+    array = par.Array(shape=(1,), lower=-0.5, upper=2.5)
     assert array.value[0] == 1
-    assert array.bounds == (-1, 3)  # type: ignore
+    assert array.bounds == (-0.5, 2.5)  # type: ignore
+    assert array.sigma.value == 0.5
 
 
 @pytest.mark.parametrize("method", ["clipping", "arctan", "tanh", "constraint", "bouncing"])  # type: ignore
