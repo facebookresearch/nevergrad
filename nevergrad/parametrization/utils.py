@@ -7,11 +7,12 @@ import os
 import sys
 import shutil
 import tempfile
+import warnings
 import subprocess
 from pathlib import Path
 import numpy as np
+from nevergrad.common import errors
 from nevergrad.common import typing as tp
-from nevergrad.common import tools as ngtools
 
 
 class BoundChecker:
@@ -79,9 +80,11 @@ class FunctionInfo:  # Note: eventually, this should be a dataclass (dropping ol
         self.metrizable = metrizable
 
     def __repr__(self) -> str:
-        vals = ngtools.different_from_defaults(instance=self, check_mismatches=True)
-        diff = ",".join(f"{x}={y}" for x, y in sorted(vals.items()))
+        diff = ",".join(f"{x}={y}" for x, y in sorted(self.__dict__.items()))
         return f"{self.__class__.__name__}({diff})"
+
+
+_WARNING = "parameter.descriptors is deprecated use {} instead"
 
 
 class DeprecatedDescriptors:
@@ -107,27 +110,31 @@ class DeprecatedDescriptors:
                 from . import helpers  # pylint: disable=import-outside-toplevel
 
                 self._info = helpers.analyze(self._param)
+            warnings.warn(_WARNING.format(f"'ng.p.helpers.analyze(parameter).{name}'"))
             return getattr(self._info, name)
         if name == "non_proxy_function":
+            warnings.warn(_WARNING.format(f"'not parameter.function.{name}'"))
             return not self._param.function.proxy
         translation = dict(deterministic_function="deterministic", metrizable="metrizable")
         if name not in translation:
             return super().__getattr__(name)  # type: ignore
+        warnings.warn(_WARNING.format(f"'parameter.function.{translation[name]}'"))
         return getattr(self._param.function, translation[name])
 
     def __setattr__(self, name: str, value: bool) -> None:
         if name in self._ANALYSIS_NAMES:
-            if self._info is None:
-                from . import helpers  # pylint: disable=import-outside-toplevel
-
-                self._info = helpers.analyze(self._param)
-            setattr(self._info, name, value)
+            raise RuntimeError(
+                f"Setting {name} descriptor value is no longer supported, as "
+                "this is now included in ng.p.helpers.analyze(parameter)"
+            )
         if name == "non_proxy_function":
             self._param.function.proxy = not value
+            warnings.warn(_WARNING.format(f"'not parameter.function.{name}'"))
             return
         translation = dict(deterministic_function="deterministic", metrizable="metrizable")
         if name in translation:
             setattr(self._param.function, translation[name], value)
+            warnings.warn(_WARNING.format(f"'parameter.function.{translation[name]}'"))
             return
         super().__setattr__(name, value)
 

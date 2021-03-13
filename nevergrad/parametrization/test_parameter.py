@@ -42,6 +42,9 @@ def test_array_basics() -> None:
 )
 def test_empty_parameters(param: par.Dict) -> None:
     assert not param.dimension
+    analysis = par.helpers.analyze(param)
+    assert analysis.continuous
+    assert analysis.deterministic
     assert param.descriptors.continuous
     assert param.descriptors.deterministic
 
@@ -216,9 +219,13 @@ def test_parameter_names(param: par.Parameter, name: str) -> None:
         ),
     ],
 )
-def test_parameter_descriptors(
+def test_parameter_analysis(
     param: par.Parameter, continuous: bool, deterministic: bool, ordered: bool
 ) -> None:
+    analysis = par.helpers.analyze(param)
+    assert analysis.continuous == continuous
+    assert analysis.deterministic == deterministic
+    assert analysis.ordered == ordered
     assert param.descriptors.continuous == continuous
     assert param.descriptors.deterministic == deterministic
     assert param.descriptors.ordered == ordered

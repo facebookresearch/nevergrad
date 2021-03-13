@@ -125,8 +125,9 @@ def test_parametrization_continuous_noisy(
     variables: tp.Tuple[ng.p.Parameter, ...], continuous: bool, noisy: bool
 ) -> None:
     instru = ng.p.Instrumentation(*variables)
-    assert instru.descriptors.continuous == continuous
-    assert instru.descriptors.deterministic != noisy
+    analysis = ng.p.helpers.analyze(instru)
+    assert analysis.continuous == continuous
+    assert analysis.deterministic != noisy
 
 
 class ExampleFunction(base.ExperimentFunction):

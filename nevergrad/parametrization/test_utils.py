@@ -71,7 +71,7 @@ def test_flatten(no_container: bool, param: p.Parameter, keys: tp.Iterable[str])
 
 def test_function_info() -> None:
     info = utils.FunctionInfo(deterministic=False)
-    assert repr(info) == "FunctionInfo(deterministic=False)"
+    assert repr(info) == "FunctionInfo(deterministic=False,metrizable=True,proxy=False)"
 
 
 @testing.parametrized(
