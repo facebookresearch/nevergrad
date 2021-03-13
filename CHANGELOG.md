@@ -39,6 +39,8 @@
   the representation (`__repr__`) of `Array` has changed, and their `bounds` attribute is no longer reliable for now.
   This change will eventually lead to a new syntax for settings bounds and distribution, but it's not ready yet.
 - `DE` initial sampling as been updated to take bounds into accounts [#1058](https://github.com/facebookresearch/nevergrad/pull/1058)
+- `Array` can now take `lower` and `upper` bounds as initialization arguments. The array is initialized at its average
+  if not `init` is provided and both bounds are provided. In this case, sampling will be uniformm between these bounds.
 
 
 ### Other changes

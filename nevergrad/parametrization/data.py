@@ -84,6 +84,10 @@ class Data(core.Parameter):
         initial value of the array (defaults to 0, with a provided shape)
     shape: tuple of ints, or None
         shape of the array, to be provided iff init is not provided
+    lower: array, float or None
+        minimum value
+    upper: array, float or None
+        maximum value
     mutable_sigma: bool
         whether the mutation standard deviation must mutate as well (for mutation based algorithms)
 
@@ -98,25 +102,36 @@ class Data(core.Parameter):
         *,
         init: tp.Optional[tp.ArrayLike] = None,
         shape: tp.Optional[tp.Tuple[int, ...]] = None,
+        lower: tp.Optional[float] = None,
+        upper: tp.Optional[float] = None,
         mutable_sigma: bool = False,
     ) -> None:
         sigma = Log(init=1.0, exponent=2.0, mutable_sigma=False) if mutable_sigma else 1.0
         super().__init__()
         self.parameters = Dict(sigma=sigma, recombination="average", mutation="gaussian")
-        err_msg = 'Exactly one of "init" or "shape" must be provided'
         self.parameters._ignore_in_repr = dict(sigma="1.0", recombination="average", mutation="gaussian")
+        # make sure either shape or
+        if sum(x is None for x in [init, shape]) != 1:
+            raise ValueError('Exactly one of "init" or "shape" must be provided')
         if init is not None:
-            if shape is not None:
-                raise ValueError(err_msg)
-            self._value = np.array(init, dtype=float, copy=False)
-        elif shape is not None:
-            assert isinstance(shape, tuple) and all(
-                isinstance(n, int) for n in shape
-            ), f"Shape incorrect: {shape}."
-            self._value = np.zeros(shape, dtype=float)
+            init = np.array(init, dtype=float, copy=False)
         else:
-            raise ValueError(err_msg)
+            assert isinstance(shape, (list, tuple)) and all(
+                isinstance(n, int) for n in shape
+            ), f"Incorrect shape: {shape}."
+            init = np.zeros(shape, dtype=float)
+            if lower is not None and upper is not None:
+                init += (lower + upper) / 2.0
+        self._value = init
         self.add_layer(_layering.ArrayCasting())
+        num_bounds = sum(x is not None for x in (lower, upper))
+        if num_bounds:
+            from . import _datalayers
+
+            layer = _datalayers.Bound(
+                lower=lower, upper=upper, uniform_sampling=init is None and num_bounds == 2
+            )
+            layer(self, inplace=True)
 
     @property
     def bounds(self) -> tp.Tuple[tp.Optional[np.ndarray], tp.Optional[np.ndarray]]:
@@ -192,9 +207,9 @@ class Data(core.Parameter):
 
         Parameters
         ----------
-        lower: float or None
+        lower: array, float or None
             minimum value
-        upper: float or None
+        upper: array, float or None
             maximum value
         method: str
             One of the following choices:
