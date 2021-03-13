@@ -383,6 +383,15 @@ def test_descriptors() -> None:
     assert d3.deterministic is True
 
 
+def test_array_bounded_initialization() -> None:
+    array = par.Array(shape=(1,), lower=-1)
+    assert array.value[0] == 0
+    assert array.bounds == (-1, None)  # type: ignore
+    array = par.Array(shape=(1,), lower=-1, upper=3)
+    assert array.value[0] == 1
+    assert array.bounds == (-1, 3)  # type: ignore
+
+
 @pytest.mark.parametrize("method", ["clipping", "arctan", "tanh", "constraint", "bouncing"])  # type: ignore
 @pytest.mark.parametrize("exponent", [2.0, None])  # type: ignore
 @pytest.mark.parametrize("sigma", [1.0, 1000, 0.001])  # type: ignore
