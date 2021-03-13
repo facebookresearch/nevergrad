@@ -110,15 +110,22 @@ class DeprecatedDescriptors:
                 from . import helpers  # pylint: disable=import-outside-toplevel
 
                 self._info = helpers.analyze(self._param)
-            warnings.warn(_WARNING.format(f"'ng.p.helpers.analyze(parameter).{name}'"))
+            warnings.warn(
+                _WARNING.format(f"'ng.p.helpers.analyze(parameter).{name}'"),
+                errors.NevergradDeprecationWarning,
+            )
             return getattr(self._info, name)
         if name == "non_proxy_function":
-            warnings.warn(_WARNING.format(f"'not parameter.function.{name}'"))
+            warnings.warn(
+                _WARNING.format(f"'not parameter.function.{name}'"), errors.NevergradDeprecationWarning
+            )
             return not self._param.function.proxy
         translation = dict(deterministic_function="deterministic", metrizable="metrizable")
         if name not in translation:
             return super().__getattr__(name)  # type: ignore
-        warnings.warn(_WARNING.format(f"'parameter.function.{translation[name]}'"))
+        warnings.warn(
+            _WARNING.format(f"'parameter.function.{translation[name]}'"), errors.NevergradDeprecationWarning
+        )
         return getattr(self._param.function, translation[name])
 
     def __setattr__(self, name: str, value: bool) -> None:
@@ -129,12 +136,17 @@ class DeprecatedDescriptors:
             )
         if name == "non_proxy_function":
             self._param.function.proxy = not value
-            warnings.warn(_WARNING.format(f"'not parameter.function.{name}'"))
+            warnings.warn(
+                _WARNING.format(f"'not parameter.function.{name}'"), errors.NevergradDeprecationWarning
+            )
             return
         translation = dict(deterministic_function="deterministic", metrizable="metrizable")
         if name in translation:
             setattr(self._param.function, translation[name], value)
-            warnings.warn(_WARNING.format(f"'parameter.function.{translation[name]}'"))
+            warnings.warn(
+                _WARNING.format(f"'parameter.function.{translation[name]}'"),
+                errors.NevergradDeprecationWarning,
+            )
             return
         super().__setattr__(name, value)
 
