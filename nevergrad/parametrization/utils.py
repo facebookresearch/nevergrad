@@ -294,3 +294,15 @@ def float_penalty(x: tp.Union[bool, float]) -> float:
     elif isinstance(x, (float, np.float)):
         return -min(0, x)  # Negative ==> >0
     raise TypeError(f"Only bools and floats are supported for check constaint, but got: {x} ({type(x)})")
+
+
+class _ConstraintCompatibilityFunction:
+    """temporary hack for "register_cheap_constraint", to be removed"""
+
+    def __init__(self, func: tp.Callable[[tp.Any], tp.Loss]) -> None:
+        self.func = func
+
+    def __call__(self, *args: tp.Any, **kwargs: tp.Any) -> tp.Loss:
+        out = self.func((args, kwargs))
+        print("calling", args, kwargs, "out =", out)
+        return out

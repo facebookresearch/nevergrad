@@ -1,19 +1,20 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.(an
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import functools
-import warnings
+# import warnings
 import numpy as np
 import nevergrad.common.typing as tp
+from nevergrad.common import errors
+
+from . import _layering
 from . import core
 from .container import Dict
 from . import utils
-from . import transforms as trans
 
 
-# pylint: disable=no-value-for-parameter
+# pylint: disable=no-value-for-parameter,import-outside-toplevel
 
 
 D = tp.TypeVar("D", bound="Data")
@@ -40,6 +41,9 @@ class Mutation(core.Parameter):
     Recombinations should take several
     """
 
+    # NOTE: this API should disappear in favor of the layer API
+    # (a layer can modify the mutation scheme)
+
     # pylint: disable=unused-argument
     value: core.ValueProperty[tp.Callable[[tp.Sequence[D]], None]] = core.ValueProperty()
 
@@ -47,10 +51,10 @@ class Mutation(core.Parameter):
         super().__init__()
         self.parameters = Dict(**kwargs)
 
-    def _get_value(self) -> tp.Callable[[tp.Sequence[D]], None]:
+    def _layered_get_value(self) -> tp.Callable[[tp.Sequence[D]], None]:
         return self.apply
 
-    def _set_value(self, value: tp.Any) -> None:
+    def _layered_set_value(self, value: tp.Any) -> None:
         raise RuntimeError("Mutation cannot be set.")
 
     def _get_name(self) -> str:
@@ -104,37 +108,63 @@ class Data(core.Parameter):
         if init is not None:
             if shape is not None:
                 raise ValueError(err_msg)
-            self._value = np.array(init, copy=False)
+            self._value = np.array(init, dtype=float, copy=False)
         elif shape is not None:
             assert isinstance(shape, tuple) and all(
                 isinstance(n, int) for n in shape
             ), f"Shape incorrect: {shape}."
-            self._value = np.zeros(shape)
+            self._value = np.zeros(shape, dtype=float)
         else:
             raise ValueError(err_msg)
-        self.integer = False
-        self.exponent: tp.Optional[float] = None
-        self.bounds: tp.Tuple[tp.Optional[np.ndarray], tp.Optional[np.ndarray]] = (None, None)
-        self.bound_transform: tp.Optional[trans.BoundTransform] = None
-        self.full_range_sampling = False
-        self._ref_data: tp.Optional[np.ndarray] = None
+        self.add_layer(_layering.ArrayCasting())
+
+    @property
+    def bounds(self) -> tp.Tuple[tp.Optional[np.ndarray], tp.Optional[np.ndarray]]:
+        """Estimate of the bounds (None if unbounded)
+
+        Note
+        ----
+        This may be inaccurate (WIP)
+        """
+        from . import _datalayers
+
+        bound_layers = _datalayers.BoundLayer.filter_from(self)
+        if not bound_layers:
+            return (None, None)
+        bounds = bound_layers[-1].bounds
+        forwardable = _datalayers.ForwardableOperation.filter_from(self)
+        forwardable = [x for x in forwardable if x._layer_index > bound_layers[-1]._layer_index]
+        for f in forwardable:
+            bounds = tuple(None if b is None else f.forward(b) for b in bounds)  # type: ignore
+        return bounds
+
+    @property
+    def dimension(self) -> int:
+        return int(np.prod(self._value.shape))
 
     def _compute_descriptors(self) -> utils.Descriptors:
-        return utils.Descriptors(continuous=not self.integer)
+        from . import _datalayers
+
+        intlayers = _layering.Int.filter_from(self)
+        deterministic = all(lay.deterministic for lay in intlayers)
+        continuous = not any(lay.deterministic for lay in intlayers)
+        return utils.Descriptors(
+            deterministic=deterministic,
+            continuous=continuous,
+            ordered=not any(isinstance(lay, _datalayers.SoftmaxSampling) for lay in intlayers),
+        )
 
     def _get_name(self) -> str:
         cls = self.__class__.__name__
-        descriptors: tp.List[str] = (
-            ["int"]
-            if self.integer
-            else ([str(self._value.shape).replace(" ", "")] if self._value.shape != (1,) else [])
-        )
-        descriptors += [f"exp={self.exponent}"] if self.exponent is not None else []
-        descriptors += [f"{self.bound_transform.name}"] if self.bound_transform is not None else []
-        descriptors += ["constr"] if self._constraint_checkers else []
-        description = ""
-        if descriptors:
-            description = "{{{}}}".format(",".join(descriptors))
+        descriptors: tp.List[str] = []
+        if self._value.shape != (1,):
+            descriptors.append(str(self._value.shape).replace(" ", ""))
+        descriptors += [
+            layer.name
+            for layer in self._layers[1:]
+            if not isinstance(layer, (_layering.ArrayCasting, _layering._ScalarCasting))
+        ]
+        description = "" if not descriptors else "{{{}}}".format(",".join(descriptors))
         return f"{cls}{description}" + _param_string(self.parameters)
 
     @property
@@ -142,18 +172,12 @@ class Data(core.Parameter):
         """Value for the standard deviation used to mutate the parameter"""
         return self.parameters["sigma"]  # type: ignore
 
-    def sample(self: D) -> D:
-        if not self.full_range_sampling:
-            return super().sample()
+    def _layered_sample(self: D) -> D:
         child = self.spawn_child()
-        func = (lambda x: x) if self.exponent is None else self._to_reduced_space  # noqa
-        std_bounds = tuple(func(b * np.ones(self._value.shape)) for b in self.bounds)
-        diff = std_bounds[1] - std_bounds[0]
-        new_data = std_bounds[0] + self.random_state.uniform(0, 1, size=diff.shape) * diff
-        if self.exponent is None:
-            new_data = self._to_reduced_space(new_data)
-        child.set_standardized_data(new_data - self._get_ref_data(), deterministic=False)
-        child.heritage["lineage"] = child.uid
+        from . import helpers
+
+        with helpers.deterministic_sampling(child):
+            child.mutate()
         return child
 
     # pylint: disable=unused-argument
@@ -163,8 +187,6 @@ class Data(core.Parameter):
         upper: tp.BoundValue = None,
         method: str = "bouncing",
         full_range_sampling: tp.Optional[bool] = None,
-        a_min: tp.BoundValue = None,
-        a_max: tp.BoundValue = None,
     ) -> D:
         """Bounds all real values into [lower, upper] using a provided method
 
@@ -200,53 +222,28 @@ class Data(core.Parameter):
         - "tanh" reaches the boundaries really quickly, while "arctan" is much softer
         - only "clipping" accepts partial bounds (None values)
         """  # TODO improve description of methods
-        lower, upper = _a_min_max_deprecation(**locals())
-        bounds = tuple(
-            a if isinstance(a, np.ndarray) or a is None else np.array([a], dtype=float)
-            for a in (lower, upper)
-        )
-        both_bounds = all(b is not None for b in bounds)
-        if full_range_sampling is None:
-            full_range_sampling = both_bounds
-        # preliminary checks
-        if self.bound_transform is not None:
-            raise RuntimeError("A bounding method has already been set")
-        if full_range_sampling and not both_bounds:
-            raise ValueError("Cannot use full range sampling if both bounds are not set")
-        checker = utils.BoundChecker(*bounds)
-        if not checker(self.value):
-            raise ValueError("Current value is not within bounds, please update it first")
-        if not (lower is None or upper is None):
-            if (bounds[0] >= bounds[1]).any():  # type: ignore
-                raise ValueError(f"Lower bounds {lower} should be strictly smaller than upper bounds {upper}")
-        # update instance
-        transforms = dict(
-            clipping=trans.Clipping,
-            arctan=trans.ArctanBound,
-            tanh=trans.TanhBound,
-            gaussian=trans.CumulativeDensity,
-        )
-        transforms["bouncing"] = functools.partial(trans.Clipping, bounce=True)  # type: ignore
-        if method in transforms:
-            if self.exponent is not None and method not in ("clipping", "bouncing"):
-                raise ValueError(f'Cannot use method "{method}" in logarithmic mode')
-            self.bound_transform = transforms[method](*bounds)
-        elif method == "constraint":
+        from . import _datalayers
+
+        # if method == "constraint":
+        #     method = "clipping"
+        value = self.value
+        if method == "constraint":
+            layer = _datalayers.BoundLayer(lower=lower, upper=upper, uniform_sampling=full_range_sampling)
+            checker = utils.BoundChecker(*layer.bounds)
             self.register_cheap_constraint(checker)
         else:
-            avail = ["constraint"] + list(transforms)
-            raise ValueError(f"Unknown method {method}, available are: {avail}\nSee docstring for more help.")
-        self.bounds = bounds  # type: ignore
-        self.full_range_sampling = full_range_sampling
-        # warn if sigma is too large for range
-        if both_bounds and method != "tanh":  # tanh goes to infinity anyway
-            std_bounds = tuple(self._to_reduced_space(b) for b in self.bounds)  # type: ignore
-            min_dist = np.min(np.abs(std_bounds[0] - std_bounds[1]).ravel())
-            if min_dist < 3.0:
-                warnings.warn(
-                    f"Bounds are {min_dist} sigma away from each other at the closest, "
-                    "you should aim for at least 3 for better quality."
-                )
+            layer = _datalayers.Bound(
+                lower=lower, upper=upper, method=method, uniform_sampling=full_range_sampling
+            )
+        layer._LEGACY = True
+        layer(self, inplace=True)
+        _fix_legacy(self)
+        try:
+            self.value = value
+        except ValueError as e:
+            raise errors.NevergradValueError(
+                "Current value is not within bounds, please update it first"
+            ) from e
         return self
 
     def set_recombination(self: D, recombination: tp.Union[None, str, core.Parameter]) -> D:
@@ -265,7 +262,8 @@ class Data(core.Parameter):
                 func = (
                     self.random_state.normal if mutation == "gaussian" else self.random_state.standard_cauchy
                 )
-                self.set_standardized_data(func(size=self.dimension), deterministic=False)
+                new_state = func(size=self.dimension)
+                self.set_standardized_data(new_state)
             else:
                 raise NotImplementedError('Mutation "{mutation}" is not implemented')
         elif isinstance(mutation, Mutation):
@@ -310,18 +308,21 @@ class Data(core.Parameter):
             else:
                 self.sigma.value = sigma  # type: ignore
         if exponent is not None:
-            if self.bound_transform is not None and not isinstance(self.bound_transform, trans.Clipping):
-                raise RuntimeError(
-                    f"Cannot set logarithmic transform with bounding transform {self.bound_transform}, "
-                    "only clipping and constraint bounding methods can accept itp."
-                )
-            if exponent <= 1.0:
-                raise ValueError("Only exponents strictly higher than 1.0 are allowed")
-            if np.min(self._value.ravel()) <= 0:
-                raise RuntimeError(
+            from . import _datalayers
+
+            if exponent <= 0.0:
+                raise ValueError("Only exponents strictly higher than 0.0 are allowed")
+            value = self.value
+            layer = _datalayers.Exponent(base=exponent)
+            layer._LEGACY = True
+            self.add_layer(layer)
+            _fix_legacy(self)
+            try:
+                self.value = value
+            except ValueError as e:
+                raise errors.NevergradValueError(
                     "Cannot convert to logarithmic mode with current non-positive value, please update it firstp."
-                )
-            self.exponent = exponent
+                ) from e
         if custom is not None:
             self.parameters._content["mutation"] = core.as_parameter(custom)
         return self
@@ -339,38 +340,32 @@ class Data(core.Parameter):
         difficult. It is especially ill-advised to use this with a range smaller than 10, or
         a sigma lower than 1. In those cases, you should rather use a TransitionChoice instead.
         """
-        self.integer = True
-        return self
+        return self.add_layer(_layering.Int())
+
+    @property
+    def integer(self) -> bool:
+        return any(isinstance(x, _layering.Int) for x in self._layers)
 
     # pylint: disable=unused-argument
-    def _internal_set_standardized_data(
-        self: D, data: np.ndarray, reference: D, deterministic: bool = False
-    ) -> None:
+    def _internal_set_standardized_data(self: D, data: np.ndarray, reference: D) -> None:
         assert isinstance(data, np.ndarray)
         sigma = reference.sigma.value
-        data_reduc = sigma * (data + reference._get_ref_data()).reshape(reference._value.shape)
-        self._value = data_reduc if reference.exponent is None else reference.exponent ** data_reduc
-        self._ref_data = None
-        if reference.bound_transform is not None:
-            self._value = reference.bound_transform.forward(self._value)
+        data_reduc = sigma * (data + reference._to_reduced_space()).reshape(reference._value.shape)
+        self._value = data_reduc
+        # make sure _value is updated by the layers getters if need be:
+        self.value  # pylint: disable=pointless-statement
 
     def _internal_get_standardized_data(self: D, reference: D) -> np.ndarray:
-        return reference._to_reduced_space(self._value) - reference._get_ref_data()  # type: ignore
+        return reference._to_reduced_space(self._value - reference._value)
 
-    def _get_ref_data(self) -> np.ndarray:
-        if self._ref_data is None:
-            self._ref_data = self._to_reduced_space(self._value)
-        return self._ref_data
-
-    def _to_reduced_space(self, value: np.ndarray) -> np.ndarray:
+    def _to_reduced_space(self, value: tp.Optional[np.ndarray] = None) -> np.ndarray:
         """Converts array with appropriate shapes to reduced (uncentered) space
         by applying log scaling and sigma scaling
         """
-        sigma = self.sigma.value
-        if self.bound_transform is not None:
-            value = self.bound_transform.backward(value)
-        distribval = value if self.exponent is None else np.log(value) / np.log(self.exponent)
-        reduced = distribval / sigma
+        # TODO this is nearly useless now that the layer system has been added. Remove?
+        if value is None:
+            value = self._value
+        reduced = value / self.sigma.value
         return reduced.ravel()  # type: ignore
 
     def recombine(self: D, *others: D) -> None:
@@ -381,10 +376,9 @@ class Data(core.Parameter):
         if recomb is None:
             return
         all_params = [self] + list(others)
-        print(all_params)
         if isinstance(recomb, str) and recomb == "average":
             all_arrays = [p.get_standardized_data(reference=self) for p in all_params]
-            self.set_standardized_data(np.mean(all_arrays, axis=0), deterministic=False)
+            self.set_standardized_data(np.mean(all_arrays, axis=0))
         elif isinstance(recomb, Mutation):
             recomb.apply(all_params)
         elif callable(recomb):
@@ -392,39 +386,111 @@ class Data(core.Parameter):
         else:
             raise ValueError(f'Unknown recombination "{recomb}"')
 
-    def spawn_child(self: D, new_value: tp.Optional[tp.Any] = None) -> D:
-        child = super().spawn_child()  # dont forward the value
+    def copy(self: D) -> D:
+        child = super().copy()
         child._value = np.array(self._value, copy=True)
-        if new_value is not None:
-            child.value = new_value
         return child
+
+    def _layered_set_value(self, value: np.ndarray) -> None:
+        self._check_frozen()
+        if self._value.shape != value.shape:
+            raise ValueError(
+                f"Cannot set array of shape {self._value.shape} with value of shape {value.shape}"
+            )
+        self._value = value
+
+    def _layered_get_value(self) -> np.ndarray:
+        return self._value
+
+    def _new_with_data_layer(self: D, name: str, *args: tp.Any, **kwargs: tp.Any) -> D:
+        # pylint: disable=cyclic-import
+        from . import _datalayers  # lazy to avoid cyclic imports
+
+        new = self.copy()
+        new.add_layer(getattr(_datalayers, name)(*args, **kwargs))
+        return new
+
+    def __mod__(self: D, module: tp.Any) -> D:
+        return self._new_with_data_layer("Modulo", module)
+
+    def __rpow__(self: D, base: float) -> D:
+        return self._new_with_data_layer("Exponent", base)
+
+    def __add__(self: D, offset: tp.Any) -> D:
+        return self._new_with_data_layer("Add", offset)
+
+    def __sub__(self: D, offset: tp.Any) -> D:
+        return self.__add__(-offset)
+
+    def __radd__(self: D, offset: tp.Any) -> D:
+        return self.__add__(offset)
+
+    def __mul__(self: D, value: tp.Any) -> D:
+        return self._new_with_data_layer("Multiply", value)
+
+    def __rmul__(self: D, value: tp.Any) -> D:
+        return self.__mul__(value)
+
+    def __truediv__(self: D, value: tp.Any) -> D:
+        return self.__mul__(1.0 / value)
+
+    def __rtruediv__(self: D, value: tp.Any) -> D:
+        return value * (self ** -1)  # type: ignore
+
+    def __pow__(self: D, power: float) -> D:
+        return self._new_with_data_layer("Power", power)
+
+    def __neg__(self: D) -> D:
+        return self.__mul__(-1.0)
+
+
+def _fix_legacy(parameter: Data) -> None:
+    """Ugly hack for keeping the legacy behaviors with considers bounds always after the exponent
+    and can still sample "before" the exponent (log-uniform).
+    """
+    from . import _datalayers
+
+    legacy = [x for x in _datalayers.Operation.filter_from(parameter) if x._LEGACY]
+    if len(legacy) < 2:
+        return
+    if len(legacy) > 2:
+        raise errors.NevergradRuntimeError("More than 2 legacy layers, this should not happen, open an issue")
+    # warnings.warn(
+    #     "Settings bounds and exponent through the Array/Scalar API will change behavior "
+    #     " (this is an early warning, more on this asap)",
+    #     errors.NevergradBehaviorChangesWarning,
+    # )  # TODO activate when ready
+    value = parameter.value
+    layers_inds = tuple(leg._layer_index for leg in legacy)
+    if abs(layers_inds[0] - layers_inds[1]) > 1:
+        raise errors.NevergradRuntimeError("Non-legacy layers between 2 legacy layers")
+    parameter._layers = [x for x in parameter._layers if x._layer_index not in layers_inds]
+    # fix parameter layers
+    for k, sub in enumerate(parameter._layers):
+        sub._layer_index = k
+        sub._layers = parameter._layers
+    parameter.value = value
+    bound_ind = int(isinstance(legacy[0], _datalayers.Exponent))
+    bound: _datalayers.BoundLayer = legacy[bound_ind]  # type: ignore
+    exp: _datalayers.Exponent = legacy[(bound_ind + 1) % 2]  # type: ignore
+    bound.bounds = tuple(None if b is None else exp.backward(b) for b in bound.bounds)  # type: ignore
+    if isinstance(bound, _datalayers.Bound):
+        bound = _datalayers.Bound(
+            lower=bound.bounds[0],
+            upper=bound.bounds[1],
+            method=bound._method,
+            uniform_sampling=bound.uniform_sampling,
+        )
+    for l in (bound, exp):
+        l._layer_index = 0
+        l._layers = [l]
+        parameter.add_layer(l)
+    return
 
 
 class Array(Data):
 
     value: core.ValueProperty[np.ndarray] = core.ValueProperty()
-
-    def _get_value(self) -> np.ndarray:
-        if self.integer:
-            return np.round(self._value)  # type: ignore
-        return self._value
-
-    def _set_value(self, value: tp.ArrayLike) -> None:
-        self._check_frozen()
-        self._ref_data = None
-        if not isinstance(value, (np.ndarray, tuple, list)):
-            raise TypeError(f"Received a {type(value)} in place of a np.ndarray/tuple/list")
-        value = np.asarray(value)
-        assert isinstance(value, np.ndarray)
-        if self._value.shape != value.shape:
-            raise ValueError(
-                f"Cannot set array of shape {self._value.shape} with value of shape {value.shape}"
-            )
-        if not utils.BoundChecker(*self.bounds)(self.value):
-            raise ValueError("New value does not comply with bounds")
-        if self.exponent is not None and np.min(value.ravel()) <= 0:
-            raise ValueError("Logirithmic values cannot be negative")
-        self._value = value
 
 
 class Scalar(Data):
@@ -472,30 +538,7 @@ class Scalar(Data):
             self.set_mutation(sigma=(upper - lower) / 6)  # type: ignore
         if any(a is not None for a in (lower, upper)):
             self.set_bounds(lower=lower, upper=upper, full_range_sampling=bounded and no_init)
-
-    def _get_value(self) -> float:
-        return float(self._value[0]) if not self.integer else int(np.round(self._value[0]))
-
-    def _set_value(self, value: float) -> None:
-        self._check_frozen()
-        if not isinstance(value, (float, int, np.float, np.int)):
-            raise TypeError(f"Received a {type(value)} in place of a scalar (float, int)")
-        self._value = np.array([value], dtype=float)
-
-
-# pylint: disable=unused-argument
-def _a_min_max_deprecation(
-    a_min: tp.Any, a_max: tp.Any, lower: tp.Any, upper: tp.Any, **kwargs: tp.Any
-) -> tp.Tuple[tp.Any, tp.Any]:
-    if a_min is not None:
-        warnings.warn('"a_min" is deprecated in favor of "lower" for clarity', DeprecationWarning)
-        assert lower is None, "Use only lower, and not a_min"
-        lower = a_min
-    if a_max is not None:
-        warnings.warn('"a_max" is deprecated in favor of "upper" for clarity', DeprecationWarning)
-        assert upper is None, "Use only upper, and not a_max"
-        upper = a_max
-    return lower, upper
+        self.add_layer(_layering._ScalarCasting())
 
 
 class Log(Scalar):
@@ -529,10 +572,7 @@ class Log(Scalar):
         lower: tp.Optional[float] = None,
         upper: tp.Optional[float] = None,
         mutable_sigma: bool = False,
-        a_min: tp.Optional[float] = None,
-        a_max: tp.Optional[float] = None,
     ) -> None:
-        lower, upper = _a_min_max_deprecation(**locals())
         no_init = init is None
         bounded = all(a is not None for a in (lower, upper))
         if bounded:
@@ -546,7 +586,15 @@ class Log(Scalar):
             raise ValueError("You must define either a init value or both lower and upper bounds")
         if exponent is None:
             exponent = 2.0
-        super().__init__(init=init, mutable_sigma=mutable_sigma)
-        self.set_mutation(sigma=1.0, exponent=exponent)
-        if any(a is not None for a in (lower, upper)):
-            self.set_bounds(lower, upper, full_range_sampling=bounded and no_init)
+        from . import _datalayers
+
+        exp_layer = _datalayers.Exponent(exponent)
+        raw_bounds = tuple(None if x is None else np.array([x], dtype=float) for x in (lower, upper))
+        bounds = tuple(None if x is None else exp_layer.backward(x) for x in raw_bounds)
+        init = exp_layer.backward(np.array([init]))
+        super().__init__(init=init[0], mutable_sigma=mutable_sigma)  # type: ignore
+        # TODO remove the next line when all compatibility is done
+        if any(x is not None for x in bounds):
+            bound_layer = _datalayers.Bound(*bounds, uniform_sampling=bounded and no_init)  # type: ignore
+            bound_layer(self, inplace=True)
+        self.add_layer(exp_layer)

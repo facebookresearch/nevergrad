@@ -70,3 +70,8 @@ def test_set_env() -> None:
     with tools.set_env(BLUBLU=1):
         assert os.environ.get("BLUBLU", None) == "1"
     assert os.environ.get("BLUBLU", None) is None
+
+
+def test_flatten() -> None:
+    out = tools.flatten(["a", {"truc": [4, 5]}])
+    assert out == {"0": "a", "1.truc.0": 4, "1.truc.1": 5}

@@ -3,7 +3,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 import os
+import math
 import logging
+import itertools
 from collections import deque
 import warnings
 import cma
@@ -15,13 +17,14 @@ from nevergrad.common import errors
 from nevergrad.parametrization import parameter as p
 from nevergrad.parametrization import transforms
 from nevergrad.parametrization import discretization
-from nevergrad.parametrization import helpers as paramhelpers
+from nevergrad.parametrization import _layering
+from nevergrad.parametrization import _datalayers
+from . import oneshot
 from . import base
 from . import mutations
 from .base import registry as registry
 from .base import addCompare  # pylint: disable=unused-import
 from .base import IntOrParameter
-from . import sequences
 
 
 # families of optimizers
@@ -69,13 +72,15 @@ class _OnePlusOne(base.Optimizer):
         noise_handling: tp.Optional[tp.Union[str, tp.Tuple[str, float]]] = None,
         mutation: str = "gaussian",
         crossover: bool = False,
+        use_pareto: bool = False,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._sigma: float = 1
-        all_params = paramhelpers.flatten_parameter(self.parametrization)
+        self._previous_best_loss = float("inf")
+        self.use_pareto = use_pareto
+        all_params = p.helpers.flatten_parameter(self.parametrization)
         arity = max(
-            len(param.choices) if isinstance(param, p.TransitionChoice) else 500
-            for param in all_params.values()
+            len(param.choices) if isinstance(param, p.TransitionChoice) else 500 for _, param in all_params
         )
         self.arity_for_discrete_mutation = arity
         # configuration
@@ -153,6 +158,12 @@ class _OnePlusOne(base.Optimizer):
         # crossover
         mutator = mutations.Mutator(self._rng)
         pessimistic = self.current_bests["pessimistic"].parameter.spawn_child()
+        if self.num_objectives > 1 and self.use_pareto:  # multiobjective
+            # revert to using a sample of the pareto front (not "pessimistic" though)
+            pareto = (
+                self.pareto_front()
+            )  # we can't use choice directly, because numpy does not like iterables
+            pessimistic = pareto[self._rng.choice(len(pareto))].spawn_child()
         ref = self.parametrization
         if self.crossover and self._num_ask % 2 == 1 and len(self.archive) > 2:
             data = mutator.crossover(
@@ -233,6 +244,8 @@ class _OnePlusOne(base.Optimizer):
 
     def _internal_tell(self, x: tp.ArrayLike, loss: tp.FloatLoss) -> None:
         # only used for cauchy and gaussian
+        if self._previous_best_loss != loss:
+            self._sigma *= 2.0 if loss < self._previous_best_loss else 0.84
         if self.mutation == "doerr" and self._doerr_current_best < float("inf") and self._doerr_index >= 0:
             improvement = max(0.0, self._doerr_current_best - loss)
             # Decay.
@@ -246,20 +259,16 @@ class _OnePlusOne(base.Optimizer):
             self._doerr_index = -1
         if self.mutation == "doerr":
             self._doerr_current_best = min(self._doerr_current_best, loss)
-        self._sigma *= 2.0 if loss <= self.current_bests["pessimistic"].mean else 0.84
         if self.mutation == "adaptive":
-            factor = (
-                1.2 if loss <= self.current_bests["pessimistic"].mean else 0.731
-            )  # 0.731 = 1.2**(-np.exp(1)-1)
+            factor = 1.2 if loss <= self._previous_best_loss else 0.731  # 0.731 = 1.2**(-np.exp(1)-1)
             self._adaptive_mr = min(1.0, factor * self._adaptive_mr)
         if self.mutation == "coordinatewise_adaptive":
-            factor = (
-                1.2 if loss < self.current_bests["pessimistic"].mean else 0.731
-            )  # 0.731 = 1.2**(-np.exp(1)-1)
+            factor = 1.2 if loss < self._previous_best_loss else 0.731  # 0.731 = 1.2**(-np.exp(1)-1)
             inds = self._modified_variables
             self._velocity[inds] = np.clip(
                 self._velocity[inds] * factor, 1.0, self.arity_for_discrete_mutation / 4.0
             )
+        self._previous_best_loss = self.current_bests["pessimistic"].mean  # could be the current one
 
 
 class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
@@ -293,6 +302,8 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
         - `"lengler"`: specific mutation rate chosen as a function of the dimension and iteration index.
     crossover: bool
         whether to add a genetic crossover step every other iteration.
+    use_pareto: bool
+        whether to restart from a random pareto element in multiobjective mode, instead of the last one added
 
     Notes
     -----
@@ -310,6 +321,7 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
         noise_handling: tp.Optional[tp.Union[str, tp.Tuple[str, float]]] = None,
         mutation: str = "gaussian",
         crossover: bool = False,
+        use_pareto: bool = False,
     ) -> None:
         super().__init__(_OnePlusOne, locals())
 
@@ -662,9 +674,10 @@ class _TBPSA(base.Optimizer):
             return self.current_bests["optimistic"].parameter
         else:
             # This is NOT the naive version. We deal with noise.
-            return self.parametrization.spawn_child().set_standardized_data(
-                self.current_center, deterministic=True
-            )
+            out = self.parametrization.spawn_child()
+            with p.helpers.deterministic_sampling(out):
+                out.set_standardized_data(self.current_center)
+            return out
 
     def _internal_ask_candidate(self) -> p.Parameter:
         mutated_sigma = self.sigma * np.exp(self._rng.normal(0, 1) / np.sqrt(self.dimension))
@@ -755,8 +768,7 @@ class NoisyBandit(base.Optimizer):
         return self.current_bests["optimistic"].x
 
 
-@registry.register
-class PSO(base.Optimizer):
+class _PSO(base.Optimizer):
 
     # pylint: disable=too-many-instance-attributes
     def __init__(
@@ -764,11 +776,10 @@ class PSO(base.Optimizer):
         parametrization: IntOrParameter,
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
-        transform: str = "arctan",
-        wide: bool = False,  # legacy, to be removed if not needed anymore
-        popsize: tp.Optional[int] = None,
+        config: tp.Optional["ConfiguredPSO"] = None,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        self._config = ConfiguredPSO() if config is None else config
         if budget is not None and budget < 60:
             warnings.warn("PSO is inefficient with budget < 60", errors.InefficientSettingsWarning)
         cases: tp.Dict[str, tp.Tuple[tp.Optional[float], transforms.Transform]] = dict(
@@ -777,29 +788,18 @@ class PSO(base.Optimizer):
             gaussian=(1e-10, transforms.CumulativeDensity()),
         )
         # eps is used for clipping to make sure it is admissible
-        self._eps, self._transform = cases[transform]
-        self._wide = wide
+        self._eps, self._transform = cases[self._config.transform]
         self.llambda = max(40, num_workers)
-        if popsize is not None:
-            self.llambda = popsize
+        if self._config.popsize is not None:
+            self.llambda = self._config.popsize
         self._uid_queue = base.utils.UidQueue()
         self.population: tp.Dict[str, p.Parameter] = {}
         self._best = self.parametrization.spawn_child()
-        self._omega = 0.5 / np.log(2.0)
-        self._phip = 0.5 + np.log(2.0)
-        self._phig = 0.5 + np.log(2.0)
 
     def _internal_ask_candidate(self) -> p.Parameter:
         # population is increased only if queue is empty (otherwise tell_not_asked does not work well at the beginning)
         if len(self.population) < self.llambda:
-            param = self.parametrization
-            if self._wide:
-                # old initialization below seeds in the while R space, while other algorithms use normal distrib
-                data = self._transform.backward(self._rng.uniform(0, 1, self.dimension))
-                candidate = param.spawn_child().set_standardized_data(data, reference=param)
-                candidate.heritage["lineage"] = candidate.uid
-            else:
-                candidate = param.sample()
+            candidate = self.parametrization.sample()
             self.population[candidate.uid] = candidate
             dim = self.parametrization.dimension
             candidate.heritage["speed"] = (
@@ -809,6 +809,7 @@ class PSO(base.Optimizer):
             return candidate
         uid = self._uid_queue.ask()
         candidate = self._spawn_mutated_particle(self.population[uid])
+        candidate.heritage["lineage"] = uid  # override in case it was a tell-not-asked
         return candidate
 
     def _get_boxed_data(self, particle: p.Parameter) -> np.ndarray:
@@ -827,9 +828,9 @@ class PSO(base.Optimizer):
         rp = self._rng.uniform(0.0, 1.0, size=self.dimension)
         rg = self._rng.uniform(0.0, 1.0, size=self.dimension)
         speed = (
-            self._omega * speed
-            + self._phip * rp * (parent_best_x - x)
-            + self._phig * rg * (global_best_x - x)
+            self._config.omega * speed
+            + self._config.phip * rp * (parent_best_x - x)
+            + self._config.phig * rg * (global_best_x - x)
         )
         data = speed + x
         if self._eps is not None:
@@ -853,22 +854,19 @@ class PSO(base.Optimizer):
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         # nearly same as DE
-        candidate._meta["value"] = loss
         worst: tp.Optional[p.Parameter] = None
         if not len(self.population) < self.llambda:
-            worst = max(self.population.values(), key=lambda p: p._meta.get("value", float("inf")))
-            if worst._meta.get("value", float("inf")) < loss:
+            uid, worst = max(self.population.items(), key=lambda p: base._loss(p[1]))
+            if base._loss(worst) < loss:
                 return  # no need to update
             else:
-                uid = worst.heritage["lineage"]
                 del self.population[uid]
                 self._uid_queue.discard(uid)
-        candidate.heritage["lineage"] = candidate.uid  # new lineage
         if "speed" not in candidate.heritage:
             candidate.heritage["speed"] = self._rng.uniform(-1.0, 1.0, self.parametrization.dimension)
         self.population[candidate.uid] = candidate
         self._uid_queue.tell(candidate.uid)
-        if loss < self._best._meta.get("loss", float("inf")):
+        if loss < base._loss(self._best):
             self._best = candidate
 
 
@@ -882,10 +880,14 @@ class ConfiguredPSO(base.ConfiguredOptimizer):
     ----------
     transform: str
         name of the transform to use to map from PSO optimization space to R-space.
-    wide: bool
-        if True: legacy initialization in [-1,1] box mapped to R
     popsize: int
         population size of the particle swarm. Defaults to max(40, num_workers)
+    omega: float
+        particle swarm optimization parameter
+    phip: float
+        particle swarm optimization parameter
+    phig: float
+        particle swarm optimization parameter
 
     Note
     ----
@@ -902,14 +904,22 @@ class ConfiguredPSO(base.ConfiguredOptimizer):
     def __init__(
         self,
         transform: str = "identity",
-        wide: bool = False,
         popsize: tp.Optional[int] = None,
+        omega: float = 0.5 / math.log(2.0),
+        phip: float = 0.5 + math.log(2.0),
+        phig: float = 0.5 + math.log(2.0),
     ) -> None:
+        super().__init__(_PSO, locals(), as_config=True)
         assert transform in ["arctan", "gaussian", "identity"]
-        super().__init__(PSO, locals())
+        self.transform = transform
+        self.popsize = popsize
+        self.omega = omega
+        self.phip = phip
+        self.phig = phig
 
 
 RealSpacePSO = ConfiguredPSO().set_name("RealSpacePSO", register=True)
+PSO = ConfiguredPSO(transform="arctan").set_name("PSO", register=True)
 
 
 @registry.register
@@ -1082,7 +1092,7 @@ class SplitOptimizer(base.Optimizer):
         elif num_optims is None:
             # if no num_vars and no num_optims, try to guess how to split. Otherwise, just assume 2.
             if isinstance(parametrization, p.Parameter):
-                subparams = [x[1] for x in paramhelpers.split_as_data_parameters(parametrization)]
+                subparams = [x[1] for x in p.helpers.list_data(parametrization)]
                 if len(subparams) == 1:
                     subparams.clear()
                 num_optims = len(subparams)
@@ -1101,6 +1111,7 @@ class SplitOptimizer(base.Optimizer):
         if non_deterministic_descriptor:
             for param in subparams:
                 param.descriptors.deterministic_function = False
+        print(subparams, [x.dimension for x in subparams])
         # synchronize random state and create optimizers
         self.optims: tp.List[base.Optimizer] = []
         mono, multi = monovariate_optimizer, multivariate_optimizer
@@ -1657,15 +1668,17 @@ class _BO(base.Optimizer):
         self._transform = transforms.ArctanBound(0, 1)
         self._bo: tp.Optional[BayesianOptimization] = None
         self._fake_function = _FakeFunction(num_digits=len(str(self.dimension)))
+        # initialization
+        init = initialization
+        self._init_budget = init_budget
+        self._middle_point = middle_point
+        if init is None:
+            self._InitOpt: tp.Optional[base.ConfiguredOptimizer] = None
+        elif init == "random":
+            self._InitOpt = oneshot.RandomSearch
+        else:
+            self._InitOpt = oneshot.SamplingSearch(sampler=init, scrambled=init == "Hammersley")
         # configuration
-        assert initialization is None or initialization in [
-            "random",
-            "Hammersley",
-            "LHS",
-        ], f"Unknown init {initialization}"
-        self.initialization = initialization
-        self.init_budget = init_budget
-        self.middle_point = middle_point
         self.utility_kind = utility_kind
         self.utility_kappa = utility_kappa
         self.utility_xi = utility_xi
@@ -1687,30 +1700,21 @@ class _BO(base.Optimizer):
         if self._bo is None:
             bounds = {self._fake_function.key(i): (0.0, 1.0) for i in range(self.dimension)}
             self._bo = BayesianOptimization(self._fake_function, bounds, random_state=self._rng)
-            init_budget = max(2, int(np.sqrt(self.budget) if self.init_budget is None else self.init_budget))
+            init_budget = max(
+                2, int(np.sqrt(self.budget) if self._init_budget is None else self._init_budget)
+            )
             if self.gp_parameters is not None:
                 self._bo.set_gp_params(**self.gp_parameters)
             # init
-            init = self.initialization
-            if self.middle_point:
+            if self._middle_point:
                 self._bo.probe([0.5] * self.dimension, lazy=True)
                 init_budget -= 1
-            if init is not None and init_budget > 0:
-                sampler = {
-                    "Hammersley": sequences.HammersleySampler,
-                    "LHS": sequences.LHSSampler,
-                    "random": sequences.RandomSampler,
-                }[init](
-                    self.dimension,
-                    budget=init_budget,
-                    scrambling=(init == "Hammersley"),
-                    random_state=self._rng,
-                )
-                for k, point in enumerate(sampler):
-                    if not k and self.middle_point and np.linalg.norm(point - 0.5) < 1e-6:
-                        # resampling middle point, this is useless, let's redraw randomly
-                        point = self._bo._space.random_sample()
-                    self._bo.probe(point, lazy=True)
+            if self._InitOpt is not None and init_budget > 0:
+                param = p.Array(shape=(self.dimension,)).set_bounds(lower=0, upper=1.0)
+                param.random_state = self._rng
+                opt = self._InitOpt(param, budget=init_budget)
+                for _ in range(init_budget):
+                    self._bo.probe(opt.ask().value, lazy=True)
             else:  # default
                 for _ in range(init_budget):
                     self._bo.probe(self._bo._space.random_sample(), lazy=True)
@@ -1932,10 +1936,10 @@ class cGA(base.Optimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if arity is None:
-            all_params = paramhelpers.flatten_parameter(self.parametrization)
+            all_params = p.helpers.flatten_parameter(self.parametrization)
             arity = max(
                 len(param.choices) if isinstance(param, p.TransitionChoice) else 500
-                for param in all_params.values()
+                for _, param in all_params
             )
         self._arity = arity
         self._penalize_cheap_violations = False  # Not sure this is the optimal decision.
@@ -2029,9 +2033,10 @@ class _EMNA(base.Optimizer):
             return self.current_bests["optimistic"].parameter
         else:
             # This is NOT the naive version. We deal with noise.
-            return self.parametrization.spawn_child().set_standardized_data(
-                self.current_center, deterministic=True
-            )
+            out = self.parametrization.spawn_child()
+            with p.helpers.deterministic_sampling(out):
+                out.set_standardized_data(self.current_center)
+            return out
 
     def _internal_ask_candidate(self) -> p.Parameter:
         sigma_tmp = self.sigma
@@ -2049,13 +2054,12 @@ class _EMNA(base.Optimizer):
         return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        candidate._meta["loss"] = loss
         if self.population_size_adaptation:
             self.popsize.add_value(loss)
         self.children.append(candidate)
         if len(self.children) >= self.popsize.llambda:
             # Sorting the population.
-            self.children.sort(key=lambda c: c._meta["loss"])
+            self.children.sort(key=base._loss)
             # Computing the new parent.
             self.parents = self.children[: self.popsize.mu]
             self.children = []
@@ -2162,11 +2166,17 @@ class NGOptBase(base.Optimizer):
         # The noise coming from discrete variables goes to 0.
         self.noise_from_instrumentation = self.has_noise and descr.deterministic_function
         self.fully_continuous = descr.continuous
-        all_params = paramhelpers.flatten_parameter(self.parametrization)
-        choicetags = [p.BaseChoice.ChoiceTag.as_tag(x) for x in all_params.values()]
-        self.has_discrete_not_softmax = any(issubclass(ct.cls, p.TransitionChoice) for ct in choicetags)
-        self._has_discrete = any(issubclass(ct.cls, p.BaseChoice) for ct in choicetags)
-        self._arity = max(ct.arity for ct in choicetags)
+        all_params = p.helpers.flatten_parameter(self.parametrization)
+        # figure out if there is any discretization layers
+        int_layers = list(
+            itertools.chain.from_iterable([_layering.Int.filter_from(x) for _, x in all_params])
+        )
+        int_layers = [x for x in int_layers if x.arity is not None]  # only "Choice" instances for now
+        self.has_discrete_not_softmax = any(
+            not isinstance(lay, _datalayers.SoftmaxSampling) for lay in int_layers
+        )
+        self._has_discrete = bool(int_layers)
+        self._arity: int = max((lay.arity for lay in int_layers), default=-1)  # type: ignore
         if self.fully_continuous:
             self._arity = -1
         self._optim: tp.Optional[base.Optimizer] = None
