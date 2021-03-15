@@ -14,14 +14,14 @@ import math
 import pyproj
 import numpy as np
 from nevergrad.parametrization import parameter
-from ..base import ExperimentFunction
+from ..base import ArrayExperimentFunction
 
 # pylint: disable=too-many-locals,too-many-statements
 
 
-class Rocket(ExperimentFunction):
-    def __init__(self) -> None:
-        super().__init__(rocket, parameter.Array(shape=(24,)))
+class Rocket(ArrayExperimentFunction):
+    def __init__(self, symmetry: int = 0) -> None:
+        super().__init__(rocket, parametrization=parameter.Array(shape=(24,)), symmetry=symmetry)
 
 
 def rocket(thrust_bias: np.ndarray):

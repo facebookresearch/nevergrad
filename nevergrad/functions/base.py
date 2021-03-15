@@ -74,9 +74,6 @@ class ExperimentFunction:
         parametrization: p.Parameter,
     ) -> None:
         assert callable(function)
-        assert not hasattr(
-            self, "_initialization_kwargs"
-        ), '"register_initialization" was called before super().__init__'
         self._auto_init: tp.Dict[str, tp.Any]  # filled by __new__
         self._descriptors: tp.Dict[str, tp.Any]  # filled by __new__
         self._parametrization: p.Parameter
@@ -118,7 +115,7 @@ class ExperimentFunction:
         return self.__function
 
     def __call__(self, *args: tp.Any, **kwargs: tp.Any) -> tp.Loss:
-        """Call the function directly (equivaluent to parametrized_function.function(*args, **kwargs))"""
+        """Call the function directly (equivalent to parametrized_function.function(*args, **kwargs))"""
         return self.function(*args, **kwargs)
 
     @property
@@ -282,6 +279,67 @@ def update_leaderboard(identifier: str, loss: float, array: np.ndarray, verbose:
                 print(f"New best value for {identifier}: {loss}\nwith: {string[:80]}")
     except Exception:  # pylint: disable=broad-except
         pass  # better avoir bugs for this
+
+
+class ArrayExperimentFunction(ExperimentFunction):
+    """Combines a function and its parametrization for running experiments (see benchmark subpackage).
+    Extends ExperimentFunction, in the special case of an array, by allowing the creation of symmetries
+    of a single function. We can create ArrayExperimentFunction(callable, symmetry=i) for i in range(0, 2**d)
+    when the callable works on R^d.
+    Works only if there are no constraints.
+
+    Parameters
+    ----------
+    function: callable
+        the callable to convert
+    parametrization: Parameter
+        the parametrization of the function
+    symmetry: int
+        number parametrizing how we symmetrize the function.
+    """
+
+    def __init__(
+        self, function: tp.Callable[..., tp.Loss], parametrization: p.Parameter, symmetry: int = 0
+    ) -> None:
+        """Adds a "symmetry" parameter, which allows the creation of many symmetries of a given function.
+
+        symmetry: an int, 0 by default.
+        if not zero, a symmetrization is applied to the input; each of the 2^d possible values
+        for symmetry % 2^d gives one different function.
+        Makes sense if and only if (1) the input is a single ndarray (2) the domains are symmetric."""
+        self._inner_function = function
+        super().__init__(self.symmetrized_function, parametrization)
+        assert isinstance(
+            parametrization, p.Array
+        ), f"{type(parametrization)} is not p.Array; {parametrization}."
+        assert (parametrization.bounds[0] is None) == (parametrization.bounds[1] is None)
+        assert len(parametrization._constraint_checkers) == 0
+        assert symmetry >= 0
+        assert symmetry < 2 ** self.dimension
+        # The number 11111111111111111111111 is prime (using a prime is an overkill but ok).
+        symmetry = (symmetry * 11111111111111111111111) % (2 ** self.dimension)
+        if symmetry != 0:
+            self._function = self.symmetrized_function
+            self.threshold_coefficients = np.zeros(self.dimension)
+            self.slope_coefficients = np.ones(self.dimension)
+            for i in range(self.dimension):  # pylint: disable=consider-using-enumerate
+                if symmetry % 2 == 1:
+                    if self.parametrization.bounds[0] is not None and self.parametrization.bounds[1] is not None:  # type: ignore
+                        middle = (self.parametrization.bounds[0][0] + self.parametrization.bounds[1][0]) / 2.0  # type: ignore
+                    else:
+                        middle = 0.0
+                    self.threshold_coefficients[i] = 2.0 * middle  # Otherwise we keep 0.
+                    self.slope_coefficients[i] = -1.0  # Otherwise we keep 1.
+                symmetry = symmetry // 2
+        else:
+            self._function = function
+            self.threshold_coefficients = np.zeros(self.dimension)
+            self.slope_coefficients = np.ones(self.dimension)
+
+    def symmetrized_function(self, x: np.ndarray) -> tp.Loss:
+        assert isinstance(x, np.ndarray), "symmetry != 0 works only when the input is an array."
+        assert len(x.shape) == 1, "only one-dimensional arrays for now."
+        return self._inner_function(self.threshold_coefficients + self.slope_coefficients * x)  # type: ignore
 
 
 class MultiExperiment(ExperimentFunction):

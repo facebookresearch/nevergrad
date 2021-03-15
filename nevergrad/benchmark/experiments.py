@@ -1059,7 +1059,7 @@ def rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Rocket simulator. Maximize max altitude by choosing the thrust schedule, given a total thrust.
     Budget 25, 50, ..., 1600.
     Sequential or 30 workers."""
-    funcs = [Rocket()]
+    funcs = [Rocket(i) for i in range(17)]
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", seed=next(seedg))
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
