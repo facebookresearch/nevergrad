@@ -300,7 +300,7 @@ class SoftmaxSampling(Int):
 
 
 class AngleOp(Operation):
-    """Converts to and from angles for -pi to pi"""
+    """Converts to and from angles from -pi to pi"""
 
     def _layered_get_value(self) -> tp.Any:
         x = super()._layered_get_value()
