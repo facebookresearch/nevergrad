@@ -19,6 +19,10 @@
   variables since in this case `parameter.sample()` samples uniformly (unless otherwise specified).
   The previous behavior can be obtained with `RandomSearchMaker(sampler="gaussian")`.
 - `PSO` API has been slightly changed [#1073](https://github.com/facebookresearch/nevergrad/pull/1073)
+- `Parameter` instances `descriptor` attribute is deprecated, in favor of a combinaison of an analysis function
+  (`ng.p.helpers.analyze`) returning information about the parameter (eg: whether continuous, deterministic etc...)
+  and a new `function` attribute which can be used to provide information about the function (eg: whether deterministic etc)
+  [#1076](https://github.com/facebookresearch/nevergrad/pull/1076).
 
 ### Important changes
 
