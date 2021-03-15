@@ -211,7 +211,7 @@ class ImageAdversarial(base.ExperimentFunction):
 
     def evaluation_function(self, *recommendations: ng.p.Parameter) -> float:
         """Returns wether the attack worked or not"""
-        assert len(recommendations) == 1, "Should not be a pareto set for a monoobjective function"
+        assert len(recommendations) == 1, "Should not be a pareto set for a singleobjective function"
         x = recommendations[0].value
         output_adv = self._get_classifier_output(x)
         _, pred = torch.max(output_adv, axis=1)

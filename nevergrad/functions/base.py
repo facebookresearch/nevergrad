@@ -226,12 +226,12 @@ class ExperimentFunction:
             pareto front provided by the optimizer
         """
 
-        if self.multiobjective_upper_bounds is None:  # monoobjective case
+        if self.multiobjective_upper_bounds is None:  # singleobjective case
             assert len(recommendations) == 1
             output = self.function(*recommendations[0].args, **recommendations[0].kwargs)
             assert isinstance(
                 output, numbers.Number
-            ), f"evaluation_function can only be called on monoobjective experiments (output={output}) function={self.function}."
+            ), f"evaluation_function can only be called on singleobjective experiments (output={output}) function={self.function}."
             return output
         # multiobjective case
         hypervolume = mobj.HypervolumePareto(

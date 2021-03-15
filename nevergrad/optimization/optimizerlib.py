@@ -2421,3 +2421,58 @@ class NGOpt10(NGOpt8):
 @registry.register
 class NGOpt(NGOpt10):
     pass
+
+
+class _MSR(CM):
+    """This code applies multiple copies of NGOpt with random weights for the different objective functions.
+
+    Variants dedicated to multiobjective optimization by multiple singleobjective optimization.
+    """
+
+    def __init__(
+        self,
+        parametrization: IntOrParameter,
+        budget: tp.Optional[int] = None,
+        num_workers: int = 1,
+        num_single_runs: int = 9,
+        base_optimizer: base.OptCls = NGOpt,
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        self.num_optims = num_single_runs
+        self.optims = [
+            base_optimizer(
+                self.parametrization,
+                budget=1 + (budget // self.num_optims) if budget is not None else None,
+                num_workers=num_workers,
+            )
+            for _ in range(self.num_optims)
+        ]
+        self.coeff: tp.Optional[tp.List[float]] = None
+
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        if self.coeff is None:
+            self.coeffs = [
+                self.parametrization.random_state.uniform(size=self.num_objectives)
+                for _ in range(self.num_optims)
+            ]
+        for coeffs, opt in zip(self.coeffs, self.optims):
+            this_loss = np.sum(loss * coeffs)
+            opt.tell(candidate, this_loss)
+
+
+class MultipleSingleRuns(base.ConfiguredOptimizer):
+    """Multiple single-objective runs, in particular for multi-objective optimization.
+    Parameters
+    ----------
+    num_single_runs: int
+        number of single runs.
+    """
+
+    # pylint: disable=unused-argument
+    def __init__(
+        self,
+        *,
+        num_single_runs: int = 9,
+        base_optimizer: base.OptCls = NGOpt,
+    ) -> None:
+        super().__init__(_MSR, locals())

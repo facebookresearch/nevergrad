@@ -27,7 +27,7 @@ registry: decorators.Registry[tp.Callable[..., tp.Iterator["Experiment"]]] = dec
 
 
 # pylint: disable=unused-argument
-def _assert_monoobjective_callback(optimizer: obase.Optimizer, candidate: p.Parameter, loss: float) -> None:
+def _assert_singleobjective_callback(optimizer: obase.Optimizer, candidate: p.Parameter, loss: float) -> None:
     if optimizer.num_tell <= 1 and not isinstance(loss, numbers.Number):
         raise TypeError(
             f"Cannot process loss {loss} of type {type(loss)}.\n"
@@ -212,7 +212,7 @@ class Experiment:
         opt = self._optimizer
         assert opt is not None
         # ExperimentFunction can directly override this evaluation function if need be
-        # (pareto_front returns only the recommendation in monoobjective)
+        # (pareto_front returns only the recommendation in singleobjective)
         self.result["loss"] = pfunc.evaluation_function(*opt.pareto_front())
         self.result["elapsed_budget"] = num_calls
         if num_calls > self.optimsettings.budget:
@@ -247,7 +247,7 @@ class Experiment:
             if pfunc.multiobjective_upper_bounds is not None:
                 self._optimizer.tell(p.MultiobjectiveReference(), pfunc.multiobjective_upper_bounds)
             else:
-                self._optimizer.register_callback("tell", _assert_monoobjective_callback)
+                self._optimizer.register_callback("tell", _assert_singleobjective_callback)
         if callbacks is not None:
             for name, func in callbacks.items():
                 self._optimizer.register_callback(name, func)
