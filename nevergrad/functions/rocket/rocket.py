@@ -22,7 +22,6 @@ from ..base import ArrayExperimentFunction
 class Rocket(ArrayExperimentFunction):
     def __init__(self, symmetry: int = 0) -> None:
         super().__init__(self._simulate_rocket, parametrization=p.Array(shape=(24,)), symmetry=symmetry)
-         
 
 
 def rocket(thrust_bias: np.ndarray):
