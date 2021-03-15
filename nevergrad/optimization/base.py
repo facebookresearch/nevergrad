@@ -432,20 +432,20 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             callback(self)
         current_num_ask = self.num_ask
         # tentatives if a cheap constraint is available
-        # TODO: this should be replaced by an optimization algorithm.
-        max_trials = max(
-            1,
-            self._constraints_manager.max_trials // 2
-            if self.budget is None
-            else (self.budget - self.num_ask),
-        )  # half will be used for sub-optimization --- if the optimization method does not need/use a budget.
-        # TODO(oteytaud): actually we could do this even when the budget is known, if we are sure that exceeding the budget is not a problem.
+        max_trials = max(1, self._constraints_manager.max_trials // 2)
+        # half will be used for sub-optimization --- if the optimization method does not need/use a budget.
+        # TODO(oteytaud): actually we could do this even when the budget is known, if we are sure that
+        # exceeding the budget is not a problem.
         # Very simple constraint solver:
         # - we use a simple algorithm.
         # - no memory of previous iterations.
         # - just projection to constraint satisfaction.
         # We try using the normal tool during half constraint budget, in order to reduce the impact on the normal run.
-        for k in range(max_trials):
+        max_trials_ask = max_trials
+        if self.budget is not None:  # dont use too much internal optimizer budget for this
+            # this update is probably pointless though, since the budget will be consumed and we may use too much budget anyway
+            max_trials_ask = max(1, min(max_trials, (self.budget - self.num_ask) // 2))
+        for k in range(max_trials_ask):
             is_suggestion = False
             if self._suggestions:  # use suggestions if available
                 is_suggestion = True

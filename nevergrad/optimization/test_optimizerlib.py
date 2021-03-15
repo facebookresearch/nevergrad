@@ -523,7 +523,7 @@ def test_metamodel(dimension: int, num_workers: int, scale: float, budget: int, 
     "penalization,expected,as_layer",
     [
         (False, [1.005573e00, 3.965783e-04], False),
-        (True, [1.000001, 0.002842], False),
+        (True, [0.999924, -0.111009], False),
         (False, [1.000760, -5.116619e-4], True),
     ],
 )
@@ -539,7 +539,7 @@ def test_constrained_optimization(penalization: bool, expected: tp.List[float], 
     optimizer = optlib.OnePlusOne(parametrization, budget=100)
     optimizer.parametrization.random_state.seed(12)
     if penalization:
-        optimizer._constraints_manager.update(max_trials=2, penalty_factor=10)
+        optimizer._constraints_manager.update(max_trials=10, penalty_factor=10)
 
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", category=UserWarning)
