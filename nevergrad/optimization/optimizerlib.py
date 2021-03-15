@@ -2438,11 +2438,12 @@ class _MSR(CM):
         base_optimizer: base.OptCls = NGOpt,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        assert budget is not None
         self.num_optims = num_single_runs
         self.optims = [
             base_optimizer(
-                self.parametrization, budget=1 + (budget // self.num_optims), num_workers=num_workers
+                self.parametrization,
+                budget=1 + (budget // self.num_optims) if budget is not None else None,
+                num_workers=num_workers,
             )
             for _ in range(self.num_optims)
         ]
