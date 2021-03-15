@@ -6,8 +6,8 @@
 import operator
 import functools
 from collections import OrderedDict
-import nevergrad.common.typing as tp
 import numpy as np
+import nevergrad.common.typing as tp
 from . import utils
 from . import core
 
@@ -124,7 +124,7 @@ class Dict(Container):
     used to hold the internal/model parameters for all Parameter classes.
     """
 
-    value: core.ValueProperty[tp.Dict[str, tp.Any]] = core.ValueProperty()
+    value: core.ValueProperty[tp.Dict[str, tp.Any], tp.Dict[str, tp.Any]] = core.ValueProperty()
 
     def __iter__(self) -> tp.Iterator[str]:
         return iter(self.keys())
@@ -187,7 +187,7 @@ class Tuple(Container):
     def __iter__(self) -> tp.Iterator[core.Parameter]:
         return (self._content[k] for k in range(len(self)))
 
-    value: core.ValueProperty[tp.Tuple[tp.Any]] = core.ValueProperty()
+    value: core.ValueProperty[tp.Tuple[tp.Any, ...], tp.Tuple[tp.Any, ...]] = core.ValueProperty()
 
     def _layered_get_value(self) -> tp.Tuple[tp.Any, ...]:
         return tuple(p.value for p in self)
@@ -230,10 +230,10 @@ class Instrumentation(Tuple):
 
     @property
     def args(self) -> tp.Tuple[tp.Any, ...]:
-        return self.value[0]  # type: ignore
+        return self.value[0]
 
     @property
     def kwargs(self) -> tp.Dict[str, tp.Any]:
-        return self.value[1]  # type: ignore
+        return self.value[1]
 
-    value: core.ValueProperty[tp.ArgsKwargs] = core.ValueProperty()  # type: ignore
+    value: core.ValueProperty[tp.ArgsKwargs, tp.ArgsKwargs] = core.ValueProperty()  # type: ignore

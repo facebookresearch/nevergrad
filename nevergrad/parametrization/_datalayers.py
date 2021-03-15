@@ -10,6 +10,7 @@ import nevergrad.common.typing as tp
 from nevergrad.common import errors
 from . import _layering
 from ._layering import Int as Int
+from . import data as _data
 from .data import Data
 from .core import Parameter
 from . import discretization
@@ -101,11 +102,12 @@ class BoundLayer(Operation):
             if min_dist < 3.0:
                 warnings.warn(
                     f"Bounds are {min_dist} sigma away from each other at the closest, "
-                    "you should aim for at least 3 for better quality."
+                    "you should aim for at least 3 for better quality.",
+                    errors.NevergradRuntimeWarning,
                 )
         return new
 
-    def _layered_sample(self) -> "Data":
+    def _layered_sample(self) -> Data:
         if not self.uniform_sampling:
             return super()._layered_sample()  # type: ignore
         root = self._layers[0]
@@ -297,16 +299,48 @@ class SoftmaxSampling(Int):
         super()._layered_set_value(out)
 
 
-class Angle(Operation):
+class AngleOp(Operation):
+    """Converts to and from angles for -pi to pi"""
+
     def _layered_get_value(self) -> tp.Any:
         x = super()._layered_get_value()
-        if not x.shape[-1] == 4:
-            raise ValueError("Last dimension should be 4, got {x.shape}")
-        return np.angle(x[..., 0] - x[..., 2] + (x[..., 1] - x[..., 3]) * 1j)
+        if not x.shape[0] == 4:
+            raise ValueError("First dimension should be 4, got {x.shape}")
+        return np.angle(x[0, ...] - x[2, ...] + (x[1, ...] - x[3, ...]) * 1j)
 
     def _layered_set_value(self, value: tp.Any) -> None:
         x = np.cos(value)
         y = np.sin(value)
         parts = [np.maximum(z, 0) for z in (x, y, -x, -y)]
-        out = np.concatenate(parts, axis=-1)
+        out = np.stack(parts, axis=0)
         super()._layered_set_value(out)
+
+
+def Angles(
+    init: tp.Optional[tp.ArrayLike] = None, shape: tp.Optional[tp.Sequence[int]] = None
+) -> _data.Array:
+    """Creates an Array parameter representing an angle from -pi to pi
+
+    Parameters
+    ----------
+    init: array-like or None
+        initial values if provided (either shape or init is required)
+    shape: sequence of int or None
+        shape of the angle array, if provided (either shape or init is required)
+
+    Returns
+    -------
+    Array
+        An Array Parameter instance which represents an angle between -pi and pi
+    """
+    if sum(x is None for x in (init, shape)) != 1:
+        raise ValueError("Exactly 1 of init or shape must be provided")
+    out_shape = tuple(shape) if shape is not None else np.array(init).shape
+    angles = _data.Array(shape=(4,) + out_shape)
+    angles.add_layer(AngleOp())
+    with warnings.catch_warnings():  # ignore bounding warning which is irrelevant here
+        warnings.simplefilter("ignore", category=errors.NevergradRuntimeWarning)
+        Bound(-np.pi, np.pi)(angles, inplace=True)
+    if init is not None:
+        angles.value = init
+    return angles
