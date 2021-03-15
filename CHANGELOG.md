@@ -19,6 +19,9 @@
   variables since in this case `parameter.sample()` samples uniformly (unless otherwise specified).
   The previous behavior can be obtained with `RandomSearchMaker(sampler="gaussian")`.
 - `PSO` API has been slightly changed [#1073](https://github.com/facebookresearch/nevergrad/pull/1073)
+- Half the budget alloted to solve cheap constrained is now used by a sub-optimizer
+  [#1047](https://github.com/facebookresearch/nevergrad/pull/1047). More changes of constraint management will land
+  in the near future.
 
 ### Important changes
 
