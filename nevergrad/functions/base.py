@@ -311,7 +311,7 @@ class ArrayExperimentFunction(ExperimentFunction):
         super().__init__(self.symmetrized_function, parametrization)
         assert isinstance(
             parametrization, p.Array
-        ), f"{type(parametrization)} is not p.Array; {parametrization.parameters}."
+        ), f"{type(parametrization)} is not p.Array; {parametrization}."
         assert (parametrization.bounds[0] is None) == (parametrization.bounds[1] is None)
         assert len(parametrization._constraint_checkers) == 0
         assert symmetry >= 0
