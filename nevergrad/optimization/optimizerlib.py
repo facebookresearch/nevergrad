@@ -2454,8 +2454,8 @@ class _MSR(CM):
                 self.parametrization.random_state.uniform(size=self.num_objectives)
                 for _ in range(self.num_optims)
             ]
-        for i, opt in enumerate(self.optims):
-            this_loss = np.sum(loss * self.coeffs[i])
+        for coeffs, opt in zip(self.coeffs, self.optims):
+            this_loss = np.sum(loss * coeffs)
             opt.tell(candidate, this_loss)
 
 
