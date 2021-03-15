@@ -7,6 +7,7 @@ import pickle
 import typing as tp
 import pytest
 import numpy as np
+from nevergrad.common import errors
 from . import utils
 from . import parameter as par
 
@@ -311,7 +312,7 @@ def test_scalar_sampling(param: par.Scalar, expected: bool) -> None:
 
 
 def test_log() -> None:
-    with pytest.warns(UserWarning) as record:
+    with pytest.warns(errors.NevergradRuntimeWarning) as record:
         log = par.Log(lower=0.001, upper=0.1, init=0.02, exponent=2.0)
         assert log.value == pytest.approx(0.02)
         assert not record, [x.message for x in record]  # TODO readd
