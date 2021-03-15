@@ -77,5 +77,6 @@ linkcheck_ignore = [
     "windows.html",
     "https://ieeexplore.ieee.org/*",
     "https://iohprofiler.liacs.nl/",  # server error: bad gateway
+    "https://www.facebook.com/whitehat/",  # server error: 500
     r"https://arxiv.org/abs/*",
 ]  # Transient certificate error :(

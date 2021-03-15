@@ -271,6 +271,6 @@ class TunedTranslation(Mutation):
         assert data.shape == self.shape
         shift = self.shift.value
         # update shift arrray
-        shifts = self.shift.weights.value
-        self.shift.weights.value = np.roll(shifts, shift)  # update probas
+        shifts = self.shift.indices._value
+        self.shift.indices._value = np.roll(shifts, shift)  # update probas
         return np.roll(data, shift, axis=self.axis)  # type: ignore
