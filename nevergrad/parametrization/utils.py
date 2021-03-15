@@ -279,7 +279,7 @@ class Subobjects(tp.Generic[X]):
     Parameters
     ----------
     object: Any
-        an object containing other( sub)objects
+        an object containing other (sub)objects
     base: Type
         the base class of the subobjects (to filter out other items)
     attribute: str
