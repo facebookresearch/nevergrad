@@ -187,7 +187,7 @@ class _DE(base.Optimizer):
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         discardable: tp.Optional[str] = None
         if len(self.population) >= self.llambda:
-            if self.num_objectives == 1:  # monoobjective: replace if better
+            if self.num_objectives == 1:  # singleobjective: replace if better
                 worst = max(self.population.values(), key=base._loss)
                 if loss < base._loss(worst):
                     discardable = worst.heritage["lineage"]

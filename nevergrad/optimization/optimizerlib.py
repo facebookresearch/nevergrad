@@ -2416,7 +2416,7 @@ class NGOpt(NGOpt10):
 class _MSR(CM):
     """This code applies multiple copies of NGOpt with random weights for the different objective functions.
 
-    Variants dedicated to multiobjective optimization by multiple monoobjective optimization.
+    Variants dedicated to multiobjective optimization by multiple singleobjective optimization.
     """
 
     def __init__(
