@@ -530,6 +530,8 @@ def test_metamodel(dimension: int, num_workers: int, scale: float, budget: int, 
 @testing.suppress_nevergrad_warnings()  # hides failed constraints
 def test_constrained_optimization(penalization: bool, expected: tp.List[float], as_layer: bool) -> None:
     def constraint(i: tp.Any) -> tp.Union[bool, float]:
+        if penalization:
+            return -float(abs(i[1]["x"][0] - 1))
         out = i[1]["x"][0] >= 1
         return out if not as_layer else float(not out)
 
@@ -538,9 +540,6 @@ def test_constrained_optimization(penalization: bool, expected: tp.List[float], 
     optimizer.parametrization.random_state.seed(12)
     if penalization:
         optimizer._constraints_manager.update(max_trials=8, penalty_factor=10)
-
-        def constraint(i: tp.Any) -> tp.Union[bool, float]:  # pylint: disable=function-redefined
-            return -abs(i[1]["x"][0] - 1)
 
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", category=UserWarning)
