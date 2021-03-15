@@ -295,3 +295,18 @@ class SoftmaxSampling(Int):
         coeff = discretization.weight_for_reset(self.arity)
         out[np.arange(value.size, dtype=int), value] = coeff
         super()._layered_set_value(out)
+
+
+class Angle(Operation):
+    def _layered_get_value(self) -> tp.Any:
+        x = super()._layered_get_value()
+        if not x.shape[-1] == 4:
+            raise ValueError("Last dimension should be 4, got {x.shape}")
+        return np.angle(x[..., 0] - x[..., 2] + (x[..., 1] - x[..., 3]) * 1j)
+
+    def _layered_set_value(self, value: tp.Any) -> None:
+        x = np.cos(value)
+        y = np.sin(value)
+        parts = [np.maximum(z, 0) for z in (x, y, -x, -y)]
+        out = np.concatenate(parts, axis=-1)
+        super()._layered_set_value(out)
