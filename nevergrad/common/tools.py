@@ -205,3 +205,28 @@ def set_env(**environ: tp.Any) -> tp.Generator[None, None, None]:
             os.environ.pop(k)
             if val is not None:
                 os.environ[k] = val
+
+
+def flatten(obj: tp.Any) -> tp.Any:
+    """Flatten a dict/list structure
+
+    Example
+    -------
+
+    >>> flatten(["a", {"truc": [4, 5]}])
+    >>> {"0": "a", "1.truc.0": 4, "1.truc.1": 5}
+    """
+    output: tp.Any = {}
+    if isinstance(obj, (tuple, list)):
+        iterator = enumerate(obj)
+    elif isinstance(obj, dict):
+        iterator = obj.items()  # type: ignore
+    else:
+        return obj
+    for k, val in iterator:
+        content = flatten(val)
+        if isinstance(content, dict):
+            output.update({f"{k}.{x}": y for x, y in content.items()})
+        else:
+            output[str(k)] = val
+    return output

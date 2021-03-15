@@ -1,9 +1,13 @@
 [MASTER]
-extension-pkg-whitelist=numpy,nose,nose.tools,numpy.testing, pathlib.PurePath, pathlib.PosixPath, pathlib.Path
+extension-pkg-whitelist=
+    numpy, nose, nose.tools, numpy.testing, pathlib.PurePath, pathlib.PosixPath, pathlib.Path
 
 [MESSAGES CONTROL]
 # disabled messages
-disable=invalid-name,missing-docstring,too-few-public-methods, protected-access, import-error, no-self-use, fixme, no-else-return, no-member, useless-import-alias, unsubscriptable-object
+disable=
+    invalid-name, missing-docstring, too-few-public-methods, protected-access, import-error,
+    no-self-use, fixme, no-else-return, no-member, useless-import-alias, unsubscriptable-object,
+    too-many-arguments, too-many-instance-attributes, too-many-lines
 
 [TYPECHECK]
 ignored-modules = numpy, numpy.testing

@@ -9,6 +9,7 @@ import warnings
 import numpy as np
 from nevergrad.parametrization import parameter as p
 from nevergrad.parametrization.utils import float_penalty as _float_penalty
+from nevergrad.parametrization import _datalayers
 import nevergrad.common.typing as tp
 from nevergrad.common.tools import OrderedSet
 
@@ -254,12 +255,18 @@ class Pruning:
     def __init__(self, min_len: int, max_len: int):
         self.min_len = min_len
         self.max_len = max_len
+        self._num_prunings = 0  # for testing it is not called too often
 
     def __call__(self, archive: Archive[MultiValue]) -> Archive[MultiValue]:
         if len(archive) < self.max_len:
             return archive
+        return self._prune(archive)
+
+    def _prune(self, archive: Archive[MultiValue]) -> Archive[MultiValue]:
+        self._num_prunings += 1
+        # separate function to ease profiling
         quantiles: tp.Dict[str, float] = {}
-        threshold = float(self.min_len) / len(archive)
+        threshold = float(self.min_len + 1) / len(archive)
         names = ["optimistic", "pessimistic", "average"]
         for name in names:
             quantiles[name] = np.quantile(
@@ -269,8 +276,9 @@ class Pruning:
         new_archive.bytesdict = {
             b: v
             for b, v in archive.bytesdict.items()
-            if any(v.get_estimation(n) <= quantiles[n] for n in names)
-        }
+            if any(v.get_estimation(n) < quantiles[n] for n in names)
+        }  # strict comparison to make sure we prune even for values repeated maaany times
+        # this may remove all points though, but nevermind for now
         return new_archive
 
     @classmethod
@@ -345,8 +353,6 @@ class BoundScaler:
     This is used for samplers.
     Code of parametrization and/or this helper should definitely be
     updated to make it simpler and more robust
-
-    It warns in
     """
 
     def __init__(self, reference: p.Parameter) -> None:
@@ -356,8 +362,10 @@ class BoundScaler:
         parameter = self.reference.spawn_child()
         parameter.set_standardized_data(np.linspace(-1, 1, self.reference.dimension))
         expected = parameter.get_standardized_data(reference=self.reference)
-        self._ref_arrays = self.list_arrays(self.reference)
-        arrays = self.list_arrays(parameter)
+        # self._ref_arrays = self.list_arrays(self.reference)
+        # arrays = self.list_arrays(parameter)
+        self._ref_arrays = [x[1] for x in p.helpers.list_data(self.reference)]
+        arrays = [x[1] for x in p.helpers.list_data(parameter)]
         check = np.concatenate(
             [x.get_standardized_data(reference=y) for x, y in zip(arrays, self._ref_arrays)], axis=0
         )
@@ -371,22 +379,6 @@ class BoundScaler:
             f"Failed to find bounds for {self.reference}, quasi-random optimizer may be inefficient.\n"
             "Please open an issue on Nevergrad github"
         )
-
-    @classmethod
-    def list_arrays(cls, parameter: p.Parameter) -> tp.List[p.Array]:
-        """Computes a list of data (Array) parameters in the same order as in
-        the standardized data space.
-        """
-        if isinstance(parameter, p.Array):
-            return [parameter]
-        elif isinstance(parameter, p.Constant):
-            return []
-        if not isinstance(parameter, p.Dict):
-            raise RuntimeError(f"Unsupported parameter {parameter}")
-        output: tp.List[p.Array] = []
-        for _, subpar in sorted(parameter._content.items()):
-            output += cls.list_arrays(subpar)
-        return output
 
     def transform(
         self, x: tp.ArrayLike, unbounded_transform: tp.Callable[[np.ndarray], np.ndarray]
@@ -409,17 +401,15 @@ class BoundScaler:
         start = 0
         for ref in self._ref_arrays:
             end = start + ref.dimension
-            if any(b is None for b in ref.bounds) or not ref.full_range_sampling:
+            layers = _datalayers.BoundLayer.filter_from(ref)  # find bound layers
+            layers = [x for x in layers if x.uniform_sampling]  # keep only uniform sampling
+            if not layers:
                 x[start:end] = unbounded_transform(x[start:end])
             else:
+                layer_index = layers[-1]._layer_index
                 array = ref.spawn_child()
-                bounds: tp.List[tp.Any] = list(ref.bounds)
-                if array.exponent is not None:
-                    bounds = [np.log(b) for b in bounds]
-                value = bounds[0] + (bounds[1] - bounds[0]) * x[start:end].reshape(ref._value.shape)
-                if array.exponent is not None:
-                    value = np.exp(value)
-                array._value = value
+                normalized = x[start:end].reshape(ref._value.shape)
+                array._layers[layer_index].set_normalized_value(normalized)  # type: ignore
                 x[start:end] = array.get_standardized_data(reference=ref)
             start = end
         return x

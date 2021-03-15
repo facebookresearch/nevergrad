@@ -12,7 +12,8 @@ import traceback
 import typing as tp
 import numpy as np
 from nevergrad.parametrization import parameter as p
-from ..common import decorators
+from nevergrad.common import decorators
+from nevergrad.common import errors
 from ..functions.rl.agents import torch  # import includes pytorch fix
 from ..functions import base as fbase
 from ..optimization import base as obase
@@ -193,8 +194,8 @@ class Experiment:
         """
         try:
             self._run_with_error()
-        except fbase.ExperimentFunctionCopyError as c_e:
-            raise c_e
+        except (errors.ExperimentFunctionCopyError, errors.UnsupportedExperiment) as ex:
+            raise ex
         except Exception as e:  # pylint: disable=broad-except
             # print the case and the traceback
             self.result["error"] = e.__class__.__name__
@@ -255,7 +256,7 @@ class Experiment:
         executor = self.optimsettings.executor
         with warnings.catch_warnings():
             warnings.filterwarnings(
-                "ignore", category=obase.InefficientSettingsWarning
+                "ignore", category=errors.InefficientSettingsWarning
             )  # benchmark do not need to be efficient
             try:
                 # call the actual Optimizer.minimize method because overloaded versions could alter the worklflow
