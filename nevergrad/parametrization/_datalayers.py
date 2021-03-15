@@ -332,6 +332,10 @@ def Angles(
     -------
     Array
         An Array Parameter instance which represents an angle between -pi and pi
+
+    Notes
+    ------
+    This API is experimental and will probably evolve in the near future.
     """
     if sum(x is None for x in (init, shape)) != 1:
         raise ValueError("Exactly 1 of init or shape must be provided")
