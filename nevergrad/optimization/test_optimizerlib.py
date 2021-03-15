@@ -523,7 +523,7 @@ def test_metamodel(dimension: int, num_workers: int, scale: float, budget: int, 
     "penalization,expected,as_layer",
     [
         (False, [1.005573e00, 3.965783e-04], False),
-        (True, [0.999924, -0.111009], False),
+        (True, [0.999996, -0.111009], False),
         (False, [1.000760, -5.116619e-4], True),
     ],
 )
