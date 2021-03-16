@@ -7,30 +7,29 @@
 import math
 import numpy as np
 from nevergrad.parametrization import parameter
-from ..base import ArrayExperimentFunction
+from ..base import ExperimentFunction
 import gym
 
 # pylint: disable=too-many-locals,too-many-statements
 
 
-class GymAnm(ArrayExperimentFunction):
-
-    def __init__(self, symmetry: int = 0) -> None:
-        super().__init__(gym_anm, parametrization=parameter.Array(shape=(100, 6)), symmetry=symmetry)
+class GymAnm(ExperimentFunction):
+    def __init__(self) -> None:
+        super().__init__(gym_anm, parametrization=parameter.Array(shape=(100, 6)))
 
 
 def gym_anm(x: np.ndarray):
 
-
-    env = gym.make('gym_anm:ANM6Easy-v0')
+    env = gym.make("gym_anm:ANM6Easy-v0")
     o = env.reset()
-    
-    reward = 0.
+
+    reward = 0.0
     for i in range(100):
         a = env.action_space.sample()
-        a = 10. * x[i,:]
-        o, r, done, info = env.step(a)
+        a = 10.0 * x[i, :]
+        # o, r, done, info = env.step(a)
+        _, r, _, _ = env.step(a)
         reward += r
         # print(f"action={a} (type={type(a)}), reward={r}")
-        #env.render()
+        # env.render()
     return -reward
