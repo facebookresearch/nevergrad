@@ -27,7 +27,10 @@ def gym_anm(x: np.ndarray):
         a = env.action_space.sample()
         a = 10.0 * x[i, :]
         # o, r, done, info = env.step(a)
-        _, r, _, _ = env.step(a)
+        try:
+            _, r, _, _ = env.step(a)
+        except AssertionError:  # Illegal action.
+            return 1e20
         reward += r
         # print(f"action={a} (type={type(a)}), reward={r}")
         # env.render()
