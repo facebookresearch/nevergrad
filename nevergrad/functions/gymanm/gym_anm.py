@@ -4,7 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 
-import math
 import numpy as np
 from nevergrad.parametrization import parameter
 from ..base import ExperimentFunction
@@ -21,7 +20,7 @@ class GymAnm(ExperimentFunction):
 def gym_anm(x: np.ndarray):
 
     env = gym.make("gym_anm:ANM6Easy-v0")
-    o = env.reset()
+    _ = env.reset()  # output value = "o"
 
     reward = 0.0
     for i in range(100):
