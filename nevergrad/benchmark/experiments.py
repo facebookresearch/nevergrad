@@ -1087,7 +1087,6 @@ def gymanm(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
             if num_workers < budget:
                 for algo in optims:
                     xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
-                    # skip_ci(reason="Too slow")
                     if not xp.is_incoherent:
                         yield xp
 
