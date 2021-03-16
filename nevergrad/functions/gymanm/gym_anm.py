@@ -23,7 +23,6 @@ def gym_anm(x: np.ndarray):
 
     reward = 0.0
     for i, val in enumerate(x):
-        a = env.action_space.sample()
         a = 10.0 * x[i]
         # o, r, done, info = env.step(a)
         try:
