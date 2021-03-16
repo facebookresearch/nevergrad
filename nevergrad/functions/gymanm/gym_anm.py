@@ -31,7 +31,7 @@ def gym_anm(x: np.ndarray):
         try:
             _, r, _, _ = env.step(a)
         except AssertionError:  # Illegal action.
-            return (1e20 / (1. + i))  # We encourage late failures rather than early failures.
+            return 1e20 / (1.0 + i)  # We encourage late failures rather than early failures.
         reward += r
         # print(f"action={a} (type={type(a)}), reward={r}")
         # env.render()
