@@ -12,5 +12,5 @@ def test_gym_anm() -> None:
     with testing.skip_error_on_systems(OSError, systems=("Windows",)):
         func = gym_anm.GymAnm()
         x = np.random.zeros(func.dimension)
-        value = func(x)  # should not touch boundaries, so value should be < np.inf
+        value = func(x)
         np.testing.assert_almost_equal(value, 1e20)
