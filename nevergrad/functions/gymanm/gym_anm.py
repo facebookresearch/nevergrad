@@ -20,12 +20,13 @@ class GymAnm(ExperimentFunction):
 def gym_anm(x: np.ndarray):
 
     env = gym.make("gym_anm:ANM6Easy-v0")
+    env.seed(0)
     _ = env.reset()  # output value = "o"
 
     reward = 0.0
     for i in range(100):
         a = env.action_space.sample()
-        a = 10.0 * x[i, :]
+        a = 10.0 * x[i]
         # o, r, done, info = env.step(a)
         try:
             _, r, _, _ = env.step(a)
