@@ -9,8 +9,6 @@ from nevergrad.parametrization import parameter
 from ..base import ExperimentFunction
 import gym
 
-# pylint: disable=too-many-locals,too-many-statements
-
 
 class GymAnm(ExperimentFunction):
     def __init__(self) -> None:
