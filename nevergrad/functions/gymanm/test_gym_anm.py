@@ -13,4 +13,4 @@ def test_gym_anm() -> None:
         func = gym_anm.GymAnm()
         x = np.random.zeros(func.dimension)
         value = func(x)
-        np.testing.assert_almost_equal(value, 1e20)
+        assert value == 1e20
