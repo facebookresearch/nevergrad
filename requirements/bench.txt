@@ -5,7 +5,7 @@ lpips==0.1.3
 opencv-python==4.1.2.30
 matplotlib>=2.2.3
 gym>=0.12.1
-gym-anm
+gym-anm>=1.0.1
 torch>=1.2.0
 hiplot
 fcmaes>=1.2.7
