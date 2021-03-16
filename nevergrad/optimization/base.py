@@ -441,11 +441,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # - no memory of previous iterations.
         # - just projection to constraint satisfaction.
         # We try using the normal tool during half constraint budget, in order to reduce the impact on the normal run.
-        max_trials_ask = max_trials
-        if self.budget is not None:  # dont use too much internal optimizer budget for this
-            # this update is probably pointless though, since the budget will be consumed and we may use too much budget anyway
-            max_trials_ask = max(1, min(max_trials, (self.budget - self.num_ask) // 2))
-        for k in range(max_trials_ask):
+        for _ in range(max_trials):
             is_suggestion = False
             if self._suggestions:  # use suggestions if available
                 is_suggestion = True
@@ -457,18 +453,18 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             if self._penalize_cheap_violations:
                 # Warning! This might be a tell not asked.
                 self._internal_tell_candidate(candidate, float("Inf"))  # DE requires a tell
-            self._num_ask += (
-                1  # this is necessary for some algorithms which need new num to ask another point
-            )
-            if k == max_trials - 1:
-                warnings.warn(
-                    f"Could not bypass the constraint after {max_trials} tentatives, "
-                    "sending candidate anyway.",
-                    errors.FailedConstraintWarning,
-                )
-        if not candidate.satisfies_constraints():
+            # updating num_ask  is necessary for some algorithms which need new num to ask another point
+            self._num_ask += 1
+        satisfies = candidate.satisfies_constraints()
+        if not satisfies:
             # still not solving, let's run sub-optimization
             candidate = _constraint_solver(candidate, budget=max_trials)
+        if not (satisfies or candidate.satisfies_constraints()):
+            warnings.warn(
+                f"Could not bypass the constraint after {max_trials} tentatives, "
+                "sending candidate anyway.",
+                errors.FailedConstraintWarning,
+            )
         if not is_suggestion:
             if candidate.uid in self._asked:
                 raise RuntimeError(
