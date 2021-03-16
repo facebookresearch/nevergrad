@@ -309,8 +309,7 @@ class AngleOp(Operation):
         return np.angle(x[0, ...] - x[2, ...] + (x[1, ...] - x[3, ...]) * 1j)
 
     def _layered_set_value(self, value: tp.Any) -> None:
-        x = np.cos(value)
-        y = np.sin(value)
+        x, y = [fn(value) for fn in (np.cos, np.sin)]
         parts = [np.maximum(z, 0) for z in (x, y, -x, -y)]
         out = np.stack(parts, axis=0)
         super()._layered_set_value(out)
