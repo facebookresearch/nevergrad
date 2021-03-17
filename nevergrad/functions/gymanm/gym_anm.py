@@ -13,10 +13,10 @@ import gym_anm
 
 class GymAnm(ExperimentFunction):
     def __init__(self) -> None:
-        super().__init__(gym_anm, parametrization=parameter.Array(shape=(100, 6)))
+        super().__init__(gym_anm_function, parametrization=parameter.Array(shape=(100, 6)))
 
 
-def gym_anm(x: np.ndarray):
+def gym_anm_function(x: np.ndarray):
 
     env = gym.make("gym_anm:ANM6Easy-v0")
     env.seed(0)
