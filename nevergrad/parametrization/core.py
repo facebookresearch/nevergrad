@@ -56,7 +56,6 @@ class Parameter(Layered):
         # Additional convenient features
         self._random_state: tp.Optional[np.random.RandomState] = None  # lazy initialization
         self._generation = 0
-        # self._constraint_checkers: tp.List[tp.Union[tp.Callable[[tp.Any], bool], tp.Callable[[tp.Any], float]]] = []
         self._constraint_checkers: tp.List[tp.Callable[[tp.Any], tp.Union[bool, float]]] = []
         self._name: tp.Optional[str] = None
         self._frozen = False
@@ -240,7 +239,6 @@ class Parameter(Layered):
         return ":".join(strings)
 
     # %% Constraint management
-
     def satisfies_constraints(self) -> bool:
         """Whether the instance satisfies the constraints added through
         the `register_cheap_constraint` method
