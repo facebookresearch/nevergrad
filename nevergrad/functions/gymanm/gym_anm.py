@@ -8,6 +8,7 @@ import numpy as np
 from nevergrad.parametrization import parameter
 from ..base import ExperimentFunction
 import gym
+import gym_anm
 
 
 class GymAnm(ExperimentFunction):
