@@ -11,6 +11,6 @@ from . import gym_anm
 def test_gym_anm() -> None:
     with testing.skip_error_on_systems(OSError, systems=("Windows",)):
         func = gym_anm.GymAnm()
-        x = np.random.zeros(func.dimension)
+        x = np.zeros(func.dimension)
         value = func(x)
         assert value == 1e20
