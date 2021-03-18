@@ -13,21 +13,49 @@ if os.name != "nt":
 from nevergrad.parametrization import parameter
 from ..base import ExperimentFunction
 
-gym_env_names = ["gym_anm:ANM6Easy-v0"]
 
-for e in gym.envs.registry.all():
-    try:
-        assert "Kelly" not in e.id
-        env = gym.make(e.id)
-        a1 = env.action_space.sample()
-        a2 = env.action_space.sample()
-        a3 = env.action_space.sample()
-        a1 = a1 + a2 + a3
-        if hasattr(a1, "size"):
-            assert a1.size() < 15000
-        gym_env_names.append(e.id)
-    except:
-        pass
+# Method for building a new list, for a future version of gym:
+#
+# gym_env_names = ["gym_anm:ANM6Easy-v0"]
+#
+# for e in gym.envs.registry.all():
+#     try:
+#         assert "Kelly" not in e.id
+#         env = gym.make(e.id)
+#         a1 = env.action_space.sample()
+#         a2 = env.action_space.sample()
+#         a3 = env.action_space.sample()
+#         a1 = a1 + a2 + a3
+#         if hasattr(a1, "size"):
+#             assert a1.size() < 15000
+#         gym_env_names.append(e.id)
+#     except:
+#         pass
+
+gym_env_names = [
+    "gym_anm:ANM6Easy-v0",
+    "Copy-v0",
+    "RepeatCopy-v0",
+    "ReversedAddition-v0",
+    "ReversedAddition3-v0",
+    "DuplicatedInput-v0",
+    "Reverse-v0",
+    "CartPole-v0",
+    "CartPole-v1",
+    "MountainCar-v0",
+    "Acrobot-v1",
+    "Blackjack-v0",
+    "FrozenLake-v0",
+    "FrozenLake8x8-v0",
+    "CliffWalking-v0",
+    "NChain-v0",
+    "Roulette-v0",
+    "Taxi-v2",
+    "CubeCrash-v0",
+    "CubeCrashSparse-v0",
+    "CubeCrashScreenBecomesBlack-v0",
+    "MemorizeDigits-v0",
+]
 
 
 class GymMulti(ExperimentFunction):
