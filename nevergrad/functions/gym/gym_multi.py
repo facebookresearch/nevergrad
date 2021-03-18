@@ -59,8 +59,10 @@ gym_env_names = [
 
 
 class GymMulti(ExperimentFunction):
+
     def __init__(self, name: str = "gym_anm:ANM6Easy-v0") -> None:
         env = gym.make(name)
+        self.name = name
         if "int" in str(type(env.action_space.sample())):  # Discrete action space
             dimension = (env.action_space.n,)
             discrete = True
