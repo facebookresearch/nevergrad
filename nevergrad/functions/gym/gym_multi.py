@@ -5,8 +5,9 @@
 
 
 import numpy as np
-import gym
 import os
+import sys
+import gym
 
 if os.name != "nt":
     import gym_anm  # type: ignore  # pylint: disable=unused-import
@@ -17,7 +18,11 @@ gym_env_names = ["gym_anm:ANM6Easy-v0"]
 
 for e in gym.envs.registry.all():
     try:
-        gym.make(e.id)
+        env = gym.make(e.id)
+        a1 = env.action_space.sample()
+        a2 = env.action_space.sample()
+        assert sys.getsizeof(a1) < 5000
+        assert sys.getsizeof(a1) == sys.getsizeof(a2)
         gym_env_names.append(e.id)
     except:
         pass
