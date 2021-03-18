@@ -4,12 +4,13 @@
 # LICENSE file in the root directory of this source tree.
 
 import numpy as np
+import os
 from nevergrad.common import testing
 from . import gym_anm
 
 
 def test_gym_anm() -> None:
-    with testing.skip_error_on_systems(OSError, systems=("Windows",)):
+    if os.name != "nt":
         func = gym_anm.GymAnm()
         x = np.zeros(func.dimension)
         value = func(x)
