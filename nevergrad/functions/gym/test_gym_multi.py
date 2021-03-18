@@ -14,9 +14,9 @@ def test_gym_multi() -> None:
         x = np.zeros(func.dimension)
         value = func(x)
         assert value == 1e20
-    for name in gym_multi.gym_env_names:
-        func = gym_multi.GymMulti(name)
-        x = np.zeros(func.dimension)
-        value = func(x)
-        print(f"{name} -> {value}")
-    assert len(gym_multi.gym_env_names) == 22  # For the moment, this includes 29 environments.
+        for name in gym_multi.gym_env_names:
+            func = gym_multi.GymMulti(name)
+            x = np.zeros(func.dimension)
+            value = func(x)
+            print(f"{name} -> {value}")
+        assert len(gym_multi.gym_env_names) == 22  # For the moment, this includes 29 environments.
