@@ -13,7 +13,7 @@ if os.name != "nt":
 from nevergrad.parametrization import parameter
 from ..base import ExperimentFunction
 
-gym_env_names = ["gym_anm:ANM6Easy-v0"] 
+gym_env_names = ["gym_anm:ANM6Easy-v0"]
 
 for e in gym.envs.registry.all():
     try:
@@ -23,14 +23,6 @@ for e in gym.envs.registry.all():
         pass
 
 
-#+ [e.id for e in gym.envs.registry.all() if not any(x in e.id for x in ["Lunar", "BipedalWalker", "CarRacing", "Reacher", "Pusher", "Thrower", "Striker", "InvertedPendulum", "InvertedDoublePendulum", "HalfCheetah", "Swimmer", "Hopper", "Walker2d", "Ant", "Humanoid", "Fetch", "HandReach", "HandManipulate"])]
-
-#    ["MountainCarContinuous-v0", "CartPole-v0", "FrozenLake8x8-v0", "Breakout-v0"]
-#    from gym import envs
-#    all_envs = envs.registry.all()
-#    env_ids = [env_spec.id for env_spec in all_envs]
-#    print(env_ids)
-
 class GymMulti(ExperimentFunction):
     def __init__(self, name: str = "gym_anm:ANM6Easy-v0") -> None:
         env = gym.make(name)
@@ -38,22 +30,22 @@ class GymMulti(ExperimentFunction):
             dimension = (env.action_space.n,)
             discrete = True
         else:  # Continuous action space
-            dimension = tuple(np.asarray(env.action_space.sample()).shape)
+            dimension = tuple(np.asarray(env.action_space.sample()).shape)  # type: ignore
             discrete = False
         shape = (100,) + dimension
         super().__init__(self.gym_multi_function, parametrization=parameter.Array(shape=shape))
-        self.env = env 
+        self.env = env
         self.discrete = discrete
 
     def env_names(self):
         return gym_env_names
 
     def gym_multi_function(self, x: np.ndarray):
-    
+
         env = self.env
         env.seed(0)
         _ = env.reset()  # output value = "o"
-    
+
         reward = 0.0
         for i, val in enumerate(x):
             a = 10.0 * val

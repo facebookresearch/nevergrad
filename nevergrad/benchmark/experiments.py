@@ -1079,9 +1079,9 @@ def gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Gym simulator. Maximize reward.
     Budget 25, 50, ..., 1600.
     Sequential or 30 workers."""
-    env_names = GymMulti().env_names
+    env_names = GymMulti().env_names()
     seedg = create_seed_generator(seed)
-    optims = get_optimizers("basics", "progressive", "splitters", "baselinesyyy", seed=next(seedg))
+    optims = get_optimizers("basics", "progressive", "splitters", "baselines", seed=next(seedg))
     for budget in [50, 100, 200, 400, 800, 1600]:
         for func in [GymMulti(name) for name in env_names]:
             for num_workers in [1, 30]:
@@ -1098,7 +1098,7 @@ def gym_anm(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     Sequential or 30 workers."""
     func = GymMulti()
     seedg = create_seed_generator(seed)
-    optims = get_optimizers("basics", "progressive", "splitters", "baselinesyyy", seed=next(seedg))
+    optims = get_optimizers("basics", "progressive", "splitters", "baselines", seed=next(seedg))
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
         for num_workers in [1, 30]:
             if num_workers < budget:
