@@ -22,7 +22,7 @@ for e in gym.envs.registry.all():
         env = gym.make(e.id)
         a1 = env.action_space.sample()
         a2 = env.action_space.sample()
-        assert sys.getsizeof(a1) < 5000
+        assert sys.getsizeof(a1) < 15000
         assert sys.getsizeof(a1) == sys.getsizeof(a2)
         gym_env_names.append(e.id)
     except:
