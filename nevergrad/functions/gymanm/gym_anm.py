@@ -6,7 +6,8 @@
 
 import numpy as np
 import gym
-import gym_anm  # type: ignore  # pylint: disable=unused-import
+if os.name != "nt":
+    import gym_anm  # type: ignore  # pylint: disable=unused-import
 from nevergrad.parametrization import parameter
 from ..base import ExperimentFunction
 
