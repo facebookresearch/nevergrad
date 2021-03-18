@@ -33,7 +33,11 @@ def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[expe
         raise SkipTest("Too slow in CircleCI")
 
     # Our IQAs and our ScikitLearn are not well guaranteed on Windows.
-    if all(x in name for x in ["anm", "image", "quality"]) and platform.system() == "Windows":
+    if all(x in name for x in ["image", "quality"]) and platform.system() == "Windows":
+        raise SkipTest("Image quality not guaranteed on Windows.")
+
+    # ANM does not work under Windows.
+    if "anm" in name and platform.system() == "Windows":
         raise SkipTest("Image quality not guaranteed on Windows.")
 
     # Basic test.
