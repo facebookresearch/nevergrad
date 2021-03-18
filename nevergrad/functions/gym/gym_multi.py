@@ -50,7 +50,7 @@ gym_env_names = [
     "CliffWalking-v0",
     "NChain-v0",
     "Roulette-v0",
-    "Taxi-v2",
+    "Taxi-v3",
     "CubeCrash-v0",
     "CubeCrashSparse-v0",
     "CubeCrashScreenBecomesBlack-v0",
