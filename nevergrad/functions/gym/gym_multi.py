@@ -18,6 +18,7 @@ gym_env_names = ["gym_anm:ANM6Easy-v0"]
 
 for e in gym.envs.registry.all():
     try:
+        assert "Kelly" not in e.id
         env = gym.make(e.id)
         a1 = env.action_space.sample()
         a2 = env.action_space.sample()
