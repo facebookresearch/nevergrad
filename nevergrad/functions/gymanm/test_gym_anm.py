@@ -5,7 +5,6 @@
 
 import numpy as np
 import os
-from nevergrad.common import testing
 from . import gym_anm
 
 
