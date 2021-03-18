@@ -6,6 +6,8 @@
 
 import numpy as np
 import gym
+import os
+
 if os.name != "nt":
     import gym_anm  # type: ignore  # pylint: disable=unused-import
 from nevergrad.parametrization import parameter
