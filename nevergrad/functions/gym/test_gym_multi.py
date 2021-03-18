@@ -19,4 +19,4 @@ def test_gym_multi() -> None:
         x = np.zeros(func.dimension)
         value = func(x)
         print(f"{name} -> {value}")
-    assert len(gym_multi.gym_env_names) == 20  # For the moment, this includes 29 environments.
+    assert len(gym_multi.gym_env_names) == 22  # For the moment, this includes 29 environments.
