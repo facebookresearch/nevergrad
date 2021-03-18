@@ -23,7 +23,7 @@ from nevergrad.functions import images as imagesxp
 from nevergrad.functions.powersystems import PowerSystem
 from nevergrad.functions.stsp import STSP
 from nevergrad.functions.rocket import Rocket
-from nevergrad.functions.gymanm import GymAnm
+from nevergrad.functions.gymmulti import GymMulti
 from nevergrad.functions.mixsimulator import OptimizeMix
 from nevergrad.functions.unitcommitment import UnitCommitmentProblem
 from nevergrad.functions import control
@@ -1075,11 +1075,28 @@ def rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def gymanm(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """GymAnm simulator. Maximize reward.
+def gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Gym simulator. Maximize reward.
     Budget 25, 50, ..., 1600.
     Sequential or 30 workers."""
-    func = GymAnm()
+    env_names = GymMulti().env_names
+    seedg = create_seed_generator(seed)
+    optims = get_optimizers("basics", seed=next(seedg))
+    for budget in [50, 100, 200, 400, 800, 1600]:
+        for func in [GymMulti(name) for name in env_names]:
+            for num_workers in [1, 30]:
+                for algo in optims:
+                    xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
+                    if not xp.is_incoherent:
+                        yield xp
+
+
+@registry.register
+def gym_anm(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Gym simulator for Active Network Management. Maximize reward.
+    Budget 25, 50, ..., 1600.
+    Sequential or 30 workers."""
+    func = GymMulti()
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", seed=next(seedg))
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
