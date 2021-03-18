@@ -23,7 +23,7 @@ from nevergrad.functions import images as imagesxp
 from nevergrad.functions.powersystems import PowerSystem
 from nevergrad.functions.stsp import STSP
 from nevergrad.functions.rocket import Rocket
-from nevergrad.functions.gymmulti import GymMulti
+from nevergrad.functions.gym import GymMulti  # mypy: ignore
 from nevergrad.functions.mixsimulator import OptimizeMix
 from nevergrad.functions.unitcommitment import UnitCommitmentProblem
 from nevergrad.functions import control
@@ -1081,7 +1081,7 @@ def gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     Sequential or 30 workers."""
     env_names = GymMulti().env_names
     seedg = create_seed_generator(seed)
-    optims = get_optimizers("basics", seed=next(seedg))
+    optims = get_optimizers("basics", "progressive", "splitters", "baselinesyyy", seed=next(seedg))
     for budget in [50, 100, 200, 400, 800, 1600]:
         for func in [GymMulti(name) for name in env_names]:
             for num_workers in [1, 30]:
@@ -1098,7 +1098,7 @@ def gym_anm(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     Sequential or 30 workers."""
     func = GymMulti()
     seedg = create_seed_generator(seed)
-    optims = get_optimizers("basics", seed=next(seedg))
+    optims = get_optimizers("basics", "progressive", "splitters", "baselinesyyy", seed=next(seedg))
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
         for num_workers in [1, 30]:
             if num_workers < budget:
