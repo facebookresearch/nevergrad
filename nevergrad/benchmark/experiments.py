@@ -1083,7 +1083,7 @@ def gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", "progressive", "splitters", "baselines", seed=next(seedg))
     for budget in [50, 100, 200, 400, 800, 1600]:
-        for func in [GymMulti(name) for name in env_names]:
+        for func in [GymMulti(name) for name in env_names if "gym_anm" not in name]:
             for num_workers in [1, 30]:
                 for algo in optims:
                     xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
