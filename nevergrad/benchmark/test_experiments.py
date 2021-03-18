@@ -38,7 +38,7 @@ def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[expe
 
     # ANM does not work under Windows.
     if "gym" in name and platform.system() == "Windows":
-        raise SkipTest("Image quality not guaranteed on Windows.")
+        raise SkipTest("Some gym problems suffer on Windows.")
 
     # Basic test.
     with tools.set_env(NEVERGRAD_PYTEST=1):
