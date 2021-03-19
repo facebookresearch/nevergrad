@@ -23,7 +23,7 @@ from nevergrad.functions import images as imagesxp
 from nevergrad.functions.powersystems import PowerSystem
 from nevergrad.functions.stsp import STSP
 from nevergrad.functions.rocket import Rocket
-from nevergrad.functions.gym import GymMulti  # mypy: ignore
+from nevergrad.functions.gym import GymMulti
 from nevergrad.functions.mixsimulator import OptimizeMix
 from nevergrad.functions.unitcommitment import UnitCommitmentProblem
 from nevergrad.functions import control
