@@ -316,7 +316,8 @@ class AngleOp(Operation):
 def Angles(
     init: tp.Optional[tp.ArrayLike] = None, shape: tp.Optional[tp.Sequence[int]] = None
 ) -> _data.Array:
-    """Creates an Array parameter representing an angle from -pi to pi
+    """Creates an Array parameter representing an angle from -pi to pi.
+    Internally, this keeps track of coordinates which are transformed to an angle.
 
     Parameters
     ----------
