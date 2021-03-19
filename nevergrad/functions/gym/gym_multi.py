@@ -59,6 +59,7 @@ GYM_ENV_NAMES = [
 
 
 class GymMulti(ExperimentFunction):
+
     def __init__(
         self, name: str = "gym_anm:ANM6Easy-v0", control: str = "conformant", neural_factor: int = 2
     ) -> None:
@@ -134,7 +135,16 @@ class GymMulti(ExperimentFunction):
 
     def gym_multi_function(self, x: np.ndarray):
         env = self.env
-        env.seed(0)
+        reward = 0.
+        num_simulations = 7 if self.control != "conformant" else 1
+        for _ in range(num_simulations):
+            reward += self.gym_simulate(x)
+        return reward / num_simulations
+
+    def gym_simulate(self, x: np.ndarray, seed: int = 0):
+        assert seed == 0 or self.control != "conformant"
+        env = self.env
+        env.seed(seed=seed)
         o = env.reset()
         control = self.control
         if control == "conformant":
