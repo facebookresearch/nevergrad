@@ -59,9 +59,11 @@ gym_env_names = [
 
 
 class GymMulti(ExperimentFunction):
-    def __init__(self, name: str = "gym_anm:ANM6Easy-v0", control: str = "conformant", neural_factor: int = 2) -> None:
+    def __init__(
+        self, name: str = "gym_anm:ANM6Easy-v0", control: str = "conformant", neural_factor: int = 2
+    ) -> None:
         env = gym.make(name)
-        self.name = name
+        self.name = name + "__" + control + "__" + str(neural_factor)
         self.num_time_steps = 100
         self.neural_factor = neural_factor
         o = env.reset()
@@ -83,17 +85,24 @@ class GymMulti(ExperimentFunction):
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.num_neurons = neural_factor * input_dim
-        assert control in ["conformant", "linear", "neural", "noisy_neural", "noisy_scrambled_neural", "scrambled_neural"], f"{control} not known as a form of control"
+        assert control in [
+            "conformant",
+            "linear",
+            "neural",
+            "noisy_neural",
+            "noisy_scrambled_neural",
+            "scrambled_neural",
+        ], f"{control} not known as a form of control"
         self.control = control
         neural_size = (output_dim * self.num_neurons + self.num_neurons * (input_dim + 1),)
         shape = {
-                "conformant": (self.num_time_steps,) + output_shape,
-                "linear": (input_dim + 1, output_dim),
-                "neural": neural_size,
-                "noisy_neural": neural_size,
-                "noisy_scrambled_neural": neural_size,
-                "scrambled_neural": neural_size,
-                }[control]
+            "conformant": (self.num_time_steps,) + output_shape,
+            "linear": (input_dim + 1, output_dim),
+            "neural": neural_size,
+            "noisy_neural": neural_size,
+            "noisy_scrambled_neural": neural_size,
+            "scrambled_neural": neural_size,
+        }[control]
         shape = tuple(int(s) for s in shape)
         self.policy_shape = shape
         parametrization = parameter.Array(shape=shape)
@@ -118,7 +127,9 @@ class GymMulti(ExperimentFunction):
         first_size = self.num_neurons * (self.input_dim + 1)
         first_matrix = x[:first_size].reshape(self.input_dim + 1, self.num_neurons)
         second_matrix = x[first_size:].reshape(self.num_neurons, self.output_dim)
-        return np.matmul(np.tanh(np.matmul(o.ravel(), first_matrix[1:]) + first_matrix[0]), second_matrix).reshape(self.output_shape)
+        return np.matmul(
+            np.tanh(np.matmul(o.ravel(), first_matrix[1:]) + first_matrix[0]), second_matrix
+        ).reshape(self.output_shape)
 
     def gym_multi_function(self, x: np.ndarray):
         env = self.env
@@ -131,7 +142,7 @@ class GymMulti(ExperimentFunction):
             np.random.RandomState(1234).shuffle(x)
         if "noisy" in control:
             x = x + 0.01 * np.random.RandomState(1234).normal(size=x.shape)
-        reward = 0.
+        reward = 0.0
         for i in range(self.num_time_steps):
             if self.discrete_input:
                 obs = np.zeros(shape=self.input_dim)
@@ -148,7 +159,7 @@ class GymMulti(ExperimentFunction):
             reward += r
             if done:
                 break
-        return reward 
+        return reward
 
     def gym_conformant(self, x: np.ndarray):
         reward = 0.0

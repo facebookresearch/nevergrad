@@ -15,7 +15,14 @@ def test_gym_multi() -> None:
         value = func(x)
         assert value == 1e20
         for name in gym_multi.gym_env_names:
-            for control in ["conformant", "linear", "neural", "noisy_neural", "scrambled_neural", "noisy_scrambled_neural"]:
+            for control in [
+                "conformant",
+                "linear",
+                "neural",
+                "noisy_neural",
+                "scrambled_neural",
+                "noisy_scrambled_neural",
+            ]:
                 func = gym_multi.GymMulti(name, control)
                 x = np.zeros(func.dimension)
                 value = func(x)
