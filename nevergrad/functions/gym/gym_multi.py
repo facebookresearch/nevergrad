@@ -16,7 +16,7 @@ from ..base import ExperimentFunction
 
 # Method for building a new list, for a future version of gym:
 #
-# gym_env_names = ["gym_anm:ANM6Easy-v0"]
+# GYM_ENV_NAMES = ["gym_anm:ANM6Easy-v0"]
 #
 # for e in gym.envs.registry.all():
 #     try:
@@ -28,11 +28,11 @@ from ..base import ExperimentFunction
 #         a1 = a1 + a2 + a3
 #         if hasattr(a1, "size"):
 #             assert a1.size() < 15000
-#         gym_env_names.append(e.id)
+#         GYM_ENV_NAMES.append(e.id)
 #     except:
 #         pass
 
-gym_env_names = [
+GYM_ENV_NAMES = [
     "gym_anm:ANM6Easy-v0",
     "Copy-v0",
     "RepeatCopy-v0",
@@ -112,7 +112,7 @@ class GymMulti(ExperimentFunction):
         self.discrete = discrete
 
     def env_names(self):
-        return gym_env_names
+        return GYM_ENV_NAMES
 
     def discretize(self, a):
         probabilities = np.exp(a - max(a))

@@ -1077,8 +1077,8 @@ def rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 @registry.register
 def gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Gym simulator. Maximize reward.
-    Budget 25, 50, ..., 1600.
-    Sequential or 30 workers."""
+    Many distinct problems."""
+    raise ng.errors.UnsupportedExperiment("Windows is not supported") 
     env_names = GymMulti().env_names()
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", "progressive", "splitters", "baselines", seed=next(seedg))
@@ -1109,8 +1109,9 @@ def gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 @registry.register
 def gym_anm(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Gym simulator for Active Network Management. Maximize reward.
-    Budget 25, 50, ..., 1600.
-    Sequential or 30 workers."""
+    """
+    raise ng.errors.UnsupportedExperiment("Windows is not supported") 
+
     func = GymMulti()
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", "progressive", "splitters", "baselines", seed=next(seedg))
