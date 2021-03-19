@@ -116,7 +116,7 @@ class GymMulti(ExperimentFunction):
     def discretize(self, a):
         probabilities = np.exp(a - max(a))
         probabilities = probabilities / sum(probabilities)
-        return np.random.multinomial(1, probabilities)[0]
+        return int(np.random.multinomial(1, probabilities)[0])
 
     def neural(self, x: np.ndarray, o: np.ndarray):
         x = x.reshape(self.policy_shape)
