@@ -166,8 +166,7 @@ class GymMulti(ExperimentFunction):
 
     def gym_conformant(self, x: np.ndarray):
         reward = 0.0
-        for i, val in enumerate(x):
-            a = 10.0 * val
+        for i, a in enumerate(10. 0 * x):
             if type(a) == np.float64:
                 a = np.asarray((a,))
                 if self.discrete:
