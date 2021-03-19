@@ -59,7 +59,6 @@ gym_env_names = [
 
 
 class GymMulti(ExperimentFunction):
-
     def __init__(self, name: str = "gym_anm:ANM6Easy-v0") -> None:
         env = gym.make(name)
         self.name = name
