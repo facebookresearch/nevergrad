@@ -304,14 +304,12 @@ class AngleOp(Operation):
 
     def _layered_get_value(self) -> tp.Any:
         x = super()._layered_get_value()
-        if not x.shape[0] == 4:
-            raise ValueError("First dimension should be 4, got {x.shape}")
-        return np.angle(x[0, ...] - x[2, ...] + (x[1, ...] - x[3, ...]) * 1j)
+        if x.shape[0] != 2:
+            raise ValueError(f"First dimension should be 2, got {x.shape}")
+        return np.angle(x[0, ...] + 1j * x[1, ...])
 
     def _layered_set_value(self, value: tp.Any) -> None:
-        x, y = [fn(value) for fn in (np.cos, np.sin)]
-        parts = [np.maximum(z, 0) for z in (x, y, -x, -y)]
-        out = np.stack(parts, axis=0)
+        out = np.stack([fn(value) for fn in (np.cos, np.sin)], axis=0)
         super()._layered_set_value(out)
 
 
@@ -339,7 +337,7 @@ def Angles(
     if sum(x is None for x in (init, shape)) != 1:
         raise ValueError("Exactly 1 of init or shape must be provided")
     out_shape = tuple(shape) if shape is not None else np.array(init).shape
-    angles = _data.Array(shape=(4,) + out_shape)
+    angles = _data.Array(shape=(2,) + out_shape)
     angles.add_layer(AngleOp())
     with warnings.catch_warnings():  # ignore bounding warning which is irrelevant here
         warnings.simplefilter("ignore", category=errors.NevergradRuntimeWarning)
