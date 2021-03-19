@@ -29,50 +29,7 @@ def _param_string(parameters: Dict) -> str:
     return substr
 
 
-class Mutation(core.Parameter):
-    """Custom mutation or recombination
-    This is an experimental API
-
-    Either implement:
-    - `_apply_array`  which provides a new np.ndarray from a list of arrays
-    - `apply` which updates the first p.Array instance
-
-    Mutation should take only one p.Array instance as argument, while
-    Recombinations should take several
-    """
-
-    # NOTE: this API should disappear in favor of the layer API
-    # (a layer can modify the mutation scheme)
-
-    # pylint: disable=unused-argument
-    value: core.ValueProperty[tp.Callable[[tp.Sequence[D]], None]] = core.ValueProperty()
-
-    def __init__(self, **kwargs: tp.Any) -> None:
-        super().__init__()
-        self.parameters = Dict(**kwargs)
-
-    def _layered_get_value(self) -> tp.Callable[[tp.Sequence[D]], None]:
-        return self.apply
-
-    def _layered_set_value(self, value: tp.Any) -> None:
-        raise RuntimeError("Mutation cannot be set.")
-
-    def _get_name(self) -> str:
-        return super()._get_name() + _param_string(self.parameters)
-
-    def apply(self, arrays: tp.Sequence[D]) -> None:
-        new_value = self._apply_array([a._value for a in arrays])
-        arrays[0]._value = new_value
-
-    def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:
-        raise RuntimeError("Mutation._apply_array should either be implementer or bypassed in Mutation.apply")
-        return np.array([])  # pylint: disable=unreachable
-
-    def get_standardized_data(  # pylint: disable=unused-argument
-        self: P, *, reference: tp.Optional[P] = None
-    ) -> np.ndarray:
-        return np.array([])
-
+:
 
 # pylint: disable=too-many-arguments, too-many-instance-attributes,abstract-method
 class Data(core.Parameter):

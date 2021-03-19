@@ -9,9 +9,35 @@ import typing as tp
 import numpy as np
 from . import core
 from . import transforms
-from .data import Mutation as Mutation
 from .data import Array, Scalar, Data
 from .choice import Choice
+from . import _layering
+
+
+class Mutation(_layering.Layer):
+    """Custom mutation or recombination
+    This is an experimental API
+
+    Either implement:
+    - `_apply_array`  which provides a new np.ndarray from a list of arrays
+    - `apply` which updates the first p.Array instance
+
+    Mutation should take only one p.Array instance as argument, while
+    Recombinations should take several
+    """
+
+    def root(self) -> Data:
+        data = self._layers[0]
+        if not isinstance(data, Data):
+            raise RuntimeError(
+                f"{self.__class__.__name__} must be applied to Data parameters, got: {type(data)}"
+            )
+        return data
+
+    def __call__(self, data: Data, inplace: bool = False) -> Data:
+        new = data if inplace else data.copy()
+        new.add_layer(self.copy())
+        return new
 
 
 class Crossover(Mutation):
