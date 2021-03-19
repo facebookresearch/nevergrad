@@ -81,6 +81,7 @@ class GymMulti(ExperimentFunction):
         else:
             input_dim = np.prod(np.asarray(o).shape)
             self.discrete_input = False
+        self.action_type = type(env.action_space.sample())
         self.output_shape = output_shape
         self.input_dim = input_dim
         self.output_dim = output_dim
@@ -153,6 +154,8 @@ class GymMulti(ExperimentFunction):
             if self.discrete:
                 a = self.discretize(a)
             try:
+                a = self.action_type(a)
+                assert type(a) == self.action_type
                 o, r, done, _ = env.step(a)  # Outputs = observation, reward, done, info.
             except AssertionError:  # Illegal action.
                 return 1e20 / (1.0 + i)  # We encourage late failures rather than early failures.
@@ -170,6 +173,8 @@ class GymMulti(ExperimentFunction):
                 if self.discrete:
                     a = self.discretize(a)
             try:
+                a = self.action_type(a)
+                assert type(a) == self.action_type
                 _, r, done, _ = self.env.step(a)  # Outputs = observation, reward, done, info.
             except AssertionError:  # Illegal action.
                 return 1e20 / (1.0 + i)  # We encourage late failures rather than early failures.
