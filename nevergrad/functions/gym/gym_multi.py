@@ -9,7 +9,7 @@ import os
 import gym
 
 if os.name != "nt":
-    import gym_anm  # type: ignore  # pylint: disable=unused-import
+    import gym_anm  # pylint: disable=unused-import
 from nevergrad.parametrization import parameter
 from ..base import ExperimentFunction
 
