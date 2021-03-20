@@ -161,8 +161,9 @@ class GymMulti(ExperimentFunction):
             a = self.neural(x, o)
             if self.discrete:
                 a = self.discretize(a)
-            try:
+            else:
                 a = self.action_type(a)
+            try:
                 assert type(a) == self.action_type
                 o, r, done, _ = env.step(a)  # Outputs = observation, reward, done, info.
             except AssertionError:  # Illegal action.
@@ -179,8 +180,9 @@ class GymMulti(ExperimentFunction):
                 a = np.asarray((a,))
                 if self.discrete:
                     a = self.discretize(a)
+                else:
+                    a = self.action_type(a)
             try:
-                a = self.action_type(a)
                 assert type(a) == self.action_type
                 _, r, done, _ = self.env.step(a)  # Outputs = observation, reward, done, info.
             except AssertionError:  # Illegal action.
