@@ -14,7 +14,7 @@ def test_gym_multi() -> None:
         x = np.zeros(func.dimension)
         value = func(x)
         assert value == 1e20
-        for name in gym_multi.gym_env_names:
+        for name in gym_multi.GYM_ENV_NAMES:
             for control in [
                 "conformant",
                 "linear",
@@ -26,4 +26,4 @@ def test_gym_multi() -> None:
                 func = gym_multi.GymMulti(name, control)
                 x = np.zeros(func.dimension)
                 value = func(x)
-        assert len(gym_multi.gym_env_names) == 22  # For the moment, this includes 29 environments.
+        assert len(gym_multi.GYM_ENV_NAMES) == 22  # For the moment, this includes 29 environments.
