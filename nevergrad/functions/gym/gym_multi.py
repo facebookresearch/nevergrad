@@ -33,7 +33,7 @@ from ..base import ExperimentFunction
 #         pass
 
 GYM_ENV_NAMES = [
-    "gym_anm:ANM6Easy-v0",
+#    "gym_anm:ANM6Easy-v0",   Specific issues for this one!
     "Copy-v0",
     "RepeatCopy-v0",
     "ReversedAddition-v0",
@@ -57,9 +57,10 @@ GYM_ENV_NAMES = [
     "MemorizeDigits-v0",
 ]
 
+CONTROLLERS = ["conformant", "linear", "neural", "noisy_neural", "noisy_scrambled_neural", "scrambled_neural", "stochastic_conformant"]
+
 
 class GymMulti(ExperimentFunction):
-
     def __init__(
         self, name: str = "gym_anm:ANM6Easy-v0", control: str = "conformant", neural_factor: int = 2
     ) -> None:
@@ -87,18 +88,12 @@ class GymMulti(ExperimentFunction):
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.num_neurons = neural_factor * input_dim
-        assert control in [
-            "conformant",
-            "linear",
-            "neural",
-            "noisy_neural",
-            "noisy_scrambled_neural",
-            "scrambled_neural",
-        ], f"{control} not known as a form of control"
+        assert control in CONTROLLERS, f"{control} not known as a form of control"
         self.control = control
         neural_size = (output_dim * self.num_neurons + self.num_neurons * (input_dim + 1),)
         shape = {
             "conformant": (self.num_time_steps,) + output_shape,
+            "stochastic_conformant": (self.num_time_steps,) + output_shape,
             "linear": (input_dim + 1, output_dim),
             "neural": neural_size,
             "noisy_neural": neural_size,
@@ -134,11 +129,10 @@ class GymMulti(ExperimentFunction):
         ).reshape(self.output_shape)
 
     def gym_multi_function(self, x: np.ndarray):
-        env = self.env
-        reward = 0.
+        reward = 0.0
         num_simulations = 7 if self.control != "conformant" else 1
-        for _ in range(num_simulations):
-            reward += self.gym_simulate(x)
+        for seed in range(num_simulations):
+            reward += self.gym_simulate(x, seed=seed)
         return reward / num_simulations
 
     def gym_simulate(self, x: np.ndarray, seed: int = 0):
@@ -147,7 +141,7 @@ class GymMulti(ExperimentFunction):
         env.seed(seed=seed)
         o = env.reset()
         control = self.control
-        if control == "conformant":
+        if "conformant" in control:
             return self.gym_conformant(x)
         if "scrambled" in control:
             np.random.RandomState(1234).shuffle(x)
@@ -163,8 +157,9 @@ class GymMulti(ExperimentFunction):
             a = self.neural(x, o)
             if self.discrete:
                 a = self.discretize(a)
-            try:
+            else:
                 a = self.action_type(a)
+            try:
                 assert type(a) == self.action_type
                 o, r, done, _ = env.step(a)  # Outputs = observation, reward, done, info.
             except AssertionError:  # Illegal action.
@@ -181,9 +176,15 @@ class GymMulti(ExperimentFunction):
                 a = np.asarray((a,))
                 if self.discrete:
                     a = self.discretize(a)
+                else:
+                    try:
+                        if type(a) != self.action_type:
+                            a = self.action_type(a)
+                    except:
+                        print(f"{a} should have type {self.action_type} instead of {type(a)}")
+                        assert False
+                assert type(a) == self.action_type, f"{a} should have type {self.action_type} "
             try:
-                a = self.action_type(a)
-                assert type(a) == self.action_type
                 _, r, done, _ = self.env.step(a)  # Outputs = observation, reward, done, info.
             except AssertionError:  # Illegal action.
                 return 1e20 / (1.0 + i)  # We encourage late failures rather than early failures.

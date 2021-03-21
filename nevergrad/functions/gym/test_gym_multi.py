@@ -14,16 +14,9 @@ def test_gym_multi() -> None:
         x = np.zeros(func.dimension)
         value = func(x)
         assert value == 1e20
-        for name in gym_multi.gym_env_names:
-            for control in [
-                "conformant",
-                "linear",
-                "neural",
-                "noisy_neural",
-                "scrambled_neural",
-                "noisy_scrambled_neural",
-            ]:
+        for name in gym_multi.GYM_ENV_NAMES:
+            for control in gym_multi.CONTROLLERS:
                 func = gym_multi.GymMulti(name, control)
                 x = np.zeros(func.dimension)
                 value = func(x)
-        assert len(gym_multi.gym_env_names) == 22  # For the moment, this includes 29 environments.
+        assert len(gym_multi.GYM_ENV_NAMES) == 21  # For the moment, this includes 29 environments.
