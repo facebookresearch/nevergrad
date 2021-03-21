@@ -1083,25 +1083,12 @@ def gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     env_names = GymMulti().env_names()
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", "progressive", "splitters", "baselines", seed=next(seedg))
-    optims = [
-        o for o in optims if "CMA" not in str(o) or "Diag" in str(o)
-    ]  # Remove CMA because too expensive.
-    #optims = ["CMA", "MetaModel", "NGOpt", "DE", "PSO", "CMandAS2", "OnePlusOne"]
-    #optims += get_optimizers("progressive", seed=next(seedg))
     optims += ["DiagonalCMA"]
     for func in [
         GymMulti(name, control, neural_factor)
-        for control in [
-            "conformant",
-            "linear",
-            "neural",
-            "noisy_neural",
-            "noisy_scrambled_neural",
-            "scrambled_neural",
-        ]
+        for control in GymMulti().controllers()
         for neural_factor in [2]  # 1, 2, 4, 10]
         for name in env_names
-        if "gym_anm" not in name
     ]:
         for budget in [50, 400, 1600]:  # , 100, 200, 400, 800, 1600]:
             for num_workers in [1, 30]:

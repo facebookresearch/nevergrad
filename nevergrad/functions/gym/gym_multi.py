@@ -110,6 +110,9 @@ class GymMulti(ExperimentFunction):
     def env_names(self):
         return GYM_ENV_NAMES
 
+    def controllers(self):
+        return CONTROLLERS
+
     def discretize(self, a):
         probabilities = np.exp(a - max(a))
         probabilities = probabilities / sum(probabilities)
