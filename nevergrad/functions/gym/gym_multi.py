@@ -139,7 +139,7 @@ class GymMulti(ExperimentFunction):
         num_simulations = 7 if self.control != "conformant" else 1
         for seed in range(num_simulations):
             reward += self.gym_simulate(x, seed=seed)
-        return reward / num_simulations
+        return -reward / num_simulations
 
     def gym_simulate(self, x: np.ndarray, seed: int = 0):
         assert seed == 0 or self.control != "conformant"
