@@ -66,7 +66,10 @@ class GymMulti(ExperimentFunction):
     ) -> None:
         env = gym.make(name)
         self.name = name + "__" + control + "__" + str(neural_factor)
-        self.num_time_steps = 100
+        try:
+            self.num_time_steps = env._max_episode_steps  # I know! This is a private variable.
+        except AttributeError:  # Not all environements have a max number of episodes!
+            self.num_time_steps = 100
         self.neural_factor = neural_factor
         o = env.reset()
         if "int" in str(type(env.action_space.sample())):  # Discrete action space
