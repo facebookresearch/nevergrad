@@ -135,11 +135,11 @@ class GymMulti(ExperimentFunction):
         ).reshape(self.output_shape)
 
     def gym_multi_function(self, x: np.ndarray):
-        reward = 0.0
+        loss = 0.0
         num_simulations = 7 if self.control != "conformant" else 1
         for seed in range(num_simulations):
-            reward += self.gym_simulate(x, seed=seed)
-        return -reward / num_simulations
+            loss += self.gym_simulate(x, seed=seed)
+        return loss / num_simulations
 
     def gym_simulate(self, x: np.ndarray, seed: int = 0):
         assert seed == 0 or self.control != "conformant"
@@ -173,7 +173,7 @@ class GymMulti(ExperimentFunction):
             reward += r
             if done:
                 break
-        return -reward
+        return - reward
 
     def gym_conformant(self, x: np.ndarray):
         reward = 0.0
@@ -194,4 +194,4 @@ class GymMulti(ExperimentFunction):
             if done:
                 break
         # env.render()  if you want to display.
-        return -reward
+        return - reward
