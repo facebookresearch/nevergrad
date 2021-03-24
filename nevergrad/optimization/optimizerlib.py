@@ -329,6 +329,9 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
 OnePlusOne = ParametrizedOnePlusOne().set_name("OnePlusOne", register=True)
 NoisyOnePlusOne = ParametrizedOnePlusOne(noise_handling="random").set_name("NoisyOnePlusOne", register=True)
 DiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete").set_name("DiscreteOnePlusOne", register=True)
+PortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="portfolio").set_name(
+    "PortfolioDiscreteOnePlusOne", register=True
+)
 DiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(mutation="lengler").set_name(
     "DiscreteLenglerOnePlusOne", register=True
 )

@@ -51,9 +51,6 @@ FastGAOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
 FastGANoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling="random", mutation="fastga").set_name(
     "FastGANoisyDiscreteOnePlusOne", register=True
 )
-PortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="portfolio").set_name(
-    "PortfolioDiscreteOnePlusOne", register=True
-)
 PortfolioOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
     noise_handling="optimistic", mutation="portfolio"
 ).set_name("PortfolioOptimisticNoisyDiscreteOnePlusOne", register=True)
