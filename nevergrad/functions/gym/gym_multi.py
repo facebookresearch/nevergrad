@@ -33,7 +33,7 @@ from ..base import ExperimentFunction
 #         pass
 
 GYM_ENV_NAMES = [
-#    "gym_anm:ANM6Easy-v0",   Specific issues for this one!
+    #    "gym_anm:ANM6Easy-v0",   Specific issues for this one!
     "Copy-v0",
     "RepeatCopy-v0",
     "ReversedAddition-v0",
@@ -57,13 +57,24 @@ GYM_ENV_NAMES = [
     "MemorizeDigits-v0",
 ]
 
-CONTROLLERS = ["conformant", "linear", "neural", "noisy_neural", "noisy_scrambled_neural", "scrambled_neural", "stochastic_conformant"]
+# We do not use "conformant" which is not consistent with the rest.
+CONTROLLERS = [
+    "linear",
+    "neural",
+    "noisy_neural",
+    "noisy_scrambled_neural",
+    "scrambled_neural",
+    "stochastic_conformant",
+]
 
 
 class GymMulti(ExperimentFunction):
     def __init__(
-        self, name: str = "gym_anm:ANM6Easy-v0", control: str = "conformant", neural_factor: int = 2, randomized: bool =
-        False,
+        self,
+        name: str = "gym_anm:ANM6Easy-v0",
+        control: str = "conformant",
+        neural_factor: int = 2,
+        randomized: bool = False,
     ) -> None:
         env = gym.make(name)
         self.name = name + "__" + control + "__" + str(neural_factor)
@@ -184,7 +195,7 @@ class GymMulti(ExperimentFunction):
             reward += r
             if done:
                 break
-        return - reward
+        return -reward
 
     def gym_conformant(self, x: np.ndarray):
         reward = 0.0
@@ -205,4 +216,4 @@ class GymMulti(ExperimentFunction):
             if done:
                 break
         # env.render()  if you want to display.
-        return - reward
+        return -reward

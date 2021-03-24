@@ -1098,10 +1098,12 @@ def gym_multi(seed: tp.Optional[int] = None, randomized: bool = False) -> tp.Ite
                     if not xp.is_incoherent:
                         yield xp
 
+
 @registry.register
 def stochastic_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of gym_multi."""
     return gym_multi(seed, randomized=True)
+
 
 @registry.register
 def gym_anm(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
