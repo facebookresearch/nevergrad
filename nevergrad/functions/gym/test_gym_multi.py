@@ -13,7 +13,7 @@ def test_gym_multi() -> None:
         func = gym_multi.GymMulti()
         x = np.zeros(func.dimension)
         value = func(x)
-        assert value == 1e20
+        assert value == -1e20
         for name in gym_multi.GYM_ENV_NAMES:
             for control in gym_multi.CONTROLLERS:
                 func = gym_multi.GymMulti(name, control)

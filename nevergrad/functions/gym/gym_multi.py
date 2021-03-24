@@ -173,24 +173,20 @@ class GymMulti(ExperimentFunction):
             reward += r
             if done:
                 break
-        return reward
+        return -reward
 
     def gym_conformant(self, x: np.ndarray):
         reward = 0.0
         for i, a in enumerate(10.0 * x):
             if type(a) == np.float64:
                 a = np.asarray((a,))
-                if self.discrete:
-                    a = self.discretize(a)
-                else:
-                    try:
-                        if type(a) != self.action_type:
-                            a = self.action_type(a)
-                    except:
-                        print(f"{a} should have type {self.action_type} instead of {type(a)}")
-                        assert False
-                assert type(a) == self.action_type, f"{a} should have type {self.action_type} "
+            if self.discrete:
+                a = self.discretize(a)
+            else:
+                if self.action_type != type(a):
+                    a = self.action_type(a)
             try:
+                assert type(a) == self.action_type, f"{a} should have type {self.action_type} "
                 _, r, done, _ = self.env.step(a)  # Outputs = observation, reward, done, info.
             except AssertionError:  # Illegal action.
                 return 1e20 / (1.0 + i)  # We encourage late failures rather than early failures.

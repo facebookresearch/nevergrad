@@ -1085,7 +1085,6 @@ def gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     optims = get_optimizers("basics", "progressive", "splitters", "baselines", seed=next(seedg))
     optims += ["DiagonalCMA"]
     controllers = GymMulti().controllers()
-    np.random.RandomState(123).shuffle(controllers)
     for func in [
         GymMulti(name, control, neural_factor)
         for control in controllers
