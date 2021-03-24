@@ -106,7 +106,7 @@ class GymMulti(ExperimentFunction):
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.num_neurons = neural_factor * input_dim
-        assert control in CONTROLLERS, f"{control} not known as a form of control"
+        assert control in CONTROLLERS or control == "conformant", f"{control} not known as a form of control"
         self.control = control
         neural_size = (output_dim * self.num_neurons + self.num_neurons * (input_dim + 1),)
         shape = {
