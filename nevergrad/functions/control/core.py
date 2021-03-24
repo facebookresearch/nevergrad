@@ -118,7 +118,7 @@ class BaseFunction(base.ExperimentFunction):
         return loss
 
     def evaluation_function(self, *recommendations: p.Parameter) -> float:
-        assert len(recommendations) == 1, "Should not be a pareto set for a monoobjective function"
+        assert len(recommendations) == 1, "Should not be a pareto set for a singleobjective function"
         x = recommendations[0].value
         # pylint: disable=not-callable
         loss = self.function(x)

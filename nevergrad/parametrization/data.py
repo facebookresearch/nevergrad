@@ -30,6 +30,9 @@ def _param_string(parameters: Dict) -> str:
     return substr
 
 
+MutFn = tp.Callable[[tp.Sequence["Data"]], None]
+
+
 class Mutation(core.Parameter):
     """Custom mutation or recombination
     This is an experimental API
@@ -46,13 +49,13 @@ class Mutation(core.Parameter):
     # (a layer can modify the mutation scheme)
 
     # pylint: disable=unused-argument
-    value: core.ValueProperty[tp.Callable[[tp.Sequence[D]], None]] = core.ValueProperty()
+    value: core.ValueProperty[MutFn, MutFn] = core.ValueProperty()
 
     def __init__(self, **kwargs: tp.Any) -> None:
         super().__init__()
         self.parameters = Dict(**kwargs)
 
-    def _layered_get_value(self) -> tp.Callable[[tp.Sequence[D]], None]:
+    def _layered_get_value(self) -> MutFn:
         return self.apply
 
     def _layered_set_value(self, value: tp.Any) -> None:
@@ -61,7 +64,7 @@ class Mutation(core.Parameter):
     def _get_name(self) -> str:
         return super()._get_name() + _param_string(self.parameters)
 
-    def apply(self, arrays: tp.Sequence[D]) -> None:
+    def apply(self, arrays: tp.Sequence["Data"]) -> None:
         new_value = self._apply_array([a._value for a in arrays])
         arrays[0]._value = new_value
 
@@ -479,7 +482,7 @@ def _fix_legacy(parameter: Data) -> None:
 
 class Array(Data):
 
-    value: core.ValueProperty[np.ndarray] = core.ValueProperty()
+    value: core.ValueProperty[tp.ArrayLike, np.ndarray] = core.ValueProperty()
 
 
 class Scalar(Data):
@@ -505,7 +508,7 @@ class Scalar(Data):
       :code:`set_bounds`, :code:`set_mutation`, :code:`set_integer_casting`
     """
 
-    value: core.ValueProperty[float] = core.ValueProperty()
+    value: core.ValueProperty[float, float] = core.ValueProperty()
 
     def __init__(
         self,

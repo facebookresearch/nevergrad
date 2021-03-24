@@ -23,6 +23,9 @@
   (`ng.p.helpers.analyze`) returning information about the parameter (eg: whether continuous, deterministic etc...)
   and a new `function` attribute which can be used to provide information about the function (eg: whether deterministic etc)
   [#1076](https://github.com/facebookresearch/nevergrad/pull/1076).
+- Half the budget alloted to solve cheap constrained is now used by a sub-optimizer
+  [#1047](https://github.com/facebookresearch/nevergrad/pull/1047). More changes of constraint management will land
+  in the near future.
 
 ### Important changes
 

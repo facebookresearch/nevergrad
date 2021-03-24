@@ -179,7 +179,7 @@ class Photonics(base.ExperimentFunction):
         return np.array(data, copy=False).ravel()
 
     def evaluation_function(self, *recommendations: p.Parameter) -> float:
-        assert len(recommendations) == 1, "Should not be a pareto set for a monoobjective function"
+        assert len(recommendations) == 1, "Should not be a pareto set for a singleobjective function"
         recom = recommendations[0]
         x = self.to_array(*recom.args, **recom.kwargs)
         loss = self.function(x)

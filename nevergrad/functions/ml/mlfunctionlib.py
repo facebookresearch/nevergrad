@@ -228,7 +228,7 @@ class MLTuning(ExperimentFunction):
         self._evalparams = evalparams
 
     def evaluation_function(self, *recommendations: p.Parameter) -> float:
-        assert len(recommendations) == 1, "Should not be a pareto set for a monoobjective function"
+        assert len(recommendations) == 1, "Should not be a pareto set for a singleobjective function"
         assert not recommendations[0].args
         kwargs = dict(recommendations[0].kwargs)
         # override with eval parameters (with partial, the eval parameters would be overriden by kwargs)

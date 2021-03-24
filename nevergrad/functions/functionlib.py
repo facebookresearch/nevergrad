@@ -235,7 +235,7 @@ class ArtificialFunction(ExperimentFunction):
         """Implements the call of the function.
         Under the hood, __call__ delegates to oracle_call + add some noise if noise_level > 0.
         """
-        assert len(recommendations) == 1, "Should not be a pareto set for a monoobjective function"
+        assert len(recommendations) == 1, "Should not be a pareto set for a singleobjective function"
         assert len(recommendations[0].args) == 1 and not recommendations[0].kwargs
         data = self._transform(recommendations[0].args[0])
         return self.function_from_transform(data)
