@@ -10,6 +10,7 @@ import nevergrad.common.typing as tp
 from nevergrad.common import errors
 from . import _layering
 from ._layering import Int as Int
+from . import data as _data
 from .data import Data
 from .core import Parameter
 from . import discretization
@@ -101,11 +102,12 @@ class BoundLayer(Operation):
             if min_dist < 3.0:
                 warnings.warn(
                     f"Bounds are {min_dist} sigma away from each other at the closest, "
-                    "you should aim for at least 3 for better quality."
+                    "you should aim for at least 3 for better quality.",
+                    errors.NevergradRuntimeWarning,
                 )
         return new
 
-    def _layered_sample(self) -> "Data":
+    def _layered_sample(self) -> Data:
         if not self.uniform_sampling:
             return super()._layered_sample()  # type: ignore
         root = self._layers[0]
@@ -218,6 +220,7 @@ class Multiply(ForwardableOperation):
     def __init__(self, value: tp.Any) -> None:
         super().__init__(value)
         self._mult = value
+        self.name = f"Mult({value})"
 
     def forward(self, value: tp.Any) -> tp.Any:
         return self._mult * value
@@ -295,3 +298,65 @@ class SoftmaxSampling(Int):
         coeff = discretization.weight_for_reset(self.arity)
         out[np.arange(value.size, dtype=int), value] = coeff
         super()._layered_set_value(out)
+
+
+class AngleOp(Operation):
+    """Converts to and from angles from -pi to pi"""
+
+    def _layered_get_value(self) -> tp.Any:
+        x = super()._layered_get_value()
+        if x.shape[0] != 2:
+            raise ValueError(f"First dimension should be 2, got {x.shape}")
+        return np.angle(x[0, ...] + 1j * x[1, ...])
+
+    def _layered_set_value(self, value: tp.Any) -> None:
+        out = np.stack([fn(value) for fn in (np.cos, np.sin)], axis=0)
+        super()._layered_set_value(out)
+
+
+def Angles(
+    init: tp.Optional[tp.ArrayLike] = None,
+    shape: tp.Optional[tp.Sequence[int]] = None,
+    deg: bool = False,
+    bound_method: tp.Optional[str] = None,
+) -> _data.Array:
+    """Creates an Array parameter representing an angle from -pi to pi (deg=False)
+    or -180 to 180 (deg=True).
+    Internally, this keeps track of coordinates which are transformed to an angle.
+
+    Parameters
+    ----------
+    init: array-like or None
+        initial values if provided (either shape or init is required)
+    shape: sequence of int or None
+        shape of the angle array, if provided (either shape or init is required)
+    deg: bool
+        whether to return the result in degrees instead of radians
+    bound_method: optional str
+        adds a bound in the standardized domain, to make sure the values do not
+        diverge too much (experimental, the impact is not clear)
+
+    Returns
+    -------
+    Array
+        An Array Parameter instance which represents an angle between -pi and pi
+
+    Notes
+    ------
+    This API is experimental and will probably evolve in the near future.
+    """
+    if sum(x is None for x in (init, shape)) != 1:
+        raise ValueError("Exactly 1 of init or shape must be provided")
+    out_shape = tuple(shape) if shape is not None else np.array(init).shape
+    ang = _data.Array(shape=(2,) + out_shape)
+    if bound_method is not None:
+        Bound(-2, 2, method=bound_method)(ang, inplace=True)
+    ang.add_layer(AngleOp())
+    with warnings.catch_warnings():  # ignore bounding warning which is irrelevant here
+        warnings.simplefilter("ignore", category=errors.NevergradRuntimeWarning)
+        Bound(-np.pi, np.pi)(ang, inplace=True)
+    if deg:
+        ang = ang * (180 / np.pi)
+    if init is not None:
+        ang.value = init
+    return ang

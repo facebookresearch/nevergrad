@@ -39,7 +39,7 @@ class Parameter(Layered):
     # Spawning a child creates a shallow copy.
 
     _LAYER_LEVEL = Level.ROOT
-    value: ValueProperty[tp.Any] = ValueProperty()
+    value: ValueProperty[tp.Any, tp.Any] = ValueProperty()
 
     def __init__(self) -> None:
         # Main features
