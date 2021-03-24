@@ -220,6 +220,7 @@ class Multiply(ForwardableOperation):
     def __init__(self, value: tp.Any) -> None:
         super().__init__(value)
         self._mult = value
+        self.name = f"Mult({value})"
 
     def forward(self, value: tp.Any) -> tp.Any:
         return self._mult * value
@@ -314,9 +315,12 @@ class AngleOp(Operation):
 
 
 def Angles(
-    init: tp.Optional[tp.ArrayLike] = None, shape: tp.Optional[tp.Sequence[int]] = None
+    init: tp.Optional[tp.ArrayLike] = None,
+    shape: tp.Optional[tp.Sequence[int]] = None,
+    deg: bool = False,
 ) -> _data.Array:
-    """Creates an Array parameter representing an angle from -pi to pi.
+    """Creates an Array parameter representing an angle from -pi to pi (deg=False)
+    or -180 to 180 (deg=True).
     Internally, this keeps track of coordinates which are transformed to an angle.
 
     Parameters
@@ -325,6 +329,8 @@ def Angles(
         initial values if provided (either shape or init is required)
     shape: sequence of int or None
         shape of the angle array, if provided (either shape or init is required)
+    deg: bool
+        whether to return the result in degrees instead of radians
 
     Returns
     -------
@@ -338,11 +344,13 @@ def Angles(
     if sum(x is None for x in (init, shape)) != 1:
         raise ValueError("Exactly 1 of init or shape must be provided")
     out_shape = tuple(shape) if shape is not None else np.array(init).shape
-    angles = _data.Array(shape=(2,) + out_shape)
-    angles.add_layer(AngleOp())
+    ang = _data.Array(shape=(2,) + out_shape)
+    ang.add_layer(AngleOp())
     with warnings.catch_warnings():  # ignore bounding warning which is irrelevant here
         warnings.simplefilter("ignore", category=errors.NevergradRuntimeWarning)
-        Bound(-np.pi, np.pi)(angles, inplace=True)
+        Bound(-np.pi, np.pi)(ang, inplace=True)
+    if deg:
+        ang = ang * (180 / np.pi)
     if init is not None:
-        angles.value = init
-    return angles
+        ang.value = init
+    return ang

@@ -148,8 +148,10 @@ def test_rand_int_casting() -> None:
     assert 50 < total < 500
 
 
-def test_angles() -> None:
-    params = [_datalayers.Angles(shape=(10,)) / (2 * np.pi) + 0.5 for _ in range(2)]
+@pytest.mark.parametrize("deg", (True, False))  # type: ignore
+def test_angles(deg: bool) -> None:
+    span = 360 if deg else 2 * np.pi
+    params = [_datalayers.Angles(shape=(10,), deg=deg) / span + 0.5 for _ in range(2)]
     assert params[0].bounds == (0, 1)
     values = [np.linspace(0, 1, 10), np.linspace(1, 0, 10)]
     for param, value in zip(params, values):
