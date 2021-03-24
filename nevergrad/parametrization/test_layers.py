@@ -149,9 +149,12 @@ def test_rand_int_casting() -> None:
 
 
 @pytest.mark.parametrize("deg", (True, False))  # type: ignore
-def test_angles(deg: bool) -> None:
+@pytest.mark.parametrize("bound_method", (None, "clipping", "arctan"))  # type: ignore
+def test_angles(deg: bool, bound_method: tp.Any) -> None:
     span = 360 if deg else 2 * np.pi
-    params = [_datalayers.Angles(shape=(10,), deg=deg) / span + 0.5 for _ in range(2)]
+    params = [
+        _datalayers.Angles(shape=(10,), deg=deg, bound_method=bound_method) / span + 0.5 for _ in range(2)
+    ]
     assert params[0].bounds == (0, 1)
     values = [np.linspace(0, 1, 10), np.linspace(1, 0, 10)]
     for param, value in zip(params, values):

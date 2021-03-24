@@ -318,6 +318,7 @@ def Angles(
     init: tp.Optional[tp.ArrayLike] = None,
     shape: tp.Optional[tp.Sequence[int]] = None,
     deg: bool = False,
+    bound_method: tp.Optional[str] = None,
 ) -> _data.Array:
     """Creates an Array parameter representing an angle from -pi to pi (deg=False)
     or -180 to 180 (deg=True).
@@ -331,6 +332,9 @@ def Angles(
         shape of the angle array, if provided (either shape or init is required)
     deg: bool
         whether to return the result in degrees instead of radians
+    bound_method: optional str
+        adds a bound in the standardized domain, to make sure the values do not
+        diverge too much (experimental, the impact is not clear)
 
     Returns
     -------
@@ -345,6 +349,8 @@ def Angles(
         raise ValueError("Exactly 1 of init or shape must be provided")
     out_shape = tuple(shape) if shape is not None else np.array(init).shape
     ang = _data.Array(shape=(2,) + out_shape)
+    if bound_method is not None:
+        Bound(-2, 2, method=bound_method)(ang, inplace=True)
     ang.add_layer(AngleOp())
     with warnings.catch_warnings():  # ignore bounding warning which is irrelevant here
         warnings.simplefilter("ignore", category=errors.NevergradRuntimeWarning)
