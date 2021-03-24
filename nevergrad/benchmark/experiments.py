@@ -1075,7 +1075,7 @@ def rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def gym_multi(seed: tp.Optional[int] = None, randomized: bool = False) -> tp.Iterator[Experiment]:
     """Gym simulator. Maximize reward.
     Many distinct problems."""
     if os.name == "nt":
@@ -1086,7 +1086,7 @@ def gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     optims += ["DiagonalCMA"]
     controllers = GymMulti().controllers()
     for func in [
-        GymMulti(name, control, neural_factor)
+        GymMulti(name, control, neural_factor, randomized=randomized)
         for control in controllers
         for neural_factor in [2]  # 1, 2, 4, 10]
         for name in env_names
@@ -1098,6 +1098,10 @@ def gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                     if not xp.is_incoherent:
                         yield xp
 
+@registry.register
+def stochastic_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of gym_multi."""
+    return gym_multi(seed, randomized=True)
 
 @registry.register
 def gym_anm(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:

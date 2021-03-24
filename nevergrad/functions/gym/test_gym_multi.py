@@ -16,7 +16,8 @@ def test_gym_multi() -> None:
         assert value == 1e20
         for name in gym_multi.GYM_ENV_NAMES:
             for control in gym_multi.CONTROLLERS:
-                func = gym_multi.GymMulti(name, control)
-                x = np.zeros(func.dimension)
-                value = func(x)
+                for r in [False, True]:
+                    func = gym_multi.GymMulti(name, control, randomized=r)
+                    x = np.zeros(func.dimension)
+                    value = func(x)
         assert len(gym_multi.GYM_ENV_NAMES) == 21  # For the moment, this includes 29 environments.

@@ -62,10 +62,14 @@ CONTROLLERS = ["conformant", "linear", "neural", "noisy_neural", "noisy_scramble
 
 class GymMulti(ExperimentFunction):
     def __init__(
-        self, name: str = "gym_anm:ANM6Easy-v0", control: str = "conformant", neural_factor: int = 2
+        self, name: str = "gym_anm:ANM6Easy-v0", control: str = "conformant", neural_factor: int = 2, randomized: bool =
+        False,
     ) -> None:
         env = gym.make(name)
         self.name = name + "__" + control + "__" + str(neural_factor)
+        if randomized:
+            self.name += "_unseeded"
+        self.randomized = randomized
         try:
             self.num_time_steps = env._max_episode_steps  # I know! This is a private variable.
         except AttributeError:  # Not all environements have a max number of episodes!
@@ -110,6 +114,13 @@ class GymMulti(ExperimentFunction):
         self.env = env
         self.discrete = discrete
 
+    def evaluation_function(self, *recommendations) -> float:
+        x = recommendations[0].value
+        if not self.randomized:
+            return self.gym_multi_function(x)
+        losses = [self.gym_multi_function(x) for _ in range(40)]
+        return sum(losses) / len(losses)
+
     def env_names(self):
         return GYM_ENV_NAMES
 
@@ -136,13 +147,13 @@ class GymMulti(ExperimentFunction):
 
     def gym_multi_function(self, x: np.ndarray):
         loss = 0.0
-        num_simulations = 7 if self.control != "conformant" else 1
+        num_simulations = 7 if self.control != "conformant" and not self.randomized else 1
         for seed in range(num_simulations):
-            loss += self.gym_simulate(x, seed=seed)
+            loss += self.gym_simulate(x, seed=seed if not self.randomized else np.random.randint(500000))
         return loss / num_simulations
 
     def gym_simulate(self, x: np.ndarray, seed: int = 0):
-        assert seed == 0 or self.control != "conformant"
+        assert seed == 0 or self.control != "conformant" or self.randomized
         env = self.env
         env.seed(seed=seed)
         o = env.reset()
