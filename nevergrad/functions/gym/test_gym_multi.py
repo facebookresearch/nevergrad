@@ -22,3 +22,4 @@ def test_gym_multi() -> None:
                     value = func(x)
         for env_name in gym_multi.GUARANTEED_GYM_ENV_NAMES:
             assert env_name in gym_multi.GYM_ENV_NAMES
+        assert len(gym_multi.GYM_ENV_NAMES) == 26
