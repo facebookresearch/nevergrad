@@ -14,48 +14,64 @@ from nevergrad.parametrization import parameter
 from ..base import ExperimentFunction
 
 
-# Method for building a new list, for a future version of gym:
-#
-# GYM_ENV_NAMES = ["gym_anm:ANM6Easy-v0"]
-#
-# for e in gym.envs.registry.all():
-#     try:
-#         assert "Kelly" not in e.id
-#         env = gym.make(e.id)
-#         a1 = env.action_space.sample()
-#         a2 = env.action_space.sample()
-#         a3 = env.action_space.sample()
-#         a1 = a1 + a2 + a3
-#         if hasattr(a1, "size"):
-#             assert a1.size() < 15000
-#         GYM_ENV_NAMES.append(e.id)
-#     except:
-#         pass
+## Method for building a new list, for a future version of gym:
 
-GYM_ENV_NAMES = [
-#    "gym_anm:ANM6Easy-v0",   Specific issues for this one!
-    "Copy-v0",
-    "RepeatCopy-v0",
-    "ReversedAddition-v0",
-    "ReversedAddition3-v0",
-    "DuplicatedInput-v0",
-    "Reverse-v0",
-    "CartPole-v0",
-    "CartPole-v1",
-    "MountainCar-v0",
-    "Acrobot-v1",
-    "Blackjack-v0",
-    "FrozenLake-v0",
-    "FrozenLake8x8-v0",
-    "CliffWalking-v0",
-    "NChain-v0",
-    "Roulette-v0",
-    "Taxi-v3",
-    "CubeCrash-v0",
-    "CubeCrashSparse-v0",
-    "CubeCrashScreenBecomesBlack-v0",
-    "MemorizeDigits-v0",
-]
+GYM_ENV_NAMES = []
+
+for e in gym.envs.registry.all():
+    try:
+        print("")
+        print(f"working on {e.id}")
+        assert "Kelly" not in str(e.id), "Kellly in id"
+        try:
+            env = gym.make(e.id)
+        except e:
+            assert False, f" failed creation: {e}"
+        print("    created...")
+        a1 = np.asarray(env.action_space.sample())
+        print("    a1 created...")
+        a2 = np.asarray(env.action_space.sample())
+        a3 = np.asarray(env.action_space.sample())
+        a1 = a1 + a2 + a3
+        print("    sum ok")
+        try:
+          if hasattr(a1, "size"):
+            print("has a size attribute")
+            print(f"     has a size attribute {a1.size}")
+            assert a1.size < 15000
+        except e:
+          print("failure = {e}")
+          assert False
+        print("    hasattr no pb")
+        print(f"===============> {e.id} added")
+        GYM_ENV_NAMES.append(e.id)
+    except:
+        pass
+
+#     GYM_ENV_NAMES = [
+#     #    "gym_anm:ANM6Easy-v0",   Specific issues for this one!
+#         "Copy-v0",
+#         "RepeatCopy-v0",
+#         "ReversedAddition-v0",
+#         "ReversedAddition3-v0",
+#         "DuplicatedInput-v0",
+#         "Reverse-v0",
+#         "CartPole-v0",
+#         "CartPole-v1",
+#         "MountainCar-v0",
+#         "Acrobot-v1",
+#         "Blackjack-v0",
+#         "FrozenLake-v0",
+#         "FrozenLake8x8-v0",
+#         "CliffWalking-v0",
+#         "NChain-v0",
+#         "Roulette-v0",
+#         "Taxi-v3",
+#         "CubeCrash-v0",
+#         "CubeCrashSparse-v0",
+#         "CubeCrashScreenBecomesBlack-v0",
+#         "MemorizeDigits-v0",
+#     ]
 
 CONTROLLERS = ["conformant", "linear", "neural", "noisy_neural", "noisy_scrambled_neural", "scrambled_neural", "stochastic_conformant"]
 
