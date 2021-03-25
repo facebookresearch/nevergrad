@@ -73,15 +73,31 @@ for e in gym.envs.registry.all():
 #         "MemorizeDigits-v0",
 #     ]
 
-CONTROLLERS = ["conformant", "linear", "neural", "noisy_neural", "noisy_scrambled_neural", "scrambled_neural", "stochastic_conformant"]
+
+# We do not use "conformant" which is not consistent with the rest.
+CONTROLLERS = [
+    "linear",
+    "neural",
+    "noisy_neural",
+    "noisy_scrambled_neural",
+    "scrambled_neural",
+    "stochastic_conformant",
+]
 
 
 class GymMulti(ExperimentFunction):
     def __init__(
-        self, name: str = "gym_anm:ANM6Easy-v0", control: str = "conformant", neural_factor: int = 2
+        self,
+        name: str = "gym_anm:ANM6Easy-v0",
+        control: str = "conformant",
+        neural_factor: int = 2,
+        randomized: bool = False,
     ) -> None:
         env = gym.make(name)
         self.name = name + "__" + control + "__" + str(neural_factor)
+        if randomized:
+            self.name += "_unseeded"
+        self.randomized = randomized
         try:
             self.num_time_steps = env._max_episode_steps  # I know! This is a private variable.
         except AttributeError:  # Not all environements have a max number of episodes!
@@ -107,7 +123,7 @@ class GymMulti(ExperimentFunction):
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.num_neurons = neural_factor * input_dim
-        assert control in CONTROLLERS, f"{control} not known as a form of control"
+        assert control in CONTROLLERS or control == "conformant", f"{control} not known as a form of control"
         self.control = control
         neural_size = (output_dim * self.num_neurons + self.num_neurons * (input_dim + 1),)
         shape = {
@@ -125,6 +141,13 @@ class GymMulti(ExperimentFunction):
         super().__init__(self.gym_multi_function, parametrization=parametrization)
         self.env = env
         self.discrete = discrete
+
+    def evaluation_function(self, *recommendations) -> float:
+        x = recommendations[0].value
+        if not self.randomized:
+            return self.gym_multi_function(x)
+        losses = [self.gym_multi_function(x) for _ in range(40)]
+        return sum(losses) / len(losses)
 
     def env_names(self):
         return GYM_ENV_NAMES
@@ -152,13 +175,13 @@ class GymMulti(ExperimentFunction):
 
     def gym_multi_function(self, x: np.ndarray):
         loss = 0.0
-        num_simulations = 7 if self.control != "conformant" else 1
+        num_simulations = 7 if self.control != "conformant" and not self.randomized else 1
         for seed in range(num_simulations):
-            loss += self.gym_simulate(x, seed=seed)
+            loss += self.gym_simulate(x, seed=seed if not self.randomized else np.random.randint(500000))
         return loss / num_simulations
 
     def gym_simulate(self, x: np.ndarray, seed: int = 0):
-        assert seed == 0 or self.control != "conformant"
+        assert seed == 0 or self.control != "conformant" or self.randomized
         env = self.env
         env.seed(seed=seed)
         o = env.reset()
@@ -189,7 +212,7 @@ class GymMulti(ExperimentFunction):
             reward += r
             if done:
                 break
-        return - reward
+        return -reward
 
     def gym_conformant(self, x: np.ndarray):
         reward = 0.0
@@ -210,4 +233,4 @@ class GymMulti(ExperimentFunction):
             if done:
                 break
         # env.render()  if you want to display.
-        return - reward
+        return -reward
