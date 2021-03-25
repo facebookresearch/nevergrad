@@ -20,4 +20,5 @@ def test_gym_multi() -> None:
                     func = gym_multi.GymMulti(name, control, randomized=r)
                     x = np.zeros(func.dimension)
                     value = func(x)
-        assert len(gym_multi.GYM_ENV_NAMES) == 21  # For the moment, this includes 29 environments.
+        for env_name in gym_multi.GUARANTEED_GYM_ENV_NAMES:
+            assert env_name in gym_multi.GYM_ENV_NAMES
