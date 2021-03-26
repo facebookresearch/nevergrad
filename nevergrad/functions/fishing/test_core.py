@@ -8,7 +8,7 @@ from . import core
 
 
 def test_mixsimulator() -> None:
-    func = core.OptimizeMix()
+    func = core.OptimizeFish()
     x = np.random.rand(func.dimension)
     value = func(x)  # should not touch boundaries, so value should be < np.inf
     assert value < np.inf

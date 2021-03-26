@@ -5,6 +5,7 @@
 
 # Based on https://github.com/Foloso/MixSimulator/tree/nevergrad_experiment
 
+import numpy as np
 from nevergrad.parametrization import parameter as p
 from .. import base
 
@@ -24,11 +25,10 @@ class OptimizeFish(base.ExperimentFunction):
         init = 0.5*np.ones(time)
         parameter = p.Array(init=init)
         parameter.set_bounds(0. * init, 2. * init)
-        super().__init__(self._compute_total_fishing, parameter)
+        parameter.set_name("raw_encoding")
+        super().__init__(_compute_total_fishing, parameter)
 
 
-
-@registry.register_with_info(no_transform=True)
 def _compute_total_fishing(list_number_fishermen: np.ndarray) -> float:
     """Lotka-Volterra equations.
 
