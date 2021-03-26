@@ -171,12 +171,12 @@ def check_parameter_freezable(param: par.Parameter) -> None:
         (par.Array(shape=(2, 2)), "Array{(2,2)}"),
         (par.Tuple(12), "Tuple(12)"),
         (par.Dict(constant=12), "Dict(constant=12)"),
-        (par.Scalar(), "Scalar[sigma=Log{exp=2.0}]"),
+        (par.Scalar(), "Scalar[sigma=Scalar{exp=2}]"),
         (
             par.Log(lower=3.2, upper=12.0, exponent=1.5),
             "Log{Cl(2.868682869489701,6.128533874054364,b),exp=1.5}",
         ),
-        (par.Scalar().set_integer_casting(), "Scalar{Int}[sigma=Log{exp=2.0}]"),
+        (par.Scalar().set_integer_casting(), "Scalar{Int}[sigma=Scalar{exp=2}]"),
         (
             par.Instrumentation(par.Array(shape=(2,)), string="blublu", truc="plop"),
             "Instrumentation(Tuple(Array{(2,)}),Dict(string=blublu,truc=plop))",

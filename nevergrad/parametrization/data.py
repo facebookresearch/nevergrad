@@ -109,7 +109,7 @@ class Data(core.Parameter):
         mutable_sigma: bool = False,
     ) -> None:
         super().__init__()
-        sigma_val = np.array([1.0])
+        sigma: tp.Any = np.array([1.0])
         # make sure either shape or
         if sum(x is None for x in [init, shape]) != 1:
             raise ValueError('Exactly one of "init" or "shape" must be provided')
@@ -134,14 +134,15 @@ class Data(core.Parameter):
                 lower=lower, upper=upper, uniform_sampling=init is None and num_bounds == 2
             )
             if num_bounds == 2:
-                sigma_val = (layer.bounds[1] - layer.bounds[0]) / 6
+                sigma = (layer.bounds[1] - layer.bounds[0]) / 6
         # set parameters
-        if not mutable_sigma:
-            sigma: tp.Any = sigma_val[0] if sigma_val.size == 1 else sigma_val
-        elif sigma_val.size == 1:
-            sigma = Log(init=sigma_val[0], exponent=2.0, mutable_sigma=False)
-        else:
-            sigma = Array(init=sigma_val, lower=0, mutable_sigma=False)
+        sigma = sigma[0] if sigma.size == 1 else sigma
+        if mutable_sigma:
+            siginit = sigma
+            sigma = 2 ** (Array if isinstance(sigma, np.ndarray) else Scalar)(
+                init=siginit, mutable_sigma=False
+            )
+            sigma.value = siginit
         self.parameters = Dict(sigma=sigma, recombination="average", mutation="gaussian")
         self.parameters._ignore_in_repr = dict(sigma="1.0", recombination="average", mutation="gaussian")
         if layer is not None:

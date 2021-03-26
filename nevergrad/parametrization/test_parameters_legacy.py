@@ -61,7 +61,7 @@ def test_instrumentation() -> None:
     assert values[0] == values[1]
     # check naming
     instru_str = (
-        "Instrumentation(Tuple(Scalar[sigma=Log{exp=2.0}],3),"
+        "Instrumentation(Tuple(Scalar[sigma=Scalar{exp=2}],3),"
         "Dict(a=TransitionChoice(choices=Tuple(0,1,2,3),"
         "indices=Array{Cd(0,4),Add,Int},transitions=[1. 1.]),"
         "b=Choice(choices=Tuple(0,1,2,3),indices=Array{(1,4),SoftmaxSampling})))"
