@@ -115,7 +115,7 @@ class PowerSystem(ExperimentFunction):
             *[p.Array(shape=(int(a.dimension),)) for a in self.dam_agents]
         ).set_name("")
         super().__init__(self._simulate_power_system, parameter)
-        self.parametrization.descriptors.deterministic_function = False
+        self.parametrization.function.deterministic = False
 
     def get_num_vars(self) -> tp.List[tp.Any]:
         return [m.dimension for m in self.dam_agents]

@@ -1059,7 +1059,7 @@ def rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Rocket simulator. Maximize max altitude by choosing the thrust schedule, given a total thrust.
     Budget 25, 50, ..., 1600.
     Sequential or 30 workers."""
-    funcs = [Rocket()]
+    funcs = [Rocket(i) for i in range(17)]
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", seed=next(seedg))
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
@@ -1378,16 +1378,18 @@ def image_quality_proxy_pgan(seed: tp.Optional[int] = None) -> tp.Iterator[Exper
 
 @registry.register
 def image_quality(
-    seed: tp.Optional[int] = None, cross_val: bool = False, with_pgan: bool = False
+    seed: tp.Optional[int] = None, cross_val: bool = False, with_pgan: bool = False, num_images: int = 1
 ) -> tp.Iterator[Experiment]:
     """Optimizing images for quality:
-    TODO
+    we optimize K512, Blur and Brisque.
+
+    With num_images > 1, we are doing morphing.
     """
     seedg = create_seed_generator(seed)
     optims: tp.List[tp.Any] = get_optimizers("structured_moo", seed=next(seedg))
     # We optimize func_blur or func_brisque and check performance on func_iqa.
     funcs: tp.List[ExperimentFunction] = [
-        imagesxp.Image(loss=loss, with_pgan=with_pgan)
+        imagesxp.Image(loss=loss, with_pgan=with_pgan, num_images=num_images)
         for loss in (
             imagesxp.imagelosses.Koncept512,
             imagesxp.imagelosses.Blur,
@@ -1410,6 +1412,11 @@ def image_quality(
                 for func in mofuncs:
                     xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
                     yield xp
+
+
+@registry.register
+def morphing_pgan_quality(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    return image_quality(seed, with_pgan=True, num_images=2)
 
 
 @registry.register
@@ -1486,21 +1493,6 @@ def image_similarity_and_quality_cv_pgan(seed: tp.Optional[int] = None) -> tp.It
     return image_similarity_and_quality(seed, cross_val=True, with_pgan=True)
 
 
-# TODO: GAN counterparts of the above ?
-@registry.register
-def images_using_gan(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Optimizing an image using koncept512 and a GAN"""
-    seedg = create_seed_generator(seed)
-    optims = get_optimizers("structured_moo", seed=next(seedg))
-    func = imagesxp.ImageFromPGAN()
-    num_workers = 1
-    for budget in [100 * 5 ** k for k in range(3)]:
-        for algo in optims:
-            xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
-            if not xp.is_incoherent:
-                yield xp
-
-
 @registry.register
 def double_o_seven(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Optimization of policies for the 007 game.
@@ -1540,48 +1532,71 @@ def double_o_seven(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def multiobjective_example(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def multiobjective_example(
+    seed: tp.Optional[int] = None, hd: bool = False, many: bool = False
+) -> tp.Iterator[Experiment]:
     """Optimization of 2 and 3 objective functions in Sphere, Ellipsoid, Cigar, Hm.
     Dimension 6 and 7.
     Budget 100 to 3200
     """
     seedg = create_seed_generator(seed)
-    optims: tp.List[tp.Any] = [
-        "NaiveTBPSA",
-        "PSO",
-        "DE",
-        "LhsDE",
-        "RandomSearch",
-        "NGO",
-        "Shiwa",
-        "DiagonalCMA",
-        "CMA",
-        "OnePlusOne",
-        "TwoPointsDE",
-        "NGOpt10",
-    ]
+    optims = get_optimizers("structure", "structured_moo", seed=next(seedg))
     optims += [
         ng.families.DifferentialEvolution(multiobjective_adaptation=False).set_name("DE-noadapt"),
         ng.families.DifferentialEvolution(crossover="twopoints", multiobjective_adaptation=False).set_name(
             "TwoPointsDE-noadapt"
         ),
     ]
+    optims += ["DiscreteOnePlusOne", "DiscreteLenglerOnePlusOne"]
+    popsizes = [20, 40, 80]
+    optims += [
+        ng.families.EvolutionStrategy(
+            recombination_ratio=recomb, only_offsprings=only, popsize=pop, offsprings=pop * 5
+        )
+        for only in [True, False]
+        for recomb in [0.1, 0.5]
+        for pop in popsizes
+    ]
+
     mofuncs: tp.List[fbase.MultiExperiment] = []
+    dim = 2000 if hd else 7
     for name1, name2 in itertools.product(["sphere"], ["sphere", "hm"]):
         mofuncs.append(
             fbase.MultiExperiment(
-                [ArtificialFunction(name1, block_dimension=7), ArtificialFunction(name2, block_dimension=7)],
-                upper_bounds=[100, 100],
+                [
+                    ArtificialFunction(name1, block_dimension=dim),
+                    ArtificialFunction(name2, block_dimension=dim),
+                ]
+                + (
+                    [
+                        ArtificialFunction(name1, block_dimension=dim),  # Addendum for many-objective optim.
+                        ArtificialFunction(name2, block_dimension=dim),
+                    ]
+                    if many
+                    else []
+                ),
+                upper_bounds=[100, 100] * (2 if many else 1),
             )
         )
         mofuncs.append(
             fbase.MultiExperiment(
                 [
-                    ArtificialFunction(name1, block_dimension=6),
-                    ArtificialFunction("sphere", block_dimension=6),
-                    ArtificialFunction(name2, block_dimension=6),
-                ],
-                upper_bounds=[100, 100, 100.0],
+                    ArtificialFunction(name1, block_dimension=dim - 1),
+                    ArtificialFunction("sphere", block_dimension=dim - 1),
+                    ArtificialFunction(name2, block_dimension=dim - 1),
+                ]
+                + (
+                    [
+                        ArtificialFunction(
+                            name1, block_dimension=dim - 1
+                        ),  # Addendum for many-objective optim.
+                        ArtificialFunction("sphere", block_dimension=dim - 1),
+                        ArtificialFunction(name2, block_dimension=dim - 1),
+                    ]
+                    if many
+                    else []
+                ),
+                upper_bounds=[100, 100, 100.0] * (2 if many else 1),
             )
         )
     for mofunc in mofuncs:
@@ -1589,6 +1604,24 @@ def multiobjective_example(seed: tp.Optional[int] = None) -> tp.Iterator[Experim
             for budget in [100, 200, 400, 800, 1600, 3200]:
                 for nw in [1, 100]:
                     yield Experiment(mofunc, optim, budget=budget, num_workers=nw, seed=next(seedg))
+
+
+@registry.register
+def multiobjective_example_hd(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of moo with high dimension."""
+    return multiobjective_example(seed, hd=True)
+
+
+@registry.register
+def multiobjective_example_many_hd(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of moo with high dimension and more objective functions."""
+    return multiobjective_example(seed, hd=True, many=True)
+
+
+@registry.register
+def multiobjective_example_many(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of moo with more objective functions."""
+    return multiobjective_example(seed, many=True)
 
 
 @registry.register

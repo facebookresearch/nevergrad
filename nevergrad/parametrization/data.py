@@ -15,6 +15,7 @@ from . import utils
 
 
 # pylint: disable=no-value-for-parameter,import-outside-toplevel
+# pylint: disable=cyclic-import
 
 
 D = tp.TypeVar("D", bound="Data")
@@ -27,6 +28,9 @@ def _param_string(parameters: Dict) -> str:
     if substr == "[]":
         substr = ""
     return substr
+
+
+MutFn = tp.Callable[[tp.Sequence["Data"]], None]
 
 
 class Mutation(core.Parameter):
@@ -45,13 +49,13 @@ class Mutation(core.Parameter):
     # (a layer can modify the mutation scheme)
 
     # pylint: disable=unused-argument
-    value: core.ValueProperty[tp.Callable[[tp.Sequence[D]], None]] = core.ValueProperty()
+    value: core.ValueProperty[MutFn, MutFn] = core.ValueProperty()
 
     def __init__(self, **kwargs: tp.Any) -> None:
         super().__init__()
         self.parameters = Dict(**kwargs)
 
-    def _layered_get_value(self) -> tp.Callable[[tp.Sequence[D]], None]:
+    def _layered_get_value(self) -> MutFn:
         return self.apply
 
     def _layered_set_value(self, value: tp.Any) -> None:
@@ -60,7 +64,7 @@ class Mutation(core.Parameter):
     def _get_name(self) -> str:
         return super()._get_name() + _param_string(self.parameters)
 
-    def apply(self, arrays: tp.Sequence[D]) -> None:
+    def apply(self, arrays: tp.Sequence["Data"]) -> None:
         new_value = self._apply_array([a._value for a in arrays])
         arrays[0]._value = new_value
 
@@ -171,18 +175,6 @@ class Data(core.Parameter):
     @property
     def dimension(self) -> int:
         return int(np.prod(self._value.shape))
-
-    def _compute_descriptors(self) -> utils.Descriptors:
-        from . import _datalayers
-
-        intlayers = _layering.Int.filter_from(self)
-        deterministic = all(lay.deterministic for lay in intlayers)
-        continuous = not any(lay.deterministic for lay in intlayers)
-        return utils.Descriptors(
-            deterministic=deterministic,
-            continuous=continuous,
-            ordered=not any(isinstance(lay, _datalayers.SoftmaxSampling) for lay in intlayers),
-        )
 
     def _get_name(self) -> str:
         cls = self.__class__.__name__
@@ -520,7 +512,7 @@ def _fix_legacy(parameter: Data) -> None:
 
 class Array(Data):
 
-    value: core.ValueProperty[np.ndarray] = core.ValueProperty()
+    value: core.ValueProperty[tp.ArrayLike, np.ndarray] = core.ValueProperty()
 
 
 class Scalar(Data):
@@ -546,7 +538,7 @@ class Scalar(Data):
       :code:`set_bounds`, :code:`set_mutation`, :code:`set_integer_casting`
     """
 
-    value: core.ValueProperty[float] = core.ValueProperty()
+    value: core.ValueProperty[float, float] = core.ValueProperty()
 
     def __init__(
         self,

@@ -13,7 +13,8 @@ import nevergrad.common.typing as tp
 
 L = tp.TypeVar("L", bound="Layered")
 F = tp.TypeVar("F", bound="Filterable")
-X = tp.TypeVar("X")
+In = tp.TypeVar("In")
+Out = tp.TypeVar("Out")
 
 
 class Level(Enum):
@@ -146,7 +147,7 @@ class Layered:
         return self
 
 
-class ValueProperty(tp.Generic[X]):
+class ValueProperty(tp.Generic[In, Out]):
     """Typed property (descriptor) object so that the value attribute of
     Parameter objects fetches _layered_get_value and _layered_set_value methods
     """
@@ -166,10 +167,10 @@ class ValueProperty(tp.Generic[X]):
         array([0., 0.])
         """
 
-    def __get__(self, obj: Layered, objtype: tp.Optional[tp.Type[object]] = None) -> X:
+    def __get__(self, obj: Layered, objtype: tp.Optional[tp.Type[object]] = None) -> Out:
         return obj._layers[-1]._layered_get_value()  # type: ignore
 
-    def __set__(self, obj: Layered, value: X) -> None:
+    def __set__(self, obj: Layered, value: In) -> None:
         self.__delete__(obj)
         obj._layers[-1]._layered_set_value(value)
 
@@ -238,6 +239,7 @@ class Int(Layered, Filterable):
     def __init__(self, deterministic: bool = True) -> None:
         super().__init__()
         self.arity: tp.Optional[int] = None
+        self.ordered = True
         self.deterministic = deterministic
         self._cache: tp.Optional[np.ndarray] = None
 

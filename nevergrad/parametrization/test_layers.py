@@ -146,3 +146,20 @@ def test_rand_int_casting() -> None:
     param.add_layer(_datalayers.Int(deterministic=False))
     total = param.value.ravel().sum()
     assert 50 < total < 500
+
+
+@pytest.mark.parametrize("deg", (True, False))  # type: ignore
+@pytest.mark.parametrize("bound_method", (None, "clipping", "arctan"))  # type: ignore
+def test_angles(deg: bool, bound_method: tp.Any) -> None:
+    span = 360 if deg else 2 * np.pi
+    params = [
+        _datalayers.Angles(shape=(10,), deg=deg, bound_method=bound_method) / span + 0.5 for _ in range(2)
+    ]
+    assert params[0].bounds == (0, 1)
+    values = [np.linspace(0, 1, 10), np.linspace(1, 0, 10)]
+    for param, value in zip(params, values):
+        param.value = value
+        assert param.value == pytest.approx(value)
+    average = params[1].get_standardized_data(reference=params[0]) / 2
+    params[1].set_standardized_data(average, reference=params[0])
+    assert params[1].value.tolist() == pytest.approx([1, 1, 1, 0.5, 0.5, 0.5, 0.5, 1, 1, 1])

@@ -90,7 +90,7 @@ class _Game:
         if policy1 is None and policy2 is None:
             return 57 * 57
         if np.random.uniform(0.0, 1.0) > 0.5:
-            r = self.flip_play_game_nosym(policy2, policy1)
+            r = self.flip_play_game_nosym(policy1=policy2, policy2=policy1)
             return 1 if r == 2 else 2 if r == 1 else 0
         return self.flip_play_game_nosym(policy1, policy2)
 
@@ -416,8 +416,8 @@ class Game(ExperimentFunction):
             self.game_object.play_game(self.game) * 2
         )  # times 2 because we consider both players separately.
         super().__init__(self._simulate_game, p.Array(shape=(dimension,)))
-        self.parametrization.descriptors.deterministic_function = False
-        self.parametrization.descriptors.metrizable = game not in ["war", "batawaf"]
+        self.parametrization.function.deterministic = False
+        self.parametrization.function.metrizable = game not in ["war", "batawaf"]
 
     def _simulate_game(self, x: np.ndarray) -> float:
         # FIXME: an adaptive opponent, e.g. bandit, would be better.
@@ -433,7 +433,7 @@ class Game(ExperimentFunction):
         return (result + (0.0 if r == 2 else 0.5 if r == 0 else 1.0)) / 2
 
     def evaluation_function(self, *recommendations: p.Parameter) -> float:
-        assert len(recommendations) == 1, "Should not be a pareto set for a monoobjective function"
+        assert len(recommendations) == 1, "Should not be a pareto set for a singleobjective function"
         x = recommendations[0].value
         # pylint: disable=not-callable
         loss = sum([self.function(x) for _ in range(42)]) / 42.0
