@@ -9,7 +9,6 @@ import pytest
 import numpy as np
 
 from nevergrad.common import errors
-from . import utils
 from . import parameter as par
 
 
