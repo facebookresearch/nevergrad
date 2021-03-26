@@ -384,7 +384,7 @@ def test_optimization_doc_parametrization_example() -> None:
 
 
 def test_optimization_discrete_with_one_sample() -> None:
-    optimizer = xpvariants.PortfolioDiscreteOnePlusOne(parametrization=1, budget=10)
+    optimizer = optlib.PortfolioDiscreteOnePlusOne(parametrization=1, budget=10)
     optimizer.minimize(_square)
 
 
@@ -523,13 +523,15 @@ def test_metamodel(dimension: int, num_workers: int, scale: float, budget: int, 
     "penalization,expected,as_layer",
     [
         (False, [1.005573e00, 3.965783e-04], False),
-        (True, [0.999987, -0.322118], False),
+        (True, [0.999975, -0.111235], False),
         (False, [1.000760, -5.116619e-4], True),
     ],
 )
 @testing.suppress_nevergrad_warnings()  # hides failed constraints
 def test_constrained_optimization(penalization: bool, expected: tp.List[float], as_layer: bool) -> None:
     def constraint(i: tp.Any) -> tp.Union[bool, float]:
+        if penalization:
+            return -float(abs(i[1]["x"][0] - 1))
         out = i[1]["x"][0] >= 1
         return out if not as_layer else float(not out)
 
@@ -537,10 +539,7 @@ def test_constrained_optimization(penalization: bool, expected: tp.List[float], 
     optimizer = optlib.OnePlusOne(parametrization, budget=100)
     optimizer.parametrization.random_state.seed(12)
     if penalization:
-        optimizer._constraints_manager.update(max_trials=2, penalty_factor=10)
-
-        def constraint(i: tp.Any) -> tp.Union[bool, float]:  # pylint: disable=function-redefined
-            return -abs(i[1]["x"][0] - 1)
+        optimizer._constraints_manager.update(max_trials=10, penalty_factor=10)
 
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", category=UserWarning)

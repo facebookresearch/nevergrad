@@ -15,6 +15,7 @@ from . import utils
 
 
 # pylint: disable=no-value-for-parameter,import-outside-toplevel
+# pylint: disable=cyclic-import
 
 
 D = tp.TypeVar("D", bound="Data")
@@ -28,8 +29,6 @@ def _param_string(parameters: Dict) -> str:
         substr = ""
     return substr
 
-
-:
 
 # pylint: disable=too-many-arguments, too-many-instance-attributes,abstract-method
 class Data(core.Parameter):
@@ -98,18 +97,6 @@ class Data(core.Parameter):
     @property
     def dimension(self) -> int:
         return int(np.prod(self._value.shape))
-
-    def _compute_descriptors(self) -> utils.Descriptors:
-        from . import _datalayers
-
-        intlayers = _layering.Int.filter_from(self)
-        deterministic = all(lay.deterministic for lay in intlayers)
-        continuous = not any(lay.deterministic for lay in intlayers)
-        return utils.Descriptors(
-            deterministic=deterministic,
-            continuous=continuous,
-            ordered=not any(isinstance(lay, _datalayers.SoftmaxSampling) for lay in intlayers),
-        )
 
     def _get_name(self) -> str:
         cls = self.__class__.__name__
@@ -447,7 +434,7 @@ def _fix_legacy(parameter: Data) -> None:
 
 class Array(Data):
 
-    value: core.ValueProperty[np.ndarray] = core.ValueProperty()
+    value: core.ValueProperty[tp.ArrayLike, np.ndarray] = core.ValueProperty()
 
 
 class Scalar(Data):
@@ -473,7 +460,7 @@ class Scalar(Data):
       :code:`set_bounds`, :code:`set_mutation`, :code:`set_integer_casting`
     """
 
-    value: core.ValueProperty[float] = core.ValueProperty()
+    value: core.ValueProperty[float, float] = core.ValueProperty()
 
     def __init__(
         self,

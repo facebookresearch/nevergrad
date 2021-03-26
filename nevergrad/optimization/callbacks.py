@@ -106,7 +106,7 @@ class ParametersLogger:
             data["#meta-sigma"] = candidate._meta["sigma"]  # for TBPSA-like algorithms
         if candidate.generation > 1:
             data["#parents_uids"] = candidate.parents_uids
-        for name, param in helpers.flatten_parameter(candidate, with_containers=False, order=1):
+        for name, param in helpers.flatten(candidate, with_containers=False, order=1):
             val = param.value
             if inspect.ismethod(val):
                 val = repr(val.__self__)  # show mutation class

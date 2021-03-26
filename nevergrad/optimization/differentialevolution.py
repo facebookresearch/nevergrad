@@ -195,7 +195,8 @@ class _DE(base.Optimizer):
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         discardable: tp.Optional[str] = None
         if len(self.population) >= self.llambda:
-            if self.num_objectives == 1:  # monoobjective: replace if better
+
+            if self.num_objectives == 1:  # singleobjective: replace if better
                 uid, worst = max(self.population.items(), key=lambda p: base._loss(p[1]))
                 if loss < base._loss(worst):
                     discardable = uid

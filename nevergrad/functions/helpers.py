@@ -31,7 +31,7 @@ class SpecialEvaluationExperiment(base.ExperimentFunction):
         self._pareto_subset_tentatives = pareto_subset_tentatives
         super().__init__(self._delegate_to_experiment, experiment.parametrization)
         self.add_descriptors(non_proxy_function=False)
-        # remove multiobjective descriptors if monoobjective / no pareto subset
+        # remove multiobjective descriptors if singleobjective / no pareto subset
         if self._pareto_size is None:
             names = [name for name in self._descriptors if name.startswith("pareto_")]
             for name in names:
@@ -119,7 +119,7 @@ class SpecialEvaluationExperiment(base.ExperimentFunction):
                 trainxps = [xp for xp in experiments if xp != eval_xp]
                 if training_only_experiments is not None:
                     trainxps += training_only_experiments
-                if len(trainxps) == 1:  # monoobjective
+                if len(trainxps) == 1:  # singleobjective
                     experiment = trainxps[0]
                 else:  # multiobjective
                     # uses origin as upper bound
