@@ -64,9 +64,14 @@ def test_command_function() -> None:
         ("0", "0.choices.0.x", "0.choices.1", "0.indices"),
     ),
 )
-def test_flatten_parameter(no_container: bool, param: p.Parameter, keys: tp.Iterable[str]) -> None:
-    flat = dict(helpers.flatten_parameter(param, with_containers=not no_container))
+def test_flatten(no_container: bool, param: p.Parameter, keys: tp.Iterable[str]) -> None:
+    flat = dict(helpers.flatten(param, with_containers=not no_container))
     assert set(flat) == set(keys), f"Unexpected flattened parameter: {flat}"
+
+
+def test_function_info() -> None:
+    info = utils.FunctionInfo(deterministic=False)
+    assert repr(info) == "FunctionInfo(deterministic=False,metrizable=True,proxy=False)"
 
 
 @testing.parametrized(
@@ -88,11 +93,11 @@ def test_flatten_parameter(no_container: bool, param: p.Parameter, keys: tp.Iter
 )
 def test_split_as_data_parameters(param: p.Parameter, names: tp.List[str]) -> None:
     # new version
-    output = helpers.list_data(param)
-    assert [x[0] for x in output] == names
+    output = helpers.flatten(param)
+    assert [x[0] for x in output if isinstance(x[1], p.Data)] == names
     # legacy
-    output = split_as_data_parameters(param)
-    assert [x[0] for x in output] == names
+    output2 = split_as_data_parameters(param)
+    assert [x[0] for x in output2] == names
 
 
 @testing.parametrized(
@@ -123,15 +128,10 @@ def test_split_as_data_parameters(param: p.Parameter, names: tp.List[str]) -> No
         ),
     ),
 )
-def test_flatten_parameter_order(order: int, keys: tp.Iterable[str]) -> None:
+def test_flatten_order(order: int, keys: tp.Iterable[str]) -> None:
     param = p.Choice([p.Dict(x=p.Scalar(), y=12), p.Scalar().sigma.set_mutation(sigma=p.Scalar())])
-    flat = dict(helpers.flatten_parameter(param, with_containers=False, order=order))
+    flat = dict(helpers.flatten(param, with_containers=False, order=order))
     assert set(flat) == set(keys), f"Unexpected flattened parameter: {flat}"
-
-
-def test_descriptors() -> None:
-    desc = utils.Descriptors(ordered=False)
-    assert repr(desc) == "Descriptors(ordered=False)"
 
 
 @testing.parametrized(
@@ -178,7 +178,9 @@ def split_as_data_parameters(
     )
     copied = parameter.copy()
     ref = parameter.copy()
-    flatp, flatc, flatref = (dict(helpers.list_data(pa)) for pa in (parameter, copied, ref))
+    flatp, flatc, flatref = (
+        {x: y for x, y in helpers.flatten(pa) if isinstance(y, p.Data)} for pa in (parameter, copied, ref)
+    )
     keys = list(flatp.keys())
     random.shuffle(keys)  # makes it safer to test!
     # remove transforms for both ref and copied parameters and set index

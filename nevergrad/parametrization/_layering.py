@@ -239,6 +239,7 @@ class Int(Layered, Filterable):
     def __init__(self, deterministic: bool = True) -> None:
         super().__init__()
         self.arity: tp.Optional[int] = None
+        self.ordered = True
         self.deterministic = deterministic
         self._cache: tp.Optional[np.ndarray] = None
 

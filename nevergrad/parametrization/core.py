@@ -59,8 +59,12 @@ class Parameter(Layered):
         self._constraint_checkers: tp.List[tp.Callable[[tp.Any], tp.Union[bool, float]]] = []
         self._name: tp.Optional[str] = None
         self._frozen = False
-        self._descriptors: tp.Optional[utils.Descriptors] = None
         self._meta: tp.Dict[tp.Hashable, tp.Any] = {}  # for anything algorithm related
+        self.function = utils.FunctionInfo()
+
+    @property
+    def descriptors(self) -> utils.DeprecatedDescriptors:  # TODO remove
+        return utils.DeprecatedDescriptors(self)
 
     @property
     def losses(self) -> np.ndarray:
@@ -391,16 +395,6 @@ class Parameter(Layered):
                 "(optimizers freeze the parametrization and all asked and told candidates to avoid border effects)"
             )
         self._subobjects.apply("_check_frozen")
-
-    def _compute_descriptors(self) -> utils.Descriptors:
-        return utils.Descriptors()
-
-    @property
-    def descriptors(self) -> utils.Descriptors:
-        if self._descriptors is None:
-            self._compute_descriptors()
-            self._descriptors = self._compute_descriptors()
-        return self._descriptors
 
 
 # Basic types and helpers #

@@ -503,7 +503,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         """
         recom_data = self._internal_provide_recommendation()  # pylint: disable=assignment-from-none
         if recom_data is None or any(np.isnan(recom_data)):
-            name = "minimum" if self.parametrization.descriptors.deterministic_function else "pessimistic"
+            name = "minimum" if self.parametrization.function.deterministic else "pessimistic"
             return self.current_bests[name].parameter
         out = self.parametrization.spawn_child()
         with p.helpers.deterministic_sampling(out):

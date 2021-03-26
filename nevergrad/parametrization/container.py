@@ -3,8 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import operator
-import functools
 from collections import OrderedDict
 import numpy as np
 import nevergrad.common.typing as tp
@@ -55,10 +53,6 @@ class Container(core.Parameter):
             ids = {id(p) for p in parameters}
             if len(ids) != len(parameters):
                 raise ValueError("Don't repeat twice the same parameter")
-
-    def _compute_descriptors(self) -> utils.Descriptors:
-        init = utils.Descriptors()
-        return functools.reduce(operator.and_, [p.descriptors for p in self._content.values()], init)
 
     def __getitem__(self, name: tp.Any) -> core.Parameter:
         return self._content[name]

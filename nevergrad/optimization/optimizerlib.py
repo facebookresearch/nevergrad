@@ -78,7 +78,7 @@ class _OnePlusOne(base.Optimizer):
         self._sigma: float = 1
         self._previous_best_loss = float("inf")
         self.use_pareto = use_pareto
-        all_params = p.helpers.flatten_parameter(self.parametrization)
+        all_params = p.helpers.flatten(self.parametrization)
         arity = max(
             len(param.choices) if isinstance(param, p.TransitionChoice) else 500 for _, param in all_params
         )
@@ -1092,7 +1092,7 @@ class SplitOptimizer(base.Optimizer):
         elif num_optims is None:
             # if no num_vars and no num_optims, try to guess how to split. Otherwise, just assume 2.
             if isinstance(parametrization, p.Parameter):
-                subparams = [x[1] for x in p.helpers.list_data(parametrization)]
+                subparams = p.helpers.list_data(parametrization)  # type: ignore
                 if len(subparams) == 1:
                     subparams.clear()
                 num_optims = len(subparams)
@@ -1110,8 +1110,7 @@ class SplitOptimizer(base.Optimizer):
                 subparams += [p.Array(shape=(num_vars[i],))]
         if non_deterministic_descriptor:
             for param in subparams:
-                param.descriptors.deterministic_function = False
-        print(subparams, [x.dimension for x in subparams])
+                param.function.deterministic = False
         # synchronize random state and create optimizers
         self.optims: tp.List[base.Optimizer] = []
         mono, multi = monovariate_optimizer, multivariate_optimizer
@@ -1684,8 +1683,9 @@ class _BO(base.Optimizer):
         self.utility_xi = utility_xi
         self.gp_parameters = {} if gp_parameters is None else gp_parameters
         if isinstance(parametrization, p.Parameter) and self.gp_parameters.get("alpha", 0) == 0:
-            noisy = not parametrization.descriptors.deterministic
-            cont = parametrization.descriptors.continuous
+            analysis = p.helpers.analyze(parametrization)
+            noisy = not analysis.deterministic
+            cont = analysis.continuous
             if noisy or not cont:
                 warnings.warn(
                     "Dis-continuous and noisy parametrization require gp_parameters['alpha'] > 0 "
@@ -1936,7 +1936,7 @@ class cGA(base.Optimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if arity is None:
-            all_params = p.helpers.flatten_parameter(self.parametrization)
+            all_params = p.helpers.flatten(self.parametrization)
             arity = max(
                 len(param.choices) if isinstance(param, p.TransitionChoice) else 500
                 for _, param in all_params
@@ -2161,12 +2161,13 @@ class NGOptBase(base.Optimizer):
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        descr = self.parametrization.descriptors
-        self.has_noise = not (descr.deterministic and descr.deterministic_function)
+        analysis = p.helpers.analyze(self.parametrization)
+        funcinfo = self.parametrization.function
+        self.has_noise = not (analysis.deterministic and funcinfo.deterministic)
         # The noise coming from discrete variables goes to 0.
-        self.noise_from_instrumentation = self.has_noise and descr.deterministic_function
-        self.fully_continuous = descr.continuous
-        all_params = p.helpers.flatten_parameter(self.parametrization)
+        self.noise_from_instrumentation = self.has_noise and funcinfo.deterministic
+        self.fully_continuous = analysis.continuous
+        all_params = p.helpers.flatten(self.parametrization)
         # figure out if there is any discretization layers
         int_layers = list(
             itertools.chain.from_iterable([_layering.Int.filter_from(x) for _, x in all_params])
@@ -2207,7 +2208,7 @@ class NGOptBase(base.Optimizer):
             else:
                 if (
                     self.has_discrete_not_softmax
-                    or not self.parametrization.descriptors.metrizable
+                    or not self.parametrization.function.metrizable
                     or not self.fully_continuous
                 ):
                     cls = DoubleFastGADiscreteOnePlusOne
@@ -2253,11 +2254,10 @@ class Shiwa(NGOptBase):
 
     def _select_optimizer_cls(self) -> base.OptCls:
         optCls: base.OptCls = NGOptBase
-        if self.has_noise and (
-            self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable
-        ):
+        funcinfo = self.parametrization.function
+        if self.has_noise and (self.has_discrete_not_softmax or not funcinfo.metrizable):
             optCls = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
-        elif self.dimension >= 60 and not self.parametrization.descriptors.metrizable:
+        elif self.dimension >= 60 and not funcinfo.metrizable:
             optCls = CMA
         return optCls
 
@@ -2276,11 +2276,10 @@ class NGOpt4(NGOptBase):
             self.fully_continuous and not self.has_discrete_not_softmax and self._arity < 0
         )
         budget, num_workers = self.budget, self.num_workers
+        funcinfo = self.parametrization.function
         assert budget is not None
         optimClass: base.OptCls
-        if self.has_noise and (
-            self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable
-        ):
+        if self.has_noise and (self.has_discrete_not_softmax or not funcinfo.metrizable):
             mutation = "portfolio" if budget > 1000 else "discrete"
             optimClass = ParametrizedOnePlusOne(
                 crossover=True, mutation=mutation, noise_handling="optimistic"
@@ -2306,11 +2305,7 @@ class NGOpt4(NGOptBase):
                     else:
                         optimClass = OnePlusOne
                 else:
-                    if (
-                        self.has_discrete_not_softmax
-                        or not self.parametrization.descriptors.metrizable
-                        or not self.fully_continuous
-                    ):
+                    if self.has_discrete_not_softmax or not funcinfo.metrizable or not self.fully_continuous:
                         optimClass = DoubleFastGADiscreteOnePlusOne
                     else:
                         if num_workers > budget / 5:
@@ -2368,10 +2363,9 @@ class NGOpt8(NGOpt4):
     def _select_optimizer_cls(self) -> base.OptCls:
         # Extracting info as far as possible.
         assert self.budget is not None
+        funcinfo = self.parametrization.function
         optimClass: base.OptCls
-        if self.has_noise and (
-            self.has_discrete_not_softmax or not self.parametrization.descriptors.metrizable
-        ):
+        if self.has_noise and (self.has_discrete_not_softmax or not funcinfo.metrizable):
             if self.budget > 10000:
                 optimClass = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
             else:
