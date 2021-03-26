@@ -104,8 +104,8 @@ class Data(core.Parameter):
         *,
         init: tp.Optional[tp.ArrayLike] = None,
         shape: tp.Optional[tp.Tuple[int, ...]] = None,
-        lower: tp.Optional[float] = None,
-        upper: tp.Optional[float] = None,
+        lower: tp.BoundValue = None,
+        upper: tp.BoundValue = None,
         mutable_sigma: bool = False,
     ) -> None:
         super().__init__()
