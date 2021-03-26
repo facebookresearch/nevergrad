@@ -398,3 +398,5 @@ def st10(x: np.ndarray) -> float:
 def st100(x: np.ndarray) -> float:
     """Styblinksitang function with noise 100."""
     return _styblinksitang(x, 100)
+
+
