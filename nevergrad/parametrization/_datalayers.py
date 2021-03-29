@@ -177,7 +177,7 @@ class Exponent(ForwardableOperation):
         if base <= 0:
             raise errors.NevergradValueError("Exponent must be strictly positive")
         self._base = base
-        self._name = f"exp={base}"
+        self._name = f"exp={base:.2f}"
 
     def forward(self, value: tp.Any) -> tp.Any:
         return self._base ** value

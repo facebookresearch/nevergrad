@@ -181,12 +181,12 @@ def check_parameter_freezable(param: par.Parameter) -> None:
         (par.Array(shape=(2, 2)), "Array{(2,2)}"),
         (par.Tuple(12), "Tuple(12)"),
         (par.Dict(constant=12), "Dict(constant=12)"),
-        (par.Scalar(), "Scalar[sigma=Log{exp=2.0}]"),
+        (par.Scalar(), "Scalar[sigma=Scalar{exp=2.03}]"),
         (
             par.Log(lower=3.2, upper=12.0, exponent=1.5),
-            "Log{Cl(2.868682869489701,6.128533874054364,b),exp=1.5}",
+            "Log{Cl(2.868682869489701,6.128533874054364,b),exp=1.50}",
         ),
-        (par.Scalar().set_integer_casting(), "Scalar{Int}[sigma=Log{exp=2.0}]"),
+        (par.Scalar().set_integer_casting(), "Scalar{Int}[sigma=Scalar{exp=2.03}]"),
         (
             par.Instrumentation(par.Array(shape=(2,)), string="blublu", truc="plop"),
             "Instrumentation(Tuple(Array{(2,)}),Dict(string=blublu,truc=plop))",
@@ -387,6 +387,17 @@ def test_transition_choice_repetitions() -> None:
     np.testing.assert_almost_equal(choice.indices.value, [3, 1], decimal=3)
     choice.mutate()
     assert choice.value == (3, 0)
+
+
+def test_array_bounded_initialization() -> None:
+    array = par.Array(shape=(1,), lower=-1)
+    assert array.value[0] == 0
+    assert array.bounds == (-1, None)  # type: ignore
+    assert array.sigma.value == 1.0
+    array = par.Array(shape=(1,), lower=-0.5, upper=2.5)
+    assert array.value[0] == 1
+    assert array.bounds == (-0.5, 2.5)  # type: ignore
+    assert array.sigma.value == 0.5
 
 
 @pytest.mark.parametrize("method", ["clipping", "arctan", "tanh", "constraint", "bouncing"])  # type: ignore
