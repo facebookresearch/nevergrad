@@ -80,6 +80,8 @@ class GymMulti(ExperimentFunction):
         neural_factor: int = 2,
         randomized: bool = False,
     ) -> None:
+        if os.name == "nt":
+            raise ng.errors.UnsupportedExperiment("Windows is not supported")
         env = gym.make(name)
         self.name = name + "__" + control + "__" + str(neural_factor)
         if randomized:
@@ -91,21 +93,31 @@ class GymMulti(ExperimentFunction):
             self.num_time_steps = 100
         self.neural_factor = neural_factor
         o = env.reset()
-        if "int" in str(type(env.action_space.sample())):  # Discrete action space
+        if isinstance(env.action_space, gym.spaces.Discrete):
             output_dim = env.action_space.n
             output_shape = (output_dim,)
             discrete = True
+            assert output_dim is not None, env.action_space.n
         else:  # Continuous action space
-            output_shape = tuple(np.asarray(env.action_space.sample()).shape)  # type: ignore
+            output_shape = env.action_space.shape
+            if output_shape is None:
+                output_shape = tuple(np.asarray(env.action_space.sample()).shape)  # type: ignore
+            # When the shape is not available we might do:
+            # output_shape = tuple(np.asarray(env.action_space.sample()).shape)  # type: ignore
             discrete = False
             output_dim = np.prod(output_shape)
-        if "int" in str(type(o)):
+        if env.observation_space.dtype == int:
+        # Direct inference for corner cases:
+        #if "int" in str(type(o)):
             input_dim = env.observation_space.n
+            assert input_dim is not None, env.observation_space.n
             self.discrete_input = True
         else:
-            input_dim = np.prod(np.asarray(o).shape)
+            input_dim = np.prod(env.observation_space.shape)
+            if input_dim is None:
+                input_dim = np.prod(np.asarray(o).shape)
             self.discrete_input = False
-        self.action_type = type(env.action_space.sample())
+        self.action_type = type(env.action_space.sample())  # Did not find simpler than that using dtype.
         self.output_shape = output_shape
         self.input_dim = input_dim
         self.output_dim = output_dim
@@ -189,9 +201,9 @@ class GymMulti(ExperimentFunction):
             a = self.neural(x, o)
             if self.discrete:
                 a = self.discretize(a)
-            else:
-                if type(a) != self.action_type:
-                    a = self.action_type(a)
+            #else:
+            #    if type(a) != self.action_type:
+            #        a = self.action_type(a)
             try:
                 assert type(a) == self.action_type
                 o, r, done, _ = env.step(a)  # Outputs = observation, reward, done, info.
