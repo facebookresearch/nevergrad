@@ -1075,7 +1075,9 @@ def rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def gym_multi(seed: tp.Optional[int] = None, randomized: bool = False, multi: bool = False, big: bool = False) -> tp.Iterator[Experiment]:
+def gym_multi(
+    seed: tp.Optional[int] = None, randomized: bool = False, multi: bool = False, big: bool = False
+) -> tp.Iterator[Experiment]:
     """Gym simulator. Maximize reward.
     Many distinct problems."""
     env_names = GymMulti().env_names()
@@ -1089,7 +1091,7 @@ def gym_multi(seed: tp.Optional[int] = None, randomized: bool = False, multi: bo
         for name in env_names
     ]:
         for budget in [25600, 3200, 6400, 12800, 50, 100, 200, 400, 800, 1600]:
-            for num_workers in ([1] if big else [1, 30]):
+            for num_workers in [1] if big else [1, 30]:
                 for algo in optims:
                     xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
                     if not xp.is_incoherent:

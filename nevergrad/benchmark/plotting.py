@@ -503,7 +503,7 @@ class XpPlotter:
             ax.add_artist(self._overlays[-1])
 
     @staticmethod
-    def make_data(df: pd.DataFrame, normalized_loss: bool = False) -> tp.Dict[str, tp.Dict[str, np.ndarray]]:
+    def make_data(df: pd.DataFrame, normalized_loss: bool = False) -> tp.Dict[str, tp.Dict[str, np.ndarray]], tp.Dict[int, tp.Any]:
         """Process raw xp data and process it to extract relevant information for xp plots:
         regret with respect to budget for each optimizer after averaging on all experiments (it is good practice to use a df
         which is filtered out for one set of input parameters)
@@ -554,7 +554,7 @@ class XpPlotter:
             optim_vals[optim]["num_eval"] = num_eval
             for i, l in zip(optim_vals[optim]["budget"], optim_vals[optim]["loss"]):
                 if l < best_performance[i][0]:
-                    best_performance[i] = (l, optim) 
+                    best_performance[i] = (l, optim)
             if "pseudotime" in means.columns:
                 optim_vals[optim]["pseudotime"] = np.array(means.loc[optim, "pseudotime"])
         return optim_vals, best_performance
@@ -563,7 +563,9 @@ class XpPlotter:
         with open(output_filepath, "w") as f:
             f.write("Best performance:\n")
             for i in best_performance.keys():
-                f.write(f"  budget {i}: {best_performance[i][0]} ({best_performance[i][1]}) ({output_filepath})\n")
+                f.write(
+                    f"  budget {i}: {best_performance[i][0]} ({best_performance[i][1]}) ({output_filepath})\n"
+                )
 
     def save(self, output_filepath: tp.PathLike) -> None:
         """Saves the xp plot

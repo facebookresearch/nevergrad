@@ -3,10 +3,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-
 import numpy as np
 import os
 import gym
+import nevergrad as ng
 
 if os.name != "nt":
     import gym_anm  # pylint: disable=unused-import
@@ -108,8 +108,8 @@ class GymMulti(ExperimentFunction):
             discrete = False
             output_dim = np.prod(output_shape)
         if env.observation_space.dtype == int:
-        # Direct inference for corner cases:
-        #if "int" in str(type(o)):
+            # Direct inference for corner cases:
+            # if "int" in str(type(o)):
             input_dim = env.observation_space.n
             assert input_dim is not None, env.observation_space.n
             self.discrete_input = True
@@ -208,7 +208,7 @@ class GymMulti(ExperimentFunction):
             a = self.neural(x[i % len(x)] if "multi" in control else x, o)
             if self.discrete:
                 a = self.discretize(a)
-            #else:
+            # else:
             #    if type(a) != self.action_type:
             #        a = self.action_type(a)
             try:
