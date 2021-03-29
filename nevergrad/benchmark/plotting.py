@@ -503,7 +503,7 @@ class XpPlotter:
             ax.add_artist(self._overlays[-1])
 
     @staticmethod
-    def make_data(df: pd.DataFrame, normalized_loss: bool = False) -> tp.Dict[str, tp.Dict[str, np.ndarray]], tp.Dict[int, tp.Any]:
+    def make_data(df: pd.DataFrame, normalized_loss: bool = False) -> tp.Tuple[tp.Dict[str, tp.Dict[str, np.ndarray]], tp.Dict[int, tp.Any]]:
         """Process raw xp data and process it to extract relevant information for xp plots:
         regret with respect to budget for each optimizer after averaging on all experiments (it is good practice to use a df
         which is filtered out for one set of input parameters)
