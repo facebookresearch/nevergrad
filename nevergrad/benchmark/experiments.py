@@ -1075,25 +1075,37 @@ def rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def gym_multi(seed: tp.Optional[int] = None, randomized: bool = False) -> tp.Iterator[Experiment]:
+def gym_multi(seed: tp.Optional[int] = None, randomized: bool = False, multi: bool = False, big: bool = False) -> tp.Iterator[Experiment]:
     """Gym simulator. Maximize reward.
     Many distinct problems."""
     env_names = GymMulti().env_names()
     seedg = create_seed_generator(seed)
-    optims = get_optimizers("basics", "progressive", "splitters", "baselines", seed=next(seedg))
+    optims = get_optimizers("basics", "splitters", "baselines", seed=next(seedg))
     optims += ["DiagonalCMA"]
     for func in [
         GymMulti(name, control, neural_factor, randomized=randomized)
-        for control in ["neural"]
-        for neural_factor in [2]  # 1, 2, 4, 10]
+        for control in (["neural"] if not multi else ["multi_neural"])
+        for neural_factor in ([2] if not big else [20])
         for name in env_names
     ]:
-        for budget in [50, 100, 200, 400]:  # , 100, 200, 400, 800, 1600]:
-            for num_workers in [1, 30]:
+        for budget in [25600, 3200, 6400, 12800, 50, 100, 200, 400, 800, 1600]:
+            for num_workers in ([1] if big else [1, 30]):
                 for algo in optims:
                     xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
                     if not xp.is_incoherent:
                         yield xp
+
+
+@registry.register
+def multi_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart with one NN per time step of gym_multi."""
+    return gym_multi(seed, randomized=False, multi=True)
+
+
+@registry.register
+def big_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of gym_multi."""
+    return gym_multi(seed, randomized=False, big=True)
 
 
 @registry.register

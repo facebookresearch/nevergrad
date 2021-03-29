@@ -10,6 +10,7 @@ import hashlib
 import warnings
 import argparse
 import itertools
+from collections import defaultdict
 from pathlib import Path
 import numpy as np
 import pandas as pd
@@ -25,7 +26,6 @@ from .exporttable import export_table
 
 
 _DPI = 250
-
 
 # %% Basic tools
 
@@ -349,7 +349,7 @@ def create_plots(
         cases = [()]
     # Average normalized plot with everything.
     out_filepath = output_folder / "xpresults_all.png"
-    data = XpPlotter.make_data(df, normalized_loss=True)
+    data, _ = XpPlotter.make_data(df, normalized_loss=True)
     xpplotter = XpPlotter(data, title=os.path.basename(output_folder), name_style=name_style, xaxis=xpaxis)
     xpplotter.save(out_filepath)
     # Now one xp plot per case.
@@ -362,13 +362,17 @@ def create_plots(
         out_filepath = output_folder / "xpresults{}{}.png".format(
             "_" if description else "", description.replace(":", "")
         )
-        data = XpPlotter.make_data(subdf)
+        txt_out_filepath = output_folder / "xpresults{}{}.leaderboard.txt".format(
+            "_" if description else "", description.replace(":", "")
+        )
+        data, best_performance = XpPlotter.make_data(subdf)
         try:
             xpplotter = XpPlotter(data, title=description, name_style=name_style, xaxis=xpaxis)
         except Exception as e:  # pylint: disable=broad-except
             warnings.warn(f"Bypassing error in xpplotter:\n{e}", RuntimeWarning)
         else:
             xpplotter.save(out_filepath)
+            xpplotter.save_txt(txt_out_filepath, best_performance=best_performance)
     plt.close("all")
 
 
@@ -540,6 +544,7 @@ class XpPlotter:
         stds = groupeddf.std()
         optim_vals: tp.Dict[str, tp.Dict[str, np.ndarray]] = {}
         # extract name and coordinates
+        best_performance: tp.Dict[int, tp.Any] = defaultdict(lambda: (float("inf"), "none"))
         for optim in df.unique("optimizer_name"):
             optim_vals[optim] = {}
             optim_vals[optim]["budget"] = np.array(means.loc[optim, :].index)
@@ -547,9 +552,18 @@ class XpPlotter:
             optim_vals[optim]["loss_std"] = np.array(stds.loc[optim, "loss"])
             num_eval = np.array(groupeddf.count().loc[optim, "loss"])
             optim_vals[optim]["num_eval"] = num_eval
+            for i, l in zip(optim_vals[optim]["budget"], optim_vals[optim]["loss"]):
+                if l < best_performance[i][0]:
+                    best_performance[i] = (l, optim) 
             if "pseudotime" in means.columns:
                 optim_vals[optim]["pseudotime"] = np.array(means.loc[optim, "pseudotime"])
-        return optim_vals
+        return optim_vals, best_performance
+
+    def save_txt(self, output_filepath: tp.PathLike, best_performance: tp.Dict[int, tp.Any]) -> None:
+        with open(output_filepath, "w") as f:
+            f.write("Best performance:\n")
+            for i in best_performance.keys():
+                f.write(f"  budget {i}: {best_performance[i][0]} ({best_performance[i][1]}) ({output_filepath})\n")
 
     def save(self, output_filepath: tp.PathLike) -> None:
         """Saves the xp plot
