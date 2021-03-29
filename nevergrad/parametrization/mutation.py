@@ -39,6 +39,9 @@ class Mutation(_layering.Layer):
         new.add_layer(self.copy())
         return new
 
+    def mutate(self) -> Data:
+        raise NotImplementedError
+
 
 class Crossover(Mutation):
     """Operator for merging part of an array into another one
@@ -193,6 +196,7 @@ class Jumping(Mutation):
 
     @property
     def axis(self) -> int:
+
         return self.parameters["axis"].value  # type: ignore
 
     @property
