@@ -80,6 +80,8 @@ class GymMulti(ExperimentFunction):
         neural_factor: int = 2,
         randomized: bool = False,
     ) -> None:
+        if os.name == "nt":
+            raise ng.errors.UnsupportedExperiment("Windows is not supported")
         env = gym.make(name)
         self.name = name + "__" + control + "__" + str(neural_factor)
         if randomized:

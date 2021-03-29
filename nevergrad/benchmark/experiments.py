@@ -1078,8 +1078,6 @@ def rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 def gym_multi(seed: tp.Optional[int] = None, randomized: bool = False) -> tp.Iterator[Experiment]:
     """Gym simulator. Maximize reward.
     Many distinct problems."""
-    if os.name == "nt":
-        raise ng.errors.UnsupportedExperiment("Windows is not supported")
     env_names = GymMulti().env_names()
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", "progressive", "splitters", "baselines", seed=next(seedg))
