@@ -65,6 +65,7 @@ GUARANTEED_GYM_ENV_NAMES = [
 CONTROLLERS = [
     "linear",
     "neural",
+    "memory_neural",
     "multi_neural",
     "noisy_neural",
     "noisy_scrambled_neural",
@@ -120,6 +121,9 @@ class GymMulti(ExperimentFunction):
             self.discrete_input = False
         self.action_type = type(env.action_space.sample())  # Did not find simpler than that using dtype.
         self.output_shape = output_shape
+        self.memory_len = neural_factor * input_dim if "memory" in control else 0
+        input_dim = input_dim + self.memory_len
+        output_dim = output_dim + self.memory_len
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.num_neurons = neural_factor * input_dim
@@ -130,6 +134,7 @@ class GymMulti(ExperimentFunction):
             "conformant": (self.num_time_steps,) + output_shape,
             "stochastic_conformant": (self.num_time_steps,) + output_shape,
             "linear": (input_dim + 1, output_dim),
+            "memory_neural": neural_size,
             "neural": neural_size,
             "multi_neural": (min(self.num_time_steps, 50),) + neural_size,
             "noisy_neural": neural_size,
@@ -165,13 +170,19 @@ class GymMulti(ExperimentFunction):
         if self.control == "linear":
             output = np.matmul(o.ravel(), x[1:, :])
             output += x[0]
-            return output.reshape(self.output_shape)
+            return output.reshape(self.output_shape), np.zeros(0)
         first_size = self.num_neurons * (self.input_dim + 1)
-        first_matrix = x[:first_size].reshape(self.input_dim + 1, self.num_neurons)
-        second_matrix = x[first_size:].reshape(self.num_neurons, self.output_dim)
-        return np.matmul(
-            np.tanh(np.matmul(o.ravel(), first_matrix[1:]) + first_matrix[0]), second_matrix
-        ).reshape(self.output_shape)
+        try:
+            first_matrix = x[:first_size].reshape(self.input_dim + 1, self.num_neurons)
+            second_matrix = x[first_size:].reshape(self.num_neurons, self.output_dim)
+        except:
+            assert False, f"pb with controller {self.control}"
+        assert len(o.ravel()) == len(first_matrix[1:]), f"{o.ravel().shape} coming in matrix of shape {first_matrix.shape}"
+        activations = np.matmul(o.ravel(), first_matrix[1:])
+        output = np.matmul(
+            np.tanh(activations + first_matrix[0]), second_matrix
+        )
+        return output[self.memory_len:].reshape(self.output_shape), output[:self.memory_len]
 
     def gym_multi_function(self, x: np.ndarray):
         loss = 0.0
@@ -197,15 +208,17 @@ class GymMulti(ExperimentFunction):
         if "noisy" in control:
             x = x + 0.01 * np.random.RandomState(1234).normal(size=x.shape)
         reward = 0.0
+        memory = np.zeros(self.memory_len)
         for i in range(self.num_time_steps):
             if self.discrete_input:
-                obs = np.zeros(shape=self.input_dim)
+                obs = np.zeros(shape=self.input_dim - len(memory))
                 obs[o] = 1
                 o = obs
-            o = np.asarray(o)
+            o = np.concatenate([np.asarray(o).ravel(), memory.ravel()])
+            assert len(o) == self.input_dim, f"o has shape {o.shape} whereas input_dim={self.input_dim}"
             if "multi" in control:
                 assert len(x.shape) == 2, f"{x.shape} vs {self.policy_shape}"
-            a = self.neural(x[i % len(x)] if "multi" in control else x, o)
+            a, memory = self.neural(x[i % len(x)] if "multi" in control else x, o)
             if self.discrete:
                 a = self.discretize(a)
             # else:

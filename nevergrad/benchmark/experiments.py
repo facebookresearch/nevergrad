@@ -1076,17 +1076,28 @@ def rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 @registry.register
 def gym_multi(
-    seed: tp.Optional[int] = None, randomized: bool = False, multi: bool = False, big: bool = False
+        seed: tp.Optional[int] = None, randomized: bool = False, multi: bool = False, big: bool = False, memory: bool = False
 ) -> tp.Iterator[Experiment]:
     """Gym simulator. Maximize reward.
     Many distinct problems."""
     env_names = GymMulti().env_names()
+    if memory:
+        env_names = [e for e in env_names if any(x in e for x in ["Duplicate", "Copy", "Reverse"])]
+    else:
+        env_names = [e for e in env_names if not any(x in e for x in ["Duplicate", "Copy", "Reverse"])]
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", "splitters", "baselines", seed=next(seedg))
     optims += ["DiagonalCMA"]
+    controls = []
+    if multi:
+        controls.append("multi_neural")
+    else:
+        controls.append("neural")
+    if memory:
+        controls = ["memory_neural"]
     for func in [
         GymMulti(name, control, neural_factor, randomized=randomized)
-        for control in (["neural"] if not multi else ["multi_neural"])
+        for control in controls
         for neural_factor in ([2] if not big else [20])
         for name in env_names
     ]:
@@ -1102,6 +1113,18 @@ def gym_multi(
 def multi_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart with one NN per time step of gym_multi."""
     return gym_multi(seed, randomized=False, multi=True)
+
+
+@registry.register
+def memory_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of gym_multi."""
+    return gym_multi(seed, randomized=False, big=False, memory=True)
+
+
+@registry.register
+def memory_big_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of gym_multi."""
+    return gym_multi(seed, randomized=False, big=True, memory=True)
 
 
 @registry.register
