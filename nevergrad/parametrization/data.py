@@ -143,7 +143,11 @@ class Data(core.Parameter):
         sigma = sigma[0] if sigma.size == 1 else sigma
         if mutable_sigma:
             siginit = sigma
-            sigma = 2 ** (Array if isinstance(sigma, np.ndarray) else Scalar)(
+            # for the choice of the base:
+            # cf Evolution Strategies, Hans-Georg Beyer (2007)
+            # http://www.scholarpedia.org/article/Evolution_strategies
+            base = float(np.exp(1.0 / np.sqrt(2 * init.size)))
+            sigma = base ** (Array if isinstance(sigma, np.ndarray) else Scalar)(
                 init=siginit, mutable_sigma=False
             )
             sigma.value = siginit
