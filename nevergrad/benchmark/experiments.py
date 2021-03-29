@@ -1108,7 +1108,6 @@ def stochastic_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experimen
 @registry.register
 def gym_anm(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Gym simulator for Active Network Management. Maximize reward."""
-    raise ng.errors.UnsupportedExperiment("Windows is not supported")
 
     func = GymMulti()
     seedg = create_seed_generator(seed)
