@@ -146,6 +146,8 @@ class Data(core.Parameter):
             # for the choice of the base:
             # cf Evolution Strategies, Hans-Georg Beyer (2007)
             # http://www.scholarpedia.org/article/Evolution_strategies
+            # we want:
+            # sigma *= exp(gaussian / sqrt(dim))
             base = float(np.exp(1.0 / np.sqrt(2 * init.size)))
             sigma = base ** (Array if isinstance(sigma, np.ndarray) else Scalar)(
                 init=siginit, mutable_sigma=False
