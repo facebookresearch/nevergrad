@@ -1082,10 +1082,9 @@ def gym_multi(seed: tp.Optional[int] = None, randomized: bool = False) -> tp.Ite
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", "progressive", "splitters", "baselines", seed=next(seedg))
     optims += ["DiagonalCMA"]
-    controllers = GymMulti().controllers()
     for func in [
         GymMulti(name, control, neural_factor, randomized=randomized)
-        for control in controllers
+        for control in ["neural"]
         for neural_factor in [2]  # 1, 2, 4, 10]
         for name in env_names
     ]:

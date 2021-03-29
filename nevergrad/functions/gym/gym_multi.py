@@ -65,6 +65,7 @@ GUARANTEED_GYM_ENV_NAMES = [
 CONTROLLERS = [
     "linear",
     "neural",
+    "multi_neural",
     "noisy_neural",
     "noisy_scrambled_neural",
     "scrambled_neural",
@@ -130,6 +131,7 @@ class GymMulti(ExperimentFunction):
             "stochastic_conformant": (self.num_time_steps,) + output_shape,
             "linear": (input_dim + 1, output_dim),
             "neural": neural_size,
+            "multi_neural": (min(self.num_time_steps, 50),) + neural_size,
             "noisy_neural": neural_size,
             "noisy_scrambled_neural": neural_size,
             "scrambled_neural": neural_size,
@@ -160,7 +162,6 @@ class GymMulti(ExperimentFunction):
         return int(np.random.multinomial(1, probabilities)[0])
 
     def neural(self, x: np.ndarray, o: np.ndarray):
-        x = x.reshape(self.policy_shape)
         if self.control == "linear":
             output = np.matmul(o.ravel(), x[1:, :])
             output += x[0]
@@ -180,6 +181,10 @@ class GymMulti(ExperimentFunction):
         return loss / num_simulations
 
     def gym_simulate(self, x: np.ndarray, seed: int = 0):
+        try:
+            x = x.reshape(self.policy_shape)
+        except:
+            assert False, f"x has shape {x.shape} and needs {self.policy_shape} for control {self.control}"
         assert seed == 0 or self.control != "conformant" or self.randomized
         env = self.env
         env.seed(seed=seed)
@@ -198,7 +203,9 @@ class GymMulti(ExperimentFunction):
                 obs[o] = 1
                 o = obs
             o = np.asarray(o)
-            a = self.neural(x, o)
+            if "multi" in control:
+                assert len(x.shape) == 2, f"{x.shape} vs {self.policy_shape}"
+            a = self.neural(x[i % len(x)] if "multi" in control else x, o)
             if self.discrete:
                 a = self.discretize(a)
             #else:
