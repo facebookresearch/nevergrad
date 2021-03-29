@@ -93,7 +93,7 @@ class GymMulti(ExperimentFunction):
             self.num_time_steps = 100
         self.neural_factor = neural_factor
         o = env.reset()
-        if "int" in str(type(env.action_space.sample())):  # Discrete action space
+        if isinstance(env.action_space, gym.spaces.Discrete):
             output_dim = env.action_space.n
             output_shape = (output_dim,)
             discrete = True
