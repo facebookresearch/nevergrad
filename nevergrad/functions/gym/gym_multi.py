@@ -153,7 +153,7 @@ class GymMulti(ExperimentFunction):
                 if env.action_space.low is not None and env.action_space.high is not None:
                     low = np.repeat(np.expand_dims(env.action_space.low, 0), self.num_time_steps, axis=0)
                     high = np.repeat(np.expand_dims(env.action_space.high, 0), self.num_time_steps, axis=0)
-                    init = 0.5*(low + high)
+                    init = 0.5 * (low + high)
                     parametrization = parameter.Array(init=init)
                     parametrization.set_bounds(low, high)
             except AttributeError:  # Not all env.action_space have a low and a high.
@@ -191,12 +191,12 @@ class GymMulti(ExperimentFunction):
         first_size = self.num_neurons * (self.input_dim + 1)
         first_matrix = x[:first_size].reshape(self.input_dim + 1, self.num_neurons)
         second_matrix = x[first_size:].reshape(self.num_neurons, self.output_dim)
-        assert len(o.ravel()) == len(first_matrix[1:]), f"{o.ravel().shape} coming in matrix of shape {first_matrix.shape}"
+        assert len(o.ravel()) == len(
+            first_matrix[1:]
+        ), f"{o.ravel().shape} coming in matrix of shape {first_matrix.shape}"
         activations = np.matmul(o.ravel(), first_matrix[1:])
-        output = np.matmul(
-            np.tanh(activations + first_matrix[0]), second_matrix
-        )
-        return output[self.memory_len:].reshape(self.output_shape), output[:self.memory_len]
+        output = np.matmul(np.tanh(activations + first_matrix[0]), second_matrix)
+        return output[self.memory_len :].reshape(self.output_shape), output[: self.memory_len]
 
     def gym_multi_function(self, x: np.ndarray):
         loss = 0.0
@@ -212,25 +212,27 @@ class GymMulti(ExperimentFunction):
         if self.discrete:
             a = self.discretize(a)
         else:
-            if type(a) != self.action_type: #, f"{a} does not have type {self.action_type}"
+            if type(a) != self.action_type:  # , f"{a} does not have type {self.action_type}"
                 a = self.action_type(a)
             try:
                 if env.action_space.low is not None and env.action_space.high is not None:
                     # Projection to [0, 1]
-                    a = 0.5 * (1. + np.tanh(a)) 
+                    a = 0.5 * (1.0 + np.tanh(a))
                     # Projection to the right space.
                     a = env.action_space.low + (env.action_space.high - env.action_space.high) * a
             except AttributeError:
                 pass  # Sometimes an action space has no low and no high.
             if self.subaction_type is not None:
                 if type(a) == tuple:
-                    a = tuple(int(_a + .5) for _a in a)
+                    a = tuple(int(_a + 0.5) for _a in a)
                 else:
                     for i in range(len(a)):
                         a[i] = self.subaction_type(a[i])
         assert type(a) == self.action_type, f"{a} should have type {self.action_type} "
         try:
-            assert env.action_space.contains(a), f"In {self.name}, {a} is not sufficiently close to {[env.action_space.sample() for _ in range(10)]}"
+            assert env.action_space.contains(
+                a
+            ), f"In {self.name}, {a} is not sufficiently close to {[env.action_space.sample() for _ in range(10)]}"
         except AttributeError:
             pass  # Not all env can do "contains".
         return a
@@ -267,7 +269,6 @@ class GymMulti(ExperimentFunction):
             try:
                 o, r, done, _ = env.step(a)  # Outputs = observation, reward, done, info.
             except AssertionError as e:  # Illegal action.
-                assert False, f"{e} in control={control} and pb={self.name}"
                 return 1e20 / (1.0 + i)  # We encourage late failures rather than early failures.
             reward += r
             if done:
@@ -281,7 +282,6 @@ class GymMulti(ExperimentFunction):
             try:
                 _, r, done, _ = self.env.step(a)  # Outputs = observation, reward, done, info.
             except AssertionError:  # Illegal action.
-                assert False, f"{e} in control={control} and pb={self.name}"
                 return 1e20 / (1.0 + i)  # We encourage late failures rather than early failures.
             reward += r
             if done:

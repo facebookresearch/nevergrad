@@ -1076,7 +1076,11 @@ def rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 @registry.register
 def gym_multi(
-        seed: tp.Optional[int] = None, randomized: bool = False, multi: bool = False, big: bool = False, memory: bool = False
+    seed: tp.Optional[int] = None,
+    randomized: bool = False,
+    multi: bool = False,
+    big: bool = False,
+    memory: bool = False,
 ) -> tp.Iterator[Experiment]:
     """Gym simulator. Maximize reward.
     Many distinct problems."""
