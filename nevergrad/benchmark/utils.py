@@ -101,4 +101,4 @@ class Selector(pd.DataFrame):  # type: ignore
                 df_rows[k].append(tuple(row))
             df_rows[k].sort()
         for row1, row2 in zip(*df_rows):
-            np.testing.assert_array_equal(np.around(row1, decimals=3), np.around(row2, decimals=3), err_msg=err_msg)
+            np.testing.assert_array_equal(row1, row2, err_msg=err_msg)
