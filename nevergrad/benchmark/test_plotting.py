@@ -84,8 +84,7 @@ def test_xp_plotter() -> None:
         optimizer_name=[opt]
     )
     unused_data = plotting.XpPlotter.make_data(df, normalized_loss=True)
-    data, best_perf = plotting.XpPlotter.make_data(df)
-    assert len(best_perf) == 3
+    data = plotting.XpPlotter.make_data(df)
     # check data
     testing.assert_set_equal(data.keys(), {opt})
     testing.assert_set_equal(data[opt].keys(), {"budget", "loss", "loss_std", "num_eval"})
