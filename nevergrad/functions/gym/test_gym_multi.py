@@ -13,7 +13,7 @@ def test_gym_multi() -> None:
         func = gym_multi.GymMulti()
         x = np.zeros(func.dimension)
         value = func(x)
-        np.testing.assert_almost_equal(value, 275, decimal=1)
+        np.testing.assert_almost_equal(value, 20000, decimal=2)
         for name in gym_multi.GYM_ENV_NAMES:
             for control in gym_multi.CONTROLLERS:
                 for r in [False, True]:

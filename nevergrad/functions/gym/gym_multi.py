@@ -119,7 +119,11 @@ class GymMulti(ExperimentFunction):
             if input_dim is None:
                 input_dim = np.prod(np.asarray(o).shape)
             self.discrete_input = False
-        self.action_type = type(env.action_space.sample())  # Did not find simpler than that using dtype.
+        a = env.action_space.sample()
+        self.action_type = type(a)
+        self.subaction_type = None
+        if hasattr(a, "__iter__"):
+            self.subaction_type = type(a[0])
         self.output_shape = output_shape
         self.memory_len = neural_factor * input_dim if "memory" in control else 0
         input_dim = input_dim + self.memory_len
@@ -141,11 +145,24 @@ class GymMulti(ExperimentFunction):
             "noisy_scrambled_neural": neural_size,
             "scrambled_neural": neural_size,
         }[control]
-        shape = tuple(int(s) for s in shape)
+        shape = tuple(map(int, shape))
         self.policy_shape = shape
-        parametrization = parameter.Array(shape=shape)
-        super().__init__(self.gym_multi_function, parametrization=parametrization)
+        parametrization = parameter.Array(shape=shape).set_name("ng_default")
+        if "conformant" in control:
+            try:
+                if env.action_space.low is not None and env.action_space.high is not None:
+                    low = np.repeat(np.expand_dims(env.action_space.low, 0), self.num_time_steps, axis=0)
+                    high = np.repeat(np.expand_dims(env.action_space.high, 0), self.num_time_steps, axis=0)
+                    init = 0.5*(low + high)
+                    parametrization = parameter.Array(init=init)
+                    parametrization.set_bounds(low, high)
+            except AttributeError:  # Not all env.action_space have a low and a high.
+                pass
+            if self.subaction_type == int:
+                parametrization.set_integer_casting()
+            parametrization.set_name("conformant")
         self.env = env
+        super().__init__(self.gym_multi_function, parametrization=parametrization)
         self.discrete = discrete
 
     def evaluation_function(self, *recommendations) -> float:
@@ -172,11 +189,8 @@ class GymMulti(ExperimentFunction):
             output += x[0]
             return output.reshape(self.output_shape), np.zeros(0)
         first_size = self.num_neurons * (self.input_dim + 1)
-        try:
-            first_matrix = x[:first_size].reshape(self.input_dim + 1, self.num_neurons)
-            second_matrix = x[first_size:].reshape(self.num_neurons, self.output_dim)
-        except:
-            assert False, f"pb with controller {self.control}"
+        first_matrix = x[:first_size].reshape(self.input_dim + 1, self.num_neurons)
+        second_matrix = x[first_size:].reshape(self.num_neurons, self.output_dim)
         assert len(o.ravel()) == len(first_matrix[1:]), f"{o.ravel().shape} coming in matrix of shape {first_matrix.shape}"
         activations = np.matmul(o.ravel(), first_matrix[1:])
         output = np.matmul(
@@ -190,6 +204,36 @@ class GymMulti(ExperimentFunction):
         for seed in range(num_simulations):
             loss += self.gym_simulate(x, seed=seed if not self.randomized else np.random.randint(500000))
         return loss / num_simulations
+
+    def action_cast(self, a):
+        env = self.env
+        if type(a) == np.float64:
+            a = np.asarray((a,))
+        if self.discrete:
+            a = self.discretize(a)
+        else:
+            if type(a) != self.action_type: #, f"{a} does not have type {self.action_type}"
+                a = self.action_type(a)
+            try:
+                if env.action_space.low is not None and env.action_space.high is not None:
+                    # Projection to [0, 1]
+                    a = 0.5 * (1. + np.tanh(a)) 
+                    # Projection to the right space.
+                    a = env.action_space.low + (env.action_space.high - env.action_space.high) * a
+            except AttributeError:
+                pass  # Sometimes an action space has no low and no high.
+            if self.subaction_type is not None:
+                if type(a) == tuple:
+                    a = tuple(int(_a + .5) for _a in a)
+                else:
+                    for i in range(len(a)):
+                        a[i] = self.subaction_type(a[i])
+        assert type(a) == self.action_type, f"{a} should have type {self.action_type} "
+        try:
+            assert env.action_space.contains(a), f"In {self.name}, {a} is not sufficiently close to {[env.action_space.sample() for _ in range(10)]}"
+        except AttributeError:
+            pass  # Not all env can do "contains".
+        return a
 
     def gym_simulate(self, x: np.ndarray, seed: int = 0):
         try:
@@ -219,15 +263,11 @@ class GymMulti(ExperimentFunction):
             if "multi" in control:
                 assert len(x.shape) == 2, f"{x.shape} vs {self.policy_shape}"
             a, memory = self.neural(x[i % len(x)] if "multi" in control else x, o)
-            if self.discrete:
-                a = self.discretize(a)
-            # else:
-            #    if type(a) != self.action_type:
-            #        a = self.action_type(a)
+            a = self.action_cast(a)
             try:
-                assert type(a) == self.action_type
                 o, r, done, _ = env.step(a)  # Outputs = observation, reward, done, info.
-            except AssertionError:  # Illegal action.
+            except AssertionError as e:  # Illegal action.
+                assert False, f"{e} in control={control} and pb={self.name}"
                 return 1e20 / (1.0 + i)  # We encourage late failures rather than early failures.
             reward += r
             if done:
@@ -237,17 +277,11 @@ class GymMulti(ExperimentFunction):
     def gym_conformant(self, x: np.ndarray):
         reward = 0.0
         for i, a in enumerate(10.0 * x):
-            if type(a) == np.float64:
-                a = np.asarray((a,))
-            if self.discrete:
-                a = self.discretize(a)
-            else:
-                if self.action_type != type(a):
-                    a = self.action_type(a)
+            a = self.action_cast(a)
             try:
-                assert type(a) == self.action_type, f"{a} should have type {self.action_type} "
                 _, r, done, _ = self.env.step(a)  # Outputs = observation, reward, done, info.
             except AssertionError:  # Illegal action.
+                assert False, f"{e} in control={control} and pb={self.name}"
                 return 1e20 / (1.0 + i)  # We encourage late failures rather than early failures.
             reward += r
             if done:
