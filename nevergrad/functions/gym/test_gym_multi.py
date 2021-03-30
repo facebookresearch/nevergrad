@@ -14,12 +14,13 @@ def test_gym_multi() -> None:
         x = np.zeros(func.dimension)
         value = func(x)
         np.testing.assert_almost_equal(value, 93.358, decimal=2)
-        for name in gym_multi.GYM_ENV_NAMES:
-            for control in gym_multi.CONTROLLERS:
-                for r in [False, True]:
-                    func = gym_multi.GymMulti(name, control, randomized=r)
-                    x = np.zeros(func.dimension)
-                    value = func(x)
+        for i, name in enumerate(gym_multi.GYM_ENV_NAMES):
+            control = gym_multi.CONTROLLERS[i % len(gym_multi.CONTROLLERS)]
+            func = gym_multi.GymMulti(name, control,
+                randomized=bool(np.random.randint(2)),
+                )
+            x = np.zeros(func.dimension)
+            value = func(x)
         for env_name in gym_multi.GUARANTEED_GYM_ENV_NAMES:
             assert env_name in gym_multi.GYM_ENV_NAMES
         assert len(gym_multi.GYM_ENV_NAMES) == 26
