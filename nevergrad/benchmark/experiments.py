@@ -1085,6 +1085,10 @@ def gym_multi(
     """Gym simulator. Maximize reward.
     Many distinct problems."""
     env_names = GymMulti().env_names()
+    if memory:
+        env_names = [e for e in env_names if any(x in e for x in ["Duplicate", "Copy", "Reverse"])]
+    else:
+        env_names = [e for e in env_names if not any(x in e for x in ["Duplicate", "Copy", "Reverse"])]
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", "splitters", "baselines", seed=next(seedg))
     optims += ["DiagonalCMA"]

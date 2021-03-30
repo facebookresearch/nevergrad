@@ -503,9 +503,7 @@ class XpPlotter:
             ax.add_artist(self._overlays[-1])
 
     @staticmethod
-    def make_data(
-        df: pd.DataFrame, normalized_loss: bool = False
-    ) -> tp.Dict[str, tp.Dict[str, np.ndarray]]:
+    def make_data(df: pd.DataFrame, normalized_loss: bool = False) -> tp.Dict[str, tp.Dict[str, np.ndarray]]:
         """Process raw xp data and process it to extract relevant information for xp plots:
         regret with respect to budget for each optimizer after averaging on all experiments (it is good practice to use a df
         which is filtered out for one set of input parameters)
@@ -557,7 +555,9 @@ class XpPlotter:
                 optim_vals[optim]["pseudotime"] = np.array(means.loc[optim, "pseudotime"])
         return optim_vals
 
-    def save_txt(self, output_filepath: tp.PathLike, optim_vals: tp.Dict[str, tp.Dict[str, np.ndarray]]) -> None:
+    def save_txt(
+        self, output_filepath: tp.PathLike, optim_vals: tp.Dict[str, tp.Dict[str, np.ndarray]]
+    ) -> None:
         best_performance: tp.Dict[int, tp.Any] = defaultdict(lambda: (float("inf"), "none"))
         for optim in optim_vals.keys():
             for i, l in zip(optim_vals[optim]["budget"], optim_vals[optim]["loss"]):
