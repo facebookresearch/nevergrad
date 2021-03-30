@@ -268,7 +268,7 @@ class GymMulti(ExperimentFunction):
             a = self.action_cast(a)
             try:
                 o, r, done, _ = env.step(a)  # Outputs = observation, reward, done, info.
-            except AssertionError as e:  # Illegal action.
+            except AssertionError:  # Illegal action.
                 return 1e20 / (1.0 + i)  # We encourage late failures rather than early failures.
             reward += r
             if done:
