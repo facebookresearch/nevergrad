@@ -219,7 +219,7 @@ class GymMulti(ExperimentFunction):
                     # Projection to [0, 1]
                     a = 0.5 * (1.0 + np.tanh(a))
                     # Projection to the right space.
-                    a = env.action_space.low + (env.action_space.high - env.action_space.high) * a
+                    a = env.action_space.low + (env.action_space.high - env.action_space.low) * a
             except AttributeError:
                 pass  # Sometimes an action space has no low and no high.
             if self.subaction_type is not None:
@@ -232,7 +232,7 @@ class GymMulti(ExperimentFunction):
         try:
             assert env.action_space.contains(
                 a
-            ), f"In {self.name}, {a} is not sufficiently close to {[env.action_space.sample() for _ in range(10)]}"
+            ), f"In {self.name}, high={env.action_space.high} low={env.action_space.low} {a} is not sufficiently close to {[env.action_space.sample() for _ in range(10)]}"
         except AttributeError:
             pass  # Not all env can do "contains".
         return a
