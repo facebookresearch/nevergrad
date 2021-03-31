@@ -556,9 +556,7 @@ class XpPlotter:
         return optim_vals
 
     @staticmethod
-    def save_txt(
-        output_filepath: tp.PathLike, optim_vals: tp.Dict[str, tp.Dict[str, np.ndarray]]
-    ) -> None:
+    def save_txt(output_filepath: tp.PathLike, optim_vals: tp.Dict[str, tp.Dict[str, np.ndarray]]) -> None:
         best_performance: tp.Dict[int, tp.Any] = defaultdict(lambda: (float("inf"), "none"))
         for optim in optim_vals.keys():
             for i, l in zip(optim_vals[optim]["budget"], optim_vals[optim]["loss"]):

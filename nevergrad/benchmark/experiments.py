@@ -1096,7 +1096,11 @@ def gym_multi(
     if multi:
         controls.append("multi_neural")
     else:
-        controls += ["neural", "structured_neural", "noisy_neural", "noisy_scrambled_neural", "scrambled_neural"]
+        controls += (
+            ["neural", "structured_neural", "noisy_neural", "noisy_scrambled_neural", "scrambled_neural"]
+            if not big
+            else ["neural"]
+        )
     if memory:
         controls = ["memory_neural"]
         assert not multi

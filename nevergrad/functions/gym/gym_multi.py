@@ -158,7 +158,9 @@ class GymMulti(ExperimentFunction):
             "scrambled_neural": neural_size,
         }
         shape = shape_dict[control]
-        assert all(c in shape_dict for c in self.controllers), f"{self.controllers} subset of {shape_dict.keys()}"
+        assert all(
+            c in shape_dict for c in self.controllers
+        ), f"{self.controllers} subset of {shape_dict.keys()}"
         shape = tuple(map(int, shape))
         self.policy_shape = shape if "structured" not in control else None
         parametrization = parameter.Array(shape=shape).set_name("ng_default")
@@ -201,8 +203,8 @@ class GymMulti(ExperimentFunction):
             output = np.matmul(o.ravel(), x[1:, :])
             output += x[0]
             return output.reshape(self.output_shape), np.zeros(0)
-        first_matrix = x[:self.first_size].reshape(self.first_layer_shape)
-        second_matrix = x[self.first_size:].reshape(self.second_layer_shape)
+        first_matrix = x[: self.first_size].reshape(self.first_layer_shape)
+        second_matrix = x[self.first_size :].reshape(self.second_layer_shape)
         assert len(o.ravel()) == len(
             first_matrix[1:]
         ), f"{o.ravel().shape} coming in matrix of shape {first_matrix.shape}"
