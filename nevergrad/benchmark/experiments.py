@@ -1084,7 +1084,7 @@ def gym_multi(
 ) -> tp.Iterator[Experiment]:
     """Gym simulator. Maximize reward.
     Many distinct problems."""
-    env_names = GymMulti().env_names()
+    env_names = GymMulti().env_names
     if memory:
         env_names = [e for e in env_names if any(x in e for x in ["Duplicate", "Copy", "Reverse"])]
     else:

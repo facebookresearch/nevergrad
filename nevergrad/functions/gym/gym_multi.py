@@ -165,7 +165,7 @@ class GymMulti(ExperimentFunction):
         self.policy_shape = shape if "structured" not in control else None
         parametrization = parameter.Array(shape=shape).set_name("ng_default")
         if "structured" in control and "neural" in control and "multi" not in control:
-            parametrization = parameter.Tuple(
+            parametrization = parameter.Instrumentation(
                 parameter.Array(shape=tuple(map(int, self.first_layer_shape))),
                 parameter.Array(shape=tuple(map(int, self.second_layer_shape))),
             ).set_name("ng_struct")
