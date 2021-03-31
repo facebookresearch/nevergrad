@@ -555,6 +555,7 @@ class XpPlotter:
                 optim_vals[optim]["pseudotime"] = np.array(means.loc[optim, "pseudotime"])
         return optim_vals
 
+    @staticmethod
     def save_txt(
         output_filepath: tp.PathLike, optim_vals: tp.Dict[str, tp.Dict[str, np.ndarray]]
     ) -> None:

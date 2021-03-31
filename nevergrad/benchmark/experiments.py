@@ -1090,13 +1090,13 @@ def gym_multi(
     else:
         env_names = [e for e in env_names if not any(x in e for x in ["Duplicate", "Copy", "Reverse"])]
     seedg = create_seed_generator(seed)
-    optims = get_optimizers("basics", "splitters", "baselines", seed=next(seedg))
+    optims = get_optimizers("basics", "progressive", "splitters", "baselines", seed=next(seedg))
     optims += ["DiagonalCMA"]
     controls = []
     if multi:
         controls.append("multi_neural")
     else:
-        controls.append("neural")
+        controls += ["neural", "structured_neural", "noisy_neural", "noisy_scrambled_neural", "scrambled_neural"]
     if memory:
         controls = ["memory_neural"]
         assert not multi

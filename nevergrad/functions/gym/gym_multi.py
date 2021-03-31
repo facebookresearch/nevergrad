@@ -65,6 +65,7 @@ GUARANTEED_GYM_ENV_NAMES = [
 CONTROLLERS = [
     "linear",
     "neural",
+    "structured_neural",
     "memory_neural",
     "multi_neural",
     "noisy_neural",
@@ -136,23 +137,36 @@ class GymMulti(ExperimentFunction):
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.num_neurons = neural_factor * input_dim
+        unstructured_neural_size = (output_dim * self.num_neurons + self.num_neurons * (input_dim + 1),)
+        neural_size = unstructured_neural_size
         assert control in CONTROLLERS or control == "conformant", f"{control} not known as a form of control"
         self.control = control
-        neural_size = (output_dim * self.num_neurons + self.num_neurons * (input_dim + 1),)
-        shape = {
+        if "neural" in control:
+            self.first_size = self.num_neurons * (self.input_dim + 1)
+            self.first_layer_shape = (self.input_dim + 1, self.num_neurons)
+            self.second_layer_shape = (self.num_neurons, self.output_dim)
+        shape_dict = {
             "conformant": (self.num_time_steps,) + output_shape,
             "stochastic_conformant": (self.num_time_steps,) + output_shape,
             "linear": (input_dim + 1, output_dim),
             "memory_neural": neural_size,
             "neural": neural_size,
-            "multi_neural": (min(self.num_time_steps, 50),) + neural_size,
+            "structured_neural": neural_size,
+            "multi_neural": (min(self.num_time_steps, 50),) + unstructured_neural_size,
             "noisy_neural": neural_size,
             "noisy_scrambled_neural": neural_size,
             "scrambled_neural": neural_size,
-        }[control]
+        }
+        shape = shape_dict[control]
+        assert all(c in shape_dict for c in self.controllers), f"{self.controllers} subset of {shape_dict.keys()}"
         shape = tuple(map(int, shape))
-        self.policy_shape = shape
+        self.policy_shape = shape if "structured" not in control else None
         parametrization = parameter.Array(shape=shape).set_name("ng_default")
+        if "structured" in control and "neural" in control and "multi" not in control:
+            parametrization = parameter.Tuple(
+                parameter.Array(shape=tuple(map(int, self.first_layer_shape))),
+                parameter.Array(shape=tuple(map(int, self.second_layer_shape))),
+            ).set_name("ng_struct")
         if "conformant" in control:
             try:
                 if env.action_space.low is not None and env.action_space.high is not None:
@@ -187,9 +201,8 @@ class GymMulti(ExperimentFunction):
             output = np.matmul(o.ravel(), x[1:, :])
             output += x[0]
             return output.reshape(self.output_shape), np.zeros(0)
-        first_size = self.num_neurons * (self.input_dim + 1)
-        first_matrix = x[:first_size].reshape(self.input_dim + 1, self.num_neurons)
-        second_matrix = x[first_size:].reshape(self.num_neurons, self.output_dim)
+        first_matrix = x[:self.first_size].reshape(self.first_layer_shape)
+        second_matrix = x[self.first_size:].reshape(self.second_layer_shape)
         assert len(o.ravel()) == len(
             first_matrix[1:]
         ), f"{o.ravel().shape} coming in matrix of shape {first_matrix.shape}"
@@ -238,7 +251,8 @@ class GymMulti(ExperimentFunction):
 
     def gym_simulate(self, x: np.ndarray, seed: int = 0):
         try:
-            x = x.reshape(self.policy_shape)
+            if self.policy_shape is not None:
+                x = x.reshape(self.policy_shape)
         except:
             assert False, f"x has shape {x.shape} and needs {self.policy_shape} for control {self.control}"
         assert seed == 0 or self.control != "conformant" or self.randomized
@@ -261,8 +275,6 @@ class GymMulti(ExperimentFunction):
                 o = obs
             o = np.concatenate([np.asarray(o).ravel(), memory.ravel()])
             assert len(o) == self.input_dim, f"o has shape {o.shape} whereas input_dim={self.input_dim}"
-            if "multi" in control:
-                assert len(x.shape) == 2, f"{x.shape} vs {self.policy_shape}"
             a, memory = self.neural(x[i % len(x)] if "multi" in control else x, o)
             a = self.action_cast(a)
             try:
