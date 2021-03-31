@@ -91,6 +91,10 @@ class GymMulti(ExperimentFunction):
         if os.name == "nt":
             raise ng.errors.UnsupportedExperiment("Windows is not supported")
         env = gym.make(name)
+        o = env.reset()
+        self.env = env
+
+        # Build various attributes.
         self.name = name + "__" + control + "__" + str(neural_factor)
         if randomized:
             self.name += "_unseeded"
@@ -100,7 +104,8 @@ class GymMulti(ExperimentFunction):
         except AttributeError:  # Not all environements have a max number of episodes!
             self.num_time_steps = 100
         self.neural_factor = neural_factor
-        o = env.reset()
+
+        # Infer the action space.
         if isinstance(env.action_space, gym.spaces.Discrete):
             output_dim = env.action_space.n
             output_shape = (output_dim,)
@@ -114,6 +119,9 @@ class GymMulti(ExperimentFunction):
             # output_shape = tuple(np.asarray(env.action_space.sample()).shape)  # type: ignore
             discrete = False
             output_dim = np.prod(output_shape)
+        self.discrete = discrete
+
+        # Infer the observation space.
         if env.observation_space.dtype == int:
             # Direct inference for corner cases:
             # if "int" in str(type(o)):
@@ -125,11 +133,15 @@ class GymMulti(ExperimentFunction):
             if input_dim is None:
                 input_dim = np.prod(np.asarray(o).shape)
             self.discrete_input = False
+
+        # Infer the action type.
         a = env.action_space.sample()
         self.action_type = type(a)
         self.subaction_type = None
         if hasattr(a, "__iter__"):
             self.subaction_type = type(a[0])
+
+        # Prepare the policy shape.
         self.output_shape = output_shape
         self.memory_len = neural_factor * input_dim if "memory" in control else 0
         input_dim = input_dim + self.memory_len
@@ -163,6 +175,8 @@ class GymMulti(ExperimentFunction):
         ), f"{self.controllers} subset of {shape_dict.keys()}"
         shape = tuple(map(int, shape))
         self.policy_shape = shape if "structured" not in control else None
+
+        # Create the parametrization.
         parametrization = parameter.Array(shape=shape).set_name("ng_default")
         if "structured" in control and "neural" in control and "multi" not in control:
             parametrization = parameter.Instrumentation(  # type: ignore
@@ -182,9 +196,9 @@ class GymMulti(ExperimentFunction):
             if self.subaction_type == int:
                 parametrization.set_integer_casting()
             parametrization.set_name("conformant")
-        self.env = env
+
+        # Now initializing.
         super().__init__(self.gym_multi_function, parametrization=parametrization)
-        self.discrete = discrete
 
     def evaluation_function(self, *recommendations) -> float:
         x = recommendations[0].value

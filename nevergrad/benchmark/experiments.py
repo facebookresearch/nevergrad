@@ -1092,17 +1092,16 @@ def gym_multi(
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", "progressive", "splitters", "baselines", seed=next(seedg))
     optims += ["DiagonalCMA"]
-    controls = []
     if multi:
-        controls.append("multi_neural")
+        controls = ["multi_neural"]
     else:
-        controls += (
+        controls = (
             ["neural", "structured_neural", "noisy_neural", "noisy_scrambled_neural", "scrambled_neural"]
             if not big
             else ["neural"]
         )
     if memory:
-        controls = ["memory_neural"]
+        controls = ["neural", "memory_neural"]
         assert not multi
     for func in [
         GymMulti(name, control, neural_factor, randomized=randomized)
