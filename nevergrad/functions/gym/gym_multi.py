@@ -75,6 +75,11 @@ CONTROLLERS = [
 
 
 class GymMulti(ExperimentFunction):
+
+    env_names = GYM_ENV_NAMES
+
+    controllers = CONTROLLERS
+
     def __init__(
         self,
         name: str = "gym_anm:ANM6Easy-v0",
@@ -171,12 +176,6 @@ class GymMulti(ExperimentFunction):
             return self.gym_multi_function(x)
         losses = [self.gym_multi_function(x) for _ in range(40)]
         return sum(losses) / len(losses)
-
-    def env_names(self):
-        return GYM_ENV_NAMES
-
-    def controllers(self):
-        return CONTROLLERS
 
     def discretize(self, a):
         probabilities = np.exp(a - max(a))

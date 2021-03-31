@@ -45,7 +45,7 @@ def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[expe
 
     # Some tests are skipped on CircleCI (but they do work well locally, if memory enough).
     if os.environ.get("CIRCLECI", False):
-        if any(name == x for x in ["images_using_gan", "mlda", "mldakmeans", "realworld"]):
+        if any(x in name for x in ["images_using_gan", "mlda", "realworld"]):
             raise SkipTest("Too slow in CircleCI")
 
     check_experiment(

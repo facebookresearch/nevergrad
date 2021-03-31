@@ -1099,6 +1099,7 @@ def gym_multi(
         controls.append("neural")
     if memory:
         controls = ["memory_neural"]
+        assert not multi
     for func in [
         GymMulti(name, control, neural_factor, randomized=randomized)
         for control in controls
