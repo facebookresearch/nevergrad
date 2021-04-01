@@ -1085,10 +1085,10 @@ def gym_multi(
     """Gym simulator. Maximize reward.
     Many distinct problems."""
     env_names = GymMulti().env_names
-    if memory:
-        env_names = [e for e in env_names if any(x in e for x in ["Duplicate", "Copy", "Reverse"])]
-    else:
-        env_names = [e for e in env_names if not any(x in e for x in ["Duplicate", "Copy", "Reverse"])]
+    #if memory:
+    #    env_names = [e for e in env_names if any(x in e for x in ["Duplicate", "Copy", "Reverse"])]
+    #else:
+    #    env_names = [e for e in env_names if not any(x in e for x in ["Duplicate", "Copy", "Reverse"])]
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", "progressive", "splitters", "baselines", seed=next(seedg))
     optims += ["DiagonalCMA"]
@@ -1103,13 +1103,12 @@ def gym_multi(
     if memory:
         controls = ["neural", "memory_neural"]
         assert not multi
-    for func in [
-        GymMulti(name, control, neural_factor, randomized=randomized)
-        for control in controls
-        for neural_factor in ([2] if not big else [20])
-        for name in env_names
-    ]:
-        for budget in [25600, 3200, 6400, 12800, 50, 100, 200, 400, 800, 1600]:
+    for control, neural_factor, name in zip(controls, ([2] if not big else [20]), env_names):
+        try:
+            func = GymMulti(name, control, neural_factor, randomized=randomized)
+        except MemoryError:
+            pass
+        for budget in [819200, 409600, 204800, 102400, 51200, 25600, 3200, 6400, 12800, 50, 100, 200, 400, 800, 1600]:
             for num_workers in [1] if big else [1, 30]:
                 for algo in optims:
                     xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
@@ -1130,7 +1129,7 @@ def memory_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def memory_big_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def memory_big_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of gym_multi."""
     return gym_multi(seed, randomized=False, big=True, memory=True)
 

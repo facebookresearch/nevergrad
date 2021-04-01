@@ -75,6 +75,8 @@ CONTROLLERS = [
 ]
 
 
+NO_LENGTH = ["ANM", "Blackjack", "CliffWalking", "Cube", "Memorize"]
+
 class GymMulti(ExperimentFunction):
 
     env_names = GYM_ENV_NAMES
@@ -102,6 +104,7 @@ class GymMulti(ExperimentFunction):
         try:
             self.num_time_steps = env._max_episode_steps  # I know! This is a private variable.
         except AttributeError:  # Not all environements have a max number of episodes!
+            assert any(x in name for x in NO_LENGTH), name
             self.num_time_steps = 100
         self.neural_factor = neural_factor
 
