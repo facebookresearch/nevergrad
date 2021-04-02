@@ -5,6 +5,7 @@
 
 import numpy as np
 from scipy import optimize as scipyoptimize
+import pybobyqa
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
 from . import base
@@ -26,7 +27,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         self.multirun = 1  # work in progress
         self.initial_guess: tp.Optional[tp.ArrayLike] = None
         # configuration
-        assert method in ["Nelder-Mead", "COBYLA", "SLSQP", "Powell"], f"Unknown method '{method}'"
+        assert method in ["Nelder-Mead", "COBYLA", "SLSQP", "Powell", "BOBYQA"], f"Unknown method '{method}'"
         self.method = method
         self.random_restart = random_restart
 
@@ -60,16 +61,23 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         remaining = budget - self._num_ask
         while remaining > 0:  # try to restart if budget is not elapsed
             options: tp.Dict[str, int] = {} if self.budget is None else {"maxiter": remaining}
-            res = scipyoptimize.minimize(
-                objective_function,
-                best_x if not self.random_restart else self._rng.normal(0.0, 1.0, self.dimension),
-                method=self.method,
-                options=options,
-                tol=0,
-            )
-            if res.fun < best_res:
-                best_res = res.fun
-                best_x = res.x
+            if self.method == "BOBYQA":
+                res = pybobyqa.solve(objective_function,
+                        best_x, maxfun=budget)
+                if res.f < best_res:
+                    best_res = res.f
+                    best_x = res.x
+            else:
+                res = scipyoptimize.minimize(
+                    objective_function,
+                    best_x if not self.random_restart else self._rng.normal(0.0, 1.0, self.dimension),
+                    method=self.method,
+                    options=options,
+                    tol=0,
+                )
+                if res.fun < best_res:
+                    best_res = res.fun
+                    best_x = res.x
             remaining = budget - self._num_ask
         return best_x
 
@@ -105,6 +113,7 @@ class ScipyOptimizer(base.ConfiguredOptimizer):
         super().__init__(_ScipyMinimizeBase, locals())
 
 
+BOBYQA = ScipyOptimizer(method="BOBYQA").set_name("BOBYQA", register=True)
 NelderMead = ScipyOptimizer(method="Nelder-Mead").set_name("NelderMead", register=True)
 Powell = ScipyOptimizer(method="Powell").set_name("Powell", register=True)
 RPowell = ScipyOptimizer(method="Powell", random_restart=True).set_name("RPowell", register=True)
