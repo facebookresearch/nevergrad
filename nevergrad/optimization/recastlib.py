@@ -62,8 +62,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         while remaining > 0:  # try to restart if budget is not elapsed
             options: tp.Dict[str, int] = {} if self.budget is None else {"maxiter": remaining}
             if self.method == "BOBYQA":
-                res = pybobyqa.solve(objective_function,
-                        best_x, maxfun=budget)
+                res = pybobyqa.solve(objective_function, best_x, maxfun=budget)
                 if res.f < best_res:
                     best_res = res.f
                     best_x = res.x
