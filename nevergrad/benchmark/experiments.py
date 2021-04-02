@@ -1077,7 +1077,7 @@ def rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 @registry.register
 def gym_multi(
     seed: tp.Optional[int] = None,
-    randomized: bool = False,
+    randomized: bool = True,
     multi: bool = False,
     big: bool = False,
     memory: bool = False,
@@ -1103,47 +1103,49 @@ def gym_multi(
     if memory:
         controls = ["neural", "memory_neural"]
         assert not multi
-    for control, neural_factor, name in zip(controls, ([2] if not big else [20]), env_names):
-        try:
-            func = GymMulti(name, control, neural_factor, randomized=randomized)
-        except MemoryError:
-            pass
-        for budget in [819200, 409600, 204800, 102400, 51200, 25600, 3200, 6400, 12800, 50, 100, 200, 400, 800, 1600]:
-            for num_workers in [1] if big else [1, 30]:
-                for algo in optims:
-                    xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
-                    if not xp.is_incoherent:
-                        yield xp
+    neural_factor = 5 if not big else 100
+    for control in controls:
+        for name in env_names:
+            try:
+                func = GymMulti(name, control, neural_factor, randomized=randomized)
+            except MemoryError:
+                pass
+            for budget in [819200, 409600, 204800, 102400, 51200, 25600, 3200, 6400, 12800, 50, 100, 200, 400, 800, 1600]:
+                for num_workers in [1] if big else [1, 30]:
+                    for algo in optims:
+                        xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        if not xp.is_incoherent:
+                            yield xp
 
 
 @registry.register
 def multi_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart with one NN per time step of gym_multi."""
-    return gym_multi(seed, randomized=False, multi=True)
+    return gym_multi(seed, multi=True)
 
 
 @registry.register
 def memory_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of gym_multi."""
-    return gym_multi(seed, randomized=False, big=False, memory=True)
+    return gym_multi(seed, big=False, memory=True)
 
 
 @registry.register
-def memory_big_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def memory_big_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of gym_multi."""
-    return gym_multi(seed, randomized=False, big=True, memory=True)
+    return gym_multi(seed, big=True, memory=True)
 
 
 @registry.register
 def big_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of gym_multi."""
-    return gym_multi(seed, randomized=False, big=True)
+    return gym_multi(seed, big=True)
 
 
 @registry.register
-def stochastic_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def deterministic_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of gym_multi."""
-    return gym_multi(seed, randomized=True)
+    return gym_multi(seed, randomized=False)
 
 
 @registry.register

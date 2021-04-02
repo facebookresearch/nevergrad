@@ -10,10 +10,10 @@ from . import gym_multi
 
 def test_gym_multi() -> None:
     if os.name != "nt":
-        func = gym_multi.GymMulti()
+        func = gym_multi.GymMulti(randomized=False)
         x = np.zeros(func.dimension)
         value = func(x)
-        np.testing.assert_almost_equal(value, 93.358, decimal=2)
+        np.testing.assert_almost_equal(value, 93.35, decimal=2)
         for i, name in enumerate(gym_multi.GYM_ENV_NAMES):
             control = gym_multi.CONTROLLERS[i % len(gym_multi.CONTROLLERS)]
             func = gym_multi.GymMulti(

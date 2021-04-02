@@ -88,7 +88,7 @@ class GymMulti(ExperimentFunction):
         name: str = "gym_anm:ANM6Easy-v0",
         control: str = "conformant",
         neural_factor: int = 2,
-        randomized: bool = False,
+        randomized: bool = True,
     ) -> None:
         if os.name == "nt":
             raise ng.errors.UnsupportedExperiment("Windows is not supported")
@@ -207,7 +207,7 @@ class GymMulti(ExperimentFunction):
         x = recommendations[0].value
         if not self.randomized:
             return self.gym_multi_function(x)
-        losses = [self.gym_multi_function(x) for _ in range(40)]
+        losses = [self.gym_multi_function(x) for _ in range(100)]
         return sum(losses) / len(losses)
 
     def discretize(self, a):
@@ -216,16 +216,17 @@ class GymMulti(ExperimentFunction):
         return int(np.random.multinomial(1, probabilities)[0])
 
     def neural(self, x: np.ndarray, o: np.ndarray):
+        o = o.ravel()
         if self.control == "linear":
-            output = np.matmul(o.ravel(), x[1:, :])
+            output = np.matmul(o, x[1:, :])
             output += x[0]
             return output.reshape(self.output_shape), np.zeros(0)
-        first_matrix = x[: self.first_size].reshape(self.first_layer_shape)
-        second_matrix = x[self.first_size :].reshape(self.second_layer_shape)
-        assert len(o.ravel()) == len(
+        first_matrix = x[:self.first_size].reshape(self.first_layer_shape) / np.sqrt(len(o))
+        second_matrix = x[self.first_size :].reshape(self.second_layer_shape) / np.sqrt(self.num_neurons)
+        assert len(o) == len(
             first_matrix[1:]
-        ), f"{o.ravel().shape} coming in matrix of shape {first_matrix.shape}"
-        activations = np.matmul(o.ravel(), first_matrix[1:])
+        ), f"{o.shape} coming in matrix of shape {first_matrix.shape}"
+        activations = np.matmul(o, first_matrix[1:])
         output = np.matmul(np.tanh(activations + first_matrix[0]), second_matrix)
         return output[self.memory_len :].reshape(self.output_shape), output[: self.memory_len]
 
