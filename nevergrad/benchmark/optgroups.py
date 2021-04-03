@@ -105,7 +105,7 @@ def splitters() -> tp.Sequence[Optim]:
 
 
 @registry.register
-def noisy_splitters(bool: only_progressive=False) -> tp.Sequence[Optim]:
+def noisy_splitters(only_progressive: bool=False) -> tp.Sequence[Optim]:
     optims: tp.List[Optim] = []
     for mutation in ["discrete", "gaussian"]:
         for num_optims in [None, 3, 5, 9, 13, 10000]:
