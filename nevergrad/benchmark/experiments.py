@@ -1166,7 +1166,7 @@ def deterministic_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experi
 
 @registry.register
 def gym_anm(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Gym simulator for Active Network Management. Maximize reward."""
+    """Gym simulator for Active Network Management."""
 
     func = GymMulti()
     seedg = create_seed_generator(seed)
