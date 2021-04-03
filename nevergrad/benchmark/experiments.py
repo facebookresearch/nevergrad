@@ -1085,9 +1085,9 @@ def gym_multi(
     """Gym simulator. Maximize reward.
     Many distinct problems."""
     env_names = GymMulti().env_names
-    #if memory:
+    # if memory:
     #    env_names = [e for e in env_names if any(x in e for x in ["Duplicate", "Copy", "Reverse"])]
-    #else:
+    # else:
     #    env_names = [e for e in env_names if not any(x in e for x in ["Duplicate", "Copy", "Reverse"])]
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", "progressive", "splitters", "baselines", seed=next(seedg))
@@ -1110,7 +1110,23 @@ def gym_multi(
                 func = GymMulti(name, control, neural_factor, randomized=randomized)
             except MemoryError:
                 pass
-            for budget in [819200, 409600, 204800, 102400, 51200, 25600, 3200, 6400, 12800, 50, 100, 200, 400, 800, 1600]:
+            for budget in [
+                819200,
+                409600,
+                204800,
+                102400,
+                51200,
+                25600,
+                3200,
+                6400,
+                12800,
+                50,
+                100,
+                200,
+                400,
+                800,
+                1600,
+            ]:
                 for num_workers in [1] if big else [1, 30]:
                     for algo in optims:
                         xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))

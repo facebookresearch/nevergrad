@@ -77,6 +77,7 @@ CONTROLLERS = [
 
 NO_LENGTH = ["ANM", "Blackjack", "CliffWalking", "Cube", "Memorize"]
 
+
 class GymMulti(ExperimentFunction):
 
     env_names = GYM_ENV_NAMES
@@ -221,11 +222,9 @@ class GymMulti(ExperimentFunction):
             output = np.matmul(o, x[1:, :])
             output += x[0]
             return output.reshape(self.output_shape), np.zeros(0)
-        first_matrix = x[:self.first_size].reshape(self.first_layer_shape) / np.sqrt(len(o))
+        first_matrix = x[: self.first_size].reshape(self.first_layer_shape) / np.sqrt(len(o))
         second_matrix = x[self.first_size :].reshape(self.second_layer_shape) / np.sqrt(self.num_neurons)
-        assert len(o) == len(
-            first_matrix[1:]
-        ), f"{o.shape} coming in matrix of shape {first_matrix.shape}"
+        assert len(o) == len(first_matrix[1:]), f"{o.shape} coming in matrix of shape {first_matrix.shape}"
         activations = np.matmul(o, first_matrix[1:])
         output = np.matmul(np.tanh(activations + first_matrix[0]), second_matrix)
         return output[self.memory_len :].reshape(self.output_shape), output[: self.memory_len]
