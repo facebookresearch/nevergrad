@@ -105,13 +105,15 @@ def splitters() -> tp.Sequence[Optim]:
 
 
 @registry.register
-def noisy_splitters(only_progressive: bool=False) -> tp.Sequence[Optim]:
+def noisy_splitters(only_progressive: bool = False) -> tp.Sequence[Optim]:
     optims: tp.List[Optim] = []
     for mutation in ["discrete", "gaussian"]:
         for num_optims in [None, 3, 5, 9, 13, 10000]:
-            for progressive in ([True] if only_progressive else [False, True]):
+            for progressive in [True] if only_progressive else [False, True]:
                 name = (
-                    "Prog" if progressive else "Split"
+                    "Prog"
+                    if progressive
+                    else "Split"
                     + ("Disc" if mutation == "discrete" else "")
                     + ("Auto" if num_optims is None else ("Inf" if num_optims == 10000 else str(num_optims)))
                 )
