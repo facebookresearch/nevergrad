@@ -104,30 +104,40 @@ def splitters() -> tp.Sequence[Optim]:
     return optims
 
 
+@registry.regsiter
+def progressive() -> tp.Sequence[Optim]:
+    optims: tp.List[Optim] = []
+    for mutation in ["discrete", "gaussian"]:
+        for num_optims in [None, 13, 10000]:
+            name = (
+                "Prog"
+                + ("Disc" if mutation == "discrete" else "")
+                + ("Auto" if num_optims is None else ("Inf" if num_optims == 10000 else str(num_optims)))
+            )
+            mv = ParametrizedOnePlusOne(noise_handling="optimistic", mutation=mutation)
+            opt = ConfSplitOptimizer(
+                num_optims=num_optims, progressive=True, multivariate_optimizer=mv
+            ).set_name(name)
+            optims.append(opt)
+    return optims
+
+            
 @registry.register
 def noisy_splitters(only_progressive: bool = False) -> tp.Sequence[Optim]:
     optims: tp.List[Optim] = []
     for mutation in ["discrete", "gaussian"]:
         for num_optims in [None, 3, 5, 9, 13, 10000]:
-            for progressive in [True] if only_progressive else [False, True]:
-                name = (
-                    "Prog"
-                    if progressive
-                    else "Split"
-                    + ("Disc" if mutation == "discrete" else "")
-                    + ("Auto" if num_optims is None else ("Inf" if num_optims == 10000 else str(num_optims)))
-                )
-                mv = ParametrizedOnePlusOne(noise_handling="optimistic", mutation=mutation)
-                opt = ConfSplitOptimizer(
-                    num_optims=num_optims, progressive=True, multivariate_optimizer=mv
-                ).set_name(name)
-                optims.append(opt)
+            name = (
+                "Split"
+                + ("Disc" if mutation == "discrete" else "")
+                + ("Auto" if num_optims is None else ("Inf" if num_optims == 10000 else str(num_optims)))
+            )
+            mv = ParametrizedOnePlusOne(noise_handling="optimistic", mutation=mutation)
+            opt = ConfSplitOptimizer(
+                num_optims=num_optims, progressive=True, multivariate_optimizer=mv
+            ).set_name(name)
+            optims.append(opt)
     return optims
-
-
-@registry.register
-def progressive() -> tp.Sequence[Optim]:
-    return noisy_splitters(only_progressive=True)
 
 
 @registry.register
