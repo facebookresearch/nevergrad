@@ -133,8 +133,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # to make optimize function stoppable halway through
         self._running_jobs: tp.List[tp.Tuple[p.Parameter, tp.JobLike[tp.Loss]]] = []
         self._finished_jobs: tp.Deque[tp.Tuple[p.Parameter, tp.JobLike[tp.Loss]]] = deque()
-
-    _max_num_warnings = 500
+        self._max_num_warnings = 500
 
     def warning(self, s: str, e: tp.Any) -> None:
         if _max_num_warning <= 0:
