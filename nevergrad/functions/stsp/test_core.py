@@ -4,11 +4,13 @@
 # LICENSE file in the root directory of this source tree.
 
 import numpy as np
+import pytest
 from . import core
 
 
-def test_stsp() -> None:
-    for func in [core.STSP(), core.STSP(complex_tsp=True)]:
-        x = 7 * np.random.rand(func.dimension)
-        value = func(x)  # should not touch boundaries, so value should be < np.inf
-        assert value < np.inf
+@pytest.mark.parametrize("complex_tsp", [True, False])
+def test_stsp(complex_tsp: bool) -> None:
+    func = core.STSP(complex_tsp=complex_tsp)
+    x = 7 * np.random.rand(func.dimension)
+    value = func(x)  # should not touch boundaries, so value should be < np.inf
+    assert value < np.inf
