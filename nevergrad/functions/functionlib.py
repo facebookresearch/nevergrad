@@ -185,7 +185,7 @@ class ArtificialFunction(ExperimentFunction):
             )
         )
         if noise_level > 0:
-            parametrization.descriptors.deterministic_function = False
+            parametrization.function.deterministic = False
         super().__init__(self.noisy_function, parametrization)
         # variable, must come after super().__init__(...) to bind the random_state
         # may consider having its a local random_state instead but less reproducible
@@ -235,7 +235,7 @@ class ArtificialFunction(ExperimentFunction):
         """Implements the call of the function.
         Under the hood, __call__ delegates to oracle_call + add some noise if noise_level > 0.
         """
-        assert len(recommendations) == 1, "Should not be a pareto set for a monoobjective function"
+        assert len(recommendations) == 1, "Should not be a pareto set for a singleobjective function"
         assert len(recommendations[0].args) == 1 and not recommendations[0].kwargs
         data = self._transform(recommendations[0].args[0])
         return self.function_from_transform(data)

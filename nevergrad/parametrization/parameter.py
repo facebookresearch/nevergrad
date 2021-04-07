@@ -26,7 +26,11 @@ from .data import Array as Array
 from .data import Scalar as Scalar
 from .data import Log as Log
 from . import mutation
+from ._datalayers import Angles as Angles
 
 # choices
 from .choice import Choice as Choice
 from .choice import TransitionChoice as TransitionChoice
+
+# other
+from . import helpers as helpers

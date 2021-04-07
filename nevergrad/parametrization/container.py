@@ -3,11 +3,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import operator
-import functools
 from collections import OrderedDict
-import nevergrad.common.typing as tp
 import numpy as np
+import nevergrad.common.typing as tp
 from . import utils
 from . import core
 
@@ -42,6 +40,10 @@ class Container(core.Parameter):
             str, str
         ] = {}  # hacky undocumented way to bypass boring representations
 
+    @property
+    def dimension(self) -> int:
+        return sum(x.dimension for x in self._content.values())
+
     def _sanity_check(self, parameters: tp.List[core.Parameter]) -> None:
         """Check that all parameters are different"""
         # TODO: this is first order, in practice we would need to test all the different
@@ -51,10 +53,6 @@ class Container(core.Parameter):
             ids = {id(p) for p in parameters}
             if len(ids) != len(parameters):
                 raise ValueError("Don't repeat twice the same parameter")
-
-    def _compute_descriptors(self) -> utils.Descriptors:
-        init = utils.Descriptors()
-        return functools.reduce(operator.and_, [p.descriptors for p in self._content.values()], init)
 
     def __getitem__(self, name: tp.Any) -> core.Parameter:
         return self._content[name]
@@ -81,9 +79,7 @@ class Container(core.Parameter):
             return np.array([])
         return data_list[0] if len(data_list) == 1 else np.concatenate(data_list)  # type: ignore
 
-    def _internal_set_standardized_data(
-        self: D, data: np.ndarray, reference: D, deterministic: bool = False
-    ) -> None:
+    def _internal_set_standardized_data(self: D, data: np.ndarray, reference: D) -> None:
         if self._sizes is None:
             self.get_standardized_data(reference=self)
         assert self._sizes is not None
@@ -95,16 +91,13 @@ class Container(core.Parameter):
         start, end = 0, 0
         for name, size in self._sizes.items():
             end = start + size
-            self._content[name].set_standardized_data(
-                data[start:end], reference=reference[name], deterministic=deterministic
-            )
+            self._content[name].set_standardized_data(data[start:end], reference=reference[name])
             start = end
         assert end == len(data), f"Finished at {end} but expected {len(data)}"
 
-    def sample(self: D) -> D:
+    def _layered_sample(self: D) -> D:
         child = self.spawn_child()
         child._content = {k: p.sample() for k, p in self._content.items()}
-        child.heritage["lineage"] = child.uid
         return child
 
 
@@ -125,7 +118,7 @@ class Dict(Container):
     used to hold the internal/model parameters for all Parameter classes.
     """
 
-    value: core.ValueProperty[tp.Dict[str, tp.Any]] = core.ValueProperty()
+    value: core.ValueProperty[tp.Dict[str, tp.Any], tp.Dict[str, tp.Any]] = core.ValueProperty()
 
     def __iter__(self) -> tp.Iterator[str]:
         return iter(self.keys())
@@ -139,10 +132,10 @@ class Dict(Container):
     def values(self) -> tp.ValuesView[core.Parameter]:
         return self._content.values()
 
-    def _get_value(self) -> tp.Dict[str, tp.Any]:
+    def _layered_get_value(self) -> tp.Dict[str, tp.Any]:
         return {k: p.value for k, p in self.items()}
 
-    def _set_value(self, value: tp.Dict[str, tp.Any]) -> None:
+    def _layered_set_value(self, value: tp.Dict[str, tp.Any]) -> None:
         cls = self.__class__.__name__
         if not isinstance(value, dict):
             raise TypeError(f"{cls} value must be a dict, got: {value}\nCurrent value: {self.value}")
@@ -188,12 +181,12 @@ class Tuple(Container):
     def __iter__(self) -> tp.Iterator[core.Parameter]:
         return (self._content[k] for k in range(len(self)))
 
-    value: core.ValueProperty[tp.Tuple[tp.Any]] = core.ValueProperty()
+    value: core.ValueProperty[tp.Tuple[tp.Any, ...], tp.Tuple[tp.Any, ...]] = core.ValueProperty()
 
-    def _get_value(self) -> tp.Tuple[tp.Any, ...]:
+    def _layered_get_value(self) -> tp.Tuple[tp.Any, ...]:
         return tuple(p.value for p in self)
 
-    def _set_value(self, value: tp.Tuple[tp.Any, ...]) -> None:
+    def _layered_set_value(self, value: tp.Tuple[tp.Any, ...]) -> None:
         if not isinstance(value, tuple) or not len(value) == len(self):
             cls = self.__class__.__name__
             raise ValueError(
@@ -231,10 +224,10 @@ class Instrumentation(Tuple):
 
     @property
     def args(self) -> tp.Tuple[tp.Any, ...]:
-        return self[0].value  # type: ignore
+        return self.value[0]
 
     @property
     def kwargs(self) -> tp.Dict[str, tp.Any]:
-        return self[1].value  # type: ignore
+        return self.value[1]
 
-    value: core.ValueProperty[tp.ArgsKwargs] = core.ValueProperty()  # type: ignore
+    value: core.ValueProperty[tp.ArgsKwargs, tp.ArgsKwargs] = core.ValueProperty()  # type: ignore

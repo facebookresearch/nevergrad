@@ -7,11 +7,12 @@ import os
 import sys
 import shutil
 import tempfile
+import warnings
 import subprocess
 from pathlib import Path
 import numpy as np
+from nevergrad.common import errors
 from nevergrad.common import typing as tp
-from nevergrad.common import tools as ngtools
 
 
 class BoundChecker:
@@ -53,9 +54,8 @@ class BoundChecker:
         return True
 
 
-class Descriptors:
-    """Provides access to a set of descriptors for the parametrization
-    This can be used within optimizers.
+class FunctionInfo:  # Note: eventually, this should be a dataclass (dropping old Python support)
+    """Information about the function
 
     Parameters
     ----------
@@ -63,45 +63,92 @@ class Descriptors:
         whether the function equipped with its instrumentation is deterministic.
         Can be false if the function is not deterministic or if the instrumentation
         contains a softmax.
-    deterministic_function: bool
-        whether the objective function is deterministic.
-    non_proxy_function: bool
-        whether the objective function is not a proxy of a more interesting objective function.
-    continuous: bool
-        whether the domain is entirely continuous.
+    proxy: bool
+        whether the objective function is a proxy of a more interesting objective function.
     metrizable: bool
         whether the domain is naturally equipped with a metric.
-    ordered: bool
-        whether all domains and subdomains are ordered.
-    """  # TODO add repr
+    """
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         deterministic: bool = True,
-        deterministic_function: bool = True,
-        non_proxy_function: bool = True,
-        continuous: bool = True,
+        proxy: bool = False,
         metrizable: bool = True,
-        ordered: bool = True,
     ) -> None:
         self.deterministic = deterministic
-        self.deterministic_function = deterministic_function
-        self.non_proxy_function = non_proxy_function
-        self.continuous = continuous
+        self.proxy = proxy
         self.metrizable = metrizable
-        self.ordered = ordered
-
-    def __and__(self, other: "Descriptors") -> "Descriptors":
-        values = {field: getattr(self, field) & getattr(other, field) for field in self.__dict__}
-        return Descriptors(**values)
 
     def __repr__(self) -> str:
-        diff = ",".join(
-            f"{x}={y}"
-            for x, y in sorted(ngtools.different_from_defaults(instance=self, check_mismatches=True).items())
-        )
+        diff = ",".join(f"{x}={y}" for x, y in sorted(self.__dict__.items()))
         return f"{self.__class__.__name__}({diff})"
+
+
+_WARNING = "parameter.descriptors is deprecated use {} instead"
+
+
+class DeprecatedDescriptors:
+    """Provides access to a set of descriptors for the parametrization
+    This can be used within optimizers.
+
+    Deprecated
+    ----------
+    This is replaced by ng.p.helpers.analyze(parameter), and parameter.function
+
+    """
+
+    _ANALYSIS_NAMES = ["deterministic", "continuous", "ordered"]
+
+    # pylint: disable=too-many-arguments
+    def __init__(self, param: tp.Any) -> None:
+        self._param = param
+        self._info: tp.Any = None
+
+    def __getattr__(self, name: str) -> tp.Any:
+        if name in self._ANALYSIS_NAMES:
+            if self._info is None:
+                from . import helpers  # pylint: disable=import-outside-toplevel
+
+                self._info = helpers.analyze(self._param)
+            warnings.warn(
+                _WARNING.format(f"'ng.p.helpers.analyze(parameter).{name}'"),
+                errors.NevergradDeprecationWarning,
+            )
+            return getattr(self._info, name)
+        if name == "non_proxy_function":
+            warnings.warn(
+                _WARNING.format(f"'not parameter.function.{name}'"), errors.NevergradDeprecationWarning
+            )
+            return not self._param.function.proxy
+        translation = dict(deterministic_function="deterministic", metrizable="metrizable")
+        if name not in translation:
+            return super().__getattr__(name)  # type: ignore
+        warnings.warn(
+            _WARNING.format(f"'parameter.function.{translation[name]}'"), errors.NevergradDeprecationWarning
+        )
+        return getattr(self._param.function, translation[name])
+
+    def __setattr__(self, name: str, value: bool) -> None:
+        if name in self._ANALYSIS_NAMES:
+            raise RuntimeError(
+                f"Setting {name} descriptor value is no longer supported, as "
+                "this is now included in ng.p.helpers.analyze(parameter)"
+            )
+        if name == "non_proxy_function":
+            self._param.function.proxy = not value
+            warnings.warn(
+                _WARNING.format(f"'not parameter.function.{name}'"), errors.NevergradDeprecationWarning
+            )
+            return
+        translation = dict(deterministic_function="deterministic", metrizable="metrizable")
+        if name in translation:
+            setattr(self._param.function, translation[name], value)
+            warnings.warn(
+                _WARNING.format(f"'parameter.function.{translation[name]}'"),
+                errors.NevergradDeprecationWarning,
+            )
+            return
+        super().__setattr__(name, value)
 
 
 class TemporaryDirectoryCopy(tempfile.TemporaryDirectory):  # type: ignore
@@ -294,3 +341,15 @@ def float_penalty(x: tp.Union[bool, float]) -> float:
     elif isinstance(x, (float, np.float)):
         return -min(0, x)  # Negative ==> >0
     raise TypeError(f"Only bools and floats are supported for check constaint, but got: {x} ({type(x)})")
+
+
+class _ConstraintCompatibilityFunction:
+    """temporary hack for "register_cheap_constraint", to be removed"""
+
+    def __init__(self, func: tp.Callable[[tp.Any], tp.Loss]) -> None:
+        self.func = func
+
+    def __call__(self, *args: tp.Any, **kwargs: tp.Any) -> tp.Loss:
+        out = self.func((args, kwargs))
+        print("calling", args, kwargs, "out =", out)
+        return out

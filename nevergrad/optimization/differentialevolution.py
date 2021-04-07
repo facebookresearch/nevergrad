@@ -5,11 +5,10 @@
 
 import warnings
 import numpy as np
-from scipy import stats
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
 from . import base
-from . import sequences
+from . import oneshot
 
 
 class Crossover:
@@ -100,7 +99,7 @@ class _DE(base.Optimizer):
         self._penalize_cheap_violations = True
         self._uid_queue = base.utils.UidQueue()
         self.population: tp.Dict[str, p.Parameter] = {}
-        self.sampler: tp.Optional[sequences.Sampler] = None
+        self.sampler: tp.Optional[base.Optimizer] = None
 
     def recommend(self) -> p.Parameter:  # This is NOT the naive version. We deal with noise.
         if self._config.recommendation != "noisy":
@@ -112,30 +111,38 @@ class _DE(base.Optimizer):
         data: tp.Any = sum(
             [g.get_standardized_data(reference=self.parametrization) for g in good_guys]
         ) / len(good_guys)
-        return self.parametrization.spawn_child().set_standardized_data(data, deterministic=True)
+        out = self.parametrization.spawn_child()
+        with p.helpers.deterministic_sampling(out):
+            out.set_standardized_data(data)
+        return out
 
     def _internal_ask_candidate(self) -> p.Parameter:
         if len(self.population) < self.llambda:  # initialization phase
             init = self._config.initialization
-            if self.sampler is None and init != "gaussian":
+            if self.sampler is None and init not in ["gaussian", "parametrization"]:
                 assert init in ["LHS", "QR"]
-                sampler_cls = sequences.LHSSampler if init == "LHS" else sequences.HammersleySampler
-                self.sampler = sampler_cls(
-                    self.dimension, budget=self.llambda, scrambling=init == "QR", random_state=self._rng
+                self.sampler = oneshot.SamplingSearch(
+                    sampler=init if init == "LHS" else "Hammersley", scrambled=init == "QR", scale=self.scale
+                )(
+                    self.parametrization,
+                    budget=self.llambda,
                 )
-            new_guy = self.scale * (
-                self._rng.normal(0, 1, self.dimension)
-                if self.sampler is None
-                else stats.norm.ppf(self.sampler())
-            )
-            candidate = self.parametrization.spawn_child().set_standardized_data(new_guy)
+            if init == "parametrization":
+                candidate = self.parametrization.sample()
+            elif self.sampler is not None:
+                candidate = self.sampler.ask()
+            else:
+                new_guy = self.scale * self._rng.normal(0, 1, self.dimension)
+                candidate = self.parametrization.spawn_child().set_standardized_data(new_guy)
             candidate.heritage["lineage"] = candidate.uid  # new lineage
             self.population[candidate.uid] = candidate
             self._uid_queue.asked.add(candidate.uid)
             return candidate
         # init is done
-        parent = self.population[self._uid_queue.ask()]
+        lineage = self._uid_queue.ask()
+        parent = self.population[lineage]
         candidate = parent.spawn_child()
+        candidate.heritage["lineage"] = lineage  # tell-not-asked may have provided a different lineage
         data = candidate.get_standardized_data(reference=self.parametrization)
         # define all the different parents
         uids = list(self.population)
@@ -144,10 +151,11 @@ class _DE(base.Optimizer):
         # redefine the different parents in case of multiobjective optimization
         if self._config.multiobjective_adaptation and self.num_objectives > 1:
             pareto = self.pareto_front()
+            # can't use choice directly on pareto, because parametrization can be iterable
             if pareto:
-                best = parent if parent in pareto else self._rng.choice(pareto)
+                best = parent if parent in pareto else pareto[self._rng.choice(len(pareto))]
             if len(pareto) > 2:  # otherwise, not enough diversity
-                a, b = self._rng.choice(pareto, size=2, replace=False)
+                a, b = (pareto[idx] for idx in self._rng.choice(len(pareto), size=2, replace=False))
         # define donor
         data_a, data_b, data_best = (
             indiv.get_standardized_data(reference=self.parametrization) for indiv in (a, b, best)
@@ -161,7 +169,7 @@ class _DE(base.Optimizer):
         else:
             crossovers = Crossover(self._rng, 1.0 / self.dimension if co == "dimension" else co)
             crossovers.apply(donor, data)
-            candidate.set_standardized_data(donor, deterministic=False, reference=self.parametrization)
+            candidate.set_standardized_data(donor, reference=self.parametrization)
         return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
@@ -187,10 +195,11 @@ class _DE(base.Optimizer):
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         discardable: tp.Optional[str] = None
         if len(self.population) >= self.llambda:
-            if self.num_objectives == 1:  # monoobjective: replace if better
-                worst = max(self.population.values(), key=base._loss)
+
+            if self.num_objectives == 1:  # singleobjective: replace if better
+                uid, worst = max(self.population.items(), key=lambda p: base._loss(p[1]))
                 if loss < base._loss(worst):
-                    discardable = worst.heritage["lineage"]
+                    discardable = uid
             else:  # multiobjective: replace if in pareto and some parents are not
                 pareto_uids = {c.uid for c in self.pareto_front()}
                 if candidate.uid in pareto_uids:
@@ -202,8 +211,9 @@ class _DE(base.Optimizer):
             del self.population[discardable]
             self._uid_queue.discard(discardable)
         if len(self.population) < self.llambda:  # if there is space, add the new point
-            candidate.heritage["lineage"] = candidate.uid  # new lineage
             self.population[candidate.uid] = candidate
+            # this candidate lineage is not candidate.uid, but to avoid interfering with other optimizers (eg: PSO)
+            # we should not update the lineage (and lineage of children must therefore be enforced manually)
             self._uid_queue.tell(candidate.uid)
 
 
@@ -225,8 +235,9 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
 
     Parameters
     ----------
-    initialization: "LHS", "QR" or "gaussian"
-        algorithm/distribution used for the initialization phase
+    initialization: "parametrization", "LHS" or "QR"
+        algorithm/distribution used for the initialization phase. If "parametrization", this uses the
+        sample method of the parametrization.
     scale: float or str
         scale of random component of the updates
     recommendation: "pessimistic", "optimistic", "mean" or "noisy"
@@ -253,7 +264,7 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
     def __init__(
         self,
         *,
-        initialization: str = "gaussian",
+        initialization: str = "parametrization",
         scale: tp.Union[str, float] = 1.0,
         recommendation: str = "optimistic",
         crossover: tp.Union[str, float] = 0.5,
@@ -265,7 +276,7 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
     ) -> None:
         super().__init__(_DE, locals(), as_config=True)
         assert recommendation in ["optimistic", "pessimistic", "noisy", "mean"]
-        assert initialization in ["gaussian", "LHS", "QR"]
+        assert initialization in ["gaussian", "LHS", "QR", "parametrization"]
         assert isinstance(scale, float) or scale == "mini"
         if not isinstance(popsize, int):
             assert popsize in ["large", "dimension", "standard"]
