@@ -13,12 +13,22 @@ https://raw.githubusercontent.com/purdue-orbital/rocket-simulation/master/Simula
 import math
 import pyproj
 import numpy as np
+from nevergrad.parametrization import parameter
+from ..base import ArrayExperimentFunction
+
+# pylint: disable=too-many-locals,too-many-statements
+
+
+class Rocket(ArrayExperimentFunction):
+    def __init__(self, symmetry: int = 0) -> None:
+        super().__init__(rocket, parametrization=parameter.Array(shape=(24,)), symmetry=symmetry)
 
 
 def rocket(thrust_bias: np.ndarray):
 
     assert len(thrust_bias) == 24, "Bad guide length."
     # Covert ang to rads
+
     def rad(ang):
         return (ang / 360) * 2 * (3.1415926)
 
@@ -39,7 +49,8 @@ def rocket(thrust_bias: np.ndarray):
     def alt(Ex, Ey, Ez):
         ecef = pyproj.Proj(proj="geocent", ellps="WGS84", datum="WGS84")
         lla = pyproj.Proj(proj="latlong", ellps="WGS84", datum="WGS84")
-        _, _, alt = pyproj.transform(ecef, lla, Ex, Ey, Ez, radians=True)
+        transformer = pyproj.Transformer.from_proj(ecef, lla)
+        _, _, alt = transformer.transform(Ex, Ey, Ez, radians=True)
         return alt
 
     def grav_force(Ex, Ey, Ez, m):
@@ -87,11 +98,11 @@ def rocket(thrust_bias: np.ndarray):
         Fz = Fz_drag + Fz_grav
         return Fx, Fy, Fz
 
-    ##def lift_force        lift -> pitching moment by reference length
+    # def lift_force        lift -> pitching moment by reference length
 
-    ##def side_force        side -> yaw moment by reference length
+    # def side_force        side -> yaw moment by reference length
 
-    ##Areodynaminc forces are applied at center of pressfrom math import *
+    # Areodynaminc forces are applied at center of pressfrom math import *
 
     # Need to find ideal coefficient of drag
     # Diameter assumed 0.3m
@@ -102,13 +113,13 @@ def rocket(thrust_bias: np.ndarray):
     # Total 2nd stage 98 kg
     # 2nd Stage propellant 83 kg
 
-    ## GOAL FOR FINAL CODE (this refers to the original code, this does not apply here at least in the foreseeable future)
+    # GOAL FOR FINAL CODE (this refers to the original code, this does not apply here at least in the foreseeable future)
     # Iterate through launch angels to minimize delta V in the y(rocket frame) direction, to 150km
     # after thrust, maximize delta v in the x(rocket frame) direction
     # Minimize time for initial trust burn as third priority
     # looking for initial launch angle, relative angle after thrust is 0, final velocity
 
-    ## Inertial Earth Frame. Reference fram centered at the earth center of gravity (z-up, x-forward, y-right)
+    # Inertial Earth Frame. Reference fram centered at the earth center of gravity (z-up, x-forward, y-right)
     # a = 6398137  # equatoral radius
     # b = 6356752  # polar radius
     # radius = R = math.sqrt((math.pow(math.pow(a, 2) * math.cos(latitude), 2) + (math.pow(math.pow(b, 2) * math.sin(latitude), 2))) / (
@@ -139,12 +150,13 @@ def rocket(thrust_bias: np.ndarray):
     # altitude = 0    # Altitude of rocket in meters
     ecef = pyproj.Proj(proj="geocent", ellps="WGS84", datum="WGS84")
     lla = pyproj.Proj(proj="latlong", ellps="WGS84", datum="WGS84")
-    Ex, Ey, Ez = pyproj.transform(lla, ecef, longitude, latitude, altitude, radians=True)
+    transformer = pyproj.Transformer.from_proj(lla, ecef)
+    Ex, Ey, Ez = transformer.transform(longitude, latitude, altitude, radians=True)
     Evx, Evy, Evz = 0, 0, 0
     r_initial = (Ex ** 2 + Ey ** 2 + Ez ** 2) ** 0.5
     # print(Ex, Ey, Ez, r_initial, sep="\t")
 
-    ## Rocket specs
+    # Rocket specs
     roc_mass = 0.0472  # mass of rocket in kg (not including engine
     theta = 45  # Angle of launch from z
     phi = 45  # Angle of launch from x
@@ -154,9 +166,9 @@ def rocket(thrust_bias: np.ndarray):
     total_mass = roc_mass + eng_mass_initial
     final_roc_mass = roc_mass + eng_mass_final
 
-    ## Earth rotation speed at inital position
-    ## Position Velocity Attitude(Earth Centric x-forward y-right z-up)
-    ## latitude and longitude position
+    # Earth rotation speed at inital position
+    # Position Velocity Attitude(Earth Centric x-forward y-right z-up)
+    # latitude and longitude position
 
     # Adapted from the orignal code (minor modifications).
     thrust = np.asarray(

@@ -93,7 +93,7 @@ class BaseFunction(base.ExperimentFunction):
             deterministic_sim=deterministic_sim,
         )
         if self.noise_level > 0.0 or not deterministic_sim:
-            self.parametrization.descriptors.deterministic_function = False
+            self.parametrization.function.deterministic = False
         self._descriptors.pop("random_state", None)  # remove it from automatically added descriptors
 
     def _simulate(self, x: tp.Tuple) -> float:
@@ -118,7 +118,7 @@ class BaseFunction(base.ExperimentFunction):
         return loss
 
     def evaluation_function(self, *recommendations: p.Parameter) -> float:
-        assert len(recommendations) == 1, "Should not be a pareto set for a monoobjective function"
+        assert len(recommendations) == 1, "Should not be a pareto set for a singleobjective function"
         x = recommendations[0].value
         # pylint: disable=not-callable
         loss = self.function(x)

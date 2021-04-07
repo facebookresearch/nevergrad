@@ -7,9 +7,9 @@ from .oneshot import SamplingSearch
 from .differentialevolution import DifferentialEvolution
 from .optimizerlib import RandomSearchMaker, SQP, LHSSearch, DE, RandomSearch, MetaRecentering, MetaTuneRecentering  # type: ignore
 from .optimizerlib import (
+    MultipleSingleRuns,
     ParametrizedOnePlusOne,
     ParametrizedCMA,
-    ConfiguredPSO,
     ConfSplitOptimizer,
     ParametrizedBO,
     EMNA,
@@ -22,7 +22,7 @@ OnePointDE = DifferentialEvolution(crossover="onepoint").set_name("OnePointDE", 
 ParametrizationDE = DifferentialEvolution(crossover="parametrization").set_name(
     "ParametrizationDE", register=True
 )
-MiniDE = DifferentialEvolution(scale="mini").set_name("MiniDE", register=True)
+MiniDE = DifferentialEvolution(initialization="gaussian", scale="mini").set_name("MiniDE", register=True)
 MiniLhsDE = DifferentialEvolution(initialization="LHS", scale="mini").set_name("MiniLhsDE", register=True)
 MiniQrDE = DifferentialEvolution(initialization="QR", scale="mini").set_name("MiniQrDE", register=True)
 AlmostRotationInvariantDEAndBigPop = DifferentialEvolution(crossover=0.9, popsize="dimension").set_name(
@@ -52,9 +52,6 @@ FastGAOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
 FastGANoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling="random", mutation="fastga").set_name(
     "FastGANoisyDiscreteOnePlusOne", register=True
 )
-PortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="portfolio").set_name(
-    "PortfolioDiscreteOnePlusOne", register=True
-)
 PortfolioOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
     noise_handling="optimistic", mutation="portfolio"
 ).set_name("PortfolioOptimisticNoisyDiscreteOnePlusOne", register=True)
@@ -70,9 +67,6 @@ RBO = ParametrizedBO(initialization="random").set_name("RBO", register=True)
 QRBO = ParametrizedBO(initialization="Hammersley").set_name("QRBO", register=True)
 MidQRBO = ParametrizedBO(initialization="Hammersley", middle_point=True).set_name("MidQRBO", register=True)
 LBO = ParametrizedBO(initialization="LHS").set_name("LBO", register=True)
-
-# PSO
-WidePSO = ConfiguredPSO(transform="arctan", wide=True).set_name("WidePSO", register=True)  # non-standard init
 
 # EMNA
 IsoEMNA = EMNA(naive=False).set_name("IsoEMNA", register=True)
@@ -207,7 +201,7 @@ ChainCMAwithMetaRecentering = Chaining([MetaRecentering, CMA], ["num_workers"]).
 # Random search
 Zero = RandomSearchMaker(scale=0.0).set_name("Zero", register=True)
 StupidRandom = RandomSearchMaker(stupid=True).set_name("StupidRandom", register=True)
-CauchyRandomSearch = RandomSearchMaker(cauchy=True).set_name("CauchyRandomSearch", register=True)
+CauchyRandomSearch = RandomSearchMaker(sampler="cauchy").set_name("CauchyRandomSearch", register=True)
 RandomScaleRandomSearch = RandomSearchMaker(scale="random", middle_point=True).set_name(
     "RandomScaleRandomSearch", register=True
 )
@@ -282,3 +276,8 @@ HCHAvgCauchyLHSSearch = SamplingSearch(
 MetaNGOpt10 = ConfSplitOptimizer(
     multivariate_optimizer=NGOpt10, monovariate_optimizer=NGOpt10, non_deterministic_descriptor=False
 ).set_name("MetaNGOpt10", register=True)
+
+# Multiple single runs for multi-objective optimization.
+NGOptSingle9 = MultipleSingleRuns(num_single_runs=9).set_name("NGOptSingle9", register=True)
+NGOptSingle16 = MultipleSingleRuns(num_single_runs=16).set_name("NGOptSingle16", register=True)
+NGOptSingle25 = MultipleSingleRuns(num_single_runs=25).set_name("NGOptSingle25", register=True)

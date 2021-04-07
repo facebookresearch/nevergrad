@@ -8,6 +8,7 @@ import itertools
 import numpy as np
 from scipy import stats
 import nevergrad.common.typing as tp
+from . import utils
 
 
 class Transform:
@@ -194,9 +195,12 @@ class Clipping(BoundTransform):
         self._bounce = bounce
         b = ",b" if bounce else ""
         self.name = f"Cl({_f(a_min)},{_f(a_max)}{b})"
+        self.checker = utils.BoundChecker(self.a_min, self.a_max)
 
     def forward(self, x: np.ndarray) -> np.ndarray:
         self._check_shape(x)
+        if self.checker(x):
+            return x
         out = np.clip(x, self.a_min, self.a_max)
         if self._bounce:
             out = np.clip(2 * out - x, self.a_min, self.a_max)
@@ -204,10 +208,10 @@ class Clipping(BoundTransform):
 
     def backward(self, y: np.ndarray) -> np.ndarray:
         self._check_shape(y)
-        if (self.a_max is not None and (y > self.a_max).any()) or (
-            self.a_min is not None and (y < self.a_min).any()
-        ):
-            raise ValueError(f"Only data between {self.a_min} and {self.a_max} " "can be transformed back.")
+        if not self.checker(y):
+            raise ValueError(
+                f"Only data between {self.a_min} and {self.a_max} can be transformed back.\n" f"Got: {y}"
+            )
         return y
 
 
@@ -231,13 +235,13 @@ class ArctanBound(BoundTransform):
 
     def forward(self, x: np.ndarray) -> np.ndarray:
         self._check_shape(x)
-        return self._b + self._a * np.arctan(x)
+        return self._b + self._a * np.arctan(x)  # type: ignore
 
     def backward(self, y: np.ndarray) -> np.ndarray:
         self._check_shape(y)
         if (y > self.a_max).any() or (y < self.a_min).any():
             raise ValueError(f"Only data between {self.a_min} and {self.a_max} can be transformed back.")
-        return np.tan((y - self._b) / self._a)
+        return np.tan((y - self._b) / self._a)  # type: ignore
 
 
 class CumulativeDensity(BoundTransform):
@@ -253,7 +257,7 @@ class CumulativeDensity(BoundTransform):
         self.name = f"Cd({_f(lower)},{_f(upper)})"
 
     def forward(self, x: np.ndarray) -> np.ndarray:
-        return self._a * stats.norm.cdf(x) + self._b
+        return self._a * stats.norm.cdf(x) + self._b  # type: ignore
 
     def backward(self, y: np.ndarray) -> np.ndarray:
         if (y > self.a_max).any() or (y < self.a_min).any():
