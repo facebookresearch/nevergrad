@@ -136,10 +136,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         self._max_num_warnings = 500
 
     def warning(self, s: str, e: tp.Any) -> None:
-        if self._max_num_warning <= 0:
+        if self._max_num_warnings <= 0:
             return
         warnings.warn(s, e)
-        self._max_num_warning -= 1
+        self._max_num_warnings -= 1
 
     @property
     def _rng(self) -> np.random.RandomState:
