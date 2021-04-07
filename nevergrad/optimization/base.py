@@ -134,6 +134,13 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         self._running_jobs: tp.List[tp.Tuple[p.Parameter, tp.JobLike[tp.Loss]]] = []
         self._finished_jobs: tp.Deque[tp.Tuple[p.Parameter, tp.JobLike[tp.Loss]]] = deque()
 
+    _max_num_warnings = 500
+
+    def warning(self, s: str, e: tp.Any) -> None
+        if _max_num_warning <= 0:
+            return
+        warnings.warn(s, e)
+
     @property
     def _rng(self) -> np.random.RandomState:
         """np.random.RandomState: parametrization random state the optimizer must pull from.
@@ -312,7 +319,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             # Non-sense values including NaNs should not be accepted.
             # We do not use max-float as various later transformations could lead to greater values.
             if not loss < 5.0e20:  # pylint: disable=unneeded-not
-                warnings.warn(
+                self.warning(
                     f"Clipping very high value {loss} in tell (rescale the cost function?).",
                     errors.LossTooLargeWarning,
                 )
@@ -385,7 +392,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 f'"tell" method only supports float values but the passed loss was: {loss} (type: {type(loss)}.'
             )
         if np.isnan(loss) or loss == np.inf:
-            warnings.warn(f"Updating fitness with {loss} value", errors.BadLossWarning)
+            self.warning(f"Updating fitness with {loss} value", errors.BadLossWarning)
         mvalue: tp.Optional[utils.MultiValue] = None
         if x not in self.archive:
             self.archive[x] = utils.MultiValue(candidate, loss, reference=self.parametrization)
@@ -460,7 +467,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             # still not solving, let's run sub-optimization
             candidate = _constraint_solver(candidate, budget=max_trials)
         if not (satisfies or candidate.satisfies_constraints()):
-            warnings.warn(
+            self.warning(
                 f"Could not bypass the constraint after {max_trials} tentatives, "
                 "sending candidate anyway.",
                 errors.FailedConstraintWarning,
@@ -576,7 +583,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         if executor is None:
             executor = utils.SequentialExecutor()  # defaults to run everything locally and sequentially
             if self.num_workers > 1:
-                warnings.warn(
+                self.warning(
                     f"num_workers = {self.num_workers} > 1 is suboptimal when run sequentially",
                     errors.InefficientSettingsWarning,
                 )
