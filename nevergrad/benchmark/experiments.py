@@ -200,10 +200,12 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         for rotation in [True, False]  # period 2
         for nl in [0.0, 100.0]  # period 2
         for tf in [0.1, 10.0]
-        for num_blocks in [1, 8]       # period 2
+        for num_blocks in [1, 8]  # period 2
         for d in [5, 70, 10000]  # period 4
-        for split in [True, False]     # period 2
-    ][::37]  # 37 is coprime with all periods above so we sample correctly the possibilities.
+        for split in [True, False]  # period 2
+    ][
+        ::37
+    ]  # 37 is coprime with all periods above so we sample correctly the possibilities.
     assert len(functions) < 30, str(len(functions))
     # This problem is intended as a stable basis forever.
     # The list of optimizers should contain only the basic for comparison and "baselines".
@@ -216,8 +218,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                 index += 1
                 if index % 5 == 0:
                     for optim in optims:
-                        xp = Experiment(function, optim, num_workers=nw,
-                                        budget=budget, seed=next(seedg))
+                        xp = Experiment(function, optim, num_workers=nw, budget=budget, seed=next(seedg))
                         if not xp.is_incoherent:
                             yield xp
     # Discrete, unordered.
@@ -229,7 +230,9 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                 index += 1
                 if index % 4 != 0:
                     continue
-                dfunc = ExperimentFunction(corefuncs.DiscreteFunction(name, arity), instrum.set_name("transition"))
+                dfunc = ExperimentFunction(
+                    corefuncs.DiscreteFunction(name, arity), instrum.set_name("transition")
+                )
                 dfunc.add_descriptors(arity=arity)
                 for optim in optims:
                     for budget in [500, 5000]:
@@ -274,6 +277,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                 if index % 5 == 0:
                     for optim in optims:
                         yield Experiment(mofunc, optim, budget=budget, num_workers=nw, seed=next(seedg))
+
 
 # pylint: disable=redefined-outer-name
 @registry.register
