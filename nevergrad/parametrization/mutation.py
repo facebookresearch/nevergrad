@@ -19,7 +19,7 @@ class Mutation(_layering.Layer):
     This is an experimental API
 
     Either implement:
-    - `_apply_array`  which provides a new np.ndarray from a list of arrays
+    - `_apply_array`  which provides a new np.ndarray from a list of arrays
     - `apply` which updates the first p.Array instance
 
     Mutation should take only one p.Array instance as argument, while
