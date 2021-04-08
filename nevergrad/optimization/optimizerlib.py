@@ -1219,19 +1219,31 @@ class Portfolio(base.Optimizer):
     """Passive portfolio of CMA, 2-pt DE and Scr-Hammersley."""
 
     def __init__(
-        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+        self,
+        parametrization: IntOrParameter,
+        budget: tp.Optional[int] = None,
+        num_workers: int = 1,
+        optimizers: tp.Sequence[tp.Union[base.OptCls, str]] = (),
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        assert budget is not None
-        self.optims = [
-            CMA(
-                self.parametrization, budget // 3 + (budget % 3 > 0), num_workers
-            ),  # share parametrization and its rng
-            TwoPointsDE(self.parametrization, budget // 3 + (budget % 3 > 1), num_workers),  # noqa: F405
-            ScrHammersleySearch(self.parametrization, budget // 3, num_workers),
-        ]  # noqa: F405
-        if budget < 12 * num_workers:
-            self.optims = [ScrHammersleySearch(self.parametrization, budget, num_workers)]  # noqa: F405
+        if not optimizers:
+            if budget is not None and budget < 12 * num_workers:
+                optimizers = ["ScrHammersleySearch"]
+            else:
+                optimizers = [CMA, "TwoPointsDE", "ScrHammersleySearch"]
+        self.optims: tp.List[base.Optimizer] = []
+        num = len(optimizers)
+        sub_budget = None if budget is None else budget // num + (budget % num > 0)
+        for opt in optimizers:
+            Optim = registry[opt] if isinstance(opt, str) else opt
+            sub_workers = 1 if Optim.no_parallelization else num_workers // num + (num_workers % num > 0)
+            self.optims.append(
+                Optim(
+                    self.parametrization,  # share parametrization and its rng
+                    budget=sub_budget,
+                    num_workers=sub_workers,
+                )
+            )
 
     def _internal_ask_candidate(self) -> p.Parameter:
         optim_index = self._num_ask % len(self.optims)
@@ -1297,7 +1309,7 @@ def learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.Arra
     model.fit(X2, y)
 
     try:
-        for cls in Powell, DE:  # Powell excellent here, DE as a backup for thread safety.
+        for cls in (Powell, DE):  # Powell excellent here, DE as a backup for thread safety.
             optimizer = cls(parametrization=dimension, budget=45 * dimension + 30)
             try:
                 minimum = optimizer.minimize(
