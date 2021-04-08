@@ -159,8 +159,8 @@ def test_bound_scaler() -> None:
         letter=p.Choice("abc"),
     )
     # make sure the order is preserved using legacy split method
-    expected = [x[0] for x in split_as_data_parameters(ref)]
-    assert [x[0] for x in p.helpers.list_data(ref)] == expected
+    expected = [x[1] for x in split_as_data_parameters(ref)]
+    assert p.helpers.list_data(ref) == expected
     # check the bounds
     param = ref.spawn_child()
     scaler = utils.BoundScaler(param)

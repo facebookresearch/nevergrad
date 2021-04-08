@@ -7,7 +7,8 @@ import pickle
 import typing as tp
 import pytest
 import numpy as np
-from . import utils
+
+from nevergrad.common import errors
 from . import parameter as par
 
 
@@ -43,6 +44,9 @@ def test_array_basics() -> None:
 )
 def test_empty_parameters(param: par.Dict) -> None:
     assert not param.dimension
+    analysis = par.helpers.analyze(param)
+    assert analysis.continuous
+    assert analysis.deterministic
     assert param.descriptors.continuous
     assert param.descriptors.deterministic
 
@@ -139,11 +143,17 @@ def check_parameter_features(param: par.Parameter) -> None:
     assert samp_param.uid == samp_param.heritage["lineage"]
     # set descriptor
     assert param.descriptors.deterministic_function
+    assert param.function.deterministic
     param.descriptors.deterministic_function = False
     assert not param.descriptors.deterministic_function
+    assert not param.function.deterministic
+    #
     assert param.descriptors.non_proxy_function
+    assert not param.function.proxy
     param.descriptors.non_proxy_function = False
     assert not param.descriptors.non_proxy_function
+    assert param.function.proxy
+    #
     descr_child = param.spawn_child()
     assert not descr_child.descriptors.deterministic_function
     assert not descr_child.descriptors.non_proxy_function
@@ -171,12 +181,12 @@ def check_parameter_freezable(param: par.Parameter) -> None:
         (par.Array(shape=(2, 2)), "Array{(2,2)}"),
         (par.Tuple(12), "Tuple(12)"),
         (par.Dict(constant=12), "Dict(constant=12)"),
-        (par.Scalar(), "Scalar[sigma=Log{exp=2.0}]"),
+        (par.Scalar(), "Scalar[sigma=Scalar{exp=2.03}]"),
         (
             par.Log(lower=3.2, upper=12.0, exponent=1.5),
-            "Log{Cl(2.868682869489701,6.128533874054364,b),exp=1.5}",
+            "Log{Cl(2.868682869489701,6.128533874054364,b),exp=1.50}",
         ),
-        (par.Scalar().set_integer_casting(), "Scalar{Int}[sigma=Log{exp=2.0}]"),
+        (par.Scalar().set_integer_casting(), "Scalar{Int}[sigma=Scalar{exp=2.03}]"),
         (
             par.Instrumentation(par.Array(shape=(2,)), string="blublu", truc="plop"),
             "Instrumentation(Tuple(Array{(2,)}),Dict(string=blublu,truc=plop))",
@@ -211,9 +221,13 @@ def test_parameter_names(param: par.Parameter, name: str) -> None:
         ),
     ],
 )
-def test_parameter_descriptors(
+def test_parameter_analysis(
     param: par.Parameter, continuous: bool, deterministic: bool, ordered: bool
 ) -> None:
+    analysis = par.helpers.analyze(param)
+    assert analysis.continuous == continuous
+    assert analysis.deterministic == deterministic
+    assert analysis.ordered == ordered
     assert param.descriptors.continuous == continuous
     assert param.descriptors.deterministic == deterministic
     assert param.descriptors.ordered == ordered
@@ -311,7 +325,7 @@ def test_scalar_sampling(param: par.Scalar, expected: bool) -> None:
 
 
 def test_log() -> None:
-    with pytest.warns(UserWarning) as record:
+    with pytest.warns(errors.NevergradRuntimeWarning) as record:
         log = par.Log(lower=0.001, upper=0.1, init=0.02, exponent=2.0)
         assert log.value == pytest.approx(0.02)
         assert not record, [x.message for x in record]  # TODO readd
@@ -375,12 +389,15 @@ def test_transition_choice_repetitions() -> None:
     assert choice.value == (3, 0)
 
 
-def test_descriptors() -> None:
-    d1 = utils.Descriptors()
-    d2 = utils.Descriptors(continuous=False)
-    d3 = d1 & d2
-    assert d3.continuous is False
-    assert d3.deterministic is True
+def test_array_bounded_initialization() -> None:
+    array = par.Array(shape=(1,), lower=-1)
+    assert array.value[0] == 0
+    assert array.bounds == (-1, None)  # type: ignore
+    assert array.sigma.value == 1.0
+    array = par.Array(shape=(1,), lower=-0.5, upper=2.5)
+    assert array.value[0] == 1
+    assert array.bounds == (-0.5, 2.5)  # type: ignore
+    assert array.sigma.value == 0.5
 
 
 @pytest.mark.parametrize("method", ["clipping", "arctan", "tanh", "constraint", "bouncing"])  # type: ignore

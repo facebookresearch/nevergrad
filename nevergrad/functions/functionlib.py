@@ -185,7 +185,7 @@ class ArtificialFunction(ExperimentFunction):
             )
         )
         if noise_level > 0:
-            parametrization.descriptors.deterministic_function = False
+            parametrization.function.deterministic = False
         super().__init__(self.noisy_function, parametrization)
         # variable, must come after super().__init__(...) to bind the random_state
         # may consider having its a local random_state instead but less reproducible

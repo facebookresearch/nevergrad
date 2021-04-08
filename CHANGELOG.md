@@ -19,6 +19,13 @@
   variables since in this case `parameter.sample()` samples uniformly (unless otherwise specified).
   The previous behavior can be obtained with `RandomSearchMaker(sampler="gaussian")`.
 - `PSO` API has been slightly changed [#1073](https://github.com/facebookresearch/nevergrad/pull/1073)
+- `Parameter` instances `descriptor` attribute is deprecated, in favor of a combinaison of an analysis function
+  (`ng.p.helpers.analyze`) returning information about the parameter (eg: whether continuous, deterministic etc...)
+  and a new `function` attribute which can be used to provide information about the function (eg: whether deterministic etc)
+  [#1076](https://github.com/facebookresearch/nevergrad/pull/1076).
+- Half the budget alloted to solve cheap constrained is now used by a sub-optimizer
+  [#1047](https://github.com/facebookresearch/nevergrad/pull/1047). More changes of constraint management will land
+  in the near future.
 
 ### Important changes
 
@@ -39,6 +46,8 @@
   the representation (`__repr__`) of `Array` has changed, and their `bounds` attribute is no longer reliable for now.
   This change will eventually lead to a new syntax for settings bounds and distribution, but it's not ready yet.
 - `DE` initial sampling as been updated to take bounds into accounts [#1058](https://github.com/facebookresearch/nevergrad/pull/1058)
+- `Array` can now take `lower` and `upper` bounds as initialization arguments. The array is initialized at its average
+  if not `init` is provided and both bounds are provided. In this case, sampling will be uniformm between these bounds.
 
 
 ### Other changes
