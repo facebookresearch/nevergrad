@@ -1081,10 +1081,14 @@ def gym_multi(
     multi: bool = False,
     big: bool = False,
     memory: bool = False,
+    ng_gym: bool = False,
+    conformant: bool = False,
 ) -> tp.Iterator[Experiment]:
     """Gym simulator. Maximize reward.
     Many distinct problems."""
-    env_names = GymMulti().env_names
+    env_names = GymMulti.env_names
+    if ng_gym:
+        env_names = GymMulti.ng_gym
     #if memory:
     #    env_names = [e for e in env_names if any(x in e for x in ["Duplicate", "Copy", "Reverse"])]
     #else:
@@ -1092,30 +1096,52 @@ def gym_multi(
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", "progressive", "splitters", "baselines", seed=next(seedg))
     optims += ["DiagonalCMA"]
+    optims += get_optimizers("split_noisy", seed=next(seedg))
+    optims += ["TBPSA"]
     if multi:
         controls = ["multi_neural"]
     else:
         controls = (
-            ["neural", "structured_neural", "noisy_neural", "noisy_scrambled_neural", "scrambled_neural"]
+            ["neural", "structured_neural", "noisy_neural", "noisy_scrambled_neural", "scrambled_neural", "deep_neural",
+            "semideep_neural", "linear"]
             if not big
             else ["neural"]
         )
     if memory:
-        controls = ["neural", "memory_neural"]
+        controls = ["memory_neural", "deep_memory_neural", "semideep_memory_neural"]
+        controls += ["stackingmemory_neural", "deep_stackingmemory_neural", "semideep_stackingmemory_neural"]
         assert not multi
-    neural_factor = 5 if not big else 100
+    if conformant:
+        controls = ["stochastic_conformant"]
     for control in controls:
-        for name in env_names:
-            try:
-                func = GymMulti(name, control, neural_factor, randomized=randomized)
-            except MemoryError:
-                pass
-            for budget in [819200, 409600, 204800, 102400, 51200, 25600, 3200, 6400, 12800, 50, 100, 200, 400, 800, 1600]:
-                for num_workers in [1] if big else [1, 30]:
+        for neural_factor in ([-1] if conformant or control == "linear" else [1, 3, 4, 6, 9]):
+            for name in env_names:
+                try:
+                    func = GymMulti(name, control, neural_factor * (3 if big else 1), randomized=randomized)
+                except MemoryError:
+                    pass
+                for budget in [50, 200, 800, 6400, 3200, 100, 25, 400, 1600, 819200, 409600, 204800, 102400, 51200, 25600, 12800]:
+                    if budget > 100000:
+                        continue
                     for algo in optims:
-                        xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        algo_name = str(algo)
+                        if (not "TBPSA" in algo_name) and (not "Prog" in algo_name) and (not "Split" in algo_name) and (not "PSO" in algo_name):
+                            continue
+                        xp = Experiment(func, algo, budget, num_workers=1, seed=next(seedg))
                         if not xp.is_incoherent:
                             yield xp
+
+
+@registry.register
+def conformant_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of gym_multi with fixed, predetermined actions for each time step.""" 
+    return gym_multi(seed, conformant=True)
+
+
+@registry.register
+def ng_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of gym_multi with a specific list of problems."""
+    return gym_multi(seed, ng_gym=True)
 
 
 @registry.register
@@ -1126,25 +1152,25 @@ def multi_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 @registry.register
 def memory_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Counterpart of gym_multi."""
+    """Counterpart of gym_multi with a recurrent net as a memory."""
     return gym_multi(seed, big=False, memory=True)
 
 
 @registry.register
 def memory_big_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Counterpart of gym_multi."""
+    """Counterpart of gym_multi with bigger nets and a recurrent net as a memory."""
     return gym_multi(seed, big=True, memory=True)
 
 
 @registry.register
 def big_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Counterpart of gym_multi."""
+    """Counterpart of gym_multi with bigger nets."""
     return gym_multi(seed, big=True)
 
 
 @registry.register
 def deterministic_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Counterpart of gym_multi."""
+    """Counterpart of gym_multi with fixed seeds (so that the problem becomes deterministic)."""
     return gym_multi(seed, randomized=False)
 
 

@@ -9,6 +9,15 @@ from . import gym_multi
 
 
 def test_gym_multi() -> None:
+    for env_name in gym_multi.GymMulti.ng_gym:
+        assert env_name in gym_multi.GymMulti.env_names, f"{env_name} unknown!"
+        assert env_name not in gym_multi.NO_LENGTH, f"{env_name} in no length and in ng_gym!"
+    for env_name in gym_multi.GUARANTEED_GYM_ENV_NAMES:
+        assert env_name in gym_multi.GymMulti.env_names, f"{env_name} should be guaranteed!"
+    assert len(gym_multi.GYM_ENV_NAMES) == 26
+
+
+def test_run_gym_multi() -> None:
     if os.name != "nt":
         func = gym_multi.GymMulti(randomized=False)
         x = np.zeros(func.dimension)
@@ -21,8 +30,6 @@ def test_gym_multi() -> None:
                 control,
                 randomized=bool(np.random.randint(2)),
             )
-            x = np.zeros(func.dimension)
-            value = func(x)
-        for env_name in gym_multi.GUARANTEED_GYM_ENV_NAMES:
-            assert env_name in gym_multi.GYM_ENV_NAMES
-        assert len(gym_multi.GYM_ENV_NAMES) == 26
+            # x = np.zeros(func.dimension)
+            x = func.parametrization.sample()
+            value = func(x.value)

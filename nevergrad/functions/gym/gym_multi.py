@@ -65,8 +65,15 @@ GUARANTEED_GYM_ENV_NAMES = [
 CONTROLLERS = [
     "linear",
     "neural",
+    "deep_neural",
+    "semideep_neural",
     "structured_neural",
     "memory_neural",
+    "stackingmemory_neural",
+    "deep_memory_neural",
+    "deep_stackingmemory_neural",
+    "semideep_memory_neural",
+    "semideep_stackingmemory_neural",
     "multi_neural",
     "noisy_neural",
     "noisy_scrambled_neural",
@@ -82,6 +89,20 @@ class GymMulti(ExperimentFunction):
     env_names = GYM_ENV_NAMES
 
     controllers = CONTROLLERS
+
+    ng_gym = [
+        "Copy-v0",
+        "RepeatCopy-v0",
+        "Reverse-v0",
+        "CartPole-v0",
+        "CartPole-v1",
+        "Acrobot-v1",
+        "FrozenLake-v0",
+        "FrozenLake8x8-v0",
+        "NChain-v0",
+        "Roulette-v0",
+]   
+
 
     def __init__(
         self,
@@ -146,18 +167,24 @@ class GymMulti(ExperimentFunction):
 
         # Prepare the policy shape.
         self.output_shape = output_shape
+        self.num_stacking = 1
         self.memory_len = neural_factor * input_dim if "memory" in control else 0
-        input_dim = input_dim + self.memory_len
+        self.extended_input_len = (input_dim + output_dim) * self.num_stacking if "stacking" in control else 0
+        input_dim = input_dim + self.memory_len + self.extended_input_len
+        self.extended_input = np.zeros(self.extended_input_len)
         output_dim = output_dim + self.memory_len
         self.input_dim = input_dim
         self.output_dim = output_dim
-        self.num_neurons = neural_factor * input_dim
-        unstructured_neural_size = (output_dim * self.num_neurons + self.num_neurons * (input_dim + 1),)
+        self.num_neurons = neural_factor * (input_dim - self.extended_input_len)
+        self.num_internal_layers = 1 if "semi" in control else 3
+        internal = self.num_internal_layers * (self.num_neurons**2) if "deep" in control else 0
+        unstructured_neural_size = (output_dim * self.num_neurons + self.num_neurons * (input_dim + 1) + internal,)
         neural_size = unstructured_neural_size
         assert control in CONTROLLERS or control == "conformant", f"{control} not known as a form of control"
         self.control = control
         if "neural" in control:
             self.first_size = self.num_neurons * (self.input_dim + 1)
+            self.second_size = self.num_neurons * self.output_dim
             self.first_layer_shape = (self.input_dim + 1, self.num_neurons)
             self.second_layer_shape = (self.num_neurons, self.output_dim)
         shape_dict = {
@@ -165,7 +192,14 @@ class GymMulti(ExperimentFunction):
             "stochastic_conformant": (self.num_time_steps,) + output_shape,
             "linear": (input_dim + 1, output_dim),
             "memory_neural": neural_size,
+            "stackingmemory_neural": neural_size,
             "neural": neural_size,
+            "deep_neural": neural_size,
+            "semideep_neural": neural_size,
+            "deep_memory_neural": neural_size,
+            "semideep_memory_neural": neural_size,
+            "deep_stackingmemory_neural": neural_size,
+            "semideep_stackingmemory_neural": neural_size,
             "structured_neural": neural_size,
             "multi_neural": (min(self.num_time_steps, 50),) + unstructured_neural_size,
             "noisy_neural": neural_size,
@@ -221,13 +255,29 @@ class GymMulti(ExperimentFunction):
             output = np.matmul(o, x[1:, :])
             output += x[0]
             return output.reshape(self.output_shape), np.zeros(0)
-        first_matrix = x[:self.first_size].reshape(self.first_layer_shape) / np.sqrt(len(o))
-        second_matrix = x[self.first_size :].reshape(self.second_layer_shape) / np.sqrt(self.num_neurons)
+        if "structured" not in self.control:
+            first_matrix = x[:self.first_size].reshape(self.first_layer_shape) / np.sqrt(len(o))
+            second_matrix = x[self.first_size:(self.first_size + self.second_size)].reshape(self.second_layer_shape) / np.sqrt(self.num_neurons)
+        else:
+            assert len(x) == 2
+            first_matrix = np.asarray(x[0][0])
+            second_matrix = np.asarray(x[0][1])
+            assert first_matrix.shape == self.first_layer_shape, f"{first_matrix} does not match {self.first_layer_shape}"
+            assert second_matrix.shape == self.second_layer_shape, f"{second_matrix} does not match {self.second_layer_shape}"
         assert len(o) == len(
             first_matrix[1:]
         ), f"{o.shape} coming in matrix of shape {first_matrix.shape}"
-        activations = np.matmul(o, first_matrix[1:])
-        output = np.matmul(np.tanh(activations + first_matrix[0]), second_matrix)
+        output = np.matmul(o, first_matrix[1:])
+        if "deep" in self.control:
+            current_index = self.first_size + self.second_size
+            internal_layer_size = self.num_neurons ** 2
+            s = (self.num_neurons, self.num_neurons)
+            for k in range(self.num_internal_layers):
+                output = np.tanh(output)
+                output = np.matmul(output, x[current_index:current_index + internal_layer_size].reshape(s)) / np.sqrt(self.num_neurons)
+                current_index += internal_layer_size
+            assert current_index == len(x)
+        output = np.matmul(np.tanh(output + first_matrix[0]), second_matrix)
         return output[self.memory_len :].reshape(self.output_shape), output[: self.memory_len]
 
     def gym_multi_function(self, x: np.ndarray):
@@ -290,17 +340,23 @@ class GymMulti(ExperimentFunction):
         memory = np.zeros(self.memory_len)
         for i in range(self.num_time_steps):
             if self.discrete_input:
-                obs = np.zeros(shape=self.input_dim - len(memory))
+                obs = np.zeros(shape=self.input_dim - self.extended_input_len - len(memory))
                 obs[o] = 1
                 o = obs
-            o = np.concatenate([np.asarray(o).ravel(), memory.ravel()])
-            assert len(o) == self.input_dim, f"o has shape {o.shape} whereas input_dim={self.input_dim}"
+            previous_o = o
+            o = np.concatenate([np.asarray(o).ravel(), memory.ravel(), self.extended_input])
+            assert len(o) == self.input_dim, f"o has shape {o.shape} whereas input_dim={self.input_dim} ({control} / {env})"
             a, memory = self.neural(x[i % len(x)] if "multi" in control else x, o)
             a = self.action_cast(a)
             try:
                 o, r, done, _ = env.step(a)  # Outputs = observation, reward, done, info.
             except AssertionError:  # Illegal action.
                 return 1e20 / (1.0 + i)  # We encourage late failures rather than early failures.
+            if "stacking" in control:
+                additional_input = np.concatenate([np.asarray(a).ravel(), previous_o.ravel()])
+                shift = len(additional_input)
+                self.extended_input[:(len(self.extended_input) - shift)] = self.extended_input[shift:]
+                self.extended_input[(len(self.extended_input) - shift):] = additional_input
             reward += r
             if done:
                 break
