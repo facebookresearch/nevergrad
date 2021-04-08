@@ -237,6 +237,7 @@ class GymMulti(ExperimentFunction):
 
         # Now initializing.
         super().__init__(self.gym_multi_function, parametrization=parametrization)
+        self.archive = []
 
     def evaluation_function(self, *recommendations) -> float:
         x = recommendations[0].value
@@ -282,6 +283,10 @@ class GymMulti(ExperimentFunction):
         return output[self.memory_len :].reshape(self.output_shape), output[: self.memory_len]
 
     def gym_multi_function(self, x: np.ndarray):
+        self.current_time_index = 0
+        self.current_reward = 0
+        self.current_observations = []
+        self.current_actions = []
         loss = 0.0
         num_simulations = 7 if self.control != "conformant" and not self.randomized else 1
         for seed in range(num_simulations):
@@ -320,6 +325,35 @@ class GymMulti(ExperimentFunction):
             pass  # Not all env can do "contains".
         return a
 
+    def step(self, a):
+        o, r, done, info = self.env.step(a)
+        self.current_time_index += 1
+        self.current_reward += r
+        self.current_observations += [np.asarray(o).copy()]
+        self.current_actions += [np.asarray(a).copy()]
+        if done:
+            self.archive += [(self.current_observations, self.current_actions, self.current_reward)]
+        return o, r, done, info
+
+    def heuristic(self, o):
+        current_observations = np.asarray(self.current_observations + [o], dtype=np.float32)
+        assert len(current_observations) == 1 + self.current_time_index, f"{len(current_observations)} vs {self.current_time_index}"
+        a = self.env.action_space.sample()
+        best_a = None
+        best_loss = float("Inf")
+        for trace in self.archive:
+            to, ta, tr = trace
+            if len(current_observations) > len(to):
+                continue
+            to = np.asarray(to[:len(current_observations)], dtype=np.float32)
+            if tr >= best_loss:
+                continue
+            #if all((_to - _o) for _to, _o in zip(to, current_observations)) <= 1e-7:
+            if np.array_equal(to, current_observations):
+                best_a = np.asarray(ta[len(current_observations) - 1], dtype=np.float32)
+                best_loss = tr
+        return best_a
+
     def gym_simulate(self, x: np.ndarray, seed: int = 0):
         try:
             if self.policy_shape is not None:
@@ -350,10 +384,13 @@ class GymMulti(ExperimentFunction):
             a, memory = self.neural(x[i % len(x)] if "multi" in control else x, o)
             a = self.action_cast(a)
             try:
-                o, r, done, _ = env.step(a)  # Outputs = observation, reward, done, info.
+                o, r, done, _ = self.step(a)  # Outputs = observation, reward, done, info.
             except AssertionError:  # Illegal action.
                 return 1e20 / (1.0 + i)  # We encourage late failures rather than early failures.
             if "stacking" in control:
+                attention_a = self.heuristic(o)  # Best so far, or something like that heuristically derived.
+                if attention_a is not None:
+                    a = attention_a
                 additional_input = np.concatenate([np.asarray(a).ravel(), previous_o.ravel()])
                 shift = len(additional_input)
                 self.extended_input[:(len(self.extended_input) - shift)] = self.extended_input[shift:]
@@ -368,7 +405,7 @@ class GymMulti(ExperimentFunction):
         for i, a in enumerate(10.0 * x):
             a = self.action_cast(a)
             try:
-                _, r, done, _ = self.env.step(a)  # Outputs = observation, reward, done, info.
+                _, r, done, _ = self.step(a)  # Outputs = observation, reward, done, info.
             except AssertionError:  # Illegal action.
                 return 1e20 / (1.0 + i)  # We encourage late failures rather than early failures.
             reward += r
