@@ -1089,10 +1089,6 @@ def gym_multi(
     env_names = GymMulti.env_names
     if ng_gym:
         env_names = GymMulti.ng_gym
-    #if memory:
-    #    env_names = [e for e in env_names if any(x in e for x in ["Duplicate", "Copy", "Reverse"])]
-    #else:
-    #    env_names = [e for e in env_names if not any(x in e for x in ["Duplicate", "Copy", "Reverse"])]
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", "progressive", "splitters", "baselines", seed=next(seedg))
     optims += ["DiagonalCMA"]
@@ -1176,7 +1172,7 @@ def deterministic_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experi
 
 @registry.register
 def gym_anm(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Gym simulator for Active Network Management. Maximize reward."""
+    """Gym simulator for Active Network Management."""
 
     func = GymMulti()
     seedg = create_seed_generator(seed)
