@@ -1227,10 +1227,11 @@ class Portfolio(base.Optimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if not optimizers:
-            if budget is not None and budget < 12 * num_workers:
-                optimizers = ["ScrHammersleySearch"]
-            else:
-                optimizers = [CMA, "TwoPointsDE", "ScrHammersleySearch"]
+            optimizers = []
+            if budget is None or budget >= 12 * num_workers:
+                optimizers = [CMA, "TwoPointsDE"]
+            if budget is not None:  # needs a budget
+                optimizers.append("ScrHammersleySearch")
         self.optims: tp.List[base.Optimizer] = []
         num = len(optimizers)
         sub_budget = None if budget is None else budget // num + (budget % num > 0)
