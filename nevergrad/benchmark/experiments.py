@@ -1098,8 +1098,16 @@ def gym_multi(
         controls = ["multi_neural"]
     else:
         controls = (
-            ["neural", "structured_neural", "noisy_neural", "noisy_scrambled_neural", "scrambled_neural", "deep_neural",
-            "semideep_neural", "linear"]
+            [
+                "neural",
+                "structured_neural",
+                "noisy_neural",
+                "noisy_scrambled_neural",
+                "scrambled_neural",
+                "deep_neural",
+                "semideep_neural",
+                "linear",
+            ]
             if not big
             else ["neural"]
         )
@@ -1110,18 +1118,40 @@ def gym_multi(
     if conformant:
         controls = ["stochastic_conformant"]
     for control in controls:
-        for neural_factor in ([-1] if conformant or control == "linear" else [1, 3, 4, 6, 9]):
+        for neural_factor in [-1] if conformant or control == "linear" else [1, 3, 4, 6, 9]:
             for name in env_names:
                 try:
                     func = GymMulti(name, control, neural_factor * (3 if big else 1), randomized=randomized)
                 except MemoryError:
                     pass
-                for budget in [50, 200, 800, 6400, 3200, 100, 25, 400, 1600, 819200, 409600, 204800, 102400, 51200, 25600, 12800]:
+                for budget in [
+                    50,
+                    200,
+                    800,
+                    6400,
+                    3200,
+                    100,
+                    25,
+                    400,
+                    1600,
+                    819200,
+                    409600,
+                    204800,
+                    102400,
+                    51200,
+                    25600,
+                    12800,
+                ]:
                     if budget > 1000:
                         continue
                     for algo in optims:
                         algo_name = str(algo)
-                        if (not "TBPSA" in algo_name) and (not "Prog" in algo_name) and (not "Split" in algo_name) and (not "PSO" in algo_name):
+                        if (
+                            (not "TBPSA" in algo_name)
+                            and (not "Prog" in algo_name)
+                            and (not "Split" in algo_name)
+                            and (not "PSO" in algo_name)
+                        ):
                             continue
                         xp = Experiment(func, algo, budget, num_workers=1, seed=next(seedg))
                         if not xp.is_incoherent:
@@ -1130,7 +1160,7 @@ def gym_multi(
 
 @registry.register
 def conformant_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Counterpart of gym_multi with fixed, predetermined actions for each time step.""" 
+    """Counterpart of gym_multi with fixed, predetermined actions for each time step."""
     return gym_multi(seed, conformant=True)
 
 
@@ -1144,6 +1174,7 @@ def ng_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 def ng_stacking_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of gym_multi with a specific list of problems."""
     return gym_multi(seed, ng_gym=True, memory=True)
+
 
 @registry.register
 def multi_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:

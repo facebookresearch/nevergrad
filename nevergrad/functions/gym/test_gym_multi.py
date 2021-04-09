@@ -17,6 +17,7 @@ def test_gym_multi() -> None:
         assert env_name in gym_multi.GymMulti.env_names, f"{env_name} should be guaranteed!"
     assert len(gym_multi.GYM_ENV_NAMES) == 26 or os.name == "nt"
 
+
 @pytest.mark.parametrize("name", gym_multi.GYM_ENV_NAMES)
 def test_run_gym_multi(name) -> None:
     if os.name != "nt":

@@ -103,8 +103,7 @@ class GymMulti(ExperimentFunction):
         "FrozenLake8x8-v0",
         "NChain-v0",
         "Roulette-v0",
-]   
-
+    ]
 
     def __init__(
         self,
@@ -179,8 +178,10 @@ class GymMulti(ExperimentFunction):
         self.output_dim = output_dim
         self.num_neurons = neural_factor * (input_dim - self.extended_input_len)
         self.num_internal_layers = 1 if "semi" in control else 3
-        internal = self.num_internal_layers * (self.num_neurons**2) if "deep" in control else 0
-        unstructured_neural_size = (output_dim * self.num_neurons + self.num_neurons * (input_dim + 1) + internal,)
+        internal = self.num_internal_layers * (self.num_neurons ** 2) if "deep" in control else 0
+        unstructured_neural_size = (
+            output_dim * self.num_neurons + self.num_neurons * (input_dim + 1) + internal,
+        )
         neural_size = unstructured_neural_size
         assert control in CONTROLLERS or control == "conformant", f"{control} not known as a form of control"
         self.control = control
@@ -260,17 +261,21 @@ class GymMulti(ExperimentFunction):
             output += x[0]
             return output.reshape(self.output_shape), np.zeros(0)
         if "structured" not in self.control:
-            first_matrix = x[:self.first_size].reshape(self.first_layer_shape) / np.sqrt(len(o))
-            second_matrix = x[self.first_size:(self.first_size + self.second_size)].reshape(self.second_layer_shape) / np.sqrt(self.num_neurons)
+            first_matrix = x[: self.first_size].reshape(self.first_layer_shape) / np.sqrt(len(o))
+            second_matrix = x[self.first_size : (self.first_size + self.second_size)].reshape(
+                self.second_layer_shape
+            ) / np.sqrt(self.num_neurons)
         else:
             assert len(x) == 2
             first_matrix = np.asarray(x[0][0])
             second_matrix = np.asarray(x[0][1])
-            assert first_matrix.shape == self.first_layer_shape, f"{first_matrix} does not match {self.first_layer_shape}"
-            assert second_matrix.shape == self.second_layer_shape, f"{second_matrix} does not match {self.second_layer_shape}"
-        assert len(o) == len(
-            first_matrix[1:]
-        ), f"{o.shape} coming in matrix of shape {first_matrix.shape}"
+            assert (
+                first_matrix.shape == self.first_layer_shape
+            ), f"{first_matrix} does not match {self.first_layer_shape}"
+            assert (
+                second_matrix.shape == self.second_layer_shape
+            ), f"{second_matrix} does not match {self.second_layer_shape}"
+        assert len(o) == len(first_matrix[1:]), f"{o.shape} coming in matrix of shape {first_matrix.shape}"
         output = np.matmul(o, first_matrix[1:])
         if "deep" in self.control:
             current_index = self.first_size + self.second_size
@@ -278,7 +283,9 @@ class GymMulti(ExperimentFunction):
             s = (self.num_neurons, self.num_neurons)
             for _ in range(self.num_internal_layers):
                 output = np.tanh(output)
-                output = np.matmul(output, x[current_index:current_index + internal_layer_size].reshape(s)) / np.sqrt(self.num_neurons)
+                output = np.matmul(
+                    output, x[current_index : current_index + internal_layer_size].reshape(s)
+                ) / np.sqrt(self.num_neurons)
                 current_index += internal_layer_size
             assert current_index == len(x)
         output = np.matmul(np.tanh(output + first_matrix[0]), second_matrix)
@@ -334,11 +341,17 @@ class GymMulti(ExperimentFunction):
         self.current_observations += [np.asarray(o).copy()]
         self.current_actions += [np.asarray(a).copy()]
         if done:
-            self.mean_loss = (.95 * self.mean_loss + 0.05 * self.current_reward) if self.mean_loss is not None else self.current_reward
+            self.mean_loss = (
+                (0.95 * self.mean_loss + 0.05 * self.current_reward)
+                if self.mean_loss is not None
+                else self.current_reward
+            )
             found = False
             for trace in self.archive:
                 to, _, _ = trace
-                if np.array_equal(np.asarray(self.current_observations, dtype=np.float32), np.asarray(to, dtype=np.float32)):
+                if np.array_equal(
+                    np.asarray(self.current_observations, dtype=np.float32), np.asarray(to, dtype=np.float32)
+                ):
                     found = True
                     break
             if not found:
@@ -347,14 +360,18 @@ class GymMulti(ExperimentFunction):
 
     def heuristic(self, o):
         current_observations = np.asarray(self.current_observations + [o], dtype=np.float32)
-        assert len(current_observations) == 1 + self.current_time_index, f"{len(current_observations)} vs {self.current_time_index}"
-        self.archive = [self.archive[i] for i in range(len(self.archive)) if self.archive[i][2] <= self.mean_loss]
+        assert (
+            len(current_observations) == 1 + self.current_time_index
+        ), f"{len(current_observations)} vs {self.current_time_index}"
+        self.archive = [
+            self.archive[i] for i in range(len(self.archive)) if self.archive[i][2] <= self.mean_loss
+        ]
         for trace in self.archive:
             to, ta, _ = trace
             if len(current_observations) > len(to):
                 continue
-            to = np.asarray(to[:len(current_observations)], dtype=np.float32)
-            #if all((_to - _o) for _to, _o in zip(to, current_observations)) <= 1e-7:
+            to = np.asarray(to[: len(current_observations)], dtype=np.float32)
+            # if all((_to - _o) for _to, _o in zip(to, current_observations)) <= 1e-7:
             if np.array_equal(to, current_observations):
                 return np.asarray(ta[len(current_observations) - 1], dtype=np.float32)
         return None
@@ -385,7 +402,9 @@ class GymMulti(ExperimentFunction):
                 o = obs
             previous_o = np.asarray(o)
             o = np.concatenate([previous_o.ravel(), memory.ravel(), self.extended_input])
-            assert len(o) == self.input_dim, f"o has shape {o.shape} whereas input_dim={self.input_dim} ({control} / {env})"
+            assert (
+                len(o) == self.input_dim
+            ), f"o has shape {o.shape} whereas input_dim={self.input_dim} ({control} / {env})"
             a, memory = self.neural(x[i % len(x)] if "multi" in control else x, o)
             a = self.action_cast(a)
             try:
@@ -399,8 +418,8 @@ class GymMulti(ExperimentFunction):
                 previous_o = previous_o.ravel()
                 additional_input = np.concatenate([np.asarray(a).ravel(), previous_o])
                 shift = len(additional_input)
-                self.extended_input[:(len(self.extended_input) - shift)] = self.extended_input[shift:]
-                self.extended_input[(len(self.extended_input) - shift):] = additional_input
+                self.extended_input[: (len(self.extended_input) - shift)] = self.extended_input[shift:]
+                self.extended_input[(len(self.extended_input) - shift) :] = additional_input
             reward += r
             if done:
                 break

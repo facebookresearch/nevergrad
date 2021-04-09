@@ -126,57 +126,58 @@ def progressive() -> tp.Sequence[Optim]:
 def split_noisy() -> tp.Sequence[Optim]:
     OptimisticNoisyOnePlusOne = optimizerlib_registry["OptimisticNoisyOnePlusOne"]
     OptimisticDiscreteOnePlusOne = optimizerlib_registry["OptimisticDiscreteOnePlusOne"]
-    Split_ONOPO3 = ConfSplitOptimizer(num_optims=3, progressive=False,
-    multivariate_optimizer=OptimisticNoisyOnePlusOne).set_name(
-    "Split_ONOPO3"
-    )
-    Split_ONOPO5 = ConfSplitOptimizer(num_optims=5, progressive=False,
-    multivariate_optimizer=OptimisticNoisyOnePlusOne).set_name(
-    "Split_ONOPO5"
-    )
-    Split_ONOPO9 = ConfSplitOptimizer(num_optims=9, progressive=False,
-    multivariate_optimizer=OptimisticNoisyOnePlusOne).set_name(
-    "Split_ONOPO9"
-    )
-    Split_ONOPO13 = ConfSplitOptimizer(num_optims=13, progressive=False,
-    multivariate_optimizer=OptimisticNoisyOnePlusOne).set_name(
-    "Split_ONOPO13"
-    )
-    Split_ONOPOInf = ConfSplitOptimizer(num_optims=100000, progressive=False,
-    multivariate_optimizer=OptimisticNoisyOnePlusOne).set_name(
-    "Split_ONOPOInf"
-    )
-    Split_ONOPOAuto = ConfSplitOptimizer(progressive=False,
-    multivariate_optimizer=OptimisticNoisyOnePlusOne).set_name(
-    "Split_ONOPOAuto"
-    )
+    Split_ONOPO3 = ConfSplitOptimizer(
+        num_optims=3, progressive=False, multivariate_optimizer=OptimisticNoisyOnePlusOne
+    ).set_name("Split_ONOPO3")
+    Split_ONOPO5 = ConfSplitOptimizer(
+        num_optims=5, progressive=False, multivariate_optimizer=OptimisticNoisyOnePlusOne
+    ).set_name("Split_ONOPO5")
+    Split_ONOPO9 = ConfSplitOptimizer(
+        num_optims=9, progressive=False, multivariate_optimizer=OptimisticNoisyOnePlusOne
+    ).set_name("Split_ONOPO9")
+    Split_ONOPO13 = ConfSplitOptimizer(
+        num_optims=13, progressive=False, multivariate_optimizer=OptimisticNoisyOnePlusOne
+    ).set_name("Split_ONOPO13")
+    Split_ONOPOInf = ConfSplitOptimizer(
+        num_optims=100000, progressive=False, multivariate_optimizer=OptimisticNoisyOnePlusOne
+    ).set_name("Split_ONOPOInf")
+    Split_ONOPOAuto = ConfSplitOptimizer(
+        progressive=False, multivariate_optimizer=OptimisticNoisyOnePlusOne
+    ).set_name("Split_ONOPOAuto")
     # Split_Optimizer
-    Split_ODOPO3 = ConfSplitOptimizer(num_optims=3, progressive=False,
-    multivariate_optimizer=OptimisticDiscreteOnePlusOne).set_name(
-    "Split_ODOPO3"
-    )
-    Split_ODOPO5 = ConfSplitOptimizer(num_optims=5, progressive=False,
-    multivariate_optimizer=OptimisticDiscreteOnePlusOne).set_name(
-    "Split_ODOPO5"
-    )
-    Split_ODOPO9 = ConfSplitOptimizer(num_optims=9, progressive=False,
-    multivariate_optimizer=OptimisticDiscreteOnePlusOne).set_name(
-    "Split_ODOPO9"
-    )
-    Split_ODOPO13 = ConfSplitOptimizer(num_optims=13, progressive=False,
-    multivariate_optimizer=OptimisticDiscreteOnePlusOne).set_name(
-    "Split_ODOPO13"
-    )
-    Split_ODOPOInf = ConfSplitOptimizer(num_optims=100000, progressive=False,
-    multivariate_optimizer=OptimisticDiscreteOnePlusOne).set_name(
-    "Split_ODOPOInf"
-    )
-    Split_ODOPOAuto = ConfSplitOptimizer(progressive=False,
-    multivariate_optimizer=OptimisticDiscreteOnePlusOne).set_name(
-    "Split_ODOPOAuto"
-    )
-    return [Split_ONOPO3, Split_ONOPO5, Split_ONOPO9, Split_ONOPO13, Split_ONOPOAuto, Split_ONOPOInf,
-            Split_ODOPO3, Split_ODOPO5, Split_ODOPO9, Split_ODOPO13, Split_ODOPOAuto, Split_ODOPOInf]
+    Split_ODOPO3 = ConfSplitOptimizer(
+        num_optims=3, progressive=False, multivariate_optimizer=OptimisticDiscreteOnePlusOne
+    ).set_name("Split_ODOPO3")
+    Split_ODOPO5 = ConfSplitOptimizer(
+        num_optims=5, progressive=False, multivariate_optimizer=OptimisticDiscreteOnePlusOne
+    ).set_name("Split_ODOPO5")
+    Split_ODOPO9 = ConfSplitOptimizer(
+        num_optims=9, progressive=False, multivariate_optimizer=OptimisticDiscreteOnePlusOne
+    ).set_name("Split_ODOPO9")
+    Split_ODOPO13 = ConfSplitOptimizer(
+        num_optims=13, progressive=False, multivariate_optimizer=OptimisticDiscreteOnePlusOne
+    ).set_name("Split_ODOPO13")
+    Split_ODOPOInf = ConfSplitOptimizer(
+        num_optims=100000, progressive=False, multivariate_optimizer=OptimisticDiscreteOnePlusOne
+    ).set_name("Split_ODOPOInf")
+    Split_ODOPOAuto = ConfSplitOptimizer(
+        progressive=False, multivariate_optimizer=OptimisticDiscreteOnePlusOne
+    ).set_name("Split_ODOPOAuto")
+    return [
+        Split_ONOPO3,
+        Split_ONOPO5,
+        Split_ONOPO9,
+        Split_ONOPO13,
+        Split_ONOPOAuto,
+        Split_ONOPOInf,
+        Split_ODOPO3,
+        Split_ODOPO5,
+        Split_ODOPO9,
+        Split_ODOPO13,
+        Split_ODOPOAuto,
+        Split_ODOPOInf,
+    ]
+
 
 @registry.register
 def basics() -> tp.Sequence[Optim]:
