@@ -1117,7 +1117,7 @@ def gym_multi(
                 except MemoryError:
                     pass
                 for budget in [50, 200, 800, 6400, 3200, 100, 25, 400, 1600, 819200, 409600, 204800, 102400, 51200, 25600, 12800]:
-                    if budget > 100000:
+                    if budget > 1000:
                         continue
                     for algo in optims:
                         algo_name = str(algo)
