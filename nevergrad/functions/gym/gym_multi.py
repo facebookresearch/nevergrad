@@ -237,7 +237,7 @@ class GymMulti(ExperimentFunction):
 
         # Now initializing.
         super().__init__(self.gym_multi_function, parametrization=parametrization)
-        self.archive = []
+        self.archive: tp.List[tp.Any] = []
         self.mean_loss = None
 
     def evaluation_function(self, *recommendations) -> float:
@@ -286,8 +286,8 @@ class GymMulti(ExperimentFunction):
     def gym_multi_function(self, x: np.ndarray):
         self.current_time_index = 0
         self.current_reward = 0
-        self.current_observations = []
-        self.current_actions = []
+        self.current_observations: tp.List[tp.Any] = []
+        self.current_actions: tp.List[tp.Any] = []
         loss = 0.0
         num_simulations = 7 if self.control != "conformant" and not self.randomized else 1
         for seed in range(num_simulations):

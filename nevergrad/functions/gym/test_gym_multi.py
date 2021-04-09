@@ -26,7 +26,6 @@ def test_run_gym_multi(name) -> None:
         np.testing.assert_almost_equal(value, 93.35, decimal=2)
         i = gym_multi.GYM_ENV_NAMES.index(name)
         control = gym_multi.CONTROLLERS[i % len(gym_multi.CONTROLLERS)]
-        control = "stackingmemory_neural"
         func = gym_multi.GymMulti(
             name,
             control,
@@ -34,8 +33,6 @@ def test_run_gym_multi(name) -> None:
         )
         # x = np.zeros(func.dimension)
         x = func.parametrization.sample()
-        value = func(x.value)
+        result = func(x.value)
         if "stac" in control:  # Let's check if the memory works.
-            for _ in range(3):
-                value = func(x.value)
-                x = func.parametrization.sample()
+            result = func(x.value)
