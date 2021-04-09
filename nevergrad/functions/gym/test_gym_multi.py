@@ -15,7 +15,7 @@ def test_gym_multi() -> None:
         assert env_name not in gym_multi.NO_LENGTH, f"{env_name} in no length and in ng_gym!"
     for env_name in gym_multi.GUARANTEED_GYM_ENV_NAMES:
         assert env_name in gym_multi.GymMulti.env_names, f"{env_name} should be guaranteed!"
-    assert len(gym_multi.GYM_ENV_NAMES) == 26
+    assert len(gym_multi.GYM_ENV_NAMES) == 26 or os.name == "nt"
 
 @pytest.mark.parametrize("name", gym_multi.GYM_ENV_NAMES)
 def test_run_gym_multi(name) -> None:
@@ -32,7 +32,7 @@ def test_run_gym_multi(name) -> None:
             randomized=bool(np.random.randint(2)),
         )
         # x = np.zeros(func.dimension)
-        x = func.parametrization.sample()
-        result = func(x.value)
+        y = func.parametrization.sample()
+        func(y.value)
         if "stac" in control:  # Let's check if the memory works.
-            result = func(x.value)
+            func(y.value)
