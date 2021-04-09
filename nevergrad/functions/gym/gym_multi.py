@@ -5,6 +5,7 @@
 
 import numpy as np
 import os
+import typing as tp
 import gym
 import nevergrad as ng
 
@@ -275,7 +276,7 @@ class GymMulti(ExperimentFunction):
             current_index = self.first_size + self.second_size
             internal_layer_size = self.num_neurons ** 2
             s = (self.num_neurons, self.num_neurons)
-            for k in range(self.num_internal_layers):
+            for _ in range(self.num_internal_layers):
                 output = np.tanh(output)
                 output = np.matmul(output, x[current_index:current_index + internal_layer_size].reshape(s)) / np.sqrt(self.num_neurons)
                 current_index += internal_layer_size
@@ -336,7 +337,7 @@ class GymMulti(ExperimentFunction):
             self.mean_loss = (.95 * self.mean_loss + 0.05 * self.current_reward) if self.mean_loss is not None else self.current_reward
             found = False
             for trace in self.archive:
-                to, ta, tr = trace
+                to, _, _ = trace
                 if np.array_equal(np.asarray(self.current_observations, dtype=np.float32), np.asarray(to, dtype=np.float32)):
                     found = True
                     break
@@ -347,10 +348,9 @@ class GymMulti(ExperimentFunction):
     def heuristic(self, o):
         current_observations = np.asarray(self.current_observations + [o], dtype=np.float32)
         assert len(current_observations) == 1 + self.current_time_index, f"{len(current_observations)} vs {self.current_time_index}"
-        a = self.env.action_space.sample()
         self.archive = [self.archive[i] for i in range(len(self.archive)) if self.archive[i][2] <= self.mean_loss]
         for trace in self.archive:
-            to, ta, tr = trace
+            to, ta, _ = trace
             if len(current_observations) > len(to):
                 continue
             to = np.asarray(to[:len(current_observations)], dtype=np.float32)
