@@ -238,6 +238,7 @@ class GymMulti(ExperimentFunction):
         # Now initializing.
         super().__init__(self.gym_multi_function, parametrization=parametrization)
         self.archive = []
+        self.mean_loss = None
 
     def evaluation_function(self, *recommendations) -> float:
         x = recommendations[0].value
@@ -332,27 +333,31 @@ class GymMulti(ExperimentFunction):
         self.current_observations += [np.asarray(o).copy()]
         self.current_actions += [np.asarray(a).copy()]
         if done:
-            self.archive += [(self.current_observations, self.current_actions, self.current_reward)]
+            self.mean_loss = (.95 * self.mean_loss + 0.05 * self.current_reward) if self.mean_loss is not None else self.current_reward
+            found = False
+            for trace in self.archive:
+                to, ta, tr = trace
+                if np.array_equal(np.asarray(self.current_observations, dtype=np.float32), np.asarray(to, dtype=np.float32)):
+                    found = True
+                    break
+            if not found:
+                self.archive += [(self.current_observations, self.current_actions, self.current_reward)]
         return o, r, done, info
 
     def heuristic(self, o):
         current_observations = np.asarray(self.current_observations + [o], dtype=np.float32)
         assert len(current_observations) == 1 + self.current_time_index, f"{len(current_observations)} vs {self.current_time_index}"
         a = self.env.action_space.sample()
-        best_a = None
-        best_loss = float("Inf")
+        self.archive = [self.archive[i] for i in range(len(self.archive)) if self.archive[i][2] <= self.mean_loss]
         for trace in self.archive:
             to, ta, tr = trace
             if len(current_observations) > len(to):
                 continue
             to = np.asarray(to[:len(current_observations)], dtype=np.float32)
-            if tr >= best_loss:
-                continue
             #if all((_to - _o) for _to, _o in zip(to, current_observations)) <= 1e-7:
             if np.array_equal(to, current_observations):
-                best_a = np.asarray(ta[len(current_observations) - 1], dtype=np.float32)
-                best_loss = tr
-        return best_a
+                return np.asarray(ta[len(current_observations) - 1], dtype=np.float32)
+        return None
 
     def gym_simulate(self, x: np.ndarray, seed: int = 0):
         try:
@@ -378,8 +383,8 @@ class GymMulti(ExperimentFunction):
                 obs = np.zeros(shape=self.input_dim - self.extended_input_len - len(memory))
                 obs[o] = 1
                 o = obs
-            previous_o = o
-            o = np.concatenate([np.asarray(o).ravel(), memory.ravel(), self.extended_input])
+            previous_o = np.asarray(o)
+            o = np.concatenate([previous_o.ravel(), memory.ravel(), self.extended_input])
             assert len(o) == self.input_dim, f"o has shape {o.shape} whereas input_dim={self.input_dim} ({control} / {env})"
             a, memory = self.neural(x[i % len(x)] if "multi" in control else x, o)
             a = self.action_cast(a)
@@ -391,7 +396,8 @@ class GymMulti(ExperimentFunction):
                 attention_a = self.heuristic(o)  # Best so far, or something like that heuristically derived.
                 if attention_a is not None:
                     a = attention_a
-                additional_input = np.concatenate([np.asarray(a).ravel(), previous_o.ravel()])
+                previous_o = previous_o.ravel()
+                additional_input = np.concatenate([np.asarray(a).ravel(), previous_o])
                 shift = len(additional_input)
                 self.extended_input[:(len(self.extended_input) - shift)] = self.extended_input[shift:]
                 self.extended_input[(len(self.extended_input) - shift):] = additional_input

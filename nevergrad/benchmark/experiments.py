@@ -1104,8 +1104,8 @@ def gym_multi(
             else ["neural"]
         )
     if memory:
-        controls = ["memory_neural", "deep_memory_neural", "semideep_memory_neural"]
-        controls += ["stackingmemory_neural", "deep_stackingmemory_neural", "semideep_stackingmemory_neural"]
+        controls = ["stackingmemory_neural", "deep_stackingmemory_neural", "semideep_stackingmemory_neural"]
+        controls += ["memory_neural", "deep_memory_neural", "semideep_memory_neural"]
         assert not multi
     if conformant:
         controls = ["stochastic_conformant"]
@@ -1139,6 +1139,11 @@ def ng_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of gym_multi with a specific list of problems."""
     return gym_multi(seed, ng_gym=True)
 
+
+@registry.register
+def ng_stacking_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of gym_multi with a specific list of problems."""
+    return gym_multi(seed, ng_gym=True, memory=True)
 
 @registry.register
 def multi_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
