@@ -582,7 +582,7 @@ def test_shiwa_dim1() -> None:
 
 
 continuous_case = [
-    ("NGOpt", d, b, n, f"choice_d{d}_b{b}_n{n} ")
+    ("NGOpt", d, b, n, f"continuouschoice_d{d}_b{b}_n{n} ")
     for d in [1, 2, 10, 100, 1000]
     for b in [2 * d, 10 * d, 100 * d]
     for n in [1, d, 10 * d]
@@ -616,8 +616,7 @@ continuous_case = [
         ("NGOpt", ng.p.TransitionChoice(range(3), repetitions=10), 10, 2, "DiscreteLenglerOnePlusOne"),
         ("NGO", 1, 10, 1, "Cobyla"),
         ("NGO", 1, 10, 2, "OnePlusOne"),
-    ]
-    continuous_case,  # pylint: disable=too-many-arguments  # type: ignore
+    ] + continuous_case,  # pylint: disable=too-many-arguments  # type: ignore
 )
 @testing.suppress_nevergrad_warnings()
 def test_ngopt_selection(
@@ -629,10 +628,16 @@ def test_ngopt_selection(
         pattern = rf".*{name} selected (?P<name>\w+?) optimizer\."
         match = re.match(pattern, caplog.text.splitlines()[-1])
         assert match is not None, f"Did not detect selection in logs: {caplog.text}"
-        if "choice" in expected:
-            print(f"{expected} --> {match.group('name')}")
+        choice = match.group("name")
+        if "continuouschoice_" in expected:
+            print(f"{expected} --> {choice}")
+            if num_workers >= budget:
+                assert choice == "MetaTuneRecentering"
+            if num_workers > 1:
+                assert choice != "SQP"
+                assert choice != "Cobyla"
             return
-        assert match.group("name") == expected
+        assert choice == expected
 
 
 def test_bo_ordering() -> None:
