@@ -581,7 +581,7 @@ def test_shiwa_dim1() -> None:
     assert recom.value < init
 
 
-continuous_case = [
+continuous_case: List[Tuple[str, object, int, int, str]] = [
     ("NGOpt", d, b, n, f"continuouschoice_d{d}_b{b}_n{n} ")
     for d in [1, 2, 10, 100, 1000]
     for b in [2 * d, 10 * d, 100 * d]
@@ -616,7 +616,7 @@ continuous_case = [
         ("NGOpt", ng.p.TransitionChoice(range(3), repetitions=10), 10, 2, "DiscreteLenglerOnePlusOne"),
         ("NGO", 1, 10, 1, "Cobyla"),
         ("NGO", 1, 10, 2, "OnePlusOne"),
-    ] + continuous_case,  # pylint: disable=too-many-arguments  # type: ignore
+    ] + continuous_case,  # pylint: disable=too-many-arguments
 )
 @testing.suppress_nevergrad_warnings()
 def test_ngopt_selection(
