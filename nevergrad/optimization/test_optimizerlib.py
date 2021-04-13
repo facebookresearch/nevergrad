@@ -581,7 +581,13 @@ def test_shiwa_dim1() -> None:
     assert recom.value < init
 
 
-continuous_case = [("NGOpt", d, b, n, f"choice_d{d}_b{d}_n{n} ") for d in [1, 2, 10, 100, 1000] for b in [2*d, 10*d, 100*d] for n in [1, d, 10*d]]
+continuous_case = [
+    ("NGOpt", d, b, n, f"choice_d{d}_b{b}_n{n} ")
+    for d in [1, 2, 10, 100, 1000]
+    for b in [2 * d, 10 * d, 100 * d]
+    for n in [1, d, 10 * d]
+]
+
 
 @pytest.mark.parametrize(  # type: ignore
     "name,param,budget,num_workers,expected",
@@ -610,7 +616,8 @@ continuous_case = [("NGOpt", d, b, n, f"choice_d{d}_b{d}_n{n} ") for d in [1, 2,
         ("NGOpt", ng.p.TransitionChoice(range(3), repetitions=10), 10, 2, "DiscreteLenglerOnePlusOne"),
         ("NGO", 1, 10, 1, "Cobyla"),
         ("NGO", 1, 10, 2, "OnePlusOne"),
-    ] + continuous_case,  # pylint: disable=too-many-arguments
+    ]
+    + continuous_case,  # pylint: disable=too-many-arguments, type: ignore
 )
 @testing.suppress_nevergrad_warnings()
 def test_ngopt_selection(

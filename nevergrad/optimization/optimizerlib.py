@@ -2425,6 +2425,7 @@ class NGOpt16(NGOpt10):
             and self.fully_continuous
             and self.num_workers == 1
             and self.dimension < 50
+            and self.budget is not None
             and self.budget < self.dimension * 50
             and self.budget > self.dimension * 5
         ):
