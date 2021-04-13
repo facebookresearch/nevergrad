@@ -2417,15 +2417,21 @@ class NGOpt10(NGOpt8):
 
 
 @registry.register
- class NGOpt16(NGOpt10):
-     def _select_optimizer_cls(self) -> base.OptCls:
-         if not self.has_noise and self.fully_continuous and self.num_workers == 1 and self.dimension < 50 and 
-            self.budget < self.dimension * 50 and self.budget > self.dimension * 5:
+class NGOpt16(NGOpt10):
+    def _select_optimizer_cls(self) -> base.OptCls:
+        if (
+            not self.has_noise
+            and self.fully_continuous
+            and self.num_workers == 1
+            and self.dimension < 50
+            and self.budget < self.dimension * 50
+            and self.budget > self.dimension * 5
+        ):
             return chainMetaModelSQP
-         else:
-             return super()._select_optimizer_cls()
+        else:
+            return super()._select_optimizer_cls()
 
-    
+
 @registry.register
 class NGOpt(NGOpt16):
     pass
