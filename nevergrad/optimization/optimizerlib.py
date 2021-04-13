@@ -2427,7 +2427,7 @@ class NGOpt10(NGOpt8):
 
     
 @registry.register
-class NGOpt(NGOpt10):
+class NGOpt(NGOpt16):
     pass
 
 
