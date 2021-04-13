@@ -617,7 +617,7 @@ continuous_case = [
         ("NGO", 1, 10, 1, "Cobyla"),
         ("NGO", 1, 10, 2, "OnePlusOne"),
     ]
-    + continuous_case,  # pylint: disable=too-many-arguments, type: ignore
+    continuous_case,  # pylint: disable=too-many-arguments  # type: ignore
 )
 @testing.suppress_nevergrad_warnings()
 def test_ngopt_selection(
