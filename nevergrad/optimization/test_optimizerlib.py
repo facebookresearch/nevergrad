@@ -581,6 +581,8 @@ def test_shiwa_dim1() -> None:
     assert recom.value < init
 
 
+continuous_case = [("NGOpt", d, b, n, f"choice_d{d}_b{d}_n{n} ") for d in [1, 2, 10, 100, 1000] for b in [2*d, 10*d, 100*d] for n in [1, d, 10*d]]
+
 @pytest.mark.parametrize(  # type: ignore
     "name,param,budget,num_workers,expected",
     [
@@ -593,7 +595,7 @@ def test_shiwa_dim1() -> None:
             2,
             "DoubleFastGADiscreteOnePlusOne",
         ),
-        ("NGOpt", 1, 10, 1, "MetaModel"),
+        ("NGOpt", 1, 10, 1, "chainMetaModelSQP"),
         ("NGOpt", 1, 10, 2, "MetaModel"),
         (
             "NGOpt",
@@ -608,7 +610,7 @@ def test_shiwa_dim1() -> None:
         ("NGOpt", ng.p.TransitionChoice(range(3), repetitions=10), 10, 2, "DiscreteLenglerOnePlusOne"),
         ("NGO", 1, 10, 1, "Cobyla"),
         ("NGO", 1, 10, 2, "OnePlusOne"),
-    ],  # pylint: disable=too-many-arguments
+    ] + continuous_case,  # pylint: disable=too-many-arguments
 )
 @testing.suppress_nevergrad_warnings()
 def test_ngopt_selection(
@@ -620,6 +622,9 @@ def test_ngopt_selection(
         pattern = rf".*{name} selected (?P<name>\w+?) optimizer\."
         match = re.match(pattern, caplog.text.splitlines()[-1])
         assert match is not None, f"Did not detect selection in logs: {caplog.text}"
+        if "choice" in expected:
+            print(f"{expected} --> {match.group('name')}")
+            return
         assert match.group("name") == expected
 
 

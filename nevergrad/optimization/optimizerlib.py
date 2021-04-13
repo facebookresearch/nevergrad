@@ -2389,6 +2389,7 @@ class NGOpt8(NGOpt4):
                 and not (self.has_noise and self.fully_continuous)
                 and not (self.num_workers > self.budget / 5)
                 and (self.num_workers == 1 and self.budget > 6000 and self.dimension > 7)
+                and self.num_workers < self.budget
             ):
                 optimClass = ChainMetaModelPowell
             else:
