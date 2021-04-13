@@ -512,6 +512,7 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
 CMA = ParametrizedCMA().set_name("CMA", register=True)
 DiagonalCMA = ParametrizedCMA(diagonal=True).set_name("DiagonalCMA", register=True)
 FCMA = ParametrizedCMA(fcmaes=True).set_name("FCMA", register=True)
+ECMA = ParametrizedCMA(elitist=True).set_name("ECMA", register=True)
 
 
 class _PopulationSizeController:
@@ -1328,7 +1329,7 @@ class MetaModel(base.Optimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if multivariate_optimizer is None:
-            multivariate_optimizer = CMA if self.dimension > 1 else OnePlusOne
+            multivariate_optimizer = ECMA if self.dimension > 1 else OnePlusOne
         self._optim = multivariate_optimizer(
             self.parametrization, budget, num_workers
         )  # share parametrization and its rng
@@ -2415,6 +2416,16 @@ class NGOpt10(NGOpt8):
         return base.Optimizer.recommend(self)
 
 
+@registry.register
+ class NGOpt16(NGOpt10):
+     def _select_optimizer_cls(self) -> base.OptCls:
+         if not self.has_noise and self.fully_continuous and self.num_workers == 1 and self.dimension < 50 and 
+            self.budget < self.dimension * 50 and self.budget > self.dimension * 5:
+            return chainMetaModelSQP
+         else:
+             return super()._select_optimizer_cls()
+
+    
 @registry.register
 class NGOpt(NGOpt10):
     pass
