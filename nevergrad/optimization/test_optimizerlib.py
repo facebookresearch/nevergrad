@@ -616,7 +616,8 @@ continuous_case: tp.List[tp.Tuple[str, object, int, int, str]] = [
         ("NGOpt", ng.p.TransitionChoice(range(3), repetitions=10), 10, 2, "DiscreteLenglerOnePlusOne"),
         ("NGO", 1, 10, 1, "Cobyla"),
         ("NGO", 1, 10, 2, "OnePlusOne"),
-    ] + continuous_case,  # pylint: disable=too-many-arguments
+    ]
+    + continuous_case,  # pylint: disable=too-many-arguments
 )
 @testing.suppress_nevergrad_warnings()
 def test_ngopt_selection(
