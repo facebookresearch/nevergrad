@@ -1239,7 +1239,7 @@ class ConfPortfolio(base.ConfiguredOptimizer):
         optimizers: tp.Sequence[tp.Union[base.Optimizer, base.OptCls, str]] = (),
         warmup_ratio: tp.Optional[float] = None,
     ) -> None:
-        super().__init__(SplitOptimizer, locals())
+        super().__init__(Portfolio, locals())
 
 
 @registry.register
