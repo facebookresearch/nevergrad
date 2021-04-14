@@ -22,6 +22,7 @@ from nevergrad.parametrization import _datalayers
 from . import oneshot
 from . import base
 from . import mutations
+from . import utils
 from .base import registry as registry
 from .base import addCompare  # pylint: disable=unused-import
 from .base import IntOrParameter
@@ -1226,14 +1227,15 @@ class Portfolio(base.Optimizer):
         optimizers: tp.Sequence[tp.Union[base.OptCls, str]] = (),
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        if not optimizers:
+        if not optimizers:  # default
             optimizers = []
             if budget is None or budget >= 12 * num_workers:
                 optimizers = [CMA, "TwoPointsDE"]
             if budget is not None:  # needs a budget
                 optimizers.append("ScrHammersleySearch")
-        self.optims: tp.List[base.Optimizer] = []
+        # initialize
         num = len(optimizers)
+        self.optims: tp.List[base.Optimizer] = []
         sub_budget = None if budget is None else budget // num + (budget % num > 0)
         for opt in optimizers:
             Optim = registry[opt] if isinstance(opt, str) else opt
@@ -1245,31 +1247,37 @@ class Portfolio(base.Optimizer):
                     num_workers=sub_workers,
                 )
             )
+        # current optimizer choice
+        self._current = 0
 
     def _internal_ask_candidate(self) -> p.Parameter:
-        optim_index = self._num_ask % len(self.optims)
-        candidate = self.optims[optim_index].ask()
+        num = len(self.optims)
+        for k in range(2 * num):
+            self._current += 1
+            optim_index = self._current % len(self.optims)
+            opt = self.optims[optim_index]
+            if opt.num_workers > opt.num_ask - (opt.num_tell - opt.num_tell_not_asked):
+                break  # if there are workers left, use this optimizer
+            if k > num:
+                if not opt.no_parallelization:
+                    break  # if no worker is available, try the first parallelizable optimizer
+        candidate = opt.ask()
         candidate._meta["optim_index"] = optim_index
+        self._current += 1
         return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        # Telling all optimizers is presumably better than just
+        # self.optims[optim_index].tell(candidate, value)
+        accepted = 0
         for opt in self.optims:
             try:
                 opt.tell(candidate, loss)
+                accepted += 1
             except errors.TellNotAskedNotSupportedError:
                 pass
-        # Presumably better than self.optims[optim_index].tell(candidate, value)
-
-    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        at_least_one_ok = False
-        for opt in self.optims:
-            try:
-                opt.tell(candidate, loss)
-                at_least_one_ok = True
-            except errors.TellNotAskedNotSupportedError:
-                pass
-        if not at_least_one_ok:
-            raise errors.TellNotAskedNotSupportedError
+        if not accepted:
+            raise errors.TellNotAskedNotSupportedError("No sub-optimizer accepted the tell-not-asked")
 
 
 class InfiniteMetaModelOptimum(ValueError):
