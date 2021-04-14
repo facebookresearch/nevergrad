@@ -1224,7 +1224,7 @@ class Portfolio(base.Optimizer):
         parametrization: IntOrParameter,
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
-        optimizers: tp.Sequence[tp.Union[base.OptCls, str]] = (),
+        optimizers: tp.Sequence[tp.Union[base.Optimizer, base.OptCls, str]] = (),
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if not optimizers:  # default
@@ -1238,6 +1238,14 @@ class Portfolio(base.Optimizer):
         self.optims: tp.List[base.Optimizer] = []
         sub_budget = None if budget is None else budget // num + (budget % num > 0)
         for opt in optimizers:
+            if isinstance(opt, base.Optimizer):
+                if opt.parametrization is not self.parametrization:
+                    raise errors.NevergradValueError(
+                        "Initialized optimizers are only accepted if "
+                        "the parametrization object is strictly the same"
+                    )
+                self.optims.append(opt)
+                continue
             Optim = registry[opt] if isinstance(opt, str) else opt
             sub_workers = 1 if Optim.no_parallelization else num_workers // num + (num_workers % num > 0)
             self.optims.append(
@@ -1248,10 +1256,11 @@ class Portfolio(base.Optimizer):
                 )
             )
         # current optimizer choice
-        self._current = 0
+        self._current = -1
 
     def _internal_ask_candidate(self) -> p.Parameter:
         num = len(self.optims)
+        # look for next optimizer to use
         for k in range(2 * num):
             self._current += 1
             optim_index = self._current % len(self.optims)
