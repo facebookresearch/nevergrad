@@ -2444,10 +2444,10 @@ class _MSR(CM):
             )
             for _ in range(self.num_optims)
         ]
-        self.coeff: tp.Optional[tp.List[float]] = None
+        self.coeffs: tp.List[np.ndarray] = []
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        if self.coeff is None:
+        if not self.coeffs:
             self.coeffs = [
                 self.parametrization.random_state.uniform(size=self.num_objectives)
                 for _ in range(self.num_optims)
