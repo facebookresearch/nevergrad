@@ -1317,7 +1317,6 @@ class Portfolio(base.Optimizer):
         opt = self.optims[optim_index]
         candidate = opt.ask()
         candidate._meta["optim_index"] = optim_index
-        self._current += 1
         return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
