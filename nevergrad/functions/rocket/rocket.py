@@ -66,7 +66,7 @@ def rocket(thrust_bias: np.ndarray):
         F_z = F * Ez / r
         F_x = F * (Ex / ((Ex ** 2 + Ey ** 2) ** 0.5))
         F_y = F * (Ey / ((Ex ** 2 + Ey ** 2) ** 0.5))
-        print(F_x, F_y, F_z, sep="\t")
+        # print(F_x, F_y, F_z, sep="\t")
         return F_x, F_y, F_z  # in the -r direction
 
     def drag_force(Ex, Ey, Ez, Evx, Evy, Evz):
