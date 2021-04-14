@@ -1348,10 +1348,10 @@ TripleCMA = ConfPortfolio(
 PolyCMA = ConfPortfolio(
     optimizers=[ParametrizedCMA(random_init=True) for _ in range(20)], warmup_ratio=0.33
 ).set_name("PolyCMA", register=True)
-MultiscaleCMA = ConfPortfolio(
+MultiScaleCMA = ConfPortfolio(
     optimizers=[ParametrizedCMA(random_init=True, scale=scale) for scale in [1.0, 1e-3, 1e-6]],
     warmup_ratio=0.33,
-).set_name("MultiscaleCMA", register=True)
+).set_name("MultiScaleCMA", register=True)
 
 
 class InfiniteMetaModelOptimum(ValueError):
