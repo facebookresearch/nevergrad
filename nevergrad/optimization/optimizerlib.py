@@ -1430,26 +1430,6 @@ class MetaModel(base.Optimizer):
 ParaPortfolio = ConfPortfolio(optimizers=[CMA, TwoPointsDE, PSO, SQP, ScrHammersleySearch]).set_name(
     "ParaPortfolio", register=True
 )
-
-
-@registry.register
-class SQPCMA(Portfolio):
-    """Passive portfolio of CMA and many SQP."""
-
-    def __init__(
-        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
-    ) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        cma_workers = num_workers // 2
-        optims: tp.List[base.Optimizer] = [CMA(self.parametrization, budget=budget, num_workers=cma_workers)]
-        optims += [SQP(self.parametrization, num_workers=1) for _ in range(num_workers - cma_workers)]
-        for opt in optims[2:]:  # make sure initializations differ
-            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
-        self.optims.clear()
-        self.optims.extend(optims)
-
-
-# Algorithm selection, with CMA and Lhs-DE. Active selection at 1/3
 ASCMADEthird = ConfPortfolio(optimizers=[CMA, LhsDE], warmup_ratio=0.33).set_name(
     "ASCMADEthird", register=True
 )
@@ -1469,95 +1449,116 @@ MultiscaleCMA = ConfPortfolio(
 
 
 @registry.register
-class CMandAS2(ASCMADEthird):
-    """Competence map, with algorithm selection in one of the cases (3 CMAs)."""
+class SQPCMA(Portfolio):
+    """Passive portfolio of CMA and many SQP."""
 
     def __init__(
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        self.optims = [TwoPointsDE(self.parametrization, budget=None, num_workers=num_workers)]  # noqa: F405
-        assert budget is not None
-        self.budget_before_choosing = 2 * budget
-        if budget < 201:
-            self.optims = [OnePlusOne(self.parametrization, budget=None, num_workers=num_workers)]
-        if budget > 50 * self.dimension or num_workers < 30:
-            self.optims = [
-                MetaModel(self.parametrization, budget=None, num_workers=num_workers) for _ in range(3)
-            ]
-            self.budget_before_choosing = budget // 10
+        cma_workers = num_workers // 2
+        optims: tp.List[base.Optimizer] = [CMA(self.parametrization, budget=budget, num_workers=cma_workers)]
+        optims += [SQP(self.parametrization, num_workers=1) for _ in range(num_workers - cma_workers)]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+        self.optims.clear()
+        self.optims.extend(optims)
 
 
 @registry.register
-class CMandAS3(ASCMADEthird):
-    """Competence map, with algorithm selection in one of the cases (3 CMAs)."""
+class MultiDiscrete(Portfolio):
+    """Combining 3 Discrete(1+1) optimizers. Active selection at 1/4th of the budget."""
 
     def __init__(
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        self.optims = [TwoPointsDE(self.parametrization, budget=None, num_workers=num_workers)]  # noqa: F405
+        super().__init__(parametrization, budget=budget, num_workers=num_workers, warmup_ratio=0.25)
         assert budget is not None
-        self.budget_before_choosing = 2 * budget
-        if budget < 201:
-            self.optims = [OnePlusOne(self.parametrization, budget=None, num_workers=num_workers)]
-        if budget > 50 * self.dimension or num_workers < 30:
-            if num_workers == 1:
-                self.optims = [
-                    ChainCMAPowell(
-                        self.parametrization, budget=None, num_workers=num_workers
-                    ),  # share parametrization and its rng
-                    ChainCMAPowell(self.parametrization, budget=None, num_workers=num_workers),
-                    ChainCMAPowell(self.parametrization, budget=None, num_workers=num_workers),
-                ]
-            else:
-                self.optims = [
-                    CMA(
-                        self.parametrization, budget=None, num_workers=num_workers
-                    ),  # share parametrization and its rng
-                    CMA(self.parametrization, budget=None, num_workers=num_workers),
-                    CMA(self.parametrization, budget=None, num_workers=num_workers),
-                ]
-            self.budget_before_choosing = budget // 10
-
-
-@registry.register
-class CM(CMandAS2):
-    """Competence map, simplest."""
-
-    def __init__(
-        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
-    ) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        assert budget is not None
-        # share parametrization and its random number generator between all underlying optimizers
-        self.optims = [TwoPointsDE(self.parametrization, budget=None, num_workers=num_workers)]  # noqa: F405
-        self.budget_before_choosing = 2 * budget
-        if budget < 201:
-            self.optims = [OnePlusOne(self.parametrization, budget=None, num_workers=num_workers)]
-        if budget > 50 * self.dimension:
-            self.optims = [CMA(self.parametrization, budget=None, num_workers=num_workers)]
-
-
-@registry.register
-class MultiDiscrete(CM):
-    """Combining 3 Discrete(1+1). Exactly identical. Active selection at 1/10 of the budget."""
-
-    def __init__(
-        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
-    ) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        assert budget is not None
+        self.optims.clear()
         self.optims = [
-            DiscreteOnePlusOne(
-                self.parametrization, budget=budget // 12, num_workers=num_workers
-            ),  # share parametrization and its rng
+            DiscreteOnePlusOne(self.parametrization, budget=budget // 12, num_workers=num_workers),
             DiscreteBSOOnePlusOne(self.parametrization, budget=budget // 12, num_workers=num_workers),
             DoubleFastGADiscreteOnePlusOne(
                 self.parametrization, budget=(budget // 4) - 2 * (budget // 12), num_workers=num_workers
             ),
         ]
-        self.budget_before_choosing = budget // 4
+
+
+@registry.register
+class CMandAS2(Portfolio):
+    """Competence map, with algorithm selection in one of the cases (3 CMAs)."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        # we need to manually create the parametrization if it's an int, so as to make sure
+        # it is shared through instances
+        optims: tp.List[base.OptCls] = [TwoPointsDE]
+        assert budget is not None
+        warmup_ratio = 2.0
+        if budget < 201:
+            optims = [OnePlusOne]
+        if budget > 50 * self.dimension or num_workers < 30:
+            optims = [MetaModel for _ in range(3)]
+            warmup_ratio = 0.1
+        super().__init__(
+            parametrization,
+            budget=budget,
+            num_workers=num_workers,
+            optimizers=optims,
+            warmup_ratio=warmup_ratio,
+        )
+
+
+@registry.register
+class CMandAS3(Portfolio):
+    """Competence map, with algorithm selection in one of the cases (3 CMAs)."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        optims: tp.List[base.OptCls] = [TwoPointsDE]
+        warmup_ratio = 2.0
+        assert budget is not None
+        if budget < 201:
+            optims = [OnePlusOne]
+        if budget > 50 * self.dimension or num_workers < 30:
+            if num_workers == 1:
+                optims = [ChainCMAPowell for _ in range(3)]
+            else:
+                optims = [CMA for _ in range(3)]
+            warmup_ratio = 0.1
+        super().__init__(
+            parametrization,
+            budget=budget,
+            num_workers=num_workers,
+            optimizers=optims,
+            warmup_ratio=warmup_ratio,
+        )
+
+
+@registry.register
+class CM(Portfolio):
+    """Competence map, simplest."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        optims: tp.List[base.OptCls] = [TwoPointsDE]
+        assert budget is not None
+        warmup_ratio = 2.0
+        assert budget is not None
+        if budget < 201:
+            optims = [OnePlusOne]
+        if budget > 50 * self.dimension:
+            optims = [CMA]
+        super().__init__(
+            parametrization,
+            budget=budget,
+            num_workers=num_workers,
+            optimizers=optims,
+            warmup_ratio=warmup_ratio,
+        )
 
 
 class _FakeFunction:
