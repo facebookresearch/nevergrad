@@ -1186,7 +1186,7 @@ RescaledCMA = Rescaled().set_name("RescaledCMA", register=True)
 
 
 class ConfSplitOptimizer(base.ConfiguredOptimizer):
-    """ "Combines optimizers, each of them working on their own variables.
+    """Combines optimizers, each of them working on their own variables.
 
     Parameters
     ----------
@@ -1215,6 +1215,33 @@ class ConfSplitOptimizer(base.ConfiguredOptimizer):
         super().__init__(SplitOptimizer, locals())
 
 
+class ConfPortfolio(base.ConfiguredOptimizer):
+    """Alternates :code:`ask()` on several optimizers
+
+    Parameters
+    ----------
+    optimizers: list of Optimizer, optimizer name, Optimizer class or ConfiguredOptimizer
+        the list of optimizers to use.
+    warmup_ratio: optional float
+        ratio of the budget used before choosing to focus on one optimizer
+
+    Notes
+    -----
+    - if providing an initialized  optimizer, the parametrization of the optimizer
+      must be the exact same instance as the one of the Portfolio.
+    - this API is temporary and be be renamed very soon
+    """
+
+    # pylint: disable=unused-argument
+    def __init__(
+        self,
+        *,
+        optimizers: tp.Sequence[tp.Union[base.Optimizer, base.OptCls, str]] = (),
+        warmup_ratio: tp.Optional[float] = None,
+    ) -> None:
+        super().__init__(SplitOptimizer, locals())
+
+
 @registry.register
 class Portfolio(base.Optimizer):
     """Passive portfolio of CMA, 2-pt DE and Scr-Hammersley."""
@@ -1225,6 +1252,7 @@ class Portfolio(base.Optimizer):
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
         optimizers: tp.Sequence[tp.Union[base.Optimizer, base.OptCls, str]] = (),
+        warmup_ratio: tp.Optional[float] = None,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if not optimizers:  # default
@@ -1247,7 +1275,7 @@ class Portfolio(base.Optimizer):
                 self.optims.append(opt)
                 continue
             Optim = registry[opt] if isinstance(opt, str) else opt
-            sub_workers = 1 if Optim.no_parallelization else num_workers // num + (num_workers % num > 0)
+            sub_workers = 1 if Optim.no_parallelization else num_workers  # could be reduced in some settings
             self.optims.append(
                 Optim(
                     self.parametrization,  # share parametrization and its rng
@@ -1256,20 +1284,37 @@ class Portfolio(base.Optimizer):
                 )
             )
         # current optimizer choice
+        self._selected_ind: tp.Optional[int] = None
         self._current = -1
+        self._warmup_budget: tp.Optional[int] = None
+        if warmup_ratio is not None and budget is None:
+            raise ValueError("warmup_ratio is only available if a budget is provided")
+        if not any(x is None for x in (warmup_ratio, budget)):
+            self._warmup_budget = int(warmup_ratio * budget)  # type: ignore
 
     def _internal_ask_candidate(self) -> p.Parameter:
-        num = len(self.optims)
-        # look for next optimizer to use
-        for k in range(2 * num):
-            self._current += 1
-            optim_index = self._current % len(self.optims)
-            opt = self.optims[optim_index]
-            if opt.num_workers > opt.num_ask - (opt.num_tell - opt.num_tell_not_asked):
-                break  # if there are workers left, use this optimizer
-            if k > num:
-                if not opt.no_parallelization:
-                    break  # if no worker is available, try the first parallelizable optimizer
+        # optimizer selection if budget is over
+        if self._warmup_budget is not None:
+            if self._selected_ind is None and self._warmup_budget < self.num_tell:
+                ind = self.current_bests["pessimistic"].parameter._meta.get("optim_index", -1)
+                if ind >= 0:  # not a tell not asked
+                    if self.num_workers == 1 or self.optims[ind].num_workers > 1:
+                        self._selected_ind = ind  # don't select non-parallelizable in parallel settings
+        optim_index = self._selected_ind
+        if optim_index is None:
+            num = len(self.optims)
+            for k in range(2 * num):
+                self._current += 1
+                optim_index = self._current % len(self.optims)
+                opt = self.optims[optim_index]
+                if opt.num_workers > opt.num_ask - (opt.num_tell - opt.num_tell_not_asked):
+                    break  # if there are workers left, use this optimizer
+                if k > num:
+                    if not opt.no_parallelization:
+                        break  # if no worker is available, try the first parallelizable optimizer
+        if optim_index is None:
+            raise RuntimeError("Something went wrong in optimizer selection")
+        opt = self.optims[optim_index]
         candidate = opt.ask()
         candidate._meta["optim_index"] = optim_index
         self._current += 1
