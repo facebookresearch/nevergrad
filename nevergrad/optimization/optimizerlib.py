@@ -2476,39 +2476,15 @@ class MultipleSingleRuns(base.ConfiguredOptimizer):
 
 
 # Adding noisy splitters.
-Split_ONOPO3 = ConfSplitOptimizer(
-    num_optims=3, progressive=False, multivariate_optimizer=OptimisticNoisyOnePlusOne
-).set_name("Split_ONOPO3", register=True)
-Split_ONOPO5 = ConfSplitOptimizer(
-    num_optims=5, progressive=False, multivariate_optimizer=OptimisticNoisyOnePlusOne
-).set_name("Split_ONOPO5", register=True)
-Split_ONOPO9 = ConfSplitOptimizer(
-    num_optims=9, progressive=False, multivariate_optimizer=OptimisticNoisyOnePlusOne
-).set_name("Split_ONOPO9", register=True)
 Split_ONOPO13 = ConfSplitOptimizer(
-    num_optims=13, progressive=False, multivariate_optimizer=OptimisticNoisyOnePlusOne
+    num_optims=13, multivariate_optimizer=OptimisticNoisyOnePlusOne
 ).set_name("Split_ONOPO13", register=True)
 Split_ONOPOInf = ConfSplitOptimizer(
-    num_optims=100000, progressive=False, multivariate_optimizer=OptimisticNoisyOnePlusOne
+    num_optims=100000, multivariate_optimizer=OptimisticNoisyOnePlusOne
 ).set_name("Split_ONOPOInf", register=True)
-Split_ONOPOAuto = ConfSplitOptimizer(
-    progressive=False, multivariate_optimizer=OptimisticNoisyOnePlusOne
-).set_name("Split_ONOPOAuto", register=True)
-Split_ODOPO3 = ConfSplitOptimizer(
-    num_optims=3, progressive=False, multivariate_optimizer=OptimisticDiscreteOnePlusOne
-).set_name("Split_ODOPO3", register=True)
-Split_ODOPO5 = ConfSplitOptimizer(
-    num_optims=5, progressive=False, multivariate_optimizer=OptimisticDiscreteOnePlusOne
-).set_name("Split_ODOPO5", register=True)
-Split_ODOPO9 = ConfSplitOptimizer(
-    num_optims=9, progressive=False, multivariate_optimizer=OptimisticDiscreteOnePlusOne
-).set_name("Split_ODOPO9", register=True)
 Split_ODOPO13 = ConfSplitOptimizer(
-    num_optims=13, progressive=False, multivariate_optimizer=OptimisticDiscreteOnePlusOne
+    num_optims=13, multivariate_optimizer=OptimisticDiscreteOnePlusOne
 ).set_name("Split_ODOPO13", register=True)
 Split_ODOPOInf = ConfSplitOptimizer(
-    num_optims=100000, progressive=False, multivariate_optimizer=OptimisticDiscreteOnePlusOne
+    num_optims=100000, multivariate_optimizer=OptimisticDiscreteOnePlusOne
 ).set_name("Split_ODOPOInf", register=True)
-Split_ODOPOAuto = ConfSplitOptimizer(
-    progressive=False, multivariate_optimizer=OptimisticDiscreteOnePlusOne
-).set_name("Split_ODOPOAuto", register=True)
