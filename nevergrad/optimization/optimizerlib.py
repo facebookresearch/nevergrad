@@ -1329,7 +1329,7 @@ class MetaModel(base.Optimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if multivariate_optimizer is None:
-            multivariate_optimizer = ECMA if self.dimension > 1 else OnePlusOne
+            multivariate_optimizer = ParametrizedCMA(elitist=True) if self.dimension > 1 else OnePlusOne
         self._optim = multivariate_optimizer(
             self.parametrization, budget, num_workers
         )  # share parametrization and its rng
