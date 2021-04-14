@@ -1333,6 +1333,27 @@ class Portfolio(base.Optimizer):
             raise errors.TellNotAskedNotSupportedError("No sub-optimizer accepted the tell-not-asked")
 
 
+ParaPortfolio = ConfPortfolio(optimizers=[CMA, TwoPointsDE, PSO, SQP, ScrHammersleySearch]).set_name(
+    "ParaPortfolio", register=True
+)
+ASCMADEthird = ConfPortfolio(optimizers=[CMA, LhsDE], warmup_ratio=0.33).set_name(
+    "ASCMADEthird", register=True
+)
+MultiCMA = ConfPortfolio(
+    optimizers=[ParametrizedCMA(random_init=True) for _ in range(3)], warmup_ratio=0.1
+).set_name("MultiCMA", register=True)
+TripleCMA = ConfPortfolio(
+    optimizers=[ParametrizedCMA(random_init=True) for _ in range(3)], warmup_ratio=0.33
+).set_name("TripleCMA", register=True)
+PolyCMA = ConfPortfolio(
+    optimizers=[ParametrizedCMA(random_init=True) for _ in range(20)], warmup_ratio=0.33
+).set_name("PolyCMA", register=True)
+MultiscaleCMA = ConfPortfolio(
+    optimizers=[ParametrizedCMA(random_init=True, scale=scale) for scale in [1.0, 1e-3, 1e-6]],
+    warmup_ratio=0.33,
+).set_name("MultiscaleCMA", register=True)
+
+
 class InfiniteMetaModelOptimum(ValueError):
     """Sometimes the optimum of the metamodel is at infinity."""
 
@@ -1427,27 +1448,6 @@ class MetaModel(base.Optimizer):
         self._optim.tell(candidate, loss)
 
 
-ParaPortfolio = ConfPortfolio(optimizers=[CMA, TwoPointsDE, PSO, SQP, ScrHammersleySearch]).set_name(
-    "ParaPortfolio", register=True
-)
-ASCMADEthird = ConfPortfolio(optimizers=[CMA, LhsDE], warmup_ratio=0.33).set_name(
-    "ASCMADEthird", register=True
-)
-MultiCMA = ConfPortfolio(
-    optimizers=[ParametrizedCMA(random_init=True) for _ in range(3)], warmup_ratio=0.1
-).set_name("MultiCMA", register=True)
-TripleCMA = ConfPortfolio(
-    optimizers=[ParametrizedCMA(random_init=True) for _ in range(3)], warmup_ratio=0.33
-).set_name("TripleCMA", register=True)
-PolyCMA = ConfPortfolio(
-    optimizers=[ParametrizedCMA(random_init=True) for _ in range(20)], warmup_ratio=0.33
-).set_name("PolyCMA", register=True)
-MultiscaleCMA = ConfPortfolio(
-    optimizers=[ParametrizedCMA(random_init=True, scale=scale) for scale in [1.0, 1e-3, 1e-6]],
-    warmup_ratio=0.33,
-).set_name("MultiscaleCMA", register=True)
-
-
 @registry.register
 class SQPCMA(Portfolio):
     """Passive portfolio of CMA and many SQP."""
@@ -1494,11 +1494,12 @@ class CMandAS2(Portfolio):
         # we need to manually create the parametrization if it's an int, so as to make sure
         # it is shared through instances
         optims: tp.List[base.OptCls] = [TwoPointsDE]
+        dim = parametrization if isinstance(parametrization, int) else parametrization.dimension
         assert budget is not None
         warmup_ratio = 2.0
         if budget < 201:
             optims = [OnePlusOne]
-        if budget > 50 * self.dimension or num_workers < 30:
+        if budget > 50 * dim or num_workers < 30:
             optims = [MetaModel for _ in range(3)]
             warmup_ratio = 0.1
         super().__init__(
@@ -1519,10 +1520,11 @@ class CMandAS3(Portfolio):
     ) -> None:
         optims: tp.List[base.OptCls] = [TwoPointsDE]
         warmup_ratio = 2.0
+        dim = parametrization if isinstance(parametrization, int) else parametrization.dimension
         assert budget is not None
         if budget < 201:
             optims = [OnePlusOne]
-        if budget > 50 * self.dimension or num_workers < 30:
+        if budget > 50 * dim or num_workers < 30:
             if num_workers == 1:
                 optims = [ChainCMAPowell for _ in range(3)]
             else:
@@ -1545,12 +1547,13 @@ class CM(Portfolio):
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
         optims: tp.List[base.OptCls] = [TwoPointsDE]
+        dim = parametrization if isinstance(parametrization, int) else parametrization.dimension
         assert budget is not None
         warmup_ratio = 2.0
         assert budget is not None
         if budget < 201:
             optims = [OnePlusOne]
-        if budget > 50 * self.dimension:
+        if budget > 50 * dim:
             optims = [CMA]
         super().__init__(
             parametrization,
@@ -2360,7 +2363,7 @@ class NGOpt(NGOpt10):
     pass
 
 
-class _MSR(CM):
+class _MSR(Portfolio):
     """This code applies multiple copies of NGOpt with random weights for the different objective functions.
 
     Variants dedicated to multiobjective optimization by multiple singleobjective optimization.
@@ -2374,23 +2377,18 @@ class _MSR(CM):
         num_single_runs: int = 9,
         base_optimizer: base.OptCls = NGOpt,
     ) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        self.num_optims = num_single_runs
-        self.optims = [
-            base_optimizer(
-                self.parametrization,
-                budget=1 + (budget // self.num_optims) if budget is not None else None,
-                num_workers=num_workers,
-            )
-            for _ in range(self.num_optims)
-        ]
+        super().__init__(
+            parametrization,
+            budget=budget,
+            num_workers=num_workers,
+            optimizers=[base_optimizer] * num_single_runs,
+        )
         self.coeffs: tp.List[np.ndarray] = []
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         if not self.coeffs:
             self.coeffs = [
-                self.parametrization.random_state.uniform(size=self.num_objectives)
-                for _ in range(self.num_optims)
+                self.parametrization.random_state.uniform(size=self.num_objectives) for _ in self.optims
             ]
         for coeffs, opt in zip(self.coeffs, self.optims):
             this_loss = np.sum(loss * coeffs)
