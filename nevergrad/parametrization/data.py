@@ -40,13 +40,19 @@ class Data(core.Parameter):
         initial value of the array (defaults to 0, with a provided shape)
     shape: tuple of ints, or None
         shape of the array, to be provided iff init is not provided
+    lower: array, float or None
+        minimum value
+    upper: array, float or None
+        maximum value
     mutable_sigma: bool
         whether the mutation standard deviation must mutate as well (for mutation based algorithms)
 
     Note
     ----
-    More specific behaviors can be obtained throught the following methods:
-    set_bounds, set_mutation, set_integer_casting
+    - More specific behaviors can be obtained throught the following methods:
+      set_bounds, set_mutation, set_integer_casting
+    - if both lower and upper bounds are provided, sigma will be adapted so that the range spans 6 sigma.
+      Also, if init is not provided, it will be set to the middle value.
     """
 
     def __init__(
@@ -54,25 +60,55 @@ class Data(core.Parameter):
         *,
         init: tp.Optional[tp.ArrayLike] = None,
         shape: tp.Optional[tp.Tuple[int, ...]] = None,
+        lower: tp.BoundValue = None,
+        upper: tp.BoundValue = None,
         mutable_sigma: bool = False,
     ) -> None:
-        sigma = Log(init=1.0, exponent=2.0, mutable_sigma=False) if mutable_sigma else 1.0
         super().__init__()
-        self.parameters = Dict(sigma=sigma, recombination="average", mutation="gaussian")
-        err_msg = 'Exactly one of "init" or "shape" must be provided'
-        self.parameters._ignore_in_repr = dict(sigma="1.0", recombination="average", mutation="gaussian")
+        sigma: tp.Any = np.array([1.0])
+        # make sure either shape or
+        if sum(x is None for x in [init, shape]) != 1:
+            raise ValueError('Exactly one of "init" or "shape" must be provided')
         if init is not None:
-            if shape is not None:
-                raise ValueError(err_msg)
-            self._value = np.array(init, dtype=float, copy=False)
-        elif shape is not None:
-            assert isinstance(shape, tuple) and all(
-                isinstance(n, int) for n in shape
-            ), f"Shape incorrect: {shape}."
-            self._value = np.zeros(shape, dtype=float)
+            init = np.array(init, dtype=float, copy=False)
         else:
-            raise ValueError(err_msg)
+            assert isinstance(shape, (list, tuple)) and all(
+                isinstance(n, int) for n in shape
+            ), f"Incorrect shape: {shape}."
+            init = np.zeros(shape, dtype=float)
+            if lower is not None and upper is not None:
+                init += (lower + upper) / 2.0
+        self._value = init
         self.add_layer(_layering.ArrayCasting())
+        # handle bounds
+        num_bounds = sum(x is not None for x in (lower, upper))
+        layer: tp.Any = None
+        if num_bounds:
+            from . import _datalayers
+
+            layer = _datalayers.Bound(
+                lower=lower, upper=upper, uniform_sampling=init is None and num_bounds == 2
+            )
+            if num_bounds == 2:
+                sigma = (layer.bounds[1] - layer.bounds[0]) / 6
+        # set parameters
+        sigma = sigma[0] if sigma.size == 1 else sigma
+        if mutable_sigma:
+            siginit = sigma
+            # for the choice of the base:
+            # cf Evolution Strategies, Hans-Georg Beyer (2007)
+            # http://www.scholarpedia.org/article/Evolution_strategies
+            # we want:
+            # sigma *= exp(gaussian / sqrt(dim))
+            base = float(np.exp(1.0 / np.sqrt(2 * init.size)))
+            sigma = base ** (Array if isinstance(sigma, np.ndarray) else Scalar)(
+                init=siginit, mutable_sigma=False
+            )
+            sigma.value = siginit
+        self.parameters = Dict(sigma=sigma, recombination="average", mutation="gaussian")
+        self.parameters._ignore_in_repr = dict(sigma="1.0", recombination="average", mutation="gaussian")
+        if layer is not None:
+            layer(self, inplace=True)
 
     @property
     def bounds(self) -> tp.Tuple[tp.Optional[np.ndarray], tp.Optional[np.ndarray]]:
@@ -112,7 +148,7 @@ class Data(core.Parameter):
         return f"{cls}{description}" + _param_string(self.parameters)
 
     @property
-    def sigma(self) -> tp.Union["Array", "Scalar"]:
+    def sigma(self) -> "Data":
         """Value for the standard deviation used to mutate the parameter"""
         return self.parameters["sigma"]  # type: ignore
 
@@ -136,9 +172,9 @@ class Data(core.Parameter):
 
         Parameters
         ----------
-        lower: float or None
+        lower: array, float or None
             minimum value
-        upper: float or None
+        upper: array, float or None
             maximum value
         method: str
             One of the following choices:
@@ -250,7 +286,7 @@ class Data(core.Parameter):
             ):
                 self.parameters._content["sigma"] = core.as_parameter(sigma)
             else:
-                self.sigma.value = sigma  # type: ignore
+                self.sigma.value = sigma
         if exponent is not None:
             from . import _datalayers
 
