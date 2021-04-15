@@ -25,14 +25,25 @@ def convex_limit(struct_points: np.ndarray) -> int:
         return len(struct_points) // 2
     for i in range(0, min(2 * d + 2, len(struct_points)), 2):
         points += [struct_points[i]]
-    hull = ConvexHull(points, incremental=True)
+    hull = ConvexHull(points[:d], incremental=True)
     k = len(points)
     for i in range(d + 1, len(points)):
         hull.add_points(points[i : (i + 1)])
         if i not in hull.vertices:
-            k = i - 1
+            k = i  # We identify the point which violates quasi-convexity.
             break
-    return k
+    if k == len(points):
+        return k
+    # The violation is points[k]
+    hull = ConvexHull(points[:d], incremental=True)
+    for i in range(d + 1, len(points)):
+        hull.add_points(points[i : (i + 1)])
+        hull_copy = copy.deep_copy(hull)
+        hull_copy.add_points(points[k : (k + 1)])        
+        if k not in hull_copy.vertices:
+            return i - 1  # We should not have added the ith point.
+            break
+    assert False  # This should never happen.
 
 
 def hull_center(points: np.ndarray, k: int) -> np.ndarray:
