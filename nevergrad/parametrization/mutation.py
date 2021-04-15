@@ -14,7 +14,7 @@ from .choice import Choice
 from . import _layering
 
 
-class Mutation(_layering.Layer):
+class Mutation(_layering.Layered):
     """Custom mutation or recombination
     This is an experimental API
 

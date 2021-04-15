@@ -60,11 +60,15 @@ class Layered:
             for k, x in enumerate(self._layers):
                 x._layer_index = k
         other._layers = self._layers
+        other._on_layer_added()
         return self
+
+    def _on_layer_added(self) -> None:
+        """Hook called when the layer is added to another one"""
 
     def _call_deeper(self, name: str, *args: tp.Any, **kwargs: tp.Any) -> tp.Any:
         if self._layers[self._layer_index] is not self:
-            layers = [f"{l.name}({l._layer_index})" for l in self._layers]
+            layers = [f"{lay.name}({lay._layer_index})" for lay in self._layers]
             raise errors.NevergradRuntimeError(
                 "Layer indexing has changed for an unknown reason. Please open an issue:\n"
                 f"Caller at index {self._layer_index}: {self.name}"
