@@ -14,6 +14,26 @@ from .choice import Choice
 from . import _layering
 
 
+P = tp.TypeVar("P", bound=core.Parameter)
+
+
+class Subparameter:
+    def __init__(self, maker: tp.Callable[[], P]) -> None:
+        self.maker = maker
+        self.name = ""
+
+    def __set_name__(self, owner: "Mutation", name: str) -> None:
+        self.name = name
+
+    def __get__(self, obj: "Mutation", objtype: tp.Optional[tp.Type[object]] = None) -> core.Parameter:
+        if not self.name:
+            raise RuntimeError(f"No name provided for descriptor: {self}")
+        subparams = obj.root().parameters
+        if self.name not in subparams:
+            subparams[self.name] = self.maker()
+        return subparams[self.name]
+
+
 class Mutation(_layering.Layered):
     """Custom mutation or recombination
     This is an experimental API
@@ -33,6 +53,11 @@ class Mutation(_layering.Layered):
                 f"{self.__class__.__name__} must be applied to Data parameters, got: {type(data)}"
             )
         return data
+
+    def _on_layer_added(self) -> None:
+        for name, obj in self.__class__.__dict__.items():
+            if isinstance(obj, Subparameter):
+                getattr(self, name)  # initialize if need be
 
     def __call__(self, data: Data, inplace: bool = False) -> Data:
         new = data if inplace else data.copy()
