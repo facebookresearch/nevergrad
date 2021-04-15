@@ -14,41 +14,6 @@ from .choice import Choice
 from . import _layering
 
 
-def _Updater:
-
-    def __init__(self, obj: "Mutation") -> None:
-        self._obj = obj
-
-    def __setitem__(self, name: str, value: tp.Any) -> None:
-        self._obj.root().parameters[name] = value
-
-    def __getitem__(self, name: str) -> tp.Any:
-
-
-class Subparameters:
-
-    def __init__(self) -> None:
-        self._init: tp.Any = None
-        self._initialized = False
-        self.name = ""
-
-    def __set_name__(self, obj: tp.Any, name: str) -> None:
-        self.name = name
-
-    def __get__(self, obj: "Mutation", objtype: tp.Optional[tp.Type[object]] = None) -> "Subparameters":
-        subparams = obj.root().parameters
-        if not self.name:
-            raise RuntimeError("Non-initialized descriptor")
-        if self.name not in subparams:
-            if not self._initialized:
-                raise RuntimeError("An initialization must be provided")
-            subparams[self.name] = core.as_parameter(self._init).copy()
-        return self
-
-    def __set__(self, obj: "Mutation", value: tp.Any) -> None:
-        raise AttributeError("Can't set subparameter")
-
-
 class Mutation(_layering.Layered):
     """Custom mutation or recombination
     This is an experimental API
@@ -61,7 +26,8 @@ class Mutation(_layering.Layered):
     Recombinations should take several
     """
 
-    subparameters = Subparameters()
+    def __init__(self, **parameters: tp.Any) -> None:
+        self._parameters = parameters
 
     def root(self) -> Data:
         data = self._layers[0]
@@ -72,9 +38,11 @@ class Mutation(_layering.Layered):
         return data
 
     def _on_layer_added(self) -> None:
-        for name, obj in self.__class__.__dict__.items():
-            if isinstance(obj, Subparameter):
-                getattr(self, name)  # initialize if need be
+        params = self.root().parameters
+        for name, obj in self._parameters.items():
+            if name not in params:
+                params[name] = core.as_parameter(obj)
+        self._parameters.clear()
 
     def __call__(self, data: Data, inplace: bool = False) -> Data:
         new = data if inplace else data.copy()
@@ -115,10 +83,6 @@ class Crossover(Mutation):
       0 1 1 0
     """
 
-    Subparameters()
-    max_size = Subparameter()
-    fft = Subparameter()
-
     def __init__(
         self,
         axis: tp.Optional[tp.Union[int, tp.Iterable[int]]] = None,
@@ -127,15 +91,16 @@ class Crossover(Mutation):
     ) -> None:
         if not isinstance(axis, core.Parameter):
             axis = (axis,) if isinstance(axis, int) else tuple(axis) if axis is not None else None
-        self.axis = Subparameter(axis)
-        self.max_size = Subparameter(max_size)
-        self.fft = Subparameter(fft)
-        super().__init__()
+        super().__init__(max_size=max_size, axis=axis, fft=fft)
+
+    @property
+    def axis(self) -> tp.Optional[tp.Tuple[int, ...]]:
+        return self.root().parameters["axis"].value  # type: ignore
 
     def apply(self, arrays: tp.Sequence[Data]) -> None:
         new_value = self._apply_array([a._value for a in arrays])
         bounds = arrays[0].bounds
-        if self.fft.value and any(x is not None for x in bounds):
+        if self.root().parameters["fft"].value and any(x is not None for x in bounds):
             new_value = transforms.Clipping(a_min=bounds[0], a_max=bounds[1]).forward(new_value)
         arrays[0].value = new_value
 
@@ -145,7 +110,7 @@ class Crossover(Mutation):
             raise Exception("Crossover can only be applied between 2 individuals")
         transf = (
             transforms.Fourrier(range(arrays[0].dim) if self.axis is None else self.axis)
-            if self.fft.value
+            if self.root().parameters["fft"].value
             else None
         )
         if transf is not None:
@@ -154,7 +119,7 @@ class Crossover(Mutation):
         assert shape == arrays[1].shape, "Individuals should have the same shape"
         # settings
         axis = tuple(range(len(shape))) if self.axis is None else self.axis
-        max_size = self.max_size.value
+        max_size = self.root().parameters["max_size"].value
         max_size = int(((arrays[0].size + 1) / 2) ** (1 / len(axis))) if max_size is None else max_size
         max_size = min(max_size, *(shape[a] - 1 for a in axis))
         size = 1 if max_size == 1 else self.random_state.randint(1, max_size)
@@ -210,9 +175,9 @@ class Translation(Mutation):
             axis = (axis,) if isinstance(axis, int) else tuple(axis) if axis is not None else None
         super().__init__(axis=axis)
 
-    @ property
+    @property
     def axis(self) -> tp.Optional[tp.Tuple[int, ...]]:
-        return self.parameters["axis"].value  # type: ignore
+        return self.root().parameters["axis"].value  # type: ignore
 
     def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:
         assert len(arrays) == 1
@@ -239,14 +204,13 @@ class Jumping(Mutation):
     def __init__(self, axis: int, size: int):
         super().__init__(axis=axis, size=size)
 
-    @ property
+    @property
     def axis(self) -> int:
+        return self.root().parameters["axis"].value  # type: ignore
 
-        return self.parameters["axis"].value  # type: ignore
-
-    @ property
+    @property
     def size(self) -> int:
-        return self.parameters["size"].value  # type: ignore
+        return self.root().parameters["size"].value  # type: ignore
 
     def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:
         assert len(arrays) == 1
@@ -255,8 +219,8 @@ class Jumping(Mutation):
         size = self.random_state.randint(1, self.size)
         asdata = AxisSlicedArray(data, self.axis)
         init = self.random_state.randint(L)
-        chunck = asdata[init: init + size]
-        remain: np.ndarray = np.concatenate([asdata[:init], asdata[init + size:]], axis=self.axis)
+        chunck = asdata[init : init + size]
+        remain: np.ndarray = np.concatenate([asdata[:init], asdata[init + size :]], axis=self.axis)
         # pylint: disable=unsubscriptable-object
         newpos = self.random_state.randint(remain.shape[self.axis])
         asremain = AxisSlicedArray(remain, self.axis)
@@ -271,9 +235,9 @@ class LocalGaussian(Mutation):
             axes = (axes,) if isinstance(axes, int) else tuple(axes) if axes is not None else None
         super().__init__(axes=axes, size=size)
 
-    @ property
+    @property
     def axes(self) -> tp.Optional[tp.Tuple[int, ...]]:
-        return self.parameters["axes"].value  # type: ignore
+        return self.root().parameters["axes"].value  # type: ignore
 
     def apply(self, arrays: tp.Sequence[Data]) -> None:
         arrays = list(arrays)
@@ -281,7 +245,7 @@ class LocalGaussian(Mutation):
         data = np.zeros(arrays[0].value.shape)
         # settings
         axis = tuple(range(len(data.shape))) if self.axes is None else self.axes
-        size = self.parameters["size"].value
+        size = self.root().parameters["size"].value
         # slices
         slices = _make_slices(data.shape, axis, size, self.random_state)
         shape = data[tuple(slices)].shape
@@ -300,7 +264,7 @@ class ProbaLocalGaussian(Mutation):
         )
 
     def axes(self) -> tp.Optional[tp.Tuple[int, ...]]:
-        return self.parameters["axes"].value  # type: ignore
+        return self.root().parameters["axes"].value  # type: ignore
 
     def apply(self, arrays: tp.Sequence[Data]) -> None:
         arrays = list(arrays)
@@ -308,9 +272,9 @@ class ProbaLocalGaussian(Mutation):
         data = np.zeros(arrays[0].value.shape)
         # settings
         length = self.shape[self.axis]
-        size = int(max(1, np.round(length * self.parameters["ratio"].value)))
+        size = int(max(1, np.round(length * self.root().parameters["ratio"].value)))
         # slices
-        e_weights = np.exp(rolling_mean(self.parameters["positions"].value, size))
+        e_weights = np.exp(rolling_mean(self.root().parameters["positions"].value, size))
         probas = e_weights / np.sum(e_weights)
         index = self.random_state.choice(range(length), p=probas)
         # update (inefficient)
@@ -336,9 +300,9 @@ class TunedTranslation(Mutation):
         super().__init__(shift=Choice(range(1, shape[axis])))
         self.axis = axis
 
-    @ property
+    @property
     def shift(self) -> Choice:
-        return self.parameters["shift"]  # type: ignore
+        return self.root().parameters["shift"]  # type: ignore
 
     def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:
         assert len(arrays) == 1
