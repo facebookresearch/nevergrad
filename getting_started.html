@@ -206,7 +206,7 @@ the <code class="code docutils literal notranslate"><span class="pre">[all]</spa
 <section id="basic-optimization-example">
 <h2>Basic optimization example<a class="headerlink" href="#basic-optimization-example" title="Permalink to this headline">¶</a></h2>
 <p><strong>By default all optimizers assume a centered and reduced prior at the beginning of the optimization (i.e. 0 mean and unitary standard deviation).</strong></p>
-<p>Optimizing (minimizing!) a function using an optimizer (here <code class="code docutils literal notranslate"><span class="pre">OnePlusOne</span></code>) can be easily run with:</p>
+<p>Optimizing (minimizing!) a function using an optimizer (here <code class="code docutils literal notranslate"><span class="pre">NGOpt</span></code>, our adaptative optimization algorithm) can be easily run with:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nevergrad</span> <span class="k">as</span> <span class="nn">ng</span>
 
 <span class="k">def</span> <span class="nf">square</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>

@@ -6,7 +6,7 @@ How to perform optimization
 Basic example
 -------------
 
-Minimizing a function using an optimizer (here :code:`OnePlusOne`) can be easily run with:
+Minimizing a function using an optimizer (here :code:`NGOpt`, our adaptative optimization algorithm) can be easily run with:
 
 .. literalinclude:: ../nevergrad/optimization/test_doc.py
     :language: python
@@ -80,7 +80,7 @@ Please make sure that your function returns a float, and that you indeed want to
 Choosing an optimizer
 ---------------------
 
-:code:`ng.optimizers.registry` is a :code:`dict` of all optimizers, so you :code:`ng.optimizers.OnePlusOne` is equivalent to :code:`ng.optimizers.registry["OnePlusOne"]`.
+:code:`ng.optimizers.registry` is a :code:`dict` of all optimizers, so you :code:`ng.optimizers.NGOpt` is equivalent to :code:`ng.optimizers.registry["NGOpt"]`.
 Also, **you can print the full list of optimizers** with:
 
 
