@@ -50,9 +50,6 @@ class Mutation(_layering.Layered):
         new.add_layer(self.copy())
         return new
 
-    def mutate(self) -> Data:
-        raise NotImplementedError
-
 
 class Crossover(Mutation):
     """Operator for merging part of an array into another one
@@ -98,20 +95,22 @@ class Crossover(Mutation):
     def axis(self) -> tp.Optional[tp.Tuple[int, ...]]:
         return self.root().parameters["axis"].value  # type: ignore
 
-    def apply(self, arrays: tp.Sequence[Data]) -> None:
-        new_value = self._apply_array([a._value for a in arrays])
-        bounds = arrays[0].bounds
-        if self.root().parameters["fft"].value and any(x is not None for x in bounds):
+    def _layered_recombine(self, *arrays: Data) -> None:  # type: ignore
+        root = self.root()
+        new_value = self._apply_array([root.value] + [a.value for a in arrays])
+        bounds = root.bounds
+        if root.parameters["fft"].value and any(x is not None for x in bounds):
             new_value = transforms.Clipping(a_min=bounds[0], a_max=bounds[1]).forward(new_value)
-        arrays[0].value = new_value
+        root.value = new_value
 
     def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:
+        root = self.root()
         # checks
         if len(arrays) != 2:
             raise Exception("Crossover can only be applied between 2 individuals")
         transf = (
             transforms.Fourrier(range(arrays[0].dim) if self.axis is None else self.axis)
-            if self.root().parameters["fft"].value
+            if root.parameters["fft"].value
             else None
         )
         if transf is not None:
@@ -120,7 +119,7 @@ class Crossover(Mutation):
         assert shape == arrays[1].shape, "Individuals should have the same shape"
         # settings
         axis = tuple(range(len(shape))) if self.axis is None else self.axis
-        max_size = self.root().parameters["max_size"].value
+        max_size = root.parameters["max_size"].value
         max_size = int(((arrays[0].size + 1) / 2) ** (1 / len(axis))) if max_size is None else max_size
         max_size = min(max_size, *(shape[a] - 1 for a in axis))
         size = 1 if max_size == 1 else self.random_state.randint(1, max_size)
@@ -254,37 +253,6 @@ class LocalGaussian(Mutation):
         arrays[0]._internal_set_standardized_data(data.ravel(), reference=arrays[0])
 
 
-class ProbaLocalGaussian(Mutation):
-    def __init__(self, axis: int, shape: tp.Sequence[int]):
-        assert isinstance(axis, int)
-        self.shape = tuple(shape)
-        self.axis = axis
-        super().__init__(
-            positions=Array(shape=(shape[axis],)),
-            ratio=Scalar(init=1, lower=0, upper=1).set_mutation(sigma=0.05),
-        )
-
-    def axes(self) -> tp.Optional[tp.Tuple[int, ...]]:
-        return self.root().parameters["axes"].value  # type: ignore
-
-    def apply(self, arrays: tp.Sequence[Data]) -> None:
-        arrays = list(arrays)
-        assert len(arrays) == 1
-        data = np.zeros(arrays[0].value.shape)
-        # settings
-        length = self.shape[self.axis]
-        size = int(max(1, np.round(length * self.root().parameters["ratio"].value)))
-        # slices
-        e_weights = np.exp(rolling_mean(self.root().parameters["positions"].value, size))
-        probas = e_weights / np.sum(e_weights)
-        index = self.random_state.choice(range(length), p=probas)
-        # update (inefficient)
-        shape = tuple(size if a == self.axis else s for a, s in enumerate(arrays[0].value.shape))
-        data[tuple(slice(s) for s in shape)] += self.random_state.normal(0, 1, size=shape)
-        data = np.roll(data, shift=index, axis=self.axis)
-        arrays[0]._internal_set_standardized_data(data.ravel(), reference=arrays[0])
-
-
 def rolling_mean(vector: np.ndarray, window: int) -> np.ndarray:
     if window >= len(vector):
         return np.sum(vector) * np.ones((len(vector),))  # type: ignore
@@ -294,23 +262,54 @@ def rolling_mean(vector: np.ndarray, window: int) -> np.ndarray:
     return cumsum[window:] - cumsum[:-window]  # type: ignore
 
 
-class TunedTranslation(Mutation):
-    def __init__(self, axis: int, shape: tp.Sequence[int]):
-        assert isinstance(axis, int)
-        self.shape = tuple(shape)
-        super().__init__(shift=Choice(range(1, shape[axis])))
-        self.axis = axis
+# class TunedTranslation(Mutation):
+#     def __init__(self, axis: int, shape: tp.Sequence[int]):
+#         assert isinstance(axis, int)
+#         self.shape = tuple(shape)
+#         super().__init__(shift=Choice(range(1, shape[axis])))
+#         self.axis = axis
+#
+#     @property
+#     def shift(self) -> Choice:
+#         return self.root().parameters["shift"]  # type: ignore
+#
+#     def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:
+#         assert len(arrays) == 1
+#         data = arrays[0]
+#         assert data.shape == self.shape
+#         shift = self.shift.value
+#         # update shift arrray
+#         shifts = self.shift.indices._value
+#         self.shift.indices._value = np.roll(shifts, shift)  # update probas
+#         return np.roll(data, shift, axis=self.axis)  # type: ignore
 
-    @property
-    def shift(self) -> Choice:
-        return self.root().parameters["shift"]  # type: ignore
 
-    def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:
-        assert len(arrays) == 1
-        data = arrays[0]
-        assert data.shape == self.shape
-        shift = self.shift.value
-        # update shift arrray
-        shifts = self.shift.indices._value
-        self.shift.indices._value = np.roll(shifts, shift)  # update probas
-        return np.roll(data, shift, axis=self.axis)  # type: ignore
+# class ProbaLocalGaussian(Mutation):
+#     def __init__(self, axis: int, shape: tp.Sequence[int]):
+#         assert isinstance(axis, int)
+#         self.shape = tuple(shape)
+#         self.axis = axis
+#         super().__init__(
+#             positions=Array(shape=(shape[axis],)),
+#             ratio=Scalar(init=1, lower=0, upper=1).set_mutation(sigma=0.05),
+#         )
+#
+#     def axes(self) -> tp.Optional[tp.Tuple[int, ...]]:
+#         return self.root().parameters["axes"].value  # type: ignore
+#
+#     def apply(self, arrays: tp.Sequence[Data]) -> None:
+#         arrays = list(arrays)
+#         assert len(arrays) == 1
+#         data = np.zeros(arrays[0].value.shape)
+#         # settings
+#         length = self.shape[self.axis]
+#         size = int(max(1, np.round(length * self.root().parameters["ratio"].value)))
+#         # slices
+#         e_weights = np.exp(rolling_mean(self.root().parameters["positions"].value, size))
+#         probas = e_weights / np.sum(e_weights)
+#         index = self.random_state.choice(range(length), p=probas)
+#         # update (inefficient)
+#         shape = tuple(size if a == self.axis else s for a, s in enumerate(arrays[0].value.shape))
+#         data[tuple(slice(s) for s in shape)] += self.random_state.normal(0, 1, size=shape)
+#         data = np.roll(data, shift=index, axis=self.axis)
+#         arrays[0]._internal_set_standardized_data(data.ravel(), reference=arrays[0])

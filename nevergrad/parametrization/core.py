@@ -114,6 +114,9 @@ class Parameter(Layered):
         """Mutate parameters of the instance, and then its value"""
         self._check_frozen()
         self._subobjects.apply("mutate")
+        self._layers[-1]._layered_mutate()
+
+    def _layered_mutate(self) -> None:
         self.set_standardized_data(self.random_state.normal(size=self.dimension))
 
     def sample(self: P) -> P:
@@ -141,9 +144,11 @@ class Parameter(Layered):
         """
         if not others:
             return
+        self._check_frozen()
         self.random_state  # pylint: disable=pointless-statement
         assert all(isinstance(o, self.__class__) for o in others)
         self._subobjects.apply("recombine", *others)
+        self._layers[-1]._layered_recombine()
 
     def get_standardized_data(self: P, *, reference: P) -> np.ndarray:
         """Get the standardized data representing the value of the instance as an array in the optimization space.

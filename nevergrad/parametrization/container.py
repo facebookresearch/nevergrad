@@ -57,7 +57,7 @@ class Container(core.Parameter):
     def __getitem__(self, name: tp.Any) -> core.Parameter:
         return self._content[name]
 
-    def __setitem__(self, name: tp.Any, value: tp.Any) -> core.Parameter:
+    def __setitem__(self, name: tp.Any, value: tp.Any) -> None:
         self._sizes = None
         self._content[name] = core.as_parameter(value)
         self._sanity_check(list(self._content.values()))

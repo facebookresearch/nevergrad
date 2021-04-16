@@ -99,6 +99,12 @@ class Layered:
     def _layered_sample(self) -> "Layered":
         return self._call_deeper("_layered_sample")  # type: ignore
 
+    def _layered_mutate(self) -> None:
+        return self._call_deeper("_layered_mutate")  # type: ignore
+
+    def _layered_recombine(self, *args: "Layered") -> None:
+        return self._call_deeper("_layered_recombine", *args)  # type: ignore
+
     @property
     def random_state(self) -> np.random.RandomState:
         return self._layers[0].random_state  # use the root random state

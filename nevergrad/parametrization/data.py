@@ -232,10 +232,10 @@ class Data(core.Parameter):
         )
         return self
 
-    def mutate(self) -> None:
+    def _layered_mutate(self) -> None:
         """Mutate parameters of the instance, and then its value"""
-        self._check_frozen()
-        self._subobjects.apply("mutate")
+        # self._check_frozen()
+        # self._subobjects.apply("mutate")
         mutation = self.parameters["mutation"].value
         if isinstance(mutation, str):
             if mutation in ["gaussian", "cauchy"]:
@@ -246,10 +246,6 @@ class Data(core.Parameter):
                 self.set_standardized_data(new_state)
             else:
                 raise NotImplementedError('Mutation "{mutation}" is not implemented')
-        elif isinstance(mutation, Mutation):
-            mutation.apply([self])
-        elif callable(mutation):
-            mutation([self])
         else:
             raise TypeError("Mutation must be a string, a callable or a Mutation instance")
 
@@ -348,23 +344,10 @@ class Data(core.Parameter):
         reduced = value / self.sigma.value
         return reduced.ravel()  # type: ignore
 
-    def recombine(self: D, *others: D) -> None:
-        if not others:
-            return
-        self._subobjects.apply("recombine", *others)
-        recomb = self.parameters["recombination"].value
-        if recomb is None:
-            return
+    def _layered_recombine(self: D, *others: D) -> None:  # type: ignore
         all_params = [self] + list(others)
-        if isinstance(recomb, str) and recomb == "average":
-            all_arrays = [p.get_standardized_data(reference=self) for p in all_params]
-            self.set_standardized_data(np.mean(all_arrays, axis=0))
-        elif isinstance(recomb, Mutation):
-            recomb.apply(all_params)
-        elif callable(recomb):
-            recomb(all_params)
-        else:
-            raise ValueError(f'Unknown recombination "{recomb}"')
+        all_arrays = [p.get_standardized_data(reference=self) for p in all_params]
+        self.set_standardized_data(np.mean(all_arrays, axis=0))
 
     def copy(self: D) -> D:
         child = super().copy()
