@@ -28,6 +28,7 @@ class Mutation(_layering.Layered):
 
     def __init__(self, **parameters: tp.Any) -> None:
         self._parameters = parameters
+        super().__init__()
 
     def root(self) -> Data:
         data = self._layers[0]
@@ -42,7 +43,7 @@ class Mutation(_layering.Layered):
         for name, obj in self._parameters.items():
             if name not in params:
                 params[name] = core.as_parameter(obj)
-        self._parameters.clear()
+        self._parameters = {}
 
     def __call__(self, data: Data, inplace: bool = False) -> Data:
         new = data if inplace else data.copy()
