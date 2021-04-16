@@ -20,10 +20,10 @@ def test_simplest_example() -> None:
         return sum((x - 0.5) ** 2)
 
     # optimization on x as an array of shape (2,)
-    optimizer = ng.optimizers.OnePlusOne(parametrization=2, budget=100)
+    optimizer = ng.optimizers.NGOpt(parametrization=2, budget=100)
     recommendation = optimizer.minimize(square)  # best value
     print(recommendation.value)
-    # >>> [0.49971112 0.5002944]
+    # >>> [0.49999998 0.50000004]
     # DOC_SIMPLEST_1
     np.testing.assert_array_almost_equal(recommendation.value, [0.5, 0.5], decimal=1)
 
