@@ -17,7 +17,9 @@ from .data import Array
 def test_crossover(fft: bool, expected: tp.List[int]) -> None:
     x1 = 4 * np.ones((2, 4))
     x2 = 5 * np.ones((2, 4)) if not fft else np.arange(8).reshape((2, 4))
-    co = mutation.Crossover(axis=1, fft=fft)
+    array = mutation.Crossover(axis=1, fft=fft)(Array(init=x1))
+    co = array._layers[1]
+    assert isinstance(co, mutation.Crossover)
     co.random_state.seed(12)
     out = co._apply_array((x1, x2))
     expected = np.ones((2, 1)).dot([expected])
@@ -32,6 +34,16 @@ def test_ravel_crossover() -> None:
     out = co._apply_array((x1, x2))
     expected = [[4, 5, 5, 5], [4, 4, 4, 4]]
     np.testing.assert_array_equal(out, expected)
+
+
+def test_ravel_crossover_array() -> None:
+    x1 = 4 * np.ones((2, 4))
+    x2 = 5 * np.ones((2, 4))
+    a1, a2 = (mutation.RavelCrossover()(Array(init=x)) for x in (x1, x2))
+    a1.random_state.seed(12)
+    a1.recombine(a2)
+    expected = [[4, 5, 5, 5], [4, 4, 4, 4]]
+    np.testing.assert_array_equal(a1, expected)
 
 
 def test_local_gaussian() -> None:
