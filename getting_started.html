@@ -213,10 +213,10 @@ the <code class="code docutils literal notranslate"><span class="pre">[all]</spa
     <span class="k">return</span> <span class="nb">sum</span><span class="p">((</span><span class="n">x</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
 
 <span class="c1"># optimization on x as an array of shape (2,)</span>
-<span class="n">optimizer</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">OnePlusOne</span><span class="p">(</span><span class="n">parametrization</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">budget</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">NGOpt</span><span class="p">(</span><span class="n">parametrization</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">budget</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
 <span class="n">recommendation</span> <span class="o">=</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="n">square</span><span class="p">)</span>  <span class="c1"># best value</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">recommendation</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
-<span class="c1"># &gt;&gt;&gt; [0.49971112 0.5002944]</span>
+<span class="c1"># &gt;&gt;&gt; [0.49999998 0.50000004]</span>
 </pre></div>
 </div>
 <p><code class="code docutils literal notranslate"><span class="pre">parametrization=n</span></code> is a shortcut to state that the function has only one variable, of dimension <code class="code docutils literal notranslate"><span class="pre">n</span></code>,
