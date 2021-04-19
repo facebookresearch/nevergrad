@@ -1114,11 +1114,12 @@ def gym_multi(
     if memory:
         controls = ["stackingmemory_neural", "deep_stackingmemory_neural", "semideep_stackingmemory_neural"]
         controls += ["memory_neural", "deep_memory_neural", "semideep_memory_neural"]
+        controls += ["extrapolatestackingmemory_neural", "deep_extrapolatestackingmemory_neural", "semideep_extrapolatestackingmemory_neural"]
         assert not multi
     if conformant:
         controls = ["stochastic_conformant"]
     for control in controls:
-        for neural_factor in [-1] if conformant or control == "linear" else [1, 3, 4, 6, 9]:
+        for neural_factor in [-1] if conformant or control == "linear" else ([1, 2, 3, 4, 6, 9] if not memory else [1]):
             for name in env_names:
                 try:
                     func = GymMulti(name, control, neural_factor * (3 if big else 1), randomized=randomized)
@@ -1134,25 +1135,19 @@ def gym_multi(
                     25,
                     400,
                     1600,
-                    819200,
-                    409600,
-                    204800,
-                    102400,
                     51200,
                     25600,
                     12800,
                 ]:
-                    if budget > 1000:
-                        continue
                     for algo in optims:
-                        algo_name = str(algo)
-                        if (
-                            (not "TBPSA" in algo_name)
-                            and (not "Prog" in algo_name)
-                            and (not "Split" in algo_name)
-                            and (not "PSO" in algo_name)
-                        ):
-                            continue
+                        #algo_name = str(algo)
+                        #if (
+                        #    (not "TBPSA" in algo_name)
+                        #    and (not "Prog" in algo_name)
+                        #    and (not "Split" in algo_name)
+                        #    and (not "PSO" in algo_name)
+                        #):
+                        #    continue
                         xp = Experiment(func, algo, budget, num_workers=1, seed=next(seedg))
                         if not xp.is_incoherent:
                             yield xp

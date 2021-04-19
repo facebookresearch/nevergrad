@@ -27,13 +27,17 @@ def test_run_gym_multi(name) -> None:
         np.testing.assert_almost_equal(value, 93.35, decimal=2)
         i = gym_multi.GYM_ENV_NAMES.index(name)
         control = gym_multi.CONTROLLERS[i % len(gym_multi.CONTROLLERS)]
+        print(f"Working with {control} on {name}.")
         func = gym_multi.GymMulti(
             name,
             control,
             randomized=bool(np.random.randint(2)),
         )
-        # x = np.zeros(func.dimension)
         y = func.parametrization.sample()
         func(y.value)
         if "stac" in control:  # Let's check if the memory works.
+            func(y.value)
+            func(y.value)
+            func(y.value)
+            func(y.value)
             func(y.value)

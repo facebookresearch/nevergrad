@@ -70,11 +70,14 @@ CONTROLLERS = [
     "semideep_neural",
     "structured_neural",
     "memory_neural",
-    "stackingmemory_neural",
     "deep_memory_neural",
+    "stackingmemory_neural",
     "deep_stackingmemory_neural",
-    "semideep_memory_neural",
     "semideep_stackingmemory_neural",
+    "extrapolatestackingmemory_neural",
+    "deep_extrapolatestackingmemory_neural",
+    "semideep_extrapolatestackingmemory_neural",
+    "semideep_memory_neural",
     "multi_neural",
     "noisy_neural",
     "noisy_scrambled_neural",
@@ -195,14 +198,17 @@ class GymMulti(ExperimentFunction):
             "stochastic_conformant": (self.num_time_steps,) + output_shape,
             "linear": (input_dim + 1, output_dim),
             "memory_neural": neural_size,
-            "stackingmemory_neural": neural_size,
             "neural": neural_size,
             "deep_neural": neural_size,
             "semideep_neural": neural_size,
             "deep_memory_neural": neural_size,
             "semideep_memory_neural": neural_size,
             "deep_stackingmemory_neural": neural_size,
+            "stackingmemory_neural": neural_size,
             "semideep_stackingmemory_neural": neural_size,
+            "deep_extrapolatestackingmemory_neural": neural_size,
+            "extrapolatestackingmemory_neural": neural_size,
+            "semideep_extrapolatestackingmemory_neural": neural_size,
             "structured_neural": neural_size,
             "multi_neural": (min(self.num_time_steps, 50),) + unstructured_neural_size,
             "noisy_neural": neural_size,
@@ -366,11 +372,13 @@ class GymMulti(ExperimentFunction):
         self.archive = [
             self.archive[i] for i in range(len(self.archive)) if self.archive[i][2] <= self.mean_loss
         ]
+        self.archive = sorted(self.archive, key=lambda trace: -len(trace[0]))
         for trace in self.archive:
             to, ta, _ = trace
-            if len(current_observations) > len(to):
+            assert len(to) == len(ta)
+            if len(current_observations) > len(to) and "extrapolate" not in self.control:
                 continue
-            to = np.asarray(to[: len(current_observations)], dtype=np.float32)
+            to = np.asarray(to[(-len(current_observations)):], dtype=np.float32)
             # if all((_to - _o) for _to, _o in zip(to, current_observations)) <= 1e-7:
             if np.array_equal(to, current_observations):
                 return np.asarray(ta[len(current_observations) - 1], dtype=np.float32)
@@ -413,8 +421,7 @@ class GymMulti(ExperimentFunction):
                 return 1e20 / (1.0 + i)  # We encourage late failures rather than early failures.
             if "stacking" in control:
                 attention_a = self.heuristic(o)  # Best so far, or something like that heuristically derived.
-                if attention_a is not None:
-                    a = attention_a
+                a = attention_a if attention_a is not None else 0. * np.asarray(a)
                 previous_o = previous_o.ravel()
                 additional_input = np.concatenate([np.asarray(a).ravel(), previous_o])
                 shift = len(additional_input)
