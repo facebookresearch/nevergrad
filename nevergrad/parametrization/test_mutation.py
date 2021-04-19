@@ -62,7 +62,7 @@ def test_choice() -> None:
     roll = mutation.Translation(0)
     Mut = mutation.MutationChoice([lg, jump, roll])
     x = Mut(Array(init=4.0 * np.ones((2, 4))))
-    x.mutate()
+    x.copy().mutate()
 
 
 def test_cauchy() -> None:

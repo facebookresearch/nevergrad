@@ -19,15 +19,11 @@ P = tp.TypeVar("P", bound=core.Parameter)
 
 
 class Mutation(_layering.Layered):
-    """Custom mutation or recombination
+    """Custom mutation or recombination operation
     This is an experimental API
 
-    Either implement:
-    - `_apply_array`  which provides a new np.ndarray from a list of arrays
-    - `apply` which updates the first p.Array instance
-
-    Mutation should take only one p.Array instance as argument, while
-    Recombinations should take several
+    Call on a Parameter to create a new Parameter with the
+    provided mutation/recombination.
     """
 
     _TYPE = core.Parameter
@@ -84,6 +80,7 @@ class MutationChoice(DataMutation):
         root = self.root()
         for mut in self.mutations:
             root.add_layer(mut)
+        self.mutations = []
         super()._on_layer_added()
 
     def _select(self) -> core.Layered:
