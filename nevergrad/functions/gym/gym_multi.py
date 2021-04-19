@@ -249,6 +249,7 @@ class GymMulti(ExperimentFunction):
         self.mean_loss = None
 
     def evaluation_function(self, *recommendations) -> float:
+    """Averages multiple evaluatioons if necessary."""
         x = recommendations[0].value
         if not self.randomized:
             return self.gym_multi_function(x)
@@ -256,22 +257,27 @@ class GymMulti(ExperimentFunction):
         return sum(losses) / len(losses)
 
     def discretize(self, a):
+    """Transforms a logit into an int obtained through softmax."""
         probabilities = np.exp(a - max(a))
         probabilities = probabilities / sum(probabilities)
         return int(np.random.multinomial(1, probabilities)[0])
 
     def neural(self, x: np.ndarray, o: np.ndarray):
+    """Applies a neural net parametrized by x to an observation o."""
         o = o.ravel()
         if self.control == "linear":
+            # The linear case is simplle.
             output = np.matmul(o, x[1:, :])
             output += x[0]
             return output.reshape(self.output_shape), np.zeros(0)
         if "structured" not in self.control:
+            # If not structured then we split into two matrices.
             first_matrix = x[: self.first_size].reshape(self.first_layer_shape) / np.sqrt(len(o))
             second_matrix = x[self.first_size : (self.first_size + self.second_size)].reshape(
                 self.second_layer_shape
             ) / np.sqrt(self.num_neurons)
         else:
+            # In the structured case we should have two entries with the right shapes.
             assert len(x) == 2
             first_matrix = np.asarray(x[0][0])
             second_matrix = np.asarray(x[0][1])
@@ -284,6 +290,7 @@ class GymMulti(ExperimentFunction):
         assert len(o) == len(first_matrix[1:]), f"{o.shape} coming in matrix of shape {first_matrix.shape}"
         output = np.matmul(o, first_matrix[1:])
         if "deep" in self.control:
+            # The deep case must be split into several layers.
             current_index = self.first_size + self.second_size
             internal_layer_size = self.num_neurons ** 2
             s = (self.num_neurons, self.num_neurons)
@@ -298,11 +305,14 @@ class GymMulti(ExperimentFunction):
         return output[self.memory_len :].reshape(self.output_shape), output[: self.memory_len]
 
     def gym_multi_function(self, x: np.ndarray):
+    """Do a simulation with parametrization x and return the result."""
         self.current_time_index = 0
         self.current_reward = 0
         self.current_observations: tp.List[tp.Any] = []
         self.current_actions: tp.List[tp.Any] = []
         loss = 0.0
+        # Deterministic conformant: do  the average of 7 simullations always with the same seed.
+        # Otherwise: apply a random seed and do a single simulation.
         num_simulations = 7 if self.control != "conformant" and not self.randomized else 1
         for seed in range(num_simulations):
             loss += self.gym_simulate(x, seed=seed if not self.randomized else np.random.randint(500000))

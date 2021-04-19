@@ -37,7 +37,3 @@ def test_run_gym_multi(name) -> None:
         func(y.value)
         if "stac" in control:  # Let's check if the memory works.
             func(y.value)
-            func(y.value)
-            func(y.value)
-            func(y.value)
-            func(y.value)
