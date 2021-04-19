@@ -9,8 +9,8 @@ from . import core
 
 
 @pytest.mark.parametrize("complex_tsp", [True, False])
-def test_stsp(complex_tsp: bool) -> None:
-    func = core.STSP(complex_tsp=complex_tsp)
+def test_stsp(complex: bool) -> None:
+    func = core.STSP(complex=complex)
     x = 7 * np.random.rand(func.dimension)
     value = func(x)  # should not touch boundaries, so value should be < np.inf
     assert value < np.inf
