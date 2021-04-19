@@ -248,10 +248,9 @@ class LocalGaussian(Mutation):
     def axes(self) -> tp.Optional[tp.Tuple[int, ...]]:
         return self.root().parameters["axes"].value  # type: ignore
 
-    def apply(self, arrays: tp.Sequence[Data]) -> None:
-        arrays = list(arrays)
-        assert len(arrays) == 1
-        data = np.zeros(arrays[0].value.shape)
+    def _layered_mutate(self) -> None:
+        root = self.root()
+        data = np.zeros(root.value.shape)
         # settings
         axis = tuple(range(len(data.shape))) if self.axes is None else self.axes
         size = self.root().parameters["size"].value
@@ -259,7 +258,7 @@ class LocalGaussian(Mutation):
         slices = _make_slices(data.shape, axis, size, self.random_state)
         shape = data[tuple(slices)].shape
         data[tuple(slices)] += self.random_state.normal(0, 1, size=shape)
-        arrays[0]._internal_set_standardized_data(data.ravel(), reference=arrays[0])
+        root._internal_set_standardized_data(data.ravel(), reference=root)
 
 
 def rolling_mean(vector: np.ndarray, window: int) -> np.ndarray:
