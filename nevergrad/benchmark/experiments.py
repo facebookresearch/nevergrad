@@ -1118,7 +1118,7 @@ def gym_multi(
     if conformant:
         controls = ["stochastic_conformant"]
     for control in controls:
-        for neural_factor in [-1] if conformant or control == "linear" else [1, 3, 4, 6, 9]:
+        for neural_factor in [-1] if conformant or control == "linear" else [1, 2, 4]:
             for name in env_names:
                 try:
                     func = GymMulti(name, control, neural_factor * (3 if big else 1), randomized=randomized)
