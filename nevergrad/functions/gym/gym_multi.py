@@ -64,25 +64,25 @@ GUARANTEED_GYM_ENV_NAMES = [
 
 # We do not use "conformant" which is not consistent with the rest.
 CONTROLLERS = [
-    "linear",
-    "neural",
-    "deep_neural",
-    "semideep_neural",
-    "structured_neural",
-    "memory_neural",
-    "deep_memory_neural",
-    "stackingmemory_neural",
+    "linear",  # Simple linear controller.
+    "neural",  # Simple neural controller.
+    "deep_neural",   # Deeper neural controller.
+    "semideep_neural",  # Deep, but not very deep.
+    "structured_neural",  # Structured optimization of a neural net.
+    "memory_neural",  # Uses a memory (i.e. recurrent net).
+    "deep_memory_neural",  
+    "stackingmemory_neural",  # Uses a memory and stacks a heuristic and the memory as inputs.
     "deep_stackingmemory_neural",
     "semideep_stackingmemory_neural",
-    "extrapolatestackingmemory_neural",
+    "extrapolatestackingmemory_neural",  # Same as stackingmemory_neural + suffix-based extrapolation.
     "deep_extrapolatestackingmemory_neural",
     "semideep_extrapolatestackingmemory_neural",
     "semideep_memory_neural",
-    "multi_neural",
-    "noisy_neural",
+    "multi_neural",  # One neural net per time step.
+    "noisy_neural",  # Do not start at 0 but at a random point.
+    "scrambled_neural",  # Why not perturbating the order of variables ?
     "noisy_scrambled_neural",
-    "scrambled_neural",
-    "stochastic_conformant",
+    "stochastic_conformant",  # Conformant planning, but still not deterministic.
 ]
 
 
@@ -319,6 +319,7 @@ class GymMulti(ExperimentFunction):
         return loss / num_simulations
 
     def action_cast(self, a):
+    """Transforms an action into an active as expected by the gym step function."""
         env = self.env
         if type(a) == np.float64:
             a = np.asarray((a,))
@@ -351,12 +352,16 @@ class GymMulti(ExperimentFunction):
         return a
 
     def step(self, a):
+        """Apply an action.
+
+        We have a step on top of Gym's step for storing some statistics."""
         o, r, done, info = self.env.step(a)
         self.current_time_index += 1
         self.current_reward += r
         self.current_observations += [np.asarray(o).copy()]
         self.current_actions += [np.asarray(a).copy()]
-        if done:
+        if done and "stacking" in self.control:  # Only the method which do a stacking of heuristic + memory into the
+        # observation need archiving.
             self.mean_loss = (
                 (0.95 * self.mean_loss + 0.05 * self.current_reward)
                 if self.mean_loss is not None
