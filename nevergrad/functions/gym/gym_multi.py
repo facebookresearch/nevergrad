@@ -306,11 +306,6 @@ class GymMulti(ExperimentFunction):
 
     def gym_multi_function(self, x: np.ndarray):
     """Do a simulation with parametrization x and return the result."""
-        self.current_time_index = 0
-        self.current_reward = 0
-        self.current_observations: tp.List[tp.Any] = []
-        self.current_actions: tp.List[tp.Any] = []
-        loss = 0.0
         # Deterministic conformant: do  the average of 7 simullations always with the same seed.
         # Otherwise: apply a random seed and do a single simulation.
         num_simulations = 7 if self.control != "conformant" and not self.randomized else 1
@@ -399,7 +394,13 @@ class GymMulti(ExperimentFunction):
                 return np.asarray(ta[len(current_observations) - 1], dtype=np.float32)
         return None
 
-    def gym_simulate(self, x: np.ndarray, seed: int = 0):
+    def gym_simulate(self, x: np.ndarray, seed: int):
+    """Single simulation with parametrization x."""
+        self.current_time_index = 0
+        self.current_reward = 0
+        self.current_observations: tp.List[tp.Any] = []
+        self.current_actions: tp.List[tp.Any] = []
+        loss = 0.0
         try:
             if self.policy_shape is not None:
                 x = x.reshape(self.policy_shape)
@@ -410,15 +411,18 @@ class GymMulti(ExperimentFunction):
         env.seed(seed=seed)
         o = env.reset()
         control = self.control
-        if "conformant" in control:
+        if "conformant" in control:  # Conformant planning: we just optimize a sequence of actions. No reactivity.
             return self.gym_conformant(x)
-        if "scrambled" in control:
+        if "scrambled" in control:  # We shuffle the variables, typically so that progressive methods optimize
+            # everywhere in parallel
             np.random.RandomState(1234).shuffle(x)
-        if "noisy" in control:
+        if "noisy" in control:  # We add a randomly chosen but fixed perturbation of the x, i.e. we do not
+            # start at 0.
             x = x + 0.01 * np.random.RandomState(1234).normal(size=x.shape)
         reward = 0.0
         memory = np.zeros(self.memory_len)
         for i in range(self.num_time_steps):
+            # Actual loop over time steps!
             if self.discrete_input:
                 obs = np.zeros(shape=self.input_dim - self.extended_input_len - len(memory))
                 obs[o] = 1
@@ -448,6 +452,7 @@ class GymMulti(ExperimentFunction):
         return -reward
 
     def gym_conformant(self, x: np.ndarray):
+    """Conformant: we directly optimize inputs, not parameters of a policy."""
         reward = 0.0
         for i, a in enumerate(10.0 * x):
             a = self.action_cast(a)
