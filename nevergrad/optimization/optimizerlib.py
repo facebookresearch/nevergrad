@@ -397,10 +397,11 @@ class _CMA(base.Optimizer):
                     popsize=self._popsize,
                     randn=self._rng.randn,
                     CMA_diagonal=self._config.diagonal,
-                    verbose=0,
+                    verbose=-9,
                     seed=np.nan,
                     CMA_elitist=self._config.elitist,
                 )
+                inopts.update(self._config.inopts if self._config.inopts is not None else {})
                 self._es = cma.CMAEvolutionStrategy(
                     x0=self.parametrization.sample().get_standardized_data(reference=self.parametrization)
                     if self._config.random_init
@@ -481,6 +482,9 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         if objective function evaluation is fast.
     random_init: bool
         Use a randomized initialization
+    inopts: optional dict
+        use this to averride any inopts parameter of the wrapped CMA optimizer
+        (see https://github.com/CMA-ES/pycma)
     """
 
     # pylint: disable=unused-argument
@@ -493,6 +497,7 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         diagonal: bool = False,
         fcmaes: bool = False,
         random_init: bool = False,
+        inopts: tp.Optional[tp.Dict[str, tp.Any]] = None,
     ) -> None:
         super().__init__(_CMA, locals(), as_config=True)
         if fcmaes:
@@ -504,6 +509,7 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         self.diagonal = diagonal
         self.fcmaes = fcmaes
         self.random_init = random_init
+        self.inopts = inopts
 
 
 CMA = ParametrizedCMA().set_name("CMA", register=True)
