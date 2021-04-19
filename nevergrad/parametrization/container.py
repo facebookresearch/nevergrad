@@ -106,8 +106,7 @@ class Container(core.Parameter):
         return child
 
     def _layered_recombine(self: D, *others: D) -> None:  # type: ignore
-        for name in self._content:
-            self[name].recombine(*[o[name] for o in others])
+        pass  # nothing specific here, already propagated to sub-objects (content)
 
 
 class Dict(Container):
