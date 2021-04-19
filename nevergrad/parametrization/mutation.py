@@ -16,6 +16,7 @@ from . import _layering
 
 
 D = tp.TypeVar("D", bound=Data)
+P = tp.TypeVar("P", bound=core.Parameter)
 
 
 class Mutation(_layering.Layered):
@@ -30,17 +31,36 @@ class Mutation(_layering.Layered):
     Recombinations should take several
     """
 
+    _TYPE = core.Parameter
+
+    def root(self) -> core.Parameter:
+        param = self._layers[0]
+        self._check_type(param)
+        return param  # type: ignore
+
+    def _check_type(self, param: core.Layered) -> None:
+        if not isinstance(param, self._TYPE):
+            raise RuntimeError(
+                f"{self.__class__.__name__} must be applied to {self._TYPE} parameters, got: {type(param)}"
+            )
+
+    def __call__(self, parameter: P, inplace: bool = False) -> P:
+        self._check_type(parameter)
+        new = parameter if inplace else parameter.copy()
+        new.add_layer(self.copy())
+        return new
+
+
+class DataMutation(Mutation):
+    _TYPE = Data
+
     def __init__(self, **parameters: tp.Any) -> None:
         self._parameters = parameters
         super().__init__()
 
-    def root(self) -> Data:
-        data = self._layers[0]
-        if not isinstance(data, Data):
-            raise RuntimeError(
-                f"{self.__class__.__name__} must be applied to Data parameters, got: {type(data)}"
-            )
-        return data
+    def root(self) -> Data:  # pylint: disable=useless-super-delegation
+        # simpler for typing
+        return super().root()  # type: ignore
 
     def _on_layer_added(self) -> None:
         params = self.root().parameters
@@ -49,13 +69,14 @@ class Mutation(_layering.Layered):
                 params[name] = core.as_parameter(obj)
         self._parameters = {}
 
-    def __call__(self, data: D, inplace: bool = False) -> D:
-        new = data if inplace else data.copy()
-        new.add_layer(self.copy())
-        return new
+
+class Cauchy(Mutation):
+    def _layered_mutate(self) -> None:
+        root = self.root()
+        root.set_standardized_data(root.random_state.standard_cauchy(size=root.dimension))
 
 
-class Crossover(Mutation):
+class Crossover(DataMutation):
     """Operator for merging part of an array into another one
 
     Parameters
@@ -136,7 +157,7 @@ class Crossover(Mutation):
         return result
 
 
-class RavelCrossover(Crossover):
+class RavelCrossover(Crossover):  # TODO: can be made for all parameters instead of just arrays
     """Operator for merging part of an array into another one, after raveling
 
     Parameters
@@ -173,7 +194,7 @@ def _make_slices(
     return slices
 
 
-class Translation(Mutation):
+class Translation(DataMutation):
     def __init__(self, axis: tp.Optional[tp.Union[int, tp.Iterable[int]]] = None):
         if not isinstance(axis, core.Parameter):
             axis = (axis,) if isinstance(axis, int) else tuple(axis) if axis is not None else None
@@ -206,7 +227,7 @@ class AxisSlicedArray:
         return self.array[slices]  # type: ignore
 
 
-class Jumping(Mutation):
+class Jumping(DataMutation):
     """Move a chunk for a position to another in an array"""
 
     def __init__(self, axis: int, size: int):
@@ -239,7 +260,7 @@ class Jumping(Mutation):
         return np.concatenate([asremain[:newpos], chunck, asremain[newpos:]], axis=self.axis)  # type: ignore
 
 
-class LocalGaussian(Mutation):
+class LocalGaussian(DataMutation):
     def __init__(
         self, size: tp.Union[int, core.Parameter], axes: tp.Optional[tp.Union[int, tp.Iterable[int]]] = None
     ):

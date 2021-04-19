@@ -32,7 +32,7 @@ def _param_string(parameters: Dict) -> str:
 
 # pylint: disable=too-many-arguments, too-many-instance-attributes,abstract-method
 class Data(core.Parameter):
-    """Array parameter with customizable mutation and recombination.
+    """Array/scalar parameter
 
     Parameters
     ----------
@@ -105,8 +105,8 @@ class Data(core.Parameter):
                 init=siginit, mutable_sigma=False
             )
             sigma.value = siginit
-        self.parameters = Dict(sigma=sigma, recombination="average", mutation="gaussian")
-        self.parameters._ignore_in_repr = dict(sigma="1.0", recombination="average", mutation="gaussian")
+        self.parameters = Dict(sigma=sigma)
+        self.parameters._ignore_in_repr = dict(sigma="1.0")
         if layer is not None:
             layer(self, inplace=True)
 
@@ -226,34 +226,10 @@ class Data(core.Parameter):
             ) from e
         return self
 
-    def set_recombination(self: D, recombination: tp.Union[None, str, core.Parameter]) -> D:
-        self.parameters._content["recombination"] = (
-            recombination if isinstance(recombination, core.Parameter) else core.Constant(recombination)
-        )
-        return self
-
-    def _layered_mutate(self) -> None:
-        """Mutate parameters of the instance, and then its value"""
-        # self._check_frozen()
-        # self._subobjects.apply("mutate")
-        mutation = self.parameters["mutation"].value
-        if isinstance(mutation, str):
-            if mutation in ["gaussian", "cauchy"]:
-                func = (
-                    self.random_state.normal if mutation == "gaussian" else self.random_state.standard_cauchy
-                )
-                new_state = func(size=self.dimension)
-                self.set_standardized_data(new_state)
-            else:
-                raise NotImplementedError('Mutation "{mutation}" is not implemented')
-        else:
-            raise TypeError("Mutation must be a string, a callable or a Mutation instance")
-
     def set_mutation(
         self: D,
         sigma: tp.Optional[tp.Union[float, core.Parameter]] = None,
         exponent: tp.Optional[float] = None,
-        custom: tp.Optional[tp.Union[str, core.Parameter]] = None,
     ) -> D:
         """Output will be cast to integer(s) through deterministic rounding.
 
@@ -266,10 +242,6 @@ class Data(core.Parameter):
         exponent: float
             exponent for the logarithmic mode. With the default sigma=1, using exponent=2 will perform
             x2 or /2 "on average" on the value at each mutation.
-        custom: str or Parameter
-            custom mutation which can be a string ("gaussian" or "cauchy")
-            or Mutation/Recombination like object
-            or a Parameter which value is either of those
 
         Returns
         -------
@@ -299,8 +271,6 @@ class Data(core.Parameter):
                 raise errors.NevergradValueError(
                     "Cannot convert to logarithmic mode with current non-positive value, please update it firstp."
                 ) from e
-        if custom is not None:
-            self.parameters._content["mutation"] = core.as_parameter(custom)
         return self
 
     def set_integer_casting(self: D) -> D:
@@ -444,10 +414,10 @@ def _fix_legacy(parameter: Data) -> None:
             method=bound._method,
             uniform_sampling=bound.uniform_sampling,
         )
-    for l in (bound, exp):
-        l._layer_index = 0
-        l._layers = [l]
-        parameter.add_layer(l)
+    for lay in (bound, exp):
+        lay._layer_index = 0
+        lay._layers = [lay]
+        parameter.add_layer(lay)
     return
 
 

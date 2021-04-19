@@ -56,6 +56,11 @@ def test_local_gaussian() -> None:
     np.testing.assert_array_equal(x.value == init, expected)
 
 
+def test_cauchy() -> None:
+    array = mutation.Cauchy()(Array(shape=(2, 4)))
+    array.mutate()
+
+
 # def test_proba_local_gaussian() -> None:
 #     init = 4.0 * np.ones((2, 8))
 #     x = Array(init=np.array(init))
