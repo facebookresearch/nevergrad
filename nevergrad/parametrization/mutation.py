@@ -9,7 +9,7 @@ import typing as tp
 import numpy as np
 from . import core
 from . import transforms
-from .data import Data
+from .data import Data, Scalar
 from .choice import Choice
 from . import _layering
 
@@ -137,8 +137,8 @@ class Crossover(DataMutation):
 
     def __init__(
         self,
-        axis: tp.Optional[tp.Union[int, tp.Iterable[int]]] = None,
-        max_size: tp.Optional[int] = None,
+        axis: tp.Any = None,
+        max_size: tp.Union[int, Scalar, None] = None,
         fft: bool = False,
     ) -> None:
         if not isinstance(axis, core.Parameter):
@@ -198,7 +198,7 @@ class RavelCrossover(Crossover):  # TODO: can be made for all parameters instead
 
     def __init__(
         self,
-        max_size: tp.Optional[int] = None,
+        max_size: tp.Union[int, Scalar, None] = None,
     ) -> None:
         super().__init__(axis=0, max_size=max_size)
 
