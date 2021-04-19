@@ -44,7 +44,6 @@ class Parameter(Layered):
     def __init__(self) -> None:
         # Main features
         super().__init__()
-        self.uid = uuid.uuid4().hex
         self._subobjects = utils.Subobjects(
             self, base=Parameter, attribute="__dict__"
         )  # registers and apply functions too all (sub-)Parameter attributes

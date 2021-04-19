@@ -22,6 +22,7 @@
 import typing as tp
 import numpy as np
 import nevergrad as ng
+from nevergrad.ops import mutations
 from . import photonics
 from .. import base
 
@@ -93,7 +94,8 @@ def _make_parametrization(
         sigma = ng.p.Array(init=[[10.0]] if name != "bragg" else [[0.03], [10.0]]).set_mutation(exponent=2.0)  # type: ignore
         array.set_mutation(sigma=sigma)
     if rolling:
-        array.set_mutation(custom=ng.p.Choice(["gaussian", "cauchy", ng.ops.mutations.Translation(axis=1)]))
+        mutation = mutations.MutationChoice([mutations.Cauchy(), mutations.Translation(axis=1)])
+        array = mutation(array)
     array.set_bounds(b_array[:, [0]], b_array[:, [1]], method=bounding_method, full_range_sampling=True)
     array = ng.ops.mutations.Crossover(axis=1)(array).set_name("")
     assert array.dimension == dimension, f"Unexpected {array} for dimension {dimension}"

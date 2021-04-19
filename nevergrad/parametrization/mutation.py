@@ -10,8 +10,7 @@ import numpy as np
 from . import core
 from . import transforms
 from .data import Data
-
-# from .choice import Choice
+from .choice import Choice
 from . import _layering
 
 
@@ -68,6 +67,36 @@ class DataMutation(Mutation):
             if name not in params:
                 params[name] = core.as_parameter(obj)
         self._parameters = {}
+
+
+class MutationChoice(DataMutation):
+    """Selects one of the provided mutation based on a Choice subparameter
+    Caution: there may be subparameter collisions
+    """
+
+    def __init__(self, mutations: tp.Sequence[Mutation], with_default: bool = True) -> None:
+        self.mutations = list(mutations)
+        self.with_default = with_default
+        options = [lay.uid for lay in self.mutations] + (["#ROOT#"] if with_default else [])
+        super().__init__(mutation_choice=Choice(options))
+
+    def _on_layer_added(self) -> None:
+        root = self.root()
+        for mut in self.mutations:
+            root.add_layer(mut)
+        super()._on_layer_added()
+
+    def _select(self) -> core.Layered:
+        root = self.root()
+        layers = {lay.uid: lay for lay in self._layers}
+        layers["#ROOT#"] = root
+        return layers[root.parameters["mutation_choice"].value]
+
+    def _layered_recombine(self, *others: core.Layered) -> None:
+        self._select()._layered_recombine(*others)
+
+    def _layered_mutate(self) -> None:
+        self._select()._layered_mutate()
 
 
 class Cauchy(Mutation):
@@ -197,12 +226,12 @@ def _make_slices(
 class Translation(DataMutation):
     def __init__(self, axis: tp.Optional[tp.Union[int, tp.Iterable[int]]] = None):
         if not isinstance(axis, core.Parameter):
-            axis = (axis,) if isinstance(axis, int) else tuple(axis) if axis is not None else None
-        super().__init__(axis=axis)
+            axes = (axis,) if isinstance(axis, int) else tuple(axis) if axis is not None else None
+        super().__init__(axes=axes)
 
     @property
-    def axis(self) -> tp.Optional[tp.Tuple[int, ...]]:
-        return self.root().parameters["axis"].value  # type: ignore
+    def axes(self) -> tp.Optional[tp.Tuple[int, ...]]:
+        return self.root().parameters["axes"].value  # type: ignore
 
     def _layered_mutate(self) -> None:
         root = self.root()
@@ -211,9 +240,9 @@ class Translation(DataMutation):
     def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:
         assert len(arrays) == 1
         data = arrays[0]
-        axis = tuple(range(data.dim)) if self.axis is None else self.axis
-        shifts = [self.random_state.randint(data.shape[a]) for a in axis]
-        return np.roll(data, shifts, axis=axis)  # type: ignore
+        axes = tuple(range(data.dim)) if self.axes is None else self.axes
+        shifts = [self.random_state.randint(data.shape[a]) for a in axes]
+        return np.roll(data, shifts, axis=axes)  # type: ignore
 
 
 class AxisSlicedArray:

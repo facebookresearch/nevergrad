@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import uuid
 import copy
 import bisect
 from enum import Enum
@@ -43,6 +44,7 @@ class Layered:
         self._layers = [self]
         self._layer_index = 0
         self._name: tp.Optional[str] = None
+        self.uid = uuid.uuid4().hex
 
     def add_layer(self: L, other: "Layered") -> L:
         """Adds a layer which will modify the object behavior"""
