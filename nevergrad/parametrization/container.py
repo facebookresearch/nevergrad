@@ -105,6 +105,10 @@ class Container(core.Parameter):
         child._content = {k: p.sample() for k, p in self._content.items()}
         return child
 
+    def _layered_recombine(self: D, *others: D) -> None:
+        for name in self._content:
+            self[name].recombine(*[o[name] for o in others])
+
 
 class Dict(Container):
     """Dictionary-valued parameter. This Parameter can contain other Parameters,

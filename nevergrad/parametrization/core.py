@@ -148,7 +148,7 @@ class Parameter(Layered):
         self.random_state  # pylint: disable=pointless-statement
         assert all(isinstance(o, self.__class__) for o in others)
         self._subobjects.apply("recombine", *others)
-        self._layers[-1]._layered_recombine()
+        self._layers[-1]._layered_recombine(*others)
 
     def get_standardized_data(self: P, *, reference: P) -> np.ndarray:
         """Get the standardized data representing the value of the instance as an array in the optimization space.

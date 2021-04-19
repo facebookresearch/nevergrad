@@ -9,8 +9,9 @@ import typing as tp
 import numpy as np
 from . import core
 from . import transforms
-from .data import Array, Scalar, Data
-from .choice import Choice
+from .data import Data
+
+# from .choice import Choice
 from . import _layering
 
 
@@ -107,7 +108,7 @@ class Crossover(Mutation):
         root = self.root()
         # checks
         if len(arrays) != 2:
-            raise Exception("Crossover can only be applied between 2 individuals")
+            raise Exception(f"Crossover can only be applied between 2 individuals, got {len(arrays)}")
         transf = (
             transforms.Fourrier(range(arrays[0].dim) if self.axis is None else self.axis)
             if root.parameters["fft"].value
@@ -179,6 +180,10 @@ class Translation(Mutation):
     def axis(self) -> tp.Optional[tp.Tuple[int, ...]]:
         return self.root().parameters["axis"].value  # type: ignore
 
+    def _layered_mutate(self) -> None:
+        root = self.root()
+        root._value = self._apply_array([root._value])
+
     def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:
         assert len(arrays) == 1
         data = arrays[0]
@@ -211,6 +216,10 @@ class Jumping(Mutation):
     @property
     def size(self) -> int:
         return self.root().parameters["size"].value  # type: ignore
+
+    def _layered_mutate(self) -> None:
+        root = self.root()
+        root._value = self._apply_array([root._value])
 
     def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:
         assert len(arrays) == 1
