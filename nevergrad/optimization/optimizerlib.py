@@ -394,7 +394,7 @@ class _CMA(base.Optimizer):
         if self._es is None:
             if not self._config.fcmaes:
                 inopts = dict(
-                    popsize=self._config.popsize,
+                    popsize=self._popsize,
                     randn=self._rng.randn,
                     CMA_diagonal=self._config.diagonal,
                     verbose=0,
@@ -418,7 +418,7 @@ class _CMA(base.Optimizer):
                 self._es = cmaes.Cmaes(
                     x0=np.zeros(self.dimension, dtype=np.float),
                     input_sigma=self._config.scale,
-                    popsize=self._config.popsize,
+                    popsize=self._popsize,
                     randn=self._rng.randn,
                 )
         return self._es
