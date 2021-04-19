@@ -91,7 +91,6 @@ class Image(base.ExperimentFunction):
         """ Generates images tensor of shape [nb_images, x, y, 3] with pixels between 0 and 255"""
         # pylint: disable=not-callable
         noise = torch.tensor(x.astype("float32"))
-        # type: ignore
         return (
             ((self.pgan_model.test(noise).clamp(min=-1, max=1) + 1) * 255.99 / 2)
             .permute(0, 2, 3, 1)
