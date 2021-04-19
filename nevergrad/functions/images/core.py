@@ -22,7 +22,7 @@ from nevergrad.common import errors
 from .. import base
 from . import imagelosses
 
-# pylint: disable=abstract-method
+# pylint: disable=abstract-method,too-many-instance-attributes,too-many-arguments
 
 
 class Image(base.ExperimentFunction):
@@ -63,7 +63,7 @@ class Image(base.ExperimentFunction):
             array.set_mutation(sigma=35)
             array.set_bounds(lower=0, upper=255.99, method="clipping", full_range_sampling=True)
             max_size = ng.p.Scalar(lower=1, upper=200).set_integer_casting()
-            array.set_recombination(ng.p.mutation.Crossover(axis=(0, 1), max_size=max_size)).set_name("")  # type: ignore
+            array = ng.ops.mutations.Crossover(axis=(0, 1), max_size=max_size)(array).set_name("")  # type: ignore
             super().__init__(loss(reference=self.data), array)
         else:
             self.pgan_model = torch.hub.load(
@@ -79,7 +79,7 @@ class Image(base.ExperimentFunction):
             self.target = np.random.normal(size=(1, 512))
             array = ng.p.Array(init=initial_noise, mutable_sigma=True)
             array.set_mutation(sigma=35.0)
-            array.set_recombination(ng.p.mutation.Crossover(axis=(0, 1))).set_name("")
+            array = ng.ops.mutations.Crossover(axis=(0, 1))(array).set_name("")
             self._descriptors.pop("use_gpu", None)
             super().__init__(self._loss_with_pgan, array)
 
@@ -91,7 +91,13 @@ class Image(base.ExperimentFunction):
         """ Generates images tensor of shape [nb_images, x, y, 3] with pixels between 0 and 255"""
         # pylint: disable=not-callable
         noise = torch.tensor(x.astype("float32"))
-        return ((self.pgan_model.test(noise).clamp(min=-1, max=1) + 1) * 255.99 / 2).permute(0, 2, 3, 1).cpu().numpy()[:, :, :, [2, 1, 0]]  # type: ignore
+        # type: ignore
+        return (
+            ((self.pgan_model.test(noise).clamp(min=-1, max=1) + 1) * 255.99 / 2)
+            .permute(0, 2, 3, 1)
+            .cpu()
+            .numpy()[:, :, :, [2, 1, 0]]
+        )
 
     def interpolate(self, base_image: np.ndarray, target: np.ndarray, k: int, num_images: int) -> np.ndarray:
         if num_images == 1:
@@ -318,7 +324,7 @@ class ImageFromPGAN(base.ExperimentFunction):
         array = ng.p.Array(init=initial_noise, mutable_sigma=mutable_sigma)
         # parametrization
         array.set_mutation(sigma=sigma)
-        array.set_recombination(ng.p.mutation.Crossover(axis=(0, 1))).set_name("")
+        array = ng.ops.mutations.Crossover(axis=(0, 1))(array).set_name("")
 
         super().__init__(self._loss, array)
         self.loss_function = loss

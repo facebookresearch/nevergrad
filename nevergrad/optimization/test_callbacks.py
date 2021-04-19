@@ -20,7 +20,7 @@ def test_log_parameters(tmp_path: Path) -> None:
     filepath = tmp_path / "logs.txt"
     cases = [0, np.int(1), np.float(2.0), np.nan, float("inf"), np.inf]
     instrum = ng.p.Instrumentation(
-        ng.p.Array(shape=(1,)).set_mutation(custom=ng.p.mutation.Translation()),
+        ng.ops.mutations.Translation()(ng.p.Array(shape=(1,))),
         ng.p.Scalar(),
         blublu=ng.p.Choice(cases),
         array=ng.p.Array(shape=(3, 2)),

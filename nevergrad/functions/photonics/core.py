@@ -21,7 +21,7 @@
 
 import typing as tp
 import numpy as np
-from nevergrad.parametrization import parameter as p
+import nevergrad as ng
 from . import photonics
 from .. import base
 
@@ -32,7 +32,7 @@ def _make_parametrization(
     bounding_method: str = "bouncing",
     rolling: bool = False,
     as_tuple: bool = False,
-) -> p.Parameter:
+) -> ng.p.Parameter:
     """Creates appropriate parametrization for a Photonics problem
 
     Parameters
@@ -77,9 +77,9 @@ def _make_parametrization(
     ones = np.ones((1, shape[1]))
     init = np.sum(b_array, axis=1, keepdims=True).dot(ones) / 2
     if as_tuple:
-        instrum = p.Instrumentation(
+        instrum = ng.p.Instrumentation(
             *[
-                p.Array(init=init[:, i]).set_bounds(
+                ng.p.Array(init=init[:, i]).set_bounds(
                     b_array[:, 0], b_array[:, 1], method=bounding_method, full_range_sampling=True
                 )
                 for i in range(init.shape[1])
@@ -87,15 +87,15 @@ def _make_parametrization(
         ).set_name("as_tuple")
         assert instrum.dimension == dimension, instrum
         return instrum
-    array = p.Array(init=init)
+    array = ng.p.Array(init=init)
     if bounding_method not in ("arctan", "tanh"):
         # sigma must be adapted for clipping and constraint methods
-        sigma = p.Array(init=[[10.0]] if name != "bragg" else [[0.03], [10.0]]).set_mutation(exponent=2.0)  # type: ignore
+        sigma = ng.p.Array(init=[[10.0]] if name != "bragg" else [[0.03], [10.0]]).set_mutation(exponent=2.0)  # type: ignore
         array.set_mutation(sigma=sigma)
     if rolling:
-        array.set_mutation(custom=p.Choice(["gaussian", "cauchy", p.mutation.Translation(axis=1)]))
+        array.set_mutation(custom=ng.p.Choice(["gaussian", "cauchy", ng.ops.mutations.Translation(axis=1)]))
     array.set_bounds(b_array[:, [0]], b_array[:, [1]], method=bounding_method, full_range_sampling=True)
-    array.set_recombination(p.mutation.Crossover(axis=1)).set_name("")
+    array = ng.ops.mutations.Crossover(axis=1)(array).set_name("")
     assert array.dimension == dimension, f"Unexpected {array} for dimension {dimension}"
     return array
 
@@ -178,7 +178,7 @@ class Photonics(base.ExperimentFunction):
         assert data.size == self.dimension
         return np.array(data, copy=False).ravel()
 
-    def evaluation_function(self, *recommendations: p.Parameter) -> float:
+    def evaluation_function(self, *recommendations: ng.p.Parameter) -> float:
         assert len(recommendations) == 1, "Should not be a pareto set for a singleobjective function"
         recom = recommendations[0]
         x = self.to_array(*recom.args, **recom.kwargs)

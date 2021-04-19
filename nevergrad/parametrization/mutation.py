@@ -15,6 +15,9 @@ from .data import Data
 from . import _layering
 
 
+D = tp.TypeVar("D", bound=Data)
+
+
 class Mutation(_layering.Layered):
     """Custom mutation or recombination
     This is an experimental API
@@ -46,7 +49,7 @@ class Mutation(_layering.Layered):
                 params[name] = core.as_parameter(obj)
         self._parameters = {}
 
-    def __call__(self, data: Data, inplace: bool = False) -> Data:
+    def __call__(self, data: D, inplace: bool = False) -> D:
         new = data if inplace else data.copy()
         new.add_layer(self.copy())
         return new
