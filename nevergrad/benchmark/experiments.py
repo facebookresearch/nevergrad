@@ -1128,31 +1128,13 @@ def gym_multi(
                     50,
                     200,
                     800,
-                    6400,
                     3200,
                     100,
                     25,
                     400,
                     1600,
-                    819200,
-                    409600,
-                    204800,
-                    102400,
-                    51200,
-                    25600,
-                    12800,
                 ]:
-                    if budget > 1000:
-                        continue
                     for algo in optims:
-                        algo_name = str(algo)
-                        if (
-                            (not "TBPSA" in algo_name)
-                            and (not "Prog" in algo_name)
-                            and (not "Split" in algo_name)
-                            and (not "PSO" in algo_name)
-                        ):
-                            continue
                         xp = Experiment(func, algo, budget, num_workers=1, seed=next(seedg))
                         if not xp.is_incoherent:
                             yield xp
