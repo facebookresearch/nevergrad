@@ -16,10 +16,10 @@ from ..base import ExperimentFunction
 
 
 class STSP(ExperimentFunction):
-    def __init__(self, dimension: int = 500, complex_tsp: bool = False) -> None:
+    def __init__(self, dimension: int = 500, complex: bool = False) -> None:
         super().__init__(self._simulate_stsp, p.Array(shape=(dimension,)))
         self.order = np.arange(0, self.dimension)
-        self.complex = complex_tsp
+        self.complex = complex
         self.x = self.parametrization.random_state.normal(size=self.dimension)
         self.y = self.parametrization.random_state.normal(size=self.dimension)
 
