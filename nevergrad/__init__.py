@@ -14,4 +14,4 @@ from .common import errors as errors
 __all__ = ["optimizers", "families", "callbacks", "p", "typing", "errors"]
 
 
-__version__ = "0.4.3.post2"
+__version__ = "0.4.3.post3"
