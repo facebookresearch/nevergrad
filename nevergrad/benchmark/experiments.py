@@ -1119,7 +1119,7 @@ def gym_multi(
     if conformant:
         controls = ["stochastic_conformant"]
     for control in controls:
-        for neural_factor in [-1] if conformant or control == "linear" else ([1, 2, 3, 4, 6, 9] if not memory else [1]):
+        for neural_factor in [-1] if conformant or control == "linear" else ([1] if "memory" in control else [1, 2, 4]):
             for name in env_names:
                 try:
                     func = GymMulti(name, control, neural_factor * (3 if big else 1), randomized=randomized)
@@ -1129,25 +1129,13 @@ def gym_multi(
                     50,
                     200,
                     800,
-                    6400,
                     3200,
                     100,
                     25,
                     400,
                     1600,
-                    51200,
-                    25600,
-                    12800,
                 ]:
                     for algo in optims:
-                        #algo_name = str(algo)
-                        #if (
-                        #    (not "TBPSA" in algo_name)
-                        #    and (not "Prog" in algo_name)
-                        #    and (not "Split" in algo_name)
-                        #    and (not "PSO" in algo_name)
-                        #):
-                        #    continue
                         xp = Experiment(func, algo, budget, num_workers=1, seed=next(seedg))
                         if not xp.is_incoherent:
                             yield xp
