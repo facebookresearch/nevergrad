@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import copy
 import numpy as np
 from scipy import stats
 from scipy.spatial import ConvexHull  # pylint: disable=no-name-in-module
@@ -25,20 +26,22 @@ def convex_limit(struct_points: np.ndarray) -> int:
         return len(struct_points) // 2
     for i in range(0, min(2 * d + 2, len(struct_points)), 2):
         points += [struct_points[i]]
-    hull = ConvexHull(points[:(d+1)], incremental=True)
-    num_points = len(points[:(d+1)])
+    hull = ConvexHull(points[: (d + 1)], incremental=True)
+    num_points = len(hull.vertices)
     k = len(points) - 1
     for i in range(num_points, len(points)):
         # We add the ith point.
         hull.add_points(points[i : (i + 1)])
         num_points += 1
-        for j in range(i+1, len(points)):
+        if len(hull.vertices) != num_points:
+            return num_points - 1
+        for j in range(i + 1, len(points)):
             # We check that the jth point is not in the convex hull;
             # this is ok if the jth point, added in the hull, becomes a vertex.
             hull_copy = copy.deep_copy(hull)
-            hull_copy.add_points(points[j:j+1])
+            hull_copy.add_points(points[j : j + 1])
             if len(hull_copy.vertices) != num_points + 1:
-                return i - 1
+                return num_points - 1
     return k
 
 
@@ -392,7 +395,10 @@ MetaTuneRecentering = SamplingSearch(
     cauchy=False, autorescale="autotune", sampler="Hammersley", scrambled=True
 ).set_name("MetaTuneRecentering", register=True)
 HAvgMetaTuneRecentering = SamplingSearch(
-    cauchy=False, autorescale="autotune", sampler="Hammersley", scrambled=True,
+    cauchy=False,
+    autorescale="autotune",
+    sampler="Hammersley",
+    scrambled=True,
     recommendation_rule="average_of_hull_best",
 ).set_name("HAvgMetaTuneRecentering", register=True)
 HAvgMetaRecentering = SamplingSearch(
