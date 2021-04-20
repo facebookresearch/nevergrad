@@ -249,7 +249,7 @@ class GymMulti(ExperimentFunction):
         self.mean_loss = None
 
     def evaluation_function(self, *recommendations) -> float:
-    """Averages multiple evaluatioons if necessary."""
+        """Averages multiple evaluatioons if necessary."""
         x = recommendations[0].value
         if not self.randomized:
             return self.gym_multi_function(x)
@@ -257,13 +257,13 @@ class GymMulti(ExperimentFunction):
         return sum(losses) / len(losses)
 
     def discretize(self, a):
-    """Transforms a logit into an int obtained through softmax."""
+        """Transforms a logit into an int obtained through softmax."""
         probabilities = np.exp(a - max(a))
         probabilities = probabilities / sum(probabilities)
         return int(np.random.multinomial(1, probabilities)[0])
 
     def neural(self, x: np.ndarray, o: np.ndarray):
-    """Applies a neural net parametrized by x to an observation o."""
+        """Applies a neural net parametrized by x to an observation o."""
         o = o.ravel()
         if self.control == "linear":
             # The linear case is simplle.
@@ -305,7 +305,7 @@ class GymMulti(ExperimentFunction):
         return output[self.memory_len :].reshape(self.output_shape), output[: self.memory_len]
 
     def gym_multi_function(self, x: np.ndarray):
-    """Do a simulation with parametrization x and return the result."""
+        """Do a simulation with parametrization x and return the result."""
         # Deterministic conformant: do  the average of 7 simullations always with the same seed.
         # Otherwise: apply a random seed and do a single simulation.
         num_simulations = 7 if self.control != "conformant" and not self.randomized else 1
@@ -314,7 +314,7 @@ class GymMulti(ExperimentFunction):
         return loss / num_simulations
 
     def action_cast(self, a):
-    """Transforms an action into an active as expected by the gym step function."""
+        """Transforms an action into an active as expected by the gym step function."""
         env = self.env
         if type(a) == np.float64:
             a = np.asarray((a,))
