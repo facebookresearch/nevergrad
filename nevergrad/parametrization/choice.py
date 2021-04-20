@@ -186,7 +186,7 @@ class TransitionChoice(BaseChoice):
         transitions: tp.Union[tp.ArrayLike, Array] = (1.0, 1.0),
         repetitions: tp.Optional[int] = None,
     ) -> None:
-        choices = list(choices)
+        choices = list(choices if not isinstance(choices, int) else range(choices))
         indices = Array(init=len(choices) / 2.0 * np.ones((repetitions if repetitions is not None else 1,)))
         indices.set_bounds(0, len(choices), method="gaussian")
         indices = indices - 0.5
