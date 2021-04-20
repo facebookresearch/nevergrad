@@ -1120,12 +1120,18 @@ def gym_multi(
     if memory:
         controls = ["stackingmemory_neural", "deep_stackingmemory_neural", "semideep_stackingmemory_neural"]
         controls += ["memory_neural", "deep_memory_neural", "semideep_memory_neural"]
-        controls += ["extrapolatestackingmemory_neural", "deep_extrapolatestackingmemory_neural", "semideep_extrapolatestackingmemory_neural"]
+        controls += [
+            "extrapolatestackingmemory_neural",
+            "deep_extrapolatestackingmemory_neural",
+            "semideep_extrapolatestackingmemory_neural",
+        ]
         assert not multi
     if conformant:
         controls = ["stochastic_conformant"]
     for control in controls:
-        for neural_factor in [-1] if conformant or control == "linear" else ([1] if "memory" in control else [1, 2, 4]):
+        for neural_factor in (
+            [-1] if conformant or control == "linear" else ([1] if "memory" in control else [1, 2, 4])
+        ):
             for name in env_names:
                 try:
                     func = GymMulti(name, control, neural_factor * (3 if big else 1), randomized=randomized)

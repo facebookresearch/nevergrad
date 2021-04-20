@@ -66,11 +66,11 @@ GUARANTEED_GYM_ENV_NAMES = [
 CONTROLLERS = [
     "linear",  # Simple linear controller.
     "neural",  # Simple neural controller.
-    "deep_neural",   # Deeper neural controller.
+    "deep_neural",  # Deeper neural controller.
     "semideep_neural",  # Deep, but not very deep.
     "structured_neural",  # Structured optimization of a neural net.
     "memory_neural",  # Uses a memory (i.e. recurrent net).
-    "deep_memory_neural",  
+    "deep_memory_neural",
     "stackingmemory_neural",  # Uses a memory and stacks a heuristic and the memory as inputs.
     "deep_stackingmemory_neural",
     "semideep_stackingmemory_neural",
@@ -308,7 +308,7 @@ class GymMulti(ExperimentFunction):
         """Do a simulation with parametrization x and return the result."""
         # Deterministic conformant: do  the average of 7 simullations always with the same seed.
         # Otherwise: apply a random seed and do a single simulation.
-        num_simulations = 7 if self.control != "conformant" and not self.randomized else 1a
+        num_simulations = 7 if self.control != "conformant" and not self.randomized else 1
         loss = 0
         for seed in range(num_simulations):
             loss += self.gym_simulate(x, seed=seed if not self.randomized else np.random.randint(500000))
@@ -356,8 +356,10 @@ class GymMulti(ExperimentFunction):
         self.current_reward += r
         self.current_observations += [np.asarray(o).copy()]
         self.current_actions += [np.asarray(a).copy()]
-        if done and "stacking" in self.control:  # Only the method which do a stacking of heuristic + memory into the
-        # observation need archiving.
+        if (
+            done and "stacking" in self.control
+        ):  # Only the method which do a stacking of heuristic + memory into the
+            # observation need archiving.
             self.mean_loss = (
                 (0.95 * self.mean_loss + 0.05 * self.current_reward)
                 if self.mean_loss is not None
@@ -389,7 +391,7 @@ class GymMulti(ExperimentFunction):
             assert len(to) == len(ta)
             if len(current_observations) > len(to) and "extrapolate" not in self.control:
                 continue
-            to = np.asarray(to[(-len(current_observations)):], dtype=np.float32)
+            to = np.asarray(to[(-len(current_observations)) :], dtype=np.float32)
             # if all((_to - _o) for _to, _o in zip(to, current_observations)) <= 1e-7:
             if np.array_equal(to, current_observations):
                 return np.asarray(ta[len(current_observations) - 1], dtype=np.float32)
@@ -411,7 +413,9 @@ class GymMulti(ExperimentFunction):
         env.seed(seed=seed)
         o = env.reset()
         control = self.control
-        if "conformant" in control:  # Conformant planning: we just optimize a sequence of actions. No reactivity.
+        if (
+            "conformant" in control
+        ):  # Conformant planning: we just optimize a sequence of actions. No reactivity.
             return self.gym_conformant(x)
         if "scrambled" in control:  # We shuffle the variables, typically so that progressive methods optimize
             # everywhere in parallel
@@ -440,7 +444,7 @@ class GymMulti(ExperimentFunction):
                 return 1e20 / (1.0 + i)  # We encourage late failures rather than early failures.
             if "stacking" in control:
                 attention_a = self.heuristic(o)  # Best so far, or something like that heuristically derived.
-                a = attention_a if attention_a is not None else 0. * np.asarray(a)
+                a = attention_a if attention_a is not None else 0.0 * np.asarray(a)
                 previous_o = previous_o.ravel()
                 additional_input = np.concatenate([np.asarray(a).ravel(), previous_o])
                 shift = len(additional_input)
