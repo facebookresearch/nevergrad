@@ -308,7 +308,8 @@ class GymMulti(ExperimentFunction):
         """Do a simulation with parametrization x and return the result."""
         # Deterministic conformant: do  the average of 7 simullations always with the same seed.
         # Otherwise: apply a random seed and do a single simulation.
-        num_simulations = 7 if self.control != "conformant" and not self.randomized else 1
+        num_simulations = 7 if self.control != "conformant" and not self.randomized else 1a
+        loss = 0
         for seed in range(num_simulations):
             loss += self.gym_simulate(x, seed=seed if not self.randomized else np.random.randint(500000))
         return loss / num_simulations
@@ -400,7 +401,6 @@ class GymMulti(ExperimentFunction):
         self.current_reward = 0
         self.current_observations: tp.List[tp.Any] = []
         self.current_actions: tp.List[tp.Any] = []
-        loss = 0.0
         try:
             if self.policy_shape is not None:
                 x = x.reshape(self.policy_shape)
