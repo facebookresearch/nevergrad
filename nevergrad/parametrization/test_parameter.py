@@ -83,7 +83,7 @@ def check_parameter_features(param: par.Parameter) -> None:
     print(f"Seeding with {seed} from reproducibility.")
     np.random.seed(seed)
     assert isinstance(param.name, str)
-    assert param._random_state is None
+    # assert param._random_state is None  # TODO no more true because of layers :s
     assert param.generation == 0
     child = param.spawn_child()
     assert isinstance(child, type(param))
