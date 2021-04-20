@@ -180,8 +180,9 @@ class ValueProperty(tp.Generic[In, Out]):
         """
 
     def __get__(self, obj: Layered, objtype: tp.Optional[tp.Type[object]] = None) -> Out:
-        if hasattr(obj, "random_state"):
-            getattr(obj, "random_state")  # HACKY random state initialization
+        # pylint: disable=pointless-statement
+        if hasattr(obj.__class__, "random_state"):
+            getattr(obj, "random_state")  # very hacky way to initialize random_state
         return obj._layers[-1]._layered_get_value()  # type: ignore
 
     def __set__(self, obj: Layered, value: In) -> None:
