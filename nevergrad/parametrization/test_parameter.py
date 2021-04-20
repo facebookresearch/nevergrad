@@ -100,7 +100,7 @@ def check_parameter_features(param: par.Parameter) -> None:
     mutable = True
     try:
         child.mutate()
-    except par.NotSupportedError:
+    except errors.UnsupportedParameterOperationError:
         mutable = False
     else:
         assert np.any(child.get_standardized_data(reference=param))
@@ -119,7 +119,9 @@ def check_parameter_features(param: par.Parameter) -> None:
     if isinstance(param, par.Data):
         assert param.get_value_hash() != child_hash.get_value_hash()
         child_hash.value = param.value
-        np.testing.assert_almost_equal(param.get_standardized_data(reference=child), [0] * param.dimension)
+        np.testing.assert_almost_equal(
+            param.get_standardized_data(reference=child), np.zeros(param.dimension)  # type: ignore
+        )
     if mutable:
         param.recombine(child, child)
         param.recombine()  # empty should work, for simplicity's sake
