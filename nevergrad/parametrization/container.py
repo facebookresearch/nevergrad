@@ -57,6 +57,11 @@ class Container(core.Parameter):
     def __getitem__(self, name: tp.Any) -> core.Parameter:
         return self._content[name]
 
+    def __setitem__(self, name: tp.Any, value: tp.Any) -> None:
+        self._sizes = None
+        self._content[name] = core.as_parameter(value)
+        self._sanity_check(list(self._content.values()))
+
     def __len__(self) -> int:
         return len(self._content)
 
@@ -99,6 +104,9 @@ class Container(core.Parameter):
         child = self.spawn_child()
         child._content = {k: p.sample() for k, p in self._content.items()}
         return child
+
+    def _layered_recombine(self: D, *others: D) -> None:  # type: ignore
+        pass  # nothing specific here, already propagated to sub-objects (content)
 
 
 class Dict(Container):

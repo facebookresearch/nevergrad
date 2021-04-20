@@ -26,6 +26,9 @@
 - Half the budget alloted to solve cheap constrained is now used by a sub-optimizer
   [#1047](https://github.com/facebookresearch/nevergrad/pull/1047). More changes of constraint management will land
   in the near future.
+- Experimental methods `Array.set_recombination` and `Array.set_mutation(custom=.)` are removed in favor of
+  layers changing `Array` behaviors [#1086](https://github.com/facebookresearch/nevergrad/pull/1086).
+  Caution: this is still very experimental (and undocumented).
 
 ### Important changes
 

@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import uuid
 import copy
 import bisect
 from enum import Enum
@@ -43,6 +44,7 @@ class Layered:
         self._layers = [self]
         self._layer_index = 0
         self._name: tp.Optional[str] = None
+        self.uid = uuid.uuid4().hex
 
     def add_layer(self: L, other: "Layered") -> L:
         """Adds a layer which will modify the object behavior"""
@@ -60,11 +62,15 @@ class Layered:
             for k, x in enumerate(self._layers):
                 x._layer_index = k
         other._layers = self._layers
+        other._on_layer_added()
         return self
+
+    def _on_layer_added(self) -> None:
+        """Hook called when the layer is added to another one"""
 
     def _call_deeper(self, name: str, *args: tp.Any, **kwargs: tp.Any) -> tp.Any:
         if self._layers[self._layer_index] is not self:
-            layers = [f"{l.name}({l._layer_index})" for l in self._layers]
+            layers = [f"{lay.name}({lay._layer_index})" for lay in self._layers]
             raise errors.NevergradRuntimeError(
                 "Layer indexing has changed for an unknown reason. Please open an issue:\n"
                 f"Caller at index {self._layer_index}: {self.name}"
@@ -94,6 +100,12 @@ class Layered:
 
     def _layered_sample(self) -> "Layered":
         return self._call_deeper("_layered_sample")  # type: ignore
+
+    def _layered_mutate(self) -> None:
+        self._call_deeper("_layered_mutate")
+
+    def _layered_recombine(self, *args: "Layered") -> None:
+        self._call_deeper("_layered_recombine", *args)
 
     @property
     def random_state(self) -> np.random.RandomState:
