@@ -395,7 +395,7 @@ class GymMulti(ExperimentFunction):
         return None
 
     def gym_simulate(self, x: np.ndarray, seed: int):
-    """Single simulation with parametrization x."""
+        """Single simulation with parametrization x."""
         self.current_time_index = 0
         self.current_reward = 0
         self.current_observations: tp.List[tp.Any] = []
@@ -452,7 +452,7 @@ class GymMulti(ExperimentFunction):
         return -reward
 
     def gym_conformant(self, x: np.ndarray):
-    """Conformant: we directly optimize inputs, not parameters of a policy."""
+        """Conformant: we directly optimize inputs, not parameters of a policy."""
         reward = 0.0
         for i, a in enumerate(10.0 * x):
             a = self.action_cast(a)
