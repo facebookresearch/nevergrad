@@ -59,6 +59,8 @@
 - `EvolutionStrategy` now defaults to NSGA2 selection in the multiobjective case
 - A new experimental callback adds an early stopping mechanism
   [#1054](https://github.com/facebookresearch/nevergrad/pull/1054).
+- `Choice`-like parameters now accept integers are inputs instead of a list, as a shortcut for `range(num)`
+  [#1106](https://github.com/facebookresearch/nevergrad/pull/1106).
 
 ## 0.4.3 (2021-01-28)
 
