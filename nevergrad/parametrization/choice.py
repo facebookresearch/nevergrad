@@ -20,11 +20,16 @@ T = tp.TypeVar("T", bound="TransitionChoice")
 
 class BaseChoice(container.Container):
     def __init__(
-        self, *, choices: tp.Iterable[tp.Any], repetitions: tp.Optional[int] = None, **kwargs: tp.Any
+        self,
+        *,
+        choices: tp.Union[int, tp.Iterable[tp.Any]],
+        repetitions: tp.Optional[int] = None,
+        **kwargs: tp.Any,
     ) -> None:
         assert repetitions is None or isinstance(repetitions, int)  # avoid silent issues
         self._repetitions = repetitions
-        lchoices = list(choices)  # unroll iterables (includig Tuple instances
+        # unroll iterables (includig Tuple instances or integers)
+        lchoices = list(choices if not isinstance(choices, int) else range(choices))
         if not lchoices:
             raise ValueError("{self._class__.__name__} received an empty list of options.")
         super().__init__(choices=container.Tuple(*lchoices), **kwargs)
@@ -100,8 +105,8 @@ class Choice(BaseChoice):
 
     Parameters
     ----------
-    choices: list
-        a list of possible values or Parameters for the variable.
+    choices: list or int
+        a list of possible values or Parameters for the variable (or an integer as a shortcut for range(num))
     repetitions: None or int
         set to an integer :code:`n` if you want :code:`n` similar choices sampled independently (each with its own distribution)
         This is equivalent to :code:`Tuple(*[Choice(options) for _ in range(n)])` but can be
@@ -129,11 +134,11 @@ class Choice(BaseChoice):
 
     def __init__(
         self,
-        choices: tp.Iterable[tp.Any],
+        choices: tp.Union[int, tp.Iterable[tp.Any]],
         repetitions: tp.Optional[int] = None,
         deterministic: bool = False,
     ) -> None:
-        lchoices = list(choices)
+        lchoices = list(choices if not isinstance(choices, int) else range(choices))
         rep = 1 if repetitions is None else repetitions
         indices = Array(shape=(rep, len(lchoices)), mutable_sigma=False)
         indices.add_layer(_datalayers.SoftmaxSampling(len(lchoices), deterministic=deterministic))
@@ -159,8 +164,8 @@ class TransitionChoice(BaseChoice):
 
     Parameters
     ----------
-    choices: list
-        a list of possible values or Parameters for the variable.
+    choices: list or int
+        a list of possible values or Parameters for the variable (or an integer as a shortcut for range(num))
     transitions: np.ndarray or Array
         the transition weights. During transition, the direction (forward or backward will be drawn with
         equal probabilities), then the transitions weights are normalized through softmax, the 1st value gives
@@ -177,7 +182,7 @@ class TransitionChoice(BaseChoice):
 
     def __init__(
         self,
-        choices: tp.Iterable[tp.Any],
+        choices: tp.Union[int, tp.Iterable[tp.Any]],
         transitions: tp.Union[tp.ArrayLike, Array] = (1.0, 1.0),
         repetitions: tp.Optional[int] = None,
     ) -> None:

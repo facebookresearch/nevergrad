@@ -423,3 +423,9 @@ def test_parenthood() -> None:
     param_spawn = param.spawn_child()
     assert param_samp[0][0].sigma.parents_uids == []  # type: ignore
     assert param_spawn[0][0].sigma.parents_uids == [sigma_uid]  # type: ignore
+
+
+def test_random_state_initialization() -> None:
+    param = par.Dict(x=par.Choice(4), y=par.Choice(10))
+    param.value  # pylint: disable=pointless-statement
+    assert param["x"].random_state is param["y"].random_state
