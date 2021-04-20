@@ -355,8 +355,8 @@ class GymMulti(ExperimentFunction):
         o, r, done, info = self.env.step(a)
         return o, r, done, info
 
-    def heuristic(self, o):
-        current_observations = np.asarray(self.current_observations + [o], dtype=np.float32)
+    def heuristic(self, o, current_observations):
+        current_observations = np.asarray(current_observations + [o], dtype=np.float32)
         assert (
             len(current_observations) == 1 + self.current_time_index
         ), f"{len(current_observations)} vs {self.current_time_index}"
@@ -444,11 +444,11 @@ class GymMulti(ExperimentFunction):
                             break
                     if not found:
                         # Risky: this code assumes that the object is used only in a single run.
-                        archive += [(current_observations, current_actions, current_reward)]
+                        sellf.archive += [(current_observations, current_actions, current_reward)]
             except AssertionError:  # Illegal action.
                 return 1e20 / (1.0 + i)  # We encourage late failures rather than early failures.
             if "stacking" in control:
-                attention_a = self.heuristic(o)  # Best so far, or something like that heuristically derived.
+                attention_a = self.heuristic(o, current_observations)  # Best so far, or something like that heuristically derived.
                 a = attention_a if attention_a is not None else 0.0 * np.asarray(a)
                 previous_o = previous_o.ravel()
                 additional_input = np.concatenate([np.asarray(a).ravel(), previous_o])
