@@ -56,6 +56,7 @@ def test_abstract_model_with_constraints() -> None:
     model = abs_model.create_instance(filename)
 
     func = core.Pyomo(model)
+    func.random_state.seed(12)
     optimizer = ng.optimizers.OnePlusOne(parametrization=func.parametrization, budget=200)
     recommendation = optimizer.minimize(func.function)
 
