@@ -4,8 +4,7 @@
 <html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8" />
-  <meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
-
+  
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
   <title>Examples - Working with Pyomo model &mdash; nevergrad  documentation</title>
@@ -85,7 +84,7 @@
               
             
             
-              <p><span class="caption-text">Contents</span></p>
+              <p class="caption"><span class="caption-text">Contents</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="optimization.html">How to perform optimization</a></li>
@@ -171,11 +170,11 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <section id="examples-working-with-pyomo-model">
+  <div class="section" id="examples-working-with-pyomo-model">
 <h1>Examples - Working with Pyomo model<a class="headerlink" href="#examples-working-with-pyomo-model" title="Permalink to this headline">¶</a></h1>
 <p>Pyomo is an open source software package for modeling and solving mathematical programs in Python <a class="reference internal" href="#hart2011" id="id1"><span>[Hart2011]</span></a>.
 This section gives an example of how to optimize Pyomo models using Nevergrad.</p>
-<section id="concrete-model">
+<div class="section" id="concrete-model">
 <h2>Concrete Model<a class="headerlink" href="#concrete-model" title="Permalink to this headline">¶</a></h2>
 <p>Let us create a <code class="code docutils literal notranslate"><span class="pre">ConcreteModel</span></code> instance using Pyomo.
 In a <code class="code docutils literal notranslate"><span class="pre">ConcreteModel</span></code>, each component is fully initialized.</p>
@@ -212,8 +211,8 @@ To do this, you should first import new module.</p>
 <span class="nb">print</span><span class="p">(</span><span class="n">recommendation</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;x[1]&quot;</span><span class="p">])</span>
 </pre></div>
 </div>
-</section>
-<section id="abstract-model">
+</div>
+<div class="section" id="abstract-model">
 <h2>Abstract Model<a class="headerlink" href="#abstract-model" title="Permalink to this headline">¶</a></h2>
 <p>Pyomo model has to be fully constructed before you solve the model.
 When you define an <code class="code docutils literal notranslate"><span class="pre">AbstractModel</span></code>, construction occurs in two phases.
@@ -232,8 +231,8 @@ You may refer to the <a class="reference external" href="https://pyomo.readthedo
 <dd><p>Hart, William E., Jean-Paul Watson, and David L. Woodruff. “Pyomo: modeling and solving mathematical programs in Python.” Mathematical Programming Computation 3, no. 3 (2011): 219-260.</p>
 </dd>
 </dl>
-</section>
-</section>
+</div>
+</div>
 
 
            </div>

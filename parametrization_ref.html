@@ -4,8 +4,7 @@
 <html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8" />
-  <meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
-
+  
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
   <title>Parametrization API reference &mdash; nevergrad  documentation</title>
@@ -85,7 +84,7 @@
               
             
             
-              <p><span class="caption-text">Contents</span></p>
+              <p class="caption"><span class="caption-text">Contents</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="optimization.html">How to perform optimization</a></li>
@@ -171,7 +170,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <section id="parametrization-api-reference">
+  <div class="section" id="parametrization-api-reference">
 <span id="parametrization-ref"></span><h1>Parametrization API reference<a class="headerlink" href="#parametrization-api-reference" title="Permalink to this headline">¶</a></h1>
 <p><strong>Please note that parametrization is still a work in progress and changes are on their way (including for this documentation)! We are trying to update it to make it simpler and simpler to use (all feedbacks are welcome ;) ), with the side effect that there will be breaking changes.</strong></p>
 <p>The aim of parametrization is to specify what are the parameters that the optimization should be performed upon.
@@ -180,7 +179,7 @@ The parametrization subpackage will help you do thanks to:</p>
 <li><p>the <cite>parameter</cite> modules (accessed by the shortcut <cite>nevergrad.p</cite>) providing classes that should be used to specify each parameter.</p></li>
 <li><p>the <cite>FolderFunction</cite> which helps transform any code into a Python function in a few lines. This can be especially helpful to optimize parameters in non-Python 3.6+ code (C++, Octave, etc…) or parameters in scripts.</p></li>
 </ul>
-<section id="parameters">
+<div class="section" id="parameters">
 <h2>Parameters<a class="headerlink" href="#parameters" title="Permalink to this headline">¶</a></h2>
 <p>Here are the current types of parameters currently provided:</p>
 <table class="longtable docutils align-default">
@@ -465,8 +464,8 @@ to optimize.</p>
 
 </dd></dl>
 
-</section>
-<section id="parameter-api">
+</div>
+<div class="section" id="parameter-api">
 <h2>Parameter API<a class="headerlink" href="#parameter-api" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
 <dt id="nevergrad.p.Parameter">
@@ -728,8 +727,8 @@ to optimize.</p>
 
 </dd></dl>
 
-</section>
-</section>
+</div>
+</div>
 
 
            </div>
