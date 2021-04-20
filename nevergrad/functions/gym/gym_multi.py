@@ -353,6 +353,7 @@ class GymMulti(ExperimentFunction):
         We have a step on top of Gym's step for storing some statistics."""
         o, r, done, info = self.env.step(a)
         return o, r, done, info
+
     def heuristic(self, o):
         current_observations = np.asarray(self.current_observations + [o], dtype=np.float32)
         assert (
@@ -433,7 +434,8 @@ class GymMulti(ExperimentFunction):
                     for trace in self.archive:
                         to, _, _ = trace
                         if np.array_equal(
-                            np.asarray(current_observations, dtype=np.float32), np.asarray(to, dtype=np.float32)
+                            np.asarray(current_observations, dtype=np.float32),
+                            np.asarray(to, dtype=np.float32),
                         ):
                             found = True
                             break
