@@ -246,7 +246,8 @@ class GymMulti(ExperimentFunction):
         # Now initializing.
         super().__init__(self.gym_multi_function, parametrization=parametrization)
         self.archive: tp.List[tp.Any] = []
-        self.mean_loss = None
+        self.mean_loss = 0.0
+        self.num_losses = 0
 
     def evaluation_function(self, *recommendations) -> float:
         """Averages multiple evaluatioons if necessary."""
@@ -425,8 +426,10 @@ class GymMulti(ExperimentFunction):
                     done and "stacking" in self.control
                 ):  # Only the method which do a stacking of heuristic + memory into the
                     # observation need archiving.
+                    self.num_losses += 1
+                    tau = 1.0 / self.num_losses
                     self.mean_loss = (
-                        (0.95 * self.mean_loss + 0.05 * current_reward)
+                        ((1.0 - tau) * self.mean_loss + tau * current_reward)
                         if self.mean_loss is not None
                         else current_reward
                     )
