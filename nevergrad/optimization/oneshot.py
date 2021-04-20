@@ -25,28 +25,25 @@ def convex_limit(struct_points: np.ndarray) -> int:
         return len(struct_points) // 2
     for i in range(0, min(2 * d + 2, len(struct_points)), 2):
         points += [struct_points[i]]
-    hull = ConvexHull(points[:d], incremental=True)
-    k = len(points)
-    for i in range(d + 1, len(points)):
+    hull = ConvexHull(points[:(d+1)], incremental=True)
+    num_points = len(points[:(d+1)])
+    k = len(points) - 1
+    for i in range(num_points, len(points)):
+        # We add the ith point.
         hull.add_points(points[i : (i + 1)])
-        if i not in hull.vertices:
-            k = i  # We identify the point which violates quasi-convexity.
-            break
-    if k == len(points):
-        return k
-    # The violation is points[k]
-    hull = ConvexHull(points[:d], incremental=True)
-    for i in range(d + 1, len(points)):
-        hull.add_points(points[i : (i + 1)])
-        hull_copy = copy.deep_copy(hull)
-        hull_copy.add_points(points[k : (k + 1)])        
-        if k not in hull_copy.vertices:
-            return i - 1  # We should not have added the ith point.
-            break
-    assert False  # This should never happen.
+        num_points += 1
+        for j in range(i+1, len(points)):
+            # We check that the jth point is not in the convex hull;
+            # this is ok if the jth point, added in the hull, becomes a vertex.
+            hull_copy = copy.deep_copy(hull)
+            hull_copy.add_points(points[j:j+1])
+            if len(hull_copy.vertices) != num_points + 1:
+                return i - 1
+    return k
 
 
 def hull_center(points: np.ndarray, k: int) -> np.ndarray:
+    """Center of the cuboid enclosing the hull."""
     hull = ConvexHull(points[:k])
     maxi = np.asarray(hull.vertices[0])
     mini = np.asarray(hull.vertices[0])
@@ -394,6 +391,10 @@ MetaRecentering = SamplingSearch(
 MetaTuneRecentering = SamplingSearch(
     cauchy=False, autorescale="autotune", sampler="Hammersley", scrambled=True
 ).set_name("MetaTuneRecentering", register=True)
+HAvgMetaTuneRecentering = SamplingSearch(
+    cauchy=False, autorescale="autotune", sampler="Hammersley", scrambled=True,
+    recommendation_rule="average_of_hull_best",
+).set_name("HAvgMetaTuneRecentering", register=True)
 HAvgMetaRecentering = SamplingSearch(
     cauchy=False,
     autorescale=True,

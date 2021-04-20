@@ -441,18 +441,21 @@ def oneshot(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     Base dimension 3 or 25.
     budget 30, 100 or 3000."""
     seedg = create_seed_generator(seed)
-    names = ["sphere", "rastrigin", "cigar"]
+    names = ["sphere", "griewank", "hm"]  #"sphere", "rastrigin", "cigar"]
     optims = get_optimizers("oneshot", seed=next(seedg))
     functions = [
         ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
         for name in names
-        for bd in [3, 25]
-        for uv_factor in [0, 5]
+        for bd in [3, 10, 30, 100, 300, 1000, 3000]
+        for uv_factor in [0]  #, 5]
     ]
     for func in functions:
         for optim in optims:
-            for budget in [30, 100, 3000]:
-                yield Experiment(func, optim, budget=budget, num_workers=budget, seed=next(seedg))
+          #if not any(x in str(optim) for x in ["Tune", "Large", "Cauchy"]):
+          # if "Meta" in str(optim):
+            for budget in [100000, 30, 100, 300, 1000, 3000, 10000]:
+                if func.dimension < 3000 or budget < 100000:
+                    yield Experiment(func, optim, budget=budget, num_workers=budget, seed=next(seedg))
 
 
 @registry.register
