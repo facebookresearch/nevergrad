@@ -143,8 +143,7 @@ class Parameter(Layered):
         """
         if not others:
             return
-        self.random_state  # pylint: disable=pointless-statement
-        # self._check_frozen() TODO activate this instead and initialize randomstate there
+        self._check_frozen()
         assert all(isinstance(o, self.__class__) for o in others)
         self._subobjects.apply("recombine", *others)
         self._layers[-1]._layered_recombine(*others)
@@ -208,7 +207,7 @@ class Parameter(Layered):
         assert isinstance(
             sent_reference, self.__class__
         ), f"Expected {type(self)} but got {type(sent_reference)} as reference"
-        self._check_frozen()
+        self._check_frozen(initialize_random_state=False)
         del self.value  # remove all cached information
         self._internal_set_standardized_data(np.array(data, copy=False), reference=sent_reference)
         return self
@@ -390,7 +389,7 @@ class Parameter(Layered):
         self._frozen = True
         self._subobjects.apply("freeze")
 
-    def _check_frozen(self) -> None:
+    def _check_frozen(self, initialize_random_state: bool = True) -> None:
         if self._frozen and not isinstance(
             self, Constant
         ):  # nevermind constants (since they dont spawn children)
@@ -399,7 +398,8 @@ class Parameter(Layered):
                 "(optimizers freeze the parametrization and all asked and told candidates to avoid border effects)"
             )
         # make sure the random state is initialized if we need to update it (aka if not frozen)
-        # self.random_state  # pylint: disable=pointless-statement
+        if initialize_random_state:
+            self.random_state  # pylint: disable=pointless-statement
         self._subobjects.apply("_check_frozen")
 
 
