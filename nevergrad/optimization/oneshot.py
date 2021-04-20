@@ -38,7 +38,7 @@ def convex_limit(struct_points: np.ndarray) -> int:
         for j in range(i + 1, len(points)):
             # We check that the jth point is not in the convex hull;
             # this is ok if the jth point, added in the hull, becomes a vertex.
-            hull_copy = copy.deep_copy(hull)
+            hull_copy = copy.deepcopy(hull)
             hull_copy.add_points(points[j : j + 1])
             if len(hull_copy.vertices) != num_points + 1:
                 return num_points - 1
