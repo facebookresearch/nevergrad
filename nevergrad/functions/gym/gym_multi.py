@@ -352,31 +352,7 @@ class GymMulti(ExperimentFunction):
 
         We have a step on top of Gym's step for storing some statistics."""
         o, r, done, info = self.env.step(a)
-        self.current_time_index += 1
-        self.current_reward += r
-        self.current_observations += [np.asarray(o).copy()]
-        self.current_actions += [np.asarray(a).copy()]
-        if (
-            done and "stacking" in self.control
-        ):  # Only the method which do a stacking of heuristic + memory into the
-            # observation need archiving.
-            self.mean_loss = (
-                (0.95 * self.mean_loss + 0.05 * self.current_reward)
-                if self.mean_loss is not None
-                else self.current_reward
-            )
-            found = False
-            for trace in self.archive:
-                to, _, _ = trace
-                if np.array_equal(
-                    np.asarray(self.current_observations, dtype=np.float32), np.asarray(to, dtype=np.float32)
-                ):
-                    found = True
-                    break
-            if not found:
-                self.archive += [(self.current_observations, self.current_actions, self.current_reward)]
         return o, r, done, info
-
     def heuristic(self, o):
         current_observations = np.asarray(self.current_observations + [o], dtype=np.float32)
         assert (
@@ -399,10 +375,10 @@ class GymMulti(ExperimentFunction):
 
     def gym_simulate(self, x: np.ndarray, seed: int):
         """Single simulation with parametrization x."""
-        self.current_time_index = 0
-        self.current_reward = 0
-        self.current_observations: tp.List[tp.Any] = []
-        self.current_actions: tp.List[tp.Any] = []
+        current_time_index = 0
+        current_reward = 0
+        current_observations: tp.List[tp.Any] = []
+        current_actions: tp.List[tp.Any] = []
         try:
             if self.policy_shape is not None:
                 x = x.reshape(self.policy_shape)
@@ -418,7 +394,7 @@ class GymMulti(ExperimentFunction):
         ):  # Conformant planning: we just optimize a sequence of actions. No reactivity.
             return self.gym_conformant(x)
         if "scrambled" in control:  # We shuffle the variables, typically so that progressive methods optimize
-            # everywhere in parallel
+            # everywhere in parallel instead of focusing on one single layer for years.
             np.random.RandomState(1234).shuffle(x)
         if "noisy" in control:  # We add a randomly chosen but fixed perturbation of the x, i.e. we do not
             # start at 0.
@@ -440,6 +416,30 @@ class GymMulti(ExperimentFunction):
             a = self.action_cast(a)
             try:
                 o, r, done, _ = self.step(a)  # Outputs = observation, reward, done, info.
+                current_time_index += 1
+                current_reward += r
+                current_observations += [np.asarray(o).copy()]
+                current_actions += [np.asarray(a).copy()]
+                if (
+                    done and "stacking" in self.control
+                ):  # Only the method which do a stacking of heuristic + memory into the
+                    # observation need archiving.
+                    self.mean_loss = (
+                        (0.95 * self.mean_loss + 0.05 * self.current_reward)
+                        if self.mean_loss is not None
+                        else self.current_reward
+                    )
+                    found = False
+                    for trace in self.archive:
+                        to, _, _ = trace
+                        if np.array_equal(
+                            np.asarray(self.current_observations, dtype=np.float32), np.asarray(to, dtype=np.float32)
+                        ):
+                            found = True
+                            break
+                    if not found:
+                        # Risky: this code assumes that the object is used only in a single run.
+                        self.archive += [(self.current_observations, self.current_actions, self.current_reward)]
             except AssertionError:  # Illegal action.
                 return 1e20 / (1.0 + i)  # We encourage late failures rather than early failures.
             if "stacking" in control:
