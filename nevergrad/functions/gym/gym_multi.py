@@ -444,7 +444,7 @@ class GymMulti(ExperimentFunction):
                             break
                     if not found:
                         # Risky: this code assumes that the object is used only in a single run.
-                        sellf.archive += [(current_observations, current_actions, current_reward)]
+                        self.archive += [(current_observations, current_actions, current_reward)]
             except AssertionError:  # Illegal action.
                 return 1e20 / (1.0 + i)  # We encourage late failures rather than early failures.
             if "stacking" in control:
