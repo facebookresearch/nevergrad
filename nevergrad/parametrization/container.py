@@ -60,6 +60,8 @@ class Container(core.Parameter):
     def __setitem__(self, name: tp.Any, value: tp.Any) -> None:
         self._sizes = None
         self._content[name] = core.as_parameter(value)
+        if self._random_state is not None:
+            self._content[name].random_state = self.random_state
         self._sanity_check(list(self._content.values()))
 
     def __len__(self) -> int:

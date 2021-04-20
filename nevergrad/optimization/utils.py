@@ -362,10 +362,8 @@ class BoundScaler:
         parameter = self.reference.spawn_child()
         parameter.set_standardized_data(np.linspace(-1, 1, self.reference.dimension))
         expected = parameter.get_standardized_data(reference=self.reference)
-        # self._ref_arrays = self.list_arrays(self.reference)
-        # arrays = self.list_arrays(parameter)
-        self._ref_arrays = [x for x in p.helpers.list_data(self.reference)]
-        arrays = [x for x in p.helpers.list_data(parameter)]
+        self._ref_arrays = p.helpers.list_data(self.reference)
+        arrays = p.helpers.list_data(parameter)
         check = np.concatenate(
             [x.get_standardized_data(reference=y) for x, y in zip(arrays, self._ref_arrays)], axis=0
         )

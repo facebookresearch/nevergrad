@@ -143,8 +143,7 @@ class Parameter(Layered):
         """
         if not others:
             return
-        self.random_state  # pylint: disable=pointless-statement
-        # self._check_frozen() TODO activate this instead and initialize randomstate there
+        self._check_frozen()
         assert all(isinstance(o, self.__class__) for o in others)
         self._subobjects.apply("recombine", *others)
         self._layers[-1]._layered_recombine(*others)
@@ -399,7 +398,7 @@ class Parameter(Layered):
                 "(optimizers freeze the parametrization and all asked and told candidates to avoid border effects)"
             )
         # make sure the random state is initialized if we need to update it (aka if not frozen)
-        # self.random_state  # pylint: disable=pointless-statement
+        self.random_state  # pylint: disable=pointless-statement
         self._subobjects.apply("_check_frozen")
 
 
