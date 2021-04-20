@@ -400,7 +400,7 @@ class Parameter(Layered):
         # make sure the random state is initialized if we need to update it (aka if not frozen)
         if initialize_random_state:
             self.random_state  # pylint: disable=pointless-statement
-        self._subobjects.apply("_check_frozen")
+        self._subobjects.apply("_check_frozen", initialize_random_state)
 
 
 # Basic types and helpers #
