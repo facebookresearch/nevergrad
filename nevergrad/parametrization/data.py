@@ -325,7 +325,7 @@ class Data(core.Parameter):
         return child
 
     def _layered_set_value(self, value: np.ndarray) -> None:
-        self._check_frozen(initialize_random_state=False)
+        self._check_frozen()
         if self._value.shape != value.shape:
             raise ValueError(
                 f"Cannot set array of shape {self._value.shape} with value of shape {value.shape}"

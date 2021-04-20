@@ -207,7 +207,7 @@ class Parameter(Layered):
         assert isinstance(
             sent_reference, self.__class__
         ), f"Expected {type(self)} but got {type(sent_reference)} as reference"
-        self._check_frozen(initialize_random_state=False)
+        self._check_frozen()
         del self.value  # remove all cached information
         self._internal_set_standardized_data(np.array(data, copy=False), reference=sent_reference)
         return self
@@ -389,7 +389,7 @@ class Parameter(Layered):
         self._frozen = True
         self._subobjects.apply("freeze")
 
-    def _check_frozen(self, initialize_random_state: bool = True) -> None:
+    def _check_frozen(self) -> None:
         if self._frozen and not isinstance(
             self, Constant
         ):  # nevermind constants (since they dont spawn children)
@@ -398,9 +398,8 @@ class Parameter(Layered):
                 "(optimizers freeze the parametrization and all asked and told candidates to avoid border effects)"
             )
         # make sure the random state is initialized if we need to update it (aka if not frozen)
-        if initialize_random_state:
-            self.random_state  # pylint: disable=pointless-statement
-        self._subobjects.apply("_check_frozen", initialize_random_state)
+        self.random_state  # pylint: disable=pointless-statement
+        self._subobjects.apply("_check_frozen")
 
 
 # Basic types and helpers #
