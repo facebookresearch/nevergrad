@@ -5,29 +5,33 @@
 
 # Based on https://github.com/Foloso/MixSimulator/tree/nevergrad_experiment
 
-from mixsimulator.MixSimulator import MixSimulator  # type: ignore
-from ..base import ExperimentFunction
+from mixsimulator.MixSimulator import MixSimulator
+from .. import base
 
 
-class OptimizeMix(ExperimentFunction):
+class OptimizeMix(base.ExperimentFunction):
     """
-        MixSimulator is an application with an optimization model for calculating
-        and simulating the least cost of an energy mix under certain constraints.
+    MixSimulator is an application with an optimization model for calculating
+    and simulating the least cost of an energy mix under certain constraints.
 
-        For now, it uses a default dataset (more will be added soon).
+    For now, it uses a default dataset (more will be added soon).
 
-        For more information, visit : https://github.com/Foloso/MixSimulator
+    For more information, visit : https://github.com/Foloso/MixSimulator
 
-        Parameters
-        ----------
-        time: int
-            total time over which it evaluates the mix (must be in hour)
+    Parameters
+    ----------
+    time: int
+        total time over which it evaluates the mix (must be in hour)
 
     """
 
     def __init__(self, time: int = 168) -> None:
-        self._mix = MixSimulator()
-        self._mix.set_data_to("Toamasina")
+        try:
+            self._mix = MixSimulator()
+            self._mix.set_data_to("Toamasina")
+        except (KeyError, AttributeError) as e:
+            # send a skip error so that this does not break the test suit
+            raise base.UnsupportedExperiment("mixsimulator dependency issue") from e
         self._mix.set_penalisation_cost(100)
         self._mix.set_carbon_cost(10)
         parameters = self._mix.get_opt_params(time)

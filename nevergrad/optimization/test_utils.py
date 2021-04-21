@@ -9,6 +9,7 @@ import numpy as np
 import nevergrad as ng
 from nevergrad.common import testing
 from nevergrad.parametrization import parameter as p
+from nevergrad.parametrization.test_utils import split_as_data_parameters
 from .test_base import CounterFunction
 from . import experimentalvariants as xpvariants
 from . import utils
@@ -25,6 +26,7 @@ def test_value_and_point() -> None:
     np.testing.assert_almost_equal(v.variance, 0.3536, decimal=4)
     assert v.optimistic_confidence_bound < v.pessimistic_confidence_bound
     assert v.get_estimation("optimistic") < v.get_estimation("pessimistic")
+    assert v.get_estimation("minimum") == 3
     np.testing.assert_raises(NotImplementedError, v.get_estimation, "blublu")
     repr(v)
     assert v.parameter.value == 12
@@ -50,7 +52,7 @@ def test_get_nash() -> None:
     for k in range(4):
         array = (float(k),)
         zeroptim.archive[array] = utils.MultiValue(param, k, reference=param)
-        zeroptim.archive[array].count += (4 - k)
+        zeroptim.archive[array].count += 4 - k
     nash = utils._get_nash(zeroptim)
     testing.printed_assert_equal(nash, [((2,), 3), ((1,), 4), ((0,), 5)])
     np.random.seed(12)
@@ -64,7 +66,7 @@ def test_archive() -> None:
     archive[np.array(data)] = 12
     np.testing.assert_equal(archive[np.array(data)], 12)
     np.testing.assert_equal(archive.get(data), 12)
-    np.testing.assert_equal(archive.get([0, 12.]), None)
+    np.testing.assert_equal(archive.get([0, 12.0]), None)
     y = np.frombuffer(next(iter(archive.bytesdict.keys())))
     assert data in archive
     np.testing.assert_equal(y, data)
@@ -78,9 +80,9 @@ def test_archive() -> None:
 
 def test_archive_errors() -> None:
     archive: utils.Archive[float] = utils.Archive()
-    archive[[12, 0.]] = 12.
+    archive[[12, 0.0]] = 12.0
     np.testing.assert_raises(AssertionError, archive.__getitem__, [12, 0])  # int instead of float
-    np.testing.assert_raises(AssertionError, archive.__getitem__, [[12], [0.]])  # int instead of float
+    np.testing.assert_raises(AssertionError, archive.__getitem__, [[12], [0.0]])  # int instead of float
     np.testing.assert_raises(RuntimeError, archive.keys)
     np.testing.assert_raises(RuntimeError, archive.items)
 
@@ -91,9 +93,9 @@ def test_pruning() -> None:
     for k in range(3):
         value = utils.MultiValue(param, float(k), reference=param)
         archive[(float(k),)] = value
-    value = utils.MultiValue(param, 1., reference=param)
-    value.add_evaluation(1.)
-    archive[(3.,)] = value
+    value = utils.MultiValue(param, 1.0, reference=param)
+    value.add_evaluation(1.0)
+    archive[(3.0,)] = value
     # pruning
     pruning = utils.Pruning(min_len=1, max_len=3)
     # 0 is best optimistic and average, and 3 is best pessimistic (variance=0)
@@ -105,12 +107,15 @@ def test_pruning() -> None:
     testing.assert_set_equal([x[0] for x in archive2.keys_as_arrays()], [0, 3], err_msg=f"Repetition #{k+1}")
 
 
-@pytest.mark.parametrize("nw,dimension,expected_min,expected_max", [  # type: ignore
-    (12, 8, 100, 1000),
-    (24, 8, 168, 1680),
-    (24, 100000, 168, 671),
-    (24, 1000000, 168, 504),
-])
+@pytest.mark.parametrize(  # type: ignore
+    "nw,dimension,expected_min,expected_max",
+    [
+        (12, 8, 100, 1000),
+        (24, 8, 168, 1680),
+        (24, 100000, 168, 671),
+        (24, 1000000, 168, 504),
+    ],
+)
 def test_pruning_sensible_default(nw: int, dimension: int, expected_min: int, expected_max: int) -> None:
     pruning = utils.Pruning.sensible_default(num_workers=nw, dimension=dimension)
     assert pruning.min_len == expected_min
@@ -153,6 +158,10 @@ def test_bound_scaler() -> None:
         value=p.Scalar(),
         letter=p.Choice("abc"),
     )
+    # make sure the order is preserved using legacy split method
+    expected = [x[1] for x in split_as_data_parameters(ref)]
+    assert p.helpers.list_data(ref) == expected
+    # check the bounds
     param = ref.spawn_child()
     scaler = utils.BoundScaler(param)
     output = scaler.transform([1.0] * param.dimension, lambda x: x)

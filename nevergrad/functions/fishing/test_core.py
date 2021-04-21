@@ -6,8 +6,10 @@
 import numpy as np
 from . import core
 
-def test_rocket() -> None:
-    func = core.Rocket()
-    x = 0 * np.random.rand(func.dimension)
+
+def test_mixsimulator() -> None:
+    np.random.seed(17)
+    func = core.OptimizeFish()
+    x = np.random.rand(func.dimension)
     value = func(x)  # should not touch boundaries, so value should be < np.inf
-    np.testing.assert_almost_equal(value, 0.)
+    np.testing.assert_almost_equal(value, -0.985, decimal=2)

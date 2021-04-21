@@ -5,23 +5,21 @@
 
 import warnings
 import numpy as np
-from scipy import stats
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
 from . import base
-from . import sequences
+from . import oneshot
 
 
 class Crossover:
-
     def __init__(self, random_state: np.random.RandomState, crossover: tp.Union[str, float]):
-        self.CR = .5
+        self.CR = 0.5
         self.crossover = crossover
         self.random_state = random_state
         if isinstance(crossover, float):
             self.CR = crossover
         elif crossover == "random":
-            self.CR = self.random_state.uniform(0., 1.)
+            self.CR = self.random_state.uniform(0.0, 1.0)
         elif crossover not in ["twopoints", "onepoint"]:
             raise ValueError(f'Unknown crossover "{crossover}"')
 
@@ -37,7 +35,9 @@ class Crossover:
     def variablewise(self, donor: np.ndarray, individual: np.ndarray) -> None:
         R = self.random_state.randint(donor.size)
         # the following could be updated to vectorial uniform sampling (changes recomms)
-        transfer = np.array([idx != R and self.random_state.uniform(0, 1) > self.CR for idx in range(donor.size)])
+        transfer = np.array(
+            [idx != R and self.random_state.uniform(0, 1) > self.CR for idx in range(donor.size)]
+        )
         donor[transfer] = individual[transfer]
 
     def onepoint(self, donor: np.ndarray, individual: np.ndarray) -> None:
@@ -52,10 +52,10 @@ class Crossover:
         if bounds[1] == donor.size and not bounds[0]:  # make sure there is at least one point crossover
             bounds[self.random_state.randint(2)] = self.random_state.randint(1, donor.size)
         if self.random_state.choice([True, False]):
-            donor[bounds[0]: bounds[1]] = individual[bounds[0]: bounds[1]]
+            donor[bounds[0] : bounds[1]] = individual[bounds[0] : bounds[1]]
         else:
-            donor[:bounds[0]] = individual[:bounds[0]]
-            donor[bounds[1]:] = individual[bounds[1]:]
+            donor[: bounds[0]] = individual[: bounds[0]]
+            donor[bounds[1] :] = individual[bounds[1] :]
 
 
 class _DE(base.Optimizer):
@@ -66,6 +66,7 @@ class _DE(base.Optimizer):
     CR =.5, F1=.8, F2=.8, curr-to-best.
     Initial population: pure random.
     """
+
     # pylint: disable=too-many-locals, too-many-nested-blocks,too-many-instance-attributes
     # pylint: disable=too-many-branches, too-many-statements, too-many-arguments
 
@@ -74,12 +75,16 @@ class _DE(base.Optimizer):
         parametrization: base.IntOrParameter,
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
-        config: tp.Optional["DifferentialEvolution"] = None
+        config: tp.Optional["DifferentialEvolution"] = None,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         # config
         self._config = DifferentialEvolution() if config is None else config
-        self.scale = float(1. / np.sqrt(self.dimension)) if isinstance(self._config.scale, str) else self._config.scale
+        self.scale = (
+            float(1.0 / np.sqrt(self.dimension))
+            if isinstance(self._config.scale, str)
+            else self._config.scale
+        )
         pop_choice = {"standard": 0, "dimension": self.dimension + 1, "large": 7 * self.dimension}
         if isinstance(self._config.popsize, int):
             self.llambda = self._config.popsize
@@ -87,12 +92,14 @@ class _DE(base.Optimizer):
             self.llambda = max(30, self.num_workers, pop_choice[self._config.popsize])
         # internals
         if budget is not None and budget < 60:
-            warnings.warn("DE algorithms are inefficient with budget < 60", base.InefficientSettingsWarning)
+            warnings.warn(
+                "DE algorithms are inefficient with budget < 60", base.errors.InefficientSettingsWarning
+            )
         self._MULTIOBJECTIVE_AUTO_BOUND = max(self._MULTIOBJECTIVE_AUTO_BOUND, self.llambda)
         self._penalize_cheap_violations = True
         self._uid_queue = base.utils.UidQueue()
         self.population: tp.Dict[str, p.Parameter] = {}
-        self.sampler: tp.Optional[sequences.Sampler] = None
+        self.sampler: tp.Optional[base.Optimizer] = None
 
     def recommend(self) -> p.Parameter:  # This is NOT the naive version. We deal with noise.
         if self._config.recommendation != "noisy":
@@ -101,27 +108,41 @@ class _DE(base.Optimizer):
         good_guys = [p for p in self.population.values() if p.loss is not None and p.loss < med_fitness]
         if not good_guys:
             return self.current_bests["pessimistic"].parameter
-        data: tp.Any = sum([g.get_standardized_data(reference=self.parametrization) for g in good_guys]) / len(good_guys)
-        return self.parametrization.spawn_child().set_standardized_data(data, deterministic=True)
+        data: tp.Any = sum(
+            [g.get_standardized_data(reference=self.parametrization) for g in good_guys]
+        ) / len(good_guys)
+        out = self.parametrization.spawn_child()
+        with p.helpers.deterministic_sampling(out):
+            out.set_standardized_data(data)
+        return out
 
     def _internal_ask_candidate(self) -> p.Parameter:
         if len(self.population) < self.llambda:  # initialization phase
             init = self._config.initialization
-            if self.sampler is None and init != "gaussian":
+            if self.sampler is None and init not in ["gaussian", "parametrization"]:
                 assert init in ["LHS", "QR"]
-                sampler_cls = sequences.LHSSampler if init == "LHS" else sequences.HammersleySampler
-                self.sampler = sampler_cls(self.dimension, budget=self.llambda, scrambling=init == "QR", random_state=self._rng)
-            new_guy = self.scale * (self._rng.normal(0, 1, self.dimension)
-                                    if self.sampler is None else stats.norm.ppf(self.sampler()))
-            candidate = self.parametrization.spawn_child().set_standardized_data(new_guy)
+                self.sampler = oneshot.SamplingSearch(
+                    sampler=init if init == "LHS" else "Hammersley", scrambled=init == "QR", scale=self.scale
+                )(
+                    self.parametrization,
+                    budget=self.llambda,
+                )
+            if init == "parametrization":
+                candidate = self.parametrization.sample()
+            elif self.sampler is not None:
+                candidate = self.sampler.ask()
+            else:
+                new_guy = self.scale * self._rng.normal(0, 1, self.dimension)
+                candidate = self.parametrization.spawn_child().set_standardized_data(new_guy)
             candidate.heritage["lineage"] = candidate.uid  # new lineage
-            candidate.loss = float("inf")
             self.population[candidate.uid] = candidate
             self._uid_queue.asked.add(candidate.uid)
             return candidate
         # init is done
-        parent = self.population[self._uid_queue.ask()]
+        lineage = self._uid_queue.ask()
+        parent = self.population[lineage]
         candidate = parent.spawn_child()
+        candidate.heritage["lineage"] = lineage  # tell-not-asked may have provided a different lineage
         data = candidate.get_standardized_data(reference=self.parametrization)
         # define all the different parents
         uids = list(self.population)
@@ -130,23 +151,25 @@ class _DE(base.Optimizer):
         # redefine the different parents in case of multiobjective optimization
         if self._config.multiobjective_adaptation and self.num_objectives > 1:
             pareto = self.pareto_front()
+            # can't use choice directly on pareto, because parametrization can be iterable
             if pareto:
-                best = parent if parent in pareto else self._rng.choice(pareto)
+                best = parent if parent in pareto else pareto[self._rng.choice(len(pareto))]
             if len(pareto) > 2:  # otherwise, not enough diversity
-                a, b = self._rng.choice(pareto, size=2, replace=False)
+                a, b = (pareto[idx] for idx in self._rng.choice(len(pareto), size=2, replace=False))
         # define donor
-        data_a, data_b, data_best = (indiv.get_standardized_data(reference=self.parametrization) for indiv in (a, b, best))
-        donor = (data + self._config.F1 * (data_a - data_b) +
-                 self._config.F2 * (data_best - data))
+        data_a, data_b, data_best = (
+            indiv.get_standardized_data(reference=self.parametrization) for indiv in (a, b, best)
+        )
+        donor = data + self._config.F1 * (data_a - data_b) + self._config.F2 * (data_best - data)
         candidate.parents_uids.extend([i.uid for i in (a, b)])
         # apply crossover
         co = self._config.crossover
         if co == "parametrization":
             candidate.recombine(self.parametrization.spawn_child().set_standardized_data(donor))
         else:
-            crossovers = Crossover(self._rng, 1. / self.dimension if co == "dimension" else co)
+            crossovers = Crossover(self._rng, 1.0 / self.dimension if co == "dimension" else co)
             crossovers.apply(donor, data)
-            candidate.set_standardized_data(donor, deterministic=False, reference=self.parametrization)
+            candidate.set_standardized_data(donor, reference=self.parametrization)
         return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
@@ -156,11 +179,13 @@ class _DE(base.Optimizer):
             return
         self._uid_queue.tell(uid)  # only add to queue if not a "tell_not_asked" (from a removed parent)
         parent = self.population[uid]
-        parent_value: float = parent.loss  # type: ignore
         mo_adapt = self._config.multiobjective_adaptation and self.num_objectives > 1
-        if not mo_adapt and loss <= parent_value:
+        mo_adapt &= candidate._losses is not None  # can happen with bad constraints
+        if not mo_adapt and loss <= base._loss(parent):
             self.population[uid] = candidate
-        elif mo_adapt and (parent._losses is None or np.mean(candidate.losses < parent.losses) > self._rng.rand()):
+        elif mo_adapt and (
+            parent._losses is None or np.mean(candidate.losses < parent.losses) > self._rng.rand()
+        ):
             # multiobjective case, with adaptation,
             # randomly replaces the parent depending on the number of better losses
             self.population[uid] = candidate
@@ -168,23 +193,33 @@ class _DE(base.Optimizer):
             self.population[uid].heritage.update(candidate.heritage)
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        worst: tp.Optional[p.Parameter] = None
+        discardable: tp.Optional[str] = None
         if len(self.population) >= self.llambda:
-            worst = max(self.population.values(), key=base._loss)
-            if worst.loss < loss:  # type: ignore
-                return  # no need to update
-            else:
-                uid = worst.heritage["lineage"]
-                del self.population[uid]
-                self._uid_queue.discard(uid)
-        candidate.heritage["lineage"] = candidate.uid  # new lineage
-        self.population[candidate.uid] = candidate
-        self._uid_queue.tell(candidate.uid)
+
+            if self.num_objectives == 1:  # singleobjective: replace if better
+                uid, worst = max(self.population.items(), key=lambda p: base._loss(p[1]))
+                if loss < base._loss(worst):
+                    discardable = uid
+            else:  # multiobjective: replace if in pareto and some parents are not
+                pareto_uids = {c.uid for c in self.pareto_front()}
+                if candidate.uid in pareto_uids:
+                    non_pareto_pop = {c.uid for c in self.population.values()} - pareto_uids
+                    if non_pareto_pop:
+                        nonpareto = {c.uid: c for c in self.population.values()}[list(non_pareto_pop)[0]]
+                        discardable = nonpareto.heritage["lineage"]
+        if discardable is not None:  # if we found a point to kick, kick it
+            del self.population[discardable]
+            self._uid_queue.discard(discardable)
+        if len(self.population) < self.llambda:  # if there is space, add the new point
+            self.population[candidate.uid] = candidate
+            # this candidate lineage is not candidate.uid, but to avoid interfering with other optimizers (eg: PSO)
+            # we should not update the lineage (and lineage of children must therefore be enforced manually)
+            self._uid_queue.tell(candidate.uid)
 
 
 # pylint: disable=too-many-arguments, too-many-instance-attributes
 class DifferentialEvolution(base.ConfiguredOptimizer):
-    """ Differential evolution is typically used for continuous optimization.
+    """Differential evolution is typically used for continuous optimization.
     It uses differences between points in the population for doing mutations in fruitful directions;
     it is therefore a kind of covariance adaptation without any explicit covariance,
     making it super fast in high dimension. This class implements several variants of differential
@@ -200,8 +235,9 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
 
     Parameters
     ----------
-    initialization: "LHS", "QR" or "gaussian"
-        algorithm/distribution used for the initialization phase
+    initialization: "parametrization", "LHS" or "QR"
+        algorithm/distribution used for the initialization phase. If "parametrization", this uses the
+        sample method of the parametrization.
     scale: float or str
         scale of random component of the updates
     recommendation: "pessimistic", "optimistic", "mean" or "noisy"
@@ -228,23 +264,29 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
     def __init__(
         self,
         *,
-        initialization: str = "gaussian",
-        scale: tp.Union[str, float] = 1.,
+        initialization: str = "parametrization",
+        scale: tp.Union[str, float] = 1.0,
         recommendation: str = "optimistic",
-        crossover: tp.Union[str, float] = .5,
-        F1: float = .8,
-        F2: float = .8,
+        crossover: tp.Union[str, float] = 0.5,
+        F1: float = 0.8,
+        F2: float = 0.8,
         popsize: tp.Union[str, int] = "standard",
         propagate_heritage: bool = False,  # experimental
         multiobjective_adaptation: bool = True,
     ) -> None:
         super().__init__(_DE, locals(), as_config=True)
         assert recommendation in ["optimistic", "pessimistic", "noisy", "mean"]
-        assert initialization in ["gaussian", "LHS", "QR"]
+        assert initialization in ["gaussian", "LHS", "QR", "parametrization"]
         assert isinstance(scale, float) or scale == "mini"
         if not isinstance(popsize, int):
             assert popsize in ["large", "dimension", "standard"]
-        assert isinstance(crossover, float) or crossover in ["onepoint", "twopoints", "dimension", "random", "parametrization"]
+        assert isinstance(crossover, float) or crossover in [
+            "onepoint",
+            "twopoints",
+            "dimension",
+            "random",
+            "parametrization",
+        ]
         self.initialization = initialization
         self.scale = scale
         self.recommendation = recommendation
@@ -261,5 +303,9 @@ TwoPointsDE = DifferentialEvolution(crossover="twopoints").set_name("TwoPointsDE
 LhsDE = DifferentialEvolution(initialization="LHS").set_name("LhsDE", register=True)
 QrDE = DifferentialEvolution(initialization="QR").set_name("QrDE", register=True)
 NoisyDE = DifferentialEvolution(recommendation="noisy").set_name("NoisyDE", register=True)
-AlmostRotationInvariantDE = DifferentialEvolution(crossover=.9).set_name("AlmostRotationInvariantDE", register=True)
-RotationInvariantDE = DifferentialEvolution(crossover=1., popsize="dimension").set_name("RotationInvariantDE", register=True)
+AlmostRotationInvariantDE = DifferentialEvolution(crossover=0.9).set_name(
+    "AlmostRotationInvariantDE", register=True
+)
+RotationInvariantDE = DifferentialEvolution(crossover=1.0, popsize="dimension").set_name(
+    "RotationInvariantDE", register=True
+)

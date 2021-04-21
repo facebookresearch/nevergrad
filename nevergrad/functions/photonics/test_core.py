@@ -11,12 +11,13 @@ import pytest
 import numpy as np
 from nevergrad.common import testing
 from . import core
+from . import photonics
 
 
 @testing.parametrized(
     bragg=("bragg", [2.93, 2.18, 2.35, 2.12, 45.77, 37.99, 143.34, 126.55]),
     morpho=("morpho", [280.36, 52.96, 208.16, 72.69, 89.92, 60.37, 226.69, 193.11]),
-    chirped=("chirped", [170.18, 56.48, 82.04, 48.17, 45.77, 37.99, 143.34, 126.55])
+    chirped=("chirped", [170.18, 56.48, 82.04, 48.17, 45.77, 37.99, 143.34, 126.55]),
 )
 def test_photonics_bounding_methods(pb: str, expected: tp.List[float]) -> None:
     func = core.Photonics(pb, 8, bounding_method="tanh")
@@ -28,11 +29,11 @@ def test_photonics_bounding_methods(pb: str, expected: tp.List[float]) -> None:
 
 @testing.parametrized(
     # bragg domain (n=60): [2,3]^30 x [30,180]^30
-    bragg=("bragg", [2.5, 2.5, 2.5, 2.5, 105., 105., 105., 105.]),
+    bragg=("bragg", [2.5, 2.5, 2.5, 2.5, 105.0, 105.0, 105.0, 105.0]),
     # chirped domain (n=60): [30,170]^60
-    chirped=("chirped", [105., 105., 105., 105., 105., 105., 105., 105.]),
+    chirped=("chirped", [105.0, 105.0, 105.0, 105.0, 105.0, 105.0, 105.0, 105.0]),
     # morpho domain (n=60): [0,300]^15 x [0,600]^15 x [30,600]^15 x [0,300]^15
-    morpho=("morpho", [150., 150., 300., 300., 315., 315., 150., 150.]),
+    morpho=("morpho", [150.0, 150.0, 300.0, 300.0, 315.0, 315.0, 150.0, 150.0]),
 )
 def test_photonics_mean(pb: str, expected: tp.List[float]) -> None:
     func = core.Photonics(pb, 8)
@@ -55,7 +56,6 @@ def test_morpho_bounding_method_constraints() -> None:
 
 def test_photonics_bragg_recombination() -> None:
     func = core.Photonics("bragg", 8)
-    # func.parametrization.set_recombination(ng.p.mutation.RavelCrossover())  # type: ignore
     func.parametrization.random_state.seed(24)
     arrays = [func.parametrization.spawn_child() for _ in range(2)]
     arrays[0].value = [[2, 2, 2, 2], [35, 35, 35, 35]]
@@ -70,6 +70,9 @@ def test_photonics_custom_mutation() -> None:
     param = func.parametrization.spawn_child()
     for _ in range(10):
         param.mutate()
+    # as tuple
+    func = core.Photonics("morpho", 16, rolling=True, as_tuple=True)
+    func.evaluation_function(func.parametrization)
 
 
 def test_photonics_error() -> None:
@@ -101,34 +104,97 @@ def test_photonics_values(name: str, value: float, expected: float) -> None:
         raise SkipTest("Too slow in CircleCI")
     photo = core.Photonics(name, 16)
     np.testing.assert_almost_equal(photo(value * np.ones(16)), expected, decimal=4)
-    np.testing.assert_almost_equal(photo.evaluation_function(value * np.ones(16)), expected, decimal=4)
 
 
-GOOD_CHIRPED = [89.04887416, 109.54188095, 89.74520725, 121.81700431,
-                179.99830918, 124.38222473, 95.31017129, 116.0239629,
-                92.92345776, 118.06108198, 179.99965859, 116.89288181,
-                88.90191494, 110.30816229, 93.11974992, 137.42629858,
-                118.81810084, 110.74139708, 85.15270955, 100.9382438,
-                81.44070951, 100.6382896, 84.97336252, 110.59252719,
-                134.89164276, 121.84205195, 89.28450356, 106.72776991,
-                85.77168797, 102.33562547]
+GOOD_CHIRPED = [
+    89.04887416,
+    109.54188095,
+    89.74520725,
+    121.81700431,
+    179.99830918,
+    124.38222473,
+    95.31017129,
+    116.0239629,
+    92.92345776,
+    118.06108198,
+    179.99965859,
+    116.89288181,
+    88.90191494,
+    110.30816229,
+    93.11974992,
+    137.42629858,
+    118.81810084,
+    110.74139708,
+    85.15270955,
+    100.9382438,
+    81.44070951,
+    100.6382896,
+    84.97336252,
+    110.59252719,
+    134.89164276,
+    121.84205195,
+    89.28450356,
+    106.72776991,
+    85.77168797,
+    102.33562547,
+]
+
+
+EPS_AND_D = [  # photosic realistic
+    2.0000,
+    3.0000,
+    2.1076,
+    2.0000,
+    3.0000,
+    2.5783,
+    2.0000,
+    3.0000,
+    2.0000,
+    3.0000,
+    90.0231,
+    78.9789,
+    72.8369,
+    99.9577,
+    82.7487,
+    62.7583,
+    104.1682,
+    139.9002,
+    93.3356,
+    75.6039,
+]
 
 
 @testing.parametrized(
     morpho=("morpho", 1.127904, None),
     chirped=("chirped", 0.594587, None),
-    good_chirped=("chirped", 0.275923, GOOD_CHIRPED),  # supposed to be better
-    bragg=("bragg", 0.96776, None)
+    good_chirped=("chirped", 0.275923, np.array([GOOD_CHIRPED])),  # supposed to be better
+    bragg=("bragg", 0.96776, None),
+    photosic_realistic=("cf_photosic_realistic", 0.0860257, np.array(EPS_AND_D).reshape((2, -1))),
+    photosic_reference=("cf_photosic_reference", 0.431072, None),
 )
-def test_photonics_values_random(name: str, expected: float, data: tp.Optional[tp.List[float]]) -> None:
+def test_photonics_values_random(name: str, expected: float, data: tp.Optional[np.ndarray]) -> None:
     if name == "morpho" and os.environ.get("CIRCLECI", False):
         raise SkipTest("Too slow in CircleCI")
-    size = len(data) if data is not None else (16 if name != "morpho" else 4)
+    size = data.size if data is not None else (16 if name != "morpho" else 4)
     photo = core.Photonics(name, size)
     if data is None:
         x = np.random.RandomState(12).normal(0, 1, size=size)
         candidate = photo.parametrization.spawn_child().set_standardized_data(x)
     else:
-        candidate = photo.parametrization.spawn_child(new_value=[data])
-    for func in [photo, photo.evaluation_function]:
-        np.testing.assert_almost_equal(func(candidate.value), expected, decimal=4)  # type: ignore
+        candidate = photo.parametrization.spawn_child(new_value=data)
+    np.testing.assert_almost_equal(photo(candidate.value), expected, decimal=4)
+    np.testing.assert_almost_equal(photo.evaluation_function(candidate), expected, decimal=4)
+
+
+def test_photosic_reference() -> None:
+    debut = np.array([79, 102])
+    fin = np.array([100, 70])
+    dbr = np.tile(np.array([147, 120]), 3)
+    X = np.concatenate([debut, dbr, fin])
+    cf_test = photonics.cf_photosic_reference(X)
+    np.testing.assert_almost_equal(cf_test, 0.09069397)
+
+
+def test_photosic_realist() -> None:
+    cf_test = photonics.cf_photosic_realistic(np.array(EPS_AND_D))
+    np.testing.assert_almost_equal(cf_test, 0.08602574254532869)

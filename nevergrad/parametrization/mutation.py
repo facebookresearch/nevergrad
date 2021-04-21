@@ -8,13 +8,101 @@
 import typing as tp
 import numpy as np
 from . import core
-from .import transforms
-from .data import Mutation as Mutation
-from .data import Array, Scalar
+from . import transforms
+from .data import Data, Scalar
 from .choice import Choice
+from . import _layering
 
 
-class Crossover(Mutation):
+D = tp.TypeVar("D", bound=Data)
+P = tp.TypeVar("P", bound=core.Parameter)
+
+
+class Mutation(_layering.Layered):
+    """Custom mutation or recombination operation
+    This is an experimental API
+
+    Call on a Parameter to create a new Parameter with the
+    provided mutation/recombination.
+    """
+
+    _TYPE = core.Parameter
+
+    def root(self) -> core.Parameter:
+        param = self._layers[0]
+        self._check_type(param)
+        return param  # type: ignore
+
+    def _check_type(self, param: core.Layered) -> None:
+        if not isinstance(param, self._TYPE):
+            raise RuntimeError(
+                f"{self.__class__.__name__} must be applied to {self._TYPE} parameters, got: {type(param)}"
+            )
+
+    def __call__(self, parameter: P, inplace: bool = False) -> P:
+        self._check_type(parameter)
+        new = parameter if inplace else parameter.copy()
+        new.add_layer(self.copy())
+        return new
+
+
+class DataMutation(Mutation):
+    _TYPE = Data
+
+    def __init__(self, **parameters: tp.Any) -> None:
+        self._parameters = parameters
+        super().__init__()
+
+    def root(self) -> Data:  # pylint: disable=useless-super-delegation
+        # simpler for typing
+        return super().root()  # type: ignore
+
+    def _on_layer_added(self) -> None:
+        params = self.root().parameters
+        for name, obj in self._parameters.items():
+            if name not in params:
+                params[name] = core.as_parameter(obj)
+        self._parameters = {}
+
+
+class MutationChoice(DataMutation):
+    """Selects one of the provided mutation based on a Choice subparameter
+    Caution: there may be subparameter collisions
+    """
+
+    def __init__(self, mutations: tp.Sequence[Mutation], with_default: bool = True) -> None:
+        self.mutations = list(mutations)
+        self.with_default = with_default
+        options = [lay.uid for lay in self.mutations] + (["#ROOT#"] if with_default else [])
+        super().__init__(mutation_choice=Choice(options))
+
+    def _on_layer_added(self) -> None:
+        root = self.root()
+        for mut in self.mutations:
+            root.add_layer(mut)
+        self.mutations = []
+        super()._on_layer_added()
+
+    def _select(self) -> core.Layered:
+        root = self.root()
+        layers = {lay.uid: lay for lay in self._layers}
+        layers["#ROOT#"] = root
+        return layers[root.parameters["mutation_choice"].value]
+
+    def _layered_recombine(self, *others: core.Layered) -> None:
+        self._select()._layered_recombine(*others)
+
+    def _layered_mutate(self) -> None:
+        self._select()._layered_mutate()
+
+
+class Cauchy(Mutation):
+    def _layered_mutate(self) -> None:
+        root = self.root()
+        root.set_standardized_data(root.random_state.standard_cauchy(size=root.dimension))
+
+
+class Crossover(DataMutation):
     """Operator for merging part of an array into another one
 
     Parameters
@@ -46,9 +134,9 @@ class Crossover(Mutation):
 
     def __init__(
         self,
-        axis: tp.Optional[tp.Union[int, tp.Iterable[int]]] = None,
-        max_size: tp.Optional[int] = None,
-        fft: bool = False
+        axis: tp.Any = None,
+        max_size: tp.Union[int, Scalar, None] = None,
+        fft: bool = False,
     ) -> None:
         if not isinstance(axis, core.Parameter):
             axis = (axis,) if isinstance(axis, int) else tuple(axis) if axis is not None else None
@@ -56,28 +144,34 @@ class Crossover(Mutation):
 
     @property
     def axis(self) -> tp.Optional[tp.Tuple[int, ...]]:
-        return self.parameters["axis"].value  # type: ignore
+        return self.root().parameters["axis"].value  # type: ignore
 
-    def apply(self, arrays: tp.Sequence["Array"]) -> None:
-        new_value = self._apply_array([a._value for a in arrays])
-        bounds = arrays[0].bounds
-        if self.parameters["fft"].value and any(x is not None for x in bounds):
+    def _layered_recombine(self, *arrays: Data) -> None:  # type: ignore
+        root = self.root()
+        new_value = self._apply_array([root.value] + [a.value for a in arrays])
+        bounds = root.bounds
+        if root.parameters["fft"].value and any(x is not None for x in bounds):
             new_value = transforms.Clipping(a_min=bounds[0], a_max=bounds[1]).forward(new_value)
-        arrays[0].value = new_value
+        root.value = new_value
 
     def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:
+        root = self.root()
         # checks
         if len(arrays) != 2:
-            raise Exception("Crossover can only be applied between 2 individuals")
-        transf = transforms.Fourrier(range(arrays[0].dim) if self.axis is None else self.axis) if self.parameters["fft"].value else None
+            raise Exception(f"Crossover can only be applied between 2 individuals, got {len(arrays)}")
+        transf = (
+            transforms.Fourrier(range(arrays[0].dim) if self.axis is None else self.axis)
+            if root.parameters["fft"].value
+            else None
+        )
         if transf is not None:
             arrays = [transf.forward(a) for a in arrays]
         shape = arrays[0].shape
         assert shape == arrays[1].shape, "Individuals should have the same shape"
         # settings
         axis = tuple(range(len(shape))) if self.axis is None else self.axis
-        max_size = self.parameters["max_size"].value
-        max_size = int(((arrays[0].size + 1) / 2)**(1 / len(axis))) if max_size is None else max_size
+        max_size = root.parameters["max_size"].value
+        max_size = int(((arrays[0].size + 1) / 2) ** (1 / len(axis))) if max_size is None else max_size
         max_size = min(max_size, *(shape[a] - 1 for a in axis))
         size = 1 if max_size == 1 else self.random_state.randint(1, max_size)
         # slices
@@ -89,7 +183,7 @@ class Crossover(Mutation):
         return result
 
 
-class RavelCrossover(Crossover):
+class RavelCrossover(Crossover):  # TODO: can be made for all parameters instead of just arrays
     """Operator for merging part of an array into another one, after raveling
 
     Parameters
@@ -101,7 +195,7 @@ class RavelCrossover(Crossover):
 
     def __init__(
         self,
-        max_size: tp.Optional[int] = None,
+        max_size: tp.Union[int, Scalar, None] = None,
     ) -> None:
         super().__init__(axis=0, max_size=max_size)
 
@@ -110,15 +204,9 @@ class RavelCrossover(Crossover):
         out = super()._apply_array([a.ravel() for a in arrays])
         return out.reshape(shape)
 
-    def _internal_spawn_child(self) -> "RavelCrossover":
-        return RavelCrossover(max_size=self.parameters["max_size"])  # type: ignore
-
 
 def _make_slices(
-    shape: tp.Tuple[int, ...],
-    axes: tp.Tuple[int, ...],
-    size: int,
-    rng: np.random.RandomState
+    shape: tp.Tuple[int, ...], axes: tp.Tuple[int, ...], size: int, rng: np.random.RandomState
 ) -> tp.List[slice]:
     slices = []
     for a, s in enumerate(shape):
@@ -132,27 +220,29 @@ def _make_slices(
     return slices
 
 
-class Translation(Mutation):
-
+class Translation(DataMutation):
     def __init__(self, axis: tp.Optional[tp.Union[int, tp.Iterable[int]]] = None):
         if not isinstance(axis, core.Parameter):
-            axis = (axis,) if isinstance(axis, int) else tuple(axis) if axis is not None else None
-        super().__init__(axis=axis)
+            axes = (axis,) if isinstance(axis, int) else tuple(axis) if axis is not None else None
+        super().__init__(axes=axes)
 
     @property
-    def axis(self) -> tp.Optional[tp.Tuple[int, ...]]:
-        return self.parameters["axis"].value  # type: ignore
+    def axes(self) -> tp.Optional[tp.Tuple[int, ...]]:
+        return self.root().parameters["axes"].value  # type: ignore
+
+    def _layered_mutate(self) -> None:
+        root = self.root()
+        root._value = self._apply_array([root._value])
 
     def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:
         assert len(arrays) == 1
         data = arrays[0]
-        axis = tuple(range(data.dim)) if self.axis is None else self.axis
-        shifts = [self.random_state.randint(data.shape[a]) for a in axis]
-        return np.roll(data, shifts, axis=axis)  # type: ignore
+        axes = tuple(range(data.dim)) if self.axes is None else self.axes
+        shifts = [self.random_state.randint(data.shape[a]) for a in axes]
+        return np.roll(data, shifts, axis=axes)  # type: ignore
 
 
 class AxisSlicedArray:
-
     def __init__(self, array: np.ndarray, axis: int):
         self.array = array
         self.axis = axis
@@ -163,20 +253,23 @@ class AxisSlicedArray:
         return self.array[slices]  # type: ignore
 
 
-class Jumping(Mutation):
-    """Move a chunk for a position to another in an array
-    """
+class Jumping(DataMutation):
+    """Move a chunk for a position to another in an array"""
 
     def __init__(self, axis: int, size: int):
         super().__init__(axis=axis, size=size)
 
     @property
     def axis(self) -> int:
-        return self.parameters["axis"].value  # type: ignore
+        return self.root().parameters["axis"].value  # type: ignore
 
     @property
     def size(self) -> int:
-        return self.parameters["size"].value  # type: ignore
+        return self.root().parameters["size"].value  # type: ignore
+
+    def _layered_mutate(self) -> None:
+        root = self.root()
+        root._value = self._apply_array([root._value])
 
     def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:
         assert len(arrays) == 1
@@ -185,75 +278,37 @@ class Jumping(Mutation):
         size = self.random_state.randint(1, self.size)
         asdata = AxisSlicedArray(data, self.axis)
         init = self.random_state.randint(L)
-        chunck = asdata[init: init + size]
-        remain: np.ndarray = np.concatenate([asdata[:init], asdata[init + size:]], axis=self.axis)
+        chunck = asdata[init : init + size]
+        remain: np.ndarray = np.concatenate([asdata[:init], asdata[init + size :]], axis=self.axis)
         # pylint: disable=unsubscriptable-object
         newpos = self.random_state.randint(remain.shape[self.axis])
         asremain = AxisSlicedArray(remain, self.axis)
         return np.concatenate([asremain[:newpos], chunck, asremain[newpos:]], axis=self.axis)  # type: ignore
 
 
-class LocalGaussian(Mutation):
-
-    def __init__(self, size: tp.Union[int, core.Parameter], axes: tp.Optional[tp.Union[int, tp.Iterable[int]]] = None):
+class LocalGaussian(DataMutation):
+    def __init__(
+        self, size: tp.Union[int, core.Parameter], axes: tp.Optional[tp.Union[int, tp.Iterable[int]]] = None
+    ):
         if not isinstance(axes, core.Parameter):
             axes = (axes,) if isinstance(axes, int) else tuple(axes) if axes is not None else None
         super().__init__(axes=axes, size=size)
 
     @property
     def axes(self) -> tp.Optional[tp.Tuple[int, ...]]:
-        return self.parameters["axes"].value  # type: ignore
+        return self.root().parameters["axes"].value  # type: ignore
 
-    def apply(self, arrays: tp.Sequence[Array]) -> None:
-        arrays = list(arrays)
-        assert len(arrays) == 1
-        data = np.zeros(arrays[0].value.shape)
+    def _layered_mutate(self) -> None:
+        root = self.root()
+        data = np.zeros(root.value.shape)
         # settings
         axis = tuple(range(len(data.shape))) if self.axes is None else self.axes
-        size = self.parameters["size"].value
+        size = self.root().parameters["size"].value
         # slices
         slices = _make_slices(data.shape, axis, size, self.random_state)
         shape = data[tuple(slices)].shape
         data[tuple(slices)] += self.random_state.normal(0, 1, size=shape)
-        arrays[0]._internal_set_standardized_data(data.ravel(), reference=arrays[0])
-
-
-class ProbaLocalGaussian(Mutation):
-
-    def __init__(self, axis: int, shape: tp.Sequence[int]):
-        assert isinstance(axis, int)
-        self.shape = tuple(shape)
-        self.axis = axis
-        super().__init__(
-            positions=Array(shape=(shape[axis],)),
-            ratio=Scalar(init=1, lower=0, upper=1).set_mutation(sigma=0.05)
-        )
-
-    def axes(self) -> tp.Optional[tp.Tuple[int, ...]]:
-        return self.parameters["axes"].value  # type: ignore
-
-    def apply(self, arrays: tp.Sequence[Array]) -> None:
-        arrays = list(arrays)
-        assert len(arrays) == 1
-        data = np.zeros(arrays[0].value.shape)
-        # settings
-        length = self.shape[self.axis]
-        size = int(max(1, np.round(length * self.parameters["ratio"].value)))
-        # slices
-        e_weights = np.exp(rolling_mean(self.parameters["positions"].value, size))
-        probas = e_weights / np.sum(e_weights)
-        index = np.random.choice(range(length), p=probas)
-        # update (inefficient)
-        shape = tuple(size if a == self.axis else s for a, s in enumerate(arrays[0].value.shape))
-        data[tuple(slice(s) for s in shape)] += self.random_state.normal(0, 1, size=shape)
-        data = np.roll(data, shift=index, axis=self.axis)
-        arrays[0]._internal_set_standardized_data(data.ravel(), reference=arrays[0])
-
-    def _internal_spawn_child(self) -> "ProbaLocalGaussian":
-        child = self.__class__(axis=self.axis, shape=self.shape)
-        child.parameters._content = {k: v.spawn_child() if isinstance(v, core.Parameter) else v
-                                     for k, v in self.parameters._content.items()}
-        return child
+        root._internal_set_standardized_data(data.ravel(), reference=root)
 
 
 def rolling_mean(vector: np.ndarray, window: int) -> np.ndarray:
@@ -261,34 +316,58 @@ def rolling_mean(vector: np.ndarray, window: int) -> np.ndarray:
         return np.sum(vector) * np.ones((len(vector),))  # type: ignore
     if window <= 1:
         return vector
-    cumsum: np.ndarray = np.cumsum(np.concatenate(([0], vector, vector[:window - 1])))
+    cumsum: np.ndarray = np.cumsum(np.concatenate(([0], vector, vector[: window - 1])))
     return cumsum[window:] - cumsum[:-window]  # type: ignore
 
 
-class TunedTranslation(Mutation):
+# class TunedTranslation(Mutation):
+#     def __init__(self, axis: int, shape: tp.Sequence[int]):
+#         assert isinstance(axis, int)
+#         self.shape = tuple(shape)
+#         super().__init__(shift=Choice(range(1, shape[axis])))
+#         self.axis = axis
+#
+#     @property
+#     def shift(self) -> Choice:
+#         return self.root().parameters["shift"]  # type: ignore
+#
+#     def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:
+#         assert len(arrays) == 1
+#         data = arrays[0]
+#         assert data.shape == self.shape
+#         shift = self.shift.value
+#         # update shift arrray
+#         shifts = self.shift.indices._value
+#         self.shift.indices._value = np.roll(shifts, shift)  # update probas
+#         return np.roll(data, shift, axis=self.axis)  # type: ignore
 
-    def __init__(self, axis: int, shape: tp.Sequence[int]):
-        assert isinstance(axis, int)
-        self.shape = tuple(shape)
-        super().__init__(shift=Choice(range(1, shape[axis])))
-        self.axis = axis
 
-    @property
-    def shift(self) -> Choice:
-        return self.parameters["shift"]  # type: ignore
-
-    def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:
-        assert len(arrays) == 1
-        data = arrays[0]
-        assert data.shape == self.shape
-        shift = self.shift.value
-        # update shift arrray
-        shifts = self.shift.weights.value
-        self.shift.weights.value = np.roll(shifts, shift)  # update probas
-        return np.roll(data, shift, axis=self.axis)  # type: ignore
-
-    def _internal_spawn_child(self) -> "TunedTranslation":
-        child = self.__class__(axis=self.axis, shape=self.shape)
-        child.parameters._content = {k: v.spawn_child() if isinstance(v, core.Parameter) else v
-                                     for k, v in self.parameters._content.items()}
-        return child
+# class ProbaLocalGaussian(Mutation):
+#     def __init__(self, axis: int, shape: tp.Sequence[int]):
+#         assert isinstance(axis, int)
+#         self.shape = tuple(shape)
+#         self.axis = axis
+#         super().__init__(
+#             positions=Array(shape=(shape[axis],)),
+#             ratio=Scalar(init=1, lower=0, upper=1).set_mutation(sigma=0.05),
+#         )
+#
+#     def axes(self) -> tp.Optional[tp.Tuple[int, ...]]:
+#         return self.root().parameters["axes"].value  # type: ignore
+#
+#     def apply(self, arrays: tp.Sequence[Data]) -> None:
+#         arrays = list(arrays)
+#         assert len(arrays) == 1
+#         data = np.zeros(arrays[0].value.shape)
+#         # settings
+#         length = self.shape[self.axis]
+#         size = int(max(1, np.round(length * self.root().parameters["ratio"].value)))
+#         # slices
+#         e_weights = np.exp(rolling_mean(self.root().parameters["positions"].value, size))
+#         probas = e_weights / np.sum(e_weights)
+#         index = self.random_state.choice(range(length), p=probas)
+#         # update (inefficient)
+#         shape = tuple(size if a == self.axis else s for a, s in enumerate(arrays[0].value.shape))
+#         data[tuple(slice(s) for s in shape)] += self.random_state.normal(0, 1, size=shape)
+#         data = np.roll(data, shift=index, axis=self.axis)
+#         arrays[0]._internal_set_standardized_data(data.ravel(), reference=arrays[0])

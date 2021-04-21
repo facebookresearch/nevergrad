@@ -6,7 +6,7 @@ How to perform optimization
 Basic example
 -------------
 
-Minimizing a function using an optimizer (here :code:`OnePlusOne`) can be easily run with:
+Minimizing a function using an optimizer (here :code:`NGOpt`, our adaptative optimization algorithm) can be easily run with:
 
 .. literalinclude:: ../nevergrad/optimization/test_doc.py
     :language: python
@@ -14,11 +14,12 @@ Minimizing a function using an optimizer (here :code:`OnePlusOne`) can be easily
     :start-after: DOC_BASE_0
     :end-before: DOC_BASE_1
 
-:code:`parametrization=n` is a shortcut to state that the function has only one variable, of dimension :code:`n`,
-See the :ref:`Parametrization section <parametrizing>` for more complex parametrizations.
+:code:`parametrization=n` is a shortcut to state that the function has only one variable, continuous, of dimension :code:`n`: :code:`ng.p.Array(shape=(n,))`.
 
-:code:`parametrization=n` is a shortcut to state that the function has only one variable, continuous, of dimension :code:`n`,
-Defining the following parametrization instead will optimize on both :code:`x` (continuous, dimension 2) and :code:`y` (continuous, dimension 1).
+**Important**: Make sure to check the :ref:`Parametrization section <parametrizing>` for more complex parametrizations examples,
+and :ref:`Parametrization API section <parametrization_ref>` for the full list of options. Below are a few more advanced cases.
+
+Defining the parametrization (:code:`instrum`) as follows in the code sample will instead optimize on both :code:`x` (continuous, dimension 2, bounded between -12 and 12) and :code:`y` (continuous, dimension 1).
 
 
 .. literalinclude:: ../nevergrad/optimization/test_doc.py
@@ -34,6 +35,7 @@ We can work in the discrete case as well, e.g. with the one-max function applied
     :dedent: 4
     :start-after: DOC_BASE_4
     :end-before: DOC_BASE_5
+
 
 
 Using several workers
@@ -78,7 +80,7 @@ Please make sure that your function returns a float, and that you indeed want to
 Choosing an optimizer
 ---------------------
 
-:code:`ng.optimizers.registry` is a :code:`dict` of all optimizers, so you :code:`ng.optimizers.OnePlusOne` is equivalent to :code:`ng.optimizers.registry["OnePlusOne"]`.
+:code:`ng.optimizers.registry` is a :code:`dict` of all optimizers, so you :code:`ng.optimizers.NGOpt` is equivalent to :code:`ng.optimizers.registry["NGOpt"]`.
 Also, **you can print the full list of optimizers** with:
 
 
@@ -106,20 +108,10 @@ Telling non-asked points, or suggesting points
 ----------------------------------------------
 There are two ways to inoculate information you already have about some points:
 
-- :code:`optimizer.sugggest(*args, **kwargs)`: after suggesting a point, the next :code:`ask` will be a point
-  with the provided :code:`value`.
-- :code:`candidate = optimizer.parametrization.spawn_child(new_value=your_value)`  which you can then use to
-  :code:`tell` the optimizer with the corresponding loss.
+- :code:`optimizer.sugggest(*args, **kwargs)`: after suggesting a point, the next :code:`ask` will be a point with the provided inputs. Make sure you call :code:`optimizer.suggest` the same way (= with the same arguments) that you would call your function to optimize.
+- :code:`candidate = optimizer.parametrization.spawn_child(new_value=your_value)`  which you can then use to :code:`tell` the optimizer with the corresponding loss.
 
 **Examples:**
-
-- parametrized with an :code:`Array`:
-
-.. literalinclude:: ../nevergrad/optimization/test_doc.py
-    :language: python
-    :dedent: 4
-    :start-after: DOC_INOCULATION_0
-    :end-before: DOC_INOCULATION_1
 
 - parametrized with an :code:`ng.p.Instrumentation`
 
@@ -129,6 +121,13 @@ There are two ways to inoculate information you already have about some points:
     :start-after: DOC_INOCULATION_1
     :end-before: DOC_INOCULATION_2
 
+- parametrized with an :code:`Array`:
+
+.. literalinclude:: ../nevergrad/optimization/test_doc.py
+    :language: python
+    :dedent: 4
+    :start-after: DOC_INOCULATION_0
+    :end-before: DOC_INOCULATION_1
 
 **Note:** some optimizers do not support such inoculation. Those will raise a :code:`TellNotAskedNotSupportedError`.
 
@@ -228,18 +227,7 @@ Multiobjective minimization is a **work in progress** in :code:`nevergrad`. It i
 
 In other words, use it at your own risk ;) and provide feedbacks (both positive and negative) if you have any!
 
-
-The initial API that was added into :code:`nevergrad` to work with multiobjective functions uses a function wrapper to convert them into monoobjective functions.
-Let us minimize :code:`f1` and :code:`f2` (two objective functions) assuming that values above 2.5 are of no interest:
-
-.. literalinclude:: ../nevergrad/functions/multiobjective/test_core.py
-    :language: python
-    :dedent: 4
-    :start-after: DOC_MULTIOBJ_0
-    :end-before: DOC_MULTIOBJ_1
-
-
-We are currently working on an **new experimental API** allowing users to directly :code:`tell` the results as an array or list of floats. When this API is stabilized and proved to work, it will probably replace the older one. Here is an example on how to use it:
+To perform multiobjective optimization, you can just provide :code:`tell` with the results as an array or list of floats:
 
 .. literalinclude:: ../nevergrad/optimization/multiobjective/test_core.py
     :language: python
@@ -247,8 +235,10 @@ We are currently working on an **new experimental API** allowing users to direct
     :start-after: DOC_MULTIOBJ_OPT_0
     :end-before: DOC_MULTIOBJ_OPT_1
 
-Note that `DE` and its variants have been updated to make use of the multi-objective losses [#789](https://github.com/facebookresearch/nevergrad/pull/789). This is a **preliminary** fix since the initial `DE` implementaton was ill-suited for this use case.
-
+Currently most optimizers only derive a volume float loss from the multiobjective loss and minimize it.
+:code:`DE` and its variants have however been updated to make use of the full multi-objective losses
+[#789](https://github.com/facebookresearch/nevergrad/pull/789), which make them good candidates for multi-objective minimization (:code:`NGOpt` will
+delegate to DE in the case of multi-objective functions).
 
 Reproducibility
 ---------------
