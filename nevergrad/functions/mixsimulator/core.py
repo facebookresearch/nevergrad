@@ -26,7 +26,7 @@ class OptimizeMix(base.ExperimentFunction):
 
     """
 
-    def __init__(self, time: int = 168) -> None:
+    def __init__(self, time: int = 8760) -> None:
         try:
             self._mix = MixSimulator()
             self._mix.set_data_to("Toamasina")
