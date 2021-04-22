@@ -59,8 +59,7 @@ def test_uncomment_line_custom_file_type(line: str, ext: str, comment: str, expe
 
 
 @testing.parametrized(
-    with_clean_copy=(True,),
-    without_clean_copy=(False,),
+    with_clean_copy=(True,), without_clean_copy=(False,),
 )
 def test_folder_instantiator(clean_copy: bool) -> None:
     path = Path(__file__).parent / "examples"
@@ -88,8 +87,7 @@ def test_placeholder(text: str, name_comments: tp.List[tp.Tuple[str, tp.Optional
 
 
 @testing.parametrized(
-    python=(".py", "[[1, 2], [3, 4]]"),
-    cpp=(".cpp", "{{1, 2}, {3, 4}}"),
+    python=(".py", "[[1, 2], [3, 4]]"), cpp=(".cpp", "{{1, 2}, {3, 4}}"),
 )
 def test_placeholder_for_array(extension: str, expected: str) -> None:
     text = "NG_ARG{bidule}"

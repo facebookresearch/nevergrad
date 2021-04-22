@@ -88,8 +88,7 @@ def test_multibounds(transform_cls: tp.Type[transforms.BoundTransform], expected
 
 
 @testing.parametrized(
-    both_sides=(transforms.Clipping(0, 1), [0, 1.0]),
-    one_side=(transforms.Clipping(a_max=1), [-3, 1.0]),
+    both_sides=(transforms.Clipping(0, 1), [0, 1.0]), one_side=(transforms.Clipping(a_max=1), [-3, 1.0]),
 )
 def test_clipping(transform: transforms.Transform, expected: tp.List[float]) -> None:
     y = transform.forward(np.array([-3, 5]))

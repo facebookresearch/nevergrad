@@ -11,8 +11,7 @@ from .data import Array
 
 
 @testing.parametrized(
-    fft=(True, [3, 3, 5, 5]),
-    real=(False, [4, 5, 5, 4]),
+    fft=(True, [3, 3, 5, 5]), real=(False, [4, 5, 5, 4]),
 )
 def test_crossover(fft: bool, expected: tp.List[int]) -> None:
     x1 = 4 * np.ones((2, 4))
@@ -114,9 +113,7 @@ def test_jump() -> None:
 
 
 @testing.parametrized(
-    all_none=(None, None),
-    d2=((1, 2), None),
-    d1=((1), None),
+    all_none=(None, None), d2=((1, 2), None), d1=((1), None),
 )
 def test_crossover_axis(axis: tp.Optional[tp.Tuple[int, ...]], max_size: tp.Optional[int]) -> None:
     shape = (6, 8, 10)
@@ -131,10 +128,7 @@ def test_crossover_axis(axis: tp.Optional[tp.Tuple[int, ...]], max_size: tp.Opti
 
 
 @testing.parametrized(
-    w1=(1, [1, 2, 5, 9]),
-    w2=(2, [3, 7, 14, 10]),
-    w3=(3, [8, 16, 15, 12]),
-    w4=(4, [17, 17, 17, 17]),
+    w1=(1, [1, 2, 5, 9]), w2=(2, [3, 7, 14, 10]), w3=(3, [8, 16, 15, 12]), w4=(4, [17, 17, 17, 17]),
 )
 def test_rolling_mean(window: int, expected: tp.List[int]) -> None:
     output = mutation.rolling_mean(np.array([1, 2, 5, 9]), window)

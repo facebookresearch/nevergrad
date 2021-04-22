@@ -192,10 +192,7 @@ class ImageAdversarial(base.ExperimentFunction):
         self.criterion = nn.CrossEntropyLoss()
         self.imsize = self.image.shape[1]
 
-        array = ng.p.Array(
-            init=np.zeros(self.image.shape),
-            mutable_sigma=True,
-        ).set_name("")
+        array = ng.p.Array(init=np.zeros(self.image.shape), mutable_sigma=True,).set_name("")
         array.set_mutation(sigma=self.epsilon / 10)
         array.set_bounds(lower=-self.epsilon, upper=self.epsilon, method="clipping", full_range_sampling=True)
         max_size = ng.p.Scalar(lower=1, upper=200).set_integer_casting()
@@ -225,9 +222,7 @@ class ImageAdversarial(base.ExperimentFunction):
 
     @classmethod
     def make_folder_functions(
-        cls,
-        folder: tp.Optional[tp.PathLike],
-        model: str = "resnet50",
+        cls, folder: tp.Optional[tp.PathLike], model: str = "resnet50",
     ) -> tp.Generator["ImageAdversarial", None, None]:
         """
 

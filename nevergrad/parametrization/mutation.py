@@ -133,10 +133,7 @@ class Crossover(DataMutation):
     """
 
     def __init__(
-        self,
-        axis: tp.Any = None,
-        max_size: tp.Union[int, Scalar, None] = None,
-        fft: bool = False,
+        self, axis: tp.Any = None, max_size: tp.Union[int, Scalar, None] = None, fft: bool = False,
     ) -> None:
         if not isinstance(axis, core.Parameter):
             axis = (axis,) if isinstance(axis, int) else tuple(axis) if axis is not None else None
@@ -193,10 +190,7 @@ class RavelCrossover(Crossover):  # TODO: can be made for all parameters instead
         array to the power of 1/number of axis.
     """
 
-    def __init__(
-        self,
-        max_size: tp.Union[int, Scalar, None] = None,
-    ) -> None:
+    def __init__(self, max_size: tp.Union[int, Scalar, None] = None,) -> None:
         super().__init__(axis=0, max_size=max_size)
 
     def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:

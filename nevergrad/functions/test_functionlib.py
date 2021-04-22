@@ -118,8 +118,7 @@ def test_testcase_function_value(config: tp.Dict[str, tp.Any], expected: float) 
 
 
 @testing.parametrized(
-    random=(np.random.normal(0, 1, 12), False),
-    hashed=(np.ones(12), True),
+    random=(np.random.normal(0, 1, 12), False), hashed=(np.ones(12), True),
 )
 def test_test_function(x: tp.Any, hashing: bool) -> None:
     config: tp.Dict[str, tp.Any] = {

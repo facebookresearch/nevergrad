@@ -123,10 +123,7 @@ class _DE(base.Optimizer):
                 assert init in ["LHS", "QR"]
                 self.sampler = oneshot.SamplingSearch(
                     sampler=init if init == "LHS" else "Hammersley", scrambled=init == "QR", scale=self.scale
-                )(
-                    self.parametrization,
-                    budget=self.llambda,
-                )
+                )(self.parametrization, budget=self.llambda,)
             if init == "parametrization":
                 candidate = self.parametrization.sample()
             elif self.sampler is not None:

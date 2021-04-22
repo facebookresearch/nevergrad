@@ -69,12 +69,7 @@ class FunctionInfo:  # Note: eventually, this should be a dataclass (dropping ol
         whether the domain is naturally equipped with a metric.
     """
 
-    def __init__(
-        self,
-        deterministic: bool = True,
-        proxy: bool = False,
-        metrizable: bool = True,
-    ) -> None:
+    def __init__(self, deterministic: bool = True, proxy: bool = False, metrizable: bool = True,) -> None:
         self.deterministic = deterministic
         self.proxy = proxy
         self.metrizable = metrizable

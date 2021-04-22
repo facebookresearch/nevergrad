@@ -152,9 +152,7 @@ def test_float_penalty(value: tp.Any, expected: float) -> None:
 
 
 # pylint: disable=too-many-locals
-def split_as_data_parameters(
-    parameter: p.Parameter,
-) -> tp.List[tp.Tuple[str, p.Data]]:
+def split_as_data_parameters(parameter: p.Parameter,) -> tp.List[tp.Tuple[str, p.Data]]:
     """List all the instances involved as parameter (not as subparameter/
     endogeneous parameter) ordered as in standardized data space
 

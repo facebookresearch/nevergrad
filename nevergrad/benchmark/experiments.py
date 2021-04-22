@@ -1021,7 +1021,7 @@ def realworld(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     funcs += [
         _mlda.SammonMapping.from_mlda("Virus", rescale=False),
         _mlda.SammonMapping.from_mlda("Virus", rescale=True),
-        _mlda.SammonMapping.from_mlda("Employees"),
+        # _mlda.SammonMapping.from_mlda("Employees"),
     ]
     funcs += [_mlda.Landscape(transform) for transform in [None, "square", "gaussian"]]
 
@@ -1236,7 +1236,7 @@ def mlda(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     funcs += [
         _mlda.SammonMapping.from_mlda("Virus", rescale=False),
         _mlda.SammonMapping.from_mlda("Virus", rescale=True),
-        _mlda.SammonMapping.from_mlda("Employees"),
+        # _mlda.SammonMapping.from_mlda("Employees"),
     ]
     funcs += [_mlda.Perceptron.from_mlda(name) for name in ["quadratic", "sine", "abs", "heaviside"]]
     funcs += [_mlda.Landscape(transform) for transform in [None, "square", "gaussian"]]
@@ -1529,11 +1529,7 @@ def double_o_seven(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                         )
                         opt_budget = env_budget // num_repetitions
                         yield Experiment(
-                            func,
-                            optim,
-                            budget=opt_budget,
-                            num_workers=num_workers,
-                            seed=next(seedg),
+                            func, optim, budget=opt_budget, num_workers=num_workers, seed=next(seedg),
                         )
 
 

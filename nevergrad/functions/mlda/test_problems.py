@@ -62,8 +62,7 @@ def test_perceptron() -> None:
 
 
 @testing.parametrized(
-    virus=("Virus",),
-    employees=("Employees",),
+    virus=("Virus",), employees=("Employees",),
 )
 def test_sammon_mapping(name: str) -> None:
     data = np.arange(6).reshape(3, 2) if name == "Virus" else pd.DataFrame(data=np.arange(12).reshape(3, 4))

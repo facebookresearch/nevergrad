@@ -26,10 +26,7 @@ matplotlib.use("Agg")
 
 
 @testing.parametrized(
-    val0=(0, False),
-    val1=(1, True),
-    val5=(5, False),
-    val6=(6, True),
+    val0=(0, False), val1=(1, True), val5=(5, False), val6=(6, True),
 )
 def test_moduler(value: int, expected: bool) -> None:
     moduler = core.Moduler(5, 1)

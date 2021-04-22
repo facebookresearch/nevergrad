@@ -62,10 +62,7 @@ class ARCoating(base.ExperimentFunction):
         self.epmin = 1
         init = (self.epmin + self.epf) / 2.0 * np.ones((nbslab,))
         sigma = (self.epf - self.ep0) / 6
-        array = ng.p.Array(
-            init=init,
-            mutable_sigma=True,
-        )
+        array = ng.p.Array(init=init, mutable_sigma=True,)
         array.set_mutation(sigma=sigma)
         array.set_bounds(self.epmin, self.epf, method=bounding_method, full_range_sampling=True)
         array = ng.ops.mutations.Crossover(0)(array).set_name("")

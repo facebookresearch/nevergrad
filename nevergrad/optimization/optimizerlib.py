@@ -743,12 +743,7 @@ class ParametrizedTBPSA(base.ConfiguredOptimizer):
     """
 
     # pylint: disable=unused-argument
-    def __init__(
-        self,
-        *,
-        naive: bool = True,
-        initial_popsize: tp.Optional[int] = None,
-    ) -> None:
+    def __init__(self, *, naive: bool = True, initial_popsize: tp.Optional[int] = None,) -> None:
         super().__init__(_TBPSA, locals())
 
 
@@ -1175,12 +1170,7 @@ class Rescaled(base.ConfiguredOptimizer):
     """
 
     # pylint: disable=unused-argument
-    def __init__(
-        self,
-        *,
-        base_optimizer: base.OptCls = CMA,
-        scale: tp.Optional[float] = None,
-    ) -> None:
+    def __init__(self, *, base_optimizer: base.OptCls = CMA, scale: tp.Optional[float] = None,) -> None:
         super().__init__(_Rescaled, locals())
 
 
@@ -2188,9 +2178,7 @@ class NGOptBase(base.Optimizer):
             self._arity = -1
         self._optim: tp.Optional[base.Optimizer] = None
         self._constraints_manager.update(
-            max_trials=1000,
-            penalty_factor=1.0,
-            penalty_exponent=1.01,
+            max_trials=1000, penalty_factor=1.0, penalty_exponent=1.01,
         )
 
     @property
@@ -2469,10 +2457,5 @@ class MultipleSingleRuns(base.ConfiguredOptimizer):
     """
 
     # pylint: disable=unused-argument
-    def __init__(
-        self,
-        *,
-        num_single_runs: int = 9,
-        base_optimizer: base.OptCls = NGOpt,
-    ) -> None:
+    def __init__(self, *, num_single_runs: int = 9, base_optimizer: base.OptCls = NGOpt,) -> None:
         super().__init__(_MSR, locals())
