@@ -11,7 +11,7 @@ from unittest.mock import patch
 import requests
 import numpy as np
 import pandas as pd
-from scipy import misc
+from PIL import Image
 
 
 _NAMED_URLS = {
@@ -63,7 +63,8 @@ def get_data(name: str) -> tp.Union[np.ndarray, pd.DataFrame]:
     elif name == "Employees":  # proximity matrix
         return pd.read_excel(path)
     elif name == "Landscape":
-        return misc.imread(path).dot([0.216, 0.7152, 0.0722])  # get brightness
+        with Image.open(path) as im:
+            return np.array(im).dot([1.216, 0.7152, 0.0722])
     else:
         raise NameError(f'Unknown parsing for name "{name}"')
 
