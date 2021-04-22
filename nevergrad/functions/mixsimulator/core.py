@@ -32,7 +32,7 @@ class OptimizeMix(base.ExperimentFunction):
             self._mix.set_data_to("Toamasina")
             self._demand = Demand()
             self._demand.set_data_to("Toamasina",delimiter=",")
-            self._mix.set_demand(demand)
+            self._mix.set_demand(self._demand)
         except (KeyError, AttributeError) as e:
             # send a skip error so that this does not break the test suit
             raise base.UnsupportedExperiment("mixsimulator dependency issue") from e
