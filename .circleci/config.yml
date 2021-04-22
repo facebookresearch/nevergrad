@@ -36,8 +36,8 @@ commands:
           command: |
             python3 -m venv venv
             . venv/bin/activate
-            pip install -U --progress-bar off pip
-            pip install -e --progress-bar off .[all]
+            pip install --progress-bar off -U pip
+            pip install --progress-bar off -e .[all]
             # master numpy-stubs adds a lot of messy warnings :s
             pip install --progress-bar off git+https://github.com/numpy/numpy-stubs@2c8d8f26adb1eef54571ccc85ef8ad4f2fb90c4c
 
@@ -61,8 +61,8 @@ jobs:
           command: |
             python3 -m venv venv
             . venv/bin/activate
-            pip install --upgrade --progress-bar off pip
-            pip install -e --progress-bar off .
+            pip install --progress-bar off --upgrade pip
+            pip install --progress-bar off -e .
 
       - run:
           name: "[no-extra] Print installation"
