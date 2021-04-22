@@ -30,7 +30,8 @@ def fake_caller(func: tp.Callable[[int], int]) -> int:
 
 
 @testing.parametrized(
-    finished=(10, 30), unfinished=(2, None),  # should not hang at deletion!
+    finished=(10, 30),
+    unfinished=(2, None),  # should not hang at deletion!
 )
 def test_messaging_thread(num_iter: int, output: tp.Optional[int]) -> None:
     thread = recaster.MessagingThread(fake_caller)

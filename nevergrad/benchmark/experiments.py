@@ -1529,7 +1529,11 @@ def double_o_seven(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                         )
                         opt_budget = env_budget // num_repetitions
                         yield Experiment(
-                            func, optim, budget=opt_budget, num_workers=num_workers, seed=next(seedg),
+                            func,
+                            optim,
+                            budget=opt_budget,
+                            num_workers=num_workers,
+                            seed=next(seedg),
                         )
 
 

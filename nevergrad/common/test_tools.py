@@ -11,7 +11,10 @@ from . import testing
 
 
 @testing.parametrized(
-    void=([], []), one=(["a"], []), two=([1, 2], [(1, 2)]), three=([1, 2, 3], [(1, 2), (2, 3)]),
+    void=([], []),
+    one=(["a"], []),
+    two=([1, 2], [(1, 2)]),
+    three=([1, 2, 3], [(1, 2), (2, 3)]),
 )
 def test_pairwise(iterator: tp.Iterable[tp.Any], expected: tp.List[tp.Tuple[tp.Any, ...]]) -> None:
     output = list(tools.pairwise(iterator))

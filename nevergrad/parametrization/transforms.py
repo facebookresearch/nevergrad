@@ -185,7 +185,12 @@ class Clipping(BoundTransform):
         bounce (once) on borders instead of just clipping
     """
 
-    def __init__(self, a_min: BoundType = None, a_max: BoundType = None, bounce: bool = False,) -> None:
+    def __init__(
+        self,
+        a_min: BoundType = None,
+        a_max: BoundType = None,
+        bounce: bool = False,
+    ) -> None:
         super().__init__(a_min=a_min, a_max=a_max)
         self._bounce = bounce
         b = ",b" if bounce else ""

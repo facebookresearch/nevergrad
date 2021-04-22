@@ -156,7 +156,8 @@ def test_split_long_title() -> None:
 
 
 @testing.parametrized(
-    nothing=([1, 2, 10.0], [1, 2, 10.0]), identic=([1, 1, 10.0, 10.0], [0.5, 1.5, 9.5, 10.5]),
+    nothing=([1, 2, 10.0], [1, 2, 10.0]),
+    identic=([1, 1, 10.0, 10.0], [0.5, 1.5, 9.5, 10.5]),
 )
 def test_compute_best_placements(positions: tp.List[float], expected: tp.List[float]) -> None:
     new_positions = plotting.compute_best_placements(positions, min_diff=1.0)

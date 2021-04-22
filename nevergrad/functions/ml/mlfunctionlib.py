@@ -305,9 +305,11 @@ class MLTuning(ExperimentFunction):
         X = X.reshape(-1, data_dimension)
         rng.shuffle(X)
 
-        target_function = {"artificial": np.sin, "artificialcos": np.cos, "artificialsquare": np.square,}[
-            dataset
-        ]
+        target_function = {
+            "artificial": np.sin,
+            "artificialcos": np.cos,
+            "artificialsquare": np.square,
+        }[dataset]
         y = np.sum(np.sin(X), axis=1).ravel()
         self.X_train = X  # Training set.
         self.y_train = y  # Labels of the training set.

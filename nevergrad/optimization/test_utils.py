@@ -109,7 +109,12 @@ def test_pruning() -> None:
 
 @pytest.mark.parametrize(  # type: ignore
     "nw,dimension,expected_min,expected_max",
-    [(12, 8, 100, 1000), (24, 8, 168, 1680), (24, 100000, 168, 671), (24, 1000000, 168, 504),],
+    [
+        (12, 8, 100, 1000),
+        (24, 8, 168, 1680),
+        (24, 100000, 168, 671),
+        (24, 1000000, 168, 504),
+    ],
 )
 def test_pruning_sensible_default(nw: int, dimension: int, expected_min: int, expected_max: int) -> None:
     pruning = utils.Pruning.sensible_default(num_workers=nw, dimension=dimension)

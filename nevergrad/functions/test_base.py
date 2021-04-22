@@ -53,7 +53,9 @@ def test_experiment_function() -> None:
 def test_array_experiment_function() -> None:
     iarrayfuncs = [
         base.ArrayExperimentFunction(
-            sum, ng.p.Array(shape=(10,)).set_bounds(-0.5, 6.0).set_name(""), symmetry=s,
+            sum,
+            ng.p.Array(shape=(10,)).set_bounds(-0.5, 6.0).set_name(""),
+            symmetry=s,
         )
         for s in [247, 111, 111]
     ]

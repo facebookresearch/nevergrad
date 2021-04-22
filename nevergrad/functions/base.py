@@ -68,7 +68,11 @@ class ExperimentFunction:
         inst._descriptors["function_class"] = cls.__name__
         return inst  # type: ignore
 
-    def __init__(self: EF, function: tp.Callable[..., tp.Loss], parametrization: p.Parameter,) -> None:
+    def __init__(
+        self: EF,
+        function: tp.Callable[..., tp.Loss],
+        parametrization: p.Parameter,
+    ) -> None:
         assert callable(function)
         self._auto_init: tp.Dict[str, tp.Any]  # filled by __new__
         self._descriptors: tp.Dict[str, tp.Any]  # filled by __new__
@@ -353,7 +357,11 @@ class MultiExperiment(ExperimentFunction):
     - there is no descriptor for the packed functions, except the name (concatenetion of packed function names).
     """
 
-    def __init__(self, experiments: tp.Iterable[ExperimentFunction], upper_bounds: tp.ArrayLike,) -> None:
+    def __init__(
+        self,
+        experiments: tp.Iterable[ExperimentFunction],
+        upper_bounds: tp.ArrayLike,
+    ) -> None:
         xps = list(experiments)
         assert xps
         assert len(xps) == len({id(xp) for xp in xps}), "All experiments must be different instances"

@@ -28,7 +28,12 @@ from .externalbo import _hp_parametrization_to_dict, _hp_dict_to_parametrization
         ),
         (
             ng.p.Instrumentation(
-                a=ng.p.Choice([ng.p.Choice(list(range(10))), ng.p.Scalar(lower=0, upper=1),])
+                a=ng.p.Choice(
+                    [
+                        ng.p.Choice(list(range(10))),
+                        ng.p.Scalar(lower=0, upper=1),
+                    ]
+                )
             ),
             False,
         ),

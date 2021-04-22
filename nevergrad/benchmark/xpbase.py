@@ -262,7 +262,10 @@ class Experiment:
                 # call the actual Optimizer.minimize method because overloaded versions could alter the worklflow
                 # and provide unfair comparisons  (especially for parallelized settings)
                 obase.Optimizer.minimize(
-                    self._optimizer, pfunc, batch_mode=executor.batch_mode, executor=executor,
+                    self._optimizer,
+                    pfunc,
+                    batch_mode=executor.batch_mode,
+                    executor=executor,
                 )
             except Exception as e:  # pylint: disable=broad-except
                 self._log_results(pfunc, t0, self._optimizer.num_ask)
