@@ -1229,7 +1229,7 @@ class ConfPortfolio(base.ConfiguredOptimizer):
     -----
     - if providing an initialized  optimizer, the parametrization of the optimizer
       must be the exact same instance as the one of the Portfolio.
-    - this API is temporary and be be renamed very soon
+    - this API is temporary and will be renamed very soon
     """
 
     # pylint: disable=unused-argument
