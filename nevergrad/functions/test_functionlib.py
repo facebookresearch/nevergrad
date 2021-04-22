@@ -222,12 +222,12 @@ def test_far_optimum_function(independent_sigma: bool, mutable_sigma: bool) -> N
     param = func.parametrization.spawn_child()
     assert isinstance(param, p.Array)
     assert isinstance(param.sigma, p.Array) == mutable_sigma
-    assert param.sigma.value.size == (1 + independent_sigma)
+    assert param.sigma.value.size == (1 + independent_sigma)  # type: ignore
     param.mutate()
     new_val = param.sigma.value
     assert bool(np.sum(np.abs(new_val - func.parametrization.sigma.value))) == mutable_sigma  # type: ignore
     if independent_sigma and mutable_sigma:
-        assert new_val[0] != new_val[1]
+        assert new_val[0] != new_val[1]  # type: ignore
 
 
 def test_far_optimum_function_cases() -> None:

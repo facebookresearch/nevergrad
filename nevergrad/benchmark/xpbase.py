@@ -12,7 +12,8 @@ import traceback
 import typing as tp
 import numpy as np
 from nevergrad.parametrization import parameter as p
-from ..common import decorators
+from nevergrad.common import decorators
+from nevergrad.common import errors
 from ..functions.rl.agents import torch  # import includes pytorch fix
 from ..functions import base as fbase
 from ..optimization import base as obase
@@ -26,7 +27,7 @@ registry: decorators.Registry[tp.Callable[..., tp.Iterator["Experiment"]]] = dec
 
 
 # pylint: disable=unused-argument
-def _assert_monoobjective_callback(optimizer: obase.Optimizer, candidate: p.Parameter, loss: float) -> None:
+def _assert_singleobjective_callback(optimizer: obase.Optimizer, candidate: p.Parameter, loss: float) -> None:
     if optimizer.num_tell <= 1 and not isinstance(loss, numbers.Number):
         raise TypeError(
             f"Cannot process loss {loss} of type {type(loss)}.\n"
@@ -193,7 +194,7 @@ class Experiment:
         """
         try:
             self._run_with_error()
-        except (fbase.ExperimentFunctionCopyError, fbase.UnsupportedExperiment) as ex:
+        except (errors.ExperimentFunctionCopyError, errors.UnsupportedExperiment) as ex:
             raise ex
         except Exception as e:  # pylint: disable=broad-except
             # print the case and the traceback
@@ -211,7 +212,7 @@ class Experiment:
         opt = self._optimizer
         assert opt is not None
         # ExperimentFunction can directly override this evaluation function if need be
-        # (pareto_front returns only the recommendation in monoobjective)
+        # (pareto_front returns only the recommendation in singleobjective)
         self.result["loss"] = pfunc.evaluation_function(*opt.pareto_front())
         self.result["elapsed_budget"] = num_calls
         if num_calls > self.optimsettings.budget:
@@ -246,7 +247,7 @@ class Experiment:
             if pfunc.multiobjective_upper_bounds is not None:
                 self._optimizer.tell(p.MultiobjectiveReference(), pfunc.multiobjective_upper_bounds)
             else:
-                self._optimizer.register_callback("tell", _assert_monoobjective_callback)
+                self._optimizer.register_callback("tell", _assert_singleobjective_callback)
         if callbacks is not None:
             for name, func in callbacks.items():
                 self._optimizer.register_callback(name, func)
@@ -255,7 +256,7 @@ class Experiment:
         executor = self.optimsettings.executor
         with warnings.catch_warnings():
             warnings.filterwarnings(
-                "ignore", category=obase.InefficientSettingsWarning
+                "ignore", category=errors.InefficientSettingsWarning
             )  # benchmark do not need to be efficient
             try:
                 # call the actual Optimizer.minimize method because overloaded versions could alter the worklflow

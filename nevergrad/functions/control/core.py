@@ -50,19 +50,29 @@ class BaseFunction(base.ExperimentFunction):
     random_state: int or None
         random state for reproducibility in Gym environment.
     """
-    
+
     env_name: str
     state_mean: tp.Any
     state_std: tp.Any
     policy_dim: tp.Tuple[int, ...]
 
-    def __init__(self, num_rollouts: int, activation: str = "tanh", intermediate_layer_dim: tp.Optional[tuple] = None,
-                 deterministic_sim: bool = True, noise_level: float = 0., states_normalization: bool = True,
-                 layer_rescaling_coef: tp.Optional[tuple] = None, random_state: tp.Optional[int] = None) -> None:
+    def __init__(
+        self,
+        num_rollouts: int,
+        activation: str = "tanh",
+        intermediate_layer_dim: tp.Optional[tuple] = None,
+        deterministic_sim: bool = True,
+        noise_level: float = 0.0,
+        states_normalization: bool = True,
+        layer_rescaling_coef: tp.Optional[tuple] = None,
+        random_state: tp.Optional[int] = None,
+    ) -> None:
         if intermediate_layer_dim is not None:
             self.policy_dim = (self.policy_dim[0],) + intermediate_layer_dim + (self.policy_dim[1],)  # type: ignore
-        list_parametrizations = [p.Array(shape=(a, b)).set_name(r"layer_{a}_{b}") for a, b in
-                                 zip(self.policy_dim[:-1], self.policy_dim[1:])]
+        list_parametrizations = [
+            p.Array(shape=(a, b)).set_name(r"layer_{a}_{b}")
+            for a, b in zip(self.policy_dim[:-1], self.policy_dim[1:])
+        ]
         parametrization: p.Tuple = p.Tuple(*list_parametrizations).set_name(self.env_name)
         super().__init__(self._simulate, parametrization)
         self.num_rollouts = num_rollouts
@@ -72,32 +82,43 @@ class BaseFunction(base.ExperimentFunction):
         self.noise_level = noise_level
         self.deterministic_sim = deterministic_sim
         self.layer_rescaling_coef = layer_rescaling_coef
-        if layer_rescaling_coef is None: self.layer_rescaling_coef = np.ones(len(self.policy_dim) - 1)  # type: ignore
-        self.add_descriptors(num_rollouts=num_rollouts, intermediate_layer_dim=intermediate_layer_dim,
-                             activation=activation, states_normalization=states_normalization,
-                             noise_level=self.noise_level, deterministic_sim=deterministic_sim)
-        if self.noise_level > 0. or not deterministic_sim: self.parametrization.descriptors.deterministic_function = False
+        if layer_rescaling_coef is None:
+            self.layer_rescaling_coef = np.ones(len(self.policy_dim) - 1)  # type: ignore
+        self.add_descriptors(
+            num_rollouts=num_rollouts,
+            intermediate_layer_dim=intermediate_layer_dim,
+            activation=activation,
+            states_normalization=states_normalization,
+            noise_level=self.noise_level,
+            deterministic_sim=deterministic_sim,
+        )
+        if self.noise_level > 0.0 or not deterministic_sim:
+            self.parametrization.function.deterministic = False
         self._descriptors.pop("random_state", None)  # remove it from automatically added descriptors
 
     def _simulate(self, x: tp.Tuple) -> float:
         try:
-            env = GenericMujocoEnv(env_name=self.env_name,
-                                   state_mean=self.state_mean if self.states_normalization else None,
-                                   state_std=self.state_std if self.states_normalization else None,
-                                   num_rollouts=self.num_rollouts,
-                                   activation=self.activation,
-                                   layer_rescaling_coef=self.layer_rescaling_coef,
-                                   noise_level=self.noise_level,
-                                   random_state=self.parametrization.random_state)
+            env = GenericMujocoEnv(
+                env_name=self.env_name,
+                state_mean=self.state_mean if self.states_normalization else None,
+                state_std=self.state_std if self.states_normalization else None,
+                num_rollouts=self.num_rollouts,
+                activation=self.activation,
+                layer_rescaling_coef=self.layer_rescaling_coef,
+                noise_level=self.noise_level,
+                random_state=self.parametrization.random_state,
+            )
         except gym.error.DependencyNotInstalled as e:
             raise base.UnsupportedExperiment("Missing mujoco_py") from e
-        env.env.seed(self.random_state if self.deterministic_sim else self.parametrization.random_state.randint(10000))
+        env.env.seed(
+            self.random_state if self.deterministic_sim else self.parametrization.random_state.randint(10000)
+        )
         loss = env(x)
         # base.update_leaderboard(f'{self.env_name},{self.parametrization.dimension}', loss, x, verbose=True)
         return loss
 
     def evaluation_function(self, *recommendations: p.Parameter) -> float:
-        assert len(recommendations) == 1, "Should not be a pareto set for a monoobjective function"
+        assert len(recommendations) == 1, "Should not be a pareto set for a singleobjective function"
         x = recommendations[0].value
         # pylint: disable=not-callable
         loss = self.function(x)

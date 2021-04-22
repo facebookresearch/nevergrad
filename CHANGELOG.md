@@ -2,12 +2,72 @@
 
 ## master
 
+### Breaking changes
+
+- `copy()` method of a `Parameter` does not change the parameters's random state anymore (it used to reset it to `None` [#1048](https://github.com/facebookresearch/nevergrad/pull/1048)
+- `MultiobjectiveFunction` does not exist anymore  [#1034](https://github.com/facebookresearch/nevergrad/pull/1034).
+- `Choice` and `TransitionChoice` have some of their API changed for uniformization. In particular, `indices` is now an
+  `ng.p.Array` (and not an `np.ndarray`) which contains the selected indices (or index) of the `Choice`. The sampling is
+  performed by specific "layers" that are applied to `Data` parameters [#1065](https://github.com/facebookresearch/nevergrad/pull/1065).
+- `Parameter.set_standardized_space` does not take a `deterministic` parameter anymore
+  [#1068](https://github.com/facebookresearch/nevergrad/pull/1068).  This is replaced by the more
+  general `with ng.p.helpers.determistic_sampling(parameter)` context. One-shot algorithms are also updated to choose
+  options of `Choice` parameters deterministically, since it is a simpler behavior to expect compared to sampling the
+  standardized space than sampling the option stochastically from there
+- `RandomSearch` now defaults to sample values using the `parameter.sample()` instead of a Gaussian
+   [#1068](https://github.com/facebookresearch/nevergrad/pull/1068).  The only difference comes with bounded
+  variables since in this case `parameter.sample()` samples uniformly (unless otherwise specified).
+  The previous behavior can be obtained with `RandomSearchMaker(sampler="gaussian")`.
+- `PSO` API has been slightly changed [#1073](https://github.com/facebookresearch/nevergrad/pull/1073)
+- `Parameter` instances `descriptor` attribute is deprecated, in favor of a combinaison of an analysis function
+  (`ng.p.helpers.analyze`) returning information about the parameter (eg: whether continuous, deterministic etc...)
+  and a new `function` attribute which can be used to provide information about the function (eg: whether deterministic etc)
+  [#1076](https://github.com/facebookresearch/nevergrad/pull/1076).
+- Half the budget alloted to solve cheap constrained is now used by a sub-optimizer
+  [#1047](https://github.com/facebookresearch/nevergrad/pull/1047). More changes of constraint management will land
+  in the near future.
+- Experimental methods `Array.set_recombination` and `Array.set_mutation(custom=.)` are removed in favor of
+  layers changing `Array` behaviors [#1086](https://github.com/facebookresearch/nevergrad/pull/1086).
+  Caution: this is still very experimental (and undocumented).
+
+### Important changes
+
+- `Parameter` classes are undergoing heavy changes, please open an issue if you encounter any problem.
+  The midterm aim is to allow for simpler constraint management.
+- `Parameter` have been updated  have undergone heavy changes to ease the handling of their tree structure (
+  [#1029](https://github.com/facebookresearch/nevergrad/pull/1029)
+  [#1036](https://github.com/facebookresearch/nevergrad/pull/1036)
+  [#1038](https://github.com/facebookresearch/nevergrad/pull/1038)
+  [#1043](https://github.com/facebookresearch/nevergrad/pull/1043)
+  [#1044](https://github.com/facebookresearch/nevergrad/pull/1044)
+  )
+- `Parameter` classes have now a layer structure [#1045](https://github.com/facebookresearch/nevergrad/pull/1045)
+  which simplifies changing their behavior. In future PRs this system will take charge of bounds, other constraints,
+  sampling etc.
+- The layer structures allows disentangling bounds and log-distribution. This goal has been reached with
+  [#1053](https://github.com/facebookresearch/nevergrad/pull/1053) but may create some instabilities. In particular,
+  the representation (`__repr__`) of `Array` has changed, and their `bounds` attribute is no longer reliable for now.
+  This change will eventually lead to a new syntax for settings bounds and distribution, but it's not ready yet.
+- `DE` initial sampling as been updated to take bounds into accounts [#1058](https://github.com/facebookresearch/nevergrad/pull/1058)
+- `Array` can now take `lower` and `upper` bounds as initialization arguments. The array is initialized at its average
+  if not `init` is provided and both bounds are provided. In this case, sampling will be uniformm between these bounds.
+
+
+### Other changes
+
+- the new `nevergrad.errors` module gathers errors and warnings used throughout the package (WIP) [#1031](https://github.com/facebookresearch/nevergrad/pull/1031).
+- `EvolutionStrategy` now defaults to NSGA2 selection in the multiobjective case
+- A new experimental callback adds an early stopping mechanism
+  [#1054](https://github.com/facebookresearch/nevergrad/pull/1054).
+- `Choice`-like parameters now accept integers are inputs instead of a list, as a shortcut for `range(num)`
+  [#1106](https://github.com/facebookresearch/nevergrad/pull/1106).
+
 ## 0.4.3 (2021-01-28)
 
 ### Important changes
 
 - `tell` method can now receive a list/array of losses for multi-objective optimization [#775](https://github.com/facebookresearch/nevergrad/pull/775). For now it is neither robust, nor scalable, nor stable, nor optimal so be careful when using it. More information in the [documentation](https://facebookresearch.github.io/nevergrad/optimization.html#multiobjective-minimization-with-nevergrad).
-- The old way to perform multiobjective optimization, through the use of :code:`MultiobjectiveFunction`, is now deprecated and will be removed i n version 0.4.3 [#1017](https://github.com/facebookresearch/nevergrad/pull/1017).
+- The old way to perform multiobjective optimization, through the use of :code:`MultiobjectiveFunction`, is now deprecated and will be removed after version 0.4.3 [#1017](https://github.com/facebookresearch/nevergrad/pull/1017).
 - By default, the optimizer now returns the best set of parameter as recommendation [#951](https://github.com/facebookresearch/nevergrad/pull/951), considering that the function is deterministic. The previous behavior would use an estimation of noise to provide the pessimistic best point, leading to unexpected behaviors [#947](https://github.com/facebookresearch/nevergrad/pull/947). You can can back to this behavior by specifying: :code:`parametrization.descriptors.deterministic_function = False`
 
 ### Other

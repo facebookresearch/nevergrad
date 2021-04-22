@@ -6,11 +6,10 @@
 import hashlib
 import itertools
 import numpy as np
-from nevergrad.parametrization import parameter as p
+import nevergrad as ng
 from nevergrad.common import tools
 import nevergrad.common.typing as tp
 from .base import ExperimentFunction
-from .multiobjective import MultiobjectiveFunction
 from .pbt import PBT as PBT  # pylint: disable=unused-import
 from . import utils
 from . import corefuncs
@@ -71,8 +70,8 @@ class ArtificialVariable:
         if self.hashing:
             data2 = np.array(data, copy=True)
             for i, y in enumerate(data):
-                self.random_state.seed(int(hashlib.md5(str(y).encode()).hexdigest(), 16) % 500000)  # type: ignore
-                data2[i] = self.random_state.normal(0.0, 1.0)  # type: ignore
+                self.random_state.seed(int(hashlib.md5(str(y).encode()).hexdigest(), 16) % 500000)
+                data2[i] = self.random_state.normal(0.0, 1.0)
             data = data2
         data = np.array(data, copy=False)
         output = []
@@ -176,17 +175,17 @@ class ArtificialFunction(ExperimentFunction):
 
         assert not (split and hashing)
         assert not (split and useless_variables > 0)
-        parametrization = (
-            p.Array(shape=(1,) if hashing else (self._dimension,)).set_name("")
-            if not split
-            else (
-                p.Instrumentation(*[p.Array(shape=(block_dimension,)) for _ in range(num_blocks)]).set_name(
-                    "split"
-                )
+        if not split:
+            parametrization: ng.p.Parameter = ng.p.Array(
+                shape=(1,) if hashing else (self._dimension,)
+            ).set_name("")
+        else:
+            parametrization = ng.p.Instrumentation(
+                *[ng.p.Array(shape=(block_dimension,)) for _ in range(num_blocks)]
             )
-        )
+            parametrization.set_name("split")
         if noise_level > 0:
-            parametrization.descriptors.deterministic_function = False
+            parametrization.function.deterministic = False
         super().__init__(self.noisy_function, parametrization)
         # variable, must come after super().__init__(...) to bind the random_state
         # may consider having its a local random_state instead but less reproducible
@@ -232,11 +231,11 @@ class ArtificialFunction(ExperimentFunction):
             results.append(self._func(block))
         return float(self._aggregator(results))
 
-    def evaluation_function(self, *recommendations: p.Parameter) -> float:
+    def evaluation_function(self, *recommendations: ng.p.Parameter) -> float:
         """Implements the call of the function.
         Under the hood, __call__ delegates to oracle_call + add some noise if noise_level > 0.
         """
-        assert len(recommendations) == 1, "Should not be a pareto set for a monoobjective function"
+        assert len(recommendations) == 1, "Should not be a pareto set for a singleobjective function"
         assert len(recommendations[0].args) == 1 and not recommendations[0].kwargs
         data = self._transform(recommendations[0].args[0])
         return self.function_from_transform(data)
@@ -299,13 +298,14 @@ class FarOptimumFunction(ExperimentFunction):
     ) -> None:
         assert recombination in ("crossover", "average")
         self._optimum = np.array(optimum, dtype=float)
-        parametrization = p.Array(shape=(2,), mutable_sigma=mutable_sigma)
+        parametrization = ng.p.Array(shape=(2,), mutable_sigma=mutable_sigma)
         init = np.array([1.0, 1.0] if independent_sigma else [1.0], dtype=float)
-        sigma = p.Array(init=init).set_mutation(exponent=2.0) if mutable_sigma else p.Constant(init)
+        sigma: tp.Any = ng.p.Array(init=init).set_mutation(exponent=2.0) if mutable_sigma else init
         parametrization.set_mutation(sigma=sigma)
-        parametrization.set_recombination("average" if recombination == "average" else p.mutation.Crossover())
-        self._multiobjective = MultiobjectiveFunction(self._multifunc, 2 * self._optimum)
-        super().__init__(self._multiobjective if multiobjective else self._monofunc, parametrization.set_name(""))  # type: ignore
+        if recombination == "crossover":
+            parametrization = ng.ops.mutations.Crossover()(parametrization)
+        self.multiobjective_upper_bounds = np.array(2 * self._optimum) if multiobjective else None
+        super().__init__(self._multifunc if multiobjective else self._monofunc, parametrization.set_name(""))  # type: ignore
 
     def _multifunc(self, x: np.ndarray) -> np.ndarray:
         return np.abs(x - self._optimum)  # type: ignore
@@ -313,10 +313,8 @@ class FarOptimumFunction(ExperimentFunction):
     def _monofunc(self, x: np.ndarray) -> float:
         return float(np.sum(self._multifunc(x)))
 
-    def evaluation_function(self, *recommendations: p.Parameter) -> float:
-        assert len(recommendations) == 1, "Should not be a pareto set for a monoobjective function"
-        assert len(recommendations[0].args) == 1 and not recommendations[0].kwargs
-        return self._monofunc(recommendations[0].args[0])
+    def evaluation_function(self, *recommendations: ng.p.Parameter) -> float:
+        return min(self._monofunc(x.args[0]) for x in recommendations)
 
     @classmethod
     def itercases(cls) -> tp.Iterator["FarOptimumFunction"]:

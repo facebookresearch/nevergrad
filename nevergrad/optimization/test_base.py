@@ -93,6 +93,7 @@ def test_base_optimizer() -> None:
     zeroptim = xpvariants.Zero(parametrization=2, budget=4, num_workers=1)
     # add descriptor to replicate old behavior, returning pessimistic best
     zeroptim.parametrization.descriptors.deterministic_function = False
+    assert not zeroptim.parametrization.function.deterministic
     representation = repr(zeroptim)
     expected = "parametrization=Array{(2,)}"
     assert expected in representation, f"Unexpected representation: {representation}"

@@ -11,6 +11,7 @@ import datetime
 from pathlib import Path
 import numpy as np
 import nevergrad.common.typing as tp
+from nevergrad.common import errors
 from nevergrad.parametrization import parameter as p
 from nevergrad.parametrization import helpers
 from . import base
@@ -105,12 +106,12 @@ class ParametersLogger:
             data["#meta-sigma"] = candidate._meta["sigma"]  # for TBPSA-like algorithms
         if candidate.generation > 1:
             data["#parents_uids"] = candidate.parents_uids
-        for name, param in helpers.flatten_parameter(candidate, with_containers=False, order=1).items():
+        for name, param in helpers.flatten(candidate, with_containers=False, order=1):
             val = param.value
             if inspect.ismethod(val):
                 val = repr(val.__self__)  # show mutation class
             data[name if name else "0"] = val.tolist() if isinstance(val, np.ndarray) else val
-            if isinstance(param, p.Array):
+            if isinstance(param, p.Data):
                 val = param.sigma.value
                 data[(name if name else "0") + "#sigma"] = (
                     val.tolist() if isinstance(val, np.ndarray) else val
@@ -246,3 +247,42 @@ class ProgressBar:
         state = dict(self.__dict__)
         state["_progress_bar"] = None
         return state
+
+
+class EarlyStopping:
+    """Callback for stopping the :code:`minimize` method before the budget is
+    fully used.
+
+    Parameters
+    ----------
+    stopping_criterion: func(optimizer) -> bool
+        function that takes the current optimizer as input and returns True
+        if the minimization must be stopped
+
+    Note
+    ----
+    This callback must be register on the "ask" method only.
+
+    Example
+    -------
+    In the following code, the :code:`minimize` method will be stopped at the 4th "ask"
+
+    >>> early_stopping = ng.callbacks.EarlyStopping(lambda opt: opt.num_ask > 3)
+    >>> optimizer.register_callback("ask", early_stopping)
+    >>> optimizer.minimize(_func, verbosity=2)
+
+    A couple other options (equivalent in case of non-noisy optimization) for stopping
+    if the loss is below 12:
+
+    >>> early_stopping = ng.callbacks.EarlyStopping(lambda opt: opt.recommend().loss < 12)
+    >>> early_stopping = ng.callbacks.EarlyStopping(lambda opt: opt.current_bests["minimum"].mean < 12)
+    """
+
+    def __init__(self, stopping_criterion: tp.Callable[[base.Optimizer], bool]) -> None:
+        self.stopping_criterion = stopping_criterion
+
+    def __call__(self, optimizer: base.Optimizer, *args: tp.Any, **kwargs: tp.Any) -> None:
+        if args or kwargs:
+            raise errors.NevergradRuntimeError("EarlyStopping must be registered on ask method")
+        if self.stopping_criterion(optimizer):
+            raise errors.NevergradEarlyStopping("Early stopping criterion is reached")

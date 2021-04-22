@@ -48,9 +48,7 @@ def test_run_packed_artificial_function() -> None:
     )
     xp = xpbase.Experiment(func, optimizer="OnePlusOne", budget=24, num_workers=2, batch_mode=True, seed=14)
     summary = xp.run()
-    np.testing.assert_almost_equal(
-        summary["loss"], -9784.829729792353, decimal=1
-    )  # makes sure seeding works!
+    np.testing.assert_almost_equal(summary["loss"], -9784.8, decimal=1)  # makes sure seeding works!
 
 
 def test_noisy_artificial_function_loss() -> None:
@@ -88,8 +86,8 @@ def test_run_with_error() -> None:
 
 
 @testing.parametrized(
-    concurrent=("OnePlusOne", 10, False),  # no true case implemented for now
-)
+    concurrent=("OnePlusOne", 10, False),
+)  # no true case implemented for now
 def test_is_incoherent(optimizer: str, num_workers: int, expected: bool) -> None:
     func = ArtificialFunction(name="sphere", block_dimension=2)
     xp = xpbase.Experiment(func, optimizer=optimizer, budget=300, num_workers=num_workers)

@@ -36,10 +36,10 @@ commands:
           command: |
             python3 -m venv venv
             . venv/bin/activate
-            pip install -U pip
-            pip install -e .[all]
+            pip install --progress-bar off -U pip
+            pip install --progress-bar off -e .[all]
             # master numpy-stubs adds a lot of messy warnings :s
-            pip install git+https://github.com/numpy/numpy-stubs@2c8d8f26adb1eef54571ccc85ef8ad4f2fb90c4c
+            pip install --progress-bar off git+https://github.com/numpy/numpy-stubs@2c8d8f26adb1eef54571ccc85ef8ad4f2fb90c4c
 
 
 jobs:
@@ -61,8 +61,8 @@ jobs:
           command: |
             python3 -m venv venv
             . venv/bin/activate
-            pip install --upgrade pip
-            pip install -e .
+            pip install --progress-bar off --upgrade pip
+            pip install --progress-bar off -e .
 
       - run:
           name: "[no-extra] Print installation"
@@ -118,7 +118,7 @@ jobs:
             python3 -m venv test_wheel
             . test_wheel/bin/activate
             cd ..  # don't use nevergrad locally
-            pip install repo/nevergrad-build/dist/nevergrad-*any.whl
+            pip install --progress-bar off repo/nevergrad-build/dist/nevergrad-*any.whl
             python -c "from nevergrad import functions;f = functions.ArtificialFunction(name='sphere', block_dimension=2);f([2, 3])"
 
       - persist_to_workspace:
@@ -131,11 +131,25 @@ jobs:
             . venv/bin/activate
             cd docs/
             make html
-            make linkcheck
 
       - persist_to_workspace:
           root: docs/_build
           paths: html
+
+  docs-links:
+    executor: ubuntu-python37
+
+    steps:
+
+      - ubuntu_restore_all
+
+      - run:
+          name: "Check links"
+          when: always
+          command: |
+            . venv/bin/activate
+            cd docs/
+            make linkcheck
 
   static:
     executor: ubuntu-python37
@@ -158,7 +172,7 @@ jobs:
           command: |
             . venv/bin/activate
             pylint --version
-            pylint nevergrad --disable=all --enable=unused-import,unused-argument,unused-variable,undefined-loop-variable,redefined-builtin,used-before-assignment,super-init-not-called,useless-super-delegation,dangerous-default-value
+            pylint nevergrad --disable=all --enable=unused-import,unused-argument,unused-variable,undefined-loop-variable,redefined-builtin,used-before-assignment,super-init-not-called,useless-super-delegation,dangerous-default-value,unnecessary-pass,attribute-defined-outside-init
 
       - run:
           name: "Run black"
@@ -233,9 +247,9 @@ jobs:
           command: |
             py -3 -m venv venv
             . ./venv/Scripts/activate
-            pip install -U pip
-            pip install torch==1.4.0+cpu torchvision==0.5.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
-            pip install .[all]
+            pip install --progress-bar off -U pip
+            pip install --progress-bar off torch==1.4.0+cpu torchvision==0.5.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
+            pip install --progress-bar off .[all]
 
       - save_cache:
           name: "[all] Save cache"
@@ -310,6 +324,12 @@ workflows:
               only: master
             tags:
               only: /(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/
+      - docs-links:  # a bit noisy, so only running on master, and does not stop deployments
+          requires:
+            - install
+          filters:
+            branches:
+              only: master
       - pypi-deploy:
           requires:
             - install

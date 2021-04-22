@@ -195,37 +195,33 @@ class FastNonDominatedRanking:
         return ranked_sublists
 
 
-class NSGA2Ranking:
-    """This class implements the multi-objective ranking function of NSGA-II."""
-
-    def __init__(self):
-        self._frontier_ranker = FastNonDominatedRanking()
-        self._density_estimator = CrowdingDistance()
-
-    def rank(
-        self, population: tp.List[p.Parameter], n_selected: tp.Optional[int] = None
-    ) -> tp.Dict[str, tp.Tuple[int, int, float]]:
-        selected_pop: tp.Dict[str, tp.Tuple[int, int, float]] = {}
-        frontiers = self._frontier_ranker.compute_ranking(population)
-        count = 0
-        next_rank = 0
-        for front_i, p_frontier in enumerate(frontiers):
-            count += len(p_frontier)
-            if n_selected is None or count > n_selected:
-                self._density_estimator.compute_distance(p_frontier)
-                self._density_estimator.sort(p_frontier)
-                n_dist_calc = n_selected - len(selected_pop) if n_selected is not None else len(p_frontier)
-                for c_i in range(0, n_dist_calc):
-                    selected_pop[p_frontier[c_i].uid] = (
-                        next_rank,
-                        front_i,
-                        p_frontier[c_i]._meta["crowding_distance"],
-                    )
-                    next_rank += 1
-                if n_selected is not None:
-                    break
-            if n_selected is not None:
-                for candidate in p_frontier:
-                    selected_pop[candidate.uid] = (next_rank, front_i, float("inf"))
+def rank(
+    population: tp.List[p.Parameter], n_selected: tp.Optional[int] = None
+) -> tp.Dict[str, tp.Tuple[int, int, float]]:
+    """implements the multi-objective ranking function of NSGA-II."""
+    frontier_ranker = FastNonDominatedRanking()
+    density_estimator = CrowdingDistance()
+    selected_pop: tp.Dict[str, tp.Tuple[int, int, float]] = {}
+    frontiers = frontier_ranker.compute_ranking(population)
+    count = 0
+    next_rank = 0
+    for front_i, p_frontier in enumerate(frontiers):
+        count += len(p_frontier)
+        if n_selected is None or count > n_selected:
+            density_estimator.compute_distance(p_frontier)
+            density_estimator.sort(p_frontier)
+            n_dist_calc = n_selected - len(selected_pop) if n_selected is not None else len(p_frontier)
+            for c_i in range(0, n_dist_calc):
+                selected_pop[p_frontier[c_i].uid] = (
+                    next_rank,
+                    front_i,
+                    p_frontier[c_i]._meta["crowding_distance"],
+                )
                 next_rank += 1
-        return selected_pop
+            if n_selected is not None:
+                break
+        if n_selected is not None:
+            for candidate in p_frontier:
+                selected_pop[candidate.uid] = (next_rank, front_i, float("inf"))
+            next_rank += 1
+    return selected_pop
