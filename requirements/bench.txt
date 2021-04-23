@@ -26,4 +26,3 @@ image-quality==1.2.6
 keras==2.2.4
 tensorflow-estimator==2.3.0
 openml==0.12.1
-auto-sklearn==0.12.6

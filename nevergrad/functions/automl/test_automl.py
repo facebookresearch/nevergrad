@@ -21,7 +21,7 @@ def test_parametrization():
         scoring_func="balanced_accuracy",
         random_state=42,
     )
-    optimizer = ng.optimizers.RandomSearch(parametrization=func.parametrization, budget=10)
+    optimizer = ng.optimizers.RandomSearch(parametrization=func.parametrization, budget=3)
     optimizer.minimize(func, verbosity=2)
 
 

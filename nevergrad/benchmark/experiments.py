@@ -24,9 +24,8 @@ from nevergrad.functions import mlda as _mlda
 from nevergrad.functions import rl
 from nevergrad.functions.arcoating import ARCoating
 from nevergrad.functions.causaldiscovery import CausalDiscovery
-from nevergrad.functions.automl import AutoSKlearnBenchmark
 from nevergrad.functions.games import game
-from nevergrad.functions.mixsimulator import OptimizeMix
+# from nevergrad.functions.mixsimulator import OptimizeMix
 from nevergrad.functions.ml import MLTuning
 from nevergrad.functions.photonics import Photonics
 from nevergrad.functions.powersystems import PowerSystem
@@ -142,6 +141,7 @@ def naivemltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 def autosklearntuning(seed: tp.Optional[int] = None):
+    from nevergrad.functions.automl import AutoSKlearnBenchmark
     from nevergrad.optimization.optimizerlib import ConfSplitOptimizer
     from nevergrad.optimization.optimizerlib import registry as optimizerlib_registry
 

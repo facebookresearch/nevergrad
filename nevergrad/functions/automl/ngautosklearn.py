@@ -3,12 +3,15 @@ import warnings
 import numpy as np
 import nevergrad as ng
 import ConfigSpace as cs
-import autosklearn.classification
 from sklearn.metrics import get_scorer
 from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection import cross_val_score
-from autosklearn.pipeline.classification import SimpleClassificationPipeline
 
+try:
+    import autosklearn.classification
+    from autosklearn.pipeline.classification import SimpleClassificationPipeline
+except ImportError:
+    raise ImportError("Auto-Sklearn not installed. Run: python -m pip install auto-sklearn==0.12.6")
 
 def _eval_function(
     config: cs.Configuration, X, y, scoring_func: str, cv: int, random_state: int, test_data: tuple = None
