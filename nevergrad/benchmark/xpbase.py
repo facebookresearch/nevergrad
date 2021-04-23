@@ -290,11 +290,3 @@ class Experiment:
             and self.function.equivalent_to(other.function)
             and self.optimsettings == other.optimsettings
         )
-
-
-class AutoMLExperiment(Experiment):
-
-    def _log_results(self, pfunc: fbase.ExperimentFunction, t0: float, num_calls: int) -> None:
-        """Final evaluation on test set."""
-        pfunc.evaluate_on_test = True
-        super()._log_results(pfunc=pfunc, t0=t0, num_calls=num_calls)

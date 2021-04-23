@@ -3,41 +3,44 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import os
-import warnings
-import typing as tp
 import itertools
-import numpy as np
+import os
+import typing as tp
+import warnings
+
 import nevergrad as ng
 import nevergrad.functions.corefuncs as corefuncs
-from nevergrad.functions import base as fbase
-from nevergrad.functions import ExperimentFunction
+import numpy as np
 from nevergrad.functions import ArtificialFunction
+from nevergrad.functions import ExperimentFunction
 from nevergrad.functions import FarOptimumFunction
 from nevergrad.functions import PBT
-from nevergrad.functions.ml import MLTuning
-from nevergrad.functions import mlda as _mlda
-from nevergrad.functions.photonics import Photonics
-from nevergrad.functions.arcoating import ARCoating
-from nevergrad.functions import images as imagesxp
-from nevergrad.functions.powersystems import PowerSystem
-from nevergrad.functions.stsp import STSP
-from nevergrad.functions.rocket import Rocket
-from nevergrad.functions.mixsimulator import OptimizeMix
-from nevergrad.functions.unitcommitment import UnitCommitmentProblem
+from nevergrad.functions import base as fbase
 from nevergrad.functions import control
-from nevergrad.functions import rl
-from nevergrad.functions.games import game
-from nevergrad.functions.causaldiscovery import CausalDiscovery
-from nevergrad.functions import iohprofiler
 from nevergrad.functions import helpers
-from .xpbase import Experiment as Experiment
-from .xpbase import create_seed_generator
-from .xpbase import registry as registry  # noqa
-from .optgroups import get_optimizers
+from nevergrad.functions import images as imagesxp
+from nevergrad.functions import iohprofiler
+from nevergrad.functions import mlda as _mlda
+from nevergrad.functions import rl
+from nevergrad.functions.arcoating import ARCoating
+from nevergrad.functions.causaldiscovery import CausalDiscovery
+from nevergrad.functions.automl import AutoSKlearnBenchmark
+from nevergrad.functions.games import game
+from nevergrad.functions.mixsimulator import OptimizeMix
+from nevergrad.functions.ml import MLTuning
+from nevergrad.functions.photonics import Photonics
+from nevergrad.functions.powersystems import PowerSystem
+from nevergrad.functions.rocket import Rocket
+from nevergrad.functions.stsp import STSP
+from nevergrad.functions.unitcommitment import UnitCommitmentProblem
 
 # register all frozen experiments
 from . import frozenexperiments  # noqa # pylint: disable=unused-import
+from .optgroups import get_optimizers
+from .xpbase import Experiment as Experiment
+from .xpbase import create_seed_generator
+from .xpbase import registry as registry  # noqa
+
 
 # pylint: disable=stop-iteration-return, too-many-nested-blocks, too-many-locals
 
@@ -136,6 +139,80 @@ def mltuning(
 def naivemltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of mltuning with overfitting of valid loss, i.e. train/valid/valid instead of train/valid/test."""
     return mltuning(seed, overfitter=True)
+
+
+def autosklearntuning(seed: tp.Optional[int] = None):
+    from nevergrad.optimization.optimizerlib import ConfSplitOptimizer
+    from nevergrad.optimization.optimizerlib import registry as optimizerlib_registry
+
+    # Only considered small subset of OpenML-CC18
+    list_tasks = [
+        3,
+        11,
+        15,
+        18,
+        23,
+        29,
+        31,
+        37,
+        45,
+        49,
+        53,
+        2079,
+        3022,
+        3549,
+        3560,
+        3902,
+        3903,
+        3913,
+        3917,
+        3918,
+        9946,
+        9957,
+        9964,
+        9971,
+        9978,
+        9981,
+        10093,
+        10101,
+        14954,
+        125920,
+        146800,
+        146817,
+        146819,
+        146821,
+        146822,
+    ]
+    optims = [
+        "HyperOpt",
+        "RandomSearch",
+        "CMA",
+        "DE",
+        # "BO", Error !
+        ConfSplitOptimizer(multivariate_optimizer=optimizerlib_registry["CMA"], num_optims=None).set_name(
+            "SplitCMAAuto"
+        ),
+        ConfSplitOptimizer(multivariate_optimizer=optimizerlib_registry["DE"], num_optims=None).set_name(
+            "SplitDEAuto"
+        ),
+    ]
+    seedg = create_seed_generator(seed)
+    for budget in [10, 50, 100]:
+        for task_id in list_tasks:
+            for algo in optims:
+                for seed in range(10):
+                    func = AutoSKlearnBenchmark(
+                        openml_task_id=task_id,
+                        cv=3,
+                        time_budget_per_run=300,
+                        memory_limit=1024 * 10,
+                        scoring_func="balanced_accuracy",
+                        random_state=next(seedg),
+                    )
+                    xp = Experiment(func, algo, budget, num_workers=1, seed=next(seedg))
+                    skip_ci(reason="Too slow")
+                    if not xp.is_incoherent:
+                        yield xp
 
 
 # We register only the sequential counterparts for the moment.
