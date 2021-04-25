@@ -1,0 +1,252 @@
+{
+	"benchmark_server_args" : {
+		"experiment_id": 5,
+		"project_file_path": "./data/projects/Yoga1/Yoga1.perfproj",
+		"frame_index": 1050,
+		"error_weights": {
+			"silhouette": 0.1,
+			"chamfer_total": 1.0,
+			"surface_gradient_error": 0.01,
+			"self_penetration": 1.0,
+			"anthropomorfic_constraints":1.0
+		}
+	},
+	"ng_function_args" : {
+
+		"initial_pose": [
+			{
+				"joint_id": -1,
+				"values":[0, 0, 0]
+			},
+			{
+				"joint_id": 0,
+				"values":[0, 0, 0]
+			},
+			{
+				"joint_id": 1,
+				"values":[0, 0, 0]
+			},
+			{
+				"joint_id": 2,
+				"values":[0, 0, 0]
+			},
+			{
+				"joint_id": 3,
+				"values":[0, 0, 0]
+			},
+			{
+				"joint_id": 4,
+				"values":[0, 0, 0]
+			},
+			{
+				"joint_id": 5,
+				"values":[0, 0, 0]
+			},
+			{
+				"joint_id": 6,
+				"values":[0, 0, 0]
+			},
+			{
+				"joint_id": 7,
+				"values":[0, 0, 0]
+			},
+			{
+				"joint_id": 8,
+				"values":[0, 0, 0]
+			},
+			{
+				"joint_id": 9,
+				"values":[0, 0, 0]
+			},
+			{
+				"joint_id": 10,
+				"values":[0, 0, 0]
+			},
+			{
+				"joint_id": 11,
+				"values":[0, 0, 0]
+			},
+			{
+				"joint_id": 12,
+				"values":[0, 0, 0]
+			},
+			{
+				"joint_id": 13,
+				"values":[0, 0, 0]
+			},
+			{
+				"joint_id": 14,
+				"values":[0, 0, 0]
+			},
+			{
+				"joint_id": 15,
+				"values":[0, 0, 0]
+			},
+			{
+				"joint_id": 16,
+				"values":[0, 0, 0]
+			},
+			{
+				"joint_id": 17,
+				"values":[0, 0, 0]
+			}
+		],
+		"relative_search_space" : true,
+		"normalize" : false,
+		"variables": [
+			{
+				"joint_id":-1,
+				"DOFs" : [true, true, true],
+				"mutation_variances":[0.1,0.1,0.1],
+				"mutable_mutation_variances":[true,true,true],
+				"bounds_min" : [-0.4,-0.4,-0.4],
+				"bounds_max" : [0.4,0.4,0.4]
+
+			},
+			{
+				"joint_id":0,
+				"DOFs" : [true, true, true],
+				"mutation_variances":[3.0, 3.0, 3.0],
+				"mutable_mutation_variances":[true, true, true],
+				"bounds_min" : [-15.0, -15.0, -15.0],
+				"bounds_max" : [15.0, 15.0, 15.0]
+			},
+			{
+				"joint_id":1,
+				"DOFs" : [true, true, true],
+				"mutation_variances":[3.0, 3.0, 3.0],
+				"mutable_mutation_variances":[true, true, true],
+				"bounds_min" : [-15.0, -15.0, -15.0],
+				"bounds_max" : [15.0, 15.0, 15.0]
+			},
+			{
+				"joint_id":2,
+				"DOFs" : [true, true, true],
+				"mutation_variances":[3.0, 3.0, 3.0],
+				"mutable_mutation_variances":[true, true, true],
+				"bounds_min" : [-15.0, -15.0, -15.0],
+				"bounds_max" : [15.0, 15.0, 15.0]
+			},
+			{
+				"joint_id":3,
+				"DOFs" : [true, true, true],
+				"mutation_variances":[3.0, 3.0, 3.0],
+				"mutable_mutation_variances":[true, true, true],
+				"bounds_min" : [-15.0, -15.0, -15.0],
+				"bounds_max" : [15.0, 15.0, 15.0]
+			},
+			{
+				"joint_id":4,
+				"DOFs" : [true, true, true],
+				"mutation_variances":[3.0, 3.0, 3.0],
+				"mutable_mutation_variances":[true, true, true],
+				"bounds_min" : [-15.0, -15.0, -15.0],
+				"bounds_max" : [15.0, 15.0, 15.0]
+			},
+			{
+				"joint_id":5,
+				"DOFs" : [true, true, true],
+				"mutation_variances":[3.0, 3.0, 3.0],
+				"mutable_mutation_variances":[true, true, true],
+				"bounds_min" : [-15.0, -15.0, -15.0],
+				"bounds_max" : [15.0, 15.0, 15.0]
+			},
+			{
+				"joint_id":6,
+				"DOFs" : [true, false, false],
+				"mutation_variances":[3.0],
+				"mutable_mutation_variances":[true],
+				"bounds_min" : [-15.0],
+				"bounds_max" : [15.0]
+			},
+			{
+				"joint_id":7,
+				"DOFs" : [true, true, true],
+				"mutation_variances":[3.0, 3.0, 3.0],
+				"mutable_mutation_variances":[true, true, true],
+				"bounds_min" : [-15.0, -15.0, -15.0],
+				"bounds_max" : [15.0, 15.0, 15.0]
+			},
+			{
+				"joint_id":8,
+				"DOFs" : [true, true, true],
+				"mutation_variances":[3.0, 3.0, 3.0],
+				"mutable_mutation_variances":[true, true, true],
+				"bounds_min" : [-15.0, -15.0, -15.0],
+				"bounds_max" : [15.0, 15.0, 15.0]
+			},
+			{
+				"joint_id":9,
+				"DOFs" : [true, true, true],
+				"mutation_variances":[3.0, 3.0, 3.0],
+				"mutable_mutation_variances":[true, true, true],
+				"bounds_min" : [-15.0, -15.0, -15.0],
+				"bounds_max" : [15.0, 15.0, 15.0]
+			},
+			{
+				"joint_id":10,
+				"DOFs" : [true, false, false],
+				"mutation_variances":[3.0],
+				"mutable_mutation_variances":[true],
+				"bounds_min" : [-15.0],
+				"bounds_max" : [15.0]
+			},
+			{
+				"joint_id":11,
+				"DOFs" : [true, true, true],
+				"mutation_variances":[3.0, 3.0, 3.0],
+				"mutable_mutation_variances":[true, true, true],
+				"bounds_min" : [-15.0, -15.0, -15.0],
+				"bounds_max" : [15.0, 15.0, 15.0]
+			},
+			{
+				"joint_id":12,
+				"DOFs" : [true, true, true],
+				"mutation_variances":[3.0, 3.0, 3.0],
+				"mutable_mutation_variances":[true, true, true],
+				"bounds_min" : [-15.0, -15.0, -15.0],
+				"bounds_max" : [15.0, 15.0, 15.0]
+			},
+			{
+				"joint_id":13,
+				"DOFs" : [true, true, true],
+				"mutation_variances":[3.0, 3.0, 3.0],
+				"mutable_mutation_variances":[true, true, true],
+				"bounds_min" : [-15.0, -15.0, -15.0],
+				"bounds_max" : [15.0, 15.0, 15.0]
+			},
+			{
+				"joint_id":14,
+				"DOFs" : [true, false, true],
+				"mutation_variances":[3.0, 3.0],
+				"mutable_mutation_variances":[true, true],
+				"bounds_min" : [-15.0, -15.0],
+				"bounds_max" : [15.0, 15.0]
+			},
+			{
+				"joint_id":15,
+				"DOFs" : [true, true, true],
+				"mutation_variances":[3.0, 3.0, 3.0],
+				"mutable_mutation_variances":[true, true, true],
+				"bounds_min" : [-15.0, -15.0, -15.0],
+				"bounds_max" : [15.0, 15.0, 15.0]
+			},
+			{
+				"joint_id":16,
+				"DOFs" : [true, true, true],
+				"mutation_variances":[3.0, 3.0, 3.0],
+				"mutable_mutation_variances":[true, true, true],
+				"bounds_min" : [-15.0, -15.0, -15.0],
+				"bounds_max" : [15.0, 15.0, 15.0]
+			},
+			{
+				"joint_id":17,
+				"DOFs" : [true, false, true],
+				"mutation_variances":[3.0, 3.0],
+				"mutable_mutation_variances":[true, true],
+				"bounds_min" : [-15.0, -15.0],
+				"bounds_max" : [15.0, 15.0]
+			}
+		]
+	}
+}
