@@ -27,20 +27,18 @@ commands:
       - restore_cache:
           name: "[all] Restore cache"
           keys:
-          - v6-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          - v7-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
           # fallback to installing main requirements
-          - v6-dependencies-main-{{ checksum "requirements/main.txt"}}
+          - v7-dependencies-main-{{ checksum "requirements/main.txt"}}
 
       - run:
           name: "[all] Install dependencies"
           command: |
             python3 -m venv venv
             . venv/bin/activate
-            pip install --progress-bar off -U pip
+            pip install --progress-bar off pip==21.0.1  # TODO update after 21.1 which bugs
             pip install --progress-bar off -e .[all]
-            # master numpy-stubs adds a lot of messy warnings :s
-            pip install --progress-bar off git+https://github.com/numpy/numpy-stubs@2c8d8f26adb1eef54571ccc85ef8ad4f2fb90c4c
-
+            pip install --progress-bar off -U numpy>=1.20.0
 
 jobs:
   install:
@@ -53,7 +51,7 @@ jobs:
       - restore_cache:
           name: "[no-extra] Restore cache"
           keys:
-          - v6-dependencies-main-{{ checksum "requirements/main.txt"}}
+          - v7-dependencies-main-{{ checksum "requirements/main.txt"}}
           # fallback to using the latest cache if no exact match is found
 
       - run:
@@ -61,7 +59,7 @@ jobs:
           command: |
             python3 -m venv venv
             . venv/bin/activate
-            pip install --progress-bar off --upgrade pip
+            pip install --progress-bar off pip==21.0.1
             pip install --progress-bar off -e .
 
       - run:
@@ -80,7 +78,7 @@ jobs:
           name: "[no-extra] Save cache"
           paths:
             - ./venv
-          key: v6-dependencies-main-{{ checksum "requirements/main.txt"}}
+          key: v7-dependencies-main-{{ checksum "requirements/main.txt"}}
 
       - run:
           name: "[no-extra] Run basic tests (checking dependencies)"
@@ -95,7 +93,7 @@ jobs:
           name: "[all] Save cache"
           paths:
             - ./venv
-          key: v6-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          key: v7-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
 
       - run:
           name: "[all] Print installation"
@@ -240,14 +238,14 @@ jobs:
       - restore_cache:
           name: "[all] Restore cache"
           keys:
-          - v6-win-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          - v7-win-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
 
       - run:
           name: Setup nevergrad in virtualenv
           command: |
             py -3 -m venv venv
             . ./venv/Scripts/activate
-            pip install --progress-bar off -U pip
+            pip install --progress-bar off pip==21.0.1
             pip install --progress-bar off torch==1.4.0+cpu torchvision==0.5.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
             pip install --progress-bar off .[all]
 
@@ -255,7 +253,7 @@ jobs:
           name: "[all] Save cache"
           paths:
             - ./venv
-          key: v6-win-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          key: v7-win-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
 
       - run:
           name: pytest

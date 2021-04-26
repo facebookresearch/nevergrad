@@ -9,6 +9,7 @@
 # - Mike Preuss, LIACS, Leiden University
 
 import numpy as np
+import pandas as pd
 import scipy.spatial
 from nevergrad.parametrization import parameter as p
 import nevergrad.common.typing as tp
@@ -170,7 +171,7 @@ class SammonMapping(ExperimentFunction):
         """
         assert name in ["Virus", "Employees"], f"Unkwnown name {name}"
         assert name != "Employees", "The Employees dataset is not available anymore"
-        raw_data = datasets.get_data(name)
+        raw_data: pd.DataFrame = datasets.get_data(name)  # type: ignore
         if name == "Employees":
             if rescale:
                 raise ValueError("Impossible to rescale with 'Employees'")

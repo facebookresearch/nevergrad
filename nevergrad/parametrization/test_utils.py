@@ -141,8 +141,8 @@ def test_flatten_order(order: int, keys: tp.Iterable[str]) -> None:
     np_false=(np.bool_(False), 1.0),
     pos=(0.7, 0.0),
     neg=(-0.7, 0.7),
-    np_pos=(np.float(0.7), 0.0),
-    np_neg=(np.float(-0.7), 0.7),
+    np_pos=(np.float_(0.7), 0.0),
+    np_neg=(np.float_(-0.7), 0.7),
 )
 def test_float_penalty(value: tp.Any, expected: float) -> None:
     assert utils.float_penalty(value) == expected

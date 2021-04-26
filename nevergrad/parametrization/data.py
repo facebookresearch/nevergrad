@@ -317,7 +317,8 @@ class Data(core.Parameter):
     def _layered_recombine(self: D, *others: D) -> None:  # type: ignore
         all_params = [self] + list(others)
         all_arrays = [p.get_standardized_data(reference=self) for p in all_params]
-        self.set_standardized_data(np.mean(all_arrays, axis=0))
+        mean: np.ndarray = np.mean(all_arrays, axis=0)  # type: ignore
+        self.set_standardized_data(mean)
 
     def copy(self: D) -> D:
         child = super().copy()
@@ -513,7 +514,7 @@ class Log(Scalar):
                 init = float(np.sqrt(lower * upper))  # type: ignore
             if exponent is None:
                 exponent = float(
-                    np.exp((np.log(upper) - np.log(lower)) / 6.0)
+                    np.exp((np.log(upper) - np.log(lower)) / 6.0)  # type: ignore
                 )  # 99.7% of values within the bounds
         if init is None:
             raise ValueError("You must define either a init value or both lower and upper bounds")
