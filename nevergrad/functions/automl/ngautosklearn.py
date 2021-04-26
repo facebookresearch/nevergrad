@@ -1,20 +1,23 @@
-import os
 import scipy
 import warnings
-import numpy as np
-import nevergrad as ng
+
 import ConfigSpace as cs
+import nevergrad as ng
+import numpy as np
+import scipy
 from sklearn.metrics import get_scorer
 from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection import cross_val_score
+
+from autosklearn.constants import BINARY_CLASSIFICATION, MULTICLASS_CLASSIFICATION
 from autosklearn.util.pipeline import get_configuration_space
-from autosklearn.constants import BINARY_CLASSIFICATION, CLASSIFICATION_TASKS, MULTICLASS_CLASSIFICATION
 
 try:
     import autosklearn.classification
     from autosklearn.pipeline.classification import SimpleClassificationPipeline
 except ImportError:
     raise ImportError("Auto-Sklearn not installed. Run: python -m pip install auto-sklearn==0.12.6")
+
 
 def _eval_function(
     config: cs.Configuration, X, y, scoring_func: str, cv: int, random_state: int, test_data: tuple = None
@@ -61,7 +64,7 @@ def check_configuration(config_space, values):
 def get_config_space(X, y):
     dataset_properties = {
         "task": BINARY_CLASSIFICATION if len(np.unique(y)) == 2 else MULTICLASS_CLASSIFICATION,
-        "is_sparse": scipy.sparse.issparse(X)
+        "is_sparse": scipy.sparse.issparse(X),
     }
     return get_configuration_space(dataset_properties)
 
@@ -89,7 +92,6 @@ def get_instrumention(param):
 
 
 def get_parametrization(config_space: cs.ConfigurationSpace):
-
     base_pipeline = [
         "balancing:strategy",
         "classifier:__choice__",

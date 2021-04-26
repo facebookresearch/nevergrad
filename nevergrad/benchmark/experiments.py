@@ -25,7 +25,7 @@ from nevergrad.functions import rl
 from nevergrad.functions.arcoating import ARCoating
 from nevergrad.functions.causaldiscovery import CausalDiscovery
 from nevergrad.functions.games import game
-# from nevergrad.functions.mixsimulator import OptimizeMix
+from nevergrad.functions.mixsimulator import OptimizeMix
 from nevergrad.functions.ml import MLTuning
 from nevergrad.functions.photonics import Photonics
 from nevergrad.functions.powersystems import PowerSystem

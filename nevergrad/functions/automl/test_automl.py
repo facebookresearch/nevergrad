@@ -4,10 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import nevergrad as ng
-import numpy as np
-import pytest
 from nevergrad.benchmark.xpbase import Experiment
-from .ngautosklearn import get_configuration
 
 from .core import AutoSKlearnBenchmark
 
