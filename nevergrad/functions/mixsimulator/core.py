@@ -30,7 +30,7 @@ class OptimizeMix(base.ExperimentFunction):
 
             self._mix = MixSimulator()
             self._mix.set_data_to("Toamasina")
-        except (KeyError, AttributeError) as e:
+        except (KeyError, AttributeError, ModuleNotFoundError) as e:
             # send a skip error so that this does not break the test suit
             raise base.UnsupportedExperiment("mixsimulator dependency issue") from e
         self._mix.set_penalisation_cost(100)
