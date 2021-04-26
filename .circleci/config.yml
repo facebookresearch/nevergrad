@@ -36,7 +36,7 @@ commands:
           command: |
             python3 -m venv venv
             . venv/bin/activate
-            pip install -U pip
+            pip install pip==21.0.1  # TODO update after 21.1 which bugs
             pip install -e .[all]
 
 jobs:
