@@ -8,7 +8,7 @@
 import nevergrad.common.typing as tp
 import numpy as np
 import openml
-import pynisher
+import pynisher  # type: ignore
 
 from .ngautosklearn import get_parametrization, get_configuration, _eval_function, get_config_space
 from .. import base

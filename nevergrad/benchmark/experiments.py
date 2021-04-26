@@ -23,6 +23,7 @@ from nevergrad.functions import iohprofiler
 from nevergrad.functions import mlda as _mlda
 from nevergrad.functions import rl
 from nevergrad.functions.arcoating import ARCoating
+from nevergrad.functions.automl import AutoSKlearnBenchmark
 from nevergrad.functions.causaldiscovery import CausalDiscovery
 from nevergrad.functions.games import game
 from nevergrad.functions.mixsimulator import OptimizeMix
@@ -141,9 +142,7 @@ def naivemltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 def autosklearntuning(seed: tp.Optional[int] = None):
-    from nevergrad.functions.automl import AutoSKlearnBenchmark
-    from nevergrad.optimization.optimizerlib import ConfSplitOptimizer
-    from nevergrad.optimization.optimizerlib import registry as optimizerlib_registry
+    seedg = create_seed_generator(seed)
 
     # Only considered small subset of OpenML-CC18
     list_tasks = [
@@ -188,15 +187,9 @@ def autosklearntuning(seed: tp.Optional[int] = None):
         "RandomSearch",
         "CMA",
         "DE",
-        # "BO", Error !
-        ConfSplitOptimizer(multivariate_optimizer=optimizerlib_registry["CMA"], num_optims=None).set_name(
-            "SplitCMAAuto"
-        ),
-        ConfSplitOptimizer(multivariate_optimizer=optimizerlib_registry["DE"], num_optims=None).set_name(
-            "SplitDEAuto"
-        ),
-    ]
-    seedg = create_seed_generator(seed)
+        "BO",
+    ] + get_optimizers("splitters", seed=next(seedg))
+
     for budget in [10, 50, 100]:
         for task_id in list_tasks:
             for algo in optims:
@@ -1488,7 +1481,9 @@ def image_quality(
         )
     else:
         upper_bounds = [func(func.parametrization.value) for func in funcs]
-        mofuncs: tp.Sequence[ExperimentFunction] = [fbase.MultiExperiment(funcs, upper_bounds=upper_bounds)]  # type: ignore
+        mofuncs: tp.Sequence[ExperimentFunction] = [
+            fbase.MultiExperiment(funcs, upper_bounds=upper_bounds)
+        ]  # type: ignore
     for budget in [100 * 5 ** k for k in range(3)]:
         for num_workers in [1]:
             for algo in optims:
@@ -1815,7 +1810,9 @@ def pbo_suite(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                 ]:
                     for nw in [1, 10]:
                         for budget in [100, 1000, 10000]:
-                            yield Experiment(func, optim, num_workers=nw, budget=budget, seed=next(seedg))  # type: ignore
+                            yield Experiment(
+                                func, optim, num_workers=nw, budget=budget, seed=next(seedg)
+                            )  # type: ignore
 
 
 def causal_similarity(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:

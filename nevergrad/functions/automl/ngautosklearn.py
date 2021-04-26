@@ -1,7 +1,11 @@
-import scipy
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 import warnings
 
-import ConfigSpace as cs
+import ConfigSpace as cs  # type: ignore
 import nevergrad as ng
 import numpy as np
 import scipy
@@ -9,14 +13,12 @@ from sklearn.metrics import get_scorer
 from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection import cross_val_score
 
-from autosklearn.constants import BINARY_CLASSIFICATION, MULTICLASS_CLASSIFICATION
-from autosklearn.util.pipeline import get_configuration_space
-
 try:
-    import autosklearn.classification
-    from autosklearn.pipeline.classification import SimpleClassificationPipeline
+    from autosklearn.constants import BINARY_CLASSIFICATION, MULTICLASS_CLASSIFICATION  # type: ignore
+    from autosklearn.util.pipeline import get_configuration_space  # type: ignore
+    from autosklearn.pipeline.classification import SimpleClassificationPipeline  # type: ignore
 except ImportError:
-    raise ImportError("Auto-Sklearn not installed. Run: python -m pip install auto-sklearn==0.12.6")
+    raise ImportError("Auto-Sklearn not installed. Run: python -m pip install auto-sklearn==0.11.0")
 
 
 def _eval_function(
@@ -53,9 +55,7 @@ def _eval_function(
 def check_configuration(config_space, values):
     val_dict = to_dict(values[1])
     try:
-        config = cs.Configuration(
-            configuration_space=config_space, values=val_dict, allow_inactive_with_values=False
-        )
+        cs.Configuration(configuration_space=config_space, values=val_dict, allow_inactive_with_values=False)
     except Exception:
         return False
     return True
