@@ -18,7 +18,7 @@ def _func(x: tp.Any, y: tp.Any, blublu: str, array: tp.Any, multiobjective: bool
 
 def test_log_parameters(tmp_path: Path) -> None:
     filepath = tmp_path / "logs.txt"
-    cases = [0, np.int_(1), np.float_(2.0), np.nan, float("inf"), np.inf]
+    cases = [0, np.int64(1), np.float64(2.0), np.nan, float("inf"), np.inf]
     instrum = ng.p.Instrumentation(
         ng.ops.mutations.Translation()(ng.p.Array(shape=(1,))),
         ng.p.Scalar(),
