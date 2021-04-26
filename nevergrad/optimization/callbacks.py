@@ -108,7 +108,7 @@ class ParametersLogger:
             data["#parents_uids"] = candidate.parents_uids
         for name, param in helpers.flatten(candidate, with_containers=False, order=1):
             val = param.value
-            if isinstance(val, (np.float_, np.bool_)):
+            if isinstance(val, (np.float_, np.int_, np.bool_)):
                 val = val.item()
             if inspect.ismethod(val):
                 val = repr(val.__self__)  # show mutation class
