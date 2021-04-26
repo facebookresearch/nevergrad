@@ -1,4 +1,5 @@
 import os
+import scipy
 import warnings
 import numpy as np
 import nevergrad as ng
@@ -6,6 +7,8 @@ import ConfigSpace as cs
 from sklearn.metrics import get_scorer
 from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection import cross_val_score
+from autosklearn.util.pipeline import get_configuration_space
+from autosklearn.constants import BINARY_CLASSIFICATION, CLASSIFICATION_TASKS, MULTICLASS_CLASSIFICATION
 
 try:
     import autosklearn.classification
@@ -55,9 +58,12 @@ def check_configuration(config_space, values):
     return True
 
 
-def get_config_space(X, y, time_budget_per_run):
-    automl = autosklearn.classification.AutoSklearnClassifier(per_run_time_limit=time_budget_per_run)
-    return automl.get_configuration_space(X, y)
+def get_config_space(X, y):
+    dataset_properties = {
+        "task": BINARY_CLASSIFICATION if len(np.unique(y)) == 2 else MULTICLASS_CLASSIFICATION,
+        "is_sparse": scipy.sparse.issparse(X)
+    }
+    return get_configuration_space(dataset_properties)
 
 
 def get_instrumention(param):

@@ -46,9 +46,7 @@ class AutoSKlearnBenchmark(base.ExperimentFunction):
         self.X_train, self.y_train = X[split[0]], y[split[0]]
         self.X_test, self.y_test = X[split[1]], y[split[1]]
 
-        self.config_space = get_config_space(
-            X=self.X_train, y=self.y_train, time_budget_per_run=time_budget_per_run
-        )
+        self.config_space = get_config_space(X=self.X_train, y=self.y_train)
         parametrization = get_parametrization(self.config_space)
         parametrization = parametrization.set_name(f"time={time_budget_per_run}")
 
@@ -68,8 +66,8 @@ class AutoSKlearnBenchmark(base.ExperimentFunction):
         super().__init__(self._simulate, parametrization)
 
     def _simulate(self, **x) -> float:
+        config = get_configuration(x, self.config_space)
         if not self.evaluate_on_test:
-            config = get_configuration(x, self.config_space)
             loss = self.eval_func(
                 config=config,
                 X=self.X_train,
@@ -79,12 +77,9 @@ class AutoSKlearnBenchmark(base.ExperimentFunction):
                 cv=self.cv,
                 random_state=self.random_state,
             )
-            if loss < self.best_loss:
-                self.best_loss = loss
-                self.best_config = config
         else:
             loss = self.eval_func(
-                config=self.best_config,
+                config=config,
                 X=self.X_train,
                 y=self.y_train,
                 test_data=(self.X_test, self.y_test),
