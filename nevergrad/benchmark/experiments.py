@@ -188,7 +188,7 @@ def autosklearntuning(seed: tp.Optional[int] = None):
         "CMA",
         "DE",
         "BO",
-    ] + get_optimizers("splitters", seed=next(seedg))
+    ] + get_optimizers("splitters", seed=next(seedg)) # type: ignore
 
     for budget in [10, 50, 100]:
         for task_id in list_tasks:
