@@ -168,7 +168,7 @@ class SammonMapping(ExperimentFunction):
         - for "Virus", we compute a proximity matrix from raw data (no normalization)
         """
         assert name in ["Virus", "Employees"], f"Unkwnown name {name}"
-        raw_data = datasets.get_data(name)
+        raw_data: pd.DataFrame = datasets.get_data(name)  # type: ignore
         if name == "Employees":
             if rescale:
                 raise ValueError("Impossible to rescale with 'Employees'")

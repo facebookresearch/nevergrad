@@ -57,7 +57,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         best_x: np.ndarray = self.current_bests["average"].x  # np.zeros(self.dimension)
         if self.initial_guess is not None:
             best_x = np.array(self.initial_guess, copy=True)  # copy, just to make sure it is not modified
-        remaining = budget - self._num_ask
+        remaining = int(budget - self._num_ask)
         while remaining > 0:  # try to restart if budget is not elapsed
             options: tp.Dict[str, int] = {} if self.budget is None else {"maxiter": remaining}
             res = scipyoptimize.minimize(
@@ -70,7 +70,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
             if res.fun < best_res:
                 best_res = res.fun
                 best_x = res.x
-            remaining = budget - self._num_ask
+            remaining = int(budget - self._num_ask)
         return best_x
 
 

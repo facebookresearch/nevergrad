@@ -99,7 +99,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
 
         self.parametrization = (
             parametrization
-            if not isinstance(parametrization, (int, np.int))
+            if not isinstance(parametrization, (int, np.int_))
             else p.Array(shape=(parametrization,))
         )
         self.parametrization.freeze()  # avoids issues!

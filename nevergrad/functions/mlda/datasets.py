@@ -90,7 +90,12 @@ def mocked_data() -> tp.Iterator[tp.Any]:
 
 def make_perceptron_data(name: str) -> np.ndarray:
     """Creates the data (see https://drive.google.com/file/d/1fc1sVwoLJ0LsQ5fzi4jo3rDJHQ6VGQ1h/view)"""
-    funcs = {"quadratic": lambda x: x ** 2, "sine": np.sin, "abs": np.abs, "heaviside": lambda x: x > 0}
+    funcs: tp.Dict[str, tp.Callable[[np.ndarray], np.ndarray]] = {
+        "quadratic": lambda x: x ** 2,
+        "sine": np.sin,
+        "abs": np.abs,
+        "heaviside": lambda x: x > 0,  # type: ignore
+    }
     if name not in funcs:
         raise ValueError(f'Unknown name "{name}", available are:\n{list(funcs.keys())}')
     data: np.ndarray = np.zeros((50, 2))  # TODO: why?
