@@ -36,8 +36,8 @@ commands:
           command: |
             python3 -m venv venv
             . venv/bin/activate
-            pip install pip==21.0.1  # TODO update after 21.1 which bugs
-            pip install -e .[all]
+            pip install --progress-bar off pip==21.0.1  # TODO update after 21.1 which bugs
+            pip install --progress-bar off -e .[all]
 
 jobs:
   install:
@@ -58,8 +58,8 @@ jobs:
           command: |
             python3 -m venv venv
             . venv/bin/activate
-            pip install --upgrade pip
-            pip install -e .
+            pip install --progress-bar off --upgrade pip
+            pip install --progress-bar off -e .
 
       - run:
           name: "[no-extra] Print installation"
@@ -115,7 +115,7 @@ jobs:
             python3 -m venv test_wheel
             . test_wheel/bin/activate
             cd ..  # don't use nevergrad locally
-            pip install repo/nevergrad-build/dist/nevergrad-*any.whl
+            pip install --progress-bar off repo/nevergrad-build/dist/nevergrad-*any.whl
             python -c "from nevergrad import functions;f = functions.ArtificialFunction(name='sphere', block_dimension=2);f([2, 3])"
 
       - persist_to_workspace:
@@ -244,9 +244,9 @@ jobs:
           command: |
             py -3 -m venv venv
             . ./venv/Scripts/activate
-            pip install -U pip
-            pip install torch==1.4.0+cpu torchvision==0.5.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
-            pip install .[all]
+            pip install --progress-bar off -U pip
+            pip install --progress-bar off torch==1.4.0+cpu torchvision==0.5.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
+            pip install --progress-bar off .[all]
 
       - save_cache:
           name: "[all] Save cache"

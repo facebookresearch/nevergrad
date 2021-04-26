@@ -86,8 +86,8 @@ def test_run_with_error() -> None:
 
 
 @testing.parametrized(
-    concurrent=("OnePlusOne", 10, False),  # no true case implemented for now
-)
+    concurrent=("OnePlusOne", 10, False),
+)  # no true case implemented for now
 def test_is_incoherent(optimizer: str, num_workers: int, expected: bool) -> None:
     func = ArtificialFunction(name="sphere", block_dimension=2)
     xp = xpbase.Experiment(func, optimizer=optimizer, budget=300, num_workers=num_workers)
