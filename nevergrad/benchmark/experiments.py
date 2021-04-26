@@ -3,44 +3,42 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import itertools
 import os
-import typing as tp
 import warnings
-
+import typing as tp
+import itertools
+import numpy as np
 import nevergrad as ng
 import nevergrad.functions.corefuncs as corefuncs
-import numpy as np
-from nevergrad.functions import ArtificialFunction
+from nevergrad.functions import base as fbase
 from nevergrad.functions import ExperimentFunction
+from nevergrad.functions import ArtificialFunction
 from nevergrad.functions import FarOptimumFunction
 from nevergrad.functions import PBT
-from nevergrad.functions import base as fbase
-from nevergrad.functions import control
-from nevergrad.functions import helpers
-from nevergrad.functions import images as imagesxp
-from nevergrad.functions import iohprofiler
+from nevergrad.functions.ml import MLTuning
 from nevergrad.functions import mlda as _mlda
-from nevergrad.functions import rl
+from nevergrad.functions.photonics import Photonics
 from nevergrad.functions.arcoating import ARCoating
+from nevergrad.functions import images as imagesxp
+from nevergrad.functions.powersystems import PowerSystem
+from nevergrad.functions.stsp import STSP
+from nevergrad.functions.rocket import Rocket
+from nevergrad.functions.mixsimulator import OptimizeMix
+from nevergrad.functions.unitcommitment import UnitCommitmentProblem
+from nevergrad.functions import control
+from nevergrad.functions import rl
+from nevergrad.functions.games import game
 from nevergrad.functions.automl import AutoSKlearnBenchmark
 from nevergrad.functions.causaldiscovery import CausalDiscovery
-from nevergrad.functions.games import game
-from nevergrad.functions.mixsimulator import OptimizeMix
-from nevergrad.functions.ml import MLTuning
-from nevergrad.functions.photonics import Photonics
-from nevergrad.functions.powersystems import PowerSystem
-from nevergrad.functions.rocket import Rocket
-from nevergrad.functions.stsp import STSP
-from nevergrad.functions.unitcommitment import UnitCommitmentProblem
-
-# register all frozen experiments
-from . import frozenexperiments  # noqa # pylint: disable=unused-import
-from .optgroups import get_optimizers
+from nevergrad.functions import iohprofiler
+from nevergrad.functions import helpers
 from .xpbase import Experiment as Experiment
 from .xpbase import create_seed_generator
 from .xpbase import registry as registry  # noqa
+from .optgroups import get_optimizers
 
+# register all frozen experiments
+from . import frozenexperiments  # noqa # pylint: disable=unused-import
 
 # pylint: disable=stop-iteration-return, too-many-nested-blocks, too-many-locals
 
@@ -182,9 +180,14 @@ def autosklearntuning(seed: tp.Optional[int] = None):
         146821,
         146822,
     ]
-    optims = ["HyperOpt", "RandomSearch", "CMA", "DE", "BO",] + get_optimizers(
-        "splitters", seed=next(seedg)
-    )  # type: ignore
+    optims = [
+        "HyperOpt",
+        "RandomSearch",
+        "CMA",
+        "DE",
+        "BO",
+    ]
+    optims += get_optimizers("splitters", seed=next(seedg))  # type: ignore
 
     for budget in [10, 50, 100]:
         for task_id in list_tasks:
@@ -193,6 +196,7 @@ def autosklearntuning(seed: tp.Optional[int] = None):
                     func = AutoSKlearnBenchmark(
                         openml_task_id=task_id,
                         cv=3,
+                        overfitter=False,
                         time_budget_per_run=300,
                         memory_limit=1024 * 10,
                         scoring_func="balanced_accuracy",
@@ -1477,9 +1481,7 @@ def image_quality(
         )
     else:
         upper_bounds = [func(func.parametrization.value) for func in funcs]
-        mofuncs: tp.Sequence[ExperimentFunction] = [
-            fbase.MultiExperiment(funcs, upper_bounds=upper_bounds)
-        ]  # type: ignore
+        mofuncs: tp.Sequence[ExperimentFunction] = [fbase.MultiExperiment(funcs, upper_bounds=upper_bounds)]  # type: ignore
     for budget in [100 * 5 ** k for k in range(3)]:
         for num_workers in [1]:
             for algo in optims:
@@ -1806,9 +1808,7 @@ def pbo_suite(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                 ]:
                     for nw in [1, 10]:
                         for budget in [100, 1000, 10000]:
-                            yield Experiment(
-                                func, optim, num_workers=nw, budget=budget, seed=next(seedg)
-                            )  # type: ignore
+                            yield Experiment(func, optim, num_workers=nw, budget=budget, seed=next(seedg))  # type: ignore
 
 
 def causal_similarity(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
