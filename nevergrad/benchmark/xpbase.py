@@ -213,6 +213,7 @@ class Experiment:
         assert opt is not None
         # ExperimentFunction can directly override this evaluation function if need be
         # (pareto_front returns only the recommendation in singleobjective)
+        self.result["num_objectives"] = opt.num_objectives
         self.result["loss"] = pfunc.evaluation_function(*opt.pareto_front())
         self.result["elapsed_budget"] = num_calls
         if num_calls > self.optimsettings.budget:
