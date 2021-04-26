@@ -30,8 +30,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         self.method = method
         self.random_restart = random_restart
 
-    #    def _internal_tell_not_asked(self, x: base.ArrayLike, value: float) -> None:
-    def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
+    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         """Called whenever calling "tell" on a candidate that was not "asked".
         Defaults to the standard tell pipeline.
         """  # We do not do anything; this just updates the current best.
@@ -57,9 +56,9 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         best_x: np.ndarray = self.current_bests["average"].x  # np.zeros(self.dimension)
         if self.initial_guess is not None:
             best_x = np.array(self.initial_guess, copy=True)  # copy, just to make sure it is not modified
-        remaining = budget - self._num_ask
+        remaining: float = budget - self._num_ask
         while remaining > 0:  # try to restart if budget is not elapsed
-            options: tp.Dict[str, int] = {} if self.budget is None else {"maxiter": remaining}
+            options: tp.Dict[str, tp.Any] = {} if self.budget is None else {"maxiter": remaining}
             res = scipyoptimize.minimize(
                 objective_function,
                 best_x if not self.random_restart else self._rng.normal(0.0, 1.0, self.dimension),

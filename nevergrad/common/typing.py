@@ -49,7 +49,7 @@ ArrayLike = Union[Tuple[float, ...], List[float], _np.ndarray]
 PathLike = Union[str, Path]
 FloatLoss = float
 Loss = Union[float, ArrayLike]
-BoundValue = Optional[Union[float, int, _np.int, _np.float, _np.ndarray]]
+BoundValue = Optional[Union[float, int, _np.int_, _np.float_, _np.ndarray]]
 
 
 # %% Protocol definitions for executor typing

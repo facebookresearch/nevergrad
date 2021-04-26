@@ -52,7 +52,7 @@ class PBOFunction(base.ExperimentFunction):
             "Ordered",
         ], "The only valid options for 'instrumentation' are 'Softmax' and 'Ordered'"
         if instrumentation == "Softmax":
-            parameterization: np.p.Parameter = ng.p.Choice([0, 1], repetitions=dim)
+            parameterization: ng.p.Parameter = ng.p.Choice([0, 1], repetitions=dim)
         else:
             parameterization = ng.p.TransitionChoice([0, 1], repetitions=dim)
         super().__init__(self._evaluation_internal, parameterization.set_name(instrumentation))

@@ -279,7 +279,7 @@ class Experiment:
         summary = dict(self.result, seed=-1 if self.seed is None else self.seed)
         summary.update(self.function.descriptors)
         summary.update(self.optimsettings.get_description())
-        return summary
+        return summary  # type: ignore
 
     def __eq__(self, other: tp.Any) -> bool:
         if not isinstance(other, Experiment):

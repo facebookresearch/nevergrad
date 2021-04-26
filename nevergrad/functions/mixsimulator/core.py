@@ -5,7 +5,6 @@
 
 # Based on https://github.com/Foloso/MixSimulator/tree/nevergrad_experiment
 
-from mixsimulator.MixSimulator import MixSimulator
 from .. import base
 
 
@@ -27,9 +26,11 @@ class OptimizeMix(base.ExperimentFunction):
 
     def __init__(self, time: int = 168) -> None:
         try:
+            from mixsimulator.MixSimulator import MixSimulator  # pylint: disable=import-outside-toplevel
+
             self._mix = MixSimulator()
             self._mix.set_data_to("Toamasina")
-        except (KeyError, AttributeError) as e:
+        except (KeyError, AttributeError, ModuleNotFoundError) as e:
             # send a skip error so that this does not break the test suit
             raise base.UnsupportedExperiment("mixsimulator dependency issue") from e
         self._mix.set_penalisation_cost(100)
