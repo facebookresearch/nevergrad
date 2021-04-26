@@ -182,13 +182,9 @@ def autosklearntuning(seed: tp.Optional[int] = None):
         146821,
         146822,
     ]
-    optims = [
-        "HyperOpt",
-        "RandomSearch",
-        "CMA",
-        "DE",
-        "BO",
-    ] + get_optimizers("splitters", seed=next(seedg)) # type: ignore
+    optims = ["HyperOpt", "RandomSearch", "CMA", "DE", "BO",] + get_optimizers(
+        "splitters", seed=next(seedg)
+    )  # type: ignore
 
     for budget in [10, 50, 100]:
         for task_id in list_tasks:
@@ -202,7 +198,7 @@ def autosklearntuning(seed: tp.Optional[int] = None):
                         scoring_func="balanced_accuracy",
                         random_state=next(seedg),
                     )
-                    xp = Experiment(func, algo, budget, num_workers=1, seed=next(seedg))
+                    xp = Experiment(func, algo, budget, num_workers=1, seed=next(seedg))  # type: ignore
                     skip_ci(reason="Too slow")
                     if not xp.is_incoherent:
                         yield xp
