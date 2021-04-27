@@ -31,9 +31,9 @@ for e in gym.envs.registry.all():
         a1 = a1 + a2 + a3
         if hasattr(a1, "size"):
             try:
-                assert a1.size < 15000
+                assert a1.size < 15000  # type: ignore
             except:
-                assert a1.size() < 15000
+                assert a1.size() < 15000  # type: ignore
         GYM_ENV_NAMES.append(e.id)
         # print(f"adding {e.id}, {len(GYM_ENV_NAMES)} environments...")
     except:
