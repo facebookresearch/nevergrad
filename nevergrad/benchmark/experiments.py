@@ -1107,12 +1107,12 @@ def ng_full_gym(
             [
                 "neural",
                 "structured_neural",
-                #"noisy_neural",
-                #"noisy_scrambled_neural",
-                #"scrambled_neural",
+                # "noisy_neural",
+                # "noisy_scrambled_neural",
+                # "scrambled_neural",
                 "deep_neural",
                 "semideep_neural",
-                #"linear",
+                # "linear",
             ]
             if not big
             else ["neural"]
