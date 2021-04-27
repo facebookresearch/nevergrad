@@ -23,6 +23,8 @@ for e in gym.envs.registry.all():
     try:
         assert "Kelly" not in str(e.id)
         env = gym.make(e.id)
+        env.reset()
+        env.step(env.action_space.sample())
         a1 = np.asarray(env.action_space.sample())
         a2 = np.asarray(env.action_space.sample())
         a3 = np.asarray(env.action_space.sample())
@@ -118,6 +120,7 @@ class GymMulti(ExperimentFunction):
         if os.name == "nt":
             raise ng.errors.UnsupportedExperiment("Windows is not supported")
         env = gym.make(name)
+
         o = env.reset()
         self.env = env
 
@@ -357,9 +360,6 @@ class GymMulti(ExperimentFunction):
 
     def heuristic(self, o, current_observations):
         current_observations = np.asarray(current_observations + [o], dtype=np.float32)
-        assert (
-            len(current_observations) == 1 + self.current_time_index
-        ), f"{len(current_observations)} vs {self.current_time_index}"
         self.archive = [
             self.archive[i] for i in range(len(self.archive)) if self.archive[i][2] <= self.mean_loss
         ]

@@ -1081,7 +1081,7 @@ def rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def gym_multi(
+def ng_full_gym(
     seed: tp.Optional[int] = None,
     randomized: bool = True,
     multi: bool = False,
@@ -1128,9 +1128,9 @@ def gym_multi(
         assert not multi
     if conformant:
         controls = ["stochastic_conformant"]
-    for control in controls:
+    for control in ["neural"]:  #controls:
         for neural_factor in (
-            [-1] if conformant or control == "linear" else ([1] if "memory" in control else [1, 2, 4])
+            [-1] if conformant or control == "linear" else ([1] if "memory" in control else [1])
         ):
             for name in env_names:
                 try:
@@ -1142,6 +1142,7 @@ def gym_multi(
                     200,
                     800,
                     3200,
+                    6400,
                     100,
                     25,
                     400,
@@ -1156,49 +1157,49 @@ def gym_multi(
 @registry.register
 def conformant_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of gym_multi with fixed, predetermined actions for each time step."""
-    return gym_multi(seed, conformant=True)
+    return ng_full_gym(seed, conformant=True)
 
 
 @registry.register
 def ng_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of gym_multi with a specific list of problems."""
-    return gym_multi(seed, ng_gym=True)
+    return ng_full_gym(seed, ng_gym=True)
 
 
 @registry.register
 def ng_stacking_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of gym_multi with a specific list of problems."""
-    return gym_multi(seed, ng_gym=True, memory=True)
+    return ng_full_gym(seed, ng_gym=True, memory=True)
 
 
 @registry.register
 def multi_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart with one NN per time step of gym_multi."""
-    return gym_multi(seed, multi=True)
+    return ng_full_gym(seed, multi=True)
 
 
 @registry.register
 def memory_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of gym_multi with a recurrent net as a memory."""
-    return gym_multi(seed, big=False, memory=True)
+    return ng_full_gym(seed, big=False, memory=True)
 
 
 @registry.register
 def memory_big_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of gym_multi with bigger nets and a recurrent net as a memory."""
-    return gym_multi(seed, big=True, memory=True)
+    return ng_full_gym(seed, big=True, memory=True)
 
 
 @registry.register
 def big_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of gym_multi with bigger nets."""
-    return gym_multi(seed, big=True)
+    return ng_full_gym(seed, big=True)
 
 
 @registry.register
 def deterministic_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of gym_multi with fixed seeds (so that the problem becomes deterministic)."""
-    return gym_multi(seed, randomized=False)
+    return ng_full_gym(seed, randomized=False)
 
 
 @registry.register

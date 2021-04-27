@@ -462,7 +462,8 @@ class XpPlotter:
         self._ax.set_xlim([min(all_x), max(all_x)])
         self.add_legends(legend_infos)
         # global info
-        self._ax.set_title(split_long_title(title))
+        if "tmp" not in title:
+            self._ax.set_title(split_long_title(title))
         self._ax.tick_params(axis="both", which="both")
         # self._fig.tight_layout()
 
