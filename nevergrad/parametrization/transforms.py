@@ -201,9 +201,9 @@ class Clipping(BoundTransform):
         self._check_shape(x)
         if self.checker(x):
             return x
-        out = np.clip(x, self.a_min, self.a_max)
+        out = np.clip(x, self.a_min, self.a_max)  # type: ignore
         if self._bounce:
-            out = np.clip(2 * out - x, self.a_min, self.a_max)
+            out = np.clip(2 * out - x, self.a_min, self.a_max)  # type: ignore
         return out  # type: ignore
 
     def backward(self, y: np.ndarray) -> np.ndarray:
