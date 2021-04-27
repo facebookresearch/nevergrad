@@ -147,8 +147,10 @@ class _RandomSearch(OneShotOptimizer):
         scale = self.scale
         if isinstance(scale, str) and scale == "auto":
             # Some variants use a rescaling depending on the budget and the dimension (1st version).
+            assert self.budget is not None
             scale = (1 + np.log(self.budget)) / (4 * np.log(self.dimension))
         if isinstance(scale, str) and scale == "autotune":
+            assert self.budget is not None
             scale = np.sqrt(np.log(self.budget) / self.dimension)
         if isinstance(scale, str) and scale == "random":
             scale = np.exp(self._rng.normal(0.0, 1.0) - 2.0) / np.sqrt(self.dimension)
@@ -300,8 +302,10 @@ class _SamplingSearch(OneShotOptimizer):
         if self._rescaler is not None:
             sample = self._rescaler.apply(sample)
         if self.autorescale is True or self.autorescale == "auto":
+            assert self.budget is not None
             self.scale = (1 + np.log(self.budget)) / (4 * np.log(self.dimension))
         if self.autorescale == "autotune":
+            assert self.budget is not None
             self.scale = np.sqrt(np.log(self.budget) / self.dimension)
 
         def transf(x: np.ndarray) -> np.ndarray:
