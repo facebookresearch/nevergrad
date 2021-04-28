@@ -17,6 +17,36 @@ def test_gym_multi() -> None:
         assert env_name in gym_multi.GymMulti.env_names, f"{env_name} should be guaranteed!"
     assert len(gym_multi.GYM_ENV_NAMES) >= 26 or os.name == "nt"
 
+def test_roulette() -> None:
+    print(gym_multi.GymMulti.ng_gym)
+    func = gym_multi.GymMulti(name='Roulette-v0', randomized=True)
+    results = [func(np.zeros(func.dimension)) for _ in range(300)]
+    assert min(results) != max(results), "Roulette should not be deterministic."
+    candidate = func.parametrization.sample()
+    results = [func.evaluation_function(candidate) for _ in range(300)]
+    assert min(results) != max(results), "Roulette should not be deterministic."
+
+
+
+@pytest.mark.parametrize("name", gym_multi.GYM_ENV_NAMES)
+def test_run_gym_multi(name) -> None:
+    if os.name != "nt" and all(np.random.randint(2, size=3, dtype=bool)):
+        func = gym_multi.GymMulti(randomized=False)
+        x = np.zeros(func.dimension)
+        value = func(x)
+        np.testing.assert_almost_equal(value, 93.35, decimal=2)
+        i = gym_multi.GYM_ENV_NAMES.index(name)
+        control = gym_multi.CONTROLLERS[i % len(gym_multi.CONTROLLERS)]
+        print(f"Working with {control} on {name}.")
+        func = gym_multi.GymMulti(
+            name,
+            control,
+            randomized=bool(np.random.randint(2)),
+        )
+        y = func.parametrization.sample()
+        func(y.value)
+
+
 
 @pytest.mark.parametrize("name", gym_multi.GYM_ENV_NAMES)
 def test_run_gym_multi(name) -> None:
