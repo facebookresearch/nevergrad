@@ -1107,6 +1107,8 @@ def ng_full_gym(
             [
                 "neural",
                 "structured_neural",
+                "memory_neural",
+                "stackingmemory_neural",
                 # "noisy_neural",
                 # "noisy_scrambled_neural",
                 # "scrambled_neural",
@@ -1130,7 +1132,7 @@ def ng_full_gym(
         controls = ["stochastic_conformant"]
     for control in controls:
         for neural_factor in (
-            [-1] if conformant or control == "linear" else ([1] if "memory" in control else [1, 2, 3, 4, 5])
+            [-1] if conformant or control == "linear" else ([1] if "memory" in control else [1, 2])
         ):
             for name in env_names:
                 try:
