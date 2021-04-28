@@ -264,7 +264,7 @@ class GymMulti(ExperimentFunction):
         """Transforms a logit into an int obtained through softmax."""
         probabilities = np.exp(a - max(a))
         probabilities = probabilities / sum(probabilities)
-        return int(np.random.multinomial(1, probabilities)[0])
+        return int(list(np.random.multinomial(1, probabilities)).index(1))
 
     def neural(self, x: np.ndarray, o: np.ndarray):
         """Applies a neural net parametrized by x to an observation o."""
