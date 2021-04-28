@@ -20,7 +20,7 @@ def test_gym_multi() -> None:
 
 @pytest.mark.parametrize("name", gym_multi.GYM_ENV_NAMES)
 def test_run_gym_multi(name) -> None:
-    if os.name != "nt":
+    if os.name != "nt" and all(np.random.randint(2, size=3, dtype=bool)):
         func = gym_multi.GymMulti(randomized=False)
         x = np.zeros(func.dimension)
         value = func(x)
