@@ -315,7 +315,7 @@ class GymMulti(ExperimentFunction):
         num_simulations = 7 if self.control != "conformant" and not self.randomized else 1
         loss = 0
         for seed in range(num_simulations):
-            loss += self.gym_simulate(x, seed=seed if not self.randomized else np.random.randint(500000))
+            loss += self.gym_simulate(x, seed=seed if not self.randomized else self.parametrization.random_state.randint(500000))
         return loss / num_simulations
 
     def action_cast(self, a):
