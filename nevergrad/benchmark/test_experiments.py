@@ -34,7 +34,7 @@ def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[expe
 
     # mixsimulator is not accepted by circleci pytest.
     if "mixsimulator" in name and os.environ.get("CIRCLECI", False):
-        raise SkipTest("Too slow in CircleCI")
+        raise SkipTest("Sigkill in CircleCI")
 
     # Our IQAs and our ScikitLearn are not well guaranteed on Windows.
     if all(x in name for x in ["image", "quality"]) and platform.system() == "Windows":
@@ -47,7 +47,7 @@ def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[expe
 
     # Some tests are skipped on CircleCI (but they do work well locally, if memory enough).
     if os.environ.get("CIRCLECI", False):
-        if any(name == x for x in ["images_using_gan", "mlda", "realworld", "mixsimulator"]):
+        if any(name == x for x in ["images_using_gan", "mlda", "realworld"]):
             raise SkipTest("Too slow in CircleCI")
 
     check_experiment(
