@@ -20,10 +20,10 @@ def test_gym_multi() -> None:
 def test_roulette() -> None:
     print(gym_multi.GymMulti.ng_gym)
     func = gym_multi.GymMulti(name='Roulette-v0', randomized=True)
-    results = [func(np.zeros(func.dimension)) for _ in range(300)]
+    results = [func(np.zeros(func.dimension)) for _ in range(40)]
     assert min(results) != max(results), "Roulette should not be deterministic."
     candidate = func.parametrization.sample()
-    results = [func.evaluation_function(candidate) for _ in range(300)]
+    results = [func.evaluation_function(candidate) for _ in range(40)]
     assert min(results) != max(results), "Roulette should not be deterministic."
 
 
