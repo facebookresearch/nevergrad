@@ -76,19 +76,19 @@ def _make_parametrization(
     b_array = np.array(bounds)
     assert b_array.shape[0] == shape[0]  # pylint: disable=unsubscriptable-object
     ones = np.ones((1, shape[1]))
-    init = np.sum(b_array, axis=1, keepdims=True).dot(ones) / 2
+    init = np.sum(b_array, axis=1, keepdims=True).dot(ones) / 2  # type: ignore
     if as_tuple:
         instrum = ng.p.Instrumentation(
             *[
                 ng.p.Array(init=init[:, i]).set_bounds(
                     b_array[:, 0], b_array[:, 1], method=bounding_method, full_range_sampling=True
                 )
-                for i in range(init.shape[1])
+                for i in range(init.shape[1])  # type: ignore
             ]
         ).set_name("as_tuple")
         assert instrum.dimension == dimension, instrum
         return instrum
-    array = ng.p.Array(init=init)
+    array = ng.p.Array(init=init)  # type: ignore
     if bounding_method not in ("arctan", "tanh"):
         # sigma must be adapted for clipping and constraint methods
         sigma = ng.p.Array(init=[[10.0]] if name != "bragg" else [[0.03], [10.0]]).set_mutation(exponent=2.0)  # type: ignore

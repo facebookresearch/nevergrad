@@ -160,7 +160,7 @@ class Crossover(DataMutation):
         if len(arrays) != 2:
             raise Exception(f"Crossover can only be applied between 2 individuals, got {len(arrays)}")
         transf = (
-            transforms.Fourrier(range(arrays[0].dim) if self.axis is None else self.axis)
+            transforms.Fourrier(range(arrays[0].ndim) if self.axis is None else self.axis)
             if root.parameters["fft"].value
             else None
         )
@@ -237,7 +237,7 @@ class Translation(DataMutation):
     def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:
         assert len(arrays) == 1
         data = arrays[0]
-        axes = tuple(range(data.dim)) if self.axes is None else self.axes
+        axes = tuple(range(data.ndim)) if self.axes is None else self.axes
         shifts = [self.random_state.randint(data.shape[a]) for a in axes]
         return np.roll(data, shifts, axis=axes)  # type: ignore
 

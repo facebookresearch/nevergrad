@@ -211,7 +211,7 @@ class _ScalarCasting(Layered):
         return out  # type: ignore
 
     def _layered_set_value(self, value: tp.Any) -> None:
-        if not isinstance(value, (float, int, np.float, np.int)):
+        if not isinstance(value, (float, int, np.float_, np.int_)):
             raise TypeError(f"Received a {type(value)} in place of a scalar (float, int)")
         super()._layered_set_value(np.array([value], dtype=float))
 

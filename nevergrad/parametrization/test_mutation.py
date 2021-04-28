@@ -22,8 +22,8 @@ def test_crossover(fft: bool, expected: tp.List[int]) -> None:
     assert isinstance(co, mutation.Crossover)
     co.random_state.seed(12)
     out = co._apply_array((x1, x2))
-    expected = np.ones((2, 1)).dot([expected])
-    np.testing.assert_array_equal(out, expected)
+    expected_arr = np.ones((2, 1)).dot([expected])
+    np.testing.assert_array_equal(out, expected_arr)
 
 
 def test_ravel_crossover() -> None:

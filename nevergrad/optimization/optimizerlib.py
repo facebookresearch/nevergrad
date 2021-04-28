@@ -405,7 +405,7 @@ class _CMA(base.Optimizer):
                 self._es = cma.CMAEvolutionStrategy(
                     x0=self.parametrization.sample().get_standardized_data(reference=self.parametrization)
                     if self._config.random_init
-                    else np.zeros(self.dimension, dtype=np.float),
+                    else np.zeros(self.dimension, dtype=np.float_),
                     sigma0=self._config.scale,
                     inopts=inopts,
                 )
@@ -417,7 +417,7 @@ class _CMA(base.Optimizer):
                         "Please install fcmaes (pip install fcmaes) to use FCMA optimizers"
                     ) from e
                 self._es = cmaes.Cmaes(
-                    x0=np.zeros(self.dimension, dtype=np.float),
+                    x0=np.zeros(self.dimension, dtype=np.float_),
                     input_sigma=self._config.scale,
                     popsize=self._popsize,
                     randn=self._rng.randn,
@@ -1013,7 +1013,7 @@ class _Rescaled(base.Optimizer):
         self._subcandidates: tp.Dict[str, p.Parameter] = {}
         if scale is None:
             assert budget is not None, "Either scale or budget must be known in _Rescaled."
-            scale = np.sqrt(np.log(self.budget) / self.dimension)
+            scale = np.sqrt(np.log(budget) / self.dimension)
         self.scale = scale
         assert self.scale != 0.0, "scale should be non-zero in Rescaler."
 
@@ -1706,9 +1706,12 @@ class _BO(base.Optimizer):
         if self._bo is None:
             bounds = {self._fake_function.key(i): (0.0, 1.0) for i in range(self.dimension)}
             self._bo = BayesianOptimization(self._fake_function, bounds, random_state=self._rng)
-            init_budget = max(
-                2, int(np.sqrt(self.budget) if self._init_budget is None else self._init_budget)
-            )
+            if self._init_budget is None:
+                assert self.budget is not None
+                init_budget = int(np.sqrt(self.budget))
+            else:
+                init_budget = self._init_budget
+            init_budget = max(2, init_budget)
             if self.gp_parameters is not None:
                 self._bo.set_gp_params(**self.gp_parameters)
             # init
@@ -2109,7 +2112,7 @@ class _EMNA(base.Optimizer):
                     for i in range(self.popsize.mu)
                 ]
                 self.sigma = np.sqrt(
-                    np.sum(stdd, axis=0 if self.isotropic else None)
+                    np.sum(stdd, axis=0 if self.isotropic else None)  # type: ignore
                     / (self.popsize.mu * (self.dimension if self.isotropic else 1))
                 )
 

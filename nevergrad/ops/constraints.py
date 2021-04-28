@@ -54,7 +54,7 @@ class Constraint(core.Operator):
 
     def function(self, *args: tp.Any, **kwargs: tp.Any) -> tp.Loss:
         out = self._func(*args, **kwargs)
-        if isinstance(out, (bool, np.bool)):
+        if isinstance(out, (bool, np.bool_)):
             raise errors.NevergradTypeError(
                 "Constraint must be a positive float if unsatisfied constraint (not bool)"
             )
