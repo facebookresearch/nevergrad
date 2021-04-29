@@ -630,8 +630,10 @@ def test_ngopt_selection(
         match = re.match(pattern, caplog.text.splitlines()[-1])
         assert match is not None, f"Did not detect selection in logs: {caplog.text}"
         choice = match.group("name")
-        if "continuouschoice_" in expected:
-            print(f"{expected} --> {choice}")
+        if expected != "#CONTINUOUS":
+            assert choice == expected
+        else:
+            print(f"Continuous param={param} budget={budget} workers={num_workers} --> {choice}")
             if num_workers >= budget:
                 assert choice == "MetaTuneRecentering"
             if num_workers > 1:
