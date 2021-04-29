@@ -582,7 +582,7 @@ def test_shiwa_dim1() -> None:
 
 
 continuous_cases: tp.List[tp.Tuple[str, object, int, int, str]] = [
-    ("NGOpt", d, b, n, f"continuouschoice_d{d}_b{b}_n{n} ")
+    ("NGOpt", d, b, n, f"#CONTINUOUS")
     for d in [1, 2, 10, 100, 1000]
     for b in [2 * d, 10 * d, 100 * d]
     for n in [1, d, 10 * d]
