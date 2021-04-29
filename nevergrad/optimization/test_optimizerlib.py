@@ -581,7 +581,7 @@ def test_shiwa_dim1() -> None:
     assert recom.value < init
 
 
-continuous_case: tp.List[tp.Tuple[str, object, int, int, str]] = [
+continuous_cases: tp.List[tp.Tuple[str, object, int, int, str]] = [
     ("NGOpt", d, b, n, f"continuouschoice_d{d}_b{b}_n{n} ")
     for d in [1, 2, 10, 100, 1000]
     for b in [2 * d, 10 * d, 100 * d]
