@@ -639,8 +639,6 @@ def test_ngopt_selection(
             if num_workers > 1:
                 assert choice != "SQP"
                 assert choice != "Cobyla"
-            return
-        assert choice == expected
 
 
 def test_bo_ordering() -> None:
