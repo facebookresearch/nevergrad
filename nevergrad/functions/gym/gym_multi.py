@@ -139,7 +139,7 @@ class GymMulti(ExperimentFunction):
         except AttributeError:  # Not all environements have a max number of episodes!
             assert any(x in name for x in NO_LENGTH), name
             self.num_time_steps = 100 if "LANM" not in name else 3000
-        self.gamma = .995 if "LANM" in name else 1.
+        self.gamma = 0.995 if "LANM" in name else 1.0
         self.neural_factor = neural_factor
 
         # Infer the action space.
