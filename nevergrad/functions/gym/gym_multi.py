@@ -120,11 +120,12 @@ class GymMulti(ExperimentFunction):
     ) -> None:
         if os.name == "nt":
             raise ng.errors.UnsupportedExperiment("Windows is not supported")
-        if "llvm" in name:
-            env = gym.make(name, benchmark="foo")
+        if "compilergym" in name:
+            env = gym.make("llvm-ic-v0")
+            env.require_dataset("cBench-v1")
+            env.unwrapped.benchmark = "benchmark://cBench-v1/qsort"
         else:
-            env = gym.make(name)
-
+            env = gym.make(name if "LANM" not in name else "gym_anm:ANM6Easy-v0")
         o = env.reset()
         self.env = env
 
@@ -137,7 +138,8 @@ class GymMulti(ExperimentFunction):
             self.num_time_steps = env._max_episode_steps  # I know! This is a private variable.
         except AttributeError:  # Not all environements have a max number of episodes!
             assert any(x in name for x in NO_LENGTH), name
-            self.num_time_steps = 100
+            self.num_time_steps = 100 if "LANM" not in name else 3000
+        self.gamma = .995 if "LANM" in name else 1.
         self.neural_factor = neural_factor
 
         # Infer the action space.
@@ -252,6 +254,7 @@ class GymMulti(ExperimentFunction):
 
         # Now initializing.
         super().__init__(self.gym_multi_function, parametrization=parametrization)
+        self.parametrization.function.deterministic = False
         self.archive: tp.List[tp.Any] = []
         self.mean_loss = 0.0
         self.num_losses = 0
@@ -425,6 +428,7 @@ class GymMulti(ExperimentFunction):
             try:
                 o, r, done, _ = self.step(a)  # Outputs = observation, reward, done, info.
                 current_time_index += 1
+                current_reward *= self.gamma
                 current_reward += r
                 current_observations += [np.asarray(o).copy()]
                 current_actions += [np.asarray(a).copy()]
@@ -477,6 +481,7 @@ class GymMulti(ExperimentFunction):
                 _, r, done, _ = self.step(a)  # Outputs = observation, reward, done, info.
             except AssertionError:  # Illegal action.
                 return 1e20 / (1.0 + i)  # We encourage late failures rather than early failures.
+            reward *= self.gamma
             reward += r
             if done:
                 break
