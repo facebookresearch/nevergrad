@@ -7,6 +7,7 @@ import numpy as np
 import os
 import typing as tp
 import gym
+import compiler_gym
 import nevergrad as ng
 
 if os.name != "nt":
@@ -119,7 +120,10 @@ class GymMulti(ExperimentFunction):
     ) -> None:
         if os.name == "nt":
             raise ng.errors.UnsupportedExperiment("Windows is not supported")
-        env = gym.make(name)
+        if "llvm" in name:
+            env = gym.make(name, benchmark="foo")
+        else:
+            env = gym.make(name)
 
         o = env.reset()
         self.env = env
