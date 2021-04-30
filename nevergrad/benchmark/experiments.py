@@ -1100,6 +1100,7 @@ def ng_full_gym(
     optims += ["DiagonalCMA"]
     optims += get_optimizers("split_noisy", seed=next(seedg))
     optims += ["TBPSA"]
+    optims += ["NGOpt"]
     if multi:
         controls = ["multi_neural"]
     else:
@@ -1130,9 +1131,10 @@ def ng_full_gym(
         assert not multi
     if conformant:
         controls = ["stochastic_conformant"]
+    controls = ["neural"]
     for control in controls:
         for neural_factor in (
-            [-1] if conformant or control == "linear" else ([1] if "memory" in control else [1, 2])
+            [-1] if conformant or control == "linear" else ([1] if "memory" in control else [1])
         ):
             for name in env_names:
                 try:
@@ -1157,7 +1159,12 @@ def ng_full_gym(
 
 
 @registry.register
-def conformant_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def multi_ng_full_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    return ng_full_gym(seed, multi=True)
+
+
+@registry.register
+def conformant_ng_full_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of gym_multi with fixed, predetermined actions for each time step."""
     return ng_full_gym(seed, conformant=True)
 
@@ -1172,12 +1179,6 @@ def ng_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 def ng_stacking_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of gym_multi with a specific list of problems."""
     return ng_full_gym(seed, ng_gym=True, memory=True)
-
-
-@registry.register
-def multi_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Counterpart with one NN per time step of gym_multi."""
-    return ng_full_gym(seed, multi=True)
 
 
 @registry.register
@@ -1208,7 +1209,7 @@ def deterministic_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experi
 def gym_anm(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Gym simulator for Active Network Management."""
 
-    func = GymMulti()
+    func = GymMulti("LANM")
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", "progressive", "splitters", "baselines", seed=next(seedg))
     for budget in [25, 50, 100, 200, 400, 800, 1600]:

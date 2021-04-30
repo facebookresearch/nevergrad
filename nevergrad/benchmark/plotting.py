@@ -438,7 +438,7 @@ class XpPlotter:
         self._ax.grid(True, which="both")
         self._overlays: tp.List[tp.Any] = []
         legend_infos: tp.List[LegendInfo] = []
-        for optim_name in sorted_optimizers[-12:]:
+        for optim_name in sorted_optimizers:   #[-12:]:
             vals = optim_vals[optim_name]
             lowerbound = min(lowerbound, np.min(vals["loss"]))
             line = plt.plot(vals[xaxis], vals["loss"], name_style[optim_name], label=optim_name)
@@ -671,12 +671,13 @@ class FightPlotter:
         sorted_names = winrates.index
         # number of subcases actually computed is twice self-victories
         sorted_names = ["{} ({}/{})".format(n, int(2 * victories.loc[n, n]), total) for n in sorted_names]
+        num_names = len(sorted_names)
         sorted_names = [sorted_names[i] for i in range(min(30, len(sorted_names)))]
         data = np.array(winrates.iloc[:num_rows, : len(sorted_names)])
         # pylint: disable=anomalous-backslash-in-string
         best_names = [
-            (f"{name} ({100 * val:2.1f}%)").replace("Search", "")
-            for name, val in zip(mean_win.index[:num_rows], mean_win)
+            (f"{name} ({i+1}/{num_names}:{100 * val:2.1f}%)").replace("Search", "")
+            for i, (name, val) in enumerate(zip(mean_win.index[:num_rows], mean_win))
         ]
         return pd.DataFrame(index=best_names, columns=sorted_names, data=data)
 
