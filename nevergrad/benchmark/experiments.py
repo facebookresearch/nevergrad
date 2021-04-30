@@ -1227,6 +1227,12 @@ def compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
+def conformant_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Working on CompilerGym."""
+    return gym_anm(seed, specific_problem="compilergym", conformant=True)
+
+
+@registry.register
 def mixsimulator(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """MixSimulator of power plants
     Budget 20, 40, ..., 1600.
