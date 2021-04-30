@@ -1210,9 +1210,9 @@ def gym_anm(seed: tp.Optional[int] = None, specific_problem: str = "LANM") -> tp
     """Gym simulator for Active Network Management."""
     func = GymMulti(specific_problem)
     seedg = create_seed_generator(seed)
-    optims = get_optimizers("basics", "progressive", "splitters", "baselines", seed=next(seedg))
+    optims = ["DE", "TwoPointsDE", "PSO", "CMA", "NGOpt", "DiscreteLenglerOnePlusOne", "DoubleFastGA"]
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
-        for num_workers in [1, 30]:
+        for num_workers in [1]:
             if num_workers < budget:
                 for algo in optims:
                     xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
