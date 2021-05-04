@@ -122,11 +122,18 @@ class GymMulti(ExperimentFunction):
             raise ng.errors.UnsupportedExperiment("Windows is not supported")
         if "compilergym" in name:
             env = gym.make("llvm-ic-v0")
-            env.require_dataset("cBench-v1")
-            env.unwrapped.benchmark = "benchmark://cBench-v1/qsort"
+            self.uris = list(env.datasets["benchmark://cbench-v1"].benchmark_uris())
+            if "stoc" in name:
+                self.compilergym_index = None
+                o = env.reset(benchmark=np.random.choice(uris))
+            else:
+                self.compilergym_index = np.random.choice(uris)
+                o = env.reset(benchmark=self.compilergym_index)
+            #env.require_dataset("cBench-v1")
+            #env.unwrapped.benchmark = "benchmark://cBench-v1/qsort"
         else:
             env = gym.make(name if "LANM" not in name else "gym_anm:ANM6Easy-v0")
-        o = env.reset()
+            o = env.reset()
         self.env = env
 
         # Build various attributes.
@@ -398,7 +405,13 @@ class GymMulti(ExperimentFunction):
         assert seed == 0 or self.control != "conformant" or self.randomized
         env = self.env
         env.seed(seed=seed)
-        o = env.reset()
+        if "compilergym" in name:
+            if "stoc" in name:
+                o = env.reset(benchmark=np.random.choice(uris))
+            else:
+                o = env.reset(benchmark=self.compilergym_index)
+        else:
+            o = env.reset()
         control = self.control
         if (
             "conformant" in control
