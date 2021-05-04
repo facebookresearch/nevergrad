@@ -1227,9 +1227,27 @@ def compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def conformant_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def stochastic_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Working on CompilerGym."""
-    return gym_anm(seed, specific_problem="compilergym", conformant=True)
+    return gym_anm(seed, specific_problem="stochasticcompilergym")
+
+
+@registry.register
+def stochastic_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Working on CompilerGym. Stochastic problem: we are optimizing a net for driving compilation."""
+    return gym_anm(seed, specific_problem="stochasticcompilergym")
+
+
+@registry.register
+def problems11_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Working on CompilerGym. 11 problems, randomly drawn, but always the same ones."""
+    return itertools.chain(gym_anm(seed, specific_problem="compilergym") for _ in range(11))
+
+
+@registry.register
+def conformant_problems11_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Working on CompilerGym. 11 problems, randomly drawn, but always the same ones. Conformant planning."""
+    return itertools.chain(gym_anm(seed, specific_problem="compilergym", conformant=True) for _ in range(11))
 
 
 @registry.register
