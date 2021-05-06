@@ -36,6 +36,9 @@ of the BBO paper is `` Bayesian Optimization is Superior to Random Search for Ma
 and the organizers refused to use the optimization wizard of Nevergrad (what they call Nevergrad is actually a random search extracted from Nevergrad). At least the authors should mention that this is not Nevergrad but the random search extracted from Nevergrad.
 My opinion is that Squirrel did win the competition but as it was a competition dedicated to Bayesian Optimization things were altered until Bayesian Optimization becomes more visible.
 
+Holger Hoos gives an `interesting talk <https://simons.berkeley.edu/talks/tbd-307>`_ about SATzilla and collaborative competitions. That sounds good to me, so that
+people do not end up overfitting competitions or preferring method A to method B for political reasons.
+
 Research in black-box optimization and benchmarking
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
