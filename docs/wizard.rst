@@ -39,8 +39,7 @@ Research in black-box optimization and benchmarking
 
 At Nevergrad we do a lot of benchmarking. We need it for improving our wizard and for checking our codes. We have the following conclusions overall:
    #. Do not trust a comparison on less than 30 objective functions, with several completely different settings (for example, not all with Scikit learn, or not all with Pytorch, etc).
-   #. Do not trust a comparison if the dimensions do not range from 2 to 5000. 
-   #. Do not trust a comparison if it is run by people who are the authors of a method involved in the comparison.
+   #. A comparison is just an informed guess if there is not a wide range of settings in terms of dimension and objective functions.
    #. Do not trust positive results from a code which is not properly packaged (e.g. Pypi-packaged). This is just not very reproducible.
 
 I find the results in `MicroPredictions <https://microprediction.github.io/optimizer-elo-ratings/>`_ interesting: I reproduced some of their results so that I am convinced. BOBYQA, and its implementation there, are definitely interesting contributions to the state of the art.
