@@ -22,7 +22,7 @@ except ImportError:
 
 
 def _eval_function(
-    config: cs.Configuration, X, y, scoring_func: str, cv: int, random_state: int, test_data: tuple = None
+    config: cs.Configuration, X, y, scoring_func: str, cv: int, random_state: int, test_data: tuple
 ):
     try:
         # Naive skip SVM training for big datasets because it can not be interrupt by pynisher.

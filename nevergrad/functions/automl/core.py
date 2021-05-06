@@ -8,7 +8,7 @@
 import nevergrad.common.typing as tp
 import numpy as np
 import openml
-import pynisher  # type: ignore
+import submitit
 
 from .ngautosklearn import get_parametrization, get_configuration, _eval_function, get_config_space
 from .. import base
@@ -36,9 +36,7 @@ class AutoSKlearnBenchmark(base.ExperimentFunction):
         self.error_penalty = error_penalty
         self.overfitter = overfitter
         self.evaluate_on_test = False
-        self.eval_func = pynisher.enforce_limits(
-            mem_in_mb=memory_limit, wall_time_in_s=self.time_budget_per_run
-        )(_eval_function)
+        self.eval_func = _eval_function
         openml_task = openml.tasks.get_task(openml_task_id)
         self.dataset_name = openml_task.get_dataset().name
         X, y = openml_task.get_X_and_y()
@@ -49,6 +47,10 @@ class AutoSKlearnBenchmark(base.ExperimentFunction):
         self.config_space = get_config_space(X=self.X_train, y=self.y_train)
         parametrization = get_parametrization(self.config_space)
         parametrization = parametrization.set_name(f"time={time_budget_per_run}")
+
+        log_folder = "/tmp"
+        self.executor = submitit.AutoExecutor(folder=log_folder, cluster="local")
+        self.executor.update_parameters(timeout_min=time_budget_per_run)
 
         self.add_descriptors(
             openml_task_id=openml_task_id,
@@ -63,30 +65,20 @@ class AutoSKlearnBenchmark(base.ExperimentFunction):
         self._descriptors.pop("random_state", None)  # remove it from automatically added descriptors
         self.best_loss = np.inf
         self.best_config = None
+        parametrization.function.proxy = not overfitter
+        parametrization.function.deterministic = False
         super().__init__(self._simulate, parametrization)
 
     def _simulate(self, **x) -> float:
         config = get_configuration(x, self.config_space)
         if not self.evaluate_on_test:
-            loss = self.eval_func(
-                config=config,
-                X=self.X_train,
-                y=self.y_train,
-                test_data=None,
-                scoring_func=self.scoring_func,
-                cv=self.cv,
-                random_state=self.random_state,
-            )
+            job = self.executor.submit(self.eval_func, config, self.X_train, self.y_train, self.scoring_func, self.cv, self.random_state, None)
         else:
-            loss = self.eval_func(
-                config=config,
-                X=self.X_train,
-                y=self.y_train,
-                test_data=(self.X_test, self.y_test),
-                scoring_func=self.scoring_func,
-                cv=self.cv,
-                random_state=self.random_state,
-            )
+            job = self.executor.submit(self.eval_func, config, self.X_train, self.y_train, self.scoring_func, self.cv, self.random_state, (self.X_test, self.y_test))
+        try:
+            loss = job.result()
+        except:
+            loss = 1
 
         return loss if isinstance(loss, float) else self.error_penalty
 
