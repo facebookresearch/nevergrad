@@ -41,7 +41,9 @@ At Nevergrad we do a lot of benchmarking. We need it for improving our wizard an
    #. Do not trust a comparison on less than 30 objective functions, with several completely different settings (for example, not all with Scikit learn, or not all with Pytorch, etc).
    #. Do not trust a comparison if the dimensions do not range from 2 to 5000. 
    #. Do not trust a comparison if it is run by people who are the authors of a method involved in the comparison.
-   #. Do not trust positive results from a code which is not properly packaged (e.g. Pypi-packaged).
+   #. Do not trust positive results from a code which is not properly packaged (e.g. Pypi-packaged). This is just not very reproducible.
+
+I find the results in `MicroPredictions <https://microprediction.github.io/optimizer-elo-ratings/>`_ interesting: I reproduced some of their results so that I am convinced. BOBYQA, and its implementation there, are definitely interesting contributions to the state of the art.
 
 Nevergrad features an enormous `list of benchmarks <https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/benchmark/experiments.py>`_. Importantly, Nevergrad is PyPi-packaged and each benchmark can be run in one line.
 
