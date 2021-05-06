@@ -34,8 +34,7 @@ would perform worse. Squirrel was still not bad, but ranked 3rd instead of first
 It is a classical issue in benchmarking. People typically have in mind a method they want to investigate: for example the title
 of the BBO paper is `` Bayesian Optimization is Superior to Random Search for Machine Learning Hyperparameter Tuning: Analysis of the Black-Box Optimization Challenge 2020''
 and the organizers refused to use the optimization wizard of Nevergrad (what they call Nevergrad is actually a random search extracted from Nevergrad). At least the authors should mention that this is not Nevergrad but the random search extracted from Nevergrad.
-
-My opinion is that Squirrel did win the competition.
+My opinion is that Squirrel did win the competition but as it was a competition dedicated to Bayesian Optimization things were altered until Bayesian Optimization becomes more visible.
 
 Research in black-box optimization and benchmarking
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
