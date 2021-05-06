@@ -22,14 +22,15 @@ NGOpt will take into account:
 NGOpt is not perfect. Sometimes, we find a problem in which it did a suboptimal choice. Nonetheless it is frequently
 very reasonable, and on average it performs quite well.
 
+By the way, do not trust paper who cite some results about Nevergrad in the BBO competition: they decided to use Nevergrad's random search instead of Nevergrad. They use 15 lines of Nevergrad instead of our enormous optimization wizard. This is ok, but this should not be called "Nevergrad".
 
 Research in black-box optimization and wizards for competition
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 `Squirrel <https://arxiv.org/abs/2012.08180>`_, an optimization wizard using a lot of differential evolution (by the way an excellent optimization algorithm,
-essentially and unfortunately ignored in the machine learning community) won the original BBO Challenge (`BBO Challenge <https://bbochallenge.com/altleaderboard>`_) when the setup was the expected one. It was decided to change the setup in a manner that removes some information, so that wizards could use less information than expected.  
-Squirrel was still not bad, but ranked 3rd instead of first. It was still the best performing method with the original setup.
+essentially and unfortunately ignored in the machine learning community) won the BBO Challenge (`BBO Challenge <https://bbochallenge.com/altleaderboard>`_) with its original setup. The setup was modified (removal of some prior knowledge typically used by wizards). Squirrel was still not bad, but ranked 3rd instead of first. It was still the best performing method with the original setup. To me, Squirrel has made an excellent point, showing that the prior knowledge is super useful.
 Interestingly, the method which ranked best after the change of setup was also using some evolutionary stuff, with a NSGA component.
 
+Organizing competitions when wizards dominate (and they will dominate in black-box optimization, as much as they are already dominating in combinatorial optimization and scheduling) are more complicated to organize.
 Holger Hoos gives an `interesting talk <https://simons.berkeley.edu/talks/tbd-307>`_ about SATzilla and collaborative competitions. That sounds good to me, so that
 people do not end up overfitting competitions or preferring method A to method B for political reasons.
 
