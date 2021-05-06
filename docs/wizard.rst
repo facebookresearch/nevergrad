@@ -13,11 +13,11 @@ of passive selection), then NGOpt (more and more surrogate models, more base alg
 to out current best method.
 
 NGOpt will take into account:
-    # the type of variables
-    # the dimension
-    # the parallelism (num workers)
-    # the budget
-    # any side info you might provide (e.g. whether there is noise).
+   #. the type of variables
+   #. the dimension
+   #. the parallelism (num workers)
+   #. the budget
+   #. any side info you might provide (e.g. whether there is noise).
 
 NGOpt is not perfect. Sometimes, we find a problem in which it did a suboptimal choice. Nonetheless it is frequently
 very reasonable, and on average it performs quite well.
@@ -39,10 +39,10 @@ My opinion is that Squirrel did win the competition but as it was a competition 
 Research in black-box optimization and benchmarking
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 At Nevergrad we do a lot of benchmarking. We have the following conclusions overall:
-    # Do not trust a comparison on less than 30 objective functions, with several completely different settings (for example, not all with Scikit learn, or not all with Pytorch, etc).
-    # Do not trust a comparison if the dimensions do not range from 2 to 5000. 
-    # Do not trust a comparison if it is run by people who are the authors of a method involved in the comparison.
-    # Do not trust positive results from a code which is not properly packaged (e.g. Pypi-packaged).
+   #. Do not trust a comparison on less than 30 objective functions, with several completely different settings (for example, not all with Scikit learn, or not all with Pytorch, etc).
+   #. Do not trust a comparison if the dimensions do not range from 2 to 5000. 
+   #. Do not trust a comparison if it is run by people who are the authors of a method involved in the comparison.
+   #. Do not trust positive results from a code which is not properly packaged (e.g. Pypi-packaged).
 
 Nevergrad features an enormous list of benchmarks. Importantly, Nevergrad is PyPi-packaged and each benchmark can be run in one line.
 
