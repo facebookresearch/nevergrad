@@ -25,8 +25,8 @@ very reasonable, and on average it performs quite well.
 
 Research in black-box optimization and wizards for competition
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-`Squirrel<https://arxiv.org/abs/2012.08180>`_, an optimization wizard using a lot of differential evolution (by the way an excellent optimization algorithm,
-essentially and unfortunately ignored in the machine learning community) initially won the BBO Challenge (`BBO Challenge<https://bbochallenge.com/altleaderboard>`_). 
+`Squirrel <https://arxiv.org/abs/2012.08180>`_, an optimization wizard using a lot of differential evolution (by the way an excellent optimization algorithm,
+essentially and unfortunately ignored in the machine learning community) initially won the BBO Challenge (`BBO Challenge <https://bbochallenge.com/altleaderboard>`_). 
 
 However the organizers decided to rerun the algorithms a second time after removal of naming information so that wizards which were using such information
 would perform worse. Squirrel was still not bad, but ranked 3rd instead of first.
@@ -51,7 +51,7 @@ Nevergrad features an enormous list of benchmarks. Importantly, Nevergrad is PyP
     python -m nevergrad.benchmark illcond --seed=12 --repetitions=50 --num_workers=40 --plot
 
 
-If it does not work, ping us! The `user group<https://www.facebook.com/groups/nevergradusers>`_ is very active.
+If it does not work, ping us! The `user group <https://www.facebook.com/groups/nevergradusers>`_ is very active.
 
 
 
