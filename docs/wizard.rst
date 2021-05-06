@@ -45,7 +45,7 @@ At Nevergrad we do a lot of benchmarking. We need it for improving our wizard an
    #. Do not trust a comparison if it is run by people who are the authors of a method involved in the comparison.
    #. Do not trust positive results from a code which is not properly packaged (e.g. Pypi-packaged).
 
-Nevergrad features an enormous list of benchmarks. Importantly, Nevergrad is PyPi-packaged and each benchmark can be run in one line.
+Nevergrad features an enormous `list of benchmarks <https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/benchmark/experiments.py>`_. Importantly, Nevergrad is PyPi-packaged and each benchmark can be run in one line.
 
 .. code-block:: bash
 
