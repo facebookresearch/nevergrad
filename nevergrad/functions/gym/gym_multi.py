@@ -89,7 +89,7 @@ CONTROLLERS = [
 ]
 
 
-NO_LENGTH = ["ANM", "Blackjack", "CliffWalking", "Cube", "Memorize"]
+NO_LENGTH = ["ANM", "Blackjack", "CliffWalking", "Cube", "Memorize", "ompiler"]
 
 
 class GymMulti(ExperimentFunction):
@@ -166,14 +166,14 @@ class GymMulti(ExperimentFunction):
         self.discrete = discrete
 
         # Infer the observation space.
-        if env.observation_space.dtype == int:
+        if env.observation_space is not None and env.observation_space.dtype == int:
             # Direct inference for corner cases:
             # if "int" in str(type(o)):
             input_dim = env.observation_space.n
             assert input_dim is not None, env.observation_space.n
             self.discrete_input = True
         else:
-            input_dim = np.prod(env.observation_space.shape)
+            input_dim = np.prod(env.observation_space.shape) if env.observation_space is not None else 0
             if input_dim is None:
                 input_dim = np.prod(np.asarray(o).shape)
             self.discrete_input = False

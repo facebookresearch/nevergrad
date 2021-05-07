@@ -1206,9 +1206,9 @@ def deterministic_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experi
 
 
 @registry.register
-def gym_anm(seed: tp.Optional[int] = None, specific_problem: str = "LANM") -> tp.Iterator[Experiment]:
+def gym_anm(seed: tp.Optional[int] = None, specific_problem: str = "LANM", conformant: bool = False) -> tp.Iterator[Experiment]:
     """Gym simulator for Active Network Management."""
-    func = GymMulti(specific_problem)
+    func = GymMulti(specific_problem, control="conformant") if conformant else GymMulti(specific_problem)
     seedg = create_seed_generator(seed)
     optims = ["DE", "TwoPointsDE", "PSO", "CMA", "NGOpt", "DiscreteLenglerOnePlusOne", "DoubleFastGA"]
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
@@ -1235,13 +1235,19 @@ def stochastic_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experi
 @registry.register
 def problems11_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Working on CompilerGym. 11 problems, randomly drawn, but always the same ones."""
-    return itertools.chain(gym_anm(seed, specific_problem="compilergym") for _ in range(11))
+    for _ in range(11):
+        pb = gym_anm(seed, specific_problem="compilergym")
+        for xp in pb:
+            yield xp
 
 
 @registry.register
 def conformant_problems11_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Working on CompilerGym. 11 problems, randomly drawn, but always the same ones. Conformant planning."""
-    return itertools.chain(gym_anm(seed, specific_problem="compilergym", conformant=True) for _ in range(11))
+    for _ in range(11):
+        pb = gym_anm(seed, specific_problem="compilergym", conformant=True)
+        for xp in pb:
+            yield xp
 
 
 @registry.register
