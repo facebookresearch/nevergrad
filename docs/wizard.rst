@@ -31,8 +31,7 @@ essentially and unfortunately ignored in the machine learning community) won the
 Interestingly, the method which ranked best after the change of setup was also using some evolutionary stuff, with `a NSGA component <https://arxiv.org/abs/2012.03826v1>`_. I.e. in both setups, evolution was present in the top result: and in the original setup, wizards were also present. 
 
 Organizing competitions when wizards dominate (and they will dominate in black-box optimization, as much as they are already dominating in combinatorial optimization and scheduling) are more complicated to organize.
-Holger Hoos gives an `interesting talk <https://simons.berkeley.edu/talks/tbd-307>`_ about SATzilla and collaborative competitions. That sounds good to me, so that
-people do not end up overfitting competitions or preferring method A to method B for political reasons.
+Holger Hoos gives an `interesting talk <https://simons.berkeley.edu/talks/tbd-307>`_ about SATzilla and collaborative competitions. In some competitions, portfolios of methods are forbidden (which makes sense, for studying specific  methods); nonetheless, they do perform quite well.
 
 Research in black-box optimization and benchmarking
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -44,7 +43,7 @@ At Nevergrad we do a lot of benchmarking. We need it for improving our wizard an
 
 I find the results in `MicroPredictions <https://microprediction.github.io/optimizer-elo-ratings/>`_ interesting: I reproduced some of their results so that I am convinced. BOBYQA, and its implementation there, are definitely interesting contributions to the state of the art.
 
-Nevergrad features an enormous `list of benchmarks <https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/benchmark/experiments.py>`_. Importantly, Nevergrad is PyPi-packaged and each benchmark can be run in one line.
+Nevergrad features an enormous `list of benchmarks <https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/benchmark/experiments.py>`_. Importantly, Nevergrad is PyPi-packaged and each benchmark can be run in one line:
 
 .. code-block:: bash
 
