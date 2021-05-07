@@ -1206,11 +1206,21 @@ def deterministic_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experi
 
 
 @registry.register
-def gym_anm(seed: tp.Optional[int] = None, specific_problem: str = "LANM", conformant: bool = False) -> tp.Iterator[Experiment]:
+def gym_anm(
+    seed: tp.Optional[int] = None, specific_problem: str = "LANM", conformant: bool = False
+) -> tp.Iterator[Experiment]:
     """Gym simulator for Active Network Management."""
     func = GymMulti(specific_problem, control="conformant") if conformant else GymMulti(specific_problem)
     seedg = create_seed_generator(seed)
-    optims = ["DE", "TwoPointsDE", "PSO", "CMA", "NGOpt", "DiscreteLenglerOnePlusOne", "DoubleFastGA"]
+    optims = [
+        "DE",
+        "TwoPointsDE",
+        "PSO",
+        "CMA",
+        "NGOpt",
+        "DiscreteLenglerOnePlusOne",
+        "PortfolioDiscreteOnePlusOne",
+    ]
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
         for num_workers in [1]:
             if num_workers < budget:

@@ -166,6 +166,9 @@ class GymMulti(ExperimentFunction):
         self.discrete = discrete
 
         # Infer the observation space.
+        assert (
+            env.observation_space is not None or "ompiler" in name
+        ), "An observation space should be defined."
         if env.observation_space is not None and env.observation_space.dtype == int:
             # Direct inference for corner cases:
             # if "int" in str(type(o)):
