@@ -51,7 +51,7 @@ def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[expe
     check_experiment(
         maker,
         ("mltuning" in name or "anm" in name),
-        skip_seed=(name in ["rocket", "images_using_gan"])
+        skip_seed=(name in ["rocket", "images_using_gan", "compiler"])
         or any(x in name for x in ["tuning", "image_", "anm"]),
     )  # this is a basic test on first elements, do not fully rely on it
 
