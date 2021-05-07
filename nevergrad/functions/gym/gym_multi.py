@@ -125,9 +125,9 @@ class GymMulti(ExperimentFunction):
             self.uris = list(env.datasets["benchmark://cbench-v1"].benchmark_uris())
             if "stoc" in name:
                 self.compilergym_index = None
-                o = env.reset(benchmark=np.random.choice(uris))
+                o = env.reset(benchmark=np.random.choice(self.uris))
             else:
-                self.compilergym_index = np.random.choice(uris)
+                self.compilergym_index = np.random.choice(self.uris)
                 o = env.reset(benchmark=self.compilergym_index)
             # env.require_dataset("cBench-v1")
             # env.unwrapped.benchmark = "benchmark://cBench-v1/qsort"
@@ -407,7 +407,7 @@ class GymMulti(ExperimentFunction):
         env.seed(seed=seed)
         if "compilergym" in name:
             if "stoc" in name:
-                o = env.reset(benchmark=np.random.choice(uris))
+                o = env.reset(benchmark=np.random.choice(self.uris))
             else:
                 o = env.reset(benchmark=self.compilergym_index)
         else:
