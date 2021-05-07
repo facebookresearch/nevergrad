@@ -1228,12 +1228,6 @@ def compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 @registry.register
 def stochastic_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Working on CompilerGym."""
-    return gym_anm(seed, specific_problem="stochasticcompilergym")
-
-
-@registry.register
-def stochastic_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Working on CompilerGym. Stochastic problem: we are optimizing a net for driving compilation."""
     return gym_anm(seed, specific_problem="stochasticcompilergym")
 
