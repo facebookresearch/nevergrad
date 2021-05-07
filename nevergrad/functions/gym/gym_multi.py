@@ -408,8 +408,8 @@ class GymMulti(ExperimentFunction):
         assert seed == 0 or self.control != "conformant" or self.randomized
         env = self.env
         env.seed(seed=seed)
-        if "compilergym" in name:
-            if "stoc" in name:
+        if "compilergym" in self.name:
+            if "stoc" in self.name:
                 o = env.reset(benchmark=np.random.choice(self.uris))
             else:
                 o = env.reset(benchmark=self.compilergym_index)
