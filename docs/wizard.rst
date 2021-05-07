@@ -22,7 +22,7 @@ NGOpt will take into account:
 NGOpt is not perfect. Sometimes, we find a problem in which it did a suboptimal choice. Nonetheless it is frequently
 very reasonable, and on average it performs quite well.
 
-By the way, do not trust paper who cite some results about Nevergrad in the BBO competition: they decided to use Nevergrad's random search instead of Nevergrad. They use 15 lines of Nevergrad instead of our enormous optimization wizard. This is ok, but this should not be called "Nevergrad".
+By the way, do not trust paper which cite some results about Nevergrad in the BBO competition: they decided to use Nevergrad's random search instead of Nevergrad. They use 15 lines of Nevergrad instead of our enormous optimization wizard. This is ok, but this should not be called "Nevergrad".
 
 Research in black-box optimization and wizards for competition
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
