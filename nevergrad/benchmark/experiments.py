@@ -1221,6 +1221,7 @@ def gym_anm(
         "DiscreteLenglerOnePlusOne",
         "PortfolioDiscreteOnePlusOne",
     ]
+    optims = ["DE"]
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
         for num_workers in [1]:
             if num_workers < budget:

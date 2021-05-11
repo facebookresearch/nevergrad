@@ -121,7 +121,7 @@ class GymMulti(ExperimentFunction):
         if os.name == "nt":
             raise ng.errors.UnsupportedExperiment("Windows is not supported")
         if "compilergym" in name:
-            env = gym.make("llvm-ic-v0")
+            env = gym.make("llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
             self.uris = list(env.datasets["benchmark://cbench-v1"].benchmark_uris())
             if "stoc" in name:
                 self.compilergym_index = None
@@ -137,7 +137,7 @@ class GymMulti(ExperimentFunction):
         self.env = env
 
         # Build various attributes.
-        self.name = name + "__" + control + "__" + str(neural_factor)
+        self.name = (name if not "compiler" in name else name + str(env)) + "__" + control + "__" + str(neural_factor)
         if randomized:
             self.name += "_unseeded"
         self.randomized = randomized
@@ -169,7 +169,10 @@ class GymMulti(ExperimentFunction):
         assert (
             env.observation_space is not None or "ompiler" in name
         ), "An observation space should be defined."
-        if env.observation_space is not None and env.observation_space.dtype == int:
+        if "ompiler" in self.name:
+            input_dim = 56
+            self.discrete_input = False
+        elif env.observation_space is not None and env.observation_space.dtype == int:
             # Direct inference for corner cases:
             # if "int" in str(type(o)):
             input_dim = env.observation_space.n
