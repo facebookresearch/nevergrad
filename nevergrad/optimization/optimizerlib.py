@@ -2085,7 +2085,7 @@ class _EMNA(base.Optimizer):
                     self.sigma = np.exp(
                         np.sum(
                             np.log([c._meta["sigma"] for c in self.parents]),
-                            axis=0 if self.isotropic else None,
+                            axis=0 if self.isotropic else None,  # type: ignore
                         )
                         / self.popsize.mu
                     )
