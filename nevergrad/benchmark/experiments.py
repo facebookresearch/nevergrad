@@ -1021,7 +1021,7 @@ def realworld(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     funcs += [
         _mlda.SammonMapping.from_mlda("Virus", rescale=False),
         _mlda.SammonMapping.from_mlda("Virus", rescale=True),
-        _mlda.SammonMapping.from_mlda("Employees"),
+        # _mlda.SammonMapping.from_mlda("Employees"),
     ]
     funcs += [_mlda.Landscape(transform) for transform in [None, "square", "gaussian"]]
 
@@ -1088,7 +1088,7 @@ def mixsimulator(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     optims: tp.List[str] = get_optimizers("basics", seed=next(seedg))  # type: ignore
 
-    seq = np.arange(0, 1601, 20)
+    seq = np.arange(0, 1601, 50)
     for budget in seq:
         for num_workers in [1, 30]:
             if num_workers < budget:
@@ -1236,7 +1236,7 @@ def mlda(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     funcs += [
         _mlda.SammonMapping.from_mlda("Virus", rescale=False),
         _mlda.SammonMapping.from_mlda("Virus", rescale=True),
-        _mlda.SammonMapping.from_mlda("Employees"),
+        # _mlda.SammonMapping.from_mlda("Employees"),
     ]
     funcs += [_mlda.Perceptron.from_mlda(name) for name in ["quadratic", "sine", "abs", "heaviside"]]
     funcs += [_mlda.Landscape(transform) for transform in [None, "square", "gaussian"]]
