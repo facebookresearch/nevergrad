@@ -1216,7 +1216,7 @@ class ConfSplitOptimizer(base.ConfiguredOptimizer):
     ) -> None:
         super().__init__(SplitOptimizer, locals())
 
-        
+
 @registry.register
 class Portfolio(base.Optimizer):
     """Passive portfolio of CMA, 2-pt DE and Scr-Hammersley."""
@@ -1804,9 +1804,9 @@ class ParametrizedBO(base.ConfiguredOptimizer):
 
 BO = ParametrizedBO().set_name("BO", register=True)
 # As Bayesian Optimization suffers in high dimension, let us split in 20 blocks.
-BOTwenty = ConfSplitOptimizer(
-                    num_optims=20, progressive=False, multivariate_optimizer=BO
-                ).set_name("BOTwenty", register=True)
+BOTwenty = ConfSplitOptimizer(num_optims=20, progressive=False, multivariate_optimizer=BO).set_name(
+    "BOTwenty", register=True
+)
 
 
 class _Chain(base.Optimizer):
