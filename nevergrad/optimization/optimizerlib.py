@@ -2455,7 +2455,6 @@ class NGOpt20(NGOpt10):
     def _select_optimizer_cls(self) -> base.OptCls:
         if (
             not self.has_noise
-            and self.fully_continuous
             and self.num_workers == 1
             and self.dimension < 100
             and self.budget is not None
