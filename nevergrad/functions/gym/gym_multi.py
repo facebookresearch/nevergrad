@@ -123,7 +123,7 @@ class SmallActionSpaceLlvmEnv(gym.ActionWrapper):
         # the wrapped environment.
         self.true_action_indices = [self.action_space[f] for f in self.action_space_subset]
 
-    def action(self, action: Union[int, List[int]]):
+    def action(self, action: tp.Union[int, List[int]]):
         if isinstance(action, int):
             return self.true_action_indices[action]
         else:
