@@ -24,6 +24,7 @@ from nevergrad.functions.powersystems import PowerSystem
 from nevergrad.functions.stsp import STSP
 from nevergrad.functions.rocket import Rocket
 from nevergrad.functions.gym import GymMulti
+from nevergrad.functions.gym import CompilerGym
 from nevergrad.functions.mixsimulator import OptimizeMix
 from nevergrad.functions.unitcommitment import UnitCommitmentProblem
 from nevergrad.functions import control
@@ -1210,7 +1211,10 @@ def gym_anm(
     seed: tp.Optional[int] = None, specific_problem: str = "LANM", conformant: bool = False
 ) -> tp.Iterator[Experiment]:
     """Gym simulator for Active Network Management."""
-    func = GymMulti(specific_problem, control="conformant") if conformant else GymMulti(specific_problem)
+    if specific_problem == "directcompilergym":
+        func = CompilerGym()
+    else:
+        func = GymMulti(specific_problem, control="conformant") if conformant else GymMulti(specific_problem)
     seedg = create_seed_generator(seed)
     optims = [
         "DE",
@@ -1265,7 +1269,7 @@ def conformant_problems11_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iter
 def direct_problems11_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Working on CompilerGym. 11 problems, randomly drawn, but always the same ones. Chris style."""
     for _ in range(11):
-        pb = gym_multi.CompilerGym()
+        pb = gym_anm(seed, specific_problem="directcompilergym")
         for xp in pb:
             yield xp
 

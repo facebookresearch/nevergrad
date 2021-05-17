@@ -98,6 +98,7 @@ class SmallActionSpaceLlvmEnv(gym.ActionWrapper):
     the full discrete action space (the subset was hand pruned to contain a mix
     of "good" and "bad" actions).
     """
+
     action_space_subset = [
         "-break-crit-edges",
         "-early-cse-memssa",
@@ -116,13 +117,11 @@ class SmallActionSpaceLlvmEnv(gym.ActionWrapper):
         "-sroa",
     ]
 
-    def __init__(self, env, flags = None):
+    def __init__(self, env, flags=None):
         super().__init__(env=env)
         # Array for translating from this tiny action space to the action space of
         # the wrapped environment.
-        self.true_action_indices = [
-          self.action_space[f] for f in self.action_space_subset
-        ]
+        self.true_action_indices = [self.action_space[f] for f in self.action_space_subset]
 
     def action(self, action: Union[int, List[int]]):
         if isinstance(action, int):
@@ -132,11 +131,11 @@ class SmallActionSpaceLlvmEnv(gym.ActionWrapper):
 
 
 class CompilerGym(ExperimentFunction):
-
     def __init__(self):
         action_space_size = len(SmallActionSpaceLlvmEnv.action_space_subset)
-        parametrization = ng.p.Array(shape=(num_episode_steps,)).set_bounds(0,
-                action_space_size - 1).set_integer_casting()
+        parametrization = (
+            ng.p.Array(shape=(num_episode_steps,)).set_bounds(0, action_space_size - 1).set_integer_casting()
+        )
         env = gym.make("llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
         self.uris = list(env.datasets["benchmark://cbench-v1"].benchmark_uris())
         self.compilergym_index = np.random.choice(self.uris)
@@ -144,37 +143,35 @@ class CompilerGym(ExperimentFunction):
         super().__init__(self.eval_actions_as_list, parametrization=parametrization)
 
     def make_env() -> gym.Env:
-      """Convenience function to create the environment that we'll use."""
-      # User the time-limited wrapper to fix the length of episodes.
-      env = gym.wrappers.TimeLimit(
-          env=SmallActionSpaceLlvmEnv(
-              env=gym.make("llvm-v0", reward_space="IrInstructionCountOz")
-          ),
-          max_episode_steps=num_episode_steps
-      )
-      env.require_dataset("cBench-v1")
-      env.unwrapped.benchmark = "cBench-v1/qsort"
-      return env
+        """Convenience function to create the environment that we'll use."""
+        # User the time-limited wrapper to fix the length of episodes.
+        env = gym.wrappers.TimeLimit(
+            env=SmallActionSpaceLlvmEnv(env=gym.make("llvm-v0", reward_space="IrInstructionCountOz")),
+            max_episode_steps=num_episode_steps,
+        )
+        env.require_dataset("cBench-v1")
+        env.unwrapped.benchmark = "cBench-v1/qsort"
+        return env
 
-    #@lru_cache(maxsize=1024)  # function is deterministic so we can cache results
+    # @lru_cache(maxsize=1024)  # function is deterministic so we can cache results
     def eval_actions(self, actions: Tuple[int]) -> float:
-      """Create an environment, run the sequence of actions in order, and return the
-      negative cumulative reward. Intermediate observations/rewards are discarded.
-    
-      This is the function that we want to minimize.
-      """
-      with self.make_env() as env:
-        env.reset(benchmark=self.compilergym_index)
-        _, reward, _, _ = env.step(actions)
-      return -env.episode_reward
+        """Create an environment, run the sequence of actions in order, and return the
+        negative cumulative reward. Intermediate observations/rewards are discarded.
 
-  def eval_actions_as_list(self, actions: List[int]):
-      """Wrapper around eval_actions() that records the return value for later analysis."""
-      action_space_size = len(SmallActionSpaceLlvmEnv.action_space_subset)
-      reward = eval_actions(tuple(actions.tolist()))
-      # action_names = [SmallActionSpaceLlvmEnv.action_space_subset[a] for a in actions]
-      # print(len(rewards_list), f"{-reward:.6f}", " ".join(action_names), sep='\t')
-      return reward
+        This is the function that we want to minimize.
+        """
+        with self.make_env() as env:
+            env.reset(benchmark=self.compilergym_index)
+            _, reward, _, _ = env.step(actions)
+        return -env.episode_reward
+
+    def eval_actions_as_list(self, actions: List[int]):
+        """Wrapper around eval_actions() that records the return value for later analysis."""
+        action_space_size = len(SmallActionSpaceLlvmEnv.action_space_subset)
+        reward = eval_actions(tuple(actions.tolist()))
+        # action_names = [SmallActionSpaceLlvmEnv.action_space_subset[a] for a in actions]
+        # print(len(rewards_list), f"{-reward:.6f}", " ".join(action_names), sep='\t')
+        return reward
 
 
 class GymMulti(ExperimentFunction):
@@ -222,7 +219,9 @@ class GymMulti(ExperimentFunction):
         self.env = env
 
         # Build various attributes.
-        self.name = (name if not "compiler" in name else name + str(env)) + "__" + control + "__" + str(neural_factor)
+        self.name = (
+            (name if not "compiler" in name else name + str(env)) + "__" + control + "__" + str(neural_factor)
+        )
         if randomized:
             self.name += "_unseeded"
         self.randomized = randomized
