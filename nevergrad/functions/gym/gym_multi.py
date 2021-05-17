@@ -7,6 +7,7 @@ import numpy as np
 import os
 import typing as tp
 import gym
+import compiler_gym
 import nevergrad as ng
 
 if os.name != "nt":
@@ -88,7 +89,90 @@ CONTROLLERS = [
 ]
 
 
-NO_LENGTH = ["ANM", "Blackjack", "CliffWalking", "Cube", "Memorize"]
+NO_LENGTH = ["ANM", "Blackjack", "CliffWalking", "Cube", "Memorize", "ompiler"]
+
+
+# Environment used for CompilerGym.
+class SmallActionSpaceLlvmEnv(gym.ActionWrapper):
+    """A wrapper for the LLVM compiler environment that exposes a tiny subset of
+    the full discrete action space (the subset was hand pruned to contain a mix
+    of "good" and "bad" actions).
+    """
+
+    action_space_subset = [
+        "-break-crit-edges",
+        "-early-cse-memssa",
+        "-gvn-hoist",
+        "-gvn",
+        "-instcombine",
+        "-instsimplify",
+        "-jump-threading",
+        "-loop-reduce",
+        "-loop-rotate",
+        "-loop-versioning",
+        "-mem2reg",
+        "-newgvn",
+        "-reg2mem",
+        "-simplifycfg",
+        "-sroa",
+    ]
+
+    def __init__(self, env, flags=None):
+        super().__init__(env=env)
+        # Array for translating from this tiny action space to the action space of
+        # the wrapped environment.
+        self.true_action_indices = [self.action_space[f] for f in self.action_space_subset]
+
+    def action(self, action: tp.Union[int, tp.List[int]]):
+        if isinstance(action, int):
+            return self.true_action_indices[action]
+        else:
+            return [self.true_action_indices[a] for a in action]
+
+
+class CompilerGym(ExperimentFunction):
+    def __init__(self):
+        action_space_size = len(SmallActionSpaceLlvmEnv.action_space_subset)
+        num_episode_steps = 100
+        parametrization = (
+            ng.p.Array(shape=(num_episode_steps,)).set_bounds(0, action_space_size - 1).set_integer_casting()
+        ).set_name("direct")
+        env = gym.make("llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
+        self.uris = list(env.datasets["benchmark://cbench-v1"].benchmark_uris())
+        self.compilergym_index = np.random.choice(self.uris)
+        env.reset(benchmark=self.compilergym_index)
+        super().__init__(self.eval_actions_as_list, parametrization=parametrization)
+
+    def make_env() -> gym.Env:
+        """Convenience function to create the environment that we'll use."""
+        # User the time-limited wrapper to fix the length of episodes.
+        env = gym.wrappers.TimeLimit(
+            env=SmallActionSpaceLlvmEnv(env=gym.make("llvm-v0", reward_space="IrInstructionCountOz")),
+            max_episode_steps=num_episode_steps,
+        )
+        env.require_dataset("cBench-v1")
+        env.unwrapped.benchmark = "cBench-v1/qsort"
+        return env
+
+    # @lru_cache(maxsize=1024)  # function is deterministic so we can cache results
+    def eval_actions(self, actions: tp.Tuple[int]) -> float:
+        """Create an environment, run the sequence of actions in order, and return the
+        negative cumulative reward. Intermediate observations/rewards are discarded.
+
+        This is the function that we want to minimize.
+        """
+        with self.make_env() as env:
+            env.reset(benchmark=self.compilergym_index)
+            _, reward, _, _ = env.step(actions)
+        return -env.episode_reward
+
+    def eval_actions_as_list(self, actions: tp.List[int]):
+        """Wrapper around eval_actions() that records the return value for later analysis."""
+        action_space_size = len(SmallActionSpaceLlvmEnv.action_space_subset)
+        reward = eval_actions(tuple(actions.tolist()))
+        # action_names = [SmallActionSpaceLlvmEnv.action_space_subset[a] for a in actions]
+        # print(len(rewards_list), f"{-reward:.6f}", " ".join(action_names), sep='\t')
+        return reward
 
 
 class GymMulti(ExperimentFunction):
@@ -119,13 +203,26 @@ class GymMulti(ExperimentFunction):
     ) -> None:
         if os.name == "nt":
             raise ng.errors.UnsupportedExperiment("Windows is not supported")
-        env = gym.make(name if "LANM" not in name else "gym_anm:ANM6Easy-v0")
-
-        o = env.reset()
+        if "compilergym" in name:
+            env = gym.make("llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
+            self.uris = list(env.datasets["benchmark://cbench-v1"].benchmark_uris())
+            if "stoc" in name:
+                self.compilergym_index = None
+                o = env.reset(benchmark=np.random.choice(self.uris))
+            else:
+                self.compilergym_index = np.random.choice(self.uris)
+                o = env.reset(benchmark=self.compilergym_index)
+            # env.require_dataset("cBench-v1")
+            # env.unwrapped.benchmark = "benchmark://cBench-v1/qsort"
+        else:
+            env = gym.make(name if "LANM" not in name else "gym_anm:ANM6Easy-v0")
+            o = env.reset()
         self.env = env
 
         # Build various attributes.
-        self.name = name + "__" + control + "__" + str(neural_factor)
+        self.name = (
+            (name if not "compiler" in name else name + str(env)) + "__" + control + "__" + str(neural_factor)
+        )
         if randomized:
             self.name += "_unseeded"
         self.randomized = randomized
@@ -134,7 +231,7 @@ class GymMulti(ExperimentFunction):
         except AttributeError:  # Not all environements have a max number of episodes!
             assert any(x in name for x in NO_LENGTH), name
             self.num_time_steps = 100 if "LANM" not in name else 3000
-        self.gamma = .995 if "LANM" in name else 1.
+        self.gamma = 0.995 if "LANM" in name else 1.0
         self.neural_factor = neural_factor
 
         # Infer the action space.
@@ -154,14 +251,20 @@ class GymMulti(ExperimentFunction):
         self.discrete = discrete
 
         # Infer the observation space.
-        if env.observation_space.dtype == int:
+        assert (
+            env.observation_space is not None or "ompiler" in name
+        ), "An observation space should be defined."
+        if "ompiler" in self.name:
+            input_dim = 56
+            self.discrete_input = False
+        elif env.observation_space is not None and env.observation_space.dtype == int:
             # Direct inference for corner cases:
             # if "int" in str(type(o)):
             input_dim = env.observation_space.n
             assert input_dim is not None, env.observation_space.n
             self.discrete_input = True
         else:
-            input_dim = np.prod(env.observation_space.shape)
+            input_dim = np.prod(env.observation_space.shape) if env.observation_space is not None else 0
             if input_dim is None:
                 input_dim = np.prod(np.asarray(o).shape)
             self.discrete_input = False
@@ -394,7 +497,13 @@ class GymMulti(ExperimentFunction):
         assert seed == 0 or self.control != "conformant" or self.randomized
         env = self.env
         env.seed(seed=seed)
-        o = env.reset()
+        if "compilergym" in self.name:
+            if "stoc" in self.name:
+                o = env.reset(benchmark=np.random.choice(self.uris))
+            else:
+                o = env.reset(benchmark=self.compilergym_index)
+        else:
+            o = env.reset()
         control = self.control
         if (
             "conformant" in control

@@ -4,3 +4,4 @@
 # LICENSE file in the root directory of this source tree.
 
 from .gym_multi import GymMulti as GymMulti  # type: ignore
+from .gym_multi import CompilerGym as CompilerGym  # type: ignore

@@ -24,6 +24,7 @@ from nevergrad.functions.powersystems import PowerSystem
 from nevergrad.functions.stsp import STSP
 from nevergrad.functions.rocket import Rocket
 from nevergrad.functions.gym import GymMulti
+from nevergrad.functions.gym import CompilerGym
 from nevergrad.functions.mixsimulator import OptimizeMix
 from nevergrad.functions.unitcommitment import UnitCommitmentProblem
 from nevergrad.functions import control
@@ -1224,19 +1225,70 @@ def gym_multifid_anm(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def gym_anm(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def gym_anm(
+    seed: tp.Optional[int] = None, specific_problem: str = "LANM", conformant: bool = False
+) -> tp.Iterator[Experiment]:
     """Gym simulator for Active Network Management."""
-
-    func = GymMulti("LANM")
+    if specific_problem == "directcompilergym":
+        func = CompilerGym()
+    else:
+        func = GymMulti(specific_problem, control="conformant") if conformant else GymMulti(specific_problem)
     seedg = create_seed_generator(seed)
-    optims = get_optimizers("basics", "progressive", "splitters", "baselines", seed=next(seedg))
-    for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600, 51200]:
-        for num_workers in [1, 30]:
+    optims = [
+        "DE",
+        "TwoPointsDE",
+        "PSO",
+        "CMA",
+        "NGOpt",
+        "DiscreteLenglerOnePlusOne",
+        "PortfolioDiscreteOnePlusOne",
+    ]
+    for budget in [25, 50, 100, 200, 400, 800, 1600]:
+        for num_workers in [1]:
             if num_workers < budget:
                 for algo in optims:
                     xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
                     if not xp.is_incoherent:
                         yield xp
+
+
+@registry.register
+def compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Working on CompilerGym."""
+    return gym_anm(seed, specific_problem="compilergym")
+
+
+@registry.register
+def stochastic_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Working on CompilerGym. Stochastic problem: we are optimizing a net for driving compilation."""
+    return gym_anm(seed, specific_problem="stochasticcompilergym")
+
+
+@registry.register
+def problems11_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Working on CompilerGym. 11 problems, randomly drawn, but always the same ones."""
+    for _ in range(11):
+        pb = gym_anm(seed, specific_problem="compilergym")
+        for xp in pb:
+            yield xp
+
+
+@registry.register
+def conformant_problems11_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Working on CompilerGym. 11 problems, randomly drawn, but always the same ones. Conformant planning."""
+    for _ in range(11):
+        pb = gym_anm(seed, specific_problem="compilergym", conformant=True)
+        for xp in pb:
+            yield xp
+
+
+@registry.register
+def direct_problems11_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Working on CompilerGym. 11 problems, randomly drawn, but always the same ones. Chris style."""
+    for _ in range(11):
+        pb = gym_anm(seed, specific_problem="directcompilergym")
+        for xp in pb:
+            yield xp
 
 
 @registry.register
@@ -1248,7 +1300,7 @@ def mixsimulator(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     optims: tp.List[str] = get_optimizers("basics", seed=next(seedg))  # type: ignore
 
-    seq = np.arange(0, 1601, 20)
+    seq = np.arange(0, 1601, 50)
     for budget in seq:
         for num_workers in [1, 30]:
             if num_workers < budget:
