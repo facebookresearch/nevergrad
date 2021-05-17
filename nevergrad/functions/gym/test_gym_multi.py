@@ -18,6 +18,13 @@ def test_gym_multi() -> None:
     assert len(gym_multi.GYM_ENV_NAMES) >= 26 or os.name == "nt"
 
 
+def test_compiler_gym() -> None:
+    func = gym_multi.CompilerGym()
+    candidate = func.parametrization.sample()
+    results = [func.evaluation_function(candidate) for _ in range(40)]
+    assert min(results) != max(results), "CompilerGym should not be deterministic."
+
+
 def test_roulette() -> None:
     print(gym_multi.GymMulti.ng_gym)
     func = gym_multi.GymMulti(name="Roulette-v0", control="neural", randomized=True)

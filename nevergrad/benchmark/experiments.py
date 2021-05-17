@@ -1262,6 +1262,15 @@ def conformant_problems11_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iter
 
 
 @registry.register
+def direct_problems11_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Working on CompilerGym. 11 problems, randomly drawn, but always the same ones. Chris style."""
+    for _ in range(11):
+        pb = gym_multi.CompilerGym()
+        for xp in pb:
+            yield xp
+
+
+@registry.register
 def mixsimulator(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """MixSimulator of power plants
     Budget 20, 40, ..., 1600.
