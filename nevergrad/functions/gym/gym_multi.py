@@ -258,8 +258,8 @@ class GymMulti(ExperimentFunction):
         """Averages multiple evaluatioons if necessary."""
         x = recommendations[0].value
         if not self.randomized:
-            return self.gym_multi_function(x)
-        losses = [self.gym_multi_function(x) for _ in range(100)]
+            return self.gym_multi_function(x, limited_fidelity=False)
+        losses = [self.gym_multi_function(x, limited_fidelity=False) for _ in range(100)]
         return sum(losses) / len(losses)
 
     def discretize(self, a):
@@ -310,7 +310,7 @@ class GymMulti(ExperimentFunction):
         output = np.matmul(np.tanh(output + first_matrix[0]), second_matrix)
         return output[self.memory_len :].reshape(self.output_shape), output[: self.memory_len]
 
-    def gym_multi_function(self, x: np.ndarray):
+    def gym_multi_function(self, x: np.ndarray, limited_fidelity: bool = False):
         """Do a simulation with parametrization x and return the result."""
         # Deterministic conformant: do  the average of 7 simullations always with the same seed.
         # Otherwise: apply a random seed and do a single simulation.
@@ -318,7 +318,8 @@ class GymMulti(ExperimentFunction):
         loss = 0
         for seed in range(num_simulations):
             loss += self.gym_simulate(
-                x, seed=seed if not self.randomized else self.parametrization.random_state.randint(500000)
+                x, seed=seed if not self.randomized else self.parametrization.random_state.randint(500000),
+                limited_fidelity=limited_fidelity,
             )
         return loss / num_simulations
 
@@ -379,7 +380,7 @@ class GymMulti(ExperimentFunction):
                 return np.asarray(ta[len(current_observations) - 1], dtype=np.float32)
         return None
 
-    def gym_simulate(self, x: np.ndarray, seed: int):
+    def gym_simulate(self, x: np.ndarray, seed: int, limited_fidelity: bool = True):
         """Single simulation with parametrization x."""
         current_time_index = 0
         current_reward = 0
@@ -423,6 +424,8 @@ class GymMulti(ExperimentFunction):
             try:
                 o, r, done, _ = self.step(a)  # Outputs = observation, reward, done, info.
                 current_time_index += 1
+                if "multifidLANM" in name and current_time_index > 500 and limited_fidelity:
+                    done = True
                 current_reward *= self.gamma
                 current_reward += r
                 current_observations += [np.asarray(o).copy()]
