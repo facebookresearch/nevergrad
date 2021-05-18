@@ -196,7 +196,7 @@ class CompilerGym(ExperimentFunction):
     def eval_actions_as_list(self, actions: tp.List[int]):
         """Wrapper around eval_actions() that records the return value for later analysis."""
         action_space_size = len(SmallActionSpaceLlvmEnv.action_space_subset)
-        reward = self.eval_actions(tuple(actions))
+        reward = self.eval_actions(tuple(actions.tolist()))
         # action_names = [SmallActionSpaceLlvmEnv.action_space_subset[a] for a in actions]
         # print(len(rewards_list), f"{-reward:.6f}", " ".join(action_names), sep='\t')
         return reward
