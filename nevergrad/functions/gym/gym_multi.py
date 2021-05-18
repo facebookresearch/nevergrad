@@ -227,6 +227,7 @@ class GymMulti(ExperimentFunction):
         control: str = "conformant",
         neural_factor: int = 2,
         randomized: bool = True,
+        pb_index: int = -1,
     ) -> None:
         if os.name == "nt":
             raise ng.errors.UnsupportedExperiment("Windows is not supported")
@@ -238,11 +239,11 @@ class GymMulti(ExperimentFunction):
 
             if "stoc" in name:
                 self.compilergym_index = None
-                # In training, we randomly draw in csmith.
+                # In training, we randomly draw in csmith (but we are allowed to use 100x more budget :-) ).
                 o = env.reset(benchmark=np.random.choice(self.csmith))
             else:
-                self.compilergym_index = np.random.randint(23))
-                o = env.reset(benchmark=self.compilergym_index)
+                self.compilergym_index = pb_index
+                o = env.reset(benchmark=self.uris[self.compilergym_index])
             # env.require_dataset("cBench-v1")
             # env.unwrapped.benchmark = "benchmark://cBench-v1/qsort"
         else:
