@@ -167,7 +167,7 @@ class CompilerGym(ExperimentFunction):
         env = gym.make("llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
         self.uris = list(env.datasets["benchmark://cbench-v1"].benchmark_uris())
         self.compilergym_index = pb_index
-        env.reset(benchmark=self.compilergym_index)
+        env.reset(benchmark=self.uris[self.compilergym_index])
         super().__init__(self.eval_actions_as_list, parametrization=parametrization)
 
     def make_env(self) -> gym.Env:
@@ -189,7 +189,7 @@ class CompilerGym(ExperimentFunction):
         This is the function that we want to minimize.
         """
         with self.make_env() as env:
-            env.reset(benchmark=self.compilergym_index)
+            env.reset(benchmark=self.uris[self.compilergym_index])
             _, reward, _, _ = env.step(actions)
         return -env.episode_reward
 
@@ -227,20 +227,23 @@ class GymMulti(ExperimentFunction):
         control: str = "conformant",
         neural_factor: int = 2,
         randomized: bool = True,
+        pb_index: int = -1,
     ) -> None:
         if os.name == "nt":
             raise ng.errors.UnsupportedExperiment("Windows is not supported")
         if "compilergym" in name:
             env = gym.make("llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
             self.uris = list(env.datasets["benchmark://cbench-v1"].benchmark_uris())
+            # For training, in the "stochastic" case.
             self.csmith = list(env.datasets["generator://csmith-v0"].benchmark_uris())[:100]
 
             if "stoc" in name:
                 self.compilergym_index = None
+                # In training, we randomly draw in csmith (but we are allowed to use 100x more budget :-) ).
                 o = env.reset(benchmark=np.random.choice(self.csmith))
             else:
-                self.compilergym_index = np.random.choice(self.uris)
-                o = env.reset(benchmark=self.compilergym_index)
+                self.compilergym_index = pb_index
+                o = env.reset(benchmark=self.uris[self.compilergym_index])
             # env.require_dataset("cBench-v1")
             # env.unwrapped.benchmark = "benchmark://cBench-v1/qsort"
         else:
@@ -531,7 +534,8 @@ class GymMulti(ExperimentFunction):
         env = self.env
         env.seed(seed=seed)
         if "compilergym" in self.name:
-            if "stoc" in self.name:
+            if "stoc" in self.name:  # Stochastic case: in training we use randomly drawn points.
+                # In training, we randomly draw in csmith (but we are allowed to use 100x more budget :-) ).
                 o = env.reset(
                     benchmark=np.random.choice(self.csmith) if pb_index < 0 else self.uris[pb_index]
                 )
