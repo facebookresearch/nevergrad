@@ -233,9 +233,11 @@ class GymMulti(ExperimentFunction):
         if "compilergym" in name:
             env = gym.make("llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
             self.uris = list(env.datasets["benchmark://cbench-v1"].benchmark_uris())
+            self.csmith = list(env.datasets["generator://csmith-v0"].benchmark_uris())[:100]
+
             if "stoc" in name:
                 self.compilergym_index = None
-                o = env.reset(benchmark=np.random.choice(self.uris))
+                o = env.reset(benchmark=np.random.choice(self.csmith))
             else:
                 self.compilergym_index = np.random.choice(self.uris)
                 o = env.reset(benchmark=self.compilergym_index)
@@ -389,7 +391,7 @@ class GymMulti(ExperimentFunction):
         x = recommendations[0].value
         if not self.randomized:
             return self.gym_multi_function(x, limited_fidelity=False)
-        losses = [self.gym_multi_function(x, limited_fidelity=False) for _ in range(100)]
+        losses = [self.gym_multi_function(x, limited_fidelity=False, pb_index=pb_index) for pb_index in range(23)]
         return sum(losses) / len(losses)
 
     def discretize(self, a):
@@ -440,7 +442,7 @@ class GymMulti(ExperimentFunction):
         output = np.matmul(np.tanh(output + first_matrix[0]), second_matrix)
         return output[self.memory_len :].reshape(self.output_shape), output[: self.memory_len]
 
-    def gym_multi_function(self, x: np.ndarray, limited_fidelity: bool = False):
+    def gym_multi_function(self, x: np.ndarray, limited_fidelity: bool = False, pb_index: int = -1):
         """Do a simulation with parametrization x and return the result."""
         # Deterministic conformant: do  the average of 7 simullations always with the same seed.
         # Otherwise: apply a random seed and do a single simulation.
@@ -450,6 +452,7 @@ class GymMulti(ExperimentFunction):
             loss += self.gym_simulate(
                 x, seed=seed if not self.randomized else self.parametrization.random_state.randint(500000),
                 limited_fidelity=limited_fidelity,
+                pb_index=pb_index,
             )
         return loss / num_simulations
 
@@ -510,7 +513,7 @@ class GymMulti(ExperimentFunction):
                 return np.asarray(ta[len(current_observations) - 1], dtype=np.float32)
         return None
 
-    def gym_simulate(self, x: np.ndarray, seed: int, limited_fidelity: bool = True):
+    def gym_simulate(self, x: np.ndarray, seed: int, limited_fidelity: bool = True, pb_index: int):
         """Single simulation with parametrization x."""
         current_time_index = 0
         current_reward = 0
@@ -526,7 +529,7 @@ class GymMulti(ExperimentFunction):
         env.seed(seed=seed)
         if "compilergym" in self.name:
             if "stoc" in self.name:
-                o = env.reset(benchmark=np.random.choice(self.uris))
+                o = env.reset(benchmark=np.random.choice(self.csmith) if pb_index < 0 else self.uris[pb_index])
             else:
                 o = env.reset(benchmark=self.compilergym_index)
         else:
