@@ -182,25 +182,30 @@ class CompilerGym(ExperimentFunction):
         return env
 
     # @lru_cache(maxsize=1024)  # function is deterministic so we can cache results
-    def eval_actions(self, actions: tp.Tuple[int]) -> float:
+    def eval_actions(self, actions: tp.Tuple[int], pb_index: int) -> float:
         """Create an environment, run the sequence of actions in order, and return the
         negative cumulative reward. Intermediate observations/rewards are discarded.
 
         This is the function that we want to minimize.
         """
         with self.make_env() as env:
-            env.reset(benchmark=self.compilergym_index)
+            env.reset(benchmark=self.compilergym_index if pb_index < 0 else self.uris[pb_index])
             _, reward, _, _ = env.step(actions)
         return -env.episode_reward
 
-    def eval_actions_as_list(self, actions: tp.List[int]):
+    def eval_actions_as_list(self, actions: tp.List[int], pb_index: int = -1):
         """Wrapper around eval_actions() that records the return value for later analysis."""
         action_space_size = len(SmallActionSpaceLlvmEnv.action_space_subset)
-        reward = eval_actions(tuple(actions.tolist()))
+        reward = eval_actions(tuple(actions.tolist()), pb_index=pb_index)
         # action_names = [SmallActionSpaceLlvmEnv.action_space_subset[a] for a in actions]
         # print(len(rewards_list), f"{-reward:.6f}", " ".join(action_names), sep='\t')
         return reward
-
+    
+    def evaluation_function(self, *recommendations) -> float:
+        """Averages multiple evaluatioons if necessary."""
+        x = recommendations[0].value
+        losses = [self.eval_actions_as_list(x, pb_index=pb_index) for pb_index in range(23)]
+        return sum(losses) / len(losses)
 
 class GymMulti(ExperimentFunction):
 
@@ -389,7 +394,7 @@ class GymMulti(ExperimentFunction):
         x = recommendations[0].value
         if not self.randomized:
             return self.gym_multi_function(x, limited_fidelity=False)
-        losses = [self.gym_multi_function(x, limited_fidelity=False) for _ in range(100)]
+        losses = [self.gym_multi_function(x, limited_fidelity=False, pb_index=pb_index) for pb_index in range(23)]
         return sum(losses) / len(losses)
 
     def discretize(self, a):
@@ -440,7 +445,7 @@ class GymMulti(ExperimentFunction):
         output = np.matmul(np.tanh(output + first_matrix[0]), second_matrix)
         return output[self.memory_len :].reshape(self.output_shape), output[: self.memory_len]
 
-    def gym_multi_function(self, x: np.ndarray, limited_fidelity: bool = False):
+    def gym_multi_function(self, x: np.ndarray, limited_fidelity: bool = False, pb_index: int = -1):
         """Do a simulation with parametrization x and return the result."""
         # Deterministic conformant: do  the average of 7 simullations always with the same seed.
         # Otherwise: apply a random seed and do a single simulation.
@@ -450,6 +455,7 @@ class GymMulti(ExperimentFunction):
             loss += self.gym_simulate(
                 x, seed=seed if not self.randomized else self.parametrization.random_state.randint(500000),
                 limited_fidelity=limited_fidelity,
+                pb_index=pb_index,
             )
         return loss / num_simulations
 
@@ -510,7 +516,7 @@ class GymMulti(ExperimentFunction):
                 return np.asarray(ta[len(current_observations) - 1], dtype=np.float32)
         return None
 
-    def gym_simulate(self, x: np.ndarray, seed: int, limited_fidelity: bool = True):
+    def gym_simulate(self, x: np.ndarray, seed: int, limited_fidelity: bool = True, pb_index: int):
         """Single simulation with parametrization x."""
         current_time_index = 0
         current_reward = 0
@@ -526,9 +532,9 @@ class GymMulti(ExperimentFunction):
         env.seed(seed=seed)
         if "compilergym" in self.name:
             if "stoc" in self.name:
-                o = env.reset(benchmark=np.random.choice(self.uris))
+                o = env.reset(benchmark=np.random.choice(self.uris) if pb_index < 0 else self.uris[pb_index])
             else:
-                o = env.reset(benchmark=self.compilergym_index)
+                o = env.reset(benchmark=self.compilergym_index if pb_index < 0 else self.uris[pb_index])
         else:
             o = env.reset()
         control = self.control
