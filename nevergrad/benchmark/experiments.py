@@ -1256,7 +1256,7 @@ def gym_anm(
 @registry.register
 def compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Working on CompilerGym."""
-    return gym_anm(seed, specific_problem="compilergym")
+    return gym_anm(seed, specific_problem="compilergym", pb_index=np.random.randint(23))
 
 
 @registry.register
@@ -1266,28 +1266,28 @@ def stochastic_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experi
 
 
 @registry.register
-def problems11_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def problems23_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Working on CompilerGym. 11 problems, randomly drawn, but always the same ones."""
-    for _ in range(11):
-        pb = gym_anm(seed, specific_problem="compilergym")
+    for pb_index in range(23):
+        pb = gym_anm(seed, specific_problem="compilergym", pb_index=pb_index)
         for xp in pb:
             yield xp
 
 
 @registry.register
-def conformant_problems11_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def conformant_problems23_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Working on CompilerGym. 11 problems, randomly drawn, but always the same ones. Conformant planning."""
-    for _ in range(11):
-        pb = gym_anm(seed, specific_problem="compilergym", conformant=True)
+    for pb_index in range(23):
+        pb = gym_anm(seed, specific_problem="compilergym", conformant=True, pb_index=pb_index)
         for xp in pb:
             yield xp
 
 
 @registry.register
-def direct_problems11_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def direct_problems23_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Working on CompilerGym. 11 problems, randomly drawn, but always the same ones. Chris style."""
     for pb_index in range(23):
-        pb = gym_anm(seed, specific_problem="directcompilergym", pb_index=23)
+        pb = gym_anm(seed, specific_problem="directcompilergym", pb_index=pb_index)
         for xp in pb:
             yield xp
 
