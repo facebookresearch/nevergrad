@@ -513,7 +513,7 @@ class GymMulti(ExperimentFunction):
                 return np.asarray(ta[len(current_observations) - 1], dtype=np.float32)
         return None
 
-    def gym_simulate(self, x: np.ndarray, seed: int, limited_fidelity: bool = True, pb_index: int):
+    def gym_simulate(self, x: np.ndarray, seed: int, pb_index: int, limited_fidelity: bool = True):
         """Single simulation with parametrization x."""
         current_time_index = 0
         current_reward = 0
