@@ -519,7 +519,7 @@ class GymMulti(ExperimentFunction):
     def gym_simulate(self, x: np.ndarray, seed: int, pb_index: int, limited_fidelity: bool = True):
         """Single simulation with parametrization x."""
         current_time_index = 0
-        current_reward = 0
+        current_reward = 0.
         current_observations: tp.List[tp.Any] = []
         current_actions: tp.List[tp.Any] = []
         try:
