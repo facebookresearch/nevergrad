@@ -1102,7 +1102,7 @@ def ng_full_gym(
     optims += get_optimizers("split_noisy", seed=next(seedg))
     optims += ["TBPSA"]
     optims += ["NGOpt"]
-    optims = ["NGOpt", "PSO", "DiscreteOnePlusOne", "DE", "CMandAS2"] + [
+    optims = ["NGOpt", "PSO", "DiscreteOnePlusOne", "DE", "CMandAS2"] + [  # type: ignore
         o for o in optims if "ProgD13" in str(o) or "ProgInf" in str(o)
     ]
     if multi:
@@ -1238,7 +1238,7 @@ def gym_anm(
         assert pb_index > 0
         func = CompilerGym(pb_index)
     else:
-        func = GymMulti(specific_problem, control="conformant") if conformant else GymMulti(specific_problem)
+        func = GymMulti(specific_problem, control="conformant") if conformant else GymMulti(specific_problem)  # type: ignore
     seedg = create_seed_generator(seed)
     optims = [
         "DE",
