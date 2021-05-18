@@ -1803,8 +1803,8 @@ class ParametrizedBO(base.ConfiguredOptimizer):
 
 
 BO = ParametrizedBO().set_name("BO", register=True)
-# As Bayesian Optimization suffers in high dimension, let us split in 20 blocks.
-BOSplit = ConfSplitOptimizer(num_vars=20, progressive=False, multivariate_optimizer=BO).set_name(
+# As Bayesian Optimization suffers in high dimension, let us split in blocks of 15 variables.
+BOSplit = ConfSplitOptimizer(num_vars=15, progressive=False, multivariate_optimizer=BO).set_name(
     "BOSplit", register=True
 )
 
