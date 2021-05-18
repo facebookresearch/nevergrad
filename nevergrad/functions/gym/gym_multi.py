@@ -160,9 +160,9 @@ class SmallActionSpaceLlvmEnv(gym.ActionWrapper):
 class CompilerGym(ExperimentFunction):
     def __init__(self, pb_index: int):
         action_space_size = len(SmallActionSpaceLlvmEnv.action_space_subset)
-        num_episode_steps = 45
+        self.num_episode_steps = 45
         parametrization = (
-            ng.p.Array(shape=(num_episode_steps,)).set_bounds(0, action_space_size - 1).set_integer_casting()
+            ng.p.Array(shape=(self.num_episode_steps,)).set_bounds(0, action_space_size - 1).set_integer_casting()
         ).set_name("direct")
         env = gym.make("llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
         self.uris = list(env.datasets["benchmark://cbench-v1"].benchmark_uris())
@@ -170,12 +170,12 @@ class CompilerGym(ExperimentFunction):
         env.reset(benchmark=self.compilergym_index)
         super().__init__(self.eval_actions_as_list, parametrization=parametrization)
 
-    def make_env() -> gym.Env:
+    def make_env(self) -> gym.Env:
         """Convenience function to create the environment that we'll use."""
         # User the time-limited wrapper to fix the length of episodes.
         env = gym.wrappers.TimeLimit(
             env=SmallActionSpaceLlvmEnv(env=gym.make("llvm-v0", reward_space="IrInstructionCountOz")),
-            max_episode_steps=num_episode_steps,
+            max_episode_steps=self.num_episode_steps,
         )
         env.require_dataset("cBench-v1")
         env.unwrapped.benchmark = "cBench-v1/qsort"
