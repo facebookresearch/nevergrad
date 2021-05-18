@@ -233,13 +233,15 @@ class GymMulti(ExperimentFunction):
         if "compilergym" in name:
             env = gym.make("llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
             self.uris = list(env.datasets["benchmark://cbench-v1"].benchmark_uris())
+            # For training, in the "stochastic" case.
             self.csmith = list(env.datasets["generator://csmith-v0"].benchmark_uris())[:100]
 
             if "stoc" in name:
                 self.compilergym_index = None
+                # In training, we randomly draw in csmith.
                 o = env.reset(benchmark=np.random.choice(self.csmith))
             else:
-                self.compilergym_index = np.random.choice(self.uris)
+                self.compilergym_index = np.random.randint(23))
                 o = env.reset(benchmark=self.compilergym_index)
             # env.require_dataset("cBench-v1")
             # env.unwrapped.benchmark = "benchmark://cBench-v1/qsort"
