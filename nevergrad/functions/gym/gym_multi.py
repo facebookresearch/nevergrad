@@ -196,7 +196,7 @@ class CompilerGym(ExperimentFunction):
     def eval_actions_as_list(self, actions: tp.List[int]):
         """Wrapper around eval_actions() that records the return value for later analysis."""
         action_space_size = len(SmallActionSpaceLlvmEnv.action_space_subset)
-        reward = eval_actions(tuple(actions.tolist()))
+        reward = self.eval_actions(tuple(actions))
         # action_names = [SmallActionSpaceLlvmEnv.action_space_subset[a] for a in actions]
         # print(len(rewards_list), f"{-reward:.6f}", " ".join(action_names), sep='\t')
         return reward
@@ -568,7 +568,7 @@ class GymMulti(ExperimentFunction):
             try:
                 o, r, done, _ = self.step(a)  # Outputs = observation, reward, done, info.
                 current_time_index += 1
-                if "multifidLANM" in name and current_time_index > 500 and limited_fidelity:
+                if "multifidLANM" in self.name and current_time_index > 500 and limited_fidelity:
                     done = True
                 current_reward *= self.gamma
                 current_reward += r
