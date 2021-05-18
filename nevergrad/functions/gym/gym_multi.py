@@ -167,7 +167,7 @@ class CompilerGym(ExperimentFunction):
         env = gym.make("llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
         self.uris = list(env.datasets["benchmark://cbench-v1"].benchmark_uris())
         self.compilergym_index = pb_index
-        env.reset(benchmark=self.compilergym_index)
+        env.reset(benchmark=self.uris[self.compilergym_index])
         super().__init__(self.eval_actions_as_list, parametrization=parametrization)
 
     def make_env(self) -> gym.Env:
@@ -189,7 +189,7 @@ class CompilerGym(ExperimentFunction):
         This is the function that we want to minimize.
         """
         with self.make_env() as env:
-            env.reset(benchmark=self.compilergym_index)
+            env.reset(benchmark=self.uris[self.compilergym_index])
             _, reward, _, _ = env.step(actions)
         return -env.episode_reward
 
