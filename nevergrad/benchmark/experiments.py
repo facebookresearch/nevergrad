@@ -1226,11 +1226,12 @@ def gym_multifid_anm(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 @registry.register
 def gym_anm(
-    seed: tp.Optional[int] = None, specific_problem: str = "LANM", conformant: bool = False
+    seed: tp.Optional[int] = None, specific_problem: str = "LANM", conformant: bool = False, pb_index: int = -1
 ) -> tp.Iterator[Experiment]:
     """Gym simulator for Active Network Management."""
     if specific_problem == "directcompilergym":
-        func = CompilerGym()
+        assert pb_index > 0
+        func = CompilerGym(pb_index)
     else:
         func = GymMulti(specific_problem, control="conformant") if conformant else GymMulti(specific_problem)
     seedg = create_seed_generator(seed)
@@ -1285,8 +1286,8 @@ def conformant_problems11_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iter
 @registry.register
 def direct_problems11_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Working on CompilerGym. 11 problems, randomly drawn, but always the same ones. Chris style."""
-    for _ in range(11):
-        pb = gym_anm(seed, specific_problem="directcompilergym")
+    for pb_index in range(23):
+        pb = gym_anm(seed, specific_problem="directcompilergym", pb_index=23)
         for xp in pb:
             yield xp
 
