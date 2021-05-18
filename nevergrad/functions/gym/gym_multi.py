@@ -133,7 +133,7 @@ class SmallActionSpaceLlvmEnv(gym.ActionWrapper):
 class CompilerGym(ExperimentFunction):
     def __init__(self):
         action_space_size = len(SmallActionSpaceLlvmEnv.action_space_subset)
-        num_episode_steps = 100
+        num_episode_steps = 45
         parametrization = (
             ng.p.Array(shape=(num_episode_steps,)).set_bounds(0, action_space_size - 1).set_integer_casting()
         ).set_name("direct")
@@ -230,7 +230,7 @@ class GymMulti(ExperimentFunction):
             self.num_time_steps = env._max_episode_steps  # I know! This is a private variable.
         except AttributeError:  # Not all environements have a max number of episodes!
             assert any(x in name for x in NO_LENGTH), name
-            self.num_time_steps = 100 if "LANM" not in name else 3000
+            self.num_time_steps = 45 if "ompiler" in name else (100 if "LANM" not in name else 3000)
         self.gamma = 0.995 if "LANM" in name else 1.0
         self.neural_factor = neural_factor
 
