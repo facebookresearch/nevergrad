@@ -1102,7 +1102,9 @@ def ng_full_gym(
     optims += get_optimizers("split_noisy", seed=next(seedg))
     optims += ["TBPSA"]
     optims += ["NGOpt"]
-    optims = ["NGOpt", "PSO", "DiscreteOnePlusOne", "DE", "CMandAS2"] + [o for o in optims if "ProgD13" in str(o) or "ProgInf" in str(o)]
+    optims = ["NGOpt", "PSO", "DiscreteOnePlusOne", "DE", "CMandAS2"] + [
+        o for o in optims if "ProgD13" in str(o) or "ProgInf" in str(o)
+    ]
     if multi:
         controls = ["multi_neural"]
     else:
@@ -1154,7 +1156,7 @@ def ng_full_gym(
                     400,
                     1600,
                 ] + ([12800, 25600, 51200, 102400, 204800, 409600, 819200, 1638400] if False else []):
-                #] + ([12800, 25600, 51200, 102400, 204800, 409600, 819200, 1638400] if "Hardcore" in name else []):
+                    # ] + ([12800, 25600, 51200, 102400, 204800, 409600, 819200, 1638400] if "Hardcore" in name else []):
                     for algo in optims:
                         xp = Experiment(func, algo, budget, num_workers=1, seed=next(seedg))
                         if not xp.is_incoherent:
@@ -1226,7 +1228,10 @@ def gym_multifid_anm(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 @registry.register
 def gym_anm(
-    seed: tp.Optional[int] = None, specific_problem: str = "LANM", conformant: bool = False, pb_index: int = -1
+    seed: tp.Optional[int] = None,
+    specific_problem: str = "LANM",
+    conformant: bool = False,
+    pb_index: int = -1,
 ) -> tp.Iterator[Experiment]:
     """Gym simulator for Active Network Management."""
     if specific_problem == "directcompilergym":

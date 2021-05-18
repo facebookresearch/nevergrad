@@ -100,48 +100,48 @@ class SmallActionSpaceLlvmEnv(gym.ActionWrapper):
     """
 
     action_space_subset = [
-                "-adce",
-                "-break-crit-edges",
-                "-constmerge",
-                "-correlated-propagation",
-                "-deadargelim",
-                "-dse",
-                "-early-cse",
-                "-functionattrs",
-                "-functionattrs",
-                "-globaldce",
-                "-globalopt",
-                "-gvn",
-                "-indvars",
-                "-inline",
-                "-instcombine",
-                "-ipsccp",
-                "-jump-threading",
-                "-lcssa",
-                "-licm",
-                "-loop-deletion",
-                "-loop-idiom",
-                "-loop-reduce",
-                "-loop-rotate",
-                "-loop-simplify",
-                "-loop-unroll",
-                "-loop-unswitch",
-                "-lower-expect",
-                "-loweratomic",
-                "-lowerinvoke",
-                "-lowerswitch",
-                "-mem2reg",
-                "-memcpyopt",
-                "-partial-inliner",
-                "-prune-eh",
-                "-reassociate",
-                "-sccp",
-                "-simplifycfg",
-                "-sink",
-                "-sroa",
-                "-strip",
-                "-strip-nondebug",
-                "-tailcallelim",
+        "-adce",
+        "-break-crit-edges",
+        "-constmerge",
+        "-correlated-propagation",
+        "-deadargelim",
+        "-dse",
+        "-early-cse",
+        "-functionattrs",
+        "-functionattrs",
+        "-globaldce",
+        "-globalopt",
+        "-gvn",
+        "-indvars",
+        "-inline",
+        "-instcombine",
+        "-ipsccp",
+        "-jump-threading",
+        "-lcssa",
+        "-licm",
+        "-loop-deletion",
+        "-loop-idiom",
+        "-loop-reduce",
+        "-loop-rotate",
+        "-loop-simplify",
+        "-loop-unroll",
+        "-loop-unswitch",
+        "-lower-expect",
+        "-loweratomic",
+        "-lowerinvoke",
+        "-lowerswitch",
+        "-mem2reg",
+        "-memcpyopt",
+        "-partial-inliner",
+        "-prune-eh",
+        "-reassociate",
+        "-sccp",
+        "-simplifycfg",
+        "-sink",
+        "-sroa",
+        "-strip",
+        "-strip-nondebug",
+        "-tailcallelim",
     ]
 
     def __init__(self, env, flags=None):
@@ -391,7 +391,9 @@ class GymMulti(ExperimentFunction):
         x = recommendations[0].value
         if not self.randomized:
             return self.gym_multi_function(x, limited_fidelity=False)
-        losses = [self.gym_multi_function(x, limited_fidelity=False, pb_index=pb_index) for pb_index in range(23)]
+        losses = [
+            self.gym_multi_function(x, limited_fidelity=False, pb_index=pb_index) for pb_index in range(23)
+        ]
         return sum(losses) / len(losses)
 
     def discretize(self, a):
@@ -450,7 +452,8 @@ class GymMulti(ExperimentFunction):
         loss = 0
         for seed in range(num_simulations):
             loss += self.gym_simulate(
-                x, seed=seed if not self.randomized else self.parametrization.random_state.randint(500000),
+                x,
+                seed=seed if not self.randomized else self.parametrization.random_state.randint(500000),
                 limited_fidelity=limited_fidelity,
                 pb_index=pb_index,
             )
@@ -529,7 +532,9 @@ class GymMulti(ExperimentFunction):
         env.seed(seed=seed)
         if "compilergym" in self.name:
             if "stoc" in self.name:
-                o = env.reset(benchmark=np.random.choice(self.csmith) if pb_index < 0 else self.uris[pb_index])
+                o = env.reset(
+                    benchmark=np.random.choice(self.csmith) if pb_index < 0 else self.uris[pb_index]
+                )
             else:
                 o = env.reset(benchmark=self.compilergym_index)
         else:
