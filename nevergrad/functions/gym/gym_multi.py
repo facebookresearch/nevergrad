@@ -534,7 +534,8 @@ class GymMulti(ExperimentFunction):
         env = self.env
         env.seed(seed=seed)
         if "compilergym" in self.name:
-            if "stoc" in self.name:
+            if "stoc" in self.name:  # Stochastic case: in training we use randomly drawn points.
+                # In training, we randomly draw in csmith (but we are allowed to use 100x more budget :-) ).
                 o = env.reset(
                     benchmark=np.random.choice(self.csmith) if pb_index < 0 else self.uris[pb_index]
                 )
