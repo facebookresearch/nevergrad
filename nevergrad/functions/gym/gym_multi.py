@@ -396,7 +396,10 @@ class GymMulti(ExperimentFunction):
         """Averages multiple evaluatioons if necessary."""
         x = recommendations[0].value
         if not self.randomized:
+            assert "ompiler" not in self.name
             return self.gym_multi_function(x, limited_fidelity=False)
+        if "ompiler" not in self.name:
+            return np.sum(self.gym_multi_function(x, limited_fidelity=False) for pb_index in range(23)) / 23.
         rewards = [
             - np.log(self.gym_multi_function(x, limited_fidelity=False, pb_index=pb_index)) for pb_index in range(23)
         ]
