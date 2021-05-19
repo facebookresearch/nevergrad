@@ -238,7 +238,7 @@ class GymMulti(ExperimentFunction):
             self.uris = list(env.datasets["benchmark://cbench-v1"].benchmark_uris())
             # For training, in the "stochastic" case.
             from itertools import islice
-            self.csmith = list(islice(env.datasets["generator://csmith-v0"].benchmark_uris(), 100))`
+            self.csmith = list(islice(env.datasets["generator://csmith-v0"].benchmark_uris(), 100))
 
             if "stoc" in name:
                 self.compilergym_index = None
