@@ -106,7 +106,7 @@ class SmallActionSpaceLlvmEnv(gym.ActionWrapper):
         "-correlated-propagation",
         "-deadargelim",
         "-dse",
-        "-early-cse",
+        "-early-cse-memssa",
         "-functionattrs",
         "-functionattrs",
         "-globaldce",
@@ -396,10 +396,12 @@ class GymMulti(ExperimentFunction):
         x = recommendations[0].value
         if not self.randomized:
             return self.gym_multi_function(x, limited_fidelity=False)
-        losses = [
-            self.gym_multi_function(x, limited_fidelity=False, pb_index=pb_index) for pb_index in range(23)
+        rewards = [
+            - np.log(self.gym_multi_function(x, limited_fidelity=False, pb_index=pb_index)) for pb_index in range(23)
         ]
-        return sum(losses) / len(losses)
+        if min(rewards) <= 0:
+            return -float("inf")
+        return - np.exp(sum(rewards) / len(rewards))
 
     def discretize(self, a):
         """Transforms a logit into an int obtained through softmax."""
