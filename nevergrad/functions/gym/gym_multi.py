@@ -401,7 +401,7 @@ class GymMulti(ExperimentFunction):
         if "ompiler" not in self.name:
             return np.sum(self.gym_multi_function(x, limited_fidelity=False) for pb_index in range(23)) / 23.
         rewards = [
-            - np.log(self.gym_multi_function(x, limited_fidelity=False, pb_index=pb_index)) for pb_index in range(23)
+            np.log(-self.gym_multi_function(x, limited_fidelity=False, pb_index=pb_index)) for pb_index in range(23)
         ]
         if min(rewards) <= 0:
             return -float("inf")
@@ -548,7 +548,7 @@ class GymMulti(ExperimentFunction):
                     benchmark=np.random.choice(self.csmith) if pb_index < 0 else self.uris[pb_index]
                 )
             else:
-                o = env.reset(benchmark=self.compilergym_index)
+                o = env.reset(benchmark=self.uris[self.compilergym_index])
         else:
             o = env.reset()
         control = self.control

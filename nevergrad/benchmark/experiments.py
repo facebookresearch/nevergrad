@@ -1233,12 +1233,13 @@ def gym_anm(
     conformant: bool = False,
     pb_index: int = -1,
 ) -> tp.Iterator[Experiment]:
-    """Gym simulator for Active Network Management."""
+    """Gym simulator for Active Network Management or other pb."""
     if specific_problem == "directcompilergym":
         assert pb_index > 0
         func = CompilerGym(pb_index)
     else:
-        func = GymMulti(specific_problem, control="conformant") if conformant else GymMulti(specific_problem)  # type: ignore
+        func = GymMulti(specific_problem, control="conformant") if conformant else GymMulti(specific_problem,
+        control="neural", neural_factor=1)  # type: ignore
     seedg = create_seed_generator(seed)
     optims = [
         "DE",
