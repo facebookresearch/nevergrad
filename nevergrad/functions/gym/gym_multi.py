@@ -405,9 +405,8 @@ class GymMulti(ExperimentFunction):
             np.log(max(1e-5, -self.gym_multi_function(x, limited_fidelity=False, pb_index=pb_index))) for pb_index in range(23)
         ]
         print(rewards)
-        if min(rewards) <= 0:
-            return -float("inf")
         #return         (sum(rewards) / len(rewards))
+        print(- np.exp(sum(rewards) / len(rewards)))
         return - np.exp(sum(rewards) / len(rewards))
 
     def discretize(self, a):
