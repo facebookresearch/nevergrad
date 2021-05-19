@@ -21,8 +21,8 @@ def test_gym_multi() -> None:
 def test_compiler_gym() -> None:
     func = gym_multi.CompilerGym(17)
     candidate = func.parametrization.sample()
-    results = [func.evaluation_function(candidate) for _ in range(40)]
-    assert min(results) != max(results), "CompilerGym should not be deterministic."
+    results = [func.evaluation_function(candidate) for _ in range(4)]
+    assert min(results) == max(results), "CompilerGym should be deterministic."
 
 
 def test_roulette() -> None:
