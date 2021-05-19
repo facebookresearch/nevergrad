@@ -1103,7 +1103,7 @@ def ng_full_gym(
     optims += ["TBPSA"]
     optims += ["NGOpt"]
     optims = ["NGOpt", "PSO", "DiscreteOnePlusOne", "DE", "CMandAS2"] + [  # type: ignore
-        o for o in optims if "ProgD13" in str(o) or "ProgInf" in str(o)
+        o for o in optims if "ProgD13" in str(o) or "ProgInf" in str(o)  # type: ignore
     ]
     if multi:
         controls = ["multi_neural"]
