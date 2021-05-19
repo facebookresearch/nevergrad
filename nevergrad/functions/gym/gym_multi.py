@@ -184,7 +184,7 @@ class CompilerGym(ExperimentFunction):
         return env
 
     # @lru_cache(maxsize=1024)  # function is deterministic so we can cache results
-    def eval_actions(self, actions: tp.Tuple[int]) -> float:
+    def eval_actions(self, actions: tp.Tuple[int, ...]) -> float:
         """Create an environment, run the sequence of actions in order, and return the
         negative cumulative reward. Intermediate observations/rewards are discarded.
 
@@ -198,7 +198,7 @@ class CompilerGym(ExperimentFunction):
     def eval_actions_as_list(self, actions: tp.List[int]):
         """Wrapper around eval_actions() that records the return value for later analysis."""
         # action_space_size = len(SmallActionSpaceLlvmEnv.action_space_subset)
-        reward = self.eval_actions(tuple(int(actions[i]) for i in range(len(actions))))
+        reward = self.eval_actions(tuple(actions[i] for i in range(len(actions))))
         # action_names = [SmallActionSpaceLlvmEnv.action_space_subset[a] for a in actions]
         # print(len(rewards_list), f"{-reward:.6f}", " ".join(action_names), sep='\t')
         return reward
