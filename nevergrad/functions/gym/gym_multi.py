@@ -7,7 +7,7 @@ import numpy as np
 import os
 import typing as tp
 import gym
-import compiler_gym  # ignored: unused-import
+import compiler_gym  # pylint: disable=unused-import
 import nevergrad as ng
 
 if os.name != "nt":
@@ -196,7 +196,7 @@ class CompilerGym(ExperimentFunction):
     def eval_actions_as_list(self, actions: tp.List[int]):
         """Wrapper around eval_actions() that records the return value for later analysis."""
         # action_space_size = len(SmallActionSpaceLlvmEnv.action_space_subset)
-        reward = self.eval_actions(actions)  #tuple([actions[i] for i in range(len(actions))]))
+        reward = self.eval_actions(tuple([actions[i] for i in range(len(actions))]))
         # action_names = [SmallActionSpaceLlvmEnv.action_space_subset[a] for a in actions]
         # print(len(rewards_list), f"{-reward:.6f}", " ".join(action_names), sep='\t')
         return reward
