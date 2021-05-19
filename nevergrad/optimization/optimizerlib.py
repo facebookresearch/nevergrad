@@ -2450,13 +2450,13 @@ class NGOpt19(NGOpt10):
 
 
 @registry.register
-class NGOpt23(NGOpt19):
+class NGOpt24(NGOpt19):
     def _select_optimizer_cls(self) -> base.OptCls:
         if (
             not self.has_noise
             and self.budget is not None
-            and self.num_workers * self.num_workers < self.budget
-            and self.dimension < 100
+            and self.num_workers * 3 < self.budget
+            and self.dimension < 25
             and self.budget < 80
         ):
             return HyperOpt
