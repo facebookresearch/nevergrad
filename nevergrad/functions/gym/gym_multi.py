@@ -144,7 +144,7 @@ class SmallActionSpaceLlvmEnv(gym.ActionWrapper):
         "-tailcallelim",
     ]
 
-    def __init__(self, env):  #, flags=None):
+    def __init__(self, env):  # , flags=None):
         super().__init__(env=env)
         # Array for translating from this tiny action space to the action space of
         # the wrapped environment.
@@ -162,7 +162,9 @@ class CompilerGym(ExperimentFunction):
         action_space_size = len(SmallActionSpaceLlvmEnv.action_space_subset)
         self.num_episode_steps = 45
         parametrization = (
-            ng.p.Array(shape=(self.num_episode_steps,)).set_bounds(0, action_space_size - 1).set_integer_casting()
+            ng.p.Array(shape=(self.num_episode_steps,))
+            .set_bounds(0, action_space_size - 1)
+            .set_integer_casting()
         ).set_name("direct")
         env = gym.make("llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
         self.uris = list(env.datasets["benchmark://cbench-v1"].benchmark_uris())
@@ -196,7 +198,7 @@ class CompilerGym(ExperimentFunction):
     def eval_actions_as_list(self, actions: tp.List[int]):
         """Wrapper around eval_actions() that records the return value for later analysis."""
         # action_space_size = len(SmallActionSpaceLlvmEnv.action_space_subset)
-        reward = self.eval_actions(tuple([actions[i] for i in range(len(actions))]))
+        reward = self.eval_actions(tuple(actions[i] for i in range(len(actions))))
         # action_names = [SmallActionSpaceLlvmEnv.action_space_subset[a] for a in actions]
         # print(len(rewards_list), f"{-reward:.6f}", " ".join(action_names), sep='\t')
         return reward
@@ -522,7 +524,7 @@ class GymMulti(ExperimentFunction):
     def gym_simulate(self, x: np.ndarray, seed: int, pb_index: int, limited_fidelity: bool = True):
         """Single simulation with parametrization x."""
         current_time_index = 0
-        current_reward = 0.
+        current_reward = 0.0
         current_observations: tp.List[tp.Any] = []
         current_actions: tp.List[tp.Any] = []
         try:
