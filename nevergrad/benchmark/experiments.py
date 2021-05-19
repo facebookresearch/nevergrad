@@ -1238,7 +1238,8 @@ def gym_anm(
         assert pb_index > 0
         func = CompilerGym(pb_index)
     else:
-        func = GymMulti(specific_problem, control="conformant") if conformant else GymMulti(specific_problem)  # type: ignore
+        func = GymMulti(specific_problem, control="conformant") if conformant else GymMulti(specific_problem,
+                                                                                           control="neural", neural_factor=1)  # type: ignore
     seedg = create_seed_generator(seed)
     optims = [
         "DE",
