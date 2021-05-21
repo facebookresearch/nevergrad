@@ -22,13 +22,14 @@ from nevergrad.parametrization import _datalayers
 from . import oneshot
 from . import base
 from . import mutations
+from . import utils
 from .base import registry as registry
 from .base import addCompare  # pylint: disable=unused-import
 from .base import IntOrParameter
 
 
 # families of optimizers
-# pylint: disable=unused-wildcard-import,wildcard-import,too-many-lines,too-many-arguments
+# pylint: disable=unused-wildcard-import,wildcard-import,too-many-lines,too-many-arguments,too-many-branches
 from .differentialevolution import *  # type: ignore  # noqa: F403
 from .es import *  # type: ignore  # noqa: F403
 from .oneshot import *  # noqa: F403
@@ -1012,8 +1013,8 @@ class _Rescaled(base.Optimizer):
         self._optimizer = base_optimizer(self.parametrization, budget=budget, num_workers=num_workers)
         self._subcandidates: tp.Dict[str, p.Parameter] = {}
         if scale is None:
-            assert budget is not None, "Either scale or budget must be known in _Rescaled."
-            scale = np.sqrt(np.log(budget) / self.dimension)
+            assert self.budget is not None, "Either scale or budget must be known in _Rescaled."
+            scale = math.sqrt(math.log(self.budget) / self.dimension)
         self.scale = scale
         assert self.scale != 0.0, "scale should be non-zero in Rescaler."
 
@@ -1037,59 +1038,48 @@ class _Rescaled(base.Optimizer):
         self._optimizer.tell(candidate, loss)
 
 
-class SplitOptimizer(base.Optimizer):
-    """Combines optimizers, each of them working on their own variables.
+class Rescaled(base.ConfiguredOptimizer):
+    """Configured optimizer for creating rescaled optimization algorithms.
 
     Parameters
-    ---------
-    num_optims: int or None
-        number of optimizers
-    num_vars: int or None
-        number of variable per optimizer (should not be used if max_num_vars is set)
-    max_num_vars: int or None
-        maximum number of variables per optimizer. Should not be defined if :code:`num_vars`
-         is defined since they will be chosen automatically.
-    progressive: bool
-        True if we want to progressively add optimizers during the optimization run.
-        If progressive = True, the optimizer is forced at OptimisticNoisyOnePlusOne.
-
-    Example
-    -------
-    for 5 optimizers, each of them working on 2 variables, one can use:
-
-    opt = SplitOptimizer(parametrization=10, num_workers=3, num_optims=5, num_vars=[2, 2, 2, 2, 2])
-    or equivalently:
-    opt = SplitOptimizer(parametrization=10, num_workers=3, num_vars=[2, 2, 2, 2, 2])
-    Given that all optimizers have the same number of variables, one can also run:
-    opt = SplitOptimizer(parametrization=10, num_workers=3, num_optims=5)
-
-    Note
-    ----
-    By default, it uses CMA for multivariate groups and RandomSearch for monovariate groups.
-
-    Caution
-    -------
-    The variables refer to the deep representation used by optimizers.
-    For example, a categorical variable with 5 possible values becomes 5 continuous variables.
+    ----------
+    base_optimizer: base.OptCls
+        optimization algorithm to be rescaled.
+    scale: how much do we rescale. E.g. 0.001 if we want to focus on the center
+        with std 0.001 (assuming the std of the domain is set to 1).
     """
+
+    # pylint: disable=unused-argument
+    def __init__(
+        self,
+        *,
+        base_optimizer: base.OptCls = CMA,
+        scale: tp.Optional[float] = None,
+    ) -> None:
+        super().__init__(_Rescaled, locals())
+
+
+RescaledCMA = Rescaled().set_name("RescaledCMA", register=True)
+
+
+class SplitOptimizer(base.Optimizer):
+    """Combines optimizers, each of them working on their own variables. (use ConfSplitOptimizer)"""
 
     def __init__(
         self,
         parametrization: IntOrParameter,
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
-        num_optims: tp.Optional[int] = None,
-        num_vars: tp.Optional[tp.List[int]] = None,
-        max_num_vars: tp.Optional[int] = None,
-        multivariate_optimizer: base.OptCls = CMA,
-        monovariate_optimizer: base.OptCls = OnePlusOne,
-        progressive: bool = False,
-        non_deterministic_descriptor: bool = True,
+        config: tp.Optional["ConfSplitOptimizer"] = None,
     ) -> None:
+        self._config = ConfSplitOptimizer() if config is None else config
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._subcandidates: tp.Dict[str, tp.List[p.Parameter]] = {}
-        self._progressive = progressive
         subparams: tp.List[p.Parameter] = []
+
+        num_vars = self._config.num_vars
+        num_optims = self._config.num_optims
+        max_num_vars = self._config.max_num_vars
         if max_num_vars is not None:
             assert num_vars is None, "num_vars and max_num_vars should not be set at the same time"
             num_vars = [max_num_vars] * (self.dimension // max_num_vars)
@@ -1116,19 +1106,19 @@ class SplitOptimizer(base.Optimizer):
         if not subparams:
             # if num_vars not given: we will distribute variables equally.
             assert num_optims is not None
-            num_optims = min(num_optims, self.dimension)
+            num_optims = int(min(num_optims, self.dimension))
             num_vars = num_vars if num_vars else []
             for i in range(num_optims):
                 if len(num_vars) < i + 1:
                     num_vars += [(self.dimension // num_optims) + (self.dimension % num_optims > i)]
                 assert num_vars[i] >= 1, "At least one variable per optimizer."
                 subparams += [p.Array(shape=(num_vars[i],))]
-        if non_deterministic_descriptor:
+        if self._config.non_deterministic_descriptor:
             for param in subparams:
                 param.function.deterministic = False
         # synchronize random state and create optimizers
         self.optims: tp.List[base.Optimizer] = []
-        mono, multi = monovariate_optimizer, multivariate_optimizer
+        mono, multi = self._config.monovariate_optimizer, self._config.multivariate_optimizer
         for param in subparams:
             param.random_state = self.parametrization.random_state
             self.optims.append((multi if param.dimension > 1 else mono)(param, budget, num_workers))
@@ -1140,7 +1130,7 @@ class SplitOptimizer(base.Optimizer):
     def _internal_ask_candidate(self) -> p.Parameter:
         candidates: tp.List[p.Parameter] = []
         for i, opt in enumerate(self.optims):
-            if self._progressive:
+            if self._config.progressive:
                 assert self.budget is not None
                 if i > 0 and i / len(self.optims) > np.sqrt(2.0 * self.num_ask / self.budget):
                     candidates.append(opt.parametrization.spawn_child())  # unchanged
@@ -1172,59 +1162,94 @@ class SplitOptimizer(base.Optimizer):
             opt.tell(local_candidate, loss)
 
 
-class Rescaled(base.ConfiguredOptimizer):
-    """Configured optimizer for creating rescaled optimization algorithms.
-
-    Parameters
-    ----------
-    base_optimizer: base.OptCls
-        optimization algorithm to be rescaled.
-    scale: how much do we rescale. E.g. 0.001 if we want to focus on the center
-        with std 0.001 (assuming the std of the domain is set to 1).
-    """
-
-    # pylint: disable=unused-argument
-    def __init__(
-        self,
-        *,
-        base_optimizer: base.OptCls = CMA,
-        scale: tp.Optional[float] = None,
-    ) -> None:
-        super().__init__(_Rescaled, locals())
-
-
-RescaledCMA = Rescaled().set_name("RescaledCMA", register=True)
-
-
 class ConfSplitOptimizer(base.ConfiguredOptimizer):
-    """ "Combines optimizers, each of them working on their own variables.
+    """Combines optimizers, each of them working on their own variables.
 
     Parameters
     ----------
-    num_optims: int
+    num_optims: int (or float("inf"))
         number of optimizers
-    num_vars: optional list of int
-        number of variable per optimizer.
+    num_vars: int or None
+        number of variable per optimizer (should not be used if max_num_vars is set)
+    max_num_vars: int or None
+        maximum number of variables per optimizer. Should not be defined if :code:`num_vars`
+        is defined since they will be chosen automatically.
     progressive: optional bool
         whether we progressively add optimizers.
     non_deterministic_descriptor: bool
         subparts parametrization descriptor is set to noisy function.
         This can have an impact for optimizer selection for competence maps.
+
+    Example
+    -------
+    for 5 optimizers, each of them working on 2 variables, one can use:
+
+    opt = ConfSplitOptimizer(num_optims=5, num_vars=[2, 2, 2, 2, 2])(parametrization=10, num_workers=3)
+    or equivalently:
+    opt = SplitOptimizer(parametrization=10, num_workers=3, num_vars=[2, 2, 2, 2, 2])
+    Given that all optimizers have the same number of variables, one can also run:
+    opt = SplitOptimizer(parametrization=10, num_workers=3, num_optims=5)
+
+    Note
+    ----
+    By default, it uses CMA for multivariate groups and RandomSearch for monovariate groups.
+
+    Caution
+    -------
+    The variables refer to the deep representation used by optimizers.
+    For example, a categorical variable with 5 possible values becomes 5 continuous variables.
     """
 
     # pylint: disable=unused-argument
     def __init__(
         self,
         *,
-        num_optims: tp.Optional[int] = None,
+        num_optims: tp.Optional[float] = None,
         num_vars: tp.Optional[tp.List[int]] = None,
         max_num_vars: tp.Optional[int] = None,
         multivariate_optimizer: base.OptCls = CMA,
-        monovariate_optimizer: base.OptCls = RandomSearch,
+        monovariate_optimizer: base.OptCls = oneshot.RandomSearch,
         progressive: bool = False,
         non_deterministic_descriptor: bool = True,
     ) -> None:
-        super().__init__(SplitOptimizer, locals())
+        self.num_optims = num_optims
+        self.num_vars = num_vars
+        self.max_num_vars = max_num_vars
+        self.multivariate_optimizer = multivariate_optimizer
+        self.monovariate_optimizer = monovariate_optimizer
+        self.progressive = progressive
+        self.non_deterministic_descriptor = non_deterministic_descriptor
+        super().__init__(SplitOptimizer, locals(), as_config=True)
+
+
+class NoisySplit(base.ConfiguredOptimizer):
+    """Non-progressive noisy split of variables based on 1+1
+
+    Parameters
+    ----------
+    num_optims: optional int
+        number of optimizers (one per variable if float("inf"))
+    discrete: bool
+        uses OptimisticDiscreteOnePlusOne if True, else NoisyOnePlusOne
+    """
+
+    # pylint: disable=unused-argument
+    def __init__(
+        self,
+        *,
+        num_optims: tp.Optional[float] = None,
+        discrete: bool = False,
+    ) -> None:
+        kwargs = locals()
+        opt = OptimisticDiscreteOnePlusOne if discrete else OptimisticNoisyOnePlusOne
+        mono_opt: base.OptCls = NoisyBandit if discrete else opt
+        ConfOpt = ConfSplitOptimizer(
+            progressive=False,
+            num_optims=num_optims,
+            multivariate_optimizer=opt,
+            monovariate_optimizer=mono_opt,
+        )
+        super().__init__(ConfOpt, kwargs)
 
 
 @registry.register
@@ -1287,9 +1312,7 @@ def learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.Arra
     dimension = len(items[0][0])
 
     # Select the k best.
-    first_k_individuals = [
-        x for x in sorted(items, key=lambda indiv: archive[indiv[0]].get_estimation("pessimistic"))[:k]
-    ]
+    first_k_individuals = sorted(items, key=lambda indiv: archive[indiv[0]].get_estimation("pessimistic"))[:k]
     assert len(first_k_individuals) == k
 
     # Recenter the best.
