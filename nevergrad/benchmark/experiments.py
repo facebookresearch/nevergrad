@@ -187,7 +187,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     ]
     for i, func in enumerate(functions):
         func.parametrization.register_cheap_constraint(_Constraint("sum", as_bool=i % 2 == 0))
-
+    assert len(functions) == 8
     # Then, let us build a constraint-free case. We include the noisy case.
     names = ["hm", "rastrigin", "sphere", "doublelinearslope", "ellipsoid"]
 
@@ -201,28 +201,35 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         for nl in [0.0, 100.0]  # period 2
         for tf in [0.1, 10.0]
         for num_blocks in [1, 8]  # period 2
-        for d in [2, 40, 3000, 10000]  # period 4
+        for d in [5, 70, 10000]  # period 4
         for split in [True, False]  # period 2
     ][
-        ::23
-    ]  # 23 is coprime with all periods above so we sample correctly the possibilities.
+        ::37
+    ]  # 37 is coprime with all periods above so we sample correctly the possibilities.
+    assert len(functions) < 30, str(len(functions))
     # This problem is intended as a stable basis forever.
     # The list of optimizers should contain only the basic for comparison and "baselines".
-    optims: tp.List[str] = ["NGOpt8"] + get_optimizers("baselines", seed=next(seedg))  # type: ignore
-    optims += get_optimizers("basics", seed=next(seedg))  # type: ignore
+    optims: tp.List[str] = ["NGOpt10"] + get_optimizers("baselines", seed=next(seedg))  # type: ignore
 
-    for optim in optims:
-        for function in functions:
-            for budget in [50, 250, 1500, 6000, 25000]:
-                for nw in [1, budget] + ([] if budget <= 300 else [300]):
-                    xp = Experiment(function, optim, num_workers=nw, budget=budget, seed=next(seedg))
-                    if not xp.is_incoherent:
-                        yield xp
+    index = 0
+    for function in functions:
+        for budget in [50, 1500, 25000]:
+            for nw in [1, budget] + ([] if budget <= 300 else [300]):
+                index += 1
+                if index % 5 == 0:
+                    for optim in optims:
+                        xp = Experiment(function, optim, num_workers=nw, budget=budget, seed=next(seedg))
+                        if not xp.is_incoherent:
+                            yield xp
     # Discrete, unordered.
+    index = 0
     for nv in [200, 2000]:
         for arity in [2, 7, 37]:
             instrum = ng.p.TransitionChoice(range(arity), repetitions=nv)
             for name in ["onemax", "leadingones", "jump"]:
+                index += 1
+                if index % 4 != 0:
+                    continue
                 dfunc = ExperimentFunction(
                     corefuncs.DiscreteFunction(name, arity), instrum.set_name("transition")
                 )
@@ -231,7 +238,6 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                     for budget in [500, 5000]:
                         for nw in [1, 100]:
                             yield Experiment(dfunc, optim, num_workers=nw, budget=budget, seed=next(seedg))
-
     # The multiobjective case.
     # TODO the upper bounds are really not well set for this experiment with cigar
     mofuncs: tp.List[fbase.MultiExperiment] = []
@@ -435,18 +441,21 @@ def oneshot(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     Base dimension 3 or 25.
     budget 30, 100 or 3000."""
     seedg = create_seed_generator(seed)
-    names = ["sphere", "rastrigin", "cigar"]
+    names = ["sphere", "griewank", "hm"]  # "sphere", "rastrigin", "cigar"]
     optims = get_optimizers("oneshot", seed=next(seedg))
     functions = [
         ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
         for name in names
-        for bd in [3, 25]
-        for uv_factor in [0, 5]
+        for bd in [3, 10, 30, 100, 300, 1000, 3000]
+        for uv_factor in [0]  # , 5]
     ]
     for func in functions:
         for optim in optims:
-            for budget in [30, 100, 3000]:
-                yield Experiment(func, optim, budget=budget, num_workers=budget, seed=next(seedg))
+            # if not any(x in str(optim) for x in ["Tune", "Large", "Cauchy"]):
+            # if "Meta" in str(optim):
+            for budget in [100000, 30, 100, 300, 1000, 3000, 10000]:
+                if func.dimension < 3000 or budget < 100000:
+                    yield Experiment(func, optim, budget=budget, num_workers=budget, seed=next(seedg))
 
 
 @registry.register
@@ -1015,7 +1024,7 @@ def realworld(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     funcs += [
         _mlda.SammonMapping.from_mlda("Virus", rescale=False),
         _mlda.SammonMapping.from_mlda("Virus", rescale=True),
-        _mlda.SammonMapping.from_mlda("Employees"),
+        # _mlda.SammonMapping.from_mlda("Employees"),
     ]
     funcs += [_mlda.Landscape(transform) for transform in [None, "square", "gaussian"]]
 
@@ -1082,7 +1091,7 @@ def mixsimulator(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     optims: tp.List[str] = get_optimizers("basics", seed=next(seedg))  # type: ignore
 
-    seq = np.arange(0, 1601, 20)
+    seq = np.arange(0, 1601, 50)
     for budget in seq:
         for num_workers in [1, 30]:
             if num_workers < budget:
@@ -1230,7 +1239,7 @@ def mlda(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     funcs += [
         _mlda.SammonMapping.from_mlda("Virus", rescale=False),
         _mlda.SammonMapping.from_mlda("Virus", rescale=True),
-        _mlda.SammonMapping.from_mlda("Employees"),
+        # _mlda.SammonMapping.from_mlda("Employees"),
     ]
     funcs += [_mlda.Perceptron.from_mlda(name) for name in ["quadratic", "sine", "abs", "heaviside"]]
     funcs += [_mlda.Landscape(transform) for transform in [None, "square", "gaussian"]]

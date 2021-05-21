@@ -3,9 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# Based on https://github.com/Foloso/MixSimulator/tree/nevergrad_experiment
+# Based on https://github.com/Foloso/MixSimulator
 
-from mixsimulator.MixSimulator import MixSimulator
 from .. import base
 
 
@@ -25,11 +24,18 @@ class OptimizeMix(base.ExperimentFunction):
 
     """
 
-    def __init__(self, time: int = 168) -> None:
+    def __init__(self, time: int = 8760) -> None:
         try:
+            from mixsimulator.MixSimulator import MixSimulator  # pylint: disable=import-outside-toplevel
+            from mixsimulator.Demand import Demand
+
             self._mix = MixSimulator()
             self._mix.set_data_to("Toamasina")
-        except (KeyError, AttributeError) as e:
+            self._demand = Demand()
+            self._demand.set_data_to("Toamasina", delimiter=",")
+            self._mix.set_demand(self._demand)
+
+        except (KeyError, AttributeError, ModuleNotFoundError) as e:
             # send a skip error so that this does not break the test suit
             raise base.UnsupportedExperiment("mixsimulator dependency issue") from e
         self._mix.set_penalisation_cost(100)

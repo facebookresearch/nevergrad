@@ -31,7 +31,7 @@ def test_readme_parametrization() -> None:
         architecture=ng.p.Choice(["conv", "fc"]),
     )
 
-    optimizer = ng.optimizers.OnePlusOne(parametrization=parametrization, budget=100)
+    optimizer = ng.optimizers.NGOpt(parametrization=parametrization, budget=100)
     recommendation = optimizer.minimize(fake_training)
 
     print(recommendation.kwargs)  # shows the recommended keyword arguments of the function

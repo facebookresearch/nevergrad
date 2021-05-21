@@ -13,7 +13,7 @@ Creating data from experiments
 Experiment plans are described in :code:`nevergrad.benchmark.experiments`. Each experiment plan is a generator yielding different :code:`Experiment` instances (defining function and optimizer settings).
 To run an experiment plan, use:
 
-.. code-block: bash
+.. code-block:: bash
 
     python -m nevergrad.benchmark <experiment_name>
 
@@ -29,7 +29,7 @@ Plotting results
 
 In order to plot the data in the csv file, just run:
 
-.. code-block: bash
+.. code-block:: bash
 
     python -m nevergrad.benchmark.plotting <csv_file>
 
@@ -56,7 +56,7 @@ This system however does not work on Windows (yet? feel free to help us!)
 
 Example (please note that :code:`nevergrad` needs to be cloned in your working directory for this example to work):
 
-.. code-block: bash
+.. code-block:: bash
 
     python -m nevergrad.benchmark additional_experiment --imports=nevergrad/benchmark/additional/example.py
 
