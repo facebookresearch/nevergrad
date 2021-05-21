@@ -2456,7 +2456,7 @@ class NGOpt13(NGOpt12):  # Also known as NGOpt12H
             not self.has_noise
             and self.budget is not None
             and self.num_workers * 3 < self.budget
-            and self.dimension < 25
+            and self.dimension < 8
             and self.budget < 80
         ):
             return HyperOpt
