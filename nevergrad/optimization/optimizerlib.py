@@ -1091,7 +1091,7 @@ class SplitOptimizer(base.Optimizer):
         self._progressive = progressive
         subparams: tp.List[p.Parameter] = []
         if max_num_vars is not None:
-            assert num_vars is None
+            assert num_vars is None, "num_vars and max_num_vars should not be set at the same time"
             num_vars = [max_num_vars] * (self.dimension // max_num_vars)
             if self.dimension > sum(num_vars):
                 num_vars += [self.dimension - sum(num_vars)]
