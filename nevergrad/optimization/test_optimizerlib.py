@@ -767,3 +767,11 @@ def test_paraportfolio_de() -> None:
         cands = [opt.ask() for _ in range(workers)]
         for cand in cands:
             opt.tell(cand, np.random.rand())
+
+
+def test_cma_logs(capsys: tp.Any) -> None:
+    opt = registry["CMA"](2, budget=300, num_workers=4)
+    [opt.ask() for _ in range(4)]  # pylint: disable=expression-not-assigned
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err == ""

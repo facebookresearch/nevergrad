@@ -106,7 +106,7 @@ class Sleeper:
                 return self._min
             value = time.time() - self._start
         else:
-            value = np.mean(self._queue)
+            value = float(np.mean(self._queue))
         return float(np.clip(value / self._num_waits, self._min, self._max))
 
     def sleep(self) -> None:
