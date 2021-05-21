@@ -1282,34 +1282,7 @@ class ConfPortfolio(base.ConfiguredOptimizer):
     ) -> None:
         self.optimizers = optimizers
         self.warmup_ratio = warmup_ratio
-        super().__init__(SplitOptimizer, locals(), as_config=True)
-
-
-class ConfPortfolio(base.ConfiguredOptimizer):
-    """Alternates :code:`ask()` on several optimizers
-
-    Parameters
-    ----------
-    optimizers: list of Optimizer, optimizer name, Optimizer class or ConfiguredOptimizer
-        the list of optimizers to use.
-    warmup_ratio: optional float
-        ratio of the budget used before choosing to focus on one optimizer
-
-    Notes
-    -----
-    - if providing an initialized  optimizer, the parametrization of the optimizer
-      must be the exact same instance as the one of the Portfolio.
-    - this API is temporary and be be renamed very soon
-    """
-
-    # pylint: disable=unused-argument
-    def __init__(
-        self,
-        *,
-        optimizers: tp.Sequence[tp.Union[base.Optimizer, base.OptCls, str]] = (),
-        warmup_ratio: tp.Optional[float] = None,
-    ) -> None:
-        super().__init__(Portfolio, locals())
+        super().__init__(Portfolio, locals(), as_config=True)
 
 
 @registry.register
@@ -1326,13 +1299,13 @@ class Portfolio(base.Optimizer):
         self._config = ConfPortfolio() if config is None else config
         cfg = self._config
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        if not cfg.optimizers:  # default
+        optimizers = list(cfg.optimizers)
+        if not optimizers:  # default
             optimizers = []
             if budget is None or budget >= 12 * num_workers:
                 optimizers = [CMA, "TwoPointsDE"]
             if budget is not None:  # needs a budget
                 optimizers.append("ScrHammersleySearch")
-        # initialize
         num = len(optimizers)
         self.optims: tp.List[base.Optimizer] = []
         sub_budget = None if budget is None else budget // num + (budget % num > 0)
@@ -1345,7 +1318,7 @@ class Portfolio(base.Optimizer):
                     )
                 self.optims.append(opt)
                 continue
-            Optim: base.OptCls = registry[opt] if isinstance(opt, str) else opt  # type: ignore
+            Optim: base.OptCls = registry[opt] if isinstance(opt, str) else opt
             sub_workers = 1 if Optim.no_parallelization else num_workers  # could be reduced in some settings
             self.optims.append(
                 Optim(
@@ -1541,7 +1514,9 @@ class MultiDiscrete(Portfolio):
     def __init__(
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers, warmup_ratio=0.25)
+        super().__init__(
+            parametrization, budget=budget, num_workers=num_workers, config=ConfPortfolio(warmup_ratio=0.25)
+        )
         assert budget is not None
         self.optims.clear()
         self.optims = [
@@ -1575,8 +1550,7 @@ class CMandAS2(Portfolio):
             parametrization,
             budget=budget,
             num_workers=num_workers,
-            optimizers=optims,
-            warmup_ratio=warmup_ratio,
+            config=ConfPortfolio(optimizers=optims, warmup_ratio=warmup_ratio),
         )
 
 
@@ -1603,8 +1577,7 @@ class CMandAS3(Portfolio):
             parametrization,
             budget=budget,
             num_workers=num_workers,
-            optimizers=optims,
-            warmup_ratio=warmup_ratio,
+            config=ConfPortfolio(optimizers=optims, warmup_ratio=warmup_ratio),
         )
 
 
@@ -1628,8 +1601,7 @@ class CM(Portfolio):
             parametrization,
             budget=budget,
             num_workers=num_workers,
-            optimizers=optims,
-            warmup_ratio=warmup_ratio,
+            config=ConfPortfolio(optimizers=optims, warmup_ratio=warmup_ratio),
         )
 
 
@@ -2499,7 +2471,7 @@ class _MSR(Portfolio):
             parametrization,
             budget=budget,
             num_workers=num_workers,
-            optimizers=[base_optimizer] * num_single_runs,
+            config=ConfPortfolio(optimizers=[base_optimizer] * num_single_runs),
         )
         self.coeffs: tp.List[np.ndarray] = []
 
