@@ -196,7 +196,8 @@ class HypervolumeIndicator:
         return self._multilist
 
     def compute(self, points: tp.Union[tp.List[np.ndarray], np.ndarray]) -> float:
-        points = points - self.reference_point
+        points = points - self.reference_point  # type: ignore
+        # TODO: not sure why it would work with lists tough, investigate the ignored typing
         self.reference_bounds = np.full(self.dimension, -np.inf)
         self._multilist = VectorLinkedList.create_sorted(self.dimension, points)
         hypervolume = self.recursive_hypervolume(self.dimension - 1)
