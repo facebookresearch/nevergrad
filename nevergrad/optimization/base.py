@@ -669,7 +669,8 @@ class ConfiguredOptimizer:
     Parameters
     ----------
     OptimizerClass: type
-        class of the optimizer to configure
+        class of the optimizer to configure, or another ConfiguredOptimizer (config will then be ignored
+        except for the optimizer name/representation)
     config: dict
         dictionnary of all the configurations
     as_config: bool
@@ -686,9 +687,7 @@ class ConfiguredOptimizer:
     one_shot = False  # algorithm designed to suggest all budget points at once
     no_parallelization = False  # algorithm which is designed to run sequentially only
 
-    def __init__(
-        self, OptimizerClass: tp.Type[Optimizer], config: tp.Dict[str, tp.Any], as_config: bool = False
-    ) -> None:
+    def __init__(self, OptimizerClass: OptCls, config: tp.Dict[str, tp.Any], as_config: bool = False) -> None:
         self._OptimizerClass = OptimizerClass
         config.pop("self", None)  # self comes from "locals()"
         config.pop("__class__", None)  # self comes from "locals()"
@@ -719,7 +718,9 @@ class ConfiguredOptimizer:
         num_workers: int
             number of evaluations which will be run in parallel at once
         """
-        config = dict(config=self) if self._as_config else self._config
+        config = dict(config=self) if self._as_config else self.config()
+        if isinstance(self._OptimizerClass, ConfiguredOptimizer):
+            config = {}  # ignore, it's already configured
         run = self._OptimizerClass(parametrization=parametrization, budget=budget, num_workers=num_workers, **config)  # type: ignore
         run.name = self.name
         # hacky but convenient to have around:

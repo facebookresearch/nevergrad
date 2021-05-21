@@ -319,15 +319,19 @@ def test_optimizer_families_repr() -> None:
     np.testing.assert_equal(repr(Cls()), "DifferentialEvolution()")
     np.testing.assert_equal(repr(Cls(initialization="LHS")), "DifferentialEvolution(initialization='LHS')")
     #
-    optimrs = optlib.RandomSearchMaker(sampler="cauchy")
-    np.testing.assert_equal(repr(optimrs), "RandomSearchMaker(sampler='cauchy')")
+    optim: base.ConfiguredOptimizer = optlib.RandomSearchMaker(sampler="cauchy")
+    np.testing.assert_equal(repr(optim), "RandomSearchMaker(sampler='cauchy')")
     #
-    optimso = optlib.ScipyOptimizer(method="COBYLA")
-    np.testing.assert_equal(repr(optimso), "ScipyOptimizer(method='COBYLA')")
-    assert optimso.no_parallelization
+    optim = optlib.ScipyOptimizer(method="COBYLA")
+    np.testing.assert_equal(repr(optim), "ScipyOptimizer(method='COBYLA')")
+    assert optim.no_parallelization
     #
-    optimcma = optlib.ParametrizedCMA(diagonal=True)
-    np.testing.assert_equal(repr(optimcma), "ParametrizedCMA(diagonal=True)")
+    optim = optlib.ParametrizedCMA(diagonal=True)
+    np.testing.assert_equal(repr(optim), "ParametrizedCMA(diagonal=True)")
+    #
+    optim = optlib.NoisySplit(discrete=True)
+    np.testing.assert_equal(repr(optim), "NoisySplitter(discrete=True)")
+    assert optim._OptimizerClass.multivariate_optimizer is optlib.OptimisticDiscreteOnePlusOne  # type: ignore
 
 
 @pytest.mark.parametrize("name", ["PSO", "DE"])  # type: ignore
