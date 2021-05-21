@@ -65,7 +65,7 @@ class TorchOptimizer:
             if not (inspect.isclass(cls) and issubclass(cls, base.Optimizer)):
                 raise TypeError('"cls" must be a str, a ConfiguredOptimizer instance, or an Optimizer class')
         args = (
-            ng.p.Array(init=np.array(p.data, dtype=np.float)).set_bounds(-bound, bound, method="clipping")
+            ng.p.Array(init=np.array(p.data, dtype=np.float_)).set_bounds(-bound, bound, method="clipping")
             for p in self.parameters
         )  # bounded to avoid overflows
         self.optimizer = cls(ng.p.Tuple(*args), budget=None, num_workers=1)
