@@ -219,8 +219,8 @@ AvgHammersleySearch = SamplingSearch(sampler="Hammersley", recommendation_rule="
 AvgHammersleySearchPlusMiddlePoint = SamplingSearch(
     sampler="Hammersley", middle_point=True, recommendation_rule="average_of_best"
 ).set_name("AvgHammersleySearchPlusMiddlePoint", register=True)
-HCHAvgRandomSearch = SamplingSearch(sampler="Random", recommendation_rule="average_of_hull_best").set_name(
-    "HCHAvgRandomSearch", register=True
+HullCenterHullAvgRandomSearch = SamplingSearch(sampler="Random", recommendation_rule="average_of_hull_best").set_name(
+    "HullCenterHullAvgRandomSearch", register=True
 )
 AvgRandomSearch = SamplingSearch(sampler="Random", recommendation_rule="average_of_best").set_name(
     "AvgRandomSearch", register=True
@@ -247,30 +247,30 @@ TEAvgCauchyLHSSearch = SamplingSearch(
 ).set_name("TEAvgCauchyLHSSearch", register=True)
 
 # Recommendation rule = by convex hull.
-HCHAvgScrHaltonSearch = SamplingSearch(scrambled=True, recommendation_rule="average_of_hull_best").set_name(
-    "HCHAvgScrHaltonSearch", register=True
+HullCenterHullAvgScrHaltonSearch = SamplingSearch(scrambled=True, recommendation_rule="average_of_hull_best").set_name(
+    "HullCenterHullAvgScrHaltonSearch", register=True
 )
-HCHAvgScrHaltonSearchPlusMiddlePoint = SamplingSearch(
+HullCenterHullAvgScrHaltonSearchPlusMiddlePoint = SamplingSearch(
     middle_point=True, scrambled=True, recommendation_rule="average_of_hull_best"
-).set_name("HCHAvgScrHaltonSearchPlusMiddlePoint", register=True)
-HCHAvgScrHammersleySearchPlusMiddlePoint = SamplingSearch(
+).set_name("HullCenterHullAvgScrHaltonSearchPlusMiddlePoint", register=True)
+HullCenterHullAvgScrHammersleySearchPlusMiddlePoint = SamplingSearch(
     scrambled=True, sampler="Hammersley", middle_point=True, recommendation_rule="average_of_hull_best"
-).set_name("HCHAvgScrHammersleySearchPlusMiddlePoint", register=True)
-HCHAvgLargeHammersleySearch = SamplingSearch(
+).set_name("HullCenterHullAvgScrHammersleySearchPlusMiddlePoint", register=True)
+HullCenterHullAvgLargeHammersleySearch = SamplingSearch(
     scale=100.0, sampler="Hammersley", recommendation_rule="average_of_hull_best"
-).set_name("HCHAvgLargeHammersleySearch", register=True)
-HCHAvgScrHammersleySearch = SamplingSearch(
+).set_name("HullCenterHullAvgLargeHammersleySearch", register=True)
+HullCenterHullAvgScrHammersleySearch = SamplingSearch(
     sampler="Hammersley", scrambled=True, recommendation_rule="average_of_hull_best"
-).set_name("HCHAvgScrHammersleySearch", register=True)
-HCHAvgCauchyScrHammersleySearch = SamplingSearch(
+).set_name("HullCenterHullAvgScrHammersleySearch", register=True)
+HullCenterHullAvgCauchyScrHammersleySearch = SamplingSearch(
     cauchy=True, sampler="Hammersley", scrambled=True, recommendation_rule="average_of_hull_best"
-).set_name("HCHAvgCauchyScrHammersleySearch", register=True)
-HCHAvgLHSSearch = SamplingSearch(sampler="LHS", recommendation_rule="average_of_hull_best").set_name(
-    "HCHAvgLHSSearch", register=True
+).set_name("HullCenterHullAvgCauchyScrHammersleySearch", register=True)
+HullCenterHullAvgLHSSearch = SamplingSearch(sampler="LHS", recommendation_rule="average_of_hull_best").set_name(
+    "HullCenterHullAvgLHSSearch", register=True
 )
-HCHAvgCauchyLHSSearch = SamplingSearch(
+HullCenterHullAvgCauchyLHSSearch = SamplingSearch(
     sampler="LHS", cauchy=True, recommendation_rule="average_of_hull_best"
-).set_name("HCHAvgCauchyLHSSearch", register=True)
+).set_name("HullCenterHullAvgCauchyLHSSearch", register=True)
 
 # Split on top of competence map.
 MetaNGOpt10 = ConfSplitOptimizer(
