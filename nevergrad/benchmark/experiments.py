@@ -1255,7 +1255,7 @@ def gym_anm(
         optims = ["DiagonalCMA", "PSO", "DE", "TwoPointsDE"]
     #optims = [np.random.choice(optims)]
     for func in funcs:
-        for budget in [np.random.choice([25, 50, 100, 200] + ([400, 800, 1600, 3200, 6400, 12800, 25600] if "stochastic" not in specific_problem else []))]:
+        for budget in [([25, 50, 100, 200] + ([400, 800, 1600, 3200, 6400, 12800, 25600] if "stochastic" not in specific_problem else []))]:
             for num_workers in [1]:
                 if num_workers < budget:
                     for algo in optims:
