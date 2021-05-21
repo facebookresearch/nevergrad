@@ -1045,10 +1045,10 @@ class SplitOptimizer(base.Optimizer):
     num_optims: int or None
         number of optimizers
     num_vars: int or None
-        number of variable per optimizer.
+        number of variable per optimizer (should not be used if max_num_vars is set)
     max_num_vars: int or None
-        maximum number of variables per optimizer. Should not be defined if num_vars is defined:
-        num_vars will be setup internally using max_num_vars.
+        maximum number of variables per optimizer. Should not be defined if :code:`num_vars`
+         is defined since they will be chosen automatically.
     progressive: bool
         True if we want to progressively add optimizers during the optimization run.
         If progressive = True, the optimizer is forced at OptimisticNoisyOnePlusOne.
