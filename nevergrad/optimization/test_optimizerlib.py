@@ -117,6 +117,10 @@ def check_optimizer(
 SLOW = [
     "NoisyDE",
     "NoisyBandit",
+    "Noisy13Splits",
+    "NoisyInfSplits",
+    "DiscreteNoisy13Splits",
+    "DiscreteNoisyInfSplits",
     "SPSA",
     "NoisyOnePlusOne",
     "OptimisticNoisyOnePlusOne",
