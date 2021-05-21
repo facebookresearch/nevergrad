@@ -12,6 +12,7 @@ from .optimizerlib import (
     ParametrizedBO,
     EMNA,
     NGOpt10,
+    NGOpt12,
 )
 from . import optimizerlib as opts
 from .optimizerlib import CMA, Chaining, PSO, BO
@@ -277,11 +278,17 @@ MetaNGOpt10 = opts.ConfSplitOptimizer(
 ).set_name("MetaNGOpt10", register=True)
 
 # Multiple single runs for multi-objective optimization.
-NGOptSingle9 = opts.MultipleSingleRuns(num_single_runs=9).set_name("NGOptSingle9", register=True)
-NGOptSingle16 = opts.MultipleSingleRuns(num_single_runs=16).set_name("NGOptSingle16", register=True)
-NGOptSingle25 = opts.MultipleSingleRuns(num_single_runs=25).set_name("NGOptSingle25", register=True)
+NGOptSingle9 = opts.MultipleSingleRuns(num_single_runs=9, base_optimizer=NGOpt12).set_name(
+    "NGOptSingle9", register=True
+)
+NGOptSingle16 = opts.MultipleSingleRuns(num_single_runs=16, base_optimizer=NGOpt12).set_name(
+    "NGOptSingle16", register=True
+)
+NGOptSingle25 = opts.MultipleSingleRuns(num_single_runs=25, base_optimizer=NGOpt12).set_name(
+    "NGOptSingle25", register=True
+)
 
-# noisy splitters.
+# noisy splitters
 Noisy13Splits = opts.NoisySplit(num_optims=13, discrete=False).set_name("Noisy13Splits", register=True)
 NoisyInfSplits = opts.NoisySplit(num_optims=float("inf"), discrete=False).set_name(
     "NoisyInfSplits", register=True

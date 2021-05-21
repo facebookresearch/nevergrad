@@ -585,6 +585,14 @@ def test_shiwa_dim1() -> None:
     assert recom.value < init
 
 
+continuous_cases: tp.List[tp.Tuple[str, object, int, int, str]] = [
+    ("NGOpt", d, b, n, f"#CONTINUOUS")
+    for d in [1, 2, 10, 100, 1000]
+    for b in [2 * d, 10 * d, 100 * d]
+    for n in [1, d, 10 * d]
+]
+
+
 @pytest.mark.parametrize(  # type: ignore
     "name,param,budget,num_workers,expected",
     [
@@ -597,22 +605,25 @@ def test_shiwa_dim1() -> None:
             2,
             "DoubleFastGADiscreteOnePlusOne",
         ),
-        ("NGOpt", 1, 10, 1, "MetaModel"),
-        ("NGOpt", 1, 10, 2, "MetaModel"),
+        ("NGOpt", 10, 10, 1, "Cobyla"),
+        ("NGOpt", 10, 10, 2, "CMA"),
         (
             "NGOpt",
             ng.p.Log(lower=1, upper=1000).set_integer_casting(),
             10,
             2,
-            "DoubleFastGADiscreteOnePlusOne",
+            "HyperOpt",
         ),
         ("NGOpt8", ng.p.TransitionChoice(range(30), repetitions=10), 10, 2, "CMandAS2"),
         ("NGOpt8", ng.p.TransitionChoice(range(3), repetitions=10), 10, 2, "AdaptiveDiscreteOnePlusOne"),
+        ("NGOpt", ng.p.TransitionChoice(range(30), repetitions=4), 10, 2, "HyperOpt"),
+        ("NGOpt", ng.p.TransitionChoice(range(30), repetitions=4), 10, 2, "HyperOpt"),
         ("NGOpt", ng.p.TransitionChoice(range(30), repetitions=10), 10, 2, "DiscreteLenglerOnePlusOne"),
-        ("NGOpt", ng.p.TransitionChoice(range(3), repetitions=10), 10, 2, "DiscreteLenglerOnePlusOne"),
+        ("NGOpt", ng.p.TransitionChoice(range(30), repetitions=10), 10, 2, "DiscreteLenglerOnePlusOne"),
         ("NGO", 1, 10, 1, "Cobyla"),
         ("NGO", 1, 10, 2, "OnePlusOne"),
-    ],  # pylint: disable=too-many-arguments
+    ]
+    + continuous_cases,  # pylint: disable=too-many-arguments
 )
 @testing.suppress_nevergrad_warnings()
 def test_ngopt_selection(
@@ -624,7 +635,15 @@ def test_ngopt_selection(
         pattern = rf".*{name} selected (?P<name>\w+?) optimizer\."
         match = re.match(pattern, caplog.text.splitlines()[-1])
         assert match is not None, f"Did not detect selection in logs: {caplog.text}"
-        assert match.group("name") == expected
+        choice = match.group("name")
+        if expected != "#CONTINUOUS":
+            assert choice == expected
+        else:
+            print(f"Continuous param={param} budget={budget} workers={num_workers} --> {choice}")
+            if num_workers >= budget:
+                assert choice == "MetaTuneRecentering"
+            if num_workers > 1:
+                assert choice not in ["SQP", "Cobyla"]
 
 
 def test_bo_ordering() -> None:
