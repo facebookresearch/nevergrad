@@ -7,15 +7,14 @@ from .oneshot import SamplingSearch
 from .differentialevolution import DifferentialEvolution
 from .optimizerlib import RandomSearchMaker, SQP, LHSSearch, DE, RandomSearch, MetaRecentering, MetaTuneRecentering  # type: ignore
 from .optimizerlib import (
-    MultipleSingleRuns,
     ParametrizedOnePlusOne,
     ParametrizedCMA,
-    ConfSplitOptimizer,
     ParametrizedBO,
     EMNA,
     NGOpt10,
     NGOpt12,
 )
+from . import optimizerlib as opts
 from .optimizerlib import CMA, Chaining, PSO, BO
 
 # DE
@@ -274,17 +273,29 @@ HullCenterHullAvgCauchyLHSSearch = SamplingSearch(
 ).set_name("HullCenterHullAvgCauchyLHSSearch", register=True)
 
 # Split on top of competence map.
-MetaNGOpt10 = ConfSplitOptimizer(
+MetaNGOpt10 = opts.ConfSplitOptimizer(
     multivariate_optimizer=NGOpt10, monovariate_optimizer=NGOpt10, non_deterministic_descriptor=False
 ).set_name("MetaNGOpt10", register=True)
 
 # Multiple single runs for multi-objective optimization.
-NGOptSingle9 = MultipleSingleRuns(num_single_runs=9, base_optimizer=NGOpt12).set_name(
+NGOptSingle9 = opts.MultipleSingleRuns(num_single_runs=9, base_optimizer=NGOpt12).set_name(
     "NGOptSingle9", register=True
 )
-NGOptSingle16 = MultipleSingleRuns(num_single_runs=16, base_optimizer=NGOpt12).set_name(
+NGOptSingle16 = opts.MultipleSingleRuns(num_single_runs=16, base_optimizer=NGOpt12).set_name(
     "NGOptSingle16", register=True
 )
-NGOptSingle25 = MultipleSingleRuns(num_single_runs=25, base_optimizer=NGOpt12).set_name(
+NGOptSingle25 = opts.MultipleSingleRuns(num_single_runs=25, base_optimizer=NGOpt12).set_name(
     "NGOptSingle25", register=True
+)
+
+# noisy splitters
+Noisy13Splits = opts.NoisySplit(num_optims=13, discrete=False).set_name("Noisy13Splits", register=True)
+NoisyInfSplits = opts.NoisySplit(num_optims=float("inf"), discrete=False).set_name(
+    "NoisyInfSplits", register=True
+)
+DiscreteNoisy13Splits = opts.NoisySplit(num_optims=13, discrete=True).set_name(
+    "DiscreteNoisy13Splits", register=True
+)
+DiscreteNoisyInfSplits = opts.NoisySplit(num_optims=float("inf"), discrete=True).set_name(
+    "DiscreteNoisyInfSplits", register=True
 )
