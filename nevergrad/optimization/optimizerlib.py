@@ -1168,12 +1168,14 @@ class ConfSplitOptimizer(base.ConfiguredOptimizer):
     Parameters
     ----------
     num_optims: int (or float("inf"))
-        number of optimizers
+        number of optimizers to create (if not provided through :code:`num_vars: or
+        :code:`max_num_vars`)
     num_vars: int or None
-        number of variable per optimizer (should not be used if max_num_vars is set)
+        number of variable per optimizer (should not be used if :code:`max_num_vars` or
+        :code:`num_optims` is set)
     max_num_vars: int or None
-        maximum number of variables per optimizer. Should not be defined if :code:`num_vars`
-        is defined since they will be chosen automatically.
+        maximum number of variables per optimizer. Should not be defined if :code:`num_vars` or
+        :code:`num_optims` is defined since they will be chosen automatically.
     progressive: optional bool
         whether we progressively add optimizers.
     non_deterministic_descriptor: bool
@@ -1184,7 +1186,7 @@ class ConfSplitOptimizer(base.ConfiguredOptimizer):
     -------
     for 5 optimizers, each of them working on 2 variables, one can use:
 
-    opt = ConfSplitOptimizer(num_optims=5, num_vars=[2, 2, 2, 2, 2])(parametrization=10, num_workers=3)
+    opt = ConfSplitOptimizer(num_vars=[2, 2, 2, 2, 2])(parametrization=10, num_workers=3)
     or equivalently:
     opt = SplitOptimizer(parametrization=10, num_workers=3, num_vars=[2, 2, 2, 2, 2])
     Given that all optimizers have the same number of variables, one can also run:
@@ -1219,6 +1221,8 @@ class ConfSplitOptimizer(base.ConfiguredOptimizer):
         self.monovariate_optimizer = monovariate_optimizer
         self.progressive = progressive
         self.non_deterministic_descriptor = non_deterministic_descriptor
+        if sum(x is not None for x in [num_optims, num_vars, max_num_vars]) > 1:
+            raise ValueError("At most, only one of num_optims, num_vars and max_num_vars can be set")
         super().__init__(SplitOptimizer, locals(), as_config=True)
 
 
@@ -1252,49 +1256,125 @@ class NoisySplit(base.ConfiguredOptimizer):
         super().__init__(ConfOpt, kwargs)
 
 
+class ConfPortfolio(base.ConfiguredOptimizer):
+    """Alternates :code:`ask()` on several optimizers
+
+    Parameters
+    ----------
+    optimizers: list of Optimizer, optimizer name, Optimizer class or ConfiguredOptimizer
+        the list of optimizers to use.
+    warmup_ratio: optional float
+        ratio of the budget used before choosing to focus on one optimizer
+
+    Notes
+    -----
+    - if providing an initialized  optimizer, the parametrization of the optimizer
+      must be the exact same instance as the one of the Portfolio.
+    - this API is temporary and will be renamed very soon
+    """
+
+    # pylint: disable=unused-argument
+    def __init__(
+        self,
+        *,
+        optimizers: tp.Sequence[tp.Union[base.Optimizer, base.OptCls, str]] = (),
+        warmup_ratio: tp.Optional[float] = None,
+    ) -> None:
+        self.optimizers = optimizers
+        self.warmup_ratio = warmup_ratio
+        super().__init__(SplitOptimizer, locals(), as_config=True)
+
+
 @registry.register
 class Portfolio(base.Optimizer):
     """Passive portfolio of CMA, 2-pt DE and Scr-Hammersley."""
 
     def __init__(
-        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+        self,
+        parametrization: IntOrParameter,
+        budget: tp.Optional[int] = None,
+        num_workers: int = 1,
+        config: tp.Optional["ConfPortfolio"] = None,
     ) -> None:
+        self._config = ConfPortfolio() if config is None else config
+        cfg = self._config
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        assert budget is not None
-        self.optims = [
-            CMA(
-                self.parametrization, budget // 3 + (budget % 3 > 0), num_workers
-            ),  # share parametrization and its rng
-            TwoPointsDE(self.parametrization, budget // 3 + (budget % 3 > 1), num_workers),  # noqa: F405
-            ScrHammersleySearch(self.parametrization, budget // 3, num_workers),
-        ]  # noqa: F405
-        if budget < 12 * num_workers:
-            self.optims = [ScrHammersleySearch(self.parametrization, budget, num_workers)]  # noqa: F405
+        if not cfg.optimizers:  # default
+            optimizers = []
+            if budget is None or budget >= 12 * num_workers:
+                optimizers = [CMA, "TwoPointsDE"]
+            if budget is not None:  # needs a budget
+                optimizers.append("ScrHammersleySearch")
+        # initialize
+        num = len(optimizers)
+        self.optims: tp.List[base.Optimizer] = []
+        sub_budget = None if budget is None else budget // num + (budget % num > 0)
+        for opt in optimizers:
+            if isinstance(opt, base.Optimizer):
+                if opt.parametrization is not self.parametrization:
+                    raise errors.NevergradValueError(
+                        "Initialized optimizers are only accepted if "
+                        "the parametrization object is strictly the same"
+                    )
+                self.optims.append(opt)
+                continue
+            Optim: base.OptCls = registry[opt] if isinstance(opt, str) else opt  # type: ignore
+            sub_workers = 1 if Optim.no_parallelization else num_workers  # could be reduced in some settings
+            self.optims.append(
+                Optim(
+                    self.parametrization,  # share parametrization and its rng
+                    budget=sub_budget,
+                    num_workers=sub_workers,
+                )
+            )
+        # current optimizer choice
+        self._selected_ind: tp.Optional[int] = None
+        self._current = -1
+        self._warmup_budget: tp.Optional[int] = None
+        if cfg.warmup_ratio is not None and budget is None:
+            raise ValueError("warmup_ratio is only available if a budget is provided")
+        if not any(x is None for x in (cfg.warmup_ratio, budget)):
+            self._warmup_budget = int(cfg.warmup_ratio * budget)  # type: ignore
 
     def _internal_ask_candidate(self) -> p.Parameter:
-        optim_index = self._num_ask % len(self.optims)
-        candidate = self.optims[optim_index].ask()
+        # optimizer selection if budget is over
+        if self._warmup_budget is not None:
+            if self._selected_ind is None and self._warmup_budget < self.num_tell:
+                ind = self.current_bests["pessimistic"].parameter._meta.get("optim_index", -1)
+                if ind >= 0:  # not a tell not asked
+                    if self.num_workers == 1 or self.optims[ind].num_workers > 1:
+                        self._selected_ind = ind  # don't select non-parallelizable in parallel settings
+        optim_index = self._selected_ind
+        if optim_index is None:
+            num = len(self.optims)
+            for k in range(2 * num):
+                self._current += 1
+                optim_index = self._current % len(self.optims)
+                opt = self.optims[optim_index]
+                if opt.num_workers > opt.num_ask - (opt.num_tell - opt.num_tell_not_asked):
+                    break  # if there are workers left, use this optimizer
+                if k > num:
+                    if not opt.no_parallelization:
+                        break  # if no worker is available, try the first parallelizable optimizer
+        if optim_index is None:
+            raise RuntimeError("Something went wrong in optimizer selection")
+        opt = self.optims[optim_index]
+        candidate = opt.ask()
         candidate._meta["optim_index"] = optim_index
         return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        # Telling all optimizers is presumably better than just
+        # self.optims[optim_index].tell(candidate, value)
+        accepted = 0
         for opt in self.optims:
             try:
                 opt.tell(candidate, loss)
+                accepted += 1
             except errors.TellNotAskedNotSupportedError:
                 pass
-        # Presumably better than self.optims[optim_index].tell(candidate, value)
-
-    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        at_least_one_ok = False
-        for opt in self.optims:
-            try:
-                opt.tell(candidate, loss)
-                at_least_one_ok = True
-            except errors.TellNotAskedNotSupportedError:
-                pass
-        if not at_least_one_ok:
-            raise errors.TellNotAskedNotSupportedError
+        if not accepted:
+            raise errors.TellNotAskedNotSupportedError("No sub-optimizer accepted the tell-not-asked")
 
 
 class InfiniteMetaModelOptimum(ValueError):
@@ -1333,7 +1413,7 @@ def learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.Arra
     model.fit(X2, y)
 
     try:
-        for cls in Powell, DE:  # Powell excellent here, DE as a backup for thread safety.
+        for cls in (Powell, DE):  # Powell excellent here, DE as a backup for thread safety.
             optimizer = cls(parametrization=dimension, budget=45 * dimension + 30)
             try:
                 minimum = optimizer.minimize(

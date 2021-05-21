@@ -7,7 +7,7 @@ extension-pkg-whitelist=
 disable=
     invalid-name, missing-docstring, too-few-public-methods, protected-access, import-error,
     no-self-use, fixme, no-else-return, no-member, useless-import-alias, unsubscriptable-object,
-    too-many-arguments, too-many-instance-attributes, too-many-lines
+    too-many-arguments, too-many-instance-attributes, too-many-lines, too-many-locals
 
 [TYPECHECK]
 ignored-modules = numpy, numpy.testing
