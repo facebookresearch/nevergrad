@@ -219,9 +219,9 @@ AvgHammersleySearch = SamplingSearch(sampler="Hammersley", recommendation_rule="
 AvgHammersleySearchPlusMiddlePoint = SamplingSearch(
     sampler="Hammersley", middle_point=True, recommendation_rule="average_of_best"
 ).set_name("AvgHammersleySearchPlusMiddlePoint", register=True)
-HullCenterHullAvgRandomSearch = SamplingSearch(sampler="Random", recommendation_rule="average_of_hull_best").set_name(
-    "HullCenterHullAvgRandomSearch", register=True
-)
+HullCenterHullAvgRandomSearch = SamplingSearch(
+    sampler="Random", recommendation_rule="average_of_hull_best"
+).set_name("HullCenterHullAvgRandomSearch", register=True)
 AvgRandomSearch = SamplingSearch(sampler="Random", recommendation_rule="average_of_best").set_name(
     "AvgRandomSearch", register=True
 )
@@ -247,9 +247,9 @@ TEAvgCauchyLHSSearch = SamplingSearch(
 ).set_name("TEAvgCauchyLHSSearch", register=True)
 
 # Recommendation rule = by convex hull.
-HullCenterHullAvgScrHaltonSearch = SamplingSearch(scrambled=True, recommendation_rule="average_of_hull_best").set_name(
-    "HullCenterHullAvgScrHaltonSearch", register=True
-)
+HullCenterHullAvgScrHaltonSearch = SamplingSearch(
+    scrambled=True, recommendation_rule="average_of_hull_best"
+).set_name("HullCenterHullAvgScrHaltonSearch", register=True)
 HullCenterHullAvgScrHaltonSearchPlusMiddlePoint = SamplingSearch(
     middle_point=True, scrambled=True, recommendation_rule="average_of_hull_best"
 ).set_name("HullCenterHullAvgScrHaltonSearchPlusMiddlePoint", register=True)
@@ -265,9 +265,9 @@ HullCenterHullAvgScrHammersleySearch = SamplingSearch(
 HullCenterHullAvgCauchyScrHammersleySearch = SamplingSearch(
     cauchy=True, sampler="Hammersley", scrambled=True, recommendation_rule="average_of_hull_best"
 ).set_name("HullCenterHullAvgCauchyScrHammersleySearch", register=True)
-HullCenterHullAvgLHSSearch = SamplingSearch(sampler="LHS", recommendation_rule="average_of_hull_best").set_name(
-    "HullCenterHullAvgLHSSearch", register=True
-)
+HullCenterHullAvgLHSSearch = SamplingSearch(
+    sampler="LHS", recommendation_rule="average_of_hull_best"
+).set_name("HullCenterHullAvgLHSSearch", register=True)
 HullCenterHullAvgCauchyLHSSearch = SamplingSearch(
     sampler="LHS", cauchy=True, recommendation_rule="average_of_hull_best"
 ).set_name("HullCenterHullAvgCauchyLHSSearch", register=True)
