@@ -282,13 +282,13 @@ NGOptSingle16 = opts.MultipleSingleRuns(num_single_runs=16).set_name("NGOptSingl
 NGOptSingle25 = opts.MultipleSingleRuns(num_single_runs=25).set_name("NGOptSingle25", register=True)
 
 # noisy splitters.
-Noisy13Splits = opts.NoisySplitter(num_optims=13, discrete=False).set_name("Noisy13Splits", register=True)
-NoisyInfSplits = opts.NoisySplitter(num_optims=float("inf"), discrete=False).set_name(
+Noisy13Splits = opts.NoisySplit(num_optims=13, discrete=False).set_name("Noisy13Splits", register=True)
+NoisyInfSplits = opts.NoisySplit(num_optims=float("inf"), discrete=False).set_name(
     "NoisyInfSplits", register=True
 )
-DiscreteNoisy13Splits = opts.NoisySplitter(num_optims=13, discrete=True).set_name(
+DiscreteNoisy13Splits = opts.NoisySplit(num_optims=13, discrete=True).set_name(
     "DiscreteNoisy13Splits", register=True
 )
-DiscreteNoisyInfSplits = opts.NoisySplitter(num_optims=float("inf"), discrete=True).set_name(
+DiscreteNoisyInfSplits = opts.NoisySplit(num_optims=float("inf"), discrete=True).set_name(
     "DiscreteNoisyInfSplits", register=True
 )

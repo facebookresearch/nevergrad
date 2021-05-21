@@ -14,7 +14,7 @@ from .optimizerlib import ParametrizedTBPSA
 from .optimizerlib import ParametrizedBO
 from .optimizerlib import ParametrizedCMA
 from .optimizerlib import Chaining
-from .optimizerlib import NoisySplitter
+from .optimizerlib import NoisySplit
 from .optimizerlib import ConfSplitOptimizer
 from .differentialevolution import DifferentialEvolution
 from .es import EvolutionStrategy
@@ -35,6 +35,6 @@ __all__ = [
     "Chaining",
     "EMNA",
     "ParametrizedTBPSA",
-    "NoisySplitter",
+    "NoisySplit",
     "ConfSplitOptimizer",
 ]

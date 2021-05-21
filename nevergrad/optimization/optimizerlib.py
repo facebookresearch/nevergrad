@@ -1218,7 +1218,7 @@ class ConfSplitOptimizer(base.ConfiguredOptimizer):
         super().__init__(SplitOptimizer, locals(), as_config=True)
 
 
-class NoisySplitter(base.ConfiguredOptimizer):
+class NoisySplit(base.ConfiguredOptimizer):
     """Non-progressive noisy split of variables based on 1+1
 
     Parameters
