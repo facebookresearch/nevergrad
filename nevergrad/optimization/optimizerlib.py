@@ -1184,7 +1184,7 @@ class ConfSplitOptimizer(base.ConfiguredOptimizer):
     -------
     for 5 optimizers, each of them working on 2 variables, one can use:
 
-    opt = SplitOptimizer(parametrization=10, num_workers=3, num_optims=5, num_vars=[2, 2, 2, 2, 2])
+    opt = ConfSplitOptimizer(num_optims=5, num_vars=[2, 2, 2, 2, 2])(parametrization=10, num_workers=3)
     or equivalently:
     opt = SplitOptimizer(parametrization=10, num_workers=3, num_vars=[2, 2, 2, 2, 2])
     Given that all optimizers have the same number of variables, one can also run:
