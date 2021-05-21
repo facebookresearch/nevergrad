@@ -8,6 +8,9 @@ import os
 import typing as tp
 import gym
 import compiler_gym  # pylint: disable=unused-import
+from compiler_gym import CompilerEnvState, CompilerEnvStateWriter
+from compiler_gym.util.statistics import arithmetic_mean, geometric_mean, stdev
+from compiler_gym.util.tabulate import tabulate
 import nevergrad as ng
 
 if os.name != "nt":
@@ -15,7 +18,16 @@ if os.name != "nt":
 from nevergrad.parametrization import parameter
 from ..base import ExperimentFunction
 
-
+#from compiler_gym_experiments.cli_util import (
+#    ActionSpace,
+#        ActivationFunction,
+#            RLlibFramework,
+#            )
+#from compiler_gym_experiments.wrappers import (
+#                AutophaseNormalizedFeatures,
+#                    ConcatActionsHistogram,
+#                        CycleOverBenchmarks,
+#                        )
 ## Method for building a new list, for a future version of gym:
 
 GYM_ENV_NAMES = []
@@ -165,7 +177,7 @@ class CompilerGym(ExperimentFunction):
             ng.p.Array(shape=(self.num_episode_steps,))
             .set_bounds(0, action_space_size - 1)
             .set_integer_casting()
-        ).set_name("direct")
+        ).set_name("direct" + str(pb_index))
         env = gym.make("llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
         self.uris = list(env.datasets["benchmark://cbench-v1"].benchmark_uris())
         self.compilergym_index = pb_index
@@ -235,6 +247,8 @@ class GymMulti(ExperimentFunction):
             raise ng.errors.UnsupportedExperiment("Windows is not supported")
         if "compilergym" in name:
             env = gym.make("llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
+#            env = AutophaseNormalizedFeatures(env)
+#            env = ConcatActionsHistogram(env)
             self.uris = list(env.datasets["benchmark://cbench-v1"].benchmark_uris())
             # For training, in the "stochastic" case.
             from itertools import islice
@@ -461,6 +475,10 @@ class GymMulti(ExperimentFunction):
         """Do a simulation with parametrization x and return the result."""
         # Deterministic conformant: do  the average of 7 simullations always with the same seed.
         # Otherwise: apply a random seed and do a single simulation.
+        if "stochastic" in self.name and "compiler" in self.name:
+            log_rewards = [np.log(max(1e-5, -self.gym_simulate(x, seed=self.parametrization.random_state.randint(500000),
+                limited_fidelity=limited_fidelity, pb_index=pb_index))) for pb_index in range(23)]
+            return - np.exp(np.sum(log_rewards) / len(log_rewards))
         num_simulations = 7 if self.control != "conformant" and not self.randomized else 1
         loss = 0
         for seed in range(num_simulations):
