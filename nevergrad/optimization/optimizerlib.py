@@ -1168,12 +1168,14 @@ class ConfSplitOptimizer(base.ConfiguredOptimizer):
     Parameters
     ----------
     num_optims: int (or float("inf"))
-        number of optimizers
+        number of optimizers to create (if not provided through :code:`num_vars: or
+        :code:`max_num_vars`)
     num_vars: int or None
-        number of variable per optimizer (should not be used if max_num_vars is set)
+        number of variable per optimizer (should not be used if :code:`max_num_vars` or
+        :code:`num_optims` is set)
     max_num_vars: int or None
-        maximum number of variables per optimizer. Should not be defined if :code:`num_vars`
-        is defined since they will be chosen automatically.
+        maximum number of variables per optimizer. Should not be defined if :code:`num_vars` or
+        :code:`num_optims` is defined since they will be chosen automatically.
     progressive: optional bool
         whether we progressively add optimizers.
     non_deterministic_descriptor: bool
@@ -1184,7 +1186,7 @@ class ConfSplitOptimizer(base.ConfiguredOptimizer):
     -------
     for 5 optimizers, each of them working on 2 variables, one can use:
 
-    opt = ConfSplitOptimizer(num_optims=5, num_vars=[2, 2, 2, 2, 2])(parametrization=10, num_workers=3)
+    opt = ConfSplitOptimizer(num_vars=[2, 2, 2, 2, 2])(parametrization=10, num_workers=3)
     or equivalently:
     opt = SplitOptimizer(parametrization=10, num_workers=3, num_vars=[2, 2, 2, 2, 2])
     Given that all optimizers have the same number of variables, one can also run:
@@ -1219,6 +1221,8 @@ class ConfSplitOptimizer(base.ConfiguredOptimizer):
         self.monovariate_optimizer = monovariate_optimizer
         self.progressive = progressive
         self.non_deterministic_descriptor = non_deterministic_descriptor
+        if sum(x is not None for x in [num_optims, num_vars, max_num_vars]) > 1:
+            raise ValueError("At most, only one of num_optims, num_vars and max_num_vars can be set")
         super().__init__(SplitOptimizer, locals(), as_config=True)
 
 
@@ -1276,7 +1280,9 @@ class ConfPortfolio(base.ConfiguredOptimizer):
         optimizers: tp.Sequence[tp.Union[base.Optimizer, base.OptCls, str]] = (),
         warmup_ratio: tp.Optional[float] = None,
     ) -> None:
-        super().__init__(Portfolio, locals())
+        self.optimizers = optimizers
+        self.warmup_ratio = warmup_ratio
+        super().__init__(SplitOptimizer, locals(), as_config=True)
 
 
 @registry.register
@@ -1288,11 +1294,12 @@ class Portfolio(base.Optimizer):
         parametrization: IntOrParameter,
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
-        optimizers: tp.Sequence[tp.Union[base.Optimizer, base.OptCls, str]] = (),
-        warmup_ratio: tp.Optional[float] = None,
+        config: tp.Optional["ConfPortfolio"] = None,
     ) -> None:
+        self._config = ConfPortfolio() if config is None else config
+        cfg = self._config
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        if not optimizers:  # default
+        if not cfg.optimizers:  # default
             optimizers = []
             if budget is None or budget >= 12 * num_workers:
                 optimizers = [CMA, "TwoPointsDE"]
@@ -1311,7 +1318,7 @@ class Portfolio(base.Optimizer):
                     )
                 self.optims.append(opt)
                 continue
-            Optim = registry[opt] if isinstance(opt, str) else opt
+            Optim: base.OptCls = registry[opt] if isinstance(opt, str) else opt  # type: ignore
             sub_workers = 1 if Optim.no_parallelization else num_workers  # could be reduced in some settings
             self.optims.append(
                 Optim(
@@ -1324,10 +1331,10 @@ class Portfolio(base.Optimizer):
         self._selected_ind: tp.Optional[int] = None
         self._current = -1
         self._warmup_budget: tp.Optional[int] = None
-        if warmup_ratio is not None and budget is None:
+        if cfg.warmup_ratio is not None and budget is None:
             raise ValueError("warmup_ratio is only available if a budget is provided")
-        if not any(x is None for x in (warmup_ratio, budget)):
-            self._warmup_budget = int(warmup_ratio * budget)  # type: ignore
+        if not any(x is None for x in (cfg.warmup_ratio, budget)):
+            self._warmup_budget = int(cfg.warmup_ratio * budget)  # type: ignore
 
     def _internal_ask_candidate(self) -> p.Parameter:
         # optimizer selection if budget is over

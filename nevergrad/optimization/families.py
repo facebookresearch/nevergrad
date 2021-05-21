@@ -16,6 +16,7 @@ from .optimizerlib import ParametrizedCMA
 from .optimizerlib import Chaining
 from .optimizerlib import NoisySplit
 from .optimizerlib import ConfSplitOptimizer
+from .optimizerlib import ConfPortfolio
 from .differentialevolution import DifferentialEvolution
 from .es import EvolutionStrategy
 from .recastlib import ScipyOptimizer
@@ -37,4 +38,5 @@ __all__ = [
     "ParametrizedTBPSA",
     "NoisySplit",
     "ConfSplitOptimizer",
+    "ConfPortfolio",
 ]
