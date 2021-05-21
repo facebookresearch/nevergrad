@@ -2423,7 +2423,7 @@ class NGOpt10(NGOpt8):
 
 
 @registry.register
-class NGOpt19(NGOpt10):
+class NGOpt12(NGOpt10):
     def _select_optimizer_cls(self) -> base.OptCls:
         if (
             not self.has_noise
@@ -2450,7 +2450,7 @@ class NGOpt19(NGOpt10):
 
 
 @registry.register
-class NGOpt24(NGOpt19):
+class NGOpt12H(NGOpt12):
     def _select_optimizer_cls(self) -> base.OptCls:
         if (
             not self.has_noise
@@ -2465,7 +2465,7 @@ class NGOpt24(NGOpt19):
 
 
 @registry.register
-class NGOpt(NGOpt24):
+class NGOpt(NGOpt12H):
     pass
 
 
