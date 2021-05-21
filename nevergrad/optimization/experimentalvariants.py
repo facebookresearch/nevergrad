@@ -14,6 +14,7 @@ from .optimizerlib import (
     ParametrizedBO,
     EMNA,
     NGOpt10,
+    NGOpt12,
 )
 from .optimizerlib import CMA, Chaining, PSO, BO
 
@@ -278,6 +279,12 @@ MetaNGOpt10 = ConfSplitOptimizer(
 ).set_name("MetaNGOpt10", register=True)
 
 # Multiple single runs for multi-objective optimization.
-NGOptSingle9 = MultipleSingleRuns(num_single_runs=9).set_name("NGOptSingle9", register=True)
-NGOptSingle16 = MultipleSingleRuns(num_single_runs=16).set_name("NGOptSingle16", register=True)
-NGOptSingle25 = MultipleSingleRuns(num_single_runs=25).set_name("NGOptSingle25", register=True)
+NGOptSingle9 = MultipleSingleRuns(num_single_runs=9, base_optimizer=NGOpt12).set_name(
+    "NGOptSingle9", register=True
+)
+NGOptSingle16 = MultipleSingleRuns(num_single_runs=16, base_optimizer=NGOpt12).set_name(
+    "NGOptSingle16", register=True
+)
+NGOptSingle25 = MultipleSingleRuns(num_single_runs=25, base_optimizer=NGOpt12).set_name(
+    "NGOptSingle25", register=True
+)
