@@ -1364,7 +1364,7 @@ class MetaModel(base.Optimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if multivariate_optimizer is None:
-            multivariate_optimizer = CMA if self.dimension > 1 else OnePlusOne
+            multivariate_optimizer = ParametrizedCMA(elitist=True) if self.dimension > 1 else OnePlusOne
         self._optim = multivariate_optimizer(
             self.parametrization, budget, num_workers
         )  # share parametrization and its rng
@@ -2430,6 +2430,7 @@ class NGOpt8(NGOpt4):
                 and not (self.has_noise and self.fully_continuous)
                 and not (self.num_workers > self.budget / 5)
                 and (self.num_workers == 1 and self.budget > 6000 and self.dimension > 7)
+                and self.num_workers < self.budget
             ):
                 optimClass = ChainMetaModelPowell
             else:
@@ -2458,7 +2459,49 @@ class NGOpt10(NGOpt8):
 
 
 @registry.register
-class NGOpt(NGOpt10):
+class NGOpt12(NGOpt10):
+    def _select_optimizer_cls(self) -> base.OptCls:
+        if (
+            not self.has_noise
+            and self.fully_continuous
+            and self.num_workers == 1
+            and self.dimension < 100  # was 50 in 15, 16, 17
+            and self.budget is not None
+            and self.budget < self.dimension * 50
+            and self.budget > min(50, self.dimension * 5)
+        ):
+            return chainMetaModelSQP
+        elif (
+            not self.has_noise
+            and self.fully_continuous
+            and self.num_workers == 1
+            and self.dimension < 100  # was 50 in 15, 16, 17
+            and self.budget is not None
+            and self.budget < self.dimension * 5
+            and self.budget > 50
+        ):
+            return MetaModel
+        else:
+            return super()._select_optimizer_cls()
+
+
+@registry.register
+class NGOpt13(NGOpt12):  # Also known as NGOpt12H
+    def _select_optimizer_cls(self) -> base.OptCls:
+        if (
+            not self.has_noise
+            and self.budget is not None
+            and self.num_workers * 3 < self.budget
+            and self.dimension < 8
+            and self.budget < 80
+        ):
+            return HyperOpt
+        else:
+            return super()._select_optimizer_cls()
+
+
+@registry.register
+class NGOpt(NGOpt13):
     pass
 
 
