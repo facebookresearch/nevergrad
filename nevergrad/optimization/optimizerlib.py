@@ -1047,7 +1047,8 @@ class SplitOptimizer(base.Optimizer):
     num_vars: int or None
         number of variable per optimizer.
     max_num_vars: int or None
-        maximum number of variables per optimizer.
+        maximum number of variables per optimizer. Should not be defined if num_vars is defined:
+        num_vars will be setup internally using max_num_vars.
     progressive: bool
         True if we want to progressively add optimizers during the optimization run.
         If progressive = True, the optimizer is forced at OptimisticNoisyOnePlusOne.
@@ -1090,8 +1091,10 @@ class SplitOptimizer(base.Optimizer):
         self._progressive = progressive
         subparams: tp.List[p.Parameter] = []
         if max_num_vars is not None:
+            assert num_vars is None
             num_vars = [max_num_vars] * (self.dimension // max_num_vars)
-            num_vars += [self.dimension - sum(num_vars)]
+            if self.dimension > sum(num_vars):
+                num_vars += [self.dimension - sum(num_vars)]
         if num_vars is not None:  # The user has specified how are the splits (s)he wants.
             assert (
                 sum(num_vars) == self.dimension
@@ -1215,6 +1218,7 @@ class ConfSplitOptimizer(base.ConfiguredOptimizer):
         *,
         num_optims: tp.Optional[int] = None,
         num_vars: tp.Optional[tp.List[int]] = None,
+        max_num_vars: tp.Optional[int] = None,
         multivariate_optimizer: base.OptCls = CMA,
         monovariate_optimizer: base.OptCls = RandomSearch,
         progressive: bool = False,
@@ -1809,6 +1813,9 @@ class ParametrizedBO(base.ConfiguredOptimizer):
 
 
 BO = ParametrizedBO().set_name("BO", register=True)
+BOSplit = ConfSplitOptimizer(max_num_vars=15, progressive=False, multivariate_optimizer=BO).set_name(
+    "BOSplit", register=True
+)
 
 
 class _Chain(base.Optimizer):
