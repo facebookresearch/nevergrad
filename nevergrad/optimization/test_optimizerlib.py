@@ -637,8 +637,7 @@ def test_ngopt_selection(
             if num_workers >= budget:
                 assert choice == "MetaTuneRecentering"
             if num_workers > 1:
-                assert choice != "SQP"
-                assert choice != "Cobyla"
+                assert choice not in ["SQP", "Cobyla"]
 
 
 def test_bo_ordering() -> None:
