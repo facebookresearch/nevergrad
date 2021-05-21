@@ -1236,30 +1236,32 @@ def gym_anm(
     """Gym simulator for Active Network Management or other pb."""
     if "directcompilergym" in specific_problem:
         assert pb_index >= 0
-        func = CompilerGym(pb_index)
+        funcs = [CompilerGym(pb_index)]
     else:
-        func = GymMulti(specific_problem, control="conformant") if conformant else GymMulti(specific_problem,
-        control=np.random.choice(["multi_neural", "memory_neural", "neural", "linear"]), neural_factor=np.random.choice([1, 2]))  # type: ignore
-    seedg = create_seed_generator(seed)
+        func = [GymMulti(specific_problem, control="conformant") if conformant else GymMulti(specific_problem,  # type: ignore
+            control=control, neural_factor=1)  
+                for control in ["multi_neural", "memory_neural", "neural", "linear"]]
+    seedg = create_seed_generator(seed)]
     optims = [
         "DE",
         "TwoPointsDE",
-#        "PSO",
-#        "CMA",
-#        "NGOpt",
-#        "DiscreteLenglerOnePlusOne",
-#        "PortfolioDiscreteOnePlusOne",
+        "PSO",
+        "CMA",
+        "NGOpt",
+        "DiscreteLenglerOnePlusOne",
+        "PortfolioDiscreteOnePlusOne",
     ]
     if "stochastic" in specific_problem:
-        optims = ["DiagonalCMA", "DiagonalCMA", "PSO", "DE", "TwoPointsDE"]
-    optims = [np.random.choice(optims)]
-    for budget in [np.random.choice([25, 50, 100, 200] + ([400, 800, 1600, 3200, 6400, 12800, 25600] if "stochastic" not in specific_problem else []))]:
-        for num_workers in [1]:
-            if num_workers < budget:
-                for algo in optims:
-                    xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
-                    if not xp.is_incoherent:
-                        yield xp
+        optims = ["DiagonalCMA", "PSO", "DE", "TwoPointsDE"]
+    #optims = [np.random.choice(optims)]
+    for func in funcs:
+        for budget in [np.random.choice([25, 50, 100, 200] + ([400, 800, 1600, 3200, 6400, 12800, 25600] if "stochastic" not in specific_problem else []))]:
+            for num_workers in [1]:
+                if num_workers < budget:
+                    for algo in optims:
+                        xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        if not xp.is_incoherent:
+                            yield xp
 
 
 @registry.register
