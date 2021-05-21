@@ -1241,8 +1241,14 @@ class NoisySplit(base.ConfiguredOptimizer):
         discrete: bool = False,
     ) -> None:
         kwargs = locals()
-        opt = OptimisticNoisyOnePlusOne if not discrete else OptimisticDiscreteOnePlusOne
-        ConfOpt = ConfSplitOptimizer(progressive=False, num_optims=num_optims, multivariate_optimizer=opt)
+        opt = OptimisticDiscreteOnePlusOne if discrete else OptimisticNoisyOnePlusOne
+        mono_opt = NoisyBandit if discrete else opt
+        ConfOpt = ConfSplitOptimizer(
+            progressive=False,
+            num_optims=num_optims,
+            multivariate_optimizer=opt,
+            monovariate_optimizer=mono_opt,
+        )
         super().__init__(ConfOpt, kwargs)
 
 
