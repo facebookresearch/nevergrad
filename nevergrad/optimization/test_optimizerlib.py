@@ -330,7 +330,7 @@ def test_optimizer_families_repr() -> None:
     np.testing.assert_equal(repr(optim), "ParametrizedCMA(diagonal=True)")
     #
     optim = optlib.NoisySplit(discrete=True)
-    np.testing.assert_equal(repr(optim), "NoisySplitter(discrete=True)")
+    np.testing.assert_equal(repr(optim), "NoisySplit(discrete=True)")
     assert optim._OptimizerClass.multivariate_optimizer is optlib.OptimisticDiscreteOnePlusOne  # type: ignore
 
 

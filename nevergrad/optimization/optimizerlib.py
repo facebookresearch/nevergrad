@@ -1242,7 +1242,7 @@ class NoisySplit(base.ConfiguredOptimizer):
     ) -> None:
         kwargs = locals()
         opt = OptimisticDiscreteOnePlusOne if discrete else OptimisticNoisyOnePlusOne
-        mono_opt = NoisyBandit if discrete else opt
+        mono_opt: base.OptCls = NoisyBandit if discrete else opt
         ConfOpt = ConfSplitOptimizer(
             progressive=False,
             num_optims=num_optims,
