@@ -29,7 +29,7 @@ from .base import IntOrParameter
 
 
 # families of optimizers
-# pylint: disable=unused-wildcard-import,wildcard-import,too-many-lines,too-many-arguments
+# pylint: disable=unused-wildcard-import,wildcard-import,too-many-lines,too-many-arguments,too-many-branches
 from .differentialevolution import *  # type: ignore  # noqa: F403
 from .es import *  # type: ignore  # noqa: F403
 from .oneshot import *  # noqa: F403
@@ -1063,37 +1063,7 @@ RescaledCMA = Rescaled().set_name("RescaledCMA", register=True)
 
 
 class SplitOptimizer(base.Optimizer):
-    """Combines optimizers, each of them working on their own variables.
-
-    Parameters
-    ---------
-    num_optims: int or None
-        number of optimizers
-    num_vars: int or None
-        number of variable per optimizer.
-    progressive: bool
-        True if we want to progressively add optimizers during the optimization run.
-        If progressive = True, the optimizer is forced at OptimisticNoisyOnePlusOne.
-
-    Example
-    -------
-    for 5 optimizers, each of them working on 2 variables, one can use:
-
-    opt = SplitOptimizer(parametrization=10, num_workers=3, num_optims=5, num_vars=[2, 2, 2, 2, 2])
-    or equivalently:
-    opt = SplitOptimizer(parametrization=10, num_workers=3, num_vars=[2, 2, 2, 2, 2])
-    Given that all optimizers have the same number of variables, one can also run:
-    opt = SplitOptimizer(parametrization=10, num_workers=3, num_optims=5)
-
-    Note
-    ----
-    By default, it uses CMA for multivariate groups and RandomSearch for monovariate groups.
-
-    Caution
-    -------
-    The variables refer to the deep representation used by optimizers.
-    For example, a categorical variable with 5 possible values becomes 5 continuous variables.
-    """
+    """Combines optimizers, each of them working on their own variables. (use ConfSplitOptimizer)"""
 
     def __init__(
         self,
@@ -1106,8 +1076,15 @@ class SplitOptimizer(base.Optimizer):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._subcandidates: tp.Dict[str, tp.List[p.Parameter]] = {}
         subparams: tp.List[p.Parameter] = []
+
         num_vars = self._config.num_vars
         num_optims = self._config.num_optims
+        max_num_vars = self._config.max_num_vars
+        if max_num_vars is not None:
+            assert num_vars is None, "num_vars and max_num_vars should not be set at the same time"
+            num_vars = [max_num_vars] * (self.dimension // max_num_vars)
+            if self.dimension > sum(num_vars):
+                num_vars += [self.dimension - sum(num_vars)]
         if num_vars is not None:  # The user has specified how are the splits (s)he wants.
             assert (
                 sum(num_vars) == self.dimension
@@ -1192,13 +1169,35 @@ class ConfSplitOptimizer(base.ConfiguredOptimizer):
     ----------
     num_optims: int (or float("inf"))
         number of optimizers
-    num_vars: optional list of int
-        number of variable per optimizer.
+    num_vars: int or None
+        number of variable per optimizer (should not be used if max_num_vars is set)
+    max_num_vars: int or None
+        maximum number of variables per optimizer. Should not be defined if :code:`num_vars`
+        is defined since they will be chosen automatically.
     progressive: optional bool
         whether we progressively add optimizers.
     non_deterministic_descriptor: bool
         subparts parametrization descriptor is set to noisy function.
         This can have an impact for optimizer selection for competence maps.
+
+    Example
+    -------
+    for 5 optimizers, each of them working on 2 variables, one can use:
+
+    opt = SplitOptimizer(parametrization=10, num_workers=3, num_optims=5, num_vars=[2, 2, 2, 2, 2])
+    or equivalently:
+    opt = SplitOptimizer(parametrization=10, num_workers=3, num_vars=[2, 2, 2, 2, 2])
+    Given that all optimizers have the same number of variables, one can also run:
+    opt = SplitOptimizer(parametrization=10, num_workers=3, num_optims=5)
+
+    Note
+    ----
+    By default, it uses CMA for multivariate groups and RandomSearch for monovariate groups.
+
+    Caution
+    -------
+    The variables refer to the deep representation used by optimizers.
+    For example, a categorical variable with 5 possible values becomes 5 continuous variables.
     """
 
     # pylint: disable=unused-argument
@@ -1207,6 +1206,7 @@ class ConfSplitOptimizer(base.ConfiguredOptimizer):
         *,
         num_optims: tp.Optional[float] = None,
         num_vars: tp.Optional[tp.List[int]] = None,
+        max_num_vars: tp.Optional[int] = None,
         multivariate_optimizer: base.OptCls = CMA,
         monovariate_optimizer: base.OptCls = oneshot.RandomSearch,
         progressive: bool = False,
@@ -1214,6 +1214,7 @@ class ConfSplitOptimizer(base.ConfiguredOptimizer):
     ) -> None:
         self.num_optims = num_optims
         self.num_vars = num_vars
+        self.max_num_vars = max_num_vars
         self.multivariate_optimizer = multivariate_optimizer
         self.monovariate_optimizer = monovariate_optimizer
         self.progressive = progressive
@@ -1829,6 +1830,9 @@ class ParametrizedBO(base.ConfiguredOptimizer):
 
 
 BO = ParametrizedBO().set_name("BO", register=True)
+BOSplit = ConfSplitOptimizer(max_num_vars=15, progressive=False, multivariate_optimizer=BO).set_name(
+    "BOSplit", register=True
+)
 
 
 class _Chain(base.Optimizer):
