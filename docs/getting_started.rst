@@ -47,7 +47,7 @@ Basic optimization example
 
 **By default all optimizers assume a centered and reduced prior at the beginning of the optimization (i.e. 0 mean and unitary standard deviation).**
 
-Optimizing (minimizing!) a function using an optimizer (here :code:`OnePlusOne`) can be easily run with:
+Optimizing (minimizing!) a function using an optimizer (here :code:`NGOpt`, our adaptative optimization algorithm) can be easily run with:
 
 .. literalinclude:: ../nevergrad/optimization/test_doc.py
     :language: python

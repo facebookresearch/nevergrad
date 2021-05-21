@@ -101,13 +101,15 @@ class ParametersLogger:
         if hasattr(optimizer, "_configured_optimizer"):
             configopt = optimizer._configured_optimizer  # type: ignore
             if isinstance(configopt, base.ConfiguredOptimizer):
-                data.update({"#optimizer#" + x: y for x, y in configopt.config().items()})
+                data.update({"#optimizer#" + x: str(y) for x, y in configopt.config().items()})
         if isinstance(candidate._meta.get("sigma"), float):
             data["#meta-sigma"] = candidate._meta["sigma"]  # for TBPSA-like algorithms
         if candidate.generation > 1:
             data["#parents_uids"] = candidate.parents_uids
         for name, param in helpers.flatten(candidate, with_containers=False, order=1):
             val = param.value
+            if isinstance(val, (np.float_, np.int_, np.bool_)):
+                val = val.item()
             if inspect.ismethod(val):
                 val = repr(val.__self__)  # show mutation class
             data[name if name else "0"] = val.tolist() if isinstance(val, np.ndarray) else val

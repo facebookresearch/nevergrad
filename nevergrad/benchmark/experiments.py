@@ -441,18 +441,21 @@ def oneshot(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     Base dimension 3 or 25.
     budget 30, 100 or 3000."""
     seedg = create_seed_generator(seed)
-    names = ["sphere", "rastrigin", "cigar"]
+    names = ["sphere", "griewank", "hm"]  # "sphere", "rastrigin", "cigar"]
     optims = get_optimizers("oneshot", seed=next(seedg))
     functions = [
         ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
         for name in names
-        for bd in [3, 25]
-        for uv_factor in [0, 5]
+        for bd in [3, 10, 30, 100, 300, 1000, 3000]
+        for uv_factor in [0]  # , 5]
     ]
     for func in functions:
         for optim in optims:
-            for budget in [30, 100, 3000]:
-                yield Experiment(func, optim, budget=budget, num_workers=budget, seed=next(seedg))
+            # if not any(x in str(optim) for x in ["Tune", "Large", "Cauchy"]):
+            # if "Meta" in str(optim):
+            for budget in [100000, 30, 100, 300, 1000, 3000, 10000]:
+                if func.dimension < 3000 or budget < 100000:
+                    yield Experiment(func, optim, budget=budget, num_workers=budget, seed=next(seedg))
 
 
 @registry.register
@@ -1021,7 +1024,7 @@ def realworld(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     funcs += [
         _mlda.SammonMapping.from_mlda("Virus", rescale=False),
         _mlda.SammonMapping.from_mlda("Virus", rescale=True),
-        _mlda.SammonMapping.from_mlda("Employees"),
+        # _mlda.SammonMapping.from_mlda("Employees"),
     ]
     funcs += [_mlda.Landscape(transform) for transform in [None, "square", "gaussian"]]
 
@@ -1088,7 +1091,7 @@ def mixsimulator(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     optims: tp.List[str] = get_optimizers("basics", seed=next(seedg))  # type: ignore
 
-    seq = np.arange(0, 1601, 20)
+    seq = np.arange(0, 1601, 50)
     for budget in seq:
         for num_workers in [1, 30]:
             if num_workers < budget:
@@ -1236,7 +1239,7 @@ def mlda(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     funcs += [
         _mlda.SammonMapping.from_mlda("Virus", rescale=False),
         _mlda.SammonMapping.from_mlda("Virus", rescale=True),
-        _mlda.SammonMapping.from_mlda("Employees"),
+        # _mlda.SammonMapping.from_mlda("Employees"),
     ]
     funcs += [_mlda.Perceptron.from_mlda(name) for name in ["quadratic", "sine", "abs", "heaviside"]]
     funcs += [_mlda.Landscape(transform) for transform in [None, "square", "gaussian"]]
