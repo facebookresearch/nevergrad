@@ -1238,10 +1238,10 @@ def gym_anm(
         assert pb_index >= 0
         funcs = [CompilerGym(pb_index)]
     else:
-        func = [GymMulti(specific_problem, control="conformant") if conformant else GymMulti(specific_problem,  # type: ignore
+        funcs = [GymMulti(specific_problem, control="conformant") if conformant else GymMulti(specific_problem,  # type: ignore
             control=control, neural_factor=1)  
                 for control in ["multi_neural", "memory_neural", "neural", "linear"]]
-    seedg = create_seed_generator(seed)]
+    seedg = create_seed_generator(seed)
     optims = [
         "DE",
         "TwoPointsDE",
@@ -1255,7 +1255,7 @@ def gym_anm(
         optims = ["DiagonalCMA", "PSO", "DE", "TwoPointsDE"]
     #optims = [np.random.choice(optims)]
     for func in funcs:
-        for budget in [([25, 50, 100, 200] + ([400, 800, 1600, 3200, 6400, 12800, 25600] if "stochastic" not in specific_problem else []))]:
+        for budget in ([25, 50, 100, 200] + ([400, 800, 1600, 3200, 6400, 12800, 25600] if "stochastic" not in specific_problem else [])):
             for num_workers in [1]:
                 if num_workers < budget:
                     for algo in optims:
