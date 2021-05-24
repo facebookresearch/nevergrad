@@ -1239,7 +1239,7 @@ def gym_anm(
         func = CompilerGym(pb_index)
     else:
         func = GymMulti(specific_problem, control="conformant") if conformant else GymMulti(specific_problem,
-        control=np.random.choice(["multi_neural", "memory_neural", "neural", "linear"]), neural_factor=np.random.choice([1, 2]))  # type: ignore
+        control=np.random.choice(["linear", "semideep_neural", "neural"]), neural_factor=np.random.choice([1, 2]))  # type: ignore
     seedg = create_seed_generator(seed)
     optims = [
         "DE",
@@ -1251,9 +1251,10 @@ def gym_anm(
 #        "PortfolioDiscreteOnePlusOne",
     ]
     if "stochastic" in specific_problem:
-        optims = ["DiagonalCMA", "DiagonalCMA", "PSO", "DE", "TwoPointsDE"]
+        optims = ["DE"] #DiagonalCMA", "DiagonalCMA", "PSO", "DE", "TwoPointsDE"]
     optims = [np.random.choice(optims)]
-    for budget in [np.random.choice([25, 50, 100, 200] + ([400, 800, 1600, 3200, 6400, 12800, 25600] if "stochastic" not in specific_problem else []))]:
+    for budget in ([102400] if "stochastic" not in specific_problem else [np.random.choice([25, 50, 100, 200, 400, 800, 1600])]):
+    #for budget in [([25, 50, 100, 200] + ([400, 800, 1600, 3200, 6400, 12800, 25600] if "stochastic" not in specific_problem else []))]:
         for num_workers in [1]:
             if num_workers < budget:
                 for algo in optims:
@@ -1298,7 +1299,7 @@ def direct_problems23_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator
     """Working on CompilerGym. 11 problems, randomly drawn, but always the same ones. Chris style."""
     pb_index = np.random.randint(23)
     if np.random.randint(10) < 6:
-       pb_index = np.random.choice([5,6,16,17])
+       pb_index = np.random.choice([5,6,16])
     pb = gym_anm(seed, specific_problem="directcompilergym" + str(pb_index), pb_index=pb_index)
     for xp in pb:
         yield xp

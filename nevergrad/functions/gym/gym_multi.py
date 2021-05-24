@@ -7,11 +7,317 @@ import numpy as np
 import os
 import typing as tp
 import gym
-import compiler_gym  # pylint: disable=unused-import
+#import compiler_gym  # pylint: disable=unused-import
+
+
+from compiler_gym.datasets import Benchmark
+from compiler_gym.envs import CompilerEnv, LlvmEnv
+from compiler_gym.spaces.commandline import Commandline, CommandlineFlag
+#from compiler_gym.util.gym_type_hints import ObservationType, RewardType, StepType
+
 from compiler_gym import CompilerEnvState, CompilerEnvStateWriter
 from compiler_gym.util.statistics import arithmetic_mean, geometric_mean, stdev
 from compiler_gym.util.tabulate import tabulate
 import nevergrad as ng
+
+
+class CommandLineFlagSubsetWrapper(gym.ActionWrapper):
+    """A wrapper for environments with a command line action space that enables
+    only a subset of the flags to be selected.
+    """
+
+    def __init__(self, env: gym.Env, flags: tp.Iterable[str], name: tp.Optional[str] = None):
+        super().__init__(env)
+
+        assert isinstance(
+            env.action_space, Commandline
+        ), f"Unsupported action space: {type(env.action_space).__name__}"
+        assert flags, "No flags"
+
+        self.forward_translation: tp.List[int] = [self.action_space[f] for f in flags]
+        self.reverse_translation: tp.Dict[int, int] = {
+            v: i for i, v in enumerate(self.forward_translation)
+        }
+
+        # Redefine the action space using this smaller set of flags.
+        self.action_space = Commandline(
+            items=[
+                CommandlineFlag(
+                    name=env.action_space.names[a],
+                    flag=env.action_space.flags[a],
+                    description=env.action_space.descriptions[a],
+                )
+                for a in (env.action_space.flags.index(f) for f in flags)
+            ],
+            name=name or f"{env.action_space.name}_{len(flags)}",
+        )
+
+    def action(self, action: tp.Union[int, tp.List[int]]):
+        if isinstance(action, tp.IterableType):
+            return [self.forward_translation[a] for a in action]
+        return self.forward_translation[action]
+
+    def reverse_action(self, action: tp.Union[int, tp.List[int]]):
+        if isinstance(action, tp.IterableType):
+            return [self.reverse_translation[a] for a in action]
+        return self.reverse_translation[action]
+
+
+class Llvm15FlagActionSpaceWrapper(CommandLineFlagSubsetWrapper):
+    """Tiny subset of the LLVM action space that was hand pruned to contain a
+    mix of 10x "good" and 5x "bad" actions.
+    """
+
+    def __init__(self, env: LlvmEnv):
+        super().__init__(
+            env=env,
+            flags=[
+                "-break-crit-edges",
+                "-early-cse-memssa",
+                "-gvn-hoist",
+                "-gvn",
+                "-instcombine",
+                "-instsimplify",
+                "-jump-threading",
+                "-loop-reduce",
+                "-loop-rotate",
+                "-loop-versioning",
+                "-mem2reg",
+                "-newgvn",
+                "-reg2mem",
+                "-simplifycfg",
+                "-sroa",
+            ],
+        )
+
+class AutophaseReducedActionSpace(CommandLineFlagSubsetWrapper):
+    """A filtered subset of the Autophase action space."""
+
+    def __init__(self, env: LlvmEnv):
+        super().__init__(
+            env=env,
+            # Taken from:
+            # https://github.com/ucb-bar/autophase/blob/306ed4d7895455bcaeda51638bdac43c336121d6/gym-hls/gym_hls/envs/getcycle.py
+            flags=[
+                "-adce",
+                "-dse",
+                "-early-cse",
+                "-gvn",
+                "-instcombine",
+                "-loop-deletion",
+                "-loop-reduce",
+                "-loop-rotate",
+                "-loop-unroll",
+                "-mem2reg",
+                "-partial-inliner",
+                "-reassociate",
+                "-simplifycfg",
+                "-sroa",
+            ],
+        )
+
+
+class AutophaseReducedFeatures(gym.ObservationWrapper):
+    """Modify the autophase feature space to select only those from the
+    Autophase "shrunk" space.
+    """
+
+    # Taken from:
+    # https://github.com/ucb-bar/autophase/blob/306ed4d7895455bcaeda51638bdac43c336121d6/gym-hls/gym_hls/envs/hls_env.py#L67-L73
+    feature_indices = [
+        5,
+        7,
+        8,
+        9,
+        11,
+        13,
+        15,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        24,
+        26,
+        28,
+        30,
+        31,
+        32,
+        33,
+        34,
+        36,
+        37,
+        38,
+        40,
+        42,
+        46,
+        49,
+        52,
+        55,
+    ]
+
+    def __init__(self, env: CompilerEnv):
+        super().__init__(env=env)
+        assert (
+            env.observation_space_spec.id == "Autophase"
+        ), "Requires autophase features"
+        # Adjust the shape of the sapce.
+        self.observation_space = gym.spaces.Box(
+            low=np.full(len(self.feature_indices), 0, dtype=np.float32),
+            high=np.full(len(self.feature_indices), 1, dtype=np.float32),
+            dtype=np.float32,
+        )
+
+    def observation(self, observation):
+        return observation[self.feature_indices]
+
+
+class AutophaseNormalizedFeatures(gym.ObservationWrapper):
+    """A wrapper for LLVM environments that use the Autophase observation space
+    to normalize and clip features to the range [0, 1].
+    """
+
+    # The index of the "TotalInsts" feature of autophase.
+    TotalInsts_index = 51
+
+    def __init__(self, env: CompilerEnv):
+        super().__init__(env=env)
+        assert (
+            env.observation_space_spec.id == "Autophase"
+        ), "Requires autophase features"
+        # Adjust the bounds to reflect the normalized values.
+        self.observation_space = gym.spaces.Box(
+            low=np.full(self.observation_space.shape[0], 0, dtype=np.float32),
+            high=np.full(self.observation_space.shape[0], 1, dtype=np.float32),
+            dtype=np.float32,
+        )
+
+    def observation(self, observation):
+        if observation[self.TotalInsts_index] <= 0:
+            return np.zeros(observation.shape)
+        return np.clip(observation / observation[self.TotalInsts_index], 0, 1)
+
+
+class ConcatActionsHistogram(gym.ObservationWrapper):
+    """A wrapper that concatenates a histogram of previous actions to each
+    observation.
+    The actions histogram is concatenated to the end of the existing 1-D box
+    observation, expanding the space.
+    The actions histogram has bounds [0,inf]. If you specify a fixed episode
+    length `norm_to_episode_len`, each histogram update will be scaled by
+    1/norm_to_episode_len, so that `sum(observation) == 1` after episode_len
+    steps.
+    """
+
+    def __init__(self, env: CompilerEnv, norm_to_episode_len: int = 0):
+        super().__init__(env=env)
+        assert isinstance(
+            self.observation_space, gym.spaces.Box
+        ), "Can only contatenate actions histogram to box shape"
+        assert isinstance(
+            self.action_space, gym.spaces.Discrete
+        ), "Can only construct histograms from discrete spaces"
+        assert len(self.observation_space.shape) == 1, "Requires 1-D observation space"
+        self.increment = 1 / norm_to_episode_len if norm_to_episode_len else 1
+
+        # Reshape the observation space.
+        self.observation_space = gym.spaces.Box(
+            low=np.concatenate(
+                (
+                    self.observation_space.low,
+                    np.full(self.action_space.n, 0, dtype=np.float32),
+                )
+            ),
+            high=np.concatenate(
+                (
+                    self.observation_space.high,
+                    np.full(
+                        self.action_space.n,
+                        1 if norm_to_episode_len else float("inf"),
+                        dtype=np.float32,
+                    ),
+                )
+            ),
+            dtype=np.float32,
+        )
+
+    def reset(self, *args, **kwargs):
+        self.histogram = np.zeros((self.action_space.n,))
+        return super().reset(*args, **kwargs)
+
+    def step(self, action: tp.Union[int, tp.List[int]]):
+        if not isinstance(action, tp.IterableType):
+            action = [action]
+        for a in action:
+            self.histogram[a] += self.increment
+        return super().step(action)
+
+    def observation(self, observation):
+        return np.concatenate((observation, self.histogram))
+
+
+class AutophaseActionSpace(CommandLineFlagSubsetWrapper):
+    """An action space wrapper that limits the action space to that of the
+    Autophase paper.
+    The actions used in the Autophase work are taken from:
+        https://github.com/ucb-bar/autophase/blob/2f2e61ad63b50b5d0e2526c915d54063efdc2b92/gym-hls/gym_hls/envs/getcycle.py#L9
+    Note that 4 of the 46 flags are not included. Those are:
+        -codegenprepare     Excluded from CompilerGym
+            -scalarrepl     Removed from LLVM in https://reviews.llvm.org/D21316
+        -scalarrepl-ssa     Removed from LLVM in https://reviews.llvm.org/D21316
+             -terminate     Not found in LLVM 10.0.0
+    """
+
+    def __init__(self, env: LlvmEnv):
+        super().__init__(
+            env=env,
+            flags=[
+                "-adce",
+                "-break-crit-edges",
+                "-constmerge",
+                "-correlated-propagation",
+                "-deadargelim",
+                "-dse",
+                "-early-cse",
+                "-functionattrs",
+                "-functionattrs",
+                "-globaldce",
+                "-globalopt",
+                "-gvn",
+                "-indvars",
+                "-inline",
+                "-instcombine",
+                "-ipsccp",
+                "-jump-threading",
+                "-lcssa",
+                "-licm",
+                "-loop-deletion",
+                "-loop-idiom",
+                "-loop-reduce",
+                "-loop-rotate",
+                "-loop-simplify",
+                "-loop-unroll",
+                "-loop-unswitch",
+                "-lower-expect",
+                "-loweratomic",
+                "-lowerinvoke",
+                "-lowerswitch",
+                "-mem2reg",
+                "-memcpyopt",
+                "-partial-inliner",
+                "-prune-eh",
+                "-reassociate",
+                "-sccp",
+                "-simplifycfg",
+                "-sink",
+                "-sroa",
+                "-strip",
+                "-strip-nondebug",
+                "-tailcallelim",
+            ],
+        )
+
 
 if os.name != "nt":
     import gym_anm  # pylint: disable=unused-import
@@ -101,7 +407,7 @@ CONTROLLERS = [
 ]
 
 
-NO_LENGTH = ["ANM", "Blackjack", "CliffWalking", "Cube", "Memorize", "ompiler"]
+NO_LENGTH = ["ANM", "Blackjack", "CliffWalking", "Cube", "Memorize", "ompiler", "llvm"]
 
 
 # Environment used for CompilerGym.
@@ -178,7 +484,7 @@ class CompilerGym(ExperimentFunction):
             .set_bounds(0, action_space_size - 1)
             .set_integer_casting()
         ).set_name("direct" + str(pb_index))
-        env = gym.make("llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
+        env = gym.make("llvm-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
         self.uris = list(env.datasets["benchmark://cbench-v1"].benchmark_uris())
         self.compilergym_index = pb_index
         env.reset(benchmark=self.uris[self.compilergym_index])
@@ -246,7 +552,10 @@ class GymMulti(ExperimentFunction):
         if os.name == "nt":
             raise ng.errors.UnsupportedExperiment("Windows is not supported")
         if "compilergym" in name:
-            env = gym.make("llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
+            env = gym.make("llvm-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
+            env = AutophaseNormalizedFeatures(env)
+            env = ConcatActionsHistogram(env)
+            env = SmallActionSpaceLlvmEnv(env)
 #            env = AutophaseNormalizedFeatures(env)
 #            env = ConcatActionsHistogram(env)
             self.uris = list(env.datasets["benchmark://cbench-v1"].benchmark_uris())

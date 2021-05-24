@@ -9,6 +9,7 @@ import os
 from . import gym_multi
 
 
+
 def test_gym_multi() -> None:
     for env_name in gym_multi.GymMulti.ng_gym:
         assert env_name in gym_multi.GymMulti.env_names, f"{env_name} unknown!"
@@ -35,10 +36,15 @@ def test_roulette() -> None:
     assert min(results) != max(results), "Roulette should not be deterministic."
 
 
+def test_stochastic_compiler_gym() -> None:
+    func = gym_multi.GymMulti(name="stochastic_compilergym")
+    x = np.zeros(func.dimension)
+    value = func(x)
+
 @pytest.mark.parametrize("name", gym_multi.GYM_ENV_NAMES)
 def test_run_gym_multi(name) -> None:
     if os.name != "nt" and all(np.random.randint(2, size=3, dtype=bool)):
-        func = gym_multi.GymMulti(randomized=False)
+        func = gym_multi.GymMulti(name=name, randomized=False)
         x = np.zeros(func.dimension)
         value = func(x)
         np.testing.assert_almost_equal(value, 93.35, decimal=2)
