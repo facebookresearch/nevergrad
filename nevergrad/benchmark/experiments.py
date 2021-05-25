@@ -103,13 +103,16 @@ def keras_tuning(
 
 
 def mltuning(
-    seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool = False, nano: bool = False,
+    seed: tp.Optional[int] = None,
+    overfitter: bool = False,
+    seq: bool = False,
+    nano: bool = False,
 ) -> tp.Iterator[Experiment]:
     """Machine learning hyperparameter tuning experiment. Based on scikit models."""
     seedg = create_seed_generator(seed)
     optims: tp.List[str] = get_optimizers("basics", seed=next(seedg))  # type: ignore
     if not seq:
-        optims = get_optimizers("oneshot", seed=next(seedg))
+        optims = get_optimizers("oneshot", seed=next(seedg))  # type: ignore
     for dimension in [None, 1, 2, 3]:
         if dimension is None:
             datasets = ["boston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
@@ -120,7 +123,7 @@ def mltuning(
                 function = MLTuning(
                     regressor=regressor, data_dimension=dimension, dataset=dataset, overfitter=overfitter
                 )
-                for budget in [50, 150, 500]:
+                for budget in [50, 150, 500] if not nano else [20, 40, 80, 160]:
                     # Seq for sequential optimization experiments.
                     parallelization = [1, budget // 4] if seq else [budget]
                     for num_workers in parallelization:
@@ -1115,7 +1118,7 @@ def rocket(seed: tp.Optional[int] = None, seq: bool = False) -> tp.Iterator[Expe
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", seed=next(seedg))
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
-        for num_workers in ([1] if seq else [1, 30]):
+        for num_workers in [1] if seq else [1, 30]:
             if num_workers < budget:
                 for algo in optims:
                     for fu in funcs:
