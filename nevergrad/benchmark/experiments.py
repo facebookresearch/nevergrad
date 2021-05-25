@@ -1126,7 +1126,7 @@ def rocket(seed: tp.Optional[int] = None, seq: bool = False) -> tp.Iterator[Expe
 
 
 @registry.register
-def rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def mono_rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Sequential counterpart of the rocket problem."""
     return rocket(seed, seq=True)
 
