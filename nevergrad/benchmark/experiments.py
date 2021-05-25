@@ -23,6 +23,7 @@ from nevergrad.functions import images as imagesxp
 from nevergrad.functions.powersystems import PowerSystem
 from nevergrad.functions.stsp import STSP
 from nevergrad.functions.rocket import Rocket
+from nevergrad.functions.gym import GymMulti
 from nevergrad.functions.mixsimulator import OptimizeMix
 from nevergrad.functions.unitcommitment import UnitCommitmentProblem
 from nevergrad.functions import control
@@ -103,12 +104,13 @@ def keras_tuning(
 
 
 def mltuning(
-    seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool = False
+    seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool = False, nano: bool = False, 
 ) -> tp.Iterator[Experiment]:
     """Machine learning hyperparameter tuning experiment. Based on scikit models."""
     seedg = create_seed_generator(seed)
     optims: tp.List[str] = get_optimizers("basics", seed=next(seedg))  # type: ignore
-
+    if not seq:
+        optims = get_optimizers("oneshot", seed=next(seedg))
     for dimension in [None, 1, 2, 3]:
         if dimension is None:
             datasets = ["boston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
@@ -119,7 +121,7 @@ def mltuning(
                 function = MLTuning(
                     regressor=regressor, data_dimension=dimension, dataset=dataset, overfitter=overfitter
                 )
-                for budget in [50, 150, 500]:
+                for budget in ([50, 150, 500] if not nano else [20, 40, 80, 160]):
                     # Seq for sequential optimization experiments.
                     parallelization = [1, budget // 4] if seq else [budget]
                     for num_workers in parallelization:
@@ -137,6 +139,10 @@ def naivemltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of mltuning with overfitting of valid loss, i.e. train/valid/valid instead of train/valid/test."""
     return mltuning(seed, overfitter=True)
 
+@registry.register
+def oneshot_mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """One-shot counterpart of Scikit tuning."""
+    return mltuning(seed, overfitter=False, seq=False)
 
 # We register only the sequential counterparts for the moment.
 @registry.register
@@ -158,12 +164,20 @@ def seq_mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Sequential counterpart of mltuning."""
     return mltuning(seed, overfitter=False, seq=True)
 
+@registry.register
+def nano_seq_mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Sequential counterpart of mltuning."""
+    return mltuning(seed, overfitter=False, seq=True, nano=True)
 
 @registry.register
 def naive_seq_mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Sequential counterpart of mltuning with overfitting of valid loss, i.e. train/valid/valid instead of train/valid/test."""
     return mltuning(seed, overfitter=True, seq=True)
 
+@registry.register
+def nano_naive_seq_mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Sequential counterpart of mltuning with overfitting of valid loss, i.e. train/valid/valid instead of train/valid/test."""
+    return mltuning(seed, overfitter=True, seq=True, nano=True)
 
 # pylint:disable=too-many-branches
 @registry.register
@@ -210,7 +224,6 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # This problem is intended as a stable basis forever.
     # The list of optimizers should contain only the basic for comparison and "baselines".
     optims: tp.List[str] = ["NGOpt10"] + get_optimizers("baselines", seed=next(seedg))  # type: ignore
-
     index = 0
     for function in functions:
         for budget in [50, 1500, 25000]:
@@ -441,21 +454,18 @@ def oneshot(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     Base dimension 3 or 25.
     budget 30, 100 or 3000."""
     seedg = create_seed_generator(seed)
-    names = ["sphere", "griewank", "hm"]  # "sphere", "rastrigin", "cigar"]
+    names = ["sphere", "rastrigin", "cigar"]
     optims = get_optimizers("oneshot", seed=next(seedg))
     functions = [
         ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
         for name in names
-        for bd in [3, 10, 30, 100, 300, 1000, 3000]
-        for uv_factor in [0]  # , 5]
+        for bd in [3, 25]
+        for uv_factor in [0, 5]
     ]
     for func in functions:
         for optim in optims:
-            # if not any(x in str(optim) for x in ["Tune", "Large", "Cauchy"]):
-            # if "Meta" in str(optim):
-            for budget in [100000, 30, 100, 300, 1000, 3000, 10000]:
-                if func.dimension < 3000 or budget < 100000:
-                    yield Experiment(func, optim, budget=budget, num_workers=budget, seed=next(seedg))
+            for budget in [30, 100, 3000]:
+                yield Experiment(func, optim, budget=budget, num_workers=budget, seed=next(seedg))
 
 
 @registry.register
@@ -506,6 +516,7 @@ def fiveshots(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     names = ["sphere", "rastrigin", "cigar"]
     optims = get_optimizers("oneshot", "basics", seed=next(seedg))
+    optims = ["NGOptXX", "HyperOpt"]
     functions = [
         ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
         for name in names
@@ -589,6 +600,8 @@ def yabbob(
     hd: bool = False,
     constraint_case: int = 0,
     split: bool = False,
+    tiny: bool = False,
+    tuning: bool = False,
 ) -> tp.Iterator[Experiment]:
     """Yet Another Black-Box Optimization Benchmark.
     Related to, but without special effort for exactly sticking to, the BBOB/COCO dataset.
@@ -630,15 +643,16 @@ def yabbob(
     if hd:
         optims += ["OnePlusOne"]
         optims += get_optimizers("splitters", seed=next(seedg))  # type: ignore
-
     # List of objective functions.
     functions = [
         ArtificialFunction(name, block_dimension=d, rotation=rotation, noise_level=noise_level, split=split)
         for name in names
         for rotation in [True, False]
         for num_blocks in ([1] if not split else [7, 12])
-        for d in ([100, 1000, 3000] if hd else [2, 10, 50])
+        for d in ([100, 1000, 3000] if hd else ([2, 5, 10, 15] if tuning else [2, 10, 50]))
     ]
+    if tiny:
+        functions = functions[::13]
 
     # We possibly add constraints.
     max_num_constraints = 4
@@ -714,6 +728,16 @@ def yahdsplitbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with more budget."""
     return yabbob(seed, hd=True, split=True)
 
+
+@registry.register
+def yatuningbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with less budget."""
+    return yabbob(seed, parallel=False, big=False, small=True, tiny=True, tuning=True)
+
+@registry.register
+def yatinybbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with less budget."""
+    return yabbob(seed, parallel=False, big=False, small=True, tiny=True)
 
 @registry.register
 def yasmallbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
@@ -1064,6 +1088,25 @@ def realworld(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
+def mono_rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Rocket simulator. Maximize max altitude by choosing the thrust schedule, given a total thrust.
+    Budget 25, 50, ..., 1600.
+    Sequential or 30 workers."""
+    funcs = [Rocket(i) for i in range(17)]
+    seedg = create_seed_generator(seed)
+    optims = get_optimizers("basics", seed=next(seedg))
+    for budget in [25, 50, 100, 200, 400, 800, 1600]:
+        for num_workers in [1]:
+            if num_workers < budget:
+                for algo in optims:
+                    for fu in funcs:
+                        xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        skip_ci(reason="Too slow")
+                        if not xp.is_incoherent:
+                            yield xp
+
+
+@registry.register
 def rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Rocket simulator. Maximize max altitude by choosing the thrust schedule, given a total thrust.
     Budget 25, 50, ..., 1600.
@@ -1080,6 +1123,190 @@ def rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                         skip_ci(reason="Too slow")
                         if not xp.is_incoherent:
                             yield xp
+
+
+@registry.register
+def ng_full_gym(
+    seed: tp.Optional[int] = None,
+    randomized: bool = True,
+    multi: bool = False,
+    big: bool = False,
+    memory: bool = False,
+    ng_gym: bool = False,
+    conformant: bool = False,
+) -> tp.Iterator[Experiment]:
+    """Gym simulator. Maximize reward.
+    Many distinct problems."""
+    env_names = GymMulti.env_names
+    if ng_gym:
+        env_names = GymMulti.ng_gym
+    seedg = create_seed_generator(seed)
+    optims = get_optimizers("basics", "progressive", "splitters", "baselines", seed=next(seedg))
+    optims += ["DiagonalCMA"]
+    optims += get_optimizers("split_noisy", seed=next(seedg))
+    optims += ["TBPSA"]
+    optims += ["NGOpt"]
+    if multi:
+        controls = ["multi_neural"]
+    else:
+        controls = (
+            [
+                "neural",
+                "structured_neural",
+                "memory_neural",
+                "stackingmemory_neural",
+                # "noisy_neural",
+                # "noisy_scrambled_neural",
+                # "scrambled_neural",
+                "deep_neural",
+                "semideep_neural",
+                # "linear",
+            ]
+            if not big
+            else ["neural"]
+        )
+    if memory:
+        controls = ["stackingmemory_neural", "deep_stackingmemory_neural", "semideep_stackingmemory_neural"]
+        controls += ["memory_neural", "deep_memory_neural", "semideep_memory_neural"]
+        controls += [
+            "extrapolatestackingmemory_neural",
+            "deep_extrapolatestackingmemory_neural",
+            "semideep_extrapolatestackingmemory_neural",
+        ]
+        assert not multi
+    if conformant:
+        controls = ["stochastic_conformant"]
+    controls = ["neural"]
+    for control in controls:
+        for neural_factor in (
+            [-1] if conformant or control == "linear" else ([1] if "memory" in control else [1])
+        ):
+            for name in env_names:
+                try:
+                    func = GymMulti(name, control, neural_factor * (3 if big else 1), randomized=randomized)
+                except MemoryError:
+                    pass
+                for budget in [
+                    50,
+                    200,
+                    800,
+                    3200,
+                    6400,
+                    100,
+                    25,
+                    400,
+                    1600,
+                ]:
+                    for algo in optims:
+                        xp = Experiment(func, algo, budget, num_workers=1, seed=next(seedg))
+                        if not xp.is_incoherent:
+                            yield xp
+
+
+@registry.register
+def multi_ng_full_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    return ng_full_gym(seed, multi=True)
+
+
+@registry.register
+def conformant_ng_full_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of gym_multi with fixed, predetermined actions for each time step."""
+    return ng_full_gym(seed, conformant=True)
+
+
+@registry.register
+def ng_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of gym_multi with a specific list of problems."""
+    return ng_full_gym(seed, ng_gym=True)
+
+
+@registry.register
+def ng_stacking_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of gym_multi with a specific list of problems."""
+    return ng_full_gym(seed, ng_gym=True, memory=True)
+
+
+@registry.register
+def memory_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of gym_multi with a recurrent net as a memory."""
+    return ng_full_gym(seed, big=False, memory=True)
+
+
+@registry.register
+def memory_big_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of gym_multi with bigger nets and a recurrent net as a memory."""
+    return ng_full_gym(seed, big=True, memory=True)
+
+
+@registry.register
+def big_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of gym_multi with bigger nets."""
+    return ng_full_gym(seed, big=True)
+
+
+@registry.register
+def deterministic_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of gym_multi with fixed seeds (so that the problem becomes deterministic)."""
+    return ng_full_gym(seed, randomized=False)
+
+
+@registry.register
+def gym_anm(
+    seed: tp.Optional[int] = None, specific_problem: str = "LANM", conformant: bool = False
+) -> tp.Iterator[Experiment]:
+    """Gym simulator for Active Network Management."""
+    func = GymMulti(specific_problem, control="conformant") if conformant else GymMulti(specific_problem)
+    seedg = create_seed_generator(seed)
+    optims = [
+        "DE",
+        "TwoPointsDE",
+        "PSO",
+        "CMA",
+        "NGOpt",
+        "DiscreteLenglerOnePlusOne",
+        "PortfolioDiscreteOnePlusOne",
+        "DoubleFastGADiscreteOnePlusOne",
+    ]
+    budgets = [25, 50, 100, 200, 400, 800, 1600]
+    if "compiler" in specific_problem:
+        budgets += [3200, 6400, 12800, 25600]
+    for budget in [25, 50, 100, 200, 400, 800, 1600]:
+        for num_workers in [1]:
+            if num_workers < budget:
+                for algo in optims:
+                    xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
+                    if not xp.is_incoherent:
+                        yield xp
+
+
+@registry.register
+def compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Working on CompilerGym."""
+    return gym_anm(seed, specific_problem="compilergym")
+
+
+@registry.register
+def stochastic_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Working on CompilerGym. Stochastic problem: we are optimizing a net for driving compilation."""
+    return gym_anm(seed, specific_problem="stochasticcompilergym")
+
+
+@registry.register
+def problems11_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Working on CompilerGym. 11 problems, randomly drawn, but always the same ones."""
+    for _ in range(11):
+        pb = gym_anm(seed, specific_problem="compilergym")
+        for xp in pb:
+            yield xp
+
+
+@registry.register
+def conformant_problems11_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Working on CompilerGym. 11 problems, randomly drawn, but always the same ones. Conformant planning."""
+    for _ in range(11):
+        pb = gym_anm(seed, specific_problem="compilergym", conformant=True)
+        for xp in pb:
+            yield xp
 
 
 @registry.register
@@ -1659,6 +1886,7 @@ def far_optimum_es(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # prepare list of parameters to sweep for independent variables
     seedg = create_seed_generator(seed)
     optims = get_optimizers("es", "basics", seed=next(seedg))  # type: ignore
+    optims = ["NGOptXX"]
     for func in FarOptimumFunction.itercases():
         for optim in optims:
             for budget in [100, 400, 1000, 4000, 10000]:
