@@ -2581,7 +2581,7 @@ class NGOpt13(NGOpt12):  # Also known as NGOpt12H
 
 
 @registry.register
-class NGOpt(NGOpt13):
+class NGOpt(NGOpt12):  # It is not clear that NGOpt12H=NGOpt13 is better than NGOpt12.
     pass
 
 
