@@ -23,6 +23,8 @@ from nevergrad.functions import images as imagesxp
 from nevergrad.functions.powersystems import PowerSystem
 from nevergrad.functions.stsp import STSP
 from nevergrad.functions.rocket import Rocket
+from nevergrad.functions.gym import GymMulti
+from nevergrad.functions.gym import CompilerGym
 from nevergrad.functions.mixsimulator import OptimizeMix
 from nevergrad.functions.unitcommitment import UnitCommitmentProblem
 from nevergrad.functions import control
@@ -1132,6 +1134,229 @@ def rocket(seed: tp.Optional[int] = None, seq: bool = False) -> tp.Iterator[Expe
 def mono_rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Sequential counterpart of the rocket problem."""
     return rocket(seed, seq=True)
+
+def ng_full_gym(
+    seed: tp.Optional[int] = None,
+    randomized: bool = True,
+    multi: bool = False,
+    big: bool = False,
+    memory: bool = False,
+    ng_gym: bool = False,
+    conformant: bool = False,
+) -> tp.Iterator[Experiment]:
+    """Gym simulator. Maximize reward.
+    Many distinct problems."""
+    env_names = GymMulti.env_names
+    if ng_gym:
+        env_names = GymMulti.ng_gym
+    seedg = create_seed_generator(seed)
+    optims = get_optimizers("basics", "progressive", "splitters", "baselines", seed=next(seedg))
+    optims += ["DiagonalCMA"]
+    optims += get_optimizers("split_noisy", seed=next(seedg))
+    optims += ["TBPSA"]
+    optims += ["NGOpt"]
+    optims = ["NGOpt", "PSO", "DiscreteOnePlusOne", "DE", "CMandAS2"] + [  # type: ignore
+        o for o in optims if "ProgD13" in str(o) or "ProgInf" in str(o)  # type: ignore
+    ]
+    if multi:
+        controls = ["multi_neural"]
+    else:
+        controls = (
+            [
+                "neural",
+                "structured_neural",
+                "memory_neural",
+                "stackingmemory_neural",
+                # "noisy_neural",
+                # "noisy_scrambled_neural",
+                # "scrambled_neural",
+                "deep_neural",
+                "semideep_neural",
+                # "linear",
+            ]
+            if not big
+            else ["neural"]
+        )
+    if memory:
+        controls = ["stackingmemory_neural", "deep_stackingmemory_neural", "semideep_stackingmemory_neural"]
+        controls += ["memory_neural", "deep_memory_neural", "semideep_memory_neural"]
+        controls += [
+            "extrapolatestackingmemory_neural",
+            "deep_extrapolatestackingmemory_neural",
+            "semideep_extrapolatestackingmemory_neural",
+        ]
+        assert not multi
+    if conformant:
+        controls = ["stochastic_conformant"]
+    controls = ["neural"]
+    for control in controls:
+        for neural_factor in (
+            [-1] if conformant or control == "linear" else ([1] if "memory" in control else [1])
+        ):
+            for name in env_names:
+                try:
+                    func = GymMulti(name, control, neural_factor * (3 if big else 1), randomized=randomized)
+                except MemoryError:
+                    pass
+                for budget in [
+                    50,
+                    200,
+                    800,
+                    3200,
+                    6400,
+                    100,
+                    25,
+                    400,
+                    1600,
+                ] + ([12800, 25600, 51200, 102400, 204800, 409600, 819200, 1638400] if False else []):
+                    # ] + ([12800, 25600, 51200, 102400, 204800, 409600, 819200, 1638400] if "Hardcore" in name else []):
+                    for algo in optims:
+                        xp = Experiment(func, algo, budget, num_workers=1, seed=next(seedg))
+                        if not xp.is_incoherent:
+                            yield xp
+
+
+@registry.register
+def multi_ng_full_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    return ng_full_gym(seed, multi=True)
+
+
+@registry.register
+def conformant_ng_full_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of gym_multi with fixed, predetermined actions for each time step."""
+    return ng_full_gym(seed, conformant=True)
+
+
+@registry.register
+def ng_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of gym_multi with a specific list of problems."""
+    return ng_full_gym(seed, ng_gym=True)
+
+
+@registry.register
+def ng_stacking_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of gym_multi with a specific list of problems."""
+    return ng_full_gym(seed, ng_gym=True, memory=True)
+
+
+@registry.register
+def memory_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of gym_multi with a recurrent net as a memory."""
+    return ng_full_gym(seed, big=False, memory=True)
+
+
+@registry.register
+def memory_big_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of gym_multi with bigger nets and a recurrent net as a memory."""
+    return ng_full_gym(seed, big=True, memory=True)
+
+
+@registry.register
+def big_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of gym_multi with bigger nets."""
+    return ng_full_gym(seed, big=True)
+
+
+@registry.register
+def deterministic_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of gym_multi with fixed seeds (so that the problem becomes deterministic)."""
+    return ng_full_gym(seed, randomized=False)
+
+
+@registry.register
+def gym_multifid_anm(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Gym simulator for Active Network Management."""
+
+    func = GymMulti("multifidLANM")
+    seedg = create_seed_generator(seed)
+    optims = get_optimizers("basics", "progressive", "splitters", "baselines", seed=next(seedg))
+    for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600, 51200]:
+        for num_workers in [1, 30]:
+            if num_workers < budget:
+                for algo in optims:
+                    xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
+                    if not xp.is_incoherent:
+                        yield xp
+
+
+@registry.register
+def gym_anm(
+    seed: tp.Optional[int] = None,
+    specific_problem: str = "LANM",
+    conformant: bool = False,
+    pb_index: int = -1,
+) -> tp.Iterator[Experiment]:
+    """Gym simulator for Active Network Management or other pb."""
+    if "directcompilergym" in specific_problem:
+        assert pb_index >= 0
+        funcs = [CompilerGym(pb_index)]
+    else:
+        funcs = [GymMulti(specific_problem, control="conformant") if conformant else GymMulti(specific_problem,  # type: ignore
+            control=control, neural_factor=1)  
+                for control in ["multi_neural", "memory_neural", "neural", "linear"]]
+    seedg = create_seed_generator(seed)
+    optims = [
+        "DE",
+        "TwoPointsDE",
+        "PSO",
+        "CMA",
+        "NGOpt",
+        "DiscreteLenglerOnePlusOne",
+        "PortfolioDiscreteOnePlusOne",
+    ]
+    if "stochastic" in specific_problem:
+        optims = ["DiagonalCMA", "PSO", "DE", "TwoPointsDE"]
+    #optims = [np.random.choice(optims)]
+    for func in funcs:
+        for budget in ([25, 50, 100, 200] + ([400, 800, 1600, 3200, 6400, 12800, 25600] if "stochastic" not in specific_problem else [])):
+            for num_workers in [1]:
+                if num_workers < budget:
+                    for algo in optims:
+                        xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        if not xp.is_incoherent:
+                            yield xp
+
+
+@registry.register
+def compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Working on CompilerGym."""
+    pb_index = np.random.randint(23)
+    return gym_anm(seed, specific_problem="compilergym" + str(pb_index), pb_index=pb_index)
+
+
+@registry.register
+def stochastic_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Working on CompilerGym. Stochastic problem: we are optimizing a net for driving compilation."""
+    return gym_anm(seed, specific_problem="stochasticcompilergym")
+
+
+@registry.register
+def problems23_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Working on CompilerGym. 11 problems, randomly drawn, but always the same ones."""
+    for pb_index in range(23):
+        pb = gym_anm(seed, specific_problem="compilergym" + str(pb_index), pb_index=pb_index)
+        for xp in pb:
+            yield xp
+
+
+@registry.register
+def conformant_problems23_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Working on CompilerGym. 11 problems, randomly drawn, but always the same ones. Conformant planning."""
+    for pb_index in range(23):
+        pb = gym_anm(seed, specific_problem="compilergym", conformant=True, pb_index=pb_index)
+        for xp in pb:
+            yield xp
+
+
+@registry.register
+def direct_problems23_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Working on CompilerGym. 11 problems, randomly drawn, but always the same ones. Chris style."""
+    pb_index = np.random.randint(23)
+    if np.random.randint(10) < 6:
+       pb_index = np.random.choice([5,6,16,17])
+    pb = gym_anm(seed, specific_problem="directcompilergym" + str(pb_index), pb_index=pb_index)
+    for xp in pb:
+        yield xp
 
 
 @registry.register

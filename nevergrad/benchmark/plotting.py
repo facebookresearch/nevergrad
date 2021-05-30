@@ -312,6 +312,9 @@ def create_plots(
             print("\n# new case #", fixed, case)
             casedf = df.select(**dict(zip(fixed, case)))
             data_df = FightPlotter.winrates_from_selection(casedf, fight_descriptors, num_rows=num_rows)
+            data_df_big = FightPlotter.winrates_from_selection(
+                casedf, fight_descriptors, num_rows=2, num_cols=500000
+            )
             fplotter = FightPlotter(data_df)
             # Competence maps: we find out the best algorithm for each attribute1=valuei/attribute2=valuej.
             if order == 2 and competencemaps and best_algo:
@@ -321,10 +324,12 @@ def create_plots(
             name = "fight_" + ",".join("{}{}".format(x, y) for x, y in zip(fixed, case)) + ".png"
             name = "fight_all.png" if name == "fight_.png" else name
 
-            if name == "fight_all.png":
+            if True:  # name == "fight_all.png":
                 with open(str(output_folder / name) + ".cp.txt", "w") as f:
                     f.write("ranking:\n")
-                    for i, algo in enumerate(data_df.columns[:58]):
+                    #for i, algo in enumerate(data_df.columns[:58]):
+                    for i, algo in enumerate(data_df_big.columns):
+                        # for i, algo in enumerate(data_df.columns[:8]):
                         f.write(f"  algo {i}: {algo}\n")
             if len(name) > 240:
                 hashcode = hashlib.md5(bytes(name, "utf8")).hexdigest()
@@ -444,7 +449,15 @@ class XpPlotter:
         self._ax.grid(True, which="both")
         self._overlays: tp.List[tp.Any] = []
         legend_infos: tp.List[LegendInfo] = []
+<<<<<<< HEAD
         for optim_name in sorted_optimizers:  # [-12:]:
+=======
+        for optim_name in (
+            sorted_optimizers[:1] + sorted_optimizers[-12:]
+            if len(sorted_optimizers) > 13
+            else sorted_optimizers
+        ):
+>>>>>>> eae99b8ff54b346a8219003b17d09fb162e3200f
             vals = optim_vals[optim_name]
             lowerbound = min(lowerbound, np.min(vals["loss"]))
             line = plt.plot(vals[xaxis], vals["loss"], name_style[optim_name], label=optim_name)
@@ -585,9 +598,14 @@ class XpPlotter:
         output_filepath: Path or str
             path where the figure must be saved
         """
-        self._fig.savefig(
-            str(output_filepath), bbox_extra_artists=self._overlays, bbox_inches="tight", dpi=_DPI
-        )
+        try:
+            self._fig.savefig(
+                str(output_filepath), bbox_extra_artists=self._overlays, bbox_inches="tight", dpi=_DPI
+            )
+        except ValueError:
+            self._fig.savefig(
+                str(output_filepath), bbox_extra_artists=self._overlays, bbox_inches="tight", dpi=_DPI / 5
+            )
 
     def __del__(self) -> None:
         plt.close(self._fig)
@@ -649,7 +667,11 @@ class FightPlotter:
         df: utils.Selector,
         categories: tp.List[str],
         num_rows: int = 5,
+<<<<<<< HEAD
         restricted_to_complete: bool = False,
+=======
+        num_cols: int = 30,
+>>>>>>> eae99b8ff54b346a8219003b17d09fb162e3200f
     ) -> pd.DataFrame:
         """Creates a fight plot win rate data out of the given run dataframe,
         by iterating over all cases with fixed category variables.
@@ -691,6 +713,7 @@ class FightPlotter:
         # number of subcases actually computed is twice self-victories
         sorted_names = ["{} ({}/{})".format(n, int(2 * victories.loc[n, n]), total) for n in sorted_names]
         num_names = len(sorted_names)
+<<<<<<< HEAD
         sorted_names = [sorted_names[i] for i in range(min(30, len(sorted_names)))]
         data = np.array(winrates.iloc[:num_rows, : len(sorted_names)])
         # pylint: disable=anomalous-backslash-in-string
@@ -699,6 +722,14 @@ class FightPlotter:
                 f"{name} ({100 * val:2.1f}% +- {25 * np.sqrt(val*(1-val)/int(2 * victories.loc[name, name])):2.1f}*)"
             ).replace("Search", "")
             for name, val in zip(mean_win.index[:num_rows], mean_win)
+=======
+        sorted_names = [sorted_names[i] for i in range(min(num_cols, len(sorted_names)))]
+        data = np.array(winrates.iloc[:num_rows, : len(sorted_names)])
+        # pylint: disable=anomalous-backslash-in-string
+        best_names = [
+            (f"{name} ({i+1}/{num_names}:{100 * val:2.1f}%)").replace("Search", "")
+            for i, (name, val) in enumerate(zip(mean_win.index[:num_rows], mean_win))
+>>>>>>> eae99b8ff54b346a8219003b17d09fb162e3200f
         ]
         return pd.DataFrame(index=best_names, columns=sorted_names, data=data)
 
