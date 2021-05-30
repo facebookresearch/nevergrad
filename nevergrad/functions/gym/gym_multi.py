@@ -477,7 +477,7 @@ class GymMulti(ExperimentFunction):
         # Otherwise: apply a random seed and do a single simulation.
         if "stochastic" in self.name and "compiler" in self.name:
             log_rewards = [np.log(max(1e-5, -self.gym_simulate(x, seed=self.parametrization.random_state.randint(500000),
-                limited_fidelity=limited_fidelity, pb_index=pb_index))) for pb_index in range(23)]
+                limited_fidelity=limited_fidelity, pb_index=-pb_index))) for pb_index in range(100)]
             return - np.exp(np.sum(log_rewards) / len(log_rewards))
         num_simulations = 7 if self.control != "conformant" and not self.randomized else 1
         loss = 0
