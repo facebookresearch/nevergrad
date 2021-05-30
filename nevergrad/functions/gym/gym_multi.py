@@ -401,7 +401,7 @@ class GymMulti(ExperimentFunction):
 
         # Now initializing.
         super().__init__(self.gym_multi_function, parametrization=parametrization)
-        self.parametrization.function.deterministic = False
+        self.parametrization.function.deterministic = not ("compiler" in name)
         self.archive: tp.List[tp.Any] = []
         self.mean_loss = 0.0
         self.num_losses = 0
