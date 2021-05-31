@@ -449,15 +449,11 @@ class XpPlotter:
         self._ax.grid(True, which="both")
         self._overlays: tp.List[tp.Any] = []
         legend_infos: tp.List[LegendInfo] = []
-<<<<<<< HEAD
-        for optim_name in sorted_optimizers:  # [-12:]:
-=======
         for optim_name in (
             sorted_optimizers[:1] + sorted_optimizers[-12:]
             if len(sorted_optimizers) > 13
             else sorted_optimizers
         ):
->>>>>>> eae99b8ff54b346a8219003b17d09fb162e3200f
             vals = optim_vals[optim_name]
             lowerbound = min(lowerbound, np.min(vals["loss"]))
             line = plt.plot(vals[xaxis], vals["loss"], name_style[optim_name], label=optim_name)
