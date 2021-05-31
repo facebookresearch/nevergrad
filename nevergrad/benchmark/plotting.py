@@ -333,10 +333,11 @@ def create_plots(
                 name = name[:mid] + hashcode + name[-mid:]
             fplotter.save(str(output_folder / name), dpi=_DPI)
             if name == "fight_all.png":  # second version restricted to completely run algorithms.
-                data_df = FightPlotter.winrates_from_selection(casedf, fight_descriptors, num_rows=num_rows, restricted_to_complete=True)
+                data_df = FightPlotter.winrates_from_selection(
+                    casedf, fight_descriptors, num_rows=num_rows, restricted_to_complete=True
+                )
                 fplotter = FightPlotter(data_df)
                 fplotter.save(str(output_folder / "fight_all_pure.png"), dpi=_DPI)
-
 
             if order == 2 and competencemaps and best_algo:  # With order 2 we can create a competence map.
                 print("\n# Competence map")
@@ -645,7 +646,9 @@ class FightPlotter:
 
     @staticmethod
     def winrates_from_selection(
-        df: utils.Selector, categories: tp.List[str], num_rows: int = 5,
+        df: utils.Selector,
+        categories: tp.List[str],
+        num_rows: int = 5,
         restricted_to_complete: bool = False,
     ) -> pd.DataFrame:
         """Creates a fight plot win rate data out of the given run dataframe,
@@ -687,21 +690,15 @@ class FightPlotter:
         sorted_names = winrates.index
         # number of subcases actually computed is twice self-victories
         sorted_names = ["{} ({}/{})".format(n, int(2 * victories.loc[n, n]), total) for n in sorted_names]
-        num_names = len(sorted_names)
         sorted_names = [sorted_names[i] for i in range(min(30, len(sorted_names)))]
         data = np.array(winrates.iloc[:num_rows, : len(sorted_names)])
         # pylint: disable=anomalous-backslash-in-string
-        #best_names = [
-        #    (f"{name} ({i+1}/{num_names}:{100 * val:2.1f}%)").replace("Search", "")
-        #    for i, (name, val) in enumerate(zip(mean_win.index[:num_rows], mean_win))
-        #]
         best_names = [
-                            (f"{name} ({100 * val:2.1f}% +- {25 * np.sqrt(val*(1-val)/int(2 * victories.loc[name, name])):2.1f}*)"
-                                        ).replace(
-                                                        "Search", "")
-                                                                    for name, val in zip(mean_win.index[:num_rows],
-                                                                    mean_win)
-                                                                            ]
+            (
+                f"{name} ({100 * val:2.1f}% +- {25 * np.sqrt(val*(1-val)/int(2 * victories.loc[name, name])):2.1f}*)"
+            ).replace("Search", "")
+            for name, val in zip(mean_win.index[:num_rows], mean_win)
+        ]
         return pd.DataFrame(index=best_names, columns=sorted_names, data=data)
 
     def save(self, *args: tp.Any, **kwargs: tp.Any) -> None:
