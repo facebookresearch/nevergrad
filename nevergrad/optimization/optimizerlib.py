@@ -2283,7 +2283,9 @@ class modcma(base.Optimizer):
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        self.modcma = AskTellCMAES(self.dimension, lambda_=max(num_workers, int(4 + 3 * np.log(self.dimension))))
+        self.modcma = AskTellCMAES(
+            self.dimension, lambda_=max(num_workers, int(4 + 3 * np.log(self.dimension)))
+        )
 
     def _internal_ask_candidate(self) -> p.Parameter:
         data = self.modcma.ask()
@@ -2299,7 +2301,7 @@ class modcma(base.Optimizer):
         if "modcma_data" not in candidate._meta:
             print("tell not asked!")
             raise base.errors.TellNotAskedNotSupportedError
-        data = candidate._meta["modcma_data"] 
+        data = candidate._meta["modcma_data"]
         assert len(data) == self.dimension
         self.modcma.tell(data, loss)
 
