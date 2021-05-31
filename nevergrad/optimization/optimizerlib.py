@@ -2289,7 +2289,7 @@ class modcma(base.Optimizer):
 
     def _internal_ask_candidate(self) -> p.Parameter:
         data = self.modcma.ask()
-        ng_data = np.asarray(data, dtype=np.float).flatten()
+        ng_data = np.asarray(data, dtype=np.float_).flatten()
         assert len(data) == self.dimension
         assert len(ng_data) == self.dimension
         out = self.parametrization.spawn_child()
