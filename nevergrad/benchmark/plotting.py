@@ -655,9 +655,9 @@ class FightPlotter:
         data = np.array(winrates.iloc[:num_rows, : len(sorted_names)])
         # pylint: disable=anomalous-backslash-in-string
         best_names = [
-            (f"{name} ({100 * val:2.1f}% +- {100 * np.sqrt(val*(1-val)/int(2 * victories.loc[name, name])):2.1f}/4)"
-            ).replace(
-                "Search", "")
+            (
+                f"{name} ({100 * val:2.1f}% +- {100 * np.sqrt(val*(1-val)/int(2 * victories.loc[name, name])):2.1f}/4)"
+            ).replace("Search", "")
             for name, val in zip(mean_win.index[:num_rows], mean_win)
         ]
         return pd.DataFrame(index=best_names, columns=sorted_names, data=data)
