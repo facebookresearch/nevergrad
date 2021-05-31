@@ -10,6 +10,7 @@ import hashlib
 import warnings
 import argparse
 import itertools
+from collections import defaultdict
 from pathlib import Path
 import numpy as np
 import pandas as pd
@@ -25,7 +26,6 @@ from .exporttable import export_table
 
 
 _DPI = 250
-
 
 # %% Basic tools
 
@@ -324,7 +324,7 @@ def create_plots(
             if name == "fight_all.png":
                 with open(str(output_folder / name) + ".cp.txt", "w") as f:
                     f.write("ranking:\n")
-                    for i, algo in enumerate(data_df.columns[:8]):
+                    for i, algo in enumerate(data_df.columns[:58]):
                         f.write(f"  algo {i}: {algo}\n")
             if len(name) > 240:
                 hashcode = hashlib.md5(bytes(name, "utf8")).hexdigest()
@@ -332,6 +332,11 @@ def create_plots(
                 mid = 120
                 name = name[:mid] + hashcode + name[-mid:]
             fplotter.save(str(output_folder / name), dpi=_DPI)
+            if name == "fight_all.png":  # second version restricted to completely run algorithms.
+                data_df = FightPlotter.winrates_from_selection(casedf, fight_descriptors, num_rows=num_rows, restricted_to_complete=True)
+                fplotter = FightPlotter(data_df)
+                fplotter.save(str(output_folder / "fight_all_pure.png"), dpi=_DPI)
+
 
             if order == 2 and competencemaps and best_algo:  # With order 2 we can create a competence map.
                 print("\n# Competence map")
@@ -362,6 +367,9 @@ def create_plots(
         out_filepath = output_folder / "xpresults{}{}.png".format(
             "_" if description else "", description.replace(":", "")
         )
+        txt_out_filepath = output_folder / "xpresults{}{}.leaderboard.txt".format(
+            "_" if description else "", description.replace(":", "")
+        )
         data = XpPlotter.make_data(subdf)
         try:
             xpplotter = XpPlotter(data, title=description, name_style=name_style, xaxis=xpaxis)
@@ -369,6 +377,7 @@ def create_plots(
             warnings.warn(f"Bypassing error in xpplotter:\n{e}", RuntimeWarning)
         else:
             xpplotter.save(out_filepath)
+            xpplotter.save_txt(txt_out_filepath, data)
     plt.close("all")
 
 
@@ -434,7 +443,7 @@ class XpPlotter:
         self._ax.grid(True, which="both")
         self._overlays: tp.List[tp.Any] = []
         legend_infos: tp.List[LegendInfo] = []
-        for optim_name in sorted_optimizers:
+        for optim_name in sorted_optimizers:  # [-12:]:
             vals = optim_vals[optim_name]
             lowerbound = min(lowerbound, np.min(vals["loss"]))
             line = plt.plot(vals[xaxis], vals["loss"], name_style[optim_name], label=optim_name)
@@ -458,7 +467,8 @@ class XpPlotter:
         self._ax.set_xlim([min(all_x), max(all_x)])
         self.add_legends(legend_infos)
         # global info
-        self._ax.set_title(split_long_title(title))
+        if "tmp" not in title:
+            self._ax.set_title(split_long_title(title))
         self._ax.tick_params(axis="both", which="both")
         # self._fig.tight_layout()
 
@@ -551,6 +561,21 @@ class XpPlotter:
                 optim_vals[optim]["pseudotime"] = np.array(means.loc[optim, "pseudotime"])
         return optim_vals
 
+    @staticmethod
+    def save_txt(output_filepath: tp.PathLike, optim_vals: tp.Dict[str, tp.Dict[str, np.ndarray]]) -> None:
+        best_performance: tp.Dict[int, tp.Any] = defaultdict(lambda: (float("inf"), "none"))
+        for optim in optim_vals.keys():
+            for i, l in zip(optim_vals[optim]["budget"], optim_vals[optim]["loss"]):
+                if l < best_performance[i][0]:
+                    best_performance[i] = (l, optim)
+
+        with open(output_filepath, "w") as f:
+            f.write("Best performance:\n")
+            for i in best_performance.keys():
+                f.write(
+                    f"  budget {i}: {best_performance[i][0]} ({best_performance[i][1]}) ({output_filepath})\n"
+                )
+
     def save(self, output_filepath: tp.PathLike) -> None:
         """Saves the xp plot
 
@@ -620,7 +645,8 @@ class FightPlotter:
 
     @staticmethod
     def winrates_from_selection(
-        df: utils.Selector, categories: tp.List[str], num_rows: int = 5
+        df: utils.Selector, categories: tp.List[str], num_rows: int = 5,
+        restricted_to_complete: bool = False,
     ) -> pd.DataFrame:
         """Creates a fight plot win rate data out of the given run dataframe,
         by iterating over all cases with fixed category variables.
@@ -638,6 +664,16 @@ class FightPlotter:
         num_rows = min(num_rows, len(all_optimizers))
         # iterate on all sub cases
         victories, total = aggregate_winners(df, categories, all_optimizers)
+        if restricted_to_complete:
+            print([int(2 * victories.loc[n, n]) for n in all_optimizers])
+            max_num = max([int(2 * victories.loc[n, n]) for n in all_optimizers])
+            new_all_optimizers = [n for n in all_optimizers if int(2 * victories.loc[n, n]) == max_num]
+            print(new_all_optimizers)
+            print("vs")
+            print(all_optimizers)
+            if len(new_all_optimizers) > 0:
+                df = df[df["optimizer_name"].isin(new_all_optimizers)]
+                victories, total = aggregate_winners(df, categories, new_all_optimizers)
         # subcases = df.unique(categories)
         # for k, subcase in enumerate(subcases):  # TODO linearize this (precompute all subcases)? requires memory
         #     # print(subcase)
@@ -651,13 +687,21 @@ class FightPlotter:
         sorted_names = winrates.index
         # number of subcases actually computed is twice self-victories
         sorted_names = ["{} ({}/{})".format(n, int(2 * victories.loc[n, n]), total) for n in sorted_names]
+        num_names = len(sorted_names)
         sorted_names = [sorted_names[i] for i in range(min(30, len(sorted_names)))]
         data = np.array(winrates.iloc[:num_rows, : len(sorted_names)])
         # pylint: disable=anomalous-backslash-in-string
+        #best_names = [
+        #    (f"{name} ({i+1}/{num_names}:{100 * val:2.1f}%)").replace("Search", "")
+        #    for i, (name, val) in enumerate(zip(mean_win.index[:num_rows], mean_win))
+        #]
         best_names = [
-            (f"{name} ({100 * val:2.1f}%)").replace("Search", "")
-            for name, val in zip(mean_win.index[:num_rows], mean_win)
-        ]
+                            (f"{name} ({100 * val:2.1f}% +- {25 * np.sqrt(val*(1-val)/int(2 * victories.loc[name, name])):2.1f}*)"
+                                        ).replace(
+                                                        "Search", "")
+                                                                    for name, val in zip(mean_win.index[:num_rows],
+                                                                    mean_win)
+                                                                            ]
         return pd.DataFrame(index=best_names, columns=sorted_names, data=data)
 
     def save(self, *args: tp.Any, **kwargs: tp.Any) -> None:
