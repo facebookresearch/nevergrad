@@ -713,7 +713,6 @@ class FightPlotter:
         # number of subcases actually computed is twice self-victories
         sorted_names = ["{} ({}/{})".format(n, int(2 * victories.loc[n, n]), total) for n in sorted_names]
         num_names = len(sorted_names)
-<<<<<<< HEAD
         sorted_names = [sorted_names[i] for i in range(min(30, len(sorted_names)))]
         data = np.array(winrates.iloc[:num_rows, : len(sorted_names)])
         # pylint: disable=anomalous-backslash-in-string
@@ -722,14 +721,6 @@ class FightPlotter:
                 f"{name} ({100 * val:2.1f}% +- {25 * np.sqrt(val*(1-val)/int(2 * victories.loc[name, name])):2.1f}*)"
             ).replace("Search", "")
             for name, val in zip(mean_win.index[:num_rows], mean_win)
-=======
-        sorted_names = [sorted_names[i] for i in range(min(num_cols, len(sorted_names)))]
-        data = np.array(winrates.iloc[:num_rows, : len(sorted_names)])
-        # pylint: disable=anomalous-backslash-in-string
-        best_names = [
-            (f"{name} ({i+1}/{num_names}:{100 * val:2.1f}%)").replace("Search", "")
-            for i, (name, val) in enumerate(zip(mean_win.index[:num_rows], mean_win))
->>>>>>> eae99b8ff54b346a8219003b17d09fb162e3200f
         ]
         return pd.DataFrame(index=best_names, columns=sorted_names, data=data)
 
