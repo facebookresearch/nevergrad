@@ -56,7 +56,6 @@ def test_morpho_bounding_method_constraints() -> None:
 
 def test_photonics_bragg_recombination() -> None:
     func = core.Photonics("bragg", 8)
-    # func.parametrization.set_recombination(ng.p.mutation.RavelCrossover())  # type: ignore
     func.parametrization.random_state.seed(24)
     arrays = [func.parametrization.spawn_child() for _ in range(2)]
     arrays[0].value = [[2, 2, 2, 2], [35, 35, 35, 35]]

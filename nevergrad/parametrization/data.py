@@ -30,57 +30,9 @@ def _param_string(parameters: Dict) -> str:
     return substr
 
 
-MutFn = tp.Callable[[tp.Sequence["Data"]], None]
-
-
-class Mutation(core.Parameter):
-    """Custom mutation or recombination
-    This is an experimental API
-
-    Either implement:
-    - `_apply_array`  which provides a new np.ndarray from a list of arrays
-    - `apply` which updates the first p.Array instance
-
-    Mutation should take only one p.Array instance as argument, while
-    Recombinations should take several
-    """
-
-    # NOTE: this API should disappear in favor of the layer API
-    # (a layer can modify the mutation scheme)
-
-    # pylint: disable=unused-argument
-    value: core.ValueProperty[MutFn, MutFn] = core.ValueProperty()
-
-    def __init__(self, **kwargs: tp.Any) -> None:
-        super().__init__()
-        self.parameters = Dict(**kwargs)
-
-    def _layered_get_value(self) -> MutFn:
-        return self.apply
-
-    def _layered_set_value(self, value: tp.Any) -> None:
-        raise RuntimeError("Mutation cannot be set.")
-
-    def _get_name(self) -> str:
-        return super()._get_name() + _param_string(self.parameters)
-
-    def apply(self, arrays: tp.Sequence["Data"]) -> None:
-        new_value = self._apply_array([a._value for a in arrays])
-        arrays[0]._value = new_value
-
-    def _apply_array(self, arrays: tp.Sequence[np.ndarray]) -> np.ndarray:
-        raise RuntimeError("Mutation._apply_array should either be implementer or bypassed in Mutation.apply")
-        return np.array([])  # pylint: disable=unreachable
-
-    def get_standardized_data(  # pylint: disable=unused-argument
-        self: P, *, reference: tp.Optional[P] = None
-    ) -> np.ndarray:
-        return np.array([])
-
-
 # pylint: disable=too-many-arguments, too-many-instance-attributes,abstract-method
 class Data(core.Parameter):
-    """Array parameter with customizable mutation and recombination.
+    """Array/scalar parameter
 
     Parameters
     ----------
@@ -153,8 +105,8 @@ class Data(core.Parameter):
                 init=siginit, mutable_sigma=False
             )
             sigma.value = siginit
-        self.parameters = Dict(sigma=sigma, recombination="average", mutation="gaussian")
-        self.parameters._ignore_in_repr = dict(sigma="1.0", recombination="average", mutation="gaussian")
+        self.parameters = Dict(sigma=sigma)
+        self.parameters._ignore_in_repr = dict(sigma="1.0")
         if layer is not None:
             layer(self, inplace=True)
 
@@ -274,38 +226,10 @@ class Data(core.Parameter):
             ) from e
         return self
 
-    def set_recombination(self: D, recombination: tp.Union[None, str, core.Parameter]) -> D:
-        self.parameters._content["recombination"] = (
-            recombination if isinstance(recombination, core.Parameter) else core.Constant(recombination)
-        )
-        return self
-
-    def mutate(self) -> None:
-        """Mutate parameters of the instance, and then its value"""
-        self._check_frozen()
-        self._subobjects.apply("mutate")
-        mutation = self.parameters["mutation"].value
-        if isinstance(mutation, str):
-            if mutation in ["gaussian", "cauchy"]:
-                func = (
-                    self.random_state.normal if mutation == "gaussian" else self.random_state.standard_cauchy
-                )
-                new_state = func(size=self.dimension)
-                self.set_standardized_data(new_state)
-            else:
-                raise NotImplementedError('Mutation "{mutation}" is not implemented')
-        elif isinstance(mutation, Mutation):
-            mutation.apply([self])
-        elif callable(mutation):
-            mutation([self])
-        else:
-            raise TypeError("Mutation must be a string, a callable or a Mutation instance")
-
     def set_mutation(
         self: D,
         sigma: tp.Optional[tp.Union[float, core.Parameter]] = None,
         exponent: tp.Optional[float] = None,
-        custom: tp.Optional[tp.Union[str, core.Parameter]] = None,
     ) -> D:
         """Output will be cast to integer(s) through deterministic rounding.
 
@@ -318,10 +242,6 @@ class Data(core.Parameter):
         exponent: float
             exponent for the logarithmic mode. With the default sigma=1, using exponent=2 will perform
             x2 or /2 "on average" on the value at each mutation.
-        custom: str or Parameter
-            custom mutation which can be a string ("gaussian" or "cauchy")
-            or Mutation/Recombination like object
-            or a Parameter which value is either of those
 
         Returns
         -------
@@ -351,8 +271,6 @@ class Data(core.Parameter):
                 raise errors.NevergradValueError(
                     "Cannot convert to logarithmic mode with current non-positive value, please update it firstp."
                 ) from e
-        if custom is not None:
-            self.parameters._content["mutation"] = core.as_parameter(custom)
         return self
 
     def set_integer_casting(self: D) -> D:
@@ -396,23 +314,11 @@ class Data(core.Parameter):
         reduced = value / self.sigma.value
         return reduced.ravel()  # type: ignore
 
-    def recombine(self: D, *others: D) -> None:
-        if not others:
-            return
-        self._subobjects.apply("recombine", *others)
-        recomb = self.parameters["recombination"].value
-        if recomb is None:
-            return
+    def _layered_recombine(self: D, *others: D) -> None:  # type: ignore
         all_params = [self] + list(others)
-        if isinstance(recomb, str) and recomb == "average":
-            all_arrays = [p.get_standardized_data(reference=self) for p in all_params]
-            self.set_standardized_data(np.mean(all_arrays, axis=0))
-        elif isinstance(recomb, Mutation):
-            recomb.apply(all_params)
-        elif callable(recomb):
-            recomb(all_params)
-        else:
-            raise ValueError(f'Unknown recombination "{recomb}"')
+        all_arrays = [p.get_standardized_data(reference=self) for p in all_params]
+        mean: np.ndarray = np.mean(all_arrays, axis=0)  # type: ignore
+        self.set_standardized_data(mean)
 
     def copy(self: D) -> D:
         child = super().copy()
@@ -509,10 +415,10 @@ def _fix_legacy(parameter: Data) -> None:
             method=bound._method,
             uniform_sampling=bound.uniform_sampling,
         )
-    for l in (bound, exp):
-        l._layer_index = 0
-        l._layers = [l]
-        parameter.add_layer(l)
+    for lay in (bound, exp):
+        lay._layer_index = 0
+        lay._layers = [lay]
+        parameter.add_layer(lay)
     return
 
 
@@ -608,7 +514,7 @@ class Log(Scalar):
                 init = float(np.sqrt(lower * upper))  # type: ignore
             if exponent is None:
                 exponent = float(
-                    np.exp((np.log(upper) - np.log(lower)) / 6.0)
+                    np.exp((np.log(upper) - np.log(lower)) / 6.0)  # type: ignore
                 )  # 99.7% of values within the bounds
         if init is None:
             raise ValueError("You must define either a init value or both lower and upper bounds")

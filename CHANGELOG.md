@@ -26,6 +26,9 @@
 - Half the budget alloted to solve cheap constrained is now used by a sub-optimizer
   [#1047](https://github.com/facebookresearch/nevergrad/pull/1047). More changes of constraint management will land
   in the near future.
+- Experimental methods `Array.set_recombination` and `Array.set_mutation(custom=.)` are removed in favor of
+  layers changing `Array` behaviors [#1086](https://github.com/facebookresearch/nevergrad/pull/1086).
+  Caution: this is still very experimental (and undocumented).
 
 ### Important changes
 
@@ -56,6 +59,8 @@
 - `EvolutionStrategy` now defaults to NSGA2 selection in the multiobjective case
 - A new experimental callback adds an early stopping mechanism
   [#1054](https://github.com/facebookresearch/nevergrad/pull/1054).
+- `Choice`-like parameters now accept integers are inputs instead of a list, as a shortcut for `range(num)`
+  [#1106](https://github.com/facebookresearch/nevergrad/pull/1106).
 
 ## 0.4.3 (2021-01-28)
 

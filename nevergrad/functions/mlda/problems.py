@@ -9,6 +9,7 @@
 # - Mike Preuss, LIACS, Leiden University
 
 import numpy as np
+import pandas as pd
 import scipy.spatial
 from nevergrad.parametrization import parameter as p
 import nevergrad.common.typing as tp
@@ -159,7 +160,8 @@ class SammonMapping(ExperimentFunction):
         Parameters
         ----------
         name: str
-            name of the dataset (among "Virus", "Employees")
+            name of the dataset (initially among "Virus", "Employees", but Employees dataset is not
+            available online anymore)
 
         Notes
         -----
@@ -168,7 +170,8 @@ class SammonMapping(ExperimentFunction):
         - for "Virus", we compute a proximity matrix from raw data (no normalization)
         """
         assert name in ["Virus", "Employees"], f"Unkwnown name {name}"
-        raw_data = datasets.get_data(name)
+        assert name != "Employees", "The Employees dataset is not available anymore"
+        raw_data: pd.DataFrame = datasets.get_data(name)  # type: ignore
         if name == "Employees":
             if rescale:
                 raise ValueError("Impossible to rescale with 'Employees'")

@@ -12,7 +12,7 @@ from . import core
 def test_impedence_pix() -> None:
     ep0 = 1
     epf = 9
-    x = np.array([3.0, 5, 1, 9])
+    x = np.array([3.0, 5.0, 1.0, 9.0])
     dpix = 37
     lam = 400
     output = core.impedance_pix(x, dpix, lam, ep0, epf)
@@ -44,6 +44,7 @@ def test_arcoating_transform_and_call() -> None:
     x = 7 * np.random.normal(size=nbslab)  # make sure it touches space boundaries
     data = func.parametrization.spawn_child().set_standardized_data(x).args[0]
     value = func(data)  # should not touch boundaries, so value should be < np.inf
+    assert isinstance(value, float)
     assert value < np.inf
     param = func.parametrization.spawn_child().set_standardized_data(np.arange(8))
     np.testing.assert_almost_equal(func(param.value), 16.5538936)

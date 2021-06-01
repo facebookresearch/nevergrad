@@ -22,13 +22,14 @@ from nevergrad.parametrization import _datalayers
 from . import oneshot
 from . import base
 from . import mutations
+from . import utils
 from .base import registry as registry
 from .base import addCompare  # pylint: disable=unused-import
 from .base import IntOrParameter
 
 
 # families of optimizers
-# pylint: disable=unused-wildcard-import,wildcard-import,too-many-lines,too-many-arguments
+# pylint: disable=unused-wildcard-import,wildcard-import,too-many-lines,too-many-arguments,too-many-branches
 from .differentialevolution import *  # type: ignore  # noqa: F403
 from .es import *  # type: ignore  # noqa: F403
 from .oneshot import *  # noqa: F403
@@ -375,22 +376,12 @@ class _CMA(base.Optimizer):
         parametrization: IntOrParameter,
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
-        scale: float = 1.0,
-        elitist: bool = False,
-        popsize: tp.Optional[int] = None,
-        diagonal: bool = False,
-        fcmaes: bool = False,
-        random_init: bool = False,
+        config: tp.Optional["ParametrizedCMA"] = None,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        self._scale = scale
-        self._elitist = elitist
-        self._popsize = (
-            max(self.num_workers, 4 + int(3 * np.log(self.dimension))) if popsize is None else popsize
-        )
-        self._diagonal = diagonal
-        self._fcmaes = fcmaes
-        self._random_init = random_init
+        self._config = ParametrizedCMA() if config is None else config
+        pop = self._config.popsize
+        self._popsize = max(num_workers, 4 + int(3 * np.log(self.dimension))) if pop is None else pop
         # internal attributes
         self._to_be_asked: tp.Deque[np.ndarray] = deque()
         self._to_be_told: tp.List[p.Parameter] = []
@@ -402,20 +393,21 @@ class _CMA(base.Optimizer):
     @property
     def es(self) -> tp.Any:  # typing not possible since cmaes not imported :(
         if self._es is None:
-            if not self._fcmaes:
+            if not self._config.fcmaes:
                 inopts = dict(
                     popsize=self._popsize,
                     randn=self._rng.randn,
-                    CMA_diagonal=self._diagonal,
-                    verbose=0,
+                    CMA_diagonal=self._config.diagonal,
+                    verbose=-9,
                     seed=np.nan,
-                    CMA_elitist=self._elitist,
+                    CMA_elitist=self._config.elitist,
                 )
+                inopts.update(self._config.inopts if self._config.inopts is not None else {})
                 self._es = cma.CMAEvolutionStrategy(
-                    x0=self._rng.normal(size=self.dimension)
-                    if self._random_init
-                    else np.zeros(self.dimension, dtype=np.float),
-                    sigma0=self._scale,
+                    x0=self.parametrization.sample().get_standardized_data(reference=self.parametrization)
+                    if self._config.random_init
+                    else np.zeros(self.dimension, dtype=np.float_),
+                    sigma0=self._config.scale,
                     inopts=inopts,
                 )
             else:
@@ -426,8 +418,8 @@ class _CMA(base.Optimizer):
                         "Please install fcmaes (pip install fcmaes) to use FCMA optimizers"
                     ) from e
                 self._es = cmaes.Cmaes(
-                    x0=np.zeros(self.dimension, dtype=np.float),
-                    input_sigma=self._scale,
+                    x0=np.zeros(self.dimension, dtype=np.float_),
+                    input_sigma=self._config.scale,
                     popsize=self._popsize,
                     randn=self._rng.randn,
                 )
@@ -446,7 +438,7 @@ class _CMA(base.Optimizer):
         if len(self._to_be_told) >= self.es.popsize:
             listx = [c.get_standardized_data(reference=self.parametrization) for c in self._to_be_told]
             listy = [c.loss for c in self._to_be_told]
-            args = (listy, listx) if self._fcmaes else (listx, listy)
+            args = (listy, listx) if self._config.fcmaes else (listx, listy)
             try:
                 self.es.tell(*args)
             except RuntimeError:
@@ -461,7 +453,7 @@ class _CMA(base.Optimizer):
         )
         if self._es is None:
             return pessimistic
-        cma_best: tp.Optional[np.ndarray] = self.es.best_x if self._fcmaes else self.es.result.xbest
+        cma_best: tp.Optional[np.ndarray] = self.es.best_x if self._config.fcmaes else self.es.result.xbest
         if cma_best is None:
             return pessimistic
         return cma_best
@@ -483,13 +475,17 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
     popsize: Optional[int] = None
         population size, should be n * self.num_workers for int n >= 1.
         default is max(self.num_workers, 4 + int(3 * np.log(self.dimension)))
-
     diagonal: bool
         use the diagonal version of CMA (advised in big dimension)
-    fcmaes: bool = False
+    fcmaes: bool
         use fast implementation, doesn't support diagonal=True.
         produces equivalent results, preferable for high dimensions or
         if objective function evaluation is fast.
+    random_init: bool
+        Use a randomized initialization
+    inopts: optional dict
+        use this to averride any inopts parameter of the wrapped CMA optimizer
+        (see https://github.com/CMA-ES/pycma)
     """
 
     # pylint: disable=unused-argument
@@ -502,11 +498,19 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         diagonal: bool = False,
         fcmaes: bool = False,
         random_init: bool = False,
+        inopts: tp.Optional[tp.Dict[str, tp.Any]] = None,
     ) -> None:
-        super().__init__(_CMA, locals())
+        super().__init__(_CMA, locals(), as_config=True)
         if fcmaes:
             if diagonal:
                 raise RuntimeError("fcmaes doesn't support diagonal=True, use fcmaes=False")
+        self.scale = scale
+        self.elitist = elitist
+        self.popsize = popsize
+        self.diagonal = diagonal
+        self.fcmaes = fcmaes
+        self.random_init = random_init
+        self.inopts = inopts
 
 
 CMA = ParametrizedCMA().set_name("CMA", register=True)
@@ -1009,8 +1013,8 @@ class _Rescaled(base.Optimizer):
         self._optimizer = base_optimizer(self.parametrization, budget=budget, num_workers=num_workers)
         self._subcandidates: tp.Dict[str, p.Parameter] = {}
         if scale is None:
-            assert budget is not None, "Either scale or budget must be known in _Rescaled."
-            scale = np.sqrt(np.log(self.budget) / self.dimension)
+            assert self.budget is not None, "Either scale or budget must be known in _Rescaled."
+            scale = math.sqrt(math.log(self.budget) / self.dimension)
         self.scale = scale
         assert self.scale != 0.0, "scale should be non-zero in Rescaler."
 
@@ -1034,55 +1038,53 @@ class _Rescaled(base.Optimizer):
         self._optimizer.tell(candidate, loss)
 
 
-class SplitOptimizer(base.Optimizer):
-    """Combines optimizers, each of them working on their own variables.
+class Rescaled(base.ConfiguredOptimizer):
+    """Configured optimizer for creating rescaled optimization algorithms.
 
     Parameters
-    ---------
-    num_optims: int or None
-        number of optimizers
-    num_vars: int or None
-        number of variable per optimizer.
-    progressive: bool
-        True if we want to progressively add optimizers during the optimization run.
-        If progressive = True, the optimizer is forced at OptimisticNoisyOnePlusOne.
-
-    Example
-    -------
-    for 5 optimizers, each of them working on 2 variables, one can use:
-
-    opt = SplitOptimizer(parametrization=10, num_workers=3, num_optims=5, num_vars=[2, 2, 2, 2, 2])
-    or equivalently:
-    opt = SplitOptimizer(parametrization=10, num_workers=3, num_vars=[2, 2, 2, 2, 2])
-    Given that all optimizers have the same number of variables, one can also run:
-    opt = SplitOptimizer(parametrization=10, num_workers=3, num_optims=5)
-
-    Note
-    ----
-    By default, it uses CMA for multivariate groups and RandomSearch for monovariate groups.
-
-    Caution
-    -------
-    The variables refer to the deep representation used by optimizers.
-    For example, a categorical variable with 5 possible values becomes 5 continuous variables.
+    ----------
+    base_optimizer: base.OptCls
+        optimization algorithm to be rescaled.
+    scale: how much do we rescale. E.g. 0.001 if we want to focus on the center
+        with std 0.001 (assuming the std of the domain is set to 1).
     """
+
+    # pylint: disable=unused-argument
+    def __init__(
+        self,
+        *,
+        base_optimizer: base.OptCls = CMA,
+        scale: tp.Optional[float] = None,
+    ) -> None:
+        super().__init__(_Rescaled, locals())
+
+
+RescaledCMA = Rescaled().set_name("RescaledCMA", register=True)
+
+
+class SplitOptimizer(base.Optimizer):
+    """Combines optimizers, each of them working on their own variables. (use ConfSplitOptimizer)"""
 
     def __init__(
         self,
         parametrization: IntOrParameter,
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
-        num_optims: tp.Optional[int] = None,
-        num_vars: tp.Optional[tp.List[int]] = None,
-        multivariate_optimizer: base.OptCls = CMA,
-        monovariate_optimizer: base.OptCls = OnePlusOne,
-        progressive: bool = False,
-        non_deterministic_descriptor: bool = True,
+        config: tp.Optional["ConfSplitOptimizer"] = None,
     ) -> None:
+        self._config = ConfSplitOptimizer() if config is None else config
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._subcandidates: tp.Dict[str, tp.List[p.Parameter]] = {}
-        self._progressive = progressive
         subparams: tp.List[p.Parameter] = []
+
+        num_vars = self._config.num_vars
+        num_optims = self._config.num_optims
+        max_num_vars = self._config.max_num_vars
+        if max_num_vars is not None:
+            assert num_vars is None, "num_vars and max_num_vars should not be set at the same time"
+            num_vars = [max_num_vars] * (self.dimension // max_num_vars)
+            if self.dimension > sum(num_vars):
+                num_vars += [self.dimension - sum(num_vars)]
         if num_vars is not None:  # The user has specified how are the splits (s)he wants.
             assert (
                 sum(num_vars) == self.dimension
@@ -1104,19 +1106,19 @@ class SplitOptimizer(base.Optimizer):
         if not subparams:
             # if num_vars not given: we will distribute variables equally.
             assert num_optims is not None
-            num_optims = min(num_optims, self.dimension)
+            num_optims = int(min(num_optims, self.dimension))
             num_vars = num_vars if num_vars else []
             for i in range(num_optims):
                 if len(num_vars) < i + 1:
                     num_vars += [(self.dimension // num_optims) + (self.dimension % num_optims > i)]
                 assert num_vars[i] >= 1, "At least one variable per optimizer."
                 subparams += [p.Array(shape=(num_vars[i],))]
-        if non_deterministic_descriptor:
+        if self._config.non_deterministic_descriptor:
             for param in subparams:
                 param.function.deterministic = False
         # synchronize random state and create optimizers
         self.optims: tp.List[base.Optimizer] = []
-        mono, multi = monovariate_optimizer, multivariate_optimizer
+        mono, multi = self._config.monovariate_optimizer, self._config.multivariate_optimizer
         for param in subparams:
             param.random_state = self.parametrization.random_state
             self.optims.append((multi if param.dimension > 1 else mono)(param, budget, num_workers))
@@ -1128,7 +1130,7 @@ class SplitOptimizer(base.Optimizer):
     def _internal_ask_candidate(self) -> p.Parameter:
         candidates: tp.List[p.Parameter] = []
         for i, opt in enumerate(self.optims):
-            if self._progressive:
+            if self._config.progressive:
                 assert self.budget is not None
                 if i > 0 and i / len(self.optims) > np.sqrt(2.0 * self.num_ask / self.budget):
                     candidates.append(opt.parametrization.spawn_child())  # unchanged
@@ -1160,58 +1162,127 @@ class SplitOptimizer(base.Optimizer):
             opt.tell(local_candidate, loss)
 
 
-class Rescaled(base.ConfiguredOptimizer):
-    """Configured optimizer for creating rescaled optimization algorithms.
-
-    Parameters
-    ----------
-    base_optimizer: base.OptCls
-        optimization algorithm to be rescaled.
-    scale: how much do we rescale. E.g. 0.001 if we want to focus on the center
-        with std 0.001 (assuming the std of the domain is set to 1).
-    """
-
-    # pylint: disable=unused-argument
-    def __init__(
-        self,
-        *,
-        base_optimizer: base.OptCls = CMA,
-        scale: tp.Optional[float] = None,
-    ) -> None:
-        super().__init__(_Rescaled, locals())
-
-
-RescaledCMA = Rescaled().set_name("RescaledCMA", register=True)
-
-
 class ConfSplitOptimizer(base.ConfiguredOptimizer):
-    """ "Combines optimizers, each of them working on their own variables.
+    """Combines optimizers, each of them working on their own variables.
 
     Parameters
     ----------
-    num_optims: int
-        number of optimizers
-    num_vars: optional list of int
-        number of variable per optimizer.
+    num_optims: int (or float("inf"))
+        number of optimizers to create (if not provided through :code:`num_vars: or
+        :code:`max_num_vars`)
+    num_vars: int or None
+        number of variable per optimizer (should not be used if :code:`max_num_vars` or
+        :code:`num_optims` is set)
+    max_num_vars: int or None
+        maximum number of variables per optimizer. Should not be defined if :code:`num_vars` or
+        :code:`num_optims` is defined since they will be chosen automatically.
     progressive: optional bool
         whether we progressively add optimizers.
     non_deterministic_descriptor: bool
         subparts parametrization descriptor is set to noisy function.
         This can have an impact for optimizer selection for competence maps.
+
+    Example
+    -------
+    for 5 optimizers, each of them working on 2 variables, one can use:
+
+    opt = ConfSplitOptimizer(num_vars=[2, 2, 2, 2, 2])(parametrization=10, num_workers=3)
+    or equivalently:
+    opt = SplitOptimizer(parametrization=10, num_workers=3, num_vars=[2, 2, 2, 2, 2])
+    Given that all optimizers have the same number of variables, one can also run:
+    opt = SplitOptimizer(parametrization=10, num_workers=3, num_optims=5)
+
+    Note
+    ----
+    By default, it uses CMA for multivariate groups and RandomSearch for monovariate groups.
+
+    Caution
+    -------
+    The variables refer to the deep representation used by optimizers.
+    For example, a categorical variable with 5 possible values becomes 5 continuous variables.
     """
 
     # pylint: disable=unused-argument
     def __init__(
         self,
         *,
-        num_optims: tp.Optional[int] = None,
+        num_optims: tp.Optional[float] = None,
         num_vars: tp.Optional[tp.List[int]] = None,
+        max_num_vars: tp.Optional[int] = None,
         multivariate_optimizer: base.OptCls = CMA,
-        monovariate_optimizer: base.OptCls = RandomSearch,
+        monovariate_optimizer: base.OptCls = oneshot.RandomSearch,
         progressive: bool = False,
         non_deterministic_descriptor: bool = True,
     ) -> None:
-        super().__init__(SplitOptimizer, locals())
+        self.num_optims = num_optims
+        self.num_vars = num_vars
+        self.max_num_vars = max_num_vars
+        self.multivariate_optimizer = multivariate_optimizer
+        self.monovariate_optimizer = monovariate_optimizer
+        self.progressive = progressive
+        self.non_deterministic_descriptor = non_deterministic_descriptor
+        if sum(x is not None for x in [num_optims, num_vars, max_num_vars]) > 1:
+            raise ValueError("At most, only one of num_optims, num_vars and max_num_vars can be set")
+        super().__init__(SplitOptimizer, locals(), as_config=True)
+
+
+class NoisySplit(base.ConfiguredOptimizer):
+    """Non-progressive noisy split of variables based on 1+1
+
+    Parameters
+    ----------
+    num_optims: optional int
+        number of optimizers (one per variable if float("inf"))
+    discrete: bool
+        uses OptimisticDiscreteOnePlusOne if True, else NoisyOnePlusOne
+    """
+
+    # pylint: disable=unused-argument
+    def __init__(
+        self,
+        *,
+        num_optims: tp.Optional[float] = None,
+        discrete: bool = False,
+    ) -> None:
+        kwargs = locals()
+        opt = OptimisticDiscreteOnePlusOne if discrete else OptimisticNoisyOnePlusOne
+        mono_opt: base.OptCls = NoisyBandit if discrete else opt
+        ConfOpt = ConfSplitOptimizer(
+            progressive=False,
+            num_optims=num_optims,
+            multivariate_optimizer=opt,
+            monovariate_optimizer=mono_opt,
+        )
+        super().__init__(ConfOpt, kwargs)
+
+
+class ConfPortfolio(base.ConfiguredOptimizer):
+    """Alternates :code:`ask()` on several optimizers
+
+    Parameters
+    ----------
+    optimizers: list of Optimizer, optimizer name, Optimizer class or ConfiguredOptimizer
+        the list of optimizers to use.
+    warmup_ratio: optional float
+        ratio of the budget used before choosing to focus on one optimizer
+
+    Notes
+    -----
+    - if providing an initialized  optimizer, the parametrization of the optimizer
+      must be the exact same instance as the one of the Portfolio.
+    - this API is temporary and will be renamed very soon
+    """
+
+    # pylint: disable=unused-argument
+    def __init__(
+        self,
+        *,
+        optimizers: tp.Sequence[tp.Union[base.Optimizer, base.OptCls, str]] = (),
+        warmup_ratio: tp.Optional[float] = None,
+    ) -> None:
+        self.optimizers = optimizers
+        self.warmup_ratio = warmup_ratio
+        super().__init__(SplitOptimizer, locals(), as_config=True)
 
 
 @registry.register
@@ -1219,44 +1290,91 @@ class Portfolio(base.Optimizer):
     """Passive portfolio of CMA, 2-pt DE and Scr-Hammersley."""
 
     def __init__(
-        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+        self,
+        parametrization: IntOrParameter,
+        budget: tp.Optional[int] = None,
+        num_workers: int = 1,
+        config: tp.Optional["ConfPortfolio"] = None,
     ) -> None:
+        self._config = ConfPortfolio() if config is None else config
+        cfg = self._config
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        assert budget is not None
-        self.optims = [
-            CMA(
-                self.parametrization, budget // 3 + (budget % 3 > 0), num_workers
-            ),  # share parametrization and its rng
-            TwoPointsDE(self.parametrization, budget // 3 + (budget % 3 > 1), num_workers),  # noqa: F405
-            ScrHammersleySearch(self.parametrization, budget // 3, num_workers),
-        ]  # noqa: F405
-        if budget < 12 * num_workers:
-            self.optims = [ScrHammersleySearch(self.parametrization, budget, num_workers)]  # noqa: F405
+        if not cfg.optimizers:  # default
+            optimizers = []
+            if budget is None or budget >= 12 * num_workers:
+                optimizers = [CMA, "TwoPointsDE"]
+            if budget is not None:  # needs a budget
+                optimizers.append("ScrHammersleySearch")
+        # initialize
+        num = len(optimizers)
+        self.optims: tp.List[base.Optimizer] = []
+        sub_budget = None if budget is None else budget // num + (budget % num > 0)
+        for opt in optimizers:
+            if isinstance(opt, base.Optimizer):
+                if opt.parametrization is not self.parametrization:
+                    raise errors.NevergradValueError(
+                        "Initialized optimizers are only accepted if "
+                        "the parametrization object is strictly the same"
+                    )
+                self.optims.append(opt)
+                continue
+            Optim: base.OptCls = registry[opt] if isinstance(opt, str) else opt  # type: ignore
+            sub_workers = 1 if Optim.no_parallelization else num_workers  # could be reduced in some settings
+            self.optims.append(
+                Optim(
+                    self.parametrization,  # share parametrization and its rng
+                    budget=sub_budget,
+                    num_workers=sub_workers,
+                )
+            )
+        # current optimizer choice
+        self._selected_ind: tp.Optional[int] = None
+        self._current = -1
+        self._warmup_budget: tp.Optional[int] = None
+        if cfg.warmup_ratio is not None and budget is None:
+            raise ValueError("warmup_ratio is only available if a budget is provided")
+        if not any(x is None for x in (cfg.warmup_ratio, budget)):
+            self._warmup_budget = int(cfg.warmup_ratio * budget)  # type: ignore
 
     def _internal_ask_candidate(self) -> p.Parameter:
-        optim_index = self._num_ask % len(self.optims)
-        candidate = self.optims[optim_index].ask()
+        # optimizer selection if budget is over
+        if self._warmup_budget is not None:
+            if self._selected_ind is None and self._warmup_budget < self.num_tell:
+                ind = self.current_bests["pessimistic"].parameter._meta.get("optim_index", -1)
+                if ind >= 0:  # not a tell not asked
+                    if self.num_workers == 1 or self.optims[ind].num_workers > 1:
+                        self._selected_ind = ind  # don't select non-parallelizable in parallel settings
+        optim_index = self._selected_ind
+        if optim_index is None:
+            num = len(self.optims)
+            for k in range(2 * num):
+                self._current += 1
+                optim_index = self._current % len(self.optims)
+                opt = self.optims[optim_index]
+                if opt.num_workers > opt.num_ask - (opt.num_tell - opt.num_tell_not_asked):
+                    break  # if there are workers left, use this optimizer
+                if k > num:
+                    if not opt.no_parallelization:
+                        break  # if no worker is available, try the first parallelizable optimizer
+        if optim_index is None:
+            raise RuntimeError("Something went wrong in optimizer selection")
+        opt = self.optims[optim_index]
+        candidate = opt.ask()
         candidate._meta["optim_index"] = optim_index
         return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        # Telling all optimizers is presumably better than just
+        # self.optims[optim_index].tell(candidate, value)
+        accepted = 0
         for opt in self.optims:
             try:
                 opt.tell(candidate, loss)
+                accepted += 1
             except errors.TellNotAskedNotSupportedError:
                 pass
-        # Presumably better than self.optims[optim_index].tell(candidate, value)
-
-    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        at_least_one_ok = False
-        for opt in self.optims:
-            try:
-                opt.tell(candidate, loss)
-                at_least_one_ok = True
-            except errors.TellNotAskedNotSupportedError:
-                pass
-        if not at_least_one_ok:
-            raise errors.TellNotAskedNotSupportedError
+        if not accepted:
+            raise errors.TellNotAskedNotSupportedError("No sub-optimizer accepted the tell-not-asked")
 
 
 class InfiniteMetaModelOptimum(ValueError):
@@ -1274,9 +1392,7 @@ def learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.Arra
     dimension = len(items[0][0])
 
     # Select the k best.
-    first_k_individuals = [
-        x for x in sorted(items, key=lambda indiv: archive[indiv[0]].get_estimation("pessimistic"))[:k]
-    ]
+    first_k_individuals = sorted(items, key=lambda indiv: archive[indiv[0]].get_estimation("pessimistic"))[:k]
     assert len(first_k_individuals) == k
 
     # Recenter the best.
@@ -1297,7 +1413,7 @@ def learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.Arra
     model.fit(X2, y)
 
     try:
-        for cls in Powell, DE:  # Powell excellent here, DE as a backup for thread safety.
+        for cls in (Powell, DE):  # Powell excellent here, DE as a backup for thread safety.
             optimizer = cls(parametrization=dimension, budget=45 * dimension + 30)
             try:
                 minimum = optimizer.minimize(
@@ -1328,7 +1444,7 @@ class MetaModel(base.Optimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if multivariate_optimizer is None:
-            multivariate_optimizer = CMA if self.dimension > 1 else OnePlusOne
+            multivariate_optimizer = ParametrizedCMA(elitist=True) if self.dimension > 1 else OnePlusOne
         self._optim = multivariate_optimizer(
             self.parametrization, budget, num_workers
         )  # share parametrization and its rng
@@ -1703,9 +1819,12 @@ class _BO(base.Optimizer):
         if self._bo is None:
             bounds = {self._fake_function.key(i): (0.0, 1.0) for i in range(self.dimension)}
             self._bo = BayesianOptimization(self._fake_function, bounds, random_state=self._rng)
-            init_budget = max(
-                2, int(np.sqrt(self.budget) if self._init_budget is None else self._init_budget)
-            )
+            if self._init_budget is None:
+                assert self.budget is not None
+                init_budget = int(np.sqrt(self.budget))
+            else:
+                init_budget = self._init_budget
+            init_budget = max(2, init_budget)
             if self.gp_parameters is not None:
                 self._bo.set_gp_params(**self.gp_parameters)
             # init
@@ -1797,6 +1916,9 @@ class ParametrizedBO(base.ConfiguredOptimizer):
 
 
 BO = ParametrizedBO().set_name("BO", register=True)
+BOSplit = ConfSplitOptimizer(max_num_vars=15, progressive=False, multivariate_optimizer=BO).set_name(
+    "BOSplit", register=True
+)
 
 
 class _Chain(base.Optimizer):
@@ -2079,7 +2201,7 @@ class _EMNA(base.Optimizer):
                     self.sigma = np.exp(
                         np.sum(
                             np.log([c._meta["sigma"] for c in self.parents]),
-                            axis=0 if self.isotropic else None,
+                            axis=0 if self.isotropic else None,  # type: ignore
                         )
                         / self.popsize.mu
                     )
@@ -2106,7 +2228,7 @@ class _EMNA(base.Optimizer):
                     for i in range(self.popsize.mu)
                 ]
                 self.sigma = np.sqrt(
-                    np.sum(stdd, axis=0 if self.isotropic else None)
+                    np.sum(stdd, axis=0 if self.isotropic else None)  # type: ignore
                     / (self.popsize.mu * (self.dimension if self.isotropic else 1))
                 )
 
@@ -2388,6 +2510,7 @@ class NGOpt8(NGOpt4):
                 and not (self.has_noise and self.fully_continuous)
                 and not (self.num_workers > self.budget / 5)
                 and (self.num_workers == 1 and self.budget > 6000 and self.dimension > 7)
+                and self.num_workers < self.budget
             ):
                 optimClass = ChainMetaModelPowell
             else:
@@ -2416,7 +2539,49 @@ class NGOpt10(NGOpt8):
 
 
 @registry.register
-class NGOpt(NGOpt10):
+class NGOpt12(NGOpt10):
+    def _select_optimizer_cls(self) -> base.OptCls:
+        if (
+            not self.has_noise
+            and self.fully_continuous
+            and self.num_workers == 1
+            and self.dimension < 100  # was 50 in 15, 16, 17
+            and self.budget is not None
+            and self.budget < self.dimension * 50
+            and self.budget > min(50, self.dimension * 5)
+        ):
+            return chainMetaModelSQP
+        elif (
+            not self.has_noise
+            and self.fully_continuous
+            and self.num_workers == 1
+            and self.dimension < 100  # was 50 in 15, 16, 17
+            and self.budget is not None
+            and self.budget < self.dimension * 5
+            and self.budget > 50
+        ):
+            return MetaModel
+        else:
+            return super()._select_optimizer_cls()
+
+
+@registry.register
+class NGOpt13(NGOpt12):  # Also known as NGOpt12H
+    def _select_optimizer_cls(self) -> base.OptCls:
+        if (
+            not self.has_noise
+            and self.budget is not None
+            and self.num_workers * 3 < self.budget
+            and self.dimension < 8
+            and self.budget < 80
+        ):
+            return HyperOpt
+        else:
+            return super()._select_optimizer_cls()
+
+
+@registry.register
+class NGOpt(NGOpt13):
     pass
 
 
@@ -2444,10 +2609,10 @@ class _MSR(CM):
             )
             for _ in range(self.num_optims)
         ]
-        self.coeff: tp.Optional[tp.List[float]] = None
+        self.coeffs: tp.List[np.ndarray] = []
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        if self.coeff is None:
+        if not self.coeffs:
             self.coeffs = [
                 self.parametrization.random_state.uniform(size=self.num_objectives)
                 for _ in range(self.num_optims)

@@ -32,8 +32,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         self.method = method
         self.random_restart = random_restart
 
-    #    def _internal_tell_not_asked(self, x: base.ArrayLike, value: float) -> None:
-    def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
+    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         """Called whenever calling "tell" on a candidate that was not "asked".
         Defaults to the standard tell pipeline.
         """  # We do not do anything; this just updates the current best.

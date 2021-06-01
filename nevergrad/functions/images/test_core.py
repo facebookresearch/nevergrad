@@ -12,6 +12,7 @@ def test_images_adversarial() -> None:
     func = next(core.ImageAdversarial.make_folder_functions(None, model="test"))
     x = np.zeros(func.image.shape)
     value = func(x)
+    assert isinstance(value, float)
     assert value < np.inf
     other_func = func.copy().copy()
     value2 = other_func(x)
@@ -32,6 +33,7 @@ def test_images() -> None:
     x = 7 * np.fabs(np.random.normal(size=func.domain_shape))
     # data = func.parametrization.spawn_child().set_standardized_data(x.flatten()).value
     value = func(x)  # should not touch boundaries, so value should be < np.inf
+    assert isinstance(value, float)
     assert value < np.inf
     other_func = func.copy()
     value2 = other_func(x)
