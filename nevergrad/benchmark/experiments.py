@@ -103,12 +103,16 @@ def keras_tuning(
 
 
 def mltuning(
-    seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool = False
+    seed: tp.Optional[int] = None,
+    overfitter: bool = False,
+    seq: bool = False,
+    nano: bool = False,
 ) -> tp.Iterator[Experiment]:
     """Machine learning hyperparameter tuning experiment. Based on scikit models."""
     seedg = create_seed_generator(seed)
     optims: tp.List[str] = get_optimizers("basics", seed=next(seedg))  # type: ignore
-
+    if not seq:
+        optims = get_optimizers("oneshot", seed=next(seedg))  # type: ignore
     for dimension in [None, 1, 2, 3]:
         if dimension is None:
             datasets = ["boston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
@@ -119,7 +123,7 @@ def mltuning(
                 function = MLTuning(
                     regressor=regressor, data_dimension=dimension, dataset=dataset, overfitter=overfitter
                 )
-                for budget in [50, 150, 500]:
+                for budget in [50, 150, 500] if not nano else [20, 40, 80, 160]:
                     # Seq for sequential optimization experiments.
                     parallelization = [1, budget // 4] if seq else [budget]
                     for num_workers in parallelization:
@@ -152,11 +156,29 @@ def naive_seq_keras_tuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experim
     return keras_tuning(seed, overfitter=True, seq=True)
 
 
-# We register only the sequential counterparts for the moment.
+@registry.register
+def oneshot_mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """One-shot counterpart of Scikit tuning."""
+    return mltuning(seed, overfitter=False, seq=False)
+
+
+# We register only the (almost) sequential counterparts for the moment.
 @registry.register
 def seq_mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Sequential counterpart of mltuning."""
     return mltuning(seed, overfitter=False, seq=True)
+
+
+@registry.register
+def nano_seq_mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Sequential counterpart of mltuning."""
+    return mltuning(seed, overfitter=False, seq=True, nano=True)
+
+
+@registry.register
+def nano_naive_seq_mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Sequential counterpart of mltuning with overfitting of valid loss, i.e. train/valid/valid instead of train/valid/test."""
+    return mltuning(seed, overfitter=True, seq=True, nano=True)
 
 
 @registry.register
@@ -441,7 +463,7 @@ def oneshot(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     Base dimension 3 or 25.
     budget 30, 100 or 3000."""
     seedg = create_seed_generator(seed)
-    names = ["sphere", "griewank", "hm"]  # "sphere", "rastrigin", "cigar"]
+    names = ["sphere", "rastrigin", "cigar"]
     optims = get_optimizers("oneshot", seed=next(seedg))
     functions = [
         ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
@@ -589,6 +611,8 @@ def yabbob(
     hd: bool = False,
     constraint_case: int = 0,
     split: bool = False,
+    tiny: bool = False,
+    tuning: bool = False,
 ) -> tp.Iterator[Experiment]:
     """Yet Another Black-Box Optimization Benchmark.
     Related to, but without special effort for exactly sticking to, the BBOB/COCO dataset.
@@ -631,14 +655,18 @@ def yabbob(
         optims += ["OnePlusOne"]
         optims += get_optimizers("splitters", seed=next(seedg))  # type: ignore
 
+    if hd and small:
+        optims = ["BO", "BOSplit", "CMA", "PSO", "DE"]
     # List of objective functions.
     functions = [
         ArtificialFunction(name, block_dimension=d, rotation=rotation, noise_level=noise_level, split=split)
         for name in names
         for rotation in [True, False]
         for num_blocks in ([1] if not split else [7, 12])
-        for d in ([100, 1000, 3000] if hd else [2, 10, 50])
+        for d in ([100, 1000, 3000] if hd else ([2, 5, 10, 15] if tuning else [2, 10, 50]))
     ]
+    if tiny:
+        functions = functions[::13]
 
     # We possibly add constraints.
     max_num_constraints = 4
@@ -669,6 +697,12 @@ def yabbob(
                 )
                 if not xp.is_incoherent:
                     yield xp
+
+
+@registry.register
+def yahdlbbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with HD and low budget."""
+    return yabbob(seed, hd=True, small=True)
 
 
 @registry.register
@@ -713,6 +747,18 @@ def yasplitbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 def yahdsplitbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with more budget."""
     return yabbob(seed, hd=True, split=True)
+
+
+@registry.register
+def yatuningbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with less budget."""
+    return yabbob(seed, parallel=False, big=False, small=True, tiny=True, tuning=True)
+
+
+@registry.register
+def yatinybbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with less budget."""
+    return yabbob(seed, parallel=False, big=False, small=True, tiny=True)
 
 
 @registry.register
@@ -1064,7 +1110,7 @@ def realworld(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def rocket(seed: tp.Optional[int] = None, seq: bool = False) -> tp.Iterator[Experiment]:
     """Rocket simulator. Maximize max altitude by choosing the thrust schedule, given a total thrust.
     Budget 25, 50, ..., 1600.
     Sequential or 30 workers."""
@@ -1072,7 +1118,7 @@ def rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", seed=next(seedg))
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
-        for num_workers in [1, 30]:
+        for num_workers in [1] if seq else [1, 30]:
             if num_workers < budget:
                 for algo in optims:
                     for fu in funcs:
@@ -1080,6 +1126,12 @@ def rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                         skip_ci(reason="Too slow")
                         if not xp.is_incoherent:
                             yield xp
+
+
+@registry.register
+def mono_rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Sequential counterpart of the rocket problem."""
+    return rocket(seed, seq=True)
 
 
 @registry.register
