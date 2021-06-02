@@ -30,6 +30,7 @@ from .base import IntOrParameter
 
 # families of optimizers
 # pylint: disable=unused-wildcard-import,wildcard-import,too-many-lines,too-many-arguments,too-many-branches
+# pylint: disable=import-outside-toplevel
 from .differentialevolution import *  # type: ignore  # noqa: F403
 from .es import *  # type: ignore  # noqa: F403
 from .oneshot import *  # noqa: F403
@@ -1538,7 +1539,9 @@ class CMandAS2(Portfolio):
         # we need to manually create the parametrization if it's an int, so as to make sure
         # it is shared through instances
         optims: tp.List[base.OptCls] = [TwoPointsDE]
-        dim = parametrization if isinstance(parametrization, int) else parametrization.dimension
+        if isinstance(parametrization, int):
+            parametrization = p.Array(shape=(parametrization,))
+        dim = parametrization.dimension
         assert budget is not None
         warmup_ratio = 2.0
         if budget < 201:
@@ -1563,7 +1566,9 @@ class CMandAS3(Portfolio):
     ) -> None:
         optims: tp.List[base.OptCls] = [TwoPointsDE]
         warmup_ratio = 2.0
-        dim = parametrization if isinstance(parametrization, int) else parametrization.dimension
+        if isinstance(parametrization, int):
+            parametrization = p.Array(shape=(parametrization,))
+        dim = parametrization.dimension
         assert budget is not None
         if budget < 201:
             optims = [OnePlusOne]
@@ -1589,7 +1594,9 @@ class CM(Portfolio):
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
         optims: tp.List[base.OptCls] = [TwoPointsDE]
-        dim = parametrization if isinstance(parametrization, int) else parametrization.dimension
+        if isinstance(parametrization, int):
+            parametrization = p.Array(shape=(parametrization,))
+        dim = parametrization.dimension
         assert budget is not None
         warmup_ratio = 2.0
         assert budget is not None
