@@ -1849,8 +1849,9 @@ class _Chain(base.Optimizer):
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         # Let us inform all concerned algorithms
         sum_budget = 0.0
-        for opt in self.optimizers:
-            sum_budget += float("inf") if opt.budget is None else opt.budget
+        for k, opt in enumerate(self.optimizers):
+            is_last = k == len(self.optimizers) - 1
+            sum_budget += float("inf") if opt.budget is None or is_last else opt.budget
             if self.num_tell < sum_budget:
                 opt.tell(candidate, loss)
 
