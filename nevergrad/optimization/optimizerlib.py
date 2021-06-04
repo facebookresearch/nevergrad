@@ -1162,6 +1162,11 @@ class SplitOptimizer(base.Optimizer):
             local_candidate = opt.parametrization.spawn_child().set_standardized_data(local_data)
             opt.tell(local_candidate, loss)
 
+    def _info(self) -> tp.Dict[str, tp.Any]:
+        key = "sub-optim"
+        optims = [x.name if key not in x._info() else x._info()[key] for x in self.optims]
+        return {key: ",".join(optims)}
+
 
 class ConfSplitOptimizer(base.ConfiguredOptimizer):
     """Combines optimizers, each of them working on their own variables.
@@ -2247,6 +2252,11 @@ class NGOptBase(base.Optimizer):
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         self.optim.tell(candidate, loss)
+
+    def _info(self) -> tp.Dict[str, tp.Any]:
+        out = {"sub-optim": self.optim.name}
+        out.update(self.optim._info())  # this will work for recursive NGOpt calls
+        return out
 
 
 @registry.register
