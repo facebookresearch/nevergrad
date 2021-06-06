@@ -2299,7 +2299,6 @@ class modcma(base.Optimizer):
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         if "modcma_data" not in candidate._meta:
-            print("tell not asked!")
             raise base.errors.TellNotAskedNotSupportedError
         data = candidate._meta["modcma_data"]
         assert len(data) == self.dimension
