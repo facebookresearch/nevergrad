@@ -2296,11 +2296,8 @@ if modcma_available:
         def _internal_ask_candidate(self) -> p.Parameter:
             data = self.ModCMA.ask()
             ng_data = np.asarray(data, dtype=np.float_).flatten()
-            assert len(data) == self.dimension
-            assert len(ng_data) == self.dimension
             out = self.parametrization.spawn_child()
             out._meta["ModCMA_data"] = data
-            assert out.dimension == self.dimension
             return out.set_standardized_data(ng_data, reference=self.parametrization)
     
         def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
