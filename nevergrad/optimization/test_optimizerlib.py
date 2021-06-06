@@ -624,20 +624,20 @@ continuous_cases: tp.List[tp.Tuple[str, object, int, int, str]] = [
         ("NGOpt13", ng.p.TransitionChoice(range(30), repetitions=4), 10, 2, "HyperOpt"),
         ("NGOpt13", ng.p.TransitionChoice(range(30), repetitions=10), 10, 2, "DiscreteLenglerOnePlusOne"),
         ("NGOpt13", ng.p.TransitionChoice(range(30), repetitions=10), 10, 2, "DiscreteLenglerOnePlusOne"),
-        ("NGOpt14", 10, 601, 1, "Cobyla"),
+        ("NGOpt14", 10, 601, 1, "CMA"),
         ("NGOpt14", 10, 601, 2, "CMA"),
         (
             "NGOpt14",
             ng.p.Log(lower=1, upper=1000).set_integer_casting(),
             601,
             2,
-            "HyperOpt",
+            "DoubleFastGADiscreteOnePlusOne",
         ),
-        ("NGOpt14", ng.p.TransitionChoice(range(30), repetitions=4), 601, 2, "HyperOpt"),
-        ("NGOpt14", ng.p.TransitionChoice(range(30), repetitions=4), 601, 2, "HyperOpt"),
+        ("NGOpt14", ng.p.TransitionChoice(range(30), repetitions=4), 601, 2, "DiscreteLenglerOnePlusOne"),
+        ("NGOpt14", ng.p.TransitionChoice(range(30), repetitions=4), 601, 2, "DiscreteLenglerOnePlusOne"),
         ("NGOpt14", ng.p.TransitionChoice(range(30), repetitions=4), 10, 2, "MetaModel"),
-        ("NGOpt14", ng.p.TransitionChoice(range(30), repetitions=10), 10, 2, "DiscreteLenglerOnePlusOne"),
-        ("NGOpt14", ng.p.TransitionChoice(range(30), repetitions=10), 10, 2, "DiscreteLenglerOnePlusOne"),
+        ("NGOpt14", ng.p.TransitionChoice(range(30), repetitions=10), 10, 2, "MetaModel"),
+        ("NGOpt14", ng.p.TransitionChoice(range(30), repetitions=10), 10, 2, "MetaModel"),
         ("NGO", 1, 10, 1, "Cobyla"),
         ("NGO", 1, 10, 2, "OnePlusOne"),
     ]
@@ -660,7 +660,7 @@ def test_ngopt_selection(
             assert choice == expected
         else:
             print(f"Continuous param={param} budget={budget} workers={num_workers} --> {choice}")
-            if num_workers >= budget:
+            if num_workers >= budget and budget > 600:
                 assert choice == "MetaTuneRecentering"
             if num_workers > 1:
                 assert choice not in ["SQP", "Cobyla"]
