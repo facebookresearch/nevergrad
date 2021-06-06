@@ -135,7 +135,7 @@ SLOW = [
 
 
 # Unfortunately, it looks like there is no seed for modcma.
-UNSEEDABLE: tp.List[str] = ["modcma"]
+UNSEEDABLE: tp.List[str] = ["modcma"] + [f"modcma{u}" for u in raange(24)]
 
 
 def buggy_function(x: np.ndarray) -> float:
@@ -174,6 +174,7 @@ def test_infnan(name: str) -> None:
             return
         assert (  # The "bad" algorithms, most of them originating in CMA's recommendation rule.
             any(x == name for x in ["modcma", "WidePSO", "SPSA", "NGOptBase", "Shiwa", "NGO"])
+            or "modcma" in name
             or isinstance(optim, (optlib.Portfolio, optlib._CMA, optlib.recaster.SequentialRecastOptimizer))
             or "NGOpt" in name
         )  # Second chance!

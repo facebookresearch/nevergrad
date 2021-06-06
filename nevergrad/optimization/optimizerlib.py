@@ -2279,15 +2279,61 @@ NaiveIsoEMNA = EMNA().set_name("NaiveIsoEMNA", register=True)
 
 @registry.register
 class modcma(base.Optimizer):
+    diederick_index = -1
     def __init__(
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
+        self.no_params = True
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        self.modcma = AskTellCMAES(
-            self.dimension, lambda_=max(num_workers, int(4 + 3 * np.log(self.dimension)))
-        )
+
+    def _get_parametrization(self):
+        params = {}
+        if self.diederick_index < 0:
+            return params
+        keys = ["c1","cc","cmu","cs","active","elitist","orthogonal","sequential","threshold_convergence","step_size_adaptation","mirrored","base_sampler","weights_option","local_restart","bound_correction"]
+        vals = []
+        vals.append([256,0.0206,0.7673,0.0111,0.67,False,True,False,False,False,'m-xnes',None,'halton','1/2^lambda','BIPOP','toroidal'])
+        vals.append([417,0.0451,0.7855,0.1994,0.6559999999999999,True,False,False,False,True,'psr',None,'halton','1/2^lambda','IPOP','COTN'])
+        vals.append([437,0.0757,0.6754,0.1076,0.6677,True,False,False,False,False,'m-xnes','mirrored','halton','default','BIPOP','saturate'])
+        vals.append([471,0.0044,0.7832,0.052000000000000005,0.1462,True,False,True,True,False,'csa','mirrored pairwise','gaussian','default','IPOP','COTN'])
+        vals.append([487,0.1448,0.2652,0.2795,0.8994,False,True,False,True,True,'xnes','mirrored','gaussian','default','IPOP',None])
+        vals.append([506,0.0065,0.4318,0.0193,0.9606,True,True,False,False,True,'csa',None,'halton','1/2^lambda',None,'mirror'])
+        vals.append([541,0.0628,0.1869,0.1069,0.2632,True,False,True,False,True,'csa',None,'halton','default','IPOP',None])
+        vals.append([561,0.0014,0.5818,0.1484,0.47200000000000003,False,True,False,False,True,'m-xnes',None,'halton','default','BIPOP','toroidal'])
+        vals.append([596,0.0574,0.3322,0.1092,0.3564,True,True,False,True,True,'m-xnes','mirrored pairwise','halton','1/2^lambda','BIPOP','mirror'])
+        vals.append([19,0.083,0.5499,0.1519,0.2431,True,False,False,False,True,'csa',None,'halton','1/2^lambda','IPOP',None])
+        vals.append([46,0.0638,0.5971,0.1933,0.3437,True,False,False,False,True,'csa',None,'halton','1/2^lambda',None,None])
+        vals.append([56,0.0718,0.8144,0.1,0.6214,True,True,False,False,True,'csa','mirrored pairwise','sobol','1/2^lambda','IPOP','COTN'])
+        vals.append([96,0.0693,0.38299999999999995,0.1583,0.1643,True,False,True,False,True,'psr','mirrored','halton','1/2^lambda','IPOP','toroidal'])
+        vals.append([106,0.061,0.3881,0.1563,0.4799,True,False,True,False,True,'csa','mirrored','sobol','default','BIPOP','toroidal'])
+        vals.append([131,0.0231,0.8749,0.3422,0.18600000000000003,False,False,False,True,True,'tpa',None,'halton','default','BIPOP',None])
+        vals.append([157,0.0168,0.5142,0.0879,0.1058,True,False,False,False,True,'csa','mirrored','sobol','default','BIPOP','toroidal'])
+        vals.append([187,0.0443,0.5157,0.1327,0.3759,True,False,True,False,True,'csa','mirrored','sobol','default','BIPOP','saturate'])
+        vals.append([202,0.0634,0.8367,0.1915,0.3923,True,False,False,False,True,'csa','mirrored','halton','default','BIPOP','mirror'])
+        vals.append([236,0.0048,0.4208,0.3002,0.0173,True,False,False,True,True,'tpa',None,'sobol','default','BIPOP','saturate'])
+        vals.append([278,0.0373,0.5169,0.1404,0.0132,False,False,False,False,True,'csa',None,'sobol','default','BIPOP','toroidal'])
+        vals.append([312,0.1276,0.1561,0.0514,0.2047,False,True,True,False,False,'tpa','mirrored','sobol','1/2^lambda','BIPOP','unif_resample'])
+        vals.append([326,0.094,0.5854,0.0973,0.875,True,False,False,False,False,'m-xnes',None,'gaussian','1/2^lambda','BIPOP','unif_resample'])
+        vals.append([365,0.0208,0.8882,0.2308,0.6177,True,False,False,False,True,'psr','mirrored','sobol','1/2^lambda','BIPOP',None])
+        vals.append([379,0.0585,0.3893,0.0381,0.3762,True,False,False,True,True,'csa','mirrored','gaussian','default','BIPOP','saturate'])
+        for k in range(len(vals)):
+            vals[k] = vals[k][1:]
+        print(len(keys), len(vals[0]))
+        assert len(keys) == len(vals[0])
+        assert len(keys) == len(vals[-1])
+        for k, v in zip(keys, vals[self.diederick_index]):
+            if k != "sequential":
+                params[k] = v
+        return params
 
     def _internal_ask_candidate(self) -> p.Parameter:
+        num_workers = self.num_workers
+        if self.no_params:
+            self.no_params = False
+            kwargs = self._get_parametrization()
+            self.modcma = AskTellCMAES(
+                self.dimension, lambda_=max(num_workers, int(4 + 3 * np.log(self.dimension))), **kwargs
+            )
         data = self.modcma.ask()
         ng_data = np.asarray(data, dtype=np.float_).flatten()
         assert len(data) == self.dimension
@@ -2305,6 +2351,79 @@ class modcma(base.Optimizer):
         assert len(data) == self.dimension
         self.modcma.tell(data, loss)
 
+
+@registry.register
+class modcma0(modcma):
+    diederick_index = 0
+@registry.register
+class modcma1(modcma):
+    diederick_index = 1
+@registry.register
+class modcma2(modcma):
+    diederick_index = 2
+@registry.register
+class modcma3(modcma):
+    diederick_index = 3
+@registry.register
+class modcma4(modcma):
+    diederick_index = 4
+@registry.register
+class modcma5(modcma):
+    diederick_index = 5
+@registry.register
+class modcma6(modcma):
+    diederick_index = 6
+@registry.register
+class modcma7(modcma):
+    diederick_index = 7
+@registry.register
+class modcma8(modcma):
+    diederick_index = 8
+@registry.register
+class modcma9(modcma):
+    diederick_index = 9
+@registry.register
+class modcma10(modcma):
+    diederick_index = 10
+@registry.register
+class modcma11(modcma):
+    diederick_index = 11
+@registry.register
+class modcma12(modcma):
+    diederick_index = 12
+@registry.register
+class modcma13(modcma):
+    diederick_index = 13
+@registry.register
+class modcma14(modcma):
+    diederick_index = 14
+@registry.register
+class modcma15(modcma):
+    diederick_index = 15
+@registry.register
+class modcma16(modcma):
+    diederick_index = 16
+@registry.register
+class modcma17(modcma):
+    diederick_index = 17
+@registry.register
+class modcma18(modcma):
+    diederick_index = 18
+@registry.register
+class modcma19(modcma):
+    diederick_index = 19
+@registry.register
+class modcma20(modcma):
+    diederick_index = 20
+@registry.register
+class modcma21(modcma):
+    diederick_index = 21
+@registry.register
+class modcma22(modcma):
+    diederick_index = 22
+@registry.register
+class modcma23(modcma):
+    diederick_index = 23
 
 # Discussions with Jialin Liu and Fabien Teytaud helped the following development.
 # This includes discussion at Dagstuhl's 2019 seminars on randomized search heuristics and computational intelligence in games.
