@@ -1268,7 +1268,7 @@ def gym_problem(
     if "directcompilergym" in specific_problem:
         assert compiler_gym_pb_index is not None
         assert compiler_gym_pb_index >= 0
-        funcs = [CompilerGym(compiler_gym_pb_index)]
+        funcs = [CompilerGym(compiler_gym_pb_index)]  # type: ignore
     else:
         funcs = [
             GymMulti(specific_problem, control="conformant")
