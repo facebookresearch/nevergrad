@@ -1146,12 +1146,7 @@ def ng_full_gym(
     if ng_gym:
         env_names = GymMulti.ng_gym
     seedg = create_seed_generator(seed)
-    optims = get_optimizers("basics", "progressive", "splitters", "baselines", seed=next(seedg))
-    optims += ["DiagonalCMA"]
-    optims += get_optimizers("split_noisy", seed=next(seedg))
-    optims += ["TBPSA"]
-    optims += ["NGOpt"]
-    optims = ["NGOpt", "PSO", "DiscreteOnePlusOne", "DE", "CMandAS2"] + [  # type: ignore
+    optims = ["DiagonalCMA", "OnePlusOne", "PSO", "DiscreteOnePlusOne", "DE", "CMandAS2"] + [  # type: ignore
         o for o in optims if "ProgD13" in str(o) or "ProgInf" in str(o)  # type: ignore
     ]
     if multi:
