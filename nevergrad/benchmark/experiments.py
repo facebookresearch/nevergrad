@@ -1269,13 +1269,14 @@ def gym_problem(
         assert compiler_gym_pb_index is not None
         assert limited_compiler_gym is not None
         assert compiler_gym_pb_index >= 0
-        funcs = [CompilerGym(compiler_gym_pb_index, limited_compiler_gym=limited_compiler_gym)]  # type: ignore
+        funcs = [CompilerGym(compiler_gym_pb_index=compiler_gym_pb_index, limited_compiler_gym=limited_compiler_gym)]  # type: ignore
     else:
         funcs = [
             GymMulti(
                 specific_problem,
                 control="conformant",
                 limited_compiler_gym=limited_compiler_gym,
+                compiler_gym_pb_index=compiler_gym_pb_index,
                 neural_factor=None,
             )
             if conformant
@@ -1324,7 +1325,7 @@ def unlimited_direct_problems23_compiler_gym(seed: tp.Optional[int] = None) -> t
     for compiler_gym_pb_index in range(23):
         pb = gym_problem(
             seed,
-            specific_problem="compilergym" + str(compiler_gym_pb_index),
+            specific_problem="directcompilergym" + str(compiler_gym_pb_index),
             compiler_gym_pb_index=compiler_gym_pb_index,
             limited_compiler_gym=False,
         )
@@ -1338,7 +1339,7 @@ def limited_direct_problems23_compiler_gym(seed: tp.Optional[int] = None) -> tp.
     for compiler_gym_pb_index in range(23):
         pb = gym_problem(
             seed,
-            specific_problem="compilergym" + str(compiler_gym_pb_index),
+            specific_problem="directcompilergym" + str(compiler_gym_pb_index),
             compiler_gym_pb_index=compiler_gym_pb_index,
             limited_compiler_gym=True,
         )
