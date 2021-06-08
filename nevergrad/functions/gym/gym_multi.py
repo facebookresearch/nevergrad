@@ -371,14 +371,14 @@ class GymMulti(ExperimentFunction):
         assert neural_factor is not None
         self.output_shape = output_shape
         self.num_stacking = 1
-        self.memory_len = neural_factor * input_dim if "memory" in control else 0
+        self.memory_len = min(200, neural_factor * input_dim if "memory" in control else 0)
         self.extended_input_len = (input_dim + output_dim) * self.num_stacking if "stacking" in control else 0
         input_dim = input_dim + self.memory_len + self.extended_input_len
         self.extended_input = np.zeros(self.extended_input_len)
         output_dim = output_dim + self.memory_len
         self.input_dim = input_dim
         self.output_dim = output_dim
-        self.num_neurons = neural_factor * (input_dim - self.extended_input_len)
+        self.num_neurons = min(200, neural_factor * (input_dim - self.extended_input_len))
         self.num_internal_layers = 1 if "semi" in control else 3
         internal = self.num_internal_layers * (self.num_neurons ** 2) if "deep" in control else 0
         unstructured_neural_size = (
