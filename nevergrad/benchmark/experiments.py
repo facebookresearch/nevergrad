@@ -1274,9 +1274,12 @@ def gym_problem(
         assert pb_index >= 0
         funcs = [CompilerGym(pb_index)]
     else:
-        funcs = [GymMulti(specific_problem, control="conformant") if conformant else GymMulti(specific_problem,  # type: ignore
-            control=control, neural_factor=1)  
-                for control in ["multi_neural", "memory_neural", "neural", "linear"]]
+        funcs = [
+            GymMulti(specific_problem, control="conformant")
+            if conformant
+            else GymMulti(specific_problem, control=control, neural_factor=1)  # type: ignore
+            for control in ["multi_neural", "memory_neural", "neural", "linear"]
+        ]
     seedg = create_seed_generator(seed)
     optims = [
         "DE",
@@ -1290,7 +1293,9 @@ def gym_problem(
     if "stochastic" in specific_problem:
         optims = ["DiagonalCMA", "PSO", "DE", "TwoPointsDE"]
     for func in funcs:
-        for budget in ([25, 50, 100, 200, 400, 800, 1600, 3200, 6400] + ([12800, 25600] if "stochastic" not in specific_problem else [])):
+        for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400] + (
+            [12800, 25600] if "stochastic" not in specific_problem else []
+        ):
             for num_workers in [1]:
                 if num_workers < budget:
                     for algo in optims:

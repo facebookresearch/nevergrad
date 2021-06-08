@@ -8,9 +8,9 @@ import os
 import typing as tp
 import gym
 import compiler_gym  # pylint: disable=unused-import
-from compiler_gym import CompilerEnvState, CompilerEnvStateWriter
-from compiler_gym.util.statistics import arithmetic_mean, geometric_mean, stdev
-from compiler_gym.util.tabulate import tabulate
+# from compiler_gym import CompilerEnvState, CompilerEnvStateWriter
+# from compiler_gym.util.statistics import arithmetic_mean, geometric_mean, stdev
+# from compiler_gym.util.tabulate import tabulate
 import nevergrad as ng
 
 if os.name != "nt":
@@ -18,13 +18,13 @@ if os.name != "nt":
 from nevergrad.parametrization import parameter
 from ..base import ExperimentFunction
 
-#Not yet operational:
-#from compiler_gym_experiments.cli_util import (
+# Not yet operational:
+# from compiler_gym_experiments.cli_util import (
 #    ActionSpace,
 #        ActivationFunction,
 #            RLlibFramework,
 #            )
-#from compiler_gym_experiments.wrappers import (
+# from compiler_gym_experiments.wrappers import (
 #                AutophaseNormalizedFeatures,
 #                    ConcatActionsHistogram,
 #                        CycleOverBenchmarks,
@@ -248,12 +248,13 @@ class GymMulti(ExperimentFunction):
             raise ng.errors.UnsupportedExperiment("Windows is not supported")
         if "compilergym" in name:
             env = gym.make("llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
-# Not yet operational:
-#            env = AutophaseNormalizedFeatures(env)
-#            env = ConcatActionsHistogram(env)
+            # Not yet operational:
+            #            env = AutophaseNormalizedFeatures(env)
+            #            env = ConcatActionsHistogram(env)
             self.uris = list(env.datasets["benchmark://cbench-v1"].benchmark_uris())
             # For training, in the "stochastic" case.
             from itertools import islice
+
             self.csmith = list(islice(env.datasets["generator://csmith-v0"].benchmark_uris(), 100))
 
             if "stoc" in name:
@@ -262,6 +263,7 @@ class GymMulti(ExperimentFunction):
                 # In training, we randomly draw in csmith (but we are allowed to use 100x more budget :-) ).
                 o = env.reset(benchmark=np.random.choice(self.csmith))
             else:
+                assert pb_index is not None
                 self.compilergym_index = pb_index
                 o = env.reset(benchmark=self.uris[self.compilergym_index])
             # env.require_dataset("cBench-v1")
@@ -418,15 +420,16 @@ class GymMulti(ExperimentFunction):
             return self.gym_multi_function(x, limited_fidelity=False)
         if "ompiler" not in self.name:
             # Pb_index >= 0 refers to the test set.
-            return np.sum(self.gym_multi_function(x, limited_fidelity=False) for pb_index in range(23)) / 23.
+            return np.sum(self.gym_multi_function(x, limited_fidelity=False) for pb_index in range(23)) / 23.0
         rewards = [
-        #          (-self.gym_multi_function(x, limited_fidelity=False, pb_index=pb_index)) for pb_index in range(23)
-            np.log(max(1e-5, -self.gym_multi_function(x, limited_fidelity=False, pb_index=pb_index))) for pb_index in range(23)
+            #          (-self.gym_multi_function(x, limited_fidelity=False, pb_index=pb_index)) for pb_index in range(23)
+            np.log(max(1e-5, -self.gym_multi_function(x, limited_fidelity=False, pb_index=pb_index)))
+            for pb_index in range(23)
         ]
         print(rewards)
-        #return         (sum(rewards) / len(rewards))
-        print(- np.exp(sum(rewards) / len(rewards)))
-        return - np.exp(sum(rewards) / len(rewards))
+        # return         (sum(rewards) / len(rewards))
+        print(-np.exp(sum(rewards) / len(rewards)))
+        return -np.exp(sum(rewards) / len(rewards))
 
     def discretize(self, a):
         """Transforms a logit into an int obtained through softmax."""
@@ -476,16 +479,30 @@ class GymMulti(ExperimentFunction):
         output = np.matmul(np.tanh(output + first_matrix[0]), second_matrix)
         return output[self.memory_len :].reshape(self.output_shape), output[: self.memory_len]
 
-    def gym_multi_function(self, x: np.ndarray, limited_fidelity: bool = False, pb_index: tp.Optional[int] = None):
+    def gym_multi_function(
+        self, x: np.ndarray, limited_fidelity: bool = False, pb_index: tp.Optional[int] = None
+    ):
         """Do a simulation with parametrization x and return the result."""
         # Deterministic conformant: do  the average of 7 simullations always with the same seed.
         # Otherwise: apply a random seed and do a single simulation.
         if "stochastic" in self.name and "compiler" in self.name:
             assert pb_index is None
             # We use negative pb_indices, which mean training set.
-            log_rewards = [np.log(max(1e-5, -self.gym_simulate(x, seed=self.parametrization.random_state.randint(500000),
-                limited_fidelity=limited_fidelity, pb_index=-pb_index))) for pb_index in range(1, 101)]
-            return - np.exp(np.sum(log_rewards) / len(log_rewards))
+            log_rewards = [
+                np.log(
+                    max(
+                        1e-5,
+                        -self.gym_simulate(
+                            x,
+                            seed=self.parametrization.random_state.randint(500000),
+                            limited_fidelity=limited_fidelity,
+                            pb_index=-pb_index,
+                        ),
+                    )
+                )
+                for pb_index in range(1, 101)
+            ]
+            return -np.exp(np.sum(log_rewards) / len(log_rewards))
 
         # The deterministic case consists in considering the average of 7 fixed seeds.
         # The conformant case is using 1 randomized seed (unlesss we requested !randomized).
@@ -494,7 +511,9 @@ class GymMulti(ExperimentFunction):
         for simulation_index in range(num_simulations):
             loss += self.gym_simulate(
                 x,
-                seed=simulation_index if not self.randomized else self.parametrization.random_state.randint(500000),
+                seed=simulation_index
+                if not self.randomized
+                else self.parametrization.random_state.randint(500000),
                 limited_fidelity=limited_fidelity,
                 pb_index=pb_index,
             )
@@ -557,7 +576,9 @@ class GymMulti(ExperimentFunction):
                 return np.asarray(ta[len(current_observations) - 1], dtype=np.float32)
         return None
 
-    def gym_simulate(self, x: np.ndarray, seed: int, pb_index: tp.Optional[int] = None, limited_fidelity: bool = True):
+    def gym_simulate(
+        self, x: np.ndarray, seed: int, pb_index: tp.Optional[int] = None, limited_fidelity: bool = True
+    ):
         """Single simulation with parametrization x."""
         current_time_index = 0
         current_reward = 0.0
@@ -575,13 +596,11 @@ class GymMulti(ExperimentFunction):
             if "stoc" in self.name:
                 assert pb_index < 23
                 assert pb_index >= -100
-                o = env.reset(
-                    benchmark=self.csmith[-1-pb_index] if pb_index < 0 else self.uris[pb_index]
-                )
-                #We might play with stochastic training at some point...
-                #o = env.reset(
+                o = env.reset(benchmark=self.csmith[-1 - pb_index] if pb_index < 0 else self.uris[pb_index])
+                # We might play with stochastic training at some point...
+                # o = env.reset(
                 #    benchmark=np.random.choice(self.csmith) if pb_index < 0 else self.uris[pb_index]
-                #)
+                # )
             else:
                 assert self.compilergym_index is not None
                 o = env.reset(benchmark=self.uris[self.compilergym_index])
