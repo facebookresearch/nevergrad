@@ -317,7 +317,7 @@ class GymMulti(ExperimentFunction):
         except AttributeError:  # Not all environements have a max number of episodes!
             assert any(x in name for x in NO_LENGTH), name
             if "ompiler" in name and not self.limited_compiler_gym:
-                self.num_steps = 75
+                self.num_time_steps = 75
             elif "ompiler" in name and self.limited_compiler_gym:
                 self.num_time_steps = 45
             elif "LANM" not in name:
@@ -374,17 +374,17 @@ class GymMulti(ExperimentFunction):
             assert (
                 control == "linear" or "conformant" in control
             ), f"{control} has neural_factor {neural_factor}"
-            neural_factor = 0
+            neural_factor = 1
         self.output_shape = output_shape
         self.num_stacking = 1
-        self.memory_len = min(200, neural_factor * input_dim if "memory" in control else 0)
+        self.memory_len = min(200000, neural_factor * input_dim if "memory" in control else 0)
         self.extended_input_len = (input_dim + output_dim) * self.num_stacking if "stacking" in control else 0
         input_dim = input_dim + self.memory_len + self.extended_input_len
         self.extended_input = np.zeros(self.extended_input_len)
         output_dim = output_dim + self.memory_len
         self.input_dim = input_dim
         self.output_dim = output_dim
-        self.num_neurons = min(200, neural_factor * (input_dim - self.extended_input_len))
+        self.num_neurons = min(200000, neural_factor * (input_dim - self.extended_input_len))
         self.num_internal_layers = 1 if "semi" in control else 3
         internal = self.num_internal_layers * (self.num_neurons ** 2) if "deep" in control else 0
         unstructured_neural_size = (
