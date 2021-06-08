@@ -1181,7 +1181,7 @@ def ng_full_gym(
         controls = ["stochastic_conformant"]
     for control in controls:
         for neural_factor in (
-            [-1] if conformant or control == "linear" else ([1] if "memory" in control else [1])
+            [None] if conformant or control == "linear" else ([1] if "memory" in control else [1])
         ):
             for name in env_names:
                 try:
@@ -1263,17 +1263,19 @@ def gym_problem(
     specific_problem: str = "LANM",
     conformant: bool = False,
     compiler_gym_pb_index: tp.Optional[int] = None,
+    limited_compiler_gym: tp.Optional[bool] = None,
 ) -> tp.Iterator[Experiment]:
     """Gym simulator for Active Network Management (default) or other pb."""
     if "directcompilergym" in specific_problem:
         assert compiler_gym_pb_index is not None
+        assert limited_compiler_gym is not None
         assert compiler_gym_pb_index >= 0
-        funcs = [CompilerGym(compiler_gym_pb_index)]  # type: ignore
+        funcs = [CompilerGym(compiler_gym_pb_index, limited_compiler_gym=limited_compiler_gym)]  # type: ignore
     else:
         funcs = [
-            GymMulti(specific_problem, control="conformant")
+            GymMulti(specific_problem, control="conformant", limited_compiler_gym=limited_compiler_gym)
             if conformant
-            else GymMulti(specific_problem, control=control, neural_factor=1)  # type: ignore
+            else GymMulti(specific_problem, control=control, neural_factor=1, limited_compiler_gym=limited_compiler_gym)  # type: ignore
             for control in ["multi_neural", "memory_neural", "neural", "linear"]
         ]
     seedg = create_seed_generator(seed)
@@ -1301,19 +1303,40 @@ def gym_problem(
 
 
 @registry.register
-def stochastic_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def limited_stochastic_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Working on CompilerGym. Stochastic problem: we are optimizing a net for driving compilation."""
-    return gym_problem(seed, specific_problem="stochasticcompilergym")
+    return gym_problem(seed, specific_problem="stochasticcompilergym", limited_compiler_gym=True)
 
 
 @registry.register
-def direct_problems23_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def unlimited_stochastic_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Working on CompilerGym. Stochastic problem: we are optimizing a net for driving compilation."""
+    return gym_problem(seed, specific_problem="stochasticcompilergym", limited_compiler_gym=False)
+
+
+@registry.register
+def unlimited_direct_problems23_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Working on CompilerGym. 11 problems, randomly drawn, but always the same ones."""
     for compiler_gym_pb_index in range(23):
         pb = gym_problem(
             seed,
             specific_problem="compilergym" + str(compiler_gym_pb_index),
             compiler_gym_pb_index=compiler_gym_pb_index,
+            limited_compiler_gym = False,
+        )
+        for xp in pb:
+            yield xp
+
+
+@registry.register
+def limited_direct_problems23_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Working on CompilerGym. 11 problems, randomly drawn, but always the same ones."""
+    for compiler_gym_pb_index in range(23):
+        pb = gym_problem(
+            seed,
+            specific_problem="compilergym" + str(compiler_gym_pb_index),
+            compiler_gym_pb_index=compiler_gym_pb_index,
+            limited_compiler_gym = True,
         )
         for xp in pb:
             yield xp

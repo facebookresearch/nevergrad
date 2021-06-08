@@ -172,9 +172,9 @@ class SmallActionSpaceLlvmEnv(gym.ActionWrapper):
 
 
 class CompilerGym(ExperimentFunction):
-    def __init__(self, compiler_gym_pb_index: int):
+    def __init__(self, compiler_gym_pb_index: int, limited_compiler_gym: tp.Optional[bool] = None):
         action_space_size = len(SmallActionSpaceLlvmEnv.action_space_subset)
-        self.num_episode_steps = 45
+        self.num_episode_steps = 45 if limited_compiler_gym else 75
         parametrization = (
             ng.p.Array(shape=(self.num_episode_steps,))
             .set_bounds(0, action_space_size - 1)
@@ -184,17 +184,21 @@ class CompilerGym(ExperimentFunction):
         self.uris = list(env.datasets["benchmark://cbench-v1"].benchmark_uris())
         self.compilergym_index = compiler_gym_pb_index
         env.reset(benchmark=self.uris[self.compilergym_index])
+        self.limited_compiler_gym = limited_compiler_gym
         super().__init__(self.eval_actions_as_list, parametrization=parametrization)
 
     def make_env(self) -> gym.Env:
         """Convenience function to create the environment that we'll use."""
         # User the time-limited wrapper to fix the length of episodes.
-        env = gym.wrappers.TimeLimit(
-            env=SmallActionSpaceLlvmEnv(env=gym.make("llvm-v0", reward_space="IrInstructionCountOz")),
-            max_episode_steps=self.num_episode_steps,
-        )
-        env.require_dataset("cBench-v1")
-        env.unwrapped.benchmark = "cBench-v1/qsort"
+        if self.limited_compiler_gym:
+            env = gym.wrappers.TimeLimit(
+                env=SmallActionSpaceLlvmEnv(env=gym.make("llvm-v0", reward_space="IrInstructionCountOz")),
+                max_episode_steps=self.num_episode_steps,
+            )
+            env.require_dataset("cBench-v1")
+            env.unwrapped.benchmark = "cBench-v1/qsort"
+        else:
+            env = gym.make("llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
         return env
 
     # @lru_cache(maxsize=1024)  # function is deterministic so we can cache results
@@ -241,14 +245,30 @@ class GymMulti(ExperimentFunction):
         self,
         name: str = "gym_anm:ANM6Easy-v0",
         control: str = "conformant",
-        neural_factor: int = 2,
+        neural_factor: tp.Optional[int] = 1,
         randomized: bool = True,
         compiler_gym_pb_index: tp.Optional[int] = None,
+        limited_compiler_gym: tp.Optional[bool] = None,
     ) -> None:
+        #limited_compiler_gym: bool or None.
+        #        whether we work with the limited version
+        if control == "conformant" or control == "linear":
+            assert neural_factor is None
         if os.name == "nt":
             raise ng.errors.UnsupportedExperiment("Windows is not supported")
         if "compilergym" in name:
+            assert limited_compiler_gym is not None
             env = gym.make("llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
+            if self.limited_compiler_gym:
+    
+                env = gym.wrappers.TimeLimit(
+                    env=SmallActionSpaceLlvmEnv(env=gym.make("llvm-v0", reward_space="IrInstructionCountOz")),
+                    max_episode_steps=self.num_episode_steps,
+                )
+                env.require_dataset("cBench-v1")
+                env.unwrapped.benchmark = "cBench-v1/qsort"
+            else:
+                env = gym.make("llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
             # Not yet operational:
             #            env = AutophaseNormalizedFeatures(env)
             #            env = ConcatActionsHistogram(env)
@@ -272,12 +292,14 @@ class GymMulti(ExperimentFunction):
             # env.require_dataset("cBench-v1")
             # env.unwrapped.benchmark = "benchmark://cBench-v1/qsort"
         else:
+            assert limited_compiler_gym is None
             assert (
                 compiler_gym_pb_index is None
             ), "compiler_gym_pb_index should not be defined if not CompilerGym."
             env = gym.make(name if "LANM" not in name else "gym_anm:ANM6Easy-v0")
             o = env.reset()
         self.env = env
+        self.limited_compiler_gym = limited_compiler_gym
 
         # Build various attributes.
         self.name = (
@@ -290,7 +312,13 @@ class GymMulti(ExperimentFunction):
             self.num_time_steps = env._max_episode_steps  # I know! This is a private variable.
         except AttributeError:  # Not all environements have a max number of episodes!
             assert any(x in name for x in NO_LENGTH), name
-            self.num_time_steps = 45 if "ompiler" in name else (100 if "LANM" not in name else 3000)
+            if "ompiler" in name and not self.limited_compiler_gym:
+                self.num_steps = 75
+            elif "ompiler" in name and self.limited_compiler_gym:
+                self.num_time_steps = 45 
+            elif "LANM" in name:
+                self.num_time_steps = 100
+            else 3000)
         self.gamma = 0.995 if "LANM" in name else 1.0
         self.neural_factor = neural_factor
 
@@ -337,6 +365,7 @@ class GymMulti(ExperimentFunction):
             self.subaction_type = type(a[0])
 
         # Prepare the policy shape.
+        assert neural_factor is not None
         self.output_shape = output_shape
         self.num_stacking = 1
         self.memory_len = neural_factor * input_dim if "memory" in control else 0
@@ -502,7 +531,14 @@ class GymMulti(ExperimentFunction):
     def gym_multi_function(
         self, x: np.ndarray, limited_fidelity: bool = False, compiler_gym_pb_index: tp.Optional[int] = None
     ) -> float:
-        """Do a simulation with parametrization x and return the result."""
+        """Do a simulation with parametrization x and return the result.
+
+        Parameters:
+            limited_fidelity: bool
+                whether we use a limited version for the beginning of the training.
+            compiler_gym_pb_index: int or None.
+                index of the compiler_gym pb (<0 for csmith)
+        """
         # Deterministic conformant: do  the average of 7 simullations always with the same seed.
         # Otherwise: apply a random seed and do a single simulation.
         if "stochastic" in self.name and "compiler" in self.name:
