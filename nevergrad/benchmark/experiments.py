@@ -1146,9 +1146,7 @@ def ng_full_gym(
     if ng_gym:
         env_names = GymMulti.ng_gym
     seedg = create_seed_generator(seed)
-    optims = ["DiagonalCMA", "OnePlusOne", "PSO", "DiscreteOnePlusOne", "DE", "CMandAS2"] + [  # type: ignore
-        o for o in optims if "ProgD13" in str(o) or "ProgInf" in str(o)  # type: ignore
-    ]
+    optims = ["DiagonalCMA", "OnePlusOne", "PSO", "DiscreteOnePlusOne", "DE", "CMandAS2"]  # type: ignore
     if multi:
         controls = ["multi_neural"]
     else:
@@ -1181,11 +1179,13 @@ def ng_full_gym(
         controls = ["stochastic_conformant"]
     for control in controls:
         for neural_factor in (
-            [None] if conformant or control == "linear" else ([1] if "memory" in control else [1])
+            [None]
+            if (conformant or control == "linear")
+            else ([1] if "memory" in control else [3 if big else 1])
         ):
             for name in env_names:
                 try:
-                    func = GymMulti(name, control, neural_factor * (3 if big else 1), randomized=randomized)
+                    func = GymMulti(name, control=control, neural_factor=neural_factor, randomized=randomized)
                 except MemoryError:
                     pass
                 for budget in [
@@ -1273,9 +1273,14 @@ def gym_problem(
         funcs = [CompilerGym(compiler_gym_pb_index, limited_compiler_gym=limited_compiler_gym)]  # type: ignore
     else:
         funcs = [
-            GymMulti(specific_problem, control="conformant", limited_compiler_gym=limited_compiler_gym)
+            GymMulti(
+                specific_problem,
+                control="conformant",
+                limited_compiler_gym=limited_compiler_gym,
+                neural_factor=None,
+            )
             if conformant
-            else GymMulti(specific_problem, control=control, neural_factor=1, limited_compiler_gym=limited_compiler_gym)  # type: ignore
+            else GymMulti(specific_problem, control=control, neural_factor=1 if control != "linear" else None, limited_compiler_gym=limited_compiler_gym)  # type: ignore
             for control in ["multi_neural", "memory_neural", "neural", "linear"]
         ]
     seedg = create_seed_generator(seed)

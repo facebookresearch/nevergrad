@@ -37,6 +37,7 @@ GYM_ENV_NAMES = []
 for e in gym.envs.registry.all():
     try:
         assert "Kelly" not in str(e.id)
+        assert "llvm" not in str(e.id)
         env = gym.make(e.id)
         env.reset()
         env.step(env.action_space.sample())
@@ -103,7 +104,7 @@ CONTROLLERS = [
 ]
 
 
-NO_LENGTH = ["ANM", "Blackjack", "CliffWalking", "Cube", "Memorize", "ompiler"]
+NO_LENGTH = ["ANM", "Blackjack", "CliffWalking", "Cube", "Memorize", "ompiler", "llvm"]
 
 
 # Environment used for CompilerGym.
@@ -252,7 +253,8 @@ class GymMulti(ExperimentFunction):
     ) -> None:
         # limited_compiler_gym: bool or None.
         #        whether we work with the limited version
-        if control == "conformant" or control == "linear":
+        self.limited_compiler_gym = limited_compiler_gym
+        if "conformant" in control or control == "linear":
             assert neural_factor is None
         if os.name == "nt":
             raise ng.errors.UnsupportedExperiment("Windows is not supported")
@@ -301,7 +303,6 @@ class GymMulti(ExperimentFunction):
             env = gym.make(name if "LANM" not in name else "gym_anm:ANM6Easy-v0")
             o = env.reset()
         self.env = env
-        self.limited_compiler_gym = limited_compiler_gym
 
         # Build various attributes.
         self.name = (
@@ -343,7 +344,7 @@ class GymMulti(ExperimentFunction):
 
         # Infer the observation space.
         assert (
-            env.observation_space is not None or "ompiler" in name
+            env.observation_space is not None or "ompiler" in name or "llvm" in name
         ), "An observation space should be defined."
         if "ompiler" in self.name:
             input_dim = 56
@@ -368,7 +369,11 @@ class GymMulti(ExperimentFunction):
             self.subaction_type = type(a[0])
 
         # Prepare the policy shape.
-        assert neural_factor is not None
+        if neural_factor is None:
+            assert (
+                control == "linear" or "conformant" in control
+            ), f"{control} has neural_factor {neural_factor}"
+            neural_factor = 0
         self.output_shape = output_shape
         self.num_stacking = 1
         self.memory_len = min(200, neural_factor * input_dim if "memory" in control else 0)
