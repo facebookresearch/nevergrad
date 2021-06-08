@@ -1262,10 +1262,11 @@ def gym_problem(
     seed: tp.Optional[int] = None,
     specific_problem: str = "LANM",
     conformant: bool = False,
-    compiler_gym_pb_index: int = -1,
+    compiler_gym_pb_index: tp.Optional[int] = None,
 ) -> tp.Iterator[Experiment]:
     """Gym simulator for Active Network Management (default) or other pb."""
     if "directcompilergym" in specific_problem:
+        assert compiler_gym_pb_index is not None
         assert compiler_gym_pb_index >= 0
         funcs = [CompilerGym(compiler_gym_pb_index)]
     else:

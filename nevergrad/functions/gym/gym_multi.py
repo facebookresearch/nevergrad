@@ -629,10 +629,12 @@ class GymMulti(ExperimentFunction):
                 #    benchmark=np.random.choice(self.csmith) if compiler_gym_pb_index < 0 else self.uris[compiler_gym_pb_index]
                 # )
             else:
-                assert self.compilergym_index is not None
+                # Direct case: we should have an index equal to self.compilergym_index
+                assert compilergym_index is not None
+                assert compilergym_index == self.compilergym_index
                 assert compiler_gym_pb_index < 23
                 assert compiler_gym_pb_index >= -100
-                o = env.reset(benchmark=self.uris[self.compilergym_index])
+                o = env.reset(benchmark=self.uris[compilergym_index])
         else:
             assert compiler_gym_pb_index is None
             o = env.reset()
