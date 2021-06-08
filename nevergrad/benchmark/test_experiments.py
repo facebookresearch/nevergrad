@@ -43,6 +43,7 @@ def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[expe
     # ANM does not work under Windows.
 
     # Basic test.
+    print(f"Testing {name}")
     with tools.set_env(NEVERGRAD_PYTEST=1):
         with datasets.mocked_data():  # mock mlda data that should be downloaded
             check_maker(maker)  # this is to extract the function for reuse if other external packages need it

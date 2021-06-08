@@ -261,6 +261,7 @@ class GymMulti(ExperimentFunction):
         if "compilergym" in name:
             assert limited_compiler_gym is not None
             env = gym.make("llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
+            self.num_episode_steps = 45 if limited_compiler_gym else 75
             if self.limited_compiler_gym:
 
                 env = gym.wrappers.TimeLimit(

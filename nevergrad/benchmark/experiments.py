@@ -1257,7 +1257,6 @@ def gym_multifid_anm(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                         yield xp
 
 
-@registry.register
 def gym_problem(
     seed: tp.Optional[int] = None,
     specific_problem: str = "LANM",
