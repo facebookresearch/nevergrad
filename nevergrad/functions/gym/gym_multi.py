@@ -250,7 +250,7 @@ class GymMulti(ExperimentFunction):
         compiler_gym_pb_index: tp.Optional[int] = None,
         limited_compiler_gym: tp.Optional[bool] = None,
     ) -> None:
-        #limited_compiler_gym: bool or None.
+        # limited_compiler_gym: bool or None.
         #        whether we work with the limited version
         if control == "conformant" or control == "linear":
             assert neural_factor is None
@@ -260,7 +260,7 @@ class GymMulti(ExperimentFunction):
             assert limited_compiler_gym is not None
             env = gym.make("llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
             if self.limited_compiler_gym:
-    
+
                 env = gym.wrappers.TimeLimit(
                     env=SmallActionSpaceLlvmEnv(env=gym.make("llvm-v0", reward_space="IrInstructionCountOz")),
                     max_episode_steps=self.num_episode_steps,
@@ -268,7 +268,9 @@ class GymMulti(ExperimentFunction):
                 env.require_dataset("cBench-v1")
                 env.unwrapped.benchmark = "cBench-v1/qsort"
             else:
-                env = gym.make("llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
+                env = gym.make(
+                    "llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz"
+                )
             # Not yet operational:
             #            env = AutophaseNormalizedFeatures(env)
             #            env = ConcatActionsHistogram(env)
@@ -315,10 +317,11 @@ class GymMulti(ExperimentFunction):
             if "ompiler" in name and not self.limited_compiler_gym:
                 self.num_steps = 75
             elif "ompiler" in name and self.limited_compiler_gym:
-                self.num_time_steps = 45 
-            elif "LANM" in name:
+                self.num_time_steps = 45
+            elif "LANM" not in name:
                 self.num_time_steps = 100
-            else 3000)
+            else:
+                self.num_time_steps = 3000
         self.gamma = 0.995 if "LANM" in name else 1.0
         self.neural_factor = neural_factor
 
