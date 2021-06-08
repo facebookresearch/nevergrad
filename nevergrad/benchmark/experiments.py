@@ -1262,12 +1262,12 @@ def gym_problem(
     seed: tp.Optional[int] = None,
     specific_problem: str = "LANM",
     conformant: bool = False,
-    pb_index: int = -1,
+    compiler_gym_pb_index: int = -1,
 ) -> tp.Iterator[Experiment]:
     """Gym simulator for Active Network Management (default) or other pb."""
     if "directcompilergym" in specific_problem:
-        assert pb_index >= 0
-        funcs = [CompilerGym(pb_index)]
+        assert compiler_gym_pb_index >= 0
+        funcs = [CompilerGym(compiler_gym_pb_index)]
     else:
         funcs = [
             GymMulti(specific_problem, control="conformant")
@@ -1308,8 +1308,12 @@ def stochastic_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experi
 @registry.register
 def direct_problems23_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Working on CompilerGym. 11 problems, randomly drawn, but always the same ones."""
-    for pb_index in range(23):
-        pb = gym_problem(seed, specific_problem="compilergym" + str(pb_index), pb_index=pb_index)
+    for compiler_gym_pb_index in range(23):
+        pb = gym_problem(
+            seed,
+            specific_problem="compilergym" + str(compiler_gym_pb_index),
+            compiler_gym_pb_index=compiler_gym_pb_index,
+        )
         for xp in pb:
             yield xp
 
