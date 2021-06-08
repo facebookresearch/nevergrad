@@ -481,7 +481,7 @@ class GymMulti(ExperimentFunction):
 
     def gym_multi_function(
         self, x: np.ndarray, limited_fidelity: bool = False, pb_index: tp.Optional[int] = None
-    ):
+    ) -> float:
         """Do a simulation with parametrization x and return the result."""
         # Deterministic conformant: do  the average of 7 simullations always with the same seed.
         # Otherwise: apply a random seed and do a single simulation.
@@ -594,8 +594,6 @@ class GymMulti(ExperimentFunction):
         env.seed(seed=seed)
         if "compilergym" in self.name:
             if "stoc" in self.name:
-                assert pb_index < 23
-                assert pb_index >= -100
                 o = env.reset(benchmark=self.csmith[-1 - pb_index] if pb_index < 0 else self.uris[pb_index])
                 # We might play with stochastic training at some point...
                 # o = env.reset(
@@ -603,6 +601,8 @@ class GymMulti(ExperimentFunction):
                 # )
             else:
                 assert self.compilergym_index is not None
+                assert pb_index < 23
+                assert pb_index >= -100
                 o = env.reset(benchmark=self.uris[self.compilergym_index])
         else:
             o = env.reset()
