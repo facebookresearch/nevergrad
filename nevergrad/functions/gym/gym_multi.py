@@ -470,7 +470,7 @@ class GymMulti(ExperimentFunction):
                         for compiler_gym_pb_index in range(23)
                     ]
                 )
-                / 23.0
+                / 23.0  # This is not compiler_gym but we keep this 23 constant.
             )
         rewards = [
             #          (-self.gym_multi_function(x, limited_fidelity=False, compiler_gym_pb_index=compiler_gym_pb_index)) for compiler_gym_pb_index in range(23)
@@ -550,8 +550,7 @@ class GymMulti(ExperimentFunction):
         """
         # Deterministic conformant: do  the average of 7 simullations always with the same seed.
         # Otherwise: apply a random seed and do a single simulation.
-        if "stochastic" in self.name and "compiler" in self.name:
-            assert compiler_gym_pb_index is None
+        if compiler_gym_pb_index is None and "stochasticcompilergym" in self.name:
             # We use negative pb_indices, which mean training set.
             log_rewards = [
                 np.log(
@@ -573,6 +572,8 @@ class GymMulti(ExperimentFunction):
         # The conformant case is using 1 randomized seed (unlesss we requested !randomized).
         num_simulations = 7 if self.control != "conformant" and not self.randomized else 1
         loss = 0
+        if "directcoomopilergym" in self.name:
+            assert compiler_gym_pb_index is not None
         for simulation_index in range(num_simulations):
             loss += self.gym_simulate(
                 x,
