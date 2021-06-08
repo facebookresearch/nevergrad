@@ -8,6 +8,7 @@ import os
 import typing as tp
 import gym
 import compiler_gym  # pylint: disable=unused-import
+
 # from compiler_gym import CompilerEnvState, CompilerEnvStateWriter
 # from compiler_gym.util.statistics import arithmetic_mean, geometric_mean, stdev
 # from compiler_gym.util.tabulate import tabulate
@@ -420,7 +421,9 @@ class GymMulti(ExperimentFunction):
             return self.gym_multi_function(x, limited_fidelity=False)
         if "ompiler" not in self.name:
             # Pb_index >= 0 refers to the test set.
-            return np.sum(self.gym_multi_function(x, limited_fidelity=False) for pb_index in range(23)) / 23.0
+            return (
+                np.sum([self.gym_multi_function(x, limited_fidelity=False) for pb_index in range(23)]) / 23.0
+            )
         rewards = [
             #          (-self.gym_multi_function(x, limited_fidelity=False, pb_index=pb_index)) for pb_index in range(23)
             np.log(max(1e-5, -self.gym_multi_function(x, limited_fidelity=False, pb_index=pb_index)))
