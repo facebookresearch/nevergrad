@@ -312,8 +312,9 @@ def create_plots(
             print("\n# new case #", fixed, case)
             casedf = df.select(**dict(zip(fixed, case)))
             data_df = FightPlotter.winrates_from_selection(casedf, fight_descriptors, num_rows=num_rows)
+            # We also want a bigger dataframe with more columns for writing a text overview.
             data_df_big = FightPlotter.winrates_from_selection(
-                casedf, fight_descriptors, num_rows=2, num_cols=500000
+                casedf, fight_descriptors, num_rows=2, num_cols=100
             )
             fplotter = FightPlotter(data_df)
             # Competence maps: we find out the best algorithm for each attribute1=valuei/attribute2=valuej.
@@ -565,6 +566,13 @@ class XpPlotter:
 
     @staticmethod
     def save_txt(output_filepath: tp.PathLike, optim_vals: tp.Dict[str, tp.Dict[str, np.ndarray]]) -> None:
+        """Saves a list of best performances.
+
+        output_filepath: Path or str
+            path where the figure must be saved
+        optim_vals: dict
+            dict of losses obtained by a given optimizer.
+        """
         best_performance: tp.Dict[int, tp.Any] = defaultdict(lambda: (float("inf"), "none"))
         for optim in optim_vals.keys():
             for i, l in zip(optim_vals[optim]["budget"], optim_vals[optim]["loss"]):
@@ -586,7 +594,7 @@ class XpPlotter:
         output_filepath: Path or str
             path where the figure must be saved
         """
-        try:
+        try:  # Let us catch errors due to too many DPIs.
             self._fig.savefig(
                 str(output_filepath), bbox_extra_artists=self._overlays, bbox_inches="tight", dpi=_DPI
             )
