@@ -27,7 +27,7 @@ def test_compiler_gym() -> None:
 
 def test_roulette() -> None:
     print(gym_multi.GymMulti.ng_gym)
-    func = gym_multi.GymMulti(name="Roulette-v0", control="neural", scaling_factor=1, randomized=True)
+    func = gym_multi.GymMulti(name="Roulette-v0", control="neural", neural_factor=1, randomized=True)
     results = [func(np.zeros(func.dimension)) for _ in range(40)]
     assert min(results) != max(results), "Roulette should not be deterministic."
     candidate = func.parametrization.sample()

@@ -1177,12 +1177,9 @@ def ng_full_gym(
         assert not multi
     if conformant:
         controls = ["stochastic_conformant"]
+    neural_factors: tp.List[None, int] = [None] if (conformant or control == "linear") else ([1] if "memory" in control else [3 if big else 1])
     for control in controls:
-        for neural_factor in (
-            [None]
-            if (conformant or control == "linear")
-            else ([1] if "memory" in control else [3 if big else 1])
-        ):
+        for neural_factor in neural_faactors:
             for name in env_names:
                 try:
                     func = GymMulti(name, control=control, neural_factor=neural_factor, randomized=randomized)
@@ -1271,7 +1268,7 @@ def gym_problem(
         assert compiler_gym_pb_index >= 0
         funcs = [CompilerGym(compiler_gym_pb_index=compiler_gym_pb_index, limited_compiler_gym=limited_compiler_gym)]  # type: ignore
     else:
-        funcs = [
+        funcs = [  # type: ignore
             GymMulti(
                 specific_problem,
                 control="conformant",
