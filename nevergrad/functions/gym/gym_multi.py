@@ -160,6 +160,8 @@ class SmallActionSpaceLlvmEnv(gym.ActionWrapper):
             return [self.true_action_indices[a] for a in action]
 
 
+# Class for direct optimization of CompilerGym problems.
+# We have two variants: a limited (small action space) and a full version.
 class CompilerGym(ExperimentFunction):
     def __init__(self, compiler_gym_pb_index: int, limited_compiler_gym: tp.Optional[bool] = None):
         env = gym.make("llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
