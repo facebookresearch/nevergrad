@@ -34,7 +34,7 @@ def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[expe
 
     # CompilerGym sends http requests that CircleCI does not like.
     if "compiler" in name and os.environ.get("CIRCLECI", False):
-        raise SkipTest("Too slow in CircleCI")
+        raise SkipTest("No HTTP request in CircleCI")
 
     # mixsimulator is not accepted by circleci pytest.
     if "mixsimulator" in name and os.environ.get("CIRCLECI", False):
