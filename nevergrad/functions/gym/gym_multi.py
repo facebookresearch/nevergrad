@@ -693,10 +693,6 @@ class GymMulti(ExperimentFunction):
                     if compiler_gym_pb_index < 0
                     else self.uris[compiler_gym_pb_index]
                 )
-                # We might play with stochastic training at some point...
-                # o = env.reset(
-                #    benchmark=np.random.choice(self.csmith) if compiler_gym_pb_index < 0 else self.uris[compiler_gym_pb_index]
-                # )
             else:
                 # Direct case: we should have an index equal to self.compilergym_index
                 assert compiler_gym_pb_index is not None
