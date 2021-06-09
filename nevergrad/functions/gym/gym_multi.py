@@ -174,14 +174,14 @@ class SmallActionSpaceLlvmEnv(gym.ActionWrapper):
 
 class CompilerGym(ExperimentFunction):
     def __init__(self, compiler_gym_pb_index: int, limited_compiler_gym: tp.Optional[bool] = None):
-        action_space_size = len(SmallActionSpaceLlvmEnv.action_space_subset)
+        env = gym.make("llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
+        action_space_size = len(SmallActionSpaceLlvmEnv.action_space_subset) if limited_compiler_gym else env.action_space.n
         self.num_episode_steps = 45 if limited_compiler_gym else 50
         parametrization = (
             ng.p.Array(shape=(self.num_episode_steps,))
             .set_bounds(0, action_space_size - 1)
             .set_integer_casting()
         ).set_name("direct" + str(compiler_gym_pb_index))
-        env = gym.make("llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
         self.uris = list(env.datasets["benchmark://cbench-v1"].benchmark_uris())
         self.compilergym_index = compiler_gym_pb_index
         env.reset(benchmark=self.uris[self.compilergym_index])
@@ -198,8 +198,10 @@ class CompilerGym(ExperimentFunction):
             )
             env.require_dataset("cBench-v1")
             env.unwrapped.benchmark = "cBench-v1/qsort"
+            env.action_space.n = len(SmallActionSpaceLlvmEnv.action_space_subset)
         else:
-            env = gym.make("llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
+            env = gym.make("llvm-ic-v0", reward_space="IrInstructionCountOz")
+            assert env.action_space.n > len(SmallActionSpaceLlvmEnv.action_space_subset)
         return env
 
     # @lru_cache(maxsize=1024)  # function is deterministic so we can cache results
@@ -216,10 +218,7 @@ class CompilerGym(ExperimentFunction):
 
     def eval_actions_as_list(self, actions: tp.List[int]):
         """Wrapper around eval_actions() that records the return value for later analysis."""
-        # action_space_size = len(SmallActionSpaceLlvmEnv.action_space_subset)
         reward = self.eval_actions(tuple(actions[i] for i in range(len(actions))))
-        # action_names = [SmallActionSpaceLlvmEnv.action_space_subset[a] for a in actions]
-        # print(len(rewards_list), f"{-reward:.6f}", " ".join(action_names), sep='\t')
         return reward
 
 
@@ -259,22 +258,24 @@ class GymMulti(ExperimentFunction):
             assert neural_factor is None
         if os.name == "nt":
             raise ng.errors.UnsupportedExperiment("Windows is not supported")
-        if "compilergym" in name:
+        if "compiler" in name:
             assert limited_compiler_gym is not None
             self.num_episode_steps = 45 if limited_compiler_gym else 50
             if self.limited_compiler_gym:
                 env = gym.wrappers.TimeLimit(
-                    env=SmallActionSpaceLlvmEnv(env=gym.make("llvm-v0", reward_space="IrInstructionCountOz")),
+                    env=SmallActionSpaceLlvmEnv(env=gym.make("llvm-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")),
+                    #env=gym.make("llvm-v0", observation_space="Autophase", reward_space="IrInstructionCountOz"),
                     max_episode_steps=self.num_episode_steps,
                 )
                 env.require_dataset("cBench-v1")
                 env.unwrapped.benchmark = "cBench-v1/qsort"
+                env.action_space.n = len(SmallActionSpaceLlvmEnv.action_space_subset)
             else:
                 # env = gym.make(
                 #    "llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz"
                 # )
                 env = gym.wrappers.TimeLimit(
-                    env=gym.make("llvm-v0", reward_space="IrInstructionCountOz"),
+                    env=gym.make("llvm-v0", observation_space="Autophase", reward_space="IrInstructionCountOz"),
                     max_episode_steps=self.num_episode_steps,
                 )
                 env.require_dataset("cBench-v1")
@@ -676,7 +677,7 @@ class GymMulti(ExperimentFunction):
         assert seed == 0 or self.control != "conformant" or self.randomized
         env = self.env
         env.seed(seed=seed)
-        if "compilergym" in self.name:
+        if "compiler" in self.name:
             if "stoc" in self.name:
                 assert compiler_gym_pb_index is not None
                 o = env.reset(

@@ -48,7 +48,7 @@ def test_run_gym_multi(name) -> None:
         func = gym_multi.GymMulti(
             name,
             control,
-            neural_factor=(1 if (control == "linear" or "conformant" in control) else None),
+            neural_factor=(None if (control == "linear" or "conformant" in control) else 1),
             randomized=bool(np.random.randint(2)),
         )
         y = func.parametrization.sample()
