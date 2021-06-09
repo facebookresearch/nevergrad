@@ -488,7 +488,6 @@ class GymMulti(ExperimentFunction):
             )
             for compiler_gym_pb_index in range(23)
         ]
-        print(rewards)
         print(-np.exp(sum(rewards) / len(rewards)))
         return -np.exp(sum(rewards) / len(rewards))
 
