@@ -250,7 +250,7 @@ class GymMulti(ExperimentFunction):
             assert neural_factor is None
         if os.name == "nt":
             raise ng.errors.UnsupportedExperiment("Windows is not supported")
-        if "compiler" in name:
+        if "compiler" in name:  # Long special case for Compiler Gym. 
             assert limited_compiler_gym is not None
             self.num_episode_steps = 45 if limited_compiler_gym else 50
             if self.limited_compiler_gym:
