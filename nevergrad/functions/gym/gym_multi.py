@@ -175,7 +175,9 @@ class SmallActionSpaceLlvmEnv(gym.ActionWrapper):
 class CompilerGym(ExperimentFunction):
     def __init__(self, compiler_gym_pb_index: int, limited_compiler_gym: tp.Optional[bool] = None):
         env = gym.make("llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
-        action_space_size = len(SmallActionSpaceLlvmEnv.action_space_subset) if limited_compiler_gym else env.action_space.n
+        action_space_size = (
+            len(SmallActionSpaceLlvmEnv.action_space_subset) if limited_compiler_gym else env.action_space.n
+        )
         self.num_episode_steps = 45 if limited_compiler_gym else 50
         parametrization = (
             ng.p.Array(shape=(self.num_episode_steps,))
@@ -263,8 +265,12 @@ class GymMulti(ExperimentFunction):
             self.num_episode_steps = 45 if limited_compiler_gym else 50
             if self.limited_compiler_gym:
                 env = gym.wrappers.TimeLimit(
-                    env=SmallActionSpaceLlvmEnv(env=gym.make("llvm-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")),
-                    #env=gym.make("llvm-v0", observation_space="Autophase", reward_space="IrInstructionCountOz"),
+                    env=SmallActionSpaceLlvmEnv(
+                        env=gym.make(
+                            "llvm-v0", observation_space="Autophase", reward_space="IrInstructionCountOz"
+                        )
+                    ),
+                    # env=gym.make("llvm-v0", observation_space="Autophase", reward_space="IrInstructionCountOz"),
                     max_episode_steps=self.num_episode_steps,
                 )
                 env.require_dataset("cBench-v1")
@@ -275,7 +281,9 @@ class GymMulti(ExperimentFunction):
                 #    "llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz"
                 # )
                 env = gym.wrappers.TimeLimit(
-                    env=gym.make("llvm-v0", observation_space="Autophase", reward_space="IrInstructionCountOz"),
+                    env=gym.make(
+                        "llvm-v0", observation_space="Autophase", reward_space="IrInstructionCountOz"
+                    ),
                     max_episode_steps=self.num_episode_steps,
                 )
                 env.require_dataset("cBench-v1")
