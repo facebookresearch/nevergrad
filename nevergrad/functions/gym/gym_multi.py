@@ -270,9 +270,9 @@ class GymMulti(ExperimentFunction):
                 env.require_dataset("cBench-v1")
                 env.unwrapped.benchmark = "cBench-v1/qsort"
             else:
-                #env = gym.make(
+                # env = gym.make(
                 #    "llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz"
-                #)
+                # )
                 env = gym.wrappers.TimeLimit(
                     env=gym.make("llvm-v0", reward_space="IrInstructionCountOz"),
                     max_episode_steps=self.num_episode_steps,
@@ -286,7 +286,9 @@ class GymMulti(ExperimentFunction):
             # For training, in the "stochastic" case.
             from itertools import islice
 
-            self.csmith = list(islice(env.datasets["generator://csmith-v0"].benchmark_uris(), self.num_training_codes))
+            self.csmith = list(
+                islice(env.datasets["generator://csmith-v0"].benchmark_uris(), self.num_training_codes)
+            )
 
             if "stoc" in name:
                 assert (
@@ -353,13 +355,13 @@ class GymMulti(ExperimentFunction):
             env.observation_space is not None or "ompiler" in name or "llvm" in name
         ), "An observation space should be defined."
         if "ompiler" in self.name:
-#            assert False, f"obs={dir(env.observation_space)}    {env.observation_space.shape} {env.observation_space.sample()}"
-#            E           AssertionError: obs=['__class__', '__contains__', '__delattr__', '__dict__', '__dir__',
-#            '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__', '__gt__', '
-#            __hash__', '__init__', '__init_subclass__', '__le__', '__lt__', '__module__', '__ne__', '__new__',
-#            '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__',
-#            '__weakref__', '_np_random', 'bounded_above', 'bounded_below', 'contains', 'dtype', 'from_jsonable', 'high',
-#            'is_bounded', 'low', 'np_random', 'sample', 'seed', 'shape', 'to_jsonable']
+            #            assert False, f"obs={dir(env.observation_space)}    {env.observation_space.shape} {env.observation_space.sample()}"
+            #            E           AssertionError: obs=['__class__', '__contains__', '__delattr__', '__dict__', '__dir__',
+            #            '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__', '__gt__', '
+            #            __hash__', '__init__', '__init_subclass__', '__le__', '__lt__', '__module__', '__ne__', '__new__',
+            #            '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__',
+            #            '__weakref__', '_np_random', 'bounded_above', 'bounded_below', 'contains', 'dtype', 'from_jsonable', 'high',
+            #            'is_bounded', 'low', 'np_random', 'sample', 'seed', 'shape', 'to_jsonable']
             input_dim = 56
             self.discrete_input = False
         elif env.observation_space is not None and env.observation_space.dtype == int:
