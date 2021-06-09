@@ -95,7 +95,7 @@ CONTROLLERS = [
 NO_LENGTH = ["ANM", "Blackjack", "CliffWalking", "Cube", "Memorize", "ompiler", "llvm"]
 
 
-# Environment used for CompilerGym.
+# Environment used for CompilerGym: this class proposes a small ActionSpace.
 class SmallActionSpaceLlvmEnv(gym.ActionWrapper):
     """A wrapper for the LLVM compiler environment that exposes a tiny subset of
     the full discrete action space (the subset was hand pruned to contain a mix
