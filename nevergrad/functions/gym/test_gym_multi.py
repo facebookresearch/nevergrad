@@ -19,6 +19,8 @@ def test_gym_multi() -> None:
 
 
 def test_compiler_gym() -> None:
+    if os.environ.get("CIRCLECI", False):
+        raise SkipTest("No HTTP request in CircleCI")
     func = gym_multi.CompilerGym(17)
     candidate = func.parametrization.sample()
     results = [func.evaluation_function(candidate) for _ in range(4)]
