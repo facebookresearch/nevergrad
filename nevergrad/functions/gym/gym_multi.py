@@ -326,7 +326,7 @@ class GymMulti(ExperimentFunction):
                 self.num_time_steps = 50
             elif "ompiler" in name and self.limited_compiler_gym:
                 self.num_time_steps = 45
-            elif "LANM" not in name:
+            elif "LANM" not in name:  # Most cases: let's say 100 time steps.
                 self.num_time_steps = 100
             else:
                 self.num_time_steps = 3000
