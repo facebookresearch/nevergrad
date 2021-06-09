@@ -302,7 +302,7 @@ class GymMulti(ExperimentFunction):
                 o = env.reset(benchmark=self.uris[self.compilergym_index])
             # env.require_dataset("cBench-v1")
             # env.unwrapped.benchmark = "benchmark://cBench-v1/qsort"
-        else:
+        else:  # Here we are not in CompilerGym anymore.
             assert limited_compiler_gym is None
             assert (
                 compiler_gym_pb_index is None
