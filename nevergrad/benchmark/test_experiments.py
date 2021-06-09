@@ -32,6 +32,10 @@ def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[expe
     if "_pgan" in name and os.environ.get("CIRCLECI", False):
         raise SkipTest("Too slow in CircleCI")
 
+    # CompilerGym sends http requests that CircleCI does not like.
+    if "compiler" in name and os.environ.get("CIRCLECI", False):
+        raise SkipTest("Too slow in CircleCI")
+
     # mixsimulator is not accepted by circleci pytest.
     if "mixsimulator" in name and os.environ.get("CIRCLECI", False):
         raise SkipTest("Sigkill in CircleCI")
