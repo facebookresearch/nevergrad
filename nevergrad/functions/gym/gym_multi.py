@@ -215,7 +215,8 @@ class CompilerGym(ExperimentFunction):
 
 
 class GymMulti(ExperimentFunction):
-   """Class for converting a gym environment, a controller style, and others into a black-box optimization benchmark."""
+    """Class for converting a gym environment, a controller style, and others into a black-box optimization benchmark."""
+
     env_names = GYM_ENV_NAMES
 
     controllers = CONTROLLERS
@@ -250,7 +251,7 @@ class GymMulti(ExperimentFunction):
             assert neural_factor is None
         if os.name == "nt":
             raise ng.errors.UnsupportedExperiment("Windows is not supported")
-        if "compiler" in name:  # Long special case for Compiler Gym. 
+        if "compiler" in name:  # Long special case for Compiler Gym.
             assert limited_compiler_gym is not None
             self.num_episode_steps = 45 if limited_compiler_gym else 50
             if self.limited_compiler_gym:
