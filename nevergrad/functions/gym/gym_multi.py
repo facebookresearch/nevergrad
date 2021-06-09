@@ -328,7 +328,7 @@ class GymMulti(ExperimentFunction):
                 self.num_time_steps = 45
             elif "LANM" not in name:  # Most cases: let's say 100 time steps.
                 self.num_time_steps = 100
-            else:
+            else:  # LANM is a special case with 3000 time steps.
                 self.num_time_steps = 3000
         self.gamma = 0.995 if "LANM" in name else 1.0
         self.neural_factor = neural_factor
