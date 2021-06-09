@@ -322,7 +322,7 @@ class GymMulti(ExperimentFunction):
             self.num_time_steps = env._max_episode_steps  # I know! This is a private variable.
         except AttributeError:  # Not all environements have a max number of episodes!
             assert any(x in name for x in NO_LENGTH), name
-            if "ompiler" in name and not self.limited_compiler_gym:
+            if "ompiler" in name and not self.limited_compiler_gym:  # The unlimited Gym uses 50 time steps.
                 self.num_time_steps = 50
             elif "ompiler" in name and self.limited_compiler_gym:
                 self.num_time_steps = 45
