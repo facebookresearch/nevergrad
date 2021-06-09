@@ -66,7 +66,8 @@ def test_fight_plotter() -> None:
     winrates = plotting.FightPlotter.winrates_from_selection(df, ["noise_level", "budget"])
     # check data
     np.testing.assert_array_equal(
-        winrates.index, ["Powell (75.0%)", "OnePlusOneOptimizer (58.3%)", "Halton (16.7%)"]
+        winrates.index,
+        ["Powell (1/3:75.0%)", "OnePlusOneOptimizer (2/3:58.3%)", "Halton (3/3:16.7%)"],
     )
     np.testing.assert_array_equal(
         winrates.columns, ["Powell (6/6)", "OnePlusOneOptimizer (6/6)", "HaltonSearch (6/6)"]
