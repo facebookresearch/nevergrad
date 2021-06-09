@@ -324,7 +324,7 @@ class GymMulti(ExperimentFunction):
             assert any(x in name for x in NO_LENGTH), name
             if "ompiler" in name and not self.limited_compiler_gym:  # The unlimited Gym uses 50 time steps.
                 self.num_time_steps = 50
-            elif "ompiler" in name and self.limited_compiler_gym:
+            elif "ompiler" in name and self.limited_compiler_gym:  # Other Compiler Gym: 45 time steps.
                 self.num_time_steps = 45
             elif "LANM" not in name:  # Most cases: let's say 100 time steps.
                 self.num_time_steps = 100
