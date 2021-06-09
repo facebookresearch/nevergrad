@@ -19,18 +19,6 @@ if os.name != "nt":
 from nevergrad.parametrization import parameter
 from ..base import ExperimentFunction
 
-# Not yet operational:
-# from compiler_gym_experiments.cli_util import (
-#    ActionSpace,
-#        ActivationFunction,
-#            RLlibFramework,
-#            )
-# from compiler_gym_experiments.wrappers import (
-#                AutophaseNormalizedFeatures,
-#                    ConcatActionsHistogram,
-#                        CycleOverBenchmarks,
-#                        )
-## Method for building a new list, for a future version of gym:
 
 GYM_ENV_NAMES = []
 
