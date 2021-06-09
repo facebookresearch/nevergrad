@@ -500,7 +500,7 @@ class GymMulti(ExperimentFunction):
         return int(list(np.random.multinomial(1, probabilities)).index(1))
 
     def neural(self, x: np.ndarray, o: np.ndarray):
-        """Applies a neural net parametrized by x to an observation o."""
+        """Applies a neural net parametrized by x to an observation o. Returns an action or logits of actions."""
         o = o.ravel()
         if self.control == "linear":
             # The linear case is simplle.
