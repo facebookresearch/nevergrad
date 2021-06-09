@@ -1154,7 +1154,7 @@ def ng_full_gym(
             [
                 "neural",
                 "structured_neural",
-                "memory_neural",
+                # "memory_neural",
                 "stackingmemory_neural",
                 "deep_neural",
                 "semideep_neural",
@@ -1278,7 +1278,7 @@ def gym_problem(
             )
             if conformant
             else GymMulti(specific_problem, control=control, neural_factor=1 if control != "linear" else None, limited_compiler_gym=limited_compiler_gym)  # type: ignore
-            for control in ["multi_neural", "memory_neural", "neural", "linear"]
+            for control in ["neural", "linear"]
         ]
     seedg = create_seed_generator(seed)
     optims = [

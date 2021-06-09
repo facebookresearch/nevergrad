@@ -38,7 +38,7 @@ def test_roulette() -> None:
 @pytest.mark.parametrize("name", gym_multi.GYM_ENV_NAMES)
 def test_run_gym_multi(name) -> None:
     if os.name != "nt" and all(np.random.randint(2, size=3, dtype=bool)):
-        func = gym_multi.GymMulti(randomized=False)
+        func = gym_multi.GymMulti(randomized=False, neural_factor=None)
         x = np.zeros(func.dimension)
         value = func(x)
         np.testing.assert_almost_equal(value, 93.35, decimal=2)

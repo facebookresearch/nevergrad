@@ -175,7 +175,7 @@ class SmallActionSpaceLlvmEnv(gym.ActionWrapper):
 class CompilerGym(ExperimentFunction):
     def __init__(self, compiler_gym_pb_index: int, limited_compiler_gym: tp.Optional[bool] = None):
         action_space_size = len(SmallActionSpaceLlvmEnv.action_space_subset)
-        self.num_episode_steps = 45 if limited_compiler_gym else 75
+        self.num_episode_steps = 45 if limited_compiler_gym else 50
         parametrization = (
             ng.p.Array(shape=(self.num_episode_steps,))
             .set_bounds(0, action_space_size - 1)
@@ -254,16 +254,15 @@ class GymMulti(ExperimentFunction):
         # limited_compiler_gym: bool or None.
         #        whether we work with the limited version
         self.limited_compiler_gym = limited_compiler_gym
+        self.num_training_codes = 100 if limited_compiler_gym else 5000
         if "conformant" in control or control == "linear":
             assert neural_factor is None
         if os.name == "nt":
             raise ng.errors.UnsupportedExperiment("Windows is not supported")
         if "compilergym" in name:
             assert limited_compiler_gym is not None
-            env = gym.make("llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
-            self.num_episode_steps = 45 if limited_compiler_gym else 75
+            self.num_episode_steps = 45 if limited_compiler_gym else 50
             if self.limited_compiler_gym:
-
                 env = gym.wrappers.TimeLimit(
                     env=SmallActionSpaceLlvmEnv(env=gym.make("llvm-v0", reward_space="IrInstructionCountOz")),
                     max_episode_steps=self.num_episode_steps,
@@ -271,9 +270,15 @@ class GymMulti(ExperimentFunction):
                 env.require_dataset("cBench-v1")
                 env.unwrapped.benchmark = "cBench-v1/qsort"
             else:
-                env = gym.make(
-                    "llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz"
+                #env = gym.make(
+                #    "llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz"
+                #)
+                env = gym.wrappers.TimeLimit(
+                    env=gym.make("llvm-v0", reward_space="IrInstructionCountOz"),
+                    max_episode_steps=self.num_episode_steps,
                 )
+                env.require_dataset("cBench-v1")
+                env.unwrapped.benchmark = "cBench-v1/qsort"
             # Not yet operational:
             #            env = AutophaseNormalizedFeatures(env)
             #            env = ConcatActionsHistogram(env)
@@ -281,7 +286,7 @@ class GymMulti(ExperimentFunction):
             # For training, in the "stochastic" case.
             from itertools import islice
 
-            self.csmith = list(islice(env.datasets["generator://csmith-v0"].benchmark_uris(), 100))
+            self.csmith = list(islice(env.datasets["generator://csmith-v0"].benchmark_uris(), self.num_training_codes))
 
             if "stoc" in name:
                 assert (
@@ -317,7 +322,7 @@ class GymMulti(ExperimentFunction):
         except AttributeError:  # Not all environements have a max number of episodes!
             assert any(x in name for x in NO_LENGTH), name
             if "ompiler" in name and not self.limited_compiler_gym:
-                self.num_time_steps = 75
+                self.num_time_steps = 50
             elif "ompiler" in name and self.limited_compiler_gym:
                 self.num_time_steps = 45
             elif "LANM" not in name:
@@ -348,6 +353,13 @@ class GymMulti(ExperimentFunction):
             env.observation_space is not None or "ompiler" in name or "llvm" in name
         ), "An observation space should be defined."
         if "ompiler" in self.name:
+#            assert False, f"obs={dir(env.observation_space)}    {env.observation_space.shape} {env.observation_space.sample()}"
+#            E           AssertionError: obs=['__class__', '__contains__', '__delattr__', '__dict__', '__dir__',
+#            '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__', '__gt__', '
+#            __hash__', '__init__', '__init_subclass__', '__le__', '__lt__', '__module__', '__ne__', '__new__',
+#            '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__',
+#            '__weakref__', '_np_random', 'bounded_above', 'bounded_below', 'contains', 'dtype', 'from_jsonable', 'high',
+#            'is_bounded', 'low', 'np_random', 'sample', 'seed', 'shape', 'to_jsonable']
             input_dim = 56
             self.discrete_input = False
         elif env.observation_space is not None and env.observation_space.dtype == int:
@@ -377,14 +389,14 @@ class GymMulti(ExperimentFunction):
             neural_factor = 1
         self.output_shape = output_shape
         self.num_stacking = 1
-        self.memory_len = min(200000, neural_factor * input_dim if "memory" in control else 0)
+        self.memory_len = neural_factor * input_dim if "memory" in control else 0
         self.extended_input_len = (input_dim + output_dim) * self.num_stacking if "stacking" in control else 0
         input_dim = input_dim + self.memory_len + self.extended_input_len
         self.extended_input = np.zeros(self.extended_input_len)
         output_dim = output_dim + self.memory_len
         self.input_dim = input_dim
         self.output_dim = output_dim
-        self.num_neurons = min(200000, neural_factor * (input_dim - self.extended_input_len))
+        self.num_neurons = neural_factor * (input_dim - self.extended_input_len)
         self.num_internal_layers = 1 if "semi" in control else 3
         internal = self.num_internal_layers * (self.num_neurons ** 2) if "deep" in control else 0
         unstructured_neural_size = (
@@ -564,7 +576,7 @@ class GymMulti(ExperimentFunction):
                         ),
                     )
                 )
-                for compiler_gym_pb_index in range(1, 101)
+                for compiler_gym_pb_index in range(1, 1 + self.num_training_codes)
             ]
             return -np.exp(np.sum(log_rewards) / len(log_rewards))
 
@@ -679,7 +691,7 @@ class GymMulti(ExperimentFunction):
                 assert compiler_gym_pb_index is not None
                 assert compiler_gym_pb_index == self.compilergym_index
                 assert compiler_gym_pb_index < 23
-                assert compiler_gym_pb_index >= -100
+                assert compiler_gym_pb_index >= -self.num_training_codes
                 o = env.reset(benchmark=self.uris[compiler_gym_pb_index])
         else:
             assert compiler_gym_pb_index is None
@@ -707,7 +719,7 @@ class GymMulti(ExperimentFunction):
             o = np.concatenate([previous_o.ravel(), memory.ravel(), self.extended_input])
             assert (
                 len(o) == self.input_dim
-            ), f"o has shape {o.shape} whereas input_dim={self.input_dim} ({control} / {env})"
+            ), f"o has shape {o.shape} whereas input_dim={self.input_dim} ({control} / {env} {self.name} (limited={self.limited_compiler_gym}))"
             a, memory = self.neural(x[i % len(x)] if "multi" in control else x, o)
             a = self.action_cast(a)
             try:
