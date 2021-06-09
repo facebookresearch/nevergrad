@@ -625,7 +625,7 @@ class GymMulti(ExperimentFunction):
     def step(self, a):
         """Apply an action.
 
-        We have a step on top of Gym's step for storing some statistics."""
+        We have a step on top of Gym's step for possibly storing some statistics."""
         o, r, done, info = self.env.step(a)
         return o, r, done, info
 
