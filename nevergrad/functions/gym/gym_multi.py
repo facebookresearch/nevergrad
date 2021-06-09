@@ -569,7 +569,7 @@ class GymMulti(ExperimentFunction):
                         ),
                     )
                 )
-                for compiler_gym_pb_index in range(1, 1 + self.num_training_codes)
+                for compiler_gym_pb_index in np.random.choice(range(1, 1 + self.num_training_codes), 30)
             ]
             return -np.exp(np.sum(log_rewards) / len(log_rewards))
 
