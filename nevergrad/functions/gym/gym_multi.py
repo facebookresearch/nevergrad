@@ -39,7 +39,6 @@ for e in gym.envs.registry.all():
             except:
                 assert a1.size() < 15000  # type: ignore
         GYM_ENV_NAMES.append(e.id)
-        # print(f"adding {e.id}, {len(GYM_ENV_NAMES)} environments...")
     except:
         pass
 
@@ -480,7 +479,6 @@ class GymMulti(ExperimentFunction):
                 / 23.0  # This is not compiler_gym but we keep this 23 constant.
             )
         rewards = [
-            #          (-self.gym_multi_function(x, limited_fidelity=False, compiler_gym_pb_index=compiler_gym_pb_index)) for compiler_gym_pb_index in range(23)
             np.log(
                 max(
                     1e-5,
@@ -491,7 +489,6 @@ class GymMulti(ExperimentFunction):
             )
             for compiler_gym_pb_index in range(23)
         ]
-        print(-np.exp(sum(rewards) / len(rewards)))
         return -np.exp(sum(rewards) / len(rewards))
 
     def discretize(self, a):
