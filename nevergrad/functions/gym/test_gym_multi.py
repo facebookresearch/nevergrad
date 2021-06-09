@@ -5,6 +5,7 @@
 
 import numpy as np
 import pytest
+from unittest import SkipTest
 import os
 from . import gym_multi
 
