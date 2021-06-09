@@ -463,7 +463,7 @@ class GymMulti(ExperimentFunction):
         self.num_losses = 0
 
     def evaluation_function(self, *recommendations) -> float:
-        """Averages multiple evaluatioons if necessary."""
+        """Averages multiple evaluations if necessary."""
         x = recommendations[0].value
         if not self.randomized:
             assert "ompiler" not in self.name
