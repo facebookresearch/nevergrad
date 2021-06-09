@@ -590,7 +590,7 @@ class GymMulti(ExperimentFunction):
         return loss / num_simulations
 
     def action_cast(self, a):
-        """Transforms an action into an active as expected by the gym step function."""
+        """Transforms an action into an action of type as expected by the gym step function."""
         env = self.env
         if type(a) == np.float64:
             a = np.asarray((a,))
