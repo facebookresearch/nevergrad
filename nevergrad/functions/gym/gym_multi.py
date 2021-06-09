@@ -215,7 +215,7 @@ class CompilerGym(ExperimentFunction):
 
 
 class GymMulti(ExperimentFunction):
-
+   """Class for converting a gym environment, a controller style, and others into a black-box optimization benchmark."""
     env_names = GYM_ENV_NAMES
 
     controllers = CONTROLLERS
