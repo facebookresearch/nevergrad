@@ -278,7 +278,7 @@ class GymMulti(ExperimentFunction):
                 )
                 env.require_dataset("cBench-v1")
                 env.unwrapped.benchmark = "cBench-v1/qsort"
-            # Not yet operational:
+            # Not yet operational: should be used in all cases as it is supposed to help.
             #            env = AutophaseNormalizedFeatures(env)
             #            env = ConcatActionsHistogram(env)
             self.uris = list(env.datasets["benchmark://cbench-v1"].benchmark_uris())
