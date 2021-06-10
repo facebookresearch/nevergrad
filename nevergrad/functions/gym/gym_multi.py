@@ -249,6 +249,7 @@ class GymMulti(ExperimentFunction):
         self.limited_compiler_gym = limited_compiler_gym
         self.num_training_codes = 100 if limited_compiler_gym else 5000
         self.uses_compiler_gym = "compiler" in name
+        self.stochastic_problem = "stoc" in name
         if "conformant" in control or control == "linear":
             assert neural_factor is None
         if os.name == "nt":
@@ -292,7 +293,7 @@ class GymMulti(ExperimentFunction):
                 islice(env.datasets["generator://csmith-v0"].benchmark_uris(), self.num_training_codes)
             )
 
-            if "stoc" in name:
+            if self.stochastic_problem:
                 assert (
                     compiler_gym_pb_index is None
                 ), "compiler_gym_pb_index should not be defined in the stochastic case."
@@ -670,7 +671,7 @@ class GymMulti(ExperimentFunction):
         env = self.env
         env.seed(seed=seed)
         if self.uses_compiler_gym:
-            if "stoc" in self.name:
+            if self.stochastic_problem:
                 assert compiler_gym_pb_index is not None
                 o = env.reset(
                     benchmark=self.csmith[compiler_gym_pb_index]
