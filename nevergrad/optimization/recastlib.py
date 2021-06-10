@@ -100,8 +100,10 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
                 )
                 settings = rbfopt.RbfoptSettings(max_evaluations=budget)
                 alg = rbfopt.RbfoptAlgorithm(settings, bb)
-                val, x, itercount, evalcount, fast_evalcount = alg.optimize()
-                best_x = np.arctanh(x)
+                val, x, _, _, fast_evalcount = alg.optimize()
+                if val < best_res:
+                    best_x = np.arctanh(x)
+                    best_res = val
             else:
                 res = scipyoptimize.minimize(
                     objective_function,
