@@ -1,4 +1,6 @@
 black==20.8b1
+black-box>=1.02
+rbfopt>=4.2.2
 mypy>=0.800
 pytest>=4.3.0
 pytest-cov>=2.6.1
