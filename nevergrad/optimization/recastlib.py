@@ -26,7 +26,14 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         self.multirun = 1  # work in progress
         self.initial_guess: tp.Optional[tp.ArrayLike] = None
         # configuration
-        assert method in ["Nelder-Mead", "COBYLA", "SLSQP", "Powell", "BB"], f"Unknown method '{method}'"
+        assert method in [
+            "Nelder-Mead",
+            "COBYLA",
+            "SLSQP",
+            "Powell",
+            # "BB",
+            "RBFOPT",
+        ], f"Unknown method '{method}'"
         self.method = method
         self.random_restart = random_restart
 
@@ -49,8 +56,12 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         subinstance.current_bests = self.current_bests
         return subinstance._optimization_function
 
+    def local_objective_function(self, x) -> float:
+        return self.objective_function(np.arctanh(x))
+
     def _optimization_function(self, objective_function: tp.Callable[[tp.ArrayLike], float]) -> tp.ArrayLike:
         # pylint:disable=unused-argument
+        self.objective_function = objective_function
         budget = np.inf if self.budget is None else self.budget
         best_res = np.inf
         best_x: np.ndarray = self.current_bests["average"].x  # np.zeros(self.dimension)
@@ -59,18 +70,34 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         remaining: float = budget - self._num_ask
         while remaining > 0:  # try to restart if budget is not elapsed
             options: tp.Dict[str, tp.Any] = {} if self.budget is None else {"maxiter": remaining}
-            if self.method == "BB":
-                import black_box as bb
-                res = bb.search_min(f = lambda x: objective_function(np.arctanh(x)),  # given function
-                            domain = [[-1., 1.]] * self.dimension,
-                            budget = budget,  # total number of function calls available
-                            batch = 1,
-                            resfile="/dev/null")
-                best_x = np.arctanh(res)
-            elif self.method == "RBFOPT":
+            ### Failed so solve the pickle issue.
+            # if self.method == "BB":
+            #    import black_box as bb
+            #    domain = [[-1.0, 1.0]] * self.dimension
+            #    try:
+            #        res = bb.search_min(
+            #            f=self.local_objective_function,  # given function
+            #            domain=domain,
+            #            budget=max(budget, 2 + 2 * len(domain)),  # total number of function calls available
+            #            batch=1,
+            #            resfile="/dev/null",
+            #        )
+            #    except RuntimeError:  # Can not be pickled... leads to various errors.
+            #        res = None
+            #    if res is None:
+            #        res = np.array([0.0] * self.dimension)
+            #    best_x = np.arctanh(res)
+            if self.method == "RBFOPT":
                 import rbfopt
-                bb = rbfopt.RbfoptUserBlackBox(d, np.array([-1.] * d), np.array([1.] * d),
-                               np.array(['R'] * d), lambda x: objective_function(np.arctanh(x)))
+
+                d = self.dimension
+                bb = rbfopt.RbfoptUserBlackBox(
+                    d,
+                    np.array([-1.0] * d),
+                    np.array([1.0] * d),
+                    np.array(["R"] * d),
+                    self.local_objective_function,
+                )
                 settings = rbfopt.RbfoptSettings(max_evaluations=budget)
                 alg = rbfopt.RbfoptAlgorithm(settings, bb)
                 val, x, itercount, evalcount, fast_evalcount = alg.optimize()
@@ -86,7 +113,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
                 if res.fun < best_res:
                     best_res = res.fun
                     best_x = res.x
-                remaining = budget - self._num_ask
+            remaining = budget - self._num_ask
         return best_x
 
 
@@ -104,7 +131,6 @@ class ScipyOptimizer(base.ConfiguredOptimizer):
         - SQP (or SLSQP): very powerful e.g. in continuous noisy optimization. It is based on
           approximating the objective function by quadratic models.
         - Powell
-        - BB
         - RBFOPT
     random_restart: bool
         whether to restart at a random point if the optimizer converged but the budget is not entirely
@@ -124,7 +150,6 @@ class ScipyOptimizer(base.ConfiguredOptimizer):
 
 
 NelderMead = ScipyOptimizer(method="Nelder-Mead").set_name("NelderMead", register=True)
-BB = ScipyOptimizer(method="BB").set_name("BB", register=True)
 RBFOPT = ScipyOptimizer(method="RBFOPT").set_name("RBFOPT", register=True)
 Powell = ScipyOptimizer(method="Powell").set_name("Powell", register=True)
 RPowell = ScipyOptimizer(method="Powell", random_restart=True).set_name("RPowell", register=True)
