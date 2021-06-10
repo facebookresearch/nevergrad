@@ -248,11 +248,12 @@ class GymMulti(ExperimentFunction):
         #        whether we work with the limited version
         self.limited_compiler_gym = limited_compiler_gym
         self.num_training_codes = 100 if limited_compiler_gym else 5000
+        self.uses_compiler_gym = "compiler" in name
         if "conformant" in control or control == "linear":
             assert neural_factor is None
         if os.name == "nt":
             raise ng.errors.UnsupportedExperiment("Windows is not supported")
-        if "compiler" in name:  # Long special case for Compiler Gym.
+        if self.uses_compiler_gym:  # Long special case for Compiler Gym.
             assert limited_compiler_gym is not None
             self.num_episode_steps = 45 if limited_compiler_gym else 50
             if self.limited_compiler_gym:
@@ -315,7 +316,7 @@ class GymMulti(ExperimentFunction):
 
         # Build various attributes.
         self.name = (
-            (name if not "compiler" in name else name + str(env)) + "__" + control + "__" + str(neural_factor)
+            (name if not self.uses_compiler_gym else name + str(env)) + "__" + control + "__" + str(neural_factor)
         )
         if randomized:
             self.name += "_unseeded"
@@ -324,9 +325,9 @@ class GymMulti(ExperimentFunction):
             self.num_time_steps = env._max_episode_steps  # I know! This is a private variable.
         except AttributeError:  # Not all environements have a max number of episodes!
             assert any(x in name for x in NO_LENGTH), name
-            if "ompiler" in name and not self.limited_compiler_gym:  # The unlimited Gym uses 50 time steps.
+            if self.uses_compiler_gym and not self.limited_compiler_gym:  # The unlimited Gym uses 50 time steps.
                 self.num_time_steps = 50
-            elif "ompiler" in name and self.limited_compiler_gym:  # Other Compiler Gym: 45 time steps.
+            elif self.uses_compiler_gym and self.limited_compiler_gym:  # Other Compiler Gym: 45 time steps.
                 self.num_time_steps = 45
             elif "LANM" not in name:  # Most cases: let's say 100 time steps.
                 self.num_time_steps = 100
@@ -353,9 +354,9 @@ class GymMulti(ExperimentFunction):
 
         # Infer the observation space.
         assert (
-            env.observation_space is not None or "ompiler" in name or "llvm" in name
+                env.observation_space is not None or self.uses_compiler_gym or "llvm" in name
         ), "An observation space should be defined."
-        if "ompiler" in self.name:
+        if self.uses_compiler_gym:
             input_dim = 56
             self.discrete_input = False
         elif env.observation_space is not None and env.observation_space.dtype == int:
@@ -458,7 +459,7 @@ class GymMulti(ExperimentFunction):
 
         # Now initializing.
         super().__init__(self.gym_multi_function, parametrization=parametrization)
-        self.parametrization.function.deterministic = not ("compiler" in name)
+        self.parametrization.function.deterministic = not self.uses_compiler_gym
         self.archive: tp.List[tp.Any] = []
         self.mean_loss = 0.0
         self.num_losses = 0
@@ -467,9 +468,9 @@ class GymMulti(ExperimentFunction):
         """Averages multiple evaluations if necessary."""
         x = recommendations[0].value
         if not self.randomized:
-            assert "ompiler" not in self.name
+            assert not self.uses_compiler_gym
             return self.gym_multi_function(x, limited_fidelity=False)
-        if "ompiler" not in self.name:
+        if not self.uses_compiler_gym:
             # Pb_index >= 0 refers to the test set.
             return (
                 np.sum(
@@ -668,7 +669,7 @@ class GymMulti(ExperimentFunction):
         assert seed == 0 or self.control != "conformant" or self.randomized
         env = self.env
         env.seed(seed=seed)
-        if "compiler" in self.name:
+        if self.uses_compiler_gym:
             if "stoc" in self.name:
                 assert compiler_gym_pb_index is not None
                 o = env.reset(
