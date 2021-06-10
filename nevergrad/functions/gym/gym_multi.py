@@ -562,11 +562,12 @@ class GymMulti(ExperimentFunction):
                             x,
                             seed=self.parametrization.random_state.randint(500000),
                             limited_fidelity=limited_fidelity,
-                            compiler_gym_pb_index=-compiler_gym_pb_index,
+                            compiler_gym_pb_index=compiler_gym_pb_index,
+                            test_set=False,
                         ),
                     )
                 )
-                for compiler_gym_pb_index in np.random.choice(range(1, 1 + self.num_training_codes), 30)
+                for compiler_gym_pb_index in np.random.choice(range(0, self.num_training_codes), 30)
             ]
             return -np.exp(np.sum(log_rewards) / len(log_rewards))
 
@@ -650,6 +651,7 @@ class GymMulti(ExperimentFunction):
         seed: int,
         compiler_gym_pb_index: tp.Optional[int] = None,
         limited_fidelity: bool = True,
+        test_set: bool = True,
     ):
         """Single simulation with parametrization x."""
         current_time_index = 0
@@ -668,8 +670,8 @@ class GymMulti(ExperimentFunction):
             if "stoc" in self.name:
                 assert compiler_gym_pb_index is not None
                 o = env.reset(
-                    benchmark=self.csmith[-1 - compiler_gym_pb_index]
-                    if compiler_gym_pb_index < 0
+                    benchmark=self.csmith[compiler_gym_pb_index]
+                    if not test_set
                     else self.uris[compiler_gym_pb_index]
                 )
             else:
