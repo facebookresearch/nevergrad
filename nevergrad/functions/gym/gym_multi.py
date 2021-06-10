@@ -7,11 +7,13 @@ import numpy as np
 import os
 import typing as tp
 import gym
-import compiler_gym  # pylint: disable=unused-import
 
-# from compiler_gym import CompilerEnvState, CompilerEnvStateWriter
-# from compiler_gym.util.statistics import arithmetic_mean, geometric_mean, stdev
-# from compiler_gym.util.tabulate import tabulate
+compiler_gym_present = True
+try:
+    import compiler_gym  # pylint: disable=unused-import
+except ImportError:
+    compiler_gym_present = False
+
 import nevergrad as ng
 
 if os.name != "nt":
@@ -157,6 +159,8 @@ class SmallActionSpaceLlvmEnv(gym.ActionWrapper):
             return self.true_action_indices[action]
         else:
             return [self.true_action_indices[a] for a in action]
+
+
 
 
 # Class for direct optimization of CompilerGym problems.
