@@ -451,11 +451,11 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 try:  # Sometimes we have a limited budget so that
                     candidate = self._internal_ask_candidate()
                 except AssertionError:
-                    assert constraint_isssue  # This should not happen without constraint issues.
+                    assert constraint_issue  # This should not happen without constraint issues.
                     candidate = self.parametrization.spawn_child()
             if candidate.satisfies_constraints():
                 break  # good to go!
-            constraint_isssue = (
+            constraint_issue = (
                 True  # It is normal that we exceed the sampler budget -- constraint satisfaction.
             )
             if self._penalize_cheap_violations:
