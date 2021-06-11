@@ -7,6 +7,7 @@ import os
 import typing as tp
 import torch
 import numpy as np
+
 try:
     import imquality.brisque as brisque
 except ImportError:
