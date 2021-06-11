@@ -317,7 +317,11 @@ class GymMulti(ExperimentFunction):
 
         # Build various attributes.
         self.name = (
-            (name if not self.uses_compiler_gym else name + str(env)) + "__" + control + "__" + str(neural_factor)
+            (name if not self.uses_compiler_gym else name + str(env))
+            + "__"
+            + control
+            + "__"
+            + str(neural_factor)
         )
         if randomized:
             self.name += "_unseeded"
@@ -326,7 +330,9 @@ class GymMulti(ExperimentFunction):
             self.num_time_steps = env._max_episode_steps  # I know! This is a private variable.
         except AttributeError:  # Not all environements have a max number of episodes!
             assert any(x in name for x in NO_LENGTH), name
-            if self.uses_compiler_gym and not self.limited_compiler_gym:  # The unlimited Gym uses 50 time steps.
+            if (
+                self.uses_compiler_gym and not self.limited_compiler_gym
+            ):  # The unlimited Gym uses 50 time steps.
                 self.num_time_steps = 50
             elif self.uses_compiler_gym and self.limited_compiler_gym:  # Other Compiler Gym: 45 time steps.
                 self.num_time_steps = 45
@@ -355,7 +361,7 @@ class GymMulti(ExperimentFunction):
 
         # Infer the observation space.
         assert (
-                env.observation_space is not None or self.uses_compiler_gym or "llvm" in name
+            env.observation_space is not None or self.uses_compiler_gym or "llvm" in name
         ), "An observation space should be defined."
         if self.uses_compiler_gym:
             input_dim = 56
@@ -773,8 +779,8 @@ class GymMulti(ExperimentFunction):
         for trace in self.archive:
             to, _, _ = trace
             if np.array_equal(
-                    np.asarray(current_observations, dtype=np.float32),
-                    np.asarray(to, dtype=np.float32),
+                np.asarray(current_observations, dtype=np.float32),
+                np.asarray(to, dtype=np.float32),
             ):
                 found = True
                 break
