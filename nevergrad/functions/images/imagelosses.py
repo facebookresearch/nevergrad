@@ -7,7 +7,11 @@ import os
 import typing as tp
 import torch
 import numpy as np
-import imquality.brisque as brisque
+try:
+    import imquality.brisque as brisque
+except ImportError:
+    print("Brisque will fail: imquality missing")
+
 import lpips
 import cv2
 from nevergrad.functions.base import UnsupportedExperiment as UnsupportedExperiment
