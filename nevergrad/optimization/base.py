@@ -637,6 +637,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             first_iteration = False
         return self.provide_recommendation()
 
+    def _info(self) -> tp.Dict[str, tp.Any]:
+        """Easy access to debug/benchmark info"""
+        return {}
+
 
 # Adding a comparison-only functionality to an optimizer.
 def addCompare(optimizer: Optimizer) -> None:

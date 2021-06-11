@@ -688,7 +688,11 @@ def yabbob(
         for constraint in constraints[max(0, constraint_case - max_num_constraints) : constraint_case]:
             func.parametrization.register_cheap_constraint(constraint)
 
-    budgets = [40000, 80000, 160000, 320000] if (big and not noise) else [50, 200, 800, 3200, 12800]
+    budgets = (
+        [40000, 80000, 160000, 320000]
+        if (big and not noise)
+        else ([50, 200, 800, 3200, 12800] if not noise else [3200, 12800])
+    )
     if small and not noise:
         budgets = [10, 20, 40]
     for optim in optims:
