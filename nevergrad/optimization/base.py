@@ -441,15 +441,21 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # - no memory of previous iterations.
         # - just projection to constraint satisfaction.
         # We try using the normal tool during half constraint budget, in order to reduce the impact on the normal run.
+        constraint_issue = False
         for _ in range(max_trials):
             is_suggestion = False
             if self._suggestions:  # use suggestions if available
                 is_suggestion = True
                 candidate = self._suggestions.pop()
             else:
-                candidate = self._internal_ask_candidate()
+                try:  # Sometimes we have a limited budget so that
+                    candidate = self._internal_ask_candidate()
+                except AssertionError:
+                    assert constraint_isssue  # This should not happen without constraint issues.
+                    candidate = self.parametrization.spawn_child()            
             if candidate.satisfies_constraints():
                 break  # good to go!
+            constraint_isssue = True  # It is normal that we exceed the sampler budget -- constraint satisfaction.
             if self._penalize_cheap_violations:
                 # Warning! This might be a tell not asked.
                 self._internal_tell_candidate(candidate, float("Inf"))  # DE requires a tell
