@@ -778,3 +778,24 @@ class GymMulti(ExperimentFunction):
                 break
         # env.render()  if you want to display.
         return -reward
+
+    def archive_observations(self, current_actions, current_observations, current_reward):
+        self.num_losses += 1
+        tau = 1.0 / self.num_losses
+        self.mean_loss = (
+            ((1.0 - tau) * self.mean_loss + tau * current_reward)
+            if self.mean_loss is not None
+            else current_reward
+        )
+        found = False
+        for trace in self.archive:
+            to, _, _ = trace
+            if np.array_equal(
+                    np.asarray(current_observations, dtype=np.float32),
+                    np.asarray(to, dtype=np.float32),
+            ):
+                found = True
+                break
+        if not found:
+            # Risky: this code assumes that the object is used only in a single run.
+            self.archive += [(current_observations, current_actions, current_reward)]
