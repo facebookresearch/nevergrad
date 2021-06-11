@@ -727,25 +727,7 @@ class GymMulti(ExperimentFunction):
                     done and "stacking" in self.control
                 ):  # Only the method which do a stacking of heuristic + memory into the
                     # observation need archiving.
-                    self.num_losses += 1
-                    tau = 1.0 / self.num_losses
-                    self.mean_loss = (
-                        ((1.0 - tau) * self.mean_loss + tau * current_reward)
-                        if self.mean_loss is not None
-                        else current_reward
-                    )
-                    found = False
-                    for trace in self.archive:
-                        to, _, _ = trace
-                        if np.array_equal(
-                            np.asarray(current_observations, dtype=np.float32),
-                            np.asarray(to, dtype=np.float32),
-                        ):
-                            found = True
-                            break
-                    if not found:
-                        # Risky: this code assumes that the object is used only in a single run.
-                        self.archive += [(current_observations, current_actions, current_reward)]
+                    self.archive_observations(current_actions, current_observations, current_reward)
             except AssertionError:  # Illegal action.
                 return 1e20 / (1.0 + i)  # We encourage late failures rather than early failures.
             if "stacking" in control:
