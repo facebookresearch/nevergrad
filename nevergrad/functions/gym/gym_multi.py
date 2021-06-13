@@ -242,10 +242,12 @@ class GymMulti(ExperimentFunction):
         randomized: bool = True,
         compiler_gym_pb_index: tp.Optional[int] = None,
         limited_compiler_gym: tp.Optional[bool] = None,
+        optimization_scale: int = 0,
     ) -> None:
         # limited_compiler_gym: bool or None.
         #        whether we work with the limited version
         self.limited_compiler_gym = limited_compiler_gym
+        self.optimization_scale = optimization_scale
         self.num_training_codes = 100 if limited_compiler_gym else 5000
         if "conformant" in control or control == "linear":
             assert neural_factor is None
@@ -503,6 +505,7 @@ class GymMulti(ExperimentFunction):
     def neural(self, x: np.ndarray, o: np.ndarray):
         """Applies a neural net parametrized by x to an observation o. Returns an action or logits of actions."""
         o = o.ravel()
+        x = np.asarray((2 ** self.optimization_scale) * x, dtype=np.float32)
         if self.control == "linear":
             # The linear case is simplle.
             output = np.matmul(o, x[1:, :])
@@ -569,7 +572,9 @@ class GymMulti(ExperimentFunction):
                         ),
                     )
                 )
-                for compiler_gym_pb_index in np.random.choice(range(1, 1 + self.num_training_codes), 30)
+                for compiler_gym_pb_index in np.random.choice(
+                    range(1, 1 + self.num_training_codes), size=100, replace=False
+                )
             ]
             return -np.exp(np.sum(log_rewards) / len(log_rewards))
 

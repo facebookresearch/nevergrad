@@ -2638,3 +2638,11 @@ class MultipleSingleRuns(base.ConfiguredOptimizer):
         base_optimizer: base.OptCls = NGOpt,
     ) -> None:
         super().__init__(_MSR, locals())
+
+
+ProgD13 = ConfSplitOptimizer(
+    num_optims=13, progressive=True, multivariate_optimizer=NoisyDiscreteOnePlusOne
+).set_name("ProgD13", register=True)
+Prog13 = ConfSplitOptimizer(
+    num_optims=13, progressive=True, multivariate_optimizer=OptimisticNoisyOnePlusOne
+).set_name("Prog13", register=True)

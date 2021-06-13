@@ -1,1 +1,1 @@
-competence_map = ['NGO', 'Shiwa']
+progressive = [ProgDiscAuto, ProgDisc13, ProgDiscInf, ProgAuto, Prog13, ProgInf]

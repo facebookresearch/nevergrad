@@ -1260,6 +1260,8 @@ def gym_problem(
     conformant: bool = False,
     compiler_gym_pb_index: tp.Optional[int] = None,
     limited_compiler_gym: tp.Optional[bool] = None,
+    big_noise: bool = False,
+    multi_scale: bool = False,
 ) -> tp.Iterator[Experiment]:
     """Gym simulator for Active Network Management (default) or other pb."""
     if "directcompilergym" in specific_problem:
@@ -1268,18 +1270,29 @@ def gym_problem(
         assert compiler_gym_pb_index >= 0
         funcs = [CompilerGym(compiler_gym_pb_index=compiler_gym_pb_index, limited_compiler_gym=limited_compiler_gym)]  # type: ignore
     else:
-        funcs = [
-            GymMulti(  # type: ignore
-                specific_problem,
-                control="conformant",
-                limited_compiler_gym=limited_compiler_gym,
-                compiler_gym_pb_index=compiler_gym_pb_index,
-                neural_factor=None,
-            )
+        funcs = (
+            [
+                GymMulti(  # type: ignore
+                    specific_problem,
+                    control="conformant",
+                    limited_compiler_gym=limited_compiler_gym,
+                    compiler_gym_pb_index=compiler_gym_pb_index,
+                    neural_factor=None,
+                )
+            ]
             if conformant
-            else GymMulti(specific_problem, control=control, neural_factor=1 if control != "linear" else None, limited_compiler_gym=limited_compiler_gym)  # type: ignore
-            for control in ["neural", "linear"]
-        ]
+            else [
+                GymMulti(
+                    specific_problem,
+                    control=control,
+                    neural_factor=1 if control != "linear" else None,
+                    limited_compiler_gym=limited_compiler_gym,
+                    optimization_scale=scale,
+                )  # type: ignore
+                for control in (["noisy_neural"] if big_noise else ["neural", "linear"])
+                for scale in ([-6, -4, -2, 0] if multi_scale else [0])
+            ]
+        )
     seedg = create_seed_generator(seed)
     optims = [
         "DE",
@@ -1291,11 +1304,9 @@ def gym_problem(
         "PortfolioDiscreteOnePlusOne",
     ]
     if "stochastic" in specific_problem:
-        optims = ["DiagonalCMA", "PSO", "DE", "TwoPointsDE"]
+        optims = ["TBPSA", "ProgD13", "Prog13"] if big_noise else ["DiagonalCMA", "PSO", "DE", "TwoPointsDE"]
     for func in funcs:
-        for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400] + (
-            [12800, 25600] if "stochastic" not in specific_problem else []
-        ):
+        for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600]:
             for num_workers in [1]:
                 if num_workers < budget:
                     for algo in optims:
@@ -1308,6 +1319,30 @@ def gym_problem(
 def limited_stochastic_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Working on CompilerGym. Stochastic problem: we are optimizing a net for driving compilation."""
     return gym_problem(seed, specific_problem="stochasticcompilergym", limited_compiler_gym=True)
+
+
+@registry.register
+def multiscale_limited_stochastic_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Working on CompilerGym. Stochastic problem: we are optimizing a net for driving compilation."""
+    return gym_problem(
+        seed, specific_problem="stochasticcompilergym", limited_compiler_gym=True, multi_scale=True
+    )
+
+
+@registry.register
+def unlimited_hardcore_stochastic_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Working on CompilerGym. Stochastic problem: we are optimizing a net for driving compilation."""
+    return gym_problem(
+        seed, specific_problem="stochasticcompilergym", limited_compiler_gym=False, big_noise=True
+    )
+
+
+@registry.register
+def limited_hardcore_stochastic_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Working on CompilerGym. Stochastic problem: we are optimizing a net for driving compilation."""
+    return gym_problem(
+        seed, specific_problem="stochasticcompilergym", limited_compiler_gym=True, big_noise=True
+    )
 
 
 @registry.register
