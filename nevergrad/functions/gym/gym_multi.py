@@ -190,7 +190,6 @@ class CompilerGym(ExperimentFunction):
                 env=SmallActionSpaceLlvmEnv(env=gym.make("llvm-v0", reward_space="IrInstructionCountOz")),
                 max_episode_steps=self.num_episode_steps,
             )
-            env.require_dataset("cBench-v1")
             env.unwrapped.benchmark = "cBench-v1/qsort"
             env.action_space.n = len(SmallActionSpaceLlvmEnv.action_space_subset)
         else:
@@ -276,7 +275,6 @@ class GymMulti(ExperimentFunction):
             assert limited_compiler_gym is not None
             self.num_episode_steps = 45 if limited_compiler_gym else 50
             env = gym.make("llvm-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
-            env.require_dataset("cBench-v1")
             env = self.wrap_env(env)
             # Not yet operational: should be used in all cases as it is supposed to help.
             #            env = AutophaseNormalizedFeatures(env)
@@ -702,7 +700,6 @@ class GymMulti(ExperimentFunction):
                 assert compiler_gym_pb_index is not None
                 assert compiler_gym_pb_index == self.compilergym_index
                 assert compiler_gym_pb_index < 23
-                assert compiler_gym_pb_index >= -self.num_training_codes
                 o = env.reset(benchmark=self.uris[compiler_gym_pb_index])
         else:
             assert compiler_gym_pb_index is None
