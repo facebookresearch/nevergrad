@@ -509,7 +509,7 @@ class GymMulti(ExperimentFunction):
         """Transforms a logit into an int obtained through softmax."""
         if self.greedy_bias:
             a = np.asarray(a, dtype=np.float32)
-            for action in range(len(a)):
+            for i, action in enumerate(range(len(a))):
                 tmp_env = copy.deepcopy(self.env)
                 _, r, _, _ = tmp_env.step(action)
                 a[i] += self.greedy_coefficient * r
