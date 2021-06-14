@@ -243,6 +243,7 @@ class GymMulti(ExperimentFunction):
         randomized: bool = True,
         compiler_gym_pb_index: tp.Optional[int] = None,
         limited_compiler_gym: tp.Optional[bool] = None,
+        greedy_bias: bool = False,
     ) -> None:
         # limited_compiler_gym: bool or None.
         #        whether we work with the limited version
@@ -250,6 +251,7 @@ class GymMulti(ExperimentFunction):
         self.num_training_codes = 100 if limited_compiler_gym else 5000
         self.uses_compiler_gym = "compiler" in name
         self.stochastic_problem = "stoc" in name
+        self.greedy_bias = greedy_bias
         if "conformant" in control or control == "linear":
             assert neural_factor is None
         if os.name == "nt":
@@ -406,7 +408,7 @@ class GymMulti(ExperimentFunction):
         unstructured_neural_size = (
             output_dim * self.num_neurons + self.num_neurons * (input_dim + 1) + internal,
         )
-        neural_size = unstructured_neural_size
+        neural_size = unstructured_neural_size + int(greedy_bias)
         assert control in CONTROLLERS or control == "conformant", f"{control} not known as a form of control"
         self.control = control
         if "neural" in control:
@@ -503,12 +505,21 @@ class GymMulti(ExperimentFunction):
 
     def discretize(self, a):
         """Transforms a logit into an int obtained through softmax."""
+        if self.greedy_bias:
+            a = np.asarray(a, dtype=np.float32)
+            for acton in range(len(a))
+                tmp_env = self.env.copy()
+                _, r, _, _ = tmp_env.step(action)
+                a[i] += self.greedy_coefficient * r
         probabilities = np.exp(a - max(a))
         probabilities = probabilities / sum(probabilities)
         return int(list(np.random.multinomial(1, probabilities)).index(1))
 
     def neural(self, x: np.ndarray, o: np.ndarray):
         """Applies a neural net parametrized by x to an observation o. Returns an action or logits of actions."""
+        if self.greedy_bias:
+            self.greedy_coefficient = x[-1:]  # We have decided that we can not have two runs in parallel.
+            x = x[:-1]
         o = o.ravel()
         if self.control == "linear":
             # The linear case is simplle.
@@ -637,7 +648,7 @@ class GymMulti(ExperimentFunction):
         """Apply an action.
 
         We have a step on top of Gym's step for possibly storing some statistics."""
-        o, r, done, info = self.env.step(a)
+        o, r, done, info = self.env.step(a)  # We work on self.env... we can not have two threads working on the same function.
         return o, r, done, info
 
     def heuristic(self, o, current_observations):
