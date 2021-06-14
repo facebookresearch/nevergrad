@@ -1289,22 +1289,16 @@ def gym_problem(
                     limited_compiler_gym=limited_compiler_gym,
                     optimization_scale=scale,
                 )  # type: ignore
-                for control in (["noisy_neural"] if big_noise else ["neural", "linear"])
+                for control in (["noisy_neural"] if big_noise else ["deep_neural"])  #["neural", "linear"])
                 for scale in ([-6, -4, -2, 0] if multi_scale else [0])
             ]
         )
     seedg = create_seed_generator(seed)
     optims = [
-        "DE",
         "TwoPointsDE",
-        "PSO",
-        "CMA",
-        "NGOpt",
-        "DiscreteLenglerOnePlusOne",
-        "PortfolioDiscreteOnePlusOne",
     ]
     if "stochastic" in specific_problem:
-        optims = ["TBPSA", "ProgD13", "Prog13"] if big_noise else ["DiagonalCMA", "PSO", "DE", "TwoPointsDE"]
+        optims = ["DiagonalCMA", "Prog13"] if big_noise else ["DiagonalCMA"]
     for func in funcs:
         for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600]:
             for num_workers in [1]:
