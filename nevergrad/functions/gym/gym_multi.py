@@ -577,11 +577,12 @@ class GymMulti(ExperimentFunction):
             limited_fidelity: bool
                 whether we use a limited version for the beginning of the training.
             compiler_gym_pb_index: int or None.
-                index of the compiler_gym pb (<0 for csmith)
+                index of the compiler_gym pb: set only for testing
         """
         # Deterministic conformant: do  the average of 7 simullations always with the same seed.
         # Otherwise: apply a random seed and do a single simulation.
-        if compiler_gym_pb_index is None and "stochasticcompilergym" in self.name:
+        train_set = compiler_gym_pb_index is None
+        if train_set and "stochasticcompilergym" in self.name:
             # We use negative pb_indices, which mean training set.
             log_rewards = [
                 np.log(
@@ -616,6 +617,7 @@ class GymMulti(ExperimentFunction):
                 else self.parametrization.random_state.randint(500000),
                 limited_fidelity=limited_fidelity,
                 compiler_gym_pb_index=compiler_gym_pb_index,
+                test_set=True,
             )
         return loss / num_simulations
 
@@ -662,6 +664,14 @@ class GymMulti(ExperimentFunction):
         return o, r, done, info
 
     def heuristic(self, o, current_observations):
+        """Returns aa heuristic in the given context.
+
+        Parameters:
+           o: gym observation
+               new observation
+           current_observations: list of gym observations
+               current observations up to the present time step.
+        """
         current_observations = np.asarray(current_observations + [o], dtype=np.float32)
         self.archive = [
             self.archive[i] for i in range(len(self.archive)) if self.archive[i][2] <= self.mean_loss
@@ -682,9 +692,9 @@ class GymMulti(ExperimentFunction):
         self,
         x: np.ndarray,
         seed: int,
+        test_set: bool,
         compiler_gym_pb_index: tp.Optional[int] = None,
         limited_fidelity: bool = True,
-        test_set: bool = True,
     ):
         """Single simulation with parametrization x."""
         current_time_index = 0
@@ -736,11 +746,11 @@ class GymMulti(ExperimentFunction):
                 obs[o] = 1
                 o = obs
             previous_o = np.asarray(o)
-            o = np.concatenate([previous_o.ravel(), memory.ravel(), self.extended_input])
+            controller_input = np.concatenate([previous_o.ravel(), memory.ravel(), self.extended_input])
             assert (
                 len(o) == self.input_dim
             ), f"o has shape {o.shape} whereas input_dim={self.input_dim} ({control} / {env} {self.name} (limited={self.limited_compiler_gym}))"
-            a, memory = self.neural(x[i % len(x)] if "multi" in control else x, o)
+            a, memory = self.neural(x[i % len(x)] if "multi" in control else x, controller_input)
             a = self.action_cast(a)
             try:
                 o, r, done, _ = self.step(a)  # Outputs = observation, reward, done, info.
