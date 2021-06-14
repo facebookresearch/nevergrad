@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import copy
 import numpy as np
 import os
 import typing as tp
@@ -189,7 +190,6 @@ class CompilerGym(ExperimentFunction):
                 env=SmallActionSpaceLlvmEnv(env=gym.make("llvm-v0", reward_space="IrInstructionCountOz")),
                 max_episode_steps=self.num_episode_steps,
             )
-            env.require_dataset("cBench-v1")
             env.unwrapped.benchmark = "cBench-v1/qsort"
             env.action_space.n = len(SmallActionSpaceLlvmEnv.action_space_subset)
         else:
@@ -235,6 +235,22 @@ class GymMulti(ExperimentFunction):
         "Roulette-v0",
     ]
 
+    def wrap_env(self, input_env):
+        if self.limited_compiler_gym:
+            env = gym.wrappers.TimeLimit(
+                env=SmallActionSpaceLlvmEnv(input_env),
+                max_episode_steps=self.num_episode_steps,
+            )
+            env.unwrapped.benchmark = input_env.benchmark
+            env.action_space.n = len(SmallActionSpaceLlvmEnv.action_space_subset)
+        else:
+            env = gym.wrappers.TimeLimit(
+                env=env,
+                max_episode_steps=self.num_episode_steps,
+            )
+            env.unwrapped.benchmark = input_env.benchmark
+        return env
+
     def __init__(
         self,
         name: str = "gym_anm:ANM6Easy-v0",
@@ -244,6 +260,7 @@ class GymMulti(ExperimentFunction):
         compiler_gym_pb_index: tp.Optional[int] = None,
         limited_compiler_gym: tp.Optional[bool] = None,
         optimization_scale: int = 0,
+        greedy_bias: bool = False,
     ) -> None:
         # limited_compiler_gym: bool or None.
         #        whether we work with the limited version
@@ -252,6 +269,7 @@ class GymMulti(ExperimentFunction):
         self.num_training_codes = 100 if limited_compiler_gym else 5000
         self.uses_compiler_gym = "compiler" in name
         self.stochastic_problem = "stoc" in name
+        self.greedy_bias = greedy_bias
         if "conformant" in control or control == "linear":
             assert neural_factor is None
         if os.name == "nt":
@@ -259,31 +277,8 @@ class GymMulti(ExperimentFunction):
         if self.uses_compiler_gym:  # Long special case for Compiler Gym.
             assert limited_compiler_gym is not None
             self.num_episode_steps = 45 if limited_compiler_gym else 50
-            if self.limited_compiler_gym:
-                env = gym.wrappers.TimeLimit(
-                    env=SmallActionSpaceLlvmEnv(
-                        env=gym.make(
-                            "llvm-v0", observation_space="Autophase", reward_space="IrInstructionCountOz"
-                        )
-                    ),
-                    # env=gym.make("llvm-v0", observation_space="Autophase", reward_space="IrInstructionCountOz"),
-                    max_episode_steps=self.num_episode_steps,
-                )
-                env.require_dataset("cBench-v1")
-                env.unwrapped.benchmark = "cBench-v1/qsort"
-                env.action_space.n = len(SmallActionSpaceLlvmEnv.action_space_subset)
-            else:
-                # env = gym.make(
-                #    "llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz"
-                # )
-                env = gym.wrappers.TimeLimit(
-                    env=gym.make(
-                        "llvm-v0", observation_space="Autophase", reward_space="IrInstructionCountOz"
-                    ),
-                    max_episode_steps=self.num_episode_steps,
-                )
-                env.require_dataset("cBench-v1")
-                env.unwrapped.benchmark = "cBench-v1/qsort"
+            env = gym.make("llvm-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
+            env = self.wrap_env(env)
             # Not yet operational: should be used in all cases as it is supposed to help.
             #            env = AutophaseNormalizedFeatures(env)
             #            env = ConcatActionsHistogram(env)
@@ -406,7 +401,7 @@ class GymMulti(ExperimentFunction):
         self.num_internal_layers = 1 if "semi" in control else 3
         internal = self.num_internal_layers * (self.num_neurons ** 2) if "deep" in control else 0
         unstructured_neural_size = (
-            output_dim * self.num_neurons + self.num_neurons * (input_dim + 1) + internal,
+            output_dim * self.num_neurons + self.num_neurons * (input_dim + 1) + internal + int(greedy_bias),
         )
         neural_size = unstructured_neural_size
         assert control in CONTROLLERS or control == "conformant", f"{control} not known as a form of control"
@@ -468,6 +463,7 @@ class GymMulti(ExperimentFunction):
 
         # Now initializing.
         super().__init__(self.gym_multi_function, parametrization=parametrization)
+        self.greedy_coefficient = 0.0
         self.parametrization.function.deterministic = not self.uses_compiler_gym
         self.archive: tp.List[tp.Any] = []
         self.mean_loss = 0.0
@@ -505,12 +501,25 @@ class GymMulti(ExperimentFunction):
 
     def discretize(self, a):
         """Transforms a logit into an int obtained through softmax."""
+        if self.greedy_bias:
+            a = np.asarray(a, dtype=np.float32)
+            for i, action in enumerate(range(len(a))):
+                if "compiler" in self.name:
+                    tmp_env = self.wrap_env(self.env.unwrapped.fork())
+                    tmp_env._elapsed_steps = self.env._elapsed_steps
+                else:
+                    tmp_env = copy.deepcopy(self.env)
+                _, r, _, _ = tmp_env.step(action)
+                a[i] += self.greedy_coefficient * r
         probabilities = np.exp(a - max(a))
         probabilities = probabilities / sum(probabilities)
         return int(list(np.random.multinomial(1, probabilities)).index(1))
 
     def neural(self, x: np.ndarray, o: np.ndarray):
         """Applies a neural net parametrized by x to an observation o. Returns an action or logits of actions."""
+        if self.greedy_bias:
+            self.greedy_coefficient = x[-1:]  # We have decided that we can not have two runs in parallel.
+            x = x[:-1]
         o = o.ravel()
         x = np.asarray((2 ** self.optimization_scale) * x, dtype=np.float32)
         if self.control == "linear":
@@ -640,7 +649,9 @@ class GymMulti(ExperimentFunction):
         """Apply an action.
 
         We have a step on top of Gym's step for possibly storing some statistics."""
-        o, r, done, info = self.env.step(a)
+        o, r, done, info = self.env.step(
+            a
+        )  # We work on self.env... we can not have two threads working on the same function.
         return o, r, done, info
 
     def heuristic(self, o, current_observations):
@@ -694,7 +705,6 @@ class GymMulti(ExperimentFunction):
                 assert compiler_gym_pb_index is not None
                 assert compiler_gym_pb_index == self.compilergym_index
                 assert compiler_gym_pb_index < 23
-                assert compiler_gym_pb_index >= -self.num_training_codes
                 o = env.reset(benchmark=self.uris[compiler_gym_pb_index])
         else:
             assert compiler_gym_pb_index is None

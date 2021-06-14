@@ -1266,12 +1266,14 @@ def gym_problem(
     limited_compiler_gym: tp.Optional[bool] = None,
     big_noise: bool = False,
     multi_scale: bool = False,
+    greedy_bias: bool = False,
 ) -> tp.Iterator[Experiment]:
     """Gym simulator for Active Network Management (default) or other pb."""
     if "directcompilergym" in specific_problem:
         assert compiler_gym_pb_index is not None
         assert limited_compiler_gym is not None
         assert compiler_gym_pb_index >= 0
+        assert greedy_bias is False
         funcs = [CompilerGym(compiler_gym_pb_index=compiler_gym_pb_index, limited_compiler_gym=limited_compiler_gym)]  # type: ignore
     else:
         funcs = (
@@ -1286,15 +1288,9 @@ def gym_problem(
             ]
             if conformant
             else [
-                GymMulti(
-                    specific_problem,
-                    control=control,
-                    neural_factor=1 if control != "linear" else None,
-                    limited_compiler_gym=limited_compiler_gym,
-                    optimization_scale=scale,
-                )  # type: ignore
-                for control in (["noisy_neural"] if big_noise else ["deep_neural"])  #["neural", "linear"])
+                GymMulti(specific_problem, control=control, neural_factor=1 if control != "linear" else None, limited_compiler_gym=limited_compiler_gym, greedy_bias=greedy_bias)  # type: ignore
                 for scale in ([-6, -4, -2, 0] if multi_scale else [0])
+                for control in ["neural", "linear"]
             ]
         )
     seedg = create_seed_generator(seed)
@@ -1340,6 +1336,13 @@ def limited_hardcore_stochastic_compiler_gym(seed: tp.Optional[int] = None) -> t
     """Working on CompilerGym. Stochastic problem: we are optimizing a net for driving compilation."""
     return gym_problem(
         seed, specific_problem="stochasticcompilergym", limited_compiler_gym=True, big_noise=True
+    )
+
+
+def greedy_limited_stochastic_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Working on CompilerGym. Stochastic problem: we are optimizing a net for driving compilation."""
+    return gym_problem(
+        seed, specific_problem="stochasticcompilergym", limited_compiler_gym=True, greedy_bias=True
     )
 
 
