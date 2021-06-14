@@ -527,7 +527,8 @@ class GymMulti(ExperimentFunction):
             self.greedy_coefficient = x[-1:]  # We have decided that we can not have two runs in parallel.
             x = x[:-1]
         o = o.ravel()
-        x = np.asarray((2 ** self.optimization_scale) * x, dtype=np.float32)
+        if "structured" not in self.name and self.optimization_scale != 0:
+            x = np.asarray((2 ** self.optimization_scale) * x, dtype=np.float32)
         if self.control == "linear":
             # The linear case is simplle.
             output = np.matmul(o, x[1:, :])
