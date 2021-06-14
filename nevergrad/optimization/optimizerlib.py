@@ -1225,6 +1225,8 @@ class ConfSplitOptimizer(base.ConfiguredOptimizer):
         self.max_num_vars = max_num_vars
         self.multivariate_optimizer = multivariate_optimizer
         self.monovariate_optimizer = monovariate_optimizer
+        if self.max_num_vars is not None and self.max_num_vars == 1:  # If we decide to focus on 1, we want 1.
+            self.monovariate_optimizer = multivariate_optimizer
         self.progressive = progressive
         self.non_deterministic_descriptor = non_deterministic_descriptor
         if sum(x is not None for x in [num_optims, num_vars, max_num_vars]) > 1:
