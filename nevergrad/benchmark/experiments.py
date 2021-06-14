@@ -1285,7 +1285,8 @@ def gym_problem(
             if conformant
             else [
                 GymMulti(specific_problem, control=control, neural_factor=1 if control != "linear" else None, limited_compiler_gym=limited_compiler_gym, greedy_bias=greedy_bias)  # type: ignore
-                for control in ["neural", "linear"] for greedy_bias in [True, False]
+                for control in ["neural", "linear"]
+                for greedy_bias in [True, False]
             ]
         )
     seedg = create_seed_generator(seed)
