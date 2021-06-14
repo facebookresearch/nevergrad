@@ -503,6 +503,7 @@ class GymMulti(ExperimentFunction):
             for i, action in enumerate(range(len(a))):
                 if "compiler" in self.name:
                     tmp_env = self.wrap_env(self.env.unwrapped.fork())
+                    tmp_env._elapsed_steps = self.env._elapsed_steps
                 else:
                     tmp_env = copy.deepcopy(self.env)
                 _, r, _, _ = tmp_env.step(action)
