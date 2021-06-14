@@ -245,7 +245,7 @@ class GymMulti(ExperimentFunction):
             env.action_space.n = len(SmallActionSpaceLlvmEnv.action_space_subset)
         else:
             env = gym.wrappers.TimeLimit(
-                env=env,
+                env=input_env,
                 max_episode_steps=self.num_episode_steps,
             )
             env.unwrapped.benchmark = input_env.benchmark
