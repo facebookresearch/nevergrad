@@ -738,7 +738,7 @@ class GymMulti(ExperimentFunction):
             # start at 0.
             x = x + 0.01 * np.random.RandomState(1234).normal(size=x.shape)
         reward = 0.0
-        memory = np.zeros(self.memory_len
+        memory = np.zeros(self.memory_len)
         for i in range(self.num_time_steps):
             # Actual loop over time steps!
             if self.discrete_input:
