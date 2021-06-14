@@ -1272,18 +1272,22 @@ def gym_problem(
         assert compiler_gym_pb_index >= 0
         funcs = [CompilerGym(compiler_gym_pb_index=compiler_gym_pb_index, limited_compiler_gym=limited_compiler_gym)]  # type: ignore
     else:
-        funcs = [
-            GymMulti(  # type: ignore
-                specific_problem,
-                control="conformant",
-                limited_compiler_gym=limited_compiler_gym,
-                compiler_gym_pb_index=compiler_gym_pb_index,
-                neural_factor=None,
-            )
+        funcs = (
+            [
+                GymMulti(  # type: ignore
+                    specific_problem,
+                    control="conformant",
+                    limited_compiler_gym=limited_compiler_gym,
+                    compiler_gym_pb_index=compiler_gym_pb_index,
+                    neural_factor=None,
+                )
+            ]
             if conformant
-            else GymMulti(specific_problem, control=control, neural_factor=1 if control != "linear" else None, limited_compiler_gym=limited_compiler_gym)  # type: ignore
-            for control in ["neural", "linear"]
-        ]
+            else [
+                GymMulti(specific_problem, control=control, neural_factor=1 if control != "linear" else None, limited_compiler_gym=limited_compiler_gym)  # type: ignore
+                for control in ["neural", "linear"]
+            ]
+        )
     seedg = create_seed_generator(seed)
     optims = [
         "DE",

@@ -507,7 +507,7 @@ class GymMulti(ExperimentFunction):
         """Transforms a logit into an int obtained through softmax."""
         if self.greedy_bias:
             a = np.asarray(a, dtype=np.float32)
-            for acton in range(len(a))
+            for acton in range(len(a)):
                 tmp_env = self.env.copy()
                 _, r, _, _ = tmp_env.step(action)
                 a[i] += self.greedy_coefficient * r
@@ -648,7 +648,9 @@ class GymMulti(ExperimentFunction):
         """Apply an action.
 
         We have a step on top of Gym's step for possibly storing some statistics."""
-        o, r, done, info = self.env.step(a)  # We work on self.env... we can not have two threads working on the same function.
+        o, r, done, info = self.env.step(
+            a
+        )  # We work on self.env... we can not have two threads working on the same function.
         return o, r, done, info
 
     def heuristic(self, o, current_observations):
