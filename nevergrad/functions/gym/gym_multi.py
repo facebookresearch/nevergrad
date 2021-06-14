@@ -406,9 +406,9 @@ class GymMulti(ExperimentFunction):
         self.num_internal_layers = 1 if "semi" in control else 3
         internal = self.num_internal_layers * (self.num_neurons ** 2) if "deep" in control else 0
         unstructured_neural_size = (
-            output_dim * self.num_neurons + self.num_neurons * (input_dim + 1) + internal,
+            output_dim * self.num_neurons + self.num_neurons * (input_dim + 1) + internal + int(greedy_bias),
         )
-        neural_size = unstructured_neural_size + int(greedy_bias)
+        neural_size = unstructured_neural_size
         assert control in CONTROLLERS or control == "conformant", f"{control} not known as a form of control"
         self.control = control
         if "neural" in control:
