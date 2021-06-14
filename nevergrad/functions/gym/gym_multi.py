@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import copy
 import numpy as np
 import os
 import typing as tp
@@ -509,7 +510,7 @@ class GymMulti(ExperimentFunction):
         if self.greedy_bias:
             a = np.asarray(a, dtype=np.float32)
             for action in range(len(a)):
-                tmp_env = self.env.copy()
+                tmp_env = copy.deepcopy(self.env)
                 _, r, _, _ = tmp_env.step(action)
                 a[i] += self.greedy_coefficient * r
         probabilities = np.exp(a - max(a))
