@@ -1264,6 +1264,7 @@ def gym_problem(
     conformant: bool = False,
     compiler_gym_pb_index: tp.Optional[int] = None,
     limited_compiler_gym: tp.Optional[bool] = None,
+    greedy_bias: bool = False,
 ) -> tp.Iterator[Experiment]:
     """Gym simulator for Active Network Management (default) or other pb."""
     if "directcompilergym" in specific_problem:
@@ -1286,7 +1287,6 @@ def gym_problem(
             else [
                 GymMulti(specific_problem, control=control, neural_factor=1 if control != "linear" else None, limited_compiler_gym=limited_compiler_gym, greedy_bias=greedy_bias)  # type: ignore
                 for control in ["neural", "linear"]
-                for greedy_bias in [True, False]
             ]
         )
     seedg = create_seed_generator(seed)
@@ -1311,6 +1311,14 @@ def gym_problem(
 def limited_stochastic_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Working on CompilerGym. Stochastic problem: we are optimizing a net for driving compilation."""
     return gym_problem(seed, specific_problem="stochasticcompilergym", limited_compiler_gym=True)
+
+
+@registry.register
+def greedy_limited_stochastic_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Working on CompilerGym. Stochastic problem: we are optimizing a net for driving compilation."""
+    return gym_problem(
+        seed, specific_problem="stochasticcompilergym", limited_compiler_gym=True, greedy_bias=True
+    )
 
 
 @registry.register
