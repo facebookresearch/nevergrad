@@ -613,6 +613,7 @@ def yabbob(
     split: bool = False,
     tiny: bool = False,
     tuning: bool = False,
+    reduced: bool = False,
 ) -> tp.Iterator[Experiment]:
     """Yet Another Black-Box Optimization Benchmark.
     Related to, but without special effort for exactly sticking to, the BBOB/COCO dataset.
@@ -667,7 +668,9 @@ def yabbob(
     ]
     if tiny:
         functions = functions[::13]
-
+    if reduced:
+        functions = functions[::17]
+        
     # We possibly add constraints.
     max_num_constraints = 4
     constraints: tp.List[tp.Any] = [
@@ -707,6 +710,12 @@ def yabbob(
 def yahdlbbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with HD and low budget."""
     return yabbob(seed, hd=True, small=True)
+
+
+@registry.register
+def reduced_yahdlbbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with HD and low budget."""
+    return yabbob(seed, hd=True, small=True, reduced=True)
 
 
 @registry.register
