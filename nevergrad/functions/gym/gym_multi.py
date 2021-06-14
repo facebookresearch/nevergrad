@@ -739,22 +739,21 @@ class GymMulti(ExperimentFunction):
             x = x + 0.01 * np.random.RandomState(1234).normal(size=x.shape)
         reward = 0.0
         memory = np.zeros(self.memory_len
-        controller_input = o 
         for i in range(self.num_time_steps):
             # Actual loop over time steps!
             if self.discrete_input:
                 obs = np.zeros(shape=self.input_dim - self.extended_input_len - len(memory))
-                obs[controller_input] = 1
+                obs[o] = 1
                 o = obs
             previous_o = np.asarray(o)
-            controller_input = np.concatenate([previous_o.ravel(), memory.ravel(), self.extended_input])
+            o = np.concatenate([previous_o.ravel(), memory.ravel(), self.extended_input])
             assert (
-                len(controller_input) == self.input_dim
+                len(o) == self.input_dim
             ), f"o has shape {o.shape} whereas input_dim={self.input_dim} ({control} / {env} {self.name} (limited={self.limited_compiler_gym}))"
-            a, memory = self.neural(x[i % len(x)] if "multi" in control else x, controller_input)
+            a, memory = self.neural(x[i % len(x)] if "multi" in control else x, o)
             a = self.action_cast(a)
             try:
-                controller_input, r, done, _ = self.step(a)  # Outputs = observation, reward, done, info.
+                o, r, done, _ = self.step(a)  # Outputs = observation, reward, done, info.
                 current_time_index += 1
                 if "multifidLANM" in self.name and current_time_index > 500 and limited_fidelity:
                     done = True
@@ -771,7 +770,7 @@ class GymMulti(ExperimentFunction):
                 return 1e20 / (1.0 + i)  # We encourage late failures rather than early failures.
             if "stacking" in control:
                 attention_a = self.heuristic(
-                    controller_input, current_observations
+                    o, current_observations
                 )  # Best so far, or something like that heuristically derived.
                 a = attention_a if attention_a is not None else 0.0 * np.asarray(a)
                 previous_o = previous_o.ravel()
