@@ -407,6 +407,7 @@ class GymMulti(ExperimentFunction):
         if self.greedy_bias:
             neural_size = (unstructured_neural_size[0] + 1,)
             assert "multi" not in control
+            assert "structured" not in control
         assert control in CONTROLLERS or control == "conformant", f"{control} not known as a form of control"
         self.control = control
         if "neural" in control:
@@ -522,6 +523,7 @@ class GymMulti(ExperimentFunction):
         """Applies a neural net parametrized by x to an observation o. Returns an action or logits of actions."""
         if self.greedy_bias:
             assert "multi" not in self.control
+            assert "structured" not in self.control
             self.greedy_coefficient = x[-1:]  # We have decided that we can not have two runs in parallel.
             x = x[:-1]
         o = o.ravel()
