@@ -510,9 +510,9 @@ class GymMulti(ExperimentFunction):
             a = np.asarray(a, dtype=np.float32)
             for i, action in enumerate(range(len(a))):
                 if "compiler" in self.name:
-                    tmp_env = copy.deepcopy(self.env)
-                else:
                     tmp_env = self.wrap_env(self.env.fork())
+                else:
+                    tmp_env = copy.deepcopy(self.env)
                 _, r, _, _ = tmp_env.step(action)
                 a[i] += self.greedy_coefficient * r
         probabilities = np.exp(a - max(a))
