@@ -670,7 +670,7 @@ def yabbob(
         functions = functions[::13]
     if reduced:
         functions = functions[::17]
-        
+
     # We possibly add constraints.
     max_num_constraints = 4
     constraints: tp.List[tp.Any] = [
