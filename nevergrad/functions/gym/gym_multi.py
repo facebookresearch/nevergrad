@@ -738,12 +738,13 @@ class GymMulti(ExperimentFunction):
             # start at 0.
             x = x + 0.01 * np.random.RandomState(1234).normal(size=x.shape)
         reward = 0.0
-        memory = np.zeros(self.memory_len)
+        memory = np.zeros(self.memory_len
+        controller_input = o 
         for i in range(self.num_time_steps):
             # Actual loop over time steps!
             if self.discrete_input:
                 obs = np.zeros(shape=self.input_dim - self.extended_input_len - len(memory))
-                obs[o] = 1
+                obs[controller_input] = 1
                 o = obs
             previous_o = np.asarray(o)
             controller_input = np.concatenate([previous_o.ravel(), memory.ravel(), self.extended_input])
