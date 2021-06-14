@@ -236,24 +236,18 @@ class GymMulti(ExperimentFunction):
         "Roulette-v0",
     ]
 
-    def wrap_env(self, env):
+    def wrap_env(self, input_env):
         if self.limited_compiler_gym:
             env = gym.wrappers.TimeLimit(
-                env=SmallActionSpaceLlvmEnv(env),
-                # env=gym.make("llvm-v0", observation_space="Autophase", reward_space="IrInstructionCountOz"),
+                env=SmallActionSpaceLlvmEnv(input_env),
                 max_episode_steps=self.num_episode_steps,
             )
-            env.require_dataset("cBench-v1")
-            env.unwrapped.benchmark = "cBench-v1/qsort"
+            env.unwrapped.benchmark = input_env.benchmark
             env.action_space.n = len(SmallActionSpaceLlvmEnv.action_space_subset)
         else:
-            # env = gym.make(
-            #    "llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz"
-            # )
             env = gym.wrappers.TimeLimit(env=env, max_episode_steps=self.num_episode_steps,
             )
-            env.require_dataset("cBench-v1")
-            env.unwrapped.benchmark = "cBench-v1/qsort"
+            env.unwrapped.benchmark = input_env.benchmark
         return env
 
 
@@ -281,9 +275,9 @@ class GymMulti(ExperimentFunction):
         if self.uses_compiler_gym:  # Long special case for Compiler Gym.
             assert limited_compiler_gym is not None
             self.num_episode_steps = 45 if limited_compiler_gym else 50
-            env=gym.make("llvm-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
+            env = gym.make("llvm-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
+            env.require_dataset("cBench-v1")
             env = self.wrap_env(env)
-
             # Not yet operational: should be used in all cases as it is supposed to help.
             #            env = AutophaseNormalizedFeatures(env)
             #            env = ConcatActionsHistogram(env)
