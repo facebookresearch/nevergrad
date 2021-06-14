@@ -1290,7 +1290,7 @@ def gym_problem(
             else [
                 GymMulti(specific_problem, control=control, neural_factor=1 if control != "linear" else None, limited_compiler_gym=limited_compiler_gym, greedy_bias=greedy_bias)  # type: ignore
                 for scale in ([-6, -4, -2, 0] if multi_scale else [0])
-                for control in ["neural", "linear"]
+                for control in (["neural", "linear"] if not greedy_bias else ["neural"])
             ]
         )
     seedg = create_seed_generator(seed)
@@ -1339,6 +1339,7 @@ def limited_hardcore_stochastic_compiler_gym(seed: tp.Optional[int] = None) -> t
     )
 
 
+@registry.register
 def greedy_limited_stochastic_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Working on CompilerGym. Stochastic problem: we are optimizing a net for driving compilation."""
     return gym_problem(

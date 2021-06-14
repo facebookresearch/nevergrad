@@ -401,9 +401,12 @@ class GymMulti(ExperimentFunction):
         self.num_internal_layers = 1 if "semi" in control else 3
         internal = self.num_internal_layers * (self.num_neurons ** 2) if "deep" in control else 0
         unstructured_neural_size = (
-            output_dim * self.num_neurons + self.num_neurons * (input_dim + 1) + internal + int(greedy_bias),
+            output_dim * self.num_neurons + self.num_neurons * (input_dim + 1) + internal,
         )
         neural_size = unstructured_neural_size
+        if self.greedy_bias:
+            neural_size = (unstructured_neural_size[0] + 1,)
+            assert "multi" not in control
         assert control in CONTROLLERS or control == "conformant", f"{control} not known as a form of control"
         self.control = control
         if "neural" in control:
@@ -518,6 +521,7 @@ class GymMulti(ExperimentFunction):
     def neural(self, x: np.ndarray, o: np.ndarray):
         """Applies a neural net parametrized by x to an observation o. Returns an action or logits of actions."""
         if self.greedy_bias:
+            assert "multi" not in self.control
             self.greedy_coefficient = x[-1:]  # We have decided that we can not have two runs in parallel.
             x = x[:-1]
         o = o.ravel()
