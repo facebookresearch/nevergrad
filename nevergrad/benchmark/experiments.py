@@ -1290,13 +1290,7 @@ def gym_problem(
         )
     seedg = create_seed_generator(seed)
     optims = [
-        "DE",
         "TwoPointsDE",
-        "PSO",
-        "CMA",
-        "NGOpt",
-        "DiscreteLenglerOnePlusOne",
-        "PortfolioDiscreteOnePlusOne",
     ]
     if "stochastic" in specific_problem:
         optims = ["DiagonalCMA", "PSO", "DE", "TwoPointsDE"]
