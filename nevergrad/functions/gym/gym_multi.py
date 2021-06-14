@@ -7,11 +7,13 @@ import numpy as np
 import os
 import typing as tp
 import gym
-import compiler_gym  # pylint: disable=unused-import
 
-# from compiler_gym import CompilerEnvState, CompilerEnvStateWriter
-# from compiler_gym.util.statistics import arithmetic_mean, geometric_mean, stdev
-# from compiler_gym.util.tabulate import tabulate
+compiler_gym_present = True
+try:
+    import compiler_gym  # pylint: disable=unused-import
+except ImportError:
+    compiler_gym_present = False
+
 import nevergrad as ng
 
 if os.name != "nt":
@@ -39,7 +41,6 @@ for e in gym.envs.registry.all():
             except:
                 assert a1.size() < 15000  # type: ignore
         GYM_ENV_NAMES.append(e.id)
-        # print(f"adding {e.id}, {len(GYM_ENV_NAMES)} environments...")
     except:
         pass
 
@@ -249,11 +250,13 @@ class GymMulti(ExperimentFunction):
         self.limited_compiler_gym = limited_compiler_gym
         self.optimization_scale = optimization_scale
         self.num_training_codes = 100 if limited_compiler_gym else 5000
+        self.uses_compiler_gym = "compiler" in name
+        self.stochastic_problem = "stoc" in name
         if "conformant" in control or control == "linear":
             assert neural_factor is None
         if os.name == "nt":
             raise ng.errors.UnsupportedExperiment("Windows is not supported")
-        if "compiler" in name:  # Long special case for Compiler Gym.
+        if self.uses_compiler_gym:  # Long special case for Compiler Gym.
             assert limited_compiler_gym is not None
             self.num_episode_steps = 45 if limited_compiler_gym else 50
             if self.limited_compiler_gym:
@@ -292,7 +295,7 @@ class GymMulti(ExperimentFunction):
                 islice(env.datasets["generator://csmith-v0"].benchmark_uris(), self.num_training_codes)
             )
 
-            if "stoc" in name:
+            if self.stochastic_problem:
                 assert (
                     compiler_gym_pb_index is None
                 ), "compiler_gym_pb_index should not be defined in the stochastic case."
@@ -316,7 +319,11 @@ class GymMulti(ExperimentFunction):
 
         # Build various attributes.
         self.name = (
-            (name if not "compiler" in name else name + str(env)) + "__" + control + "__" + str(neural_factor)
+            (name if not self.uses_compiler_gym else name + str(env))
+            + "__"
+            + control
+            + "__"
+            + str(neural_factor)
         )
         if randomized:
             self.name += "_unseeded"
@@ -325,9 +332,11 @@ class GymMulti(ExperimentFunction):
             self.num_time_steps = env._max_episode_steps  # I know! This is a private variable.
         except AttributeError:  # Not all environements have a max number of episodes!
             assert any(x in name for x in NO_LENGTH), name
-            if "ompiler" in name and not self.limited_compiler_gym:  # The unlimited Gym uses 50 time steps.
+            if (
+                self.uses_compiler_gym and not self.limited_compiler_gym
+            ):  # The unlimited Gym uses 50 time steps.
                 self.num_time_steps = 50
-            elif "ompiler" in name and self.limited_compiler_gym:  # Other Compiler Gym: 45 time steps.
+            elif self.uses_compiler_gym and self.limited_compiler_gym:  # Other Compiler Gym: 45 time steps.
                 self.num_time_steps = 45
             elif "LANM" not in name:  # Most cases: let's say 100 time steps.
                 self.num_time_steps = 100
@@ -354,9 +363,9 @@ class GymMulti(ExperimentFunction):
 
         # Infer the observation space.
         assert (
-            env.observation_space is not None or "ompiler" in name or "llvm" in name
+            env.observation_space is not None or self.uses_compiler_gym or "llvm" in name
         ), "An observation space should be defined."
-        if "ompiler" in self.name:
+        if self.uses_compiler_gym:
             input_dim = 56
             self.discrete_input = False
         elif env.observation_space is not None and env.observation_space.dtype == int:
@@ -459,7 +468,7 @@ class GymMulti(ExperimentFunction):
 
         # Now initializing.
         super().__init__(self.gym_multi_function, parametrization=parametrization)
-        self.parametrization.function.deterministic = not ("compiler" in name)
+        self.parametrization.function.deterministic = not self.uses_compiler_gym
         self.archive: tp.List[tp.Any] = []
         self.mean_loss = 0.0
         self.num_losses = 0
@@ -468,9 +477,9 @@ class GymMulti(ExperimentFunction):
         """Averages multiple evaluations if necessary."""
         x = recommendations[0].value
         if not self.randomized:
-            assert "ompiler" not in self.name
+            assert not self.uses_compiler_gym
             return self.gym_multi_function(x, limited_fidelity=False)
-        if "ompiler" not in self.name:
+        if not self.uses_compiler_gym:
             # Pb_index >= 0 refers to the test set.
             return (
                 np.sum(
@@ -482,7 +491,6 @@ class GymMulti(ExperimentFunction):
                 / 23.0  # This is not compiler_gym but we keep this 23 constant.
             )
         rewards = [
-            #          (-self.gym_multi_function(x, limited_fidelity=False, compiler_gym_pb_index=compiler_gym_pb_index)) for compiler_gym_pb_index in range(23)
             np.log(
                 max(
                     1e-5,
@@ -493,7 +501,6 @@ class GymMulti(ExperimentFunction):
             )
             for compiler_gym_pb_index in range(23)
         ]
-        print(-np.exp(sum(rewards) / len(rewards)))
         return -np.exp(sum(rewards) / len(rewards))
 
     def discretize(self, a):
@@ -568,12 +575,13 @@ class GymMulti(ExperimentFunction):
                             x,
                             seed=self.parametrization.random_state.randint(500000),
                             limited_fidelity=limited_fidelity,
-                            compiler_gym_pb_index=-compiler_gym_pb_index,
+                            compiler_gym_pb_index=compiler_gym_pb_index,
+                            test_set=False,
                         ),
                     )
                 )
                 for compiler_gym_pb_index in np.random.choice(
-                    range(1, 1 + self.num_training_codes), size=100, replace=False
+                    range(0, self.num_training_codes), size=100, replace=False
                 )
             ]
             return -np.exp(np.sum(log_rewards) / len(log_rewards))
@@ -658,6 +666,7 @@ class GymMulti(ExperimentFunction):
         seed: int,
         compiler_gym_pb_index: tp.Optional[int] = None,
         limited_fidelity: bool = True,
+        test_set: bool = True,
     ):
         """Single simulation with parametrization x."""
         current_time_index = 0
@@ -672,12 +681,12 @@ class GymMulti(ExperimentFunction):
         assert seed == 0 or self.control != "conformant" or self.randomized
         env = self.env
         env.seed(seed=seed)
-        if "compiler" in self.name:
-            if "stoc" in self.name:
+        if self.uses_compiler_gym:
+            if self.stochastic_problem:
                 assert compiler_gym_pb_index is not None
                 o = env.reset(
-                    benchmark=self.csmith[-1 - compiler_gym_pb_index]
-                    if compiler_gym_pb_index < 0
+                    benchmark=self.csmith[compiler_gym_pb_index]
+                    if not test_set
                     else self.uris[compiler_gym_pb_index]
                 )
             else:
@@ -729,25 +738,7 @@ class GymMulti(ExperimentFunction):
                     done and "stacking" in self.control
                 ):  # Only the method which do a stacking of heuristic + memory into the
                     # observation need archiving.
-                    self.num_losses += 1
-                    tau = 1.0 / self.num_losses
-                    self.mean_loss = (
-                        ((1.0 - tau) * self.mean_loss + tau * current_reward)
-                        if self.mean_loss is not None
-                        else current_reward
-                    )
-                    found = False
-                    for trace in self.archive:
-                        to, _, _ = trace
-                        if np.array_equal(
-                            np.asarray(current_observations, dtype=np.float32),
-                            np.asarray(to, dtype=np.float32),
-                        ):
-                            found = True
-                            break
-                    if not found:
-                        # Risky: this code assumes that the object is used only in a single run.
-                        self.archive += [(current_observations, current_actions, current_reward)]
+                    self.archive_observations(current_actions, current_observations, current_reward)
             except AssertionError:  # Illegal action.
                 return 1e20 / (1.0 + i)  # We encourage late failures rather than early failures.
             if "stacking" in control:
@@ -780,3 +771,24 @@ class GymMulti(ExperimentFunction):
                 break
         # env.render()  if you want to display.
         return -reward
+
+    def archive_observations(self, current_actions, current_observations, current_reward):
+        self.num_losses += 1
+        tau = 1.0 / self.num_losses
+        self.mean_loss = (
+            ((1.0 - tau) * self.mean_loss + tau * current_reward)
+            if self.mean_loss is not None
+            else current_reward
+        )
+        found = False
+        for trace in self.archive:
+            to, _, _ = trace
+            if np.array_equal(
+                np.asarray(current_observations, dtype=np.float32),
+                np.asarray(to, dtype=np.float32),
+            ):
+                found = True
+                break
+        if not found:
+            # Risky: this code assumes that the object is used only in a single run.
+            self.archive += [(current_observations, current_actions, current_reward)]
