@@ -333,10 +333,12 @@ class GymMulti(ExperimentFunction):
                 env=input_env,
                 max_episode_steps=self.num_episode_steps,
             )
-            env.unwrapped.benchmark = input_env.benchmark
-        env = AutophaseNormalizedFeatures(env)
-        env = ConcatActionsHistogram(env)
         return env
+
+    def observation_wrap(self, env):
+        env2 = AutophaseNormalizedFeatures(env)
+        env3 = ConcatActionsHistogram(env2)
+        return env3
 
     def __init__(
         self,
@@ -365,7 +367,7 @@ class GymMulti(ExperimentFunction):
             assert limited_compiler_gym is not None
             self.num_episode_steps = 45 if limited_compiler_gym else 50
             env = gym.make("llvm-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
-            env = self.wrap_env(env)
+            env = self.observation_wrap(self.wrap_env(env))
             self.uris = list(env.datasets["benchmark://cbench-v1"].benchmark_uris())
             # For training, in the "stochastic" case, we use Csmith.
             from itertools import islice
@@ -445,7 +447,7 @@ class GymMulti(ExperimentFunction):
             env.observation_space is not None or self.uses_compiler_gym or "llvm" in name
         ), "An observation space should be defined."
         if self.uses_compiler_gym:
-            input_dim = 56
+            input_dim = 179
             self.discrete_input = False
         elif env.observation_space is not None and env.observation_space.dtype == int:
             # Direct inference for corner cases:
@@ -481,6 +483,7 @@ class GymMulti(ExperimentFunction):
         output_dim = output_dim + self.memory_len
         self.input_dim = input_dim
         self.output_dim = output_dim
+        self.num_neurons = 1 + ((neural_factor * (input_dim - self.extended_input_len)) // 7)
         self.num_neurons = neural_factor * (input_dim - self.extended_input_len)
         self.num_internal_layers = 1 if "semi" in control else 3
         internal = self.num_internal_layers * (self.num_neurons ** 2) if "deep" in control else 0
@@ -587,16 +590,23 @@ class GymMulti(ExperimentFunction):
         ]
         return -np.exp(sum(rewards) / len(rewards))
 
+    def forked_env(self):
+        forked = self.env.unwrapped.fork()
+        forked = self.wrap_env(forked)
+        # pylint: disable=W0201
+        if env._elapsed_steps is not None:
+            forked._elapsed_steps = env._elapsed_steps
+        forked = self.observation_wrap(forked)
+        if hasattr(env, "histogram"):
+            forked.histogram = env.histogram.copy()
+
     def discretize(self, a):
         """Transforms a logit into an int obtained through softmax."""
         if self.greedy_bias:
             a = np.asarray(a, dtype=np.float32)
             for i, action in enumerate(range(len(a))):
                 if "compiler" in self.name:
-                    tmp_env = self.wrap_env(self.env.unwrapped.fork())
-                    # pylint: disable=W0201
-                    tmp_env._elapsed_steps = self.env._elapsed_steps
-                    tmp_env.histogram = self.env.histogram.copy()
+                    tmp_env = self.forked_env()
                 else:
                     tmp_env = copy.deepcopy(self.env)
                 _, r, _, _ = tmp_env.step(action)
