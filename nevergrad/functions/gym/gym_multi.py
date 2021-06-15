@@ -447,7 +447,7 @@ class GymMulti(ExperimentFunction):
             env.observation_space is not None or self.uses_compiler_gym or "llvm" in name
         ), "An observation space should be defined."
         if self.uses_compiler_gym:
-            input_dim = 179
+            input_dim = 98 if self.limited_compiler_gym else 179
             self.discrete_input = False
         elif env.observation_space is not None and env.observation_space.dtype == int:
             # Direct inference for corner cases:
