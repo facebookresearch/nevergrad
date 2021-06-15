@@ -517,6 +517,7 @@ class GymMulti(ExperimentFunction):
                 a[i] += self.greedy_coefficient * r
         probabilities = np.exp(a - max(a))
         probabilities = probabilities / sum(probabilities)
+        assert sum(probabilities) <= 1.000001, f"{probabilities} with greediness {self.greedy_coefficient}."
         return int(list(np.random.multinomial(1, probabilities)).index(1))
 
     def neural(self, x: np.ndarray, o: np.ndarray):
@@ -598,7 +599,7 @@ class GymMulti(ExperimentFunction):
                     )
                 )
                 for compiler_gym_pb_index in np.random.choice(
-                    range(0, self.num_training_codes), size=100, replace=False
+                    range(0, self.num_training_codes), size=12, replace=False
                 )
             ]
             return -np.exp(np.sum(log_rewards) / len(log_rewards))
