@@ -662,18 +662,16 @@ class FightPlotter:
             List of variables to fix for obtaining similar run conditions
         num_rows: int
             number of rows to plot (best algorithms)
+        restricted_to_complete: bool
+            if we want a plot with only algorithms which have run on all settings
         """
         all_optimizers = list(df.unique("optimizer_name"))  # optimizers for which no run exists are not shown
         num_rows = min(num_rows, len(all_optimizers))
         # iterate on all sub cases
         victories, total = aggregate_winners(df, categories, all_optimizers)
         if restricted_to_complete:
-            print([int(2 * victories.loc[n, n]) for n in all_optimizers])
             max_num = max([int(2 * victories.loc[n, n]) for n in all_optimizers])
             new_all_optimizers = [n for n in all_optimizers if int(2 * victories.loc[n, n]) == max_num]
-            print(new_all_optimizers)
-            print("vs")
-            print(all_optimizers)
             if len(new_all_optimizers) > 0:
                 df = df[df["optimizer_name"].isin(new_all_optimizers)]
                 victories, total = aggregate_winners(df, categories, new_all_optimizers)
