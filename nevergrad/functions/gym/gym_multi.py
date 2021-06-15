@@ -592,10 +592,12 @@ class GymMulti(ExperimentFunction):
 
     def forked_env(self):
         assert "compiler" in self.name
-        forked = self.env.unwrapped.fork()
+        env = self.env
+        forked = env.unwrapped.fork()
         forked = self.wrap_env(forked)
         # pylint: disable=W0201
-        if hasattr(env, "_elapsed_steps") and env._elapsed_steps is not None:
+        assert hasattr(env, "_elapsed_steps"), f"{[hasattr(e, '_elapsed_steps') for e in [env, env.unwrapped, env.unwrapped.unwrapped, env.unwrapped.unwrapped.unwrapped]]}"
+        if env._elapsed_steps is not None:
             forked._elapsed_steps = env._elapsed_steps
         forked = self.observation_wrap(forked)
         if hasattr(env, "histogram"):
