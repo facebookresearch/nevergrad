@@ -334,7 +334,7 @@ def create_plots(
             fplotter.save(str(output_folder / name), dpi=_DPI)
             if name == "fight_all.png":  # second version restricted to completely run algorithms.
                 data_df = FightPlotter.winrates_from_selection(
-                    casedf, fight_descriptors, num_rows=num_rows, restricted_to_complete=True
+                    casedf, fight_descriptors, num_rows=num_rows, complete_runs_only=True
                 )
                 fplotter = FightPlotter(data_df)
                 fplotter.save(str(output_folder / "fight_all_pure.png"), dpi=_DPI)
@@ -649,7 +649,7 @@ class FightPlotter:
         df: utils.Selector,
         categories: tp.List[str],
         num_rows: int = 5,
-        restricted_to_complete: bool = False,
+        complete_runs_only: bool = False,
     ) -> pd.DataFrame:
         """Creates a fight plot win rate data out of the given run dataframe,
         by iterating over all cases with fixed category variables.
@@ -662,14 +662,14 @@ class FightPlotter:
             List of variables to fix for obtaining similar run conditions
         num_rows: int
             number of rows to plot (best algorithms)
-        restricted_to_complete: bool
+        complete_runs_only: bool
             if we want a plot with only algorithms which have run on all settings
         """
         all_optimizers = list(df.unique("optimizer_name"))  # optimizers for which no run exists are not shown
         num_rows = min(num_rows, len(all_optimizers))
         # iterate on all sub cases
         victories, total = aggregate_winners(df, categories, all_optimizers)
-        if restricted_to_complete:
+        if complete_runs_only:
             max_num = max([int(2 * victories.loc[n, n]) for n in all_optimizers])
             new_all_optimizers = [n for n in all_optimizers if int(2 * victories.loc[n, n]) == max_num]
             if len(new_all_optimizers) > 0:
