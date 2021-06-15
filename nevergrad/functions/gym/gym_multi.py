@@ -9,7 +9,6 @@ import os
 import typing as tp
 import gym
 from compiler_gym.envs import CompilerEnv
-from compiler_gym.spaces import Commandline, CommandlineFlag
 
 compiler_gym_present = True
 try:
@@ -174,9 +173,7 @@ class AutophaseNormalizedFeatures(gym.ObservationWrapper):
 
     def __init__(self, env: CompilerEnv):
         super().__init__(env=env)
-        assert (
-            env.observation_space_spec.id == "Autophase"
-        ), "Requires autophase features"
+        assert env.observation_space_spec.id == "Autophase", "Requires autophase features"
         # Adjust the bounds to reflect the normalized values.
         self.observation_space = gym.spaces.Box(
             low=np.full(self.observation_space.shape[0], 0, dtype=np.float32),
@@ -232,6 +229,7 @@ class ConcatActionsHistogram(gym.ObservationWrapper):
             ),
             dtype=np.float32,
         )
+        self.histogram = np.zeros((self.action_space.n,))
 
     def reset(self, *args, **kwargs):
         self.histogram = np.zeros((self.action_space.n,))
@@ -370,6 +368,7 @@ class GymMulti(ExperimentFunction):
             self.uris = list(env.datasets["benchmark://cbench-v1"].benchmark_uris())
             # For training, in the "stochastic" case, we use Csmith.
             from itertools import islice
+
             self.csmith = list(
                 islice(env.datasets["generator://csmith-v0"].benchmark_uris(), self.num_training_codes)
             )
@@ -594,7 +593,7 @@ class GymMulti(ExperimentFunction):
             for i, action in enumerate(range(len(a))):
                 if "compiler" in self.name:
                     tmp_env = self.wrap_env(self.env.unwrapped.fork())
-                    tmp_env._elapsed_steps = self.env._elapsed_steps
+                    tmp_env._elapsed_steps = self.env._elapsed_steps  # type: ignore
                 else:
                     tmp_env = copy.deepcopy(self.env)
                 _, r, _, _ = tmp_env.step(action)
