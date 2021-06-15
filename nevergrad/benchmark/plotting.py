@@ -329,7 +329,7 @@ def create_plots(
             if name == "fight_all.png":
                 with open(str(output_folder / name) + ".cp.txt", "w") as f:
                     f.write("ranking:\n")
-                    for i, algo in enumerate(data_df_big.columns):
+                    for i, algo in enumerate(data_df.columns[:58]):
                         f.write(f"  algo {i}: {algo}\n")
             if len(name) > 240:
                 hashcode = hashlib.md5(bytes(name, "utf8")).hexdigest()
@@ -337,6 +337,12 @@ def create_plots(
                 mid = 120
                 name = name[:mid] + hashcode + name[-mid:]
             fplotter.save(str(output_folder / name), dpi=_DPI)
+            if name == "fight_all.png":  # second version restricted to completely run algorithms.
+                data_df = FightPlotter.winrates_from_selection(
+                    casedf, fight_descriptors, num_rows=num_rows, restricted_to_complete=True
+                )
+                fplotter = FightPlotter(data_df)
+                fplotter.save(str(output_folder / "fight_all_pure.png"), dpi=_DPI)
 
             if order == 2 and competencemaps and best_algo:  # With order 2 we can create a competence map.
                 print("\n# Competence map")
@@ -665,6 +671,7 @@ class FightPlotter:
         categories: tp.List[str],
         num_rows: int = 5,
         num_cols: int = 30,
+        restricted_to_complete: bool = False,
     ) -> pd.DataFrame:
         """Creates a fight plot win rate data out of the given run dataframe,
         by iterating over all cases with fixed category variables.
@@ -682,6 +689,16 @@ class FightPlotter:
         num_rows = min(num_rows, len(all_optimizers))
         # iterate on all sub cases
         victories, total = aggregate_winners(df, categories, all_optimizers)
+        if restricted_to_complete:
+            print([int(2 * victories.loc[n, n]) for n in all_optimizers])
+            max_num = max([int(2 * victories.loc[n, n]) for n in all_optimizers])
+            new_all_optimizers = [n for n in all_optimizers if int(2 * victories.loc[n, n]) == max_num]
+            print(new_all_optimizers)
+            print("vs")
+            print(all_optimizers)
+            if len(new_all_optimizers) > 0:
+                df = df[df["optimizer_name"].isin(new_all_optimizers)]
+                victories, total = aggregate_winners(df, categories, new_all_optimizers)
         # subcases = df.unique(categories)
         # for k, subcase in enumerate(subcases):  # TODO linearize this (precompute all subcases)? requires memory
         #     # print(subcase)
@@ -700,7 +717,9 @@ class FightPlotter:
         data = np.array(winrates.iloc[:num_rows, : len(sorted_names)])
         # pylint: disable=anomalous-backslash-in-string
         best_names = [
-            (f"{name} ({i+1}/{num_names}:{100 * val:2.1f}%)").replace("Search", "")
+            (
+                f"{name} ({i+1}/{num_names}:{100 * val:2.1f}% +- {25 * np.sqrt(val*(1-val)/int(2 * victories.loc[name, name])):2.1f}*)"
+            ).replace("Search", "")
             for i, (name, val) in enumerate(zip(mean_win.index[:num_rows], mean_win))
         ]
         return pd.DataFrame(index=best_names, columns=sorted_names, data=data)

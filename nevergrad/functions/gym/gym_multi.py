@@ -596,6 +596,7 @@ class GymMulti(ExperimentFunction):
                     tmp_env = self.wrap_env(self.env.unwrapped.fork())
                     # pylint: disable=W0201
                     tmp_env._elapsed_steps = self.env._elapsed_steps
+                    tmp_env.histogram = self.env.histogram.copy()
                 else:
                     tmp_env = copy.deepcopy(self.env)
                 _, r, _, _ = tmp_env.step(action)

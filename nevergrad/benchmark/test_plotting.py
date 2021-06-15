@@ -56,7 +56,9 @@ def test_create_plots_from_csv_mocked() -> None:
     with patch("nevergrad.benchmark.plotting.XpPlotter"):
         with patch("nevergrad.benchmark.plotting.FightPlotter") as fplt:
             plotting.create_plots(df, "", max_combsize=1)
-            assert fplt.call_count == 6, "Should be called for all, 2 noise levels and 3 budgets"
+            assert (
+                fplt.call_count == 7
+            ), "Should be called for all, 2 noise levels and 3 budgets, plus one ``pure'' context."
 
 
 def test_fight_plotter() -> None:
@@ -67,7 +69,7 @@ def test_fight_plotter() -> None:
     # check data
     np.testing.assert_array_equal(
         winrates.index,
-        ["Powell (1/3:75.0%)", "OnePlusOneOptimizer (2/3:58.3%)", "Halton (3/3:16.7%)"],
+        ["Powell (1/3:75.0% +- 4.4*)", "OnePlusOneOptimizer (2/3:58.3% +- 5.0*)", "Halton (3/3:16.7% +- 3.8*)"],
     )
     np.testing.assert_array_equal(
         winrates.columns, ["Powell (6/6)", "OnePlusOneOptimizer (6/6)", "HaltonSearch (6/6)"]
