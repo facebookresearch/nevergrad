@@ -12,6 +12,7 @@ import gym
 compiler_gym_present = True
 try:
     import compiler_gym  # pylint: disable=unused-import
+    from compiler_gym.envs import CompilerEnv
 except ImportError:
     compiler_gym_present = False
 
@@ -162,6 +163,90 @@ class SmallActionSpaceLlvmEnv(gym.ActionWrapper):
             return [self.true_action_indices[a] for a in action]
 
 
+if compiler_gym_present:
+
+    class AutophaseNormalizedFeatures(gym.ObservationWrapper):
+        """A wrapper for LLVM environments that use the Autophase observation space
+        to normalize and clip features to the range [0, 1].
+        """
+
+        # The index of the "TotalInsts" feature of autophase.
+        TotalInsts_index = 51
+
+        def __init__(self, env: CompilerEnv):
+            super().__init__(env=env)
+            assert env.observation_space_spec.id == "Autophase", "Requires autophase features"
+            # Adjust the bounds to reflect the normalized values.
+            self.observation_space = gym.spaces.Box(
+                low=np.full(self.observation_space.shape[0], 0, dtype=np.float32),  # type: ignore
+                high=np.full(self.observation_space.shape[0], 1, dtype=np.float32),  # type: ignore
+                dtype=np.float32,
+            )
+
+        def observation(self, observation):
+            if observation[self.TotalInsts_index] <= 0:
+                return np.zeros(observation.shape)
+            return np.clip(observation / observation[self.TotalInsts_index], 0, 1)
+
+    class ConcatActionsHistogram(gym.ObservationWrapper):
+        """A wrapper that concatenates a histogram of previous actions to each
+        observation.
+        The actions histogram is concatenated to the end of the existing 1-D box
+        observation, expanding the space.
+        The actions histogram has bounds [0,inf]. If you specify a fixed episode
+        length `norm_to_episode_len`, each histogram update will be scaled by
+        1/norm_to_episode_len, so that `sum(observation) == 1` after episode_len
+        steps.
+        """
+
+        def __init__(self, env: CompilerEnv, norm_to_episode_len: int = 0):
+            super().__init__(env=env)
+            assert isinstance(
+                self.observation_space, gym.spaces.Box  # type: ignore
+            ), "Can only contatenate actions histogram to box shape"
+            assert isinstance(
+                self.action_space, gym.spaces.Discrete
+            ), "Can only construct histograms from discrete spaces"
+            assert len(self.observation_space.shape) == 1, "Requires 1-D observation space"  # type: ignore
+            self.increment = 1 / norm_to_episode_len if norm_to_episode_len else 1
+
+            # Reshape the observation space.
+            self.observation_space = gym.spaces.Box(
+                low=np.concatenate(
+                    (
+                        self.observation_space.low,  # type: ignore
+                        np.full(self.action_space.n, 0, dtype=np.float32),
+                    )
+                ),
+                high=np.concatenate(
+                    (
+                        self.observation_space.high,  # type: ignore
+                        np.full(
+                            self.action_space.n,
+                            1 if norm_to_episode_len else float("inf"),
+                            dtype=np.float32,
+                        ),
+                    )
+                ),
+                dtype=np.float32,
+            )
+            self.histogram = np.zeros((self.action_space.n,))
+
+        def reset(self, *args, **kwargs):
+            self.histogram = np.zeros((self.action_space.n,))
+            return super().reset(*args, **kwargs)
+
+        def step(self, action: tp.Union[int, tp.List[int]]):
+            if not isinstance(action, tp.Iterable):
+                action = [action]
+            for a in action:
+                self.histogram[a] += self.increment
+            return super().step(action)
+
+        def observation(self, observation):
+            return np.concatenate((observation, self.histogram))
+
+
 # Class for direct optimization of CompilerGym problems.
 # We have two variants: a limited (small action space) and a full version.
 class CompilerGym(ExperimentFunction):
@@ -249,6 +334,8 @@ class GymMulti(ExperimentFunction):
                 max_episode_steps=self.num_episode_steps,
             )
             env.unwrapped.benchmark = input_env.benchmark
+        env = AutophaseNormalizedFeatures(env)
+        env = ConcatActionsHistogram(env)
         return env
 
     def __init__(
@@ -279,11 +366,8 @@ class GymMulti(ExperimentFunction):
             self.num_episode_steps = 45 if limited_compiler_gym else 50
             env = gym.make("llvm-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
             env = self.wrap_env(env)
-            # Not yet operational: should be used in all cases as it is supposed to help.
-            #            env = AutophaseNormalizedFeatures(env)
-            #            env = ConcatActionsHistogram(env)
             self.uris = list(env.datasets["benchmark://cbench-v1"].benchmark_uris())
-            # For training, in the "stochastic" case.
+            # For training, in the "stochastic" case, we use Csmith.
             from itertools import islice
 
             self.csmith = list(
@@ -510,6 +594,7 @@ class GymMulti(ExperimentFunction):
             for i, action in enumerate(range(len(a))):
                 if "compiler" in self.name:
                     tmp_env = self.wrap_env(self.env.unwrapped.fork())
+                    # pylint: disable=W0201
                     tmp_env._elapsed_steps = self.env._elapsed_steps
                 else:
                     tmp_env = copy.deepcopy(self.env)
@@ -747,11 +832,11 @@ class GymMulti(ExperimentFunction):
                 obs[o] = 1
                 o = obs
             previous_o = np.asarray(o)
-            controller_input = np.concatenate([previous_o.ravel(), memory.ravel(), self.extended_input])
+            o = np.concatenate([previous_o.ravel(), memory.ravel(), self.extended_input])
             assert (
                 len(o) == self.input_dim
             ), f"o has shape {o.shape} whereas input_dim={self.input_dim} ({control} / {env} {self.name} (limited={self.limited_compiler_gym}))"
-            a, memory = self.neural(x[i % len(x)] if "multi" in control else x, controller_input)
+            a, memory = self.neural(x[i % len(x)] if "multi" in control else x, o)
             a = self.action_cast(a)
             try:
                 o, r, done, _ = self.step(a)  # Outputs = observation, reward, done, info.
