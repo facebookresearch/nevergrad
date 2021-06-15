@@ -175,7 +175,7 @@ class AutophaseNormalizedFeatures(gym.ObservationWrapper):
         super().__init__(env=env)
         assert env.observation_space_spec.id == "Autophase", "Requires autophase features"
         # Adjust the bounds to reflect the normalized values.
-        self.observation_space = gym.spaces.Box(
+        self.observation_space = gym.spaces.Box(  # type: ignore
             low=np.full(self.observation_space.shape[0], 0, dtype=np.float32),
             high=np.full(self.observation_space.shape[0], 1, dtype=np.float32),
             dtype=np.float32,
@@ -236,7 +236,7 @@ class ConcatActionsHistogram(gym.ObservationWrapper):
         return super().reset(*args, **kwargs)
 
     def step(self, action: tp.Union[int, tp.List[int]]):
-        if not isinstance(action, IterableType):
+        if not isinstance(action, tp.IterableType):
             action = [action]
         for a in action:
             self.histogram[a] += self.increment
@@ -593,7 +593,7 @@ class GymMulti(ExperimentFunction):
             for i, action in enumerate(range(len(a))):
                 if "compiler" in self.name:
                     tmp_env = self.wrap_env(self.env.unwrapped.fork())
-                    tmp_env._elapsed_steps = self.env._elapsed_steps  # type: ignore
+                    tmp_env._elapsed_steps = self.env._elapsed_steps  # pylint: disable=attribute-defined-outside-init
                 else:
                     tmp_env = copy.deepcopy(self.env)
                 _, r, _, _ = tmp_env.step(action)
