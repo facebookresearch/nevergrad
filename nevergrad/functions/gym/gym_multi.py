@@ -246,59 +246,59 @@ if compiler_gym_present:
         def observation(self, observation):
             return np.concatenate((observation, self.histogram))
 
-    # Class for direct optimization of CompilerGym problems.
-    # We have two variants: a limited (small action space) and a full version.
-    class CompilerGym(ExperimentFunction):
-        def __init__(self, compiler_gym_pb_index: int, limited_compiler_gym: tp.Optional[bool] = None):
-            env = gym.make("llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
-            action_space_size = (
-                len(SmallActionSpaceLlvmEnv.action_space_subset)
-                if limited_compiler_gym
-                else env.action_space.n
+# Class for direct optimization of CompilerGym problems.
+# We have two variants: a limited (small action space) and a full version.
+class CompilerGym(ExperimentFunction):
+    def __init__(self, compiler_gym_pb_index: int, limited_compiler_gym: tp.Optional[bool] = None):
+        env = gym.make("llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
+        action_space_size = (
+            len(SmallActionSpaceLlvmEnv.action_space_subset)
+            if limited_compiler_gym
+            else env.action_space.n
+        )
+        self.num_episode_steps = 45 if limited_compiler_gym else 50
+        parametrization = (
+            ng.p.Array(shape=(self.num_episode_steps,))
+            .set_bounds(0, action_space_size - 1)
+            .set_integer_casting()
+        ).set_name("direct" + str(compiler_gym_pb_index))
+        self.uris = list(env.datasets["benchmark://cbench-v1"].benchmark_uris())
+        self.compilergym_index = compiler_gym_pb_index
+        env.reset(benchmark=self.uris[self.compilergym_index])
+        self.limited_compiler_gym = limited_compiler_gym
+        super().__init__(self.eval_actions_as_list, parametrization=parametrization)
+
+    def make_env(self) -> gym.Env:
+        """Convenience function to create the environment that we'll use."""
+        # User the time-limited wrapper to fix the length of episodes.
+        if self.limited_compiler_gym:
+            env = gym.wrappers.TimeLimit(
+                env=SmallActionSpaceLlvmEnv(env=gym.make("llvm-v0", reward_space="IrInstructionCountOz")),
+                max_episode_steps=self.num_episode_steps,
             )
-            self.num_episode_steps = 45 if limited_compiler_gym else 50
-            parametrization = (
-                ng.p.Array(shape=(self.num_episode_steps,))
-                .set_bounds(0, action_space_size - 1)
-                .set_integer_casting()
-            ).set_name("direct" + str(compiler_gym_pb_index))
-            self.uris = list(env.datasets["benchmark://cbench-v1"].benchmark_uris())
-            self.compilergym_index = compiler_gym_pb_index
+            env.unwrapped.benchmark = "cBench-v1/qsort"
+            env.action_space.n = len(SmallActionSpaceLlvmEnv.action_space_subset)
+        else:
+            env = gym.make("llvm-ic-v0", reward_space="IrInstructionCountOz")
+            assert env.action_space.n > len(SmallActionSpaceLlvmEnv.action_space_subset)
+        return env
+
+    # @lru_cache(maxsize=1024)  # function is deterministic so we can cache results
+    def eval_actions(self, actions: tp.Tuple[int, ...]) -> float:
+        """Create an environment, run the sequence of actions in order, and return the
+        negative cumulative reward. Intermediate observations/rewards are discarded.
+
+        This is the function that we want to minimize.
+        """
+        with self.make_env() as env:
             env.reset(benchmark=self.uris[self.compilergym_index])
-            self.limited_compiler_gym = limited_compiler_gym
-            super().__init__(self.eval_actions_as_list, parametrization=parametrization)
+            _, _, _, _ = env.step(actions)
+        return -env.episode_reward
 
-        def make_env(self) -> gym.Env:
-            """Convenience function to create the environment that we'll use."""
-            # User the time-limited wrapper to fix the length of episodes.
-            if self.limited_compiler_gym:
-                env = gym.wrappers.TimeLimit(
-                    env=SmallActionSpaceLlvmEnv(env=gym.make("llvm-v0", reward_space="IrInstructionCountOz")),
-                    max_episode_steps=self.num_episode_steps,
-                )
-                env.unwrapped.benchmark = "cBench-v1/qsort"
-                env.action_space.n = len(SmallActionSpaceLlvmEnv.action_space_subset)
-            else:
-                env = gym.make("llvm-ic-v0", reward_space="IrInstructionCountOz")
-                assert env.action_space.n > len(SmallActionSpaceLlvmEnv.action_space_subset)
-            return env
-
-        # @lru_cache(maxsize=1024)  # function is deterministic so we can cache results
-        def eval_actions(self, actions: tp.Tuple[int, ...]) -> float:
-            """Create an environment, run the sequence of actions in order, and return the
-            negative cumulative reward. Intermediate observations/rewards are discarded.
-
-            This is the function that we want to minimize.
-            """
-            with self.make_env() as env:
-                env.reset(benchmark=self.uris[self.compilergym_index])
-                _, _, _, _ = env.step(actions)
-            return -env.episode_reward
-
-        def eval_actions_as_list(self, actions: tp.List[int]):
-            """Wrapper around eval_actions() that records the return value for later analysis."""
-            reward = self.eval_actions(tuple(actions[i] for i in range(len(actions))))
-            return reward
+    def eval_actions_as_list(self, actions: tp.List[int]):
+        """Wrapper around eval_actions() that records the return value for later analysis."""
+        reward = self.eval_actions(tuple(actions[i] for i in range(len(actions))))
+        return reward
 
 
 class GymMulti(ExperimentFunction):
