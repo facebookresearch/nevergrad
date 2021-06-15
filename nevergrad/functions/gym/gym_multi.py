@@ -246,15 +246,14 @@ if compiler_gym_present:
         def observation(self, observation):
             return np.concatenate((observation, self.histogram))
 
+
 # Class for direct optimization of CompilerGym problems.
 # We have two variants: a limited (small action space) and a full version.
 class CompilerGym(ExperimentFunction):
     def __init__(self, compiler_gym_pb_index: int, limited_compiler_gym: tp.Optional[bool] = None):
         env = gym.make("llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
         action_space_size = (
-            len(SmallActionSpaceLlvmEnv.action_space_subset)
-            if limited_compiler_gym
-            else env.action_space.n
+            len(SmallActionSpaceLlvmEnv.action_space_subset) if limited_compiler_gym else env.action_space.n
         )
         self.num_episode_steps = 45 if limited_compiler_gym else 50
         parametrization = (
@@ -595,7 +594,8 @@ class GymMulti(ExperimentFunction):
             for i, action in enumerate(range(len(a))):
                 if "compiler" in self.name:
                     tmp_env = self.wrap_env(self.env.unwrapped.fork())
-                    tmp_env._elapsed_steps = self.env._elapsed_steps  # type: ignore
+                    # pylint: disable=W0201
+                    tmp_env._elapsed_steps = self.env._elapsed_steps
                 else:
                     tmp_env = copy.deepcopy(self.env)
                 _, r, _, _ = tmp_env.step(action)
