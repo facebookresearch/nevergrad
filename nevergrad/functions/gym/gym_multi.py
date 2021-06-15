@@ -367,11 +367,9 @@ class GymMulti(ExperimentFunction):
             self.num_episode_steps = 45 if limited_compiler_gym else 50
             env = gym.make("llvm-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
             env = self.wrap_env(env)
-            # Not yet operational: should be used in all cases as it is supposed to help.
             self.uris = list(env.datasets["benchmark://cbench-v1"].benchmark_uris())
-            # For training, in the "stochastic" case.
+            # For training, in the "stochastic" case, we use Csmith.
             from itertools import islice
-
             self.csmith = list(
                 islice(env.datasets["generator://csmith-v0"].benchmark_uris(), self.num_training_codes)
             )
