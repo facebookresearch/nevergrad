@@ -591,14 +591,16 @@ class GymMulti(ExperimentFunction):
         return -np.exp(sum(rewards) / len(rewards))
 
     def forked_env(self):
+        assert "compiler" in self.name
         forked = self.env.unwrapped.fork()
         forked = self.wrap_env(forked)
         # pylint: disable=W0201
-        if env._elapsed_steps is not None:
+        if hasattr(env, "_elapsed_steps") and env._elapsed_steps is not None:
             forked._elapsed_steps = env._elapsed_steps
         forked = self.observation_wrap(forked)
         if hasattr(env, "histogram"):
             forked.histogram = env.histogram.copy()
+        return forked
 
     def discretize(self, a):
         """Transforms a logit into an int obtained through softmax."""
@@ -613,7 +615,7 @@ class GymMulti(ExperimentFunction):
                 a[i] += self.greedy_coefficient * r
         probabilities = np.exp(a - max(a))
         probabilities = probabilities / sum(probabilities)
-        assert sum(probabilities) <= 1.000001, f"{probabilities} with greediness {self.greedy_coefficient}."
+        assert sum(probabilities) <= 1. + 1e-7, f"{probabilities} with greediness {self.greedy_coefficient}."
         return int(list(np.random.multinomial(1, probabilities)).index(1))
 
     def neural(self, x: np.ndarray, o: np.ndarray):
