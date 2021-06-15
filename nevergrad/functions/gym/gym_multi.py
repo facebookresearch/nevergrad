@@ -202,7 +202,7 @@ if compiler_gym_present:
         def __init__(self, env: CompilerEnv, norm_to_episode_len: int = 0):
             super().__init__(env=env)
             assert isinstance(
-                    self.observation_space, gym.spaces.Box  # type: ignore
+                self.observation_space, gym.spaces.Box  # type: ignore
             ), "Can only contatenate actions histogram to box shape"
             assert isinstance(
                 self.action_space, gym.spaces.Discrete
@@ -595,7 +595,7 @@ class GymMulti(ExperimentFunction):
             for i, action in enumerate(range(len(a))):
                 if "compiler" in self.name:
                     tmp_env = self.wrap_env(self.env.unwrapped.fork())
-                    tmp_env._elapsed_steps = (
+                    tmp_env._elapsed_steps = (  # type: ignore
                         self.env._elapsed_steps
                     )  # pylint: disable=attribute-defined-outside-init
                 else:
