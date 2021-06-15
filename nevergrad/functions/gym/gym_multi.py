@@ -8,11 +8,11 @@ import numpy as np
 import os
 import typing as tp
 import gym
-from compiler_gym.envs import CompilerEnv
 
 compiler_gym_present = True
 try:
     import compiler_gym  # pylint: disable=unused-import
+    from compiler_gym.envs import CompilerEnv
 except ImportError:
     compiler_gym_present = False
 
