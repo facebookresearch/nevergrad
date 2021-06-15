@@ -329,7 +329,7 @@ def create_plots(
             if name == "fight_all.png":
                 with open(str(output_folder / name) + ".cp.txt", "w") as f:
                     f.write("ranking:\n")
-                    for i, algo in enumerate(data_df.columns[:58]):
+                    for i, algo in enumerate(data_df_big.columns[:58]):
                         f.write(f"  algo {i}: {algo}\n")
             if len(name) > 240:
                 hashcode = hashlib.md5(bytes(name, "utf8")).hexdigest()

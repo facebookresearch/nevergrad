@@ -1290,7 +1290,9 @@ def gym_problem(
             else [
                 GymMulti(specific_problem, control=control, neural_factor=1 if control != "linear" else None, limited_compiler_gym=limited_compiler_gym, greedy_bias=greedy_bias)  # type: ignore
                 for scale in ([-6, -4, -2, 0] if multi_scale else [0])
-                for control in (["deep_neural", "semideep_neural", "neural", "linear"] if not greedy_bias else ["neural"])
+                for control in (
+                    ["deep_neural", "semideep_neural", "neural", "linear"] if not greedy_bias else ["neural"]
+                )
             ]
         )
     seedg = create_seed_generator(seed)
