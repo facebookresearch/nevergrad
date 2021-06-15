@@ -163,142 +163,143 @@ class SmallActionSpaceLlvmEnv(gym.ActionWrapper):
             return [self.true_action_indices[a] for a in action]
 
 
-class AutophaseNormalizedFeatures(gym.ObservationWrapper):
-    """A wrapper for LLVM environments that use the Autophase observation space
-    to normalize and clip features to the range [0, 1].
-    """
-
-    # The index of the "TotalInsts" feature of autophase.
-    TotalInsts_index = 51
-
-    def __init__(self, env: CompilerEnv):
-        super().__init__(env=env)
-        assert env.observation_space_spec.id == "Autophase", "Requires autophase features"
-        # Adjust the bounds to reflect the normalized values.
-        self.observation_space = gym.spaces.Box(  # type: ignore
-            low=np.full(self.observation_space.shape[0], 0, dtype=np.float32),
-            high=np.full(self.observation_space.shape[0], 1, dtype=np.float32),
-            dtype=np.float32,
-        )
-
-    def observation(self, observation):
-        if observation[self.TotalInsts_index] <= 0:
-            return np.zeros(observation.shape)
-        return np.clip(observation / observation[self.TotalInsts_index], 0, 1)
-
-
-class ConcatActionsHistogram(gym.ObservationWrapper):
-    """A wrapper that concatenates a histogram of previous actions to each
-    observation.
-    The actions histogram is concatenated to the end of the existing 1-D box
-    observation, expanding the space.
-    The actions histogram has bounds [0,inf]. If you specify a fixed episode
-    length `norm_to_episode_len`, each histogram update will be scaled by
-    1/norm_to_episode_len, so that `sum(observation) == 1` after episode_len
-    steps.
-    """
-
-    def __init__(self, env: CompilerEnv, norm_to_episode_len: int = 0):
-        super().__init__(env=env)
-        assert isinstance(
-            self.observation_space, gym.spaces.Box
-        ), "Can only contatenate actions histogram to box shape"
-        assert isinstance(
-            self.action_space, gym.spaces.Discrete
-        ), "Can only construct histograms from discrete spaces"
-        assert len(self.observation_space.shape) == 1, "Requires 1-D observation space"
-        self.increment = 1 / norm_to_episode_len if norm_to_episode_len else 1
-
-        # Reshape the observation space.
-        self.observation_space = gym.spaces.Box(
-            low=np.concatenate(
-                (
-                    self.observation_space.low,
-                    np.full(self.action_space.n, 0, dtype=np.float32),
-                )
-            ),
-            high=np.concatenate(
-                (
-                    self.observation_space.high,
-                    np.full(
-                        self.action_space.n,
-                        1 if norm_to_episode_len else float("inf"),
-                        dtype=np.float32,
-                    ),
-                )
-            ),
-            dtype=np.float32,
-        )
-        self.histogram = np.zeros((self.action_space.n,))
-
-    def reset(self, *args, **kwargs):
-        self.histogram = np.zeros((self.action_space.n,))
-        return super().reset(*args, **kwargs)
-
-    def step(self, action: tp.Union[int, tp.List[int]]):
-        if not isinstance(action, tp.IterableType):
-            action = [action]
-        for a in action:
-            self.histogram[a] += self.increment
-        return super().step(action)
-
-    def observation(self, observation):
-        return np.concatenate((observation, self.histogram))
-
-
-# Class for direct optimization of CompilerGym problems.
-# We have two variants: a limited (small action space) and a full version.
-class CompilerGym(ExperimentFunction):
-    def __init__(self, compiler_gym_pb_index: int, limited_compiler_gym: tp.Optional[bool] = None):
-        env = gym.make("llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
-        action_space_size = (
-            len(SmallActionSpaceLlvmEnv.action_space_subset) if limited_compiler_gym else env.action_space.n
-        )
-        self.num_episode_steps = 45 if limited_compiler_gym else 50
-        parametrization = (
-            ng.p.Array(shape=(self.num_episode_steps,))
-            .set_bounds(0, action_space_size - 1)
-            .set_integer_casting()
-        ).set_name("direct" + str(compiler_gym_pb_index))
-        self.uris = list(env.datasets["benchmark://cbench-v1"].benchmark_uris())
-        self.compilergym_index = compiler_gym_pb_index
-        env.reset(benchmark=self.uris[self.compilergym_index])
-        self.limited_compiler_gym = limited_compiler_gym
-        super().__init__(self.eval_actions_as_list, parametrization=parametrization)
-
-    def make_env(self) -> gym.Env:
-        """Convenience function to create the environment that we'll use."""
-        # User the time-limited wrapper to fix the length of episodes.
-        if self.limited_compiler_gym:
-            env = gym.wrappers.TimeLimit(
-                env=SmallActionSpaceLlvmEnv(env=gym.make("llvm-v0", reward_space="IrInstructionCountOz")),
-                max_episode_steps=self.num_episode_steps,
-            )
-            env.unwrapped.benchmark = "cBench-v1/qsort"
-            env.action_space.n = len(SmallActionSpaceLlvmEnv.action_space_subset)
-        else:
-            env = gym.make("llvm-ic-v0", reward_space="IrInstructionCountOz")
-            assert env.action_space.n > len(SmallActionSpaceLlvmEnv.action_space_subset)
-        return env
-
-    # @lru_cache(maxsize=1024)  # function is deterministic so we can cache results
-    def eval_actions(self, actions: tp.Tuple[int, ...]) -> float:
-        """Create an environment, run the sequence of actions in order, and return the
-        negative cumulative reward. Intermediate observations/rewards are discarded.
-
-        This is the function that we want to minimize.
+if compiler_gym_present:
+    class AutophaseNormalizedFeatures(gym.ObservationWrapper):
+        """A wrapper for LLVM environments that use the Autophase observation space
+        to normalize and clip features to the range [0, 1].
         """
-        with self.make_env() as env:
+    
+        # The index of the "TotalInsts" feature of autophase.
+        TotalInsts_index = 51
+    
+        def __init__(self, env: CompilerEnv):
+            super().__init__(env=env)
+            assert env.observation_space_spec.id == "Autophase", "Requires autophase features"
+            # Adjust the bounds to reflect the normalized values.
+            self.observation_space = gym.spaces.Box(
+                low=np.full(self.observation_space.shape[0], 0, dtype=np.float32),
+                high=np.full(self.observation_space.shape[0], 1, dtype=np.float32),
+                dtype=np.float32,
+            )
+    
+        def observation(self, observation):
+            if observation[self.TotalInsts_index] <= 0:
+                return np.zeros(observation.shape)
+            return np.clip(observation / observation[self.TotalInsts_index], 0, 1)
+    
+    
+    class ConcatActionsHistogram(gym.ObservationWrapper):
+        """A wrapper that concatenates a histogram of previous actions to each
+        observation.
+        The actions histogram is concatenated to the end of the existing 1-D box
+        observation, expanding the space.
+        The actions histogram has bounds [0,inf]. If you specify a fixed episode
+        length `norm_to_episode_len`, each histogram update will be scaled by
+        1/norm_to_episode_len, so that `sum(observation) == 1` after episode_len
+        steps.
+        """
+    
+        def __init__(self, env: CompilerEnv, norm_to_episode_len: int = 0):
+            super().__init__(env=env)
+            assert isinstance(
+                self.observation_space, gym.spaces.Box
+            ), "Can only contatenate actions histogram to box shape"
+            assert isinstance(
+                self.action_space, gym.spaces.Discrete
+            ), "Can only construct histograms from discrete spaces"
+            assert len(self.observation_space.shape) == 1, "Requires 1-D observation space"
+            self.increment = 1 / norm_to_episode_len if norm_to_episode_len else 1
+    
+            # Reshape the observation space.
+            self.observation_space = gym.spaces.Box(
+                low=np.concatenate(
+                    (
+                        self.observation_space.low,
+                        np.full(self.action_space.n, 0, dtype=np.float32),
+                    )
+                ),
+                high=np.concatenate(
+                    (
+                        self.observation_space.high,
+                        np.full(
+                            self.action_space.n,
+                            1 if norm_to_episode_len else float("inf"),
+                            dtype=np.float32,
+                        ),
+                    )
+                ),
+                dtype=np.float32,
+            )
+            self.histogram = np.zeros((self.action_space.n,))
+    
+        def reset(self, *args, **kwargs):
+            self.histogram = np.zeros((self.action_space.n,))
+            return super().reset(*args, **kwargs)
+    
+        def step(self, action: tp.Union[int, tp.List[int]]):
+            if not isinstance(action, tp.Iterable):
+                action = [action]
+            for a in action:
+                self.histogram[a] += self.increment
+            return super().step(action)
+    
+        def observation(self, observation):
+            return np.concatenate((observation, self.histogram))
+    
+    
+    # Class for direct optimization of CompilerGym problems.
+    # We have two variants: a limited (small action space) and a full version.
+    class CompilerGym(ExperimentFunction):
+        def __init__(self, compiler_gym_pb_index: int, limited_compiler_gym: tp.Optional[bool] = None):
+            env = gym.make("llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
+            action_space_size = (
+                len(SmallActionSpaceLlvmEnv.action_space_subset) if limited_compiler_gym else env.action_space.n
+            )
+            self.num_episode_steps = 45 if limited_compiler_gym else 50
+            parametrization = (
+                ng.p.Array(shape=(self.num_episode_steps,))
+                .set_bounds(0, action_space_size - 1)
+                .set_integer_casting()
+            ).set_name("direct" + str(compiler_gym_pb_index))
+            self.uris = list(env.datasets["benchmark://cbench-v1"].benchmark_uris())
+            self.compilergym_index = compiler_gym_pb_index
             env.reset(benchmark=self.uris[self.compilergym_index])
-            _, _, _, _ = env.step(actions)
-        return -env.episode_reward
-
-    def eval_actions_as_list(self, actions: tp.List[int]):
-        """Wrapper around eval_actions() that records the return value for later analysis."""
-        reward = self.eval_actions(tuple(actions[i] for i in range(len(actions))))
-        return reward
-
-
+            self.limited_compiler_gym = limited_compiler_gym
+            super().__init__(self.eval_actions_as_list, parametrization=parametrization)
+    
+        def make_env(self) -> gym.Env:
+            """Convenience function to create the environment that we'll use."""
+            # User the time-limited wrapper to fix the length of episodes.
+            if self.limited_compiler_gym:
+                env = gym.wrappers.TimeLimit(
+                    env=SmallActionSpaceLlvmEnv(env=gym.make("llvm-v0", reward_space="IrInstructionCountOz")),
+                    max_episode_steps=self.num_episode_steps,
+                )
+                env.unwrapped.benchmark = "cBench-v1/qsort"
+                env.action_space.n = len(SmallActionSpaceLlvmEnv.action_space_subset)
+            else:
+                env = gym.make("llvm-ic-v0", reward_space="IrInstructionCountOz")
+                assert env.action_space.n > len(SmallActionSpaceLlvmEnv.action_space_subset)
+            return env
+    
+        # @lru_cache(maxsize=1024)  # function is deterministic so we can cache results
+        def eval_actions(self, actions: tp.Tuple[int, ...]) -> float:
+            """Create an environment, run the sequence of actions in order, and return the
+            negative cumulative reward. Intermediate observations/rewards are discarded.
+    
+            This is the function that we want to minimize.
+            """
+            with self.make_env() as env:
+                env.reset(benchmark=self.uris[self.compilergym_index])
+                _, _, _, _ = env.step(actions)
+            return -env.episode_reward
+    
+        def eval_actions_as_list(self, actions: tp.List[int]):
+            """Wrapper around eval_actions() that records the return value for later analysis."""
+            reward = self.eval_actions(tuple(actions[i] for i in range(len(actions))))
+            return reward
+    
+    
 class GymMulti(ExperimentFunction):
     """Class for converting a gym environment, a controller style, and others into a black-box optimization benchmark."""
 
