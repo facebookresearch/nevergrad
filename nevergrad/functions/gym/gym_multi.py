@@ -596,7 +596,9 @@ class GymMulti(ExperimentFunction):
         forked = env.unwrapped.fork()
         forked = self.wrap_env(forked)
         # pylint: disable=W0201
-        assert hasattr(env, "_elapsed_steps"), f"{[hasattr(e, '_elapsed_steps') for e in [env, env.unwrapped, env.unwrapped.unwrapped, env.unwrapped.unwrapped.unwrapped]]}"
+        assert hasattr(
+            env, "_elapsed_steps"
+        ), f"{[hasattr(e, '_elapsed_steps') for e in [env, env.unwrapped, env.unwrapped.unwrapped, env.unwrapped.unwrapped.unwrapped]]}"
         if env._elapsed_steps is not None:
             forked._elapsed_steps = env._elapsed_steps
         forked = self.observation_wrap(forked)
@@ -617,7 +619,7 @@ class GymMulti(ExperimentFunction):
                 a[i] += self.greedy_coefficient * r
         probabilities = np.exp(a - max(a))
         probabilities = probabilities / sum(probabilities)
-        assert sum(probabilities) <= 1. + 1e-7, f"{probabilities} with greediness {self.greedy_coefficient}."
+        assert sum(probabilities) <= 1.0 + 1e-7, f"{probabilities} with greediness {self.greedy_coefficient}."
         return int(list(np.random.multinomial(1, probabilities)).index(1))
 
     def neural(self, x: np.ndarray, o: np.ndarray):
