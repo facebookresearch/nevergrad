@@ -106,7 +106,7 @@ def check_optimizer(
     except Exception as e:  # pylint: disable=broad-except
         if not isinstance(e, base.errors.TellNotAskedNotSupportedError):
             raise AssertionError(
-                "Optimizers should raise base.errors.TellNotAskedNotSupportedError "
+                "Optimizers should raise ng.errors.TellNotAskedNotSupportedError "
                 "at when telling unasked points if they do not support it"
             ) from e
     else:
