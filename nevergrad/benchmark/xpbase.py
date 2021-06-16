@@ -220,6 +220,7 @@ class Experiment:
             raise RuntimeError(
                 f"Too much elapsed budget {num_calls} for {self.optimsettings.name} on {self.function}"
             )
+        self.result.update({f"info/{x}": y for x, y in opt._info().items()})  # Add optimizer info for debug
 
     def _run_with_error(self, callbacks: tp.Optional[tp.Dict[str, obase._OptimCallBack]] = None) -> None:
         """Run an experiment with the provided artificial function and optimizer

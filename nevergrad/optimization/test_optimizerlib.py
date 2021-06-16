@@ -609,21 +609,35 @@ continuous_cases: tp.List[tp.Tuple[str, object, int, int, str]] = [
             2,
             "DoubleFastGADiscreteOnePlusOne",
         ),
-        ("NGOpt", 10, 10, 1, "Cobyla"),
-        ("NGOpt", 10, 10, 2, "CMA"),
+        ("NGOpt8", ng.p.TransitionChoice(range(30), repetitions=10), 10, 2, "CMandAS2"),
+        ("NGOpt8", ng.p.TransitionChoice(range(3), repetitions=10), 10, 2, "AdaptiveDiscreteOnePlusOne"),
+        ("NGOpt13", 10, 10, 1, "Cobyla"),
+        ("NGOpt13", 10, 10, 2, "CMA"),
         (
-            "NGOpt",
+            "NGOpt13",
             ng.p.Log(lower=1, upper=1000).set_integer_casting(),
             10,
             2,
             "HyperOpt",
         ),
-        ("NGOpt8", ng.p.TransitionChoice(range(30), repetitions=10), 10, 2, "CMandAS2"),
-        ("NGOpt8", ng.p.TransitionChoice(range(3), repetitions=10), 10, 2, "AdaptiveDiscreteOnePlusOne"),
-        ("NGOpt", ng.p.TransitionChoice(range(30), repetitions=4), 10, 2, "HyperOpt"),
-        ("NGOpt", ng.p.TransitionChoice(range(30), repetitions=4), 10, 2, "HyperOpt"),
-        ("NGOpt", ng.p.TransitionChoice(range(30), repetitions=10), 10, 2, "DiscreteLenglerOnePlusOne"),
-        ("NGOpt", ng.p.TransitionChoice(range(30), repetitions=10), 10, 2, "DiscreteLenglerOnePlusOne"),
+        ("NGOpt13", ng.p.TransitionChoice(range(30), repetitions=4), 10, 2, "HyperOpt"),
+        ("NGOpt13", ng.p.TransitionChoice(range(30), repetitions=4), 10, 2, "HyperOpt"),
+        ("NGOpt13", ng.p.TransitionChoice(range(30), repetitions=10), 10, 2, "DiscreteLenglerOnePlusOne"),
+        ("NGOpt13", ng.p.TransitionChoice(range(30), repetitions=10), 10, 2, "DiscreteLenglerOnePlusOne"),
+        ("NGOpt14", 10, 601, 1, "CMA"),
+        ("NGOpt14", 10, 601, 2, "CMA"),
+        (
+            "NGOpt14",
+            ng.p.Log(lower=1, upper=1000).set_integer_casting(),
+            601,
+            2,
+            "DoubleFastGADiscreteOnePlusOne",
+        ),
+        ("NGOpt14", ng.p.TransitionChoice(range(30), repetitions=4), 601, 2, "DiscreteLenglerOnePlusOne"),
+        ("NGOpt14", ng.p.TransitionChoice(range(30), repetitions=4), 601, 2, "DiscreteLenglerOnePlusOne"),
+        ("NGOpt14", ng.p.TransitionChoice(range(30), repetitions=4), 10, 2, "MetaModel"),
+        ("NGOpt14", ng.p.TransitionChoice(range(30), repetitions=10), 10, 2, "MetaModel"),
+        ("NGOpt14", ng.p.TransitionChoice(range(30), repetitions=10), 10, 2, "MetaModel"),
         ("NGO", 1, 10, 1, "Cobyla"),
         ("NGO", 1, 10, 2, "OnePlusOne"),
     ]
@@ -635,7 +649,9 @@ def test_ngopt_selection(
 ) -> None:
     with caplog.at_level(logging.DEBUG, logger="nevergrad.optimization.optimizerlib"):
         # pylint: disable=expression-not-assigned
-        optlib.registry[name](param, budget=budget, num_workers=num_workers).optim  # type: ignore
+        opt = optlib.registry[name](param, budget=budget, num_workers=num_workers)
+        # pylint: disable=pointless-statement
+        opt.optim  # type: ignore
         pattern = rf".*{name} selected (?P<name>\w+?) optimizer\."
         match = re.match(pattern, caplog.text.splitlines()[-1])
         assert match is not None, f"Did not detect selection in logs: {caplog.text}"
@@ -644,10 +660,11 @@ def test_ngopt_selection(
             assert choice == expected
         else:
             print(f"Continuous param={param} budget={budget} workers={num_workers} --> {choice}")
-            if num_workers >= budget:
+            if num_workers >= budget and budget > 600:
                 assert choice == "MetaTuneRecentering"
             if num_workers > 1:
                 assert choice not in ["SQP", "Cobyla"]
+        assert choice == opt._info()["sub-optim"]
 
 
 def test_bo_ordering() -> None:
@@ -679,8 +696,8 @@ def test_ngo_split_optimizer(
     budget: int,
     expected: tp.List[str],
 ) -> None:
-    param: ng.p.Parameter = ng.p.Instrumentation(
-        ng.p.Instrumentation(
+    if fake_learning:
+        param: ng.p.Parameter = ng.p.Instrumentation(
             # a log-distributed scalar between 0.001 and 1.0
             learning_rate=ng.p.Log(lower=0.001, upper=1.0),
             # an integer from 1 to 12
@@ -688,17 +705,16 @@ def test_ngo_split_optimizer(
             # either "conv" or "fc"
             architecture=ng.p.Choice(["conv", "fc"]),
         )
-        if fake_learning
-        else ng.p.Choice(["const", ng.p.Array(init=list(range(dimension)))])
-    )
+    else:
+        param = ng.p.Choice(["const", ng.p.Array(init=list(range(dimension)))])
     opt: base.OptCls = (
         xpvariants.MetaNGOpt10
         if name is None
         else (optlib.ConfSplitOptimizer(multivariate_optimizer=optlib.registry[name]))
     )
     optimizer = opt(param, budget=budget, num_workers=num_workers)
-    names = [o.optim.name if o.dimension != 1 or name is None else "monovariate" for o in optimizer.optims]  # type: ignore
-    assert names == expected
+    expected = [x if x != "monovariate" else optimizer._config.monovariate_optimizer.name for x in expected]  # type: ignore
+    assert optimizer._info()["sub-optim"] == ",".join(expected)
 
 
 @skip_win_perf  # type: ignore

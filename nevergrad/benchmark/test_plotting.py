@@ -69,7 +69,7 @@ def test_fight_plotter() -> None:
     # check data
     np.testing.assert_array_equal(
         winrates.index,
-        ["Powell (75.0% +- 4.4*)", "OnePlusOneOptimizer (58.3% +- 5.0*)", "Halton (16.7% +- 3.8*)"],
+        ["Powell (75.0% +- 4.4)", "OnePlusOneOptimizer (58.3% +- 5.0)", "Halton (16.7% +- 3.8)"],
     )
     np.testing.assert_array_equal(
         winrates.columns, ["Powell (6/6)", "OnePlusOneOptimizer (6/6)", "HaltonSearch (6/6)"]

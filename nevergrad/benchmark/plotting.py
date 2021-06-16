@@ -224,6 +224,7 @@ def create_plots(
     assert xpaxis in ["budget", "pseudotime"]
     df = remove_errors(df)
     df.loc[:, "loss"] = pd.to_numeric(df.loc[:, "loss"])
+    df = df.loc[:, [x for x in df.columns if not x.startswith("info/")]]
     # If we have a descriptor "instrum_str",
     # we assume that it describes the instrumentation as a string,
     # that we should include the various instrumentations as distinct curves in the same plot.
@@ -693,7 +694,7 @@ class FightPlotter:
         # pylint: disable=anomalous-backslash-in-string
         best_names = [
             (
-                f"{name} ({100 * val:2.1f}% +- {25 * np.sqrt(val*(1-val)/int(2 * victories.loc[name, name])):2.1f}*)"
+                f"{name} ({100 * val:2.1f}% +- {25 * np.sqrt(val*(1-val)/int(2 * victories.loc[name, name])):2.1f})"
             ).replace("Search", "")
             for name, val in zip(mean_win.index[:num_rows], mean_win)
         ]
