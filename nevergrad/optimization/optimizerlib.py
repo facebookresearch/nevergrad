@@ -2276,38 +2276,30 @@ class EMNA(base.ConfiguredOptimizer):
 NaiveIsoEMNA = EMNA().set_name("NaiveIsoEMNA", register=True)
 
 
-try:
-    from modcma import AskTellCMAES
+@registry.register
+class ModCMA(base.Optimizer):
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        from modcma import AskTellCMAES
+        self.ModCMA = AskTellCMAES(
+            self.dimension, lambda_=max(num_workers, int(4 + 3 * np.log(self.dimension)))
+        )
 
-    modcma_available = True
-except ImportError:
-    modcma_available = False
+    def _internal_ask_candidate(self) -> p.Parameter:
+        data = self.ModCMA.ask()
+        ng_data = np.asarray(data, dtype=np.float_).flatten()
+        out = self.parametrization.spawn_child()
+        out._meta["ModCMA_data"] = data
+        return out.set_standardized_data(ng_data, reference=self.parametrization)
 
-if modcma_available:
-
-    @registry.register
-    class ModCMA(base.Optimizer):
-        def __init__(
-            self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
-        ) -> None:
-            super().__init__(parametrization, budget=budget, num_workers=num_workers)
-            self.ModCMA = AskTellCMAES(
-                self.dimension, lambda_=max(num_workers, int(4 + 3 * np.log(self.dimension)))
-            )
-
-        def _internal_ask_candidate(self) -> p.Parameter:
-            data = self.ModCMA.ask()
-            ng_data = np.asarray(data, dtype=np.float_).flatten()
-            out = self.parametrization.spawn_child()
-            out._meta["ModCMA_data"] = data
-            return out.set_standardized_data(ng_data, reference=self.parametrization)
-
-        def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-            if "ModCMA_data" not in candidate._meta:
-                raise base.errors.TellNotAskedNotSupportedError
-            data = candidate._meta["ModCMA_data"]
-            assert len(data) == self.dimension
-            self.ModCMA.tell(data, loss)
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        if "ModCMA_data" not in candidate._meta:
+            raise base.errors.TellNotAskedNotSupportedError
+        data = candidate._meta["ModCMA_data"]
+        assert len(data) == self.dimension
+        self.ModCMA.tell(data, loss)
 
 
 # Discussions with Jialin Liu and Fabien Teytaud helped the following development.
