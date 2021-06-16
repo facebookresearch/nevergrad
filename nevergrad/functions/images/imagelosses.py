@@ -8,10 +8,6 @@ import typing as tp
 import torch
 import numpy as np
 
-try:
-    import imquality.brisque as brisque
-except ImportError:
-    print("Brisque will fail: imquality missing")
 
 import lpips
 import cv2
@@ -153,6 +149,10 @@ class Brisque(ImageLoss):
     REQUIRES_REFERENCE = False
 
     def __call__(self, img: np.ndarray) -> float:
+        try:
+            import imquality.brisque as brisque
+        except ImportError:
+            raise UnsupportedExperiment("Brisque will fail: imquality missing")
         try:
             score = brisque.score(img)
         except AssertionError:  # oh my god, brisque can raise an assert when the data is too weird.
