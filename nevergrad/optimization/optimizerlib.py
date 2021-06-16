@@ -2283,6 +2283,7 @@ class ModCMA(base.Optimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         from modcma import AskTellCMAES
+
         self.ModCMA = AskTellCMAES(
             self.dimension, lambda_=max(num_workers, int(4 + 3 * np.log(self.dimension)))
         )
