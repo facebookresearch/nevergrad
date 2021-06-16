@@ -70,9 +70,9 @@ def test_fight_plotter() -> None:
     np.testing.assert_array_equal(
         winrates.index,
         [
-            "Powell (1/3:75.0% +- 4.4*)",
-            "OnePlusOneOptimizer (2/3:58.3% +- 5.0*)",
-            "Halton (3/3:16.7% +- 3.8*)",
+            "Powell (1/3:75.0% +- 4.4)",
+            "OnePlusOneOptimizer (2/3:58.3% +- 5.0)",
+            "Halton (3/3:16.7% +- 3.8)",
         ],
     )
     np.testing.assert_array_equal(

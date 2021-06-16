@@ -718,7 +718,7 @@ class FightPlotter:
         # pylint: disable=anomalous-backslash-in-string
         best_names = [
             (
-                f"{name} ({i+1}/{num_names}:{100 * val:2.1f}% +- {25 * np.sqrt(val*(1-val)/int(2 * victories.loc[name, name])):2.1f}*)"
+                f"{name} ({i+1}/{num_names}:{100 * val:2.1f}% +- {25 * np.sqrt(val*(1-val)/int(2 * victories.loc[name, name])):2.1f})"
             ).replace("Search", "")
             for i, (name, val) in enumerate(zip(mean_win.index[:num_rows], mean_win))
         ]
