@@ -198,9 +198,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     TODO(oteytaud): this requires a significant improvement, covering mixed problems and different types of constraints.
     """
     seedg = create_seed_generator(seed)
-
     total_xp_per_optim = 0
-
     # Continuous case
 
     # First, a few functions with constraints.
