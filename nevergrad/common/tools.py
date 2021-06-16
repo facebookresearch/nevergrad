@@ -106,7 +106,7 @@ class Sleeper:
                 return self._min
             value = time.time() - self._start
         else:
-            value = np.mean(self._queue)
+            value = float(np.mean(self._queue))
         return float(np.clip(value / self._num_waits, self._min, self._max))
 
     def sleep(self) -> None:
@@ -179,9 +179,13 @@ def different_from_defaults(
     if instance_dict is None:
         instance_dict = instance.__dict__
     if check_mismatches:
-        diff = set(defaults.keys()).symmetric_difference(instance_dict.keys())
-        if diff:  # this is to help during development
-            raise RuntimeError(f"Mismatch between attributes and arguments of {instance}: {diff}")
+        add = set(defaults.keys()) - set(instance_dict.keys())
+        miss = set(instance_dict.keys()) - set(defaults.keys())
+        if add or miss:  # this is to help during development
+            raise RuntimeError(
+                f"Mismatch between attributes and arguments of {instance.__class__}:\n"
+                f"- additional: {add}\n- missing: {miss}"
+            )
     else:
         defaults = {x: y for x, y in defaults.items() if x in instance.__dict__}
     # only print non defaults

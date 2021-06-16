@@ -99,7 +99,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
 
         self.parametrization = (
             parametrization
-            if not isinstance(parametrization, (int, np.int))
+            if not isinstance(parametrization, (int, np.int_))
             else p.Array(shape=(parametrization,))
         )
         self.parametrization.freeze()  # avoids issues!
@@ -441,15 +441,23 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # - no memory of previous iterations.
         # - just projection to constraint satisfaction.
         # We try using the normal tool during half constraint budget, in order to reduce the impact on the normal run.
+        constraint_issue = False
         for _ in range(max_trials):
             is_suggestion = False
             if self._suggestions:  # use suggestions if available
                 is_suggestion = True
                 candidate = self._suggestions.pop()
             else:
-                candidate = self._internal_ask_candidate()
+                try:  # Sometimes we have a limited budget so that
+                    candidate = self._internal_ask_candidate()
+                except AssertionError:
+                    assert constraint_issue  # This should not happen without constraint issues.
+                    candidate = self.parametrization.spawn_child()
             if candidate.satisfies_constraints():
                 break  # good to go!
+            constraint_issue = (
+                True  # It is normal that we exceed the sampler budget -- constraint satisfaction.
+            )
             if self._penalize_cheap_violations:
                 # Warning! This might be a tell not asked.
                 self._internal_tell_candidate(candidate, float("Inf"))  # DE requires a tell
@@ -637,6 +645,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             first_iteration = False
         return self.provide_recommendation()
 
+    def _info(self) -> tp.Dict[str, tp.Any]:
+        """Easy access to debug/benchmark info"""
+        return {}
+
 
 # Adding a comparison-only functionality to an optimizer.
 def addCompare(optimizer: Optimizer) -> None:
@@ -669,7 +681,8 @@ class ConfiguredOptimizer:
     Parameters
     ----------
     OptimizerClass: type
-        class of the optimizer to configure
+        class of the optimizer to configure, or another ConfiguredOptimizer (config will then be ignored
+        except for the optimizer name/representation)
     config: dict
         dictionnary of all the configurations
     as_config: bool
@@ -686,9 +699,7 @@ class ConfiguredOptimizer:
     one_shot = False  # algorithm designed to suggest all budget points at once
     no_parallelization = False  # algorithm which is designed to run sequentially only
 
-    def __init__(
-        self, OptimizerClass: tp.Type[Optimizer], config: tp.Dict[str, tp.Any], as_config: bool = False
-    ) -> None:
+    def __init__(self, OptimizerClass: OptCls, config: tp.Dict[str, tp.Any], as_config: bool = False) -> None:
         self._OptimizerClass = OptimizerClass
         config.pop("self", None)  # self comes from "locals()"
         config.pop("__class__", None)  # self comes from "locals()"
@@ -719,7 +730,9 @@ class ConfiguredOptimizer:
         num_workers: int
             number of evaluations which will be run in parallel at once
         """
-        config = dict(config=self) if self._as_config else self._config
+        config = dict(config=self) if self._as_config else self.config()
+        if isinstance(self._OptimizerClass, ConfiguredOptimizer):
+            config = {}  # ignore, it's already configured
         run = self._OptimizerClass(parametrization=parametrization, budget=budget, num_workers=num_workers, **config)  # type: ignore
         run.name = self.name
         # hacky but convenient to have around:

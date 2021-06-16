@@ -83,7 +83,7 @@ def check_parameter_features(param: par.Parameter) -> None:
     print(f"Seeding with {seed} from reproducibility.")
     np.random.seed(seed)
     assert isinstance(param.name, str)
-    assert param._random_state is None
+    # assert param._random_state is None  # TODO no more true because of layers :s
     assert param.generation == 0
     child = param.spawn_child()
     assert isinstance(child, type(param))
@@ -100,7 +100,7 @@ def check_parameter_features(param: par.Parameter) -> None:
     mutable = True
     try:
         child.mutate()
-    except par.NotSupportedError:
+    except errors.UnsupportedParameterOperationError:
         mutable = False
     else:
         assert np.any(child.get_standardized_data(reference=param))
@@ -119,7 +119,9 @@ def check_parameter_features(param: par.Parameter) -> None:
     if isinstance(param, par.Data):
         assert param.get_value_hash() != child_hash.get_value_hash()
         child_hash.value = param.value
-        np.testing.assert_almost_equal(param.get_standardized_data(reference=child), [0] * param.dimension)
+        np.testing.assert_almost_equal(
+            param.get_standardized_data(reference=child), np.zeros(param.dimension)  # type: ignore
+        )
     if mutable:
         param.recombine(child, child)
         param.recombine()  # empty should work, for simplicity's sake
@@ -423,3 +425,9 @@ def test_parenthood() -> None:
     param_spawn = param.spawn_child()
     assert param_samp[0][0].sigma.parents_uids == []  # type: ignore
     assert param_spawn[0][0].sigma.parents_uids == [sigma_uid]  # type: ignore
+
+
+def test_random_state_initialization() -> None:
+    param = par.Dict(x=par.Choice(4), y=par.Choice(10))
+    param.value  # pylint: disable=pointless-statement
+    assert param["x"].random_state is param["y"].random_state

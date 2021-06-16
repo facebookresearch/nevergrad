@@ -44,7 +44,6 @@ class Parameter(Layered):
     def __init__(self) -> None:
         # Main features
         super().__init__()
-        self.uid = uuid.uuid4().hex
         self._subobjects = utils.Subobjects(
             self, base=Parameter, attribute="__dict__"
         )  # registers and apply functions too all (sub-)Parameter attributes
@@ -114,6 +113,9 @@ class Parameter(Layered):
         """Mutate parameters of the instance, and then its value"""
         self._check_frozen()
         self._subobjects.apply("mutate")
+        self._layers[-1]._layered_mutate()
+
+    def _layered_mutate(self) -> None:
         self.set_standardized_data(self.random_state.normal(size=self.dimension))
 
     def sample(self: P) -> P:
@@ -141,9 +143,10 @@ class Parameter(Layered):
         """
         if not others:
             return
-        self.random_state  # pylint: disable=pointless-statement
+        self._check_frozen()
         assert all(isinstance(o, self.__class__) for o in others)
         self._subobjects.apply("recombine", *others)
+        self._layers[-1]._layered_recombine(*others)
 
     def get_standardized_data(self: P, *, reference: P) -> np.ndarray:
         """Get the standardized data representing the value of the instance as an array in the optimization space.
@@ -394,6 +397,8 @@ class Parameter(Layered):
                 f"Cannot modify frozen Parameter {self.name}, please spawn a child and modify it instead"
                 "(optimizers freeze the parametrization and all asked and told candidates to avoid border effects)"
             )
+        # make sure the random state is initialized if we need to update it (aka if not frozen)
+        self.random_state  # pylint: disable=pointless-statement
         self._subobjects.apply("_check_frozen")
 
 

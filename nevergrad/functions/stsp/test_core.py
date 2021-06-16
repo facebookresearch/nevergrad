@@ -13,4 +13,5 @@ def test_stsp(complex: bool) -> None:
     func = core.STSP(complex=complex)
     x = 7 * np.random.rand(func.dimension)
     value = func(x)  # should not touch boundaries, so value should be < np.inf
+    assert isinstance(value, float)
     assert value < np.inf
