@@ -198,6 +198,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     TODO(oteytaud): this requires a significant improvement, covering mixed problems and different types of constraints.
     """
     seedg = create_seed_generator(seed)
+    total_xp_per_optim = 0
     # Continuous case
 
     # First, a few functions with constraints.
@@ -228,7 +229,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     ][
         ::37
     ]  # 37 is coprime with all periods above so we sample correctly the possibilities.
-    assert len(functions) < 30, str(len(functions))
+    assert len(functions) == 21, f"{len(functions)} problems instead of 21. Yawidebbob should be standard."
     # This problem is intended as a stable basis forever.
     # The list of optimizers should contain only the basic for comparison and "baselines".
     optims: tp.List[str] = ["NGOpt10"] + get_optimizers("baselines", seed=next(seedg))  # type: ignore
@@ -239,6 +240,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
             for nw in [1, budget] + ([] if budget <= 300 else [300]):
                 index += 1
                 if index % 5 == 0:
+                    total_xp_per_optim += 1
                     for optim in optims:
                         xp = Experiment(function, optim, num_workers=nw, budget=budget, seed=next(seedg))
                         if not xp.is_incoherent:
@@ -256,10 +258,12 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                     corefuncs.DiscreteFunction(name, arity), instrum.set_name("transition")
                 )
                 dfunc.add_descriptors(arity=arity)
-                for optim in optims:
-                    for budget in [500, 5000]:
-                        for nw in [1, 100]:
+                for budget in [500, 5000]:
+                    for nw in [1, 100]:
+                        total_xp_per_optim += 1
+                        for optim in optims:
                             yield Experiment(dfunc, optim, num_workers=nw, budget=budget, seed=next(seedg))
+
     # The multiobjective case.
     # TODO the upper bounds are really not well set for this experiment with cigar
     mofuncs: tp.List[fbase.MultiExperiment] = []
@@ -297,8 +301,10 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
             for nw in [1, 100]:
                 index += 1
                 if index % 5 == 0:
+                    total_xp_per_optim += 1
                     for optim in optims:
                         yield Experiment(mofunc, optim, budget=budget, num_workers=nw, seed=next(seedg))
+    assert total_xp_per_optim == 55, "We should have 55 xps per optimizer, not {total_xp_per_optim}."
 
 
 # pylint: disable=redefined-outer-name

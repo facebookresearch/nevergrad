@@ -7,7 +7,8 @@ import os
 import typing as tp
 import torch
 import numpy as np
-import imquality.brisque as brisque
+
+
 import lpips
 import cv2
 from nevergrad.functions.base import UnsupportedExperiment as UnsupportedExperiment
@@ -148,6 +149,10 @@ class Brisque(ImageLoss):
     REQUIRES_REFERENCE = False
 
     def __call__(self, img: np.ndarray) -> float:
+        try:
+            import imquality.brisque as brisque
+        except ImportError:
+            raise UnsupportedExperiment("Brisque is not installed, please run 'pip install imquality'")
         try:
             score = brisque.score(img)
         except AssertionError:  # oh my god, brisque can raise an assert when the data is too weird.
