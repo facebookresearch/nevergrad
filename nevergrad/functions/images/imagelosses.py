@@ -152,7 +152,7 @@ class Brisque(ImageLoss):
         try:
             import imquality.brisque as brisque
         except ImportError:
-            raise UnsupportedExperiment("Brisque will fail: imquality missing")
+            raise UnsupportedExperiment("Brisque is not installed, please run 'pip install imquality'")
         try:
             score = brisque.score(img)
         except AssertionError:  # oh my god, brisque can raise an assert when the data is too weird.
