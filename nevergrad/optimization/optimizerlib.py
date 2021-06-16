@@ -369,7 +369,8 @@ RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
     crossover=True, mutation="portfolio", noise_handling="optimistic"
 ).set_name("RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne", register=True)
 RecombiningPortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(
-    crossover=True, mutation="portfolio",
+    crossover=True,
+    mutation="portfolio",
 ).set_name("RecombiningPortfolioDiscreteOnePlusOne", register=True)
 
 # pylint: too-many-arguments,too-many-instance-attributes
