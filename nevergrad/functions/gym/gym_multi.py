@@ -24,7 +24,6 @@ from nevergrad.parametrization import parameter
 from ..base import ExperimentFunction
 
 
-
 def get_list_of_gym_envs():
     gym_env_names = []
     for e in gym.envs.registry.all():
@@ -45,7 +44,7 @@ def get_list_of_gym_envs():
                     assert a1.size() < 15000  # type: ignore
             gym_env_names.append(e.id)
         except Exception as exception:
-            print(f"{e.id} not included in full list becaue of {exception}."
+            print(f"{e.id} not included in full list becaue of {exception}.")
     return gym_env_names
 
 
