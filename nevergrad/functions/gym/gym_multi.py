@@ -156,7 +156,8 @@ class SmallActionSpaceLlvmEnv(gym.ActionWrapper):
         "-tailcallelim",
     ]
 
-    def __init__(self, env):  # , flags=None):
+    def __init__(self, env):
+        """Creating a counterpart of a compiler gym environement with a reduced action space."""
         super().__init__(env=env)
         # Array for translating from this tiny action space to the action space of
         # the wrapped environment.
@@ -180,6 +181,7 @@ if compiler_gym_present:
         TotalInsts_index = 51
 
         def __init__(self, env: CompilerEnv):
+            """Creating a counterpart of a compiler gym environement with an extended observation space."""
             super().__init__(env=env)
             assert env.observation_space_spec.id == "Autophase", "Requires autophase features"
             # Adjust the bounds to reflect the normalized values.
@@ -206,6 +208,7 @@ if compiler_gym_present:
         """
 
         def __init__(self, env: CompilerEnv, norm_to_episode_len: int = 0):
+            """Creating a counterpart of a compiler gym environement with an extended observation space."""
             super().__init__(env=env)
             assert isinstance(
                 self.observation_space, gym.spaces.Box  # type: ignore
@@ -257,6 +260,14 @@ if compiler_gym_present:
 # We have two variants: a limited (small action space) and a full version.
 class CompilerGym(ExperimentFunction):
     def __init__(self, compiler_gym_pb_index: int, limited_compiler_gym: tp.Optional[bool] = None):
+        """Creating a compiler gym environement.
+
+        Parameters:
+            compiler_gym_pb_index: integer
+                which pb we are working on.
+            limited_compiler_gym: bool
+                whether we use a limited action space.
+        """
         env = gym.make("llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
         action_space_size = (
             len(SmallActionSpaceLlvmEnv.action_space_subset) if limited_compiler_gym else env.action_space.n
