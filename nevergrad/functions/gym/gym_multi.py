@@ -24,27 +24,33 @@ from nevergrad.parametrization import parameter
 from ..base import ExperimentFunction
 
 
-GYM_ENV_NAMES = []
 
-for e in gym.envs.registry.all():
-    try:
-        assert "Kelly" not in str(e.id)
-        assert "llvm" not in str(e.id)
-        env = gym.make(e.id)
-        env.reset()
-        env.step(env.action_space.sample())
-        a1 = np.asarray(env.action_space.sample())
-        a2 = np.asarray(env.action_space.sample())
-        a3 = np.asarray(env.action_space.sample())
-        a1 = a1 + a2 + a3
-        if hasattr(a1, "size"):
-            try:
-                assert a1.size < 15000  # type: ignore
-            except:
-                assert a1.size() < 15000  # type: ignore
-        GYM_ENV_NAMES.append(e.id)
-    except:
-        pass
+def get_list_of_gym_envs():
+    gym_env_names = []
+    for e in gym.envs.registry.all():
+        try:
+            assert "Kelly" not in str(e.id)  # We should have another check than that.
+            assert "llvm" not in str(e.id)  # We should have another check than that.
+            env = gym.make(e.id)
+            env.reset()
+            env.step(env.action_space.sample())
+            a1 = np.asarray(env.action_space.sample())
+            a2 = np.asarray(env.action_space.sample())
+            a3 = np.asarray(env.action_space.sample())
+            a1 = a1 + a2 + a3
+            if hasattr(a1, "size"):
+                try:
+                    assert a1.size < 15000  # type: ignore
+                except:
+                    assert a1.size() < 15000  # type: ignore
+            gym_env_names.append(e.id)
+        except Exception as exception:
+            print(f"{e.id} not included in full list becaue of {exception}."
+    return gym_env_names
+
+
+GYM_ENV_NAMES = get_list_of_gym_envs()
+
 
 GUARANTEED_GYM_ENV_NAMES = [
     "Copy-v0",
