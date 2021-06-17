@@ -1340,7 +1340,7 @@ def gym_problem(
         "TwoPointsDE",
     ]
     if "stochastic" in specific_problem:
-        optims = ["DiagonalCMA", "Prog13"] if big_noise else ["DiagonalCMA"]
+        optims = ["DiagonalCMA", "TBPSA"] if big_noise else ["DiagonalCMA"]
     for func in funcs:
         for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600]:
             for num_workers in [1]:

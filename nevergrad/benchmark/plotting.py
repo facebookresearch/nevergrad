@@ -605,7 +605,8 @@ class XpPlotter:
             self._fig.savefig(
                 str(output_filepath), bbox_extra_artists=self._overlays, bbox_inches="tight", dpi=_DPI
             )
-        except ValueError:
+        except ValueError as v:
+            print(f"We catch {v} which means that image = too big.")
             self._fig.savefig(
                 str(output_filepath), bbox_extra_artists=self._overlays, bbox_inches="tight", dpi=_DPI / 5
             )
