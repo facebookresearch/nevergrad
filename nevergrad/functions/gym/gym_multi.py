@@ -17,6 +17,8 @@ from ..base import ExperimentFunction
 
 
 def get_list_of_gym_envs():
+    import gym_anm  # pylint: disable=unused-import
+
     gym_env_names = []
     for e in gym.envs.registry.all():
         try:
@@ -164,7 +166,7 @@ class SmallActionSpaceLlvmEnv(gym.ActionWrapper):
 try:
     import compiler_gym  # pylint: disable=unused-import
     from compiler_gym.envs import CompilerEnv
-    import gym_anm
+    import gym_anm  # pylint: disable=unused-import
 
     class AutophaseNormalizedFeatures(gym.ObservationWrapper):
         """A wrapper for LLVM environments that use the Autophase observation space
