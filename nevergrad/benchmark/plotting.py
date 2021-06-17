@@ -586,7 +586,7 @@ class XpPlotter:
                 if l < best_performance[i][0]:
                     best_performance[i] = (l, optim)
 
-        with open(output_filepath, "w") as f:
+        with output_filepath.open("w") as f:
             f.write("Best performance:\n")
             for i in best_performance.keys():
                 f.write(
