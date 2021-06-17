@@ -1150,8 +1150,24 @@ def ng_full_gym(
     ng_gym: bool = False,
     conformant: bool = False,
 ) -> tp.Iterator[Experiment]:
-    """Gym simulator. Maximize reward.
-    Many distinct problems."""
+    """Gym simulator. Maximize reward.  Many distinct problems.
+
+    Parameters:
+        seed: int
+           random seed.
+        randomized: bool
+           whether we keep the problem's stochasticity
+        multi: bool 
+           do we have one neural net per time step
+        big: bool 
+           do we consider big budgets
+        memory: bool
+           do we use recurrent nets
+        ng_gym: bool
+           do we restrict to ng-gym
+        conformant: bool
+           do we restrict to conformant planning, i.e. deterministic controls.
+    """
     env_names = GymMulti.env_names
     if ng_gym:
         env_names = GymMulti.ng_gym
@@ -1274,7 +1290,25 @@ def gym_problem(
     multi_scale: bool = False,
     greedy_bias: bool = False,
 ) -> tp.Iterator[Experiment]:
-    """Gym simulator for Active Network Management (default) or other pb."""
+    """Gym simulator for Active Network Management (default) or other pb.
+
+    seed: int
+        random seed for determinizing the problem
+    specific_problem: string
+        name of the problem we are working on
+    conformant: bool
+        do we focus on conformant planning
+    compiler_gym_pb_index: integer
+        index of Uris problem we work on.
+    limited_compiler_gym: boolean 
+        for compiler-gyn, whether we use a restricted action space
+    big_noise: bool
+        do we switch to specific optimizers, dedicated to noise
+    multi_scale: boolean
+        do we check multiple scales
+    greedy_bias: boolean
+        do we use greedy reward estimates for biasing the decisions.
+    """
     if "directcompilergym" in specific_problem:
         assert compiler_gym_pb_index is not None
         assert limited_compiler_gym is not None
