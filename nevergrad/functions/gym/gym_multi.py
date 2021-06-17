@@ -9,12 +9,6 @@ import os
 import typing as tp
 import gym
 
-compiler_gym_present = True
-try:
-    import compiler_gym  # pylint: disable=unused-import
-    from compiler_gym.envs import CompilerEnv
-except ImportError:
-    compiler_gym_present = False
 
 import nevergrad as ng
 
@@ -168,17 +162,19 @@ class SmallActionSpaceLlvmEnv(gym.ActionWrapper):
         else:
             return [self.true_action_indices[a] for a in action]
 
-
-if compiler_gym_present:
-
+try:
+    import compiler_gym  # pylint: disable=unused-import
+    from compiler_gym.envs import CompilerEnv
+    
+    
     class AutophaseNormalizedFeatures(gym.ObservationWrapper):
         """A wrapper for LLVM environments that use the Autophase observation space
         to normalize and clip features to the range [0, 1].
         """
-
+    
         # The index of the "TotalInsts" feature of autophase.
         TotalInsts_index = 51
-
+    
         def __init__(self, env: CompilerEnv):
             """Creating a counterpart of a compiler gym environement with an extended observation space."""
             super().__init__(env=env)
@@ -189,12 +185,12 @@ if compiler_gym_present:
                 high=np.full(self.observation_space.shape[0], 1, dtype=np.float32),  # type: ignore
                 dtype=np.float32,
             )
-
+    
         def observation(self, observation):
             if observation[self.TotalInsts_index] <= 0:
                 return np.zeros(observation.shape)
             return np.clip(observation / observation[self.TotalInsts_index], 0, 1)
-
+    
     class ConcatActionsHistogram(gym.ObservationWrapper):
         """A wrapper that concatenates a histogram of previous actions to each
         observation.
@@ -205,7 +201,7 @@ if compiler_gym_present:
         1/norm_to_episode_len, so that `sum(observation) == 1` after episode_len
         steps.
         """
-
+    
         def __init__(self, env: CompilerEnv, norm_to_episode_len: int = 0):
             """Creating a counterpart of a compiler gym environement with an extended observation space."""
             super().__init__(env=env)
@@ -217,7 +213,7 @@ if compiler_gym_present:
             ), "Can only construct histograms from discrete spaces"
             assert len(self.observation_space.shape) == 1, "Requires 1-D observation space"  # type: ignore
             self.increment = 1 / norm_to_episode_len if norm_to_episode_len else 1
-
+    
             # Reshape the observation space.
             self.observation_space = gym.spaces.Box(
                 low=np.concatenate(
@@ -239,20 +235,23 @@ if compiler_gym_present:
                 dtype=np.float32,
             )
             self.histogram = np.zeros((self.action_space.n,))
-
+    
         def reset(self, *args, **kwargs):
             self.histogram = np.zeros((self.action_space.n,))
             return super().reset(*args, **kwargs)
-
+    
         def step(self, action: tp.Union[int, tp.List[int]]):
             if not isinstance(action, tp.Iterable):
                 action = [action]
             for a in action:
                 self.histogram[a] += self.increment
             return super().step(action)
-
+    
         def observation(self, observation):
             return np.concatenate((observation, self.histogram))
+except ImportError:
+    raise ng.errors.UnsupportedExperiment
+
 
 
 # Class for direct optimization of CompilerGym problems.
