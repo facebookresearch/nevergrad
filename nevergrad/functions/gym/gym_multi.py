@@ -12,8 +12,6 @@ import gym
 
 import nevergrad as ng
 
-if os.name != "nt":
-    import gym_anm  # pylint: disable=unused-import
 from nevergrad.parametrization import parameter
 from ..base import ExperimentFunction
 
