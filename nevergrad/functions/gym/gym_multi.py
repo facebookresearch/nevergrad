@@ -784,7 +784,7 @@ class GymMulti(ExperimentFunction):
         return o, r, done, info
 
     def heuristic(self, o, current_observations):
-        """Returns aa heuristic in the given context.
+        """Returns a heuristic action in the given context.
 
         Parameters:
            o: gym observation
