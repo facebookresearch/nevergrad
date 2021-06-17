@@ -1157,9 +1157,9 @@ def ng_full_gym(
            random seed.
         randomized: bool
            whether we keep the problem's stochasticity
-        multi: bool 
+        multi: bool
            do we have one neural net per time step
-        big: bool 
+        big: bool
            do we consider big budgets
         memory: bool
            do we use recurrent nets
@@ -1300,7 +1300,7 @@ def gym_problem(
         do we focus on conformant planning
     compiler_gym_pb_index: integer
         index of Uris problem we work on.
-    limited_compiler_gym: boolean 
+    limited_compiler_gym: boolean
         for compiler-gyn, whether we use a restricted action space
     big_noise: bool
         do we switch to specific optimizers, dedicated to noise
