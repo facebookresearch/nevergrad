@@ -27,6 +27,8 @@ class Crossover:
         dim = donor.size
         if self.crossover == "twopoints" and dim >= 4:
             return self.twopoints(donor, individual)
+        elif self.crossover == "rotated_twopoints" and dim >= 4:
+            return self.rotated_twopoints(donor, individual)
         elif self.crossover == "onepoint" and dim >= 3:
             return self.onepoint(donor, individual)
         else:
@@ -39,7 +41,7 @@ class Crossover:
             [idx != R and self.random_state.uniform(0, 1) > self.CR for idx in range(donor.size)]
         )
         donor[transfer] = individual[transfer]
-
+e
     def onepoint(self, donor: np.ndarray, individual: np.ndarray) -> None:
         R = self.random_state.randint(1, donor.size)
         if self.random_state.choice([True, False]):
@@ -56,6 +58,20 @@ class Crossover:
         else:
             donor[: bounds[0]] = individual[: bounds[0]]
             donor[bounds[1] :] = individual[bounds[1] :]
+
+
+    def rotated_twopoints(self, donor: np.ndarray, individual: np.ndarray) -> None:
+        bounds = sorted(self.random_state.choice(donor.size + 1, size=2, replace=False).tolist())
+        if bounds[1] == donor.size and not bounds[0]:  # make sure there is at least one point crossover
+            bounds[self.random_state.randint(2)] = self.random_state.randint(1, donor.size)
+        bounds2 = sorted(self.random_state.choice(donor.size + 1, size=2, replace=False).tolist())
+        if bounds2[1] == donor.size and not bounds2[0]:  # make sure there is at least one point crossover
+            bounds2[self.random_state.randint(2)] = self.random_state.randint(1, donor.size)
+        if self.random_state.choice([True, False]):
+            donor[bounds[0] : bounds[1]] = individual[bounds2[0] : bounds2[1]]
+        else:
+            donor[: bounds[0]] = individual[: bounds2[0]]
+            donor[bounds[1] :] = individual[bounds2[1] :]
 
 
 class _DE(base.Optimizer):
@@ -248,6 +264,7 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
         - "random": different random (uniform) crossover rate at each iteration
         - "onepoint": one point crossover
         - "twopoints": two points crossover
+        - "rotated_twopoints": more genetic 2p cross-over
         - "parametrization": use the parametrization recombine method
     F1: float
         differential weight #1
@@ -283,6 +300,7 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
         assert isinstance(crossover, float) or crossover in [
             "onepoint",
             "twopoints",
+            "rotated_twopoints",
             "dimension",
             "random",
             "parametrization",
@@ -300,6 +318,8 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
 
 DE = DifferentialEvolution().set_name("DE", register=True)
 TwoPointsDE = DifferentialEvolution(crossover="twopoints").set_name("TwoPointsDE", register=True)
+RotatedTwoPointsDE = DifferentialEvolution(crossover="rotated_twopoints").set_name("TwoPointsDE", register=True)
+
 LhsDE = DifferentialEvolution(initialization="LHS").set_name("LhsDE", register=True)
 QrDE = DifferentialEvolution(initialization="QR").set_name("QrDE", register=True)
 NoisyDE = DifferentialEvolution(recommendation="noisy").set_name("NoisyDE", register=True)
