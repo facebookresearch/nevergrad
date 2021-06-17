@@ -555,7 +555,7 @@ class GymMulti(ExperimentFunction):
                 parameter.Array(shape=tuple(map(int, self.first_layer_shape))),
                 parameter.Array(shape=tuple(map(int, self.second_layer_shape))),
             ).set_name("ng_struct")
-        if "conformant" in control:
+        elif "conformant" in control:
             try:
                 if env.action_space.low is not None and env.action_space.high is not None:
                     low = np.repeat(np.expand_dims(env.action_space.low, 0), self.num_time_steps, axis=0)
@@ -594,6 +594,7 @@ class GymMulti(ExperimentFunction):
                 )
                 / 23.0  # This is not compiler_gym but we keep this 23 constant.
             )
+        assert self.uses_compiler_gym
         rewards = [
             np.log(
                 max(
@@ -703,7 +704,6 @@ class GymMulti(ExperimentFunction):
         # Otherwise: apply a random seed and do a single simulation.
         train_set = compiler_gym_pb_index is None
         if train_set and "stochasticcompilergym" in self.name:
-            # We use negative pb_indices, which mean training set.
             log_rewards = [
                 np.log(
                     max(
@@ -727,7 +727,7 @@ class GymMulti(ExperimentFunction):
         # The conformant case is using 1 randomized seed (unlesss we requested !randomized).
         num_simulations = 7 if self.control != "conformant" and not self.randomized else 1
         loss = 0
-        if "directcoomopilergym" in self.name:
+        if "directcompilergym" in self.name:
             assert compiler_gym_pb_index is not None
         for simulation_index in range(num_simulations):
             loss += self.gym_simulate(
