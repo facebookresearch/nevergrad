@@ -63,18 +63,10 @@ class Crossover:
         bounds = sorted(self.random_state.choice(donor.size + 1, size=2, replace=False).tolist())
         if bounds[1] == donor.size and not bounds[0]:  # make sure there is at least one point crossover
             bounds[self.random_state.randint(2)] = self.random_state.randint(1, donor.size)
-        found = False
-        while not found:
-            bounds2 = sorted(self.random_state.choice(donor.size + 1, size=1, replace=False).tolist())
-            bounds2.append(bounds2[0] + bounds[1] - bounds[0])
-            if bounds2[1] == donor.size and not bounds2[0]:  # make sure there is at least one point crossover
-                bounds2[self.random_state.randint(2)] = self.random_state.randint(1, donor.size)
-            if bounds[0] - bounds[1] == bounds2[0] - bounds2[1]:
-                found = True
-        try:
-            donor[bounds[0] : bounds[1]] = individual[bounds2[0] : bounds2[1]]
-        except ValueError:
-            print(f"{bounds} {bounds2}")
+        bounds2 = sorted(self.random_state.choice(donor.size + 1 - (bounds[1] - bounds[0]), size=1, replace=False).tolist())
+        bounds2.append(bounds2[0] + bounds[1] - bounds[0])
+        assert bounds[1] < donor.size + 1
+        donor[bounds[0] : bounds[1]] = individual[bounds2[0] : bounds2[1]]
 
 
 class _DE(base.Optimizer):
