@@ -41,7 +41,7 @@ class Crossover:
             [idx != R and self.random_state.uniform(0, 1) > self.CR for idx in range(donor.size)]
         )
         donor[transfer] = individual[transfer]
-e
+
     def onepoint(self, donor: np.ndarray, individual: np.ndarray) -> None:
         R = self.random_state.randint(1, donor.size)
         if self.random_state.choice([True, False]):
@@ -58,7 +58,6 @@ e
         else:
             donor[: bounds[0]] = individual[: bounds[0]]
             donor[bounds[1] :] = individual[bounds[1] :]
-
 
     def rotated_twopoints(self, donor: np.ndarray, individual: np.ndarray) -> None:
         bounds = sorted(self.random_state.choice(donor.size + 1, size=2, replace=False).tolist())
