@@ -312,11 +312,7 @@ def create_plots(
         for case in df.unique(fixed) if fixed else [()]:
             print("\n# new case #", fixed, case)
             casedf = df.select(**dict(zip(fixed, case)))
-            data_df = FightPlotter.winrates_from_selection(casedf, fight_descriptors, num_rows=num_rows)
-            # We also want a bigger dataframe with more columns for writing a text overview.
-            data_df_big = FightPlotter.winrates_from_selection(
-                casedf, fight_descriptors, num_rows=2, num_cols=100
-            )
+            data_df = FightPlotter.winrates_from_selection(casedf, fight_descriptors, num_rows=num_rows, num_cols=100)
             fplotter = FightPlotter(data_df)
             # Competence maps: we find out the best algorithm for each attribute1=valuei/attribute2=valuej.
             if order == 2 and competencemaps and best_algo:
@@ -329,7 +325,7 @@ def create_plots(
             if name == "fight_all.png":
                 with open(str(output_folder / name) + ".cp.txt", "w") as f:
                     f.write("ranking:\n")
-                    for i, algo in enumerate(data_df_big.columns[:58]):
+                    for i, algo in enumerate(data_df.columns[:58]):
                         f.write(f"  algo {i}: {algo}\n")
             if len(name) > 240:
                 hashcode = hashlib.md5(bytes(name, "utf8")).hexdigest()
