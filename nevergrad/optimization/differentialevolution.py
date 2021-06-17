@@ -20,7 +20,7 @@ class Crossover:
             self.CR = crossover
         elif crossover == "random":
             self.CR = self.random_state.uniform(0.0, 1.0)
-        elif crossover not in ["twopoints", "onepoint"]:
+        elif crossover not in ["twopoints", "onepoint", "rotated_twopoints"]:
             raise ValueError(f'Unknown crossover "{crossover}"')
 
     def apply(self, donor: np.ndarray, individual: np.ndarray) -> None:
@@ -317,7 +317,9 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
 
 DE = DifferentialEvolution().set_name("DE", register=True)
 TwoPointsDE = DifferentialEvolution(crossover="twopoints").set_name("TwoPointsDE", register=True)
-RotatedTwoPointsDE = DifferentialEvolution(crossover="rotated_twopoints").set_name("RotatedTwoPointsDE", register=True)
+RotatedTwoPointsDE = DifferentialEvolution(crossover="rotated_twopoints").set_name(
+    "RotatedTwoPointsDE", register=True
+)
 
 LhsDE = DifferentialEvolution(initialization="LHS").set_name("LhsDE", register=True)
 QrDE = DifferentialEvolution(initialization="QR").set_name("QrDE", register=True)
