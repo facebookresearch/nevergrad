@@ -9,22 +9,16 @@ import os
 import typing as tp
 import gym
 
-compiler_gym_present = True
-try:
-    import compiler_gym  # pylint: disable=unused-import
-    from compiler_gym.envs import CompilerEnv
-except ImportError:
-    compiler_gym_present = False
 
 import nevergrad as ng
 
-if os.name != "nt":
-    import gym_anm  # pylint: disable=unused-import
 from nevergrad.parametrization import parameter
 from ..base import ExperimentFunction
 
 
 def get_list_of_gym_envs():
+    import gym_anm  # pylint: disable=unused-import
+
     gym_env_names = []
     for e in gym.envs.registry.all():
         try:
@@ -169,7 +163,10 @@ class SmallActionSpaceLlvmEnv(gym.ActionWrapper):
             return [self.true_action_indices[a] for a in action]
 
 
-if compiler_gym_present:
+try:
+    import compiler_gym  # pylint: disable=unused-import
+    from compiler_gym.envs import CompilerEnv
+    import gym_anm  # pylint: disable=unused-import
 
     class AutophaseNormalizedFeatures(gym.ObservationWrapper):
         """A wrapper for LLVM environments that use the Autophase observation space
@@ -253,6 +250,10 @@ if compiler_gym_present:
 
         def observation(self, observation):
             return np.concatenate((observation, self.histogram))
+
+
+except ImportError:
+    raise ng.errors.UnsupportedExperiment
 
 
 # Class for direct optimization of CompilerGym problems.
