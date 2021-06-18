@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import typing as tp
 from nevergrad.functions.gym import GymMulti
 from nevergrad.functions.gym import CompilerGym
 from .xpbase import registry
