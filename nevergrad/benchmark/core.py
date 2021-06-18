@@ -29,6 +29,7 @@ def import_additional_module(filepath: tp.PathLike) -> None:
     spec = importlib.util.spec_from_file_location(
         "nevergrad.additionalimport." + filepath.with_suffix("").name, str(filepath)
     )
+    assert spec is not None
     module = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
     spec.loader.exec_module(module)  # type: ignore
