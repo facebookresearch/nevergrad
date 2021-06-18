@@ -312,7 +312,9 @@ def create_plots(
         for case in df.unique(fixed) if fixed else [()]:
             print("\n# new case #", fixed, case)
             casedf = df.select(**dict(zip(fixed, case)))
-            data_df = FightPlotter.winrates_from_selection(casedf, fight_descriptors, num_rows=num_rows, num_cols=30)
+            data_df = FightPlotter.winrates_from_selection(
+                casedf, fight_descriptors, num_rows=num_rows, num_cols=30
+            )
             fplotter = FightPlotter(data_df)
             # Competence maps: we find out the best algorithm for each attribute1=valuei/attribute2=valuej.
             if order == 2 and competencemaps and best_algo:
