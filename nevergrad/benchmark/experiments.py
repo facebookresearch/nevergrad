@@ -39,7 +39,7 @@ from .optgroups import get_optimizers
 # register all frozen experiments
 from . import frozenexperiments  # noqa # pylint: disable=unused-import
 
-from . import experiments_gym
+from . import experiments_gym  # noqa # pylint: disable=unused-import
 
 # pylint: disable=stop-iteration-return, too-many-nested-blocks, too-many-locals
 
