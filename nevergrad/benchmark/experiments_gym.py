@@ -9,6 +9,7 @@ from nevergrad.functions.gym import CompilerGym
 from .xpbase import registry
 from .xpbase import create_seed_generator
 from .xpbase import Experiment
+from .optgroups import get_optimizers
 
 
 @registry.register
