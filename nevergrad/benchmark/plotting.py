@@ -225,6 +225,8 @@ def create_plots(
     df = remove_errors(df)
     df.loc[:, "loss"] = pd.to_numeric(df.loc[:, "loss"])
     df = df.loc[:, [x for x in df.columns if not x.startswith("info/")]]
+    if "num_objectives" in set(df.columns):
+        df["num_objectives"].replace({0: 1}, inplace=True)  # 0 objective values does not make any sense.
     # If we have a descriptor "instrum_str",
     # we assume that it describes the instrumentation as a string,
     # that we should include the various instrumentations as distinct curves in the same plot.
