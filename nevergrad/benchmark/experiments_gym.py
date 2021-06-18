@@ -5,7 +5,9 @@
 
 from nevergrad.functions.gym import GymMulti
 from nevergrad.functions.gym import CompilerGym
-
+from .xpbase import registry
+from .xpbase import create_seed_generator
+from .xpbase import Experiment
 
 @registry.register
 def ng_full_gym(

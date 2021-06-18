@@ -39,6 +39,8 @@ from .optgroups import get_optimizers
 # register all frozen experiments
 from . import frozenexperiments  # noqa # pylint: disable=unused-import
 
+from . import experiments_gym
+
 # pylint: disable=stop-iteration-return, too-many-nested-blocks, too-many-locals
 
 
@@ -1836,4 +1838,3 @@ def unit_commitment(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                         yield xp
 
 
-from .experiments_gym import *
