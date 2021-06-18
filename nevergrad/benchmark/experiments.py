@@ -1138,7 +1138,6 @@ def rocket(seed: tp.Optional[int] = None, seq: bool = False) -> tp.Iterator[Expe
                             yield xp
 
 
-
 def mono_rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Sequential counterpart of the rocket problem."""
     return rocket(seed, seq=True)
@@ -1836,4 +1835,5 @@ def unit_commitment(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                     if not xp.is_incoherent:
                         yield xp
 
-import experiments_gym
+
+from .experiments_gym import *
