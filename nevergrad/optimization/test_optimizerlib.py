@@ -254,6 +254,8 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
         raise SkipTest("Not playing nicely with the tests (unseedable)")
     if "BO" in name:
         raise SkipTest("BO differs from one computer to another")
+    if "SMAC" in name:
+        raise SkipTest("SMAC is too slow for the 20s limit")
     # set up environment
     optimizer_cls = registry[name]
     np.random.seed(None)
