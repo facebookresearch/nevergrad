@@ -36,10 +36,10 @@ from .xpbase import create_seed_generator
 from .xpbase import registry as registry  # noqa
 from .optgroups import get_optimizers
 
-# register all frozen experiments
-from . import frozenexperiments  # noqa # pylint: disable=unused-import
-
-from . import experiments_gym  # noqa # pylint: disable=unused-import
+# register all experiments from other files
+# pylint: disable=unused-import
+from . import frozenexperiments  # noqa
+from . import gymexperiments  # noqa
 
 # pylint: disable=stop-iteration-return, too-many-nested-blocks, too-many-locals
 
