@@ -372,10 +372,10 @@ class GymMulti(ExperimentFunction):
             assert neural_factor is None
         if os.name == "nt":
             raise ng.errors.UnsupportedExperiment("Windows is not supported")
+        # CompilerGym sends http requests that CircleCI does not like.
+        if os.environ.get("CIRCLECI", False):
+            raise ng.errors.UnsupportedExperiment("No HTTP request in CircleCI")
         if self.uses_compiler_gym:  # Long special case for Compiler Gym.
-            # CompilerGym sends http requests that CircleCI does not like.
-            if os.environ.get("CIRCLECI", False):
-                raise ng.errors.UnsupportedExperiment("No HTTP request in CircleCI")
             assert limited_compiler_gym is not None
             self.num_episode_steps = 45 if limited_compiler_gym else 50
             env = gym.make("llvm-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
