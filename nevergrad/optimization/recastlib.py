@@ -26,7 +26,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         self.multirun = 1  # work in progress
         self.initial_guess: tp.Optional[tp.ArrayLike] = None
         # configuration
-        assert method in ["Nelder-Mead", "COBYLA", "SLSQP", "Powell"], f"Unknown method '{method}'"
+        assert method in ["SMAC", "Nelder-Mead", "COBYLA", "SLSQP", "Powell"], f"Unknown method '{method}'"
         self.method = method
         self.random_restart = random_restart
 
@@ -57,18 +57,32 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         if self.initial_guess is not None:
             best_x = np.array(self.initial_guess, copy=True)  # copy, just to make sure it is not modified
         remaining: float = budget - self._num_ask
+        def smac_obj(p):
+            data = [np.arctanh(p["x" + str(i)]) for i in range(self.dimension)]
+            data = np.asarray(data, dtype = np.float)
+            return objective_function(data)
         while remaining > 0:  # try to restart if budget is not elapsed
             options: tp.Dict[str, tp.Any] = {} if self.budget is None else {"maxiter": remaining}
-            res = scipyoptimize.minimize(
-                objective_function,
-                best_x if not self.random_restart else self._rng.normal(0.0, 1.0, self.dimension),
-                method=self.method,
-                options=options,
-                tol=0,
-            )
-            if res.fun < best_res:
-                best_res = res.fun
-                best_x = res.x
+            if method == "SMAC":
+                x, cost, _ = fmin_smac(func=smac_obj,
+                       x0=[0.] * self.dimension,
+                       bounds=[(-1, 1)] * self.dimension,
+                       maxfun=budget)  # Passing a seed makes fmin_smac determistic
+
+                if cost < best_res:
+                    best_res = cost
+                    best_x = x
+            else:
+                res = scipyoptimize.minimize(
+                    objective_function,
+                    best_x if not self.random_restart else self._rng.normal(0.0, 1.0, self.dimension),
+                    method=self.method,
+                    options=options,
+                    tol=0,
+                )
+                if res.fun < best_res:
+                    best_res = res.fun
+                    best_x = res.x
             remaining = budget - self._num_ask
         return best_x
 
@@ -105,6 +119,7 @@ class ScipyOptimizer(base.ConfiguredOptimizer):
 
 
 NelderMead = ScipyOptimizer(method="Nelder-Mead").set_name("NelderMead", register=True)
+SMAC = ScipyOptimizer(method="SMAC").set_name("SMAC", register=True)
 Powell = ScipyOptimizer(method="Powell").set_name("Powell", register=True)
 RPowell = ScipyOptimizer(method="Powell", random_restart=True).set_name("RPowell", register=True)
 Cobyla = ScipyOptimizer(method="COBYLA").set_name("Cobyla", register=True)
