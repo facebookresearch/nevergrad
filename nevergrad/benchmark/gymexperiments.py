@@ -4,14 +4,14 @@
 # LICENSE file in the root directory of this source tree.
 
 import typing as tp
-from nevergrad.functions.gym import GymMulti
-from nevergrad.functions.gym import CompilerGym
+from nevergrad.functions import gym
+from nevergrad.functions import ExperimentFunction
 from .xpbase import registry
 from .xpbase import create_seed_generator
 from .xpbase import Experiment
 from .optgroups import get_optimizers
 
-# pylint: disable=too-many-nested-blocks
+# pylint: disable=too-many-nested-blocks,stop-iteration-return
 
 
 @registry.register
@@ -21,7 +21,7 @@ def ng_full_gym(
     multi: bool = False,
     big: bool = False,
     memory: bool = False,
-    ng_gym: bool = False,
+    ng_gym: bool = False,  # pylint: disable=redefined-outer-name
     conformant: bool = False,
 ) -> tp.Iterator[Experiment]:
     """Gym simulator. Maximize reward.  Many distinct problems.
@@ -42,9 +42,9 @@ def ng_full_gym(
         conformant: bool
            do we restrict to conformant planning, i.e. deterministic controls.
     """
-    env_names = GymMulti.env_names
+    env_names = gym.GymMulti.get_env_names()
     if ng_gym:
-        env_names = GymMulti.ng_gym
+        env_names = gym.GymMulti.ng_gym
     seedg = create_seed_generator(seed)
     optims = ["DiagonalCMA", "OnePlusOne", "PSO", "DiscreteOnePlusOne", "DE", "CMandAS2"]
     if multi:
@@ -87,7 +87,9 @@ def ng_full_gym(
         for neural_factor in neural_factors:
             for name in env_names:
                 try:
-                    func = GymMulti(name, control=control, neural_factor=neural_factor, randomized=randomized)
+                    func = gym.GymMulti(
+                        name, control=control, neural_factor=neural_factor, randomized=randomized
+                    )
                 except MemoryError:
                     continue
                 for budget in budgets:
@@ -137,7 +139,7 @@ def deterministic_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experi
 def gym_multifid_anm(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Gym simulator for Active Network Management."""
 
-    func = GymMulti("multifidLANM")
+    func = gym.GymMulti("multifidLANM")
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", "progressive", "splitters", "baselines", seed=next(seedg))
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600, 51200]:
@@ -183,11 +185,15 @@ def gym_problem(
         assert limited_compiler_gym is not None
         assert compiler_gym_pb_index >= 0
         assert greedy_bias is False
-        funcs = [CompilerGym(compiler_gym_pb_index=compiler_gym_pb_index, limited_compiler_gym=limited_compiler_gym)]  # type: ignore
+        funcs: tp.List[ExperimentFunction] = [
+            gym.CompilerGym(
+                compiler_gym_pb_index=compiler_gym_pb_index, limited_compiler_gym=limited_compiler_gym
+            )
+        ]
     else:
-        funcs = (
-            [
-                GymMulti(  # type: ignore
+        if conformant:
+            funcs = [
+                gym.GymMulti(
                     specific_problem,
                     control="conformant",
                     limited_compiler_gym=limited_compiler_gym,
@@ -195,21 +201,20 @@ def gym_problem(
                     neural_factor=None,
                 )
             ]
-            if conformant
-            else [
-                GymMulti(
+        else:
+            funcs = [
+                gym.GymMulti(
                     specific_problem,
                     control=control,
                     neural_factor=1 if control != "linear" else None,
                     limited_compiler_gym=limited_compiler_gym,
                     greedy_bias=greedy_bias,
-                )  # type: ignore
+                )
                 for scale in ([-6, -4, -2, 0] if multi_scale else [0])
                 for control in (
                     ["deep_neural", "semideep_neural", "neural", "linear"] if not greedy_bias else ["neural"]
                 )
             ]
-        )
     seedg = create_seed_generator(seed)
     optims = [
         "TwoPointsDE",

@@ -3,46 +3,18 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import copy
-import numpy as np
 import os
+import copy
 import typing as tp
+import numpy as np
 import gym
-
 
 import nevergrad as ng
 
 from nevergrad.parametrization import parameter
 from ..base import ExperimentFunction
 
-
-def get_list_of_gym_envs():
-    import gym_anm  # pylint: disable=unused-import
-
-    gym_env_names = []
-    for e in gym.envs.registry.all():
-        try:
-            assert "Kelly" not in str(e.id)  # We should have another check than that.
-            assert "llvm" not in str(e.id)  # We should have another check than that.
-            env = gym.make(e.id)
-            env.reset()
-            env.step(env.action_space.sample())
-            a1 = np.asarray(env.action_space.sample())
-            a2 = np.asarray(env.action_space.sample())
-            a3 = np.asarray(env.action_space.sample())
-            a1 = a1 + a2 + a3
-            if hasattr(a1, "size"):
-                try:
-                    assert a1.size < 15000  # type: ignore
-                except:
-                    assert a1.size() < 15000  # type: ignore
-            gym_env_names.append(e.id)
-        except Exception as exception:
-            print(f"{e.id} not included in full list becaue of {exception}.")
-    return gym_env_names
-
-
-GYM_ENV_NAMES = get_list_of_gym_envs()
+# pylint: disable=unused-import,import-outside-toplevel
 
 
 GUARANTEED_GYM_ENV_NAMES = [
@@ -149,7 +121,7 @@ class SmallActionSpaceLlvmEnv(gym.ActionWrapper):
         "-tailcallelim",
     ]
 
-    def __init__(self, env):
+    def __init__(self, env) -> None:
         """Creating a counterpart of a compiler gym environement with a reduced action space."""
         super().__init__(env=env)
         # Array for translating from this tiny action space to the action space of
@@ -163,97 +135,89 @@ class SmallActionSpaceLlvmEnv(gym.ActionWrapper):
             return [self.true_action_indices[a] for a in action]
 
 
-try:
-    import compiler_gym  # pylint: disable=unused-import
-    from compiler_gym.envs import CompilerEnv
-    import gym_anm  # pylint: disable=unused-import
+class AutophaseNormalizedFeatures(gym.ObservationWrapper):
+    """A wrapper for LLVM environments that use the Autophase observation space
+    to normalize and clip features to the range [0, 1].
+    """
 
-    class AutophaseNormalizedFeatures(gym.ObservationWrapper):
-        """A wrapper for LLVM environments that use the Autophase observation space
-        to normalize and clip features to the range [0, 1].
-        """
+    # The index of the "TotalInsts" feature of autophase.
+    TotalInsts_index = 51
 
-        # The index of the "TotalInsts" feature of autophase.
-        TotalInsts_index = 51
+    def __init__(self, env: tp.Any):
+        """Creating a counterpart of a compiler gym environement with an extended observation space."""
+        super().__init__(env=env)
+        assert env.observation_space_spec.id == "Autophase", "Requires autophase features"
+        # Adjust the bounds to reflect the normalized values.
+        self.observation_space = gym.spaces.Box(
+            low=np.full(self.observation_space.shape[0], 0, dtype=np.float32),  # type: ignore
+            high=np.full(self.observation_space.shape[0], 1, dtype=np.float32),  # type: ignore
+            dtype=np.float32,
+        )
 
-        def __init__(self, env: CompilerEnv):
-            """Creating a counterpart of a compiler gym environement with an extended observation space."""
-            super().__init__(env=env)
-            assert env.observation_space_spec.id == "Autophase", "Requires autophase features"
-            # Adjust the bounds to reflect the normalized values.
-            self.observation_space = gym.spaces.Box(
-                low=np.full(self.observation_space.shape[0], 0, dtype=np.float32),  # type: ignore
-                high=np.full(self.observation_space.shape[0], 1, dtype=np.float32),  # type: ignore
-                dtype=np.float32,
-            )
-
-        def observation(self, observation):
-            if observation[self.TotalInsts_index] <= 0:
-                return np.zeros(observation.shape)
-            return np.clip(observation / observation[self.TotalInsts_index], 0, 1)
-
-    class ConcatActionsHistogram(gym.ObservationWrapper):
-        """A wrapper that concatenates a histogram of previous actions to each
-        observation.
-        The actions histogram is concatenated to the end of the existing 1-D box
-        observation, expanding the space.
-        The actions histogram has bounds [0,inf]. If you specify a fixed episode
-        length `norm_to_episode_len`, each histogram update will be scaled by
-        1/norm_to_episode_len, so that `sum(observation) == 1` after episode_len
-        steps.
-        """
-
-        def __init__(self, env: CompilerEnv, norm_to_episode_len: int = 0):
-            """Creating a counterpart of a compiler gym environement with an extended observation space."""
-            super().__init__(env=env)
-            assert isinstance(
-                self.observation_space, gym.spaces.Box  # type: ignore
-            ), "Can only contatenate actions histogram to box shape"
-            assert isinstance(
-                self.action_space, gym.spaces.Discrete
-            ), "Can only construct histograms from discrete spaces"
-            assert len(self.observation_space.shape) == 1, "Requires 1-D observation space"  # type: ignore
-            self.increment = 1 / norm_to_episode_len if norm_to_episode_len else 1
-
-            # Reshape the observation space.
-            self.observation_space = gym.spaces.Box(
-                low=np.concatenate(
-                    (
-                        self.observation_space.low,  # type: ignore
-                        np.full(self.action_space.n, 0, dtype=np.float32),
-                    )
-                ),
-                high=np.concatenate(
-                    (
-                        self.observation_space.high,  # type: ignore
-                        np.full(
-                            self.action_space.n,
-                            1 if norm_to_episode_len else float("inf"),
-                            dtype=np.float32,
-                        ),
-                    )
-                ),
-                dtype=np.float32,
-            )
-            self.histogram = np.zeros((self.action_space.n,))
-
-        def reset(self, *args, **kwargs):
-            self.histogram = np.zeros((self.action_space.n,))
-            return super().reset(*args, **kwargs)
-
-        def step(self, action: tp.Union[int, tp.List[int]]):
-            if not isinstance(action, tp.Iterable):
-                action = [action]
-            for a in action:
-                self.histogram[a] += self.increment
-            return super().step(action)
-
-        def observation(self, observation):
-            return np.concatenate((observation, self.histogram))
+    def observation(self, observation):
+        if observation[self.TotalInsts_index] <= 0:
+            return np.zeros(observation.shape)
+        return np.clip(observation / observation[self.TotalInsts_index], 0, 1)
 
 
-except ImportError:
-    raise ng.errors.UnsupportedExperiment
+class ConcatActionsHistogram(gym.ObservationWrapper):
+    """A wrapper that concatenates a histogram of previous actions to each
+    observation.
+    The actions histogram is concatenated to the end of the existing 1-D box
+    observation, expanding the space.
+    The actions histogram has bounds [0,inf]. If you specify a fixed episode
+    length `norm_to_episode_len`, each histogram update will be scaled by
+    1/norm_to_episode_len, so that `sum(observation) == 1` after episode_len
+    steps.
+    """
+
+    def __init__(self, env: tp.Any, norm_to_episode_len: int = 0) -> None:
+        """Creating a counterpart of a compiler gym environement with an extended observation space."""
+        super().__init__(env=env)
+        assert isinstance(
+            self.observation_space, gym.spaces.Box  # type: ignore
+        ), "Can only contatenate actions histogram to box shape"
+        assert isinstance(
+            self.action_space, gym.spaces.Discrete
+        ), "Can only construct histograms from discrete spaces"
+        assert len(self.observation_space.shape) == 1, "Requires 1-D observation space"  # type: ignore
+        self.increment = 1 / norm_to_episode_len if norm_to_episode_len else 1
+
+        # Reshape the observation space.
+        self.observation_space = gym.spaces.Box(
+            low=np.concatenate(
+                (
+                    self.observation_space.low,  # type: ignore
+                    np.full(self.action_space.n, 0, dtype=np.float32),
+                )
+            ),
+            high=np.concatenate(
+                (
+                    self.observation_space.high,  # type: ignore
+                    np.full(
+                        self.action_space.n,
+                        1 if norm_to_episode_len else float("inf"),
+                        dtype=np.float32,
+                    ),
+                )
+            ),
+            dtype=np.float32,
+        )
+        self.histogram = np.zeros((self.action_space.n,))
+
+    def reset(self, *args, **kwargs):
+        self.histogram = np.zeros((self.action_space.n,))
+        return super().reset(*args, **kwargs)
+
+    def step(self, action: tp.Union[int, tp.List[int]]):
+        if not isinstance(action, tp.Iterable):
+            action = [action]
+        for a in action:
+            self.histogram[a] += self.increment
+        return super().step(action)
+
+    def observation(self, observation):
+        return np.concatenate((observation, self.histogram))
 
 
 # Class for direct optimization of CompilerGym problems.
@@ -268,6 +232,10 @@ class CompilerGym(ExperimentFunction):
             limited_compiler_gym: bool
                 whether we use a limited action space.
         """
+        try:
+            import compiler_gym  # pylint: disable=unused-import
+        except ImportError:
+            raise ng.errors.UnsupportedExperiment
         env = gym.make("llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
         action_space_size = (
             len(SmallActionSpaceLlvmEnv.action_space_subset) if limited_compiler_gym else env.action_space.n
@@ -320,7 +288,31 @@ class CompilerGym(ExperimentFunction):
 class GymMulti(ExperimentFunction):
     """Class for converting a gym environment, a controller style, and others into a black-box optimization benchmark."""
 
-    env_names = GYM_ENV_NAMES
+    @staticmethod
+    def get_env_names() -> tp.List[str]:
+        import gym_anm  # noqa
+
+        gym_env_names = []
+        for e in gym.envs.registry.all():
+            try:
+                assert "Kelly" not in str(e.id)  # We should have another check than that.
+                assert "llvm" not in str(e.id)  # We should have another check than that.
+                env = gym.make(e.id)
+                env.reset()
+                env.step(env.action_space.sample())
+                a1 = np.asarray(env.action_space.sample())
+                a2 = np.asarray(env.action_space.sample())
+                a3 = np.asarray(env.action_space.sample())
+                a1 = a1 + a2 + a3
+                if hasattr(a1, "size"):
+                    try:
+                        assert a1.size < 15000
+                    except Exception:  # pylint: disable=broad-except
+                        assert a1.size() < 15000  # type: ignore
+                gym_env_names.append(e.id)
+            except Exception as exception:  # pylint: disable=broad-except
+                print(f"{e.id} not included in full list becaue of {exception}.")
+        return gym_env_names
 
     controllers = CONTROLLERS
 
@@ -381,6 +373,9 @@ class GymMulti(ExperimentFunction):
         if os.name == "nt":
             raise ng.errors.UnsupportedExperiment("Windows is not supported")
         if self.uses_compiler_gym:  # Long special case for Compiler Gym.
+            # CompilerGym sends http requests that CircleCI does not like.
+            if os.environ.get("CIRCLECI", False):
+                raise ng.errors.UnsupportedExperiment("No HTTP request in CircleCI")
             assert limited_compiler_gym is not None
             self.num_episode_steps = 45 if limited_compiler_gym else 50
             env = gym.make("llvm-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
@@ -452,9 +447,9 @@ class GymMulti(ExperimentFunction):
         else:  # Continuous action space
             output_shape = env.action_space.shape
             if output_shape is None:
-                output_shape = tuple(np.asarray(env.action_space.sample()).shape)  # type: ignore
+                output_shape = tuple(np.asarray(env.action_space.sample()).shape)
             # When the shape is not available we might do:
-            # output_shape = tuple(np.asarray(env.action_space.sample()).shape)  # type: ignore
+            # output_shape = tuple(np.asarray(env.action_space.sample()).shape)
             discrete = False
             output_dim = np.prod(output_shape)
         self.discrete = discrete
@@ -767,9 +762,10 @@ class GymMulti(ExperimentFunction):
                         a[i] = self.subaction_type(a[i])
         assert type(a) == self.action_type, f"{a} should have type {self.action_type} "
         try:
-            assert env.action_space.contains(
-                a
-            ), f"In {self.name}, high={env.action_space.high} low={env.action_space.low} {a} is not sufficiently close to {[env.action_space.sample() for _ in range(10)]}"
+            assert env.action_space.contains(a), (
+                f"In {self.name}, high={env.action_space.high} low={env.action_space.low} {a} "
+                f"is not sufficiently close to {[env.action_space.sample() for _ in range(10)]}"
+            )
         except AttributeError:
             pass  # Not all env can do "contains".
         return a
@@ -867,9 +863,10 @@ class GymMulti(ExperimentFunction):
                 o = obs
             previous_o = np.asarray(o)
             o = np.concatenate([previous_o.ravel(), memory.ravel(), self.extended_input])
-            assert (
-                len(o) == self.input_dim
-            ), f"o has shape {o.shape} whereas input_dim={self.input_dim} ({control} / {env} {self.name} (limited={self.limited_compiler_gym}))"
+            assert len(o) == self.input_dim, (
+                f"o has shape {o.shape} whereas input_dim={self.input_dim} "
+                f"({control} / {env} {self.name} (limited={self.limited_compiler_gym}))"
+            )
             a, memory = self.neural(x[i % len(x)] if "multi" in control else x, o)
             a = self.action_cast(a)
             try:
