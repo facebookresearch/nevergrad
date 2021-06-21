@@ -233,9 +233,11 @@ class CompilerGym(ExperimentFunction):
                 whether we use a limited action space.
         """
         try:
-            import compiler_gym  # pylint: disable=unused-import
-        except ImportError:
-            raise ng.errors.UnsupportedExperiment
+            import compiler_gym  # noqa
+        except ImportError as e:
+            raise ng.errors.UnsupportedExperiment(
+                "Please install compiler_gym for CompilerGym experiments"
+            ) from e
         env = gym.make("llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
         action_space_size = (
             len(SmallActionSpaceLlvmEnv.action_space_subset) if limited_compiler_gym else env.action_space.n
