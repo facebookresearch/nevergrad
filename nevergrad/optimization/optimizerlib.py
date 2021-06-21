@@ -74,9 +74,11 @@ class _OnePlusOne(base.Optimizer):
         noise_handling: tp.Optional[tp.Union[str, tp.Tuple[str, float]]] = None,
         mutation: str = "gaussian",
         crossover: bool = False,
+        rotation: bool = False,
         use_pareto: bool = False,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        assert crossover or (not rotation), "We can not have both rotation and not crossover."
         self._sigma: float = 1
         self._previous_best_loss = float("inf")
         self.use_pareto = use_pareto
@@ -122,6 +124,7 @@ class _OnePlusOne(base.Optimizer):
         self.noise_handling = noise_handling
         self.mutation = mutation
         self.crossover = crossover
+        self.rotation = rotation
         if mutation == "doerr":
             assert num_workers == 1, "Doerr mutation is implemented only in the sequential case."
             self._doerr_mutation_rates = [1, 2]
@@ -169,7 +172,9 @@ class _OnePlusOne(base.Optimizer):
         ref = self.parametrization
         if self.crossover and self._num_ask % 2 == 1 and len(self.archive) > 2:
             data = mutator.crossover(
-                pessimistic.get_standardized_data(reference=ref), mutator.get_roulette(self.archive, num=2)
+                pessimistic.get_standardized_data(reference=ref),
+                mutator.get_roulette(self.archive, num=2),
+                rotation=self.rotation,
             )
             return pessimistic.set_standardized_data(data, reference=ref)
         # mutating
@@ -323,6 +328,7 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
         noise_handling: tp.Optional[tp.Union[str, tp.Tuple[str, float]]] = None,
         mutation: str = "gaussian",
         crossover: bool = False,
+        rotation: bool = False,
         use_pareto: bool = False,
     ) -> None:
         super().__init__(_OnePlusOne, locals())
