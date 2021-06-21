@@ -10,7 +10,6 @@ from collections import deque
 import warnings
 import cma
 import numpy as np
-from smac.facade.func_facade import fmin_smac
 from bayes_opt import UtilityFunction
 from bayes_opt import BayesianOptimization
 import nevergrad.common.typing as tp
