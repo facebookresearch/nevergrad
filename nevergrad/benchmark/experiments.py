@@ -1140,6 +1140,7 @@ def rocket(seed: tp.Optional[int] = None, seq: bool = False) -> tp.Iterator[Expe
                             yield xp
 
 
+@registry.register
 def mono_rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Sequential counterpart of the rocket problem."""
     return rocket(seed, seq=True)
@@ -1165,6 +1166,7 @@ def mixsimulator(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                             yield xp
 
 
+@registry.register
 def control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """MuJoCo testbed. Learn linear policy for different control problems.
     Budget 500, 1000, 3000, 5000."""
@@ -1204,6 +1206,7 @@ def control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                     yield xp
 
 
+@registry.register
 def neuro_control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """MuJoCo testbed. Learn neural policies."""
     seedg = create_seed_generator(seed)
