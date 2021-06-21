@@ -59,7 +59,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         remaining: float = budget - self._num_ask
 
         def smac_obj(p):
-            data = np.arctanh(p)
+            data = np.tan(np.pi * p / 2.)
             data = np.asarray(data, dtype=np.float)
             return objective_function(data)
 
@@ -75,7 +75,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
 
                 if cost < best_res:
                     best_res = cost
-                    best_x = x
+                    best_x = np.tan(np.pi * x / 2.)
             else:
                 res = scipyoptimize.minimize(
                     objective_function,
