@@ -57,18 +57,20 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         if self.initial_guess is not None:
             best_x = np.array(self.initial_guess, copy=True)  # copy, just to make sure it is not modified
         remaining: float = budget - self._num_ask
+
         def smac_obj(p):
             data = [np.arctanh(p["x" + str(i)]) for i in range(self.dimension)]
-            data = np.asarray(data, dtype = np.float)
+            data = np.asarray(data, dtype=np.float)
             return objective_function(data)
+
         while remaining > 0:  # try to restart if budget is not elapsed
             options: tp.Dict[str, tp.Any] = {} if self.budget is None else {"maxiter": remaining}
-            if method == "SMAC":
+            if self.method == "SMAC":
                 from smac.facade.func_facade import fmin_smac
-                x, cost, _ = fmin_smac(func=smac_obj,
-                       x0=[0.] * self.dimension,
-                       bounds=[(-1, 1)] * self.dimension,
-                       maxfun=budget)  # Passing a seed makes fmin_smac determistic
+
+                x, cost, _ = fmin_smac(
+                    func=smac_obj, x0=[0.0] * self.dimension, bounds=[(-1, 1)] * self.dimension, maxfun=budget
+                )  # Passing a seed makes fmin_smac determistic
 
                 if cost < best_res:
                     best_res = cost
