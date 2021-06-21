@@ -59,7 +59,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         remaining: float = budget - self._num_ask
 
         def smac_obj(p):
-            data = [np.arctanh(p["x" + str(i)]) for i in range(self.dimension)]
+            data = np.arctanh(p)
             data = np.asarray(data, dtype=np.float)
             return objective_function(data)
 
