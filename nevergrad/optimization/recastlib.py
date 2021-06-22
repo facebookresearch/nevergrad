@@ -50,35 +50,73 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         subinstance.current_bests = self.current_bests
         return subinstance._optimization_function
 
+
     def _optimization_function(self, objective_function: tp.Callable[[tp.ArrayLike], float]) -> tp.ArrayLike:
         # pylint:disable=unused-argument
         budget = np.inf if self.budget is None else self.budget
         best_res = np.inf
-        best_x: np.ndarray = self.current_bests["average"].x  # np.zeros(self.dimension)
+        best_x: np.ndarray = self.current_bests["average"].x
         if self.initial_guess is not None:
             best_x = np.array(self.initial_guess, copy=True)  # copy, just to make sure it is not modified
         remaining: float = budget - self._num_ask
-
+        print(f"optimized function at 0: {objective_function( np.asarray((0.,), dtype=np.float))}")  # This line never ends.
         def smac_obj(p):
             print(f"SMAC proposes {p}")
-            data = np.asarray(np.tan(np.pi * p / 2.), dtype=np.float)
+            data = np.asarray(np.tan(np.pi * p / 2.0), dtype=np.float)
             print(f"converted to {data}")
-            res = objective_function(data)    # Stuck here!
-            print(f"{SMAC} will receive {res}")
+            print(f"inside ---- optimized function at 0: {objective_function( np.asarray((0.,), dtype=np.float))}")  # Stuck here
+            res = objective_function(data)  # Stuck here!
+            print(f"SMAC will receive {res}")
+            return res
+        def smac2_obj(p):
+            print(f"SMAC2 proposes {p}")
+            p = np.asarray([p[f"x{i}"] for i in range(self.dimension)])
+            data = np.asarray(np.tan(np.pi * p / 2.0), dtype=np.float)
+            print(f"converted to {data}")
+            print(f"inside ---- optimized function at 0: {objective_function( np.asarray((0.,), dtype=np.float))}")  # Stuck here
+            res = objective_function(data)  # Stuck here!
+            print(f"SMAC2 will receive {res}")
             return res
 
         while remaining > 0:  # try to restart if budget is not elapsed
             options: tp.Dict[str, tp.Any] = {} if self.budget is None else {"maxiter": remaining}
             if self.method == "SMAC":
+                from ConfigSpace.hyperparameters import UniformFloatHyperparameter
+    
+                # Import ConfigSpace and different types of parameters
+                from smac.configspace import ConfigurationSpace
+                from smac.facade.smac_hpo_facade import SMAC4HPO
+                # Import SMAC-utilities
+                from smac.scenario.scenario import Scenario
+
+                cs = ConfigurationSpace()
+                cs.add_hyperparameters([UniformFloatHyperparameter(f"x{i}", -1., 1., default_value=0.) for i in range(self.dimension)])
+                scenario = Scenario({"run_obj": "quality",  # we optimize quality (alternatively runtime)
+                                     "runcount-limit": budget,  # max. number of function evaluations
+                                     "cs": cs,  # configuration space
+                                     "deterministic": "true"
+                                     })
+                smac = SMAC4HPO(scenario=scenario,
+                                rng=self._rng.randint(5000),
+                                tae_runner=smac2_obj)
+                res = smac.optimize()
+                best_x = np.asarray([np.tan(np.pi * .5 * res[f"x{k}"]) for k in range(len(res.keys()))], dtype=np.float)
+
+            elif self.method == "SMAC_fmin":
                 import smac  # noqa  # pylint: disable=unused-importa
                 import scipy.optimize  # noqa  # pylint: disable=unused-importa
                 from smac.facade.func_facade import fmin_smac  # noqa  # pylint: disable=unused-import
+
                 logging.basicConfig(level=20)
                 logger = logging.getLogger("Optimizer")
                 print(f"start SMAC optimization with budget {budget} in dimension {self.dimension}")
                 assert budget is not None
                 x, cost, _ = fmin_smac(
-                    func=smac_obj, x0=[0.0] * self.dimension, bounds=[(-1, 1)] * self.dimension, maxfun=budget
+                    func=smac_obj,
+                    x0=[0.0] * self.dimension,
+                    bounds=[(-1, 1)] * self.dimension,
+                    maxfun=budget,
+                    rng=self._rng.randint(5000),
                 )  # Passing a seed makes fmin_smac determistic
                 print("end SMAC optimization")
 
