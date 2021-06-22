@@ -8,7 +8,6 @@ import logging
 import itertools
 from collections import deque
 import warnings
-import cma
 import numpy as np
 from bayes_opt import UtilityFunction
 from bayes_opt import BayesianOptimization
@@ -380,6 +379,8 @@ RecombiningPortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(
 ).set_name("RecombiningPortfolioDiscreteOnePlusOne", register=True)
 
 # pylint: too-many-arguments,too-many-instance-attributes
+
+
 class _CMA(base.Optimizer):
     def __init__(
         self,
@@ -404,6 +405,8 @@ class _CMA(base.Optimizer):
     def es(self) -> tp.Any:  # typing not possible since cmaes not imported :(
         if self._es is None:
             if not self._config.fcmaes:
+                import cma  # import inline in order to avoid matplotlib initialization warning
+
                 inopts = dict(
                     popsize=self._popsize,
                     randn=self._rng.randn,
@@ -412,6 +415,7 @@ class _CMA(base.Optimizer):
                     seed=np.nan,
                     CMA_elitist=self._config.elitist,
                 )
+
                 inopts.update(self._config.inopts if self._config.inopts is not None else {})
                 self._es = cma.CMAEvolutionStrategy(
                     x0=self.parametrization.sample().get_standardized_data(reference=self.parametrization)
@@ -422,7 +426,7 @@ class _CMA(base.Optimizer):
                 )
             else:
                 try:
-                    from fcmaes import cmaes  # pylint: disable=import-outside-toplevel
+                    from fcmaes import cmaes
                 except ImportError as e:
                     raise ImportError(
                         "Please install fcmaes (pip install fcmaes) to use FCMA optimizers"
