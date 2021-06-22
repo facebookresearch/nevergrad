@@ -611,9 +611,8 @@ def yabbob(
     hd: bool = False,
     constraint_case: int = 0,
     split: bool = False,
-    tiny: bool = False,
     tuning: bool = False,
-    benchmark_reduction: bool = False,
+    reduction_factor: int = 1,
 ) -> tp.Iterator[Experiment]:
     """Yet Another Black-Box Optimization Benchmark.
     Related to, but without special effort for exactly sticking to, the BBOB/COCO dataset.
@@ -666,10 +665,9 @@ def yabbob(
         for num_blocks in ([1] if not split else [7, 12])
         for d in ([100, 1000, 3000] if hd else ([2, 5, 10, 15] if tuning else [2, 10, 50]))
     ]
-    if tiny:
-        functions = functions[::13]
-    if benchmark_reduction:
-        functions = functions[::17]
+
+    assert reduction_factor in [1, 7, 13, 17]  # needs to be a cofactor
+    functions = functions[::reduction_factor]
 
     # We possibly add constraints.
     max_num_constraints = 4
@@ -715,7 +713,7 @@ def yahdlbbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 @registry.register
 def reduced_yahdlbbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with HD and low budget."""
-    return yabbob(seed, hd=True, small=True, benchmark_reduction=True)
+    return yabbob(seed, hd=True, small=True, reduction_factor=17)
 
 
 @registry.register
@@ -765,13 +763,13 @@ def yahdsplitbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 @registry.register
 def yatuningbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with less budget."""
-    return yabbob(seed, parallel=False, big=False, small=True, tiny=True, tuning=True)
+    return yabbob(seed, parallel=False, big=False, small=True, reduction_factor=13, tuning=True)
 
 
 @registry.register
 def yatinybbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with less budget."""
-    return yabbob(seed, parallel=False, big=False, small=True, tiny=True)
+    return yabbob(seed, parallel=False, big=False, small=True, reduction_factor=13)
 
 
 @registry.register
