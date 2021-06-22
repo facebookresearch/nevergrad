@@ -58,7 +58,6 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         if self.initial_guess is not None:
             best_x = np.array(self.initial_guess, copy=True)  # copy, just to make sure it is not modified
         remaining: float = budget - self._num_ask
-        set_objective_function(objective_function)
         while remaining > 0:  # try to restart if budget is not elapsed
             options: tp.Dict[str, tp.Any] = {} if self.budget is None else {"maxiter": remaining}
             if self.method == "SMAC2":
@@ -112,7 +111,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
                     print(f"SMAC proposes {p}")
                     data = np.asarray([np.tan(np.pi * p[i] / 2.0) for i in range(len(p))], dtype=np.float)
                     print(f"converted to {data}")
-                    res = np.sum(np.abs(data)) # objective_function(data)  # Stuck here!
+                    res = objective_function(data)
                     print(f"SMAC will receive {res}")
                     return res
 
