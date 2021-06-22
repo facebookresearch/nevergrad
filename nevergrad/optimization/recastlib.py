@@ -13,10 +13,13 @@ from .base import IntOrParameter
 from . import recaster
 
 __objective_function = lambda x: None
+
+
 def set_objective_function(objective_function):
     global __objective_function
     print("setting the oobjective function!")
     __objective_function = objective_function
+
 
 def smac_obj(p):
     print(f"SMAC proposes {p}")
@@ -25,6 +28,7 @@ def smac_obj(p):
     res = __objective_function(data)  # Stuck here!
     print(f"SMAC will receive {res}")
     return res
+
 
 def smac2_obj(p):
     print(f"SMAC2 proposes {p}")
@@ -73,7 +77,6 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         subinstance.current_bests = self.current_bests
         return subinstance._optimization_function
 
-
     def _optimization_function(self, objective_function: tp.Callable[[tp.ArrayLike], float]) -> tp.ArrayLike:
         # pylint:disable=unused-argument
         budget = np.inf if self.budget is None else self.budget
@@ -86,27 +89,38 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         while remaining > 0:  # try to restart if budget is not elapsed
             options: tp.Dict[str, tp.Any] = {} if self.budget is None else {"maxiter": remaining}
             if self.method == "SMAC2":
-                from ConfigSpace.hyperparameters import UniformFloatHyperparameter  # noqa  # pylint: disable=unused-import
-    
+                from ConfigSpace.hyperparameters import (
+                    UniformFloatHyperparameter,
+                )  # noqa  # pylint: disable=unused-import
+
                 # Import ConfigSpace and different types of parameters
                 from smac.configspace import ConfigurationSpace  # noqa  # pylint: disable=unused-import
                 from smac.facade.smac_hpo_facade import SMAC4HPO  # noqa  # pylint: disable=unused-import
+
                 # Import SMAC-utilities
                 from smac.scenario.scenario import Scenario  # noqa  # pylint: disable=unused-import
 
                 print(f"start SMAC2 optimization with budget {budget} in dimension {self.dimension}")
                 cs = ConfigurationSpace()
-                cs.add_hyperparameters([UniformFloatHyperparameter(f"x{i}", -1., 1., default_value=0.) for i in range(self.dimension)])
-                scenario = Scenario({"run_obj": "quality",  # we optimize quality (alternatively runtime)
-                                     "runcount-limit": budget,  # max. number of function evaluations
-                                     "cs": cs,  # configuration space
-                                     "deterministic": "true"
-                                     })
-                smac = SMAC4HPO(scenario=scenario,
-                                rng=self._rng.randint(5000),
-                                tae_runner=smac2_obj)
+                cs.add_hyperparameters(
+                    [
+                        UniformFloatHyperparameter(f"x{i}", -1.0, 1.0, default_value=0.0)
+                        for i in range(self.dimension)
+                    ]
+                )
+                scenario = Scenario(
+                    {
+                        "run_obj": "quality",  # we optimize quality (alternatively runtime)
+                        "runcount-limit": budget,  # max. number of function evaluations
+                        "cs": cs,  # configuration space
+                        "deterministic": "true",
+                    }
+                )
+                smac = SMAC4HPO(scenario=scenario, rng=self._rng.randint(5000), tae_runner=smac2_obj)
                 res = smac.optimize()
-                best_x = np.asarray([np.tan(np.pi * .5 * res[f"x{k}"]) for k in range(len(res.keys()))], dtype=np.float)
+                best_x = np.asarray(
+                    [np.tan(np.pi * 0.5 * res[f"x{k}"]) for k in range(len(res.keys()))], dtype=np.float
+                )
 
             elif self.method == "SMAC":
                 import smac  # noqa  # pylint: disable=unused-import
