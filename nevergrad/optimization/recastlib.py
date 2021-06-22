@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import logging
 import numpy as np
 from scipy import optimize as scipyoptimize
 import nevergrad.common.typing as tp
@@ -59,9 +60,12 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         remaining: float = budget - self._num_ask
 
         def smac_obj(p):
-            data = np.tan(np.pi * p / 2.0)
-            data = np.asarray(data, dtype=np.float)
-            return objective_function(data)
+            print(f"SMAC proposes {p}")
+            data = np.asarray(np.tan(np.pi * p / 2.), dtype=np.float)
+            print(f"converted to {data}")
+            res = objective_function(data)    # Stuck here!
+            print(f"{SMAC} will receive {res}")
+            return res
 
         while remaining > 0:  # try to restart if budget is not elapsed
             options: tp.Dict[str, tp.Any] = {} if self.budget is None else {"maxiter": remaining}
@@ -69,10 +73,14 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
                 import smac  # noqa  # pylint: disable=unused-importa
                 import scipy.optimize
                 from smac.facade.func_facade import fmin_smac  # noqa  # pylint: disable=unused-import
-
+                logging.basicConfig(level=20)
+                logger = logging.getLogger("Optimizer")
+                print(f"start SMAC optimization with budget {budget} in dimension {self.dimension}")
+                assert budget is not None
                 x, cost, _ = fmin_smac(
                     func=smac_obj, x0=[0.0] * self.dimension, bounds=[(-1, 1)] * self.dimension, maxfun=budget
                 )  # Passing a seed makes fmin_smac determistic
+                print("end SMAC optimization")
 
                 if cost < best_res:
                     best_res = cost

@@ -160,6 +160,7 @@ def test_infnan(name: str) -> None:
                 "Stupid",
                 "Large",
                 "TBPSA",
+                "SMAC",
                 "BO",
                 "Noisy",
                 "Chain",

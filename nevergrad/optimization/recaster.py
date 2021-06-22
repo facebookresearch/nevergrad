@@ -196,8 +196,8 @@ class RecastOptimizer(base.Optimizer):
             messages = [m for m in self._messaging_thread.messages if not m.meta.get("asked", False)]
             if not messages:  # avoid waiting if messages at the first iteration
                 time.sleep(self._last_optimizer_duration / 10.0)
-            if time.time() - t0 > 20:
-                raise RuntimeError("No message with thread for 20s, something went wrong")
+            if time.time() - t0 > 250:  # SMAC needs a lot of time.
+                raise RuntimeError("No message with thread for 250s, something went wrong")
         self._last_optimizer_duration = float(np.clip(time.time() - t0, 0.0001, 1.0))
         # case when the thread is dead (send random points)
         if not self._messaging_thread.is_alive():  # In case the algorithm stops before the budget is elapsed.
