@@ -11,32 +11,6 @@ from . import base
 from .base import IntOrParameter
 from . import recaster
 
-__objective_function = lambda x: None
-
-
-def set_objective_function(objective_function):
-    global __objective_function
-    print("setting the oobjective function!")
-    __objective_function = lambda x: objective_function(x)
-
-
-def smac_obj(p):
-    print(f"SMAC proposes {p}")
-    data = np.asarray(np.tan(np.pi * p / 2.0), dtype=np.float)
-    print(f"converted to {data}")
-    res = __objective_function(data)  # Stuck here!
-    print(f"SMAC will receive {res}")
-    return res
-
-
-def smac2_obj(p):
-    print(f"SMAC2 proposes {p}")
-    p = np.asarray([p[f"x{i}"] for i in range(len(p.keys()))])
-    data = np.asarray(np.tan(np.pi * p / 2.0), dtype=np.float)
-    print(f"converted to {data}")
-    res = __objective_function(data)  # Stuck here!
-    print(f"SMAC2 will receive {res}")
-    return res
 
 
 class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
@@ -115,6 +89,14 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
                         "deterministic": "true",
                     }
                 )
+                def smac2_obj(p):
+                    print(f"SMAC2 proposes {p}")
+                    p = np.asarray([p[f"x{i}"] for i in range(len(p.keys()))])
+                    data = np.asarray(np.tan(np.pi * p / 2.0), dtype=np.float)
+                    print(f"converted to {data}")
+                    res = objective_function(data)  # Stuck here!
+                    print(f"SMAC2 will receive {res}")
+                    return res
                 smac = SMAC4HPO(scenario=scenario, rng=self._rng.randint(5000), tae_runner=smac2_obj)
                 res = smac.optimize()
                 best_x = np.asarray(
@@ -125,6 +107,14 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
                 import smac  # noqa  # pylint: disable=unused-import
                 import scipy.optimize  # noqa  # pylint: disable=unused-import
                 from smac.facade.func_facade import fmin_smac  # noqa  # pylint: disable=unused-import
+
+                def smac_obj(p):
+                    print(f"SMAC proposes {p}")
+                    data = np.asarray([np.tan(np.pi * p[i] / 2.0) for i in range(len(p))], dtype=np.float)
+                    print(f"converted to {data}")
+                    res = objective_function(data)  # Stuck here!
+                    print(f"SMAC will receive {res}")
+                    return res
 
                 print(f"start SMAC optimization with budget {budget} in dimension {self.dimension}")
                 assert budget is not None
