@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import logging
 import numpy as np
 from scipy import optimize as scipyoptimize
 import nevergrad.common.typing as tp
@@ -18,7 +17,7 @@ __objective_function = lambda x: None
 def set_objective_function(objective_function):
     global __objective_function
     print("setting the oobjective function!")
-    __objective_function = objective_function
+    __objective_function = lambda x: objective_function(x)
 
 
 def smac_obj(p):
