@@ -112,7 +112,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
                     print(f"SMAC proposes {p}")
                     data = np.asarray([np.tan(np.pi * p[i] / 2.0) for i in range(len(p))], dtype=np.float)
                     print(f"converted to {data}")
-                    res = objective_function(data)  # Stuck here!
+                    res = np.sum(np.abs(data)) # objective_function(data)  # Stuck here!
                     print(f"SMAC will receive {res}")
                     return res
 
