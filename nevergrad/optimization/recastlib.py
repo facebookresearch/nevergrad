@@ -66,7 +66,8 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         while remaining > 0:  # try to restart if budget is not elapsed
             options: tp.Dict[str, tp.Any] = {} if self.budget is None else {"maxiter": remaining}
             if self.method == "SMAC":
-                import smac  # noqa  # pylint: disable=unused-import
+                import smac  # noqa  # pylint: disable=unused-importa
+                import scipy.optimize
                 from smac.facade.func_facade import fmin_smac  # noqa  # pylint: disable=unused-import
 
                 x, cost, _ = fmin_smac(
