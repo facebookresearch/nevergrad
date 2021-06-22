@@ -12,6 +12,29 @@ from . import base
 from .base import IntOrParameter
 from . import recaster
 
+__objective_function = lambda x: None
+def set_objective_function(objective_function):
+    global __objective_function
+    print("setting the oobjective function!")
+    __objective_function = objective_function
+
+def smac_obj(p):
+    print(f"SMAC proposes {p}")
+    data = np.asarray(np.tan(np.pi * p / 2.0), dtype=np.float)
+    print(f"converted to {data}")
+    res = __objective_function(data)  # Stuck here!
+    print(f"SMAC will receive {res}")
+    return res
+
+def smac2_obj(p):
+    print(f"SMAC2 proposes {p}")
+    p = np.asarray([p[f"x{i}"] for i in range(len(p.keys()))])
+    data = np.asarray(np.tan(np.pi * p / 2.0), dtype=np.float)
+    print(f"converted to {data}")
+    res = __objective_function(data)  # Stuck here!
+    print(f"SMAC2 will receive {res}")
+    return res
+
 
 class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
     def __init__(
@@ -59,36 +82,19 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         if self.initial_guess is not None:
             best_x = np.array(self.initial_guess, copy=True)  # copy, just to make sure it is not modified
         remaining: float = budget - self._num_ask
-        print(f"optimized function at 0: {objective_function( np.asarray((0.,), dtype=np.float))}")  # This line never ends.
-        def smac_obj(p):
-            print(f"SMAC proposes {p}")
-            data = np.asarray(np.tan(np.pi * p / 2.0), dtype=np.float)
-            print(f"converted to {data}")
-            print(f"inside ---- optimized function at 0: {objective_function( np.asarray((0.,), dtype=np.float))}")  # Stuck here
-            res = objective_function(data)  # Stuck here!
-            print(f"SMAC will receive {res}")
-            return res
-        def smac2_obj(p):
-            print(f"SMAC2 proposes {p}")
-            p = np.asarray([p[f"x{i}"] for i in range(self.dimension)])
-            data = np.asarray(np.tan(np.pi * p / 2.0), dtype=np.float)
-            print(f"converted to {data}")
-            print(f"inside ---- optimized function at 0: {objective_function( np.asarray((0.,), dtype=np.float))}")  # Stuck here
-            res = objective_function(data)  # Stuck here!
-            print(f"SMAC2 will receive {res}")
-            return res
-
+        set_objective_function(objective_function)
         while remaining > 0:  # try to restart if budget is not elapsed
             options: tp.Dict[str, tp.Any] = {} if self.budget is None else {"maxiter": remaining}
-            if self.method == "SMAC":
-                from ConfigSpace.hyperparameters import UniformFloatHyperparameter
+            if self.method == "SMAC2":
+                from ConfigSpace.hyperparameters import UniformFloatHyperparameter  # noqa  # pylint: disable=unused-import
     
                 # Import ConfigSpace and different types of parameters
-                from smac.configspace import ConfigurationSpace
-                from smac.facade.smac_hpo_facade import SMAC4HPO
+                from smac.configspace import ConfigurationSpace  # noqa  # pylint: disable=unused-import
+                from smac.facade.smac_hpo_facade import SMAC4HPO  # noqa  # pylint: disable=unused-import
                 # Import SMAC-utilities
-                from smac.scenario.scenario import Scenario
+                from smac.scenario.scenario import Scenario  # noqa  # pylint: disable=unused-import
 
+                print(f"start SMAC2 optimization with budget {budget} in dimension {self.dimension}")
                 cs = ConfigurationSpace()
                 cs.add_hyperparameters([UniformFloatHyperparameter(f"x{i}", -1., 1., default_value=0.) for i in range(self.dimension)])
                 scenario = Scenario({"run_obj": "quality",  # we optimize quality (alternatively runtime)
@@ -102,13 +108,11 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
                 res = smac.optimize()
                 best_x = np.asarray([np.tan(np.pi * .5 * res[f"x{k}"]) for k in range(len(res.keys()))], dtype=np.float)
 
-            elif self.method == "SMAC_fmin":
-                import smac  # noqa  # pylint: disable=unused-importa
-                import scipy.optimize  # noqa  # pylint: disable=unused-importa
+            elif self.method == "SMAC":
+                import smac  # noqa  # pylint: disable=unused-import
+                import scipy.optimize  # noqa  # pylint: disable=unused-import
                 from smac.facade.func_facade import fmin_smac  # noqa  # pylint: disable=unused-import
 
-                logging.basicConfig(level=20)
-                logger = logging.getLogger("Optimizer")
                 print(f"start SMAC optimization with budget {budget} in dimension {self.dimension}")
                 assert budget is not None
                 x, cost, _ = fmin_smac(
