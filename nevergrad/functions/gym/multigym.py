@@ -7,6 +7,8 @@ import os
 import copy
 import typing as tp
 import numpy as np
+import sys
+
 import gym
 
 import nevergrad as ng
@@ -595,17 +597,23 @@ class GymMulti(ExperimentFunction):
                 / 23.0  # This is not compiler_gym but we keep this 23 constant.
             )
         assert self.uses_compiler_gym
+        compilergym_storage = {}
         rewards = [
             np.log(
                 max(
                     1e-5,
                     -self.gym_multi_function(
-                        x, limited_fidelity=False, compiler_gym_pb_index=compiler_gym_pb_index
+                        x, limited_fidelity=False, compiler_gym_pb_index=compiler_gym_pb_index,
+                        compilergym_storage=compilergym_storage,
                     ),
                 )
             )
             for compiler_gym_pb_index in range(23)
         ]
+        print(
+            f"<<<compilergym:{[locals[k] for k in sorted(locals.keys())]}:{[(k, compilergym_storage[k]) for k in sorted(compilergym_storage.keys())]}>>>",
+            file=sys.stderr,
+        )
         return -np.exp(sum(rewards) / len(rewards))
 
     def forked_env(self):
@@ -690,7 +698,8 @@ class GymMulti(ExperimentFunction):
         return output[self.memory_len :].reshape(self.output_shape), output[: self.memory_len]
 
     def gym_multi_function(
-        self, x: np.ndarray, limited_fidelity: bool = False, compiler_gym_pb_index: tp.Optional[int] = None
+        self, x: np.ndarray, limited_fidelity: bool = False, compiler_gym_pb_index: tp.Optional[int] = None,
+        compilergym_storage: tp.Optional[tp.Dict[tp.Any, tp.Any]] = None,
     ) -> float:
         """Do a simulation with parametrization x and return the result.
 
@@ -738,6 +747,7 @@ class GymMulti(ExperimentFunction):
                 limited_fidelity=limited_fidelity,
                 compiler_gym_pb_index=compiler_gym_pb_index,
                 test_set=True,
+                                compilergym_storage=compilergym_storage,
             )
         return loss / num_simulations
 
@@ -816,6 +826,7 @@ class GymMulti(ExperimentFunction):
         test_set: bool,
         compiler_gym_pb_index: tp.Optional[int] = None,
         limited_fidelity: bool = True,
+        compilergym_storage: tp.Optional[tp.Dict[tp.Any, tp.Any]] = None,
     ):
         """Single simulation with parametrization x."""
         current_time_index = 0
@@ -874,6 +885,8 @@ class GymMulti(ExperimentFunction):
             )
             a, memory = self.neural(x[i % len(x)] if "multi" in control else x, o)
             a = self.action_cast(a)
+            if compilergym_storage is not None:
+                compilergym_storage[(compiler_gym_pb_index, i)] = a
             try:
                 o, r, done, _ = self.step(a)  # Outputs = observation, reward, done, info.
                 current_time_index += 1
