@@ -368,6 +368,7 @@ class GymMulti(ExperimentFunction):
     ) -> None:
         import gym_anm  # noqa
         import compiler_gym  # noqa
+
         # limited_compiler_gym: bool or None.
         #        whether we work with the limited version
         self.limited_compiler_gym = limited_compiler_gym
