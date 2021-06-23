@@ -613,7 +613,7 @@ class GymMulti(ExperimentFunction):
             for compiler_gym_pb_index in range(23)
         ]
         print(
-            f"<<<compilergym:{[locals[k] for k in sorted(locals.keys())]}:{[(k, compilergym_storage[k]) for k in sorted(compilergym_storage.keys())]}>>>",
+            f"<<<compilergym:{[locals()[k] for k in sorted(locals().keys())]}:{[(k, compilergym_storage[k]) for k in sorted(compilergym_storage.keys())]}>>>",
             file=sys.stderr,
         )
         return -np.exp(sum(rewards) / len(rewards))
