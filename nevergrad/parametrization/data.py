@@ -68,9 +68,9 @@ class Data(core.Parameter):
         sigma: tp.Any = np.array([1.0])
         # make sure either shape or
         if isinstance(lower, (list, tuple)):
-            lower = np.array(lower)
+            lower = np.array(lower, dtype=float)
         if isinstance(upper, (list, tuple)):
-            upper = np.array(upper)
+            upper = np.array(upper, dtype=float)
         if sum(x is None for x in [init, shape]) != 1:
             raise ValueError('Exactly one of "init" or "shape" must be provided')
         if init is not None:
