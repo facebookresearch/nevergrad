@@ -296,7 +296,6 @@ class GymMulti(ExperimentFunction):
     @staticmethod
     def get_env_names() -> tp.List[str]:
         import gym_anm  # noqa
-        import compiler_gym  # noqa
 
         gym_env_names = []
         for e in gym.envs.registry.all():
@@ -367,7 +366,13 @@ class GymMulti(ExperimentFunction):
         greedy_bias: bool = False,
     ) -> None:
         import gym_anm  # noqa
-        import compiler_gym  # noqa
+        if "compilergym" in name:
+            try:
+                import compiler_gym  # noqa
+            except ImportError as e:
+                raise ng.errors.UnsupportedExperiment(
+                    "Please install compiler_gym for CompilerGym experiments"
+                ) from e
 
         # limited_compiler_gym: bool or None.
         #        whether we work with the limited version
