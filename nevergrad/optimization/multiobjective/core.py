@@ -167,7 +167,7 @@ class HypervolumePareto:
             return self._pareto
         if subset == "random":
             return self._rng.choice(self._pareto, size).tolist()  # type: ignore
-        tentatives = [self._rng.choice(self._pareto, size).tolist() for _ in range(subset_tentatives)]
+        tentatives = [self._rng.choice(self._pareto, size).tolist() for _ in range(subset_tentatives)]  # type: ignore
         if self._hypervolume is None:
             raise RuntimeError("Hypervolume not initialized, not supported")  # TODO fix
         hypervolume = self._hypervolume

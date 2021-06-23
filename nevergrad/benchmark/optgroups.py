@@ -37,7 +37,7 @@ def get_optimizers(*names: str, seed: tp.Optional[int] = None) -> tp.List[Optim]
             if optim not in optims:  # avoid duplicates
                 optims.append(optim)
     if seed is not None:
-        np.random.RandomState(seed).shuffle(optims)
+        np.random.RandomState(seed).shuffle(optims)  # type: ignore
     return optims
 
 

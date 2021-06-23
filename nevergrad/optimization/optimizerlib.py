@@ -965,7 +965,7 @@ class SPSA(base.Optimizer):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.init = True
         self.idx = 0
-        self.delta = float("nan")
+        self.delta: tp.Any = float("nan")
         self.ym: tp.Optional[np.ndarray] = None
         self.yp: tp.Optional[np.ndarray] = None
         self.t: np.ndarray = np.zeros(self.dimension)
