@@ -603,7 +603,9 @@ class GymMulti(ExperimentFunction):
                 max(
                     1e-5,
                     -self.gym_multi_function(
-                        x, limited_fidelity=False, compiler_gym_pb_index=compiler_gym_pb_index,
+                        x,
+                        limited_fidelity=False,
+                        compiler_gym_pb_index=compiler_gym_pb_index,
                         compilergym_storage=compilergym_storage,
                     ),
                 )
@@ -698,7 +700,10 @@ class GymMulti(ExperimentFunction):
         return output[self.memory_len :].reshape(self.output_shape), output[: self.memory_len]
 
     def gym_multi_function(
-        self, x: np.ndarray, limited_fidelity: bool = False, compiler_gym_pb_index: tp.Optional[int] = None,
+        self,
+        x: np.ndarray,
+        limited_fidelity: bool = False,
+        compiler_gym_pb_index: tp.Optional[int] = None,
         compilergym_storage: tp.Optional[tp.Dict[tp.Any, tp.Any]] = None,
     ) -> float:
         """Do a simulation with parametrization x and return the result.
@@ -747,7 +752,7 @@ class GymMulti(ExperimentFunction):
                 limited_fidelity=limited_fidelity,
                 compiler_gym_pb_index=compiler_gym_pb_index,
                 test_set=True,
-                                compilergym_storage=compilergym_storage,
+                compilergym_storage=compilergym_storage,
             )
         return loss / num_simulations
 
