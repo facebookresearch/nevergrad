@@ -18,8 +18,8 @@ matplotlib.use("Agg")
 
 
 def test_get_winners_df() -> None:
-    data = [["alg0", 46424, 0.4], ["alg1", 4324546, 0.1], ["alg1", 424546, 0.5], ["alg2", 1424546, 0.3]]
-    df = pd.DataFrame(columns=["optimizer_name", "blublu", "loss"], data=data)
+    dfdata = [["alg0", 46424, 0.4], ["alg1", 4324546, 0.1], ["alg1", 424546, 0.5], ["alg2", 1424546, 0.3]]
+    df = pd.DataFrame(columns=["optimizer_name", "blublu", "loss"], data=dfdata)
     all_optimizers = [f"alg{k}" for k in range(4)]
     # blublu column is useless, and losses are meaned for each algorithm
     winners = plotting._make_winners_df(df, all_optimizers)

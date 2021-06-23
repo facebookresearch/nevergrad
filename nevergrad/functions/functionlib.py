@@ -199,7 +199,11 @@ class ArtificialFunction(ExperimentFunction):
             only_index_transform=only_index_transform,
             random_state=self._parametrization.random_state,
         )
-        self._aggregator = {"max": np.max, "mean": np.mean, "sum": np.sum}[aggregator]
+        self._aggregator: tp.Callable[[tp.ArrayLike], float] = {  # type: ignore
+            "max": np.max,
+            "mean": np.mean,
+            "sum": np.sum,
+        }[aggregator]
         info = corefuncs.registry.get_info(self._parameters["name"])
         # add descriptors
         self.add_descriptors(
@@ -274,7 +278,7 @@ def _noisy_call(
 ) -> float:  # pylint: disable=unused-argument
     x_transf = transf(x)
     fx = func(x_transf)
-    noise = 0
+    noise = 0.0
     if noise_level:
         if not noise_dissymmetry or x_transf.ravel()[0] <= 0:
             side_point = transf(x + random_state.normal(0, 1, size=len(x)))

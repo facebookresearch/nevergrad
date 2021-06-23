@@ -126,7 +126,8 @@ def check_experiment(maker: tp.Any, short: bool = False, skip_seed: bool = False
             )
             for xp in xps
         ]
-        np.random.shuffle(simplified)  # compute in any order
+        # compute in any order
+        np.random.shuffle(simplified)  # type: ignore
         selector = Selector(data=[xp.run() for xp in simplified])
         results.append(Selector(selector.loc[:, ["loss", "seed", "error"]]))  # elapsed_time can vary...
         assert results[-1].unique("error") == {""}, f"An error was raised during optimization:\n{results[-1]}"
