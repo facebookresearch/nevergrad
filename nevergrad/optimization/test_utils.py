@@ -172,9 +172,9 @@ def test_bound_scaler() -> None:
     assert values["stuff"] == 2
     assert values["unbounded"] == 1
     assert values["value"] == 1
-    np.testing.assert_almost_equal(values["lr"], 1000)
+    assert values["lr"] == pytest.approx(1000)
     # again, on the middle point
     output = scaler.transform([0] * param.dimension, lambda x: x)
     param.set_standardized_data(output)
-    np.testing.assert_almost_equal(param.value[1]["lr"], 1.0)
-    np.testing.assert_almost_equal(param.value[1]["stuff"], 0.5)
+    assert param.value[1]["lr"] == pytest.approx(1.0)
+    assert param.value[1]["stuff"] == pytest.approx(0.5)
