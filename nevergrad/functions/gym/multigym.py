@@ -366,6 +366,7 @@ class GymMulti(ExperimentFunction):
         greedy_bias: bool = False,
     ) -> None:
         import gym_anm  # noqa
+
         if "compilergym" in name:
             try:
                 import compiler_gym  # noqa
