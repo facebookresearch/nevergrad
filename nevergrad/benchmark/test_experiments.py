@@ -40,20 +40,24 @@ def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[expe
     if all(x in name for x in ["image", "quality"]) and platform.system() == "Windows":
         raise SkipTest("Image quality not guaranteed on Windows.")
 
+    # ANM does not work under Windows.
+
     # Basic test.
+    print(f"Testing {name}")
     with tools.set_env(NEVERGRAD_PYTEST=1):
         with datasets.mocked_data():  # mock mlda data that should be downloaded
             check_maker(maker)  # this is to extract the function for reuse if other external packages need it
 
     # Some tests are skipped on CircleCI (but they do work well locally, if memory enough).
     if os.environ.get("CIRCLECI", False):
-        if any(name == x for x in ["images_using_gan", "mlda", "realworld"]):
+        if any(x in name for x in ["images_using_gan", "mlda", "realworld"]):
             raise SkipTest("Too slow in CircleCI")
 
     check_experiment(
         maker,
-        "mltuning" in name,
-        skip_seed=(name in ["rocket", "images_using_gan"]) or any(x in name for x in ["tuning", "image_"]),
+        ("mltuning" in name or "anm" in name),
+        skip_seed=(name in ["rocket", "images_using_gan"])
+        or any(x in name for x in ["tuning", "image_", "compiler", "anm"]),
     )  # this is a basic test on first elements, do not fully rely on it
 
 
