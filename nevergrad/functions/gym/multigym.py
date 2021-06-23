@@ -596,20 +596,25 @@ class GymMulti(ExperimentFunction):
                 / 23.0  # This is not compiler_gym but we keep this 23 constant.
             )
         assert self.uses_compiler_gym
-        compilergym_storage= {}
+        compilergym_storage = {}
         rewards = [
             np.log(
                 max(
                     1e-5,
                     -self.gym_multi_function(
-                        x, limited_fidelity=False, compiler_gym_pb_index=compiler_gym_pb_index,
+                        x,
+                        limited_fidelity=False,
+                        compiler_gym_pb_index=compiler_gym_pb_index,
                         compilergym_storage=compilergym_storage,
                     ),
                 )
             )
             for compiler_gym_pb_index in range(23)
         ]
-        print(f"<<<compilergym:{[locals[k] for k in sorted(locals.keys())]}:{[k, compilergym_storage[k] for k in sorted(compilergym_storage.keys())]}>>>", file=sys.stderr)
+        print(
+            f"<<<compilergym:{[locals[k] for k in sorted(locals.keys())]}:{[(k, compilergym_storage[k]) for k in sorted(compilergym_storage.keys())]}>>>",
+            file=sys.stderr,
+        )
         return -np.exp(sum(rewards) / len(rewards))
 
     def forked_env(self):
@@ -694,7 +699,11 @@ class GymMulti(ExperimentFunction):
         return output[self.memory_len :].reshape(self.output_shape), output[: self.memory_len]
 
     def gym_multi_function(
-            self, x: np.ndarray, limited_fidelity: bool = False, compiler_gym_pb_index: tp.Optional[int] = None, compilergym_storage: tp.Optional[tp.Dict] = None,
+        self,
+        x: np.ndarray,
+        limited_fidelity: bool = False,
+        compiler_gym_pb_index: tp.Optional[int] = None,
+        compilergym_storage: tp.Optional[tp.Dict[tp.Any, tp.Any]] = None,
     ) -> float:
         """Do a simulation with parametrization x and return the result.
 
@@ -823,7 +832,7 @@ class GymMulti(ExperimentFunction):
         test_set: bool,
         compiler_gym_pb_index: tp.Optional[int] = None,
         limited_fidelity: bool = True,
-        compilergym_storage: tp.Optional[tp.Dict] = None,
+        compilergym_storage: tp.Optional[tp.Dict[tp.Any, tp.Any]] = None,
     ):
         """Single simulation with parametrization x."""
         current_time_index = 0
