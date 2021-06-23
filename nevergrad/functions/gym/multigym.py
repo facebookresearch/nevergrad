@@ -597,7 +597,7 @@ class GymMulti(ExperimentFunction):
                 / 23.0  # This is not compiler_gym but we keep this 23 constant.
             )
         assert self.uses_compiler_gym
-        compilergym_storage = {}
+        compilergym_storage: tp.Dict[tp.Any, tp.Any] = {}
         rewards = [
             np.log(
                 max(
