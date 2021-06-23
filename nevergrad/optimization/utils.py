@@ -382,7 +382,7 @@ class BoundScaler:
         self, x: tp.ArrayLike, unbounded_transform: tp.Callable[[np.ndarray], np.ndarray]
     ) -> np.ndarray:
         """Transform from [0, 1] to the space between bounds"""
-        y = np.array(x, copy=True)
+        y = np.array(x, copy=True, dtype=float)
         if not self.working:
             return unbounded_transform(y)
         try:
