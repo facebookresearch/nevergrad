@@ -296,6 +296,7 @@ class GymMulti(ExperimentFunction):
     @staticmethod
     def get_env_names() -> tp.List[str]:
         import gym_anm  # noqa
+        import compiler_gym  # noqa
 
         gym_env_names = []
         for e in gym.envs.registry.all():
@@ -365,6 +366,8 @@ class GymMulti(ExperimentFunction):
         optimization_scale: int = 0,
         greedy_bias: bool = False,
     ) -> None:
+        import gym_anm  # noqa
+        import compiler_gym  # noqa
         # limited_compiler_gym: bool or None.
         #        whether we work with the limited version
         self.limited_compiler_gym = limited_compiler_gym
