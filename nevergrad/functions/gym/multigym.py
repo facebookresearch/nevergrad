@@ -8,6 +8,7 @@ import copy
 import typing as tp
 import numpy as np
 import gym
+import sys
 
 import nevergrad as ng
 
@@ -595,17 +596,20 @@ class GymMulti(ExperimentFunction):
                 / 23.0  # This is not compiler_gym but we keep this 23 constant.
             )
         assert self.uses_compiler_gym
+        compilergym_storage= {}
         rewards = [
             np.log(
                 max(
                     1e-5,
                     -self.gym_multi_function(
-                        x, limited_fidelity=False, compiler_gym_pb_index=compiler_gym_pb_index
+                        x, limited_fidelity=False, compiler_gym_pb_index=compiler_gym_pb_index,
+                        compilergym_storage=compilergym_storage,
                     ),
                 )
             )
             for compiler_gym_pb_index in range(23)
         ]
+        print(f"<<<compilergym:{[locals[k] for k in sorted(locals.keys())]}:{[k, compilergym_storage[k] for k in sorted(compilergym_storage.keys())]}>>>", file=sys.stderr)
         return -np.exp(sum(rewards) / len(rewards))
 
     def forked_env(self):
@@ -690,7 +694,7 @@ class GymMulti(ExperimentFunction):
         return output[self.memory_len :].reshape(self.output_shape), output[: self.memory_len]
 
     def gym_multi_function(
-        self, x: np.ndarray, limited_fidelity: bool = False, compiler_gym_pb_index: tp.Optional[int] = None
+            self, x: np.ndarray, limited_fidelity: bool = False, compiler_gym_pb_index: tp.Optional[int] = None, compilergym_storage: tp.Optional[tp.Dict] = None,
     ) -> float:
         """Do a simulation with parametrization x and return the result.
 
@@ -729,6 +733,8 @@ class GymMulti(ExperimentFunction):
         loss = 0
         if "directcompilergym" in self.name:
             assert compiler_gym_pb_index is not None
+        if "compilergym" in self.name:
+            assert num_simulations == 1
         for simulation_index in range(num_simulations):
             loss += self.gym_simulate(
                 x,
@@ -738,6 +744,7 @@ class GymMulti(ExperimentFunction):
                 limited_fidelity=limited_fidelity,
                 compiler_gym_pb_index=compiler_gym_pb_index,
                 test_set=True,
+                compilergym_storage=compilergym_storage,
             )
         return loss / num_simulations
 
@@ -816,6 +823,7 @@ class GymMulti(ExperimentFunction):
         test_set: bool,
         compiler_gym_pb_index: tp.Optional[int] = None,
         limited_fidelity: bool = True,
+        compilergym_storage: tp.Optional[tp.Dict] = None,
     ):
         """Single simulation with parametrization x."""
         current_time_index = 0
@@ -874,6 +882,8 @@ class GymMulti(ExperimentFunction):
             )
             a, memory = self.neural(x[i % len(x)] if "multi" in control else x, o)
             a = self.action_cast(a)
+            if compilergym_storage is not None:
+                compilergym_storage[(compiler_gym_pb_index, i)] = a
             try:
                 o, r, done, _ = self.step(a)  # Outputs = observation, reward, done, info.
                 current_time_index += 1
@@ -889,7 +899,10 @@ class GymMulti(ExperimentFunction):
                     # observation need archiving.
                     self.archive_observations(current_actions, current_observations, current_reward)
             except AssertionError:  # Illegal action.
-                return 1e20 / (1.0 + i)  # We encourage late failures rather than early failures.
+                loss = 1e20 / (1.0 + i)  # We encourage late failures rather than early failures.
+                if compilergym_storage is not None:
+                    compilergym_stoage[(compilergym_pb_index, "loss")] = loss
+                return loss
             if "stacking" in control:
                 attention_a = self.heuristic(
                     o, current_observations
@@ -903,6 +916,8 @@ class GymMulti(ExperimentFunction):
             reward += r
             if done:
                 break
+        if compilergym_storage is not None:
+            compilergym_storage[(compiler_gym_pb_index, "loss")] = -reward
         return -reward
 
     def gym_conformant(self, x: np.ndarray):
