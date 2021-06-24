@@ -2274,7 +2274,7 @@ class NGOptBase(base.Optimizer):
 
 @registry.register
 class Shiwa(NGOptBase):
-    """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
 
     def _select_optimizer_cls(self) -> base.OptCls:
         optCls: base.OptCls = NGOptBase
@@ -2293,7 +2293,7 @@ class NGO(NGOptBase):  # compatibility
 
 @registry.register
 class NGOpt4(NGOptBase):
-    """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
 
     def _select_optimizer_cls(self) -> base.OptCls:
         self.fully_continuous = (
@@ -2382,7 +2382,7 @@ class NGOpt4(NGOptBase):
 
 @registry.register
 class NGOpt8(NGOpt4):
-    """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
 
     def _select_optimizer_cls(self) -> base.OptCls:
         # Extracting info as far as possible.
