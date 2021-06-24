@@ -909,7 +909,8 @@ class GymMulti(ExperimentFunction):
                     self.archive_observations(current_actions, current_observations, current_reward)
             except AssertionError:  # Illegal action.
                 loss = 1e20 / (1.0 + i)  # We encourage late failures rather than early failures.
-                compilergym_storage[(compiler_gym_pb_index, -1)] = loss
+                if compilergym_storage is not None:
+                    compilergym_storage[(compiler_gym_pb_index, -1)] = loss
                 return loss
             if "stacking" in control:
                 attention_a = self.heuristic(
@@ -924,7 +925,8 @@ class GymMulti(ExperimentFunction):
             reward += r
             if done:
                 break
-        compilergym_storage[(compiler_gym_pb_index, -1)] = -reward
+        if compilergym_storage is not None:
+            compilergym_storage[(compiler_gym_pb_index, -1)] = -reward
         return -reward
 
     def gym_conformant(self, x: np.ndarray):
