@@ -612,11 +612,12 @@ class GymMulti(ExperimentFunction):
             )
             for compiler_gym_pb_index in range(23)
         ]
-        l = locals()
-        print(
-            f"<<<compilergym:{[l[k] for k in sorted(l.keys())]}:{[(k, compilergym_storage[k]) for k in sorted(compilergym_storage.keys())]}>>>",
-            file=sys.stderr,
-        )
+        if compilergym_storage is not None:
+            l = locals()
+            print(
+                f"<<<compilergym:{[l[k] for k in sorted(l.keys())]}:{[(k, compilergym_storage[k]) for k in sorted(compilergym_storage.keys())]}>>>",
+                file=sys.stderr,
+            )
         return -np.exp(sum(rewards) / len(rewards))
 
     def forked_env(self):
