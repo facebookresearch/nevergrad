@@ -907,7 +907,9 @@ class GymMulti(ExperimentFunction):
                     # observation need archiving.
                     self.archive_observations(current_actions, current_observations, current_reward)
             except AssertionError:  # Illegal action.
-                return 1e20 / (1.0 + i)  # We encourage late failures rather than early failures.
+                loss = 1e20 / (1.0 + i)  # We encourage late failures rather than early failures.
+                compilergym_storage[(compiler_gym_pb_index, 'loss')] = loss
+                return loss
             if "stacking" in control:
                 attention_a = self.heuristic(
                     o, current_observations
@@ -921,6 +923,7 @@ class GymMulti(ExperimentFunction):
             reward += r
             if done:
                 break
+        compilergym_storage[(compiler_gym_pb_index, 'loss')] = -reward
         return -reward
 
     def gym_conformant(self, x: np.ndarray):
