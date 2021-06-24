@@ -226,7 +226,7 @@ def create_plots(
     df.loc[:, "loss"] = pd.to_numeric(df.loc[:, "loss"])
     df = df.loc[:, [x for x in df.columns if not x.startswith("info/")]]
     if "num_objectives" in df.columns:
-        df = df[df.num_objectives != 0]   # the optimization did not even start
+        df = df[df.num_objectives != 0]  # the optimization did not even start
     # If we have a descriptor "instrum_str",
     # we assume that it describes the instrumentation as a string,
     # that we should include the various instrumentations as distinct curves in the same plot.
