@@ -1509,6 +1509,20 @@ class MetaModel(base.Optimizer):
         self._optim.tell(candidate, loss)
 
 
+
+@registry.register
+class DiagMetaModel(base.Optimizer):
+    """Adding a metamodel into CMA."""
+
+    def __init__(
+        self,
+        parametrization: IntOrParameter,
+        budget: tp.Optional[int] = None,
+        num_workers: int = 1,
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers, multivariate_optimizer=DiagonalCMA)
+
+        
 @registry.register
 class SQPCMA(Portfolio):
     """Passive portfolio of CMA and many SQP."""
