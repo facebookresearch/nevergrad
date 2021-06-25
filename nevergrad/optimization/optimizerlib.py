@@ -1511,7 +1511,7 @@ class MetaModel(base.Optimizer):
 
 
 @registry.register
-class DiagMetaModel(base.Optimizer):
+class DiagMetaModel(MetaModel):
     """Adding a metamodel into CMA."""
 
     def __init__(
