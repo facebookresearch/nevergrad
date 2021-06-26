@@ -579,21 +579,11 @@ def test_chaining(dimension: int, num_workers: int, scale: float, budget: int, e
             for name in ("ChainMetaModelSQP", baseline if dimension > 1 else "OnePlusOne"):
                 opt = registry[name](dimension, contextual_budget, num_workers=num_workers)
                 recommendations.append(opt.minimize(_target).value)
-            metamodel_recom, default_recom = recommendations  # pylint: disable=unbalanced-tuple-unpacking
+            chaining_recom, default_recom = recommendations  # pylint: disable=unbalanced-tuple-unpacking
 
-            # Let us assert that MetaModel is better.
-            if not _target(default_recom) > _target(metamodel_recom):
+            if not _target(default_recom) > _target(chaining_recom):
                 continue
 
-            # With large budget, the difference should be significant.
-            if budget > 60 * dimension:
-                if not _target(default_recom) > 4.0 * _target(metamodel_recom):
-                    continue
-
-            # ... even more in the non ellipsoid case.
-            if budget > 60 * dimension and not ellipsoid:
-                if not _target(default_recom) > 7.0 * _target(metamodel_recom):
-                    continue
             successes += 1
         assert successes >= num_trials // 2, f"Problem for beating {baseline}."
 
