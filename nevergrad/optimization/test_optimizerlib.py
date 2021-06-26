@@ -10,6 +10,7 @@ import random
 import inspect
 import logging
 import platform
+import os
 import tempfile
 import warnings
 from pathlib import Path
@@ -468,29 +469,36 @@ def test_parallel_es() -> None:
         if not k:
             opt.tell(cand, 1)
 
+def get_tests_metamodel():
+    tests_metamodel = [
+            (2, 8, 1.0, 120, False),
+            (2, 3, 8.0, 130, True),
+            (5, 1, 1.0, 150, False),
+        ]
+    
+    if not os.environ.get("CIRCLECI", False):
+        # Interesting tests removed from CircleCI for flakiness (and we do stats when not on CircleCI):
+        tests_metamodel += [
+             (8, 27, 8., 380, True),
+             (2, 1, 8., 120, True),
+             (2, 3, 8., 70, False),
+             (1, 1, 1., 20, True),
+             (1, 3, 5., 20, False),
+             (2, 3, 1., 70, True),
+             (2, 1, 8., 40, False),
+             (5, 3, 1., 225, True),
+             (5, 1, 8., 150, False),
+             (5, 3, 8., 500, True),
+             (9, 27, 8., 700, True),
+             (10, 27, 8., 400, False),
+             ]
+    return tests_metamodel
 
 @testing.suppress_nevergrad_warnings()
 @skip_win_perf  # type: ignore
 @pytest.mark.parametrize(
     "dimension, num_workers, scale, budget, ellipsoid",
-    [
-        (2, 8, 1.0, 120, False),
-        (2, 3, 8.0, 130, True),
-        (5, 1, 1.0, 150, False),
-        # Interesting tests removed for flakiness:
-        # (8, 27, 8., 380, True),
-        # (2, 1, 8., 120, True),
-        # (2, 3, 8., 70, False),
-        # (1, 1, 1., 20, True),
-        # (1, 3, 5., 20, False),
-        # (2, 3, 1., 70, True),
-        # (2, 1, 8., 40, False),
-        # (5, 3, 1., 225, True),
-        # (5, 1, 8., 150, False),
-        # (5, 3, 8., 500, True),
-        # (9, 27, 8., 700, True),
-        # (10, 27, 8., 400, False),
-    ],
+    get_tests_metamodel(),
 )
 def test_metamodel(dimension: int, num_workers: int, scale: float, budget: int, ellipsoid: bool) -> None:
     """The test can operate on the sphere or on an elliptic funciton."""
@@ -508,23 +516,33 @@ def test_metamodel(dimension: int, num_workers: int, scale: float, budget: int, 
     contextual_budget = budget if ellipsoid else 3 * budget
     contextual_budget *= int(max(1, np.sqrt(scale)))
 
-    # Let us run the comparison.
-    recommendations: tp.List[np.ndarray] = []
-    for name in ("MetaModel", "CMA" if dimension > 1 else "OnePlusOne"):
-        opt = registry[name](dimension, contextual_budget, num_workers=num_workers)
-        recommendations.append(opt.minimize(_target).value)
-    metamodel_recom, default_recom = recommendations  # pylint: disable=unbalanced-tuple-unpacking
-
-    # Let us assert that MetaModel is better.
-    assert _target(default_recom) > _target(metamodel_recom)
-
-    # With large budget, the difference should be significant.
-    if budget > 60 * dimension:
-        assert _target(default_recom) > 4.0 * _target(metamodel_recom)
-
-    # ... even more in the non ellipsoid case.
-    if budget > 60 * dimension and not ellipsoid:
-        assert _target(default_recom) > 7.0 * _target(metamodel_recom)
+    for baseline in ["CMA", "ECMA"]:
+        num_trials = 1 if os.environ.get("CIRCLECI", False) else 7
+        successes = 0
+        for _ in range(num_trials):
+            # Let us run the comparison.
+            recommendations: tp.List[np.ndarray] = []
+            for name in ("MetaModel", baseline if dimension > 1 else "OnePlusOne"):
+                opt = registry[name](dimension, contextual_budget, num_workers=num_workers)
+                recommendations.append(opt.minimize(_target).value)
+            metamodel_recom, default_recom = recommendations  # pylint: disable=unbalanced-tuple-unpacking
+        
+        
+            # Let us assert that MetaModel is better.
+            if not _target(default_recom) > _target(metamodel_recom):
+                continue
+        
+            # With large budget, the difference should be significant.
+            if budget > 60 * dimension:
+                if not _target(default_recom) > 4.0 * _target(metamodel_recom):
+                    continue
+        
+            # ... even more in the non ellipsoid case.
+            if budget > 60 * dimension and not ellipsoid:
+                if not _target(default_recom) > 7.0 * _target(metamodel_recom):
+                    continue
+            successes += 1
+        assert successes >= num_trials // 2, f"Problem for beating {baseline}."
 
 
 @pytest.mark.parametrize(  # type: ignore
