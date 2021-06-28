@@ -565,7 +565,7 @@ def test_metamodel(dimension: int, num_workers: int, scale: float, budget: int, 
         for baseline in ["MetaModel", "SQP"]
     ],
 )
-def test_chaining(dimension: int, num_workers: int, scale: float, budget: int, ellipsoid: bool) -> None:
+def test_chaining(dimension: int, num_workers: int, scale: float, budget: int, ellipsoid: bool, baseline: str) -> None:
     """The test can operate on the sphere or on an elliptic funciton."""
 
     if os.environ.get("CIRCLECI", False):  # This test is too expensive for CircleCI.
