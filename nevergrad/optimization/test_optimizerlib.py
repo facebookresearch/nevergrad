@@ -558,14 +558,17 @@ def test_metamodel(dimension: int, num_workers: int, scale: float, budget: int, 
 @pytest.mark.parametrize(
     "dimension, num_workers, scale, budget, ellipsoid, baseline",
     [
-        (d, 1, 1.0, b, e, baseline)
+        (d, 1, s, b, e, baseline)
         for e in [True, False]
-        for b in [100, 1000, 10000]
-        for d in [7, 20, 100]
-        for baseline in ["MetaModel", "SQP"]
-    ],
+        for b in [200, 500]
+        for s in [8.0]
+        for d in [7]
+        for baseline in ["MetaModel", "CMA", "ECMA"]
+    ][::5],
 )
-def test_chaining(dimension: int, num_workers: int, scale: float, budget: int, ellipsoid: bool, baseline: str) -> None:
+def test_chaining(
+    dimension: int, num_workers: int, scale: float, budget: int, ellipsoid: bool, baseline: str
+) -> None:
     """The test can operate on the sphere or on an elliptic funciton."""
 
     if os.environ.get("CIRCLECI", False):  # This test is too expensive for CircleCI.
@@ -584,10 +587,10 @@ def test_chaining(dimension: int, num_workers: int, scale: float, budget: int, e
     contextual_budget = budget if ellipsoid else 3 * budget
     contextual_budget *= 5 * int(max(1, np.sqrt(scale)))
 
-    num_trials = 1 if os.environ.get("CIRCLECI", False) else 7
-    successes = 0
+    num_trials = 15
+    successes = 0.0
     for _ in range(num_trials):
-        if successes > num_trials // 2:
+        if successes >= num_trials / 2:
             break
         # Let us run the comparison.
         recommendations: tp.List[np.ndarray] = []
@@ -596,18 +599,18 @@ def test_chaining(dimension: int, num_workers: int, scale: float, budget: int, e
             recommendations.append(opt.minimize(_target).value)
         chaining_recom, default_recom = recommendations  # pylint: disable=unbalanced-tuple-unpacking
 
-        if not _target(default_recom) > _target(chaining_recom):
-            continue
-
-        successes += 1
+        if _target(default_recom) < _target(chaining_recom):
+            successes += 1
+        if _target(default_recom) == _target(chaining_recom):
+            successes += 0.5
 
     if successes <= num_trials // 2:
         print(
-            f"ChainMetaModelSQP fails ({successes}/{num_trials}) for d={dimension}, num_workers={num_workers}, ellipsoid={ellipsoid}, budget={budget}, vs {baseline}"
+            f"ChainMetaModelSQP fails ({successes}/{num_trials}) for d={dimension}, scale={scale}, num_workers={num_workers}, ellipsoid={ellipsoid}, budget={budget}, vs {baseline}"
         )
         assert False, "ChaingMetaModelSQP fails."
     print(
-        f"ChainMetaModelSQP wins for d={dimension}, num_workers={num_workers}, ellipsoid={ellipsoid}, budget={budget}, vs {baseline}"
+        f"ChainMetaModelSQP wins for d={dimension}, scale={scale}, num_workers={num_workers}, ellipsoid={ellipsoid}, budget={budget}, vs {baseline}"
     )
 
 
