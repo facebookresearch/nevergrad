@@ -566,7 +566,7 @@ def test_metamodel(dimension: int, num_workers: int, scale: float, budget: int, 
         for baseline in ["MetaModel", "CMA", "ECMA"]
     ][::5],
 )
-def test_chaining(
+def test_metamodel_sqp_chaining(
     dimension: int, num_workers: int, scale: float, budget: int, ellipsoid: bool, baseline: str
 ) -> None:
     """The test can operate on the sphere or on an elliptic funciton."""
