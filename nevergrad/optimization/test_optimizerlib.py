@@ -589,16 +589,23 @@ def test_metamodel_sqp_chaining(
 
     num_trials = 27
     successes = 0.0
+    total_chaining_time = 0
+    total_default_time = 0
     for _ in range(num_trials):
         if successes >= num_trials / 2:
             break
         # Let us run the comparison.
         recommendations: tp.List[np.ndarray] = []
+        timings: tp.List[np.ndarray] = []
         for name in ("ChainMetaModelSQP", baseline if dimension > 1 else "OnePlusOne"):
             opt = registry[name](dimension, contextual_budget, num_workers=num_workers)
+            t0 = time.time()
             recommendations.append(opt.minimize(_target).value)
+            timings.append(time.time() - t0)
         chaining_recom, default_recom = recommendations  # pylint: disable=unbalanced-tuple-unpacking
-
+        chaining_timing, default_timing = timings
+        total_chaining_time += chaining_timing
+        total_default_time += default_timing
         if _target(default_recom) < _target(chaining_recom):
             successes += 1
         if _target(default_recom) == _target(chaining_recom):
@@ -608,10 +615,11 @@ def test_metamodel_sqp_chaining(
         print(
             f"ChainMetaModelSQP fails ({successes}/{num_trials}) for d={dimension}, scale={scale}, num_workers={num_workers}, ellipsoid={ellipsoid}, budget={budget}, vs {baseline}"
         )
-        assert False, "ChaingMetaModelSQP fails."
+        assert False, "ChaingMetaModelSQP fails by performance."
     print(
         f"ChainMetaModelSQP wins for d={dimension}, scale={scale}, num_workers={num_workers}, ellipsoid={ellipsoid}, budget={budget}, vs {baseline}"
     )
+    assert total_chaining_time < 7 * total_default_time, "Computationally more than 7x more expensive."
 
 
 @pytest.mark.parametrize(  # type: ignore
