@@ -612,10 +612,12 @@ class GymMulti(ExperimentFunction):
             )
             for compiler_gym_pb_index in range(23)
         ]
-        print(
-            f"<<<compilergym:{[locals()[k] for k in sorted(locals().keys())]}:{[(k, compilergym_storage[k]) for k in sorted(compilergym_storage.keys())]}>>>",
-            file=sys.stderr,
-        )
+        if compilergym_storage is not None:
+            l = locals()
+            print(
+                f"<<<compilergym:{[l[k] for k in sorted(l.keys())]}:{[(k, compilergym_storage[k]) for k in sorted(compilergym_storage.keys())]}>>>",
+                file=sys.stderr,
+            )
         return -np.exp(sum(rewards) / len(rewards))
 
     def forked_env(self):
@@ -907,7 +909,10 @@ class GymMulti(ExperimentFunction):
                     # observation need archiving.
                     self.archive_observations(current_actions, current_observations, current_reward)
             except AssertionError:  # Illegal action.
-                return 1e20 / (1.0 + i)  # We encourage late failures rather than early failures.
+                loss = 1e20 / (1.0 + i)  # We encourage late failures rather than early failures.
+                if compilergym_storage is not None:
+                    compilergym_storage[(compiler_gym_pb_index, -1)] = loss
+                return loss
             if "stacking" in control:
                 attention_a = self.heuristic(
                     o, current_observations
@@ -921,6 +926,8 @@ class GymMulti(ExperimentFunction):
             reward += r
             if done:
                 break
+        if compilergym_storage is not None:
+            compilergym_storage[(compiler_gym_pb_index, -1)] = -reward
         return -reward
 
     def gym_conformant(self, x: np.ndarray):
