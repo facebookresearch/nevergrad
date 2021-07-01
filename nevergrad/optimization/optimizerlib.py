@@ -450,6 +450,7 @@ class _CMA(base.Optimizer):
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         self._to_be_told.append(candidate)
         if len(self._to_be_told) >= self.es.popsize:
+
             def no_nan(x: tp.ArrayLike) -> tp.ArrayLike:
                 y = x
                 for i in range(len(x)):
@@ -457,11 +458,14 @@ class _CMA(base.Optimizer):
                         y[i] = 2e20
                     else:
                         if y[i] > 1e20:
-                            y[i] = 1e20 + (y[i] / (y[i]+1e20)) * 1e20 
-                        elif y[i] <- 1e20:
-                            y[i] = -1e20 - (-y[i] / (1e20 - y[i])) * 1e20 
+                            y[i] = 1e20 + (y[i] / (y[i] + 1e20)) * 1e20
+                        elif y[i] < -1e20:
+                            y[i] = -1e20 - (-y[i] / (1e20 - y[i])) * 1e20
                 return y
-            listx = [no_nan(c.get_standardized_data(reference=self.parametrization)) for c in self._to_be_told]
+
+            listx = [
+                no_nan(c.get_standardized_data(reference=self.parametrization)) for c in self._to_be_told
+            ]
             listy = no_nan([c.loss for c in self._to_be_told])
             args = (listy, listx) if self._config.fcmaes else (listx, listy)
             try:
