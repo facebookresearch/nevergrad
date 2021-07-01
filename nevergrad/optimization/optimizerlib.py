@@ -450,12 +450,23 @@ class _CMA(base.Optimizer):
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         self._to_be_told.append(candidate)
         if len(self._to_be_told) >= self.es.popsize:
-            listx = [c.get_standardized_data(reference=self.parametrization) for c in self._to_be_told]
-            listy = [c.loss for c in self._to_be_told]
+            def no_nan(x: tp.ArrayLike) -> tp.ArrayLike:
+                y = x
+                for i in range(len(x)):
+                    if not (y[i] == y[i]):
+                        y[i] = 2e20
+                    else:
+                        if y[i] > 1e20:
+                            y[i] = 1e20 + (y[i] / (y[i]+1e20)) * 1e20 
+                        elif y[i] <- 1e20:
+                            y[i] = -1e20 - (-y[i] / (1e20 - y[i])) * 1e20 
+                return y
+            listx = [no_nan(c.get_standardized_data(reference=self.parametrization)) for c in self._to_be_told]
+            listy = no_nan([c.loss for c in self._to_be_told])
             args = (listy, listx) if self._config.fcmaes else (listx, listy)
             try:
                 self.es.tell(*args)
-            except RuntimeError:
+            except (ValueError, RuntimeError, AssertionError) as e:
                 pass
             else:
                 self._parents = sorted(self._to_be_told, key=base._loss)[: self._num_spawners]

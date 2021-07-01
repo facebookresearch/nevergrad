@@ -559,10 +559,10 @@ def test_metamodel(dimension: int, num_workers: int, scale: float, budget: int, 
     "dimension, num_workers, scale, budget, ellipsoid, baseline",
     [
         (d, 1, s, b, e, baseline)
-        for e in [True, False]
-        for b in [200, 500]
-        for s in [8.0]
-        for d in [7]
+        for e in [False, True]
+        for b in [400, 4000]
+        for s in [4.0]
+        for d in [7, 4, 2, 77]
         for baseline in ["MetaModel", "CMA", "ECMA"]
     ][::5],
 )
@@ -570,7 +570,7 @@ def test_metamodel_sqp_chaining(
     dimension: int, num_workers: int, scale: float, budget: int, ellipsoid: bool, baseline: str
 ) -> None:
     """The test can operate on the sphere or on an elliptic funciton."""
-
+    print(f"testing {locals()}")
     if os.environ.get("CIRCLECI", False):  # This test is too expensive for CircleCI.
         return
 
@@ -587,7 +587,7 @@ def test_metamodel_sqp_chaining(
     contextual_budget = budget if ellipsoid else 3 * budget
     contextual_budget *= 5 * int(max(1, np.sqrt(scale)))
 
-    num_trials = 15
+    num_trials = 27
     successes = 0.0
     for _ in range(num_trials):
         if successes >= num_trials / 2:
