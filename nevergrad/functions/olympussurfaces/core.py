@@ -9,8 +9,8 @@ import numpy as np
 from functools import partial
 from nevergrad.parametrization import parameter as p
 from ..base import ExperimentFunction
-from olympus import surfaces # type: ignore
-from olympus import noises # type: ignore
+from olympus import surfaces  # type: ignore
+from olympus import noises  # type: ignore
 
 
 class OlympusSurface(ExperimentFunction):
