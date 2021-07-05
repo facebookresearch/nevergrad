@@ -1861,7 +1861,7 @@ class PCABO(base.Optimizer):
             DoE_size=init_budget if init_budget is not None else 5,
             max_FEs=budget,
             verbose=True,
-            n_point=1,
+            n_point=init_budget if init_budget is not None else 5,
             n_components=0.95,
             acquisition_optimization={"optimizer": "BFGS"},
         )
@@ -1887,7 +1887,7 @@ class PCABO(base.Optimizer):
         else:
             data = candidate.get_standardized_data(reference=self.parametrization)
             # Tell not asked:
-            self._pcabo.tell(np.arctan(data))
+            self._pcabo.tell(np.arctan(data), loss)
 
         # self._fake_function.register(y, -loss)  # minimizing
         # self.bo.probe(y, lazy=False)
