@@ -1238,10 +1238,22 @@ def neuro_control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experime
 def olympus(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Olympus surfaces """
     funcs = []
-    for kind in ["AckleyPath", "Dejong", "HyperEllipsoid","Levy", "Michalewicz", 
-                "Rastrigin", "Rosenbrock", "Schwefel", "StyblinskiTang", "Zakharov"]:
+    for kind in [
+        "AckleyPath",
+        "Dejong",
+        "HyperEllipsoid",
+        "Levy",
+        "Michalewicz",
+        "Rastrigin",
+        "Rosenbrock",
+        "Schwefel",
+        "StyblinskiTang",
+        "Zakharov",
+    ]:
         for k in range(2, 6):
-            funcs.append(Olympus(kind, 10 ** k)) 
+            for noise in ["GaussianNoise", "UniformNoise", "GammaNoise"]:
+                for noise_scale in [0.5, 1]:
+                    funcs.append(Olympus(kind, 10 ** k, noise, noise_scale))
 
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", "noisy", seed=next(seedg))
