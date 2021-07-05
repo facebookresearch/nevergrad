@@ -1855,13 +1855,13 @@ class PCABO(base.Optimizer):
         lb, ub = 1e-7 - np.pi / 2, np.pi / 2 - 1e-7
         space = RealSpace([lb, ub]) * self.dimension
         # (Elena) We should find a way to pass these attributes when selecting the optimizer I guess...
-        self._pcabo = PcaBO(
+        self._pcabo = PCABO(
             search_space=space,
             obj_fun=None,  # Assuming that this is not used :-)
             DoE_size=init_budget if init_budget is not None else 5,
             max_FEs=budget,
             verbose=True,
-            n_point=init_budget if init_budget is not None else 5,
+            n_point=1,  # We start with a sequential procedure, maybe we'll extend in a second moment
             n_components=0.95,
             acquisition_optimization={"optimizer": "BFGS"},
         )
