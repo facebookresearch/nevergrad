@@ -1850,13 +1850,13 @@ class PCABO(base.Optimizer):
         # else:
         #     self._InitOpt = oneshot.SamplingSearch(sampler=init, scrambled=init == "Hammersley")
 
-        #np.random.seed(123)
-        lb, ub = 1e-7 - np.pi/2, np.pi/2 - 1e-7
+        # np.random.seed(123)
+        lb, ub = 1e-7 - np.pi / 2, np.pi / 2 - 1e-7
         space = RealSpace([lb, ub]) * self.dimension
         # (Elena) We should find a way to pass these attributes when selecting the optimizer I guess...
         self._pcabo = PCABO(
             search_space=space,
-            obj_fun=None,   # Assuming that this is not used :-)
+            obj_fun=None,  # Assuming that this is not used :-)
             DoE_size=5,
             max_FEs=budget,
             verbose=True,
@@ -1873,7 +1873,7 @@ class PCABO(base.Optimizer):
 
     def _internal_ask_candidate(self) -> p.Parameter:
         x_probe = self._pcabo.ask()
-        #data = self._pcabo._transform.backward(np.array(x_probe, copy=False))
+        # data = self._pcabo._transform.backward(np.array(x_probe, copy=False))
         data = np.tan(np.array(x_probe, copy=False))
         candidate = self.parametrization.spawn_child().set_standardized_data(data)
         candidate._meta["x_probe"] = x_probe
@@ -1895,12 +1895,13 @@ class PCABO(base.Optimizer):
         # # so we should clean the "fake" function
         # self._fake_function._registered.clear()
 
+
 #### Oteytaud: presumably we do not need that.
-    #def _internal_provide_recommendation(self) -> tp.Optional[tp.ArrayLike]:
-    #    if not self.archive:
-    #        return None
-    #    # (Elena) We shouldn't need any fake function here with this version of BO.
-    #    # And I didn't define the bo method in this class! So provide_recommendation needs changes...
+# def _internal_provide_recommendation(self) -> tp.Optional[tp.ArrayLike]:
+#    if not self.archive:
+#        return None
+#    # (Elena) We shouldn't need any fake function here with this version of BO.
+#    # And I didn't define the bo method in this class! So provide_recommendation needs changes...
 #
 #        return self._transform.backward(
 #            np.array([self.bo.max["params"][self._fake_function.key(i)] for i in range(self.dimension)])
