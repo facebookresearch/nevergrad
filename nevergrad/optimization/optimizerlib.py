@@ -1855,7 +1855,7 @@ class PCABO(base.Optimizer):
         lb, ub = 1e-7 - np.pi / 2, np.pi / 2 - 1e-7
         space = RealSpace([lb, ub]) * self.dimension
         # (Elena) We should find a way to pass these attributes when selecting the optimizer I guess...
-        self._pcabo = PCABO(
+        self._pcabo = PcaBO(
             search_space=space,
             obj_fun=None,  # Assuming that this is not used :-)
             DoE_size=init_budget if init_budget is not None else 5,
