@@ -1835,14 +1835,13 @@ class PCABO(base.Optimizer):
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
         *,
-        initialization: tp.Optional[str] = None,
+        #initialization: tp.Optional[str] = None,
         init_budget: tp.Optional[int] = None,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
 
         # initialization
-        init = initialization
-        self._init_budget = init_budget
+        #init = initialization
         # if init is None:
         #     self._InitOpt: tp.Optional[base.ConfiguredOptimizer] = None
         # elif init == "random":
@@ -1857,7 +1856,7 @@ class PCABO(base.Optimizer):
         self._pcabo = PCABO(
             search_space=space,
             obj_fun=None,  # Assuming that this is not used :-)
-            DoE_size=5,
+            DoE_size=init_budget if init_budget is not None else 5,
             max_FEs=budget,
             verbose=True,
             n_point=1,
