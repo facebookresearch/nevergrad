@@ -1816,6 +1816,7 @@ BOSplit = ConfSplitOptimizer(max_num_vars=15, progressive=False, multivariate_op
 )
 
 # (Elena) Still under construction
+@registry.register
 class PCABO(base.Optimizer):
     """Principle Component Analysis (PCA) Bayesian Optimization for dimensionality reduction in BO
 
@@ -1906,8 +1907,6 @@ class PCABO(base.Optimizer):
 #            np.array([self.bo.max["params"][self._fake_function.key(i)] for i in range(self.dimension)])
 #        )
 
-
-PCABO = PCABO().set_name("PCABO", register=True)
 
 
 class _Chain(base.Optimizer):
