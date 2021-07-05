@@ -5,7 +5,6 @@
 
 # Based on https://github.com/aspuru-guzik-group/olympus
 
-import matplotlib.pyplot as plt
 import numpy as np
 from nevergrad.parametrization import parameter as p
 from ..base import ExperimentFunction
@@ -20,7 +19,6 @@ class Olympus(ExperimentFunction):
         self.param_dim = dimension
         self.noise_kind = noise_kind
         self.noise_scale = noise_scale
-        self.surface_without_noise = None  # for evaluation
         parametrization = p.Array(shape=(dimension,))
         parametrization.function.deterministic = False
         super().__init__(self._simulate_traditional_surface, parametrization)
