@@ -8,7 +8,7 @@ from . import core
 
 
 def test_olympus_surface() -> None:
-    func = core.Olympus("AckleyPath")
+    func = core.OlympusSurface("AckleyPath")
     x = 2 * np.random.rand(func.dimension)
     value = func(x)  # should not touch boundaries, so value should be < np.inf
     assert isinstance(value, float)
