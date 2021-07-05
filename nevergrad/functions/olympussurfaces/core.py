@@ -9,8 +9,8 @@ import numpy as np
 from functools import partial
 from nevergrad.parametrization import parameter as p
 from ..base import ExperimentFunction
-from olympus.surfaces import AckleyPath, Dejong, HyperEllipsoid, Levy, Michalewicz, Rastrigin, Rosenbrock, Schwefel, StyblinskiTang, Zakharov  # type: ignore
-from olympus.noises import Noise
+from olympus import surfaces # type: ignore
+from olympus import noises # type: ignore
 
 
 class OlympusSurface(ExperimentFunction):
@@ -44,20 +44,20 @@ class OlympusSurface(ExperimentFunction):
         assert self.noise_kind in ["GaussianNoise", "UniformNoise", "GammaNoise"]
 
         traditional_surfaces = {
-            "Michalewicz": Michalewicz,
-            "AckleyPath": AckleyPath,
-            "Dejong": Dejong,
-            "HyperEllipsoid": HyperEllipsoid,
-            "Levy": Levy,
-            "Michalewicz": Michalewicz,
-            "Rastrigin": Rastrigin,
-            "Rosenbrock": Rosenbrock,
-            "Schwefel": Schwefel,
-            "StyblinskiTang": StyblinskiTang,
-            "Zakharov": Zakharov,
+            "Michalewicz": surfaces.Michalewicz,
+            "AckleyPath": surfaces.AckleyPath,
+            "Dejong": surfaces.Dejong,
+            "HyperEllipsoid": surfaces.HyperEllipsoid,
+            "Levy": surfaces.Levy,
+            "Michalewicz": surfaces.Michalewicz,
+            "Rastrigin": surfaces.Rastrigin,
+            "Rosenbrock": surfaces.Rosenbrock,
+            "Schwefel": surfaces.Schwefel,
+            "StyblinskiTang": surfaces.StyblinskiTang,
+            "Zakharov": surfaces.Zakharov,
         }
         if noise:
-            noise = Noise(kind=self.noise_kind, scale=self.noise_scale)
+            noise = noises.Noise(kind=self.noise_kind, scale=self.noise_scale)
             surface = traditional_surfaces[self.kind](param_dim=self.param_dim, noise=noise)
         else:
             surface = traditional_surfaces[self.kind](param_dim=self.param_dim)
