@@ -1837,13 +1837,13 @@ class PCABO(base.Optimizer):
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
         *,
-        #initialization: tp.Optional[str] = None,
+        # initialization: tp.Optional[str] = None,
         init_budget: tp.Optional[int] = None,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
 
         # initialization
-        #init = initialization
+        # init = initialization
         # if init is None:
         #     self._InitOpt: tp.Optional[base.ConfiguredOptimizer] = None
         # elif init == "random":
@@ -1907,7 +1907,6 @@ class PCABO(base.Optimizer):
 #        return self._transform.backward(
 #            np.array([self.bo.max["params"][self._fake_function.key(i)] for i in range(self.dimension)])
 #        )
-
 
 
 class _Chain(base.Optimizer):
