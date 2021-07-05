@@ -1886,7 +1886,7 @@ class PCABO(base.Optimizer):
             y = self._transform.forward(data)  # tell not asked
         self._pcabo.tell(y, -loss)
 
-    
+
         # self._fake_function.register(y, -loss)  # minimizing
         # self.bo.probe(y, lazy=False)
         # # for some unknown reasons, BO wants to evaluate twice the same point,
@@ -1903,6 +1903,8 @@ class PCABO(base.Optimizer):
         return self._transform.backward(
             np.array([self.bo.max["params"][self._fake_function.key(i)] for i in range(self.dimension)])
         )
+
+PCABO = PCABO().set_name("PCABO", register=True)
 
 
 class _Chain(base.Optimizer):
