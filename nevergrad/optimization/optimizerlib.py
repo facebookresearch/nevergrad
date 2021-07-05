@@ -1850,16 +1850,15 @@ class PCABO(base.Optimizer):
         # else:
         #     self._InitOpt = oneshot.SamplingSearch(sampler=init, scrambled=init == "Hammersley")
 
-        np.random.seed(123)
-        dim = 5
-        lb, ub = -5, 5
-        space = RealSpace([lb, ub]) * dim
+        #np.random.seed(123)
+        lb, ub = 1e-7 - np.pi/2, np.pi/2 - 1e-7
+        space = RealSpace([lb, ub]) * self.dimension
         # (Elena) We should find a way to pass these attributes when selecting the optimizer I guess...
         self._pcabo = PCABO(
             search_space=space,
-            obj_fun=fitness,
+            obj_fun=None,   # Assuming that this is not used :-)
             DoE_size=5,
-            max_FEs=100,
+            max_FEs=budget,
             verbose=True,
             n_point=1,
             n_components=0.95,
@@ -1874,7 +1873,8 @@ class PCABO(base.Optimizer):
 
     def _internal_ask_candidate(self) -> p.Parameter:
         x_probe = self._pcabo.ask()
-        data = self._transform.backward(np.array(x_probe, copy=False))
+        #data = self._pcabo._transform.backward(np.array(x_probe, copy=False))
+        data = np.tan(np.array(x_probe, copy=False))
         candidate = self.parametrization.spawn_child().set_standardized_data(data)
         candidate._meta["x_probe"] = x_probe
         return candidate
@@ -1882,10 +1882,11 @@ class PCABO(base.Optimizer):
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         if "x_probe" in candidate._meta:
             y = candidate._meta["x_probe"]
+            self._pcabo.tell(y, loss)
         else:
             data = candidate.get_standardized_data(reference=self.parametrization)
-            y = self._transform.forward(data)  # tell not asked
-        self._pcabo.tell(y, -loss)
+            # Tell not asked:
+            self._pcabo.tell(np.arctan(data))
 
         # self._fake_function.register(y, -loss)  # minimizing
         # self.bo.probe(y, lazy=False)
@@ -1894,15 +1895,16 @@ class PCABO(base.Optimizer):
         # # so we should clean the "fake" function
         # self._fake_function._registered.clear()
 
-    def _internal_provide_recommendation(self) -> tp.Optional[tp.ArrayLike]:
-        if not self.archive:
-            return None
-        # (Elena) We shouldn't need any fake function here with this version of BO.
-        # And I didn't define the bo method in this class! So provide_recommendation needs changes...
-
-        return self._transform.backward(
-            np.array([self.bo.max["params"][self._fake_function.key(i)] for i in range(self.dimension)])
-        )
+#### Oteytaud: presumably we do not need that.
+    #def _internal_provide_recommendation(self) -> tp.Optional[tp.ArrayLike]:
+    #    if not self.archive:
+    #        return None
+    #    # (Elena) We shouldn't need any fake function here with this version of BO.
+    #    # And I didn't define the bo method in this class! So provide_recommendation needs changes...
+#
+#        return self._transform.backward(
+#            np.array([self.bo.max["params"][self._fake_function.key(i)] for i in range(self.dimension)])
+#        )
 
 
 PCABO = PCABO().set_name("PCABO", register=True)
