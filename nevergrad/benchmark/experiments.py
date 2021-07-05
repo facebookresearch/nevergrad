@@ -31,6 +31,7 @@ from nevergrad.functions.games import game
 from nevergrad.functions.causaldiscovery import CausalDiscovery
 from nevergrad.functions import iohprofiler
 from nevergrad.functions import helpers
+from nevergrad.functions import Olympus
 from .xpbase import Experiment as Experiment
 from .xpbase import create_seed_generator
 from .xpbase import registry as registry  # noqa
@@ -1231,6 +1232,26 @@ def neuro_control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experime
                 xp = Experiment(fu, algo, budget, num_workers=1, seed=next(seedg))
                 if not xp.is_incoherent:
                     yield xp
+
+
+@registry.register
+def olympus(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Olympus surfaces """
+    funcs = [
+        Olympus(kind) 
+        for kind in ["AckleyPath", "Branin", "Dejong", "HyperEllipsoid","Levy", "Michalewicz", 
+            "Rastrigin", "Rosenbrock", "Schwefel", "StyblinskiTang", "Zakharov"]
+    ]
+    seedg = create_seed_generator(seed)
+    optims = get_optimizers("basics", "noisy", seed=next(seedg))
+    for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600]:
+        for num_workers in [1]:  # , 10, 100]:
+            if num_workers < budget:
+                for algo in optims:
+                    for fu in funcs:
+                        xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        if not xp.is_incoherent:
+                            yield xp
 
 
 @registry.register

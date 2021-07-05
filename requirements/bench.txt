@@ -26,3 +26,4 @@ tensorflow>=2.3.1
 image-quality==1.2.6
 keras==2.2.4
 compiler_gym>=0.1.8 ; sys_platform == "linux"
+olympus>=0.4
