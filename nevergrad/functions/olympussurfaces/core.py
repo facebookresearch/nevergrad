@@ -6,12 +6,14 @@
 # Based on https://github.com/aspuru-guzik-group/olympus
 
 import numpy as np
+from functools import partial
 from nevergrad.parametrization import parameter as p
 from ..base import ExperimentFunction
-import olympus  # type: ignore
+from olympus.surfaces import AckleyPath, Dejong, HyperEllipsoid, Levy, Michalewicz, Rastrigin, Rosenbrock, Schwefel, StyblinskiTang, Zakharov  # type: ignore
+from olympus.noises import Noise
 
 
-class Olympus(ExperimentFunction):
+class OlympusSurface(ExperimentFunction):
     def __init__(
         self, kind: str, dimension: int = 10, noise_kind: str = "GaussianNoise", noise_scale: float = 1
     ) -> None:
@@ -19,11 +21,13 @@ class Olympus(ExperimentFunction):
         self.param_dim = dimension
         self.noise_kind = noise_kind
         self.noise_scale = noise_scale
+        self.surface = partial(self._simulate_traditional_surface, noise=True)
+        self.surface_without_noise = partial(self._simulate_traditional_surface, noise=False)
         parametrization = p.Array(shape=(dimension,))
         parametrization.function.deterministic = False
-        super().__init__(self._simulate_traditional_surface, parametrization)
+        super().__init__(self.surface, parametrization)
 
-    def _simulate_traditional_surface(self, x: np.ndarray) -> float:
+    def _simulate_traditional_surface(self, x: np.ndarray, noise: bool = True) -> float:
         assert self.kind in [
             "AckleyPath",
             "Dejong",
@@ -40,25 +44,27 @@ class Olympus(ExperimentFunction):
         assert self.noise_kind in ["GaussianNoise", "UniformNoise", "GammaNoise"]
 
         traditional_surfaces = {
-            "Michalewicz": olympus.surfaces.Michalewicz,
-            "AckleyPath": olympus.surfaces.AckleyPath,
-            "Dejong": olympus.surfaces.Dejong,
-            "HyperEllipsoid": olympus.surfaces.HyperEllipsoid,
-            "Levy": olympus.surfaces.Levy,
-            "Michalewicz": olympus.surfaces.Michalewicz,
-            "Rastrigin": olympus.surfaces.Rastrigin,
-            "Rosenbrock": olympus.surfaces.Rosenbrock,
-            "Schwefel": olympus.surfaces.Schwefel,
-            "StyblinskiTang": olympus.surfaces.StyblinskiTang,
-            "Zakharov": olympus.surfaces.Zakharov,
+            "Michalewicz": Michalewicz,
+            "AckleyPath": AckleyPath,
+            "Dejong": Dejong,
+            "HyperEllipsoid": HyperEllipsoid,
+            "Levy": Levy,
+            "Michalewicz": Michalewicz,
+            "Rastrigin": Rastrigin,
+            "Rosenbrock": Rosenbrock,
+            "Schwefel": Schwefel,
+            "StyblinskiTang": StyblinskiTang,
+            "Zakharov": Zakharov,
         }
-        noise = olympus.noises.Noise(kind=self.noise_kind, scale=self.noise_scale)
-        surface = traditional_surfaces[self.kind](param_dim=self.param_dim, noise=noise)
-        self.surface_without_noise = traditional_surfaces[self.kind](param_dim=self.param_dim)
+        if noise:
+            noise = Noise(kind=self.noise_kind, scale=self.noise_scale)
+            surface = traditional_surfaces[self.kind](param_dim=self.param_dim, noise=noise)
+        else:
+            surface = traditional_surfaces[self.kind](param_dim=self.param_dim)
         return surface.run(x)[0][0]
 
     def evaluation_function(self, *recommendations) -> float:
         """Averages multiple evaluations if necessary."""
         x = recommendations[0].value
-        losses = [self.surface_without_noise.run(x)[0][0] for _ in range(42)]
+        losses = [self.surface_without_noise(x) for _ in range(42)]
         return sum(losses) / len(losses)

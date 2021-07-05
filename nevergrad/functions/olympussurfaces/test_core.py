@@ -7,7 +7,7 @@ import numpy as np
 from . import core
 
 
-def test_olympus() -> None:
+def test_olympus_surface() -> None:
     func = core.Olympus("AckleyPath")
     x = 2 * np.random.rand(func.dimension)
     value = func(x)  # should not touch boundaries, so value should be < np.inf
