@@ -26,7 +26,8 @@ from .base import registry as registry
 from .base import addCompare  # pylint: disable=unused-import
 from .base import IntOrParameter
 import bayes_optim
-from bayes_optim.extension import PCABO, RealSpace
+from bayes_optim.extension import PCABO as PcaBO
+from bayes_optim.extension import RealSpace
 
 
 # families of optimizers
@@ -1854,7 +1855,7 @@ class PCABO(base.Optimizer):
         lb, ub = 1e-7 - np.pi / 2, np.pi / 2 - 1e-7
         space = RealSpace([lb, ub]) * self.dimension
         # (Elena) We should find a way to pass these attributes when selecting the optimizer I guess...
-        self._pcabo = PCABO(
+        self._pcabo = PcaBO(
             search_space=space,
             obj_fun=None,  # Assuming that this is not used :-)
             DoE_size=init_budget if init_budget is not None else 5,
