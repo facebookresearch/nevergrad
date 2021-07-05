@@ -1817,7 +1817,7 @@ BOSplit = ConfSplitOptimizer(max_num_vars=15, progressive=False, multivariate_op
 
 # (Elena) Still under construction
 class PCABO(base.Optimizer):
-    """ Principle Component Analysis (PCA) Bayesian Optimization for dimensionality reduction in BO
+    """Principle Component Analysis (PCA) Bayesian Optimization for dimensionality reduction in BO
 
     References
 
@@ -1856,14 +1856,14 @@ class PCABO(base.Optimizer):
         space = RealSpace([lb, ub]) * dim
         # (Elena) We should find a way to pass these attributes when selecting the optimizer I guess...
         self._pcabo = PCABO(
-                    search_space=space,
-                    obj_fun=fitness,
-                    DoE_size=5,
-                    max_FEs=100,
-                    verbose=True,
-                    n_point=1,
-                    n_components=0.95,
-                    acquisition_optimization={"optimizer": "BFGS"},
+            search_space=space,
+            obj_fun=fitness,
+            DoE_size=5,
+            max_FEs=100,
+            verbose=True,
+            n_point=1,
+            n_components=0.95,
+            acquisition_optimization={"optimizer": "BFGS"},
         )
 
         # (Elena) PROBLEM: bayes-optim methods also work with matrices, X is a matrix for ParallelBO or during the DOE phase
@@ -1871,6 +1871,7 @@ class PCABO(base.Optimizer):
         #   func_vals = self.evaluate(X)
         #   self.tell(X, func_vals)
         # where X is a matrix, and func_vals is a vector.
+
     def _internal_ask_candidate(self) -> p.Parameter:
         x_probe = self._pcabo.ask()
         data = self._transform.backward(np.array(x_probe, copy=False))
@@ -1885,7 +1886,6 @@ class PCABO(base.Optimizer):
             data = candidate.get_standardized_data(reference=self.parametrization)
             y = self._transform.forward(data)  # tell not asked
         self._pcabo.tell(y, -loss)
-
 
         # self._fake_function.register(y, -loss)  # minimizing
         # self.bo.probe(y, lazy=False)
@@ -1903,6 +1903,7 @@ class PCABO(base.Optimizer):
         return self._transform.backward(
             np.array([self.bo.max["params"][self._fake_function.key(i)] for i in range(self.dimension)])
         )
+
 
 PCABO = PCABO().set_name("PCABO", register=True)
 
