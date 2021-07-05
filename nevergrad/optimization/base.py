@@ -449,7 +449,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             else:
                 try:  # Sometimes we have a limited budget so that
                     candidate = self._internal_ask_candidate()
-                except AssertionError:
+                except AssertionError as e:
                     assert (
                         self.parametrization._constraint_checkers
                     ), f"Error: {e}"  # This should not happen without constraint issues.
