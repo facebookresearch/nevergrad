@@ -1884,10 +1884,9 @@ class PCABO(base.Optimizer):
         else:
             data = candidate.get_standardized_data(reference=self.parametrization)
             y = self._transform.forward(data)  # tell not asked
-        self._pcabo.tell(candidate._meta["x_probe"], y)
-        # (Elena) candidate._meta["x_probe"] is not always defined! But I need to feed the pcabo.tell method with (X,y)
-        # (Elena) I am not using the loss function! Why?
+        self._pcabo.tell(y, -loss)
 
+    
         # self._fake_function.register(y, -loss)  # minimizing
         # self.bo.probe(y, lazy=False)
         # # for some unknown reasons, BO wants to evaluate twice the same point,
