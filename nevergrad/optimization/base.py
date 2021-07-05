@@ -451,7 +451,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                     candidate = self._internal_ask_candidate()
                 except AssertionError:
                     assert (
-                        self.parametrization._constraint_checker
+                        self.parametrization._constraint_checkers
                     )  # This should not happen without constraint issues.
                     candidate = self.parametrization.spawn_child()
             if candidate.satisfies_constraints():
