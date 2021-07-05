@@ -25,6 +25,8 @@ from . import utils
 from .base import registry as registry
 from .base import addCompare  # pylint: disable=unused-import
 from .base import IntOrParameter
+import bayes_optim
+from bayes_optim.extension import PCABO, RealSpace
 
 
 # families of optimizers
@@ -1812,6 +1814,96 @@ BO = ParametrizedBO().set_name("BO", register=True)
 BOSplit = ConfSplitOptimizer(max_num_vars=15, progressive=False, multivariate_optimizer=BO).set_name(
     "BOSplit", register=True
 )
+
+# (Elena) Still under construction
+class PCABO(base.Optimizer):
+    """ Principle Component Analysis (PCA) Bayesian Optimization for dimensionality reduction in BO
+
+    References
+
+    [RaponiWB+20]
+        Raponi, Elena, Hao Wang, Mariusz Bujny, Simonetta Boria, and Carola Doerr.
+        "High dimensional bayesian optimization assisted by principal component analysis."
+        In International Conference on Parallel Problem Solving from Nature, pp. 169-183.
+        Springer, Cham, 2020.
+
+    """
+
+    def __init__(
+        self,
+        parametrization: IntOrParameter,
+        budget: tp.Optional[int] = None,
+        num_workers: int = 1,
+        *,
+        initialization: tp.Optional[str] = None,
+        init_budget: tp.Optional[int] = None,
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+
+        # initialization
+        init = initialization
+        self._init_budget = init_budget
+        # if init is None:
+        #     self._InitOpt: tp.Optional[base.ConfiguredOptimizer] = None
+        # elif init == "random":
+        #     self._InitOpt = oneshot.RandomSearch
+        # else:
+        #     self._InitOpt = oneshot.SamplingSearch(sampler=init, scrambled=init == "Hammersley")
+
+        np.random.seed(123)
+        dim = 5
+        lb, ub = -5, 5
+        space = RealSpace([lb, ub]) * dim
+        # (Elena) We should find a way to pass these attributes when selecting the optimizer I guess...
+        self._pcabo = PCABO(
+                    search_space=space,
+                    obj_fun=fitness,
+                    DoE_size=5,
+                    max_FEs=100,
+                    verbose=True,
+                    n_point=1,
+                    n_components=0.95,
+                    acquisition_optimization={"optimizer": "BFGS"},
+        )
+
+        # (Elena) PROBLEM: bayes-optim methods also work with matrices, X is a matrix for ParallelBO or during the DOE phase
+        #   X = self.ask()
+        #   func_vals = self.evaluate(X)
+        #   self.tell(X, func_vals)
+        # where X is a matrix, and func_vals is a vector.
+    def _internal_ask_candidate(self) -> p.Parameter:
+        x_probe = self._pcabo.ask()
+        data = self._transform.backward(np.array(x_probe, copy=False))
+        candidate = self.parametrization.spawn_child().set_standardized_data(data)
+        candidate._meta["x_probe"] = x_probe
+        return candidate
+
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        if "x_probe" in candidate._meta:
+            y = candidate._meta["x_probe"]
+        else:
+            data = candidate.get_standardized_data(reference=self.parametrization)
+            y = self._transform.forward(data)  # tell not asked
+        self._pcabo.tell(candidate._meta["x_probe"], y)
+        # (Elena) candidate._meta["x_probe"] is not always defined! But I need to feed the pcabo.tell method with (X,y)
+        # (Elena) I am not using the loss function! Why?
+
+        # self._fake_function.register(y, -loss)  # minimizing
+        # self.bo.probe(y, lazy=False)
+        # # for some unknown reasons, BO wants to evaluate twice the same point,
+        # # but since it keeps a cache of the values, the registered value is not used
+        # # so we should clean the "fake" function
+        # self._fake_function._registered.clear()
+
+    def _internal_provide_recommendation(self) -> tp.Optional[tp.ArrayLike]:
+        if not self.archive:
+            return None
+        # (Elena) We shouldn't need any fake function here with this version of BO.
+        # And I didn't define the bo method in this class! So provide_recommendation needs changes...
+
+        return self._transform.backward(
+            np.array([self.bo.max["params"][self._fake_function.key(i)] for i in range(self.dimension)])
+        )
 
 
 class _Chain(base.Optimizer):
