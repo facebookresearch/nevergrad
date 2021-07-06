@@ -13,7 +13,7 @@ from unittest import SkipTest
 import pytest
 import numpy as np
 from nevergrad.optimization import registry as optregistry
-from nevergrad.functions.base import UnsupportedExperiment
+import nevergrad.functions.base as fbase
 from nevergrad.functions.mlda import datasets
 from nevergrad.functions import rl
 from nevergrad.common import testing
@@ -87,7 +87,7 @@ def check_maker(maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> 
     # check 1 sample
     try:
         sample = next(maker())
-    except UnsupportedExperiment as e:
+    except fbase.UnsupportedExperiment as e:
         raise SkipTest("Skipping because unsupported") from e
     assert isinstance(sample, experiments.Experiment)
     # check names, coherence and non-randomness
