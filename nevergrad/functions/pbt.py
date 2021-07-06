@@ -120,7 +120,7 @@ class PBT(ExperimentFunction):
     @classmethod
     def itercases(cls) -> tp.Iterator["PBT"]:
         options = dict(
-            names=[["Sphere", "Cigar", "Ellipsoid", "Cigar"], ["Hm", "Rastrigin", "Sphere", "Cigar"]],
+            names=[["sphere", "cigar", "ellipsoid", "cigar"], ["hm", "rastrigin", "sphere", "cigar"]],
             dimensions=[[2, 2, 2, 2], [5, 5, 5, 5], [77, 77, 77, 77]],
         )
         keys = sorted(options)
