@@ -56,8 +56,8 @@ class PBT(ExperimentFunction):
         y = self.unflatten(x)
         return sum(f(xi - o) for f, xi, o in zip(self._funcs, y, self._optima))
 
-    def evolve(self, x: np.ndarray, p: np.ndarray):
-        assert len(p) == self._hyperparameter_dimension
+    def evolve(self, x: np.ndarray, pp: np.ndarray):
+        assert len(pp) == self._hyperparameter_dimension
 
         # We define a gradient operator.
         def gradient(f, x):
@@ -65,12 +65,12 @@ class PBT(ExperimentFunction):
             # We compute a gradient by finite differences.
             g = np.zeros(len(x))
             value_minus = f(x)
-            assert type(value_minus) == type(1.5), str(type(value_minus))
+            assert isinstance(value_minus, float), str(type(value_minus))
             for i in range(len(x)):
                 e = np.zeros(len(x))
                 e[i] = epsilon
                 value_plus = f(x + e)
-                assert type(value_plus) == type(1.5), str(type(value_plus))
+                assert isinstance(value_plus, float), str(type(value_plus))
                 g[i] = (value_plus - value_minus) / epsilon
             return g
 
@@ -81,8 +81,8 @@ class PBT(ExperimentFunction):
         # Each of them is responsible of one gradient descent.
         for j in range(self._hyperparameter_dimension):
             assert len(y[j]) == self._dimensions[j]
-            assert type(self._funcs[j](y[j])) == type(1.0), str(type(self._funcs[j](y[j])))
-            y[j] -= np.exp(p[j]) * (
+            assert isinstance(self._funcs[j](y[j]), float), str(type(self._funcs[j](y[j])))
+            y[j] -= np.exp(pp[j]) * (
                 gradient(self._funcs[j], y[j] - self._optima[j]) + np.random.normal(self._dimensions[j])
             )
         current_idx = 0
