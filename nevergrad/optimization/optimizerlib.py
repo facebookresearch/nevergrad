@@ -25,7 +25,7 @@ from . import utils
 from .base import registry as registry
 from .base import addCompare  # pylint: disable=unused-import
 from .base import IntOrParameter
-import bayes_optim
+# import bayes_optim
 from bayes_optim.extension import PCABO as PcaBO
 from bayes_optim.extension import RealSpace
 
