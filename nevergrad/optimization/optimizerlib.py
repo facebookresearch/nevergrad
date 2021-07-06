@@ -29,7 +29,8 @@ from .base import IntOrParameter
 
 # families of optimizers
 # pylint: disable=unused-wildcard-import,wildcard-import,too-many-lines,too-many-arguments,too-many-branches
-# pylint: disable=import-outside-toplevel
+# pylint: disable=import-outside-toplevel,too-many-nested-blocks,too-many-instance-attributes,
+# pylint: disable=too-many-boolean-expressions,too-many-ancestors,too-many-statements
 from .differentialevolution import *  # type: ignore  # noqa: F403
 from .es import *  # type: ignore  # noqa: F403
 from .oneshot import *  # noqa: F403
@@ -1897,26 +1898,6 @@ class Chaining(base.ConfiguredOptimizer):
         super().__init__(_Chain, locals())
 
 
-# depreated: old names (need a capital letter for consistency
-chainCMAPowell = Chaining([CMA, Powell], ["half"]).set_name("chainCMAPowell", register=True)
-chainCMAPowell.no_parallelization = True
-chainMetaModelSQP = Chaining([MetaModel, SQP], ["half"]).set_name("chainMetaModelSQP", register=True)
-chainMetaModelSQP.no_parallelization = True
-chainMetaModelPowell = Chaining([MetaModel, Powell], ["half"]).set_name("chainMetaModelPowell", register=True)
-chainMetaModelPowell.no_parallelization = True
-chainDiagonalCMAPowell = Chaining([DiagonalCMA, Powell], ["half"]).set_name(
-    "chainDiagonalCMAPowell", register=True
-)
-chainDiagonalCMAPowell.no_parallelization = True
-chainNaiveTBPSAPowell = Chaining([NaiveTBPSA, Powell], ["half"]).set_name(
-    "chainNaiveTBPSAPowell", register=True
-)
-chainNaiveTBPSAPowell.no_parallelization = True
-chainNaiveTBPSACMAPowell = Chaining([NaiveTBPSA, CMA, Powell], ["third", "third"]).set_name(
-    "chainNaiveTBPSACMAPowell", register=True
-)
-chainNaiveTBPSACMAPowell.no_parallelization = True
-
 # new names
 ChainCMAPowell = Chaining([CMA, Powell], ["half"]).set_name("ChainCMAPowell", register=True)
 ChainCMAPowell.no_parallelization = True  # TODO make this automatic
@@ -2449,7 +2430,7 @@ class NGOpt12(NGOpt10):
             and self.budget < self.dimension * 50
             and self.budget > min(50, self.dimension * 5)
         ):
-            return chainMetaModelSQP
+            return ChainMetaModelSQP
         elif (
             not self.has_noise
             and self.fully_continuous

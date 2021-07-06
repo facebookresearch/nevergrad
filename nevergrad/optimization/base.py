@@ -456,7 +456,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                     candidate = self.parametrization.spawn_child()
             if candidate.satisfies_constraints():
                 break  # good to go!
-            if self._penalize_cheap_violations:
+            if self._penalize_cheap_violations or self.no_parallelization:
                 # Warning! This might be a tell not asked.
                 self._internal_tell_candidate(candidate, float("Inf"))  # DE requires a tell
             # updating num_ask  is necessary for some algorithms which need new num to ask another point
