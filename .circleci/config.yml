@@ -36,7 +36,7 @@ commands:
           command: |
             python3 -m venv venv
             . venv/bin/activate
-            pip install --progress-bar off pip==21.0.1  # TODO update after 21.1 which bugs
+            pip install --progress-bar off -U pip setuptools
             pip install --progress-bar off -e .[all]
             pip install --progress-bar off -U numpy>=1.20.0
 
