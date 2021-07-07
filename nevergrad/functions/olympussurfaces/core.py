@@ -44,7 +44,7 @@ class OlympusSurface(ExperimentFunction):
             "DiscreteMichalewicz",
             "LinearFunnel",
             "NarrowFunnel",
-            "GaussianMixture"
+            "GaussianMixture",
         ]
 
         assert self.noise_kind in ["GaussianNoise", "UniformNoise", "GammaNoise"]
@@ -61,12 +61,12 @@ class OlympusSurface(ExperimentFunction):
             "Schwefel": surfaces.Schwefel,
             "StyblinskiTang": surfaces.StyblinskiTang,
             "Zakharov": surfaces.Zakharov,
-            "DiscreteAckley":surfaces.DiscreteAckley,
-            "DiscreteDoubleWell":surfaces.DiscreteDoubleWell,
-            "DiscreteMichalewicz":surfaces.DiscreteMichalewicz,
-            "LinearFunnel":surfaces.LinearFunnel,
-            "NarrowFunnel":surfaces.NarrowFunnel,
-            "GaussianMixture":surfaces.GaussianMixture
+            "DiscreteAckley": surfaces.DiscreteAckley,
+            "DiscreteDoubleWell": surfaces.DiscreteDoubleWell,
+            "DiscreteMichalewicz": surfaces.DiscreteMichalewicz,
+            "LinearFunnel": surfaces.LinearFunnel,
+            "NarrowFunnel": surfaces.NarrowFunnel,
+            "GaussianMixture": surfaces.GaussianMixture,
         }
         if noise:
             noise = noises.Noise(kind=self.noise_kind, scale=self.noise_scale)

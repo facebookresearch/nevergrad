@@ -5,24 +5,30 @@
 
 import numpy as np
 from . import core
+import pytest
 
 
-@pytest.mark.parametrize("kind", ["AckleyPath",
-            "Dejong",
-            "HyperEllipsoid",
-            "Levy",
-            "Michalewicz",
-            "Rastrigin",
-            "Rosenbrock",
-            "Schwefel",
-            "StyblinskiTang",
-            "Zakharov",
-            "DiscreteAckley",
-            "DiscreteDoubleWell",
-            "DiscreteMichalewicz",
-            "LinearFunnel",
-            "NarrowFunnel",
-            "GaussianMixture"])
+@pytest.mark.parametrize(
+    "kind",
+    [
+        "AckleyPath",
+        "Dejong",
+        "HyperEllipsoid",
+        "Levy",
+        "Michalewicz",
+        "Rastrigin",
+        "Rosenbrock",
+        "Schwefel",
+        "StyblinskiTang",
+        "Zakharov",
+        "DiscreteAckley",
+        "DiscreteDoubleWell",
+        "DiscreteMichalewicz",
+        "LinearFunnel",
+        "NarrowFunnel",
+        "GaussianMixture",
+    ],
+)
 @pytest.mark.parametrize("noise_kind", ["GaussianNoise", "UniformNoise", "GammaNoise"])
 def test_olympus_surface(kind: str, noise_kind: str) -> None:
     func = core.OlympusSurface(kind=kind, noise_kind=noise_kind)

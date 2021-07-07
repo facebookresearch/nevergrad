@@ -1253,7 +1253,7 @@ def olympus_surfaces(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         "DiscreteDoubleWell",
         "DiscreteMichalewicz",
         "LinearFunnel",
-        "NarrowFunnel"
+        "NarrowFunnel",
     ]:
         for k in range(2, 5):
             for noise in ["GaussianNoise", "UniformNoise", "GammaNoise"]:
