@@ -11,6 +11,16 @@ from . import base
 from .base import IntOrParameter
 from . import recaster
 
+import threading
+
+    
+def smac_obj(objective_function, p):
+    print(f"SMAC proposes {p}")
+    data = np.asarray([np.tan(np.pi * p[i] / 2.0) for i in range(len(p))], dtype=np.float)
+    print(f"converted to {data}")
+    res = 1. #objective_function(data)
+    print(f"SMAC will receive {res}")
+    return res
 
 
 class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
@@ -27,7 +37,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         self.multirun = 1  # work in progress
         self.initial_guess: tp.Optional[tp.ArrayLike] = None
         # configuration
-        assert method in ["SMAC", "Nelder-Mead", "COBYLA", "SLSQP", "Powell"], f"Unknown method '{method}'"
+        assert method in ["SMAC", "SMAC2", "Nelder-Mead", "COBYLA", "SLSQP", "Powell"], f"Unknown method '{method}'"
         self.method = method
         self.random_restart = random_restart
 
@@ -107,23 +117,27 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
                 import scipy.optimize  # noqa  # pylint: disable=unused-import
                 from smac.facade.func_facade import fmin_smac  # noqa  # pylint: disable=unused-import
 
-                def smac_obj(p):
-                    print(f"SMAC proposes {p}")
-                    data = np.asarray([np.tan(np.pi * p[i] / 2.0) for i in range(len(p))], dtype=np.float)
-                    print(f"converted to {data}")
-                    res = objective_function(data)
-                    print(f"SMAC will receive {res}")
-                    return res
-
                 print(f"start SMAC optimization with budget {budget} in dimension {self.dimension}")
                 assert budget is not None
+                from functools import partial
+                import time
+
+                def thread_function(x):
+                    for k in range(500):
+                        print("pouet=", objective_function([1,2]))
+                        time.sleep(1)
+
+                thread = threading.Thread(target=thread_function, args=(1,))
+                thread.start()
+
                 x, cost, _ = fmin_smac(
-                    func=smac_obj,
+                    func=partial(smac_obj, objective_function),
                     x0=[0.0] * self.dimension,
                     bounds=[(-1, 1)] * self.dimension,
                     maxfun=budget,
                     rng=self._rng.randint(5000),
-                )  # Passing a seed makes fmin_smac determistic
+                )
+                thread.join()
                 print("end SMAC optimization")
 
                 if cost < best_res:
@@ -177,6 +191,7 @@ class ScipyOptimizer(base.ConfiguredOptimizer):
 
 NelderMead = ScipyOptimizer(method="Nelder-Mead").set_name("NelderMead", register=True)
 SMAC = ScipyOptimizer(method="SMAC").set_name("SMAC", register=True)
+SMAC2 = ScipyOptimizer(method="SMAC2").set_name("SMAC2", register=True)
 Powell = ScipyOptimizer(method="Powell").set_name("Powell", register=True)
 RPowell = ScipyOptimizer(method="Powell", random_restart=True).set_name("RPowell", register=True)
 Cobyla = ScipyOptimizer(method="COBYLA").set_name("Cobyla", register=True)
