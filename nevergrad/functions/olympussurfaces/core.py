@@ -21,13 +21,13 @@ class OlympusSurface(ExperimentFunction):
         self.param_dim = dimension
         self.noise_kind = noise_kind
         self.noise_scale = noise_scale
-        self.surface = partial(self._simulate_traditional_surface, noise=True)
-        self.surface_without_noise = partial(self._simulate_traditional_surface, noise=False)
+        self.surface = partial(self._simulate_surface, noise=True)
+        self.surface_without_noise = partial(self._simulate_surface, noise=False)
         parametrization = p.Array(shape=(dimension,))
         parametrization.function.deterministic = False
         super().__init__(self.surface, parametrization)
 
-    def _simulate_traditional_surface(self, x: np.ndarray, noise: bool = True) -> float:
+    def _simulate_surface(self, x: np.ndarray, noise: bool = True) -> float:
         assert self.kind in [
             "AckleyPath",
             "Dejong",
@@ -39,6 +39,12 @@ class OlympusSurface(ExperimentFunction):
             "Schwefel",
             "StyblinskiTang",
             "Zakharov",
+            "DiscreteAckley",
+            "DiscreteDoubleWell",
+            "DiscreteMichalewicz",
+            "LinearFunnel",
+            "NarrowFunnel",
+            "GaussianMixture"
         ]
 
         assert self.noise_kind in ["GaussianNoise", "UniformNoise", "GammaNoise"]
@@ -55,6 +61,12 @@ class OlympusSurface(ExperimentFunction):
             "Schwefel": surfaces.Schwefel,
             "StyblinskiTang": surfaces.StyblinskiTang,
             "Zakharov": surfaces.Zakharov,
+            "DiscreteAckley":surfaces.DiscreteAckley,
+            "DiscreteDoubleWell":surfaces.DiscreteDoubleWell,
+            "DiscreteMichalewicz":surfaces.DiscreteMichalewicz,
+            "LinearFunnel":surfaces.LinearFunnel,
+            "NarrowFunnel":surfaces.NarrowFunnel,
+            "GaussianMixture":surfaces.GaussianMixture
         }
         if noise:
             noise = noises.Noise(kind=self.noise_kind, scale=self.noise_scale)

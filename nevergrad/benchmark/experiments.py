@@ -1249,8 +1249,13 @@ def olympus_surfaces(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         "Schwefel",
         "StyblinskiTang",
         "Zakharov",
+        "DiscreteAckley",
+        "DiscreteDoubleWell",
+        "DiscreteMichalewicz",
+        "LinearFunnel",
+        "NarrowFunnel"
     ]:
-        for k in range(2, 6):
+        for k in range(2, 5):
             for noise in ["GaussianNoise", "UniformNoise", "GammaNoise"]:
                 for noise_scale in [0.5, 1]:
                     funcs.append(OlympusSurface(kind, 10 ** k, noise, noise_scale))
