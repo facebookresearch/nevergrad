@@ -8,6 +8,9 @@ import numpy as np
 import nevergrad as ng
 import nevergrad.common.typing as tp
 from nevergrad.common import testing
+from nevergrad.functions import ArtificialFunction
+from nevergrad.benchmark import experiments
+from nevergrad.benchmark.xpbase import Experiment
 from . import recaster
 from . import optimizerlib
 
@@ -95,3 +98,10 @@ def test_provide_recommendation() -> None:
     opt.tell(x2, 5)
     recommendation = opt.provide_recommendation()
     np.testing.assert_array_almost_equal(recommendation.value, x2.value)
+
+
+def test_sqp_with_constraint() -> None:
+    func = ArtificialFunction("ellipsoid", block_dimension=10, rotation=True, translation_factor=0.1)
+    func.parametrization.register_cheap_constraint(experiments._Constraint("sum", as_bool=True))
+    xp = Experiment(func, optimizer="ChainMetaModelSQP", budget=150, seed=4290846341)
+    xp._run_with_error()

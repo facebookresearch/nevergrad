@@ -19,13 +19,14 @@ pyomo>=5.7
 mixsimulator>=0.3.3
 hyperopt>=0.2.5
 IOHexperimenter>=0.2.8.7
-cdt>=0.5
+cdt>=0.5.23
 koncept>=0.2.2
 tensorflow-estimator>=2.3.0
-tensorflow>=2.3.1
-image-quality==1.2.6
 keras==2.2.4
 bayes-optim>=0.2.2
 scikit-learn>=0.24
+tensorflow>=2.5.0
+image-quality>=1.2.7
+keras>=2.4.3
 compiler_gym>=0.1.8 ; sys_platform == "linux"
 
