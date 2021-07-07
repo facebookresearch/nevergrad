@@ -59,6 +59,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
             best_x = np.array(self.initial_guess, copy=True)  # copy, just to make sure it is not modified
         remaining: float = budget - self._num_ask
         while remaining > 0:  # try to restart if budget is not elapsed
+            print(f"Iteration with remaining={remaining}")
             options: tp.Dict[str, tp.Any] = {} if self.budget is None else {"maxiter": remaining}
             if self.method == "SMAC2":
                 from ConfigSpace.hyperparameters import (
@@ -107,24 +108,60 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
                 import scipy.optimize  # noqa  # pylint: disable=unused-import
                 from smac.facade.func_facade import fmin_smac  # noqa  # pylint: disable=unused-import
 
+                import threading
+                import os
+                import time
+                from pathlib import Path
+                the_date = str(time.time())
+                feed = "/tmp/smac_feed" + the_date + ".txt"
+                fed = "/tmp/smac_fed" + the_date + ".txt"
+                def dummy_function():
+                    for u in range(remaining):
+                        print(f"side thread waiting for request... ({u}/{self.budget})")
+                        while (not Path(feed).is_file()) or os.stat(feed).st_size == 0:
+                            time.sleep(0.1)
+                        time.sleep(0.1)
+                        print("side thread happy to work on a request...")
+                        data = np.loadtxt(feed)
+                        os.remove(feed)
+                        print("side thread happy to really work on a request...")
+                        res = objective_function(data)
+                        print("side thread happy to forward the result of a request...")
+                        f = open(fed, "w")
+                        f.write(str(res))
+                        f.close()
+                    return
+                thread = threading.Thread(target=dummy_function)
+                thread.start()
                 def smac_obj(p):
                     print(f"SMAC proposes {p}")
                     data = np.asarray([np.tan(np.pi * p[i] / 2.0) for i in range(len(p))], dtype=np.float)
                     print(f"converted to {data}")
-                    res = objective_function(data)
+                    if Path(fed).is_file():
+                        os.remove(fed)
+                    np.savetxt(feed, data)
+                    while (not Path(fed).is_file()) or os.stat(fed).st_size == 0:
+                        time.sleep(0.1)
+                    time.sleep(0.1)
+                    f = open(fed, "r")
+                    res = np.float(f.read())
+                    f.close()
                     print(f"SMAC will receive {res}")
                     return res
 
                 print(f"start SMAC optimization with budget {budget} in dimension {self.dimension}")
                 assert budget is not None
                 x, cost, _ = fmin_smac(
+                    #func=lambda x: sum([(x_ - 1.234)**2  for x_ in x]),
                     func=smac_obj,
                     x0=[0.0] * self.dimension,
                     bounds=[(-1, 1)] * self.dimension,
-                    maxfun=budget,
+                    maxfun=remaining,
                     rng=self._rng.randint(5000),
                 )  # Passing a seed makes fmin_smac determistic
                 print("end SMAC optimization")
+                thread.join()
+                self._num_ask = budget
 
                 if cost < best_res:
                     best_res = cost
