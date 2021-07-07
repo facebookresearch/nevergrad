@@ -27,7 +27,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         self.multirun = 1  # work in progress
         self.initial_guess: tp.Optional[tp.ArrayLike] = None
         # configuration
-        assert method in ["SMAC", "Nelder-Mead", "COBYLA", "SLSQP", "Powell"], f"Unknown method '{method}'"
+        assert method in ["SMAC2", "SMAC", "Nelder-Mead", "COBYLA", "SLSQP", "Powell"], f"Unknown method '{method}'"
         self.method = method
         self.random_restart = random_restart
 
@@ -72,6 +72,32 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
 
                 # Import SMAC-utilities
                 from smac.scenario.scenario import Scenario  # noqa  # pylint: disable=unused-import
+                import threading
+                import os
+                import time
+                from pathlib import Path
+                the_date = str(time.time())
+                feed = "/tmp/smac_feed" + the_date + ".txt"
+                fed = "/tmp/smac_fed" + the_date + ".txt"
+                def dummy_function():
+                    for u in range(remaining):
+                        print(f"side thread waiting for request... ({u}/{self.budget})")
+                        while (not Path(feed).is_file()) or os.stat(feed).st_size == 0:
+                            time.sleep(0.1)
+                        time.sleep(0.1)
+                        print("side thread happy to work on a request...")
+                        data = np.loadtxt(feed)
+                        os.remove(feed)
+                        print("side thread happy to really work on a request...")
+                        res = objective_function(data)
+                        print("side thread happy to forward the result of a request...")
+                        f = open(fed, "w")
+                        f.write(str(res))
+                        f.close()
+                    return
+                thread = threading.Thread(target=dummy_function)
+                thread.start()
+
 
                 print(f"start SMAC2 optimization with budget {budget} in dimension {self.dimension}")
                 cs = ConfigurationSpace()
@@ -94,7 +120,15 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
                     p = np.asarray([p[f"x{i}"] for i in range(len(p.keys()))])
                     data = np.asarray(np.tan(np.pi * p / 2.0), dtype=np.float)
                     print(f"converted to {data}")
-                    res = objective_function(data)  # Stuck here!
+                    if Path(fed).is_file():
+                        os.remove(fed)
+                    np.savetxt(feed, data)
+                    while (not Path(fed).is_file()) or os.stat(fed).st_size == 0:
+                        time.sleep(0.1)
+                    time.sleep(0.1)
+                    f = open(fed, "r")
+                    res = np.float(f.read())
+                    f.close()
                     print(f"SMAC2 will receive {res}")
                     return res
                 smac = SMAC4HPO(scenario=scenario, rng=self._rng.randint(5000), tae_runner=smac2_obj)
@@ -102,6 +136,9 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
                 best_x = np.asarray(
                     [np.tan(np.pi * 0.5 * res[f"x{k}"]) for k in range(len(res.keys()))], dtype=np.float
                 )
+                print("end SMAC optimization")
+                thread.join()
+                self._num_ask = budget
 
             elif self.method == "SMAC":
                 import smac  # noqa  # pylint: disable=unused-import
@@ -133,6 +170,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
                     return
                 thread = threading.Thread(target=dummy_function)
                 thread.start()
+
                 def smac_obj(p):
                     print(f"SMAC proposes {p}")
                     data = np.asarray([np.tan(np.pi * p[i] / 2.0) for i in range(len(p))], dtype=np.float)
@@ -214,6 +252,7 @@ class ScipyOptimizer(base.ConfiguredOptimizer):
 
 NelderMead = ScipyOptimizer(method="Nelder-Mead").set_name("NelderMead", register=True)
 SMAC = ScipyOptimizer(method="SMAC").set_name("SMAC", register=True)
+SMAC2 = ScipyOptimizer(method="SMAC2").set_name("SMAC2", register=True)
 Powell = ScipyOptimizer(method="Powell").set_name("Powell", register=True)
 RPowell = ScipyOptimizer(method="Powell", random_restart=True).set_name("RPowell", register=True)
 Cobyla = ScipyOptimizer(method="COBYLA").set_name("Cobyla", register=True)
