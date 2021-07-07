@@ -37,7 +37,7 @@ commands:
             python3 -m venv venv
             . venv/bin/activate
             pip install --progress-bar off -U pip setuptools
-            pip install --progress-bar off -e .[all]
+            pip install --progress-bar off --no-deps -e .[all]
             pip install --progress-bar off -U numpy>=1.20.0
 
 jobs:
@@ -245,7 +245,7 @@ jobs:
           command: |
             py -3 -m venv venv
             . ./venv/Scripts/activate
-            pip install --progress-bar off pip==21.0.1
+            pip install --progress-bar off -U pip setuptools
             pip install --progress-bar off torch==1.4.0+cpu torchvision==0.5.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
             pip install --progress-bar off .[all]
 
