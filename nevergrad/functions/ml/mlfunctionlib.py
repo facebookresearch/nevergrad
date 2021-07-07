@@ -305,7 +305,7 @@ class MLTuning(ExperimentFunction):
         X = X.reshape(-1, data_dimension)
         rng.shuffle(X)
 
-        target_function = {
+        target_function: tp.Callable[[np.ndarray], np.ndarray] = {  # type: ignore
             "artificial": np.sin,
             "artificialcos": np.cos,
             "artificialsquare": np.square,

@@ -8,7 +8,6 @@ import logging
 import itertools
 from collections import deque
 import warnings
-import cma
 import numpy as np
 from bayes_opt import UtilityFunction
 from bayes_opt import BayesianOptimization
@@ -30,7 +29,8 @@ from .base import IntOrParameter
 
 # families of optimizers
 # pylint: disable=unused-wildcard-import,wildcard-import,too-many-lines,too-many-arguments,too-many-branches
-# pylint: disable=import-outside-toplevel
+# pylint: disable=import-outside-toplevel,too-many-nested-blocks,too-many-instance-attributes,
+# pylint: disable=too-many-boolean-expressions,too-many-ancestors,too-many-statements
 from .differentialevolution import *  # type: ignore  # noqa: F403
 from .es import *  # type: ignore  # noqa: F403
 from .oneshot import *  # noqa: F403
@@ -380,6 +380,8 @@ RecombiningPortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(
 ).set_name("RecombiningPortfolioDiscreteOnePlusOne", register=True)
 
 # pylint: too-many-arguments,too-many-instance-attributes
+
+
 class _CMA(base.Optimizer):
     def __init__(
         self,
@@ -404,6 +406,8 @@ class _CMA(base.Optimizer):
     def es(self) -> tp.Any:  # typing not possible since cmaes not imported :(
         if self._es is None:
             if not self._config.fcmaes:
+                import cma  # import inline in order to avoid matplotlib initialization warning
+
                 inopts = dict(
                     popsize=self._popsize,
                     randn=self._rng.randn,
@@ -412,6 +416,7 @@ class _CMA(base.Optimizer):
                     seed=np.nan,
                     CMA_elitist=self._config.elitist,
                 )
+
                 inopts.update(self._config.inopts if self._config.inopts is not None else {})
                 self._es = cma.CMAEvolutionStrategy(
                     x0=self.parametrization.sample().get_standardized_data(reference=self.parametrization)
@@ -422,7 +427,7 @@ class _CMA(base.Optimizer):
                 )
             else:
                 try:
-                    from fcmaes import cmaes  # pylint: disable=import-outside-toplevel
+                    from fcmaes import cmaes
                 except ImportError as e:
                     raise ImportError(
                         "Please install fcmaes (pip install fcmaes) to use FCMA optimizers"
@@ -961,7 +966,7 @@ class SPSA(base.Optimizer):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.init = True
         self.idx = 0
-        self.delta = float("nan")
+        self.delta: tp.Any = float("nan")
         self.ym: tp.Optional[np.ndarray] = None
         self.yp: tp.Optional[np.ndarray] = None
         self.t: np.ndarray = np.zeros(self.dimension)
@@ -1893,27 +1898,10 @@ class Chaining(base.ConfiguredOptimizer):
         super().__init__(_Chain, locals())
 
 
-# depreated: old names (need a capital letter for consistency
-chainCMAPowell = Chaining([CMA, Powell], ["half"]).set_name("chainCMAPowell", register=True)
-chainCMAPowell.no_parallelization = True
-chainMetaModelSQP = Chaining([MetaModel, SQP], ["half"]).set_name("chainMetaModelSQP", register=True)
-chainMetaModelSQP.no_parallelization = True
-chainMetaModelPowell = Chaining([MetaModel, Powell], ["half"]).set_name("chainMetaModelPowell", register=True)
-chainMetaModelPowell.no_parallelization = True
-chainDiagonalCMAPowell = Chaining([DiagonalCMA, Powell], ["half"]).set_name(
-    "chainDiagonalCMAPowell", register=True
-)
-chainDiagonalCMAPowell.no_parallelization = True
-chainNaiveTBPSAPowell = Chaining([NaiveTBPSA, Powell], ["half"]).set_name(
-    "chainNaiveTBPSAPowell", register=True
-)
-chainNaiveTBPSAPowell.no_parallelization = True
-chainNaiveTBPSACMAPowell = Chaining([NaiveTBPSA, CMA, Powell], ["third", "third"]).set_name(
-    "chainNaiveTBPSACMAPowell", register=True
-)
-chainNaiveTBPSACMAPowell.no_parallelization = True
-
 # new names
+GeneticDE = Chaining([RotatedTwoPointsDE, TwoPointsDE], [200]).set_name(
+    "GeneticDE", register=True
+)  # Also known as CGDE
 ChainCMAPowell = Chaining([CMA, Powell], ["half"]).set_name("ChainCMAPowell", register=True)
 ChainCMAPowell.no_parallelization = True  # TODO make this automatic
 ChainMetaModelSQP = Chaining([MetaModel, SQP], ["half"]).set_name("ChainMetaModelSQP", register=True)
@@ -2270,7 +2258,7 @@ class NGOptBase(base.Optimizer):
 
 @registry.register
 class Shiwa(NGOptBase):
-    """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
 
     def _select_optimizer_cls(self) -> base.OptCls:
         optCls: base.OptCls = NGOptBase
@@ -2289,7 +2277,7 @@ class NGO(NGOptBase):  # compatibility
 
 @registry.register
 class NGOpt4(NGOptBase):
-    """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
 
     def _select_optimizer_cls(self) -> base.OptCls:
         self.fully_continuous = (
@@ -2378,7 +2366,7 @@ class NGOpt4(NGOptBase):
 
 @registry.register
 class NGOpt8(NGOpt4):
-    """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
 
     def _select_optimizer_cls(self) -> base.OptCls:
         # Extracting info as far as possible.
@@ -2445,7 +2433,7 @@ class NGOpt12(NGOpt10):
             and self.budget < self.dimension * 50
             and self.budget > min(50, self.dimension * 5)
         ):
-            return chainMetaModelSQP
+            return ChainMetaModelSQP
         elif (
             not self.has_noise
             and self.fully_continuous

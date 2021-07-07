@@ -14,7 +14,7 @@ from nevergrad.functions import base as fbase
 from nevergrad.functions import ExperimentFunction
 from nevergrad.functions import ArtificialFunction
 from nevergrad.functions import FarOptimumFunction
-from nevergrad.functions import PBT
+from nevergrad.functions.pbt import PBT
 from nevergrad.functions.ml import MLTuning
 from nevergrad.functions import mlda as _mlda
 from nevergrad.functions.photonics import Photonics
@@ -36,8 +36,10 @@ from .xpbase import create_seed_generator
 from .xpbase import registry as registry  # noqa
 from .optgroups import get_optimizers
 
-# register all frozen experiments
-from . import frozenexperiments  # noqa # pylint: disable=unused-import
+# register all experiments from other files
+# pylint: disable=unused-import
+from . import frozenexperiments  # noqa
+from . import gymexperiments  # noqa
 
 # pylint: disable=stop-iteration-return, too-many-nested-blocks, too-many-locals
 
