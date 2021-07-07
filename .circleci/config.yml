@@ -36,8 +36,8 @@ commands:
           command: |
             python3 -m venv venv
             . venv/bin/activate
-            pip install --progress-bar off pip==21.0.1  # TODO update after 21.1 which bugs
-            pip install --progress-bar off -e .[all]
+            pip install --progress-bar off -U pip setuptools
+            pip install --progress-bar off --use-deprecated=legacy-resolver -e .[all]
             pip install --progress-bar off -U numpy>=1.20.0
 
 jobs:
@@ -245,9 +245,9 @@ jobs:
           command: |
             py -3 -m venv venv
             . ./venv/Scripts/activate
-            pip install --progress-bar off pip==21.0.1
+            pip install --progress-bar off -U pip setuptools
             pip install --progress-bar off torch==1.4.0+cpu torchvision==0.5.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
-            pip install --progress-bar off .[all]
+            pip install --use-deprecated=legacy-resolver --progress-bar off .[all]
 
       - save_cache:
           name: "[all] Save cache"
