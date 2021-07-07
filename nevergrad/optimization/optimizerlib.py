@@ -25,9 +25,7 @@ from . import utils
 from .base import registry as registry
 from .base import addCompare  # pylint: disable=unused-import
 from .base import IntOrParameter
-# import bayes_optim
-from bayes_optim.extension import PCABO as PcaBO
-from bayes_optim.extension import RealSpace
+
 
 
 # families of optimizers
@@ -1842,14 +1840,8 @@ class PCABO(base.Optimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
 
-        # initialization
-        # init = initialization
-        # if init is None:
-        #     self._InitOpt: tp.Optional[base.ConfiguredOptimizer] = None
-        # elif init == "random":
-        #     self._InitOpt = oneshot.RandomSearch
-        # else:
-        #     self._InitOpt = oneshot.SamplingSearch(sampler=init, scrambled=init == "Hammersley")
+        from bayes_optim.extension import PCABO as PcaBO
+        from bayes_optim.extension import RealSpace
 
         # np.random.seed(123)
         lb, ub = 1e-7 - np.pi / 2, np.pi / 2 - 1e-7
