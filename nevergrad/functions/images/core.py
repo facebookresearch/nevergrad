@@ -15,6 +15,7 @@ import torch
 import torchvision
 from torchvision.models import resnet50
 import torchvision.transforms as tr
+from . import dataset_folder
 
 import nevergrad as ng
 import nevergrad.common.typing as tp
@@ -54,7 +55,8 @@ class Image(base.ExperimentFunction):
         assert index == 0  # For the moment only 1 target.
         # path = os.path.dirname(__file__) + "/headrgb_olivier.png"
         path = Path(__file__).with_name("headrgb_olivier.png")
-        image = PIL.Image.open(path).resize((self.domain_shape[0], self.domain_shape[1]), PIL.Image.ANTIALIAS)
+        image = PIL.Image.open(path).resize(
+            (self.domain_shape[0], self.domain_shape[1]), PIL.Image.ANTIALIAS)
         self.data = np.asarray(image)[:, :, :3]  # 4th Channel is pointless here, only 255.
         # parametrization
         if not with_pgan:
@@ -63,7 +65,8 @@ class Image(base.ExperimentFunction):
             array.set_mutation(sigma=35)
             array.set_bounds(lower=0, upper=255.99, method="clipping", full_range_sampling=True)
             max_size = ng.p.Scalar(lower=1, upper=200).set_integer_casting()
-            array = ng.ops.mutations.Crossover(axis=(0, 1), max_size=max_size)(array).set_name("")  # type: ignore
+            array = ng.ops.mutations.Crossover(axis=(0, 1), max_size=max_size)(
+                array).set_name("")  # type: ignore
             super().__init__(loss(reference=self.data), array)
         else:
             self.pgan_model = torch.hub.load(
@@ -128,7 +131,8 @@ class Image(base.ExperimentFunction):
             image = self._generate_images(base_image).squeeze(0)
             image = cv2.resize(image, dsize=(226, 226), interpolation=cv2.INTER_NEAREST)
             if export_string:
-                cv2.imwrite(f"{export_string}_image{i}_{num_total_images}_{self.num_images}.jpg", image)
+                cv2.imwrite(
+                    f"{export_string}_image{i}_{num_total_images}_{self.num_images}.jpg", image)
             assert image.shape == (226, 226, 3), f"{x.shape} != {(226, 226, 3)}"
             loss += self.loss_function(image)
         return loss
@@ -197,7 +201,8 @@ class ImageAdversarial(base.ExperimentFunction):
             mutable_sigma=True,
         ).set_name("")
         array.set_mutation(sigma=self.epsilon / 10)
-        array.set_bounds(lower=-self.epsilon, upper=self.epsilon, method="clipping", full_range_sampling=True)
+        array.set_bounds(lower=-self.epsilon, upper=self.epsilon,
+                         method="clipping", full_range_sampling=True)
         max_size = ng.p.Scalar(lower=1, upper=200).set_integer_casting()
         array = ng.p.mutation.Crossover(axis=(1, 2), max_size=max_size)(array)
         super().__init__(self._loss, array)
@@ -246,19 +251,22 @@ class ImageAdversarial(base.ExperimentFunction):
         assert model in {"resnet50", "test"}
         tags = {"folder": "#FAKE#" if folder is None else Path(folder).name, "model": model}
         classifier: tp.Any = Resnet50() if model == "resnet50" else TestClassifier()
-        imsize = 224
-        transform = tr.Compose([tr.Resize(imsize), tr.CenterCrop(imsize), tr.ToTensor()])
+        classifier.eval()
+
+        transform = tr.Compose([tr.Resize(256), tr.CenterCrop(224), tr.ToTensor()])
         if folder is None:
             x = torch.zeros(1, 3, 224, 224)
             _, pred = torch.max(classifier(x), axis=1)
             data_loader: tp.Iterable[tp.Tuple[tp.Any, tp.Any]] = [(x, pred)]
         elif Path(folder).is_dir():
-            ifolder = torchvision.datasets.ImageFolder(folder, transform)
-            data_loader = torch.utils.DataLoader(
+            print(f"Folder  = {folder}")
+            ifolder = dataset_folder.ImageFolder_perso(folder, transform=transform)
+            data_loader = torch.utils.data.DataLoader(
                 ifolder, batch_size=1, shuffle=True, num_workers=8, pin_memory=True
             )
         else:
             raise ValueError(f"{folder} is not a valid folder.")
+
         for data, target in itertools.islice(data_loader, 0, 100):
             _, pred = torch.max(classifier(data), axis=1)
             if pred == target:
@@ -340,4 +348,5 @@ class ImageFromPGAN(base.ExperimentFunction):
         """ Generates images tensor of shape [nb_images, x, y, 3] with pixels between 0 and 255"""
         # pylint: disable=not-callable
         noise = torch.tensor(x.astype("float32"))
-        return ((self.pgan_model.test(noise).clamp(min=-1, max=1) + 1) * 255.99 / 2).permute(0, 2, 3, 1).cpu().numpy()  # type: ignore
+        # type: ignore
+        return ((self.pgan_model.test(noise).clamp(min=-1, max=1) + 1) * 255.99 / 2).permute(0, 2, 3, 1).cpu().numpy()
