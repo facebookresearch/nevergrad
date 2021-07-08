@@ -1490,6 +1490,7 @@ def image_quality(
         )
     ]
     # TODO: add the proxy info in the parametrization.
+    mofuncs: tp.Sequence[ExperimentFunction]
     if cross_val:
         mofuncs = helpers.SpecialEvaluationExperiment.create_crossvalidation_experiments(
             experiments=[funcs[0], funcs[2]],
@@ -1499,8 +1500,7 @@ def image_quality(
         )
     else:
         upper_bounds = [func(func.parametrization.value) for func in funcs]
-        mofuncs: tp.Sequence[ExperimentFunction] = [
-            fbase.MultiExperiment(funcs, upper_bounds=upper_bounds)]  # type: ignore
+        mofuncs: = [fbase.MultiExperiment(funcs, upper_bounds=upper_bounds)]  # type: ignore
     for budget in [100 * 5 ** k for k in range(3)]:
         for num_workers in [1]:
             for algo in optims:
@@ -1832,8 +1832,8 @@ def pbo_suite(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                 ]:
                     for nw in [1, 10]:
                         for budget in [100, 1000, 10000]:
-                            # type: ignore
-                            yield Experiment(func, optim, num_workers=nw, budget=budget, seed=next(seedg))
+                            yield Experiment(func, optim, num_workers=nw, budget=budget, seed=next(seedg)) # type: ignore
+
 
 
 def causal_similarity(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:

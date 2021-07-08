@@ -5,6 +5,7 @@ import os
 import os.path
 import sys
 import pickle
+import accimage
 
 
 def has_file_allowed_extension(filename, extensions):
@@ -174,7 +175,6 @@ def pil_loader(path):
 
 
 def accimage_loader(path):
-    import accimage
     try:
         return accimage.Image(path)
     except IOError:
