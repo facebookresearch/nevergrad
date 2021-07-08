@@ -1786,8 +1786,8 @@ def adversarial_attack(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]
     """
     seedg = create_seed_generator(seed)
     optims = get_optimizers("structure", "structured_moo", seed=next(seedg))
-    #folder = os.environ.get("NEVERGRAD_ADVERSARIAL_EXPERIMENT_FOLDER", None)
-    folder = "/datasets01/imagenet_full_size/061417/val"
+    folder = os.environ.get("NEVERGRAD_ADVERSARIAL_EXPERIMENT_FOLDER", None)
+    #folder = "/datasets01/imagenet_full_size/061417/val"
 
     if folder is None:
         warnings.warn(
