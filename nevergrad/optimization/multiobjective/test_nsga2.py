@@ -83,8 +83,7 @@ def get_nsga2_test_case_data():
 
 def test_nsga2_ranking() -> None:
     candidates, expected_frontiers = get_nsga2_test_case_data()
-    ranking_method = nsga2.NSGA2Ranking()
-    rank_result = ranking_method.rank(candidates, len(candidates))
+    rank_result = nsga2.rank(candidates, len(candidates))
 
     assert len(rank_result) == len(candidates)
     for i, frontier in enumerate(expected_frontiers):
@@ -94,9 +93,8 @@ def test_nsga2_ranking() -> None:
 
 def test_nsga2_ranking_2() -> None:
     candidates, expected_frontiers = get_nsga2_test_case_data()
-    ranking_method = nsga2.NSGA2Ranking()
     n_selected = len(expected_frontiers[0]) + len(expected_frontiers[1]) - 1
-    rank_result = ranking_method.rank(candidates, n_selected)
+    rank_result = nsga2.rank(candidates, n_selected)
 
     assert len(rank_result) == n_selected
     # Check the first frontier
@@ -116,8 +114,7 @@ def test_nsga2_ranking_2() -> None:
 
 def test_nsga2_ranking_3() -> None:
     candidates, expected_frontiers = get_nsga2_test_case_data()
-    ranking_method = nsga2.NSGA2Ranking()
-    rank_result = ranking_method.rank(candidates, None)
+    rank_result = nsga2.rank(candidates, None)
 
     assert len(rank_result) == len(candidates)
     for i, frontier in enumerate(expected_frontiers):
@@ -134,15 +131,13 @@ def test_nsga2_ranking_4():
     params = ng.p.Tuple(ng.p.Scalar(lower=0, upper=2))
     loss_values = [0.0, 1.0, -10.0, 1.0, 3.0, 1.0]
     candidates: tp.List[p.Parameter] = []
-    expected_frontier = []
     for v in loss_values:
         candidate = params.spawn_child().set_standardized_data(v)
         candidate.loss = np.array(v)
         candidates.append(candidate)
-    ranking_method = nsga2.NSGA2Ranking()
 
     n_selected = 3
-    rank_result = ranking_method.rank(candidates, n_selected)
+    rank_result = nsga2.rank(candidates, n_selected)
     candidates.sort(key=lambda x: rank_result[x.uid][0] if x.uid in rank_result else float("inf"))
     loss_from_rank = [r.loss for r in candidates[:n_selected]]
     loss_from_sorted = [np.array(v) for v in sorted(loss_values)[:n_selected]]

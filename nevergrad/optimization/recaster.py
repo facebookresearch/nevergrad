@@ -106,7 +106,7 @@ class _MessagingThread(threading.Thread):
         t0 = time.time()
         while not (mess.done or self._kill_order):  # waits for its answer
             time.sleep(self._last_evaluation_duration / 10.0)
-        self._last_evaluation_duration = np.clip(time.time() - t0, 0.0001, 1.0)
+        self._last_evaluation_duration = float(np.clip(time.time() - t0, 0.0001, 1.0))
         # sys.stdout.write(f"Received answer {repr(mess)}\n")
         # sys.stdout.flush()
         if self._kill_order:
@@ -146,10 +146,6 @@ class MessagingThread:
 
     def __del__(self) -> None:
         self.stop()  # del method of the thread class does not work
-
-
-class FinishedUnderlyingOptimizerWarning(Warning):
-    pass
 
 
 class RecastOptimizer(base.Optimizer):
@@ -200,15 +196,17 @@ class RecastOptimizer(base.Optimizer):
             messages = [m for m in self._messaging_thread.messages if not m.meta.get("asked", False)]
             if not messages:  # avoid waiting if messages at the first iteration
                 time.sleep(self._last_optimizer_duration / 10.0)
-        self._last_optimizer_duration = np.clip(time.time() - t0, 0.0001, 1.0)
+            if time.time() - t0 > 20:
+                raise RuntimeError("No message with thread for 20s, something went wrong")
+        self._last_optimizer_duration = float(np.clip(time.time() - t0, 0.0001, 1.0))
         # case when the thread is dead (send random points)
         if not self._messaging_thread.is_alive():  # In case the algorithm stops before the budget is elapsed.
             warnings.warn(
                 "Underlying optimizer has already converged, returning random points",
-                FinishedUnderlyingOptimizerWarning,
+                base.errors.FinishedUnderlyingOptimizerWarning,
             )
             self._check_error()
-            data = np.random.normal(0, 1, self.dimension)
+            data = self._rng.normal(0, 1, self.dimension)
             return self.parametrization.spawn_child().set_standardized_data(data)
         message = messages[0]  # take oldest message
         message.meta["asked"] = True  # notify that it has been asked so that it is not selected again
@@ -223,7 +221,7 @@ class RecastOptimizer(base.Optimizer):
                     f"Recast optimizer raised an error:\n{self._messaging_thread.error}"
                 ) from self._messaging_thread.error
 
-    def _internal_tell_candidate(self, candidate: p.Parameter, value: float) -> None:
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: float) -> None:
         """Returns value for a point which was "asked"
         (none asked point cannot be "tell")
         """
@@ -236,17 +234,17 @@ class RecastOptimizer(base.Optimizer):
         messages = [m for m in messages if m.meta["uid"] == candidate.uid]
         if not messages:
             raise RuntimeError(f"No message for evaluated point {x}: {self._messaging_thread.messages}")
-        messages[0].result = value  # post the value, and the thread will deal with it
+        messages[0].result = loss  # post the value, and the thread will deal with it
 
-    def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
-        raise base.TellNotAskedNotSupportedError
+    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: float) -> None:
+        raise base.errors.TellNotAskedNotSupportedError
 
     def _internal_provide_recommendation(self) -> tp.Optional[tp.ArrayLike]:
         """Returns the underlying optimizer output if provided (ie if the optimizer did finish)
         else the best pessimistic point.
         """
         if self._messaging_thread is not None and self._messaging_thread.output is not None:
-            return self._messaging_thread.output  # type: ignore
+            return self._messaging_thread.output
         else:
             return None  # use default
 

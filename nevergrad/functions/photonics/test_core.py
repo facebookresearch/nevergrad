@@ -11,6 +11,7 @@ import pytest
 import numpy as np
 from nevergrad.common import testing
 from . import core
+from . import photonics
 
 
 @testing.parametrized(
@@ -55,7 +56,6 @@ def test_morpho_bounding_method_constraints() -> None:
 
 def test_photonics_bragg_recombination() -> None:
     func = core.Photonics("bragg", 8)
-    # func.parametrization.set_recombination(ng.p.mutation.RavelCrossover())  # type: ignore
     func.parametrization.random_state.seed(24)
     arrays = [func.parametrization.spawn_child() for _ in range(2)]
     arrays[0].value = [[2, 2, 2, 2], [35, 35, 35, 35]]
@@ -140,21 +140,61 @@ GOOD_CHIRPED = [
 ]
 
 
+EPS_AND_D = [  # photosic realistic
+    2.0000,
+    3.0000,
+    2.1076,
+    2.0000,
+    3.0000,
+    2.5783,
+    2.0000,
+    3.0000,
+    2.0000,
+    3.0000,
+    90.0231,
+    78.9789,
+    72.8369,
+    99.9577,
+    82.7487,
+    62.7583,
+    104.1682,
+    139.9002,
+    93.3356,
+    75.6039,
+]
+
+
 @testing.parametrized(
     morpho=("morpho", 1.127904, None),
     chirped=("chirped", 0.594587, None),
-    good_chirped=("chirped", 0.275923, GOOD_CHIRPED),  # supposed to be better
+    good_chirped=("chirped", 0.275923, np.array([GOOD_CHIRPED])),  # supposed to be better
     bragg=("bragg", 0.96776, None),
+    photosic_realistic=("cf_photosic_realistic", 0.0860257, np.array(EPS_AND_D).reshape((2, -1))),
+    photosic_reference=("cf_photosic_reference", 0.431072, None),
 )
-def test_photonics_values_random(name: str, expected: float, data: tp.Optional[tp.List[float]]) -> None:
+def test_photonics_values_random(name: str, expected: float, data: tp.Optional[np.ndarray]) -> None:
     if name == "morpho" and os.environ.get("CIRCLECI", False):
         raise SkipTest("Too slow in CircleCI")
-    size = len(data) if data is not None else (16 if name != "morpho" else 4)
+    size = data.size if data is not None else (16 if name != "morpho" else 4)
     photo = core.Photonics(name, size)
     if data is None:
         x = np.random.RandomState(12).normal(0, 1, size=size)
         candidate = photo.parametrization.spawn_child().set_standardized_data(x)
     else:
-        candidate = photo.parametrization.spawn_child(new_value=[data])
+        candidate = photo.parametrization.spawn_child(new_value=data)
     np.testing.assert_almost_equal(photo(candidate.value), expected, decimal=4)
     np.testing.assert_almost_equal(photo.evaluation_function(candidate), expected, decimal=4)
+
+
+def test_photosic_reference() -> None:
+    debut = np.array([79, 102])
+    fin = np.array([100, 70])
+    dbr = np.tile(np.array([147, 120]), 3)
+    X = np.concatenate([debut, dbr, fin])
+    cf_test = photonics.cf_photosic_reference(X)
+    np.testing.assert_almost_equal(cf_test, 0.09069397)
+
+
+def test_photosic_realist() -> None:
+    cf_test = photonics.cf_photosic_realistic(np.array(EPS_AND_D))
+    np.testing.assert_almost_equal(cf_test, 0.08602574254532869)

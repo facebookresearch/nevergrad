@@ -12,6 +12,7 @@ import nevergrad as ng
 from . import optimizerlib
 from . import experimentalvariants as xpvariants
 from . import base
+from . import utils
 from . import callbacks
 
 
@@ -92,6 +93,7 @@ def test_base_optimizer() -> None:
     zeroptim = xpvariants.Zero(parametrization=2, budget=4, num_workers=1)
     # add descriptor to replicate old behavior, returning pessimistic best
     zeroptim.parametrization.descriptors.deterministic_function = False
+    assert not zeroptim.parametrization.function.deterministic
     representation = repr(zeroptim)
     expected = "parametrization=Array{(2,)}"
     assert expected in representation, f"Unexpected representation: {representation}"
@@ -177,3 +179,16 @@ def test_recommendation_correct() -> None:
     optimizer = optimizerlib.OnePlusOne(parametrization=param, budget=300, num_workers=1)
     recommendation = optimizer.minimize(func)
     assert func.min_loss == recommendation.value
+
+
+def constant(x: np.ndarray) -> float:  # pylint: disable=unused-argument
+    return 12.0
+
+
+def test_pruning_calls() -> None:
+    opt = ng.optimizers.CMA(50, budget=2000)
+    # worst case scenario for pruning is constant:
+    # it should not keep everything or that will make computation time explode
+    opt.minimize(constant)
+    assert isinstance(opt.pruning, utils.Pruning)
+    assert opt.pruning._num_prunings < 4

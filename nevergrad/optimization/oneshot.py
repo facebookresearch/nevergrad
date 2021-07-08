@@ -3,10 +3,12 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import copy
 import numpy as np
 from scipy import stats
 from scipy.spatial import ConvexHull  # pylint: disable=no-name-in-module
 import nevergrad.common.typing as tp
+from nevergrad.parametrization import parameter as p
 from . import sequences
 from . import base
 from .base import IntOrParameter
@@ -24,17 +26,27 @@ def convex_limit(struct_points: np.ndarray) -> int:
         return len(struct_points) // 2
     for i in range(0, min(2 * d + 2, len(struct_points)), 2):
         points += [struct_points[i]]
-    hull = ConvexHull(points, incremental=True)
-    k = len(points)
-    for i in range(d + 1, len(points)):
+    hull = ConvexHull(points[: (d + 1)], incremental=True)
+    num_points = len(hull.vertices)
+    k = len(points) - 1
+    for i in range(num_points, len(points)):
+        # We add the ith point.
         hull.add_points(points[i : (i + 1)])
-        if i not in hull.vertices:
-            k = i - 1
-            break
+        num_points += 1
+        if len(hull.vertices) != num_points:
+            return num_points - 1
+        for j in range(i + 1, len(points)):
+            # We check that the jth point is not in the convex hull;
+            # this is ok if the jth point, added in the hull, becomes a vertex.
+            hull_copy = copy.deepcopy(hull)
+            hull_copy.add_points(points[j : j + 1])
+            if len(hull_copy.vertices) != num_points + 1:
+                return num_points - 1
     return k
 
 
 def hull_center(points: np.ndarray, k: int) -> np.ndarray:
+    """Center of the cuboid enclosing the hull."""
     hull = ConvexHull(points[:k])
     maxi = np.asarray(hull.vertices[0])
     mini = np.asarray(hull.vertices[0])
@@ -75,19 +87,24 @@ def avg_of_k_best(archive: utils.Archive[utils.MultiValue], method: str = "dimfo
         raise ValueError(f"{method} not implemented as a method for choosing k in avg_of_k_best.")
     k = 1 if k < 1 else int(k)
     # Wasted time.
-    first_k_individuals = [
-        k for k in sorted(items, key=lambda indiv: archive[indiv[0]].get_estimation("pessimistic"))[:k]
-    ]
+    first_k_individuals = sorted(items, key=lambda indiv: archive[indiv[0]].get_estimation("pessimistic"))[:k]
     assert len(first_k_individuals) == k
     return np.array(sum(p[0] for p in first_k_individuals) / k)
 
 
-# # # # # classes of optimizers # # # # #
+# # # # # classes of optimizers # # # # #
 
 
 class OneShotOptimizer(base.Optimizer):
-    # pylint: disable=abstract-method
     one_shot = True
+
+    def _internal_ask_candidate(self) -> p.Parameter:
+        out = self.parametrization.spawn_child()
+        with p.helpers.deterministic_sampling(out):
+            # the values will be sampled deterministically since there is no reason not to
+            # with one shot algorithms
+            out.set_standardized_data(self._internal_ask())
+        return out
 
 
 # Recentering or center-based counterparts of the original Nevergrad oneshot optimizers:
@@ -99,7 +116,7 @@ class OneShotOptimizer(base.Optimizer):
 # - Some variants use a rescaling depending on the budget and the dimension.
 
 
-# # # # # One-shot optimizers: all fitness evaluations are in parallel. # # # # #
+# # # # # One-shot optimizers: all fitness evaluations are in parallel. # # # # #
 
 
 # pylint: disable=too-many-arguments,too-many-instance-attributes
@@ -112,7 +129,7 @@ class _RandomSearch(OneShotOptimizer):
         middle_point: bool = False,
         stupid: bool = False,
         opposition_mode: tp.Optional[str] = None,
-        cauchy: bool = False,
+        sampler: str = "parametrization",
         scale: tp.Union[float, str] = 1.0,
         recommendation_rule: str = "pessimistic",
     ) -> None:
@@ -123,8 +140,8 @@ class _RandomSearch(OneShotOptimizer):
         self.opposition_mode = opposition_mode
         self.stupid = stupid
         self.recommendation_rule = recommendation_rule
-        self.cauchy = cauchy
         self.scale = scale
+        self.sampler = sampler
         self._opposable_data: tp.Optional[np.ndarray] = None
 
     def _internal_ask(self) -> tp.ArrayLike:
@@ -141,16 +158,22 @@ class _RandomSearch(OneShotOptimizer):
         scale = self.scale
         if isinstance(scale, str) and scale == "auto":
             # Some variants use a rescaling depending on the budget and the dimension (1st version).
+            assert self.budget is not None
             scale = (1 + np.log(self.budget)) / (4 * np.log(self.dimension))
         if isinstance(scale, str) and scale == "autotune":
+            assert self.budget is not None
             scale = np.sqrt(np.log(self.budget) / self.dimension)
         if isinstance(scale, str) and scale == "random":
             scale = np.exp(self._rng.normal(0.0, 1.0) - 2.0) / np.sqrt(self.dimension)
-        point = (
-            self._rng.standard_cauchy(self.dimension)
-            if self.cauchy
-            else self._rng.normal(0, 1, self.dimension)
-        )
+        # sample the new point
+        if self.sampler == "gaussian":
+            point = self._rng.normal(0, 1, self.dimension)
+        elif self.sampler == "cauchy":
+            point = self._rng.standard_cauchy(self.dimension)
+        elif self.sampler == "parametrization":
+            point = self.parametrization.sample().get_standardized_data(reference=self.parametrization)
+        else:
+            raise ValueError("Unkwnown sampler {self.sampler}")
         self._opposable_data = scale * point
         return self._opposable_data  # type: ignore
 
@@ -180,7 +203,11 @@ class RandomSearchMaker(base.ConfiguredOptimizer):
         symmetrizes exploration wrt the center: (e.g. https://ieeexplore.ieee.org/document/4424748)
              - full symmetry if "opposite"
              - random * symmetric if "quasi"
-    cauchy: bool
+    sampler: str
+        - parametrization: uses the default sample() method of the parametrization, which samples uniformly
+          between bounds and a Gaussian otherwise
+        - gaussian: uses a Gaussian distribution
+        - cauchy: uses a Cauchy distribution
         use a Cauchy distribution instead of Gaussian distribution
     scale: float or "random"
         scalar for multiplying the suggested point values, or string:
@@ -201,10 +228,11 @@ class RandomSearchMaker(base.ConfiguredOptimizer):
         middle_point: bool = False,
         stupid: bool = False,
         opposition_mode: tp.Optional[str] = None,
-        cauchy: bool = False,
+        sampler: str = "parametrization",
         scale: tp.Union[float, str] = 1.0,
         recommendation_rule: str = "pessimistic",
     ) -> None:
+        assert sampler in ["gaussian", "cauchy", "parametrization"]
         super().__init__(_RandomSearch, locals())
 
 
@@ -285,8 +313,10 @@ class _SamplingSearch(OneShotOptimizer):
         if self._rescaler is not None:
             sample = self._rescaler.apply(sample)
         if self.autorescale is True or self.autorescale == "auto":
+            assert self.budget is not None
             self.scale = (1 + np.log(self.budget)) / (4 * np.log(self.dimension))
         if self.autorescale == "autotune":
+            assert self.budget is not None
             self.scale = np.sqrt(np.log(self.budget) / self.dimension)
 
         def transf(x: np.ndarray) -> np.ndarray:
@@ -368,13 +398,20 @@ MetaRecentering = SamplingSearch(
 MetaTuneRecentering = SamplingSearch(
     cauchy=False, autorescale="autotune", sampler="Hammersley", scrambled=True
 ).set_name("MetaTuneRecentering", register=True)
-HAvgMetaRecentering = SamplingSearch(
+HullAvgMetaTuneRecentering = SamplingSearch(
+    cauchy=False,
+    autorescale="autotune",
+    sampler="Hammersley",
+    scrambled=True,
+    recommendation_rule="average_of_hull_best",
+).set_name("HullAvgMetaTuneRecentering", register=True)
+HullAvgMetaRecentering = SamplingSearch(
     cauchy=False,
     autorescale=True,
     sampler="Hammersley",
     scrambled=True,
     recommendation_rule="average_of_hull_best",
-).set_name("HAvgMetaRecentering", register=True)
+).set_name("HullAvgMetaRecentering", register=True)
 AvgMetaRecenteringNoHull = SamplingSearch(
     cauchy=False,
     autorescale=True,

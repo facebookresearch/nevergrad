@@ -3,10 +3,11 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import cv2
-from pathlib import Path
+import os
 import itertools
+from pathlib import Path
 
+import cv2
 import numpy as np
 import PIL.Image
 import torch.nn as nn
@@ -17,10 +18,11 @@ import torchvision.transforms as tr
 
 import nevergrad as ng
 import nevergrad.common.typing as tp
+from nevergrad.common import errors
 from .. import base
 from . import imagelosses
 
-# pylint: disable=abstract-method
+# pylint: disable=abstract-method,too-many-instance-attributes,too-many-arguments
 
 
 class Image(base.ExperimentFunction):
@@ -30,6 +32,7 @@ class Image(base.ExperimentFunction):
         index: int = 0,
         loss: tp.Type[imagelosses.ImageLoss] = imagelosses.SumAbsoluteDifferences,
         with_pgan: bool = False,
+        num_images: int = 1,
     ) -> None:
         """
         problem_name: the type of problem we are working on.
@@ -44,6 +47,7 @@ class Image(base.ExperimentFunction):
         self.problem_name = problem_name
         self.index = index
         self.with_pgan = with_pgan
+        self.num_images = num_images
 
         # Storing data necessary for the problem at hand.
         assert problem_name == "recovering"  # For the moment we have only this one.
@@ -54,11 +58,12 @@ class Image(base.ExperimentFunction):
         self.data = np.asarray(image)[:, :, :3]  # 4th Channel is pointless here, only 255.
         # parametrization
         if not with_pgan:
+            assert num_images == 1
             array = ng.p.Array(init=128 * np.ones(self.domain_shape), mutable_sigma=True)
             array.set_mutation(sigma=35)
             array.set_bounds(lower=0, upper=255.99, method="clipping", full_range_sampling=True)
             max_size = ng.p.Scalar(lower=1, upper=200).set_integer_casting()
-            array.set_recombination(ng.p.mutation.Crossover(axis=(0, 1), max_size=max_size)).set_name("")  # type: ignore
+            array = ng.ops.mutations.Crossover(axis=(0, 1), max_size=max_size)(array).set_name("")  # type: ignore
             super().__init__(loss(reference=self.data), array)
         else:
             self.pgan_model = torch.hub.load(
@@ -68,11 +73,13 @@ class Image(base.ExperimentFunction):
                 pretrained=True,
                 useGPU=False,
             )
-            self.domain_shape = (1, 512)  # type: ignore
+            self.domain_shape = (num_images, 512)  # type: ignore
             initial_noise = np.random.normal(size=self.domain_shape)
+            self.initial = np.random.normal(size=(1, 512))
+            self.target = np.random.normal(size=(1, 512))
             array = ng.p.Array(init=initial_noise, mutable_sigma=True)
             array.set_mutation(sigma=35.0)
-            array.set_recombination(ng.p.mutation.Crossover(axis=(0, 1))).set_name("")
+            array = ng.ops.mutations.Crossover(axis=(0, 1))(array).set_name("")
             self._descriptors.pop("use_gpu", None)
             super().__init__(self._loss_with_pgan, array)
 
@@ -84,14 +91,50 @@ class Image(base.ExperimentFunction):
         """ Generates images tensor of shape [nb_images, x, y, 3] with pixels between 0 and 255"""
         # pylint: disable=not-callable
         noise = torch.tensor(x.astype("float32"))
-        return ((self.pgan_model.test(noise).clamp(min=-1, max=1) + 1) * 255.99 / 2).permute(0, 2, 3, 1).cpu().numpy()  # type: ignore
+        return (
+            ((self.pgan_model.test(noise).clamp(min=-1, max=1) + 1) * 255.99 / 2)
+            .permute(0, 2, 3, 1)
+            .cpu()
+            .numpy()[:, :, :, [2, 1, 0]]
+        )
 
-    def _loss_with_pgan(self, x: np.ndarray) -> float:
-        image = self._generate_images(x).squeeze(0)
-        image = cv2.resize(image, dsize=(226, 226), interpolation=cv2.INTER_NEAREST)
-        assert image.shape == (226, 226, 3), f"{x.shape} != {(226, 226, 3)}"
-        loss = self.loss_function(image)
+    def interpolate(self, base_image: np.ndarray, target: np.ndarray, k: int, num_images: int) -> np.ndarray:
+        if num_images == 1:
+            return target
+        coef1 = k / (num_images - 1)
+        coef2 = (num_images - 1 - k) / (num_images - 1)
+        return coef1 * base_image + coef2 * target
+
+    def _loss_with_pgan(self, x: np.ndarray, export_string: str = "") -> float:
+        loss = 0.0
+        factor = 1 if self.num_images < 2 else 10  # Number of intermediate images.
+        num_total_images = factor * self.num_images
+        for i in range(num_total_images):
+            base_i = i // factor
+            # We generate num_images images. The last one is close to target, the first one is close to initial if num_images > 1.
+            base_image = self.interpolate(self.initial, self.target, i, num_total_images)
+            movability = 0.5  # If only one image, then we move by 0.5.
+            if self.num_images > 1:
+                movability = 4 * (
+                    0.25 - (i / (num_total_images - 1) - 0.5) ** 2
+                )  # 1 if i == num_total_images/2, 0 if 0 or num_images-1
+            moving = (
+                movability
+                * np.sqrt(self.dimension)
+                * np.expand_dims(x[base_i], 0)
+                / (1e-10 + np.linalg.norm(x[base_i]))
+            )
+            base_image = moving if self.num_images == 1 else base_image + moving
+            image = self._generate_images(base_image).squeeze(0)
+            image = cv2.resize(image, dsize=(226, 226), interpolation=cv2.INTER_NEAREST)
+            if export_string:
+                cv2.imwrite(f"{export_string}_image{i}_{num_total_images}_{self.num_images}.jpg", image)
+            assert image.shape == (226, 226, 3), f"{x.shape} != {(226, 226, 3)}"
+            loss += self.loss_function(image)
         return loss
+
+    def export_to_images(self, x: np.ndarray, export_string: str = "export"):
+        self._loss_with_pgan(x, export_string=export_string)
 
 
 # #### Adversarial attacks ##### #
@@ -156,7 +199,7 @@ class ImageAdversarial(base.ExperimentFunction):
         array.set_mutation(sigma=self.epsilon / 10)
         array.set_bounds(lower=-self.epsilon, upper=self.epsilon, method="clipping", full_range_sampling=True)
         max_size = ng.p.Scalar(lower=1, upper=200).set_integer_casting()
-        array.set_recombination(ng.p.mutation.Crossover(axis=(1, 2), max_size=max_size))  # type: ignore
+        array = ng.p.mutation.Crossover(axis=(1, 2), max_size=max_size)(array)
         super().__init__(self._loss, array)
 
     def _loss(self, x: np.ndarray) -> float:
@@ -173,12 +216,12 @@ class ImageAdversarial(base.ExperimentFunction):
 
     def evaluation_function(self, *recommendations: ng.p.Parameter) -> float:
         """Returns wether the attack worked or not"""
-        assert len(recommendations) == 1, "Should not be a pareto set for a monoobjective function"
+        assert len(recommendations) == 1, "Should not be a pareto set for a singleobjective function"
         x = recommendations[0].value
         output_adv = self._get_classifier_output(x)
         _, pred = torch.max(output_adv, axis=1)
         actual = int(self.label)
-        return float(pred == actual if self.targeted else pred != actual)
+        return float(pred != actual if self.targeted else pred == actual)
 
     @classmethod
     def make_folder_functions(
@@ -259,6 +302,8 @@ class ImageFromPGAN(base.ExperimentFunction):
         if not torch.cuda.is_available():
             use_gpu = False
         # Storing high level information..
+        if os.environ.get("CIRCLECI", False):
+            raise errors.UnsupportedExperiment("ImageFromPGAN is not well supported in CircleCI")
         self.pgan_model = torch.hub.load(
             "facebookresearch/pytorch_GAN_zoo:hub",
             "PGAN",
@@ -278,7 +323,7 @@ class ImageFromPGAN(base.ExperimentFunction):
         array = ng.p.Array(init=initial_noise, mutable_sigma=mutable_sigma)
         # parametrization
         array.set_mutation(sigma=sigma)
-        array.set_recombination(ng.p.mutation.Crossover(axis=(0, 1))).set_name("")
+        array = ng.ops.mutations.Crossover(axis=(0, 1))(array).set_name("")
 
         super().__init__(self._loss, array)
         self.loss_function = loss

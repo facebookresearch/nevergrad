@@ -166,8 +166,8 @@ class HypervolumePareto:
         if size is None or size >= len(self._pareto):  # No limit: we return the full set.
             return self._pareto
         if subset == "random":
-            return self._rng.choice(self._pareto, size)  # type: ignore
-        tentatives = [self._rng.choice(self._pareto, size) for _ in range(subset_tentatives)]
+            return self._rng.choice(self._pareto, size).tolist()  # type: ignore
+        tentatives = [self._rng.choice(self._pareto, size).tolist() for _ in range(subset_tentatives)]  # type: ignore
         if self._hypervolume is None:
             raise RuntimeError("Hypervolume not initialized, not supported")  # TODO fix
         hypervolume = self._hypervolume
@@ -180,10 +180,10 @@ class HypervolumePareto:
                 for v in self._pareto:
                     best_score = float("inf") if subset != "EPS" else 0.0
                     for pa in tentative:
-                        if subset == "loss-covering":  # equivalent to IGD.
+                        if subset == "loss-covering":  # Equivalent to IGD.
                             best_score = min(best_score, np.linalg.norm(pa.losses - v.losses))
-                        elif subset == "EPS":
-                            best_score = max(best_score, max(pa.losses - v.losses))
+                        elif subset == "EPS":  # Cone Epsilon-Dominance.
+                            best_score = min(best_score, max(pa.losses - v.losses))
                         elif subset == "domain-covering":
                             best_score = min(
                                 best_score, np.linalg.norm(pa.get_standardized_data(reference=v))
@@ -192,4 +192,4 @@ class HypervolumePareto:
                             raise ValueError(f'Unknown subset for Pareto-Set subsampling: "{subset}"')
                     score += best_score ** 2 if subset != "EPS" else max(score, best_score)
                 scores += [score]
-        return tentatives[scores.index(min(scores))]
+        return tentatives[scores.index(min(scores))]  # type: ignore

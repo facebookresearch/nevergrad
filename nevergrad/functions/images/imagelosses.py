@@ -7,7 +7,8 @@ import os
 import typing as tp
 import torch
 import numpy as np
-import imquality.brisque as brisque
+
+
 import lpips
 import cv2
 from nevergrad.functions.base import UnsupportedExperiment as UnsupportedExperiment
@@ -30,7 +31,6 @@ class ImageLoss:
             assert self.reference.max() <= 256.0, f"Image max = {self.reference.max()}"
             assert self.reference.max() > 3.0  # Not totally sure but entirely black images are not very cool.
             self.domain_shape = self.reference.shape
-        pass
 
     def __call__(self, img: np.ndarray) -> float:
         raise NotImplementedError(f"__call__ undefined in class {type(self)}")
@@ -149,6 +149,10 @@ class Brisque(ImageLoss):
     REQUIRES_REFERENCE = False
 
     def __call__(self, img: np.ndarray) -> float:
+        try:
+            import imquality.brisque as brisque
+        except ImportError:
+            raise UnsupportedExperiment("Brisque is not installed, please run 'pip install imquality'")
         try:
             score = brisque.score(img)
         except AssertionError:  # oh my god, brisque can raise an assert when the data is too weird.

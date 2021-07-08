@@ -18,7 +18,7 @@ You can find other installation options (including for Windows users) in the :re
 
 Feel free to join `Nevergrad users Facebook group <https://www.facebook.com/groups/nevergradusers/>`_.
 
-Minimizing a function using an optimizer (here :code:`OnePlusOne`) can be easily run with:
+Minimizing a function using an optimizer (here :code:`NGOpt`, our adaptative optimization algorithm) can be easily run with:
 
 .. literalinclude:: ../nevergrad/optimization/test_doc.py
     :language: python
@@ -55,6 +55,7 @@ Learn more about parametrization in the :ref:`Parametrization section <parametri
    optimizers_ref.rst
    parametrization_ref.rst
    benchmarking.rst
+   r.rst
    benchmarks.rst
    pyomo.rst
    windows.md

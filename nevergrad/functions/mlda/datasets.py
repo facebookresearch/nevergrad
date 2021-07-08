@@ -11,7 +11,7 @@ from unittest.mock import patch
 import requests
 import numpy as np
 import pandas as pd
-from scipy import misc
+from PIL import Image
 
 
 _NAMED_URLS = {
@@ -63,7 +63,8 @@ def get_data(name: str) -> tp.Union[np.ndarray, pd.DataFrame]:
     elif name == "Employees":  # proximity matrix
         return pd.read_excel(path)
     elif name == "Landscape":
-        return misc.imread(path).dot([0.216, 0.7152, 0.0722])  # get brightness
+        with Image.open(path) as im:
+            return np.array(im).dot([1.216, 0.7152, 0.0722])
     else:
         raise NameError(f'Unknown parsing for name "{name}"')
 
@@ -90,7 +91,12 @@ def mocked_data() -> tp.Iterator[tp.Any]:
 
 def make_perceptron_data(name: str) -> np.ndarray:
     """Creates the data (see https://drive.google.com/file/d/1fc1sVwoLJ0LsQ5fzi4jo3rDJHQ6VGQ1h/view)"""
-    funcs = {"quadratic": lambda x: x ** 2, "sine": np.sin, "abs": np.abs, "heaviside": lambda x: x > 0}
+    funcs: tp.Dict[str, tp.Callable[[np.ndarray], np.ndarray]] = {
+        "quadratic": lambda x: x ** 2,  # type: ignore
+        "sine": np.sin,
+        "abs": np.abs,
+        "heaviside": lambda x: x > 0,  # type: ignore
+    }
     if name not in funcs:
         raise ValueError(f'Unknown name "{name}", available are:\n{list(funcs.keys())}')
     data: np.ndarray = np.zeros((50, 2))  # TODO: why?

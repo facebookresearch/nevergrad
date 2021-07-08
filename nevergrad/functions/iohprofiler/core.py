@@ -52,7 +52,7 @@ class PBOFunction(base.ExperimentFunction):
             "Ordered",
         ], "The only valid options for 'instrumentation' are 'Softmax' and 'Ordered'"
         if instrumentation == "Softmax":
-            parameterization: np.p.Parameter = ng.p.Choice([0, 1], repetitions=dim)
+            parameterization: ng.p.Parameter = ng.p.Choice([0, 1], repetitions=dim)
         else:
             parameterization = ng.p.TransitionChoice([0, 1], repetitions=dim)
         super().__init__(self._evaluation_internal, parameterization.set_name(instrumentation))
@@ -138,4 +138,5 @@ class WModelFunction(base.ExperimentFunction):
 
     def _evaluation_internal(self, x: np.ndarray) -> float:
         assert len(x) == self.f_internal.number_of_variables
+        assert not set(x) - {0, 1}, f"Pb with input {x} in PBO: not binary."
         return -float(self.f_internal(x))
