@@ -23,7 +23,7 @@ cdt>=0.5.23
 koncept>=0.2.2
 tensorflow-estimator>=2.3.0
 keras==2.2.4
-bayes-optim>=0.2.2
+bayes-optim>=0.2.4
 scikit-learn>=0.24
 tensorflow>=2.5.0
 image-quality>=1.2.7
