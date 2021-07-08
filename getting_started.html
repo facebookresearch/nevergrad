@@ -4,8 +4,7 @@
 <html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8" />
-  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
-
+  
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
   <title>Getting started &mdash; nevergrad  documentation</title>
@@ -176,9 +175,9 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <section id="getting-started">
+  <div class="section" id="getting-started">
 <span id="id1"></span><h1>Getting started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h1>
-<section id="installing">
+<div class="section" id="installing">
 <h2>Installing<a class="headerlink" href="#installing" title="Permalink to this headline">¶</a></h2>
 <p>Nevergrad is a Python 3.6+ library. It can be installed with:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install nevergrad
@@ -201,12 +200,12 @@ the <code class="code docutils literal notranslate"><span class="pre">[all]</spa
 <li><p>with <code class="code docutils literal notranslate"><span class="pre">zsh</span></code> you will need to run <code class="code docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">'nevergrad[all]'</span></code> instead of <code class="code docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">nevergrad[all]</span></code></p></li>
 <li><p>under Windows, you may need to preinstall torch (for <code class="code docutils literal notranslate"><span class="pre">benchmark</span></code> or <code class="code docutils literal notranslate"><span class="pre">all</span></code> installations) using Pytorch <a class="reference external" href="https://pytorch.org/get-started/locally/">installation instructions</a>.</p></li>
 </ul>
-</section>
-<section id="installing-on-windows">
+</div>
+<div class="section" id="installing-on-windows">
 <h2>Installing on Windows<a class="headerlink" href="#installing-on-windows" title="Permalink to this headline">¶</a></h2>
 <p>For Windows installation, please refer to the <a class="reference external" href="windows.html">Windows documention</a>.</p>
-</section>
-<section id="basic-optimization-example">
+</div>
+<div class="section" id="basic-optimization-example">
 <h2>Basic optimization example<a class="headerlink" href="#basic-optimization-example" title="Permalink to this headline">¶</a></h2>
 <p><strong>By default all optimizers assume a centered and reduced prior at the beginning of the optimization (i.e. 0 mean and unitary standard deviation).</strong></p>
 <p>Optimizing (minimizing!) a function using an optimizer (here <code class="code docutils literal notranslate"><span class="pre">NGOpt</span></code>, our adaptative optimization algorithm) can be easily run with:</p>
@@ -235,8 +234,8 @@ directly accessed through <code class="code docutils literal notranslate"><span 
 <p>The [optimization documentation](docs/optimization.md) contains more information on how to use several workers,
 take full control of the optimization through the <code class="code docutils literal notranslate"><span class="pre">ask</span></code> and <code class="code docutils literal notranslate"><span class="pre">tell</span></code> interface, perform multiobjective optimization,
 as well as pieces of advice on how to choose the proper optimizer for your problem.</p>
-</section>
-<section id="structure-of-the-package">
+</div>
+<div class="section" id="structure-of-the-package">
 <h2>Structure of the package<a class="headerlink" href="#structure-of-the-package" title="Permalink to this headline">¶</a></h2>
 <p>The goals of this package are to provide:</p>
 <ul class="simple">
@@ -253,8 +252,8 @@ as well as pieces of advice on how to choose the proper optimizer for your probl
 <li><p><code class="code docutils literal notranslate"><span class="pre">benchmark</span></code>: for running experiments comparing the algorithms on benchmark functions</p></li>
 <li><p><code class="code docutils literal notranslate"><span class="pre">common</span></code>: a set of tools used throughout the package</p></li>
 </ul>
-</section>
-</section>
+</div>
+</div>
 
 
            </div>

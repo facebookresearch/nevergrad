@@ -4,8 +4,7 @@
 <html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8" />
-  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
-
+  
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
   <title>Contributing to Nevergrad &mdash; nevergrad  documentation</title>
@@ -199,13 +198,13 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <section id="contributing-to-nevergrad">
+  <div class="section" id="contributing-to-nevergrad">
 <h1>Contributing to Nevergrad<a class="headerlink" href="#contributing-to-nevergrad" title="Permalink to this headline">¶</a></h1>
-<section id="general-considerations">
+<div class="section" id="general-considerations">
 <h2>General considerations<a class="headerlink" href="#general-considerations" title="Permalink to this headline">¶</a></h2>
 <p>We want to make contributing to this project as easy and transparent as possible.</p>
 <p>Whether you want to contribute or not, don’t hesitate to join <a class="reference external" href="https://www.facebook.com/groups/nevergradusers/">Nevergrad users’ Facebook group</a></p>
-<section id="our-development-process">
+<div class="section" id="our-development-process">
 <h3>Our Development Process<a class="headerlink" href="#our-development-process" title="Permalink to this headline">¶</a></h3>
 <p>To install <code class="code docutils literal notranslate"><span class="pre">nevergrad</span></code> in development mode (if you wish to contribute to it), clone the repository and run <code class="code docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-e</span> <span class="pre">.[all]</span></code> from inside the repository folder,
 or <code class="code docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-e</span> <span class="pre">'.[all]'</span></code> if you use <code class="code docutils literal notranslate"><span class="pre">zsh</span></code>. If the install fails because of <code class="code docutils literal notranslate"><span class="pre">torch</span></code>, you can preinstall it with the instructions <a class="reference external" href="https://pytorch.org/get-started/locally/">on Pytorch website</a>
@@ -229,8 +228,8 @@ can install <code class="code docutils literal notranslate"><span class="pre">bl
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>black nevergrad
 </pre></div>
 </div>
-</section>
-<section id="pull-requests">
+</div>
+<div class="section" id="pull-requests">
 <h3>Pull Requests<a class="headerlink" href="#pull-requests" title="Permalink to this headline">¶</a></h3>
 <p>We actively welcome your pull requests.</p>
 <ol class="arabic simple">
@@ -241,40 +240,40 @@ can install <code class="code docutils literal notranslate"><span class="pre">bl
 <li><p>Make sure your code lints.</p></li>
 <li><p>If you haven’t already, complete the Contributor License Agreement (“CLA”).</p></li>
 </ol>
-</section>
-<section id="contributor-license-agreement-cla">
+</div>
+<div class="section" id="contributor-license-agreement-cla">
 <h3>Contributor License Agreement (“CLA”)<a class="headerlink" href="#contributor-license-agreement-cla" title="Permalink to this headline">¶</a></h3>
 <p>In order to accept your pull request, we need you to submit a CLA. You only need
 to do this once to work on any of Facebook’s open source projects.</p>
 <p>Complete your CLA here: &lt;<a class="reference external" href="https://code.facebook.com/cla">https://code.facebook.com/cla</a>&gt;</p>
-</section>
-<section id="issues">
+</div>
+<div class="section" id="issues">
 <h3>Issues<a class="headerlink" href="#issues" title="Permalink to this headline">¶</a></h3>
 <p>We use GitHub issues to track public bugs. Please ensure your description is
 clear and has sufficient instructions to be able to reproduce the issue.</p>
 <p>Facebook has a <a class="reference external" href="https://www.facebook.com/whitehat/">bounty program</a> for the safe
 disclosure of security bugs. In those cases, please go through the process
 outlined on that page and do not file a public issue.</p>
-</section>
-<section id="coding-style">
+</div>
+<div class="section" id="coding-style">
 <h3>Coding Style<a class="headerlink" href="#coding-style" title="Permalink to this headline">¶</a></h3>
 <p>We use pep8, but allow lines to be as long as 140 characters.
 Please use the pre-commit hooks to ensure correctness (see section “Our Development Process”).</p>
-</section>
-<section id="documentation">
+</div>
+<div class="section" id="documentation">
 <h3>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h3>
 <p>Documentation can be build with <code class="code docutils literal notranslate"><span class="pre">make</span> <span class="pre">html</span></code> from the <code class="code docutils literal notranslate"><span class="pre">docs</span></code> folder.</p>
-</section>
-<section id="license">
+</div>
+<div class="section" id="license">
 <h3>License<a class="headerlink" href="#license" title="Permalink to this headline">¶</a></h3>
 <p>By contributing to <code class="code docutils literal notranslate"><span class="pre">nevergrad</span></code>, you agree that your contributions will be licensed
 under the LICENSE file in the root directory of this source tree.</p>
-</section>
-</section>
-<section id="adding-an-algorithm">
+</div>
+</div>
+<div class="section" id="adding-an-algorithm">
 <h2>Adding an algorithm<a class="headerlink" href="#adding-an-algorithm" title="Permalink to this headline">¶</a></h2>
 <p>The following guidelines are for people who want to add an algorithm to <code class="code docutils literal notranslate"><span class="pre">nevergrad</span></code>. They may be already outdated, feel free to update them if you find them unclear or think they should evolve.</p>
-<section id="where-to-add-the-algorithm">
+<div class="section" id="where-to-add-the-algorithm">
 <h3>Where to add the algorithm?<a class="headerlink" href="#where-to-add-the-algorithm" title="Permalink to this headline">¶</a></h3>
 <p>All optimizers are implemented in the <code class="code docutils literal notranslate"><span class="pre">ng.optimization</span></code> subpackage, and all optimizer classes are available either in the <code class="code docutils literal notranslate"><span class="pre">ng.optimization.optimizerlib</span></code> module (which is aliased to <code class="code docutils literal notranslate"><span class="pre">ng.optimizers</span></code>, or through the optimizer registry: <code class="code docutils literal notranslate"><span class="pre">ng.optimizers.registry</span></code>.</p>
 <p>Implementations are however spread into several files:</p>
@@ -286,10 +285,10 @@ under the LICENSE file in the root directory of this source tree.</p>
 </ul>
 <p>If you implement one new algorithm and if this algorithm is not one-shot/evolutionary/recast, you should implement it into <a class="reference external" href="https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/optimization/optimizerlib.py">optimizerlib.py</a>. If you implement a whole family of algorithms, you are welcome to create a new corresponding file.
 Still, this structure is not final, it is bound to evolve and you are welcome to amend it.</p>
-</section>
-<section id="how-to-implement-it">
+</div>
+<div class="section" id="how-to-implement-it">
 <h3>How to implement it?<a class="headerlink" href="#how-to-implement-it" title="Permalink to this headline">¶</a></h3>
-<section id="base-class-features">
+<div class="section" id="base-class-features">
 <h4>Base class features<a class="headerlink" href="#base-class-features" title="Permalink to this headline">¶</a></h4>
 <p>All algorithms derive from a base class named <code class="code docutils literal notranslate"><span class="pre">Optimizer</span></code> and are registered through a decorator. The implementation of the base class is <a class="reference external" href="https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/optimization/base.py">here</a>.
 This base class implements the <code class="code docutils literal notranslate"><span class="pre">ask</span></code> and <code class="code docutils literal notranslate"><span class="pre">tell</span></code> interface.</p>
@@ -312,8 +311,8 @@ By default it keeps at least the best 100 points and cleans up when reaching 100
 attribute to <code class="code docutils literal notranslate"><span class="pre">None</span></code>.</p>
 <p>The base <code class="code docutils literal notranslate"><span class="pre">Optimizer</span></code> class also tracks the best optimistic and pessimistic points through the <code class="code docutils literal notranslate"><span class="pre">current_bests</span></code> attribute which is of type:
 <code class="code docutils literal notranslate"><span class="pre">Dict[str,</span> <span class="pre">Point]</span></code>. The key string is either <code class="code docutils literal notranslate"><span class="pre">optimistic</span></code> or <code class="code docutils literal notranslate"><span class="pre">pessimistic</span></code>, and the <code class="code docutils literal notranslate"><span class="pre">Point</span></code> value is a <code class="code docutils literal notranslate"><span class="pre">Value</span></code> with an additional <code class="code docutils literal notranslate"><span class="pre">x</span></code> attribute, recording the location of the point.</p>
-</section>
-<section id="methods-and-attributes">
+</div>
+<div class="section" id="methods-and-attributes">
 <h4>Methods and attributes<a class="headerlink" href="#methods-and-attributes" title="Permalink to this headline">¶</a></h4>
 <p>4 methods are designed to be overridden:</p>
 <ul class="simple">
@@ -328,8 +327,8 @@ New instances of <code class="code docutils literal notranslate"><span class="pr
 filiation between parameters. The value can then be updated either directly through the <code class="code docutils literal notranslate"><span class="pre">parameter.value</span></code> attribute, or by setting
 the value in the “standardized space” (<cite>parameter.set_standardized_data</cite>).</p>
 <p>If the algorithm is not able to handle parallelization (if <code class="code docutils literal notranslate"><span class="pre">ask</span></code> cannot be called multiple times consecutively), the <code class="code docutils literal notranslate"><span class="pre">no_parallelization</span></code> <strong>class attribute</strong> must be set to <code class="code docutils literal notranslate"><span class="pre">True</span></code>.</p>
-</section>
-<section id="seeding">
+</div>
+<div class="section" id="seeding">
 <h4>Seeding<a class="headerlink" href="#seeding" title="Permalink to this headline">¶</a></h4>
 <p>Seeding has an important part for the significance and reproducibility of the algorithm benchmarking. We want to ensure the following constraints:</p>
 <ul class="simple">
@@ -342,19 +341,19 @@ user if need be. <code class="code docutils literal notranslate"><span class="pr
 By default, it will be seeded randomly by drawing a number from the global numpy random state so
 that seeding the global numpy random state will yield reproducible results as well</p>
 <p>A unit tests automatically makes sure that all optimizers have repeatable behaviors  on a simple test case when seeded from outside (see below).</p>
-</section>
-<section id="about-type-hints">
+</div>
+<div class="section" id="about-type-hints">
 <h4>About type hints<a class="headerlink" href="#about-type-hints" title="Permalink to this headline">¶</a></h4>
 <p>We have used <a class="reference external" href="https://docs.python.org/3/library/typing.html">type hints</a> throughout <code class="code docutils literal notranslate"><span class="pre">nevergrad</span></code> to make it more robust, and the continuous integration will check that everything is correct when pull requests are submitted.
 If you need to add base types for your code, please import them through <code class="code docutils literal notranslate"><span class="pre">import</span> <span class="pre">nevergrad.common.typing</span> <span class="pre">as</span> <span class="pre">tp</span></code>.
 However, <strong>we do not want typing to be an annoyance</strong> for contributors who do not care about it, so please feel entirely free to use <code class="code docutils literal notranslate"><span class="pre">#</span> <span class="pre">type:</span> <span class="pre">ignore</span></code> on each line the continuous integration will flag as incorrect, so that the errors disappear. If we consider it useful to have correct typing, we will update the code after your pull request is merged.</p>
-</section>
-<section id="optimizer-families">
+</div>
+<div class="section" id="optimizer-families">
 <h4>Optimizer families<a class="headerlink" href="#optimizer-families" title="Permalink to this headline">¶</a></h4>
 <p>If it makes sense to create several variations of your optimizer, using different hyperparameters, you can implement an <code class="code docutils literal notranslate"><span class="pre">OptimizerFamily</span></code>. The only aim of this class is to create <code class="code docutils literal notranslate"><span class="pre">Optimizers</span></code> and set the parameters before returning it. This is still an experimental API which may evolve soon, and an example can be found in the implementation of <a class="reference external" href="https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/optimization/differentialevolution.py">differential evolution algorithms</a>.</p>
-</section>
-</section>
-<section id="how-to-test-it">
+</div>
+</div>
+<div class="section" id="how-to-test-it">
 <h3>How to test it<a class="headerlink" href="#how-to-test-it" title="Permalink to this headline">¶</a></h3>
 <p>You are welcome to add tests if you want to make sure your implementation is correct. It is however not required since some tests are run on all registered algorithms. They will test two features:</p>
 <ul class="simple">
@@ -367,20 +366,20 @@ However, <strong>we do not want typing to be an annoyance</strong> for contribut
 </div>
 <p>The repeatability test will however crash the first time you run it, since no value for the recommendation of your algorithm exists. This is automatically added when running the tests, and if everything goes well the second time you run them, it means everything is fine. You will see in you diff that an additional line was added to a file containing all expected recommendations.</p>
 <p>If for any reason one of this test is not suitable for your algorithm, we’ll discuss this in the pull request and decide of the appropriate workaround.</p>
-</section>
-<section id="how-to-benchmark-it">
+</div>
+<div class="section" id="how-to-benchmark-it">
 <h3>How to benchmark it<a class="headerlink" href="#how-to-benchmark-it" title="Permalink to this headline">¶</a></h3>
 <p>Benchmarks are implemented in two files <a class="reference external" href="https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/benchmark/experiments.py">experiments.py</a> and <a class="reference external" href="https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/benchmark/frozenexperiments.py">frozenexperiments.py</a>.
 While the former can be freely modified (benchmarks will be regularly added and removed), the latter file implements experiments which should not be modified when adding an algorithm, because they are used in tests, or for reproducibility of published results.</p>
 <p>Providing some benchmark results along your pull requests will highlight the interest of your algorithm. It is however not required. For now, there is no standard approach for benchmarking your algorithm. You can implement your own benchmark, or copy an existing one and add your algorithm. Feel free to propose other solutions.</p>
-<section id="how-benchmarks-are-implemented">
+<div class="section" id="how-benchmarks-are-implemented">
 <h4>How benchmarks are implemented<a class="headerlink" href="#how-benchmarks-are-implemented" title="Permalink to this headline">¶</a></h4>
 <p>A benchmark is made of many <code class="code docutils literal notranslate"><span class="pre">Experiment</span></code> instances.  An <code class="code docutils literal notranslate"><span class="pre">Experiment</span></code> is basically the combination of a test function, and settings for the optimization (optimizer, budget, etc…).</p>
 <p>Benchmarks are specified using a generator of <code class="code docutils literal notranslate"><span class="pre">Experiment</span></code> instances. See examples in <a class="reference external" href="https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/benchmark/experiments.py">experiments.py</a>. If you want to make sure your benchmark is perfectly reproducible, you will need to be careful of properly seeding the functions and/or the experiments.</p>
-</section>
-</section>
-</section>
-</section>
+</div>
+</div>
+</div>
+</div>
 
 
            </div>
