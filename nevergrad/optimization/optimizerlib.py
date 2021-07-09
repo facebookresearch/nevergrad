@@ -66,16 +66,16 @@ class _OnePlusOne(base.Optimizer):
     """
 
     def __init__(
-            self,
-            parametrization: IntOrParameter,
-            budget: tp.Optional[int] = None,
-            num_workers: int = 1,
-            *,
-            noise_handling: tp.Optional[tp.Union[str, tp.Tuple[str, float]]] = None,
-            mutation: str = "gaussian",
-            crossover: bool = False,
-            rotation: bool = False,
-            use_pareto: bool = False,
+        self,
+        parametrization: IntOrParameter,
+        budget: tp.Optional[int] = None,
+        num_workers: int = 1,
+        *,
+        noise_handling: tp.Optional[tp.Union[str, tp.Tuple[str, float]]] = None,
+        mutation: str = "gaussian",
+        crossover: bool = False,
+        rotation: bool = False,
+        use_pareto: bool = False,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert crossover or (not rotation), "We can not have both rotation and not crossover."
@@ -259,9 +259,8 @@ class _OnePlusOne(base.Optimizer):
             index = self._doerr_index
             counter = self._doerr_counters[index]
             self._doerr_mutation_rewards[index] = (
-                                                          self._doerr_gamma * counter * self._doerr_mutation_rewards[
-                                                      index] + improvement
-                                                  ) / (self._doerr_gamma * counter + 1)
+                self._doerr_gamma * counter * self._doerr_mutation_rewards[index] + improvement
+            ) / (self._doerr_gamma * counter + 1)
             self._doerr_counters = [self._doerr_gamma * x for x in self._doerr_counters]
             self._doerr_counters[index] += 1
             self._doerr_index = -1
@@ -324,13 +323,13 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
 
     # pylint: disable=unused-argument
     def __init__(
-            self,
-            *,
-            noise_handling: tp.Optional[tp.Union[str, tp.Tuple[str, float]]] = None,
-            mutation: str = "gaussian",
-            crossover: bool = False,
-            rotation: bool = False,
-            use_pareto: bool = False,
+        self,
+        *,
+        noise_handling: tp.Optional[tp.Union[str, tp.Tuple[str, float]]] = None,
+        mutation: str = "gaussian",
+        crossover: bool = False,
+        rotation: bool = False,
+        use_pareto: bool = False,
     ) -> None:
         super().__init__(_OnePlusOne, locals())
 
@@ -386,11 +385,11 @@ RecombiningPortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(
 
 class _CMA(base.Optimizer):
     def __init__(
-            self,
-            parametrization: IntOrParameter,
-            budget: tp.Optional[int] = None,
-            num_workers: int = 1,
-            config: tp.Optional["ParametrizedCMA"] = None,
+        self,
+        parametrization: IntOrParameter,
+        budget: tp.Optional[int] = None,
+        num_workers: int = 1,
+        config: tp.Optional["ParametrizedCMA"] = None,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._config = ParametrizedCMA() if config is None else config
@@ -507,15 +506,15 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
 
     # pylint: disable=unused-argument
     def __init__(
-            self,
-            *,
-            scale: float = 1.0,
-            elitist: bool = False,
-            popsize: tp.Optional[int] = None,
-            diagonal: bool = False,
-            fcmaes: bool = False,
-            random_init: bool = False,
-            inopts: tp.Optional[tp.Dict[str, tp.Any]] = None,
+        self,
+        *,
+        scale: float = 1.0,
+        elitist: bool = False,
+        popsize: tp.Optional[int] = None,
+        diagonal: bool = False,
+        fcmaes: bool = False,
+        random_init: bool = False,
+        inopts: tp.Optional[tp.Dict[str, tp.Any]] = None,
     ) -> None:
         super().__init__(_CMA, locals(), as_config=True)
         if fcmaes:
@@ -550,7 +549,7 @@ class _PopulationSizeController:
         self._loss_record += [loss]
         if len(self._loss_record) >= 5 * self.llambda:
             first_fifth = self._loss_record[: self.llambda]
-            last_fifth = self._loss_record[-int(self.llambda):]  # casting to int to avoid pylint bug
+            last_fifth = self._loss_record[-int(self.llambda) :]  # casting to int to avoid pylint bug
             means = [sum(fitnesses) / float(self.llambda) for fitnesses in [first_fifth, last_fifth]]
             stds = [np.std(fitnesses) / np.sqrt(self.llambda - 1) for fitnesses in [first_fifth, last_fifth]]
             z = (means[0] - means[1]) / (np.sqrt(stds[0] ** 2 + stds[1] ** 2))
@@ -582,7 +581,7 @@ class EDA(base.Optimizer):
     _COVARIANCE_MEMORY = False
 
     def __init__(
-            self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.sigma = 1
@@ -599,7 +598,7 @@ class EDA(base.Optimizer):
         ]  # for transfering heritage (checkpoints in PBT)
 
     def _internal_provide_recommendation(
-            self,
+        self,
     ) -> tp.ArrayLike:  # This is NOT the naive version. We deal with noise.
         return self.current_center
 
@@ -671,12 +670,12 @@ class _TBPSA(base.Optimizer):
     # pylint: disable=too-many-instance-attributes
 
     def __init__(
-            self,
-            parametrization: IntOrParameter,
-            budget: tp.Optional[int] = None,
-            num_workers: int = 1,
-            naive: bool = True,
-            initial_popsize: tp.Optional[int] = None,
+        self,
+        parametrization: IntOrParameter,
+        budget: tp.Optional[int] = None,
+        num_workers: int = 1,
+        naive: bool = True,
+        initial_popsize: tp.Optional[int] = None,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.sigma = 1
@@ -724,10 +723,10 @@ class _TBPSA(base.Optimizer):
             self.parents = self.children[: self.popsize.mu]
             self.children = []
             self.current_center = (
-                    sum(  # type: ignore
-                        c.get_standardized_data(reference=self.parametrization) for c in self.parents
-                    )
-                    / self.popsize.mu
+                sum(  # type: ignore
+                    c.get_standardized_data(reference=self.parametrization) for c in self.parents
+                )
+                / self.popsize.mu
             )
             self.sigma = np.exp(np.sum(np.log([c._meta["sigma"] for c in self.parents])) / self.popsize.mu)
 
@@ -762,10 +761,10 @@ class ParametrizedTBPSA(base.ConfiguredOptimizer):
 
     # pylint: disable=unused-argument
     def __init__(
-            self,
-            *,
-            naive: bool = True,
-            initial_popsize: tp.Optional[int] = None,
+        self,
+        *,
+        naive: bool = True,
+        initial_popsize: tp.Optional[int] = None,
     ) -> None:
         super().__init__(_TBPSA, locals())
 
@@ -796,11 +795,11 @@ class _PSO(base.Optimizer):
 
     # pylint: disable=too-many-instance-attributes
     def __init__(
-            self,
-            parametrization: IntOrParameter,
-            budget: tp.Optional[int] = None,
-            num_workers: int = 1,
-            config: tp.Optional["ConfiguredPSO"] = None,
+        self,
+        parametrization: IntOrParameter,
+        budget: tp.Optional[int] = None,
+        num_workers: int = 1,
+        config: tp.Optional["ConfiguredPSO"] = None,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._config = ConfiguredPSO() if config is None else config
@@ -852,9 +851,9 @@ class _PSO(base.Optimizer):
         rp = self._rng.uniform(0.0, 1.0, size=self.dimension)
         rg = self._rng.uniform(0.0, 1.0, size=self.dimension)
         speed = (
-                self._config.omega * speed
-                + self._config.phip * rp * (parent_best_x - x)
-                + self._config.phig * rg * (global_best_x - x)
+            self._config.omega * speed
+            + self._config.phip * rp * (parent_best_x - x)
+            + self._config.phig * rg * (global_best_x - x)
         )
         data = speed + x
         if self._eps is not None:
@@ -926,12 +925,12 @@ class ConfiguredPSO(base.ConfiguredOptimizer):
 
     # pylint: disable=unused-argument
     def __init__(
-            self,
-            transform: str = "identity",
-            popsize: tp.Optional[int] = None,
-            omega: float = 0.5 / math.log(2.0),
-            phip: float = 0.5 + math.log(2.0),
-            phig: float = 0.5 + math.log(2.0),
+        self,
+        transform: str = "identity",
+        popsize: tp.Optional[int] = None,
+        omega: float = 0.5 / math.log(2.0),
+        phip: float = 0.5 + math.log(2.0),
+        phig: float = 0.5 + math.log(2.0),
     ) -> None:
         super().__init__(_PSO, locals(), as_config=True)
         assert transform in ["arctan", "gaussian", "identity"]
@@ -963,7 +962,7 @@ class SPSA(base.Optimizer):
     no_parallelization = True
 
     def __init__(
-            self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.init = True
@@ -1019,12 +1018,12 @@ class _Rescaled(base.Optimizer):
     """Proposes a version of a base optimizer which works at a different scale."""
 
     def __init__(
-            self,
-            parametrization: IntOrParameter,
-            budget: tp.Optional[int] = None,
-            num_workers: int = 1,
-            base_optimizer: base.OptCls = CMA,
-            scale: tp.Optional[float] = None,
+        self,
+        parametrization: IntOrParameter,
+        budget: tp.Optional[int] = None,
+        num_workers: int = 1,
+        base_optimizer: base.OptCls = CMA,
+        scale: tp.Optional[float] = None,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._optimizer = base_optimizer(self.parametrization, budget=budget, num_workers=num_workers)
@@ -1068,10 +1067,10 @@ class Rescaled(base.ConfiguredOptimizer):
 
     # pylint: disable=unused-argument
     def __init__(
-            self,
-            *,
-            base_optimizer: base.OptCls = CMA,
-            scale: tp.Optional[float] = None,
+        self,
+        *,
+        base_optimizer: base.OptCls = CMA,
+        scale: tp.Optional[float] = None,
     ) -> None:
         super().__init__(_Rescaled, locals())
 
@@ -1083,11 +1082,11 @@ class SplitOptimizer(base.Optimizer):
     """Combines optimizers, each of them working on their own variables. (use ConfSplitOptimizer)"""
 
     def __init__(
-            self,
-            parametrization: IntOrParameter,
-            budget: tp.Optional[int] = None,
-            num_workers: int = 1,
-            config: tp.Optional["ConfSplitOptimizer"] = None,
+        self,
+        parametrization: IntOrParameter,
+        budget: tp.Optional[int] = None,
+        num_workers: int = 1,
+        config: tp.Optional["ConfSplitOptimizer"] = None,
     ) -> None:
         self._config = ConfSplitOptimizer() if config is None else config
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
@@ -1104,7 +1103,7 @@ class SplitOptimizer(base.Optimizer):
                 num_vars += [self.dimension - sum(num_vars)]
         if num_vars is not None:  # The user has specified how are the splits (s)he wants.
             assert (
-                    sum(num_vars) == self.dimension
+                sum(num_vars) == self.dimension
             ), f"sum(num_vars)={sum(num_vars)} should be equal to the dimension {self.dimension}."
             if num_optims is None:  # we deduce the number of splits.
                 num_optims = len(num_vars)
@@ -1141,7 +1140,7 @@ class SplitOptimizer(base.Optimizer):
             self.optims.append((multi if param.dimension > 1 else mono)(param, budget, num_workers))
         # final check for dimension
         assert (
-                sum(opt.dimension for opt in self.optims) == self.dimension
+            sum(opt.dimension for opt in self.optims) == self.dimension
         ), "sum of sub-dimensions should be equal to the total dimension."
 
     def _internal_ask_candidate(self) -> p.Parameter:
@@ -1173,7 +1172,7 @@ class SplitOptimizer(base.Optimizer):
         data = candidate.get_standardized_data(reference=self.parametrization)
         start = 0
         for opt in self.optims:
-            local_data = data[start: start + opt.dimension]
+            local_data = data[start : start + opt.dimension]
             start += opt.dimension
             local_candidate = opt.parametrization.spawn_child().set_standardized_data(local_data)
             opt.tell(local_candidate, loss)
@@ -1226,15 +1225,15 @@ class ConfSplitOptimizer(base.ConfiguredOptimizer):
 
     # pylint: disable=unused-argument
     def __init__(
-            self,
-            *,
-            num_optims: tp.Optional[float] = None,
-            num_vars: tp.Optional[tp.List[int]] = None,
-            max_num_vars: tp.Optional[int] = None,
-            multivariate_optimizer: base.OptCls = CMA,
-            monovariate_optimizer: base.OptCls = oneshot.RandomSearch,
-            progressive: bool = False,
-            non_deterministic_descriptor: bool = True,
+        self,
+        *,
+        num_optims: tp.Optional[float] = None,
+        num_vars: tp.Optional[tp.List[int]] = None,
+        max_num_vars: tp.Optional[int] = None,
+        multivariate_optimizer: base.OptCls = CMA,
+        monovariate_optimizer: base.OptCls = oneshot.RandomSearch,
+        progressive: bool = False,
+        non_deterministic_descriptor: bool = True,
     ) -> None:
         self.num_optims = num_optims
         self.num_vars = num_vars
@@ -1261,10 +1260,10 @@ class NoisySplit(base.ConfiguredOptimizer):
 
     # pylint: disable=unused-argument
     def __init__(
-            self,
-            *,
-            num_optims: tp.Optional[float] = None,
-            discrete: bool = False,
+        self,
+        *,
+        num_optims: tp.Optional[float] = None,
+        discrete: bool = False,
     ) -> None:
         kwargs = locals()
         opt = OptimisticDiscreteOnePlusOne if discrete else OptimisticNoisyOnePlusOne
@@ -1297,10 +1296,10 @@ class ConfPortfolio(base.ConfiguredOptimizer):
 
     # pylint: disable=unused-argument
     def __init__(
-            self,
-            *,
-            optimizers: tp.Sequence[tp.Union[base.Optimizer, base.OptCls, str]] = (),
-            warmup_ratio: tp.Optional[float] = None,
+        self,
+        *,
+        optimizers: tp.Sequence[tp.Union[base.Optimizer, base.OptCls, str]] = (),
+        warmup_ratio: tp.Optional[float] = None,
     ) -> None:
         self.optimizers = optimizers
         self.warmup_ratio = warmup_ratio
@@ -1312,11 +1311,11 @@ class Portfolio(base.Optimizer):
     """Passive portfolio of CMA, 2-pt DE and Scr-Hammersley."""
 
     def __init__(
-            self,
-            parametrization: IntOrParameter,
-            budget: tp.Optional[int] = None,
-            num_workers: int = 1,
-            config: tp.Optional["ConfPortfolio"] = None,
+        self,
+        parametrization: IntOrParameter,
+        budget: tp.Optional[int] = None,
+        num_workers: int = 1,
+        config: tp.Optional["ConfPortfolio"] = None,
     ) -> None:
         self._config = ConfPortfolio() if config is None else config
         cfg = self._config
@@ -1479,11 +1478,11 @@ class MetaModel(base.Optimizer):
     """Adding a metamodel into CMA."""
 
     def __init__(
-            self,
-            parametrization: IntOrParameter,
-            budget: tp.Optional[int] = None,
-            num_workers: int = 1,
-            multivariate_optimizer: tp.Optional[base.OptCls] = None,
+        self,
+        parametrization: IntOrParameter,
+        budget: tp.Optional[int] = None,
+        num_workers: int = 1,
+        multivariate_optimizer: tp.Optional[base.OptCls] = None,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if multivariate_optimizer is None:
@@ -1496,8 +1495,8 @@ class MetaModel(base.Optimizer):
         # We request a bit more points than what is really necessary for our dimensionality (+dimension).
         sample_size = int((self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1)
         if (
-                self._num_ask % max(13, self.num_workers, self.dimension) == 0
-                and len(self.archive) >= sample_size
+            self._num_ask % max(13, self.num_workers, self.dimension) == 0
+            and len(self.archive) >= sample_size
         ):
             try:
                 data = learn_on_k_best(self.archive, sample_size)
@@ -1517,7 +1516,7 @@ class SQPCMA(Portfolio):
     """Passive portfolio of CMA and many SQP."""
 
     def __init__(
-            self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         cma_workers = num_workers // 2
@@ -1534,7 +1533,7 @@ class MultiDiscrete(Portfolio):
     """Combining 3 Discrete(1+1) optimizers. Active selection at 1/4th of the budget."""
 
     def __init__(
-            self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
         super().__init__(
             parametrization, budget=budget, num_workers=num_workers, config=ConfPortfolio(warmup_ratio=0.25)
@@ -1555,7 +1554,7 @@ class CMandAS2(Portfolio):
     """Competence map, with algorithm selection in one of the cases (3 CMAs)."""
 
     def __init__(
-            self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
         # we need to manually create the parametrization if it's an int, so as to make sure
         # it is shared through instances
@@ -1583,7 +1582,7 @@ class CMandAS3(Portfolio):
     """Competence map, with algorithm selection in one of the cases (3 CMAs)."""
 
     def __init__(
-            self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
         optims: tp.List[base.OptCls] = [TwoPointsDE]
         warmup_ratio = 2.0
@@ -1612,7 +1611,7 @@ class CM(Portfolio):
     """Competence map, simplest."""
 
     def __init__(
-            self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
         optims: tp.List[base.OptCls] = [TwoPointsDE]
         if isinstance(parametrization, int):
@@ -1665,18 +1664,18 @@ class _FakeFunction:
 
 class _BO(base.Optimizer):
     def __init__(
-            self,
-            parametrization: IntOrParameter,
-            budget: tp.Optional[int] = None,
-            num_workers: int = 1,
-            *,
-            initialization: tp.Optional[str] = None,
-            init_budget: tp.Optional[int] = None,
-            middle_point: bool = False,
-            utility_kind: str = "ucb",  # bayes_opt default
-            utility_kappa: float = 2.576,
-            utility_xi: float = 0.0,
-            gp_parameters: tp.Optional[tp.Dict[str, tp.Any]] = None,
+        self,
+        parametrization: IntOrParameter,
+        budget: tp.Optional[int] = None,
+        num_workers: int = 1,
+        *,
+        initialization: tp.Optional[str] = None,
+        init_budget: tp.Optional[int] = None,
+        middle_point: bool = False,
+        utility_kind: str = "ucb",  # bayes_opt default
+        utility_kappa: float = 2.576,
+        utility_xi: float = 0.0,
+        gp_parameters: tp.Optional[tp.Dict[str, tp.Any]] = None,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._transform = transforms.ArctanBound(0, 1)
@@ -1798,15 +1797,15 @@ class ParametrizedBO(base.ConfiguredOptimizer):
 
     # pylint: disable=unused-argument
     def __init__(
-            self,
-            *,
-            initialization: tp.Optional[str] = None,
-            init_budget: tp.Optional[int] = None,
-            middle_point: bool = False,
-            utility_kind: str = "ucb",  # bayes_opt default
-            utility_kappa: float = 2.576,
-            utility_xi: float = 0.0,
-            gp_parameters: tp.Optional[tp.Dict[str, tp.Any]] = None,
+        self,
+        *,
+        initialization: tp.Optional[str] = None,
+        init_budget: tp.Optional[int] = None,
+        middle_point: bool = False,
+        utility_kind: str = "ucb",  # bayes_opt default
+        utility_kappa: float = 2.576,
+        utility_xi: float = 0.0,
+        gp_parameters: tp.Optional[tp.Dict[str, tp.Any]] = None,
     ) -> None:
         super().__init__(_BO, locals())
 
@@ -1835,12 +1834,12 @@ class PCABO(base.Optimizer):
     no_parallelization = True
 
     def __init__(
-            self,
-            parametrization: IntOrParameter,
-            budget: tp.Optional[int] = None,
-            num_workers: int = 1,
-            *,
-            init_budget: tp.Optional[int] = None,
+        self,
+        parametrization: IntOrParameter,
+        budget: tp.Optional[int] = None,
+        num_workers: int = 1,
+        *,
+        init_budget: tp.Optional[int] = None,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
 
@@ -1896,7 +1895,7 @@ class PCABO(base.Optimizer):
         if not self.buffer:
             if "x_probe" in candidate._meta:
                 # y = candidate._meta["x_probe"]
-                print('Len(newX) = ', len(self.newX))
+                print("Len(newX) = ", len(self.newX))
                 self._pcabo.tell(self.newX, self.loss)
             else:
                 data = candidate.get_standardized_data(reference=self.parametrization)
@@ -1925,16 +1924,16 @@ class PCABO(base.Optimizer):
 
 class _Chain(base.Optimizer):
     def __init__(
-            self,
-            parametrization: IntOrParameter,
-            budget: tp.Optional[int] = None,
-            num_workers: int = 1,
-            *,
-            optimizers: tp.Sequence[tp.Union[base.ConfiguredOptimizer, tp.Type[base.Optimizer]]] = [
-                LHSSearch,
-                DE,
-            ],
-            budgets: tp.Sequence[tp.Union[str, int]] = (10,),
+        self,
+        parametrization: IntOrParameter,
+        budget: tp.Optional[int] = None,
+        num_workers: int = 1,
+        *,
+        optimizers: tp.Sequence[tp.Union[base.ConfiguredOptimizer, tp.Type[base.Optimizer]]] = [
+            LHSSearch,
+            DE,
+        ],
+        budgets: tp.Sequence[tp.Union[str, int]] = (10,),
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         # delayed initialization
@@ -1999,9 +1998,9 @@ class Chaining(base.ConfiguredOptimizer):
 
     # pylint: disable=unused-argument
     def __init__(
-            self,
-            optimizers: tp.Sequence[tp.Union[base.ConfiguredOptimizer, tp.Type[base.Optimizer]]],
-            budgets: tp.Sequence[tp.Union[str, int]],
+        self,
+        optimizers: tp.Sequence[tp.Union[base.ConfiguredOptimizer, tp.Type[base.Optimizer]]],
+        budgets: tp.Sequence[tp.Union[str, int]],
     ) -> None:
         super().__init__(_Chain, locals())
 
@@ -2039,11 +2038,11 @@ class cGA(base.Optimizer):
     # pylint: disable=too-many-instance-attributes
 
     def __init__(
-            self,
-            parametrization: IntOrParameter,
-            budget: tp.Optional[int] = None,
-            num_workers: int = 1,
-            arity: tp.Optional[int] = None,
+        self,
+        parametrization: IntOrParameter,
+        budget: tp.Optional[int] = None,
+        num_workers: int = 1,
+        arity: tp.Optional[int] = None,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if arity is None:
@@ -2097,14 +2096,14 @@ class _EMNA(base.Optimizer):
     # pylint: disable=too-many-instance-attributes
 
     def __init__(
-            self,
-            parametrization: IntOrParameter,
-            budget: tp.Optional[int] = None,
-            num_workers: int = 1,
-            isotropic: bool = True,
-            naive: bool = True,
-            population_size_adaptation: bool = False,
-            initial_popsize: tp.Optional[int] = None,
+        self,
+        parametrization: IntOrParameter,
+        budget: tp.Optional[int] = None,
+        num_workers: int = 1,
+        isotropic: bool = True,
+        naive: bool = True,
+        population_size_adaptation: bool = False,
+        initial_popsize: tp.Optional[int] = None,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.isotropic: bool = isotropic
@@ -2152,8 +2151,8 @@ class _EMNA(base.Optimizer):
     def _internal_ask_candidate(self) -> p.Parameter:
         sigma_tmp = self.sigma
         if (
-                self.population_size_adaptation
-                and self.popsize.llambda < self.min_coef_parallel_context * self.dimension
+            self.population_size_adaptation
+            and self.popsize.llambda < self.min_coef_parallel_context * self.dimension
         ):
             sigma_tmp = self.sigma * np.exp(self._rng.normal(0, 1) / np.sqrt(self.dimension))
         individual = self.current_center + sigma_tmp * self._rng.normal(0, 1, self.dimension)
@@ -2175,14 +2174,14 @@ class _EMNA(base.Optimizer):
             self.parents = self.children[: self.popsize.mu]
             self.children = []
             self.current_center = (
-                    sum(  # type: ignore
-                        c.get_standardized_data(reference=self.parametrization) for c in self.parents
-                    )
-                    / self.popsize.mu
+                sum(  # type: ignore
+                    c.get_standardized_data(reference=self.parametrization) for c in self.parents
+                )
+                / self.popsize.mu
             )
             if self.population_size_adaptation:
                 if (
-                        self.popsize.llambda < self.min_coef_parallel_context * self.dimension
+                    self.popsize.llambda < self.min_coef_parallel_context * self.dimension
                 ):  # Population size not large enough for emna
                     self.sigma = np.exp(
                         np.sum(
@@ -2194,8 +2193,8 @@ class _EMNA(base.Optimizer):
                 else:
                     stdd = [
                         (
-                                self.parents[i].get_standardized_data(reference=self.parametrization)
-                                - self.current_center
+                            self.parents[i].get_standardized_data(reference=self.parametrization)
+                            - self.current_center
                         )
                         ** 2
                         for i in range(self.popsize.mu)
@@ -2207,8 +2206,8 @@ class _EMNA(base.Optimizer):
                 # EMNA update
                 stdd = [
                     (
-                            self.parents[i].get_standardized_data(reference=self.parametrization)
-                            - self.current_center
+                        self.parents[i].get_standardized_data(reference=self.parametrization)
+                        - self.current_center
                     )
                     ** 2
                     for i in range(self.popsize.mu)
@@ -2248,12 +2247,12 @@ class EMNA(base.ConfiguredOptimizer):
 
     # pylint: disable=unused-argument
     def __init__(
-            self,
-            *,
-            isotropic: bool = True,
-            naive: bool = True,
-            population_size_adaptation: bool = False,
-            initial_popsize: tp.Optional[int] = None,
+        self,
+        *,
+        isotropic: bool = True,
+        naive: bool = True,
+        population_size_adaptation: bool = False,
+        initial_popsize: tp.Optional[int] = None,
     ) -> None:
         super().__init__(_EMNA, locals())
 
@@ -2269,7 +2268,7 @@ class NGOptBase(base.Optimizer):
 
     # pylint: disable=too-many-branches
     def __init__(
-            self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         analysis = p.helpers.analyze(self.parametrization)
@@ -2318,9 +2317,9 @@ class NGOptBase(base.Optimizer):
                 cls = TBPSA
             else:
                 if (
-                        self.has_discrete_not_softmax
-                        or not self.parametrization.function.metrizable
-                        or not self.fully_continuous
+                    self.has_discrete_not_softmax
+                    or not self.parametrization.function.metrizable
+                    or not self.fully_continuous
                 ):
                     cls = DoubleFastGADiscreteOnePlusOne
                 else:
@@ -2332,7 +2331,7 @@ class NGOptBase(base.Optimizer):
                     else:
                         # Possibly a good idea to go memetic for large budget, but something goes wrong for the moment.
                         if (
-                                self.num_workers == 1 and self.budget > 6000 and self.dimension > 7
+                            self.num_workers == 1 and self.budget > 6000 and self.dimension > 7
                         ):  # Let us go memetic.
                             cls = ChainCMAPowell
                         else:
@@ -2389,7 +2388,7 @@ class NGOpt4(NGOptBase):
 
     def _select_optimizer_cls(self) -> base.OptCls:
         self.fully_continuous = (
-                self.fully_continuous and not self.has_discrete_not_softmax and self._arity < 0
+            self.fully_continuous and not self.has_discrete_not_softmax and self._arity < 0
         )
         budget, num_workers = self.budget, self.num_workers
         funcinfo = self.parametrization.function
@@ -2436,13 +2435,13 @@ class NGOpt4(NGOptBase):
                         else:
                             # Possibly a good idea to go memetic for large budget, but something goes wrong for the moment.
                             if (
-                                    num_workers == 1 and budget > 6000 and self.dimension > 7
+                                num_workers == 1 and budget > 6000 and self.dimension > 7
                             ):  # Let us go memetic.
                                 optimClass = ChainNaiveTBPSACMAPowell
                             else:
                                 if num_workers == 1 and budget < self.dimension * 30:
                                     if (
-                                            self.dimension > 30
+                                        self.dimension > 30
                                     ):  # One plus one so good in large ratio "dimension / budget".
                                         optimClass = OnePlusOne
                                     elif self.dimension < 5:
@@ -2457,14 +2456,14 @@ class NGOpt4(NGOptBase):
                                             optimClass = MetaModel
                                         else:
                                             if (
-                                                    self.dimension > 40
-                                                    and num_workers > self.dimension
-                                                    and budget < 7 * self.dimension ** 2
+                                                self.dimension > 40
+                                                and num_workers > self.dimension
+                                                and budget < 7 * self.dimension ** 2
                                             ):
                                                 optimClass = DiagonalCMA
                                             elif (
-                                                    3 * num_workers > self.dimension ** 2
-                                                    and budget > self.dimension ** 2
+                                                3 * num_workers > self.dimension ** 2
+                                                and budget > self.dimension ** 2
                                             ):
                                                 optimClass = MetaModel
                                             else:
@@ -2497,11 +2496,11 @@ class NGOpt8(NGOpt4):
                 optimClass = super()._select_optimizer_cls()
         else:
             if (
-                    not (self.has_noise and self.fully_continuous and self.dimension > 100)
-                    and not (self.has_noise and self.fully_continuous)
-                    and not (self.num_workers > self.budget / 5)
-                    and (self.num_workers == 1 and self.budget > 6000 and self.dimension > 7)
-                    and self.num_workers < self.budget
+                not (self.has_noise and self.fully_continuous and self.dimension > 100)
+                and not (self.has_noise and self.fully_continuous)
+                and not (self.num_workers > self.budget / 5)
+                and (self.num_workers == 1 and self.budget > 6000 and self.dimension > 7)
+                and self.num_workers < self.budget
             ):
                 optimClass = ChainMetaModelPowell
             else:
@@ -2533,23 +2532,23 @@ class NGOpt10(NGOpt8):
 class NGOpt12(NGOpt10):
     def _select_optimizer_cls(self) -> base.OptCls:
         if (
-                not self.has_noise
-                and self.fully_continuous
-                and self.num_workers == 1
-                and self.dimension < 100  # was 50 in 15, 16, 17
-                and self.budget is not None
-                and self.budget < self.dimension * 50
-                and self.budget > min(50, self.dimension * 5)
+            not self.has_noise
+            and self.fully_continuous
+            and self.num_workers == 1
+            and self.dimension < 100  # was 50 in 15, 16, 17
+            and self.budget is not None
+            and self.budget < self.dimension * 50
+            and self.budget > min(50, self.dimension * 5)
         ):
             return ChainMetaModelSQP
         elif (
-                not self.has_noise
-                and self.fully_continuous
-                and self.num_workers == 1
-                and self.dimension < 100  # was 50 in 15, 16, 17
-                and self.budget is not None
-                and self.budget < self.dimension * 5
-                and self.budget > 50
+            not self.has_noise
+            and self.fully_continuous
+            and self.num_workers == 1
+            and self.dimension < 100  # was 50 in 15, 16, 17
+            and self.budget is not None
+            and self.budget < self.dimension * 5
+            and self.budget > 50
         ):
             return MetaModel
         else:
@@ -2560,11 +2559,11 @@ class NGOpt12(NGOpt10):
 class NGOpt13(NGOpt12):  # Also known as NGOpt12H
     def _select_optimizer_cls(self) -> base.OptCls:
         if (
-                not self.has_noise
-                and self.budget is not None
-                and self.num_workers * 3 < self.budget
-                and self.dimension < 8
-                and self.budget < 80
+            not self.has_noise
+            and self.budget is not None
+            and self.num_workers * 3 < self.budget
+            and self.dimension < 8
+            and self.budget < 80
         ):
             return HyperOpt
         else:
@@ -2592,12 +2591,12 @@ class _MSR(Portfolio):
     """
 
     def __init__(
-            self,
-            parametrization: IntOrParameter,
-            budget: tp.Optional[int] = None,
-            num_workers: int = 1,
-            num_single_runs: int = 9,
-            base_optimizer: base.OptCls = NGOpt,
+        self,
+        parametrization: IntOrParameter,
+        budget: tp.Optional[int] = None,
+        num_workers: int = 1,
+        num_single_runs: int = 9,
+        base_optimizer: base.OptCls = NGOpt,
     ) -> None:
         super().__init__(
             parametrization,
@@ -2627,9 +2626,9 @@ class MultipleSingleRuns(base.ConfiguredOptimizer):
 
     # pylint: disable=unused-argument
     def __init__(
-            self,
-            *,
-            num_single_runs: int = 9,
-            base_optimizer: base.OptCls = NGOpt,
+        self,
+        *,
+        num_single_runs: int = 9,
+        base_optimizer: base.OptCls = NGOpt,
     ) -> None:
         super().__init__(_MSR, locals())
