@@ -6,6 +6,7 @@ import os.path
 import sys
 import pickle
 import accimage
+from torchvision import get_image_backend
 
 
 def has_file_allowed_extension(filename, extensions):
@@ -183,7 +184,6 @@ def accimage_loader(path):
 
 
 def default_loader(path):
-    from torchvision import get_image_backend
     if get_image_backend() == 'accimage':
         return accimage_loader(path)
     else:
