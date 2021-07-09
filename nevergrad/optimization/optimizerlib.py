@@ -11,6 +11,7 @@ import warnings
 import numpy as np
 from bayes_opt import UtilityFunction
 from bayes_opt import BayesianOptimization
+from typing import List
 import nevergrad.common.typing as tp
 from nevergrad.common import errors
 from nevergrad.parametrization import parameter as p
