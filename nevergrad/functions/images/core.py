@@ -257,7 +257,6 @@ class ImageAdversarial(base.ExperimentFunction):
             _, pred = torch.max(classifier(x), axis=1)
             data_loader: tp.Iterable[tp.Tuple[tp.Any, tp.Any]] = [(x, pred)]
         elif Path(folder).is_dir():
-            print(f"Folder  = {folder}")
             ifolder = torchvision.datasets.ImageFolder(folder, transform=transform)
             data_loader = torch.utils.data.DataLoader(
                 ifolder, batch_size=1, shuffle=True, num_workers=8, pin_memory=True
