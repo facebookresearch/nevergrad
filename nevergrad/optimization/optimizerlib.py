@@ -1849,9 +1849,9 @@ class PCABO(base.Optimizer):
 
         lb, ub = 1e-7 - np.pi / 2, np.pi / 2 - 1e-7
         space = RealSpace([lb, ub]) * self.dimension
-        self.buffer = []
-        self.newX = []
-        self.loss = []
+        self.buffer: List[float] = []
+        self.newX: List[float] = []
+        self.loss: List[float] = []
 
         self._pcabo = PcaBO(
             search_space=space,
