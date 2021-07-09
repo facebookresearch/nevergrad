@@ -191,6 +191,7 @@ class ImageAdversarial(base.ExperimentFunction):
         self.label = torch.Tensor([label])  # if (label is not None) else torch.Tensor([0])
         self.label = self.label.long()
         self.classifier = classifier  # if (classifier is not None) else Classifier()
+        self.classifier.eval()
         self.criterion = nn.CrossEntropyLoss()
         self.imsize = self.image.shape[1]
 
