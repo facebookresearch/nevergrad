@@ -15,7 +15,7 @@ import torch
 import torchvision
 from torchvision.models import resnet50
 import torchvision.transforms as tr
-from . import dataset_folder
+from . import datasetfolder
 
 import nevergrad as ng
 import nevergrad.common.typing as tp
@@ -260,7 +260,7 @@ class ImageAdversarial(base.ExperimentFunction):
             data_loader: tp.Iterable[tp.Tuple[tp.Any, tp.Any]] = [(x, pred)]
         elif Path(folder).is_dir():
             print(f"Folder  = {folder}")
-            ifolder = dataset_folder.ImageFolder_perso(folder, transform=transform)
+            ifolder = datasetfolder.ImageFolder_perso(folder, transform=transform)
             data_loader = torch.utils.data.DataLoader(
                 ifolder, batch_size=1, shuffle=True, num_workers=8, pin_memory=True
             )
