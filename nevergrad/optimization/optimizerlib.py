@@ -1832,6 +1832,7 @@ class PCABO(base.Optimizer):
     """
 
     no_parallelization = True
+    recast = True
 
     def __init__(
         self,
