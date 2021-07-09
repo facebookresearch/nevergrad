@@ -111,7 +111,7 @@ class CrowdingDistance:
 
 
 class FastNonDominatedRanking:
-    """ Non-dominated ranking of NSGA-II proposed by Deb et al., see [Deb2002] """
+    """Non-dominated ranking of NSGA-II proposed by Deb et al., see [Deb2002]"""
 
     def compare(self, candidate1: p.Parameter, candidate2: p.Parameter) -> int:
         """Compare the domainance relation of two candidates.

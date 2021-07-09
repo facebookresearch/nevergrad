@@ -54,8 +54,7 @@ class Image(base.ExperimentFunction):
         assert index == 0  # For the moment only 1 target.
         # path = os.path.dirname(__file__) + "/headrgb_olivier.png"
         path = Path(__file__).with_name("headrgb_olivier.png")
-        image = PIL.Image.open(path).resize(
-            (self.domain_shape[0], self.domain_shape[1]), PIL.Image.ANTIALIAS)
+        image = PIL.Image.open(path).resize((self.domain_shape[0], self.domain_shape[1]), PIL.Image.ANTIALIAS)
         self.data = np.asarray(image)[:, :, :3]  # 4th Channel is pointless here, only 255.
         # parametrization
         if not with_pgan:
@@ -64,8 +63,9 @@ class Image(base.ExperimentFunction):
             array.set_mutation(sigma=35)
             array.set_bounds(lower=0, upper=255.99, method="clipping", full_range_sampling=True)
             max_size = ng.p.Scalar(lower=1, upper=200).set_integer_casting()
-            array = ng.ops.mutations.Crossover(axis=(0, 1), max_size=max_size)(
-                array).set_name("")  # type: ignore
+            array = ng.ops.mutations.Crossover(axis=(0, 1), max_size=max_size)(array).set_name(
+                ""
+            )  # type: ignore
             super().__init__(loss(reference=self.data), array)
         else:
             self.pgan_model = torch.hub.load(
@@ -90,7 +90,7 @@ class Image(base.ExperimentFunction):
         self.loss_function = loss(reference=self.data)
 
     def _generate_images(self, x: np.ndarray) -> np.ndarray:
-        """ Generates images tensor of shape [nb_images, x, y, 3] with pixels between 0 and 255"""
+        """Generates images tensor of shape [nb_images, x, y, 3] with pixels between 0 and 255"""
         # pylint: disable=not-callable
         noise = torch.tensor(x.astype("float32"))
         return (
@@ -130,8 +130,7 @@ class Image(base.ExperimentFunction):
             image = self._generate_images(base_image).squeeze(0)
             image = cv2.resize(image, dsize=(226, 226), interpolation=cv2.INTER_NEAREST)
             if export_string:
-                cv2.imwrite(
-                    f"{export_string}_image{i}_{num_total_images}_{self.num_images}.jpg", image)
+                cv2.imwrite(f"{export_string}_image{i}_{num_total_images}_{self.num_images}.jpg", image)
             assert image.shape == (226, 226, 3), f"{x.shape} != {(226, 226, 3)}"
             loss += self.loss_function(image)
         return loss
@@ -200,8 +199,7 @@ class ImageAdversarial(base.ExperimentFunction):
             mutable_sigma=True,
         ).set_name("")
         array.set_mutation(sigma=self.epsilon / 10)
-        array.set_bounds(lower=-self.epsilon, upper=self.epsilon,
-                         method="clipping", full_range_sampling=True)
+        array.set_bounds(lower=-self.epsilon, upper=self.epsilon, method="clipping", full_range_sampling=True)
         max_size = ng.p.Scalar(lower=1, upper=200).set_integer_casting()
         array = ng.p.mutation.Crossover(axis=(1, 2), max_size=max_size)(array)
         super().__init__(self._loss, array)
@@ -344,8 +342,13 @@ class ImageFromPGAN(base.ExperimentFunction):
         return loss
 
     def _generate_images(self, x: np.ndarray) -> np.ndarray:
-        """ Generates images tensor of shape [nb_images, x, y, 3] with pixels between 0 and 255"""
+        """Generates images tensor of shape [nb_images, x, y, 3] with pixels between 0 and 255"""
         # pylint: disable=not-callable
         noise = torch.tensor(x.astype("float32"))
         # type: ignore
-        return ((self.pgan_model.test(noise).clamp(min=-1, max=1) + 1) * 255.99 / 2).permute(0, 2, 3, 1).cpu().numpy()
+        return (
+            ((self.pgan_model.test(noise).clamp(min=-1, max=1) + 1) * 255.99 / 2)
+            .permute(0, 2, 3, 1)
+            .cpu()
+            .numpy()
+        )
