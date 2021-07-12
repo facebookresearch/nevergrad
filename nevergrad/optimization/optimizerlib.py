@@ -1911,17 +1911,9 @@ class PCABO(base.Optimizer):
         # # so we should clean the "fake" function
         # self._fake_function._registered.clear()
 
+    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        raise errors.TellNotAskedNotSupportedError
 
-#### Oteytaud: presumably we do not need that.
-# def _internal_provide_recommendation(self) -> tp.Optional[tp.ArrayLike]:
-#    if not self.archive:
-#        return None
-#    # (Elena) We shouldn't need any fake function here with this version of BO.
-#    # And I didn't define the bo method in this class! So provide_recommendation needs changes...
-#
-#        return self._transform.backward(
-#            np.array([self.bo.max["params"][self._fake_function.key(i)] for i in range(self.dimension)])
-#        )
 
 
 class _Chain(base.Optimizer):
