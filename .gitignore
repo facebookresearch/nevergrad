@@ -105,3 +105,6 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+# optimizer class hierarchy json
+nevergrad/optimization/optimizer_class_hierarchy.json
