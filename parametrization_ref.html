@@ -4,7 +4,8 @@
 <html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8" />
-  
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
   <title>Parametrization API reference &mdash; nevergrad  documentation</title>
@@ -87,7 +88,7 @@
               
             
             
-              <p class="caption"><span class="caption-text">Contents</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="optimization.html">How to perform optimization</a></li>
@@ -173,7 +174,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="parametrization-api-reference">
+  <section id="parametrization-api-reference">
 <span id="parametrization-ref"></span><h1>Parametrization API reference<a class="headerlink" href="#parametrization-api-reference" title="Permalink to this headline">¶</a></h1>
 <p><strong>Please note that parametrization is still a work in progress and changes are on their way (including for this documentation)! We are trying to update it to make it simpler and simpler to use (all feedbacks are welcome ;) ), with the side effect that there will be breaking changes.</strong></p>
 <p>The aim of parametrization is to specify what are the parameters that the optimization should be performed upon.
@@ -182,7 +183,7 @@ The parametrization subpackage will help you do thanks to:</p>
 <li><p>the <cite>parameter</cite> modules (accessed by the shortcut <cite>nevergrad.p</cite>) providing classes that should be used to specify each parameter.</p></li>
 <li><p>the <cite>FolderFunction</cite> which helps transform any code into a Python function in a few lines. This can be especially helpful to optimize parameters in non-Python 3.6+ code (C++, Octave, etc…) or parameters in scripts.</p></li>
 </ul>
-<div class="section" id="parameters">
+<section id="parameters">
 <h2>Parameters<a class="headerlink" href="#parameters" title="Permalink to this headline">¶</a></h2>
 <p>Here are the current types of parameters currently provided:</p>
 <table class="longtable docutils align-default">
@@ -467,8 +468,8 @@ to optimize.</p>
 
 </dd></dl>
 
-</div>
-<div class="section" id="parameter-api">
+</section>
+<section id="parameter-api">
 <h2>Parameter API<a class="headerlink" href="#parameter-api" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="nevergrad.p.Parameter">
@@ -485,7 +486,7 @@ The value field should sent to the function to optimize.</p>
 </div>
 <dl class="py method">
 <dt class="sig sig-object py" id="nevergrad.p.Parameter.add_layer">
-<span class="sig-name descname"><span class="pre">add_layer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">nevergrad.parametrization._layering.Layered</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">nevergrad.parametrization._layering.L</span><a class="headerlink" href="#nevergrad.p.Parameter.add_layer" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">add_layer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">nevergrad.parametrization._layering.Layered</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">nevergrad.parametrization._layering.L</span></span></span><a class="headerlink" href="#nevergrad.p.Parameter.add_layer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Adds a layer which will modify the object behavior</p>
 </dd></dl>
 
@@ -499,7 +500,7 @@ Use <cite>parameter.Instrumentation</cite> to set <cite>args</cite> and <cite>kw
 
 <dl class="py method">
 <dt class="sig sig-object py" id="nevergrad.p.Parameter.copy">
-<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">nevergrad.parametrization.core.P</span><a class="headerlink" href="#nevergrad.p.Parameter.copy" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">nevergrad.parametrization.core.P</span></span></span><a class="headerlink" href="#nevergrad.p.Parameter.copy" title="Permalink to this definition">¶</a></dt>
 <dd><p>Creates a full copy of the parameter (with new unique uid).
 Use spawn_child instead to make sure to add the parenthood information.</p>
 </dd></dl>
@@ -513,7 +514,7 @@ i.e size of the vector returned by get_standardized_data(reference=…)</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="nevergrad.p.Parameter.freeze">
-<span class="sig-name descname"><span class="pre">freeze</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">None</span><a class="headerlink" href="#nevergrad.p.Parameter.freeze" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">freeze</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#nevergrad.p.Parameter.freeze" title="Permalink to this definition">¶</a></dt>
 <dd><p>Prevents the parameter from changing value again (through value, mutate etc…)</p>
 </dd></dl>
 
@@ -525,7 +526,7 @@ i.e size of the vector returned by get_standardized_data(reference=…)</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="nevergrad.p.Parameter.get_standardized_data">
-<span class="sig-name descname"><span class="pre">get_standardized_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">nevergrad.parametrization.core.P</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">numpy.ndarray</span><a class="headerlink" href="#nevergrad.p.Parameter.get_standardized_data" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">get_standardized_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">nevergrad.parametrization.core.P</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">numpy.ndarray</span></span></span><a class="headerlink" href="#nevergrad.p.Parameter.get_standardized_data" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the standardized data representing the value of the instance as an array in the optimization space.
 In this standardized space, a mutation is typically centered and reduced (sigma=1) Gaussian noise.
 The data only represent the value of this instance, not the parameters (eg.: mutable sigma), hence it does not
@@ -556,7 +557,7 @@ by the same reference in the exact same state (no mutation)</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="nevergrad.p.Parameter.get_value_hash">
-<span class="sig-name descname"><span class="pre">get_value_hash</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">Hashable</span><a class="headerlink" href="#nevergrad.p.Parameter.get_value_hash" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">get_value_hash</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Hashable</span></span></span><a class="headerlink" href="#nevergrad.p.Parameter.get_value_hash" title="Permalink to this definition">¶</a></dt>
 <dd><p>Hashable object representing the current value of the instance</p>
 </dd></dl>
 
@@ -582,7 +583,7 @@ In case of mono-objective loss, losses is the array containing this loss as sole
 
 <dl class="py method">
 <dt class="sig sig-object py" id="nevergrad.p.Parameter.mutate">
-<span class="sig-name descname"><span class="pre">mutate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">None</span><a class="headerlink" href="#nevergrad.p.Parameter.mutate" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">mutate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#nevergrad.p.Parameter.mutate" title="Permalink to this definition">¶</a></dt>
 <dd><p>Mutate parameters of the instance, and then its value</p>
 </dd></dl>
 
@@ -604,7 +605,7 @@ It can be seeded/replaced.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="nevergrad.p.Parameter.recombine">
-<span class="sig-name descname"><span class="pre">recombine</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">others</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">nevergrad.parametrization.core.P</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">None</span><a class="headerlink" href="#nevergrad.p.Parameter.recombine" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">recombine</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">others</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">nevergrad.parametrization.core.P</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#nevergrad.p.Parameter.recombine" title="Permalink to this definition">¶</a></dt>
 <dd><p>Update value and parameters of this instance by combining it with
 other instances.</p>
 <dl class="field-list simple">
@@ -616,7 +617,7 @@ other instances.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="nevergrad.p.Parameter.register_cheap_constraint">
-<span class="sig-name descname"><span class="pre">register_cheap_constraint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">as_layer</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">None</span><a class="headerlink" href="#nevergrad.p.Parameter.register_cheap_constraint" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">register_cheap_constraint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">as_layer</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#nevergrad.p.Parameter.register_cheap_constraint" title="Permalink to this definition">¶</a></dt>
 <dd><p>Registers a new constraint on the parameter values.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -638,7 +639,7 @@ behavior</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="nevergrad.p.Parameter.sample">
-<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">nevergrad.parametrization.core.P</span><a class="headerlink" href="#nevergrad.p.Parameter.sample" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">nevergrad.parametrization.core.P</span></span></span><a class="headerlink" href="#nevergrad.p.Parameter.sample" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sample a new instance of the parameter.
 This usually means spawning a child and mutating it.
 This function should be used in optimizers when creating an initial population,
@@ -647,7 +648,7 @@ and parameter.heritage[“lineage”] is reset to parameter.uid instead of its p
 
 <dl class="py method">
 <dt class="sig sig-object py" id="nevergrad.p.Parameter.satisfies_constraints">
-<span class="sig-name descname"><span class="pre">satisfies_constraints</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">bool</span><a class="headerlink" href="#nevergrad.p.Parameter.satisfies_constraints" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">satisfies_constraints</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#nevergrad.p.Parameter.satisfies_constraints" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether the instance satisfies the constraints added through
 the <cite>register_cheap_constraint</cite> method</p>
 <dl class="field-list simple">
@@ -662,7 +663,7 @@ the <cite>register_cheap_constraint</cite> method</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="nevergrad.p.Parameter.set_name">
-<span class="sig-name descname"><span class="pre">set_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">nevergrad.parametrization._layering.L</span><a class="headerlink" href="#nevergrad.p.Parameter.set_name" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">set_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">nevergrad.parametrization._layering.L</span></span></span><a class="headerlink" href="#nevergrad.p.Parameter.set_name" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sets a name and return the current instrumentation (for chaining)</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -673,7 +674,7 @@ the <cite>register_cheap_constraint</cite> method</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="nevergrad.p.Parameter.set_standardized_data">
-<span class="sig-name descname"><span class="pre">set_standardized_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#nevergrad.p.Tuple" title="nevergrad.p.Tuple"><span class="pre">Tuple</span></a><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">nevergrad.parametrization.core.P</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">nevergrad.parametrization.core.P</span><a class="headerlink" href="#nevergrad.p.Parameter.set_standardized_data" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">set_standardized_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#nevergrad.p.Tuple" title="nevergrad.p.Tuple"><span class="pre">Tuple</span></a><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">nevergrad.parametrization.core.P</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">nevergrad.parametrization.core.P</span></span></span><a class="headerlink" href="#nevergrad.p.Parameter.set_standardized_data" title="Permalink to this definition">¶</a></dt>
 <dd><p>Updates the value of the provided reference (or self) using the standardized data.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -698,7 +699,7 @@ as keyword-only parameters.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="nevergrad.p.Parameter.spawn_child">
-<span class="sig-name descname"><span class="pre">spawn_child</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_value</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">nevergrad.parametrization.core.P</span><a class="headerlink" href="#nevergrad.p.Parameter.spawn_child" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">spawn_child</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_value</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">nevergrad.parametrization.core.P</span></span></span><a class="headerlink" href="#nevergrad.p.Parameter.spawn_child" title="Permalink to this definition">¶</a></dt>
 <dd><p>Creates a new instance which shares the same random generator than its parent,
 is sampled from the same data, and mutates independently from the parentp.
 If a new value is provided, it will be set to the new instance</p>
@@ -730,8 +731,8 @@ to optimize.</p>
 
 </dd></dl>
 
-</div>
-</div>
+</section>
+</section>
 
 
            </div>

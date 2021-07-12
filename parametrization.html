@@ -4,7 +4,8 @@
 <html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8" />
-  
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
   <title>Parametrizing your optimization &mdash; nevergrad  documentation</title>
@@ -87,7 +88,7 @@
               
             
             
-              <p class="caption"><span class="caption-text">Contents</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="optimization.html">How to perform optimization</a></li>
@@ -178,7 +179,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="parametrizing-your-optimization">
+  <section id="parametrizing-your-optimization">
 <span id="parametrizing"></span><h1>Parametrizing your optimization<a class="headerlink" href="#parametrizing-your-optimization" title="Permalink to this headline">¶</a></h1>
 <p><strong>Please note that parametrization is still a work in progress and changes are on their way (including for this documentation)! We are trying to update it to make it simpler and simpler to use (all feedbacks are welcome ;) ), with the side effect that there will be breaking changes.</strong></p>
 <p>The aim of parametrization is to specify what are the parameters that the optimization should be performed upon.
@@ -187,7 +188,7 @@ The parametrization subpackage will help you do thanks to:</p>
 <li><p>the <code class="code docutils literal notranslate"><span class="pre">parameter</span></code> modules (accessed by the shortcut <code class="code docutils literal notranslate"><span class="pre">nevergrad.p</span></code>) providing classes that should be used to specify each parameter.</p></li>
 <li><p>the <code class="code docutils literal notranslate"><span class="pre">FolderFunction</span></code> which helps transform any code into a Python function in a few lines. This can be especially helpful to optimize parameters in non-Python 3.6+ code (C++, Octave, etc…) or parameters in scripts.</p></li>
 </ul>
-<div class="section" id="preliminary-examples">
+<section id="preliminary-examples">
 <h2>Preliminary examples<a class="headerlink" href="#preliminary-examples" title="Permalink to this headline">¶</a></h2>
 <p>The code below defines a parametrization that creates a <code class="code docutils literal notranslate"><span class="pre">dict</span></code> with 3 elements:</p>
 <ul class="simple">
@@ -257,8 +258,8 @@ You can easily check how parameters mutate, and mutation of <code class="code do
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">param</span><span class="o">.</span><span class="n">random_state</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">12</span><span class="p">)</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="parameters">
+</section>
+<section id="parameters">
 <h2>Parameters<a class="headerlink" href="#parameters" title="Permalink to this headline">¶</a></h2>
 <p>7 types of parameters are currently provided:</p>
 <ul class="simple">
@@ -304,8 +305,8 @@ This serves to parametrize functions taking multiple arguments, since you can th
 </tr>
 </tbody>
 </table>
-</div>
-<div class="section" id="parametrization">
+</section>
+<section id="parametrization">
 <h2>Parametrization<a class="headerlink" href="#parametrization" title="Permalink to this headline">¶</a></h2>
 <p>Parametrization helps you define the parameters you want to optimize upon.
 Currently most algorithms make use of it to help convert the parameters into the “standardized data” space (a vector space spanning all the real values),
@@ -351,8 +352,8 @@ where it is easier to define operations.</p>
 <li><p><code class="code docutils literal notranslate"><span class="pre">Liquid</span></code> is selected because the index for <cite>Liquid</cite> is around 0 in the standardized space.</p></li>
 <li><p><code class="code docutils literal notranslate"><span class="pre">amount=(3,</span> <span class="pre">5.0)</span></code> because the last two values of the standardized space (i.e. 3.0, 5.0) corresponds to the value of the last kwargs.</p></li>
 </ul>
-</div>
-<div class="section" id="parametrizing-external-code">
+</section>
+<section id="parametrizing-external-code">
 <h2>Parametrizing external code<a class="headerlink" href="#parametrizing-external-code" title="Permalink to this headline">¶</a></h2>
 <p>Sometimes it is completely impractical or impossible to have a simple Python3.6+ function to optimize. This may happen when the code you want to optimize is a script. Even more so if the code you want to optimize is not Python3.6+.</p>
 <p>We provide tooling for this situation but this is hacky, so if you can avoid it, <strong>do avoid it</strong>. Otherwise, go through these steps to instrument your code:</p>
@@ -392,7 +393,7 @@ where it is easier to define operations.</p>
 <ul class="simple">
 <li><p><strong>parametrize</strong> the function (see Parametrization section just above).</p></li>
 </ul>
-<div class="section" id="tips-and-caveats">
+<section id="tips-and-caveats">
 <h3>Tips and caveats<a class="headerlink" href="#tips-and-caveats" title="Permalink to this headline">¶</a></h3>
 <blockquote>
 <div><ul class="simple">
@@ -402,9 +403,9 @@ where it is easier to define operations.</p>
 <li><p>the following external file types are registered by default: <code class="code docutils literal notranslate"><span class="pre">[&quot;.c&quot;,</span> <span class="pre">&quot;.h&quot;,</span> <span class="pre">&quot;.cpp&quot;,</span> <span class="pre">&quot;.hpp&quot;,</span> <span class="pre">&quot;.py&quot;,</span> <span class="pre">&quot;.m&quot;]</span></code>. Custom file types can be registered using <code class="code docutils literal notranslate"><span class="pre">FolderFunction.register_file_type</span></code> by providing the relevant file suffix as well as the characters that indicate a comment. However, for now, parameters which provide a vector or values (<code class="code docutils literal notranslate"><span class="pre">Array</span></code>) will inject code with a Python format (list) by default, which may not be suitable.</p></li>
 </ul>
 </div></blockquote>
-</div>
-</div>
-</div>
+</section>
+</section>
+</section>
 
 
            </div>
