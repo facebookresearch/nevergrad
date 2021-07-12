@@ -113,6 +113,7 @@ def _make_sorted_winrates_df(victories: pd.DataFrame) -> pd.DataFrame:
 
 def remove_errors(df: pd.DataFrame) -> utils.Selector:
     df = utils.Selector(df)
+    df = df.drop(columns="label")
     if "error" not in df.columns:  # backward compatibility
         return df  # type: ignore
     # errors with no recommendation
