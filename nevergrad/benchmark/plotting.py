@@ -253,7 +253,7 @@ def create_plots(
     to_drop = [x for x in descriptors if len(df.unique(x)) == 1]
     df = utils.Selector(df.loc[:, [x for x in df.columns if x not in to_drop]])
     # now those should be actual interesting descriptors
-    all_descriptors = sorted(set(df.columns) - (required | {"instrum_str", "seed", "pseudotime"}))
+    all_descriptors = sorted(set(df.columns) - (required | {"instrum_str", "seed", "pseudotime", "label"}))
     print(f"Descriptors: {all_descriptors}")
     print("# Fight plots")
     #
