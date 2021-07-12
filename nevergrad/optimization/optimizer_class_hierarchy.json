@@ -1,0 +1,78 @@
+{
+  "ConfiguredOptimizer": {
+    "Chaining": {},
+    "ConfPortfolio": {},
+    "ConfSplitOptimizer": {},
+    "ConfiguredPSO": {},
+    "DifferentialEvolution": {},
+    "EMNA": {},
+    "EvolutionStrategy": {},
+    "MultipleSingleRuns": {},
+    "NoisySplit": {},
+    "ParametrizedBO": {},
+    "ParametrizedCMA": {},
+    "ParametrizedHyperOpt": {},
+    "ParametrizedOnePlusOne": {},
+    "ParametrizedTBPSA": {},
+    "RandomSearchMaker": {},
+    "Rescaled": {},
+    "SamplingSearch": {},
+    "ScipyOptimizer": {}
+  },
+  "Optimizer": {
+    "EDA": {
+      "MEDA": {},
+      "MPCEDA": {},
+      "PCEDA": {}
+    },
+    "MetaModel": {},
+    "NGOptBase": {
+      "NGO": {},
+      "NGOpt4": {
+        "NGOpt8": {
+          "NGOpt10": {
+            "NGOpt12": {
+              "NGOpt13": {},
+              "NGOpt14": {
+                "NGOpt": {}
+              }
+            }
+          }
+        }
+      },
+      "Shiwa": {}
+    },
+    "NoisyBandit": {},
+    "OneShotOptimizer": {
+      "_RandomSearch": {},
+      "_SamplingSearch": {}
+    },
+    "Portfolio": {
+      "CM": {},
+      "CMandAS2": {},
+      "CMandAS3": {},
+      "MultiDiscrete": {},
+      "SQPCMA": {},
+      "_MSR": {}
+    },
+    "RecastOptimizer": {
+      "SequentialRecastOptimizer": {
+        "_ScipyMinimizeBase": {}
+      }
+    },
+    "SPSA": {},
+    "SplitOptimizer": {},
+    "_BO": {},
+    "_CMA": {},
+    "_Chain": {},
+    "_DE": {},
+    "_EMNA": {},
+    "_EvolutionStrategy": {},
+    "_HyperOpt": {},
+    "_OnePlusOne": {},
+    "_PSO": {},
+    "_Rescaled": {},
+    "_TBPSA": {},
+    "cGA": {}
+  }
+}
