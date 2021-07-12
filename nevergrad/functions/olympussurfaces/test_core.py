@@ -10,24 +10,7 @@ import pytest
 
 @pytest.mark.parametrize(
     "kind",
-    [
-        "AckleyPath",
-        "Dejong",
-        "HyperEllipsoid",
-        "Levy",
-        "Michalewicz",
-        "Rastrigin",
-        "Rosenbrock",
-        "Schwefel",
-        "StyblinskiTang",
-        "Zakharov",
-        "DiscreteAckley",
-        "DiscreteDoubleWell",
-        "DiscreteMichalewicz",
-        "LinearFunnel",
-        "NarrowFunnel",
-        "GaussianMixture",
-    ],
+    core.OlympusSurface.get_surfaces_kinds(),
 )
 @pytest.mark.parametrize("noise_kind", ["GaussianNoise", "UniformNoise", "GammaNoise"])
 def test_olympus_surface(kind: str, noise_kind: str) -> None:

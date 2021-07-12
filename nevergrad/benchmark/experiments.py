@@ -1238,23 +1238,7 @@ def neuro_control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experime
 def olympus_surfaces(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Olympus surfaces """
     funcs = []
-    for kind in [
-        "AckleyPath",
-        "Dejong",
-        "HyperEllipsoid",
-        "Levy",
-        "Michalewicz",
-        "Rastrigin",
-        "Rosenbrock",
-        "Schwefel",
-        "StyblinskiTang",
-        "Zakharov",
-        "DiscreteAckley",
-        "DiscreteDoubleWell",
-        "DiscreteMichalewicz",
-        "LinearFunnel",
-        "NarrowFunnel",
-    ]:
+    for kind in OlympusSurface.get_surfaces_kinds():
         for k in range(2, 5):
             for noise in ["GaussianNoise", "UniformNoise", "GammaNoise"]:
                 for noise_scale in [0.5, 1]:
