@@ -40,8 +40,6 @@ def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[expe
     if all(x in name for x in ["image", "quality"]) and platform.system() == "Windows":
         raise SkipTest("Image quality not guaranteed on Windows.")
 
-    # ANM does not work under Windows.
-
     # Basic test.
     print(f"Testing {name}")
     with tools.set_env(NEVERGRAD_PYTEST=1):
@@ -50,7 +48,7 @@ def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[expe
 
     # Some tests are skipped on CircleCI (but they do work well locally, if memory enough).
     if os.environ.get("CIRCLECI", False):
-        if any(x in name for x in ["images_using_gan", "mlda", "realworld"]):
+        if any(x in name for x in ["image", "mlda", "realworld", "adversarial_attack"]):
             raise SkipTest("Too slow in CircleCI")
 
     check_experiment(
