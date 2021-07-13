@@ -103,8 +103,7 @@ class ScipyOptimizer(base.ConfiguredOptimizer):
     def __init__(self, *, method: str = "Nelder-Mead", random_restart: bool = False) -> None:
         super().__init__(_ScipyMinimizeBase, locals())
 
-AX = ScipyOptimizer(method="AX").set_name("AX", register=True)
-BOBYQA = ScipyOptimizer(method="BOBYQA").set_name("BOBYQA", register=True)
+
 NelderMead = ScipyOptimizer(method="Nelder-Mead").set_name("NelderMead", register=True)
 Powell = ScipyOptimizer(method="Powell").set_name("Powell", register=True)
 RPowell = ScipyOptimizer(method="Powell", random_restart=True).set_name("RPowell", register=True)
