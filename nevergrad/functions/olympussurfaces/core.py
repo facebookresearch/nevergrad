@@ -66,5 +66,4 @@ class OlympusSurface(ExperimentFunction):
     def evaluation_function(self, *recommendations) -> float:
         """Averages multiple evaluations if necessary."""
         x = recommendations[0].value
-        losses = [self.surface_without_noise(x) for _ in range(42)]
-        return sum(losses) / len(losses)
+        return self.surface_without_noise(x)
