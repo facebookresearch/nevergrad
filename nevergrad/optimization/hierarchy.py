@@ -83,6 +83,7 @@ def _get_class_hierarchies():
 
 
 def _build_tree(opt_hierarchies):
+
     """Builds dict-of-dicts that better represents the tree structure in a class hierarchy
     using two for loops to traverse the list of lists and build dictionary as it goes."""
     tree = {}
