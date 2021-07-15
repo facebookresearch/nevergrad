@@ -56,6 +56,7 @@ class OlympusSurface(ExperimentFunction):
         self.surface_without_noise = partial(self._simulate_surface, noise=False)
         parametrization = p.Array(shape=(dimension,))
         parametrization.function.deterministic = False
+        self.shift = self.parametrization.random_state.normal(size=self.dimension)
         super().__init__(self.surface, parametrization)
 
     def _simulate_surface(self, x: np.ndarray, noise: bool = True) -> float:
@@ -67,9 +68,9 @@ class OlympusSurface(ExperimentFunction):
             surface = OlympusSurface.traditional_surfaces[self.kind](param_dim=self.param_dim, noise=noise)
         else:
             surface = OlympusSurface.traditional_surfaces[self.kind](param_dim=self.param_dim)
-        return surface.run(x)[0][0]
+        return surface.run(x - self.shift)[0][0]
 
     def evaluation_function(self, *recommendations) -> float:
         """Averages multiple evaluations if necessary."""
         x = recommendations[0].value
-        return self.surface_without_noise(x)
+        return self.surface_without_noise(x - self.shift)
