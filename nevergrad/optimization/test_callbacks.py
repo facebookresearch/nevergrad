@@ -4,6 +4,8 @@
 # LICENSE file in the root directory of this source tree.
 
 from pathlib import Path
+import logging
+import os
 import numpy as np
 import nevergrad as ng
 import nevergrad.common.typing as tp
@@ -112,3 +114,19 @@ def test_early_stopping() -> None:
     # below functions are inlcuded in the docstring
     assert optimizer.current_bests["minimum"].mean < 12
     assert optimizer.recommend().loss < 12  # type: ignore
+
+
+def test_optimization_logger(tmp_path: Path) -> None:
+    instrum = ng.p.Instrumentation(
+        None, 2.0, blublu="blublu", array=ng.p.Array(shape=(3, 2)), multiobjective=True
+    )
+    logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
+    logger = logging.getLogger(__name__)
+    optimizer = optimizerlib.OnePlusOne(parametrization=instrum, budget=100)
+    early_stopping = ng.callbacks.EarlyStopping(lambda opt: opt.num_ask > 3)
+    optimizer.register_callback(
+        "tell",
+        callbacks.OptimizationLogger(logger, logging.INFO, log_interval_tells=10, log_interval_seconds=0.1),
+    )
+    optimizer.register_callback("ask", early_stopping)
+    optimizer.minimize(_func, verbosity=2)

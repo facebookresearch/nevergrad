@@ -8,6 +8,7 @@ import time
 import warnings
 import inspect
 import datetime
+import logging
 from pathlib import Path
 import numpy as np
 import nevergrad.common.typing as tp
@@ -43,6 +44,54 @@ class OptimizationPrinter:
             self._next_tell = optimizer.num_tell + self._print_interval_tells
             x = optimizer.provide_recommendation()
             print(f"After {optimizer.num_tell}, recommendation is {x}")  # TODO fetch value
+
+
+class OptimizationLogger:
+    """Logger to register as callback in an optimizer, for Logging
+    best point regularly.
+
+    Parameters
+    ----------
+    log_interval_tells: int
+        max number of evaluation before performing another log
+    log_interval_seconds:
+        max number of seconds before performing another log
+    logger:
+        given logger that callback will use to log
+    log_level:
+        log level that logger will write to
+    """
+
+    def __init__(
+        self,
+        logger: logging.Logger,
+        log_level: str = "debug",
+        log_interval_tells: int = 1,
+        log_interval_seconds: float = 60.0,
+    ) -> None:
+        assert log_interval_tells > 0
+        assert log_interval_seconds > 0
+        assert log_level in [
+            logging.NOTSET,
+            logging.DEBUG,
+            logging.INFO,
+            logging.WARNING,
+            logging.ERROR,
+            logging.CRITICAL,
+        ]
+        self._logger = logger
+        self._log_level = log_level
+        self._log_interval_tells = int(log_interval_tells)
+        self._log_interval_seconds = log_interval_seconds
+        self._next_tell = self._log_interval_tells
+        self._next_time = time.time() + log_interval_seconds
+
+    def __call__(self, optimizer: base.Optimizer, *args: tp.Any, **kwargs: tp.Any) -> None:
+        if time.time() >= self._next_time or self._next_tell >= optimizer.num_tell:
+            self._next_time = time.time() + self._log_interval_seconds
+            self._next_tell = optimizer.num_tell + self._log_interval_tells
+            x = optimizer.provide_recommendation()
+            self._logger.log(self._log_level, "After %s, recommendation is %s", optimizer.num_tell, x)
 
 
 class ParametersLogger:
