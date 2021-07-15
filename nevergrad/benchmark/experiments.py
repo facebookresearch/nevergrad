@@ -31,7 +31,6 @@ from nevergrad.functions.games import game
 from nevergrad.functions.causaldiscovery import CausalDiscovery
 from nevergrad.functions import iohprofiler
 from nevergrad.functions import helpers
-from nevergrad.functions.olympussurfaces import OlympusSurface
 from .xpbase import Experiment as Experiment
 from .xpbase import create_seed_generator
 from .xpbase import registry as registry  # noqa
@@ -1236,6 +1235,7 @@ def neuro_control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experime
 @registry.register
 def olympus_surfaces(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Olympus surfaces """
+    from nevergrad.functions.olympussurfaces import OlympusSurface
     funcs = []
     for kind in OlympusSurface.get_surfaces_kinds():
         for k in range(2, 5):
