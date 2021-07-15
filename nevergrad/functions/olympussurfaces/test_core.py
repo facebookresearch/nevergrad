@@ -14,6 +14,8 @@ import pytest
 )
 @pytest.mark.parametrize("noise_kind", ["GaussianNoise", "UniformNoise", "GammaNoise"])
 def test_olympus_surface(kind: str, noise_kind: str) -> None:
+    if os.name == "nt":
+        raise SkipTest("Skipping Windows and running only 1 out of 8")
     func = core.OlympusSurface(kind=kind, noise_kind=noise_kind)
     x = 2 * np.random.rand(func.dimension)
     value = func(x)  # should not touch boundaries, so value should be < np.inf
