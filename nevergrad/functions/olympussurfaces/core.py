@@ -56,8 +56,8 @@ class OlympusSurface(ExperimentFunction):
         self.surface_without_noise = partial(self._simulate_surface, noise=False)
         parametrization = p.Array(shape=(dimension,))
         parametrization.function.deterministic = False
-        self.shift = self.parametrization.random_state.normal(size=self.dimension)
         super().__init__(self.surface, parametrization)
+        self.shift = self.parametrization.random_state.normal(size=self.dimension)
 
     def _simulate_surface(self, x: np.ndarray, noise: bool = True) -> float:
         assert self.kind in OlympusSurface.get_surfaces_kinds()
