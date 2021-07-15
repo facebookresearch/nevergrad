@@ -1236,6 +1236,7 @@ def neuro_control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experime
 def olympus_surfaces(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Olympus surfaces """
     from nevergrad.functions.olympussurfaces import OlympusSurface
+
     funcs = []
     for kind in OlympusSurface.get_surfaces_kinds():
         for k in range(2, 5):
