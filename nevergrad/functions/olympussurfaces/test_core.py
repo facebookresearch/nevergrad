@@ -19,7 +19,10 @@ def test_olympus_surface(kind: str, noise_kind: str) -> None:
     if os.name == "nt":
         raise SkipTest("Skipping Windows and running only 1 out of 8")
     func = core.OlympusSurface(kind=kind, noise_kind=noise_kind)
+    func2 = core.OlympusSurface(kind=kind, noise_kind=noise_kind)  # Let us check the randomization.
     x = 2 * np.random.rand(func.dimension)
     value = func(x)  # should not touch boundaries, so value should be < np.inf
+    value2 = func2(x)  # should not touch boundaries, so value should be < np.inf
     assert isinstance(value, float)
     assert value < np.inf
+    assert value != value2
