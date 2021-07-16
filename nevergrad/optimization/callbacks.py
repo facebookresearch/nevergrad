@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import os
 import json
 import time
 import warnings
@@ -16,6 +17,9 @@ from nevergrad.common import errors
 from nevergrad.parametrization import parameter as p
 from nevergrad.parametrization import helpers
 from . import base
+
+logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
+global_logger = logging.getLogger(__name__)
 
 
 class OptimizationPrinter:
@@ -52,33 +56,26 @@ class OptimizationLogger:
 
     Parameters
     ----------
-    log_interval_tells: int
-        max number of evaluation before performing another log
-    log_interval_seconds:
-        max number of seconds before performing another log
     logger:
         given logger that callback will use to log
     log_level:
         log level that logger will write to
+    log_interval_tells: int
+        max number of evaluation before performing another log
+    log_interval_seconds:
+        max number of seconds before performing another log
     """
 
     def __init__(
         self,
-        logger: logging.Logger,
-        log_level: int = logging.DEBUG,
+        *,
+        logger: logging.Logger = global_logger,
+        log_level: int = logging.INFO,
         log_interval_tells: int = 1,
         log_interval_seconds: float = 60.0,
     ) -> None:
         assert log_interval_tells > 0
         assert log_interval_seconds > 0
-        assert log_level in [
-            logging.NOTSET,
-            logging.DEBUG,
-            logging.INFO,
-            logging.WARNING,
-            logging.ERROR,
-            logging.CRITICAL,
-        ]
         self._logger = logger
         self._log_level = log_level
         self._log_interval_tells = int(log_interval_tells)

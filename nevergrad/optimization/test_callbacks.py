@@ -126,7 +126,9 @@ def test_optimization_logger(tmp_path: Path) -> None:
     early_stopping = ng.callbacks.EarlyStopping(lambda opt: opt.num_ask > 3)
     optimizer.register_callback(
         "tell",
-        callbacks.OptimizationLogger(logger, logging.INFO, log_interval_tells=10, log_interval_seconds=0.1),
+        callbacks.OptimizationLogger(
+            logger=logger, log_level=logging.INFO, log_interval_tells=10, log_interval_seconds=0.1
+        ),
     )
     optimizer.register_callback("ask", early_stopping)
     optimizer.minimize(_func, verbosity=2)
