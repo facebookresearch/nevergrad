@@ -36,8 +36,7 @@ class OptimizerHierarchy:
         return opt_hierarchies
 
     def _build_tree(self):
-        """Builds dict-of-dicts that better represents the tree structure in a class hierarchy
-        using two for loops to traverse the list of lists and build dictionary as it goes."""
+        """Builds dict-of-dicts that better represents the tree structure of a class hierarchy."""
         for opt_hierarchy in self._opt_hierarchy_lists:
             opt_hierarchy.reverse()
             self._insert_into_tree(opt_hierarchy)
