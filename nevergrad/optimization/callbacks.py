@@ -65,7 +65,7 @@ class OptimizationLogger:
     def __init__(
         self,
         logger: logging.Logger,
-        log_level: str = "debug",
+        log_level: int = logging.DEBUG,
         log_interval_tells: int = 1,
         log_interval_seconds: float = 60.0,
     ) -> None:
