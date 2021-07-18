@@ -15,6 +15,8 @@ import nevergrad as ng
 try:
     from olympus import surfaces  # type: ignore
     from olympus import noises  # type: ignore
+    from olympus import Emulator  # type: ignore
+    from olympus.datasets import Dataset  # type: ignore
 except ImportError as e:
     raise ng.errors.UnsupportedExperiment("Please install olympus for Olympus experiments") from e
 
@@ -74,3 +76,46 @@ class OlympusSurface(ExperimentFunction):
         """Averages multiple evaluations if necessary."""
         x = recommendations[0].value
         return self.surface_without_noise(x - self.shift)
+
+
+class OlympusEmulator(ExperimentFunction):
+    datasets = [
+        "suzuki",
+        "fullerenes",
+        "colors_bob",
+        "photo_wf3",
+        "snar",
+        "alkox",
+        "benzylation",
+        "photo_pce10",
+        "hplc",
+        "colors_n9",
+    ]
+
+    @classmethod
+    def get_datasets(cls):
+        return cls.datasets
+
+    def __init__(self, dataset_kind: str = "alkox", model_kind: str = "NeuralNet") -> None:
+        self.dataset_kind = dataset_kind
+        self.model_kind = model_kind
+        parametrization = self._get_parametrization()
+        parametrization.function.deterministic = False
+        parametrization.set_name("")
+        super().__init__(self._simulate_emulator, parametrization)
+
+    def _get_parametrization(self) -> p.Parameter:
+        dataset = Dataset(self.dataset_kind)
+        dimension = dataset.shape[1] - 1
+        bounds = list(zip(*dataset.param_space.param_bounds))
+        return p.Array(shape=(dimension,), lower=bounds[0], upper=bounds[1])
+
+    def _simulate_emulator(self, x: np.ndarray) -> float:
+        assert self.dataset_kind in OlympusEmulator.get_datasets()
+        assert self.model_kind in ["NeuralNet"]
+
+        emulator = Emulator(dataset=self.dataset_kind, model=self.model_kind)
+        if emulator.get_goal() == "maximize":
+            return -emulator.run(x)[0][0]
+        else:
+            return emulator.run(x)[0][0]

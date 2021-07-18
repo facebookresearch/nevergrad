@@ -26,3 +26,13 @@ def test_olympus_surface(kind: str, noise_kind: str) -> None:
     assert isinstance(value, float)
     assert value < np.inf
     assert value != value2
+
+
+@pytest.mark.parametrize("dataset_kind", core.OlympusEmulator.get_datasets())
+@pytest.mark.parametrize("model_kind", ["NeuralNet"])
+def test_olympus_emulator(dataset_kind: str, model_kind: str) -> None:
+    func = core.OlympusEmulator(dataset_kind=dataset_kind, model_kind=model_kind)
+    x = 2 * np.random.rand(func.dimension)
+    value = func(x)  # should not touch boundaries, so value should be < np.inf
+    assert isinstance(value, float)
+    assert value < np.inf
