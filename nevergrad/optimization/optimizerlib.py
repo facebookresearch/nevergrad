@@ -1864,7 +1864,6 @@ class PCABO(base.Optimizer):
             acquisition_optimization={"optimizer": "BFGS"},
         )
 
-
     def _internal_ask_candidate(self) -> p.Parameter:
         if not self.buffer:
             self.newX = []
@@ -1898,7 +1897,6 @@ class PCABO(base.Optimizer):
                 # Tell not asked:
                 self._pcabo.tell(np.arctan(data), loss)
 
-
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         raise errors.TellNotAskedNotSupportedError
 
@@ -1930,10 +1928,8 @@ class BayesOptimBO(base.Optimizer):
         # hyperparameters of the GPR model
         thetaL = 1e-10 * (ub - lb) * np.ones(self.dimension)
         thetaU = 10 * (ub - lb) * np.ones(self.dimension)
-        model = GaussianProcess(  # create the GPR model
-            thetaL=thetaL, thetaU=thetaU
-        )
-        
+        model = GaussianProcess(thetaL=thetaL, thetaU=thetaU)  # create the GPR model
+
         self.buffer: List[float] = []
         self.newX: List[float] = []
         self.loss: List[float] = []
@@ -1949,7 +1945,6 @@ class BayesOptimBO(base.Optimizer):
             # n_components=0.95,
             # acquisition_optimization={"optimizer": "BFGS"},
         )
-
 
     def _internal_ask_candidate(self) -> p.Parameter:
         if not self.buffer:
@@ -1982,7 +1977,6 @@ class BayesOptimBO(base.Optimizer):
                 data = candidate.get_standardized_data(reference=self.parametrization)
                 # Tell not asked:
                 self._bo2.tell(np.arctan(data), loss)
-
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         raise errors.TellNotAskedNotSupportedError

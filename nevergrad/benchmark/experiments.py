@@ -664,7 +664,6 @@ def yabbob(
 
     if hd and small:
         optims = ["BO", "CMA", "PSO", "DE"]
-    
 
     # List of objective functions.
     functions = [
