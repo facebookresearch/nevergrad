@@ -1817,7 +1817,6 @@ BOSplit = ConfSplitOptimizer(max_num_vars=15, progressive=False, multivariate_op
 )
 
 
-# (Elena) Still under construction
 @registry.register
 class PCABO(base.Optimizer):
     """Principle Component Analysis (PCA) Bayesian Optimization for dimensionality reduction in BO
@@ -1865,11 +1864,6 @@ class PCABO(base.Optimizer):
             acquisition_optimization={"optimizer": "BFGS"},
         )
 
-        # (Elena) PROBLEM: bayes-optim methods also work with matrices, X is a matrix for ParallelBO or during the DOE phase
-        #   X = self.ask()
-        #   func_vals = self.evaluate(X)
-        #   self.tell(X, func_vals)
-        # where X is a matrix, and func_vals is a vector.
 
     def _internal_ask_candidate(self) -> p.Parameter:
         if not self.buffer:
@@ -1904,12 +1898,91 @@ class PCABO(base.Optimizer):
                 # Tell not asked:
                 self._pcabo.tell(np.arctan(data), loss)
 
-        # self._fake_function.register(y, -loss)  # minimizing
-        # self.bo.probe(y, lazy=False)
-        # # for some unknown reasons, BO wants to evaluate twice the same point,
-        # # but since it keeps a cache of the values, the registered value is not used
-        # # so we should clean the "fake" function
-        # self._fake_function._registered.clear()
+
+    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        raise errors.TellNotAskedNotSupportedError
+
+
+@registry.register
+class BayesOptimBO(base.Optimizer):
+    """BO algorithm from BayesOptim package"""
+
+    no_parallelization = True
+    recast = True
+
+    def __init__(
+        self,
+        parametrization: IntOrParameter,
+        budget: tp.Optional[int] = None,
+        num_workers: int = 1,
+        *,
+        init_budget: tp.Optional[int] = None,
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+
+        from bayes_optim import BO as BayesOptimBO
+        from bayes_optim import RealSpace
+        from bayes_optim.surrogate import GaussianProcess
+
+        lb, ub = 1e-7 - np.pi / 2, np.pi / 2 - 1e-7
+        space = RealSpace([lb, ub]) * self.dimension
+
+        # hyperparameters of the GPR model
+        thetaL = 1e-10 * (ub - lb) * np.ones(self.dimension)
+        thetaU = 10 * (ub - lb) * np.ones(self.dimension)
+        model = GaussianProcess(  # create the GPR model
+            thetaL=thetaL, thetaU=thetaU
+        )
+        
+        self.buffer: List[float] = []
+        self.newX: List[float] = []
+        self.loss: List[float] = []
+
+        self._bo2 = BayesOptimBO(
+            search_space=space,
+            obj_fun=None,  # Assuming that this is not used :-)
+            model=model,
+            DoE_size=init_budget if init_budget is not None else 5,
+            max_FEs=budget,
+            verbose=True,
+            # n_point=1,
+            # n_components=0.95,
+            # acquisition_optimization={"optimizer": "BFGS"},
+        )
+
+
+    def _internal_ask_candidate(self) -> p.Parameter:
+        if not self.buffer:
+            self.newX = []
+            self.loss = []
+            candidate = self._bo2.ask()
+            if not isinstance(candidate, list):
+                candidate = candidate.tolist()
+            self.buffer = candidate
+        x_probe = self.buffer.pop()
+        print("X_PROBE = ", x_probe)
+        print("BUFFER = ", self.buffer)
+        data = np.tan(np.array(x_probe, copy=False))
+        candidate = self.parametrization.spawn_child().set_standardized_data(data)
+        candidate._meta["x_probe"] = x_probe
+        self.newX.append(candidate._meta["x_probe"])
+        return candidate
+
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        # print("BUFFER inside tell = ", self.buffer)
+        print("newX =", self.newX)
+        self.loss.append(loss)
+        print("new_loss =", self.loss)
+        if not self.buffer:
+            if "x_probe" in candidate._meta:
+                # y = candidate._meta["x_probe"]
+                print("Len(newX) = ", len(self.newX))
+                self._bo2.tell(self.newX, self.loss)
+            else:
+                data = candidate.get_standardized_data(reference=self.parametrization)
+                # Tell not asked:
+                self._bo2.tell(np.arctan(data), loss)
+
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         raise errors.TellNotAskedNotSupportedError
