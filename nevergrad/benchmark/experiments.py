@@ -618,9 +618,8 @@ def yabbob(
     hd: bool = False,
     constraint_case: int = 0,
     split: bool = False,
+    tiny: bool = False,
     tuning: bool = False,
-    reduction_factor: int = 1,
-    elenas: bool = False,
 ) -> tp.Iterator[Experiment]:
     """Yet Another Black-Box Optimization Benchmark.
     Related to, but without special effort for exactly sticking to, the BBOB/COCO dataset.
@@ -664,18 +663,8 @@ def yabbob(
         optims += get_optimizers("splitters", seed=next(seedg))  # type: ignore
 
     if hd and small:
-        # optims = ["BO", "CMA", "PSO", "DE"]
-        # optims = ["BO", "BOSplit1", "BOSplit5", "BOSplit10", "BOSplit15", "BOSplit20", "BOSplit40", "CMA", "PSO", "DE"]
-        # optims = ["BO", "BOSplit1", "BOSplit5", "BOSplit10", "BOSplit15", "BOSplit20", "BOSplit40", "CMA", "PSO", "DE", "MetaModel", "MetaTuneRecentering", "RandomSearch", "QORandomSearch","OnePlusOne","NGOpt","AX","BOBYQA"]
-        # optims = ["AXSplit1", "AXSplit5", "AXSplit10", "AXSplit15", "AXSplit20", "AXSplit40", "BOBYQASplit1", "BOBYQASplit5", "BOBYQASplit10", "BOBYQASplit15", "BOBYQASplit20", "BOBYQASplit40"]
-        # optims = ["AXSplit1", "AXSplit5", "AXSplit10", "AXSplit15", "AXSplit20", "AXSplit40"]
-        optims = ["BOBYQASplit15","BOBYQASplit10","AXSplit20","BOBYQASplit40","AXSplit10","AXSplit40","AXSplit15","AXSplit5","BO","BOSplit40","BOSplit20","BOSplit15","BOSplit10"]
+        optims = ["BO", "CMA", "PSO", "DE"]
     
-    if elenas:
-        # optims = ["BO", "CMA", "PSO", "DE", "BOBYQA", "BOSplit1", "BOSplit5", "BOSplit10", "BOBYQASplit1", "BOBYQASplit5", "BOBYQASplit10", "MetaModel", "MetaTuneRecentering", "RandomSearch", "QORandomSearch", "OnePlusOne", "NGOpt"]
-        # optims = ["AX", "AXSplit1", "AXSplit5", "AXSplit10"]
-        # optims = ["SQP", "Powell", "Cobyla", "ChainMetaModelSQP"]
-        optims = ["BO", "AX", "AXSplit10", "AXSplit5", "PCABO", "NGOpt", "BOBYQA", "BOBYQASplit5", "BOBYQASplit10", "Cobyla"]
 
     # List of objective functions.
     functions = [
@@ -683,12 +672,10 @@ def yabbob(
         for name in names
         for rotation in [True, False]
         for num_blocks in ([1] if not split else [7, 12])
-        # for d in ([100, 1000, 3000] if hd else ([2, 5, 10, 15] if tuning else [2, 10, 50]))
-        for d in ([100, 1000, 3000] if hd else ([2, 5, 10, 15] if tuning else ([10, 20, 40, 100] if elenas else [2, 10, 50])))
+        for d in ([100, 1000, 3000] if hd else ([2, 5, 10, 15] if tuning else [2, 10, 50]))
     ]
-
-    assert reduction_factor in [1, 7, 13, 17]  # needs to be a cofactor
-    functions = functions[::reduction_factor]
+    if tiny:
+        functions = functions[::13]
 
     # We possibly add constraints.
     max_num_constraints = 4
@@ -715,8 +702,6 @@ def yabbob(
     )
     if small and not noise:
         budgets = [10, 20, 40]
-    if elenas:
-        budgets = [10, 20, 40, 100, 150, 300]
     for optim in optims:
         for function in functions:
             for budget in budgets:
@@ -734,29 +719,6 @@ def yahdlbbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def reduced_yahdlbbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Counterpart of yabbob with HD and low budget."""
-    return yabbob(seed, hd=True, small=True, reduction_factor=17)
-
-
-@registry.register
-def reduced_elena_bbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Counterpart of yabbob with HD and low budget."""
-    return yabbob(seed, elenas=True, reduction_factor=13)
-
-
-@registry.register
-def elena_bbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Counterpart of yabbob with HD and low budget."""
-    return yabbob(seed, elenas=True)
-
-
-@registry.register
-def pcabo_bbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Counterpart of yabbob with HD and low budget."""
-    return yabbob(seed, elenas=True)
-
-
 def yanoisysplitbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with more budget."""
     return yabbob(seed, noise=True, parallel=False, split=True)
@@ -803,13 +765,13 @@ def yahdsplitbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 @registry.register
 def yatuningbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with less budget."""
-    return yabbob(seed, parallel=False, big=False, small=True, reduction_factor=13, tuning=True)
+    return yabbob(seed, parallel=False, big=False, small=True, tiny=True, tuning=True)
 
 
 @registry.register
 def yatinybbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with less budget."""
-    return yabbob(seed, parallel=False, big=False, small=True, reduction_factor=13)
+    return yabbob(seed, parallel=False, big=False, small=True, tiny=True)
 
 
 @registry.register
