@@ -219,6 +219,7 @@ class PymooOptimizer(base.ConfiguredOptimizer):
     # pylint: disable=unused-argument
     def __init__(self, *, algorithm, random_restart: bool = False) -> None:
         super().__init__(_PymooMinimizeBase, locals())
+        print(type(algorithm))
 
 
 class _PymooProblem(Problem):
@@ -233,7 +234,8 @@ class _PymooProblem(Problem):
             elementwise_evaluation=True,
         )
 
-    def _evaluate(self, X, out):
+    def _evaluate(self, X, out, *args, **kwargs):
+        # pylint: disable=unused-argument
         out["F"] = self.objective_function(X)
 
 
@@ -243,9 +245,9 @@ PymooGA = PymooOptimizer(algorithm=get_pymoo_algorithm("ga")).set_name("ga", reg
 PymooBRKGA = PymooOptimizer(algorithm=get_pymoo_algorithm("brkga")).set_name("brkga", register=True)
 PymooCMAES = PymooOptimizer(algorithm=get_pymoo_algorithm("cmaes")).set_name("cmaes", register=True)
 PymooNSGA2 = PymooOptimizer(algorithm=get_pymoo_algorithm("nsga2")).set_name("nsga2", register=True)
-PymooRNSGA2 = PymooOptimizer(algorithm=get_pymoo_algorithm("rnsga2")).set_name("rnsga2", register=True)
-PymooNSGA3 = PymooOptimizer(algorithm=get_pymoo_algorithm("nsga3")).set_name("nsga3", register=True)
-PymooUNSGA3 = PymooOptimizer(algorithm=get_pymoo_algorithm("unsga3")).set_name("unsga3", register=True)
-PymooRNSGA3 = PymooOptimizer(algorithm=get_pymoo_algorithm("rnsga3")).set_name("rnsga3", register=True)
-PymooMOEAD = PymooOptimizer(algorithm=get_pymoo_algorithm("moead")).set_name("moead", register=True)
-PymooCTAEA = PymooOptimizer(algorithm=get_pymoo_algorithm("ctaea")).set_name("ctaea", register=True)
+# PymooRNSGA2 = PymooOptimizer(algorithm=get_pymoo_algorithm("rnsga2")).set_name("rnsga2", register=True)
+# PymooNSGA3 = PymooOptimizer(algorithm=get_pymoo_algorithm("nsga3")).set_name("nsga3", register=True)
+# PymooUNSGA3 = PymooOptimizer(algorithm=get_pymoo_algorithm("unsga3")).set_name("unsga3", register=True)
+# PymooRNSGA3 = PymooOptimizer(algorithm=get_pymoo_algorithm("rnsga3")).set_name("rnsga3", register=True)
+# PymooMOEAD = PymooOptimizer(algorithm=get_pymoo_algorithm("moead")).set_name("moead", register=True)
+# PymooCTAEA = PymooOptimizer(algorithm=get_pymoo_algorithm("ctaea")).set_name("ctaea", register=True)
