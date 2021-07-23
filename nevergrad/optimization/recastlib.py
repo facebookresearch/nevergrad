@@ -5,6 +5,9 @@
 
 import numpy as np
 from scipy import optimize as scipyoptimize
+from pymoo import optimize as pymoooptimize
+from pymoo.model.problem import Problem
+from pymoo.factory import get_algorithm as get_pymoo_algorithm
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
 from . import base
@@ -113,3 +116,136 @@ SQP = ScipyOptimizer(method="SLSQP").set_name("SQP", register=True)
 SLSQP = SQP  # Just so that people who are familiar with SLSQP naming are not lost.
 RSQP = ScipyOptimizer(method="SLSQP", random_restart=True).set_name("RSQP", register=True)
 RSLSQP = RSQP  # Just so that people who are familiar with SLSQP naming are not lost.
+
+
+class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
+    def __init__(
+        self,
+        parametrization: IntOrParameter,
+        budget: tp.Optional[int] = None,
+        num_workers: int = 1,
+        *,
+        algorithm,
+        random_restart: bool = False,
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        self.multirun = 1  # work in progress
+        self.initial_guess: tp.Optional[tp.ArrayLike] = None
+        self.parametrization = parametrization
+        # configuration
+        self.algorithm = algorithm
+        self.random_restart = random_restart
+
+    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.Loss) -> None:
+        """Called whenever calling "tell" on a candidate that was not "asked".
+        Defaults to the standard tell pipeline.
+        """  # We do not do anything; this just updates the current best.
+
+    def get_optimization_function(self) -> tp.Callable[[tp.Callable[[tp.ArrayLike], float]], tp.ArrayLike]:
+        # create a different sub-instance, so that the current instance is not referenced by the thread
+        # (consequence: do not create a thread at initialization, or we get a thread explosion)
+        subinstance = self.__class__(
+            parametrization=self.parametrization,
+            budget=self.budget,
+            num_workers=self.num_workers,
+            algorithm=self.algorithm,
+            random_restart=self.random_restart,
+        )
+        if self.num_objectives > 0:
+            subinstance.num_objectives = self.num_objectives
+        else:
+            raise ValueError("This optimizer requires num_objectives to be explicity set.")
+        subinstance.archive = self.archive
+        subinstance.current_bests = self.current_bests
+        return subinstance._optimization_function
+
+    def _optimization_function(self, objective_function: tp.Callable[[tp.ArrayLike], float]) -> tp.ArrayLike:
+        # pylint:disable=unused-argument
+        budget = np.inf if self.budget is None else self.budget
+        best_res = np.inf
+        best_x: np.ndarray = self.current_bests["average"].x  # np.zeros(self.dimension)
+        problem = _PymooProblem(self, objective_function)
+        if self.initial_guess is not None:
+            best_x = np.array(self.initial_guess, copy=True)  # copy, just to make sure it is not modified
+        remaining: float = budget - self._num_ask
+        while remaining > 0:  # try to restart if budget is not elapsed
+            res = pymoooptimize.minimize(
+                problem,
+                self.algorithm
+                # termination
+            )
+            if res.F < best_res:
+                best_res = res.F
+                best_x = res.X
+            remaining = budget - self._num_ask
+        return best_x
+
+
+class PymooOptimizer(base.ConfiguredOptimizer):
+    """Wrapper over Pymoo optimizer implementations, in standard ask and tell format.
+    This is actually an import from Pymoo Optimize.
+
+    Parameters
+    ----------
+    algorithm: pymoo.model.algorithm.Algorithm(**kwargs)
+
+        Use get_pymoo_algorithm("algorithm-name") with following names to access algorithm classes:
+        -"de"
+        -'ga'
+        -"brkga"
+        -"nelder-mead"
+        -"pattern-search"
+        -"cmaes"
+        -"nsga2"
+        -"rnsga2"
+        -"nsga3"
+        -"unsga3"
+        -"rnsga3"
+        -"moead"
+        -"ctaea"
+
+    random_restart: bool
+        whether to restart at a random point if the optimizer converged but the budget is not entirely
+        spent yet (otherwise, restarts from best point)
+
+    Note
+    ----
+    These optimizers do not support asking several candidates in a row
+    """
+
+    recast = True
+    no_parallelization = True
+
+    # pylint: disable=unused-argument
+    def __init__(self, *, algorithm, random_restart: bool = False) -> None:
+        super().__init__(_PymooMinimizeBase, locals())
+
+
+class _PymooProblem(Problem):
+    def __init__(self, optimizer, objective_function):
+        self.objective_function = objective_function
+        super().__init__(
+            n_var=optimizer.dimension,
+            n_obj=optimizer.num_objectives,
+            n_constr=0,
+            xl=-5,
+            xu=5,
+            elementwise_evaluation=True,
+        )
+
+    def _evaluate(self, X, out):
+        out["F"] = self.objective_function(X)
+
+
+PymooNM = PymooOptimizer(algorithm=get_pymoo_algorithm("nelder-mead")).set_name("nelder-mead", register=True)
+PymooDE = PymooOptimizer(algorithm=get_pymoo_algorithm("de")).set_name("de", register=True)
+PymooGA = PymooOptimizer(algorithm=get_pymoo_algorithm("ga")).set_name("ga", register=True)
+PymooBRKGA = PymooOptimizer(algorithm=get_pymoo_algorithm("brkga")).set_name("brkga", register=True)
+PymooCMAES = PymooOptimizer(algorithm=get_pymoo_algorithm("cmaes")).set_name("cmaes", register=True)
+PymooNSGA2 = PymooOptimizer(algorithm=get_pymoo_algorithm("nsga2")).set_name("nsga2", register=True)
+PymooRNSGA2 = PymooOptimizer(algorithm=get_pymoo_algorithm("rnsga2")).set_name("rnsga2", register=True)
+PymooNSGA3 = PymooOptimizer(algorithm=get_pymoo_algorithm("nsga3")).set_name("nsga3", register=True)
+PymooUNSGA3 = PymooOptimizer(algorithm=get_pymoo_algorithm("unsga3")).set_name("unsga3", register=True)
+PymooRNSGA3 = PymooOptimizer(algorithm=get_pymoo_algorithm("rnsga3")).set_name("rnsga3", register=True)
+PymooMOEAD = PymooOptimizer(algorithm=get_pymoo_algorithm("moead")).set_name("moead", register=True)
+PymooCTAEA = PymooOptimizer(algorithm=get_pymoo_algorithm("ctaea")).set_name("ctaea", register=True)
