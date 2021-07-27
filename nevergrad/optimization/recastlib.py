@@ -3,11 +3,13 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import math
 import numpy as np
 from scipy import optimize as scipyoptimize
 from pymoo import optimize as pymoooptimize
 from pymoo.model.problem import Problem
 from pymoo.factory import get_algorithm as get_pymoo_algorithm
+from pymoo.model.algorithm import Algorithm as PymooAlgorithm
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
 from . import base
@@ -125,7 +127,7 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
         *,
-        algorithm,
+        algorithm: PymooAlgorithm,
         random_restart: bool = False,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
@@ -169,16 +171,29 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
             best_x = np.array(self.initial_guess, copy=True)  # copy, just to make sure it is not modified
         remaining: float = budget - self._num_ask
         while remaining > 0:  # try to restart if budget is not elapsed
-            res = pymoooptimize.minimize(
-                problem,
-                self.algorithm
-                # termination
-            )
+            res = pymoooptimize.minimize(problem, self.algorithm)
             if res.F < best_res:
                 best_res = res.F
                 best_x = res.X
             remaining = budget - self._num_ask
         return best_x
+
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: float) -> None:
+        """Returns value for a point which was "asked"
+        (none asked point cannot be "tell")
+        """
+        x = candidate.get_standardized_data(reference=self.parametrization)
+        assert self._messaging_thread is not None, 'Start by using "ask" method, instead of "tell" method'
+        if not self._messaging_thread.is_alive():  # optimizer is done
+            self._check_error()
+            return
+        messages = [m for m in self._messaging_thread.messages if m.meta.get("asked", False) and not m.done]
+        messages = [m for m in messages if m.meta["uid"] == candidate.uid]
+        if not messages:
+            raise RuntimeError(f"No message for evaluated point {x}: {self._messaging_thread.messages}")
+        # print(candidate.losses)
+        messages[0].result = candidate.losses  # post the value, and the thread will deal with it
+        # messages[0].result = loss  # post the value, and the thread will deal with it
 
 
 class PymooOptimizer(base.ConfiguredOptimizer):
@@ -187,7 +202,7 @@ class PymooOptimizer(base.ConfiguredOptimizer):
 
     Parameters
     ----------
-    algorithm: pymoo.model.algorithm.Algorithm(**kwargs)
+    algorithm: PymooAlgorithm
 
         Use get_pymoo_algorithm("algorithm-name") with following names to access algorithm classes:
         -"de"
@@ -219,7 +234,6 @@ class PymooOptimizer(base.ConfiguredOptimizer):
     # pylint: disable=unused-argument
     def __init__(self, *, algorithm, random_restart: bool = False) -> None:
         super().__init__(_PymooMinimizeBase, locals())
-        print(type(algorithm))
 
 
 class _PymooProblem(Problem):
@@ -229,17 +243,19 @@ class _PymooProblem(Problem):
             n_var=optimizer.dimension,
             n_obj=optimizer.num_objectives,
             n_constr=0,
-            xl=-5,
-            xu=5,
+            xl=-math.pi * 0.5,
+            xu=math.pi * 0.5,
             elementwise_evaluation=True,
         )
 
     def _evaluate(self, X, out, *args, **kwargs):
         # pylint: disable=unused-argument
-        out["F"] = self.objective_function(X)
+        out["F"] = self.objective_function(np.tan(X))
+        # print("Returning", out["F"])
 
 
 PymooNM = PymooOptimizer(algorithm=get_pymoo_algorithm("nelder-mead")).set_name("nelder-mead", register=True)
+# Nelder-Mead is for single objective
 PymooDE = PymooOptimizer(algorithm=get_pymoo_algorithm("de")).set_name("de", register=True)
 PymooGA = PymooOptimizer(algorithm=get_pymoo_algorithm("ga")).set_name("ga", register=True)
 PymooBRKGA = PymooOptimizer(algorithm=get_pymoo_algorithm("brkga")).set_name("brkga", register=True)
