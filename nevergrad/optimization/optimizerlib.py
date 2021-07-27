@@ -1817,16 +1817,15 @@ BOSplit = ConfSplitOptimizer(max_num_vars=15, progressive=False, multivariate_op
 
 
 class _PCABO(base.Optimizer):
-
     def __init__(
-            self,
-            parametrization: IntOrParameter,
-            budget: tp.Optional[int] = None,
-            num_workers: int = 1,
-            *,
-            init_budget: tp.Optional[int] = None,
-            n_components: tp.Optional[float] = 0.95,
-            prop_doe_factor: tp.Optional[float] = None,
+        self,
+        parametrization: IntOrParameter,
+        budget: tp.Optional[int] = None,
+        num_workers: int = 1,
+        *,
+        init_budget: tp.Optional[int] = None,
+        n_components: tp.Optional[float] = 0.95,
+        prop_doe_factor: tp.Optional[float] = None,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
 
@@ -1902,12 +1901,12 @@ class ParametrizedPCABO(base.ConfiguredOptimizer):
 
     # pylint: disable=unused-argument
     def __init__(
-            self,
-            *,
-            # num_workers: int = 1,
-            init_budget: tp.Optional[int] = None,
-            n_components: tp.Optional[float] = 0.95,
-            prop_doe_factor: tp.Optional[float] = None,
+        self,
+        *,
+        # num_workers: int = 1,
+        init_budget: tp.Optional[int] = None,
+        n_components: tp.Optional[float] = 0.95,
+        prop_doe_factor: tp.Optional[float] = None,
     ) -> None:
         super().__init__(_PCABO, locals())
 
@@ -1922,9 +1921,15 @@ PCABO95 = ParametrizedPCABO(n_components=0.95).set_name("PCABO95", register=True
 PCABO98 = ParametrizedPCABO(n_components=0.98).set_name("PCABO98", register=True)
 
 # Testing the influence of the DoE size on the performance of PCABO
-PCABO95DoE0 = ParametrizedPCABO(n_components=0.95, prop_doe_factor=0.00).set_name("PCABO95DoE0", register=True)
-PCABO95DoE20 = ParametrizedPCABO(n_components=0.95, prop_doe_factor=0.20).set_name("PCABO95DoE20", register=True)
-PCABO95DoE50 = ParametrizedPCABO(n_components=0.95, prop_doe_factor=0.50).set_name("PCABO95DoE50", register=True)
+PCABO95DoE0 = ParametrizedPCABO(n_components=0.95, prop_doe_factor=0.00).set_name(
+    "PCABO95DoE0", register=True
+)
+PCABO95DoE20 = ParametrizedPCABO(n_components=0.95, prop_doe_factor=0.20).set_name(
+    "PCABO95DoE20", register=True
+)
+PCABO95DoE50 = ParametrizedPCABO(n_components=0.95, prop_doe_factor=0.50).set_name(
+    "PCABO95DoE50", register=True
+)
 
 
 @registry.register
