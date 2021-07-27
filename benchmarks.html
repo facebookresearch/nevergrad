@@ -599,7 +599,7 @@ Onemax, Leadingones, Jump function.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="nevergrad.benchmark.experiments.keras_tuning">
 <span class="sig-prename descclassname"><span class="pre">nevergrad.benchmark.experiments.</span></span><span class="sig-name descname"><span class="pre">keras_tuning</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overfitter</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seq</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterator</span><span class="p"><span class="pre">[</span></span><span class="pre">nevergrad.benchmark.xpbase.Experiment</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#nevergrad.benchmark.experiments.keras_tuning" title="Permalink to this definition">¶</a></dt>
-<dd><p>Machine learning hyperparameter tuning experiment. Based on scikit models.</p>
+<dd><p>Machine learning hyperparameter tuning experiment. Based on Keras models.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -679,7 +679,7 @@ Budget 100 to 3200</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="nevergrad.benchmark.experiments.naive_seq_keras_tuning">
 <span class="sig-prename descclassname"><span class="pre">nevergrad.benchmark.experiments.</span></span><span class="sig-name descname"><span class="pre">naive_seq_keras_tuning</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterator</span><span class="p"><span class="pre">[</span></span><span class="pre">nevergrad.benchmark.xpbase.Experiment</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#nevergrad.benchmark.experiments.naive_seq_keras_tuning" title="Permalink to this definition">¶</a></dt>
-<dd><p>Sequential counterpart of mltuning.</p>
+<dd><p>Naive counterpart (no overfitting, see naivemltuning)of seq_keras_tuning.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -697,13 +697,14 @@ Budget 100 to 3200</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="nevergrad.benchmark.experiments.nano_naive_seq_mltuning">
 <span class="sig-prename descclassname"><span class="pre">nevergrad.benchmark.experiments.</span></span><span class="sig-name descname"><span class="pre">nano_naive_seq_mltuning</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterator</span><span class="p"><span class="pre">[</span></span><span class="pre">nevergrad.benchmark.xpbase.Experiment</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#nevergrad.benchmark.experiments.nano_naive_seq_mltuning" title="Permalink to this definition">¶</a></dt>
-<dd><p>Sequential counterpart of mltuning with overfitting of valid loss, i.e. train/valid/valid instead of train/valid/test.</p>
+<dd><p>Sequential counterpart of mltuning with overfitting of valid loss, i.e. train/valid/valid instead of train/valid/test,
+and with lower budget.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="nevergrad.benchmark.experiments.nano_seq_mltuning">
 <span class="sig-prename descclassname"><span class="pre">nevergrad.benchmark.experiments.</span></span><span class="sig-name descname"><span class="pre">nano_seq_mltuning</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterator</span><span class="p"><span class="pre">[</span></span><span class="pre">nevergrad.benchmark.xpbase.Experiment</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#nevergrad.benchmark.experiments.nano_seq_mltuning" title="Permalink to this definition">¶</a></dt>
-<dd><p>Sequential counterpart of mltuning.</p>
+<dd><p>Sequential counterpart of seq_mltuning with smaller budget.</p>
 </dd></dl>
 
 <dl class="py function">
