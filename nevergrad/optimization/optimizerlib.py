@@ -1912,6 +1912,8 @@ class ParametrizedPCABO(base.ConfiguredOptimizer):
         super().__init__(_PCABO, locals())
 
 
+PCABO = ParametrizedPCABO().set_name("PCABO", register=True)
+
 # Testing the influence of n_components on the performance of PCABO
 PCABO80 = ParametrizedPCABO(n_components=0.80).set_name("PCABO80", register=True)
 PCABO90 = ParametrizedPCABO(n_components=0.90).set_name("PCABO90", register=True)
