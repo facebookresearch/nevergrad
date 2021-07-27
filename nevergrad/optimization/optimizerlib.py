@@ -1818,19 +1818,20 @@ BOSplit = ConfSplitOptimizer(max_num_vars=15, progressive=False, multivariate_op
 
 class _BayesOptim(base.Optimizer):
     def __init__(
-            self,
-            parametrization: IntOrParameter,
-            budget: tp.Optional[int] = None,
-            num_workers: int = 1,
-            *,
-            init_budget: tp.Optional[int] = None,
-            pca: tp.Optional[bool] = False,
-            n_components: tp.Optional[float] = 0.95,
-            prop_doe_factor: tp.Optional[float] = None,
+        self,
+        parametrization: IntOrParameter,
+        budget: tp.Optional[int] = None,
+        num_workers: int = 1,
+        *,
+        init_budget: tp.Optional[int] = None,
+        pca: tp.Optional[bool] = False,
+        n_components: tp.Optional[float] = 0.95,
+        prop_doe_factor: tp.Optional[float] = None,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
 
         from bayes_optim.extension import PCABO as PcaBO
+
         # from bayes_optim.extension import RealSpace
         from bayes_optim import BO as BayesOptimBO
         from bayes_optim import RealSpace
@@ -1838,7 +1839,6 @@ class _BayesOptim(base.Optimizer):
 
         lb, ub = 1e-7 - np.pi / 2, np.pi / 2 - 1e-7
         space = RealSpace([lb, ub]) * self.dimension
-
 
         # hyperparameters of the GPR model when pca = False
         thetaL = 1e-10 * (ub - lb) * np.ones(self.dimension)
@@ -1926,13 +1926,13 @@ class ParametrizedBayesOptimBO(base.ConfiguredOptimizer):
 
     # pylint: disable=unused-argument
     def __init__(
-            self,
-            *,
-            # num_workers: int = 1,
-            init_budget: tp.Optional[int] = None,
-            pca: tp.Optional[bool] = False,
-            n_components: tp.Optional[float] = 0.95,
-            prop_doe_factor: tp.Optional[float] = None,
+        self,
+        *,
+        # num_workers: int = 1,
+        init_budget: tp.Optional[int] = None,
+        pca: tp.Optional[bool] = False,
+        n_components: tp.Optional[float] = 0.95,
+        prop_doe_factor: tp.Optional[float] = None,
     ) -> None:
         super().__init__(_BayesOptim, locals())
 
@@ -1944,7 +1944,9 @@ BayesOptimBO = ParametrizedBayesOptimBO().set_name("BayesOptimBO", register=True
 PCABO80 = ParametrizedBayesOptimBO(pca=True, n_components=0.80).set_name("PCABO80", register=True)
 
 # Testing the influence of the DoE size on the performance of PCABO
-PCABO95DoE20 = ParametrizedBayesOptimBO(pca=True, n_components=0.95, prop_doe_factor=0.20).set_name("PCABO95DoE20", register=True)
+PCABO95DoE20 = ParametrizedBayesOptimBO(pca=True, n_components=0.95, prop_doe_factor=0.20).set_name(
+    "PCABO95DoE20", register=True
+)
 
 
 class _Chain(base.Optimizer):
