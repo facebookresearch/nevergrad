@@ -11,7 +11,6 @@ import warnings
 import numpy as np
 from bayes_opt import UtilityFunction
 from bayes_opt import BayesianOptimization
-from typing import List
 import nevergrad.common.typing as tp
 from nevergrad.common import errors
 from nevergrad.parametrization import parameter as p
@@ -1849,9 +1848,9 @@ class PCABO(base.Optimizer):
 
         lb, ub = 1e-7 - np.pi / 2, np.pi / 2 - 1e-7
         space = RealSpace([lb, ub]) * self.dimension
-        self.buffer: List[float] = []
-        self.newX: List[float] = []
-        self.loss: List[float] = []
+        self.buffer: tp.List[float] = []
+        self.newX: tp.List[float] = []
+        self.loss: tp.List[float] = []
 
         self._pcabo = PcaBO(
             search_space=space,
@@ -1930,9 +1929,9 @@ class BayesOptimBO(base.Optimizer):
         thetaU = 10 * (ub - lb) * np.ones(self.dimension)
         model = GaussianProcess(thetaL=thetaL, thetaU=thetaU)  # create the GPR model
 
-        self.buffer: List[float] = []
-        self.newX: List[float] = []
-        self.loss: List[float] = []
+        self.buffer: tp.List[float] = []
+        self.newX: tp.List[float] = []
+        self.loss: tp.List[float] = []
 
         self._bo2 = BayesOptimBO(
             search_space=space,
