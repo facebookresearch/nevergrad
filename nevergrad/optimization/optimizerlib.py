@@ -1830,10 +1830,6 @@ class _BayesOptim(base.Optimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
 
-        from bayes_optim.extension import PCABO as PcaBO
-
-        # from bayes_optim.extension import RealSpace
-        from bayes_optim import BO as BayesOptimBO
         from bayes_optim import RealSpace
         from bayes_optim.surrogate import GaussianProcess
 
@@ -1854,6 +1850,8 @@ class _BayesOptim(base.Optimizer):
             init_budget = round(prop_doe_factor * budget)
 
         if pca:
+            from bayes_optim.extension import PCABO as PcaBO
+
             self._alg = PcaBO(
                 search_space=space,
                 obj_fun=None,  # Assuming that this is not used :-)
@@ -1865,6 +1863,8 @@ class _BayesOptim(base.Optimizer):
                 acquisition_optimization={"optimizer": "BFGS"},
             )
         else:
+            from bayes_optim import BO as BayesOptimBO
+
             self._alg = BayesOptimBO(
                 search_space=space,
                 obj_fun=None,  # Assuming that this is not used :-)
