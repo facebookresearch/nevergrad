@@ -1816,75 +1816,100 @@ BOSplit = ConfSplitOptimizer(max_num_vars=15, progressive=False, multivariate_op
 )
 
 
-class _PCABO(base.Optimizer):
+class _BayesOptim(base.Optimizer):
     def __init__(
-        self,
-        parametrization: IntOrParameter,
-        budget: tp.Optional[int] = None,
-        num_workers: int = 1,
-        *,
-        init_budget: tp.Optional[int] = None,
-        n_components: tp.Optional[float] = 0.95,
-        prop_doe_factor: tp.Optional[float] = None,
+            self,
+            parametrization: IntOrParameter,
+            budget: tp.Optional[int] = None,
+            num_workers: int = 1,
+            *,
+            init_budget: tp.Optional[int] = None,
+            pca: tp.Optional[bool] = False,
+            n_components: tp.Optional[float] = 0.95,
+            prop_doe_factor: tp.Optional[float] = None,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
 
         from bayes_optim.extension import PCABO as PcaBO
-        from bayes_optim.extension import RealSpace
+        # from bayes_optim.extension import RealSpace
+        from bayes_optim import BO as BayesOptimBO
+        from bayes_optim import RealSpace
+        from bayes_optim.surrogate import GaussianProcess
 
         lb, ub = 1e-7 - np.pi / 2, np.pi / 2 - 1e-7
         space = RealSpace([lb, ub]) * self.dimension
-        self.buffer: tp.List[float] = []
-        self.newX: tp.List[float] = []
-        self.loss: tp.List[float] = []
+
+
+        # hyperparameters of the GPR model when pca = False
+        thetaL = 1e-10 * (ub - lb) * np.ones(self.dimension)
+        thetaU = 10 * (ub - lb) * np.ones(self.dimension)
+        model = GaussianProcess(thetaL=thetaL, thetaU=thetaU)  # create the GPR model
+
+        self._buffer: tp.List[float] = []
+        self._newX: tp.List[float] = []
+        self._loss: tp.List[float] = []
 
         # Setting DoE size as a percentage of the total budget if prop_doe_factor is not None
         if prop_doe_factor:
             init_budget = prop_doe_factor * budget
 
-        self._pcabo = PcaBO(
-            search_space=space,
-            obj_fun=None,  # Assuming that this is not used :-)
-            DoE_size=init_budget if init_budget is not None else 5,
-            max_FEs=budget,
-            verbose=True,
-            n_point=1,  # We start with a sequential procedure, maybe we'll extend in a second moment
-            n_components=n_components,
-            acquisition_optimization={"optimizer": "BFGS"},
-        )
+        if pca:
+            self._alg = PcaBO(
+                search_space=space,
+                obj_fun=None,  # Assuming that this is not used :-)
+                DoE_size=init_budget if init_budget is not None else 5,
+                max_FEs=budget,
+                verbose=True,
+                n_point=1,  # We start with a sequential procedure, maybe we'll extend in a second moment
+                n_components=n_components,
+                acquisition_optimization={"optimizer": "BFGS"},
+            )
+        else:
+            self._alg = BayesOptimBO(
+                search_space=space,
+                obj_fun=None,  # Assuming that this is not used :-)
+                model=model,
+                DoE_size=init_budget if init_budget is not None else 5,
+                max_FEs=budget,
+                verbose=True,
+            )
 
     def _internal_ask_candidate(self) -> p.Parameter:
-        if not self.buffer:
-            self.newX = []
-            self.loss = []
-            candidate = self._pcabo.ask()
+        if not self._buffer:
+            self._newX = []
+            self._losses = []
+            candidate = self._alg.ask()
             if not isinstance(candidate, list):
                 candidate = candidate.tolist()
-            self.buffer = candidate
-        x_probe = self.buffer.pop()
+            self._buffer = candidate
+        x_probe = self._buffer.pop()
         data = np.tan(np.array(x_probe, copy=False))
         candidate = self.parametrization.spawn_child().set_standardized_data(data)
         candidate._meta["x_probe"] = x_probe
-        self.newX.append(candidate._meta["x_probe"])
+        self._newX.append(candidate._meta["x_probe"])
         return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        self.loss.append(loss)
-        if not self.buffer:
+        self._losses.append(loss)
+        if not self._buffer:
             if "x_probe" in candidate._meta:
-                self._pcabo.tell(self.newX, self.loss)
+                self._alg.tell(self._newX, self._losses)
             else:
                 data = candidate.get_standardized_data(reference=self.parametrization)
                 # Tell not asked:
-                self._pcabo.tell(np.arctan(data), loss)
+                self._alg.tell(np.arctan(data), loss)
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         raise errors.TellNotAskedNotSupportedError
 
 
-class ParametrizedPCABO(base.ConfiguredOptimizer):
+class ParametrizedBayesOptimBO(base.ConfiguredOptimizer):
     """
-     Principle Component Analysis (PCA) Bayesian Optimization for dimensionality reduction in BO
+    Algorithms from bayes-optim package.
+
+    We use:
+    - BO
+    - PCA-BO: Principle Component Analysis (PCA) Bayesian Optimization for dimensionality reduction in BO
 
     References
 
@@ -1901,116 +1926,25 @@ class ParametrizedPCABO(base.ConfiguredOptimizer):
 
     # pylint: disable=unused-argument
     def __init__(
-        self,
-        *,
-        # num_workers: int = 1,
-        init_budget: tp.Optional[int] = None,
-        n_components: tp.Optional[float] = 0.95,
-        prop_doe_factor: tp.Optional[float] = None,
+            self,
+            *,
+            # num_workers: int = 1,
+            init_budget: tp.Optional[int] = None,
+            pca: tp.Optional[bool] = False,
+            n_components: tp.Optional[float] = 0.95,
+            prop_doe_factor: tp.Optional[float] = None,
     ) -> None:
-        super().__init__(_PCABO, locals())
+        super().__init__(_BayesOptim, locals())
 
 
-PCABO = ParametrizedPCABO().set_name("PCABO", register=True)
+PCABO = ParametrizedBayesOptimBO(pca=True).set_name("PCABO", register=True)
+BayesOptimBO = ParametrizedBayesOptimBO().set_name("BayesOptimBO", register=True)
 
 # Testing the influence of n_components on the performance of PCABO
-PCABO80 = ParametrizedPCABO(n_components=0.80).set_name("PCABO80", register=True)
-PCABO90 = ParametrizedPCABO(n_components=0.90).set_name("PCABO90", register=True)
-PCABO92 = ParametrizedPCABO(n_components=0.92).set_name("PCABO92", register=True)
-PCABO95 = ParametrizedPCABO(n_components=0.95).set_name("PCABO95", register=True)
-PCABO98 = ParametrizedPCABO(n_components=0.98).set_name("PCABO98", register=True)
+PCABO80 = ParametrizedBayesOptimBO(pca=True, n_components=0.80).set_name("PCABO80", register=True)
 
 # Testing the influence of the DoE size on the performance of PCABO
-PCABO95DoE0 = ParametrizedPCABO(n_components=0.95, prop_doe_factor=0.00).set_name(
-    "PCABO95DoE0", register=True
-)
-PCABO95DoE20 = ParametrizedPCABO(n_components=0.95, prop_doe_factor=0.20).set_name(
-    "PCABO95DoE20", register=True
-)
-PCABO95DoE50 = ParametrizedPCABO(n_components=0.95, prop_doe_factor=0.50).set_name(
-    "PCABO95DoE50", register=True
-)
-
-
-@registry.register
-class BayesOptimBO(base.Optimizer):
-    """BO algorithm from BayesOptim package"""
-
-    no_parallelization = True
-    recast = True
-
-    def __init__(
-        self,
-        parametrization: IntOrParameter,
-        budget: tp.Optional[int] = None,
-        num_workers: int = 1,
-        *,
-        init_budget: tp.Optional[int] = None,
-    ) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
-
-        from bayes_optim import BO as BayesOptimBO
-        from bayes_optim import RealSpace
-        from bayes_optim.surrogate import GaussianProcess
-
-        lb, ub = 1e-7 - np.pi / 2, np.pi / 2 - 1e-7
-        space = RealSpace([lb, ub]) * self.dimension
-
-        # hyperparameters of the GPR model
-        thetaL = 1e-10 * (ub - lb) * np.ones(self.dimension)
-        thetaU = 10 * (ub - lb) * np.ones(self.dimension)
-        model = GaussianProcess(thetaL=thetaL, thetaU=thetaU)  # create the GPR model
-
-        self.buffer: tp.List[float] = []
-        self.newX: tp.List[float] = []
-        self.loss: tp.List[float] = []
-
-        self._bo2 = BayesOptimBO(
-            search_space=space,
-            obj_fun=None,  # Assuming that this is not used :-)
-            model=model,
-            DoE_size=init_budget if init_budget is not None else 5,
-            max_FEs=budget,
-            verbose=True,
-            # n_point=1,
-            # n_components=0.95,
-            # acquisition_optimization={"optimizer": "BFGS"},
-        )
-
-    def _internal_ask_candidate(self) -> p.Parameter:
-        if not self.buffer:
-            self.newX = []
-            self.loss = []
-            candidate = self._bo2.ask()
-            if not isinstance(candidate, list):
-                candidate = candidate.tolist()
-            self.buffer = candidate
-        x_probe = self.buffer.pop()
-        print("X_PROBE = ", x_probe)
-        print("BUFFER = ", self.buffer)
-        data = np.tan(np.array(x_probe, copy=False))
-        candidate = self.parametrization.spawn_child().set_standardized_data(data)
-        candidate._meta["x_probe"] = x_probe
-        self.newX.append(candidate._meta["x_probe"])
-        return candidate
-
-    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        # print("BUFFER inside tell = ", self.buffer)
-        print("newX =", self.newX)
-        self.loss.append(loss)
-        print("new_loss =", self.loss)
-        if not self.buffer:
-            if "x_probe" in candidate._meta:
-                # y = candidate._meta["x_probe"]
-                print("Len(newX) = ", len(self.newX))
-                self._bo2.tell(self.newX, self.loss)
-            else:
-                data = candidate.get_standardized_data(reference=self.parametrization)
-                # Tell not asked:
-                self._bo2.tell(np.arctan(data), loss)
-
-    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        raise errors.TellNotAskedNotSupportedError
+PCABO95DoE20 = ParametrizedBayesOptimBO(pca=True, n_components=0.95, prop_doe_factor=0.20).set_name("PCABO95DoE20", register=True)
 
 
 class _Chain(base.Optimizer):
