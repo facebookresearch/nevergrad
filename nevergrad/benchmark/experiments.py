@@ -79,7 +79,7 @@ class _Constraint:
 def keras_tuning(
     seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool = False
 ) -> tp.Iterator[Experiment]:
-    """Machine learning hyperparameter tuning experiment. Based on scikit models."""
+    """Machine learning hyperparameter tuning experiment. Based on Keras models."""
     seedg = create_seed_generator(seed)
     # Continuous case,
 
@@ -154,7 +154,7 @@ def seq_keras_tuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 # We register only the sequential counterparts for the moment.
 @registry.register
 def naive_seq_keras_tuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Sequential counterpart of mltuning."""
+    """Naive counterpart (no overfitting, see naivemltuning)of seq_keras_tuning."""
     return keras_tuning(seed, overfitter=True, seq=True)
 
 
@@ -173,13 +173,14 @@ def seq_mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 @registry.register
 def nano_seq_mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Sequential counterpart of mltuning."""
+    """Sequential counterpart of seq_mltuning with smaller budget."""
     return mltuning(seed, overfitter=False, seq=True, nano=True)
 
 
 @registry.register
 def nano_naive_seq_mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Sequential counterpart of mltuning with overfitting of valid loss, i.e. train/valid/valid instead of train/valid/test."""
+    """Sequential counterpart of mltuning with overfitting of valid loss, i.e. train/valid/valid instead of train/valid/test,
+    and with lower budget."""
     return mltuning(seed, overfitter=True, seq=True, nano=True)
 
 
@@ -235,7 +236,6 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # This problem is intended as a stable basis forever.
     # The list of optimizers should contain only the basic for comparison and "baselines".
     optims: tp.List[str] = ["NGOpt10"] + get_optimizers("baselines", seed=next(seedg))  # type: ignore
-
     index = 0
     for function in functions:
         for budget in [50, 1500, 25000]:

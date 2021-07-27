@@ -169,7 +169,7 @@ class Experiment:
         self.function.parametrization.random_state  # pylint: disable=pointless-statement
 
     def __repr__(self) -> str:
-        return f"Experiment: {self.optimsettings} (dim={self.function.dimension}) on {self.function} with seed {self.seed}"
+        return f"Experiment: {self.optimsettings} (dim={self.function.dimension}, param={self.function.parametrization}) on {self.function} with seed {self.seed}"
 
     @property
     def is_incoherent(self) -> bool:
