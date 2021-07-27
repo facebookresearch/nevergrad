@@ -1847,7 +1847,7 @@ class _BayesOptim(base.Optimizer):
 
         self._buffer: tp.List[float] = []
         self._newX: tp.List[float] = []
-        self._loss: tp.List[float] = []
+        self._losses: tp.List[float] = []
 
         # Setting DoE size as a percentage of the total budget if prop_doe_factor is not None
         if prop_doe_factor:
