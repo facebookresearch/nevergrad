@@ -1816,9 +1816,76 @@ BOSplit = ConfSplitOptimizer(max_num_vars=15, progressive=False, multivariate_op
 )
 
 
-@registry.register
-class PCABO(base.Optimizer):
-    """Principle Component Analysis (PCA) Bayesian Optimization for dimensionality reduction in BO
+class _PCABO(base.Optimizer):
+
+    def __init__(
+            self,
+            parametrization: IntOrParameter,
+            budget: tp.Optional[int] = None,
+            num_workers: int = 1,
+            *,
+            init_budget: tp.Optional[int] = None,
+            n_components: tp.Optional[float] = 0.95,
+            prop_doe_factor: tp.Optional[float] = None,
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+
+        from bayes_optim.extension import PCABO as PcaBO
+        from bayes_optim.extension import RealSpace
+
+        lb, ub = 1e-7 - np.pi / 2, np.pi / 2 - 1e-7
+        space = RealSpace([lb, ub]) * self.dimension
+        self.buffer: tp.List[float] = []
+        self.newX: tp.List[float] = []
+        self.loss: tp.List[float] = []
+
+        # Setting DoE size as a percentage of the total budget if prop_doe_factor is not None
+        if prop_doe_factor:
+            init_budget = prop_doe_factor * budget
+
+        self._pcabo = PcaBO(
+            search_space=space,
+            obj_fun=None,  # Assuming that this is not used :-)
+            DoE_size=init_budget if init_budget is not None else 5,
+            max_FEs=budget,
+            verbose=True,
+            n_point=1,  # We start with a sequential procedure, maybe we'll extend in a second moment
+            n_components=n_components,
+            acquisition_optimization={"optimizer": "BFGS"},
+        )
+
+    def _internal_ask_candidate(self) -> p.Parameter:
+        if not self.buffer:
+            self.newX = []
+            self.loss = []
+            candidate = self._pcabo.ask()
+            if not isinstance(candidate, list):
+                candidate = candidate.tolist()
+            self.buffer = candidate
+        x_probe = self.buffer.pop()
+        data = np.tan(np.array(x_probe, copy=False))
+        candidate = self.parametrization.spawn_child().set_standardized_data(data)
+        candidate._meta["x_probe"] = x_probe
+        self.newX.append(candidate._meta["x_probe"])
+        return candidate
+
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        self.loss.append(loss)
+        if not self.buffer:
+            if "x_probe" in candidate._meta:
+                self._pcabo.tell(self.newX, self.loss)
+            else:
+                data = candidate.get_standardized_data(reference=self.parametrization)
+                # Tell not asked:
+                self._pcabo.tell(np.arctan(data), loss)
+
+    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        raise errors.TellNotAskedNotSupportedError
+
+
+class ParametrizedPCABO(base.ConfiguredOptimizer):
+    """
+     Principle Component Analysis (PCA) Bayesian Optimization for dimensionality reduction in BO
 
     References
 
@@ -1833,71 +1900,29 @@ class PCABO(base.Optimizer):
     no_parallelization = True
     recast = True
 
+    # pylint: disable=unused-argument
     def __init__(
-        self,
-        parametrization: IntOrParameter,
-        budget: tp.Optional[int] = None,
-        num_workers: int = 1,
-        *,
-        init_budget: tp.Optional[int] = None,
+            self,
+            *,
+            # num_workers: int = 1,
+            init_budget: tp.Optional[int] = None,
+            n_components: tp.Optional[float] = 0.95,
+            prop_doe_factor: tp.Optional[float] = None,
     ) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        super().__init__(_PCABO, locals())
 
-        from bayes_optim.extension import PCABO as PcaBO
-        from bayes_optim.extension import RealSpace
 
-        lb, ub = 1e-7 - np.pi / 2, np.pi / 2 - 1e-7
-        space = RealSpace([lb, ub]) * self.dimension
-        self.buffer: tp.List[float] = []
-        self.newX: tp.List[float] = []
-        self.loss: tp.List[float] = []
+# Testing the influence of n_components on the performance of PCABO
+PCABO80 = ParametrizedPCABO(n_components=0.80).set_name("PCABO80", register=True)
+PCABO90 = ParametrizedPCABO(n_components=0.90).set_name("PCABO90", register=True)
+PCABO92 = ParametrizedPCABO(n_components=0.92).set_name("PCABO92", register=True)
+PCABO95 = ParametrizedPCABO(n_components=0.95).set_name("PCABO95", register=True)
+PCABO98 = ParametrizedPCABO(n_components=0.98).set_name("PCABO98", register=True)
 
-        self._pcabo = PcaBO(
-            search_space=space,
-            obj_fun=None,  # Assuming that this is not used :-)
-            DoE_size=init_budget if init_budget is not None else 5,
-            max_FEs=budget,
-            verbose=True,
-            n_point=1,  # We start with a sequential procedure, maybe we'll extend in a second moment
-            n_components=0.95,
-            acquisition_optimization={"optimizer": "BFGS"},
-        )
-
-    def _internal_ask_candidate(self) -> p.Parameter:
-        if not self.buffer:
-            self.newX = []
-            self.loss = []
-            candidate = self._pcabo.ask()
-            if not isinstance(candidate, list):
-                candidate = candidate.tolist()
-            self.buffer = candidate
-        x_probe = self.buffer.pop()
-        print("X_PROBE = ", x_probe)
-        print("BUFFER = ", self.buffer)
-        # data = self._pcabo._transform.backward(np.array(x_probe, copy=False))
-        data = np.tan(np.array(x_probe, copy=False))
-        candidate = self.parametrization.spawn_child().set_standardized_data(data)
-        candidate._meta["x_probe"] = x_probe
-        self.newX.append(candidate._meta["x_probe"])
-        return candidate
-
-    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        # print("BUFFER inside tell = ", self.buffer)
-        print("newX =", self.newX)
-        self.loss.append(loss)
-        print("new_loss =", self.loss)
-        if not self.buffer:
-            if "x_probe" in candidate._meta:
-                # y = candidate._meta["x_probe"]
-                print("Len(newX) = ", len(self.newX))
-                self._pcabo.tell(self.newX, self.loss)
-            else:
-                data = candidate.get_standardized_data(reference=self.parametrization)
-                # Tell not asked:
-                self._pcabo.tell(np.arctan(data), loss)
-
-    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        raise errors.TellNotAskedNotSupportedError
+# Testing the influence of the DoE size on the performance of PCABO
+PCABO95DoE0 = ParametrizedPCABO(n_components=0.95, prop_doe_factor=0.00).set_name("PCABO95DoE0", register=True)
+PCABO95DoE20 = ParametrizedPCABO(n_components=0.95, prop_doe_factor=0.20).set_name("PCABO95DoE20", register=True)
+PCABO95DoE50 = ParametrizedPCABO(n_components=0.95, prop_doe_factor=0.50).set_name("PCABO95DoE50", register=True)
 
 
 @registry.register
