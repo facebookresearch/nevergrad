@@ -1263,7 +1263,7 @@ def olympus_emulators(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
     funcs = []
     for dataset_kind in OlympusEmulator.get_datasets():
-        for model_kind in ["NeuralNet"]:
+        for model_kind in ["BayesNeuralNet","NeuralNet"]:
             funcs.append(OlympusEmulator(dataset_kind, model_kind))
 
     seedg = create_seed_generator(seed)

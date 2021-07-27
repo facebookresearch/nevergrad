@@ -27,3 +27,4 @@ image-quality>=1.2.7
 keras>=2.4.3
 compiler_gym>=0.1.8 ; sys_platform == "linux"
 olymp==0.0.1b0 ; sys_platform == "linux"
+silence_tensorflow

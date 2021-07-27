@@ -112,7 +112,7 @@ class OlympusEmulator(ExperimentFunction):
 
     def _simulate_emulator(self, x: np.ndarray) -> float:
         assert self.dataset_kind in OlympusEmulator.get_datasets()
-        assert self.model_kind in ["NeuralNet"]
+        assert self.model_kind in ["BayesNeuralNet","NeuralNet"]
 
         emulator = Emulator(dataset=self.dataset_kind, model=self.model_kind)
         if emulator.get_goal() == "maximize":
