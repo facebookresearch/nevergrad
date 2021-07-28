@@ -173,7 +173,7 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
         budget = np.inf if self.budget is None else self.budget
         best_res = np.inf
         best_x: np.ndarray = self.current_bests["average"].x  # np.zeros(self.dimension)
-        problem = self._PymooProblem(self, objective_function)
+        problem = self._create_pymoo_problem(self, objective_function)
         if self.algorithm in ["rnsga2", "nsga3", "unsga3", "rnsga3", "moead", "ctaea"]:
             ref_dirs = get_reference_directions("das-dennis", self.num_objectives, n_partitions=12)
             algorithm = get_pymoo_algorithm(self.algorithm, ref_dirs)
