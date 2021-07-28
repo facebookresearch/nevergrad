@@ -206,25 +206,28 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
         # print(candidate.losses)
         messages[0].result = candidate.losses  # post all the losses, and the thread will deal with it
 
-    # pylint:disable=import-outside-toplevel
-    from pymoo.model.problem import Problem
+    def _create_pymoo_problem(self, optimizer, objective_function):
+        # pylint:disable=import-outside-toplevel
+        from pymoo.model.problem import Problem
 
-    class _PymooProblem(Problem):
-        def __init__(self, optimizer, objective_function):
-            self.objective_function = objective_function
-            super().__init__(
-                n_var=optimizer.dimension,
-                n_obj=optimizer.num_objectives,
-                n_constr=0,
-                xl=-math.pi * 0.5,
-                xu=math.pi * 0.5,
-                elementwise_evaluation=True,
-            )
+        class _PymooProblem(Problem):
+            def __init__(self, optimizer, objective_function):
+                self.objective_function = objective_function
+                super().__init__(
+                    n_var=optimizer.dimension,
+                    n_obj=optimizer.num_objectives,
+                    n_constr=0,
+                    xl=-math.pi * 0.5,
+                    xu=math.pi * 0.5,
+                    elementwise_evaluation=True,
+                )
 
-        def _evaluate(self, X, out, *args, **kwargs):
-            # pylint: disable=unused-argument
-            out["F"] = self.objective_function(np.tan(X))
-            # print("Returning", out["F"])
+            def _evaluate(self, X, out, *args, **kwargs):
+                # pylint: disable=unused-argument
+                out["F"] = self.objective_function(np.tan(X))
+                # print("Returning", out["F"])
+
+        return _PymooProblem(optimizer, objective_function)
 
 
 class PymooOptimizer(base.ConfiguredOptimizer):
