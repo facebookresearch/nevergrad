@@ -152,9 +152,10 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
         if self.num_objectives > 0:
             subinstance.num_objectives = self.num_objectives
         else:
-            raise RuntimeError(
-                "This optimizer requires optimizer.num_objectives to be explicity set before the first call to ask."
-            )
+            subinstance.num_objectives = 1
+            # raise RuntimeError(
+            #     "This optimizer requires optimizer.num_objectives to be explicity set before the first call to ask."
+            # )
         subinstance.archive = self.archive
         subinstance.current_bests = self.current_bests
         return subinstance._optimization_function
