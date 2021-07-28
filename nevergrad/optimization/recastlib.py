@@ -152,10 +152,9 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
         if self.num_objectives > 0:
             subinstance.num_objectives = self.num_objectives
         else:
-            subinstance.num_objectives = 1
-            # raise RuntimeError(
-            #     "This optimizer requires optimizer.num_objectives to be explicity set before the first call to ask."
-            # )
+            raise RuntimeError(
+                "This optimizer requires optimizer.num_objectives to be explicity set before the first call to ask."
+            )
         subinstance.archive = self.archive
         subinstance.current_bests = self.current_bests
         return subinstance._optimization_function
@@ -277,7 +276,7 @@ class PymooOptimizer(base.ConfiguredOptimizer):
 # PymooGA = PymooOptimizer(algorithm=get_pymoo_algorithm("ga")).set_name("ga", register=True)
 # PymooBRKGA = PymooOptimizer(algorithm=get_pymoo_algorithm("brkga")).set_name("brkga", register=True)
 # PymooCMAES = PymooOptimizer(algorithm=get_pymoo_algorithm("cmaes")).set_name("cmaes", register=True)
-PymooNSGA2 = PymooOptimizer(algorithm="nsga2").set_name("PymooNSGA2", register=True)
+# PymooNSGA2 = PymooOptimizer(algorithm="nsga2").set_name("PymooNSGA2", register=True)
 # PymooRNSGA2 = PymooOptimizer(algorithm="rnsga2").set_name("PymooRNSGA2", register=True)
 # PymooNSGA3 = PymooOptimizer(algorithm="nsga3").set_name("PymooNSGA3", register=True)
 # PymooUNSGA3 = PymooOptimizer(algorithm="unsga3").set_name("PymooUNSGA3", register=True)
