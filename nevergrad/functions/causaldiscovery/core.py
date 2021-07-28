@@ -40,7 +40,7 @@ class CausalDiscovery(ExperimentFunction):
         self,
         generator: str = "sachs",
         causal_mechanism: str = "linear",
-        noise="gaussian",
+        noise: str = "gaussian",
         noise_coeff: float = 0.4,
         npoints: int = 500,
         nodes: int = 20,
@@ -83,12 +83,12 @@ class CausalDiscovery(ExperimentFunction):
         score = self.graph_score(output_graph)
         return -score
 
-    def graph_score(self, test_graph) -> float:
+    def graph_score(self, test_graph: nx.DiGraph) -> float:
         pr_score, _ = precision_recall(self._ground_truth_graph, test_graph)
         shd_score = SHD(self._ground_truth_graph, test_graph)
         return float(pr_score - shd_score)  # Higher better
 
-    def choices_to_graph(self, network_links):
+    def choices_to_graph(self, network_links: tp.Tuple[int]) -> nx.DiGraph:
         output_graph = nx.DiGraph()
         k = 0
         for i in range(1, self._nvars):
