@@ -9,7 +9,7 @@ from scipy import optimize as scipyoptimize
 from pymoo import optimize as pymoooptimize
 from pymoo.model.problem import Problem
 from pymoo.factory import get_algorithm as get_pymoo_algorithm
-from pymoo.model.algorithm import Algorithm as PymooAlgorithm
+from pymoo.factory import get_reference_directions
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
 from . import base
@@ -127,7 +127,7 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
         *,
-        algorithm: PymooAlgorithm,
+        algorithm: str,
         random_restart: bool = False,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
@@ -167,11 +167,12 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
         best_res = np.inf
         best_x: np.ndarray = self.current_bests["average"].x  # np.zeros(self.dimension)
         problem = _PymooProblem(self, objective_function)
+        ref_dirs = get_reference_directions("das-dennis", self.num_objectives, n_partitions=12)
         if self.initial_guess is not None:
             best_x = np.array(self.initial_guess, copy=True)  # copy, just to make sure it is not modified
         remaining: float = budget - self._num_ask
         while remaining > 0:  # try to restart if budget is not elapsed
-            res = pymoooptimize.minimize(problem, self.algorithm)
+            res = pymoooptimize.minimize(problem, get_pymoo_algorithm(self.algorithm, ref_dirs))
             if res.F < best_res:
                 best_res = res.F
                 best_x = res.X
@@ -192,8 +193,7 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
         if not messages:
             raise RuntimeError(f"No message for evaluated point {x}: {self._messaging_thread.messages}")
         # print(candidate.losses)
-        messages[0].result = candidate.losses  # post the value, and the thread will deal with it
-        # messages[0].result = loss  # post the value, and the thread will deal with it
+        messages[0].result = candidate.losses  # post all the losses, and the thread will deal with it
 
 
 class PymooOptimizer(base.ConfiguredOptimizer):
@@ -254,16 +254,16 @@ class _PymooProblem(Problem):
         # print("Returning", out["F"])
 
 
-PymooNM = PymooOptimizer(algorithm=get_pymoo_algorithm("nelder-mead")).set_name("nelder-mead", register=True)
+# PymooNM = PymooOptimizer(algorithm=get_pymoo_algorithm("nelder-mead")).set_name("nelder-mead", register=True)
 # Nelder-Mead is for single objective
-PymooDE = PymooOptimizer(algorithm=get_pymoo_algorithm("de")).set_name("de", register=True)
-PymooGA = PymooOptimizer(algorithm=get_pymoo_algorithm("ga")).set_name("ga", register=True)
-PymooBRKGA = PymooOptimizer(algorithm=get_pymoo_algorithm("brkga")).set_name("brkga", register=True)
-PymooCMAES = PymooOptimizer(algorithm=get_pymoo_algorithm("cmaes")).set_name("cmaes", register=True)
-PymooNSGA2 = PymooOptimizer(algorithm=get_pymoo_algorithm("nsga2")).set_name("nsga2", register=True)
-# PymooRNSGA2 = PymooOptimizer(algorithm=get_pymoo_algorithm("rnsga2")).set_name("rnsga2", register=True)
-# PymooNSGA3 = PymooOptimizer(algorithm=get_pymoo_algorithm("nsga3")).set_name("nsga3", register=True)
-# PymooUNSGA3 = PymooOptimizer(algorithm=get_pymoo_algorithm("unsga3")).set_name("unsga3", register=True)
-# PymooRNSGA3 = PymooOptimizer(algorithm=get_pymoo_algorithm("rnsga3")).set_name("rnsga3", register=True)
-# PymooMOEAD = PymooOptimizer(algorithm=get_pymoo_algorithm("moead")).set_name("moead", register=True)
-# PymooCTAEA = PymooOptimizer(algorithm=get_pymoo_algorithm("ctaea")).set_name("ctaea", register=True)
+# PymooDE = PymooOptimizer(algorithm=get_pymoo_algorithm("de")).set_name("de", register=True)
+# PymooGA = PymooOptimizer(algorithm=get_pymoo_algorithm("ga")).set_name("ga", register=True)
+# PymooBRKGA = PymooOptimizer(algorithm=get_pymoo_algorithm("brkga")).set_name("brkga", register=True)
+# PymooCMAES = PymooOptimizer(algorithm=get_pymoo_algorithm("cmaes")).set_name("cmaes", register=True)
+PymooNSGA2 = PymooOptimizer(algorithm="nsga2").set_name("nsga2", register=True)
+PymooRNSGA2 = PymooOptimizer(algorithm="rnsga2").set_name("rnsga2", register=True)
+PymooNSGA3 = PymooOptimizer(algorithm="nsga3").set_name("nsga3", register=True)
+PymooUNSGA3 = PymooOptimizer(algorithm="unsga3").set_name("unsga3", register=True)
+PymooRNSGA3 = PymooOptimizer(algorithm="rnsga3").set_name("rnsga3", register=True)
+PymooMOEAD = PymooOptimizer(algorithm="moead").set_name("moead", register=True)
+PymooCTAEA = PymooOptimizer(algorithm="ctaea").set_name("ctaea", register=True)
