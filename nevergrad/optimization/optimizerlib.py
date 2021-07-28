@@ -1836,11 +1836,6 @@ class _BayesOptim(base.Optimizer):
         lb, ub = 1e-7 - np.pi / 2, np.pi / 2 - 1e-7
         space = RealSpace([lb, ub]) * self.dimension
 
-        # hyperparameters of the GPR model when pca = False
-        thetaL = 1e-10 * (ub - lb) * np.ones(self.dimension)
-        thetaU = 10 * (ub - lb) * np.ones(self.dimension)
-        model = GaussianProcess(thetaL=thetaL, thetaU=thetaU)  # create the GPR model
-
         self._buffer: tp.List[float] = []
         self._newX: tp.List[float] = []
         self._losses: tp.List[float] = []
