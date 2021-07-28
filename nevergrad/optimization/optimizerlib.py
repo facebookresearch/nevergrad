@@ -1886,10 +1886,10 @@ class _BayesOptim(base.Optimizer):
         data = np.tan(np.array(x_probe, copy=False))
         candidate = self.parametrization.spawn_child().set_standardized_data(data)
         candidate._meta["x_probe"] = x_probe
-        self._newX.append(candidate._meta["x_probe"])
         return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        self._newX.append(candidate._meta["x_probe"])
         self._losses.append(loss)
         if not self._buffer:
             if "x_probe" in candidate._meta:
