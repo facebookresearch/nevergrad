@@ -6,10 +6,6 @@
 import math
 import numpy as np
 from scipy import optimize as scipyoptimize
-from pymoo import optimize as pymoooptimize
-from pymoo.model.problem import Problem
-from pymoo.factory import get_algorithm as get_pymoo_algorithm
-from pymoo.factory import get_reference_directions
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
 from . import base
@@ -156,23 +152,38 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
         if self.num_objectives > 0:
             subinstance.num_objectives = self.num_objectives
         else:
-            raise ValueError("This optimizer requires num_objectives to be explicity set.")
+            raise RuntimeError(
+                "This optimizer requires optimizer.num_objectives to be explicity set before the first call to ask."
+            )
         subinstance.archive = self.archive
         subinstance.current_bests = self.current_bests
         return subinstance._optimization_function
 
     def _optimization_function(self, objective_function: tp.Callable[[tp.ArrayLike], float]) -> tp.ArrayLike:
         # pylint:disable=unused-argument
+        # pylint:disable=import-outside-toplevel
+        from pymoo import optimize as pymoooptimize
+
+        # pylint:disable=import-outside-toplevel
+        from pymoo.factory import get_algorithm as get_pymoo_algorithm
+
+        # pylint:disable=import-outside-toplevel
+        from pymoo.factory import get_reference_directions
+
         budget = np.inf if self.budget is None else self.budget
         best_res = np.inf
         best_x: np.ndarray = self.current_bests["average"].x  # np.zeros(self.dimension)
-        problem = _PymooProblem(self, objective_function)
-        ref_dirs = get_reference_directions("das-dennis", self.num_objectives, n_partitions=12)
+        problem = self._PymooProblem(self, objective_function)
+        if self.algorithm in ["rnsga2", "nsga3", "unsga3", "rnsga3", "moead", "ctaea"]:
+            ref_dirs = get_reference_directions("das-dennis", self.num_objectives, n_partitions=12)
+            algorithm = get_pymoo_algorithm(self.algorithm, ref_dirs)
+        else:
+            algorithm = get_pymoo_algorithm(self.algorithm)
         if self.initial_guess is not None:
             best_x = np.array(self.initial_guess, copy=True)  # copy, just to make sure it is not modified
         remaining: float = budget - self._num_ask
         while remaining > 0:  # try to restart if budget is not elapsed
-            res = pymoooptimize.minimize(problem, get_pymoo_algorithm(self.algorithm, ref_dirs))
+            res = pymoooptimize.minimize(problem, algorithm)
             if res.F < best_res:
                 best_res = res.F
                 best_x = res.X
@@ -194,6 +205,26 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
             raise RuntimeError(f"No message for evaluated point {x}: {self._messaging_thread.messages}")
         # print(candidate.losses)
         messages[0].result = candidate.losses  # post all the losses, and the thread will deal with it
+
+    # pylint:disable=import-outside-toplevel
+    from pymoo.model.problem import Problem
+
+    class _PymooProblem(Problem):
+        def __init__(self, optimizer, objective_function):
+            self.objective_function = objective_function
+            super().__init__(
+                n_var=optimizer.dimension,
+                n_obj=optimizer.num_objectives,
+                n_constr=0,
+                xl=-math.pi * 0.5,
+                xu=math.pi * 0.5,
+                elementwise_evaluation=True,
+            )
+
+        def _evaluate(self, X, out, *args, **kwargs):
+            # pylint: disable=unused-argument
+            out["F"] = self.objective_function(np.tan(X))
+            # print("Returning", out["F"])
 
 
 class PymooOptimizer(base.ConfiguredOptimizer):
@@ -236,34 +267,16 @@ class PymooOptimizer(base.ConfiguredOptimizer):
         super().__init__(_PymooMinimizeBase, locals())
 
 
-class _PymooProblem(Problem):
-    def __init__(self, optimizer, objective_function):
-        self.objective_function = objective_function
-        super().__init__(
-            n_var=optimizer.dimension,
-            n_obj=optimizer.num_objectives,
-            n_constr=0,
-            xl=-math.pi * 0.5,
-            xu=math.pi * 0.5,
-            elementwise_evaluation=True,
-        )
-
-    def _evaluate(self, X, out, *args, **kwargs):
-        # pylint: disable=unused-argument
-        out["F"] = self.objective_function(np.tan(X))
-        # print("Returning", out["F"])
-
-
 # PymooNM = PymooOptimizer(algorithm=get_pymoo_algorithm("nelder-mead")).set_name("nelder-mead", register=True)
 # Nelder-Mead is for single objective
 # PymooDE = PymooOptimizer(algorithm=get_pymoo_algorithm("de")).set_name("de", register=True)
 # PymooGA = PymooOptimizer(algorithm=get_pymoo_algorithm("ga")).set_name("ga", register=True)
 # PymooBRKGA = PymooOptimizer(algorithm=get_pymoo_algorithm("brkga")).set_name("brkga", register=True)
 # PymooCMAES = PymooOptimizer(algorithm=get_pymoo_algorithm("cmaes")).set_name("cmaes", register=True)
-PymooNSGA2 = PymooOptimizer(algorithm="nsga2").set_name("nsga2", register=True)
-PymooRNSGA2 = PymooOptimizer(algorithm="rnsga2").set_name("rnsga2", register=True)
-PymooNSGA3 = PymooOptimizer(algorithm="nsga3").set_name("nsga3", register=True)
-PymooUNSGA3 = PymooOptimizer(algorithm="unsga3").set_name("unsga3", register=True)
-PymooRNSGA3 = PymooOptimizer(algorithm="rnsga3").set_name("rnsga3", register=True)
-PymooMOEAD = PymooOptimizer(algorithm="moead").set_name("moead", register=True)
-PymooCTAEA = PymooOptimizer(algorithm="ctaea").set_name("ctaea", register=True)
+PymooNSGA2 = PymooOptimizer(algorithm="nsga2").set_name("PymooNSGA2", register=True)
+# PymooRNSGA2 = PymooOptimizer(algorithm="rnsga2").set_name("PymooRNSGA2", register=True)
+# PymooNSGA3 = PymooOptimizer(algorithm="nsga3").set_name("PymooNSGA3", register=True)
+# PymooUNSGA3 = PymooOptimizer(algorithm="unsga3").set_name("PymooUNSGA3", register=True)
+# PymooRNSGA3 = PymooOptimizer(algorithm="rnsga3").set_name("PymooRNSGA3", register=True)
+# PymooMOEAD = PymooOptimizer(algorithm="moead").set_name("PymooMOEAD", register=True)
+# PymooCTAEA = PymooOptimizer(algorithm="ctaea").set_name("PymooCTAEA", register=True)
