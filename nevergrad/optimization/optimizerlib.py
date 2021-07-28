@@ -1865,6 +1865,11 @@ class _BayesOptim(base.Optimizer):
         else:
             from bayes_optim import BO as BayesOptimBO
 
+            # hyperparameters of the GPR model
+            thetaL = 1e-10 * (ub - lb) * np.ones(self.dimension)
+            thetaU = 10 * (ub - lb) * np.ones(self.dimension)
+            model = GaussianProcess(thetaL=thetaL, thetaU=thetaU)  # create the GPR model
+
             self._alg = BayesOptimBO(
                 search_space=space,
                 obj_fun=None,  # Assuming that this is not used :-)
@@ -1919,6 +1924,18 @@ class ParametrizedBayesOptimBO(base.ConfiguredOptimizer):
         In International Conference on Parallel Problem Solving from Nature, pp. 169-183.
         Springer, Cham, 2020.
 
+
+    Parameters
+    ----------
+    init_budget: int or None
+        Number of initialization algorithm steps
+    pca: bool
+        whether to use the PCA transformation defining PCA-BO rather than BO
+    n_components: float or 0.95
+        Principal axes in feature space, representing the directions of maximum variance in the data.
+        It represents the percentage of explained variance
+    prop_doe_factor: float or None
+        Percentage of the initial budget used for DoE and eventually overwriting init_budget
     """
 
     no_parallelization = True
@@ -1928,7 +1945,6 @@ class ParametrizedBayesOptimBO(base.ConfiguredOptimizer):
     def __init__(
         self,
         *,
-        # num_workers: int = 1,
         init_budget: tp.Optional[int] = None,
         pca: tp.Optional[bool] = False,
         n_components: tp.Optional[float] = 0.95,
