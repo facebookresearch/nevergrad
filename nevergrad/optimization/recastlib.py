@@ -130,7 +130,6 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.multirun = 1  # work in progress
         self.initial_guess: tp.Optional[tp.ArrayLike] = None
-        self.parametrization = parametrization
         # configuration
         self.algorithm = algorithm
         self.random_restart = random_restart
