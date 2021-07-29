@@ -1825,7 +1825,7 @@ class _BayesOptim(base.Optimizer):
         *,
         config: tp.Optional["ParametrizedBayesOptim"] = None,
     ) -> None:
-        self._config = ParametrizedBayesOptim() if config is None else config 
+        self._config = ParametrizedBayesOptim() if config is None else config
         cfg = self._config
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
 
@@ -1946,6 +1946,10 @@ class ParametrizedBayesOptim(base.ConfiguredOptimizer):
         prop_doe_factor: tp.Optional[float] = None,
     ) -> None:
         super().__init__(_BayesOptim, locals(), as_config=True)
+        self.init_budget = init_budget
+        self.pca = pca
+        self.n_components = n_components
+        self.prop_doe_factor = prop_doe_factor
 
 
 PCABO = ParametrizedBayesOptim(pca=True).set_name("PCABO", register=True)
