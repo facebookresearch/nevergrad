@@ -1946,7 +1946,7 @@ class ParametrizedBayesOptimBO(base.ConfiguredOptimizer):
         n_components: tp.Optional[float] = 0.95,
         prop_doe_factor: tp.Optional[float] = None,
     ) -> None:
-        super().__init__(_BayesOptim, locals())
+        super().__init__(_BayesOptim, locals(), as_config=True)
 
 
 PCABO = ParametrizedBayesOptimBO(pca=True).set_name("PCABO", register=True)
