@@ -1825,7 +1825,7 @@ class _BayesOptim(base.Optimizer):
         *,
         config: tp.Optional["ParametrizedBayesOptim"] = None,
     ) -> None:
-        self._config = ParametrizedBayesOptim() if config is None else 
+        self._config = ParametrizedBayesOptim() if config is None 
         cfg = self._config
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
 
