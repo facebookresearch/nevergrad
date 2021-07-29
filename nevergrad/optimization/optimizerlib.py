@@ -1844,7 +1844,7 @@ class _BayesOptim(base.Optimizer):
         if cfg.prop_doe_factor and budget is not None:
             init_budget = round(cfg.prop_doe_factor * budget)
 
-        if pca:
+        if cfg.pca:
             from bayes_optim.extension import PCABO as PcaBO
 
             self._alg = PcaBO(
@@ -1854,7 +1854,7 @@ class _BayesOptim(base.Optimizer):
                 max_FEs=budget,
                 verbose=True,
                 n_point=1,  # We start with a sequential procedure, maybe we'll extend in a second moment
-                n_components=n_components,
+                n_components=cfg.n_components,
                 acquisition_optimization={"optimizer": "BFGS"},
             )
         else:
