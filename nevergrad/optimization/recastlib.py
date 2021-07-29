@@ -162,13 +162,13 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
     def _optimization_function(self, objective_function: tp.Callable[[tp.ArrayLike], float]) -> tp.ArrayLike:
         # pylint:disable=unused-argument
         # pylint:disable=import-outside-toplevel
-        from pymoo import optimize as pymoooptimize
+        from pymoo import optimize as pymoooptimize  # type: ignore
 
         # pylint:disable=import-outside-toplevel
-        from pymoo.factory import get_algorithm as get_pymoo_algorithm
+        from pymoo.factory import get_algorithm as get_pymoo_algorithm  # type: ignore
 
         # pylint:disable=import-outside-toplevel
-        from pymoo.factory import get_reference_directions
+        from pymoo.factory import get_reference_directions  # type: ignore
 
         budget = np.inf if self.budget is None else self.budget
         best_res = np.inf
@@ -217,9 +217,11 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
         # print(candidate.losses)
         messages[0].result = candidate.losses  # post all the losses, and the thread will deal with it
 
-    def _create_pymoo_problem(self, optimizer, objective_function):
+    def _create_pymoo_problem(
+        self, optimizer: base.Optimizer, objective_function: tp.Callable[[tp.ArrayLike], float]
+    ):
         # pylint:disable=import-outside-toplevel
-        from pymoo.model.problem import Problem
+        from pymoo.model.problem import Problem  # type: ignore
 
         class _PymooProblem(Problem):
             def __init__(self, optimizer, objective_function):
@@ -277,7 +279,7 @@ class PymooOptimizer(base.ConfiguredOptimizer):
     no_parallelization = True
 
     # pylint: disable=unused-argument
-    def __init__(self, *, algorithm, random_restart: bool = False) -> None:
+    def __init__(self, *, algorithm: str, random_restart: bool = False) -> None:
         super().__init__(_PymooMinimizeBase, locals())
 
 
