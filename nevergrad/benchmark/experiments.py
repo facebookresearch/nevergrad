@@ -31,7 +31,7 @@ from nevergrad.functions.games import game
 from nevergrad.functions.causaldiscovery import CausalDiscovery
 from nevergrad.functions import iohprofiler
 from nevergrad.functions import helpers
-from nevergrad.functions.cycling import Cycling
+from nevergrad.functions.cycling import cycling
 from .xpbase import Experiment as Experiment
 from .xpbase import create_seed_generator
 from .xpbase import registry as registry  # noqa
@@ -1840,12 +1840,12 @@ def unit_commitment(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                         yield xp
 
 @registry.register
-def TeamCycling(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def team_cycling(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Experiment to optimise team pursuit track cycling problem.
     """
     seedg = create_seed_generator(seed)
     optims = ["NGOpt10", "CMA", "DE"]
-    funcs = [Cycling(30), Cycling(31), Cycling(61), Cycling(22), Cycling(23), Cycling(45)]
+    funcs = [cycling(30), cycling(31), cycling(61), cycling(22), cycling(23), cycling(45)]
     for function in funcs:
         for budget in [3000]:
             for optim in optims:
