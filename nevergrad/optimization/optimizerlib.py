@@ -1823,11 +1823,10 @@ class _BayesOptim(base.Optimizer):
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
         *,
-        init_budget: tp.Optional[int] = None,
-        pca: tp.Optional[bool] = False,
-        n_components: tp.Optional[float] = 0.95,
-        prop_doe_factor: tp.Optional[float] = None,
+        config: tp.Optional["ParametrizedBayesOptimBO"] = None,
     ) -> None:
+        self._config = ParametrizedBayesOptimBO() if config is None else 
+        cfg = self._config
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
 
         from bayes_optim import RealSpace
