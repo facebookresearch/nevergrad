@@ -1842,7 +1842,7 @@ class _BayesOptim(base.Optimizer):
         # Setting DoE size as a percentage of the total budget if prop_doe_factor is not None
         init_budget = cfg.init_budget
         if cfg.prop_doe_factor and budget is not None:
-            init_budget = round(cfg.prop_doe_factor * budget)
+            init_budget = round(cfg.prop_doe_factor * budget) if budget >= 10 else 5
 
         if cfg.pca:
             from bayes_optim.extension import PCABO as PcaBO
