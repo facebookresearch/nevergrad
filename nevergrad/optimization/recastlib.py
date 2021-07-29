@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+
 import math
 import numpy as np
 from scipy import optimize as scipyoptimize
@@ -190,12 +191,23 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
             remaining = budget - self._num_ask
         return best_x
 
+    def _internal_ask_candidate(self) -> p.Parameter:
+        """Reads messages from the thread in which the underlying optimization function is running
+        New messages are sent as "ask".
+        """
+        if self.num_objectives == 0:
+            data = self._rng.normal(0, 1, self.dimension)
+            candidate = self.parametrization.spawn_child().set_standardized_data(data)
+            return candidate
+        return super()._internal_ask_candidate()
+
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: float) -> None:
         """Returns value for a point which was "asked"
         (none asked point cannot be "tell")
         """
         x = candidate.get_standardized_data(reference=self.parametrization)
-        assert self._messaging_thread is not None, 'Start by using "ask" method, instead of "tell" method'
+        if self._messaging_thread is None:
+            return
         if not self._messaging_thread.is_alive():  # optimizer is done
             self._check_error()
             return
@@ -221,11 +233,11 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
                     xu=math.pi * 0.5,
                     elementwise_evaluation=True,
                 )
+                # print("num objectives", optimizer.num_objectives)
 
             def _evaluate(self, X, out, *args, **kwargs):
-                # pylint: disable=unused-argument
+                # pylint:disable=unused-argument
                 out["F"] = self.objective_function(np.tan(X))
-                # print("Returning", out["F"])
 
         return _PymooProblem(optimizer, objective_function)
 
