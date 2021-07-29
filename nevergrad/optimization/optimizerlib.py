@@ -1823,9 +1823,9 @@ class _BayesOptim(base.Optimizer):
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
         *,
-        config: tp.Optional["ParametrizedBayesOptimBO"] = None,
+        config: tp.Optional["ParametrizedBayesOptim"] = None,
     ) -> None:
-        self._config = ParametrizedBayesOptimBO() if config is None else 
+        self._config = ParametrizedBayesOptim() if config is None else 
         cfg = self._config
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
 
@@ -1903,7 +1903,7 @@ class _BayesOptim(base.Optimizer):
         raise errors.TellNotAskedNotSupportedError
 
 
-class ParametrizedBayesOptimBO(base.ConfiguredOptimizer):
+class ParametrizedBayesOptim(base.ConfiguredOptimizer):
     """
     Algorithms from bayes-optim package.
 
@@ -1948,14 +1948,14 @@ class ParametrizedBayesOptimBO(base.ConfiguredOptimizer):
         super().__init__(_BayesOptim, locals(), as_config=True)
 
 
-PCABO = ParametrizedBayesOptimBO(pca=True).set_name("PCABO", register=True)
-BayesOptimBO = ParametrizedBayesOptimBO().set_name("BayesOptimBO", register=True)
+PCABO = ParametrizedBayesOptim(pca=True).set_name("PCABO", register=True)
+BayesOptimBO = ParametrizedBayesOptim().set_name("BayesOptimBO", register=True)
 
 # Testing the influence of n_components on the performance of PCABO
-PCABO80 = ParametrizedBayesOptimBO(pca=True, n_components=0.80).set_name("PCABO80", register=True)
+PCABO80 = ParametrizedBayesOptim(pca=True, n_components=0.80).set_name("PCABO80", register=True)
 
 # Testing the influence of the DoE size on the performance of PCABO
-PCABO95DoE20 = ParametrizedBayesOptimBO(pca=True, n_components=0.95, prop_doe_factor=0.20).set_name(
+PCABO95DoE20 = ParametrizedBayesOptim(pca=True, n_components=0.95, prop_doe_factor=0.20).set_name(
     "PCABO95DoE20", register=True
 )
 
