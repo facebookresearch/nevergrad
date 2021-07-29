@@ -1841,8 +1841,9 @@ class _BayesOptim(base.Optimizer):
         self._losses: tp.List[float] = []
 
         # Setting DoE size as a percentage of the total budget if prop_doe_factor is not None
-        if prop_doe_factor and budget:
-            init_budget = round(prop_doe_factor * budget)
+        init_budget = cfg.init_budget
+        if cfg.prop_doe_factor and budget is not None:
+            init_budget = round(cfg.prop_doe_factor * budget)
 
         if pca:
             from bayes_optim.extension import PCABO as PcaBO
