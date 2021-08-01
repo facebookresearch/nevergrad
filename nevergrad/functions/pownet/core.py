@@ -25,7 +25,7 @@ class PowNet(Pyomo):
     - Any changes on the model externally can lead to unexpected behaviours.
     """
 
-    def __init__(self, location: str, day: int=1) -> None:
+    def __init__(self, location: str, day: int = 1) -> None:
         assert location in ["cambodian", "artificial"]
         assert 1 <= day <= 365
         pyomo_model = solver.get_pownet_model(location=location, year=2016)

@@ -16,18 +16,19 @@ from . import solver
 #     #dataset_path = os.path.join(dataset_path, "pownet_cambodian", "Model_withdata", 'pownet_data_camb_2016.dat')
 #     solver.pownet_solver(model_type="cambodian")
 
-    # model = pyomo.ConcreteModel()
-    # model.x = pyomo.Var([1, 2], domain=pyomo.NonNegativeReals)
-    # model.obj = pyomo.Objective(expr=(model.x[1] - 0.5)**2 + (model.x[2] - 0.5)**2)
+# model = pyomo.ConcreteModel()
+# model.x = pyomo.Var([1, 2], domain=pyomo.NonNegativeReals)
+# model.obj = pyomo.Objective(expr=(model.x[1] - 0.5)**2 + (model.x[2] - 0.5)**2)
 
-    # func = core.Pyomo(model)
-    # optimizer = ng.optimizers.NGO(parametrization=func.parametrization, budget=100)
-    # recommendation = optimizer.minimize(func.function)
+# func = core.Pyomo(model)
+# optimizer = ng.optimizers.NGO(parametrization=func.parametrization, budget=100)
+# recommendation = optimizer.minimize(func.function)
 
-    # np.testing.assert_almost_equal(recommendation.kwargs['x[1]'], 0.5, decimal=1)
-    # np.testing.assert_almost_equal(recommendation.kwargs['x[2]'], 0.5, decimal=1)
+# np.testing.assert_almost_equal(recommendation.kwargs['x[1]'], 0.5, decimal=1)
+# np.testing.assert_almost_equal(recommendation.kwargs['x[2]'], 0.5, decimal=1)
+
 
 def test_solver_artificial() -> None:
     dataset_path = os.path.dirname(os.path.realpath(__file__))
-    dataset_path = os.path.join(dataset_path, "pownet_artificial", "model_data", 'pownet_data_artificial.dat')
+    dataset_path = os.path.join(dataset_path, "pownet_artificial", "model_data", "pownet_data_artificial.dat")
     solver.pownet_solver(location="artificial")

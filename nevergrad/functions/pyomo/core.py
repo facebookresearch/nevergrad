@@ -15,9 +15,9 @@ ParamDict = tp.Dict[str, p.Parameter]
 
 def _convert_to_ng_name(pyomo_var_key: tp.Any) -> str:
     if isinstance(pyomo_var_key, str):
-        return '"' + str(pyomo_var_key).replace("'", "\"") + '"'
+        return '"' + str(pyomo_var_key).replace("'", '"') + '"'
     else:
-        return str(pyomo_var_key).replace("'", "\"")
+        return str(pyomo_var_key).replace("'", '"')
 
 
 def _make_pyomo_range_set_to_parametrization(
@@ -153,7 +153,7 @@ class Pyomo(base.ExperimentFunction):
         if self._value_assignment_code_obj == "":
             code_str = ""
             for k in k_model_variables:
-                #k_name = k.replace("'", "\\'")
+                # k_name = k.replace("'", "\\'")
                 code_str += f"self._model_instance.{k} = k_model_variables['{k}']\n"
             self._value_assignment_code_obj = compile(code_str, "<string>", "exec")
         # TODO find a way to avoid exec
