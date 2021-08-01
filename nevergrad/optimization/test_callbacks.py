@@ -18,11 +18,13 @@ def _func(x: tp.Any, y: tp.Any, blublu: str, array: tp.Any, multiobjective: bool
 
 def test_log_parameters(tmp_path: Path) -> None:
     filepath = tmp_path / "logs.txt"
-    cases = [0, np.int(1), np.float(2.0), np.nan, float("inf"), np.inf]
-    instrum = ng.p.Instrumentation(ng.p.Array(shape=(1,)).set_mutation(custom=ng.p.mutation.Translation()),
-                                   ng.p.Scalar(),
-                                   blublu=ng.p.Choice(cases),
-                                   array=ng.p.Array(shape=(3, 2)))
+    cases = [0, np.int_(1), np.float_(2.0), np.nan, float("inf"), np.inf]
+    instrum = ng.p.Instrumentation(
+        ng.ops.mutations.Translation()(ng.p.Array(shape=(1,))),
+        ng.p.Scalar(),
+        blublu=ng.p.Choice(cases),
+        array=ng.p.Array(shape=(3, 2)),
+    )
     optimizer = optimizerlib.NoisyOnePlusOne(parametrization=instrum, budget=32)
     optimizer.register_callback("tell", ng.callbacks.ParametersLogger(filepath, append=False))
     optimizer.minimize(_func, verbosity=2)
@@ -31,7 +33,7 @@ def test_log_parameters(tmp_path: Path) -> None:
     logs = logger.load_flattened()
     assert len(logs) == 32
     assert isinstance(logs[-1]["1"], float)
-    assert len(logs[-1]) == 35
+    assert len(logs[-1]) == 31
     logs = logger.load_flattened(max_list_elements=2)
     assert len(logs[-1]) == 27
     # deletion
@@ -41,11 +43,9 @@ def test_log_parameters(tmp_path: Path) -> None:
 
 def test_multiobjective_log_parameters(tmp_path: Path) -> None:
     filepath = tmp_path / "logs.txt"
-    instrum = ng.p.Instrumentation(None,
-                                   2.0,
-                                   blublu="blublu",
-                                   array=ng.p.Array(shape=(3, 2)),
-                                   multiobjective=True)
+    instrum = ng.p.Instrumentation(
+        None, 2.0, blublu="blublu", array=ng.p.Array(shape=(3, 2)), multiobjective=True
+    )
     optimizer = optimizerlib.OnePlusOne(parametrization=instrum, budget=2)
     optimizer.register_callback("tell", ng.callbacks.ParametersLogger(filepath, append=False))
     optimizer.minimize(_func, verbosity=2)
@@ -53,6 +53,24 @@ def test_multiobjective_log_parameters(tmp_path: Path) -> None:
     logger = callbacks.ParametersLogger(filepath)
     logs = logger.load_flattened()
     assert len(logs) == 2
+
+
+def test_chaining_log_parameters(tmp_path: Path) -> None:
+    filepath = tmp_path / "logs.txt"
+    params = ng.p.Instrumentation(
+        None, 2.0, blublu="blublu", array=ng.p.Array(shape=(3, 2)), multiobjective=False
+    )
+    zmethods = ["CauchyLHSSearch", "DE", "CMA"]
+    ztmp1 = [ng.optimizers.registry[zmet] for zmet in zmethods]
+    optmodel = ng.families.Chaining(ztmp1, [50, 50])  #
+    optim = optmodel(parametrization=params, budget=100, num_workers=3)
+    logger = ng.callbacks.ParametersLogger(filepath)
+    optim.register_callback("tell", logger)
+    optim.minimize(_func, verbosity=2)
+    # read
+    logger = callbacks.ParametersLogger(filepath)
+    logs = logger.load_flattened()
+    assert len(logs) == 100
 
 
 def test_dump_callback(tmp_path: Path) -> None:
@@ -81,3 +99,16 @@ def test_progressbar_dump(tmp_path: Path) -> None:
     for _ in range(12):
         cand = optimizer.ask()
         optimizer.tell(cand, 0)
+
+
+def test_early_stopping() -> None:
+    instrum = ng.p.Instrumentation(
+        None, 2.0, blublu="blublu", array=ng.p.Array(shape=(3, 2)), multiobjective=True
+    )
+    optimizer = optimizerlib.OnePlusOne(parametrization=instrum, budget=100)
+    early_stopping = ng.callbacks.EarlyStopping(lambda opt: opt.num_ask > 3)
+    optimizer.register_callback("ask", early_stopping)
+    optimizer.minimize(_func, verbosity=2)
+    # below functions are inlcuded in the docstring
+    assert optimizer.current_bests["minimum"].mean < 12
+    assert optimizer.recommend().loss < 12  # type: ignore

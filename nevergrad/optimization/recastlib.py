@@ -1,5 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
-# verify
+#
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
@@ -13,7 +13,6 @@ from . import recaster
 
 
 class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
-
     def __init__(
         self,
         parametrization: IntOrParameter,
@@ -21,7 +20,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         num_workers: int = 1,
         *,
         method: str = "Nelder-Mead",
-        random_restart: bool = False
+        random_restart: bool = False,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.multirun = 1  # work in progress
@@ -31,8 +30,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         self.method = method
         self.random_restart = random_restart
 
-#    def _internal_tell_not_asked(self, x: base.ArrayLike, value: float) -> None:
-    def _internal_tell_not_asked(self, candidate: p.Parameter, value: float) -> None:
+    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         """Called whenever calling "tell" on a candidate that was not "asked".
         Defaults to the standard tell pipeline.
         """  # We do not do anything; this just updates the current best.
@@ -45,7 +43,8 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
             budget=self.budget,
             num_workers=self.num_workers,
             method=self.method,
-            random_restart=self.random_restart)
+            random_restart=self.random_restart,
+        )
         subinstance.archive = self.archive
         subinstance.current_bests = self.current_bests
         return subinstance._optimization_function
@@ -57,9 +56,9 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         best_x: np.ndarray = self.current_bests["average"].x  # np.zeros(self.dimension)
         if self.initial_guess is not None:
             best_x = np.array(self.initial_guess, copy=True)  # copy, just to make sure it is not modified
-        remaining = budget - self._num_ask
+        remaining: float = budget - self._num_ask
         while remaining > 0:  # try to restart if budget is not elapsed
-            options: tp.Dict[str, int] = {} if self.budget is None else {"maxiter": remaining}
+            options: tp.Dict[str, tp.Any] = {} if self.budget is None else {"maxiter": remaining}
             res = scipyoptimize.minimize(
                 objective_function,
                 best_x if not self.random_restart else self._rng.normal(0.0, 1.0, self.dimension),
@@ -101,12 +100,7 @@ class ScipyOptimizer(base.ConfiguredOptimizer):
     no_parallelization = True
 
     # pylint: disable=unused-argument
-    def __init__(
-        self,
-        *,
-        method: str = "Nelder-Mead",
-        random_restart: bool = False
-    ) -> None:
+    def __init__(self, *, method: str = "Nelder-Mead", random_restart: bool = False) -> None:
         super().__init__(_ScipyMinimizeBase, locals())
 
 

@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import numpy as np
+
 # pylint: disable=reimported,redefined-outer-name,unused-variable,unsubscriptable-object, unused-argument
 # pylint: disable=import-outside-toplevel
 
@@ -17,7 +18,7 @@ def test_readme_parametrization() -> None:
 
     def fake_training(learning_rate: float, batch_size: int, architecture: str) -> float:
         # optimal for learning_rate=0.2, batch_size=4, architecture="conv"
-        return (learning_rate - 0.2)**2 + (batch_size - 4)**2 + (0 if architecture == "conv" else 10)
+        return (learning_rate - 0.2) ** 2 + (batch_size - 4) ** 2 + (0 if architecture == "conv" else 10)
 
     # Instrumentation class is used for functions with multiple inputs
     # (positional and/or keywords)
@@ -27,10 +28,10 @@ def test_readme_parametrization() -> None:
         # an integer from 1 to 12
         batch_size=ng.p.Scalar(lower=1, upper=12).set_integer_casting(),
         # either "conv" or "fc"
-        architecture=ng.p.Choice(["conv", "fc"])
+        architecture=ng.p.Choice(["conv", "fc"]),
     )
 
-    optimizer = ng.optimizers.OnePlusOne(parametrization=parametrization, budget=100)
+    optimizer = ng.optimizers.NGOpt(parametrization=parametrization, budget=100)
     recommendation = optimizer.minimize(fake_training)
 
     print(recommendation.kwargs)  # shows the recommended keyword arguments of the function
@@ -49,7 +50,7 @@ def test_param_example() -> None:
         # one-dimensional array of length 2
         array=ng.p.Array(shape=(2,)),
         # character, either "a" or "b or "c".
-        char=ng.p.Choice(["a", "b", "c"])
+        char=ng.p.Choice(["a", "b", "c"]),
     )
 
     print(param.value)
@@ -62,9 +63,7 @@ def test_param_example() -> None:
     # create a new instance
     child = param.spawn_child()
     # update its value
-    child.value = {'log': 0.2,
-                   'array': np.array([12., 13.]),
-                   'char': 'c'}
+    child.value = {"log": 0.2, "array": np.array([12.0, 13.0]), "char": "c"}
 
     # export to standardized space
     data = child.get_standardized_data(reference=param)

@@ -10,6 +10,7 @@ import hashlib
 import warnings
 import argparse
 import itertools
+from collections import defaultdict
 from pathlib import Path
 import numpy as np
 import pandas as pd
@@ -26,7 +27,6 @@ from .exporttable import export_table
 
 _DPI = 250
 
-
 # %% Basic tools
 
 
@@ -38,8 +38,7 @@ def _make_style_generator() -> tp.Iterator[str]:
 
 
 class NameStyle(tp.Dict[str, tp.Any]):
-    """Provides a style for each name, and keeps to it
-    """
+    """Provides a style for each name, and keeps to it"""
 
     def __init__(self) -> None:
         super().__init__()
@@ -70,7 +69,9 @@ def _make_winners_df(df: pd.DataFrame, all_optimizers: tp.List[str]) -> utils.Se
     return winners
 
 
-def aggregate_winners(df: utils.Selector, categories: tp.List[str], all_optimizers: tp.List[str]) -> tp.Tuple[utils.Selector, int]:
+def aggregate_winners(
+    df: utils.Selector, categories: tp.List[str], all_optimizers: tp.List[str]
+) -> tp.Tuple[utils.Selector, int]:
     """Computes the sum of winning rates on all cases corresponding to the categories
 
     Returns
@@ -85,7 +86,12 @@ def aggregate_winners(df: utils.Selector, categories: tp.List[str], all_optimize
     subcases = df.unique(categories[0])
     if len(subcases) == 1:
         return aggregate_winners(df, categories[1:], all_optimizers)
-    iterdf, iternum = zip(*(aggregate_winners(df.loc[df.loc[:, categories[0]] == val], categories[1:], all_optimizers) for val in subcases))
+    iterdf, iternum = zip(
+        *(
+            aggregate_winners(df.loc[df.loc[:, categories[0]] == val], categories[1:], all_optimizers)
+            for val in subcases
+        )
+    )
     return sum(iterdf), sum(iternum)  # type: ignore
 
 
@@ -114,7 +120,7 @@ def remove_errors(df: pd.DataFrame) -> utils.Selector:
     for row in nandf.itertuples():
         msg = f'Removing "{row.optimizer_name}"'
         msg += f" with dimension {row.dimension}" if hasattr(row, "dimension") else ""
-        msg += f': got error "{row.error}"' if isinstance(row.error, str) else 'recommended a nan'
+        msg += f': got error "{row.error}"' if isinstance(row.error, str) else "recommended a nan"
         warnings.warn(msg)
     # error with recorded recommendation
     handlederrordf = df.select(error=lambda x: isinstance(x, str) and x, loss=lambda x: not np.isnan(x))
@@ -128,13 +134,14 @@ def remove_errors(df: pd.DataFrame) -> utils.Selector:
     # cast nans in loss to infinity
     df.loc[np.isnan(df.loss), "loss"] = float("inf")
     #
-    assert not output.loc[:, "loss"].isnull().values.any(), "Some nan values remain while there should not be any!"
+    assert (
+        not output.loc[:, "loss"].isnull().values.any()
+    ), "Some nan values remain while there should not be any!"
     output = utils.Selector(output.reset_index(drop=True))
     return output  # type: ignore
 
 
 class PatternAggregate:
-
     def __init__(self, pattern: str) -> None:
         self._pattern = pattern
 
@@ -145,14 +152,18 @@ class PatternAggregate:
 _PARAM_MERGE_PATTERN = "{optimizer_name},{parametrization}"
 
 
-def merge_optimizer_name_pattern(df: utils.Selector, pattern: str, merge_parametrization: bool = False) -> utils.Selector:
+def merge_optimizer_name_pattern(
+    df: utils.Selector, pattern: str, merge_parametrization: bool = False
+) -> utils.Selector:
     """Merge the optimizer name with other descriptors based on a pattern
     Nothing happens if merge_parametrization is false and pattern is empty string
     """
     if merge_parametrization:
         if pattern:
-            raise ValueError("Cannot specify both merge-pattern and merge-parametrization "
-                             "(merge-parametrization is equivalent to merge-pattern='{optimizer_name},{parametrization}')")
+            raise ValueError(
+                "Cannot specify both merge-pattern and merge-parametrization "
+                "(merge-parametrization is equivalent to merge-pattern='{optimizer_name},{parametrization}')"
+            )
         pattern = _PARAM_MERGE_PATTERN
     if not pattern:
         return df
@@ -160,7 +171,8 @@ def merge_optimizer_name_pattern(df: utils.Selector, pattern: str, merge_paramet
     okey = "optimizer_name"
     elements = [tup[1] for tup in string.Formatter().parse(pattern) if tup[1] is not None]
     assert okey in elements, (
-        f"Missing optimizer key {okey!r} in merge pattern.\nEg: " + 'pattern="{optimizer_name}_{parametrization}"'
+        f"Missing optimizer key {okey!r} in merge pattern.\nEg: "
+        + 'pattern="{optimizer_name}_{parametrization}"'
     )
     others = [x for x in elements if x != okey]
     aggregate = PatternAggregate(pattern)
@@ -194,7 +206,7 @@ def create_plots(
     output_folder: tp.PathLike,
     max_combsize: int = 1,
     xpaxis: str = "budget",
-    competencemaps: bool = False
+    competencemaps: bool = False,
 ) -> None:
     """Saves all representing plots to the provided folder
 
@@ -212,6 +224,9 @@ def create_plots(
     assert xpaxis in ["budget", "pseudotime"]
     df = remove_errors(df)
     df.loc[:, "loss"] = pd.to_numeric(df.loc[:, "loss"])
+    df = df.loc[:, [x for x in df.columns if not x.startswith("info/")]]
+    if "num_objectives" in df.columns:
+        df = df[df.num_objectives != 0]  # the optimization did not even start
     # If we have a descriptor "instrum_str",
     # we assume that it describes the instrumentation as a string,
     # that we should include the various instrumentations as distinct curves in the same plot.
@@ -232,7 +247,9 @@ def create_plots(
     output_folder = Path(output_folder)
     os.makedirs(output_folder, exist_ok=True)
     # check which descriptors do vary
-    descriptors = sorted(set(df.columns) - (required | {"instrum_str", "seed", "pseudotime"}))  # all other columns are descriptors
+    descriptors = sorted(
+        set(df.columns) - (required | {"instrum_str", "seed", "pseudotime"})
+    )  # all other columns are descriptors
     to_drop = [x for x in descriptors if len(df.unique(x)) == 1]
     df = utils.Selector(df.loc[:, [x for x in df.columns if x not in to_drop]])
     # now those should be actual interesting descriptors
@@ -249,7 +266,7 @@ def create_plots(
     for d in all_descriptors:
         acceptable = False
         for b in df.budget.unique():
-            if len(df.loc[df['budget'] == b][d].unique()) > 1:
+            if len(df.loc[df["budget"] == b][d].unique()) > 1:
                 acceptable = True
                 break
         if acceptable:
@@ -260,7 +277,11 @@ def create_plots(
     # A competence map shows for each value of each of two attributes which algorithm was best.
     if competencemaps:
         max_combsize = max(max_combsize, 2)
-    for fixed in list(itertools.chain.from_iterable(itertools.combinations(combinable, order) for order in range(max_combsize + 1))):
+    for fixed in list(
+        itertools.chain.from_iterable(
+            itertools.combinations(combinable, order) for order in range(max_combsize + 1)
+        )
+    ):
         orders = [len(c) for c in df.unique(fixed)]
         if orders:
             assert min(orders) == max(orders)
@@ -270,7 +291,9 @@ def create_plots(
         best_algo: tp.List[tp.List[str]] = []
         if competencemaps and order == 2:  # With order 2 we can create a competence map.
             print("\n#trying to competence-map")
-            if all([len(c) > 1 for c in df.unique(fixed)]):  # Let us try if data are adapted to competence maps.
+            if all(
+                [len(c) > 1 for c in df.unique(fixed)]
+            ):  # Let us try if data are adapted to competence maps.
                 # This is not always the case, as some attribute1/value1 + attribute2/value2 might be empty
                 # (typically when attribute1 and attribute2 are correlated).
                 try:
@@ -291,7 +314,9 @@ def create_plots(
         for case in df.unique(fixed) if fixed else [()]:
             print("\n# new case #", fixed, case)
             casedf = df.select(**dict(zip(fixed, case)))
-            data_df = FightPlotter.winrates_from_selection(casedf, fight_descriptors, num_rows=num_rows)
+            data_df = FightPlotter.winrates_from_selection(
+                casedf, fight_descriptors, num_rows=num_rows, num_cols=30
+            )
             fplotter = FightPlotter(data_df)
             # Competence maps: we find out the best algorithm for each attribute1=valuei/attribute2=valuej.
             if order == 2 and competencemaps and best_algo:
@@ -304,14 +329,20 @@ def create_plots(
             if name == "fight_all.png":
                 with open(str(output_folder / name) + ".cp.txt", "w") as f:
                     f.write("ranking:\n")
-                    for i, algo in enumerate(data_df.columns[:8]):
+                    for i, algo in enumerate(data_df.columns[:58]):
                         f.write(f"  algo {i}: {algo}\n")
             if len(name) > 240:
-                hashcode = hashlib.md5(bytes(name, 'utf8')).hexdigest()
-                name = re.sub(r'\([^()]*\)', '', name)
+                hashcode = hashlib.md5(bytes(name, "utf8")).hexdigest()
+                name = re.sub(r"\([^()]*\)", "", name)
                 mid = 120
                 name = name[:mid] + hashcode + name[-mid:]
             fplotter.save(str(output_folder / name), dpi=_DPI)
+            if name == "fight_all.png":  # second version restricted to completely run algorithms.
+                data_df = FightPlotter.winrates_from_selection(
+                    casedf, fight_descriptors, num_rows=num_rows, complete_runs_only=True
+                )
+                fplotter = FightPlotter(data_df)
+                fplotter.save(str(output_folder / "fight_all_pure.png"), dpi=_DPI)
 
             if order == 2 and competencemaps and best_algo:  # With order 2 we can create a competence map.
                 print("\n# Competence map")
@@ -337,9 +368,14 @@ def create_plots(
         subdf = df.select_and_drop(**dict(zip(descriptors, case)))
         description = ",".join("{}:{}".format(x, y) for x, y in zip(descriptors, case))
         if len(description) > 280:
-            hash_ = hashlib.md5(bytes(description, 'utf8')).hexdigest()
+            hash_ = hashlib.md5(bytes(description, "utf8")).hexdigest()
             description = description[:140] + hash_ + description[-140:]
-        out_filepath = output_folder / "xpresults{}{}.png".format("_" if description else "", description.replace(":", ""))
+        out_filepath = output_folder / "xpresults{}{}.png".format(
+            "_" if description else "", description.replace(":", "")
+        )
+        txt_out_filepath = output_folder / "xpresults{}{}.leaderboard.txt".format(
+            "_" if description else "", description.replace(":", "")
+        )
         data = XpPlotter.make_data(subdf)
         try:
             xpplotter = XpPlotter(data, title=description, name_style=name_style, xaxis=xpaxis)
@@ -347,12 +383,12 @@ def create_plots(
             warnings.warn(f"Bypassing error in xpplotter:\n{e}", RuntimeWarning)
         else:
             xpplotter.save(out_filepath)
+            xpplotter.save_txt(txt_out_filepath, data)
     plt.close("all")
 
 
 class LegendInfo(tp.NamedTuple):
-    """Handle for information used to create a legend.
-    """
+    """Handle for information used to create a legend."""
 
     x: float
     y: float
@@ -379,12 +415,15 @@ class XpPlotter:
     def __init__(
         self,
         optim_vals: tp.Dict[str, tp.Dict[str, np.ndarray]],
-        title: str, name_style: tp.Optional[tp.Dict[str, tp.Any]] = None,
-        xaxis: str = "budget"
+        title: str,
+        name_style: tp.Optional[tp.Dict[str, tp.Any]] = None,
+        xaxis: str = "budget",
     ) -> None:
         if name_style is None:
             name_style = NameStyle()
-        upperbound = max(np.max(vals["loss"]) for vals in optim_vals.values() if np.max(vals["loss"]) < np.inf)
+        upperbound = max(
+            np.max(vals["loss"]) for vals in optim_vals.values() if np.max(vals["loss"]) < np.inf
+        )
         for optim, vals in optim_vals.items():
             if optim.lower() in ["stupid", "idiot"] or optim in ["Zero", "StupidRandom"]:
                 upperbound = min(upperbound, np.max(vals["loss"]))
@@ -394,7 +433,9 @@ class XpPlotter:
         self._fig = plt.figure()
         self._ax = self._fig.add_subplot(111)
         # use log plot? yes, if no negative value
-        logplot = not any(x <= 0 or x > 10**8 for ov in optim_vals.values() for x in ov["loss"])  # if x < np.inf)
+        logplot = not any(
+            x <= 0 or x > 10 ** 8 for ov in optim_vals.values() for x in ov["loss"]
+        )  # if x < np.inf)
         if logplot:
             self._ax.set_yscale("log")
             for ov in optim_vals.values():
@@ -408,13 +449,17 @@ class XpPlotter:
         self._ax.grid(True, which="both")
         self._overlays: tp.List[tp.Any] = []
         legend_infos: tp.List[LegendInfo] = []
-        for optim_name in sorted_optimizers:
+        for optim_name in (
+            sorted_optimizers[:1] + sorted_optimizers[-12:]
+            if len(sorted_optimizers) > 13
+            else sorted_optimizers
+        ):
             vals = optim_vals[optim_name]
             lowerbound = min(lowerbound, np.min(vals["loss"]))
             line = plt.plot(vals[xaxis], vals["loss"], name_style[optim_name], label=optim_name)
             # confidence lines
             for conf in self._get_confidence_arrays(vals, log=logplot):
-                plt.plot(vals[xaxis], conf, name_style[optim_name], label=optim_name, alpha=.1)
+                plt.plot(vals[xaxis], conf, name_style[optim_name], label=optim_name, alpha=0.1)
             text = "{} ({:.3g})".format(optim_name, vals["loss"][-1])
             if vals[xaxis].size:
                 legend_infos.append(LegendInfo(vals[xaxis][-1], vals["loss"][-1], line, text))
@@ -424,29 +469,33 @@ class XpPlotter:
                 self._ax.set_ylim(bottom=lowerbound)
                 upperbound_up += 0.02 * (upperbound - lowerbound)
                 if logplot:
-                    upperbound_up = 10 ** (np.log10(upperbound) + 0.02 * (np.log10(upperbound) - np.log10(lowerbound)))
+                    upperbound_up = 10 ** (
+                        np.log10(upperbound) + 0.02 * (np.log10(upperbound) - np.log10(lowerbound))
+                    )
             self._ax.set_ylim(top=upperbound_up)
         all_x = [v for vals in optim_vals.values() for v in vals[xaxis]]
         self._ax.set_xlim([min(all_x), max(all_x)])
         self.add_legends(legend_infos)
         # global info
-        self._ax.set_title(split_long_title(title))
+        if "tmp" not in title:
+            self._ax.set_title(split_long_title(title))
         self._ax.tick_params(axis="both", which="both")
         # self._fig.tight_layout()
 
     @staticmethod
-    def _get_confidence_arrays(vals: tp.Dict[str, np.ndarray], log: bool = False) -> tp.Tuple[np.ndarray, np.ndarray]:
+    def _get_confidence_arrays(
+        vals: tp.Dict[str, np.ndarray], log: bool = False
+    ) -> tp.Tuple[np.ndarray, np.ndarray]:
         loss = vals["loss"]
         conf = vals["loss_std"] / np.sqrt(vals["num_eval"] - 1)
         if not log:
             return loss - conf, loss + conf
         lloss = np.log10(loss)
         lstd = 0.434 * conf / loss
-        return tuple(10**(lloss + x) for x in [-lstd, lstd])  # type: ignore
+        return tuple(10 ** (lloss + x) for x in [-lstd, lstd])  # type: ignore
 
     def add_legends(self, legend_infos: tp.List[LegendInfo]) -> None:
-        """Adds the legends
-        """
+        """Adds the legends"""
         ax = self._ax
         trans = ax.transScale + ax.transLimits
         fontsize = 10.0
@@ -457,7 +506,15 @@ class XpPlotter:
         placements = compute_best_placements(values, min_diff=shift)
         for placement, info in zip(placements, legend_infos):
             self._overlays.append(
-                Legend(ax, info.line, [info.text], loc="center left", bbox_to_anchor=(1, placement), frameon=False, fontsize=fontsize)
+                Legend(
+                    ax,
+                    info.line,
+                    [info.text],
+                    loc="center left",
+                    bbox_to_anchor=(1, placement),
+                    frameon=False,
+                    fontsize=fontsize,
+                )
             )
             ax.add_artist(self._overlays[-1])
 
@@ -478,10 +535,26 @@ class XpPlotter:
             is done separately for each budget.
         """
         if normalized_loss:
-            descriptors = sorted(set(df.columns) - {"pseudotime", "time", "budget", "elapsed_time",
-                                                    "elapsed_budget", "loss", "optimizer_name", "seed"})
+            descriptors = sorted(
+                set(df.columns)
+                - {
+                    "pseudotime",
+                    "time",
+                    "budget",
+                    "elapsed_time",
+                    "elapsed_budget",
+                    "loss",
+                    "optimizer_name",
+                    "seed",
+                }
+            )
             df = normalized_losses(df, descriptors=descriptors)
-        df = utils.Selector(df.loc[:, ["optimizer_name", "budget", "loss"] + (["pseudotime"] if "pseudotime" in df.columns else [])])
+        df = utils.Selector(
+            df.loc[
+                :,
+                ["optimizer_name", "budget", "loss"] + (["pseudotime"] if "pseudotime" in df.columns else []),
+            ]
+        )
         groupeddf = df.groupby(["optimizer_name", "budget"])
         means = groupeddf.mean()
         stds = groupeddf.std()
@@ -498,6 +571,28 @@ class XpPlotter:
                 optim_vals[optim]["pseudotime"] = np.array(means.loc[optim, "pseudotime"])
         return optim_vals
 
+    @staticmethod
+    def save_txt(output_filepath: tp.PathLike, optim_vals: tp.Dict[str, tp.Dict[str, np.ndarray]]) -> None:
+        """Saves a list of best performances.
+
+        output_filepath: Path or str
+            path where the figure must be saved
+        optim_vals: dict
+            dict of losses obtained by a given optimizer.
+        """
+        best_performance: tp.Dict[int, tp.Any] = defaultdict(lambda: (float("inf"), "none"))
+        for optim in optim_vals.keys():
+            for i, l in zip(optim_vals[optim]["budget"], optim_vals[optim]["loss"]):
+                if l < best_performance[i][0]:
+                    best_performance[i] = (l, optim)
+
+        with open(output_filepath, "w") as f:
+            f.write("Best performance:\n")
+            for i in best_performance.keys():
+                f.write(
+                    f"  budget {i}: {best_performance[i][0]} ({best_performance[i][1]}) ({output_filepath})\n"
+                )
+
     def save(self, output_filepath: tp.PathLike) -> None:
         """Saves the xp plot
 
@@ -506,22 +601,29 @@ class XpPlotter:
         output_filepath: Path or str
             path where the figure must be saved
         """
-        self._fig.savefig(str(output_filepath), bbox_extra_artists=self._overlays, bbox_inches="tight", dpi=_DPI)
+        try:  # Let us catch errors due to too many DPIs.
+            self._fig.savefig(
+                str(output_filepath), bbox_extra_artists=self._overlays, bbox_inches="tight", dpi=_DPI
+            )
+        except ValueError as v:
+            print(f"We catch {v} which means that image = too big.")
+            self._fig.savefig(
+                str(output_filepath), bbox_extra_artists=self._overlays, bbox_inches="tight", dpi=_DPI / 5
+            )
 
     def __del__(self) -> None:
         plt.close(self._fig)
 
 
 def split_long_title(title: str) -> str:
-    """Splits a long title around the middle comma
-    """
+    """Splits a long title around the middle comma"""
     if len(title) <= 60:
         return title
     comma_indices = np.where(np.array(list(title)) == ",")[0]
     if not comma_indices.size:
         return title
     best_index = comma_indices[np.argmin(abs(comma_indices - len(title) // 2))]
-    title = title[: (best_index + 1)] + "\n" + title[(best_index + 1):]
+    title = title[: (best_index + 1)] + "\n" + title[(best_index + 1) :]
     return title
 
 
@@ -549,7 +651,9 @@ class FightPlotter:
         self.winrates = winrates_df
         self._fig = plt.figure()
         self._ax = self._fig.add_subplot(111)
-        self._cax = self._ax.imshow(100 * np.array(self.winrates), cmap=cm.seismic, interpolation="none", vmin=0, vmax=100)
+        self._cax = self._ax.imshow(
+            100 * np.array(self.winrates), cmap=cm.seismic, interpolation="none", vmin=0, vmax=100
+        )
         x_names = self.winrates.columns
         self._ax.set_xticks(list(range(len(x_names))))
         self._ax.set_xticklabels(x_names, rotation=90, fontsize=7)  # , ha="left")
@@ -563,7 +667,13 @@ class FightPlotter:
         plt.tight_layout()
 
     @staticmethod
-    def winrates_from_selection(df: utils.Selector, categories: tp.List[str], num_rows: int = 5) -> pd.DataFrame:
+    def winrates_from_selection(
+        df: utils.Selector,
+        categories: tp.List[str],
+        num_rows: int = 5,
+        num_cols: int = 30,
+        complete_runs_only: bool = False,
+    ) -> pd.DataFrame:
         """Creates a fight plot win rate data out of the given run dataframe,
         by iterating over all cases with fixed category variables.
 
@@ -575,11 +685,19 @@ class FightPlotter:
             List of variables to fix for obtaining similar run conditions
         num_rows: int
             number of rows to plot (best algorithms)
+        complete_runs_only: bool
+            if we want a plot with only algorithms which have run on all settings
         """
         all_optimizers = list(df.unique("optimizer_name"))  # optimizers for which no run exists are not shown
         num_rows = min(num_rows, len(all_optimizers))
         # iterate on all sub cases
         victories, total = aggregate_winners(df, categories, all_optimizers)
+        if complete_runs_only:
+            max_num = max([int(2 * victories.loc[n, n]) for n in all_optimizers])
+            new_all_optimizers = [n for n in all_optimizers if int(2 * victories.loc[n, n]) == max_num]
+            if len(new_all_optimizers) > 0:
+                df = df[df["optimizer_name"].isin(new_all_optimizers)]
+                victories, total = aggregate_winners(df, categories, new_all_optimizers)
         # subcases = df.unique(categories)
         # for k, subcase in enumerate(subcases):  # TODO linearize this (precompute all subcases)? requires memory
         #     # print(subcase)
@@ -593,15 +711,20 @@ class FightPlotter:
         sorted_names = winrates.index
         # number of subcases actually computed is twice self-victories
         sorted_names = ["{} ({}/{})".format(n, int(2 * victories.loc[n, n]), total) for n in sorted_names]
-        sorted_names = [sorted_names[i] for i in range(min(30, len(sorted_names)))]
-        data = np.array(winrates.iloc[:num_rows, :len(sorted_names)])
+        num_names = len(sorted_names)
+        sorted_names = [sorted_names[i] for i in range(min(num_cols, num_names))]
+        data = np.array(winrates.iloc[:num_rows, : len(sorted_names)])
         # pylint: disable=anomalous-backslash-in-string
-        best_names = [(f"{name} ({100 * val:2.1f}%)").replace("Search", "") for name, val in zip(mean_win.index[:num_rows], mean_win)]
+        best_names = [
+            (
+                f"{name} ({i+1}/{num_names}:{100 * val:2.1f}% +- {25 * np.sqrt(val*(1-val)/int(2 * victories.loc[name, name])):2.1f})"
+            ).replace("Search", "")
+            for i, (name, val) in enumerate(zip(mean_win.index[:num_rows], mean_win))
+        ]
         return pd.DataFrame(index=best_names, columns=sorted_names, data=data)
 
     def save(self, *args: tp.Any, **kwargs: tp.Any) -> None:
-        """Shortcut to the figure savefig method
-        """
+        """Shortcut to the figure savefig method"""
         self._fig.savefig(*args, **kwargs)
 
     def __del__(self) -> None:
@@ -638,7 +761,9 @@ class LegendGroup:
 
     def combine_with(self, other: "LegendGroup") -> "LegendGroup":
         assert self.min_diff == other.min_diff
-        return LegendGroup(self.indices + other.indices, self.init_positions + other.init_positions, self.min_diff)
+        return LegendGroup(
+            self.indices + other.indices, self.init_positions + other.init_positions, self.min_diff
+        )
 
     def get_positions(self) -> tp.List[float]:
         first_position = self.bounds[0] + self.min_diff / 2.0
@@ -685,7 +810,7 @@ def compute_best_placements(positions: tp.List[float], min_diff: float) -> tp.Li
                 # which will provide new non-overlapping positions around the mean of initial positions
                 new_groups.append(groups[k].combine_with(groups[k + 1]))
                 # copy the rest of the groups and start over from the first group
-                new_groups.extend(groups[k + 2:])
+                new_groups.extend(groups[k + 2 :])
                 groups = new_groups
                 new_groups = []
                 ready = False
@@ -701,25 +826,55 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Create plots from an experiment data file")
     parser.add_argument("filepath", type=str, help="filepath containing the experiment data")
     parser.add_argument(
-        "--output", type=str, default=None, help="Output path for the CSV file (default: a folder <filename>_plots next to the data file."
+        "--output",
+        type=str,
+        default=None,
+        help="Output path for the CSV file (default: a folder <filename>_plots next to the data file.",
     )
     parser.add_argument(
-        "--max_combsize", type=int, default=0, help="maximum number of parameters to fix (combinations) when creating experiment plots"
+        "--max_combsize",
+        type=int,
+        default=0,
+        help="maximum number of parameters to fix (combinations) when creating experiment plots",
     )
-    parser.add_argument("--pseudotime", nargs="?", default=False, const=True, help="Plots with respect to pseudotime instead of budget")
-    parser.add_argument("--competencemaps", type=bool, default=False, help="whether we should export only competence maps")
-    parser.add_argument("--merge-parametrization", action="store_true", help="if present, parametrization is merge into the optimizer name")
-    parser.add_argument("--merge-pattern", type=str, default="", help="if present, optimizer name is updated according to the pattern as "
-                        f"an f-string. --merge-parametrization is equivalent to using --merge-pattern with {_PARAM_MERGE_PATTERN!r}")
+    parser.add_argument(
+        "--pseudotime",
+        nargs="?",
+        default=False,
+        const=True,
+        help="Plots with respect to pseudotime instead of budget",
+    )
+    parser.add_argument(
+        "--competencemaps", type=bool, default=False, help="whether we should export only competence maps"
+    )
+    parser.add_argument(
+        "--merge-parametrization",
+        action="store_true",
+        help="if present, parametrization is merge into the optimizer name",
+    )
+    parser.add_argument(
+        "--merge-pattern",
+        type=str,
+        default="",
+        help="if present, optimizer name is updated according to the pattern as "
+        f"an f-string. --merge-parametrization is equivalent to using --merge-pattern with {_PARAM_MERGE_PATTERN!r}",
+    )
     args = parser.parse_args()
-    exp_df = merge_optimizer_name_pattern(utils.Selector.read_csv(args.filepath), args.merge_pattern, args.merge_parametrization)
+    exp_df = merge_optimizer_name_pattern(
+        utils.Selector.read_csv(args.filepath), args.merge_pattern, args.merge_parametrization
+    )
     # merging names
     #
     output_dir = args.output
     if output_dir is None:
         output_dir = str(Path(args.filepath).with_suffix("")) + "_plots"
-    create_plots(exp_df, output_folder=output_dir, max_combsize=args.max_combsize if not args.competencemaps else 2,
-                 xpaxis="pseudotime" if args.pseudotime else "budget", competencemaps=args.competencemaps)
+    create_plots(
+        exp_df,
+        output_folder=output_dir,
+        max_combsize=args.max_combsize if not args.competencemaps else 2,
+        xpaxis="pseudotime" if args.pseudotime else "budget",
+        competencemaps=args.competencemaps,
+    )
 
 
 if __name__ == "__main__":

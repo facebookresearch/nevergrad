@@ -14,6 +14,9 @@ from .optimizerlib import ParametrizedTBPSA
 from .optimizerlib import ParametrizedBO
 from .optimizerlib import ParametrizedCMA
 from .optimizerlib import Chaining
+from .optimizerlib import NoisySplit
+from .optimizerlib import ConfSplitOptimizer
+from .optimizerlib import ConfPortfolio
 from .differentialevolution import DifferentialEvolution
 from .es import EvolutionStrategy
 from .recastlib import ScipyOptimizer
@@ -21,5 +24,19 @@ from .oneshot import RandomSearchMaker
 from .oneshot import SamplingSearch
 
 
-__all__ = ["ParametrizedOnePlusOne", "ParametrizedCMA", "ParametrizedBO", "DifferentialEvolution", "EvolutionStrategy",
-           "ScipyOptimizer", "RandomSearchMaker", "SamplingSearch", "Chaining", "EMNA", "ParametrizedTBPSA"]
+__all__ = [
+    "ParametrizedOnePlusOne",
+    "ParametrizedCMA",
+    "ParametrizedBO",
+    "DifferentialEvolution",
+    "EvolutionStrategy",
+    "ScipyOptimizer",
+    "RandomSearchMaker",
+    "SamplingSearch",
+    "Chaining",
+    "EMNA",
+    "ParametrizedTBPSA",
+    "NoisySplit",
+    "ConfSplitOptimizer",
+    "ConfPortfolio",
+]

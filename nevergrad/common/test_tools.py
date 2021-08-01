@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import os
 import typing as tp
 import numpy as np
 from . import tools
@@ -26,7 +27,7 @@ def test_roundrobin() -> None:
 
 
 def test_grouper() -> None:
-    output = list(tools.grouper('ABCDEFG', 3, 'x'))
+    output = list(tools.grouper("ABCDEFG", 3, "x"))
     testing.printed_assert_equal(output, [list(x) for x in ["ABC", "DEF", "Gxx"]])
 
 
@@ -63,3 +64,14 @@ def test_mutable_set() -> None:
     intersect = {5, 6} | s
     assert isinstance(intersect, tools.OrderedSet)
     assert tuple(intersect) == (1, 2, 3, 5, 6)  # same behavior, always appended to the end
+
+
+def test_set_env() -> None:
+    with tools.set_env(BLUBLU=1):
+        assert os.environ.get("BLUBLU", None) == "1"
+    assert os.environ.get("BLUBLU", None) is None
+
+
+def test_flatten() -> None:
+    out = tools.flatten(["a", {"truc": [4, 5]}])
+    assert out == {"0": "a", "1.truc.0": 4, "1.truc.1": 5}

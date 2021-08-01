@@ -8,6 +8,8 @@ import operator
 import warnings
 import numpy as np
 from nevergrad.parametrization import parameter as p
+from nevergrad.parametrization.utils import float_penalty as _float_penalty
+from nevergrad.parametrization import _datalayers
 import nevergrad.common.typing as tp
 from nevergrad.common.tools import OrderedSet
 
@@ -35,9 +37,10 @@ class MultiValue:
     def __init__(self, parameter: p.Parameter, y: float, *, reference: p.Parameter) -> None:
         self.count = 1
         self.mean = y
+        self._minimum = y
         self.square = y * y
         # TODO May be safer to use a default variance which depends on y for scale invariance?
-        self.variance = 1.e6
+        self.variance = 1.0e6
         parameter.freeze()
         self.parameter = parameter
         self._ref = reference
@@ -48,11 +51,11 @@ class MultiValue:
 
     @property
     def optimistic_confidence_bound(self) -> float:
-        return float(self.mean - .1 * np.sqrt((self.variance) / (1 + self.count)))
+        return float(self.mean - 0.1 * np.sqrt((self.variance) / (1 + self.count)))
 
     @property
     def pessimistic_confidence_bound(self) -> float:
-        return float(self.mean + .1 * np.sqrt((self.variance) / (1 + self.count)))
+        return float(self.mean + 0.1 * np.sqrt((self.variance) / (1 + self.count)))
 
     def get_estimation(self, name: str) -> float:
         # Note: pruning below relies on the fact than only 3 modes exist. If a new mode is added, update pruning
@@ -60,6 +63,8 @@ class MultiValue:
             return self.optimistic_confidence_bound
         elif name == "pessimistic":
             return self.pessimistic_confidence_bound
+        elif name == "minimum":
+            return self._minimum
         elif name == "average":
             return self.mean
         else:
@@ -73,12 +78,13 @@ class MultiValue:
         y: float
             the new evaluation
         """
+        self._minimum = min(self._minimum, y)
         self.mean = (self.count * self.mean + y) / float(self.count + 1)
         self.square = (self.count * self.square + y * y) / float(self.count + 1)
-        self.square = max(self.square, self.mean**2)
+        self.square = max(self.square, self.mean ** 2)
         self.count += 1
-        factor = math.sqrt(float(self.count) / float(self.count - 1.))
-        self.variance = factor * (self.square - self.mean**2)
+        factor = math.sqrt(float(self.count) / float(self.count - 1.0))
+        self.variance = factor * (self.square - self.mean ** 2)
 
     def as_array(self, reference: p.Parameter) -> np.ndarray:
         return self.parameter.get_standardized_data(reference=reference)
@@ -95,15 +101,17 @@ def _get_nash(optimizer: tp.Any) -> tp.List[tp.Tuple[tp.Tuple[float, ...], int]]
         return [(optimizer.current_bests["pessimistic"].x, 1)]
     max_num_trial = max(p.count for p in optimizer.archive.values())
     sum_num_trial = sum(p.count for p in optimizer.archive.values())
-    threshold = np.power(max_num_trial, .5)
-    if threshold <= np.power(sum_num_trial, .25):
+    threshold = np.power(max_num_trial, 0.5)
+    if threshold <= np.power(sum_num_trial, 0.25):
         return [(optimizer.provide_recommendation(), 1)]
     # make deterministic at the price of sort complexity
-    return sorted(((np.frombuffer(k), p.count) for k, p in optimizer.archive.bytesdict.items() if p.count >= threshold),
-                  key=operator.itemgetter(1))
+    return sorted(
+        ((np.frombuffer(k), p.count) for k, p in optimizer.archive.bytesdict.items() if p.count >= threshold),
+        key=operator.itemgetter(1),
+    )
 
 
-def sample_nash(optimizer: tp.Any) -> tp.Tuple[float, ...]:   # Somehow like fictitious play.
+def sample_nash(optimizer: tp.Any) -> tp.Tuple[float, ...]:  # Somehow like fictitious play.
     nash = _get_nash(optimizer)
     if len(nash) == 1:
         return nash[0][0]
@@ -114,8 +122,7 @@ def sample_nash(optimizer: tp.Any) -> tp.Tuple[float, ...]:   # Somehow like fic
 
 
 class DelayedJob:
-    """Future-like object which delays computation
-    """
+    """Future-like object which delays computation"""
 
     def __init__(self, func: tp.Callable[..., tp.Any], *args: tp.Any, **kwargs: tp.Any) -> None:
         self.func = func
@@ -146,14 +153,16 @@ class SequentialExecutor:
 def _tobytes(x: tp.ArrayLike) -> bytes:
     x = np.array(x, copy=False)  # for compatibility
     assert x.ndim == 1, f"Input shape: {x.shape}"
-    assert x.dtype == np.float, f"Incorrect type {x.dtype} is not float"
+    assert x.dtype == np.float_, f"Incorrect type {x.dtype} is not float"
     return x.tobytes()
 
 
-_ERROR_STR = ("Generating numpy arrays from the bytes keys is inefficient, "
-              "work on archive.bytesdict.<keys,items>() directly and convert with "
-              "np.frombuffer if you can. You can also use archive.<keys,items>_as_arrays() "
-              "but it is less efficient.")
+_ERROR_STR = (
+    "Generating numpy arrays from the bytes keys is inefficient, "
+    "work on archive.bytesdict.<keys,items>() directly and convert with "
+    "np.frombuffer if you can. You can also use archive.<keys,items>_as_arrays() "
+    "but it is less efficient."
+)
 
 
 Y = tp.TypeVar("Y")
@@ -246,22 +255,35 @@ class Pruning:
     def __init__(self, min_len: int, max_len: int):
         self.min_len = min_len
         self.max_len = max_len
+        self._num_prunings = 0  # for testing it is not called too often
 
     def __call__(self, archive: Archive[MultiValue]) -> Archive[MultiValue]:
         if len(archive) < self.max_len:
             return archive
+        return self._prune(archive)
+
+    def _prune(self, archive: Archive[MultiValue]) -> Archive[MultiValue]:
+        self._num_prunings += 1
+        # separate function to ease profiling
         quantiles: tp.Dict[str, float] = {}
-        threshold = float(self.min_len) / len(archive)
+        threshold = float(self.min_len + 1) / len(archive)
         names = ["optimistic", "pessimistic", "average"]
         for name in names:
-            quantiles[name] = np.quantile([v.get_estimation(name) for v in archive.values()], threshold, interpolation="lower")
+            quantiles[name] = np.quantile(
+                [v.get_estimation(name) for v in archive.values()], threshold, interpolation="lower"
+            )
         new_archive: Archive[MultiValue] = Archive()
-        new_archive.bytesdict = {b: v for b, v in archive.bytesdict.items() if any(v.get_estimation(n) <= quantiles[n] for n in names)}
+        new_archive.bytesdict = {
+            b: v
+            for b, v in archive.bytesdict.items()
+            if any(v.get_estimation(n) < quantiles[n] for n in names)
+        }  # strict comparison to make sure we prune even for values repeated maaany times
+        # this may remove all points though, but nevermind for now
         return new_archive
 
     @classmethod
-    def sensible_default(cls, num_workers: int, dimension: int) -> 'Pruning':
-        """ Very conservative pruning
+    def sensible_default(cls, num_workers: int, dimension: int) -> "Pruning":
+        """Very conservative pruning
         - keep at least 100 elements, or 7 times num_workers, whatever is biggest
         - keep at least 3 x min_len, or up to 10 x min_len if it does not exceed 1gb of data
 
@@ -274,7 +296,7 @@ class Pruning:
         """
         # safer to keep at least 7 time the workers
         min_len = max(100, 7 * num_workers)
-        max_len_1gb = 1024**3 // (dimension * 8 * 2)  # stored twice: as key and as Parameter
+        max_len_1gb = 1024 ** 3 // (dimension * 8 * 2)  # stored twice: as key and as Parameter
         max_len = max(3 * min_len, min(10 * min_len, max_len_1gb))
         return cls(min_len, max_len)
 
@@ -293,8 +315,7 @@ class UidQueue:
         self.asked: OrderedSet[str] = OrderedSet()
 
     def clear(self) -> None:
-        """Removes all uids from the queues
-        """
+        """Removes all uids from the queues"""
         self.told.clear()
         self.asked.clear()
 
@@ -312,8 +333,7 @@ class UidQueue:
         return uid
 
     def tell(self, uid: str) -> None:
-        """Removes the uid from the asked queue and adds to the told queue
-        """
+        """Removes the uid from the asked queue and adds to the told queue"""
         self.told.append(uid)
         if uid in self.asked:
             self.asked.discard(uid)
@@ -333,8 +353,6 @@ class BoundScaler:
     This is used for samplers.
     Code of parametrization and/or this helper should definitely be
     updated to make it simpler and more robust
-
-    It warns in
     """
 
     def __init__(self, reference: p.Parameter) -> None:
@@ -344,38 +362,27 @@ class BoundScaler:
         parameter = self.reference.spawn_child()
         parameter.set_standardized_data(np.linspace(-1, 1, self.reference.dimension))
         expected = parameter.get_standardized_data(reference=self.reference)
-        self._ref_arrays = self.list_arrays(self.reference)
-        arrays = self.list_arrays(parameter)
-        check = np.concatenate([x.get_standardized_data(reference=y) for x, y in zip(arrays, self._ref_arrays)], axis=0)
+        self._ref_arrays = p.helpers.list_data(self.reference)
+        arrays = p.helpers.list_data(parameter)
+        check = np.concatenate(
+            [x.get_standardized_data(reference=y) for x, y in zip(arrays, self._ref_arrays)], axis=0
+        )
         self.working = True
         if not np.allclose(check, expected):
             self.working = False
             self._warn()
 
     def _warn(self) -> None:
-        warnings.warn(f"Failed to find bounds for {self.reference}, quasi-random optimizer may be inefficient.\n"
-                      "Please open an issue on Nevergrad github")
+        warnings.warn(
+            f"Failed to find bounds for {self.reference}, quasi-random optimizer may be inefficient.\n"
+            "Please open an issue on Nevergrad github"
+        )
 
-    @classmethod
-    def list_arrays(cls, parameter: p.Parameter) -> tp.List[p.Array]:
-        """Computes a list of data (Array) parameters in the same order as in
-        the standardized data space.
-        """
-        if isinstance(parameter, p.Array):
-            return [parameter]
-        elif isinstance(parameter, p.Constant):
-            return []
-        if not isinstance(parameter, p.Dict):
-            raise RuntimeError(f"Unsupported parameter {parameter}")
-        output: tp.List[p.Array] = []
-        for _, subpar in sorted(parameter._content.items()):
-            output += cls.list_arrays(subpar)
-        return output
-
-    def transform(self, x: tp.ArrayLike, unbounded_transform: tp.Callable[[np.ndarray], np.ndarray]) -> np.ndarray:
-        """Transform from [0, 1] to the space between bounds
-        """
-        y = np.array(x, copy=True)
+    def transform(
+        self, x: tp.ArrayLike, unbounded_transform: tp.Callable[[np.ndarray], np.ndarray]
+    ) -> np.ndarray:
+        """Transform from [0, 1] to the space between bounds"""
+        y = np.array(x, copy=True, dtype=float)
         if not self.working:
             return unbounded_transform(y)
         try:
@@ -385,22 +392,70 @@ class BoundScaler:
             out = unbounded_transform(y)
         return out
 
-    def _transform(self, x: np.ndarray, unbounded_transform: tp.Callable[[np.ndarray], np.ndarray]) -> np.ndarray:
+    def _transform(
+        self, x: np.ndarray, unbounded_transform: tp.Callable[[np.ndarray], np.ndarray]
+    ) -> np.ndarray:
         # modifies x in place
         start = 0
         for ref in self._ref_arrays:
             end = start + ref.dimension
-            if any(b is None for b in ref.bounds) or not ref.full_range_sampling:
-                x[start: end] = unbounded_transform(x[start: end])
+            layers = _datalayers.BoundLayer.filter_from(ref)  # find bound layers
+            layers = [x for x in layers if x.uniform_sampling]  # keep only uniform sampling
+            if not layers:
+                x[start:end] = unbounded_transform(x[start:end])
             else:
+                layer_index = layers[-1]._layer_index
                 array = ref.spawn_child()
-                bounds: tp.List[tp.Any] = list(ref.bounds)
-                if array.exponent is not None:
-                    bounds = [np.log(b) for b in bounds]
-                value = bounds[0] + (bounds[1] - bounds[0]) * x[start:end].reshape(ref._value.shape)
-                if array.exponent is not None:
-                    value = np.exp(value)
-                array._value = value
-                x[start: end] = array.get_standardized_data(reference=ref)
+                normalized = x[start:end].reshape(ref._value.shape)
+                array._layers[layer_index].set_normalized_value(normalized)  # type: ignore
+                x[start:end] = array.get_standardized_data(reference=ref)
             start = end
         return x
+
+
+class ConstraintManager:
+    """Try max_constraints_trials random explorations for satisfying constraints.
+    The finally chosen point, if it does not satisfy constraints, is penalized as shown in the penalty function,
+    using coeffcieints mentioned here.
+
+
+    Possibly unstable.
+    """
+
+    def __init__(self) -> None:
+        self.max_trials = 1000
+        self.penalty_factor = 1.0
+        self.penalty_exponent = 1.001
+
+    def __repr__(self) -> str:
+        return "Constraints:" + ",".join(f"{x}={y}" for x, y in self.__dict__.items())
+
+    # pylint: disable=unused-argument
+    def update(
+        self,
+        max_trials: tp.Optional[int] = None,
+        penalty_factor: tp.Optional[float] = None,
+        penalty_exponent: tp.Optional[float] = None,
+    ) -> None:
+        """
+        Parameters
+        ----------
+            max_trials: int
+                number of random tries for satisfying constraints.
+            penalty: float
+                multiplicative factor on the constraint penalization.
+            penalty_exponent: float
+                exponent, usually close to 1 and slightly greater than 1.
+        """
+        for x, y in locals().items():
+            if y is not None and x != "self" and not x.startswith("_"):
+                setattr(self, x, y)
+        if self.penalty_exponent < 1:
+            raise ValueError("Penalty exponent needs to be equal or greater than 1")
+
+    def penalty(self, parameter: p.Parameter, num_ask: int, budget: tp.Optional[int]) -> float:
+        """Computes the penalty associated with a Parameter, for constraint management"""
+        budget = 1 if budget is None else budget
+        coeff = self.penalty_factor * (self.penalty_exponent ** (num_ask / np.sqrt(budget)))
+        val = parameter.value
+        return coeff * sum(_float_penalty(func(val)) for func in parameter._constraint_checkers)  # type: ignore

@@ -26,9 +26,17 @@ def test_clustering() -> None:
         np.testing.assert_equal(func.dimension, 10)
     func(np.arange(10).reshape((num_clusters, -1)))
     instru_str = "Array{(5,2)}"
-    testing.printed_assert_equal(func.descriptors,
-                                 {"parametrization": instru_str, "function_class": "Clustering", "dimension": 10,
-                                  "name": "Ruspini", "num_clusters": 5, "rescale": True})
+    testing.printed_assert_equal(
+        func.descriptors,
+        {
+            "parametrization": instru_str,
+            "function_class": "Clustering",
+            "dimension": 10,
+            "name": "Ruspini",
+            "num_clusters": 5,
+            "rescale": True,
+        },
+    )
 
 
 def test_compute_perceptron() -> None:
@@ -41,23 +49,20 @@ def test_compute_perceptron() -> None:
         z = p[-1]
         for k in range(3):
             z += p[6 + k] * np.tanh(p[3 + k] + p[k] * x)
-        square_sum += (z - y)**2
+        square_sum += (z - y) ** 2
     output = problems.Perceptron(data[:, 0], data[:, 1]).copy()(p)
     np.testing.assert_almost_equal(output, square_sum / 5)
 
 
 def test_perceptron() -> None:
     func = problems.Perceptron.from_mlda(name="quadratic").copy()
-    output = func([k for k in range(10)])
+    output = func(list(range(10)))
     np.testing.assert_almost_equal(output, 876.837, decimal=4)
     np.testing.assert_equal(func.descriptors["name"], "quadratic")
 
 
-@testing.parametrized(
-    virus=("Virus",),
-    employees=("Employees",),
-)
-def test_sammon_mapping(name: str) -> None:
+def test_sammon_mapping() -> None:
+    name = "Virus"  # employee is not available anymore
     data = np.arange(6).reshape(3, 2) if name == "Virus" else pd.DataFrame(data=np.arange(12).reshape(3, 4))
     with patch("nevergrad.functions.mlda.datasets.get_data") as data_getter:
         data_getter.return_value = data
@@ -68,7 +73,7 @@ def test_sammon_mapping(name: str) -> None:
 
 def test_sammon_circle() -> None:
     func = problems.SammonMapping.from_2d_circle().copy()
-    assert np.max(func._proximity) <= 2.
+    assert np.max(func._proximity) <= 2.0
 
 
 def test_landscape() -> None:
@@ -78,8 +83,8 @@ def test_landscape() -> None:
         func = problems.Landscape(transform=None).copy()
         sfunc = problems.Landscape(transform="square")
     np.testing.assert_equal(func(0, 0), 5)
-    np.testing.assert_equal(func(-.2, -0.2), 5)
-    np.testing.assert_equal(func(-.6, -0.2), float("inf"))
+    np.testing.assert_equal(func(-0.2, -0.2), 5)
+    np.testing.assert_equal(func(-0.6, -0.2), float("inf"))
     np.testing.assert_equal(func(2, 1), 0)
     np.testing.assert_equal(func(2.6, 1), float("inf"))
     # with square
@@ -98,4 +103,6 @@ def test_landscape_gaussian() -> None:
     np.testing.assert_equal(output, [0, 0])  # should be mapped to 0, 0
     output = func.parametrization.spawn_child().set_standardized_data([144, 144]).args
     np.testing.assert_array_equal(output, [2, 1])  # last element
-    testing.printed_assert_equal(func.descriptors, {"parametrization": "gaussian", "function_class": "Landscape", "dimension": 2})
+    testing.printed_assert_equal(
+        func.descriptors, {"parametrization": "gaussian", "function_class": "Landscape", "dimension": 2}
+    )

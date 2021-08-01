@@ -1,0 +1,13 @@
+[tool.black]
+line-length = 110
+exclude = '''
+(
+  /(
+      .eggs         # exclude a few common directories in the
+    | .git          # root of the project
+    | .mypy_cache
+    | dist
+    | docs
+  )
+)
+'''

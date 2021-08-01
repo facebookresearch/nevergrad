@@ -8,25 +8,25 @@ from pathlib import Path
 import numpy as np
 import nevergrad.common.typing as tp
 from nevergrad.common import testing
+import nevergrad as ng
 from . import optimizerlib
 from . import experimentalvariants as xpvariants
 from . import base
+from . import utils
 from . import callbacks
 
 
 class CounterFunction:
-
     def __init__(self) -> None:
         self.count = 0
 
     def __call__(self, value: tp.ArrayLike) -> float:
         assert len(value) == 1
         self.count += 1
-        return float(value[0] - 1)**2
+        return float(value[0] - 1) ** 2
 
 
 class LoggingOptimizer(base.Optimizer):
-
     def __init__(self, num_workers: int = 1) -> None:
         super().__init__(parametrization=1, budget=5, num_workers=num_workers)
         self.logs: tp.List[str] = []
@@ -41,13 +41,23 @@ class LoggingOptimizer(base.Optimizer):
 
 
 @testing.parametrized(
-    w1_batch=(1, True, ['s0', 'u0', 's1', 'u1', 's2', 'u2', 's3', 'u3', 's4', 'u4']),
-    w1_steady=(1, False, ['s0', 'u0', 's1', 'u1', 's2', 'u2', 's3', 'u3', 's4', 'u4']),  # no difference (normal, since worker=1)
-    w3_batch=(3, True, ['s0', 's1', 's2', 'u0', 'u1', 'u2', 's3', 's4', 'u3', 'u4']),
-    w3_steady=(3, False, ['s0', 's1', 's2', 'u0', 'u1', 'u2', 's3', 's4', 'u3', 'u4']),  # not really steady TODO change this behavior
+    w1_batch=(1, True, ["s0", "u0", "s1", "u1", "s2", "u2", "s3", "u3", "s4", "u4"]),
+    w1_steady=(
+        1,
+        False,
+        ["s0", "u0", "s1", "u1", "s2", "u2", "s3", "u3", "s4", "u4"],
+    ),  # no difference (normal, since worker=1)
+    w3_batch=(3, True, ["s0", "s1", "s2", "u0", "u1", "u2", "s3", "s4", "u3", "u4"]),
+    w3_steady=(
+        3,
+        False,
+        ["s0", "s1", "s2", "u0", "u1", "u2", "s3", "s4", "u3", "u4"],
+    ),  # not really steady TODO change this behavior
     # w3_steady=(3, False, ['s0', 's1', 's2', 'u0', 's3', 'u1', 's4', 'u2', 'u3', 'u4']),  # This is what we would like
 )
-def test_batch_and_steady_optimization(num_workers: int, batch_mode: bool, expected: tp.List[tp.Tuple[str, float]]) -> None:
+def test_batch_and_steady_optimization(
+    num_workers: int, batch_mode: bool, expected: tp.List[tp.Tuple[str, float]]
+) -> None:
     # tests the suggestion (s) and update (u) patterns
     # the w3_steady is unexpected. It is designed to be efficient with a non-sequential executor, but because
     # of it, it is acting like batch mode when sequential...
@@ -81,16 +91,19 @@ def test_tell_types(value: tp.Any, error: bool) -> None:
 
 def test_base_optimizer() -> None:
     zeroptim = xpvariants.Zero(parametrization=2, budget=4, num_workers=1)
+    # add descriptor to replicate old behavior, returning pessimistic best
+    zeroptim.parametrization.descriptors.deterministic_function = False
+    assert not zeroptim.parametrization.function.deterministic
     representation = repr(zeroptim)
     expected = "parametrization=Array{(2,)}"
     assert expected in representation, f"Unexpected representation: {representation}"
     np.testing.assert_equal(zeroptim.ask().value, [0, 0])
-    zeroptim.tell(zeroptim.parametrization.spawn_child().set_standardized_data([0., 0]), 0)
-    zeroptim.tell(zeroptim.parametrization.spawn_child().set_standardized_data([1., 1]), 1)
+    zeroptim.tell(zeroptim.parametrization.spawn_child().set_standardized_data([0.0, 0]), 0)
+    zeroptim.tell(zeroptim.parametrization.spawn_child().set_standardized_data([1.0, 1]), 1)
     np.testing.assert_equal(zeroptim.provide_recommendation().value, [0, 0])
     # check that the best value is updated if a second evaluation is not as good
-    zeroptim.tell(zeroptim.parametrization.spawn_child().set_standardized_data([0., 0]), 10)
-    zeroptim.tell(zeroptim.parametrization.spawn_child().set_standardized_data([1., 1]), 1)
+    zeroptim.tell(zeroptim.parametrization.spawn_child().set_standardized_data([0.0, 0]), 10)
+    zeroptim.tell(zeroptim.parametrization.spawn_child().set_standardized_data([1.0, 1]), 1)
     np.testing.assert_equal(zeroptim.provide_recommendation().value, [1, 1])
     np.testing.assert_equal(zeroptim._num_ask, 1)
     # check suggest
@@ -101,7 +114,9 @@ def test_base_optimizer() -> None:
 
 def test_optimize_and_dump(tmp_path: Path) -> None:
     optimizer = optimizerlib.OnePlusOne(parametrization=1, budget=100, num_workers=5)
-    optimizer.register_callback("tell", callbacks.OptimizationPrinter(print_interval_tells=10, print_interval_seconds=.1))
+    optimizer.register_callback(
+        "tell", callbacks.OptimizationPrinter(print_interval_tells=10, print_interval_seconds=0.1)
+    )
     func = CounterFunction()
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
@@ -122,18 +137,58 @@ def test_compare() -> None:
         x: tp.List[tp.Any] = []
         for _ in range(6):
             x += [optimizer.ask()]
-        winners = sorted(x, key=lambda x_: np.linalg.norm(x_.value - np.array((1., 1., 1.))))
+        winners = sorted(x, key=lambda x_: np.linalg.norm(x_.value - np.array((1.0, 1.0, 1.0))))
         optimizer.compare(winners[:3], winners[3:])  # type: ignore
     result = optimizer.provide_recommendation()
     print(result)
-    np.testing.assert_almost_equal(result.value[0], 1., decimal=2)
+    np.testing.assert_almost_equal(result.value[0], 1.0, decimal=2)
 
 
 def test_naming() -> None:
     optf = optimizerlib.RandomSearchMaker(stupid=True)
     opt = optf(parametrization=2, budget=4, num_workers=1)
     instru_str = "Array{(2,)}"
-    np.testing.assert_equal(repr(opt), f"Instance of RandomSearchMaker(stupid=True)(parametrization={instru_str}, budget=4, num_workers=1)")
+    np.testing.assert_equal(
+        repr(opt),
+        f"Instance of RandomSearchMaker(stupid=True)(parametrization={instru_str}, budget=4, num_workers=1)",
+    )
     optf.set_name("BlubluOptimizer", register=True)
     opt = base.registry["BlubluOptimizer"](parametrization=2, budget=4, num_workers=1)
-    np.testing.assert_equal(repr(opt), f"Instance of BlubluOptimizer(parametrization={instru_str}, budget=4, num_workers=1)")
+    np.testing.assert_equal(
+        repr(opt), f"Instance of BlubluOptimizer(parametrization={instru_str}, budget=4, num_workers=1)"
+    )
+
+
+class MinStorageFunc:
+    """Stores the minimum value obtained so far"""
+
+    def __init__(self) -> None:
+        self.min_loss = float("inf")
+
+    def __call__(self, score: int) -> float:
+        self.min_loss = min(score, self.min_loss)
+        return score
+
+
+def test_recommendation_correct() -> None:
+    # Run this several times to debug:
+    # pytest nevergrad/optimization/test_base.py::test_recommendation_correct --count=20 --exitfirst
+    func = MinStorageFunc()
+    choice_size = 20
+    param = ng.p.Choice(range(choice_size)).set_name(f"Choice{choice_size}")
+    optimizer = optimizerlib.OnePlusOne(parametrization=param, budget=300, num_workers=1)
+    recommendation = optimizer.minimize(func)
+    assert func.min_loss == recommendation.value
+
+
+def constant(x: np.ndarray) -> float:  # pylint: disable=unused-argument
+    return 12.0
+
+
+def test_pruning_calls() -> None:
+    opt = ng.optimizers.CMA(50, budget=2000)
+    # worst case scenario for pruning is constant:
+    # it should not keep everything or that will make computation time explode
+    opt.minimize(constant)
+    assert isinstance(opt.pruning, utils.Pruning)
+    assert opt.pruning._num_prunings < 4

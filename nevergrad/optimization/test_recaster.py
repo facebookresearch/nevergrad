@@ -8,6 +8,9 @@ import numpy as np
 import nevergrad as ng
 import nevergrad.common.typing as tp
 from nevergrad.common import testing
+from nevergrad.functions import ArtificialFunction
+from nevergrad.benchmark import experiments
+from nevergrad.benchmark.xpbase import Experiment
 from . import recaster
 from . import optimizerlib
 
@@ -55,7 +58,6 @@ def fake_cost_function(x: tp.ArrayLike) -> float:
 
 
 class FakeOptimizer(recaster.SequentialRecastOptimizer):
-
     def get_optimization_function(self) -> tp.Callable[[tp.Callable[..., tp.Any]], tp.ArrayLike]:
         # create a new instance to avoid deadlock
         return self.__class__(self.parametrization, self.budget, self.num_workers)._optim_function
@@ -86,7 +88,9 @@ def test_recast_optimizer_and_stop() -> None:
 
 def test_provide_recommendation() -> None:
     opt = optimizerlib.SQP(parametrization=2, budget=100)
-    assert isinstance(opt.provide_recommendation(), ng.p.Parameter), "Recommendation should be available from start"
+    assert isinstance(
+        opt.provide_recommendation(), ng.p.Parameter
+    ), "Recommendation should be available from start"
     # the recommended solution should be the better one among the told points
     x1 = opt.ask()
     opt.tell(x1, 10)
@@ -94,3 +98,10 @@ def test_provide_recommendation() -> None:
     opt.tell(x2, 5)
     recommendation = opt.provide_recommendation()
     np.testing.assert_array_almost_equal(recommendation.value, x2.value)
+
+
+def test_sqp_with_constraint() -> None:
+    func = ArtificialFunction("ellipsoid", block_dimension=10, rotation=True, translation_factor=0.1)
+    func.parametrization.register_cheap_constraint(experiments._Constraint("sum", as_bool=True))
+    xp = Experiment(func, optimizer="ChainMetaModelSQP", budget=150, seed=4290846341)
+    xp._run_with_error()

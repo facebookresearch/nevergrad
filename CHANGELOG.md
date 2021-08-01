@@ -2,11 +2,87 @@
 
 ## master
 
-**Cautious:** current `master` branch and `0.4.2.postX` version introduce tentative APIs which may be removed in the near future. Use version `0.4.2` for a more stable version.
+### Breaking changes
 
-- as an **experimental** feature, `tell` method can now receive a list/array of losses for multi-objective optimization [#775](https://github.com/facebookresearch/nevergrad/pull/775). For now it is neither robust, nor scalable, nor stable, nor optimal so be careful when using it. More information in the [documentation](https://facebookresearch.github.io/nevergrad/optimization.html#multiobjective-minimization-with-nevergrad).
-- `DE` and its variants have been updated to make use of the multi-objective losses [#789](https://github.com/facebookresearch/nevergrad/pull/789). This is a **preliminary** fix since the initial `DE` implementaton was ill-suited for this use case.
+- `copy()` method of a `Parameter` does not change the parameters's random state anymore (it used to reset it to `None` [#1048](https://github.com/facebookresearch/nevergrad/pull/1048)
+- `MultiobjectiveFunction` does not exist anymore  [#1034](https://github.com/facebookresearch/nevergrad/pull/1034).
+- `Choice` and `TransitionChoice` have some of their API changed for uniformization. In particular, `indices` is now an
+  `ng.p.Array` (and not an `np.ndarray`) which contains the selected indices (or index) of the `Choice`. The sampling is
+  performed by specific "layers" that are applied to `Data` parameters [#1065](https://github.com/facebookresearch/nevergrad/pull/1065).
+- `Parameter.set_standardized_space` does not take a `deterministic` parameter anymore
+  [#1068](https://github.com/facebookresearch/nevergrad/pull/1068).  This is replaced by the more
+  general `with ng.p.helpers.determistic_sampling(parameter)` context. One-shot algorithms are also updated to choose
+  options of `Choice` parameters deterministically, since it is a simpler behavior to expect compared to sampling the
+  standardized space than sampling the option stochastically from there
+- `RandomSearch` now defaults to sample values using the `parameter.sample()` instead of a Gaussian
+   [#1068](https://github.com/facebookresearch/nevergrad/pull/1068).  The only difference comes with bounded
+  variables since in this case `parameter.sample()` samples uniformly (unless otherwise specified).
+  The previous behavior can be obtained with `RandomSearchMaker(sampler="gaussian")`.
+- `PSO` API has been slightly changed [#1073](https://github.com/facebookresearch/nevergrad/pull/1073)
+- `Parameter` instances `descriptor` attribute is deprecated, in favor of a combinaison of an analysis function
+  (`ng.p.helpers.analyze`) returning information about the parameter (eg: whether continuous, deterministic etc...)
+  and a new `function` attribute which can be used to provide information about the function (eg: whether deterministic etc)
+  [#1076](https://github.com/facebookresearch/nevergrad/pull/1076).
+- Half the budget alloted to solve cheap constrained is now used by a sub-optimizer
+  [#1047](https://github.com/facebookresearch/nevergrad/pull/1047). More changes of constraint management will land
+  in the near future.
+- Experimental methods `Array.set_recombination` and `Array.set_mutation(custom=.)` are removed in favor of
+  layers changing `Array` behaviors [#1086](https://github.com/facebookresearch/nevergrad/pull/1086).
+  Caution: this is still very experimental (and undocumented).
+
+### Important changes
+
+- `Parameter` classes are undergoing heavy changes, please open an issue if you encounter any problem.
+  The midterm aim is to allow for simpler constraint management.
+- `Parameter` have been updated  have undergone heavy changes to ease the handling of their tree structure (
+  [#1029](https://github.com/facebookresearch/nevergrad/pull/1029)
+  [#1036](https://github.com/facebookresearch/nevergrad/pull/1036)
+  [#1038](https://github.com/facebookresearch/nevergrad/pull/1038)
+  [#1043](https://github.com/facebookresearch/nevergrad/pull/1043)
+  [#1044](https://github.com/facebookresearch/nevergrad/pull/1044)
+  )
+- `Parameter` classes have now a layer structure [#1045](https://github.com/facebookresearch/nevergrad/pull/1045)
+  which simplifies changing their behavior. In future PRs this system will take charge of bounds, other constraints,
+  sampling etc.
+- The layer structures allows disentangling bounds and log-distribution. This goal has been reached with
+  [#1053](https://github.com/facebookresearch/nevergrad/pull/1053) but may create some instabilities. In particular,
+  the representation (`__repr__`) of `Array` has changed, and their `bounds` attribute is no longer reliable for now.
+  This change will eventually lead to a new syntax for settings bounds and distribution, but it's not ready yet.
+- `DE` initial sampling as been updated to take bounds into accounts [#1058](https://github.com/facebookresearch/nevergrad/pull/1058)
+- `Array` can now take `lower` and `upper` bounds as initialization arguments. The array is initialized at its average
+  if not `init` is provided and both bounds are provided. In this case, sampling will be uniformm between these bounds.
+
+
+### Other changes
+
+- the new `nevergrad.errors` module gathers errors and warnings used throughout the package (WIP) [#1031](https://github.com/facebookresearch/nevergrad/pull/1031).
+- `EvolutionStrategy` now defaults to NSGA2 selection in the multiobjective case
+- A new experimental callback adds an early stopping mechanism
+  [#1054](https://github.com/facebookresearch/nevergrad/pull/1054).
+- `Choice`-like parameters now accept integers are inputs instead of a list, as a shortcut for `range(num)`
+  [#1106](https://github.com/facebookresearch/nevergrad/pull/1106).
+
+## 0.4.3 (2021-01-28)
+
+### Important changes
+
+- `tell` method can now receive a list/array of losses for multi-objective optimization [#775](https://github.com/facebookresearch/nevergrad/pull/775). For now it is neither robust, nor scalable, nor stable, nor optimal so be careful when using it. More information in the [documentation](https://facebookresearch.github.io/nevergrad/optimization.html#multiobjective-minimization-with-nevergrad).
+- The old way to perform multiobjective optimization, through the use of :code:`MultiobjectiveFunction`, is now deprecated and will be removed after version 0.4.3 [#1017](https://github.com/facebookresearch/nevergrad/pull/1017).
+- By default, the optimizer now returns the best set of parameter as recommendation [#951](https://github.com/facebookresearch/nevergrad/pull/951), considering that the function is deterministic. The previous behavior would use an estimation of noise to provide the pessimistic best point, leading to unexpected behaviors [#947](https://github.com/facebookresearch/nevergrad/pull/947). You can can back to this behavior by specifying: :code:`parametrization.descriptors.deterministic_function = False`
+
+### Other
+
+- `DE` and its variants have been updated to make full use of the multi-objective losses [#789](https://github.com/facebookresearch/nevergrad/pull/789). Other optimizers convert multiobjective problems to a volume minimization, which is not always as efficient.
+- as an **experimental** feature we have added some preliminary support for constraint management through penalties.
+  From then on the prefered option for penalty is to register a function returning a positive float when the constraint is satisfied.
+  While we will wait fore more testing before documenting it, this may already cause instabilities and errors when adding cheap constraints.
+  Please open an issue if you encounter a problem.
 - `tell` argument `value` is renamed to `loss` for clarification [#774](https://github.com/facebookresearch/nevergrad/pull/774). This can be breaking when using named arguments!
+- `ExperimentFunction` now automatically records arguments used for their instantiation so that they can both be used to create a new copy, and as descriptors if there are of type  int/bool/float/str [#914](https://github.com/facebookresearch/nevergrad/pull/914 [#914](https://github.com/facebookresearch/nevergrad/pull/914)).
+- from now on, code formatting needs to be [`black`](https://black.readthedocs.io/en/stable/) compliant. This is
+  simply performed by running `black nevergrad`. A continuous integration checks that PRs are compliant, and the
+  precommit hooks have been adapted. For PRs branching from an old master, you can run `black --line-length=110 nevergrad/<path_to_modified_file>` to make your code easier to merge.
+- Pruning has been patched to make sure it is not activated too often upon convergence [#1014](https://github.com/facebookresearch/nevergrad/pull/1014). The bug used to lead to important slowdown when reaching near convergence.
 
 ## 0.4.2 (2020-08-04)
 

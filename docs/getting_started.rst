@@ -18,6 +18,14 @@ You can also install the master branch instead of the latest release with:
 
     pip install git+https://github.com/facebookresearch/nevergrad@master#egg=nevergrad
 
+
+A conda-forge version is also `available <https://github.com/conda-forge/nevergrad-feedstock>`_ thanks to @oblute:
+
+.. code-block:: bash
+
+    conda install -c conda-forge nevergrad
+
+
 Alternatively, you can clone the repository and run :code:`pip install -e .` from inside the repository folder.
 
 By default, this only installs requirements for the optimization and parametrization subpackages. If you are also interested in the benchmarking part,
@@ -39,7 +47,7 @@ Basic optimization example
 
 **By default all optimizers assume a centered and reduced prior at the beginning of the optimization (i.e. 0 mean and unitary standard deviation).**
 
-Optimizing (minimizing!) a function using an optimizer (here :code:`OnePlusOne`) can be easily run with:
+Optimizing (minimizing!) a function using an optimizer (here :code:`NGOpt`, our adaptative optimization algorithm) can be easily run with:
 
 .. literalinclude:: ../nevergrad/optimization/test_doc.py
     :language: python

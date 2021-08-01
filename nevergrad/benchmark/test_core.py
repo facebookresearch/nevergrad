@@ -17,10 +17,12 @@ import matplotlib
 from nevergrad.optimization import optimizerlib
 from nevergrad.parametrization.utils import CommandFunction, FailedJobError
 from nevergrad.common import testing
+from nevergrad.common import errors
 from . import utils
 from . import core
 from .test_xpbase import DESCRIPTION_KEYS
-matplotlib.use('Agg')
+
+matplotlib.use("Agg")
 
 
 @testing.parametrized(
@@ -46,12 +48,27 @@ def test_commandline_launch() -> None:
         # TODO make it work on Windows!
         # TODO make it work again on the CI (Linux), this started failing with #630 for no reason
         with testing.skip_error_on_systems(FailedJobError, systems=("Windows", "Linux")):
-            CommandFunction(command=[sys.executable, "-m", "nevergrad.benchmark", "additional_experiment",
-                                     "--cap_index", "2", "--num_workers", "2", "--output", str(output),
-                                     "--imports", str(Path(__file__).parent / "additional" / "example.py")])()
+            CommandFunction(
+                command=[
+                    sys.executable,
+                    "-m",
+                    "nevergrad.benchmark",
+                    "additional_experiment",
+                    "--cap_index",
+                    "2",
+                    "--num_workers",
+                    "2",
+                    "--output",
+                    str(output),
+                    "--imports",
+                    str(Path(__file__).parent / "additional" / "example.py"),
+                ]
+            )()
         assert output.exists()
         df = utils.Selector.read_csv(str(output))
-        testing.assert_set_equal(df.columns, DESCRIPTION_KEYS | {"offset"})  # "offset" comes from the custom function
+        testing.assert_set_equal(
+            df.columns, DESCRIPTION_KEYS | {"offset"}
+        )  # "offset" comes from the custom function
         np.testing.assert_equal(len(df), 2)
 
 
@@ -111,10 +128,9 @@ def test_experiment_chunk_split() -> None:
     np.testing.assert_array_equal([len(c) for c in chunks], [10, 4, 3, 3])
     chained = [x[0] for x in itertools.chain.from_iterable(chunks)]
     # check full order (everythink only once)
-    np.testing.assert_array_equal(chained, [0, 2, 4, 6, 8, 10, 12, 14, 16, 18,
-                                            1, 7, 13, 19,
-                                            3, 9, 15,
-                                            5, 11, 17])
+    np.testing.assert_array_equal(
+        chained, [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 1, 7, 13, 19, 3, 9, 15, 5, 11, 17]
+    )
     testing.assert_set_equal(chained, range(20))
     assert chunks[0].id.endswith("_i0m2"), f"Wrong id {chunks[0].id}"
     assert chunks[0].id[:-4] == chunk.id[:-4], "Id prefix should be inherited"
@@ -136,6 +152,8 @@ def test_benchmark_chunk_resuming() -> None:
     # making sure we restart from the actual experiment
     assert chunk._current_experiment is not None
     with warnings.catch_warnings(record=True) as w:
-        warnings.filterwarnings("ignore", category=optimizerlib.InefficientSettingsWarning)
+        warnings.filterwarnings("ignore", category=errors.InefficientSettingsWarning)
         chunk.compute()
-        assert not w, f"A warning was raised while it should not have (experiment could not be resumed): {w[0].message}"
+        assert (
+            not w
+        ), f"A warning was raised while it should not have (experiment could not be resumed): {w[0].message}"

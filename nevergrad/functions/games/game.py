@@ -35,7 +35,9 @@ class _Game:
         self.history1 = []
         self.history2 = []
         if game not in self.converter.keys():
-            raise NotImplementedError(f"{game} is not implemented, choose among: {list(self.converter.keys())}")
+            raise NotImplementedError(
+                f"{game} is not implemented, choose among: {list(self.converter.keys())}"
+            )
         return self.converter[game](policy1, policy2)
 
     def guesswho_play_noturn(self, decks, policy):
@@ -45,15 +47,16 @@ class _Game:
         if policy is None:
             return baseline
         difference = decks[0] - decks[1]
-        late = max(0., decks[0] - decks[1])  # How late I am.
+        late = max(0.0, decks[0] - decks[1])  # How late I am.
         try:
-            return int(0.5
-                       + baseline
-                       + policy[0] * difference
-                       + policy[1] * late
-                       + policy[2] * late * difference / (1 + decks[0])
-                       + policy[3] * late * difference / (1 + decks[1])
-                       )
+            return int(
+                0.5
+                + baseline
+                + policy[0] * difference
+                + policy[1] * late
+                + policy[2] * late * difference / (1 + decks[0])
+                + policy[3] * late * difference / (1 + decks[1])
+            )
         except Exception:  # pylint: disable=broad-except
             return baseline
 
@@ -63,7 +66,7 @@ class _Game:
         else:
             choice = self.guesswho_play_noturn([decks[1], decks[0]], policy)
         choice = max(1, min(choice, decks[turn] - 1))
-        decks = [d for d in decks]
+        decks = list(decks)
         decks[turn] = choice if np.random.randint(decks[turn]) <= choice else decks[turn] - choice
         return decks
 
@@ -71,7 +74,7 @@ class _Game:
         if policy1 is None and policy2 is None:
             return 4
         remaining_cards = [init, init]
-        if np.random.uniform(0., 1.) > .5:
+        if np.random.uniform(0.0, 1.0) > 0.5:
             remaining_cards = self.guesswho_play(policy1, remaining_cards, 0)
             if min(remaining_cards) <= 1:
                 return 1
@@ -86,8 +89,8 @@ class _Game:
     def flip_play_game(self, policy1, policy2):
         if policy1 is None and policy2 is None:
             return 57 * 57
-        if np.random.uniform(0., 1.) > .5:
-            r = self.flip_play_game_nosym(policy2, policy1)
+        if np.random.uniform(0.0, 1.0) > 0.5:
+            r = self.flip_play_game_nosym(policy1=policy2, policy2=policy1)
             return 1 if r == 2 else 2 if r == 1 else 0
         return self.flip_play_game_nosym(policy1, policy2)
 
@@ -115,17 +118,25 @@ class _Game:
                 print("==========")
             something_moves = False
 
-            bestvalue = self.flip_value(visible1, visible2, len(visible1) + len(cards1), len(visible2) + len(cards2), stack, policy1)
+            bestvalue = self.flip_value(
+                visible1, visible2, len(visible1) + len(cards1), len(visible2) + len(cards2), stack, policy1
+            )
             we_play = False
             for i in range(len(visible1)):  # pylint: disable=consider-using-enumerate
                 for location in range(2):
                     # print("testing ", visible1[i], " on ", stack[location])
                     if self.flip_match(visible1[i], stack[location]):
                         # print("player 1 can play ", visible1[i], " on ", stack[location])
-                        candidate_visible1 = visible1[:i] + visible1[i + 1:]
+                        candidate_visible1 = visible1[:i] + visible1[i + 1 :]
                         candidate_stack = sorted([visible1[i], stack[1 - location]])
-                        value = self.flip_value(candidate_visible1, visible2, len(cards1) - 1 + len(visible1),
-                                                len(cards2) + len(visible2), candidate_stack, policy1)
+                        value = self.flip_value(
+                            candidate_visible1,
+                            visible2,
+                            len(cards1) - 1 + len(visible1),
+                            len(cards2) + len(visible2),
+                            candidate_stack,
+                            policy1,
+                        )
                         if value < bestvalue:
                             # print("lgtm")
                             next_visible1 = candidate_visible1
@@ -140,17 +151,25 @@ class _Game:
                     del cards1[0]
                 if not visible1:
                     return 1
-            bestvalue = self.flip_value(visible2, visible1, len(cards2) + len(visible2), len(cards1) + len(visible1), stack, policy2)
+            bestvalue = self.flip_value(
+                visible2, visible1, len(cards2) + len(visible2), len(cards1) + len(visible1), stack, policy2
+            )
             we_play = False
             for i in range(len(visible2)):  # pylint: disable=consider-using-enumerate
                 for location in range(2):
                     # print("testing ", visible2[i], " on ", stack[location])
                     if self.flip_match(visible2[i], stack[location]):
                         # print("player 2 can play ", visible2[i], " on ", stack[location])
-                        candidate_visible2 = visible2[:i] + visible2[i + 1:]
+                        candidate_visible2 = visible2[:i] + visible2[i + 1 :]
                         candidate_stack = sorted([visible2[i], stack[1 - location]])
-                        value = self.flip_value(candidate_visible2, visible1, len(visible2) + len(cards2) -
-                                                1, len(visible1) + len(cards1), candidate_stack, policy2)
+                        value = self.flip_value(
+                            candidate_visible2,
+                            visible1,
+                            len(visible2) + len(cards2) - 1,
+                            len(visible1) + len(cards1),
+                            candidate_stack,
+                            policy2,
+                        )
                         if value < bestvalue:
                             # print("lgtm")
                             next_visible2 = candidate_visible2
@@ -373,11 +392,11 @@ class _Game:
             seed = policy[a * 18 * 6 + b * 6 + c]  # type: ignore
         else:
             seed = policy[a * 26 * 13 + b * 13 + c]  # type: ignore
-        if seed == 0.:
+        if seed == 0.0:
             return cards
-        state = np.random.RandomState(hash(seed) % (2**32))
+        state = np.random.RandomState(hash(seed) % (2 ** 32))
         state.shuffle(cards)
-        return [c for c in cards]
+        return list(cards)
 
 
 # Real life is more complicated! This is a very simple model.
@@ -393,22 +412,30 @@ class Game(ExperimentFunction):
     def __init__(self, game: str = "war") -> None:
         self.game = game
         self.game_object = _Game()
-        dimension = self.game_object.play_game(self.game) * 2  # times 2 because we consider both players separately.
+        dimension = (
+            self.game_object.play_game(self.game) * 2
+        )  # times 2 because we consider both players separately.
         super().__init__(self._simulate_game, p.Array(shape=(dimension,)))
-        self.register_initialization(game=game)
-        self.parametrization.descriptors.deterministic_function = False
-        self.parametrization.descriptors.metrizable = game not in ["war", "batawaf"]
-        self._descriptors.update(game=game)
+        self.parametrization.function.deterministic = False
+        self.parametrization.function.metrizable = game not in ["war", "batawaf"]
 
     def _simulate_game(self, x: np.ndarray) -> float:
         # FIXME: an adaptive opponent, e.g. bandit, would be better.
         # We play a game as player 1.
-        p1 = x[:(self.dimension // 2)]
+        p1 = x[: (self.dimension // 2)]
         p2 = np.random.normal(size=self.dimension // 2)
         r = self.game_object.play_game(self.game, p1, p2)
-        result = 0. if r == 1 else 0.5 if r == 0 else 1.
+        result = 0.0 if r == 1 else 0.5 if r == 0 else 1.0
         # We play a game as player 2.
         p1 = np.random.normal(size=self.dimension // 2)
-        p2 = x[(self.dimension // 2):]
+        p2 = x[(self.dimension // 2) :]
         r = self.game_object.play_game(self.game, p1, p2)
-        return (result + (0. if r == 2 else 0.5 if r == 0 else 1.)) / 2
+        return (result + (0.0 if r == 2 else 0.5 if r == 0 else 1.0)) / 2
+
+    def evaluation_function(self, *recommendations: p.Parameter) -> float:
+        assert len(recommendations) == 1, "Should not be a pareto set for a singleobjective function"
+        x = recommendations[0].value
+        # pylint: disable=not-callable
+        loss = sum([self.function(x) for _ in range(42)]) / 42.0
+        assert isinstance(loss, float)
+        return loss
