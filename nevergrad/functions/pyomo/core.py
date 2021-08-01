@@ -153,7 +153,6 @@ class Pyomo(base.ExperimentFunction):
         if self._value_assignment_code_obj == "":
             code_str = ""
             for k in k_model_variables:
-                # k_name = k.replace("'", "\\'")
                 code_str += f"self._model_instance.{k} = k_model_variables['{k}']\n"
             self._value_assignment_code_obj = compile(code_str, "<string>", "exec")
         # TODO find a way to avoid exec
