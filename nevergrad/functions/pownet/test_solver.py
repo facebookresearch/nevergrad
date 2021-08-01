@@ -10,11 +10,11 @@ import nevergrad as ng
 from . import solver
 
 
-def test_solver_cambodian() -> None:
-    solver.download_dataset("cambodian")
-    dataset_path = os.path.dirname(os.path.realpath(__file__))
-    dataset_path = os.path.join(dataset_path, "pownet_cambodian", "Model_withdata", 'pownet_data_camb_2016.dat')
-    solver.pownet_solver(dataset_path, model_type="cambodian")
+# def test_solver_cambodian() -> None:
+#     solver.download_dataset("cambodian")
+#     dataset_path = os.path.dirname(os.path.realpath(__file__))
+#     #dataset_path = os.path.join(dataset_path, "pownet_cambodian", "Model_withdata", 'pownet_data_camb_2016.dat')
+#     solver.pownet_solver(model_type="cambodian")
 
     # model = pyomo.ConcreteModel()
     # model.x = pyomo.Var([1, 2], domain=pyomo.NonNegativeReals)
@@ -27,7 +27,7 @@ def test_solver_cambodian() -> None:
     # np.testing.assert_almost_equal(recommendation.kwargs['x[1]'], 0.5, decimal=1)
     # np.testing.assert_almost_equal(recommendation.kwargs['x[2]'], 0.5, decimal=1)
 
-def test_solver_tiny() -> None:
+def test_solver_artificial() -> None:
     dataset_path = os.path.dirname(os.path.realpath(__file__))
-    dataset_path = os.path.join(dataset_path, "pownet_tiny", "model_data", 'pownet_data_tiny.dat')
-    solver.pownet_solver(dataset_path, model_type="tiny")
+    dataset_path = os.path.join(dataset_path, "pownet_artificial", "model_data", 'pownet_data_artificial.dat')
+    solver.pownet_solver(location="artificial")
