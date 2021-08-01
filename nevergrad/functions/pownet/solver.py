@@ -1,4 +1,9 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
 import os
+from pathlib import Path
 import urllib
 import zipfile
 from functools import partial
@@ -9,23 +14,21 @@ from nevergrad.functions.pyomo import core
 
 
 def download_dataset(dataset_name="cambodian", force_update=False):
-    root_dataset_path = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), "pypownet", "pypownetr", "datasets"
-    )
+    root_dataset_path = Path(os.path.dirname(os.path.realpath(__file__))) / "pypownet" / "pypownetr" / "datasets"
     dataset_paths = {
         "cambodian": {
-            "path": os.path.join(root_dataset_path, "kamal0013", "camb_2016"),
+            "path": root_dataset_path / "kamal0013" / "camb_2016",
             "filename": "kamal0013.zip",
         },
         "artificial": {
-            "path": os.path.join(root_dataset_path, "artificial", "camb_2016"),
+            "path": root_dataset_path / "artificial" / "camb_2016",
             "file": "artificial.zip",
         },
     }
     assert dataset_name in dataset_paths
-    if not os.path.exists(dataset_paths[dataset_name]["path"]) or force_update:
+    if not dataset_paths[dataset_name]["path"].exists() or force_update:
         os.makedirs(dataset_paths[dataset_name]["path"], exist_ok=True)
-        datasetZipPath = os.path.join(root_dataset_path, dataset_paths[dataset_name]["file"])
+        datasetZipPath = root_dataset_path / dataset_paths[dataset_name]["file"]
         urllib.request.urlretrieve(
             f"https://github.com/pacowong/pypownet/raw/main/pypownetr/datasets/{dataset_paths[dataset_name]['file']}",
             datasetZipPath,
