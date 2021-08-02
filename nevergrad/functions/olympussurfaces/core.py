@@ -51,8 +51,7 @@ class OlympusSurface(ExperimentFunction):
 
     def _simulate_surface(self, x: np.ndarray, noise: bool = True) -> float:
         try:
-            from olympus import surfaces  # pylint: disable=import-outside-toplevel
-            from olympus.surfaces import import_surface
+            from olympus.surfaces import import_surface  # pylint: disable=import-outside-toplevel
             from olympus import noises
         except ImportError as e:
             raise ng.errors.UnsupportedExperiment("Please install olympus for Olympus experiments") from e
