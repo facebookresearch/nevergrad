@@ -12,40 +12,28 @@ from ..base import ExperimentFunction
 
 import nevergrad as ng
 
-try:
-    from olympus import surfaces  # type: ignore
-    from olympus import noises  # type: ignore
-    from olympus import Emulator  # type: ignore
-    from olympus.datasets import Dataset  # type: ignore
-except ImportError as e:
-    raise ng.errors.UnsupportedExperiment("Please install olympus for Olympus experiments") from e
-
 
 class OlympusSurface(ExperimentFunction):
 
-    traditional_surfaces = {
-        "Michalewicz": surfaces.Michalewicz,
-        "AckleyPath": surfaces.AckleyPath,
-        "Dejong": surfaces.Dejong,
-        "HyperEllipsoid": surfaces.HyperEllipsoid,
-        "Levy": surfaces.Levy,
-        "Michalewicz": surfaces.Michalewicz,
-        "Rastrigin": surfaces.Rastrigin,
-        "Rosenbrock": surfaces.Rosenbrock,
-        "Schwefel": surfaces.Schwefel,
-        "StyblinskiTang": surfaces.StyblinskiTang,
-        "Zakharov": surfaces.Zakharov,
-        "DiscreteAckley": surfaces.DiscreteAckley,
-        "DiscreteDoubleWell": surfaces.DiscreteDoubleWell,
-        "DiscreteMichalewicz": surfaces.DiscreteMichalewicz,
-        "LinearFunnel": surfaces.LinearFunnel,
-        "NarrowFunnel": surfaces.NarrowFunnel,
-        "GaussianMixture": surfaces.GaussianMixture,
-    }
-
-    @classmethod
-    def get_surfaces_kinds(cls):
-        return list(cls.traditional_surfaces)
+    SURFACE_KINDS = (
+        "Michalewicz",
+        "AckleyPath",
+        "Dejong",
+        "HyperEllipsoid",
+        "Levy",
+        "Michalewicz",
+        "Rastrigin",
+        "Rosenbrock",
+        "Schwefel",
+        "StyblinskiTang",
+        "Zakharov",
+        "DiscreteAckley",
+        "DiscreteDoubleWell",
+        "DiscreteMichalewicz",
+        "LinearFunnel",
+        "NarrowFunnel",
+        "GaussianMixture",
+    )
 
     def __init__(
         self, kind: str, dimension: int = 10, noise_kind: str = "GaussianNoise", noise_scale: float = 1
@@ -62,14 +50,22 @@ class OlympusSurface(ExperimentFunction):
         self.shift = self.parametrization.random_state.normal(size=self.dimension)
 
     def _simulate_surface(self, x: np.ndarray, noise: bool = True) -> float:
-        assert self.kind in OlympusSurface.get_surfaces_kinds()
+        try:
+            from olympus import surfaces  # pylint: disable=import-outside-toplevel
+            from olympus.surfaces import import_surface
+            from olympus import noises
+        except ImportError as e:
+            raise ng.errors.UnsupportedExperiment("Please install olympus for Olympus experiments") from e
+
+        assert self.kind in OlympusSurface.SURFACE_KINDS
         assert self.noise_kind in ["GaussianNoise", "UniformNoise", "GammaNoise"]
 
+        SURFACES = {name: import_surface(name) for name in OlympusSurface.SURFACE_KINDS}
         if noise:
             noise = noises.Noise(kind=self.noise_kind, scale=self.noise_scale)
-            surface = OlympusSurface.traditional_surfaces[self.kind](param_dim=self.param_dim, noise=noise)
+            surface = SURFACES[self.kind](param_dim=self.param_dim, noise=noise)
         else:
-            surface = OlympusSurface.traditional_surfaces[self.kind](param_dim=self.param_dim)
+            surface = SURFACES[self.kind](param_dim=self.param_dim)
         return surface.run(x - self.shift)[0][0]
 
     def evaluation_function(self, *recommendations) -> float:
@@ -79,7 +75,7 @@ class OlympusSurface(ExperimentFunction):
 
 
 class OlympusEmulator(ExperimentFunction):
-    datasets = [
+    DATASETS = (
         "suzuki",
         "fullerenes",
         "colors_bob",
@@ -90,13 +86,10 @@ class OlympusEmulator(ExperimentFunction):
         "photo_pce10",
         "hplc",
         "colors_n9",
-    ]
-
-    @classmethod
-    def get_datasets(cls):
-        return cls.datasets
+    )
 
     def __init__(self, dataset_kind: str = "alkox", model_kind: str = "NeuralNet") -> None:
+
         self.dataset_kind = dataset_kind
         self.model_kind = model_kind
         parametrization = self._get_parametrization()
@@ -105,14 +98,24 @@ class OlympusEmulator(ExperimentFunction):
         super().__init__(self._simulate_emulator, parametrization)
 
     def _get_parametrization(self) -> p.Parameter:
+        try:
+            from olympus.datasets import Dataset  # pylint: disable=import-outside-toplevel
+        except ImportError as e:
+            raise ng.errors.UnsupportedExperiment("Please install olympus for Olympus experiments") from e
+
         dataset = Dataset(self.dataset_kind)
         dimension = dataset.shape[1] - 1
         bounds = list(zip(*dataset.param_space.param_bounds))
         return p.Array(shape=(dimension,), lower=bounds[0], upper=bounds[1])
 
     def _simulate_emulator(self, x: np.ndarray) -> float:
-        assert self.dataset_kind in OlympusEmulator.get_datasets()
-        assert self.model_kind in ["BayesNeuralNet","NeuralNet"]
+        try:
+            from olympus import Emulator  # pylint: disable=import-outside-toplevel
+        except ImportError as e:
+            raise ng.errors.UnsupportedExperiment("Please install olympus for Olympus experiments") from e
+
+        assert self.dataset_kind in OlympusEmulator.DATASETS
+        assert self.model_kind in ["BayesNeuralNet", "NeuralNet"]
 
         emulator = Emulator(dataset=self.dataset_kind, model=self.model_kind)
         if emulator.get_goal() == "maximize":

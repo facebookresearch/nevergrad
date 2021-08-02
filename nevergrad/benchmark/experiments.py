@@ -1239,7 +1239,7 @@ def olympus_surfaces(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     from nevergrad.functions.olympussurfaces import OlympusSurface
 
     funcs = []
-    for kind in OlympusSurface.get_surfaces_kinds():
+    for kind in OlympusSurface.SURFACE_KINDS:
         for k in range(2, 5):
             for noise in ["GaussianNoise", "UniformNoise", "GammaNoise"]:
                 for noise_scale in [0.5, 1]:
@@ -1263,8 +1263,8 @@ def olympus_emulators(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     from nevergrad.functions.olympussurfaces import OlympusEmulator
 
     funcs = []
-    for dataset_kind in OlympusEmulator.get_datasets():
-        for model_kind in ["BayesNeuralNet","NeuralNet"]:
+    for dataset_kind in OlympusEmulator.DATASETS:
+        for model_kind in ["BayesNeuralNet", "NeuralNet"]:
             funcs.append(OlympusEmulator(dataset_kind, model_kind))
 
     seedg = create_seed_generator(seed)
