@@ -60,12 +60,11 @@ class OlympusSurface(ExperimentFunction):
         assert self.kind in OlympusSurface.SURFACE_KINDS
         assert self.noise_kind in ["GaussianNoise", "UniformNoise", "GammaNoise"]
 
-        SURFACES = {name: import_surface(name) for name in OlympusSurface.SURFACE_KINDS}
         if noise:
             noise = noises.Noise(kind=self.noise_kind, scale=self.noise_scale)
-            surface = SURFACES[self.kind](param_dim=self.param_dim, noise=noise)
+            surface = import_surface(self.kind)(param_dim=self.param_dim, noise=noise)
         else:
-            surface = SURFACES[self.kind](param_dim=self.param_dim)
+            surface = import_surface(self.kind)(param_dim=self.param_dim)
         return surface.run(x - self.shift)[0][0]
 
     def evaluation_function(self, *recommendations) -> float:
