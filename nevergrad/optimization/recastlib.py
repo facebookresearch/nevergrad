@@ -182,8 +182,19 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
             algorithm = get_pymoo_algorithm(self.algorithm, ref_dirs)
         else:
             algorithm = get_pymoo_algorithm(self.algorithm)
-        pymoooptimize.minimize(problem, algorithm)
-        # return None
+        best_res = np.inf
+        best_x: np.ndarray = self.current_bests["average"].x  # np.zeros(self.dimension)
+        problem = self._create_pymoo_problem(self, objective_function)
+        if self.initial_guess is not None:
+            best_x = np.array(self.initial_guess, copy=True)  # copy, just to make sure it is not modified
+        res = pymoooptimize.minimize(problem, algorithm)
+        if self.num_objectives == 1:
+            if res.F < best_res:
+                best_res = res.F
+                best_x = res.X
+            return best_x
+        else:
+            return []  # in multi-objective case there is no "best_x"
 
     def _internal_ask_candidate(self) -> p.Parameter:
         """Reads messages from the thread in which the underlying optimization function is running
