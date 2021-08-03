@@ -660,7 +660,7 @@ def test_ngopt_selection(
             assert choice == expected
         else:
             print(f"Continuous param={param} budget={budget} workers={num_workers} --> {choice}")
-            if num_workers >= budget and budget > 600:
+            if num_workers >= budget > 600:
                 assert choice == "MetaTuneRecentering"
             if num_workers > 1:
                 assert choice not in ["SQP", "Cobyla"]
@@ -814,3 +814,28 @@ def test_cma_logs(capsys: tp.Any) -> None:
     captured = capsys.readouterr()
     assert captured.out == ""
     assert captured.err == ""
+
+
+def _simple_multiobjective(x):
+    return [np.sum(x ** 2), np.sum((x - 1) ** 2)]
+
+
+def test_pymoo_pf() -> None:
+    params = ng.p.Array(shape=(2,))  # We are working on R^3
+    optimizer = ng.optimizers.PymooNSGA2(parametrization=params, budget=300, num_workers=1)
+    for _ in range(optimizer.budget):
+        x = optimizer.ask()
+        loss = _simple_multiobjective(*x.args, **x.kwargs)
+        optimizer.tell(x, loss)
+
+    pf = optimizer.pareto_front()
+    assert any(
+        _simple_multiobjective(x.value)[0] < _simple_multiobjective(np.array([0.25, 0.75]))[0]
+        and _simple_multiobjective(x.value)[1] < _simple_multiobjective(np.array([0.25, 0.75]))[1]
+        for x in pf
+    )
+    assert any(
+        _simple_multiobjective(x.value)[0] < _simple_multiobjective(np.array([0.75, 0.25]))[0]
+        and _simple_multiobjective(x.value)[1] < _simple_multiobjective(np.array([0.75, 0.25]))[1]
+        for x in pf
+    )

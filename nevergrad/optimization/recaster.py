@@ -234,7 +234,7 @@ class RecastOptimizer(base.Optimizer):
         messages = [m for m in messages if m.meta["uid"] == candidate.uid]
         if not messages:
             raise RuntimeError(f"No message for evaluated point {x}: {self._messaging_thread.messages}")
-        messages[0].result = candidate.loss  # post the value, and the thread will deal with it
+        messages[0].result = loss  # post the value, and the thread will deal with it
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: float) -> None:
         raise base.errors.TellNotAskedNotSupportedError
