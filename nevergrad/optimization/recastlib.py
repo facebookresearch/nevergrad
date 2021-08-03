@@ -137,7 +137,7 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
         Defaults to the standard tell pipeline.
         """  # We do not do anything; this just updates the current best.
 
-    def get_optimization_function(self) -> tp.Callable[[tp.Callable[[tp.ArrayLike], float]], tp.ArrayLike]:
+    def get_optimization_function(self) -> tp.Callable[[tp.Callable[..., tp.Any]], tp.Optional[tp.ArrayLike]]:
         # create a different sub-instance, so that the current instance is not referenced by the thread
         # (consequence: do not create a thread at initialization, or we get a thread explosion)
         subinstance = self.__class__(
@@ -157,8 +157,11 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
         subinstance.archive = self.archive
         subinstance.current_bests = self.current_bests
         return subinstance._optimization_function
+        # pylint:disable=useless-return
 
-    def _optimization_function(self, objective_function: tp.Callable[[tp.ArrayLike], float]) -> tp.ArrayLike:
+    def _optimization_function(
+        self, objective_function: tp.Callable[[tp.ArrayLike], float]
+    ) -> tp.Optional[tp.ArrayLike]:
         # pylint:disable=unused-argument
         # pylint:disable=import-outside-toplevel
         from pymoo import optimize as pymoooptimize  # type: ignore
@@ -182,19 +185,9 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
             algorithm = get_pymoo_algorithm(self.algorithm, ref_dirs)
         else:
             algorithm = get_pymoo_algorithm(self.algorithm)
-        best_res = np.inf
-        best_x: np.ndarray = self.current_bests["average"].x  # np.zeros(self.dimension)
         problem = self._create_pymoo_problem(self, objective_function)
-        if self.initial_guess is not None:
-            best_x = np.array(self.initial_guess, copy=True)  # copy, just to make sure it is not modified
-        res = pymoooptimize.minimize(problem, algorithm)
-        if self.num_objectives == 1:
-            if res.F < best_res:
-                best_res = res.F
-                best_x = res.X
-            return best_x
-        else:
-            return []  # in multi-objective case there is no "best_x"
+        pymoooptimize.minimize(problem, algorithm)
+        return None
 
     def _internal_ask_candidate(self) -> p.Parameter:
         """Reads messages from the thread in which the underlying optimization function is running
