@@ -13,6 +13,7 @@ from .base import ExperimentFunction
 from .pbt import PBT as PBT  # pylint: disable=unused-import
 from . import utils
 from . import corefuncs
+from nevergrad.parametrization import transforms as trs
 
 
 class ArtificialVariable:
@@ -111,6 +112,9 @@ class ArtificialFunction(ExperimentFunction):
         string as element.
     aggregator: str
         how to aggregate the multiple block outputs
+    bounded: bool
+        True if we want to optimize on a bounded domain. Algorithms that natively work on bounded domains evaluate
+        f, while the ones that work on Rn optimize evaluate (f o t**-1), if t is a function that maps I into R
 
     Example
     -------
@@ -147,6 +151,7 @@ class ArtificialFunction(ExperimentFunction):
         hashing: bool = False,
         aggregator: str = "max",
         split: bool = False,
+        bounded: bool = False,
     ) -> None:
         # pylint: disable=too-many-locals
         self.name = name
@@ -232,7 +237,12 @@ class ArtificialFunction(ExperimentFunction):
         """
         results = []
         for block in x:
-            results.append(self._func(block))
+            if bounds:
+                self._trs = trs.ArctanBound(0, 1)
+                results.append(self._func(self._transform.forward(block)))
+            else:
+                results.append(self._func(block))
+                print('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
         return float(self._aggregator(results))
 
     def evaluation_function(self, *recommendations: ng.p.Parameter) -> float:
