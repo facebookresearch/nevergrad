@@ -1828,11 +1828,13 @@ class _BayesOptim(base.Optimizer):
         self._config = ParametrizedBayesOptim() if config is None else config
         cfg = self._config
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        self._transform = transforms.ArctanBound(0, 1)
 
         from bayes_optim import RealSpace
         from bayes_optim.surrogate import GaussianProcess
 
-        lb, ub = 1e-7 - np.pi / 2, np.pi / 2 - 1e-7
+        # lb, ub = 1e-7 - np.pi / 2, np.pi / 2 - 1e-7
+        lb, ub = 1e-7, 1 - 1e-7
         space = RealSpace([lb, ub]) * self.dimension
 
         self._buffer: tp.List[float] = []
@@ -1883,7 +1885,8 @@ class _BayesOptim(base.Optimizer):
                 candidate = candidate.tolist()
             self._buffer = candidate
         x_probe = self._buffer.pop()
-        data = np.tan(np.array(x_probe, copy=False))
+        data = self._transform.backward(np.array(x_probe, copy=False))
+        print("data = ", data)
         candidate = self.parametrization.spawn_child().set_standardized_data(data)
         candidate._meta["x_probe"] = x_probe
         return candidate
@@ -1897,7 +1900,7 @@ class _BayesOptim(base.Optimizer):
             else:
                 data = candidate.get_standardized_data(reference=self.parametrization)
                 # Tell not asked:
-                self._alg.tell(np.arctan(data), loss)
+                self._alg.tell(self._transform.forward(data), loss)
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         raise errors.TellNotAskedNotSupportedError
