@@ -5,10 +5,12 @@
 
 
 import math
+import warnings
 import numpy as np
 from scipy import optimize as scipyoptimize
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
+from nevergrad.common import errors
 from . import base
 from .base import IntOrParameter
 from . import recaster
@@ -144,14 +146,11 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
             num_workers=self.num_workers,
             algorithm=self.algorithm,
         )
+        # set num_objectives in sub-instance for Pymoo to use in problem definition
         if self.num_objectives > 0:
-            subinstance.num_objectives = (
-                self.num_objectives
-            )  # set num_objectives in sub-instance for Pymoo to use in problem definition
+            subinstance.num_objectives = self.num_objectives
         else:
-            raise RuntimeError(
-                "This optimizer requires optimizer.num_objectives to be explicity set before the first call to ask."
-            )
+            raise RuntimeError("num_objectives should have been set.")
         return subinstance._optimization_function
         # pylint:disable=useless-return
 
@@ -188,12 +187,13 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
         """Reads messages from the thread in which the underlying optimization function is running
         New messages are sent as "ask".
         """
+        # get a datapoint that is a random point in parameter space
         if self.num_objectives == 0:  # dummy ask i.e. not activating pymoo until num_objectives is set
-            data = self._rng.normal(
-                0, 1, self.dimension
-            )  # get a datapoint that is a random point in parameter space
-            candidate = self.parametrization.spawn_child().set_standardized_data(data)
-            return candidate
+            warnings.warn(
+                "with this optimizer, it is more efficient to set num_objectives before the optimization begins",
+                errors.NevergradRuntimeWarning,
+            )
+            return self.parametrization.spawn_child()
         return super()._internal_ask_candidate()
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: float) -> None:
@@ -230,9 +230,8 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
 
             def _evaluate(self, X, out, *args, **kwargs):
                 # pylint:disable=unused-argument
-                out["F"] = self.objective_function(
-                    np.tan(X)
-                )  # transform data so that it fits into bounds bounds
+                # pymoo is supplying us with bounded parameters in [-pi/2,pi/2]. Nevergrad wants unbounded reals from us.
+                out["F"] = self.objective_function(np.tan(X))
 
         return _PymooProblem(optimizer, objective_function)
 
