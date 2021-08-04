@@ -127,8 +127,6 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
         algorithm: str,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        self.multirun = 1  # work in progress
-        self.initial_guess: tp.Optional[tp.ArrayLike] = None
         # configuration
         self.algorithm = algorithm
 
@@ -154,37 +152,34 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
             raise RuntimeError(
                 "This optimizer requires optimizer.num_objectives to be explicity set before the first call to ask."
             )
-        subinstance.archive = self.archive
-        subinstance.current_bests = self.current_bests
         return subinstance._optimization_function
         # pylint:disable=useless-return
 
     def _optimization_function(
         self, objective_function: tp.Callable[[tp.ArrayLike], float]
     ) -> tp.Optional[tp.ArrayLike]:
-        # pylint:disable=unused-argument
-        # pylint:disable=import-outside-toplevel
-        from pymoo import optimize as pymoooptimize  # type: ignore
+        # pylint:disable=unused-argument, import-outside-toplevel
+        from pymoo import optimize as pymoooptimize
 
-        # pylint:disable=import-outside-toplevel
-        from pymoo.factory import get_algorithm as get_pymoo_algorithm  # type: ignore
+        from pymoo.factory import get_algorithm as get_pymoo_algorithm
 
-        # pylint:disable=import-outside-toplevel
-        from pymoo.factory import get_reference_directions  # type: ignore
+        # from pymoo.factory import get_reference_directions
 
         problem = self._create_pymoo_problem(self, objective_function)
-        if self.algorithm in [
-            "rnsga2",
-            "nsga3",
-            "unsga3",
-            "rnsga3",
-            "moead",
-            "ctaea",
-        ]:  # algorithms that require reference points or reference directions
-            ref_dirs = get_reference_directions("das-dennis", self.num_objectives, n_partitions=12)
-            algorithm = get_pymoo_algorithm(self.algorithm, ref_dirs)
-        else:
-            algorithm = get_pymoo_algorithm(self.algorithm)
+        # reference direction code for when we want to use the other MOO optimizers in Pymoo
+        # if self.algorithm in [
+        #     "rnsga2",
+        #     "nsga3",
+        #     "unsga3",
+        #     "rnsga3",
+        #     "moead",
+        #     "ctaea",
+        # ]:  # algorithms that require reference points or reference directions
+        #     the appropriate n_partitions must be looked into
+        #     ref_dirs = get_reference_directions("das-dennis", self.num_objectives, n_partitions=12)
+        #     algorithm = get_pymoo_algorithm(self.algorithm, ref_dirs)
+        # else:
+        algorithm = get_pymoo_algorithm(self.algorithm)
         problem = self._create_pymoo_problem(self, objective_function)
         pymoooptimize.minimize(problem, algorithm)
         return None
@@ -205,19 +200,15 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
         """Returns value for a point which was "asked"
         (none asked point cannot be "tell")
         """
-        x = candidate.get_standardized_data(
-            reference=self.parametrization
-        )  # dummy ask i.e. not activating pymoo until num_objectives is set
         if self._messaging_thread is None:
-            return
-        if not self._messaging_thread.is_alive():  # optimizer is done
-            self._check_error()
-            return
-        messages = [m for m in self._messaging_thread.messages if m.meta.get("asked", False) and not m.done]
-        messages = [m for m in messages if m.meta["uid"] == candidate.uid]
-        if not messages:
-            raise RuntimeError(f"No message for evaluated point {x}: {self._messaging_thread.messages}")
-        messages[0].result = candidate.losses  # post all the losses, and the thread will deal with it
+            return  # dummy tell i.e. not activating pymoo until num_objectives is set
+        super()._internal_tell_candidate(candidate, loss)
+
+    def _post_loss_to_message(self, message: recaster.Message, candidate: p.Parameter, loss: float):
+        """
+        Multi-Objective override for this function.
+        """
+        message.result = candidate.losses
 
     def _create_pymoo_problem(
         self, optimizer: base.Optimizer, objective_function: tp.Callable[[tp.ArrayLike], float]
@@ -246,7 +237,7 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
         return _PymooProblem(optimizer, objective_function)
 
 
-class PymooOptimizer(base.ConfiguredOptimizer):
+class Pymoo(base.ConfiguredOptimizer):
     """Wrapper over Pymoo optimizer implementations, in standard ask and tell format.
     This is actually an import from Pymoo Optimize.
 
@@ -255,13 +246,16 @@ class PymooOptimizer(base.ConfiguredOptimizer):
     algorithm: str
 
         Use "algorithm-name" with following names to access algorithm classes:
+        Single-Objective
         -"de"
         -'ga'
         -"brkga"
         -"nelder-mead"
         -"pattern-search"
         -"cmaes"
+        Multi-Objective
         -"nsga2"
+        Multi-Objective requiring reference directions, points or lines
         -"rnsga2"
         -"nsga3"
         -"unsga3"
@@ -282,4 +276,4 @@ class PymooOptimizer(base.ConfiguredOptimizer):
         super().__init__(_PymooMinimizeBase, locals())
 
 
-PymooNSGA2 = PymooOptimizer(algorithm="nsga2").set_name("PymooNSGA2", register=True)
+PymooNSGA2 = Pymoo(algorithm="nsga2").set_name("PymooNSGA2", register=True)

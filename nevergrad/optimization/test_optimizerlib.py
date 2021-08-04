@@ -821,21 +821,14 @@ def _simple_multiobjective(x):
 
 
 def test_pymoo_pf() -> None:
-    params = ng.p.Array(shape=(2,))  # We are working on R^3
-    optimizer = ng.optimizers.PymooNSGA2(parametrization=params, budget=300, num_workers=1)
-    for _ in range(optimizer.budget):  # type: ignore
-        x = optimizer.ask()
-        loss = _simple_multiobjective(*x.args, **x.kwargs)
-        optimizer.tell(x, loss)
-
+    optimizer = ng.optimizers.PymooNSGA2(parametrization=2, budget=300)
+    optimizer.minimize(_simple_multiobjective)
     pf = optimizer.pareto_front()
-    assert any(
-        _simple_multiobjective(x.value)[0] < _simple_multiobjective(np.array([0.25, 0.75]))[0]
-        and _simple_multiobjective(x.value)[1] < _simple_multiobjective(np.array([0.25, 0.75]))[1]
-        for x in pf
-    )
-    assert any(
-        _simple_multiobjective(x.value)[0] < _simple_multiobjective(np.array([0.75, 0.25]))[0]
-        and _simple_multiobjective(x.value)[1] < _simple_multiobjective(np.array([0.75, 0.25]))[1]
-        for x in pf
-    )
+    fixed_points = [[0.25, 0.75], [0.75, 0.25]]
+    for fixed_point in fixed_points:
+        values = _simple_multiobjective(np.array(fixed_point))
+        # check pareto front contains a candidate dominating fixed point
+        assert any(
+            _simple_multiobjective(x.value)[0] < values[0] and _simple_multiobjective(x.value)[1] < values[1]
+            for x in pf
+        )
