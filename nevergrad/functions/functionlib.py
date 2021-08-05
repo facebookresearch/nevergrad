@@ -215,6 +215,8 @@ class ArtificialFunction(ExperimentFunction):
             useful_dimensions=block_dimension * num_blocks,
             discrete=any(x in name for x in ["onemax", "leadingones", "jump"]),
         )
+        if bounds:
+            self._trs = trs.ArctanBound(0, 1)
 
     @property
     def dimension(self) -> int:
@@ -238,11 +240,9 @@ class ArtificialFunction(ExperimentFunction):
         results = []
         for block in x:
             if bounds:
-                self._trs = trs.ArctanBound(0, 1)
-                results.append(self._func(self._transform.forward(block)))
+                results.append(self._func(self._trs.forward(block)))
             else:
                 results.append(self._func(block))
-                print('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
         return float(self._aggregator(results))
 
     def evaluation_function(self, *recommendations: ng.p.Parameter) -> float:

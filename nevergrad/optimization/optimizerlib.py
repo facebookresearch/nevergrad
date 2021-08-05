@@ -1885,6 +1885,7 @@ class _BayesOptim(base.Optimizer):
                 candidate = candidate.tolist()
             self._buffer = candidate
         x_probe = self._buffer.pop()
+        # data = np.tan(np.array(x_probe, copy=False))
         data = self._transform.backward(np.array(x_probe, copy=False))
         # data = np.array(x_probe, copy=False)
         candidate = self.parametrization.spawn_child().set_standardized_data(data)
@@ -1900,6 +1901,7 @@ class _BayesOptim(base.Optimizer):
             else:
                 data = candidate.get_standardized_data(reference=self.parametrization)
                 # Tell not asked:
+                # self._alg.tell(np.arctan(data), loss)
                 self._alg.tell(self._transform.forward(data), loss)
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
