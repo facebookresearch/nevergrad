@@ -647,8 +647,6 @@ def yabbob(
     names += ["cigar", "altcigar", "ellipsoid", "altellipsoid", "stepellipsoid", "discus", "bentcigar"]
     names += ["deceptiveillcond", "deceptivemultimodal", "deceptivepath"]
 
-    names = ["sphere"]  # test bounded
-
     # Deceptive path is related to the sharp ridge function; there is a long path to the optimum.
     # Deceptive illcond is related to the difference of powers function; the conditioning varies as we get closer to the optimum.
     # Deceptive multimodal is related to the Weierstrass function and to the Schaffers function.
@@ -671,7 +669,8 @@ def yabbob(
         optims = ["BO", "CMA", "PSO", "DE"]
 
     if bounded:
-        optims = ["PCABO"]
+        # optims = ["PCABO"]
+        optims = ["BO", "CMA", "PSO", "DE", "BOBYQA", "PCABO", "NGOpt", "BayesOptimBO", "AX", "RandomSearch", "OnePlusOne"]
 
     # List of objective functions.
     functions = [
@@ -681,7 +680,7 @@ def yabbob(
         for num_blocks in ([1] if not split else [7, 12])
         # for d in ([100, 1000, 3000] if hd else ([2, 5, 10, 15] if tuning else [2, 10, 50]))
         for d in
-        ([100, 1000, 3000] if hd else ([2, 5, 10, 15] if tuning else ([10] if bounded else [2, 10, 50])))
+        ([100, 1000, 3000] if hd else ([2, 5, 10, 15] if tuning else ([10, 20, 40, 100] if bounded else [2, 10, 50])))
     ]
     if tiny:
         functions = functions[::13]
@@ -712,7 +711,7 @@ def yabbob(
     if small and not noise:
         budgets = [10, 20, 40]
     if bounded:
-        budgets = [100]
+        budgets = [10, 20, 40, 100, 150, 300]
     for optim in optims:
         for function in functions:
             for budget in budgets:
