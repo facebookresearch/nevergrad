@@ -646,6 +646,9 @@ def yabbob(
     names += ["sphere", "doublelinearslope", "stepdoublelinearslope"]
     names += ["cigar", "altcigar", "ellipsoid", "altellipsoid", "stepellipsoid", "discus", "bentcigar"]
     names += ["deceptiveillcond", "deceptivemultimodal", "deceptivepath"]
+
+    names = ["sphere"]  # test bounded
+
     # Deceptive path is related to the sharp ridge function; there is a long path to the optimum.
     # Deceptive illcond is related to the difference of powers function; the conditioning varies as we get closer to the optimum.
     # Deceptive multimodal is related to the Weierstrass function and to the Schaffers function.
@@ -667,13 +670,18 @@ def yabbob(
     if hd and small:
         optims = ["BO", "CMA", "PSO", "DE"]
 
+    if bounded:
+        optims = ["PCABO"]
+
     # List of objective functions.
     functions = [
         ArtificialFunction(name, block_dimension=d, rotation=rotation, noise_level=noise_level, split=split, bounded=bounded)
         for name in names
         for rotation in [True, False]
         for num_blocks in ([1] if not split else [7, 12])
-        for d in ([100, 1000, 3000] if hd else ([2, 5, 10, 15] if tuning else [2, 10, 50]))
+        # for d in ([100, 1000, 3000] if hd else ([2, 5, 10, 15] if tuning else [2, 10, 50]))
+        for d in
+        ([100, 1000, 3000] if hd else ([2, 5, 10, 15] if tuning else ([10] if bounded else [2, 10, 50])))
     ]
     if tiny:
         functions = functions[::13]
@@ -703,6 +711,8 @@ def yabbob(
     )
     if small and not noise:
         budgets = [10, 20, 40]
+    if bounded:
+        budgets = [100]
     for optim in optims:
         for function in functions:
             for budget in budgets:
@@ -801,6 +811,11 @@ def yanoisybbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     This is different from the original BBOB/COCO from that point of view.
     """
     return yabbob(seed, noise=True)
+
+@registry.register
+def yaboundedbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with bounded domain, (0,1)**n by default."""
+    return yabbob(seed, bounded=True)
 
 
 @registry.register

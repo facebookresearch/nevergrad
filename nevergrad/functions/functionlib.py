@@ -174,6 +174,7 @@ class ArtificialFunction(ExperimentFunction):
         # record necessary info and prepare transforms
         self._dimension = block_dimension * num_blocks + useless_variables
         self._func = corefuncs.registry[name]
+        self._bounded = bounded
         # special case
         info = corefuncs.registry.get_info(self._parameters["name"])
         only_index_transform = info.get("no_transform", False)
@@ -215,7 +216,7 @@ class ArtificialFunction(ExperimentFunction):
             useful_dimensions=block_dimension * num_blocks,
             discrete=any(x in name for x in ["onemax", "leadingones", "jump"]),
         )
-        if bounds:
+        if self._bounded:
             self._trs = trs.ArctanBound(0, 1)
 
     @property
@@ -239,7 +240,7 @@ class ArtificialFunction(ExperimentFunction):
         """
         results = []
         for block in x:
-            if bounds:
+            if self._bounded:
                 results.append(self._func(self._trs.forward(block)))
             else:
                 results.append(self._func(block))
