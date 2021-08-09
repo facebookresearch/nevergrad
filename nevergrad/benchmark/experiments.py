@@ -31,6 +31,7 @@ from nevergrad.functions.games import game
 from nevergrad.functions.causaldiscovery import CausalDiscovery
 from nevergrad.functions import iohprofiler
 from nevergrad.functions import helpers
+from nevergrad.functions.cycling import cycling
 from .xpbase import Experiment as Experiment
 from .xpbase import create_seed_generator
 from .xpbase import registry as registry  # noqa
@@ -1839,4 +1840,17 @@ def unit_commitment(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                     xp = Experiment(func, algo, budget, num_workers=1, seed=next(seedg))
                     if not xp.is_incoherent:
                         yield xp
->>>>>>> origin/master
+
+def team_cycling(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Experiment to optimise team pursuit track cycling problem.
+    """
+    seedg = create_seed_generator(seed)
+    optims = ["NGOpt10", "CMA", "DE"]
+    funcs = [cycling(30), cycling(31), cycling(61), cycling(22), cycling(23), cycling(45)]
+    for function in funcs:
+        for budget in [3000]:
+            for optim in optims:
+                for i in range(10):
+                    xp = Experiment(function, optim, budget=budget, num_workers=10, seed=next(seedg))
+                    if not xp.is_incoherent:
+                        yield xp
