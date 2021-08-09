@@ -3,10 +3,14 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+
+import math
+import warnings
 import numpy as np
 from scipy import optimize as scipyoptimize
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
+from nevergrad.common import errors
 from . import base
 from .base import IntOrParameter
 from . import recaster
@@ -113,3 +117,162 @@ SQP = ScipyOptimizer(method="SLSQP").set_name("SQP", register=True)
 SLSQP = SQP  # Just so that people who are familiar with SLSQP naming are not lost.
 RSQP = ScipyOptimizer(method="SLSQP", random_restart=True).set_name("RSQP", register=True)
 RSLSQP = RSQP  # Just so that people who are familiar with SLSQP naming are not lost.
+
+
+class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
+    def __init__(
+        self,
+        parametrization: IntOrParameter,
+        budget: tp.Optional[int] = None,
+        num_workers: int = 1,
+        *,
+        algorithm: str,
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        # configuration
+        self.algorithm = algorithm
+
+    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.Loss) -> None:
+        """Called whenever calling "tell" on a candidate that was not "asked".
+        Defaults to the standard tell pipeline.
+        """  # We do not do anything; this just updates the current best.
+
+    def get_optimization_function(self) -> tp.Callable[[tp.Callable[..., tp.Any]], tp.Optional[tp.ArrayLike]]:
+        # create a different sub-instance, so that the current instance is not referenced by the thread
+        # (consequence: do not create a thread at initialization, or we get a thread explosion)
+        subinstance = self.__class__(
+            parametrization=self.parametrization,
+            budget=self.budget,
+            num_workers=self.num_workers,
+            algorithm=self.algorithm,
+        )
+        # set num_objectives in sub-instance for Pymoo to use in problem definition
+        if self.num_objectives > 0:
+            subinstance.num_objectives = self.num_objectives
+        else:
+            raise RuntimeError("num_objectives should have been set.")
+        return subinstance._optimization_function
+        # pylint:disable=useless-return
+
+    def _optimization_function(
+        self, objective_function: tp.Callable[[tp.ArrayLike], float]
+    ) -> tp.Optional[tp.ArrayLike]:
+        # pylint:disable=unused-argument, import-outside-toplevel
+        from pymoo import optimize as pymoooptimize
+
+        from pymoo.factory import get_algorithm as get_pymoo_algorithm
+
+        # from pymoo.factory import get_reference_directions
+
+        problem = self._create_pymoo_problem(self, objective_function)
+        # reference direction code for when we want to use the other MOO optimizers in Pymoo
+        # if self.algorithm in [
+        #     "rnsga2",
+        #     "nsga3",
+        #     "unsga3",
+        #     "rnsga3",
+        #     "moead",
+        #     "ctaea",
+        # ]:  # algorithms that require reference points or reference directions
+        #     the appropriate n_partitions must be looked into
+        #     ref_dirs = get_reference_directions("das-dennis", self.num_objectives, n_partitions=12)
+        #     algorithm = get_pymoo_algorithm(self.algorithm, ref_dirs)
+        # else:
+        algorithm = get_pymoo_algorithm(self.algorithm)
+        problem = self._create_pymoo_problem(self, objective_function)
+        pymoooptimize.minimize(problem, algorithm)
+        return None
+
+    def _internal_ask_candidate(self) -> p.Parameter:
+        """Reads messages from the thread in which the underlying optimization function is running
+        New messages are sent as "ask".
+        """
+        # get a datapoint that is a random point in parameter space
+        if self.num_objectives == 0:  # dummy ask i.e. not activating pymoo until num_objectives is set
+            warnings.warn(
+                "with this optimizer, it is more efficient to set num_objectives before the optimization begins",
+                errors.NevergradRuntimeWarning,
+            )
+            return self.parametrization.spawn_child()
+        return super()._internal_ask_candidate()
+
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: float) -> None:
+        """Returns value for a point which was "asked"
+        (none asked point cannot be "tell")
+        """
+        if self._messaging_thread is None:
+            return  # dummy tell i.e. not activating pymoo until num_objectives is set
+        super()._internal_tell_candidate(candidate, loss)
+
+    def _post_loss_to_message(self, message: recaster.Message, candidate: p.Parameter, loss: float):
+        """
+        Multi-Objective override for this function.
+        """
+        message.result = candidate.losses
+
+    def _create_pymoo_problem(
+        self, optimizer: base.Optimizer, objective_function: tp.Callable[[tp.ArrayLike], float]
+    ):
+        # pylint:disable=import-outside-toplevel
+        from pymoo.model.problem import Problem  # type: ignore
+
+        class _PymooProblem(Problem):
+            def __init__(self, optimizer, objective_function):
+                self.objective_function = objective_function
+                super().__init__(
+                    n_var=optimizer.dimension,
+                    n_obj=optimizer.num_objectives,
+                    n_constr=0,  # constraints handled already by nevergrad
+                    xl=-math.pi * 0.5,
+                    xu=math.pi * 0.5,
+                    elementwise_evaluation=True,  # for 1-by-1 evaluation
+                )
+
+            def _evaluate(self, X, out, *args, **kwargs):
+                # pylint:disable=unused-argument
+                # pymoo is supplying us with bounded parameters in [-pi/2,pi/2]. Nevergrad wants unbounded reals from us.
+                out["F"] = self.objective_function(np.tan(X))
+
+        return _PymooProblem(optimizer, objective_function)
+
+
+class Pymoo(base.ConfiguredOptimizer):
+    """Wrapper over Pymoo optimizer implementations, in standard ask and tell format.
+    This is actually an import from Pymoo Optimize.
+
+    Parameters
+    ----------
+    algorithm: str
+
+        Use "algorithm-name" with following names to access algorithm classes:
+        Single-Objective
+        -"de"
+        -'ga'
+        -"brkga"
+        -"nelder-mead"
+        -"pattern-search"
+        -"cmaes"
+        Multi-Objective
+        -"nsga2"
+        Multi-Objective requiring reference directions, points or lines
+        -"rnsga2"
+        -"nsga3"
+        -"unsga3"
+        -"rnsga3"
+        -"moead"
+        -"ctaea"
+
+    Note
+    ----
+    These optimizers do not support asking several candidates in a row
+    """
+
+    recast = True
+    no_parallelization = True
+
+    # pylint: disable=unused-argument
+    def __init__(self, *, algorithm: str) -> None:
+        super().__init__(_PymooMinimizeBase, locals())
+
+
+PymooNSGA2 = Pymoo(algorithm="nsga2").set_name("PymooNSGA2", register=True)

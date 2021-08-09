@@ -20,6 +20,7 @@ from .optimizerlib import ConfPortfolio
 from .differentialevolution import DifferentialEvolution
 from .es import EvolutionStrategy
 from .recastlib import ScipyOptimizer
+from .recastlib import Pymoo
 from .oneshot import RandomSearchMaker
 from .oneshot import SamplingSearch
 
@@ -31,6 +32,7 @@ __all__ = [
     "DifferentialEvolution",
     "EvolutionStrategy",
     "ScipyOptimizer",
+    "Pymoo",
     "RandomSearchMaker",
     "SamplingSearch",
     "Chaining",

@@ -660,7 +660,7 @@ def test_ngopt_selection(
             assert choice == expected
         else:
             print(f"Continuous param={param} budget={budget} workers={num_workers} --> {choice}")
-            if num_workers >= budget and budget > 600:
+            if num_workers >= budget > 600:
                 assert choice == "MetaTuneRecentering"
             if num_workers > 1:
                 assert choice not in ["SQP", "Cobyla"]
@@ -814,3 +814,21 @@ def test_cma_logs(capsys: tp.Any) -> None:
     captured = capsys.readouterr()
     assert captured.out == ""
     assert captured.err == ""
+
+
+def _simple_multiobjective(x):
+    return [np.sum(x ** 2), np.sum((x - 1) ** 2)]
+
+
+def test_pymoo_pf() -> None:
+    optimizer = ng.optimizers.PymooNSGA2(parametrization=2, budget=300)
+    optimizer.minimize(_simple_multiobjective)
+    pf = optimizer.pareto_front()
+    fixed_points = [[0.25, 0.75], [0.75, 0.25]]
+    for fixed_point in fixed_points:
+        values = _simple_multiobjective(np.array(fixed_point))
+        # check pareto front contains a candidate dominating fixed point
+        assert any(
+            _simple_multiobjective(x.value)[0] < values[0] and _simple_multiobjective(x.value)[1] < values[1]
+            for x in pf
+        )
