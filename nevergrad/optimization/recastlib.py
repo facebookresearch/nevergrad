@@ -28,7 +28,14 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         self.multirun = 1  # work in progress
         self.initial_guess: tp.Optional[tp.ArrayLike] = None
         # configuration
-        assert method in ["Nelder-Mead", "COBYLA", "SLSQP", "Powell", "BOBYQA", "AX"], f"Unknown method '{method}'"
+        assert method in [
+            "Nelder-Mead",
+            "COBYLA",
+            "SLSQP",
+            "Powell",
+            "BOBYQA",
+            "AX",
+        ], f"Unknown method '{method}'"
         self.method = method
         self.random_restart = random_restart
 
@@ -51,7 +58,6 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         subinstance.current_bests = self.current_bests
         return subinstance._optimization_function
 
-
     def _optimization_function(self, objective_function: tp.Callable[[tp.ArrayLike], float]) -> tp.ArrayLike:
         # pylint:disable=unused-argument
         budget = np.inf if self.budget is None else self.budget
@@ -60,10 +66,12 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         if self.initial_guess is not None:
             best_x = np.array(self.initial_guess, copy=True)  # copy, just to make sure it is not modified
         remaining = budget - self._num_ask
+
         def ax_obj(p):
             data = [np.arctanh(p["x" + str(i)]) for i in range(self.dimension)]
-            data = np.asarray(data, dtype = np.float)
+            data = np.asarray(data, dtype=np.float)
             return objective_function(data)
+
         while remaining > 0:  # try to restart if budget is not elapsed
             options: tp.Dict[str, int] = {} if self.budget is None else {"maxiter": remaining}
             if self.method == "BOBYQA":
@@ -72,13 +80,14 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
                     best_res = res.f
                     best_x = res.x
             elif self.method == "AX":
-                parameters = [{"name": "x"+str(i), "type":"range", "bounds":[-1., 1.]} for i in range(self.dimension)]
+                parameters = [
+                    {"name": "x" + str(i), "type": "range", "bounds": [-1.0, 1.0]}
+                    for i in range(self.dimension)
+                ]
                 best_parameters, best_values, experiment, model = axoptimize(
-                    parameters,
-                    evaluation_function = ax_obj,
-                    minimize=True,
-                    total_trials = budget)
-                best_x = [np.arctanh(p["x"+str(i)]) for i in range(self.dimension)]
+                    parameters, evaluation_function=ax_obj, minimize=True, total_trials=budget
+                )
+                best_x = [np.arctanh(p["x" + str(i)]) for i in range(self.dimension)]
                 best_x = np.asarray(best_x, dtype=np.float)
             else:
                 res = scipyoptimize.minimize(

@@ -670,17 +670,34 @@ def yabbob(
 
     if bounded:
         # optims = ["PCABO"]
-        optims = ["BO", "CMA", "PSO", "DE", "BOBYQA", "PCABO", "NGOpt", "BayesOptimBO", "AX", "RandomSearch", "OnePlusOne"]
+        optims = [
+            "BO",
+            "CMA",
+            "PSO",
+            "DE",
+            "BOBYQA",
+            "PCABO",
+            "NGOpt",
+            "BayesOptimBO",
+            "AX",
+            "RandomSearch",
+            "OnePlusOne",
+        ]
 
     # List of objective functions.
     functions = [
-        ArtificialFunction(name, block_dimension=d, rotation=rotation, noise_level=noise_level, split=split, bounded=bounded)
+        ArtificialFunction(
+            name, block_dimension=d, rotation=rotation, noise_level=noise_level, split=split, bounded=bounded
+        )
         for name in names
         for rotation in [True, False]
         for num_blocks in ([1] if not split else [7, 12])
         # for d in ([100, 1000, 3000] if hd else ([2, 5, 10, 15] if tuning else [2, 10, 50]))
-        for d in
-        ([100, 1000, 3000] if hd else ([2, 5, 10, 15] if tuning else ([10, 20, 40, 100] if bounded else [2, 10, 50])))
+        for d in (
+            [100, 1000, 3000]
+            if hd
+            else ([2, 5, 10, 15] if tuning else ([10, 20, 40, 100] if bounded else [2, 10, 50]))
+        )
     ]
     if tiny:
         functions = functions[::13]
@@ -810,6 +827,7 @@ def yanoisybbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     This is different from the original BBOB/COCO from that point of view.
     """
     return yabbob(seed, noise=True)
+
 
 @registry.register
 def yaboundedbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
