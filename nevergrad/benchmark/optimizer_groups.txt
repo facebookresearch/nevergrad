@@ -1,4 +1,4 @@
-all_bo = ['BO', 'LBO', 'MidQRBO', 'QRBO', 'RBO', 'chainBOwithLHS', 'chainBOwithLHS30', 'chainBOwithLHSdim', 'chainBOwithLHSsqrt', 'chainBOwithMetaRecentering', 'chainBOwithMetaRecentering30', 'chainBOwithMetaRecenteringdim', 'chainBOwithMetaRecenteringsqrt', 'chainBOwithMetaTuneRecentering', 'chainBOwithMetaTuneRecentering30', 'chainBOwithMetaTuneRecenteringdim', 'chainBOwithMetaTuneRecenteringsqrt', 'chainBOwithR', 'chainBOwithR30', 'chainBOwithRdim', 'chainBOwithRsqrt']
+all_bo = ['BO', 'BOSplit', 'ChainBOwithLHS', 'ChainBOwithLHS30', 'ChainBOwithLHSdim', 'ChainBOwithLHSsqrt', 'ChainBOwithMetaRecentering', 'ChainBOwithMetaRecentering30', 'ChainBOwithMetaRecenteringdim', 'ChainBOwithMetaRecenteringsqrt', 'ChainBOwithMetaTuneRecentering', 'ChainBOwithMetaTuneRecentering30', 'ChainBOwithMetaTuneRecenteringdim', 'ChainBOwithMetaTuneRecenteringsqrt', 'ChainBOwithR', 'ChainBOwithR30', 'ChainBOwithRdim', 'ChainBOwithRsqrt', 'LBO', 'MidQRBO', 'QRBO', 'RBO']
 
 baselines = ['OnePlusOne', 'DiscreteOnePlusOne', 'NoisyDiscreteOnePlusOne', 'PSO', 'DE', 'TwoPointsDE']
 
@@ -10,7 +10,7 @@ competence_map = ['NGO', 'Shiwa']
 
 competitive = ['DiagonalCMA', 'CMA', 'NGO', 'Shiwa', 'MetaNGOpt10', 'NaiveTBPSA', 'PSO', 'DE', 'LhsDE', 'RandomSearch', 'OnePlusOne', 'TwoPointsDE']
 
-discrete = ['DiscreteOnePlusOne', 'DiscreteLenglerOnePlusOne', 'AdaptiveDiscreteOnePlusOne', 'AnisotropicAdaptiveDiscreteOnePlusOne', 'DiscreteBSOOnePlusOne', 'DiscreteDoerrOnePlusOne', 'OptimisticDiscreteOnePlusOne', 'DoubleFastGADiscreteOnePlusOne', 'MultiDiscrete', 'FastGADiscreteOnePlusOne', 'PortfolioDiscreteOnePlusOne']
+discrete = ['DiscreteOnePlusOne', 'PortfolioDiscreteOnePlusOne', 'DiscreteLenglerOnePlusOne', 'AdaptiveDiscreteOnePlusOne', 'AnisotropicAdaptiveDiscreteOnePlusOne', 'DiscreteBSOOnePlusOne', 'DiscreteDoerrOnePlusOne', 'OptimisticDiscreteOnePlusOne', 'DoubleFastGADiscreteOnePlusOne', 'MultiDiscrete', 'FastGADiscreteOnePlusOne']
 
 emna_variants = ['IsoEMNA', 'NaiveIsoEMNA', 'AnisoEMNA', 'NaiveAnisoEMNA', 'CMA', 'NaiveTBPSA', 'NaiveIsoEMNATBPSA', 'IsoEMNATBPSA', 'NaiveAnisoEMNATBPSA', 'AnisoEMNATBPSA']
 
@@ -22,13 +22,7 @@ multimodal = ['NaiveTBPSA', 'MultiCMA', 'TripleCMA', 'MultiScaleCMA', 'PolyCMA',
 
 noisy = ['OptimisticDiscreteOnePlusOne', 'OptimisticNoisyOnePlusOne', 'TBPSA', 'SPSA', 'NGOpt10']
 
-oneshot = ['AvgHammersleySearch', 'AvgHammersleySearchPlusMiddlePoint', 'AvgMetaRecenteringNoHull', 'CauchyScrHammersleySearch', 'HAvgMetaRecentering', 'HCHAvgCauchyScrHammersleySearch', 'HCHAvgLargeHammersleySearch', 'HCHAvgScrHammersleySearch', 'HCHAvgScrHammersleySearchPlusMiddlePoint', 'HammersleySearch', 'HammersleySearchPlusMiddlePoint', 'MetaCauchyRecentering', 'MetaRecentering', 'MetaTuneRecentering', 'OScrHammersleySearch', 'QORandomSearch', 'QOScrHammersleySearch', 'RescaleScrHammersleySearch', 'ScrHammersleySearch', 'ScrHammersleySearchPlusMiddlePoint', 'TEAvgCauchyScrHammersleySearch', 'TEAvgScrHammersleySearch', 'TEAvgScrHammersleySearchPlusMiddlePoint', 'Zero']
-
-multimodal = ['NaiveTBPSA', 'MultiCMA', 'TripleCMA', 'MultiScaleCMA', 'PolyCMA', 'ManyCMA', 'QORandomSearch']
-
-noisy = ['OptimisticDiscreteOnePlusOne', 'OptimisticNoisyOnePlusOne', 'TBPSA', 'SPSA', 'NGOpt10']
-
-oneshot = ['AvgHammersleySearch', 'AvgHammersleySearchPlusMiddlePoint', 'AvgMetaRecenteringNoHull', 'CauchyScrHammersleySearch', 'HAvgMetaRecentering', 'HCHAvgCauchyScrHammersleySearch', 'HCHAvgLargeHammersleySearch', 'HCHAvgScrHammersleySearch', 'HCHAvgScrHammersleySearchPlusMiddlePoint', 'HammersleySearch', 'HammersleySearchPlusMiddlePoint', 'MetaCauchyRecentering', 'MetaRecentering', 'MetaTuneRecentering', 'OScrHammersleySearch', 'QORandomSearch', 'QOScrHammersleySearch', 'RescaleScrHammersleySearch', 'ScrHammersleySearch', 'ScrHammersleySearchPlusMiddlePoint', 'TEAvgCauchyScrHammersleySearch', 'TEAvgScrHammersleySearch', 'TEAvgScrHammersleySearchPlusMiddlePoint', 'Zero']
+oneshot = ['AvgHammersleySearch', 'AvgHammersleySearchPlusMiddlePoint', 'AvgMetaRecenteringNoHull', 'CauchyScrHammersleySearch', 'HammersleySearch', 'HammersleySearchPlusMiddlePoint', 'HullAvgMetaRecentering', 'HullAvgMetaTuneRecentering', 'HullCenterHullAvgCauchyScrHammersleySearch', 'HullCenterHullAvgLargeHammersleySearch', 'HullCenterHullAvgScrHammersleySearch', 'HullCenterHullAvgScrHammersleySearchPlusMiddlePoint', 'MetaCauchyRecentering', 'MetaRecentering', 'MetaTuneRecentering', 'OScrHammersleySearch', 'QORandomSearch', 'QOScrHammersleySearch', 'RescaleScrHammersleySearch', 'ScrHammersleySearch', 'ScrHammersleySearchPlusMiddlePoint', 'TEAvgCauchyScrHammersleySearch', 'TEAvgScrHammersleySearch', 'TEAvgScrHammersleySearchPlusMiddlePoint', 'Zero']
 
 parallel_basics = ['NGOpt10', 'CMandAS2', 'CMA', 'DE', 'MetaModel']
 

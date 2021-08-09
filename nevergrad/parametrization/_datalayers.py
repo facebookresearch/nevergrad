@@ -311,7 +311,7 @@ class AngleOp(Operation):
         return np.angle(x[0, ...] + 1j * x[1, ...])
 
     def _layered_set_value(self, value: tp.Any) -> None:
-        out = np.stack([fn(value) for fn in (np.cos, np.sin)], axis=0)
+        out = np.stack([fn(value) for fn in (np.cos, np.sin)], axis=0)  # type: ignore
         super()._layered_set_value(out)
 
 

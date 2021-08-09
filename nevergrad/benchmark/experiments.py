@@ -14,7 +14,7 @@ from nevergrad.functions import base as fbase
 from nevergrad.functions import ExperimentFunction
 from nevergrad.functions import ArtificialFunction
 from nevergrad.functions import FarOptimumFunction
-from nevergrad.functions import PBT
+from nevergrad.functions.pbt import PBT
 from nevergrad.functions.ml import MLTuning
 from nevergrad.functions import mlda as _mlda
 from nevergrad.functions.photonics import Photonics
@@ -31,14 +31,15 @@ from nevergrad.functions.games import game
 from nevergrad.functions.causaldiscovery import CausalDiscovery
 from nevergrad.functions import iohprofiler
 from nevergrad.functions import helpers
-from nevergrad.functions.cycling import cycling
 from .xpbase import Experiment as Experiment
 from .xpbase import create_seed_generator
 from .xpbase import registry as registry  # noqa
 from .optgroups import get_optimizers
 
-# register all frozen experiments
-from . import frozenexperiments  # noqa # pylint: disable=unused-import
+# register all experiments from other files
+# pylint: disable=unused-import
+from . import frozenexperiments  # noqa
+from . import gymexperiments  # noqa
 
 # pylint: disable=stop-iteration-return, too-many-nested-blocks, too-many-locals
 
@@ -78,7 +79,7 @@ class _Constraint:
 def keras_tuning(
     seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool = False
 ) -> tp.Iterator[Experiment]:
-    """Machine learning hyperparameter tuning experiment. Based on scikit models."""
+    """Machine learning hyperparameter tuning experiment. Based on Keras models."""
     seedg = create_seed_generator(seed)
     # Continuous case,
 
@@ -153,7 +154,7 @@ def seq_keras_tuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 # We register only the sequential counterparts for the moment.
 @registry.register
 def naive_seq_keras_tuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Sequential counterpart of mltuning."""
+    """Naive counterpart (no overfitting, see naivemltuning)of seq_keras_tuning."""
     return keras_tuning(seed, overfitter=True, seq=True)
 
 
@@ -172,13 +173,14 @@ def seq_mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 @registry.register
 def nano_seq_mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Sequential counterpart of mltuning."""
+    """Sequential counterpart of seq_mltuning with smaller budget."""
     return mltuning(seed, overfitter=False, seq=True, nano=True)
 
 
 @registry.register
 def nano_naive_seq_mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Sequential counterpart of mltuning with overfitting of valid loss, i.e. train/valid/valid instead of train/valid/test."""
+    """Sequential counterpart of mltuning with overfitting of valid loss, i.e. train/valid/valid instead of train/valid/test,
+    and with lower budget."""
     return mltuning(seed, overfitter=True, seq=True, nano=True)
 
 
@@ -234,7 +236,6 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # This problem is intended as a stable basis forever.
     # The list of optimizers should contain only the basic for comparison and "baselines".
     optims: tp.List[str] = ["NGOpt10"] + get_optimizers("baselines", seed=next(seedg))  # type: ignore
-
     index = 0
     for function in functions:
         for budget in [50, 1500, 25000]:
@@ -1838,18 +1839,4 @@ def unit_commitment(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                     xp = Experiment(func, algo, budget, num_workers=1, seed=next(seedg))
                     if not xp.is_incoherent:
                         yield xp
-
-@registry.register
-def team_cycling(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Experiment to optimise team pursuit track cycling problem.
-    """
-    seedg = create_seed_generator(seed)
-    optims = ["NGOpt10", "CMA", "DE"]
-    funcs = [cycling(30), cycling(31), cycling(61), cycling(22), cycling(23), cycling(45)]
-    for function in funcs:
-        for budget in [3000]:
-            for optim in optims:
-                for i in range(10):
-                    xp = Experiment(function, optim, budget=budget, num_workers=10, seed=next(seedg))
-                    if not xp.is_incoherent:
-                        yield xp
+>>>>>>> origin/master
