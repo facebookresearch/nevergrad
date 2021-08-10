@@ -826,7 +826,6 @@ def test_pymoo_pf() -> None:
     optimizer.minimize(_simple_multiobjective)
     pf = optimizer.pareto_front()
     fixed_points = [[0.25, 0.75], [0.75, 0.25]]
-    print(pf)
     for fixed_point in fixed_points:
         values = _simple_multiobjective(np.array(fixed_point))
         # check pareto front contains a candidate dominating fixed point
