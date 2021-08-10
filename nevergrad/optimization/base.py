@@ -80,6 +80,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
     recast = False  # algorithm which were not designed to work with the suggest/update pattern
     one_shot = False  # algorithm designed to suggest all budget points at once
     no_parallelization = False  # algorithm which is designed to run sequentially only
+    no_hypervolume = False  # algorithm which is designed to not use the hypervolume method for MOO
 
     def __init__(
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
@@ -342,7 +343,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 raise RuntimeError("MultiobjectiveReference can only be provided before the first tell.")
             if not isinstance(loss, np.ndarray):
                 raise RuntimeError("MultiobjectiveReference must only be used for multiobjective losses")
-            self._hypervolume_pareto = mobj.HypervolumePareto(upper_bounds=loss, seed=self._rng)
+            self._hypervolume_pareto = mobj.HypervolumePareto(
+                upper_bounds=loss, seed=self._rng, no_hypervolume=self.no_hypervolume
+            )
             if candidate.value is None:
                 return  # no value, so stopping processing there
             candidate = candidate.value
@@ -696,6 +699,7 @@ class ConfiguredOptimizer:
     recast = False  # algorithm which were not designed to work with the suggest/update pattern
     one_shot = False  # algorithm designed to suggest all budget points at once
     no_parallelization = False  # algorithm which is designed to run sequentially only
+    no_hypervolume = False  # algorithm which is designed to not use the hypervolume method for MOO
 
     def __init__(self, OptimizerClass: OptCls, config: tp.Dict[str, tp.Any], as_config: bool = False) -> None:
         self._OptimizerClass = OptimizerClass
