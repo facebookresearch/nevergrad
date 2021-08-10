@@ -10,7 +10,7 @@ competence_map = ['NGO', 'Shiwa']
 
 competitive = ['DiagonalCMA', 'CMA', 'NGO', 'Shiwa', 'MetaNGOpt10', 'NaiveTBPSA', 'PSO', 'DE', 'LhsDE', 'RandomSearch', 'OnePlusOne', 'TwoPointsDE']
 
-discrete = ['DiscreteOnePlusOne', 'PortfolioDiscreteOnePlusOne', 'DiscreteLenglerOnePlusOne', 'AdaptiveDiscreteOnePlusOne', 'AnisotropicAdaptiveDiscreteOnePlusOne', 'DiscreteBSOOnePlusOne', 'DiscreteDoerrOnePlusOne', 'OptimisticDiscreteOnePlusOne', 'DoubleFastGADiscreteOnePlusOne', 'MultiDiscrete', 'FastGADiscreteOnePlusOne']
+discrete = ['DiscreteOnePlusOne', 'PortfolioDiscreteOnePlusOne', 'DiscreteLenglerOnePlusOne', 'AdaptiveDiscreteOnePlusOne', 'AnisotropicAdaptiveDiscreteOnePlusOne', 'DiscreteBSOOnePlusOne', 'DiscreteDoerrOnePlusOne', 'OptimisticDiscreteOnePlusOne', 'DoubleFastGADiscreteOnePlusOne', 'RecombiningPortfolioDiscreteOnePlusOne', 'MultiDiscrete', 'FastGADiscreteOnePlusOne']
 
 emna_variants = ['IsoEMNA', 'NaiveIsoEMNA', 'AnisoEMNA', 'NaiveAnisoEMNA', 'CMA', 'NaiveTBPSA', 'NaiveIsoEMNATBPSA', 'IsoEMNATBPSA', 'NaiveAnisoEMNATBPSA', 'AnisoEMNATBPSA']
 
