@@ -669,21 +669,21 @@ def yabbob(
         optims = ["BO", "CMA", "PSO", "DE"]
 
     if bounded:
-        # optims = ["PCABO"]
-        optims = [
-            "BO",
-            "CMA",
-            "PSO",
-            "DE",
-            "BOBYQA",
-            "PCABO",
-            "NGOpt",
-            "BayesOptimBO",
-            "AX",
-            "RandomSearch",
-            "OnePlusOne",
-        ]
-
+        optims = ["MetaTuneRecentering"]
+        # optims = [
+        #             "BO",
+        #             "CMA",
+        #             "PSO",
+        #             "DE",
+        #             "BOBYQA",
+        #             "PCABO",
+        #             "NGOpt",
+        #             "BayesOptimBO",
+        #             "AX",
+        #             "RandomSearch",
+        #             "OnePlusOne",
+        #         ]
+        
     # List of objective functions.
     functions = [
         ArtificialFunction(
