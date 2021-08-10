@@ -80,7 +80,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
     recast = False  # algorithm which were not designed to work with the suggest/update pattern
     one_shot = False  # algorithm designed to suggest all budget points at once
     no_parallelization = False  # algorithm which is designed to run sequentially only
-    no_hypervolume = False  # algorithm which is designed to not use the hypervolume method for MOO
+    no_hypervolume = False  # algorithm which doesn't require the use the hypervolume method for MOO and therefore doesn't perform it
 
     def __init__(
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1

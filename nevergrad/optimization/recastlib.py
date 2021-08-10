@@ -270,6 +270,7 @@ class Pymoo(base.ConfiguredOptimizer):
 
     recast = True
     no_parallelization = True
+    no_hypervolume = True
 
     # pylint: disable=unused-argument
     def __init__(self, *, algorithm: str) -> None:
