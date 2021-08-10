@@ -822,6 +822,7 @@ def _simple_multiobjective(x):
 
 def test_pymoo_pf() -> None:
     optimizer = ng.optimizers.PymooNSGA2(parametrization=2, budget=300)
+    optimizer.parametrization.random_state.seed(12)
     optimizer.minimize(_simple_multiobjective)
     pf = optimizer.pareto_front()
     fixed_points = [[0.25, 0.75], [0.75, 0.25]]

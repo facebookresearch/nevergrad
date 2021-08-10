@@ -180,7 +180,8 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
         # else:
         algorithm = get_pymoo_algorithm(self.algorithm)
         problem = self._create_pymoo_problem(self, objective_function)
-        pymoooptimize.minimize(problem, algorithm)
+        seed = self._rng.randint(2 ** 30)
+        pymoooptimize.minimize(problem, algorithm, seed=seed)
         return None
 
     def _internal_ask_candidate(self) -> p.Parameter:
