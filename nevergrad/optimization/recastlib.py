@@ -12,6 +12,7 @@ from nevergrad.parametrization import parameter as p
 from . import base
 from .base import IntOrParameter
 from . import recaster
+from nevergrad.parametrization import transforms
 
 
 class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
@@ -35,9 +36,11 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
             "Powell",
             "BOBYQA",
             "AX",
+            "AX2"
         ], f"Unknown method '{method}'"
         self.method = method
         self.random_restart = random_restart
+        self._transform = transforms.ArctanBound(0, 1)
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         """Called whenever calling "tell" on a candidate that was not "asked".
@@ -68,7 +71,10 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         remaining = budget - self._num_ask
 
         def ax_obj(p):
-            data = [np.arctanh(p["x" + str(i)]) for i in range(self.dimension)]
+            if self.method == "AX":
+                data = [np.arctanh(p["x" + str(i)]) for i in range(self.dimension)]
+            elif self.method == "AX2":
+                data = [self._transform.backward(p["x" + str(i)]) for i in range(self.dimension)]
             data = np.asarray(data, dtype=np.float)
             return objective_function(data)
 
@@ -88,6 +94,16 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
                     parameters, evaluation_function=ax_obj, minimize=True, total_trials=budget
                 )
                 best_x = [np.arctanh(p["x" + str(i)]) for i in range(self.dimension)]
+                best_x = np.asarray(best_x, dtype=np.float)
+            elif self.method == "AX2":
+                parameters = [
+                    {"name": "x" + str(i), "type": "range", "bounds": [0.0, 1.0]}
+                    for i in range(self.dimension)
+                ]
+                best_parameters, best_values, experiment, model = axoptimize(
+                    parameters, evaluation_function=ax_obj, minimize=True, total_trials=budget
+                )
+                best_x = [self._transform.backward(p["x" + str(i)]) for i in range(self.dimension)]
                 best_x = np.asarray(best_x, dtype=np.float)
             else:
                 res = scipyoptimize.minimize(
@@ -118,9 +134,13 @@ class ScipyOptimizer(base.ConfiguredOptimizer):
         - SQP (or SLSQP): very powerful e.g. in continuous noisy optimization. It is based on
           approximating the objective function by quadratic models.
         - Powell
+        - BOBYQA
+        - AX/AX2: AX2 is the same of AX with tan/arctan transformation rather than arctanh/tanh
+        to handle the unbounded domain
     random_restart: bool
         whether to restart at a random point if the optimizer converged but the budget is not entirely
         spent yet (otherwise, restarts from best point)
+
 
     Note
     ----
@@ -136,6 +156,7 @@ class ScipyOptimizer(base.ConfiguredOptimizer):
 
 
 AX = ScipyOptimizer(method="AX").set_name("AX", register=True)
+AX2 = ScipyOptimizer(method="AX2").set_name("AX2", register=True)
 BOBYQA = ScipyOptimizer(method="BOBYQA").set_name("BOBYQA", register=True)
 NelderMead = ScipyOptimizer(method="Nelder-Mead").set_name("NelderMead", register=True)
 Powell = ScipyOptimizer(method="Powell").set_name("Powell", register=True)

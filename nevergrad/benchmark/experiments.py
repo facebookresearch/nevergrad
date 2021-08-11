@@ -645,7 +645,7 @@ def yabbob(
     ]
     names += ["sphere", "doublelinearslope", "stepdoublelinearslope"]
     names += ["cigar", "altcigar", "ellipsoid", "altellipsoid", "stepellipsoid", "discus", "bentcigar"]
-    names += ["deceptiveillcond", "deceptivemultimodal", "deceptivepath"]
+    names += ["deceptiveillcond", "deceptivepath"]
 
     # Deceptive path is related to the sharp ridge function; there is a long path to the optimum.
     # Deceptive illcond is related to the difference of powers function; the conditioning varies as we get closer to the optimum.
@@ -669,7 +669,7 @@ def yabbob(
         optims = ["BO", "CMA", "PSO", "DE"]
 
     if bounded:
-        optims = ["MetaTuneRecentering"]
+        optims = ["OnePlusOne"]
         # optims = [
         #             "BO",
         #             "CMA",
@@ -682,6 +682,7 @@ def yabbob(
         #             "AX",
         #             "RandomSearch",
         #             "OnePlusOne",
+        #             "MetaTuneRecentering"
         #         ]
         
     # List of objective functions.
