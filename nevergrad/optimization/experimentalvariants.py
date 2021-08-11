@@ -13,6 +13,7 @@ from .optimizerlib import (
     EMNA,
     NGOpt10,
     NGOpt12,
+    ParametrizedBayesOptim
 )
 from . import optimizerlib as opts
 from .optimizerlib import CMA, Chaining, PSO, BO
