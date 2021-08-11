@@ -1878,8 +1878,6 @@ class _BayesOptim(base.Optimizer):
 
     def _internal_ask_candidate(self) -> p.Parameter:
         if not self._buffer:
-            self._newX = []
-            self._losses = []
             candidate = self._alg.ask()
             if not isinstance(candidate, list):
                 candidate = candidate.tolist()
@@ -1901,6 +1899,8 @@ class _BayesOptim(base.Optimizer):
                 data = candidate.get_standardized_data(reference=self.parametrization)
                 # Tell not asked:
                 self._alg.tell(self._transform.forward(data), loss)
+            self._newX = []
+            self._losses = []
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         raise errors.TellNotAskedNotSupportedError
@@ -1957,14 +1957,6 @@ class ParametrizedBayesOptim(base.ConfiguredOptimizer):
 
 PCABO = ParametrizedBayesOptim(pca=True).set_name("PCABO", register=True)
 BayesOptimBO = ParametrizedBayesOptim().set_name("BayesOptimBO", register=True)
-
-# Testing the influence of n_components on the performance of PCABO
-PCABO80 = ParametrizedBayesOptim(pca=True, n_components=0.80).set_name("PCABO80", register=True)
-
-# Testing the influence of the DoE size on the performance of PCABO
-PCABO95DoE20 = ParametrizedBayesOptim(pca=True, n_components=0.95, prop_doe_factor=0.20).set_name(
-    "PCABO95DoE20", register=True
-)
 
 
 class _Chain(base.Optimizer):
