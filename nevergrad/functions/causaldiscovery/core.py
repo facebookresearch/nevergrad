@@ -90,7 +90,7 @@ class CausalDiscovery(ExperimentFunction):
         return float(pr_score - shd_score)  # Higher better
 
     def add_missing_nodes(self, graph):
-        for n in set(self._nodes_list)-set(graph.nodes()):
+        for n in set(self._nodes_list) - set(graph.nodes()):
             graph.add_node(n)
         return graph
 
