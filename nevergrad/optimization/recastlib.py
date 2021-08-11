@@ -120,6 +120,9 @@ RSLSQP = RSQP  # Just so that people who are familiar with SLSQP naming are not 
 
 
 class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
+
+    no_hypervolume = True
+
     def __init__(
         self,
         parametrization: IntOrParameter,

@@ -80,7 +80,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
     recast = False  # algorithm which were not designed to work with the suggest/update pattern
     one_shot = False  # algorithm designed to suggest all budget points at once
     no_parallelization = False  # algorithm which is designed to run sequentially only
-    no_hypervolume = False  # algorithm which doesn't require the use the hypervolume method for MOO and therefore doesn't perform it
+    # Most optimizers are designed for single objective and use a float loss.
+    # To use these in a multi-objective optimization, we provide the negative of
+    # the hypervolume of the pareto front as the loss.
+    no_hypervolume = False  # algorithm where this is not required
 
     def __init__(
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
@@ -376,7 +379,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
 
     def _preprocess_multiobjective(self, candidate: p.Parameter) -> tp.FloatLoss:
         if self._hypervolume_pareto is None:
-            self._hypervolume_pareto = mobj.HypervolumePareto(auto_bound=self._MULTIOBJECTIVE_AUTO_BOUND)
+            self._hypervolume_pareto = mobj.HypervolumePareto(
+                auto_bound=self._MULTIOBJECTIVE_AUTO_BOUND, no_hypervolume=self.no_hypervolume
+            )
         return self._hypervolume_pareto.add(candidate)
 
     def _update_archive_and_bests(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
@@ -699,7 +704,10 @@ class ConfiguredOptimizer:
     recast = False  # algorithm which were not designed to work with the suggest/update pattern
     one_shot = False  # algorithm designed to suggest all budget points at once
     no_parallelization = False  # algorithm which is designed to run sequentially only
-    no_hypervolume = False  # algorithm which is designed to not use the hypervolume method for MOO
+    # Most optimizers are designed for single objective and use a float loss.
+    # To use these in a multi-objective optimization, we provide the negative of
+    # the hypervolume of the pareto front as the loss.
+    no_hypervolume = False  # algorithm where this is not required
 
     def __init__(self, OptimizerClass: OptCls, config: tp.Dict[str, tp.Any], as_config: bool = False) -> None:
         self._OptimizerClass = OptimizerClass
