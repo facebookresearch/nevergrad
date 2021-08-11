@@ -669,7 +669,7 @@ def yabbob(
         optims = ["BO", "CMA", "PSO", "DE"]
 
     if bounded:
-        optims = ["OnePlusOne"]
+        optims = ["BOBYQA"]
         # optims = [
         #             "BO",
         #             "CMA",
