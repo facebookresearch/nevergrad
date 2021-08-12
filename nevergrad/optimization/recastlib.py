@@ -120,9 +120,6 @@ RSLSQP = RSQP  # Just so that people who are familiar with SLSQP naming are not 
 
 
 class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
-
-    no_hypervolume = True
-
     def __init__(
         self,
         parametrization: IntOrParameter,
@@ -134,6 +131,7 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         # configuration
         self.algorithm = algorithm
+        self._no_hypervolume = True
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         """Called whenever calling "tell" on a candidate that was not "asked".
@@ -273,7 +271,6 @@ class Pymoo(base.ConfiguredOptimizer):
 
     recast = True
     no_parallelization = True
-    no_hypervolume = True
 
     # pylint: disable=unused-argument
     def __init__(self, *, algorithm: str) -> None:
