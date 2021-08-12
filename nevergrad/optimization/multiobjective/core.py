@@ -93,6 +93,7 @@ class HypervolumePareto:
         """Given parameters and the multiobjective loss, this computes the hypervolume
         and update the state of the function with new points if it belongs to the pareto front
         """
+        # pylint: disable=too-many-return-statements, too-many-branches
         if not isinstance(parameter, p.Parameter):
             raise TypeError(
                 f"{self.__class__.__name__}.add should receive a ng.p.Parameter, but got: {parameter}."
@@ -116,7 +117,7 @@ class HypervolumePareto:
                 self._best_volume = loss
             if self._best_volume < 0:
                 self.pf._add_to_pareto(parameter)
-            return -loss if not self._no_hypervolume else 0.0
+            return -loss
         if self._no_hypervolume:
             self.pf._add_to_pareto(parameter)
             return 0.0
@@ -140,7 +141,7 @@ class HypervolumePareto:
                 if (stored_losses <= losses).all():
                     distance_to_pareto = min(distance_to_pareto, min(losses - stored_losses))
             assert distance_to_pareto >= 0
-            return -new_volume + distance_to_pareto
+            return 0.0 if self._no_hypervolume else -new_volume + distance_to_pareto
 
     # pylint: disable=too-many-branches
     def pareto_front(
