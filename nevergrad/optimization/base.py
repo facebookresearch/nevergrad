@@ -136,7 +136,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # Most optimizers are designed for single objective and use a float loss.
         # To use these in a multi-objective optimization, we provide the negative of
         # the hypervolume of the pareto front as the loss.
-        self._no_hypervolume = False  # algorithm where this is not required
+        # If not needed, an optimizer can set this to True.
+        self._no_hypervolume = False
 
     @property
     def _rng(self) -> np.random.RandomState:
