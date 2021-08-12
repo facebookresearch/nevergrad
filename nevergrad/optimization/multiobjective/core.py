@@ -52,6 +52,11 @@ class HypervolumePareto:
         )
         if upper_bounds is None:
             self._auto_bound = auto_bound
+        # If we are yet to set the upper bounds, or yet to have an add since doing so, _best_volume is -inf.
+        # If we have set the upper bounds and all tells have been worse than them, then _best_volume is a
+        # negative number indicating the least amount we have ever been worse.
+        # If we have ever beaten the upper bounds, the _best_volume is nonnegative. In particular, it is
+        # the hypervolume of the current PF if we are using hypervolume, otherwise 0.
         self._best_volume = -float("Inf")
         self._hypervolume: tp.Optional[HypervolumeIndicator] = None
         self._pareto_needs_filtering = False
