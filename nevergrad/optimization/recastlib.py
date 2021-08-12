@@ -131,6 +131,7 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         # configuration
         self.algorithm = algorithm
+        self._no_hypervolume = True
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         """Called whenever calling "tell" on a candidate that was not "asked".
