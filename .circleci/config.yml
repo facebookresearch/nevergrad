@@ -263,8 +263,9 @@ jobs:
 
 
   pypi-deploy:
-    docker:
-      - image: python:3.6
+
+    executor: ubuntu-python37
+
     steps:
 
       - ubuntu_restore_all
@@ -284,17 +285,17 @@ jobs:
           command: |
             python setup.py verify_circleci_version
 
-      - run:
-          name: upload to pypi
-          command: |
-            echo "This is on $CIRCLE_REPOSITORY_URL."
-            if [[ "$CIRCLE_REPOSITORY_URL" == *":facebookresearch/"* ]]; then
-              echo "Deploying"
-              . venv/bin/activate
-              du -h nevergrad-build/dist/*
-              twine check nevergrad-build/dist/nevergrad-*
-              twine upload nevergrad-build/dist/nevergrad-* --verbose
-            fi
+            # - run:
+            #     name: upload to pypi
+            #     command: |
+            #       echo "This is on $CIRCLE_REPOSITORY_URL."
+            #       if [[ "$CIRCLE_REPOSITORY_URL" == *":facebookresearch/"* ]]; then
+            #         echo "Deploying"
+            #         . venv/bin/activate
+            #         du -h nevergrad-build/dist/*
+            #         twine check nevergrad-build/dist/nevergrad-*
+            #         twine upload nevergrad-build/dist/nevergrad-* --verbose
+            #       fi
 
 
 workflows:
@@ -331,10 +332,10 @@ workflows:
       - pypi-deploy:
           requires:
             - install
-            - static
-            - pytests
+              #   - static
+              #   - pytests
           filters:
             tags:
               only: /(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/
-            branches:
-              ignore: /.*/
+                #  branches:
+                #    ignore: /.*/
