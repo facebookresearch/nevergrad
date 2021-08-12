@@ -107,20 +107,15 @@ class HypervolumePareto:
                 self._best_volume = loss
             if self._best_volume < 0:
                 self._add_to_pareto(parameter)
-            if self._no_hypervolume:
-                return 0.0
-            else:
-                return -loss
+            return 0.0 if self._no_hypervolume else -loss
         # We compute the hypervolume
         new_volume = self._hypervolume.compute([pa.losses for pa in self._pareto] + [losses])
         if new_volume > self._best_volume:
             # This point is good! Let us give him a great mono-fitness value.
             self._best_volume = new_volume
             self._add_to_pareto(parameter)
-            if self._no_hypervolume:
-                return 0.0
-            else:
-                return -new_volume
+            return 0.0 if self._no_hypervolume else -new_volume
+
         else:
             # This point is not on the front
             # First we prune.
@@ -132,10 +127,7 @@ class HypervolumePareto:
                 if (stored_losses <= losses).all():
                     distance_to_pareto = min(distance_to_pareto, min(losses - stored_losses))
             assert distance_to_pareto >= 0
-            if self._no_hypervolume:
-                return 0.0
-            else:
-                return -new_volume + distance_to_pareto
+            return 0.0 if self._no_hypervolume else -new_volume + distance_to_pareto
 
     def _filter_pareto_front(self) -> None:
         """Filters the Pareto front"""
