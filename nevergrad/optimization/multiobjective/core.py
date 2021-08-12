@@ -220,7 +220,7 @@ class ParetoFront:
         scores: tp.List[float] = []
         for tentative in tentatives:
             if subset == "hypervolume":
-                scores += [-hypervolume.compute([pa.losses for pa in tentative])]
+                scores += [-hypervolume.compute([pa.losses for pa in tentative])]  # type: ignore
             else:
                 score: float = 0.0
                 for v in self._pareto:
