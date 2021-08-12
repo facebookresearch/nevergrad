@@ -80,10 +80,6 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
     recast = False  # algorithm which were not designed to work with the suggest/update pattern
     one_shot = False  # algorithm designed to suggest all budget points at once
     no_parallelization = False  # algorithm which is designed to run sequentially only
-    # Most optimizers are designed for single objective and use a float loss.
-    # To use these in a multi-objective optimization, we provide the negative of
-    # the hypervolume of the pareto front as the loss.
-    no_hypervolume = False  # algorithm where this is not required
 
     def __init__(
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
@@ -137,6 +133,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # to make optimize function stoppable halway through
         self._running_jobs: tp.List[tp.Tuple[p.Parameter, tp.JobLike[tp.Loss]]] = []
         self._finished_jobs: tp.Deque[tp.Tuple[p.Parameter, tp.JobLike[tp.Loss]]] = deque()
+        # Most optimizers are designed for single objective and use a float loss.
+        # To use these in a multi-objective optimization, we provide the negative of
+        # the hypervolume of the pareto front as the loss.
+        self._no_hypervolume = False  # algorithm where this is not required
 
     @property
     def _rng(self) -> np.random.RandomState:
@@ -347,7 +347,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             if not isinstance(loss, np.ndarray):
                 raise RuntimeError("MultiobjectiveReference must only be used for multiobjective losses")
             self._hypervolume_pareto = mobj.HypervolumePareto(
-                upper_bounds=loss, seed=self._rng, no_hypervolume=self.no_hypervolume
+                upper_bounds=loss, seed=self._rng, no_hypervolume=self._no_hypervolume
             )
             if candidate.value is None:
                 return  # no value, so stopping processing there
@@ -380,7 +380,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
     def _preprocess_multiobjective(self, candidate: p.Parameter) -> tp.FloatLoss:
         if self._hypervolume_pareto is None:
             self._hypervolume_pareto = mobj.HypervolumePareto(
-                auto_bound=self._MULTIOBJECTIVE_AUTO_BOUND, no_hypervolume=self.no_hypervolume
+                auto_bound=self._MULTIOBJECTIVE_AUTO_BOUND, no_hypervolume=self._no_hypervolume
             )
         return self._hypervolume_pareto.add(candidate)
 
@@ -704,10 +704,6 @@ class ConfiguredOptimizer:
     recast = False  # algorithm which were not designed to work with the suggest/update pattern
     one_shot = False  # algorithm designed to suggest all budget points at once
     no_parallelization = False  # algorithm which is designed to run sequentially only
-    # Most optimizers are designed for single objective and use a float loss.
-    # To use these in a multi-objective optimization, we provide the negative of
-    # the hypervolume of the pareto front as the loss.
-    no_hypervolume = False  # algorithm where this is not required
 
     def __init__(self, OptimizerClass: OptCls, config: tp.Dict[str, tp.Any], as_config: bool = False) -> None:
         self._OptimizerClass = OptimizerClass
