@@ -27,15 +27,26 @@ class HypervolumePareto:
         loss will be 0 (except if they are uniformly worse than the previous points).
     seed: optional int or RandomState
         seed to use for selecting random subsamples of the pareto
+    no_hypervolume: bool
+        Most optimizers are designed for single objective and use a float loss.
+        To use these in a multi-objective optimization, we provide the negative of
+        the hypervolume of the pareto front as the loss.
+        If not needed, an optimizer can set this to True.
 
     Notes
     -----
+    When no_hypervolume is false:
     - This function is not stationary!
     - The minimum value obtained for this objective function is -h,
       where h is the hypervolume of the Pareto front obtained, given upper_bounds as a reference point.
     - The callable keeps track of the pareto_front (see attribute paretor_front) and is therefor stateful.
       For this reason it cannot be distributed. A user can however call the multiobjective_function
       remotely, and aggregate locally. This is what happens in the "minimize" method of optimizers.
+    when no_hypervolume is true:
+    - Hypervolume isn't used at all!
+    - We simply add every point to the pareto front and state that the pareto front needs to be filtered.
+    - The Pareto front is lazily kept up to date because every time you call pareto_front()
+      an algorithm is performed that filters the pareto front into what it should be.
     """
 
     def __init__(
