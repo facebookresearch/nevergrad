@@ -263,8 +263,9 @@ jobs:
 
 
   pypi-deploy:
-    docker:
-      - image: python:3.6
+
+    executor: ubuntu-python37
+
     steps:
 
       - ubuntu_restore_all
