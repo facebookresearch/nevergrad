@@ -113,7 +113,7 @@ class HypervolumePareto:
             if (self._upper_bounds > -float("inf")).all() and (losses > self._upper_bounds).all():
                 return float("inf")  # Avoid uniformly worst points
             self._upper_bounds = np.maximum(self._upper_bounds, losses)
-            self._pf._add_to_pareto(parameter)
+            self._pf.add_to_pareto(parameter)
             return 0.0
         # get rid of points over the upper bounds
         if (losses - self._upper_bounds > 0).any():
@@ -121,10 +121,10 @@ class HypervolumePareto:
             if loss > self._best_volume:
                 self._best_volume = loss
             if self._best_volume < 0:
-                self._pf._add_to_pareto(parameter)
+                self._pf.add_to_pareto(parameter)
             return -loss
         if self._no_hypervolume:
-            self._pf._add_to_pareto(parameter)
+            self._pf.add_to_pareto(parameter)
             return 0.0
         if self._hypervolume is None:
             self._hypervolume = HypervolumeIndicator(self._upper_bounds)
@@ -134,7 +134,7 @@ class HypervolumePareto:
         if new_volume > self._best_volume:
             # This point is good! Let us give him a great mono-fitness value.
             self._best_volume = new_volume
-            self._pf._add_to_pareto(parameter)
+            self._pf.add_to_pareto(parameter)
             return -new_volume
         else:
             # This point is not on the front
@@ -188,7 +188,7 @@ class ParetoFront:
         self._rng = seed if isinstance(seed, np.random.RandomState) else np.random.RandomState(seed)
         self._hypervolume: tp.Optional[HypervolumeIndicator] = None
 
-    def _add_to_pareto(self, parameter: p.Parameter) -> None:
+    def add_to_pareto(self, parameter: p.Parameter) -> None:
         self._pareto.append(parameter)
         self._pareto_needs_filtering = True
 
@@ -207,6 +207,7 @@ class ParetoFront:
         self._pareto_needs_filtering = False
 
     def get_raw(self) -> tp.List[p.Parameter]:
+        """Retrieve current values, which may not be a Pareto front, as they have not been filtered."""
         return self._pareto
 
     # pylint: disable=too-many-branches
