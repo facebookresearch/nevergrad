@@ -72,7 +72,7 @@ class HypervolumePareto:
         self._hypervolume: tp.Optional[HypervolumeIndicator] = None
         self._pareto_needs_filtering = False
         self._no_hypervolume = no_hypervolume
-        self.pf = ParetoFront(hvp=self, seed=seed, no_hypervolume=no_hypervolume)
+        self._pf = ParetoFront(seed=seed, no_hypervolume=no_hypervolume)
 
     @property
     def num_objectives(self) -> int:
@@ -108,7 +108,7 @@ class HypervolumePareto:
             if (self._upper_bounds > -float("inf")).all() and (losses > self._upper_bounds).all():
                 return float("inf")  # Avoid uniformly worst points
             self._upper_bounds = np.maximum(self._upper_bounds, losses)
-            self.pf._add_to_pareto(parameter)
+            self._pf._add_to_pareto(parameter)
             return 0.0
         # get rid of points over the upper bounds
         if (losses - self._upper_bounds > 0).any():
@@ -116,25 +116,26 @@ class HypervolumePareto:
             if loss > self._best_volume:
                 self._best_volume = loss
             if self._best_volume < 0:
-                self.pf._add_to_pareto(parameter)
+                self._pf._add_to_pareto(parameter)
             return -loss
         if self._no_hypervolume:
-            self.pf._add_to_pareto(parameter)
+            self._pf._add_to_pareto(parameter)
             return 0.0
         if self._hypervolume is None:
             self._hypervolume = HypervolumeIndicator(self._upper_bounds)
+            self._pf._hypervolume = self._hypervolume
         # We compute the hypervolume
-        new_volume = self._hypervolume.compute([pa.losses for pa in self.pf._pareto] + [losses])
+        new_volume = self._hypervolume.compute([pa.losses for pa in self._pf.get_raw()] + [losses])
         if new_volume > self._best_volume:
             # This point is good! Let us give him a great mono-fitness value.
             self._best_volume = new_volume
-            self.pf._add_to_pareto(parameter)
+            self._pf._add_to_pareto(parameter)
             return -new_volume
         else:
             # This point is not on the front
             # First we prune.
             distance_to_pareto = float("Inf")
-            for param in self.pf.pareto_front():
+            for param in self._pf.get_front():
                 stored_losses = param.losses
                 # TODO the following is probably not good at all:
                 # -> +inf if no point is strictly better (but lower if it is)
@@ -166,14 +167,13 @@ class HypervolumePareto:
         list
             the list of Parameter of the pareto front
         """
-        return self.pf.pareto_front(size, subset, subset_tentatives)
+        return self._pf.get_front(size, subset, subset_tentatives)
 
 
 class ParetoFront:
     def __init__(
         self,
         *,
-        hvp: HypervolumePareto,
         seed: tp.Optional[tp.Union[int, np.random.RandomState]] = None,
         no_hypervolume: bool = False,
     ) -> None:
@@ -181,7 +181,7 @@ class ParetoFront:
         self._pareto_needs_filtering = False
         self._no_hypervolume = no_hypervolume
         self._rng = seed if isinstance(seed, np.random.RandomState) else np.random.RandomState(seed)
-        self._hvp = hvp
+        self._hypervolume = None
 
     def _add_to_pareto(self, parameter: p.Parameter) -> None:
         self._pareto.append(parameter)
@@ -201,8 +201,11 @@ class ParetoFront:
         self._pareto = new_pareto
         self._pareto_needs_filtering = False
 
+    def get_raw(self) -> tp.List[p.Parameter]:
+        return self._pareto
+
     # pylint: disable=too-many-branches
-    def pareto_front(
+    def get_front(
         self, size: tp.Optional[int] = None, subset: str = "random", subset_tentatives: int = 12
     ) -> tp.List[p.Parameter]:
         """Pareto front, as a list of Parameter. The losses can be accessed through
@@ -231,9 +234,9 @@ class ParetoFront:
         if subset == "random":
             return self._rng.choice(self._pareto, size).tolist()  # type: ignore
         tentatives = [self._rng.choice(self._pareto, size).tolist() for _ in range(subset_tentatives)]  # type: ignore
-        if self._hvp._hypervolume is None and subset == "hypervolume":
+        if self._hypervolume is None and subset == "hypervolume":
             raise RuntimeError("Hypervolume subsetting not supported as hypervolume not in use")
-        hypervolume = self._hvp._hypervolume
+        hypervolume = self._hypervolume
         scores: tp.List[float] = []
         for tentative in tentatives:
             if subset == "hypervolume":
