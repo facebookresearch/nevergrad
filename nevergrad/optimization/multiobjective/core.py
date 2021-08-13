@@ -90,8 +90,13 @@ class HypervolumePareto:
 
     # pylint: disable=too-many-branches
     def add(self, parameter: p.Parameter) -> float:
-        """Given parameters and the multiobjective loss, this computes the hypervolume
-        and update the state of the function with new points if it belongs to the pareto front
+        """
+        when _no_hypervolume = False
+            Given parameters and the multiobjective loss, this computes the hypervolume
+            and update the state of the function with new points if it belongs to the pareto front.
+        when _no_hypervolume = True
+            Add every point to pareto front. Don't compute hypervolume. Return 0.0 since loss
+            not looked at in this context.
         """
         # pylint: disable=too-many-return-statements, too-many-branches
         if not isinstance(parameter, p.Parameter):
