@@ -181,7 +181,7 @@ class ParetoFront:
         self._pareto_needs_filtering = False
         self._no_hypervolume = no_hypervolume
         self._rng = seed if isinstance(seed, np.random.RandomState) else np.random.RandomState(seed)
-        self._hypervolume = None
+        self._hypervolume: tp.Optional[HypervolumeIndicator] = None
 
     def _add_to_pareto(self, parameter: p.Parameter) -> None:
         self._pareto.append(parameter)
