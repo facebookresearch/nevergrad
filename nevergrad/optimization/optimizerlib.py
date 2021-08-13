@@ -1906,7 +1906,7 @@ class _BayesOptim(base.Optimizer):
         raise errors.TellNotAskedNotSupportedError
 
 
-class ParametrizedBayesOptim(base.ConfiguredOptimizer):
+class BayesOptim(base.ConfiguredOptimizer):
     """
     Algorithms from bayes-optim package.
 
@@ -1955,8 +1955,8 @@ class ParametrizedBayesOptim(base.ConfiguredOptimizer):
         self.prop_doe_factor = prop_doe_factor
 
 
-PCABO = ParametrizedBayesOptim(pca=True).set_name("PCABO", register=True)
-BayesOptimBO = ParametrizedBayesOptim().set_name("BayesOptimBO", register=True)
+PCABO = BayesOptim(pca=True).set_name("PCABO", register=True)
+BayesOptimBO = BayesOptim().set_name("BayesOptimBO", register=True)
 
 
 class _Chain(base.Optimizer):
