@@ -115,7 +115,7 @@ def get_parametrization(config_space: cs.ConfigurationSpace):
                 params[param.name] = ng.p.Choice(
                     [
                         ng.p.Tuple(
-                            ng.p.Constant(param_choice),
+                            param_choice,
                             ng.p.Dict(
                                 **{
                                     hp.name: get_instrumention(hp)
