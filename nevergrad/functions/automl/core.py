@@ -34,8 +34,7 @@ class AutoSKlearnBenchmark(base.ExperimentFunction):
         self.memory_limit = memory_limit
         self.time_budget_per_run = time_budget_per_run
         self.error_penalty = error_penalty
-        self.overfitter = overfitter
-        self.evaluate_on_test = False
+        self.evaluate_on_test = not overfitter
         self.eval_func = _eval_function
         openml_task = openml.tasks.get_task(openml_task_id)
         self.dataset_name = openml_task.get_dataset().name
