@@ -52,13 +52,6 @@ class AutoSKlearnBenchmark(base.ExperimentFunction):
         self.executor.update_parameters(timeout_min=time_budget_per_run)
 
         self.add_descriptors(
-            openml_task_id=openml_task_id,
-            cv=cv,
-            scoring_func=scoring_func,
-            memory_limit=memory_limit,
-            time_budget_per_run=time_budget_per_run,
-            error_penalty=error_penalty,
-            overfitter=overfitter,
             dataset_name=self.dataset_name,
         )
         self._descriptors.pop("random_state", None)  # remove it from automatically added descriptors
