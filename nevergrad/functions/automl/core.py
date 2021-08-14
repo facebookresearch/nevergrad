@@ -78,5 +78,4 @@ class AutoSKlearnBenchmark(base.ExperimentFunction):
         print(get_configuration(config.kwargs, self.config_space))
 
     def evaluation_function(self, *args) -> float:
-        self.evaluate_on_test = not self.overfitter
         return super().evaluation_function(*args)
