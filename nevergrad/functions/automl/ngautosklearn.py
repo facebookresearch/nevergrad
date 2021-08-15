@@ -25,12 +25,6 @@ def _eval_function(
     config: cs.Configuration, X, y, scoring_func: str, cv: int, random_state: int, test_data: tuple
 ):
     try:
-        # Naive skip SVM training for big datasets because it can not be interrupt by pynisher.
-        if (config["classifier:__choice__"] in ["liblinear_svc", "libsvm_svc"]) and (
-            X.shape[0] > 1500 or X.shape[1] > 1000
-        ):
-            return 1
-
         classifier = SimpleClassificationPipeline(config=config, random_state=random_state)
         scorer = get_scorer(scoring_func)
         with warnings.catch_warnings():
@@ -87,7 +81,7 @@ def get_instrumention(param):
         else:
             return ng.p.Log(lower=param.lower, upper=param.upper, init=param.default_value)
     elif isinstance(param, cs.hyperparameters.Constant):
-        return ng.p.Constant(param.value)
+        return param.value
     raise Exception(r"{param} type not known")
 
 
