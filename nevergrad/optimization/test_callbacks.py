@@ -141,7 +141,6 @@ def test_optimization_logger(caplog) -> None:
     )
     with caplog.at_level(logging.INFO):
         optimizer.minimize(_func, verbosity=2)
-    print("num objectives: ", optimizer.num_objectives)
     assert (
         "After 0, recommendation is Instrumentation(Tuple(None,2.0),Dict(array=Array{(3,2)},blublu=blublu,multiobjective=False))"
         in caplog.text
