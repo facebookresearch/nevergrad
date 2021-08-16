@@ -111,6 +111,7 @@ class _DE(base.Optimizer):
         self._uid_queue = base.utils.UidQueue()
         self.population: tp.Dict[str, p.Parameter] = {}
         self.sampler: tp.Optional[base.Optimizer] = None
+        self._no_hypervolume = True
 
     def recommend(self) -> p.Parameter:  # This is NOT the naive version. We deal with noise.
         if self._config.recommendation != "noisy":
