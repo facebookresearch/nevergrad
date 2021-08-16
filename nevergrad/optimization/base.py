@@ -368,7 +368,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         if not candidate.satisfies_constraints() and self.budget is not None:
             penalty = self._constraints_manager.penalty(candidate, self.num_ask, self.budget)
             loss = loss + penalty
-        if isinstance(loss, float) and (self.num_objectives == 1):
+        if isinstance(loss, float) and (
+            self.num_objectives == 1 or self.num_objectives > 1 and not self._no_hypervolume
+        ):
             self._update_archive_and_bests(candidate, loss)
         if candidate.uid in self._asked:
             self._internal_tell_candidate(candidate, loss)
