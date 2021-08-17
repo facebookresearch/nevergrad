@@ -330,7 +330,7 @@ class GymMulti(ExperimentFunction):
         "CartPole-v0",
         "CartPole-v1",
         "Acrobot-v1",
-        "FrozenLake-v0",
+        # "FrozenLake-v0",
         "FrozenLake8x8-v0",
         "NChain-v0",
         "Roulette-v0",
