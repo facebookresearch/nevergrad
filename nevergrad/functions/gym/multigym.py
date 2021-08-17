@@ -29,7 +29,7 @@ GUARANTEED_GYM_ENV_NAMES = [
     "MountainCar-v0",
     "Acrobot-v1",
     "Blackjack-v0",
-    "FrozenLake-v0",
+    # "FrozenLake-v0",  # deprecated
     "FrozenLake8x8-v0",
     "CliffWalking-v0",
     "NChain-v0",
