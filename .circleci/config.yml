@@ -22,7 +22,7 @@ commands:
   ubuntu_restore_all:
     description: "Restores virtual env with full install from cache, and update dependencies if need be."
     steps:
-     - checkout
+      - checkout
 
       - restore_cache:
           name: "[all] Restore cache"
