@@ -40,9 +40,11 @@ class HypervolumePareto:
 
     def __init__(
         self,
+        *,
         upper_bounds: tp.Optional[tp.ArrayLike] = None,
         auto_bound: int = AUTO_BOUND,
         seed: tp.Optional[tp.Union[int, np.random.RandomState]] = None,
+        no_hypervolume: bool = False,
     ) -> None:
         self._auto_bound = 0
         self._upper_bounds = (
@@ -55,6 +57,7 @@ class HypervolumePareto:
         self._best_volume = -float("Inf")
         self._hypervolume: tp.Optional[HypervolumeIndicator] = None
         self._pareto_needs_filtering = False
+        self._no_hypervolume = no_hypervolume
 
     @property
     def num_objectives(self) -> int:
@@ -78,6 +81,7 @@ class HypervolumePareto:
         """Given parameters and the multiobjective loss, this computes the hypervolume
         and update the state of the function with new points if it belongs to the pareto front
         """
+        # pylint: disable=too-many-return-statements, too-many-branches
         if not isinstance(parameter, p.Parameter):
             raise TypeError(
                 f"{self.__class__.__name__}.add should receive a ng.p.Parameter, but got: {parameter}."
@@ -103,14 +107,15 @@ class HypervolumePareto:
                 self._best_volume = loss
             if self._best_volume < 0:
                 self._add_to_pareto(parameter)
-            return -loss
+            return 0.0 if self._no_hypervolume else -loss
         # We compute the hypervolume
         new_volume = self._hypervolume.compute([pa.losses for pa in self._pareto] + [losses])
         if new_volume > self._best_volume:
             # This point is good! Let us give him a great mono-fitness value.
             self._best_volume = new_volume
             self._add_to_pareto(parameter)
-            return -new_volume
+            return 0.0 if self._no_hypervolume else -new_volume
+
         else:
             # This point is not on the front
             # First we prune.
@@ -122,7 +127,7 @@ class HypervolumePareto:
                 if (stored_losses <= losses).all():
                     distance_to_pareto = min(distance_to_pareto, min(losses - stored_losses))
             assert distance_to_pareto >= 0
-            return -new_volume + distance_to_pareto
+            return 0.0 if self._no_hypervolume else -new_volume + distance_to_pareto
 
     def _filter_pareto_front(self) -> None:
         """Filters the Pareto front"""
