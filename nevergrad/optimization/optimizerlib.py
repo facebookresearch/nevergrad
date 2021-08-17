@@ -1823,9 +1823,9 @@ class _BayesOptim(base.Optimizer):
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
         *,
-        config: tp.Optional["ParametrizedBayesOptim"] = None,
+        config: tp.Optional["BayesOptim"] = None,
     ) -> None:
-        self._config = ParametrizedBayesOptim() if config is None else config
+        self._config = BayesOptim() if config is None else config
         cfg = self._config
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._transform = transforms.ArctanBound(0, 1)
