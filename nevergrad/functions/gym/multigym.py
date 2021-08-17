@@ -29,7 +29,7 @@ GUARANTEED_GYM_ENV_NAMES = [
     "MountainCar-v0",
     "Acrobot-v1",
     "Blackjack-v0",
-    # "FrozenLake-v0",  # deprecated
+    # "FrozenLake-v0",   # deprecated
     "FrozenLake8x8-v0",
     "CliffWalking-v0",
     "NChain-v0",
@@ -662,7 +662,7 @@ class GymMulti(ExperimentFunction):
         if "structured" not in self.control:
             # If not structured then we split into two matrices.
             first_matrix = x[: self.first_size].reshape(self.first_layer_shape) / np.sqrt(len(o))
-            second_matrix = x[self.first_size: (self.first_size + self.second_size)].reshape(
+            second_matrix = x[self.first_size : (self.first_size + self.second_size)].reshape(
                 self.second_layer_shape
             ) / np.sqrt(self.num_neurons)
         else:
@@ -686,12 +686,12 @@ class GymMulti(ExperimentFunction):
             for _ in range(self.num_internal_layers):
                 output = np.tanh(output)
                 output = np.matmul(
-                    output, x[current_index: current_index + internal_layer_size].reshape(s)
+                    output, x[current_index : current_index + internal_layer_size].reshape(s)
                 ) / np.sqrt(self.num_neurons)
                 current_index += internal_layer_size
             assert current_index == len(x)
         output = np.matmul(np.tanh(output + first_matrix[0]), second_matrix)
-        return output[self.memory_len:].reshape(self.output_shape), output[: self.memory_len]
+        return output[self.memory_len :].reshape(self.output_shape), output[: self.memory_len]
 
     def gym_multi_function(
         self, x: np.ndarray, limited_fidelity: bool = False, compiler_gym_pb_index: tp.Optional[int] = None
@@ -807,7 +807,7 @@ class GymMulti(ExperimentFunction):
             assert len(to) == len(ta)
             if len(current_observations) > len(to) and "extrapolate" not in self.control:
                 continue
-            to = np.asarray(to[(-len(current_observations)):], dtype=np.float32)
+            to = np.asarray(to[(-len(current_observations)) :], dtype=np.float32)
             # if all((_to - _o) for _to, _o in zip(to, current_observations)) <= 1e-7:
             if np.array_equal(to, current_observations):
                 return np.asarray(ta[len(current_observations) - 1], dtype=np.float32)
@@ -903,7 +903,7 @@ class GymMulti(ExperimentFunction):
                 additional_input = np.concatenate([np.asarray(a).ravel(), previous_o])
                 shift = len(additional_input)
                 self.extended_input[: (len(self.extended_input) - shift)] = self.extended_input[shift:]
-                self.extended_input[(len(self.extended_input) - shift):] = additional_input
+                self.extended_input[(len(self.extended_input) - shift) :] = additional_input
             reward += r
             if done:
                 break
