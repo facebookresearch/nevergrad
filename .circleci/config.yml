@@ -258,6 +258,7 @@ jobs:
       - run:
           name: "[all] Print installation"
           when: always
+          command: |
             . ./venv/Scripts/activate
             pip freeze
 
