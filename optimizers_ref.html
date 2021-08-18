@@ -4,8 +4,7 @@
 <html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8" />
-  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
-
+  
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
   <title>Optimizers API Reference &mdash; nevergrad  documentation</title>
@@ -176,9 +175,9 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <section id="optimizers-api-reference">
+  <div class="section" id="optimizers-api-reference">
 <h1>Optimizers API Reference<a class="headerlink" href="#optimizers-api-reference" title="Permalink to this headline">¶</a></h1>
-<section id="optimizer-api">
+<div class="section" id="optimizer-api">
 <h2>Optimizer API<a class="headerlink" href="#optimizer-api" title="Permalink to this headline">¶</a></h2>
 <p>All the optimizers share the following common API:</p>
 <dl class="py class">
@@ -448,8 +447,8 @@ will use this suggestion.</p>
 
 </dd></dl>
 
-</section>
-<section id="callbacks">
+</div>
+<div class="section" id="callbacks">
 <span id="id1"></span><h2>Callbacks<a class="headerlink" href="#callbacks" title="Permalink to this headline">¶</a></h2>
 <p>Callbacks can be registered through the <code class="code docutils literal notranslate"><span class="pre">optimizer.register_callback</span></code> for call on either <code class="code docutils literal notranslate"><span class="pre">ask</span></code> or <code class="code docutils literal notranslate"><span class="pre">tell</span></code> methods. Two of them are available through the
 <cite>ng.callbacks</cite> namespace.</p>
@@ -575,8 +574,8 @@ unique id of type list_name#i0_i1_…</p>
 <dd><p>Progress bar to register as callback in an optimizer</p>
 </dd></dl>
 
-</section>
-<section id="configurable-optimizers">
+</div>
+<div class="section" id="configurable-optimizers">
 <h2>Configurable optimizers<a class="headerlink" href="#configurable-optimizers" title="Permalink to this headline">¶</a></h2>
 <p>Configurable optimizers share the following API to create optimizers instances:</p>
 <dl class="py class">
@@ -633,6 +632,34 @@ or through a config kwarg referencing self. (if True, see EvolutionStrategy for 
 <p class="admonition-title">Caution</p>
 <p>This module and its available classes are experimental and may change quickly in the near future.</p>
 </div>
+<dl class="py class">
+<dt class="sig sig-object py" id="nevergrad.families.BayesOptim">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">nevergrad.families.</span></span><span class="sig-name descname"><span class="pre">BayesOptim</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init_budget</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pca</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_components</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">0.95</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prop_doe_factor</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.BayesOptim" title="Permalink to this definition">¶</a></dt>
+<dd><p>Algorithms from bayes-optim package.</p>
+<p>We use:
+- BO
+- PCA-BO: Principle Component Analysis (PCA) Bayesian Optimization for dimensionality reduction in BO</p>
+<p>References</p>
+<dl class="simple">
+<dt>[RaponiWB+20]</dt><dd><p>Raponi, Elena, Hao Wang, Mariusz Bujny, Simonetta Boria, and Carola Doerr.
+“High dimensional bayesian optimization assisted by principal component analysis.”
+In International Conference on Parallel Problem Solving from Nature, pp. 169-183.
+Springer, Cham, 2020.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>init_budget</strong> (<em>int</em><em> or </em><em>None</em>) – Number of initialization algorithm steps</p></li>
+<li><p><strong>pca</strong> (<em>bool</em>) – whether to use the PCA transformation defining PCA-BO rather than BO</p></li>
+<li><p><strong>n_components</strong> (<em>float</em><em> or </em><em>0.95</em>) – Principal axes in feature space, representing the directions of maximum variance in the data.
+It represents the percentage of explained variance</p></li>
+<li><p><strong>prop_doe_factor</strong> (<em>float</em><em> or </em><em>None</em>) – Percentage of the initial budget used for DoE and eventually overwriting init_budget</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py class">
 <dt class="sig sig-object py" id="nevergrad.families.Chaining">
 <em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">nevergrad.families.</span></span><span class="sig-name descname"><span class="pre">Chaining</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optimizers</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#nevergrad.optimizers.base.ConfiguredOptimizer" title="nevergrad.optimization.base.ConfiguredOptimizer"><span class="pre">nevergrad.optimization.base.ConfiguredOptimizer</span></a><span class="p"><span class="pre">,</span> </span><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#nevergrad.optimizers.base.Optimizer" title="nevergrad.optimization.base.Optimizer"><span class="pre">nevergrad.optimization.base.Optimizer</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">budgets</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.Chaining" title="Permalink to this definition">¶</a></dt>
@@ -1056,8 +1083,8 @@ spent yet (otherwise, restarts from best point)</p></li>
 </div>
 </dd></dl>
 
-</section>
-<section id="optimizers">
+</div>
+<div class="section" id="optimizers">
 <h2>Optimizers<a class="headerlink" href="#optimizers" title="Permalink to this headline">¶</a></h2>
 <p>Here are all the other optimizers available in <code class="code docutils literal notranslate"><span class="pre">nevergrad</span></code>:</p>
 <div class="admonition caution">
@@ -1066,6 +1093,44 @@ spent yet (otherwise, restarts from best point)</p></li>
 you can get a full list of available optimizers with <code class="code docutils literal notranslate"><span class="pre">sorted(nevergrad.optimizers.registry.keys())</span></code></p>
 </div>
 <span class="target" id="module-nevergrad.optimization.optimizerlib"></span><dl class="py class">
+<dt class="sig sig-object py" id="nevergrad.optimization.optimizerlib.BayesOptim">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">nevergrad.optimization.optimizerlib.</span></span><span class="sig-name descname"><span class="pre">BayesOptim</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init_budget</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pca</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_components</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">0.95</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prop_doe_factor</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.BayesOptim" title="Permalink to this definition">¶</a></dt>
+<dd><p>Algorithms from bayes-optim package.</p>
+<p>We use:
+- BO
+- PCA-BO: Principle Component Analysis (PCA) Bayesian Optimization for dimensionality reduction in BO</p>
+<p>References</p>
+<dl class="simple">
+<dt>[RaponiWB+20]</dt><dd><p>Raponi, Elena, Hao Wang, Mariusz Bujny, Simonetta Boria, and Carola Doerr.
+“High dimensional bayesian optimization assisted by principal component analysis.”
+In International Conference on Parallel Problem Solving from Nature, pp. 169-183.
+Springer, Cham, 2020.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>init_budget</strong> (<em>int</em><em> or </em><em>None</em>) – Number of initialization algorithm steps</p></li>
+<li><p><strong>pca</strong> (<em>bool</em>) – whether to use the PCA transformation defining PCA-BO rather than BO</p></li>
+<li><p><strong>n_components</strong> (<em>float</em><em> or </em><em>0.95</em>) – Principal axes in feature space, representing the directions of maximum variance in the data.
+It represents the percentage of explained variance</p></li>
+<li><p><strong>prop_doe_factor</strong> (<em>float</em><em> or </em><em>None</em>) – Percentage of the initial budget used for DoE and eventually overwriting init_budget</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="nevergrad.optimization.optimizerlib.BayesOptim.no_parallelization">
+<span class="sig-name descname"><span class="pre">no_parallelization</span></span><em class="property"> <span class="pre">=</span> <span class="pre">True</span></em><a class="headerlink" href="#nevergrad.optimization.optimizerlib.BayesOptim.no_parallelization" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="nevergrad.optimization.optimizerlib.BayesOptim.recast">
+<span class="sig-name descname"><span class="pre">recast</span></span><em class="property"> <span class="pre">=</span> <span class="pre">True</span></em><a class="headerlink" href="#nevergrad.optimization.optimizerlib.BayesOptim.recast" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="nevergrad.optimization.optimizerlib.CM">
 <em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">nevergrad.optimization.optimizerlib.</span></span><span class="sig-name descname"><span class="pre">CM</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parametrization</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="parametrization_ref.html#nevergrad.p.Parameter" title="nevergrad.parametrization.core.Parameter"><span class="pre">nevergrad.parametrization.core.Parameter</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">budget</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_workers</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.CM" title="Permalink to this definition">¶</a></dt>
 <dd><p>Competence map, simplest.</p>
@@ -1568,8 +1633,8 @@ A discrete optimization algorithm, introduced in and often used as a first basel
 </dl>
 </dd></dl>
 
-</section>
-</section>
+</div>
+</div>
 
 
            </div>
