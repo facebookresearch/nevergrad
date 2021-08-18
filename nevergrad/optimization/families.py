@@ -17,6 +17,7 @@ from .optimizerlib import Chaining
 from .optimizerlib import NoisySplit
 from .optimizerlib import ConfSplitOptimizer
 from .optimizerlib import ConfPortfolio
+from .optimizerlib import BayesOptim
 from .differentialevolution import DifferentialEvolution
 from .es import EvolutionStrategy
 from .recastlib import ScipyOptimizer
@@ -41,4 +42,5 @@ __all__ = [
     "NoisySplit",
     "ConfSplitOptimizer",
     "ConfPortfolio",
+    "BayesOptim",
 ]
