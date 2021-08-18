@@ -184,7 +184,6 @@ class HypervolumePareto:
                     min_losses[i] = point_loss
         return min_losses
 
-
 class ParetoFront:
     def __init__(
         self,
