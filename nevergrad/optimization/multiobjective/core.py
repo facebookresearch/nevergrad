@@ -174,6 +174,9 @@ class HypervolumePareto:
         """
         return self._pf.get_front(size, subset, subset_tentatives)
 
+    def get_min_losses(self) -> tp.List[float]:
+        return np.min([p.losses for p in self._pf.get_raw()], axis=0)
+
 
 class ParetoFront:
     def __init__(
