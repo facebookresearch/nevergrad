@@ -91,7 +91,7 @@ class OptimizationLogger:
                 x = optimizer.provide_recommendation()
                 self._logger.log(self._log_level, "After %s, recommendation is %s", optimizer.num_tell, x)
             else:
-                losses = optimizer._hypervolume_pareto.get_min_losses()
+                losses = optimizer._hypervolume_pareto.get_min_losses()  # type: ignore
                 self._logger.log(
                     self._log_level,
                     "After %s, the respective minimum loss for each objective in the pareto front is %s",
