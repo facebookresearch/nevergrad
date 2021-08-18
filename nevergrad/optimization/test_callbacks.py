@@ -142,6 +142,6 @@ def test_optimization_logger(caplog) -> None:
     with caplog.at_level(logging.INFO):
         optimizer.minimize(_func, verbosity=2)
     assert (
-        "After 0, the respective minimum loss for each objective in the pareto front is [12.0, 12.0]"
+        "After 0, the respective minimum loss for each objective in the pareto front is [12. 12.]"
         in caplog.text
     )
