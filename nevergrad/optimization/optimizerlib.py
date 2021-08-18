@@ -1884,7 +1884,6 @@ class _BayesOptim(base.Optimizer):
             self._buffer = candidate
         x_probe = self._buffer.pop()
         data = self._transform.backward(np.array(x_probe, copy=False))
-        print("data = ", data)
         candidate = self.parametrization.spawn_child().set_standardized_data(data)
         candidate._meta["x_probe"] = x_probe
         return candidate
