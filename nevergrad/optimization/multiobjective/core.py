@@ -180,9 +180,9 @@ class HypervolumePareto:
         min_losses = [np.inf] * len(pf[0].value)
         for point in pf:
             point_losses = np.array(point.losses)
-            for i in range(len(point.value)):
-                if point_losses[i] < min_losses[i]:
-                    min_losses[i] = point_losses[i]
+            for i, point_loss in enumerate(point_losses):
+                if point_loss < min_losses[i]:
+                    min_losses[i] = point_loss
         return min_losses
 
 
