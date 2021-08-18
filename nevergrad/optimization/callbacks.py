@@ -87,8 +87,17 @@ class OptimizationLogger:
         if time.time() >= self._next_time or self._next_tell >= optimizer.num_tell:
             self._next_time = time.time() + self._log_interval_seconds
             self._next_tell = optimizer.num_tell + self._log_interval_tells
-            x = optimizer.provide_recommendation()
-            self._logger.log(self._log_level, "After %s, recommendation is %s", optimizer.num_tell, x)
+            if optimizer.num_objectives == 1:
+                x = optimizer.provide_recommendation()
+                self._logger.log(self._log_level, "After %s, recommendation is %s", optimizer.num_tell, x)
+            else:
+                losses = optimizer._hypervolume_pareto.get_min_losses()
+                self._logger.log(
+                    self._log_level,
+                    "After %s, the respective minimum loss for each objective in the pareto front is %s",
+                    optimizer.num_tell,
+                    losses,
+                )
 
 
 class ParametersLogger:
