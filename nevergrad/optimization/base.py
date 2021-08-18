@@ -519,7 +519,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             on the function (:code:`objective_function(*candidate.args, **candidate.kwargs)`).
         """
         if self.num_objectives > 1:
-            raise RuntimeError("No best candidate in MOO.")
+            raise RuntimeError(
+                "No best candidate in MOO. Use pareto_front function instead to get the set of all non-dominated candidates."
+            )
         recom_data = self._internal_provide_recommendation()  # pylint: disable=assignment-from-none
         if recom_data is None or any(np.isnan(recom_data)):
             name = "minimum" if self.parametrization.function.deterministic else "pessimistic"
