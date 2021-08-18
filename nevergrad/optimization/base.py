@@ -516,6 +516,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             The candidate with minimal loss. :code:`p.Parameters` have field :code:`args` and :code:`kwargs` which can be directly used
             on the function (:code:`objective_function(*candidate.args, **candidate.kwargs)`).
         """
+        if self.num_objectives > 1:
+            raise RuntimeError("No best candidate in MOO.")
         recom_data = self._internal_provide_recommendation()  # pylint: disable=assignment-from-none
         if recom_data is None or any(np.isnan(recom_data)):
             name = "minimum" if self.parametrization.function.deterministic else "pessimistic"
@@ -650,7 +652,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 (tmp_finished if x_job[1].done() else tmp_runnings).append(x_job)
             self._running_jobs, self._finished_jobs = tmp_runnings, tmp_finished
             first_iteration = False
-        return self.provide_recommendation()
+        return self.provide_recommendation() if self.num_objectives == 1 else p.Constant(None)
 
     def _info(self) -> tp.Dict[str, tp.Any]:
         """Easy access to debug/benchmark info"""
