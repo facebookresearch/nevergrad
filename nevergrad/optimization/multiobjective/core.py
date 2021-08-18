@@ -172,10 +172,9 @@ class HypervolumePareto:
         list
             the list of Parameter of the pareto front
         """
-        self.get_min_losses()
         return self._pf.get_front(size, subset, subset_tentatives)
 
-    def get_min_losses(self) -> None:
+    def get_min_losses(self) -> tp.ArrayLike[float]:
         pf = self._pf.get_raw()
         min_losses = [np.inf] * len(pf[0].value)
         for point in pf:
