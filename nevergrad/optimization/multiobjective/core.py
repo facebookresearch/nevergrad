@@ -174,7 +174,7 @@ class HypervolumePareto:
         """
         return self._pf.get_front(size, subset, subset_tentatives)
 
-    def get_min_losses(self) -> tp.ArrayLike[float]:
+    def get_min_losses(self) -> tp.List[float]:
         pf = self._pf.get_raw()
         min_losses = [np.inf] * len(pf[0].value)
         for point in pf:
@@ -183,6 +183,7 @@ class HypervolumePareto:
                 if point_loss < min_losses[i]:
                     min_losses[i] = point_loss
         return min_losses
+
 
 class ParetoFront:
     def __init__(
