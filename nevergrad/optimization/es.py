@@ -41,7 +41,7 @@ class _EvolutionStrategy(base.Optimizer):
             self._rank_method = nsga2.rank
         elif self._config.ranker != "simple":
             raise NotImplementedError(f"Unknown ranker {self._config.ranker}")
-        self._no_hypervolume = True
+        self._no_hypervolume = self._config.offsprings is None
 
     def _internal_ask_candidate(self) -> p.Parameter:
         if self.num_ask < self._config.popsize:
