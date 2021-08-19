@@ -103,20 +103,51 @@ def test_progressbar_dump(tmp_path: Path) -> None:
         optimizer.tell(cand, 0)
 
 
+class _EarlyStoppingTestee:
+    def __init__(self) -> None:
+        self.num_calls = 0
+
+    def __call__(self, *args, **kwds) -> float:
+        self.num_calls += 1
+        return np.random.rand()
+
+
 def test_early_stopping() -> None:
-    instrum = ng.p.Instrumentation(
-        None, 2.0, blublu="blublu", array=ng.p.Array(shape=(3, 2)), multiobjective=True
-    )
+    instrum = ng.p.Instrumentation(None, 2.0, blublu="blublu", array=ng.p.Array(shape=(3, 2)))
+    func = _EarlyStoppingTestee()
     optimizer = optimizerlib.OnePlusOne(parametrization=instrum, budget=100)
     early_stopping = ng.callbacks.EarlyStopping(lambda opt: opt.num_ask > 3)
     optimizer.register_callback("ask", early_stopping)
-    optimizer.minimize(_func, verbosity=2)
-    # below functions are inlcuded in the docstring
+    optimizer.minimize(func, verbosity=2)
+    # num_ask is set at the end of ask, so the callback sees the old value.
+    assert func.num_calls == 4
+    # below functions are included in the docstring of EarlyStopping
     assert optimizer.current_bests["minimum"].mean < 12
     assert optimizer.recommend().loss < 12  # type: ignore
 
 
 def test_optimization_logger(caplog) -> None:
+    instrum = ng.p.Instrumentation(
+        None, 2.0, blublu="blublu", array=ng.p.Array(shape=(3, 2)), multiobjective=False
+    )
+    logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
+    logger = logging.getLogger(__name__)
+    optimizer = optimizerlib.OnePlusOne(parametrization=instrum, budget=3)
+    optimizer.register_callback(
+        "tell",
+        callbacks.OptimizationLogger(
+            logger=logger, log_level=logging.INFO, log_interval_tells=10, log_interval_seconds=0.1
+        ),
+    )
+    with caplog.at_level(logging.INFO):
+        optimizer.minimize(_func, verbosity=2)
+    assert (
+        "After 0, recommendation is Instrumentation(Tuple(None,2.0),Dict(array=Array{(3,2)},blublu=blublu,multiobjective=False))"
+        in caplog.text
+    )
+
+
+def test_optimization_logger_MOO(caplog) -> None:
     instrum = ng.p.Instrumentation(
         None, 2.0, blublu="blublu", array=ng.p.Array(shape=(3, 2)), multiobjective=True
     )
@@ -132,6 +163,6 @@ def test_optimization_logger(caplog) -> None:
     with caplog.at_level(logging.INFO):
         optimizer.minimize(_func, verbosity=2)
     assert (
-        "After 0, recommendation is Instrumentation(Tuple(None,2.0),Dict(array=Array{(3,2)},blublu=blublu,multiobjective=True))"
+        "After 0, the respective minimum loss for each objective in the pareto front is [12. 12.]"
         in caplog.text
     )
