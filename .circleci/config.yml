@@ -27,9 +27,9 @@ commands:
       - restore_cache:
           name: "[all] Restore cache"
           keys:
-          - v7-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          - v9-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
           # fallback to installing main requirements
-          - v7-dependencies-main-{{ checksum "requirements/main.txt"}}
+          - v9-dependencies-main-{{ checksum "requirements/main.txt"}}
 
       - run:
           name: "[all] Install dependencies"
@@ -51,7 +51,7 @@ jobs:
       - restore_cache:
           name: "[no-extra] Restore cache"
           keys:
-          - v7-dependencies-main-{{ checksum "requirements/main.txt"}}
+          - v9-dependencies-main-{{ checksum "requirements/main.txt"}}
           # fallback to using the latest cache if no exact match is found
 
       - run:
@@ -78,7 +78,7 @@ jobs:
           name: "[no-extra] Save cache"
           paths:
             - ./venv
-          key: v7-dependencies-main-{{ checksum "requirements/main.txt"}}
+          key: v9-dependencies-main-{{ checksum "requirements/main.txt"}}
 
       - run:
           name: "[no-extra] Run basic tests (checking dependencies)"
@@ -93,7 +93,7 @@ jobs:
           name: "[all] Save cache"
           paths:
             - ./venv
-          key: v7-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          key: v9-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
 
       - run:
           name: "[all] Print installation"
@@ -238,7 +238,7 @@ jobs:
       - restore_cache:
           name: "[all] Restore cache"
           keys:
-          - v7-win-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          - v9-win-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
 
       - run:
           name: Setup nevergrad in virtualenv
@@ -246,14 +246,21 @@ jobs:
             py -3 -m venv venv
             . ./venv/Scripts/activate
             pip install --progress-bar off -U pip setuptools
-            pip install --progress-bar off torch==1.4.0+cpu torchvision==0.5.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
+            #  pip install --progress-bar off torch==1.4.0+cpu torchvision==0.5.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
             pip install --use-deprecated=legacy-resolver --progress-bar off .[all]
 
       - save_cache:
           name: "[all] Save cache"
           paths:
             - ./venv
-          key: v7-win-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          key: v9-win-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+
+      - run:
+          name: "[all] Print installation"
+          when: always
+          command: |
+            . ./venv/Scripts/activate
+            pip freeze
 
       - run:
           name: pytest
@@ -263,8 +270,9 @@ jobs:
 
 
   pypi-deploy:
-    docker:
-      - image: python:3.6
+
+    executor: ubuntu-python37
+
     steps:
 
       - ubuntu_restore_all

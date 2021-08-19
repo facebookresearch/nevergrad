@@ -170,7 +170,7 @@ class RecastOptimizer(base.Optimizer):
         self._messaging_thread: tp.Optional[MessagingThread] = None  # instantiate at runtime
         self._last_optimizer_duration = 0.0001
 
-    def get_optimization_function(self) -> tp.Callable[[tp.Callable[..., tp.Any]], tp.ArrayLike]:
+    def get_optimization_function(self) -> tp.Callable[[tp.Callable[..., tp.Any]], tp.Optional[tp.ArrayLike]]:
         """Return an optimization procedure function (taking a function to optimize as input)
 
         Note
@@ -234,7 +234,16 @@ class RecastOptimizer(base.Optimizer):
         messages = [m for m in messages if m.meta["uid"] == candidate.uid]
         if not messages:
             raise RuntimeError(f"No message for evaluated point {x}: {self._messaging_thread.messages}")
-        messages[0].result = loss  # post the value, and the thread will deal with it
+        self._post_loss_to_message(
+            messages[0], candidate, loss
+        )  # post the value(s), and the thread will deal with it
+
+    def _post_loss_to_message(self, message: Message, candidate: p.Parameter, loss: float):
+        # pylint: disable=unused-argument
+        """
+        Posts the value, and the thread will deal with it.
+        """
+        message.result = loss
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: float) -> None:
         raise base.errors.TellNotAskedNotSupportedError

@@ -133,6 +133,11 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # to make optimize function stoppable halway through
         self._running_jobs: tp.List[tp.Tuple[p.Parameter, tp.JobLike[tp.Loss]]] = []
         self._finished_jobs: tp.Deque[tp.Tuple[p.Parameter, tp.JobLike[tp.Loss]]] = deque()
+        # Most optimizers are designed for single objective and use a float loss.
+        # To use these in a multi-objective optimization, we provide the negative of
+        # the hypervolume of the pareto front as the loss.
+        # If not needed, an optimizer can set this to True.
+        self._no_hypervolume = False
 
     @property
     def _rng(self) -> np.random.RandomState:
@@ -342,7 +347,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 raise RuntimeError("MultiobjectiveReference can only be provided before the first tell.")
             if not isinstance(loss, np.ndarray):
                 raise RuntimeError("MultiobjectiveReference must only be used for multiobjective losses")
-            self._hypervolume_pareto = mobj.HypervolumePareto(upper_bounds=loss, seed=self._rng)
+            self._hypervolume_pareto = mobj.HypervolumePareto(
+                upper_bounds=loss, seed=self._rng, no_hypervolume=self._no_hypervolume
+            )
             if candidate.value is None:
                 return  # no value, so stopping processing there
             candidate = candidate.value
@@ -361,7 +368,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         if not candidate.satisfies_constraints() and self.budget is not None:
             penalty = self._constraints_manager.penalty(candidate, self.num_ask, self.budget)
             loss = loss + penalty
-        if isinstance(loss, float):
+        if isinstance(loss, float) and (
+            self.num_objectives == 1 or self.num_objectives > 1 and not self._no_hypervolume
+        ):
             self._update_archive_and_bests(candidate, loss)
         if candidate.uid in self._asked:
             self._internal_tell_candidate(candidate, loss)
@@ -373,7 +382,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
 
     def _preprocess_multiobjective(self, candidate: p.Parameter) -> tp.FloatLoss:
         if self._hypervolume_pareto is None:
-            self._hypervolume_pareto = mobj.HypervolumePareto(auto_bound=self._MULTIOBJECTIVE_AUTO_BOUND)
+            self._hypervolume_pareto = mobj.HypervolumePareto(
+                auto_bound=self._MULTIOBJECTIVE_AUTO_BOUND, no_hypervolume=self._no_hypervolume
+            )
         return self._hypervolume_pareto.add(candidate)
 
     def _update_archive_and_bests(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
