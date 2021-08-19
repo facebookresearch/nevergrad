@@ -621,6 +621,7 @@ def yabbob(
     split: bool = False,
     tiny: bool = False,
     tuning: bool = False,
+    bounded: bool = False,
 ) -> tp.Iterator[Experiment]:
     """Yet Another Black-Box Optimization Benchmark.
     Related to, but without special effort for exactly sticking to, the BBOB/COCO dataset.
@@ -674,8 +675,19 @@ def yabbob(
         for num_blocks in ([1] if not split else [7, 12])
         for d in ([100, 1000, 3000] if hd else ([2, 5, 10, 15] if tuning else [2, 10, 50]))
     ]
+    # TEMPORARY, I DON'T LIKE THIS COPY
+    functions_bounded = [
+        ArtificialFunction(name, block_dimension=d, rotation=rotation, noise_level=noise_level, split=split, bounded=bounded)
+        for name in names
+        for rotation in [True, False]
+        for num_blocks in ([1] if not split else [7, 12])
+        for d in ([100, 1000, 3000] if hd else ([2, 5, 10, 15] if tuning else [2, 10, 50]))
+        if bounded
+    ]
+
     if tiny:
         functions = functions[::13]
+        functions_bounded = functions_bounded[::13]
 
     # We possibly add constraints.
     max_num_constraints = 4
@@ -689,11 +701,12 @@ def yabbob(
     ), "constraint_case should be in 0, 1, ..., {len(constraints) + max_num_constraints - 1} (0 = no constraint)."
     # We reduce the number of tests when there are constraints, as the number of cases
     # is already multiplied by the number of constraint_case.
-    for func in functions[:: 13 if constraint_case > 0 else 1]:
-        # We add a window of the list of constraints. This windows finishes at "constraints" (hence, is empty if
-        # constraint_case=0).
-        for constraint in constraints[max(0, constraint_case - max_num_constraints) : constraint_case]:
-            func.parametrization.register_cheap_constraint(constraint)
+    for fgroup in [functions[:: 13 if constraint_case > 0 else 1], functions_bounded]:
+        for func in fgroup:
+            # We add a window of the list of constraints. This windows finishes at "constraints" (hence, is empty if
+            # constraint_case=0).
+            for constraint in constraints[max(0, constraint_case - max_num_constraints) : constraint_case]:
+                func.parametrization.register_cheap_constraint(constraint)
 
     budgets = (
         [40000, 80000, 160000, 320000]
@@ -703,8 +716,8 @@ def yabbob(
     if small and not noise:
         budgets = [10, 20, 40]
     for optim in optims:
-        for function in functions:
-            for budget in budgets:
+        for budget in budgets:
+            for function in (functions if (optim in ["BO", "PCABO", "BayesOptimBO", "AX"]) else functions_bounded):
                 xp = Experiment(
                     function, optim, num_workers=100 if parallel else 1, budget=budget, seed=next(seedg)
                 )
@@ -800,6 +813,12 @@ def yanoisybbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     This is different from the original BBOB/COCO from that point of view.
     """
     return yabbob(seed, noise=True)
+
+
+@registry.register
+def yaboundedbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with bounded domain, (0,1)**n by default."""
+    return yabbob(seed, bounded=True)
 
 
 @registry.register
