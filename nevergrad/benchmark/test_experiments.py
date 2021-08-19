@@ -36,8 +36,8 @@ def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[expe
     if "mixsimulator" in name and os.environ.get("CIRCLECI", False):
         raise SkipTest("Sigkill in CircleCI")
 
-    # Our IQAs and our ScikitLearn and Olympus are not well guaranteed on Windows.
-    if all(x in name for x in ["image", "quality", "olympus"]) and platform.system() == "Windows":
+    # Our IQAs and our ScikitLearn are not well guaranteed on Windows.
+    if all(x in name for x in ["image", "quality"]) and platform.system() == "Windows":
         raise SkipTest("Image quality not guaranteed on Windows.")
 
     # Basic test.

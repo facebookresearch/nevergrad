@@ -41,6 +41,8 @@ class OlympusSurface(ExperimentFunction):
         self.kind = kind
         self.param_dim = dimension
         self.noise_kind = noise_kind
+        assert self.kind in OlympusSurface.SURFACE_KINDS
+        assert self.noise_kind in ["GaussianNoise", "UniformNoise", "GammaNoise"]
         self.noise_scale = noise_scale
         self.surface = partial(self._simulate_surface, noise=True)
         self.surface_without_noise = partial(self._simulate_surface, noise=False)
@@ -55,9 +57,6 @@ class OlympusSurface(ExperimentFunction):
             from olympus import noises
         except ImportError as e:
             raise ng.errors.UnsupportedExperiment("Please install olympus for Olympus experiments") from e
-
-        assert self.kind in OlympusSurface.SURFACE_KINDS
-        assert self.noise_kind in ["GaussianNoise", "UniformNoise", "GammaNoise"]
 
         if noise:
             noise = noises.Noise(kind=self.noise_kind, scale=self.noise_scale)
@@ -90,6 +89,8 @@ class OlympusEmulator(ExperimentFunction):
 
         self.dataset_kind = dataset_kind
         self.model_kind = model_kind
+        assert self.dataset_kind in OlympusEmulator.DATASETS
+        assert self.model_kind in ["BayesNeuralNet", "NeuralNet"]
         parametrization = self._get_parametrization()
         parametrization.function.deterministic = False
         parametrization.set_name("")
@@ -112,11 +113,5 @@ class OlympusEmulator(ExperimentFunction):
         except ImportError as e:
             raise ng.errors.UnsupportedExperiment("Please install olympus for Olympus experiments") from e
 
-        assert self.dataset_kind in OlympusEmulator.DATASETS
-        assert self.model_kind in ["BayesNeuralNet", "NeuralNet"]
-
         emulator = Emulator(dataset=self.dataset_kind, model=self.model_kind)
-        if emulator.get_goal() == "maximize":
-            return -emulator.run(x)[0][0]
-        else:
-            return emulator.run(x)[0][0]
+        return emulator.run(x)[0][0] * (-1 if emulator.get_goal() == "maximize" else 1)
