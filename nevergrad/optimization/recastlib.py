@@ -73,9 +73,10 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         def ax_obj(p):
             if self.method == "AX":
                 data = [np.arctanh(p["x" + str(i)]) for i in range(self.dimension)]
+                data = np.asarray(data, dtype=np.float)
             elif self.method == "AX2":
-                data = [self._transform.backward(p["x" + str(i)]) for i in range(self.dimension)]
-            data = np.asarray(data, dtype=np.float)
+                data = [p["x" + str(i)] for i in range(self.dimension)]
+                data = self._transform.backward(np.asarray(data, dtype=np.float))
             return objective_function(data)
 
         while remaining > 0:  # try to restart if budget is not elapsed
@@ -103,8 +104,8 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
                 best_parameters, best_values, experiment, model = axoptimize(
                     parameters, evaluation_function=ax_obj, minimize=True, total_trials=budget
                 )
-                best_x = [self._transform.backward(p["x" + str(i)]) for i in range(self.dimension)]
-                best_x = np.asarray(best_x, dtype=np.float)
+                best_x = [p["x" + str(i)] for i in range(self.dimension)]
+                best_x = self._transform.backward(np.asarray(best_x, dtype=np.float))
             else:
                 res = scipyoptimize.minimize(
                     objective_function,
