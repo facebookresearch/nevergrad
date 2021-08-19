@@ -677,7 +677,9 @@ def yabbob(
     ]
     # TEMPORARY, I DON'T LIKE THIS COPY
     functions_bounded = [
-        ArtificialFunction(name, block_dimension=d, rotation=rotation, noise_level=noise_level, split=split, bounded=bounded)
+        ArtificialFunction(
+            name, block_dimension=d, rotation=rotation, noise_level=noise_level, split=split, bounded=bounded
+        )
         for name in names
         for rotation in [True, False]
         for num_blocks in ([1] if not split else [7, 12])
@@ -717,7 +719,9 @@ def yabbob(
         budgets = [10, 20, 40]
     for optim in optims:
         for budget in budgets:
-            for function in (functions if (optim in ["BO", "PCABO", "BayesOptimBO", "AX"]) else functions_bounded):
+            for function in (
+                functions if (optim in ["BO", "PCABO", "BayesOptimBO", "AX"]) else functions_bounded
+            ):
                 xp = Experiment(
                     function, optim, num_workers=100 if parallel else 1, budget=budget, seed=next(seedg)
                 )
