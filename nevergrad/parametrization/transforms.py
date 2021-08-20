@@ -11,6 +11,14 @@ import nevergrad.common.typing as tp
 from . import utils
 
 
+def bound_to_array(x: tp.BoundValue) -> np.ndarray:
+    """Updates type of bounds to use arrays"""
+    if isinstance(x, (tuple, list, np.ndarray)):
+        return np.array(x, copy=False)
+    else:
+        return np.array([x], dtype=float)
+
+
 class Transform:
     """Base class for transforms implementing a forward and a backward (inverse)
     method.
@@ -64,13 +72,13 @@ class Affine(Transform):
     b: float
     """
 
-    def __init__(self, a: float, b: float) -> None:
+    def __init__(self, a: tp.BoundValue, b: tp.BoundValue) -> None:
         super().__init__()
-        if not a:
+        self.a = bound_to_array(a)
+        self.b = bound_to_array(b)
+        if not np.any(self.a):
             raise ValueError('"a" parameter should be non-zero to prevent information loss.')
-        self.a = a
-        self.b = b
-        self.name = f"Af({self.a},{self.b})"
+        self.name = f"Af({a},{b})"
 
     def forward(self, x: np.ndarray) -> np.ndarray:
         return self.a * x + self.b  # type: ignore
