@@ -257,15 +257,31 @@ class CumulativeDensity(BoundTransform):
     Beware, cdf goes very fast to its limits.
     """
 
-    def __init__(self, lower: float = 0.0, upper: float = 1.0, eps: float = 1e-9) -> None:
+    def __init__(
+        self,
+        lower: float = 0.0,
+        upper: float = 1.0,
+        eps: float = 1e-9,
+        scale: float = 1.0,
+        density: str = "gaussian",
+    ) -> None:
         super().__init__(a_min=lower, a_max=upper)
         self._b = lower
         self._a = upper - lower
         self._eps = eps
+        self._scale = scale
         self.name = f"Cd({_f(lower)},{_f(upper)})"
+        if density not in ("gaussian", "cauchy"):
+            raise ValueError("Unknown density")
+        if density == "gaussian":
+            self._forw = stats.norm.cdf
+            self._back = stats.norm.ppf
+        else:
+            self._forw = stats.cauchy.cdf
+            self._back = stats.cauchy.ppf
 
     def forward(self, x: np.ndarray) -> np.ndarray:
-        return self._a * stats.norm.cdf(x) + self._b  # type: ignore
+        return self._a * self.forw(x / self._scale) + self._b  # type: ignore
 
     def backward(self, y: np.ndarray) -> np.ndarray:
         if (y > self.a_max).any() or (y < self.a_min).any():
@@ -273,7 +289,7 @@ class CumulativeDensity(BoundTransform):
                 f"Only data between {self.a_min} and {self.a_max} can be transformed back.\nGot: {y}"
             )
         y = np.clip((y - self._b) / self._a, self._eps, 1 - self._eps)
-        return stats.norm.ppf(y)
+        return self._scale * self._back(y)
 
 
 class Fourrier(Transform):

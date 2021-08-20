@@ -6,8 +6,8 @@
 import warnings
 import contextlib
 import itertools
-import typing as tp
 import numpy as np
+import nevergrad.common.typing as tp
 from . import core
 from . import container
 from . import _layering
@@ -153,7 +153,10 @@ class Normalizer:
     """
 
     def __init__(
-        self, reference: core.Parameter, unbounded_transform: str = "arctan", only_sampling: bool = False
+        self,
+        reference: core.Parameter,
+        unbounded_transform: tp.Optional[trans.Transform] = None,
+        only_sampling: bool = False,
     ) -> None:
         self.reference = reference.spawn_child()
         self.reference.freeze()
@@ -170,10 +173,10 @@ class Normalizer:
         if not np.allclose(check, expected):
             self.working = False
             self._warn()
-        self.unbounded_transform = trans.ArctanBound(0, 1)
         self._only_sampling = only_sampling
-        if unbounded_transform != "arctan":
-            raise NotImplementedError("Only arctan is supported for now")
+        self.unbounded_transform = (
+            trans.ArctanBound(0, 1) if unbounded_transform is None else unbounded_transform
+        )
 
     def _warn(self) -> None:
         warnings.warn(
@@ -198,8 +201,8 @@ class Normalizer:
             self._apply_unsafe(y, forward=forward)  # inplace
         except Exception:  # pylint: disable=broad-except
             self._warn()
-            out = utrans(y)
-        return out
+            y = utrans(y)
+        return y
 
     def _apply_unsafe(self, x: np.ndarray, forward: bool = True) -> None:
         # modifies x in place
