@@ -152,7 +152,9 @@ class Normalizer:
     updated to make it simpler and more robust
     """
 
-    def __init__(self, reference: core.Parameter, unbounded_transform: str = "arctan") -> None:
+    def __init__(
+        self, reference: core.Parameter, unbounded_transform: str = "arctan", only_sampling: bool = False
+    ) -> None:
         self.reference = reference.spawn_child()
         self.reference.freeze()
         # initial check
@@ -169,6 +171,7 @@ class Normalizer:
             self.working = False
             self._warn()
         self.unbounded_transform = trans.ArctanBound(0, 1)
+        self._only_sampling = only_sampling
         if unbounded_transform != "arctan":
             raise NotImplementedError("Only arctan is supported for now")
 
@@ -207,7 +210,9 @@ class Normalizer:
             layers = _datalayers.BoundLayer.filter_from(ref)  # find bound layers
             layers = [
                 lay for lay in layers if not any(b is None for b in lay.bounds)
-            ]  # keep only uniform sampling
+            ]  # keep only fully bounded layers
+            if self._only_sampling:  # for samplers
+                layers = [lay for lay in layers if lay.uniform_sampling]
             if not layers:
                 x[start:end] = utrans(x[start:end])
             else:
@@ -215,10 +220,10 @@ class Normalizer:
                 array = ref.spawn_child()
                 if forward:
                     array.set_standardized_data(x[start:end])
-                    x[start:end] = array._layers[layer_index].get_normalized_value()[:]
+                    x[start:end] = array._layers[layer_index].get_normalized_value()[:]  # type: ignore
 
                 else:
                     normalized = x[start:end].reshape(ref._value.shape)
-                    array._layers[layer_index].set_normalized_value(normalized)
+                    array._layers[layer_index].set_normalized_value(normalized)  # type: ignore
                     x[start:end] = array.get_standardized_data(reference=ref)
             start = end
