@@ -29,8 +29,8 @@ GUARANTEED_GYM_ENV_NAMES = [
     "MountainCar-v0",
     "Acrobot-v1",
     "Blackjack-v0",
-    "FrozenLake-v0",
-    "FrozenLake8x8-v0",
+    # "FrozenLake-v0",   # deprecated
+    # "FrozenLake8x8-v0",
     "CliffWalking-v0",
     "NChain-v0",
     "Roulette-v0",
@@ -330,8 +330,8 @@ class GymMulti(ExperimentFunction):
         "CartPole-v0",
         "CartPole-v1",
         "Acrobot-v1",
-        "FrozenLake-v0",
-        "FrozenLake8x8-v0",
+        # "FrozenLake-v0",  # deprecated
+        # "FrozenLake8x8-v0",
         "NChain-v0",
         "Roulette-v0",
     ]
