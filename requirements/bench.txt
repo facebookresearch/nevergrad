@@ -32,5 +32,3 @@ bayes-optim>=0.2.5.5
 olymp==0.0.1b0 ; sys_platform == "linux"
 silence_tensorflow
 tensorflow_probability
-sqlalchemy
-seaborn
