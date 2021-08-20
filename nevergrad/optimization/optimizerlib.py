@@ -1765,7 +1765,7 @@ class _BO(base.Optimizer):
     def _internal_provide_recommendation(self) -> tp.Optional[tp.ArrayLike]:
         if not self.archive:
             return None
-        return self._transform.backward(
+        return self._normalizer.backward(
             np.array([self.bo.max["params"][self._fake_function.key(i)] for i in range(self.dimension)])
         )
 
@@ -1897,7 +1897,7 @@ class _BayesOptim(base.Optimizer):
             else:
                 data = candidate.get_standardized_data(reference=self.parametrization)
                 # Tell not asked:
-                self._alg.tell(self._transform.forward(data), loss)
+                self._alg.tell(self._normalizer.forward(data), loss)
             self._newX = []
             self._losses = []
 
