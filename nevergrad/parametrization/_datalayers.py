@@ -75,9 +75,11 @@ class BoundLayer(Operation):
                 raise errors.NevergradValueError(
                     f"Lower bounds {lower} should be strictly smaller than upper bounds {upper}"
                 )
-        self._normalizer: tp.Optional[trans.Transform] = None
-        if both_bounds:
-            self._normalizer = trans.Affine(self.bounds[1] - self.bounds[0], self.bounds[0]).reverted()
+
+    def _normalizer(self) -> trans.Transform:
+        if any(b is None for b in self.bounds):
+            raise RuntimeError("Cannot use normalized value for not-fully bounded Parameter")
+        return trans.Affine(self.bounds[1] - self.bounds[0], self.bounds[0]).reverted()  # type: ignore
 
     def __call__(self, data: D, inplace: bool = False) -> D:
         """Creates a new Data instance with bounds"""
@@ -119,22 +121,19 @@ class BoundLayer(Operation):
         child = root.spawn_child()
         # send new val to the layer under this one for the child
         new_val = self.random_state.uniform(size=shape)
+        del child.value  # make sure there is no cache
         child._layers[self._layer_index].set_normalized_value(new_val)  # type: ignore
         return child
 
     def set_normalized_value(self, value: np.ndarray) -> None:
         """Sets a value normalized between 0 and 1"""
-        if self._normalizer is None:
-            raise RuntimeError("Cannot use normalized value for not-fully bounded Parameter")
-        new_val = self._normalizer.backward(value)
+        new_val = self._normalizer().backward(value)
         self._layers[self._layer_index]._layered_set_value(new_val)
 
     def get_normalized_value(self) -> np.ndarray:
         """Gets a value normalized between 0 and 1"""
-        if self._normalizer is None:
-            raise RuntimeError("Cannot use normalized value for not-fully bounded Parameter")
         value = self._layers[self._layer_index]._layered_get_value()
-        return self._normalizer.forward(value)
+        return self._normalizer().forward(value)
 
     def _check(self, value: np.ndarray) -> None:
         if not utils.BoundChecker(*self.bounds)(value):

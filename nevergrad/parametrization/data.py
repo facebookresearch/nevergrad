@@ -162,6 +162,7 @@ class Data(core.Parameter):
 
         with helpers.deterministic_sampling(child):
             child.mutate()
+        print("child", child.value)
         return child
 
     # pylint: disable=unused-argument
@@ -298,6 +299,7 @@ class Data(core.Parameter):
 
     # pylint: disable=unused-argument
     def _internal_set_standardized_data(self: D, data: np.ndarray, reference: D) -> None:
+        print("setting", data)
         assert isinstance(data, np.ndarray)
         sigma = reference.sigma.value
         data_reduc = sigma * (data + reference._to_reduced_space()).reshape(reference._value.shape)
@@ -330,6 +332,7 @@ class Data(core.Parameter):
         return child
 
     def _layered_set_value(self, value: np.ndarray) -> None:
+        print("data, setting", value)
         self._check_frozen()
         if self._value.shape != value.shape:
             raise ValueError(

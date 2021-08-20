@@ -33,6 +33,7 @@ class BoundChecker:
 
     def __init__(self, lower: tp.BoundValue = None, upper: tp.BoundValue = None) -> None:
         self.bounds = (lower, upper)
+        print("bounds", self.bounds)
 
     def __call__(self, value: np.ndarray) -> bool:
         """Checks whether the array lies within the bounds
@@ -47,8 +48,10 @@ class BoundChecker:
         bool
             True iff the array lies within the bounds
         """
+        print("called", value)
         for k, bound in enumerate(self.bounds):
             if bound is not None:
+                print(value, "<" if k else ">", bound)
                 if np.any((value > bound) if k else (value < bound)):
                     return False
         return True
