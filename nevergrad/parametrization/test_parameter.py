@@ -411,11 +411,8 @@ def test_array_sampling(method: str, exponent: tp.Optional[float], sigma: float)
         [[1.0, 1, 1]], [[mbound] * 3], method=method, full_range_sampling=True
     )
     param.set_mutation(exponent=exponent, sigma=sigma)
-    print(param._layers)
     new_param = param.sample()
-    print("_value is", new_param._value)
     val = new_param.value
-    print("value is", new_param.value)
     assert np.any(np.abs(val) > 10)
     assert np.all(val <= mbound)
     assert np.all(val >= 1)
