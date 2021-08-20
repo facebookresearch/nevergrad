@@ -214,7 +214,7 @@ def split_as_data_parameters(
     return ordered_arrays
 
 
-def test_normalizer() -> None:
+def test_normalizer_backward() -> None:
     ref = p.Instrumentation(
         p.Array(shape=(1, 2)).set_bounds(-12, 12, method="arctan"),
         p.Array(shape=(2,)).set_bounds(-12, 12, full_range_sampling=False),
@@ -230,6 +230,7 @@ def test_normalizer() -> None:
     # check the bounds
     param = ref.spawn_child()
     scaler = helpers.Normalizer(param, only_sampling=True, unbounded_transform=trans.Affine(1, 0))
+    # setting
     output = scaler.backward([1.0] * param.dimension)
     param.set_standardized_data(output)
     (array1, array2), values = param.value
@@ -244,6 +245,22 @@ def test_normalizer() -> None:
     param.set_standardized_data(output)
     assert param.value[1]["lr"] == pytest.approx(1.0)
     assert param.value[1]["stuff"] == pytest.approx(0.5)
+
+
+def test_normalizer_forward() -> None:
+    ref = p.Tuple(
+        p.Scalar(init=0), p.Scalar(init=1), p.Scalar(lower=-1, upper=3, init=0), p.Scalar(lower=-1, upper=1)
+    )
+    scaler = helpers.Normalizer(ref)
+    out = scaler.forward(ref.get_standardized_data(reference=ref))
+    np.testing.assert_almost_equal(out, [0.5, 0.5, 0.25, 0.5])
+    param = ref.spawn_child()
+    param.value = (0, 100, -1, 1)
+    data = param.get_standardized_data(reference=ref)
+    out = scaler.forward(data)
+    np.testing.assert_almost_equal(out, [0.5, 0.9967849, 0, 1])
+    back = scaler.backward(out)
+    np.testing.assert_almost_equal(back, data)  # shouuld be bijective
 
 
 # # # END OF CHECK # # #

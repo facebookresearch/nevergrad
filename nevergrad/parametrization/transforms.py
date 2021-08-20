@@ -255,6 +255,19 @@ class ArctanBound(BoundTransform):
 class CumulativeDensity(BoundTransform):
     """Bounds all real values into [0, 1] using a gaussian cumulative density function (cdf)
     Beware, cdf goes very fast to its limits.
+
+    Parameters
+    ----------
+    lower: float
+        lower bound
+    upper: float
+        upper bound
+    eps: float
+        small values to avoid hitting the bounds
+    scale: float
+        scaling factor of the density
+    density: str
+        either gaussian, or cauchy distributions
     """
 
     def __init__(
@@ -281,7 +294,7 @@ class CumulativeDensity(BoundTransform):
             self._back = stats.cauchy.ppf
 
     def forward(self, x: np.ndarray) -> np.ndarray:
-        return self._a * self.forw(x / self._scale) + self._b  # type: ignore
+        return self._a * self._forw(x / self._scale) + self._b  # type: ignore
 
     def backward(self, y: np.ndarray) -> np.ndarray:
         if (y > self.a_max).any() or (y < self.a_min).any():
