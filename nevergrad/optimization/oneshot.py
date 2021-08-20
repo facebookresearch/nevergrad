@@ -322,9 +322,8 @@ class _SamplingSearch(OneShotOptimizer):
         transf = trans.CumulativeDensity(
             0, 1, scale=self.scale, density="cauchy" if self.cauchy else "gaussian"
         )
-        self._normalizer.unbounded_transform = (
-            transf  # hack since scale is not defined before the first hack (needs refactor)
-        )
+        # hack since scale is not defined before the first hack (TODO: refactor)
+        self._normalizer.unbounded_transform = transf
 
         self._opposable_data = self._normalizer.backward(sample)
         assert self._opposable_data is not None
