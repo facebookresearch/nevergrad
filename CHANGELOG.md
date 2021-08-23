@@ -65,6 +65,8 @@
   [#1106](https://github.com/facebookresearch/nevergrad/pull/1106).
 - An interface with [Pymoo](https://pymoo.org/) optimizers has been added
   [#1197](https://github.com/facebookresearch/nevergrad/pull/1197).
+- An interface with [BayesOptim](https://github.com/wangronin/Bayesian-Optimization) optimizers has been added
+  [#1179](https://github.com/facebookresearch/nevergrad/pull/1179).
 
 ## 0.4.3 (2021-01-28)
 
