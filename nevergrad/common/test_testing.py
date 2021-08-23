@@ -82,3 +82,10 @@ def test_header() -> None:
         raise AssertionError(
             f"Following files are missing standard header (see other files):\n - {missing_str}"
         )
+
+
+def test_no_import_warning() -> None:
+    out = subprocess.run(
+        ["python", "-c", "import nevergrad as ng"], check=True, stderr=subprocess.PIPE
+    ).stderr
+    assert not out
