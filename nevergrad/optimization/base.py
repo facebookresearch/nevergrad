@@ -720,7 +720,11 @@ class ConfiguredOptimizer:
         if not as_config:
             # try instantiating for init checks
             # if as_config: check can be done before setting attributes
-            self(parametrization=4, budget=100)
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    "ignore", category=errors.InefficientSettingsWarning
+                )  # this check does not need to be efficient
+                self(parametrization=4, budget=100)
 
     def config(self) -> tp.Dict[str, tp.Any]:
         return dict(self._config)
