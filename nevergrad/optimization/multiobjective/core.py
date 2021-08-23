@@ -88,7 +88,6 @@ class HypervolumePareto:
             output = self.add(param)
         return output
 
-    # pylint: disable=too-many-branches
     def add(self, parameter: p.Parameter) -> float:
         """
         when _no_hypervolume = False
@@ -98,7 +97,7 @@ class HypervolumePareto:
             Add every point to pareto front. Don't compute hypervolume. Return 0.0 since loss
             not looked at in this context.
         """
-        # pylint: disable=too-many-return-statements, too-many-branches
+        # pylint: disable=too-many-return-statements
         if not isinstance(parameter, p.Parameter):
             raise TypeError(
                 f"{self.__class__.__name__}.add should receive a ng.p.Parameter, but got: {parameter}."
@@ -129,7 +128,9 @@ class HypervolumePareto:
         if self._hypervolume is None:
             self._hypervolume = HypervolumeIndicator(self._upper_bounds)
             self._pf._hypervolume = self._hypervolume
-        # We compute the hypervolume
+        return self._calc_hypervolume(parameter, losses)
+
+    def _calc_hypervolume(self, parameter: p.Parameter, losses: np.ndarray) -> float:
         new_volume = self._hypervolume.compute([pa.losses for pa in self._pf.get_raw()] + [losses])
         if new_volume > self._best_volume:
             # This point is good! Let us give him a great mono-fitness value.
@@ -149,7 +150,6 @@ class HypervolumePareto:
             assert distance_to_pareto >= 0
             return 0.0 if self._no_hypervolume else -new_volume + distance_to_pareto
 
-    # pylint: disable=too-many-branches
     def pareto_front(
         self, size: tp.Optional[int] = None, subset: str = "random", subset_tentatives: int = 12
     ) -> tp.List[p.Parameter]:
