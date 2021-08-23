@@ -84,7 +84,7 @@ def test_header() -> None:
         )
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="not compatible test")
+@pytest.mark.skipif(sys.platform == "win32", reason="not compatible test")  # type: ignore
 def test_no_import_warning() -> None:
     out = subprocess.run(
         ["python", "-c", "import nevergrad as ng"], check=True, stderr=subprocess.PIPE
