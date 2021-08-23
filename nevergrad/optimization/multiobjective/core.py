@@ -125,12 +125,12 @@ class HypervolumePareto:
         if self._no_hypervolume:
             self._pf.add_to_pareto(parameter)
             return 0.0
-        if self._hypervolume is None:
-            self._hypervolume = HypervolumeIndicator(self._upper_bounds)
-            self._pf._hypervolume = self._hypervolume
         return self._calc_hypervolume(parameter, losses)
 
     def _calc_hypervolume(self, parameter: p.Parameter, losses: np.ndarray) -> float:
+        if self._hypervolume is None:
+            self._hypervolume = HypervolumeIndicator(self._upper_bounds)
+            self._pf._hypervolume = self._hypervolume
         new_volume = self._hypervolume.compute([pa.losses for pa in self._pf.get_raw()] + [losses])
         if new_volume > self._best_volume:
             # This point is good! Let us give him a great mono-fitness value.
