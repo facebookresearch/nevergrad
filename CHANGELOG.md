@@ -29,6 +29,8 @@
 - Experimental methods `Array.set_recombination` and `Array.set_mutation(custom=.)` are removed in favor of
   layers changing `Array` behaviors [#1086](https://github.com/facebookresearch/nevergrad/pull/1086).
   Caution: this is still very experimental (and undocumented).
+- Important bug correction on the shape of bounds if specified as tuple or list instead of np.ndarray
+  [#1221](https://github.com/facebookresearch/nevergrad/pull/1221).
 
 ### Important changes
 
@@ -51,6 +53,8 @@
 - `DE` initial sampling as been updated to take bounds into accounts [#1058](https://github.com/facebookresearch/nevergrad/pull/1058)
 - `Array` can now take `lower` and `upper` bounds as initialization arguments. The array is initialized at its average
   if not `init` is provided and both bounds are provided. In this case, sampling will be uniformm between these bounds.
+- Bayesian optimizers are now properly using the bounds for bounded problem, which may improve performance
+  [#1222](https://github.com/facebookresearch/nevergrad/pull/1222).
 
 
 ### Other changes

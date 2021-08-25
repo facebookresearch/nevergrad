@@ -351,5 +351,4 @@ class _ConstraintCompatibilityFunction:
 
     def __call__(self, *args: tp.Any, **kwargs: tp.Any) -> tp.Loss:
         out = self.func((args, kwargs))
-        print("calling", args, kwargs, "out =", out)
         return out
