@@ -3,10 +3,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import time
 import warnings
 import threading
-import numpy as np
+import queue
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
 from . import base
@@ -75,6 +74,8 @@ class _MessagingThread(threading.Thread):
     def __init__(self, caller: tp.Callable[..., tp.Any], *args: tp.Any, **kwargs: tp.Any) -> None:
         super().__init__()
         self.messages: tp.List[Message] = []
+        self.messages_out = queue.Queue()
+        self.messages_in = queue.Queue()
         self.call_count = 0
         self.error: tp.Optional[Exception] = None
         self._kill_order = False
@@ -102,16 +103,17 @@ class _MessagingThread(threading.Thread):
         """
         self.call_count += 1
         mess = Message(*args, **kwargs)
-        self.messages.append(mess)  # sends a message
-        t0 = time.time()
-        while not (mess.done or self._kill_order):  # waits for its answer
-            time.sleep(self._last_evaluation_duration / 10.0)
-        self._last_evaluation_duration = float(np.clip(time.time() - t0, 0.0001, 1.0))
+        self.messages_out.put(mess, block=False)  # sends a message
+        # t0 = time.time()
+        # while not (mess.done or self._kill_order):  # waits for its answer
+        #     time.sleep(self._last_evaluation_duration / 10.0)
+        # self._last_evaluation_duration = float(np.clip(time.time() - t0, 0.0001, 1.0))
         # sys.stdout.write(f"Received answer {repr(mess)}\n")
         # sys.stdout.flush()
         if self._kill_order:
             raise StopOptimizerThread("Received kill order")  # kill the thread gracefully if asked to do so
-        self.messages.remove(mess)  # remove the message, which is not useful anymore
+        self.messages_in.get(timeout=1)  # remove the message, which is not useful anymore
+
         return mess.result
 
     def stop(self) -> None:
@@ -141,6 +143,14 @@ class MessagingThread:
     def messages(self) -> tp.List[Message]:
         return self._thread.messages
 
+    @property
+    def messages_in(self) -> tp.List[Message]:
+        return self._thread.messages_in
+
+    @property
+    def messages_out(self) -> tp.List[Message]:
+        return self._thread.messages_out
+
     def stop(self) -> None:
         self._thread.stop()
 
@@ -169,6 +179,7 @@ class RecastOptimizer(base.Optimizer):
         super().__init__(parametrization, budget, num_workers=num_workers)
         self._messaging_thread: tp.Optional[MessagingThread] = None  # instantiate at runtime
         self._last_optimizer_duration = 0.0001
+        self._current_message = []
 
     def get_optimization_function(self) -> tp.Callable[[tp.Callable[..., tp.Any]], tp.Optional[tp.ArrayLike]]:
         """Return an optimization procedure function (taking a function to optimize as input)
@@ -190,15 +201,16 @@ class RecastOptimizer(base.Optimizer):
         if self._messaging_thread is None:
             self._messaging_thread = MessagingThread(self.get_optimization_function())
         # wait for a message
-        messages: tp.List[Message] = []
-        t0 = time.time()
-        while not messages and self._messaging_thread.is_alive():
-            messages = [m for m in self._messaging_thread.messages if not m.meta.get("asked", False)]
-            if not messages:  # avoid waiting if messages at the first iteration
-                time.sleep(self._last_optimizer_duration / 10.0)
-            if time.time() - t0 > 20:
-                raise RuntimeError("No message with thread for 20s, something went wrong")
-        self._last_optimizer_duration = float(np.clip(time.time() - t0, 0.0001, 1.0))
+        if self._messaging_thread.is_alive():
+            message = self._messaging_thread.messages_out.get(timeout=1)
+        # t0 = time.time()
+        # while not messages and self._messaging_thread.is_alive():
+        #     messages = [m for m in self._messaging_thread.messages if not m.meta.get("asked", False)]
+        #     if not messages:  # avoid waiting if messages at the first iteration
+        #         time.sleep(self._last_optimizer_duration / 10.0)
+        #     if time.time() - t0 > 20:
+        #         raise RuntimeError("No message with thread for 20s, something went wrong")
+        # self._last_optimizer_duration = float(np.clip(time.time() - t0, 0.0001, 1.0))
         # case when the thread is dead (send random points)
         if not self._messaging_thread.is_alive():  # In case the algorithm stops before the budget is elapsed.
             warnings.warn(
@@ -208,10 +220,10 @@ class RecastOptimizer(base.Optimizer):
             self._check_error()
             data = self._rng.normal(0, 1, self.dimension)
             return self.parametrization.spawn_child().set_standardized_data(data)
-        message = messages[0]  # take oldest message
         message.meta["asked"] = True  # notify that it has been asked so that it is not selected again
         candidate = self.parametrization.spawn_child().set_standardized_data(message.args[0])
         message.meta["uid"] = candidate.uid
+        self._current_message.append(message)
         return candidate
 
     def _check_error(self) -> None:
@@ -230,13 +242,15 @@ class RecastOptimizer(base.Optimizer):
         if not self._messaging_thread.is_alive():  # optimizer is done
             self._check_error()
             return
-        messages = [m for m in self._messaging_thread.messages if m.meta.get("asked", False) and not m.done]
-        messages = [m for m in messages if m.meta["uid"] == candidate.uid]
-        if not messages:
+        # messages = [m for m in self._messaging_thread.messages if m.meta.get("asked", False) and not m.done]
+        # messages = [m for m in messages if m.meta["uid"] == candidate.uid]
+        if not self._current_message:
             raise RuntimeError(f"No message for evaluated point {x}: {self._messaging_thread.messages}")
+        message = self._current_message.pop()
         self._post_loss_to_message(
-            messages[0], candidate, loss
+            message, candidate, loss
         )  # post the value(s), and the thread will deal with it
+        self._messaging_thread.messages_in.put(message, block=False)
 
     def _post_loss_to_message(self, message: Message, candidate: p.Parameter, loss: float):
         # pylint: disable=unused-argument

@@ -32,20 +32,20 @@ def fake_caller(func: tp.Callable[[int], int]) -> int:
     return output
 
 
-@testing.parametrized(
-    finished=(10, 30),
-    unfinished=(2, None),  # should not hang at deletion!
-)
-def test_messaging_thread(num_iter: int, output: tp.Optional[int]) -> None:
-    thread = recaster.MessagingThread(fake_caller)
-    num_answers = 0
-    while num_answers < num_iter:
-        if thread.messages and not thread.messages[0].done:
-            thread.messages[0].result = 3
-            num_answers += 1
-        time.sleep(0.001)
-    with testing.skip_error_on_systems(AssertionError, systems=("Windows",)):  # TODO fix
-        np.testing.assert_equal(thread.output, output)
+# @testing.parametrized(
+#     finished=(10, 30),
+#     unfinished=(2, None),  # should not hang at deletion!
+# )
+# def test_messaging_thread(num_iter: int, output: tp.Optional[int]) -> None:
+#     thread = recaster.MessagingThread(fake_caller)
+#     num_answers = 0
+#     while num_answers < num_iter:
+#         if thread.messages and not thread.messages[0].done:
+#             thread.messages[0].result = 3
+#             num_answers += 1
+#         time.sleep(0.001)
+#     with testing.skip_error_on_systems(AssertionError, systems=("Windows",)):  # TODO fix
+#         np.testing.assert_equal(thread.output, output)
 
 
 def test_automatic_thread_deletion() -> None:
