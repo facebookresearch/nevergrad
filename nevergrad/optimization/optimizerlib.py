@@ -1833,7 +1833,6 @@ class _BayesOptim(base.Optimizer):
         from bayes_optim import RealSpace
         from bayes_optim.surrogate import GaussianProcess
 
-        # lb, ub = 1e-7 - np.pi / 2, np.pi / 2 - 1e-7
         lb, ub = 1e-7, 1 - 1e-7
         space = RealSpace([lb, ub]) * self.dimension
 
@@ -1869,7 +1868,7 @@ class _BayesOptim(base.Optimizer):
 
             self._alg = BayesOptimBO_(
                 search_space=space,
-                obj_fun=None,  # Assuming that this is not used :-)
+                obj_fun=None,
                 model=model,
                 DoE_size=init_budget if init_budget is not None else 5,
                 max_FEs=budget,
