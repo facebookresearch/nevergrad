@@ -1727,7 +1727,7 @@ class _BO(base.Optimizer):
                 self._bo.probe([0.5] * self.dimension, lazy=True)
                 init_budget -= 1
             if self._InitOpt is not None and init_budget > 0:
-                param = p.Array(shape=(self.dimension,)).set_bounds(lower=0, upper=1.0)
+                param = p.Array(shape=(self.dimension,)).set_bounds(lower=0, upper=1)
                 param.random_state = self._rng
                 opt = self._InitOpt(param, budget=init_budget)
                 for _ in range(init_budget):
@@ -1833,7 +1833,6 @@ class _BayesOptim(base.Optimizer):
         from bayes_optim import RealSpace
         from bayes_optim.surrogate import GaussianProcess
 
-        # lb, ub = 1e-7 - np.pi / 2, np.pi / 2 - 1e-7
         lb, ub = 1e-7, 1 - 1e-7
         space = RealSpace([lb, ub]) * self.dimension
 
