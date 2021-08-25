@@ -181,10 +181,12 @@ class ArtificialFunction(ExperimentFunction):
         array_bounds = dict(upper=5, lower=-5) if bounded else {}
         if not split:
             parametrization: ng.p.Parameter = ng.p.Array(
-                shape=(1,) if hashing else (self._dimension,), **array_bounds
+                shape=(1,) if hashing else (self._dimension,), **array_bounds  # type: ignore
             ).set_name("")
         else:
-            arrays = [ng.p.Array(shape=(block_dimension,), **array_bounds) for _ in range(num_blocks)]
+            arrays = [
+                ng.p.Array(shape=(block_dimension,), **array_bounds) for _ in range(num_blocks)  # type: ignore
+            ]
             parametrization = ng.p.Instrumentation(*arrays)
             parametrization.set_name("split")
         if noise_level > 0:
