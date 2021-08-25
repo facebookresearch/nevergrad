@@ -74,8 +74,8 @@ class _MessagingThread(threading.Thread):
     def __init__(self, caller: tp.Callable[..., tp.Any], *args: tp.Any, **kwargs: tp.Any) -> None:
         super().__init__()
         self.messages: tp.List[Message] = []
-        self.messages_out: queue.Queue[Message] = queue.Queue()
-        self.messages_in: queue.Queue[Message] = queue.Queue()
+        self.messages_out: tp.Any = queue.Queue()
+        self.messages_in: tp.Any = queue.Queue()
         self.call_count = 0
         self.error: tp.Optional[Exception] = None
         self._kill_order = False
@@ -144,11 +144,11 @@ class MessagingThread:
         return self._thread.messages
 
     @property
-    def messages_in(self) -> queue.Queue[Message]:
+    def messages_in(self) -> tp.Any:
         return self._thread.messages_in
 
     @property
-    def messages_out(self) -> queue.Queue[Message]:
+    def messages_out(self) -> tp.Any:
         return self._thread.messages_out
 
     def stop(self) -> None:
