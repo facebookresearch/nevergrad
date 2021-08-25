@@ -74,8 +74,8 @@ class _MessagingThread(threading.Thread):
     def __init__(self, caller: tp.Callable[..., tp.Any], *args: tp.Any, **kwargs: tp.Any) -> None:
         super().__init__()
         self.messages: tp.List[Message] = []
-        self.messages_out = queue.Queue()
-        self.messages_in = queue.Queue()
+        self.messages_out: queue.Queue[Message] = queue.Queue()
+        self.messages_in: queue.Queue[Message] = queue.Queue()
         self.call_count = 0
         self.error: tp.Optional[Exception] = None
         self._kill_order = False
@@ -144,11 +144,11 @@ class MessagingThread:
         return self._thread.messages
 
     @property
-    def messages_in(self) -> tp.List[Message]:
+    def messages_in(self) -> queue.Queue[Message]:
         return self._thread.messages_in
 
     @property
-    def messages_out(self) -> tp.List[Message]:
+    def messages_out(self) -> queue.Queue[Message]:
         return self._thread.messages_out
 
     def stop(self) -> None:
@@ -179,7 +179,7 @@ class RecastOptimizer(base.Optimizer):
         super().__init__(parametrization, budget, num_workers=num_workers)
         self._messaging_thread: tp.Optional[MessagingThread] = None  # instantiate at runtime
         self._last_optimizer_duration = 0.0001
-        self._current_message = []
+        self._current_message: tp.List[Message] = []
 
     def get_optimization_function(self) -> tp.Callable[[tp.Callable[..., tp.Any]], tp.Optional[tp.ArrayLike]]:
         """Return an optimization procedure function (taking a function to optimize as input)
