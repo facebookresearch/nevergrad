@@ -672,7 +672,9 @@ def yabbob(
 
     # List of objective functions.
     functions = [
-            ArtificialFunction(name, block_dimension=d, rotation=rotation, noise_level=noise_level, split=split, bounded=bounded)
+        ArtificialFunction(
+            name, block_dimension=d, rotation=rotation, noise_level=noise_level, split=split, bounded=bounded
+        )
         for name in names
         for rotation in [True, False]
         for num_blocks in ([1] if not split else [7, 12])

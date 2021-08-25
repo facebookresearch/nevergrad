@@ -1769,6 +1769,7 @@ class _BO(base.Optimizer):
             np.array([self.bo.max["params"][self._fake_function.key(i)] for i in range(self.dimension)])
         )
 
+
 class ParametrizedBO(base.ConfiguredOptimizer):
     """Bayesian optimization.
     Hyperparameter tuning method, based on statistical modeling of the objective function.
