@@ -112,8 +112,7 @@ class _MessagingThread(threading.Thread):
         # sys.stdout.flush()
         if self._kill_order:
             raise StopOptimizerThread("Received kill order")  # kill the thread gracefully if asked to do so
-        self.messages_in.get(timeout=1)  # remove the message, which is not useful anymore
-
+        mess = self.messages_in.get(timeout=1)  # remove the message, which is not useful anymore
         return mess.result
 
     def stop(self) -> None:
