@@ -3,11 +3,12 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import time
+# import time
 import numpy as np
 import nevergrad as ng
 import nevergrad.common.typing as tp
-from nevergrad.common import testing
+
+# from nevergrad.common import testing
 from nevergrad.functions import ArtificialFunction
 from nevergrad.benchmark import experiments
 from nevergrad.benchmark.xpbase import Experiment
