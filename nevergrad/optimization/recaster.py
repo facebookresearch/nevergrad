@@ -73,9 +73,8 @@ class _MessagingThread(threading.Thread):
     # pylint: disable=too-many-instance-attributes
     def __init__(self, caller: tp.Callable[..., tp.Any], *args: tp.Any, **kwargs: tp.Any) -> None:
         super().__init__()
-        self.messages: tp.List[Message] = []
-        self.messages_out: tp.Any = queue.Queue()
-        self.messages_in: tp.Any = queue.Queue()
+        self.messages_ask: tp.Any = queue.Queue()
+        self.messages_tell: tp.Any = queue.Queue()
         self.call_count = 0
         self.error: tp.Optional[Exception] = None
         self._kill_order = False
@@ -92,7 +91,7 @@ class _MessagingThread(threading.Thread):
         try:
             self.output = self._caller(self._fake_callable, *self._args, **self._kwargs)
         except StopOptimizerThread:  # gracefully stopping the thread
-            self.messages.clear()
+            self.messages_tell.put(None)  # placeholder
         except Exception as e:  # pylint: disable=broad-except
             self.error = e
 
@@ -103,10 +102,10 @@ class _MessagingThread(threading.Thread):
         """
         self.call_count += 1
         mess = Message(*args, **kwargs)
-        self.messages_out.put(mess, block=True)  # sends a message
+        self.messages_ask.put(mess, block=True)  # sends a message
         if self._kill_order:
             raise StopOptimizerThread("Received kill order")  # kill the thread gracefully if asked to do so
-        mess = self.messages_in.get(timeout=10)  # remove the message, which is not useful anymore
+        mess = self.messages_tell.get(timeout=10)  # get evaluated message
         return mess.result
 
     def stop(self) -> None:
@@ -133,16 +132,12 @@ class MessagingThread:
         return self._thread.error
 
     @property
-    def messages(self) -> tp.List[Message]:
-        return self._thread.messages
+    def messages_tell(self) -> tp.Any:
+        return self._thread.messages_tell
 
     @property
-    def messages_in(self) -> tp.Any:
-        return self._thread.messages_in
-
-    @property
-    def messages_out(self) -> tp.Any:
-        return self._thread.messages_out
+    def messages_ask(self) -> tp.Any:
+        return self._thread.messages_ask
 
     def stop(self) -> None:
         self._thread.stop()
@@ -195,7 +190,7 @@ class RecastOptimizer(base.Optimizer):
             self._messaging_thread = MessagingThread(self.get_optimization_function())
         # wait for a message
         if self._messaging_thread.is_alive():
-            message = self._messaging_thread.messages_out.get()
+            message = self._messaging_thread.messages_ask.get()
         if not self._messaging_thread.is_alive():  # In case the algorithm stops before the budget is elapsed.
             warnings.warn(
                 "Underlying optimizer has already converged, returning random points",
@@ -227,12 +222,12 @@ class RecastOptimizer(base.Optimizer):
             self._check_error()
             return
         if not self._current_message:
-            raise RuntimeError(f"No message for evaluated point {x}: {self._messaging_thread.messages}")
+            raise RuntimeError(f"No message for evaluated point {x}: {self._current_message}")
         message = self._current_message.pop()
         self._post_loss_to_message(
             message, candidate, loss
         )  # post the value(s), and the thread will deal with it
-        self._messaging_thread.messages_in.put(message, block=False)
+        self._messaging_thread.messages_tell.put(message, block=False)
 
     def _post_loss_to_message(self, message: Message, candidate: p.Parameter, loss: float):
         # pylint: disable=unused-argument
