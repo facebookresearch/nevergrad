@@ -228,7 +228,8 @@ class RecastOptimizer(base.Optimizer):
             message, candidate, loss
         )  # post the value(s), and the thread will deal with it
         self._messaging_thread.messages_tell.put(message, block=False)
-        if self.num_tell == self.budget - 1:  # hacky: must change
+        # hacky: must change
+        if self.num_tell == self.budget - 1:  # type: ignore
             self._messaging_thread.__del__()
 
     def _post_loss_to_message(self, message: Message, candidate: p.Parameter, loss: float):
