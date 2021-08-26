@@ -104,12 +104,6 @@ class _MessagingThread(threading.Thread):
         self.call_count += 1
         mess = Message(*args, **kwargs)
         self.messages_out.put(mess, block=True)  # sends a message
-        # t0 = time.time()
-        # while not (mess.done or self._kill_order):  # waits for its answer
-        #     time.sleep(self._last_evaluation_duration / 10.0)
-        # self._last_evaluation_duration = float(np.clip(time.time() - t0, 0.0001, 1.0))
-        # sys.stdout.write(f"Received answer {repr(mess)}\n")
-        # sys.stdout.flush()
         if self._kill_order:
             raise StopOptimizerThread("Received kill order")  # kill the thread gracefully if asked to do so
         mess = self.messages_in.get(timeout=10)  # remove the message, which is not useful anymore
@@ -202,15 +196,6 @@ class RecastOptimizer(base.Optimizer):
         # wait for a message
         if self._messaging_thread.is_alive():
             message = self._messaging_thread.messages_out.get()
-        # t0 = time.time()
-        # while not messages and self._messaging_thread.is_alive():
-        #     messages = [m for m in self._messaging_thread.messages if not m.meta.get("asked", False)]
-        #     if not messages:  # avoid waiting if messages at the first iteration
-        #         time.sleep(self._last_optimizer_duration / 10.0)
-        #     if time.time() - t0 > 20:
-        #         raise RuntimeError("No message with thread for 20s, something went wrong")
-        # self._last_optimizer_duration = float(np.clip(time.time() - t0, 0.0001, 1.0))
-        # case when the thread is dead (send random points)
         if not self._messaging_thread.is_alive():  # In case the algorithm stops before the budget is elapsed.
             warnings.warn(
                 "Underlying optimizer has already converged, returning random points",
@@ -241,8 +226,6 @@ class RecastOptimizer(base.Optimizer):
         if not self._messaging_thread.is_alive():  # optimizer is done
             self._check_error()
             return
-        # messages = [m for m in self._messaging_thread.messages if m.meta.get("asked", False) and not m.done]
-        # messages = [m for m in messages if m.meta["uid"] == candidate.uid]
         if not self._current_message:
             raise RuntimeError(f"No message for evaluated point {x}: {self._messaging_thread.messages}")
         message = self._current_message.pop()
