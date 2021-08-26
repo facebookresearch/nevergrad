@@ -102,10 +102,10 @@ class _MessagingThread(threading.Thread):
         """
         self.call_count += 1
         mess = Message(*args, **kwargs)
-        self.messages_ask.put(mess, block=True)  # sends a message
+        self.messages_ask.put(mess, block=False)  # sends a message
         if self._kill_order:
             raise StopOptimizerThread("Received kill order")  # kill the thread gracefully if asked to do so
-        mess = self.messages_tell.get(timeout=10)  # get evaluated message
+        mess = self.messages_tell.get()  # get evaluated message
         return mess.result
 
     def stop(self) -> None:
@@ -228,6 +228,8 @@ class RecastOptimizer(base.Optimizer):
             message, candidate, loss
         )  # post the value(s), and the thread will deal with it
         self._messaging_thread.messages_tell.put(message, block=False)
+        if self.num_tell == self.budget - 1:  # hacky: must change
+            self._messaging_thread.__del__()
 
     def _post_loss_to_message(self, message: Message, candidate: p.Parameter, loss: float):
         # pylint: disable=unused-argument
