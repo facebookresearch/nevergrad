@@ -4,7 +4,8 @@
 <html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8" />
-  
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
   <title>Examples of benchmarks &mdash; nevergrad  documentation</title>
@@ -183,12 +184,12 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="examples-of-benchmarks">
+  <section id="examples-of-benchmarks">
 <h1>Examples of benchmarks<a class="headerlink" href="#examples-of-benchmarks" title="Permalink to this headline">¶</a></h1>
 <p>The following figures are examples of algorithm benchmarks which can be generated very easily from the platform
 In all examples, we use independent experiments for the different x-values; so that consistent rankings between methods, over several x-values, have a statistical meaning.</p>
 <p>If you want to run the examples yourself, please make sure you have installed <code class="code docutils literal notranslate"><span class="pre">nevergrad</span></code> with the <code class="code docutils literal notranslate"><span class="pre">benchmark</span></code> flag (see <a class="reference internal" href="benchmarking.html#benchmarking"><span class="std std-ref">here</span></a>).</p>
-<div class="section" id="noisy-optimization">
+<section id="noisy-optimization">
 <h2>Noisy optimization<a class="headerlink" href="#noisy-optimization" title="Permalink to this headline">¶</a></h2>
 <p>Created with command:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python -m nevergrad.benchmark noise --seed<span class="o">=</span><span class="m">12</span> --repetitions<span class="o">=</span><span class="m">10</span> --plot
@@ -197,10 +198,10 @@ In all examples, we use independent experiments for the different x-values; so t
 <p>Here the variance of the noise does not vanish near the optimum.
 TBPSA uses the noise management principles of <a class="reference external" href="https://homepages.fhv.at/hgb/New-Papers/PPSN16_HB16.pdf">pcCMSA-ES</a> reaching fast convergence rates. We here compare it to a sample of our algorithms; but it performed very well also compared to many other methods.</p>
 <a class="reference internal image-reference" href="_images/noise_r400s12_xpresults_namecigar,rotationTrue.png"><img alt="_images/noise_r400s12_xpresults_namecigar,rotationTrue.png" src="_images/noise_r400s12_xpresults_namecigar,rotationTrue.png" style="width: 800px;" /></a>
-</div>
-<div class="section" id="one-shot-optimization">
+</section>
+<section id="one-shot-optimization">
 <h2>One-shot optimization<a class="headerlink" href="#one-shot-optimization" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="in-dimension-11-with-one-feature">
+<section id="in-dimension-11-with-one-feature">
 <h3>In dimension-11 with one feature<a class="headerlink" href="#in-dimension-11-with-one-feature" title="Permalink to this headline">¶</a></h3>
 <p>Created with command:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python -m nevergrad.benchmark dim10_select_one_feature --seed<span class="o">=</span><span class="m">12</span> --repetitions<span class="o">=</span><span class="m">400</span> --plot
@@ -219,8 +220,8 @@ TBPSA uses the noise management principles of <a class="reference external" href
 <li><p>LHS performs equivalently to low discrepancy (which can be related to the fact that only one feature matters).</p></li>
 </ul>
 <img alt="_images/dim10_select_one_feature_r400s12_xpresults.png" src="_images/dim10_select_one_feature_r400s12_xpresults.png" />
-</div>
-<div class="section" id="in-dimension-12-with-two-features">
+</section>
+<section id="in-dimension-12-with-two-features">
 <h3>In dimension-12 with two features<a class="headerlink" href="#in-dimension-12-with-two-features" title="Permalink to this headline">¶</a></h3>
 <p>We reproduce this experiment but with 2 useful variables:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python -m nevergrad.benchmark dim10_select_two_features --seed<span class="o">=</span><span class="m">12</span> --repetitions<span class="o">=</span><span class="m">400</span> --plot
@@ -228,16 +229,16 @@ TBPSA uses the noise management principles of <a class="reference external" href
 </div>
 <p>LHS still performs very well, as well as scrambled methods; Cauchy is not that useful anymore.</p>
 <img alt="_images/dim10_select_two_features_r400s12_xpresults.png" src="_images/dim10_select_two_features_r400s12_xpresults.png" />
-</div>
-<div class="section" id="in-dimension-10-with-small-budget">
+</section>
+<section id="in-dimension-10-with-small-budget">
 <h3>In dimension-10 with small budget<a class="headerlink" href="#in-dimension-10-with-small-budget" title="Permalink to this headline">¶</a></h3>
 <p>With all variables useful, the situation becomes different; Cauchy is harmful. Scrambling is still very necessary. LHS (vanilla), which does not couple variables, is weak.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python -m nevergrad.benchmark dim10_smallbudget --seed<span class="o">=</span><span class="m">12</span> --repetitions<span class="o">=</span><span class="m">400</span> --plot
 </pre></div>
 </div>
 <img alt="_images/dim10_smallbudget_r400s12_xpresults.png" src="_images/dim10_smallbudget_r400s12_xpresults.png" />
-</div>
-<div class="section" id="in-dimension-4">
+</section>
+<section id="in-dimension-4">
 <h3>In dimension-4<a class="headerlink" href="#in-dimension-4" title="Permalink to this headline">¶</a></h3>
 <p>In moderate dimension, scrambling is less necessary (consistently with theory) and LHS becomes weaker as budget increases (consistently with discrepancy results in <a class="reference external" href="https://arxiv.org/abs/1707.08481">https://arxiv.org/abs/1707.08481</a>).
 The following plot was created with command:</p>
@@ -245,9 +246,9 @@ The following plot was created with command:</p>
 </pre></div>
 </div>
 <img alt="_images/doe_dim4_r400s12_xpresults.png" src="_images/doe_dim4_r400s12_xpresults.png" />
-</div>
-</div>
-<div class="section" id="comparison-based-methods-for-ill-conditioned-problems">
+</section>
+</section>
+<section id="comparison-based-methods-for-ill-conditioned-problems">
 <h2>Comparison-based methods for ill-conditioned problems<a class="headerlink" href="#comparison-based-methods-for-ill-conditioned-problems" title="Permalink to this headline">¶</a></h2>
 <p>In this setting (rotated or not, ill-conditioned) we get excellent results with:</p>
 <blockquote>
@@ -261,16 +262,16 @@ The following plot was created with command:</p>
 </pre></div>
 </div>
 <img alt="_images/compabasedillcond_r400s12_xpresults_nameellipsoid,rotationTrue.png" src="_images/compabasedillcond_r400s12_xpresults_nameellipsoid,rotationTrue.png" />
-</div>
-<div class="section" id="ill-conditioned-function">
+</section>
+<section id="ill-conditioned-function">
 <h2>Ill-conditioned function<a class="headerlink" href="#ill-conditioned-function" title="Permalink to this headline">¶</a></h2>
 <p>SQP (which won the BBComp GECCO 2015 contest) performs great in the quadratic case, consistently with theory and intuition:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python -m nevergrad.benchmark illcond --seed<span class="o">=</span><span class="m">12</span> --repetitions<span class="o">=</span><span class="m">50</span> --plot
 </pre></div>
 </div>
 <img alt="_images/illcond_r50s12_xpresults_namecigar,rotationTrue.png" src="_images/illcond_r50s12_xpresults_namecigar,rotationTrue.png" />
-</div>
-<div class="section" id="discrete">
+</section>
+<section id="discrete">
 <h2>Discrete<a class="headerlink" href="#discrete" title="Permalink to this headline">¶</a></h2>
 <p>The platform can also deal with discrete objective functions! We can both consider discrete domains handled through softmax or through discretization of continuous variables.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python -m nevergrad.benchmark discrete --seed<span class="o">=</span><span class="m">12</span> --repetitions<span class="o">=</span><span class="m">10</span> --plot
@@ -279,8 +280,8 @@ The following plot was created with command:</p>
 <p>We note that <a class="reference external" href="https://arxiv.org/abs/1703.03334">FastGA</a> performs best. DoubleFastGA corresponds to a mutation rate ranging between 1/dim and (dim-1)/dim instead of 1/dim and 1/2; this is because the original range corresponds to a binary domain whereas we consider arbitrary domains. The simple uniform mixing of mutation rates (<a class="reference external" href="https://arxiv.org/abs/1606.05551">https://arxiv.org/abs/1606.05551</a>) performs well in several cases.</p>
 <img alt="_images/small_discrete_r10s12_xpresults_dimension330,namehardleadingones5,useless_variables300.png" src="_images/small_discrete_r10s12_xpresults_dimension330,namehardleadingones5,useless_variables300.png" />
 <img alt="_images/small_discrete_r10s12_xpresults_dimension330,namehardonemax5,useless_variables300.png" src="_images/small_discrete_r10s12_xpresults_dimension330,namehardonemax5,useless_variables300.png" />
-</div>
-<div class="section" id="list-of-benchmarks">
+</section>
+<section id="list-of-benchmarks">
 <h2>List of benchmarks<a class="headerlink" href="#list-of-benchmarks" title="Permalink to this headline">¶</a></h2>
 <p>You can find a list of currently available benchmarks below. Most are not well-documented, please open an issue when you need more information and we’ll update the documentation on demand ;)</p>
 <span class="target" id="module-nevergrad.benchmark.frozenexperiments"></span><dl class="py function">
@@ -1024,8 +1025,8 @@ and parallel.</p>
 <p>TODO(oteytaud): this requires a significant improvement, covering mixed problems and different types of constraints.</p>
 </dd></dl>
 
-</div>
-</div>
+</section>
+</section>
 
 
            </div>
