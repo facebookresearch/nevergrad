@@ -103,7 +103,7 @@ class _MessagingThread(threading.Thread):
         """
         self.call_count += 1
         mess = Message(*args, **kwargs)
-        self.messages_out.put(mess, block=False)  # sends a message
+        self.messages_out.put(mess, block=True)  # sends a message
         # t0 = time.time()
         # while not (mess.done or self._kill_order):  # waits for its answer
         #     time.sleep(self._last_evaluation_duration / 10.0)
@@ -112,7 +112,7 @@ class _MessagingThread(threading.Thread):
         # sys.stdout.flush()
         if self._kill_order:
             raise StopOptimizerThread("Received kill order")  # kill the thread gracefully if asked to do so
-        mess = self.messages_in.get(timeout=1)  # remove the message, which is not useful anymore
+        mess = self.messages_in.get(timeout=10)  # remove the message, which is not useful anymore
         return mess.result
 
     def stop(self) -> None:
@@ -201,7 +201,7 @@ class RecastOptimizer(base.Optimizer):
             self._messaging_thread = MessagingThread(self.get_optimization_function())
         # wait for a message
         if self._messaging_thread.is_alive():
-            message = self._messaging_thread.messages_out.get(timeout=1)
+            message = self._messaging_thread.messages_out.get()
         # t0 = time.time()
         # while not messages and self._messaging_thread.is_alive():
         #     messages = [m for m in self._messaging_thread.messages if not m.meta.get("asked", False)]
