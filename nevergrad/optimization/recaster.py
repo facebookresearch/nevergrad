@@ -83,6 +83,7 @@ class _MessagingThread(threading.Thread):
         self._kwargs = kwargs
         self.output: tp.Optional[tp.Any] = None  # TODO add a "done" attribute ?
         self._last_evaluation_duration = 0.0001
+        self.daemon = True
 
     def run(self) -> None:
         """Starts the thread and run the "caller" function argument on
@@ -102,10 +103,12 @@ class _MessagingThread(threading.Thread):
         """
         self.call_count += 1
         mess = Message(*args, **kwargs)
-        self.messages_ask.put(mess, block=False)  # sends a message
+        self.messages_ask.put(mess, block=True)  # sends a message
         if self._kill_order:
             raise StopOptimizerThread("Received kill order")  # kill the thread gracefully if asked to do so
         mess = self.messages_tell.get()  # get evaluated message
+        if mess is None:
+            raise StopOptimizerThread("Kill")
         return mess.result
 
     def stop(self) -> None:
@@ -191,6 +194,7 @@ class RecastOptimizer(base.Optimizer):
         # wait for a message
         if self._messaging_thread.is_alive():
             message = self._messaging_thread.messages_ask.get()
+            message.meta["asked"] = True  # notify that it has been asked so that it is not selected again
         if not self._messaging_thread.is_alive():  # In case the algorithm stops before the budget is elapsed.
             warnings.warn(
                 "Underlying optimizer has already converged, returning random points",
@@ -199,7 +203,6 @@ class RecastOptimizer(base.Optimizer):
             self._check_error()
             data = self._rng.normal(0, 1, self.dimension)
             return self.parametrization.spawn_child().set_standardized_data(data)
-        message.meta["asked"] = True  # notify that it has been asked so that it is not selected again
         candidate = self.parametrization.spawn_child().set_standardized_data(message.args[0])
         message.meta["uid"] = candidate.uid
         self._current_message.append(message)
@@ -227,10 +230,7 @@ class RecastOptimizer(base.Optimizer):
         self._post_loss_to_message(
             message, candidate, loss
         )  # post the value(s), and the thread will deal with it
-        self._messaging_thread.messages_tell.put(message, block=False)
-        # hacky: must change
-        if self.num_tell == self.budget - 1:  # type: ignore
-            self._messaging_thread.messages_tell.put(Message())
+        self._messaging_thread.messages_tell.put(message)
 
     def _post_loss_to_message(self, message: Message, candidate: p.Parameter, loss: float):
         # pylint: disable=unused-argument
