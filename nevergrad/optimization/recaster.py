@@ -193,7 +193,7 @@ class RecastOptimizer(base.Optimizer):
             self._messaging_thread = MessagingThread(self.get_optimization_function())
         # wait for a message
         if self._messaging_thread.is_alive():
-            message = self._messaging_thread.messages_ask.get(timeout=5)
+            message = self._messaging_thread.messages_ask.get(timeout=10)
             message.meta["asked"] = True  # notify that it has been asked so that it is not selected again
         if not self._messaging_thread.is_alive():  # In case the algorithm stops before the budget is elapsed.
             warnings.warn(
