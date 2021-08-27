@@ -143,6 +143,7 @@ class _RandomSearch(OneShotOptimizer):
         self.scale = scale
         self.sampler = sampler
         self._opposable_data: tp.Optional[np.ndarray] = None
+        self._no_hypervolume = True
 
     def _internal_ask(self) -> tp.ArrayLike:
         # pylint: disable=not-callable
@@ -274,6 +275,7 @@ class _SamplingSearch(OneShotOptimizer):
         self.rescaled = rescaled
         self.recommendation_rule = recommendation_rule
         # rescale to the bounds if both are provided
+        self._no_hypervolume = True
         self._normalizer = p.helpers.Normalizer(self.parametrization)
 
     @property
