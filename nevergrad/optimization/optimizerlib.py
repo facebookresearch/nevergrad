@@ -1512,6 +1512,44 @@ class MetaModel(base.Optimizer):
 
 
 @registry.register
+class MetaModelOpO(base.Optimizer):
+    """Adding a metamodel into OnePlusOne."""
+
+    def __init__(
+        self,
+        parametrization: IntOrParameter,
+        budget: tp.Optional[int] = None,
+        num_workers: int = 1,
+        multivariate_optimizer: tp.Optional[base.OptCls] = None,
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        if multivariate_optimizer is None:
+            multivariate_optimizer = OnePlusOne
+        self._optim = multivariate_optimizer(
+            self.parametrization, budget, num_workers
+        )  # share parametrization and its rng
+
+    def _internal_ask_candidate(self) -> p.Parameter:
+        # We request a bit more points than what is really necessary for our dimensionality (+dimension).
+        sample_size = int((self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1)
+        if (
+            self._num_ask % max(13, self.num_workers, self.dimension) == 0
+            and len(self.archive) >= sample_size
+        ):
+            try:
+                data = learn_on_k_best(self.archive, sample_size)
+                candidate = self.parametrization.spawn_child().set_standardized_data(data)
+            except InfiniteMetaModelOptimum:  # The optimum is at infinity. Shit happens.
+                candidate = self._optim.ask()
+        else:
+            candidate = self._optim.ask()
+        return candidate
+
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        self._optim.tell(candidate, loss)
+
+
+@registry.register
 class SQPCMA(Portfolio):
     """Passive portfolio of CMA and many SQP."""
 
@@ -2609,7 +2647,7 @@ class NGOpt13(NGOpt12):  # Also known as NGOpt12H
 class NGOpt14(NGOpt12):  # Also known as NGOpt12H_nohyperopt
     def _select_optimizer_cls(self) -> base.OptCls:
         if self.budget is not None and self.budget < 600:
-            return MetaModel
+            return MetaModelOpO
         else:
             return super()._select_optimizer_cls()
 

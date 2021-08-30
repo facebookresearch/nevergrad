@@ -669,6 +669,7 @@ def yabbob(
 
     if bounded:
         optims = ["BO", "PCABO", "BayesOptimBO", "CMA", "PSO", "DE"]
+        optims = ["MetaModelOpO", "OnePlusOne", "MetaModel"]
 
     # List of objective functions.
     functions = [
@@ -676,7 +677,7 @@ def yabbob(
         for name in names
         for rotation in [True, False]
         for num_blocks in ([1] if not split else [7, 12])
-        for d in ([100, 1000, 3000] if hd else ([2, 5, 10, 15] if tuning else ([10, 20, 40, 100] if bounded else [2, 10, 50])))
+        for d in ([100, 1000, 3000] if hd else ([2, 5, 10, 15] if tuning else ([40] if bounded else [2, 10, 50])))
     ]
     if tiny:
         functions = functions[::13]
@@ -708,6 +709,7 @@ def yabbob(
         budgets = [10, 20, 40]
     if bounded:
         budgets = [10, 20, 40, 100, 300]
+        budgets = [5000]
     for optim in optims:
         for function in functions:
             for budget in budgets:
@@ -810,6 +812,12 @@ def yanoisybbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 @registry.register
 def yaboundedbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with bounded domain, (-5,5)**n by default."""
+    return yabbob(seed, bounded=True)
+
+
+@registry.register
+def yaboundedbbob_opo(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with bounded domain, (-5,5)**n by default."""
     return yabbob(seed, bounded=True)
 
