@@ -77,13 +77,11 @@ class _MessagingThread(threading.Thread):
         self.messages_tell: tp.Any = queue.Queue()
         self.call_count = 0
         self.error: tp.Optional[Exception] = None
-        self._kill_order = False
         self._caller = caller
         self._args = args
         self._kwargs = kwargs
         self.output: tp.Optional[tp.Any] = None  # TODO add a "done" attribute ?
         self._last_evaluation_duration = 0.0001
-        # self.daemon = True
 
     def run(self) -> None:
         """Starts the thread and run the "caller" function argument on
@@ -92,7 +90,7 @@ class _MessagingThread(threading.Thread):
         try:
             self.output = self._caller(self._fake_callable, *self._args, **self._kwargs)
         except StopOptimizerThread:  # gracefully stopping the thread
-            self.messages_tell.put(None)  # placeholder
+            pass
         except Exception as e:  # pylint: disable=broad-except
             self.error = e
 
@@ -104,16 +102,14 @@ class _MessagingThread(threading.Thread):
         self.call_count += 1
         mess = Message(*args, **kwargs)
         self.messages_ask.put(mess, block=True)  # sends a message
-        if self._kill_order:
-            raise StopOptimizerThread("Received kill order")  # kill the thread gracefully if asked to do so
         mess = self.messages_tell.get()  # get evaluated message
-        # if mess is None:
-        #     raise StopOptimizerThread("Kill")
+        if mess is None:
+            raise StopOptimizerThread("Kill")
         return mess.result
 
     def stop(self) -> None:
         """Notifies the thread that it must stop"""
-        self._kill_order = True
+        self.messages_tell.put(None)
 
 
 class MessagingThread:
