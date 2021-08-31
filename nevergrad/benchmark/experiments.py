@@ -816,6 +816,7 @@ def yaboundedbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     return yabbob(seed, bounded=True)
 
 
+@registry.register
 def illcondi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Testing optimizers on ill cond problems.
     Cigar, Ellipsoid.
