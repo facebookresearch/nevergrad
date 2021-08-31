@@ -2653,7 +2653,20 @@ class NGOpt14(NGOpt12):  # Also known as NGOpt12H_nohyperopt
 
 
 @registry.register
-class NGOpt(NGOpt14):
+class NGOpt15(NGOpt14):  # Also known as NGOpt12H_nohyperopt
+    def _select_optimizer_cls(self) -> base.OptCls:
+        if (
+            self.budget is not None
+            and self.budget < self.dimension**2 * 2
+            and self.num_workers == 1
+        ):
+            return OnePlusOne  # MetamodelOpO seems equivalent so far
+        else:
+            return super()._select_optimizer_cls()
+
+
+@registry.register
+class NGOpt(NGOpt15):
     pass
 
 
