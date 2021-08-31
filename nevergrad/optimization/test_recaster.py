@@ -16,16 +16,6 @@ from . import recaster
 from . import optimizerlib
 
 
-def test_message() -> None:
-    message = recaster.Message(1, 2, blublu=3)
-    np.testing.assert_equal(message.done, False)
-    np.testing.assert_equal(message.args, [1, 2])
-    np.testing.assert_equal(message.kwargs, {"blublu": 3})
-    message.result = 3
-    np.testing.assert_equal(message.done, True)
-    np.testing.assert_equal(message.result, 3)
-
-
 def fake_caller(func: tp.Callable[[int], int]) -> int:
     output = 0
     for k in range(10):
