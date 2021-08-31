@@ -12,48 +12,6 @@ from . import base
 from .base import IntOrParameter
 
 
-class Message:
-    """Straightforward class for passing parameters of a function and
-    results to and from a thread.
-
-    Parameters
-    ----------
-    *args: Any
-    **kwargs: Any
-
-    Note
-    ----
-    - "result" attribute is a property which records when it is "posted"
-    (ie message has been received and processed and "result" is the answer, which is ready)
-    - "meta" attribute is only there for more implementation specific usages.
-    """
-
-    def __init__(self, *args: tp.Any, **kwargs: tp.Any) -> None:
-        self.args = args
-        self.kwargs = kwargs
-        self.meta: tp.Dict[str, tp.Any] = {}  # for none Thread caller purposes
-        self._result: tp.Optional[tp.Any] = None
-        self.done = False
-
-    @property
-    def result(self) -> tp.Any:
-        if not self.done:
-            raise RuntimeError("Result was not provided (not done)")
-        return self._result
-
-    @result.setter
-    def result(self, value: tp.Any) -> None:
-        self.done = True
-        self._result = value
-
-    def __repr__(self) -> str:
-        return (
-            f"<Message: args={self.args}, kwargs={self.kwargs}" + f" (result: {self.result})>"
-            if self.done
-            else ">"
-        )
-
-
 class StopOptimizerThread(Exception):
     pass
 
@@ -95,17 +53,17 @@ class _MessagingThread(threading.Thread):
             self.error = e
 
     def _fake_callable(self, *args: tp.Any, **kwargs: tp.Any) -> tp.Any:
+        # pylint: disable=unused-argument
         """Appends a message in the messages attribute of the thread when
         the caller needs an evaluation, and wait for it to be provided
         to return it to the caller
         """
         self.call_count += 1
-        mess = Message(*args, **kwargs)
-        self.messages_ask.put(mess, block=True)  # sends a message
-        mess = self.messages_tell.get()  # get evaluated message
-        if mess is None:
+        self.messages_ask.put(*args[0])  # sends a message
+        candidate = self.messages_tell.get()  # get evaluated message
+        if candidate is None:
             raise StopOptimizerThread("Kill")
-        return mess.result
+        return candidate
 
     def stop(self) -> None:
         """Notifies the thread that it must stop"""
@@ -166,7 +124,6 @@ class RecastOptimizer(base.Optimizer):
         super().__init__(parametrization, budget, num_workers=num_workers)
         self._messaging_thread: tp.Optional[MessagingThread] = None  # instantiate at runtime
         self._last_optimizer_duration = 0.0001
-        self._current_message: tp.List[Message] = []
 
     def get_optimization_function(self) -> tp.Callable[[tp.Callable[..., tp.Any]], tp.Optional[tp.ArrayLike]]:
         """Return an optimization procedure function (taking a function to optimize as input)
@@ -186,11 +143,11 @@ class RecastOptimizer(base.Optimizer):
         New messages are sent as "ask".
         """
         if self._messaging_thread is None:
+            print("Creating messaging thread")
             self._messaging_thread = MessagingThread(self.get_optimization_function())
         # wait for a message
         if self._messaging_thread.is_alive():
-            message = self._messaging_thread.messages_ask.get()
-            message.meta["asked"] = True  # notify that it has been asked so that it is not selected again
+            point = self._messaging_thread.messages_ask.get()
         if not self._messaging_thread.is_alive():  # In case the algorithm stops before the budget is elapsed.
             warnings.warn(
                 "Underlying optimizer has already converged, returning random points",
@@ -199,9 +156,7 @@ class RecastOptimizer(base.Optimizer):
             self._check_error()
             data = self._rng.normal(0, 1, self.dimension)
             return self.parametrization.spawn_child().set_standardized_data(data)
-        candidate = self.parametrization.spawn_child().set_standardized_data(message.args[0])
-        message.meta["uid"] = candidate.uid
-        self._current_message.append(message)
+        candidate = self.parametrization.spawn_child().set_standardized_data(point)
         return candidate
 
     def _check_error(self) -> None:
@@ -215,25 +170,18 @@ class RecastOptimizer(base.Optimizer):
         """Returns value for a point which was "asked"
         (none asked point cannot be "tell")
         """
-        x = candidate.get_standardized_data(reference=self.parametrization)
         assert self._messaging_thread is not None, 'Start by using "ask" method, instead of "tell" method'
         if not self._messaging_thread.is_alive():  # optimizer is done
             self._check_error()
             return
-        if not self._current_message:
-            raise RuntimeError(f"No message for evaluated point {x}: {self._current_message}")
-        message = self._current_message.pop()
-        self._post_loss_to_message(
-            message, candidate, loss
-        )  # post the value(s), and the thread will deal with it
-        self._messaging_thread.messages_tell.put(message)
+        self._messaging_thread.messages_tell.put(self._post_loss(candidate, loss))
 
-    def _post_loss_to_message(self, message: Message, candidate: p.Parameter, loss: float):
+    def _post_loss(self, candidate: p.Parameter, loss: float) -> tp.Loss:
         # pylint: disable=unused-argument
         """
         Posts the value, and the thread will deal with it.
         """
-        message.result = loss
+        return loss
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: float) -> None:
         raise base.errors.TellNotAskedNotSupportedError
