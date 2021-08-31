@@ -16,6 +16,7 @@ from .base import IntOrParameter
 from . import recaster
 
 
+
 class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
     def __init__(
         self,
@@ -30,7 +31,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         self.multirun = 1  # work in progress
         self.initial_guess: tp.Optional[tp.ArrayLike] = None
         # configuration
-        assert method in ["Nelder-Mead", "COBYLA", "SLSQP", "Powell"], f"Unknown method '{method}'"
+        assert method in ["SMAC2", "SMAC", "Nelder-Mead", "COBYLA", "SLSQP", "Powell"], f"Unknown method '{method}'"
         self.method = method
         self.random_restart = random_restart
 
@@ -57,22 +58,167 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         # pylint:disable=unused-argument
         budget = np.inf if self.budget is None else self.budget
         best_res = np.inf
-        best_x: np.ndarray = self.current_bests["average"].x  # np.zeros(self.dimension)
+        best_x: np.ndarray = self.current_bests["average"].x
         if self.initial_guess is not None:
             best_x = np.array(self.initial_guess, copy=True)  # copy, just to make sure it is not modified
         remaining: float = budget - self._num_ask
         while remaining > 0:  # try to restart if budget is not elapsed
+            print(f"Iteration with remaining={remaining}")
             options: tp.Dict[str, tp.Any] = {} if self.budget is None else {"maxiter": remaining}
-            res = scipyoptimize.minimize(
-                objective_function,
-                best_x if not self.random_restart else self._rng.normal(0.0, 1.0, self.dimension),
-                method=self.method,
-                options=options,
-                tol=0,
-            )
-            if res.fun < best_res:
-                best_res = res.fun
-                best_x = res.x
+            if self.method == "SMAC2":
+                from ConfigSpace.hyperparameters import (
+                    UniformFloatHyperparameter,
+                )  # noqa  # pylint: disable=unused-import
+
+                # Import ConfigSpace and different types of parameters
+                from smac.configspace import ConfigurationSpace  # noqa  # pylint: disable=unused-import
+                from smac.facade.smac_hpo_facade import SMAC4HPO  # noqa  # pylint: disable=unused-import
+
+                # Import SMAC-utilities
+                from smac.scenario.scenario import Scenario  # noqa  # pylint: disable=unused-import
+                import threading
+                import os
+                import time
+                from pathlib import Path
+                the_date = str(time.time())
+                feed = "/tmp/smac_feed" + the_date + ".txt"
+                fed = "/tmp/smac_fed" + the_date + ".txt"
+                def dummy_function():
+                    for u in range(remaining):
+                        print(f"side thread waiting for request... ({u}/{self.budget})")
+                        while (not Path(feed).is_file()) or os.stat(feed).st_size == 0:
+                            time.sleep(0.1)
+                        time.sleep(0.1)
+                        print("side thread happy to work on a request...")
+                        data = np.loadtxt(feed)
+                        os.remove(feed)
+                        print("side thread happy to really work on a request...")
+                        res = objective_function(data)
+                        print("side thread happy to forward the result of a request...")
+                        f = open(fed, "w")
+                        f.write(str(res))
+                        f.close()
+                    return
+                thread = threading.Thread(target=dummy_function)
+                thread.start()
+
+
+                print(f"start SMAC2 optimization with budget {budget} in dimension {self.dimension}")
+                cs = ConfigurationSpace()
+                cs.add_hyperparameters(
+                    [
+                        UniformFloatHyperparameter(f"x{i}", -1.0, 1.0, default_value=0.0)
+                        for i in range(self.dimension)
+                    ]
+                )
+                scenario = Scenario(
+                    {
+                        "run_obj": "quality",  # we optimize quality (alternatively runtime)
+                        "runcount-limit": budget,  # max. number of function evaluations
+                        "cs": cs,  # configuration space
+                        "deterministic": "true",
+                    }
+                )
+                def smac2_obj(p):
+                    print(f"SMAC2 proposes {p}")
+                    p = np.asarray([p[f"x{i}"] for i in range(len(p.keys()))])
+                    data = np.asarray(np.tan(np.pi * p / 2.0), dtype=np.float)
+                    print(f"converted to {data}")
+                    if Path(fed).is_file():
+                        os.remove(fed)
+                    np.savetxt(feed, data)
+                    while (not Path(fed).is_file()) or os.stat(fed).st_size == 0:
+                        time.sleep(0.1)
+                    time.sleep(0.1)
+                    f = open(fed, "r")
+                    res = np.float(f.read())
+                    f.close()
+                    print(f"SMAC2 will receive {res}")
+                    return res
+                smac = SMAC4HPO(scenario=scenario, rng=self._rng.randint(5000), tae_runner=smac2_obj)
+                res = smac.optimize()
+                best_x = np.asarray(
+                    [np.tan(np.pi * 0.5 * res[f"x{k}"]) for k in range(len(res.keys()))], dtype=np.float
+                )
+                print("end SMAC optimization")
+                thread.join()
+                self._num_ask = budget
+
+            elif self.method == "SMAC":
+                import smac  # noqa  # pylint: disable=unused-import
+                import scipy.optimize  # noqa  # pylint: disable=unused-import
+                from smac.facade.func_facade import fmin_smac  # noqa  # pylint: disable=unused-import
+
+                import threading
+                import os
+                import time
+                from pathlib import Path
+                the_date = str(time.time())
+                feed = "/tmp/smac_feed" + the_date + ".txt"
+                fed = "/tmp/smac_fed" + the_date + ".txt"
+                def dummy_function():
+                    for u in range(remaining):
+                        print(f"side thread waiting for request... ({u}/{self.budget})")
+                        while (not Path(feed).is_file()) or os.stat(feed).st_size == 0:
+                            time.sleep(0.1)
+                        time.sleep(0.1)
+                        print("side thread happy to work on a request...")
+                        data = np.loadtxt(feed)
+                        os.remove(feed)
+                        print("side thread happy to really work on a request...")
+                        res = objective_function(data)
+                        print("side thread happy to forward the result of a request...")
+                        f = open(fed, "w")
+                        f.write(str(res))
+                        f.close()
+                    return
+                thread = threading.Thread(target=dummy_function)
+                thread.start()
+
+                def smac_obj(p):
+                    print(f"SMAC proposes {p}")
+                    data = np.asarray([np.tan(np.pi * p[i] / 2.0) for i in range(len(p))], dtype=np.float)
+                    print(f"converted to {data}")
+                    if Path(fed).is_file():
+                        os.remove(fed)
+                    np.savetxt(feed, data)
+                    while (not Path(fed).is_file()) or os.stat(fed).st_size == 0:
+                        time.sleep(0.1)
+                    time.sleep(0.1)
+                    f = open(fed, "r")
+                    res = np.float(f.read())
+                    f.close()
+                    print(f"SMAC will receive {res}")
+                    return res
+
+                print(f"start SMAC optimization with budget {budget} in dimension {self.dimension}")
+                assert budget is not None
+                x, cost, _ = fmin_smac(
+                    #func=lambda x: sum([(x_ - 1.234)**2  for x_ in x]),
+                    func=smac_obj,
+                    x0=[0.0] * self.dimension,
+                    bounds=[(-1, 1)] * self.dimension,
+                    maxfun=remaining,
+                    rng=self._rng.randint(5000),
+                )  # Passing a seed makes fmin_smac determistic
+                print("end SMAC optimization")
+                thread.join()
+                self._num_ask = budget
+
+                if cost < best_res:
+                    best_res = cost
+                    best_x = np.tan(np.pi * x / 2.0)
+            else:
+                res = scipyoptimize.minimize(
+                    objective_function,
+                    best_x if not self.random_restart else self._rng.normal(0.0, 1.0, self.dimension),
+                    method=self.method,
+                    options=options,
+                    tol=0,
+                )
+                if res.fun < best_res:
+                    best_res = res.fun
+                    best_x = res.x
             remaining = budget - self._num_ask
         return best_x
 
@@ -109,6 +255,8 @@ class ScipyOptimizer(base.ConfiguredOptimizer):
 
 
 NelderMead = ScipyOptimizer(method="Nelder-Mead").set_name("NelderMead", register=True)
+SMAC = ScipyOptimizer(method="SMAC").set_name("SMAC", register=True)
+SMAC2 = ScipyOptimizer(method="SMAC2").set_name("SMAC2", register=True)
 Powell = ScipyOptimizer(method="Powell").set_name("Powell", register=True)
 RPowell = ScipyOptimizer(method="Powell", random_restart=True).set_name("RPowell", register=True)
 Cobyla = ScipyOptimizer(method="COBYLA").set_name("Cobyla", register=True)
