@@ -52,8 +52,7 @@ class _MessagingThread(threading.Thread):
         except Exception as e:  # pylint: disable=broad-except
             self.error = e
 
-    def _fake_callable(self, *args: tp.Any, **kwargs: tp.Any) -> tp.Any:
-        # pylint: disable=unused-argument
+    def _fake_callable(self, *args: tp.Any) -> tp.Any:
         """Appends a message in the messages attribute of the thread when
         the caller needs an evaluation, and wait for it to be provided
         to return it to the caller
@@ -62,7 +61,7 @@ class _MessagingThread(threading.Thread):
         self.messages_ask.put(args[0])  # sends a message
         candidate = self.messages_tell.get()  # get evaluated message
         if candidate is None:
-            raise StopOptimizerThread("Kill")
+            raise StopOptimizerThread()
         return candidate
 
     def stop(self) -> None:

@@ -206,7 +206,7 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
             return  # dummy tell i.e. not activating pymoo until num_objectives is set
         super()._internal_tell_candidate(candidate, loss)
 
-    def _post_loss_to_message(self, candidate: p.Parameter, loss: float):
+    def _post_loss_to_message(self, candidate: p.Parameter, loss: float) -> tp.Loss:
         # pylint: disable=unused-argument
         """
         Multi-Objective override for this function.
