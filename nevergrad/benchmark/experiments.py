@@ -669,11 +669,12 @@ def yabbob(
 
     if bounded:
         optims = ["BO", "PCABO", "BayesOptimBO", "CMA", "PSO", "DE"]
-        optims = ["MetaModelOpO", "OnePlusOne", "MetaModel"]
 
     # List of objective functions.
     functions = [
-            ArtificialFunction(name, block_dimension=d, rotation=rotation, noise_level=noise_level, split=split, bounded=bounded)
+        ArtificialFunction(
+            name, block_dimension=d, rotation=rotation, noise_level=noise_level, split=split, bounded=bounded
+        )
         for name in names
         for rotation in [True, False]
         for num_blocks in ([1] if not split else [7, 12])
@@ -709,7 +710,6 @@ def yabbob(
         budgets = [10, 20, 40]
     if bounded:
         budgets = [10, 20, 40, 100, 300]
-        budgets = [5000]
     for optim in optims:
         for function in functions:
             for budget in budgets:
@@ -816,13 +816,6 @@ def yaboundedbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     return yabbob(seed, bounded=True)
 
 
-@registry.register
-def yaboundedbbob_opo(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Counterpart of yabbob with bounded domain, (-5,5)**n by default."""
-    return yabbob(seed, bounded=True)
-
-
-@registry.register
 def illcondi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Testing optimizers on ill cond problems.
     Cigar, Ellipsoid.
