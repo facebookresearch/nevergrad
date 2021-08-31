@@ -112,7 +112,7 @@ NelderMead = ScipyOptimizer(method="Nelder-Mead").set_name("NelderMead", registe
 Powell = ScipyOptimizer(method="Powell").set_name("Powell", register=True)
 RPowell = ScipyOptimizer(method="Powell", random_restart=True).set_name("RPowell", register=True)
 Cobyla = ScipyOptimizer(method="COBYLA").set_name("Cobyla", register=True)
-RCobyla = ScipyOptimizer(method="COBYLA", random_restart=True).set_name("RCobyla", register=True)
+# RCobyla = ScipyOptimizer(method="COBYLA", random_restart=True).set_name("RCobyla", register=True)
 SQP = ScipyOptimizer(method="SLSQP").set_name("SQP", register=True)
 SLSQP = SQP  # Just so that people who are familiar with SLSQP naming are not lost.
 RSQP = ScipyOptimizer(method="SLSQP", random_restart=True).set_name("RSQP", register=True)
