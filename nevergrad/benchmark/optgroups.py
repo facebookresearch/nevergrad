@@ -253,6 +253,7 @@ def structured_moo() -> tp.Sequence[Optim]:
         "RecES",
         "RecMixES",
         "RecMutDE",
+        "PymooNSGA2",
         "ParametrizationDE",
     ]
 
