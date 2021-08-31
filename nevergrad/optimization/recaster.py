@@ -83,7 +83,7 @@ class _MessagingThread(threading.Thread):
         self._kwargs = kwargs
         self.output: tp.Optional[tp.Any] = None  # TODO add a "done" attribute ?
         self._last_evaluation_duration = 0.0001
-        self.daemon = True
+        # self.daemon = True
 
     def run(self) -> None:
         """Starts the thread and run the "caller" function argument on
@@ -106,9 +106,9 @@ class _MessagingThread(threading.Thread):
         self.messages_ask.put(mess, block=True)  # sends a message
         if self._kill_order:
             raise StopOptimizerThread("Received kill order")  # kill the thread gracefully if asked to do so
-        mess = self.messages_tell.get()  # get evaluated message
-        if mess is None:
-            raise StopOptimizerThread("Kill")
+        mess = self.messages_tell.get(timeout=5)  # get evaluated message
+        # if mess is None:
+        #     raise StopOptimizerThread("Kill")
         return mess.result
 
     def stop(self) -> None:
@@ -193,7 +193,7 @@ class RecastOptimizer(base.Optimizer):
             self._messaging_thread = MessagingThread(self.get_optimization_function())
         # wait for a message
         if self._messaging_thread.is_alive():
-            message = self._messaging_thread.messages_ask.get()
+            message = self._messaging_thread.messages_ask.get(timeout=5)
             message.meta["asked"] = True  # notify that it has been asked so that it is not selected again
         if not self._messaging_thread.is_alive():  # In case the algorithm stops before the budget is elapsed.
             warnings.warn(
