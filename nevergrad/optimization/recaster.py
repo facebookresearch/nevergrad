@@ -59,7 +59,7 @@ class _MessagingThread(threading.Thread):
         to return it to the caller
         """
         self.call_count += 1
-        self.messages_ask.put(*args[0])  # sends a message
+        self.messages_ask.put(args[0])  # sends a message
         candidate = self.messages_tell.get()  # get evaluated message
         if candidate is None:
             raise StopOptimizerThread("Kill")
@@ -143,7 +143,6 @@ class RecastOptimizer(base.Optimizer):
         New messages are sent as "ask".
         """
         if self._messaging_thread is None:
-            print("Creating messaging thread")
             self._messaging_thread = MessagingThread(self.get_optimization_function())
         # wait for a message
         if self._messaging_thread.is_alive():
