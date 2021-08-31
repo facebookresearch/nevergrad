@@ -34,6 +34,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         assert method in ["SMAC2", "SMAC", "Nelder-Mead", "COBYLA", "SLSQP", "Powell"], f"Unknown method '{method}'"
         self.method = method
         self.random_restart = random_restart
+        self._normalizer = p.helpers.Normalizer(self.parametrization)
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         """Called whenever calling "tell" on a candidate that was not "asked".
@@ -121,8 +122,8 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
                 )
                 def smac2_obj(p):
                     print(f"SMAC2 proposes {p}")
-                    p = np.asarray([p[f"x{i}"] for i in range(len(p.keys()))])
-                    data = np.asarray(np.tan(np.pi * p / 2.0), dtype=np.float)
+                    p = [p[f"x{i}"] for i in range(len(p.keys()))]
+                    data = self._normalizer.backward(np.asarray(p, dtype=np.float))
                     print(f"converted to {data}")
                     if Path(fed).is_file():
                         os.remove(fed)
@@ -137,9 +138,8 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
                     return res
                 smac = SMAC4HPO(scenario=scenario, rng=self._rng.randint(5000), tae_runner=smac2_obj)
                 res = smac.optimize()
-                best_x = np.asarray(
-                    [np.tan(np.pi * 0.5 * res[f"x{k}"]) for k in range(len(res.keys()))], dtype=np.float
-                )
+                best_x = [res[f"x{k}"] for k in range(len(res.keys()))]
+                best_x = self._normalizer.backward(np.asarray(best_x, dtype=np.float))
                 print("end SMAC optimization")
                 thread.join()
                 self._num_ask = budget
@@ -177,7 +177,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
 
                 def smac_obj(p):
                     print(f"SMAC proposes {p}")
-                    data = np.asarray([np.tan(np.pi * p[i] / 2.0) for i in range(len(p))], dtype=np.float)
+                    data = self._normalizer.backward(np.asarray([p[i] for i in range(len(p))], dtype=np.float))
                     print(f"converted to {data}")
                     if Path(fed).is_file():
                         os.remove(fed)
@@ -207,7 +207,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
 
                 if cost < best_res:
                     best_res = cost
-                    best_x = np.tan(np.pi * x / 2.0)
+                    best_x = self._normalizer.backward(np.asarray(x, dtype=np.float))
             else:
                 res = scipyoptimize.minimize(
                     objective_function,
