@@ -144,8 +144,6 @@ class RecastOptimizer(base.Optimizer):
         if self._messaging_thread is None:
             self._messaging_thread = MessagingThread(self.get_optimization_function())
         # wait for a message
-        if self._messaging_thread.is_alive():
-            point = self._messaging_thread.messages_ask.get()
         if not self._messaging_thread.is_alive():  # In case the algorithm stops before the budget is elapsed.
             warnings.warn(
                 "Underlying optimizer has already converged, returning random points",
@@ -154,6 +152,7 @@ class RecastOptimizer(base.Optimizer):
             self._check_error()
             data = self._rng.normal(0, 1, self.dimension)
             return self.parametrization.spawn_child().set_standardized_data(data)
+        point = self._messaging_thread.messages_ask.get()
         candidate = self.parametrization.spawn_child().set_standardized_data(point)
         return candidate
 
