@@ -2647,7 +2647,7 @@ class NGOpt13(NGOpt12):  # Also known as NGOpt12H
 class NGOpt14(NGOpt12):  # Also known as NGOpt12H_nohyperopt
     def _select_optimizer_cls(self) -> base.OptCls:
         if self.budget is not None and self.budget < 600:
-            return MetaModelOpO
+            return MetaModel
         else:
             return super()._select_optimizer_cls()
 
