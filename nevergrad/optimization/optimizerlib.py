@@ -2666,7 +2666,7 @@ class NGOpt15(NGOpt14):  # Also known as NGOpt12H_nohyperopt
 
 
 @registry.register
-class NGOpt(NGOpt15):
+class NGOpt(NGOpt14):
     pass
 
 
