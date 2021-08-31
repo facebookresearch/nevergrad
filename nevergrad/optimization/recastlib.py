@@ -35,6 +35,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         assert method in ["Nelder-Mead", "COBYLA", "SLSQP", "Powell", "BOBYQA", "AX"], f"Unknown method '{method}'"
         self.method = method
         self.random_restart = random_restart
+        self._normalizer = p.helpers.Normalizer(self.parametrization)
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         """Called whenever calling "tell" on a candidate that was not "asked".
@@ -65,8 +66,8 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
             best_x = np.array(self.initial_guess, copy=True)  # copy, just to make sure it is not modified
         remaining = budget - self._num_ask
         def ax_obj(p):
-            data = [np.arctanh(p["x" + str(i)]) for i in range(self.dimension)]
-            data = np.asarray(data, dtype = np.float)
+            data = [p["x" + str(i)] for i in range(self.dimension)]
+            data = self._normalizer.backward(np.asarray(data, dtype=np.float))
             return objective_function(data)
         while remaining > 0:  # try to restart if budget is not elapsed
             options: tp.Dict[str, int] = {} if self.budget is None else {"maxiter": remaining}
@@ -82,8 +83,8 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
                     evaluation_function = ax_obj,
                     minimize=True,
                     total_trials = budget)
-                best_x = [np.arctanh(p["x"+str(i)]) for i in range(self.dimension)]
-                best_x = np.asarray(best_x, dtype=np.float)
+                best_x = [p["x" + str(i)] for i in range(self.dimension)]
+                best_x = self._normalizer.backward(np.asarray(best_x, dtype=np.float))
             else:
                 res = scipyoptimize.minimize(
                     objective_function,
