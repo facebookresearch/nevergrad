@@ -18,8 +18,8 @@ class StopOptimizerThread(Exception):
 
 class _MessagingThread(threading.Thread):
     """Thread that runs a function taking another function as input. Each call of the inner function
-    creates a Message with fields args and kwargs and waits for the main thread to set the result
-    attribute of the message
+    adds the point given by the algorithm into the ask queue and then blocks until the main thread sends
+    the result back into the tell queue.
 
     Note
     ----
@@ -53,9 +53,10 @@ class _MessagingThread(threading.Thread):
             self.error = e
 
     def _fake_callable(self, *args: tp.Any) -> tp.Any:
-        """Appends a message in the messages attribute of the thread when
-        the caller needs an evaluation, and wait for it to be provided
-        to return it to the caller
+        """
+        Puts a new point into the ask queue to be evaluated on the main thread
+        and blocks on get from tell queue until point is evaluated on main thread
+        and placed into tell queue when it is then returned to the caller.
         """
         self.call_count += 1
         self.messages_ask.put(args[0])  # sends a message
