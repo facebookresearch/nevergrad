@@ -1678,7 +1678,7 @@ class _BO(base.Optimizer):
         gp_parameters: tp.Optional[tp.Dict[str, tp.Any]] = None,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        self._transform = transforms.ArctanBound(0, 1)
+        self._normalizer = p.helpers.Normalizer(self.parametrization)
         self._bo: tp.Optional[BayesianOptimization] = None
         self._fake_function = _FakeFunction(num_digits=len(str(self.dimension)))
         # initialization
@@ -1727,7 +1727,7 @@ class _BO(base.Optimizer):
                 self._bo.probe([0.5] * self.dimension, lazy=True)
                 init_budget -= 1
             if self._InitOpt is not None and init_budget > 0:
-                param = p.Array(shape=(self.dimension,)).set_bounds(lower=0, upper=1.0)
+                param = p.Array(shape=(self.dimension,)).set_bounds(lower=0, upper=1)
                 param.random_state = self._rng
                 opt = self._InitOpt(param, budget=init_budget)
                 for _ in range(init_budget):
@@ -1744,7 +1744,7 @@ class _BO(base.Optimizer):
         else:
             x_probe = self.bo.suggest(util)  # this is time consuming
             x_probe = [x_probe[self._fake_function.key(i)] for i in range(len(x_probe))]
-        data = self._transform.backward(np.array(x_probe, copy=False))
+        data = self._normalizer.backward(np.array(x_probe, copy=False))
         candidate = self.parametrization.spawn_child().set_standardized_data(data)
         candidate._meta["x_probe"] = x_probe
         return candidate
@@ -1754,7 +1754,7 @@ class _BO(base.Optimizer):
             y = candidate._meta["x_probe"]
         else:
             data = candidate.get_standardized_data(reference=self.parametrization)
-            y = self._transform.forward(data)  # tell not asked
+            y = self._normalizer.forward(data)  # tell not asked
         self._fake_function.register(y, -loss)  # minimizing
         self.bo.probe(y, lazy=False)
         # for some unknown reasons, BO wants to evaluate twice the same point,
@@ -1765,7 +1765,7 @@ class _BO(base.Optimizer):
     def _internal_provide_recommendation(self) -> tp.Optional[tp.ArrayLike]:
         if not self.archive:
             return None
-        return self._transform.backward(
+        return self._normalizer.backward(
             np.array([self.bo.max["params"][self._fake_function.key(i)] for i in range(self.dimension)])
         )
 
@@ -1828,12 +1828,11 @@ class _BayesOptim(base.Optimizer):
         self._config = BayesOptim() if config is None else config
         cfg = self._config
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        self._transform = transforms.ArctanBound(0, 1)
+        self._normalizer = p.helpers.Normalizer(self.parametrization)
 
         from bayes_optim import RealSpace
         from bayes_optim.surrogate import GaussianProcess
 
-        # lb, ub = 1e-7 - np.pi / 2, np.pi / 2 - 1e-7
         lb, ub = 1e-7, 1 - 1e-7
         space = RealSpace([lb, ub]) * self.dimension
 
@@ -1860,14 +1859,14 @@ class _BayesOptim(base.Optimizer):
                 acquisition_optimization={"optimizer": "BFGS"},
             )
         else:
-            from bayes_optim import BO as BayesOptimBO
+            from bayes_optim import BO as BayesOptimBO_
 
             # hyperparameters of the GPR model
             thetaL = 1e-10 * (ub - lb) * np.ones(self.dimension)
             thetaU = 10 * (ub - lb) * np.ones(self.dimension)
             model = GaussianProcess(thetaL=thetaL, thetaU=thetaU)  # create the GPR model
 
-            self._alg = BayesOptimBO(
+            self._alg = BayesOptimBO_(
                 search_space=space,
                 obj_fun=None,  # Assuming that this is not used :-)
                 model=model,
@@ -1883,7 +1882,7 @@ class _BayesOptim(base.Optimizer):
                 candidate = candidate.tolist()
             self._buffer = candidate
         x_probe = self._buffer.pop()
-        data = self._transform.backward(np.array(x_probe, copy=False))
+        data = self._normalizer.backward(np.array(x_probe, copy=False))
         candidate = self.parametrization.spawn_child().set_standardized_data(data)
         candidate._meta["x_probe"] = x_probe
         return candidate
@@ -1897,7 +1896,7 @@ class _BayesOptim(base.Optimizer):
             else:
                 data = candidate.get_standardized_data(reference=self.parametrization)
                 # Tell not asked:
-                self._alg.tell(self._transform.forward(data), loss)
+                self._alg.tell(self._normalizer.forward(data), loss)
             self._newX = []
             self._losses = []
 

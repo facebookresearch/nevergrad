@@ -53,6 +53,8 @@
 - `DE` initial sampling as been updated to take bounds into accounts [#1058](https://github.com/facebookresearch/nevergrad/pull/1058)
 - `Array` can now take `lower` and `upper` bounds as initialization arguments. The array is initialized at its average
   if not `init` is provided and both bounds are provided. In this case, sampling will be uniformm between these bounds.
+- Bayesian optimizers are now properly using the bounds for bounded problem, which may improve performance
+  [#1222](https://github.com/facebookresearch/nevergrad/pull/1222).
 
 
 ### Other changes
@@ -65,6 +67,8 @@
   [#1106](https://github.com/facebookresearch/nevergrad/pull/1106).
 - An interface with [Pymoo](https://pymoo.org/) optimizers has been added
   [#1197](https://github.com/facebookresearch/nevergrad/pull/1197).
+- An interface with [BayesOptim](https://github.com/wangronin/Bayesian-Optimization) optimizers has been added
+  [#1179](https://github.com/facebookresearch/nevergrad/pull/1179).
 
 ## 0.4.3 (2021-01-28)
 
