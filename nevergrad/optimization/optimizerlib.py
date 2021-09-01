@@ -1518,7 +1518,7 @@ class ParametrizedMetaModel(base.ConfiguredOptimizer):
     multivariate_optimizer: base.OptCls or None
         Optimizer to which the metamodel is added
     """
-    
+
     no_parallelization = False
 
     def __init__(
@@ -1527,10 +1527,13 @@ class ParametrizedMetaModel(base.ConfiguredOptimizer):
         multivariate_optimizer: tp.Optional[base.OptCls] = None,
     ) -> None:
         super().__init__(_MetaModel, locals())
+        self.multivariate_optimizer = multivariate_optimizer
 
 
 MetaModel = ParametrizedMetaModel().set_name("MetaModel", register=True)
-MetaModelOpO = ParametrizedMetaModel(multivariate_optimizer=OnePlusOne).set_name("MetaModelOpO", register=True)
+MetaModelOpO = ParametrizedMetaModel(multivariate_optimizer=OnePlusOne).set_name(
+    "MetaModelOpO", register=True
+)
 
 
 @registry.register
