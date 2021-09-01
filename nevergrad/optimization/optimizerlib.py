@@ -2660,6 +2660,7 @@ class NGOpt15(NGOpt14):  # Also known as NGOpt12H_nohyperopt
             and self.budget < self.dimension ** 2 * 2
             and self.num_workers == 1
             and not self.has_noise
+            and self.num_objectives < 2
         ):
             return MetaModelOpO  # OnePlusOne seems equivalent so far
         else:
