@@ -54,9 +54,10 @@ class _MessagingThread(threading.Thread):
 
     def _fake_callable(self, *args: tp.Any) -> tp.Any:
         """
-        Puts a new point into the ask queue to be evaluated on the main thread
-        and blocks on get from tell queue until point is evaluated on main thread
-        and placed into tell queue when it is then returned to the caller.
+        Puts a new point into the ask queue to be evaluated on the
+        main thread and blocks on get from tell queue until point
+        is evaluated on main thread and placed into tell queue when
+        it is then returned to the caller.
         """
         self.call_count += 1
         self.messages_ask.put(args[0])  # sends a message
