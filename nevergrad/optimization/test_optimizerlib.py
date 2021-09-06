@@ -833,3 +833,18 @@ def test_pymoo_pf() -> None:
             _simple_multiobjective(x.value)[0] < values[0] and _simple_multiobjective(x.value)[1] < values[1]
             for x in pf
         )
+
+
+def test_pymoo_batched() -> None:
+    optimizer = ng.optimizers.PymooBatchNSGA2(parametrization=2, budget=100, num_workers=2)
+    optimizer.parametrization.random_state.seed(12)
+    optimizer.minimize(_simple_multiobjective)
+    # pf = optimizer.pareto_front()
+    # fixed_points = [[0.25, 0.75], [0.75, 0.25]]
+    # for fixed_point in fixed_points:
+    #     values = _simple_multiobjective(np.array(fixed_point))
+    #     # check pareto front contains a candidate dominating fixed point
+    #     assert any(
+    #         _simple_multiobjective(x.value)[0] < values[0] and _simple_multiobjective(x.value)[1] < values[1]
+    #         for x in pf
+    #     )
