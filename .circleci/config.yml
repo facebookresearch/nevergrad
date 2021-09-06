@@ -327,15 +327,15 @@ workflows:
             - install
           filters:
             branches:
-              only: master
+              only: main
             tags:
               only: /(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/
-      - docs-links:  # a bit noisy, so only running on master, and does not stop deployments
+      - docs-links:  # a bit noisy, so only running on main, and does not stop deployments
           requires:
             - install
           filters:
             branches:
-              only: master
+              only: main
       - pypi-deploy:
           requires:
             - install
