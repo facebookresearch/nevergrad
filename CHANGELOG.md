@@ -1,6 +1,6 @@
 # Changelog
 
-## master
+## main
 
 ### Breaking changes
 
@@ -32,6 +32,7 @@
 
 ### Important changes
 
+- `master` branch has been renamed to `main`. See [#1230](https://github.com/facebookresearch/nevergrad/pull/1230) for more context.
 - `Parameter` classes are undergoing heavy changes, please open an issue if you encounter any problem.
   The midterm aim is to allow for simpler constraint management.
 - `Parameter` have been updated  have undergone heavy changes to ease the handling of their tree structure (
