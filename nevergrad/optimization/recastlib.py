@@ -291,10 +291,13 @@ class _PymooBatchMinimizeBase(recaster.RecastOptimizer):
         # configuration
         self.algorithm = algorithm
         self._no_hypervolume = True
-        self._current_batch = []
-        self._batch_losses = []
-        self._points = []
+        self._current_batch: tp.List[p.Parameter] = []
+        self._batch_losses: tp.List[tp.Loss] = []
+        self._points: tp.List[tp.ArrayLike] = []
         self._batch_offset = 0
+        self._tell_counter = 0
+        self._batch_size = 0
+        self._is_ready = False
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         """Called whenever calling "tell" on a candidate that was not "asked".
@@ -370,10 +373,12 @@ class _PymooBatchMinimizeBase(recaster.RecastOptimizer):
             self._check_error()
             data = self._rng.normal(0, 1, self.dimension)
             return self.parametrization.spawn_child().set_standardized_data(data)
-        if len(self._current_batch) == 0:
+        if not self._is_ready:
             self._points = self._messaging_thread.messages_ask.get()
+            self._batch_size = len(self._points)
             self._current_batch = list(map(self.parametrization.spawn_child, self._points))
-            self._batch_losses = [None] * len(self._points)
+            self._batch_losses = [None] * len(self._points)  # type: ignore
+            self._is_ready = True
         candidate = self._current_batch[self._batch_offset]
         self._batch_offset = self._batch_offset + 1
         self._batch_offset = self._batch_offset % len(self._points)
@@ -391,11 +396,14 @@ class _PymooBatchMinimizeBase(recaster.RecastOptimizer):
             return
         candidate_index = self._current_batch.index(candidate)
         self._batch_losses[candidate_index] = self._post_loss(candidate, loss)
-        if self._batch_offset == len(self._current_batch) - 1:
+        self._tell_counter += 1
+        if self._tell_counter == self._batch_size:
             self._messaging_thread.messages_ask.put(self._batch_losses)
             self._current_batch = []
             self._batch_losses = []
             self._points = []
+            self._tell_counter = 0
+            self._is_ready = False
 
     def _post_loss(self, candidate: p.Parameter, loss: float) -> tp.Loss:
         # pylint: disable=unused-argument
