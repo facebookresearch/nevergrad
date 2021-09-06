@@ -476,4 +476,4 @@ class PymooBatch(base.ConfiguredOptimizer):
 
 
 PymooNSGA2 = Pymoo(algorithm="nsga2").set_name("PymooNSGA2", register=True)
-PymooBatchNSGA2 = PymooBatch(algorithm="nsga2").set_name("PymooBatchNSGA2", register=True)
+PymooBatchNSGA2 = PymooBatch(algorithm="nsga2").set_name("PymooBatchNSGA2", register=False)
