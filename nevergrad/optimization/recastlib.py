@@ -374,9 +374,9 @@ class _PymooBatchMinimizeBase(recaster.RecastOptimizer):
             self._points = self._messaging_thread.messages_ask.get()
             self._current_batch = list(map(self.parametrization.spawn_child, self._points))
             self._batch_losses = [None] * len(self._points)
-        print(self._batch_offset)
         candidate = self._current_batch[self._batch_offset]
         self._batch_offset = self._batch_offset + 1
+        self._batch_offset = self._batch_offset % len(self._points)
         return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: float) -> None:
@@ -396,7 +396,6 @@ class _PymooBatchMinimizeBase(recaster.RecastOptimizer):
             self._current_batch = []
             self._batch_losses = []
             self._points = []
-            self._batch_offset = 0
 
     def _post_loss(self, candidate: p.Parameter, loss: float) -> tp.Loss:
         # pylint: disable=unused-argument

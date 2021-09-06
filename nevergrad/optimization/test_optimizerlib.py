@@ -836,7 +836,7 @@ def test_pymoo_pf() -> None:
 
 
 def test_pymoo_batched() -> None:
-    optimizer = ng.optimizers.PymooBatchNSGA2(parametrization=2, budget=100, num_workers=2)
+    optimizer = ng.optimizers.PymooBatchNSGA2(parametrization=2, budget=1000, num_workers=10)
     optimizer.parametrization.random_state.seed(12)
     optimizer.minimize(_simple_multiobjective)
     # pf = optimizer.pareto_front()
