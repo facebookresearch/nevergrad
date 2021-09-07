@@ -390,10 +390,12 @@ class _CMA(base.Optimizer):
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
         config: tp.Optional["ParametrizedCMA"] = None,
+        use_bounded_mode: bool = False,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._config = ParametrizedCMA() if config is None else config
         pop = self._config.popsize
+        self._use_bounded_mode = use_bounded_mode
         self._popsize = max(num_workers, 4 + int(3 * np.log(self.dimension))) if pop is None else pop
         # internal attributes
         self._to_be_asked: tp.Deque[np.ndarray] = deque()
@@ -417,7 +419,9 @@ class _CMA(base.Optimizer):
                     seed=np.nan,
                     CMA_elitist=self._config.elitist,
                 )
-
+                # Bullshit pseudo-code as a first step.
+                if self._use_bounded_mode and self.parametrization.upper and self.parametrization.lower:  # No idea how to check that.
+                    inopts["bounds"] = [lower, upper]
                 inopts.update(self._config.inopts if self._config.inopts is not None else {})
                 self._es = cma.CMAEvolutionStrategy(
                     x0=self.parametrization.sample().get_standardized_data(reference=self.parametrization)
@@ -446,6 +450,7 @@ class _CMA(base.Optimizer):
             self._to_be_asked.extend(self.es.ask())
         data = self._to_be_asked.popleft()
         parent = self._parents[self.num_ask % len(self._parents)]
+        # Presumably in bounded mode, clipping or whatever will have no impact.
         candidate = parent.spawn_child().set_standardized_data(data, reference=self.parametrization)
         return candidate
 
@@ -2662,7 +2667,7 @@ class MultipleSingleRuns(base.ConfiguredOptimizer):
     # pylint: disable=unused-argument
     def __init__(
         self,
-        *,
+        *
         num_single_runs: int = 9,
         base_optimizer: base.OptCls = NGOpt,
     ) -> None:
