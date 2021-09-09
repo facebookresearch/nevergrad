@@ -296,7 +296,8 @@ class _PymooBatchMinimizeBase(recaster.RecastOptimizer):
         self._points: tp.List[tp.ArrayLike] = []
         self._batch_offset = 0
         self._tell_counter = 0
-        self._batch_size = 0
+        self.batch_size = 0
+        self.indices = {}
         self._is_ready = False
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.Loss) -> None:
@@ -374,14 +375,13 @@ class _PymooBatchMinimizeBase(recaster.RecastOptimizer):
             data = self._rng.normal(0, 1, self.dimension)
             return self.parametrization.spawn_child().set_standardized_data(data)
         if not self._is_ready:
-            self._points = self._messaging_thread.messages_ask.get()
-            self._batch_size = len(self._points)
-            self._current_batch = list(map(self.parametrization.spawn_child, self._points))
-            self._batch_losses = [None] * len(self._points)  # type: ignore
+            points = self._messaging_thread.messages_ask.get()
+            self.batch_size = len(points)
+            self._current_batch = [self.parametrization.spawn_child(point) for point in points]
+            self._batch_losses = [None] * len(points)  # type: ignore
+            self.indices = {candidate: i for i, candidate in enumerate(self._current_batch)}
             self._is_ready = True
-        candidate = self._current_batch[self._batch_offset]
-        self._batch_offset = self._batch_offset + 1
-        self._batch_offset = self._batch_offset % len(self._points)
+        candidate = self._current_batch.pop()
         return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: float) -> None:
@@ -394,15 +394,12 @@ class _PymooBatchMinimizeBase(recaster.RecastOptimizer):
         if not self._messaging_thread.is_alive():  # optimizer is done
             self._check_error()
             return
-        candidate_index = self._current_batch.index(candidate)
+        candidate_index = self.indices[candidate]
         self._batch_losses[candidate_index] = self._post_loss(candidate, loss)
         self._tell_counter += 1
-        if self._tell_counter == self._batch_size:
+        if self._tell_counter % self.batch_size == 0:
             self._messaging_thread.messages_ask.put(self._batch_losses)
-            self._current_batch = []
             self._batch_losses = []
-            self._points = []
-            self._tell_counter = 0
             self._is_ready = False
 
     def _post_loss(self, candidate: p.Parameter, loss: float) -> tp.Loss:
