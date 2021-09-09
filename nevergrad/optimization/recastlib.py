@@ -297,7 +297,7 @@ class _PymooBatchMinimizeBase(recaster.RecastOptimizer):
         self._batch_offset = 0
         self._tell_counter = 0
         self.batch_size = 0
-        self.indices = {}
+        self.indices: tp.Dict[p.Parameter, int] = {}
         self._is_ready = False
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.Loss) -> None:
