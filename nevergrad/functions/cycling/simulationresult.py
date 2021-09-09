@@ -5,8 +5,8 @@
 
 import math
 
-class simulationresult:
 
+class simulationresult:
     def __init__(self, finish_time, proportion_completed, energy_remaining, velocity_profile):
         self.finish_time = finish_time
         self.energy_remaining = energy_remaining
@@ -16,16 +16,16 @@ class simulationresult:
 
     def get_finish_time(self):
         return self.finish_time
-    
+
     def get_proportion_completed(self):
         return self.proportion_completed
-    
+
     def get_energy_remaining(self):
         return self.energy_remaining
-    
+
     def get_velocity_profile(self):
         return self.velocity_profile
-    
+
     def to_string(self):
         output = "Simulation Result\n-----------------\n"
         if self.finish_time < math.inf:

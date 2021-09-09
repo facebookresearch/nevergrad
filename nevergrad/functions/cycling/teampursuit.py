@@ -7,9 +7,10 @@ from abc import ABC, abstractmethod
 import math
 import sys
 
+
 class teampursuit(ABC):
 
-    #constants
+    # constants
     friction_coefficient = 0.0025
     drafting_coefficients = [0.75, 0.65, 0.55]
     gravitational_acceleration = 9.80665
@@ -21,10 +22,10 @@ class teampursuit(ABC):
 
     temperature = 20.0
     barometric_pressure = 1013.25
-        
+
     air_density = None
     team = None
-        
+
     def __init__(self):
         self.update_air_density()
 
@@ -41,26 +42,26 @@ class teampursuit(ABC):
         else:
             self.barometric_pressure = barometric_pressure
             self.update_air_density()
-    
+
     def set_relative_humidity(self, relative_humidity):
         if relative_humidity < 0.0 or relative_humidity > 1.0:
             raise ValueError("Relative humidity must be in the range 0-1")
         else:
             self.relative_humidity = relative_humidity
             self.update_air_density()
-    
+
     def set_height(self, cyclist_id, height):
         if cyclist_id >= len(self.team):
             raise ValueError(f"Cyclist identifier must be in the range 0-{len(self.team)}")
         else:
             self.team[cyclist_id].set_height(height)
-    
+
     def set_weight(self, cyclist_id, weight):
         if cyclist_id >= len(self.team):
             raise ValueError(f"Cyclist identifier must be in the range 0-{len(self.team)}")
         else:
             self.team[cyclist_id].set_weight(weight)
-    
+
     def set_mean_maximum_power(self, cyclist_id, mean_maximum_power):
         if cyclist_id >= len(self.team):
             raise ValueError(f"Cyclist identifier must be in the range 0-{len(self.team)}")
@@ -81,28 +82,40 @@ class teampursuit(ABC):
             raise ValueError(f"Cyclist identifier must be in the range 0-{len(self.team)}")
         else:
             return self.team[cyclist_id].get_height()
-    
+
     def get_weight(self, cyclist_id):
         if cyclist_id >= len(self.team):
             raise ValueError(f"Cyclist identifier must be in the range 0-{len(self.team)}")
         else:
             return self.team[cyclist_id].get_weight()
-    
+
     def get_mean_maximum_power(self, cyclist_id):
         if cyclist_id >= len(self.team):
             raise ValueError(f"Cyclist identifier must be in the range 0-{len(self.team)}")
         else:
             return self.team[cyclist_id].get_mean_maximum_power()
-    
+
     @abstractmethod
     def simulate(self, transition_strategy, pacing_strategy):
         pass
 
     def update_air_density(self):
-        pp_water_vapour = 100 * self.relative_humidity * (6.1078 * math.pow(10, (((7.5 * (self.temperature + 273.15)) - 2048.625))/(self.temperature + 273.15 - 35.85)))
+        pp_water_vapour = (
+            100
+            * self.relative_humidity
+            * (
+                6.1078
+                * math.pow(
+                    10,
+                    (((7.5 * (self.temperature + 273.15)) - 2048.625)) / (self.temperature + 273.15 - 35.85),
+                )
+            )
+        )
         pp_dry_air = 100 * self.barometric_pressure - pp_water_vapour
-        self.air_density = (pp_dry_air/(287.058 * (self.temperature + 273.15))) + (pp_water_vapour/(461.495 * (self.temperature + 273.15)))
-    
+        self.air_density = (pp_dry_air / (287.058 * (self.temperature + 273.15))) + (
+            pp_water_vapour / (461.495 * (self.temperature + 273.15))
+        )
+
     def cyclists_remaining(self):
         cyclists_remaining = 0
         for i in range(0, len(self.team)):

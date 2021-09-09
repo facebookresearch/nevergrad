@@ -1841,9 +1841,9 @@ def unit_commitment(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                     if not xp.is_incoherent:
                         yield xp
 
+
 def team_cycling(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Experiment to optimise team pursuit track cycling problem.
-    """
+    """Experiment to optimise team pursuit track cycling problem."""
     seedg = create_seed_generator(seed)
     optims = ["NGOpt10", "CMA", "DE"]
     funcs = [cycling(30), cycling(31), cycling(61), cycling(22), cycling(23), cycling(45)]

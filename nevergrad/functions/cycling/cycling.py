@@ -20,6 +20,7 @@ import nevergrad as ng
 from nevergrad.parametrization import parameter as p
 from .. import base
 
+
 class cycling(base.ExperimentFunction):
     """
     Team Pursuit Track Cycling Simulator.
@@ -96,7 +97,7 @@ def mens_team_pursuit_simulation(x: np.ndarray) -> float:
 
     elif len(x) == 45:
         mens_transition_strategy = x[:30]
-        for i in range (0, len(mens_transition_strategy)):
+        for i in range(0, len(mens_transition_strategy)):
             if mens_transition_strategy[i] < 0.5:
                 mens_transition_strategy[i] = False
             elif mens_transition_strategy[i] > 0.5:
@@ -105,21 +106,22 @@ def mens_team_pursuit_simulation(x: np.ndarray) -> float:
                 mens_transition_strategy[i] = random.choice([True, False])
 
         mens_pacing_strategy = x[30:]
-        for i in range  (0, len(mens_pacing_strategy)):
+        for i in range(0, len(mens_pacing_strategy)):
             mens_pacing_strategy[i] = 100 * mens_pacing_strategy[i] + 200
-    
+
     # Create a mensteampursuit object
     mens_team_pursuit = mensteampursuit()
-    
+
     # Simulate event with the default strategies
     result = mens_team_pursuit.simulate(mens_transition_strategy, mens_pacing_strategy)
 
-    #print(result.get_finish_time())
+    # print(result.get_finish_time())
 
-    if result.get_finish_time() > 10000: # in case of inf
+    if result.get_finish_time() > 10000:  # in case of inf
         return 10000
     else:
         return float(result.get_finish_time())
+
 
 def womens_team_pursuit_simulation(x: np.ndarray) -> float:
 
@@ -133,7 +135,7 @@ def womens_team_pursuit_simulation(x: np.ndarray) -> float:
 
     elif len(x) == 45:
         womens_transition_strategy = x[:22]
-        for i in range (0, len(womens_transition_strategy)):
+        for i in range(0, len(womens_transition_strategy)):
             if womens_transition_strategy[i] < 0.5:
                 womens_transition_strategy[i] = False
             elif womens_transition_strategy[i] > 0.5:
@@ -142,18 +144,18 @@ def womens_team_pursuit_simulation(x: np.ndarray) -> float:
                 womens_transition_strategy[i] = random.choice([True, False])
 
         womens_pacing_strategy = x[22:]
-        for i in range  (0, len(womens_pacing_strategy)):
+        for i in range(0, len(womens_pacing_strategy)):
             womens_pacing_strategy[i] = 100 * womens_pacing_strategy[i] + 200
 
     # Create a womensteampursuit object
     womens_team_pursuit = womensteampursuit()
-            
+
     # Simulate event with the default strategies
     result = womens_team_pursuit.simulate(womens_transition_strategy, womens_pacing_strategy)
 
     print(result.get_finish_time())
 
-    if result.get_finish_time() > 10000: # in case of inf
+    if result.get_finish_time() > 10000:  # in case of inf
         return 10000
     else:
         return float(result.get_finish_time())
