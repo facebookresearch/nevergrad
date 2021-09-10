@@ -165,7 +165,6 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
 
         # from pymoo.factory import get_reference_directions
 
-        problem = self._create_pymoo_problem(self, objective_function)
         # reference direction code for when we want to use the other MOO optimizers in Pymoo
         # if self.algorithm in [
         #     "rnsga2",
@@ -180,7 +179,7 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
         #     algorithm = get_pymoo_algorithm(self.algorithm, ref_dirs)
         # else:
         algorithm = get_pymoo_algorithm(self.algorithm)
-        problem = self._create_pymoo_problem(self, objective_function)
+        problem = _create_pymoo_problem(self, objective_function)
         seed = self._rng.randint(2 ** 30)
         pymoooptimize.minimize(problem, algorithm, seed=seed)
         return None
@@ -212,31 +211,6 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
         Multi-Objective override for this function.
         """
         return candidate.losses
-
-    def _create_pymoo_problem(
-        self, optimizer: base.Optimizer, objective_function: tp.Callable[[tp.ArrayLike], float]
-    ):
-        # pylint:disable=import-outside-toplevel
-        from pymoo.model.problem import Problem  # type: ignore
-
-        class _PymooProblem(Problem):
-            def __init__(self, optimizer, objective_function):
-                self.objective_function = objective_function
-                super().__init__(
-                    n_var=optimizer.dimension,
-                    n_obj=optimizer.num_objectives,
-                    n_constr=0,  # constraints handled already by nevergrad
-                    xl=-math.pi * 0.5,
-                    xu=math.pi * 0.5,
-                    elementwise_evaluation=True,  # for 1-by-1 evaluation
-                )
-
-            def _evaluate(self, X, out, *args, **kwargs):
-                # pylint:disable=unused-argument
-                # pymoo is supplying us with bounded parameters in [-pi/2,pi/2]. Nevergrad wants unbounded reals from us.
-                out["F"] = self.objective_function(np.tan(X))
-
-        return _PymooProblem(optimizer, objective_function)
 
 
 class Pymoo(base.ConfiguredOptimizer):
@@ -324,7 +298,6 @@ class _PymooBatchMinimizeBase(recaster.BatchRecastOptimizer):
 
         # from pymoo.factory import get_reference_directions
 
-        problem = self._create_pymoo_problem(self, objective_function)
         # reference direction code for when we want to use the other MOO optimizers in Pymoo
         # if self.algorithm in [
         #     "rnsga2",
@@ -339,7 +312,7 @@ class _PymooBatchMinimizeBase(recaster.BatchRecastOptimizer):
         #     algorithm = get_pymoo_algorithm(self.algorithm, ref_dirs)
         # else:
         algorithm = get_pymoo_algorithm(self.algorithm)
-        problem = self._create_pymoo_problem(self, objective_function)
+        problem = _create_pymoo_problem(self, objective_function, False)
         seed = self._rng.randint(2 ** 30)
         pymoooptimize.minimize(problem, algorithm, seed=seed)
         return None
@@ -371,30 +344,6 @@ class _PymooBatchMinimizeBase(recaster.BatchRecastOptimizer):
         Multi-Objective override for this function.
         """
         return candidate.losses
-
-    def _create_pymoo_problem(
-        self, optimizer: base.Optimizer, objective_function: tp.Callable[[tp.ArrayLike], float]
-    ):
-        # pylint:disable=import-outside-toplevel
-        from pymoo.model.problem import Problem  # type: ignore
-
-        class _PymooProblem(Problem):
-            def __init__(self, optimizer, objective_function):
-                self.objective_function = objective_function
-                super().__init__(
-                    n_var=optimizer.dimension,
-                    n_obj=optimizer.num_objectives,
-                    n_constr=0,  # constraints handled already by nevergrad
-                    xl=-math.pi * 0.5,
-                    xu=math.pi * 0.5,
-                )
-
-            def _evaluate(self, X, out, *args, **kwargs):
-                # pylint:disable=unused-argument
-                # pymoo is supplying us with bounded parameters in [-pi/2,pi/2]. Nevergrad wants unbounded reals from us.
-                out["F"] = self.objective_function(np.tan(X))
-
-        return _PymooProblem(optimizer, objective_function)
 
 
 class PymooBatch(base.ConfiguredOptimizer):
@@ -433,6 +382,35 @@ class PymooBatch(base.ConfiguredOptimizer):
     # pylint: disable=unused-argument
     def __init__(self, *, algorithm: str) -> None:
         super().__init__(_PymooBatchMinimizeBase, locals())
+
+
+def _create_pymoo_problem(
+    optimizer: base.Optimizer,
+    objective_function: tp.Callable[[tp.ArrayLike], float],
+    elementwise: bool = True,
+):
+    # pylint:disable=import-outside-toplevel
+    from pymoo.model.problem import Problem  # type: ignore
+
+    class _PymooProblem(Problem):
+        def __init__(self, optimizer, objective_function, elementwise):
+            self.objective_function = objective_function
+            print("in")
+            super().__init__(
+                n_var=optimizer.dimension,
+                n_obj=optimizer.num_objectives,
+                n_constr=0,  # constraints handled already by nevergrad
+                xl=-math.pi * 0.5,
+                xu=math.pi * 0.5,
+                elementwise_evaluation=elementwise,
+            )
+
+        def _evaluate(self, X, out, *args, **kwargs):
+            # pylint:disable=unused-argument
+            # pymoo is supplying us with bounded parameters in [-pi/2,pi/2]. Nevergrad wants unbounded reals from us.
+            out["F"] = self.objective_function(np.tan(X))
+
+    return _PymooProblem(optimizer, objective_function, elementwise)
 
 
 PymooNSGA2 = Pymoo(algorithm="nsga2").set_name("PymooNSGA2", register=True)
