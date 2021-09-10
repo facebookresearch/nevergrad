@@ -836,7 +836,7 @@ def test_pymoo_pf() -> None:
 
 
 def test_pymoo_batched() -> None:
-    optimizer = ng.optimizers.PymooBatchNSGA2(parametrization=2, budget=1000)
+    optimizer = ng.optimizers.PymooBatchNSGA2(parametrization=2, budget=300)
     optimizer.parametrization.random_state.seed(12)
     candidates = []
     losses = []
