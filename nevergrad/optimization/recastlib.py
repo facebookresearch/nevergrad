@@ -293,7 +293,6 @@ class _PymooBatchMinimizeBase(recaster.RecastOptimizer):
         self._no_hypervolume = True
         self._current_batch: tp.List[p.Parameter] = []
         self._batch_losses: tp.List[tp.Loss] = []
-        self._points: tp.List[tp.ArrayLike] = []
         self._batch_offset = 0
         self._tell_counter = 0
         self.batch_size = 0
