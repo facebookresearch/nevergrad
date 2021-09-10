@@ -6,6 +6,7 @@
 import warnings
 import threading
 import queue
+import numpy as np
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
 from . import base
@@ -206,3 +207,70 @@ class SequentialRecastOptimizer(RecastOptimizer):
     # pylint: disable=abstract-method
 
     no_parallelization = True
+
+
+class BatchRecastOptimizer(RecastOptimizer):
+    """Base class for ask and tell optimizer derived from implementations with no ask and tell interface.
+    The underlying optimizer implementation is a function which is supposed to call directly the function
+    to optimize. It is tricked into optimizing a "fake" function in a thread:
+    - calls to the fake functions are returned by the "ask()" interface
+    - return values of the fake functions are provided to the thread when calling "tell(x, value)"
+
+    Note
+    ----
+    These implementations are not necessarily robust. More specifically, one cannot "tell" any
+    point which was not "asked" before.
+    """
+
+    # pylint: disable=abstract-method
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget, num_workers=num_workers)
+        self._current_batch: tp.List[p.Parameter] = []
+        self._batch_losses: tp.List[tp.Loss] = []
+        self._batch_offset = 0
+        self._tell_counter = 0
+        self.batch_size = 0
+        self.indices: tp.Dict[p.Parameter, int] = {}
+
+    def _internal_ask_candidate(self) -> p.Parameter:
+        """Reads messages from the thread in which the underlying optimization function is running
+        New messages are sent as "ask".
+        """
+        # get a datapoint that is a random point in parameter space
+        if self._messaging_thread is None:
+            self._messaging_thread = MessagingThread(self.get_optimization_function())
+        # wait for a message
+        if not self._messaging_thread.is_alive():  # In case the algorithm stops before the budget is elapsed.
+            warnings.warn(
+                "Underlying optimizer has already converged, returning random points",
+                base.errors.FinishedUnderlyingOptimizerWarning,
+            )
+            self._check_error()
+            data = self._rng.normal(0, 1, self.dimension)
+            return self.parametrization.spawn_child().set_standardized_data(data)
+        if not self._current_batch:
+            points = self._messaging_thread.messages_ask.get()
+            self.batch_size = len(points)
+            self._current_batch = [self.parametrization.spawn_child(point) for point in points]
+            self._batch_losses = [None] * len(points)  # type: ignore
+            self.indices = {candidate: i for i, candidate in enumerate(self._current_batch)}
+        candidate = self._current_batch.pop()
+        return candidate
+
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: float) -> None:
+        """Returns value for a point which was "asked"
+        (none asked point cannot be "tell")
+        """
+        assert self._messaging_thread is not None, 'Start by using "ask" method, instead of "tell" method'
+        if not self._messaging_thread.is_alive():  # optimizer is done
+            self._check_error()
+            return
+        candidate_index = self.indices[candidate]
+        self._batch_losses[candidate_index] = self._post_loss(candidate, loss)
+        self._tell_counter += 1
+        if self._tell_counter % self.batch_size == 0:
+            self._messaging_thread.messages_ask.put(np.array(self._batch_losses))
+            self._batch_losses = []
