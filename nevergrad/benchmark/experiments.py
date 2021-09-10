@@ -22,6 +22,7 @@ from nevergrad.functions.arcoating import ARCoating
 from nevergrad.functions import images as imagesxp
 from nevergrad.functions.powersystems import PowerSystem
 from nevergrad.functions.stsp import STSP
+from nevergrad.functions.ttp import TTPInstance
 from nevergrad.functions.rocket import Rocket
 from nevergrad.functions.mixsimulator import OptimizeMix
 from nevergrad.functions.unitcommitment import UnitCommitmentProblem
@@ -1839,3 +1840,17 @@ def unit_commitment(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                     xp = Experiment(func, algo, budget, num_workers=1, seed=next(seedg))
                     if not xp.is_incoherent:
                         yield xp
+
+@registry.register
+def travelling_thief(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Travelling thief problem.
+	"""
+
+    seedg = create_seed_generator(seed)
+    optims = ['NGOpt10',"PSO","DiagonalCMA"]
+    func = TTPInstance()
+    for budget in [100 * 5 ** k for k in range(5)]:
+        for algo in optims:
+            xp = Experiment(func, algo, budget, num_workers=10, seed=next(seedg))
+            if not xp.is_incoherent:
+                yield xp

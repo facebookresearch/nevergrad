@@ -1,0 +1,16 @@
+loss,elapsed_budget,elapsed_time,error,pseudotime,num_objectives,info/sub-optim,seed,file,function_class,parametrization,dimension,budget,num_workers,batch_mode,optimizer_name
+11158.04395037268,100,0.4453394412994385,,10.0,1,DoubleFastGADiscreteOnePlusOne,-1,./instances/a20_n95_01.ttp,TTPInstance,,114,100,10,True,NGOpt10
+10027018.223035306,100,0.17846322059631348,,10.0,1,,-1,./instances/a20_n95_01.ttp,TTPInstance,,114,100,10,True,PSO
+14573333.34377678,100,0.11366510391235352,,10.0,1,,-1,./instances/a20_n95_01.ttp,TTPInstance,,114,100,10,True,DiagonalCMA
+10926.992574573447,500,2.2576231956481934,,50.0,1,DoubleFastGADiscreteOnePlusOne,-1,./instances/a20_n95_01.ttp,TTPInstance,,114,500,10,True,NGOpt10
+919264.777240318,500,0.631537675857544,,50.0,1,,-1,./instances/a20_n95_01.ttp,TTPInstance,,114,500,10,True,PSO
+9805216.415770702,500,0.49848294258117676,,50.0,1,,-1,./instances/a20_n95_01.ttp,TTPInstance,,114,500,10,True,DiagonalCMA
+3357.8423609836464,2500,10.907867431640625,,250.0,1,DoubleFastGADiscreteOnePlusOne,-1,./instances/a20_n95_01.ttp,TTPInstance,,114,2500,10,True,NGOpt10
+7723.368334041586,2500,2.9331517219543457,,250.0,1,,-1,./instances/a20_n95_01.ttp,TTPInstance,,114,2500,10,True,PSO
+9526.734364274876,2500,2.6609537601470947,,250.0,1,,-1,./instances/a20_n95_01.ttp,TTPInstance,,114,2500,10,True,DiagonalCMA
+2903.3362941932337,12500,57.58564639091492,,1250.0,1,DoubleFastGADiscreteOnePlusOne,-1,./instances/a20_n95_01.ttp,TTPInstance,,114,12500,10,True,NGOpt10
+6529.054281442897,12500,15.2707040309906,,1250.0,1,,-1,./instances/a20_n95_01.ttp,TTPInstance,,114,12500,10,True,PSO
+8298.92557251387,12500,11.993350744247437,,1250.0,1,,-1,./instances/a20_n95_01.ttp,TTPInstance,,114,12500,10,True,DiagonalCMA
+4558.469147648659,62500,284.7405207157135,,6250.0,1,DoubleFastGADiscreteOnePlusOne,-1,./instances/a20_n95_01.ttp,TTPInstance,,114,62500,10,True,NGOpt10
+3724.523163102669,62500,421.18494296073914,,6250.0,1,,-1,./instances/a20_n95_01.ttp,TTPInstance,,114,62500,10,True,PSO
+8340.615880174912,62500,61.99838423728943,,6250.0,1,,-1,./instances/a20_n95_01.ttp,TTPInstance,,114,62500,10,True,DiagonalCMA
