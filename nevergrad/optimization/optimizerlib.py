@@ -2670,7 +2670,7 @@ class NGOpt16_tentative(NGOpt15_tentative):
             and self.num_workers == 1
             and not self.has_noise
             and self.num_objectives < 2
-            and self.fully_bounded
+            and p.helpers.Normalizer(self.parametrization).fully_bounded
         ):
             return Cobyla
         else:
