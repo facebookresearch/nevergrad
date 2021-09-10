@@ -360,6 +360,7 @@ class _PymooBatchMinimizeBase(recaster.RecastOptimizer):
                 "with this optimizer, it is more efficient to set num_objectives before the optimization begins",
                 errors.NevergradRuntimeWarning,
             )
+            print("numobj")
             return self.parametrization.spawn_child()
         if self._messaging_thread is None:
             self._messaging_thread = recaster.MessagingThread(self.get_optimization_function())
