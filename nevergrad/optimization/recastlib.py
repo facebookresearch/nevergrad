@@ -395,7 +395,6 @@ def _create_pymoo_problem(
     class _PymooProblem(Problem):
         def __init__(self, optimizer, objective_function, elementwise):
             self.objective_function = objective_function
-            print("in")
             super().__init__(
                 n_var=optimizer.dimension,
                 n_obj=optimizer.num_objectives,
