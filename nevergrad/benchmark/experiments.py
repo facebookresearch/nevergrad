@@ -1841,13 +1841,13 @@ def unit_commitment(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                     if not xp.is_incoherent:
                         yield xp
 
+
 @registry.register
 def travelling_thief(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Travelling thief problem.
-	"""
+    """Travelling thief problem."""
 
     seedg = create_seed_generator(seed)
-    optims = ['NGOpt10',"PSO","DiagonalCMA"]
+    optims = ["NGOpt10", "PSO", "DiagonalCMA"]
     func = TTPInstance()
     for budget in [100 * 5 ** k for k in range(5)]:
         for algo in optims:
