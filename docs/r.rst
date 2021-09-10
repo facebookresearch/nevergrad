@@ -58,7 +58,7 @@ Examples - Nevergrad for R
          # for (j in 1:num_workers) {  # In a perfect world this would be parallel.
          #    score[j] <- norm(nevergrad_hp_val[j]
          # }
-         
+
          # Parallel version.
          # Actually this could be asynchronous, Nevergrad is ok for that, you do not have to
          # do the tell's in the same order as the ask's.
@@ -74,4 +74,4 @@ Examples - Nevergrad for R
 
 Don't forget the "pip=TRUE". I wasted so much time because of this :-)
 
-For other instrumentations (discrete variables, logarithmic continuous variables...), please check `different instrumentations: <https://github.com/facebookresearch/nevergrad/blob/master/docs/parametrization.rst>`. Or for simple examples for machine learning `machine learning <https://github.com/facebookresearch/nevergrad/blob/master/docs/machinelearning.rst>`.
+For other instrumentations (discrete variables, logarithmic continuous variables...), please check `different instrumentations: <https://github.com/facebookresearch/nevergrad/blob/main/docs/parametrization.rst>`. Or for simple examples for machine learning `machine learning <https://github.com/facebookresearch/nevergrad/blob/main/docs/machinelearning.rst>`.
