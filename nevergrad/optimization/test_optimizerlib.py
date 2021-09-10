@@ -841,9 +841,9 @@ def test_pymoo_batched() -> None:
     candidates = []
     losses = []
     optimizer.num_objectives = 2
-    for i in range(3):
+    for _ in range(3):
         asks_from_batch = 0
-        while (optimizer.num_ask == optimizer.num_tell) or asks_from_batch < optimizer.batch_size:
+        while (optimizer.num_ask == optimizer.num_tell) or asks_from_batch < optimizer.batch_size:  # type: ignore
             x = optimizer.ask()
             loss = _simple_multiobjective(*x.args, **x.kwargs)
             candidates.append(x)
@@ -854,4 +854,4 @@ def test_pymoo_batched() -> None:
             x = candidates.pop()
             loss = losses.pop()
             optimizer.tell(x, loss)
-    assert len(optimizer._current_batch) == 0
+    assert len(optimizer._current_batch) == 0  # type: ignore
