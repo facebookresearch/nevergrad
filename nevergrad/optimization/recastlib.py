@@ -298,7 +298,6 @@ class _PymooBatchMinimizeBase(recaster.RecastOptimizer):
         self._tell_counter = 0
         self.batch_size = 0
         self.indices: tp.Dict[p.Parameter, int] = {}
-        self._is_ready = False
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         """Called whenever calling "tell" on a candidate that was not "asked".
@@ -374,13 +373,12 @@ class _PymooBatchMinimizeBase(recaster.RecastOptimizer):
             self._check_error()
             data = self._rng.normal(0, 1, self.dimension)
             return self.parametrization.spawn_child().set_standardized_data(data)
-        if not self._is_ready:
+        if not self._current_batch:
             points = self._messaging_thread.messages_ask.get()
             self.batch_size = len(points)
             self._current_batch = [self.parametrization.spawn_child(point) for point in points]
             self._batch_losses = [None] * len(points)  # type: ignore
             self.indices = {candidate: i for i, candidate in enumerate(self._current_batch)}
-            self._is_ready = True
         candidate = self._current_batch.pop()
         return candidate
 
@@ -400,7 +398,6 @@ class _PymooBatchMinimizeBase(recaster.RecastOptimizer):
         if self._tell_counter % self.batch_size == 0:
             self._messaging_thread.messages_ask.put(self._batch_losses)
             self._batch_losses = []
-            self._is_ready = False
 
     def _post_loss(self, candidate: p.Parameter, loss: float) -> tp.Loss:
         # pylint: disable=unused-argument
