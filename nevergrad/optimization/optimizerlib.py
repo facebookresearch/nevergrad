@@ -2624,6 +2624,7 @@ class NGOpt13(NGOpt12):  # Also known as NGOpt12H
             and self.num_workers * 3 < self.budget
             and self.dimension < 8
             and self.budget < 80
+            and self.fully_continuous
         ):
             return HyperOpt
         else:
@@ -2633,14 +2634,18 @@ class NGOpt13(NGOpt12):  # Also known as NGOpt12H
 @registry.register
 class NGOpt14(NGOpt12):  # Also known as NGOpt12H_nohyperopt
     def _select_optimizer_cls(self) -> base.OptCls:
-        if self.budget is not None and self.budget < 600:
+        if (
+            self.budget is not None
+            and self.budget < 600
+            and self.fully_continuous
+        ):
             return MetaModel
         else:
             return super()._select_optimizer_cls()
 
 
 @registry.register
-class NGOpt15(NGOpt14):  # Also known as NGOpt12H_nohyperopt
+class NGOpt15_tentative(NGOpt14):
     def _select_optimizer_cls(self) -> base.OptCls:
         if (
             self.budget is not None
@@ -2648,11 +2653,27 @@ class NGOpt15(NGOpt14):  # Also known as NGOpt12H_nohyperopt
             and self.num_workers == 1
             and not self.has_noise
             and self.num_objectives < 2
+            and self.fully_continuous
         ):
             return MetaModelOpO  # OnePlusOne seems equivalent so far
         else:
             return super()._select_optimizer_cls()
 
+
+@registry.register
+class NGOpt16_tentative(NGOpt15_tentative):
+    def _select_optimizer_cls(self) -> base.OptCls:
+        if (
+            self.budget is not None
+            and self.budget < 200 * self.dimension
+            and self.num_workers == 1
+            and not self.has_noise
+            and self.num_objectives < 2
+            and self.fully_continuous
+        ):
+            return Cobyla
+        else:
+            return super()._select_optimizer_cls()
 
 @registry.register
 class NGOpt(NGOpt14):
