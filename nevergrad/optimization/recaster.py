@@ -210,16 +210,20 @@ class SequentialRecastOptimizer(RecastOptimizer):
 
 
 class BatchRecastOptimizer(RecastOptimizer):
-    """Base class for ask and tell optimizer derived from implementations with no ask and tell interface.
-    The underlying optimizer implementation is a function which is supposed to call directly the function
-    to optimize. It is tricked into optimizing a "fake" function in a thread:
-    - calls to the fake functions are returned by the "ask()" interface
-    - return values of the fake functions are provided to the thread when calling "tell(x, value)"
+    """Recast optimizer where points to evaluate are provided in batches
+    and stored by the optimizer to be asked and told on. The fake_callable
+    is only brought into action every 'batch size' number of asks and tells
+    instead of every ask and tell. This opens up the optimizer to
+    parallelism.
 
     Note
     ----
-    These implementations are not necessarily robust. More specifically, one cannot "tell" any
-    point which was not "asked" before.
+    These implementations are not necessarily robust. You have to complete
+    a batch before you start a new one so parallelism is only possible
+    within batches i.e. if a batch size is 100 and you have done 100 asks,
+    you must do 100 tells before you ask again but you could do those 100
+    asks and tells in parallel.
+
     """
 
     # pylint: disable=abstract-method
@@ -271,6 +275,7 @@ class BatchRecastOptimizer(RecastOptimizer):
         candidate_index = self.indices[candidate]
         self._batch_losses[candidate_index] = self._post_loss(candidate, loss)
         self._tell_counter += 1
-        if self._tell_counter % self.batch_size == 0:
+        if self._tell_counter == self.batch_size:
             self._messaging_thread.messages_ask.put(np.array(self._batch_losses))
             self._batch_losses = []
+            self._tell_counter = 0
