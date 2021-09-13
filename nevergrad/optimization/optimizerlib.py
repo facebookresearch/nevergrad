@@ -2657,7 +2657,7 @@ class NGOpt15(NGOpt14):
 
 
 @registry.register
-class NGOpt16(NGOpt15_tentative):
+class NGOpt16(NGOpt15):
     def _select_optimizer_cls(self) -> base.OptCls:
         if (
             self.budget is not None
