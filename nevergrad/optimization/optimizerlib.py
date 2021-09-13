@@ -2620,7 +2620,6 @@ class NGOpt13(NGOpt12):  # Also known as NGOpt12H
     def _select_optimizer_cls(self) -> base.OptCls:
         if (
             not self.has_noise
-            and self.fully_continuous
             and self.budget is not None
             and self.num_workers * 3 < self.budget
             and self.dimension < 8
@@ -2634,7 +2633,7 @@ class NGOpt13(NGOpt12):  # Also known as NGOpt12H
 @registry.register
 class NGOpt14(NGOpt12):  # Also known as NGOpt12H_nohyperopt
     def _select_optimizer_cls(self) -> base.OptCls:
-        if self.budget is not None and self.fully_continuous and self.budget < 600:
+        if self.budget is not None and self.budget < 600:
             return MetaModel
         else:
             return super()._select_optimizer_cls()
@@ -2652,6 +2651,8 @@ class NGOpt15(NGOpt14):
             and self.num_objectives < 2
         ):
             return MetaModelOpO  # OnePlusOne seems equivalent so far
+        elif self.fully_continuous and self.budget is not None and self.budget < 600:
+            return MetaModel
         else:
             return super()._select_optimizer_cls()
 
