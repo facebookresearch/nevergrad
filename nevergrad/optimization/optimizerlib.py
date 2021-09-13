@@ -2640,7 +2640,7 @@ class NGOpt14(NGOpt12):  # Also known as NGOpt12H_nohyperopt
 
 
 @registry.register
-class NGOpt15(NGOpt14):
+class NGOpt15(NGOpt12):
     def _select_optimizer_cls(self) -> base.OptCls:
         if (
             self.budget is not None
