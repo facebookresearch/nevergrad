@@ -2634,18 +2634,14 @@ class NGOpt13(NGOpt12):  # Also known as NGOpt12H
 @registry.register
 class NGOpt14(NGOpt12):  # Also known as NGOpt12H_nohyperopt
     def _select_optimizer_cls(self) -> base.OptCls:
-        if (
-            self.budget is not None
-            and self.fully_continuous
-            and self.budget < 600
-        ):
+        if self.budget is not None and self.fully_continuous and self.budget < 600:
             return MetaModel
         else:
             return super()._select_optimizer_cls()
 
 
 @registry.register
-class NGOpt15_tentative(NGOpt14):
+class NGOpt15(NGOpt14):
     def _select_optimizer_cls(self) -> base.OptCls:
         if (
             self.budget is not None
@@ -2661,7 +2657,7 @@ class NGOpt15_tentative(NGOpt14):
 
 
 @registry.register
-class NGOpt16_tentative(NGOpt15_tentative):
+class NGOpt16(NGOpt15_tentative):
     def _select_optimizer_cls(self) -> base.OptCls:
         if (
             self.budget is not None
@@ -2676,8 +2672,9 @@ class NGOpt16_tentative(NGOpt15_tentative):
         else:
             return super()._select_optimizer_cls()
 
+
 @registry.register
-class NGOpt(NGOpt14):
+class NGOpt(NGOpt16):
     pass
 
 
