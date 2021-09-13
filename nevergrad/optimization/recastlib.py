@@ -108,7 +108,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
                 cs = ConfigurationSpace()
                 cs.add_hyperparameters(
                     [
-                        UniformFloatHyperparameter(f"x{i}", -1.0, 1.0, default_value=0.0)
+                        UniformFloatHyperparameter(f"x{i}", 0.0, 1.0, default_value=0.0)
                         for i in range(self.dimension)
                     ]
                 )
@@ -197,7 +197,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
                     #func=lambda x: sum([(x_ - 1.234)**2  for x_ in x]),
                     func=smac_obj,
                     x0=[0.0] * self.dimension,
-                    bounds=[(-1, 1)] * self.dimension,
+                    bounds=[(0., 1.)] * self.dimension,
                     maxfun=remaining,
                     rng=self._rng.randint(5000),
                 )  # Passing a seed makes fmin_smac determistic
