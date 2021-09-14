@@ -149,13 +149,13 @@ class TTPInstance(base.ExperimentFunction):
         tspTour = np.argsort(tspTour)
 
         tspTour = tspTour + 1
-        tspTour = tspTour.tolist()
-        tspTour.insert(0, 0)
-        tspTour.append(0)
+        tspTL = tspTour.tolist()
+        tspTL.insert(0, 0)
+        tspTL.append(0)
 
         packingPlan = packingPlan.tolist()
 
-        solution = TTPSolution(tspTour, packingPlan)
+        solution = TTPSolution(tspTL, packingPlan)
 
         tour = solution.tspTour
         z = solution.packingPlan
