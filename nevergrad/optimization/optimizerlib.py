@@ -1483,8 +1483,10 @@ class MetaModel(base.Optimizer):
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
         multivariate_optimizer: tp.Optional[base.OptCls] = None,
+        modulo: float = 0.5,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        self.modulo = modulo
         if multivariate_optimizer is None:
             multivariate_optimizer = ParametrizedCMA(elitist=True) if self.dimension > 1 else OnePlusOne
         self._optim = multivariate_optimizer(
@@ -1495,7 +1497,7 @@ class MetaModel(base.Optimizer):
         # We request a bit more points than what is really necessary for our dimensionality (+dimension).
         sample_size = int((self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1)
         if (
-            self._num_ask % max(13, self.num_workers, self.dimension) == 0
+            self._num_ask % max(13, self.num_workers, self.dimension, int(self.modulo * sample_size)) == 0
             and len(self.archive) >= sample_size
         ):
             try:
