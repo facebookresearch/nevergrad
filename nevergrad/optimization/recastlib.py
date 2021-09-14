@@ -80,7 +80,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
                     best_res = res.f
                     best_x = res.x
             elif self.method == "AX":
-                parameters = [{"name": "x"+str(i), "type":"range", "bounds":[-1., 1.]} for i in range(self.dimension)]
+                parameters = [{"name": "x"+str(i), "type":"range", "bounds":[0., 1.]} for i in range(self.dimension)]
                 best_parameters, best_values, experiment, model = axoptimize(
                     parameters,
                     evaluation_function = ax_obj,
