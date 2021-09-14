@@ -95,7 +95,7 @@ class TTPInstance(base.ExperimentFunction):
                 self.nodes = []
 
                 for i in range(0, self.numberOfNodes):
-                    count += 1
+                    count += 1 + i - i
                     line = lines[count]
                     splittedLine = line.split()
                     col = []
@@ -149,11 +149,11 @@ class TTPInstance(base.ExperimentFunction):
         tspTour = np.argsort(tspTour)
 
         tspTour = tspTour + 1
-        tspTour = list(tspTour)
+        tspTour = tspTour.tolist()
         tspTour.insert(0, 0)
         tspTour.append(0)
 
-        packingPlan = list(packingPlan)
+        packingPlan = packingPlan.tolist()
 
         solution = TTPSolution(tspTour, packingPlan)
 
@@ -168,7 +168,7 @@ class TTPInstance(base.ExperimentFunction):
         if tour[0] != tour[-1]:
             print("ERROR: The last city must be the same as the first city")
             solution.reset()
-            return
+            return float(-1)
 
         wc = float(0)
         solution.ft = 0
