@@ -13,6 +13,7 @@ from .optimizerlib import (
     EMNA,
     NGOpt10,
     NGOpt12,
+    BayesOptim,
 )
 from . import optimizerlib as opts
 from .optimizerlib import CMA, Chaining, PSO, BO
@@ -305,4 +306,13 @@ DiscreteNoisy13Splits = opts.NoisySplit(num_optims=13, discrete=True).set_name(
 )
 DiscreteNoisyInfSplits = opts.NoisySplit(num_optims=float("inf"), discrete=True).set_name(
     "DiscreteNoisyInfSplits", register=True
+)
+
+# PCA-BO
+# Testing the influence of n_components on the performance of PCABO
+PCABO80 = BayesOptim(pca=True, n_components=0.80).set_name("PCABO80", register=True)
+
+# Testing the influence of the DoE size on the performance of PCABO
+PCABO95DoE20 = BayesOptim(pca=True, n_components=0.95, prop_doe_factor=0.20).set_name(
+    "PCABO95DoE20", register=True
 )

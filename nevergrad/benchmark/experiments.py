@@ -622,6 +622,7 @@ def yabbob(
     split: bool = False,
     tiny: bool = False,
     tuning: bool = False,
+    bounded: bool = False,
 ) -> tp.Iterator[Experiment]:
     """Yet Another Black-Box Optimization Benchmark.
     Related to, but without special effort for exactly sticking to, the BBOB/COCO dataset.
@@ -665,10 +666,16 @@ def yabbob(
         optims += get_optimizers("splitters", seed=next(seedg))  # type: ignore
 
     if hd and small:
-        optims = ["BO", "BOSplit", "CMA", "PSO", "DE"]
+        optims = ["BO", "CMA", "PSO", "DE"]
+
+    if bounded:
+        optims = ["BO", "PCABO", "BayesOptimBO", "CMA", "PSO", "DE"]
+
     # List of objective functions.
     functions = [
-        ArtificialFunction(name, block_dimension=d, rotation=rotation, noise_level=noise_level, split=split)
+        ArtificialFunction(
+            name, block_dimension=d, rotation=rotation, noise_level=noise_level, split=split, bounded=bounded
+        )
         for name in names
         for rotation in [True, False]
         for num_blocks in ([1] if not split else [7, 12])
@@ -702,6 +709,8 @@ def yabbob(
     )
     if small and not noise:
         budgets = [10, 20, 40]
+    if bounded:
+        budgets = [10, 20, 40, 100, 300]
     for optim in optims:
         for function in functions:
             for budget in budgets:
@@ -800,6 +809,12 @@ def yanoisybbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     This is different from the original BBOB/COCO from that point of view.
     """
     return yabbob(seed, noise=True)
+
+
+@registry.register
+def yaboundedbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with bounded domain, (-5,5)**n by default."""
+    return yabbob(seed, bounded=True)
 
 
 @registry.register
