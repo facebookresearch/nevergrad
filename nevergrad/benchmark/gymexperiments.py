@@ -47,17 +47,19 @@ def ng_full_gym(
         env_names = gym.GymMulti.ng_gym
     seedg = create_seed_generator(seed)
     optims = ["DiagonalCMA", "OnePlusOne", "PSO", "DiscreteOnePlusOne", "DE", "CMandAS2"]
+
+    optims = ["DiagonalCMA", "CMA", "OnePlusOne", "SMAC"]
     if multi:
         controls = ["multi_neural"]
     else:
         controls = (
             [
                 "neural",
-                "structured_neural",
+                # "structured_neural",
                 # "memory_neural",
-                "stackingmemory_neural",
-                "deep_neural",
-                "semideep_neural",
+                # "stackingmemory_neural",
+                # "deep_neural",
+                # "semideep_neural",
                 # "noisy_neural",
                 # "noisy_scrambled_neural",
                 # "scrambled_neural",
@@ -78,6 +80,7 @@ def ng_full_gym(
     if conformant:
         controls = ["stochastic_conformant"]
     budgets = [50, 200, 800, 3200, 6400, 100, 25, 400, 1600]
+    budgets = [25, 50, 100]
     for control in controls:
         neural_factors: tp.Any = (
             [None]
@@ -112,7 +115,7 @@ def conformant_ng_full_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experim
 
 
 @registry.register
-def ng_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def small_ng_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of ng_full_gym with a specific, reduced list of problems."""
     return ng_full_gym(seed, ng_gym=True)
 
