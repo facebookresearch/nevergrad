@@ -1864,7 +1864,7 @@ def travelling_thief(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     optims = ["NGOpt10", "PSO", "DiagonalCMA"]
     func = TTPInstance()
-    for budget in [100 * 5 ** k for k in range(5)]:
+    for budget in [100 * 5 ** k for k in range(3)]:
         for algo in optims:
             xp = Experiment(func, algo, budget, num_workers=10, seed=next(seedg))
             if not xp.is_incoherent:
