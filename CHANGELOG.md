@@ -29,6 +29,8 @@
 - Experimental methods `Array.set_recombination` and `Array.set_mutation(custom=.)` are removed in favor of
   layers changing `Array` behaviors [#1086](https://github.com/facebookresearch/nevergrad/pull/1086).
   Caution: this is still very experimental (and undocumented).
+- Important bug correction on the shape of bounds if specified as tuple or list instead of np.ndarray
+  [#1221](https://github.com/facebookresearch/nevergrad/pull/1221).
 
 ### Important changes
 
@@ -61,6 +63,10 @@
   [#1054](https://github.com/facebookresearch/nevergrad/pull/1054).
 - `Choice`-like parameters now accept integers are inputs instead of a list, as a shortcut for `range(num)`
   [#1106](https://github.com/facebookresearch/nevergrad/pull/1106).
+- An interface with [Pymoo](https://pymoo.org/) optimizers has been added
+  [#1197](https://github.com/facebookresearch/nevergrad/pull/1197).
+- An interface with [BayesOptim](https://github.com/wangronin/Bayesian-Optimization) optimizers has been added
+  [#1179](https://github.com/facebookresearch/nevergrad/pull/1179).
 
 ## 0.4.3 (2021-01-28)
 

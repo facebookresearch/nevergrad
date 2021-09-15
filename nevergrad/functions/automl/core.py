@@ -16,15 +16,15 @@ from .. import base
 
 class AutoSKlearnBenchmark(base.ExperimentFunction):
     def __init__(
-            self,
-            openml_task_id: int,
-            cv: int,
-            time_budget_per_run: int,
-            memory_limit: int,
-            scoring_func: str = "balanced_accuracy",
-            error_penalty: float = 1.0,
-            overfitter: bool = False,
-            random_state: tp.Optional[int] = None,
+        self,
+        openml_task_id: int,
+        cv: int,
+        time_budget_per_run: int,
+        memory_limit: int,
+        scoring_func: str = "balanced_accuracy",
+        error_penalty: float = 1.0,
+        overfitter: bool = False,
+        random_state: tp.Optional[int] = None,
     ) -> None:
 
         if os.name != "nt":
@@ -81,11 +81,27 @@ class AutoSKlearnBenchmark(base.ExperimentFunction):
 
         config = get_configuration(x, self.config_space)
         if not self.evaluate_on_test:
-            job = self.executor.submit(self.eval_func, config, self.X_train, self.y_train, self.scoring_func, self.cv,
-                                       self.random_state, None)
+            job = self.executor.submit(
+                self.eval_func,
+                config,
+                self.X_train,
+                self.y_train,
+                self.scoring_func,
+                self.cv,
+                self.random_state,
+                None,
+            )
         else:
-            job = self.executor.submit(self.eval_func, config, self.X_train, self.y_train, self.scoring_func, self.cv,
-                                       self.random_state, (self.X_test, self.y_test))
+            job = self.executor.submit(
+                self.eval_func,
+                config,
+                self.X_train,
+                self.y_train,
+                self.scoring_func,
+                self.cv,
+                self.random_state,
+                (self.X_test, self.y_test),
+            )
         try:
             loss = job.result()
         except:

@@ -14,7 +14,7 @@ from nevergrad.functions import base as fbase
 from nevergrad.functions import ExperimentFunction
 from nevergrad.functions import ArtificialFunction
 from nevergrad.functions import FarOptimumFunction
-from nevergrad.functions import PBT
+from nevergrad.functions.pbt import PBT
 from nevergrad.functions.ml import MLTuning
 from nevergrad.functions import mlda as _mlda
 from nevergrad.functions.photonics import Photonics
@@ -37,8 +37,10 @@ from .xpbase import create_seed_generator
 from .xpbase import registry as registry  # noqa
 from .optgroups import get_optimizers
 
-# register all frozen experiments
-from . import frozenexperiments  # noqa # pylint: disable=unused-import
+# register all experiments from other files
+# pylint: disable=unused-import
+from . import frozenexperiments  # noqa
+from . import gymexperiments  # noqa
 
 # pylint: disable=stop-iteration-return, too-many-nested-blocks, too-many-locals
 
@@ -78,7 +80,7 @@ class _Constraint:
 def keras_tuning(
     seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool = False
 ) -> tp.Iterator[Experiment]:
-    """Machine learning hyperparameter tuning experiment. Based on scikit models."""
+    """Machine learning hyperparameter tuning experiment. Based on Keras models."""
     seedg = create_seed_generator(seed)
     # Continuous case,
 
@@ -104,12 +106,16 @@ def keras_tuning(
 
 
 def mltuning(
-    seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool = False
+    seed: tp.Optional[int] = None,
+    overfitter: bool = False,
+    seq: bool = False,
+    nano: bool = False,
 ) -> tp.Iterator[Experiment]:
     """Machine learning hyperparameter tuning experiment. Based on scikit models."""
     seedg = create_seed_generator(seed)
     optims: tp.List[str] = get_optimizers("basics", seed=next(seedg))  # type: ignore
-
+    if not seq:
+        optims = get_optimizers("oneshot", seed=next(seedg))  # type: ignore
     for dimension in [None, 1, 2, 3]:
         if dimension is None:
             datasets = ["boston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
@@ -120,7 +126,7 @@ def mltuning(
                 function = MLTuning(
                     regressor=regressor, data_dimension=dimension, dataset=dataset, overfitter=overfitter
                 )
-                for budget in [50, 150, 500]:
+                for budget in [50, 150, 500] if not nano else [20, 40, 80, 160]:
                     # Seq for sequential optimization experiments.
                     parallelization = [1, budget // 4] if seq else [budget]
                     for num_workers in parallelization:
@@ -218,15 +224,34 @@ def seq_keras_tuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 # We register only the sequential counterparts for the moment.
 @registry.register
 def naive_seq_keras_tuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Sequential counterpart of mltuning."""
+    """Naive counterpart (no overfitting, see naivemltuning)of seq_keras_tuning."""
     return keras_tuning(seed, overfitter=True, seq=True)
 
 
-# We register only the sequential counterparts for the moment.
+@registry.register
+def oneshot_mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """One-shot counterpart of Scikit tuning."""
+    return mltuning(seed, overfitter=False, seq=False)
+
+
+# We register only the (almost) sequential counterparts for the moment.
 @registry.register
 def seq_mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Sequential counterpart of mltuning."""
     return mltuning(seed, overfitter=False, seq=True)
+
+
+@registry.register
+def nano_seq_mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Sequential counterpart of seq_mltuning with smaller budget."""
+    return mltuning(seed, overfitter=False, seq=True, nano=True)
+
+
+@registry.register
+def nano_naive_seq_mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Sequential counterpart of mltuning with overfitting of valid loss, i.e. train/valid/valid instead of train/valid/test,
+    and with lower budget."""
+    return mltuning(seed, overfitter=True, seq=True, nano=True)
 
 
 @registry.register
@@ -246,6 +271,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     TODO(oteytaud): this requires a significant improvement, covering mixed problems and different types of constraints.
     """
     seedg = create_seed_generator(seed)
+    total_xp_per_optim = 0
     # Continuous case
 
     # First, a few functions with constraints.
@@ -276,17 +302,17 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     ][
         ::37
     ]  # 37 is coprime with all periods above so we sample correctly the possibilities.
-    assert len(functions) < 30, str(len(functions))
+    assert len(functions) == 21, f"{len(functions)} problems instead of 21. Yawidebbob should be standard."
     # This problem is intended as a stable basis forever.
     # The list of optimizers should contain only the basic for comparison and "baselines".
     optims: tp.List[str] = ["NGOpt10"] + get_optimizers("baselines", seed=next(seedg))  # type: ignore
-
     index = 0
     for function in functions:
         for budget in [50, 1500, 25000]:
             for nw in [1, budget] + ([] if budget <= 300 else [300]):
                 index += 1
                 if index % 5 == 0:
+                    total_xp_per_optim += 1
                     for optim in optims:
                         xp = Experiment(function, optim, num_workers=nw, budget=budget, seed=next(seedg))
                         if not xp.is_incoherent:
@@ -304,10 +330,12 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                     corefuncs.DiscreteFunction(name, arity), instrum.set_name("transition")
                 )
                 dfunc.add_descriptors(arity=arity)
-                for optim in optims:
-                    for budget in [500, 5000]:
-                        for nw in [1, 100]:
+                for budget in [500, 5000]:
+                    for nw in [1, 100]:
+                        total_xp_per_optim += 1
+                        for optim in optims:
                             yield Experiment(dfunc, optim, num_workers=nw, budget=budget, seed=next(seedg))
+
     # The multiobjective case.
     # TODO the upper bounds are really not well set for this experiment with cigar
     mofuncs: tp.List[fbase.MultiExperiment] = []
@@ -345,8 +373,10 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
             for nw in [1, 100]:
                 index += 1
                 if index % 5 == 0:
+                    total_xp_per_optim += 1
                     for optim in optims:
                         yield Experiment(mofunc, optim, budget=budget, num_workers=nw, seed=next(seedg))
+    assert total_xp_per_optim == 55, "We should have 55 xps per optimizer, not {total_xp_per_optim}."
 
 
 # pylint: disable=redefined-outer-name
@@ -516,13 +546,16 @@ def oneshot(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     functions = [
         ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
         for name in names
-        for bd in [3, 25]
-        for uv_factor in [0, 5]
+        for bd in [3, 10, 30, 100, 300, 1000, 3000]
+        for uv_factor in [0]  # , 5]
     ]
     for func in functions:
         for optim in optims:
-            for budget in [30, 100, 3000]:
-                yield Experiment(func, optim, budget=budget, num_workers=budget, seed=next(seedg))
+            # if not any(x in str(optim) for x in ["Tune", "Large", "Cauchy"]):
+            # if "Meta" in str(optim):
+            for budget in [100000, 30, 100, 300, 1000, 3000, 10000]:
+                if func.dimension < 3000 or budget < 100000:
+                    yield Experiment(func, optim, budget=budget, num_workers=budget, seed=next(seedg))
 
 
 @registry.register
@@ -656,6 +689,9 @@ def yabbob(
     hd: bool = False,
     constraint_case: int = 0,
     split: bool = False,
+    tiny: bool = False,
+    tuning: bool = False,
+    bounded: bool = False,
 ) -> tp.Iterator[Experiment]:
     """Yet Another Black-Box Optimization Benchmark.
     Related to, but without special effort for exactly sticking to, the BBOB/COCO dataset.
@@ -698,14 +734,24 @@ def yabbob(
         optims += ["OnePlusOne"]
         optims += get_optimizers("splitters", seed=next(seedg))  # type: ignore
 
+    if hd and small:
+        optims = ["BO", "CMA", "PSO", "DE"]
+
+    if bounded:
+        optims = ["BO", "PCABO", "BayesOptimBO", "CMA", "PSO", "DE"]
+
     # List of objective functions.
     functions = [
-        ArtificialFunction(name, block_dimension=d, rotation=rotation, noise_level=noise_level, split=split)
+        ArtificialFunction(
+            name, block_dimension=d, rotation=rotation, noise_level=noise_level, split=split, bounded=bounded
+        )
         for name in names
         for rotation in [True, False]
         for num_blocks in ([1] if not split else [7, 12])
-        for d in ([100, 1000, 3000] if hd else [2, 10, 50])
+        for d in ([100, 1000, 3000] if hd else ([2, 5, 10, 15] if tuning else [2, 10, 50]))
     ]
+    if tiny:
+        functions = functions[::13]
 
     # We possibly add constraints.
     max_num_constraints = 4
@@ -725,9 +771,15 @@ def yabbob(
         for constraint in constraints[max(0, constraint_case - max_num_constraints) : constraint_case]:
             func.parametrization.register_cheap_constraint(constraint)
 
-    budgets = [40000, 80000, 160000, 320000] if (big and not noise) else [50, 200, 800, 3200, 12800]
+    budgets = (
+        [40000, 80000, 160000, 320000]
+        if (big and not noise)
+        else ([50, 200, 800, 3200, 12800] if not noise else [3200, 12800])
+    )
     if small and not noise:
         budgets = [10, 20, 40]
+    if bounded:
+        budgets = [10, 20, 40, 100, 300]
     for optim in optims:
         for function in functions:
             for budget in budgets:
@@ -736,6 +788,12 @@ def yabbob(
                 )
                 if not xp.is_incoherent:
                     yield xp
+
+
+@registry.register
+def yahdlbbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with HD and low budget."""
+    return yabbob(seed, hd=True, small=True)
 
 
 @registry.register
@@ -783,6 +841,18 @@ def yahdsplitbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
+def yatuningbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with less budget."""
+    return yabbob(seed, parallel=False, big=False, small=True, tiny=True, tuning=True)
+
+
+@registry.register
+def yatinybbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with less budget."""
+    return yabbob(seed, parallel=False, big=False, small=True, tiny=True)
+
+
+@registry.register
 def yasmallbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with less budget."""
     return yabbob(seed, parallel=False, big=False, small=True)
@@ -808,6 +878,12 @@ def yanoisybbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     This is different from the original BBOB/COCO from that point of view.
     """
     return yabbob(seed, noise=True)
+
+
+@registry.register
+def yaboundedbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with bounded domain, (-5,5)**n by default."""
+    return yabbob(seed, bounded=True)
 
 
 @registry.register
@@ -1131,7 +1207,7 @@ def realworld(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def rocket(seed: tp.Optional[int] = None, seq: bool = False) -> tp.Iterator[Experiment]:
     """Rocket simulator. Maximize max altitude by choosing the thrust schedule, given a total thrust.
     Budget 25, 50, ..., 1600.
     Sequential or 30 workers."""
@@ -1139,7 +1215,7 @@ def rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", seed=next(seedg))
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
-        for num_workers in [1, 30]:
+        for num_workers in [1] if seq else [1, 30]:
             if num_workers < budget:
                 for algo in optims:
                     for fu in funcs:
@@ -1147,6 +1223,12 @@ def rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                         skip_ci(reason="Too slow")
                         if not xp.is_incoherent:
                             yield xp
+
+
+@registry.register
+def mono_rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Sequential counterpart of the rocket problem."""
+    return rocket(seed, seq=True)
 
 
 @registry.register
@@ -1158,7 +1240,7 @@ def mixsimulator(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     optims: tp.List[str] = get_optimizers("basics", seed=next(seedg))  # type: ignore
 
-    seq = np.arange(0, 1601, 20)
+    seq = np.arange(0, 1601, 50)
     for budget in seq:
         for num_workers in [1, 30]:
             if num_workers < budget:
@@ -1237,7 +1319,7 @@ def neuro_control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experime
 
 
 @registry.register
-def simpletsp(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def simple_tsp(seed: tp.Optional[int] = None, complex_tsp: bool = False) -> tp.Iterator[Experiment]:
     """Simple TSP problems. Please note that the methods we use could be applied or complex variants, whereas
     specialized methods can not always do it; therefore this comparisons from a black-box point of view makes sense
     even if white-box methods are not included though they could do this more efficiently.
@@ -1245,7 +1327,7 @@ def simpletsp(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     Budgets doubling from 25, 50, 100, 200, ... up  to 25600
 
     """
-    funcs = [STSP(10), STSP(100), STSP(1000), STSP(10000)]
+    funcs = [STSP(10 ** k, complex_tsp) for k in range(2, 6)]
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", "noisy", seed=next(seedg))
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600]:
@@ -1256,6 +1338,12 @@ def simpletsp(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                         xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
                         if not xp.is_incoherent:
                             yield xp
+
+
+@registry.register
+def complex_tsp(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of simple_tsp with non-planar term."""
+    return simple_tsp(seed, complex_tsp=True)
 
 
 @registry.register

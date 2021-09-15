@@ -12,7 +12,9 @@ import contextlib
 import typing as tp
 from pathlib import Path
 import numpy as np
+import pytest
 from nevergrad.common import testing
+from . import transforms as trans
 from . import parameter as p
 from . import utils
 from . import helpers
@@ -210,6 +212,55 @@ def split_as_data_parameters(
     if sum(pa.dimension for _, pa in ordered_arrays) != parameter.dimension:
         raise RuntimeError(err_msg)
     return ordered_arrays
+
+
+def test_normalizer_backward() -> None:
+    ref = p.Instrumentation(
+        p.Array(shape=(1, 2)).set_bounds(-12, 12, method="arctan"),
+        p.Array(shape=(2,)).set_bounds(-12, 12, full_range_sampling=False),
+        lr=p.Log(lower=0.001, upper=1000),
+        stuff=p.Scalar(lower=-1, upper=2),
+        unbounded=p.Scalar(lower=-1, init=0.0),
+        value=p.Scalar(),
+        letter=p.Choice("abc"),
+    )
+    # make sure the order is preserved using legacy split method
+    expected = [x[1] for x in split_as_data_parameters(ref)]
+    assert helpers.list_data(ref) == expected
+    # check the bounds
+    param = ref.spawn_child()
+    scaler = helpers.Normalizer(param, only_sampling=True, unbounded_transform=trans.Affine(1, 0))
+    # setting
+    output = scaler.backward([1.0] * param.dimension)
+    param.set_standardized_data(output)
+    (array1, array2), values = param.value
+    np.testing.assert_array_almost_equal(array1, [[12, 12]])
+    np.testing.assert_array_almost_equal(array2, [1, 1])
+    assert values["stuff"] == 2
+    assert values["unbounded"] == 1
+    assert values["value"] == 1
+    assert values["lr"] == pytest.approx(1000)
+    # again, on the middle point
+    output = scaler.backward([0] * param.dimension)
+    param.set_standardized_data(output)
+    assert param.value[1]["lr"] == pytest.approx(1.0)
+    assert param.value[1]["stuff"] == pytest.approx(0.5)
+
+
+def test_normalizer_forward() -> None:
+    ref = p.Tuple(
+        p.Scalar(init=0), p.Scalar(init=1), p.Scalar(lower=-1, upper=3, init=0), p.Scalar(lower=-1, upper=1)
+    )
+    scaler = helpers.Normalizer(ref)
+    out = scaler.forward(ref.get_standardized_data(reference=ref))
+    np.testing.assert_almost_equal(out, [0.5, 0.5, 0.25, 0.5])
+    param = ref.spawn_child()
+    param.value = (0, 100, -1, 1)
+    data = param.get_standardized_data(reference=ref)
+    out = scaler.forward(data)
+    np.testing.assert_almost_equal(out, [0.5, 0.9967849, 0, 1])
+    back = scaler.backward(out)
+    np.testing.assert_almost_equal(back, data)  # shouuld be bijective
 
 
 # # # END OF CHECK # # #

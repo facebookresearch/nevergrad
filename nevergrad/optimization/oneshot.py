@@ -3,11 +3,12 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import copy
 import numpy as np
-from scipy import stats
 from scipy.spatial import ConvexHull  # pylint: disable=no-name-in-module
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
+from nevergrad.parametrization import transforms as trans
 from . import sequences
 from . import base
 from .base import IntOrParameter
@@ -25,17 +26,27 @@ def convex_limit(struct_points: np.ndarray) -> int:
         return len(struct_points) // 2
     for i in range(0, min(2 * d + 2, len(struct_points)), 2):
         points += [struct_points[i]]
-    hull = ConvexHull(points, incremental=True)
-    k = len(points)
-    for i in range(d + 1, len(points)):
+    hull = ConvexHull(points[: (d + 1)], incremental=True)
+    num_points = len(hull.vertices)
+    k = len(points) - 1
+    for i in range(num_points, len(points)):
+        # We add the ith point.
         hull.add_points(points[i : (i + 1)])
-        if i not in hull.vertices:
-            k = i - 1
-            break
+        num_points += 1
+        if len(hull.vertices) != num_points:
+            return num_points - 1
+        for j in range(i + 1, len(points)):
+            # We check that the jth point is not in the convex hull;
+            # this is ok if the jth point, added in the hull, becomes a vertex.
+            hull_copy = copy.deepcopy(hull)
+            hull_copy.add_points(points[j : j + 1])
+            if len(hull_copy.vertices) != num_points + 1:
+                return num_points - 1
     return k
 
 
 def hull_center(points: np.ndarray, k: int) -> np.ndarray:
+    """Center of the cuboid enclosing the hull."""
     hull = ConvexHull(points[:k])
     maxi = np.asarray(hull.vertices[0])
     mini = np.asarray(hull.vertices[0])
@@ -132,6 +143,7 @@ class _RandomSearch(OneShotOptimizer):
         self.scale = scale
         self.sampler = sampler
         self._opposable_data: tp.Optional[np.ndarray] = None
+        self._no_hypervolume = True
 
     def _internal_ask(self) -> tp.ArrayLike:
         # pylint: disable=not-callable
@@ -263,7 +275,8 @@ class _SamplingSearch(OneShotOptimizer):
         self.rescaled = rescaled
         self.recommendation_rule = recommendation_rule
         # rescale to the bounds if both are provided
-        self._scaler = utils.BoundScaler(self.parametrization)
+        self._no_hypervolume = True
+        self._normalizer = p.helpers.Normalizer(self.parametrization)
 
     @property
     def sampler(self) -> sequences.Sampler:
@@ -308,10 +321,13 @@ class _SamplingSearch(OneShotOptimizer):
             assert self.budget is not None
             self.scale = np.sqrt(np.log(self.budget) / self.dimension)
 
-        def transf(x: np.ndarray) -> np.ndarray:
-            return self.scale * (stats.cauchy.ppf if self.cauchy else stats.norm.ppf)(x)  # type: ignore
+        transf = trans.CumulativeDensity(
+            0, 1, scale=self.scale, density="cauchy" if self.cauchy else "gaussian"
+        )
+        # hack since scale is not defined before the first hack (TODO: refactor)
+        self._normalizer.unbounded_transform = transf
 
-        self._opposable_data = self._scaler.transform(sample, transf)
+        self._opposable_data = self._normalizer.backward(sample)
         assert self._opposable_data is not None
         return self._opposable_data
 
@@ -387,13 +403,20 @@ MetaRecentering = SamplingSearch(
 MetaTuneRecentering = SamplingSearch(
     cauchy=False, autorescale="autotune", sampler="Hammersley", scrambled=True
 ).set_name("MetaTuneRecentering", register=True)
-HAvgMetaRecentering = SamplingSearch(
+HullAvgMetaTuneRecentering = SamplingSearch(
+    cauchy=False,
+    autorescale="autotune",
+    sampler="Hammersley",
+    scrambled=True,
+    recommendation_rule="average_of_hull_best",
+).set_name("HullAvgMetaTuneRecentering", register=True)
+HullAvgMetaRecentering = SamplingSearch(
     cauchy=False,
     autorescale=True,
     sampler="Hammersley",
     scrambled=True,
     recommendation_rule="average_of_hull_best",
-).set_name("HAvgMetaRecentering", register=True)
+).set_name("HullAvgMetaRecentering", register=True)
 AvgMetaRecenteringNoHull = SamplingSearch(
     cauchy=False,
     autorescale=True,

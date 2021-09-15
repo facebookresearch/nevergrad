@@ -25,6 +25,7 @@ DESCRIPTION_KEYS = {
     "optimizer_name",
     "pseudotime",
     "num_workers",
+    "num_objectives",
     "budget",
     "error",
     "batch_mode",

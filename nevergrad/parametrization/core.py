@@ -314,10 +314,10 @@ class Parameter(Layered):
         return self._random_state
 
     @random_state.setter
-    def random_state(self, random_state: np.random.RandomState) -> None:
+    def random_state(self, random_state: tp.Optional[np.random.RandomState]) -> None:
         self._set_random_state(random_state)
 
-    def _set_random_state(self, random_state: np.random.RandomState) -> None:
+    def _set_random_state(self, random_state: tp.Optional[np.random.RandomState]) -> None:
         self._random_state = random_state
         self._subobjects.apply("_set_random_state", random_state)
 

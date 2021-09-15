@@ -111,6 +111,8 @@ class ArtificialFunction(ExperimentFunction):
         string as element.
     aggregator: str
         how to aggregate the multiple block outputs
+    bounded: bool
+        bound the search domain to [-5,5]
 
     Example
     -------
@@ -147,6 +149,7 @@ class ArtificialFunction(ExperimentFunction):
         hashing: bool = False,
         aggregator: str = "max",
         split: bool = False,
+        bounded: bool = False,
     ) -> None:
         # pylint: disable=too-many-locals
         self.name = name
@@ -175,14 +178,16 @@ class ArtificialFunction(ExperimentFunction):
 
         assert not (split and hashing)
         assert not (split and useless_variables > 0)
+        array_bounds = dict(upper=5, lower=-5) if bounded else {}
         if not split:
             parametrization: ng.p.Parameter = ng.p.Array(
-                shape=(1,) if hashing else (self._dimension,)
+                shape=(1,) if hashing else (self._dimension,), **array_bounds  # type: ignore
             ).set_name("")
         else:
-            parametrization = ng.p.Instrumentation(
-                *[ng.p.Array(shape=(block_dimension,)) for _ in range(num_blocks)]
-            )
+            arrays = [
+                ng.p.Array(shape=(block_dimension,), **array_bounds) for _ in range(num_blocks)  # type: ignore
+            ]
+            parametrization = ng.p.Instrumentation(*arrays)
             parametrization.set_name("split")
         if noise_level > 0:
             parametrization.function.deterministic = False
@@ -199,7 +204,11 @@ class ArtificialFunction(ExperimentFunction):
             only_index_transform=only_index_transform,
             random_state=self._parametrization.random_state,
         )
-        self._aggregator = {"max": np.max, "mean": np.mean, "sum": np.sum}[aggregator]
+        self._aggregator: tp.Callable[[tp.ArrayLike], float] = {  # type: ignore
+            "max": np.max,
+            "mean": np.mean,
+            "sum": np.sum,
+        }[aggregator]
         info = corefuncs.registry.get_info(self._parameters["name"])
         # add descriptors
         self.add_descriptors(
@@ -274,7 +283,7 @@ def _noisy_call(
 ) -> float:  # pylint: disable=unused-argument
     x_transf = transf(x)
     fx = func(x_transf)
-    noise = 0
+    noise = 0.0
     if noise_level:
         if not noise_dissymmetry or x_transf.ravel()[0] <= 0:
             side_point = transf(x + random_state.normal(0, 1, size=len(x)))
