@@ -1,6 +1,6 @@
 # Changelog
 
-## master
+## main
 
 ### Breaking changes
 
@@ -34,6 +34,7 @@
 
 ### Important changes
 
+- `master` branch has been renamed to `main`. See [#1230](https://github.com/facebookresearch/nevergrad/pull/1230) for more context.
 - `Parameter` classes are undergoing heavy changes, please open an issue if you encounter any problem.
   The midterm aim is to allow for simpler constraint management.
 - `Parameter` have been updated  have undergone heavy changes to ease the handling of their tree structure (
@@ -53,6 +54,8 @@
 - `DE` initial sampling as been updated to take bounds into accounts [#1058](https://github.com/facebookresearch/nevergrad/pull/1058)
 - `Array` can now take `lower` and `upper` bounds as initialization arguments. The array is initialized at its average
   if not `init` is provided and both bounds are provided. In this case, sampling will be uniformm between these bounds.
+- Bayesian optimizers are now properly using the bounds for bounded problem, which may improve performance
+  [#1222](https://github.com/facebookresearch/nevergrad/pull/1222).
 
 
 ### Other changes

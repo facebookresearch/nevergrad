@@ -3,56 +3,13 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import time
 import warnings
 import threading
-import numpy as np
+import queue
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
 from . import base
 from .base import IntOrParameter
-
-
-class Message:
-    """Straightforward class for passing parameters of a function and
-    results to and from a thread.
-
-    Parameters
-    ----------
-    *args: Any
-    **kwargs: Any
-
-    Note
-    ----
-    - "result" attribute is a property which records when it is "posted"
-    (ie message has been received and processed and "result" is the answer, which is ready)
-    - "meta" attribute is only there for more implementation specific usages.
-    """
-
-    def __init__(self, *args: tp.Any, **kwargs: tp.Any) -> None:
-        self.args = args
-        self.kwargs = kwargs
-        self.meta: tp.Dict[str, tp.Any] = {}  # for none Thread caller purposes
-        self._result: tp.Optional[tp.Any] = None
-        self.done = False
-
-    @property
-    def result(self) -> tp.Any:
-        if not self.done:
-            raise RuntimeError("Result was not provided (not done)")
-        return self._result
-
-    @result.setter
-    def result(self, value: tp.Any) -> None:
-        self.done = True
-        self._result = value
-
-    def __repr__(self) -> str:
-        return (
-            f"<Message: args={self.args}, kwargs={self.kwargs}" + f" (result: {self.result})>"
-            if self.done
-            else ">"
-        )
 
 
 class StopOptimizerThread(Exception):
@@ -61,8 +18,8 @@ class StopOptimizerThread(Exception):
 
 class _MessagingThread(threading.Thread):
     """Thread that runs a function taking another function as input. Each call of the inner function
-    creates a Message with fields args and kwargs and waits for the main thread to set the result
-    attribute of the message
+    adds the point given by the algorithm into the ask queue and then blocks until the main thread sends
+    the result back into the tell queue.
 
     Note
     ----
@@ -74,10 +31,10 @@ class _MessagingThread(threading.Thread):
     # pylint: disable=too-many-instance-attributes
     def __init__(self, caller: tp.Callable[..., tp.Any], *args: tp.Any, **kwargs: tp.Any) -> None:
         super().__init__()
-        self.messages: tp.List[Message] = []
+        self.messages_ask: tp.Any = queue.Queue()
+        self.messages_tell: tp.Any = queue.Queue()
         self.call_count = 0
         self.error: tp.Optional[Exception] = None
-        self._kill_order = False
         self._caller = caller
         self._args = args
         self._kwargs = kwargs
@@ -91,32 +48,27 @@ class _MessagingThread(threading.Thread):
         try:
             self.output = self._caller(self._fake_callable, *self._args, **self._kwargs)
         except StopOptimizerThread:  # gracefully stopping the thread
-            self.messages.clear()
+            pass
         except Exception as e:  # pylint: disable=broad-except
             self.error = e
 
-    def _fake_callable(self, *args: tp.Any, **kwargs: tp.Any) -> tp.Any:
-        """Appends a message in the messages attribute of the thread when
-        the caller needs an evaluation, and wait for it to be provided
-        to return it to the caller
+    def _fake_callable(self, *args: tp.Any) -> tp.Any:
+        """
+        Puts a new point into the ask queue to be evaluated on the
+        main thread and blocks on get from tell queue until point
+        is evaluated on main thread and placed into tell queue when
+        it is then returned to the caller.
         """
         self.call_count += 1
-        mess = Message(*args, **kwargs)
-        self.messages.append(mess)  # sends a message
-        t0 = time.time()
-        while not (mess.done or self._kill_order):  # waits for its answer
-            time.sleep(self._last_evaluation_duration / 10.0)
-        self._last_evaluation_duration = float(np.clip(time.time() - t0, 0.0001, 1.0))
-        # sys.stdout.write(f"Received answer {repr(mess)}\n")
-        # sys.stdout.flush()
-        if self._kill_order:
-            raise StopOptimizerThread("Received kill order")  # kill the thread gracefully if asked to do so
-        self.messages.remove(mess)  # remove the message, which is not useful anymore
-        return mess.result
+        self.messages_ask.put(args[0])  # sends a message
+        candidate = self.messages_tell.get()  # get evaluated message
+        if candidate is None:
+            raise StopOptimizerThread()
+        return candidate
 
     def stop(self) -> None:
         """Notifies the thread that it must stop"""
-        self._kill_order = True
+        self.messages_tell.put(None)
 
 
 class MessagingThread:
@@ -138,8 +90,12 @@ class MessagingThread:
         return self._thread.error
 
     @property
-    def messages(self) -> tp.List[Message]:
-        return self._thread.messages
+    def messages_tell(self) -> tp.Any:
+        return self._thread.messages_tell
+
+    @property
+    def messages_ask(self) -> tp.Any:
+        return self._thread.messages_ask
 
     def stop(self) -> None:
         self._thread.stop()
@@ -190,16 +146,6 @@ class RecastOptimizer(base.Optimizer):
         if self._messaging_thread is None:
             self._messaging_thread = MessagingThread(self.get_optimization_function())
         # wait for a message
-        messages: tp.List[Message] = []
-        t0 = time.time()
-        while not messages and self._messaging_thread.is_alive():
-            messages = [m for m in self._messaging_thread.messages if not m.meta.get("asked", False)]
-            if not messages:  # avoid waiting if messages at the first iteration
-                time.sleep(self._last_optimizer_duration / 10.0)
-            if time.time() - t0 > 20:
-                raise RuntimeError("No message with thread for 20s, something went wrong")
-        self._last_optimizer_duration = float(np.clip(time.time() - t0, 0.0001, 1.0))
-        # case when the thread is dead (send random points)
         if not self._messaging_thread.is_alive():  # In case the algorithm stops before the budget is elapsed.
             warnings.warn(
                 "Underlying optimizer has already converged, returning random points",
@@ -208,10 +154,8 @@ class RecastOptimizer(base.Optimizer):
             self._check_error()
             data = self._rng.normal(0, 1, self.dimension)
             return self.parametrization.spawn_child().set_standardized_data(data)
-        message = messages[0]  # take oldest message
-        message.meta["asked"] = True  # notify that it has been asked so that it is not selected again
-        candidate = self.parametrization.spawn_child().set_standardized_data(message.args[0])
-        message.meta["uid"] = candidate.uid
+        point = self._messaging_thread.messages_ask.get()
+        candidate = self.parametrization.spawn_child().set_standardized_data(point)
         return candidate
 
     def _check_error(self) -> None:
@@ -225,25 +169,18 @@ class RecastOptimizer(base.Optimizer):
         """Returns value for a point which was "asked"
         (none asked point cannot be "tell")
         """
-        x = candidate.get_standardized_data(reference=self.parametrization)
         assert self._messaging_thread is not None, 'Start by using "ask" method, instead of "tell" method'
         if not self._messaging_thread.is_alive():  # optimizer is done
             self._check_error()
             return
-        messages = [m for m in self._messaging_thread.messages if m.meta.get("asked", False) and not m.done]
-        messages = [m for m in messages if m.meta["uid"] == candidate.uid]
-        if not messages:
-            raise RuntimeError(f"No message for evaluated point {x}: {self._messaging_thread.messages}")
-        self._post_loss_to_message(
-            messages[0], candidate, loss
-        )  # post the value(s), and the thread will deal with it
+        self._messaging_thread.messages_tell.put(self._post_loss(candidate, loss))
 
-    def _post_loss_to_message(self, message: Message, candidate: p.Parameter, loss: float):
+    def _post_loss(self, candidate: p.Parameter, loss: float) -> tp.Loss:
         # pylint: disable=unused-argument
         """
         Posts the value, and the thread will deal with it.
         """
-        message.result = loss
+        return loss
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: float) -> None:
         raise base.errors.TellNotAskedNotSupportedError
