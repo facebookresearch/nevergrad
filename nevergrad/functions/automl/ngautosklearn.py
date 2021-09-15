@@ -89,10 +89,10 @@ def get_parametrization(config_space: cs.ConfigurationSpace):
     base_pipeline = [
         "balancing:strategy",
         "classifier:__choice__",
-        "data_preprocessing:categorical_transformer:categorical_encoding:__choice__",
-        "data_preprocessing:categorical_transformer:category_coalescence:__choice__",
-        "data_preprocessing:numerical_transformer:imputation:strategy",
-        "data_preprocessing:numerical_transformer:rescaling:__choice__",
+        "data_preprocessor:feature_type:categorical_transformer:categorical_encoding:__choice__",
+        "data_preprocessor:feature_type:categorical_transformer:category_coalescence:__choice__",
+        "data_preprocessor:feature_type:numerical_transformer:imputation:strategy",
+        "data_preprocessor:feature_type:numerical_transformer:rescaling:__choice__",
         "feature_preprocessor:__choice__",
     ]
 
@@ -103,8 +103,8 @@ def get_parametrization(config_space: cs.ConfigurationSpace):
             if param.name in [
                 "classifier:__choice__",
                 "feature_preprocessor:__choice__",
-                "data_preprocessing:numerical_transformer:rescaling:__choice__",
-                "data_preprocessing:categorical_transformer:category_coalescence:__choice__",
+                "data_preprocessor:feature_type:numerical_transformer:rescaling:__choice__",
+                "data_preprocessor:feature_type:categorical_transformer:category_coalescence:__choice__",
             ]:
                 params[param.name] = ng.p.Choice(
                     [
@@ -142,20 +142,24 @@ def get_configuration(values, config_space):
 def to_dict(values):
     clf = values["classifier:__choice__"]
     features = values["feature_preprocessor:__choice__"]
-    trans_cat = values["data_preprocessing:categorical_transformer:category_coalescence:__choice__"]
-    trans_num = values["data_preprocessing:numerical_transformer:rescaling:__choice__"]
+    trans_cat = values[
+        "data_preprocessor:feature_type:categorical_transformer:category_coalescence:__choice__"
+    ]
+    trans_num = values["data_preprocessor:feature_type:numerical_transformer:rescaling:__choice__"]
     del values["classifier:__choice__"]
     del values["feature_preprocessor:__choice__"]
-    del values["data_preprocessing:categorical_transformer:category_coalescence:__choice__"]
-    del values["data_preprocessing:numerical_transformer:rescaling:__choice__"]
+    del values["data_preprocessor:feature_type:categorical_transformer:category_coalescence:__choice__"]
+    del values["data_preprocessor:feature_type:numerical_transformer:rescaling:__choice__"]
     values["classifier:__choice__"] = clf[0]
     values.update(clf[1])
     values["feature_preprocessor:__choice__"] = features[0]
     values.update(features[1])
-    values["data_preprocessing:categorical_transformer:category_coalescence:__choice__"] = trans_cat[0]
+    values[
+        "data_preprocessor:feature_type:categorical_transformer:category_coalescence:__choice__"
+    ] = trans_cat[0]
     if len(trans_cat[1]) > 0:
         values.update(trans_cat[1])
-    values["data_preprocessing:numerical_transformer:rescaling:__choice__"] = trans_num[0]
+    values["data_preprocessor:feature_type:numerical_transformer:rescaling:__choice__"] = trans_num[0]
     if len(trans_num[1]) > 0:
         values.update(trans_num[1])
     return values

@@ -36,11 +36,11 @@ commands:
           command: |
             python3 -m venv venv
             . venv/bin/activate
+            sudo apt-get install swig
+            pip install --progress-bar off -U auto-sklearn==0.14.0 openml==0.12.1 submitit
             pip install --progress-bar off -U pip setuptools
             pip install --progress-bar off --use-deprecated=legacy-resolver -e .[all]
             pip install --progress-bar off -U numpy>=1.20.0
-            sudo apt-get install build-essential swig python3-dev
-            pip install auto-sklearn==0.11.0 openml==0.12.1 submitit
 
 jobs:
   install:
