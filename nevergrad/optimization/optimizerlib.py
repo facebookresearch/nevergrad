@@ -6,6 +6,7 @@ import os
 import math
 import logging
 import itertools
+import time
 from collections import deque
 import warnings
 import numpy as np
@@ -1458,9 +1459,16 @@ def learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.Arra
         for cls in (Powell, DE):  # Powell excellent here, DE as a backup for thread safety.
             optimizer = cls(parametrization=dimension, budget=45 * dimension + 30)
             try:
-                minimum = optimizer.minimize(
-                    lambda x: float(model.predict(polynomial_features.fit_transform(x[None, :])))
-                ).value
+                t0 = time.time()
+                for _ in range(45 * dimension + 30):
+                    x = optimizer.ask()
+                    y = float(model.predict(polynomial_features.fit_transform(x[None, :])))
+                    if time.time() - t0 > 20:  # Never more than 20s
+                        break
+                #minimum = optimizer.minimize(
+                #    lambda x: float(model.predict(polynomial_features.fit_transform(x[None, :])))
+                #).value
+                minimum = optimizer.provide_recommendation().value
             except RuntimeError:
                 assert cls == Powell, "Only Powell is allowed to crash here."
             else:
