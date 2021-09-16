@@ -4,7 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 import nevergrad as ng
-from nevergrad.benchmark.xpbase import Experiment
 
 from .core import AutoSKlearnBenchmark
 
