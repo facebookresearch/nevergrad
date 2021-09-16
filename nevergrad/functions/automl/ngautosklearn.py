@@ -94,6 +94,7 @@ def get_parametrization(config_space: cs.ConfigurationSpace):
         "data_preprocessor:feature_type:numerical_transformer:imputation:strategy",
         "data_preprocessor:feature_type:numerical_transformer:rescaling:__choice__",
         "feature_preprocessor:__choice__",
+        "data_preprocessor:__choice__",
     ]
 
     params = {}
@@ -142,6 +143,7 @@ def get_configuration(values, config_space):
 def to_dict(values):
     clf = values["classifier:__choice__"]
     features = values["feature_preprocessor:__choice__"]
+    data_preprocessor = values["data_preprocessor:__choice__"]
     trans_cat = values[
         "data_preprocessor:feature_type:categorical_transformer:category_coalescence:__choice__"
     ]
@@ -154,6 +156,7 @@ def to_dict(values):
     values.update(clf[1])
     values["feature_preprocessor:__choice__"] = features[0]
     values.update(features[1])
+    values["data_preprocessor:__choice__"] = data_preprocessor
     values[
         "data_preprocessor:feature_type:categorical_transformer:category_coalescence:__choice__"
     ] = trans_cat[0]

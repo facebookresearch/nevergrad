@@ -18,33 +18,34 @@ def test_parametrization():
         scoring_func="balanced_accuracy",
         random_state=42,
     )
-    optimizer = ng.optimizers.RandomSearch(parametrization=func.parametrization, budget=3)
+    optimizer = ng.optimizers.RandomSearch(parametrization=func.parametrization, budget=20)
     optimizer.minimize(func, verbosity=2)
 
 
-def test_bo_error():
-    func = AutoSKlearnBenchmark(
-        openml_task_id=3,
-        cv=3,
-        time_budget_per_run=360,
-        memory_limit=7000,
-        scoring_func="balanced_accuracy",
-        random_state=42,
-    )
-    optimizer = ng.optimizers.BO(parametrization=func.parametrization, budget=10)
-    for _ in range(5):
-        config = optimizer.ask()
-        optimizer.tell(config, 0.5)
-
-
-def test_automl_experiment():
-    func = AutoSKlearnBenchmark(
-        openml_task_id=3,
-        cv=3,
-        time_budget_per_run=360,
-        memory_limit=7000,
-        scoring_func="balanced_accuracy",
-        random_state=42,
-    )
-    exp = Experiment(func, "HyperOpt", 3, num_workers=1)
-    exp.run()
+#
+# def test_bo_error():
+#     func = AutoSKlearnBenchmark(
+#         openml_task_id=3,
+#         cv=3,
+#         time_budget_per_run=360,
+#         memory_limit=7000,
+#         scoring_func="balanced_accuracy",
+#         random_state=42,
+#     )
+#     optimizer = ng.optimizers.BO(parametrization=func.parametrization, budget=10)
+#     for _ in range(5):
+#         config = optimizer.ask()
+#         optimizer.tell(config, 0.5)
+#
+#
+# def test_automl_experiment():
+#     func = AutoSKlearnBenchmark(
+#         openml_task_id=3,
+#         cv=3,
+#         time_budget_per_run=360,
+#         memory_limit=7000,
+#         scoring_func="balanced_accuracy",
+#         random_state=42,
+#     )
+#     exp = Experiment(func, "HyperOpt", 3, num_workers=1)
+#     exp.run()
