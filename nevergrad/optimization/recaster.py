@@ -221,10 +221,8 @@ class BatchRecastOptimizer(RecastOptimizer):
     You have to complete a batch before you start a new one so parallelism
     is only possible within batches i.e. if a batch size is 100 and you have
     done 100 asks, you must do 100 tells before you ask again but you could do
-    those 100 asks and tells in parallel. to find out the number of not told
-    points (which corresponds to the number asks you are allowed to do before
-    exhausting the current batch), run self.tells_left_in_batch().
-
+    those 100 asks and tells in parallel. To find out if you can perform an ask
+    at any given time call self.can_ask.
     """
 
     # pylint: disable=abstract-method
@@ -243,7 +241,6 @@ class BatchRecastOptimizer(RecastOptimizer):
         """Reads messages from the thread in which the underlying optimization function is running
         New messages are sent as "ask".
         """
-        # get a datapoint that is a random point in parameter space
         if self._messaging_thread is None:
             self._messaging_thread = MessagingThread(self.get_optimization_function())
         # wait for a message
@@ -258,7 +255,7 @@ class BatchRecastOptimizer(RecastOptimizer):
         # if no more points left in batch, wait for new batch from fake callable
         if not self._current_batch:
             # if there are any points in the previous batch that haven't been told on, you cannot update the current batch.
-            if self.tells_left_in_batch():
+            if not self.can_ask():
                 raise RuntimeError(
                     "You can't get a new batch until the old one has been fully told on. See docstring for more info."
                 )
@@ -299,5 +296,5 @@ class BatchRecastOptimizer(RecastOptimizer):
     ) -> p.Parameter:
         raise NotImplementedError("This optimizer isn't supported by the way minimize works by default.")
 
-    def tells_left_in_batch(self) -> int:
-        return len(self.indices)
+    def can_ask(self) -> int:
+        return self._current_batch or not self.indices
