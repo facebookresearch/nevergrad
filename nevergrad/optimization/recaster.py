@@ -259,10 +259,12 @@ class BatchRecastOptimizer(RecastOptimizer):
         if not self._current_batch:
             points = self._messaging_thread.messages_ask.get()
             self.batch_size = len(points)
-            self._current_batch = [self.parametrization.spawn_child(point) for point in points]
+            self._current_batch = [
+                self.parametrization.spawn_child().set_standardized_data(point) for point in points
+            ]
             self._batch_losses = [None] * len(points)  # type: ignore
             # map each point to an index in preparation to build loss array in tell
-            self.indices = {candidate: i for i, candidate in enumerate(self._current_batch)}
+            self.indices = {candidate.uid: i for i, candidate in enumerate(self._current_batch)}
         candidate = self._current_batch.pop()
         return candidate
 
@@ -274,7 +276,7 @@ class BatchRecastOptimizer(RecastOptimizer):
         if not self._messaging_thread.is_alive():  # optimizer is done
             self._check_error()
             return
-        candidate_index = self.indices[candidate]
+        candidate_index = self.indices[candidate.uid]
         self._batch_losses[candidate_index] = self._post_loss(candidate, loss)
         self._tell_counter += 1
         # if batch size number of tells since new batch, send array of losses to fake callable
@@ -282,3 +284,12 @@ class BatchRecastOptimizer(RecastOptimizer):
             self._messaging_thread.messages_ask.put(np.array(self._batch_losses))
             self._batch_losses = []
             self._tell_counter = 0
+
+    def minimize(
+        self,
+        objective_function: tp.Callable[..., tp.Loss],
+        executor: tp.Optional[tp.ExecutorLike] = None,
+        batch_mode: bool = False,
+        verbosity: int = 0,
+    ) -> p.Parameter:
+        raise NotImplementedError("This optimizer isn't supported by the way minimize works by default.")
