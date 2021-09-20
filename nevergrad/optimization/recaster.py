@@ -256,6 +256,10 @@ class BatchRecastOptimizer(RecastOptimizer):
             return self.parametrization.spawn_child().set_standardized_data(data)
         # if no more points left in batch, wait for new batch from fake callable
         if not self._current_batch:
+            if self.indices:
+                raise RuntimeError(
+                    "You can't ask on a new batch until the old one has been fully told on. See docstring for more info."
+                )
             points = self._messaging_thread.messages_ask.get()
             self.batch_size = len(points)
             self._current_batch = [
@@ -275,7 +279,7 @@ class BatchRecastOptimizer(RecastOptimizer):
         if not self._messaging_thread.is_alive():  # optimizer is done
             self._check_error()
             return
-        candidate_index = self.indices[candidate.uid]
+        candidate_index = self.indices.pop(candidate.uid)
         self._batch_losses[candidate_index] = self._post_loss(candidate, loss)
         self._tell_counter += 1
         # if batch size number of tells since new batch, send array of losses to fake callable
