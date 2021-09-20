@@ -850,7 +850,8 @@ def test_pymoo_batched() -> None:
             losses.append(loss)
             asks_from_batch += 1
         assert asks_from_batch == 100
-        while optimizer.num_ask > optimizer.num_tell:
+        while optimizer.tells_left_in_batch():
+            print("pop")
             x = candidates.pop()
             loss = losses.pop()
             optimizer.tell(x, loss)
