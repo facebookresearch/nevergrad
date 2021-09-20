@@ -296,5 +296,5 @@ class BatchRecastOptimizer(RecastOptimizer):
     ) -> p.Parameter:
         raise NotImplementedError("This optimizer isn't supported by the way minimize works by default.")
 
-    def can_ask(self) -> int:
-        return self._current_batch or not self.indices
+    def can_ask(self) -> bool:
+        return len(self.indices) == 0 or len(self._current_batch) > 0
