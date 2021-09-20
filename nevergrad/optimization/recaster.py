@@ -218,11 +218,12 @@ class BatchRecastOptimizer(RecastOptimizer):
 
     Note
     ----
-    These implementations are not necessarily robust. You have to complete
-    a batch before you start a new one so parallelism is only possible
-    within batches i.e. if a batch size is 100 and you have done 100 asks,
-    you must do 100 tells before you ask again but you could do those 100
-    asks and tells in parallel.
+    You have to complete a batch before you start a new one so parallelism
+    is only possible within batches i.e. if a batch size is 100 and you have
+    done 100 asks, you must do 100 tells before you ask again but you could do
+    those 100 asks and tells in parallel. to find out the number of not told
+    points (which corresponds to the number asks you are allowed to do before
+    exhausting the current batch), run self.tells_left_in_batch().
 
     """
 
@@ -256,9 +257,10 @@ class BatchRecastOptimizer(RecastOptimizer):
             return self.parametrization.spawn_child().set_standardized_data(data)
         # if no more points left in batch, wait for new batch from fake callable
         if not self._current_batch:
-            if self.indices:
+            # if there are any points in the previous batch that haven't been told on, you cannot update the current batch.
+            if self.tells_left_in_batch():
                 raise RuntimeError(
-                    "You can't ask on a new batch until the old one has been fully told on. See docstring for more info."
+                    "You can't get a new batch until the old one has been fully told on. See docstring for more info."
                 )
             points = self._messaging_thread.messages_ask.get()
             self.batch_size = len(points)
@@ -296,3 +298,6 @@ class BatchRecastOptimizer(RecastOptimizer):
         verbosity: int = 0,
     ) -> p.Parameter:
         raise NotImplementedError("This optimizer isn't supported by the way minimize works by default.")
+
+    def tells_left_in_batch(self) -> int:
+        return len(self.indices)
