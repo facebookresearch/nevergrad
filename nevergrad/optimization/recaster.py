@@ -236,7 +236,7 @@ class BatchRecastOptimizer(RecastOptimizer):
         self._batch_losses: tp.List[tp.Loss] = []
         self._tell_counter = 0
         self.batch_size = 0
-        self.indices: tp.Dict[p.Parameter, int] = {}
+        self.indices: tp.Dict[str, int] = {}
 
     def _internal_ask_candidate(self) -> p.Parameter:
         """Reads messages from the thread in which the underlying optimization function is running
