@@ -297,4 +297,9 @@ class BatchRecastOptimizer(RecastOptimizer):
         raise NotImplementedError("This optimizer isn't supported by the way minimize works by default.")
 
     def can_ask(self) -> bool:
+        """Returns whether the optimizer is able to perform another ask,
+        either because there are points left in the current batch to ask
+        or you are ready for a new batch (You have asked and told on every
+        point in the last batch.)
+        """
         return len(self.indices) == 0 or len(self._current_batch) > 0
