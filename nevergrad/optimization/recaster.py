@@ -234,7 +234,6 @@ class BatchRecastOptimizer(RecastOptimizer):
         super().__init__(parametrization, budget, num_workers=num_workers)
         self._current_batch: tp.List[p.Parameter] = []
         self._batch_losses: tp.List[tp.Loss] = []
-        self._batch_offset = 0
         self._tell_counter = 0
         self.batch_size = 0
         self.indices: tp.Dict[p.Parameter, int] = {}
