@@ -517,6 +517,7 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         (see https://github.com/CMA-ES/pycma)
     use_cma_bounds: bool
         use CMA own bounding option (if the parametrization is fully bounded)
+        instead of relying on the parametrization system.
     """
 
     # pylint: disable=unused-argument
