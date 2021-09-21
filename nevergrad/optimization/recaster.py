@@ -8,12 +8,17 @@ import threading
 import queue
 import numpy as np
 import nevergrad.common.typing as tp
+import nevergrad.common.errors as e
 from nevergrad.parametrization import parameter as p
 from . import base
 from .base import IntOrParameter
 
 
 class StopOptimizerThread(Exception):
+    pass
+
+
+class TooManyAskError(e.NevergradError):
     pass
 
 
@@ -256,7 +261,7 @@ class BatchRecastOptimizer(RecastOptimizer):
         if not self._current_batch:
             # if there are any points in the previous batch that haven't been told on, you cannot update the current batch.
             if not self.can_ask():
-                raise RuntimeError(
+                raise TooManyAskError(
                     "You can't get a new batch until the old one has been fully told on. See docstring for more info."
                 )
             points = self._messaging_thread.messages_ask.get()
