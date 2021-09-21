@@ -6,13 +6,19 @@
 import warnings
 import threading
 import queue
+import numpy as np
 import nevergrad.common.typing as tp
+from nevergrad.common.errors import NevergradError
 from nevergrad.parametrization import parameter as p
 from . import base
 from .base import IntOrParameter
 
 
 class StopOptimizerThread(Exception):
+    pass
+
+
+class TooManyAskError(NevergradError):
     pass
 
 
@@ -205,3 +211,99 @@ class SequentialRecastOptimizer(RecastOptimizer):
     # pylint: disable=abstract-method
 
     no_parallelization = True
+
+
+class BatchRecastOptimizer(RecastOptimizer):
+    """Recast optimizer where points to evaluate are provided in batches
+    and stored by the optimizer to be asked and told on. The fake_callable
+    is only brought into action every 'batch size' number of asks and tells
+    instead of every ask and tell. This opens up the optimizer to
+    parallelism.
+
+    Note
+    ----
+    You have to complete a batch before you start a new one so parallelism
+    is only possible within batches i.e. if a batch size is 100 and you have
+    done 100 asks, you must do 100 tells before you ask again but you could do
+    those 100 asks and tells in parallel. To find out if you can perform an ask
+    at any given time call self.can_ask.
+    """
+
+    # pylint: disable=abstract-method
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget, num_workers=num_workers)
+        self._current_batch: tp.List[p.Parameter] = []
+        self._batch_losses: tp.List[tp.Loss] = []
+        self._tell_counter = 0
+        self.batch_size = 0
+        self.indices: tp.Dict[str, int] = {}
+
+    def _internal_ask_candidate(self) -> p.Parameter:
+        """Reads messages from the thread in which the underlying optimization function is running
+        New messages are sent as "ask".
+        """
+        if self._messaging_thread is None:
+            self._messaging_thread = MessagingThread(self.get_optimization_function())
+        # wait for a message
+        if not self._messaging_thread.is_alive():  # In case the algorithm stops before the budget is elapsed.
+            warnings.warn(
+                "Underlying optimizer has already converged, returning random points",
+                base.errors.FinishedUnderlyingOptimizerWarning,
+            )
+            self._check_error()
+            data = self._rng.normal(0, 1, self.dimension)
+            return self.parametrization.spawn_child().set_standardized_data(data)
+        # if no more points left in batch, wait for new batch from fake callable
+        if not self._current_batch:
+            # if there are any points in the previous batch that haven't been told on, you cannot update the current batch.
+            if not self.can_ask():
+                raise TooManyAskError(
+                    "You can't get a new batch until the old one has been fully told on. See docstring for more info."
+                )
+            points = self._messaging_thread.messages_ask.get()
+            self.batch_size = len(points)
+            self._current_batch = [
+                self.parametrization.spawn_child().set_standardized_data(point) for point in points
+            ]
+            self._batch_losses = [None] * len(points)  # type: ignore
+            # map each point to an index in preparation to build loss array in tell
+            self.indices = {candidate.uid: i for i, candidate in enumerate(self._current_batch)}
+        candidate = self._current_batch.pop()
+        return candidate
+
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: float) -> None:
+        """Returns value for a point which was "asked"
+        (none asked point cannot be "tell")
+        """
+        assert self._messaging_thread is not None, 'Start by using "ask" method, instead of "tell" method'
+        if not self._messaging_thread.is_alive():  # optimizer is done
+            self._check_error()
+            return
+        candidate_index = self.indices.pop(candidate.uid)
+        self._batch_losses[candidate_index] = self._post_loss(candidate, loss)
+        self._tell_counter += 1
+        # if batch size number of tells since new batch, send array of losses to fake callable
+        if self._tell_counter == self.batch_size:
+            self._messaging_thread.messages_ask.put(np.array(self._batch_losses))
+            self._batch_losses = []
+            self._tell_counter = 0
+
+    def minimize(
+        self,
+        objective_function: tp.Callable[..., tp.Loss],
+        executor: tp.Optional[tp.ExecutorLike] = None,
+        batch_mode: bool = False,
+        verbosity: int = 0,
+    ) -> p.Parameter:
+        raise NotImplementedError("This optimizer isn't supported by the way minimize works by default.")
+
+    def can_ask(self) -> bool:
+        """Returns whether the optimizer is able to perform another ask,
+        either because there are points left in the current batch to ask
+        or you are ready for a new batch (You have asked and told on every
+        point in the last batch.)
+        """
+        return len(self.indices) == 0 or len(self._current_batch) > 0
