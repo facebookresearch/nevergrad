@@ -133,13 +133,13 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # to make optimize function stoppable halway through
         self._running_jobs: tp.List[tp.Tuple[p.Parameter, tp.JobLike[tp.Loss]]] = []
         self._finished_jobs: tp.Deque[tp.Tuple[p.Parameter, tp.JobLike[tp.Loss]]] = deque()
-        self._max_num_warnings = 50  # No use printing more than 50 warnings.
+        self._sent_warnings: tp.Set[tp.Any] = set()  # no use printing several time the same
 
-    def warning(self, s: str, e: tp.Any) -> None:
-        if self._max_num_warnings <= 0:
-            return
-        warnings.warn(s, e)
-        self._max_num_warnings -= 1
+    def _warn(self, msg: str, e: tp.Any) -> None:
+        """Warns only once per warning type"""
+        if e not in self._sent_warnings:
+            warnings.warn(msg, e)
+            self._sent_warnings.add(e)
 
     @property
     def _rng(self) -> np.random.RandomState:
@@ -319,7 +319,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             # Non-sense values including NaNs should not be accepted.
             # We do not use max-float as various later transformations could lead to greater values.
             if not loss < 5.0e20:  # pylint: disable=unneeded-not
-                self.warning(
+                self._warn(
                     f"Clipping very high value {loss} in tell (rescale the cost function?).",
                     errors.LossTooLargeWarning,
                 )
@@ -392,7 +392,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 f'"tell" method only supports float values but the passed loss was: {loss} (type: {type(loss)}.'
             )
         if np.isnan(loss) or loss == np.inf:
-            self.warning(f"Updating fitness with {loss} value", errors.BadLossWarning)
+            self._warn(f"Updating fitness with {loss} value", errors.BadLossWarning)
         mvalue: tp.Optional[utils.MultiValue] = None
         if x not in self.archive:
             self.archive[x] = utils.MultiValue(candidate, loss, reference=self.parametrization)
@@ -467,7 +467,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             # still not solving, let's run sub-optimization
             candidate = _constraint_solver(candidate, budget=max_trials)
         if not (satisfies or candidate.satisfies_constraints()):
-            self.warning(
+            self._warn(
                 f"Could not bypass the constraint after {max_trials} tentatives, "
                 "sending candidate anyway.",
                 errors.FailedConstraintWarning,
@@ -583,7 +583,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         if executor is None:
             executor = utils.SequentialExecutor()  # defaults to run everything locally and sequentially
             if self.num_workers > 1:
-                self.warning(
+                self._warn(
                     f"num_workers = {self.num_workers} > 1 is suboptimal when run sequentially",
                     errors.InefficientSettingsWarning,
                 )
