@@ -8,7 +8,7 @@ import threading
 import queue
 import numpy as np
 import nevergrad.common.typing as tp
-import nevergrad.common.errors as e
+from nevergrad.common.errors import NevergradError
 from nevergrad.parametrization import parameter as p
 from . import base
 from .base import IntOrParameter
@@ -18,7 +18,7 @@ class StopOptimizerThread(Exception):
     pass
 
 
-class TooManyAskError(e.NevergradError):
+class TooManyAskError(NevergradError):
     pass
 
 
