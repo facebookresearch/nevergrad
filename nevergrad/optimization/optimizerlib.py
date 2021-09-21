@@ -400,6 +400,12 @@ class _CMA(base.Optimizer):
         self._to_be_told: tp.List[p.Parameter] = []
         self._num_spawners = self._popsize // 2  # experimental, for visualization
         self._parents = [self.parametrization]
+        # if fully bounded, use bound option from CMA
+        self._normalizer: tp.Optional[p.helpers.Normalizer] = None
+        if self._config.use_cma_bounds:
+            normalizer = p.helpers.Normalizer(self.parametrization)
+            if normalizer.fully_bounded:
+                self._normalizer = normalizer
         # delay initialization to ease implementation of variants
         self._es: tp.Any = None
 
@@ -417,8 +423,7 @@ class _CMA(base.Optimizer):
                     seed=np.nan,
                     CMA_elitist=self._config.elitist,
                 )
-                # Bullshit pseudo-code as a first step.
-                if p.helpers.Normalizer(self.parametrization).fully_bounded:
+                if self._normalizer is not None:
                     inopts["bounds"] = [0, 1]
                 inopts.update(self._config.inopts if self._config.inopts is not None else {})
                 self._es = cma.CMAEvolutionStrategy(
@@ -448,7 +453,8 @@ class _CMA(base.Optimizer):
             self._to_be_asked.extend(self.es.ask())
         data = self._to_be_asked.popleft()
         parent = self._parents[self.num_ask % len(self._parents)]
-        # Presumably in bounded mode, clipping or whatever will have no impact.
+        if self._normalizer is not None:
+            data = self._normalizer.backward(data)
         candidate = parent.spawn_child().set_standardized_data(data, reference=self.parametrization)
         return candidate
 
@@ -456,6 +462,8 @@ class _CMA(base.Optimizer):
         self._to_be_told.append(candidate)
         if len(self._to_be_told) >= self.es.popsize:
             listx = [c.get_standardized_data(reference=self.parametrization) for c in self._to_be_told]
+            if self._normalizer is not None:
+                listx = [self._normalizer.forward(x) for x in listx]
             listy = [c.loss for c in self._to_be_told]
             args = (listy, listx) if self._config.fcmaes else (listx, listy)
             try:
@@ -475,6 +483,8 @@ class _CMA(base.Optimizer):
         cma_best: tp.Optional[np.ndarray] = self.es.best_x if self._config.fcmaes else self.es.result.xbest
         if cma_best is None:
             return pessimistic
+        if self._normalizer is not None:
+            cma_best = self._normalizer.backward(cma_best)
         return cma_best
 
 
@@ -505,6 +515,8 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
     inopts: optional dict
         use this to averride any inopts parameter of the wrapped CMA optimizer
         (see https://github.com/CMA-ES/pycma)
+    use_cma_bounds: bool
+        use CMA own bounding option (if the parametrization is fully bounded)
     """
 
     # pylint: disable=unused-argument
@@ -518,6 +530,7 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         fcmaes: bool = False,
         random_init: bool = False,
         inopts: tp.Optional[tp.Dict[str, tp.Any]] = None,
+        use_cma_bounds: bool = True,
     ) -> None:
         super().__init__(_CMA, locals(), as_config=True)
         if fcmaes:
@@ -530,6 +543,7 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         self.fcmaes = fcmaes
         self.random_init = random_init
         self.inopts = inopts
+        self.use_cma_bounds = use_cma_bounds
 
 
 CMA = ParametrizedCMA().set_name("CMA", register=True)
