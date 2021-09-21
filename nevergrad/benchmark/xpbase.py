@@ -169,7 +169,7 @@ class Experiment:
         self.function.parametrization.random_state  # pylint: disable=pointless-statement
 
     def __repr__(self) -> str:
-        return f"Experiment: {self.optimsettings} (dim={self.function.dimension}) on {self.function} with seed {self.seed}"
+        return f"Experiment: {self.optimsettings} (dim={self.function.dimension}, param={self.function.parametrization}) on {self.function} with seed {self.seed}"
 
     @property
     def is_incoherent(self) -> bool:
@@ -213,12 +213,14 @@ class Experiment:
         assert opt is not None
         # ExperimentFunction can directly override this evaluation function if need be
         # (pareto_front returns only the recommendation in singleobjective)
+        self.result["num_objectives"] = opt.num_objectives
         self.result["loss"] = pfunc.evaluation_function(*opt.pareto_front())
         self.result["elapsed_budget"] = num_calls
         if num_calls > self.optimsettings.budget:
             raise RuntimeError(
                 f"Too much elapsed budget {num_calls} for {self.optimsettings.name} on {self.function}"
             )
+        self.result.update({f"info/{x}": y for x, y in opt._info().items()})  # Add optimizer info for debug
 
     def _run_with_error(self, callbacks: tp.Optional[tp.Dict[str, obase._OptimCallBack]] = None) -> None:
         """Run an experiment with the provided artificial function and optimizer
@@ -279,7 +281,7 @@ class Experiment:
         summary = dict(self.result, seed=-1 if self.seed is None else self.seed)
         summary.update(self.function.descriptors)
         summary.update(self.optimsettings.get_description())
-        return summary
+        return summary  # type: ignore
 
     def __eq__(self, other: tp.Any) -> bool:
         if not isinstance(other, Experiment):

@@ -7,14 +7,15 @@ from .oneshot import SamplingSearch
 from .differentialevolution import DifferentialEvolution
 from .optimizerlib import RandomSearchMaker, SQP, LHSSearch, DE, RandomSearch, MetaRecentering, MetaTuneRecentering  # type: ignore
 from .optimizerlib import (
-    MultipleSingleRuns,
     ParametrizedOnePlusOne,
     ParametrizedCMA,
-    ConfSplitOptimizer,
     ParametrizedBO,
     EMNA,
     NGOpt10,
+    NGOpt12,
+    BayesOptim,
 )
+from . import optimizerlib as opts
 from .optimizerlib import CMA, Chaining, PSO, BO
 
 # DE
@@ -46,6 +47,13 @@ FastGADiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="fastga").set_name(
 DoubleFastGAOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
     noise_handling="optimistic", mutation="doublefastga"
 ).set_name("DoubleFastGAOptimisticNoisyDiscreteOnePlusOne", register=True)
+RecombiningGA = ParametrizedOnePlusOne(
+    mutation="doublefastga",
+    crossover=True,
+).set_name("RecombiningGA", register=True)
+RotatedRecombiningGA = ParametrizedOnePlusOne(
+    mutation="doublefastga", crossover=True, rotation=True
+).set_name("RotatedRecombiningGA", register=True)
 FastGAOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
     noise_handling="optimistic", mutation="fastga"
 ).set_name("FastGAOptimisticNoisyDiscreteOnePlusOne", register=True)
@@ -219,9 +227,9 @@ AvgHammersleySearch = SamplingSearch(sampler="Hammersley", recommendation_rule="
 AvgHammersleySearchPlusMiddlePoint = SamplingSearch(
     sampler="Hammersley", middle_point=True, recommendation_rule="average_of_best"
 ).set_name("AvgHammersleySearchPlusMiddlePoint", register=True)
-HCHAvgRandomSearch = SamplingSearch(sampler="Random", recommendation_rule="average_of_hull_best").set_name(
-    "HCHAvgRandomSearch", register=True
-)
+HullCenterHullAvgRandomSearch = SamplingSearch(
+    sampler="Random", recommendation_rule="average_of_hull_best"
+).set_name("HullCenterHullAvgRandomSearch", register=True)
 AvgRandomSearch = SamplingSearch(sampler="Random", recommendation_rule="average_of_best").set_name(
     "AvgRandomSearch", register=True
 )
@@ -247,37 +255,64 @@ TEAvgCauchyLHSSearch = SamplingSearch(
 ).set_name("TEAvgCauchyLHSSearch", register=True)
 
 # Recommendation rule = by convex hull.
-HCHAvgScrHaltonSearch = SamplingSearch(scrambled=True, recommendation_rule="average_of_hull_best").set_name(
-    "HCHAvgScrHaltonSearch", register=True
-)
-HCHAvgScrHaltonSearchPlusMiddlePoint = SamplingSearch(
+HullCenterHullAvgScrHaltonSearch = SamplingSearch(
+    scrambled=True, recommendation_rule="average_of_hull_best"
+).set_name("HullCenterHullAvgScrHaltonSearch", register=True)
+HullCenterHullAvgScrHaltonSearchPlusMiddlePoint = SamplingSearch(
     middle_point=True, scrambled=True, recommendation_rule="average_of_hull_best"
-).set_name("HCHAvgScrHaltonSearchPlusMiddlePoint", register=True)
-HCHAvgScrHammersleySearchPlusMiddlePoint = SamplingSearch(
+).set_name("HullCenterHullAvgScrHaltonSearchPlusMiddlePoint", register=True)
+HullCenterHullAvgScrHammersleySearchPlusMiddlePoint = SamplingSearch(
     scrambled=True, sampler="Hammersley", middle_point=True, recommendation_rule="average_of_hull_best"
-).set_name("HCHAvgScrHammersleySearchPlusMiddlePoint", register=True)
-HCHAvgLargeHammersleySearch = SamplingSearch(
+).set_name("HullCenterHullAvgScrHammersleySearchPlusMiddlePoint", register=True)
+HullCenterHullAvgLargeHammersleySearch = SamplingSearch(
     scale=100.0, sampler="Hammersley", recommendation_rule="average_of_hull_best"
-).set_name("HCHAvgLargeHammersleySearch", register=True)
-HCHAvgScrHammersleySearch = SamplingSearch(
+).set_name("HullCenterHullAvgLargeHammersleySearch", register=True)
+HullCenterHullAvgScrHammersleySearch = SamplingSearch(
     sampler="Hammersley", scrambled=True, recommendation_rule="average_of_hull_best"
-).set_name("HCHAvgScrHammersleySearch", register=True)
-HCHAvgCauchyScrHammersleySearch = SamplingSearch(
+).set_name("HullCenterHullAvgScrHammersleySearch", register=True)
+HullCenterHullAvgCauchyScrHammersleySearch = SamplingSearch(
     cauchy=True, sampler="Hammersley", scrambled=True, recommendation_rule="average_of_hull_best"
-).set_name("HCHAvgCauchyScrHammersleySearch", register=True)
-HCHAvgLHSSearch = SamplingSearch(sampler="LHS", recommendation_rule="average_of_hull_best").set_name(
-    "HCHAvgLHSSearch", register=True
-)
-HCHAvgCauchyLHSSearch = SamplingSearch(
+).set_name("HullCenterHullAvgCauchyScrHammersleySearch", register=True)
+HullCenterHullAvgLHSSearch = SamplingSearch(
+    sampler="LHS", recommendation_rule="average_of_hull_best"
+).set_name("HullCenterHullAvgLHSSearch", register=True)
+HullCenterHullAvgCauchyLHSSearch = SamplingSearch(
     sampler="LHS", cauchy=True, recommendation_rule="average_of_hull_best"
-).set_name("HCHAvgCauchyLHSSearch", register=True)
+).set_name("HullCenterHullAvgCauchyLHSSearch", register=True)
 
 # Split on top of competence map.
-MetaNGOpt10 = ConfSplitOptimizer(
+MetaNGOpt10 = opts.ConfSplitOptimizer(
     multivariate_optimizer=NGOpt10, monovariate_optimizer=NGOpt10, non_deterministic_descriptor=False
 ).set_name("MetaNGOpt10", register=True)
 
 # Multiple single runs for multi-objective optimization.
-NGOptSingle9 = MultipleSingleRuns(num_single_runs=9).set_name("NGOptSingle9", register=True)
-NGOptSingle16 = MultipleSingleRuns(num_single_runs=16).set_name("NGOptSingle16", register=True)
-NGOptSingle25 = MultipleSingleRuns(num_single_runs=25).set_name("NGOptSingle25", register=True)
+NGOptSingle9 = opts.MultipleSingleRuns(num_single_runs=9, base_optimizer=NGOpt12).set_name(
+    "NGOptSingle9", register=True
+)
+NGOptSingle16 = opts.MultipleSingleRuns(num_single_runs=16, base_optimizer=NGOpt12).set_name(
+    "NGOptSingle16", register=True
+)
+NGOptSingle25 = opts.MultipleSingleRuns(num_single_runs=25, base_optimizer=NGOpt12).set_name(
+    "NGOptSingle25", register=True
+)
+
+# noisy splitters
+Noisy13Splits = opts.NoisySplit(num_optims=13, discrete=False).set_name("Noisy13Splits", register=True)
+NoisyInfSplits = opts.NoisySplit(num_optims=float("inf"), discrete=False).set_name(
+    "NoisyInfSplits", register=True
+)
+DiscreteNoisy13Splits = opts.NoisySplit(num_optims=13, discrete=True).set_name(
+    "DiscreteNoisy13Splits", register=True
+)
+DiscreteNoisyInfSplits = opts.NoisySplit(num_optims=float("inf"), discrete=True).set_name(
+    "DiscreteNoisyInfSplits", register=True
+)
+
+# PCA-BO
+# Testing the influence of n_components on the performance of PCABO
+PCABO80 = BayesOptim(pca=True, n_components=0.80).set_name("PCABO80", register=True)
+
+# Testing the influence of the DoE size on the performance of PCABO
+PCABO95DoE20 = BayesOptim(pca=True, n_components=0.95, prop_doe_factor=0.20).set_name(
+    "PCABO95DoE20", register=True
+)

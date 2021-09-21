@@ -6,7 +6,7 @@
 import hashlib
 import itertools
 import numpy as np
-from nevergrad.parametrization import parameter as p
+import nevergrad as ng
 from nevergrad.common import tools
 import nevergrad.common.typing as tp
 from .base import ExperimentFunction
@@ -70,8 +70,8 @@ class ArtificialVariable:
         if self.hashing:
             data2 = np.array(data, copy=True)
             for i, y in enumerate(data):
-                self.random_state.seed(int(hashlib.md5(str(y).encode()).hexdigest(), 16) % 500000)  # type: ignore
-                data2[i] = self.random_state.normal(0.0, 1.0)  # type: ignore
+                self.random_state.seed(int(hashlib.md5(str(y).encode()).hexdigest(), 16) % 500000)
+                data2[i] = self.random_state.normal(0.0, 1.0)
             data = data2
         data = np.array(data, copy=False)
         output = []
@@ -111,6 +111,8 @@ class ArtificialFunction(ExperimentFunction):
         string as element.
     aggregator: str
         how to aggregate the multiple block outputs
+    bounded: bool
+        bound the search domain to [-5,5]
 
     Example
     -------
@@ -147,6 +149,7 @@ class ArtificialFunction(ExperimentFunction):
         hashing: bool = False,
         aggregator: str = "max",
         split: bool = False,
+        bounded: bool = False,
     ) -> None:
         # pylint: disable=too-many-locals
         self.name = name
@@ -175,15 +178,17 @@ class ArtificialFunction(ExperimentFunction):
 
         assert not (split and hashing)
         assert not (split and useless_variables > 0)
-        parametrization = (
-            p.Array(shape=(1,) if hashing else (self._dimension,)).set_name("")
-            if not split
-            else (
-                p.Instrumentation(*[p.Array(shape=(block_dimension,)) for _ in range(num_blocks)]).set_name(
-                    "split"
-                )
-            )
-        )
+        array_bounds = dict(upper=5, lower=-5) if bounded else {}
+        if not split:
+            parametrization: ng.p.Parameter = ng.p.Array(
+                shape=(1,) if hashing else (self._dimension,), **array_bounds  # type: ignore
+            ).set_name("")
+        else:
+            arrays = [
+                ng.p.Array(shape=(block_dimension,), **array_bounds) for _ in range(num_blocks)  # type: ignore
+            ]
+            parametrization = ng.p.Instrumentation(*arrays)
+            parametrization.set_name("split")
         if noise_level > 0:
             parametrization.function.deterministic = False
         super().__init__(self.noisy_function, parametrization)
@@ -199,7 +204,11 @@ class ArtificialFunction(ExperimentFunction):
             only_index_transform=only_index_transform,
             random_state=self._parametrization.random_state,
         )
-        self._aggregator = {"max": np.max, "mean": np.mean, "sum": np.sum}[aggregator]
+        self._aggregator: tp.Callable[[tp.ArrayLike], float] = {  # type: ignore
+            "max": np.max,
+            "mean": np.mean,
+            "sum": np.sum,
+        }[aggregator]
         info = corefuncs.registry.get_info(self._parameters["name"])
         # add descriptors
         self.add_descriptors(
@@ -231,7 +240,7 @@ class ArtificialFunction(ExperimentFunction):
             results.append(self._func(block))
         return float(self._aggregator(results))
 
-    def evaluation_function(self, *recommendations: p.Parameter) -> float:
+    def evaluation_function(self, *recommendations: ng.p.Parameter) -> float:
         """Implements the call of the function.
         Under the hood, __call__ delegates to oracle_call + add some noise if noise_level > 0.
         """
@@ -274,7 +283,7 @@ def _noisy_call(
 ) -> float:  # pylint: disable=unused-argument
     x_transf = transf(x)
     fx = func(x_transf)
-    noise = 0
+    noise = 0.0
     if noise_level:
         if not noise_dissymmetry or x_transf.ravel()[0] <= 0:
             side_point = transf(x + random_state.normal(0, 1, size=len(x)))
@@ -298,11 +307,12 @@ class FarOptimumFunction(ExperimentFunction):
     ) -> None:
         assert recombination in ("crossover", "average")
         self._optimum = np.array(optimum, dtype=float)
-        parametrization = p.Array(shape=(2,), mutable_sigma=mutable_sigma)
+        parametrization = ng.p.Array(shape=(2,), mutable_sigma=mutable_sigma)
         init = np.array([1.0, 1.0] if independent_sigma else [1.0], dtype=float)
-        sigma = p.Array(init=init).set_mutation(exponent=2.0) if mutable_sigma else p.Constant(init)
+        sigma: tp.Any = ng.p.Array(init=init).set_mutation(exponent=2.0) if mutable_sigma else init
         parametrization.set_mutation(sigma=sigma)
-        parametrization.set_recombination("average" if recombination == "average" else p.mutation.Crossover())
+        if recombination == "crossover":
+            parametrization = ng.ops.mutations.Crossover()(parametrization)
         self.multiobjective_upper_bounds = np.array(2 * self._optimum) if multiobjective else None
         super().__init__(self._multifunc if multiobjective else self._monofunc, parametrization.set_name(""))  # type: ignore
 
@@ -312,7 +322,7 @@ class FarOptimumFunction(ExperimentFunction):
     def _monofunc(self, x: np.ndarray) -> float:
         return float(np.sum(self._multifunc(x)))
 
-    def evaluation_function(self, *recommendations: p.Parameter) -> float:
+    def evaluation_function(self, *recommendations: ng.p.Parameter) -> float:
         return min(self._monofunc(x.args[0]) for x in recommendations)
 
     @classmethod

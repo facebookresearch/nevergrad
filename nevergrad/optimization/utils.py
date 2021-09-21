@@ -5,11 +5,9 @@
 
 import math
 import operator
-import warnings
 import numpy as np
 from nevergrad.parametrization import parameter as p
 from nevergrad.parametrization.utils import float_penalty as _float_penalty
-from nevergrad.parametrization import _datalayers
 import nevergrad.common.typing as tp
 from nevergrad.common.tools import OrderedSet
 
@@ -153,7 +151,7 @@ class SequentialExecutor:
 def _tobytes(x: tp.ArrayLike) -> bytes:
     x = np.array(x, copy=False)  # for compatibility
     assert x.ndim == 1, f"Input shape: {x.shape}"
-    assert x.dtype == np.float, f"Incorrect type {x.dtype} is not float"
+    assert x.dtype == np.float_, f"Incorrect type {x.dtype} is not float"
     return x.tobytes()
 
 
@@ -343,76 +341,6 @@ class UidQueue:
             self.asked.discard(uid)
         else:
             self.told.remove(uid)
-
-
-class BoundScaler:
-    """Hacky way to sample in the space defined by the parametrization.
-    Given an vector of values between 0 and 1,
-    the transform method samples in the bounds if provided,
-    or using the provided function otherwise.
-    This is used for samplers.
-    Code of parametrization and/or this helper should definitely be
-    updated to make it simpler and more robust
-    """
-
-    def __init__(self, reference: p.Parameter) -> None:
-        self.reference = reference.spawn_child()
-        self.reference.freeze()
-        # initial check
-        parameter = self.reference.spawn_child()
-        parameter.set_standardized_data(np.linspace(-1, 1, self.reference.dimension))
-        expected = parameter.get_standardized_data(reference=self.reference)
-        # self._ref_arrays = self.list_arrays(self.reference)
-        # arrays = self.list_arrays(parameter)
-        self._ref_arrays = [x for x in p.helpers.list_data(self.reference)]
-        arrays = [x for x in p.helpers.list_data(parameter)]
-        check = np.concatenate(
-            [x.get_standardized_data(reference=y) for x, y in zip(arrays, self._ref_arrays)], axis=0
-        )
-        self.working = True
-        if not np.allclose(check, expected):
-            self.working = False
-            self._warn()
-
-    def _warn(self) -> None:
-        warnings.warn(
-            f"Failed to find bounds for {self.reference}, quasi-random optimizer may be inefficient.\n"
-            "Please open an issue on Nevergrad github"
-        )
-
-    def transform(
-        self, x: tp.ArrayLike, unbounded_transform: tp.Callable[[np.ndarray], np.ndarray]
-    ) -> np.ndarray:
-        """Transform from [0, 1] to the space between bounds"""
-        y = np.array(x, copy=True)
-        if not self.working:
-            return unbounded_transform(y)
-        try:
-            out = self._transform(y, unbounded_transform)
-        except Exception:  # pylint: disable=broad-except
-            self._warn()
-            out = unbounded_transform(y)
-        return out
-
-    def _transform(
-        self, x: np.ndarray, unbounded_transform: tp.Callable[[np.ndarray], np.ndarray]
-    ) -> np.ndarray:
-        # modifies x in place
-        start = 0
-        for ref in self._ref_arrays:
-            end = start + ref.dimension
-            layers = _datalayers.BoundLayer.filter_from(ref)  # find bound layers
-            layers = [x for x in layers if x.uniform_sampling]  # keep only uniform sampling
-            if not layers:
-                x[start:end] = unbounded_transform(x[start:end])
-            else:
-                layer_index = layers[-1]._layer_index
-                array = ref.spawn_child()
-                normalized = x[start:end].reshape(ref._value.shape)
-                array._layers[layer_index].set_normalized_value(normalized)  # type: ignore
-                x[start:end] = array.get_standardized_data(reference=ref)
-            start = end
-        return x
 
 
 class ConstraintManager:

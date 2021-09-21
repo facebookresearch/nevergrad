@@ -9,9 +9,10 @@ from .optimization import optimizerlib as optimizers  # busy namespace, likely t
 from .optimization import families as families
 from .optimization import callbacks as callbacks
 from .common import errors as errors
+from . import ops as ops
 
 
-__all__ = ["optimizers", "families", "callbacks", "p", "typing", "errors"]
+__all__ = ["optimizers", "families", "callbacks", "p", "typing", "errors", "ops"]
 
 
-__version__ = "0.4.3.post1"
+__version__ = "0.4.3.post8"

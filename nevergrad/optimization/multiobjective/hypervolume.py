@@ -71,7 +71,7 @@ class VectorNode:
 
 
 class VectorLinkedList:
-    """ Linked list structure with list of VectorNodes as elements."""
+    """Linked list structure with list of VectorNodes as elements."""
 
     def __init__(self, dimension: int) -> None:
         self.dimension = dimension
@@ -107,7 +107,7 @@ class VectorLinkedList:
         return length
 
     def append(self, node: VectorNode, index: int) -> None:
-        """ Append a node to the `index`-th position."""
+        """Append a node to the `index`-th position."""
         current_last = self.sentinel.prev[index]
         assert current_last is not None
         node.next[index] = self.sentinel
@@ -196,7 +196,8 @@ class HypervolumeIndicator:
         return self._multilist
 
     def compute(self, points: tp.Union[tp.List[np.ndarray], np.ndarray]) -> float:
-        points = points - self.reference_point
+        points = points - self.reference_point  # type: ignore
+        # TODO: not sure why it would work with lists tough, investigate the ignored typing
         self.reference_bounds = np.full(self.dimension, -np.inf)
         self._multilist = VectorLinkedList.create_sorted(self.dimension, points)
         hypervolume = self.recursive_hypervolume(self.dimension - 1)
@@ -301,7 +302,7 @@ class HypervolumeIndicator:
         return hypervolume
 
     def skip_dominated_points(self, node: VectorNode, dimension: int) -> None:
-        """ Implements Algorithm 2, _skipdom_, for skipping dominated points."""
+        """Implements Algorithm 2, _skipdom_, for skipping dominated points."""
         if node.dominated_flag >= dimension:
             node.area[dimension] = node.prev[dimension].area[dimension]
         else:

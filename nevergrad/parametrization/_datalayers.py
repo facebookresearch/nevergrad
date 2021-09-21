@@ -62,8 +62,7 @@ class BoundLayer(Operation):
         """  # TODO improve description of methods
         super().__init__(lower, upper, uniform_sampling)
         self.bounds: tp.Tuple[tp.Optional[np.ndarray], tp.Optional[np.ndarray]] = tuple(  # type: ignore
-            a if isinstance(a, np.ndarray) or a is None else np.array([a], dtype=float)
-            for a in (lower, upper)
+            None if a is None else trans.bound_to_array(a) for a in (lower, upper)
         )
         both_bounds = all(b is not None for b in self.bounds)
         self.uniform_sampling: bool = uniform_sampling  # type: ignore
@@ -76,6 +75,11 @@ class BoundLayer(Operation):
                 raise errors.NevergradValueError(
                     f"Lower bounds {lower} should be strictly smaller than upper bounds {upper}"
                 )
+
+    def _normalizer(self) -> trans.Transform:
+        if any(b is None for b in self.bounds):
+            raise RuntimeError("Cannot use normalized value for not-fully bounded Parameter")
+        return trans.Affine(self.bounds[1] - self.bounds[0], self.bounds[0]).reverted()  # type: ignore
 
     def __call__(self, data: D, inplace: bool = False) -> D:
         """Creates a new Data instance with bounds"""
@@ -117,14 +121,19 @@ class BoundLayer(Operation):
         child = root.spawn_child()
         # send new val to the layer under this one for the child
         new_val = self.random_state.uniform(size=shape)
+        del child.value  # make sure there is no cache
         child._layers[self._layer_index].set_normalized_value(new_val)  # type: ignore
         return child
 
     def set_normalized_value(self, value: np.ndarray) -> None:
         """Sets a value normalized between 0 and 1"""
-        bounds = tuple(b * np.ones(value.shape) for b in self.bounds)
-        new_val = bounds[0] + (bounds[1] - bounds[0]) * value
+        new_val = self._normalizer().backward(value)
         self._layers[self._layer_index]._layered_set_value(new_val)
+
+    def get_normalized_value(self) -> np.ndarray:
+        """Gets a value normalized between 0 and 1"""
+        value = self._layers[self._layer_index]._layered_get_value()
+        return self._normalizer().forward(value)
 
     def _check(self, value: np.ndarray) -> None:
         if not utils.BoundChecker(*self.bounds)(value):
@@ -138,7 +147,7 @@ class Modulo(BoundLayer):
 
     def __init__(self, module: tp.Any) -> None:
         super().__init__(lower=0, upper=module)
-        if not isinstance(module, (np.ndarray, np.float, np.int, float, int)):
+        if not isinstance(module, (np.ndarray, np.float_, np.int_, float, int)):
             raise TypeError(f"Unsupported type {type(module)} for module")
         self._module = module
 
@@ -311,7 +320,7 @@ class AngleOp(Operation):
         return np.angle(x[0, ...] + 1j * x[1, ...])
 
     def _layered_set_value(self, value: tp.Any) -> None:
-        out = np.stack([fn(value) for fn in (np.cos, np.sin)], axis=0)
+        out = np.stack([fn(value) for fn in (np.cos, np.sin)], axis=0)  # type: ignore
         super()._layered_set_value(out)
 
 

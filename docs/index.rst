@@ -18,7 +18,7 @@ You can find other installation options (including for Windows users) in the :re
 
 Feel free to join `Nevergrad users Facebook group <https://www.facebook.com/groups/nevergradusers/>`_.
 
-Minimizing a function using an optimizer (here :code:`OnePlusOne`) can be easily run with:
+Minimizing a function using an optimizer (here :code:`NGOpt`, our adaptative optimization algorithm) can be easily run with:
 
 .. literalinclude:: ../nevergrad/optimization/test_doc.py
     :language: python
@@ -81,7 +81,7 @@ Citing
 License
 -------
 
-:code:`nevergrad` is released under the MIT license. See `LICENSE <https://github.com/facebookresearch/nevergrad/blob/master/LICENSE>`_ for additional details about it, as well as our `Terms of Use <https://opensource.facebook.com/legal/terms>`_ and `Privacy Policy <https://opensource.facebook.com/legal/privacy>`_.
+:code:`nevergrad` is released under the MIT license. See `LICENSE <https://github.com/facebookresearch/nevergrad/blob/main/LICENSE>`_ for additional details about it, as well as our `Terms of Use <https://opensource.facebook.com/legal/terms>`_ and `Privacy Policy <https://opensource.facebook.com/legal/privacy>`_.
 
 Indices and tables
 ------------------
