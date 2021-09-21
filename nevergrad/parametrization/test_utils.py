@@ -230,6 +230,7 @@ def test_normalizer_backward() -> None:
     # check the bounds
     param = ref.spawn_child()
     scaler = helpers.Normalizer(param, only_sampling=True, unbounded_transform=trans.Affine(1, 0))
+    assert not scaler.fully_bounded
     # setting
     output = scaler.backward([1.0] * param.dimension)
     param.set_standardized_data(output)
@@ -252,6 +253,7 @@ def test_normalizer_forward() -> None:
         p.Scalar(init=0), p.Scalar(init=1), p.Scalar(lower=-1, upper=3, init=0), p.Scalar(lower=-1, upper=1)
     )
     scaler = helpers.Normalizer(ref)
+    assert not scaler.fully_bounded
     out = scaler.forward(ref.get_standardized_data(reference=ref))
     np.testing.assert_almost_equal(out, [0.5, 0.5, 0.25, 0.5])
     param = ref.spawn_child()
@@ -261,6 +263,19 @@ def test_normalizer_forward() -> None:
     np.testing.assert_almost_equal(out, [0.5, 0.9967849, 0, 1])
     back = scaler.backward(out)
     np.testing.assert_almost_equal(back, data)  # shouuld be bijective
+
+
+@testing.parametrized(
+    set_bounds=(True, p.Array(shape=(1, 2)).set_bounds(-12, 12, method="arctan", full_range_sampling=False)),
+    log=(True, p.Log(lower=0.001, upper=1000)),
+    partial=(False, p.Scalar(lower=-12, init=0)),
+    none=(False, p.Scalar()),
+    full_tuple=(True, p.Tuple(p.Log(lower=0.01, upper=1), p.Scalar(lower=0, upper=1))),
+    partial_tuple=(False, p.Tuple(p.Log(lower=0.01, upper=1), p.Scalar(lower=0, init=1))),
+)
+def test_scaler_fully_bounded(expected: float, param: p.Parameter) -> None:
+    scaler = helpers.Normalizer(param)
+    assert scaler.fully_bounded == expected
 
 
 # # # END OF CHECK # # #
