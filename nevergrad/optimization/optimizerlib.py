@@ -1531,8 +1531,8 @@ class ParametrizedMetaModel(base.ConfiguredOptimizer):
 
 
 MetaModel = ParametrizedMetaModel().set_name("MetaModel", register=True)
-MetaModelOpO = ParametrizedMetaModel(multivariate_optimizer=OnePlusOne).set_name(
-    "MetaModelOpO", register=True
+MetaModelOnePlusOne = ParametrizedMetaModel(multivariate_optimizer=OnePlusOne).set_name(
+    "MetaModelOnePlusOne", register=True
 )
 
 
@@ -2650,7 +2650,7 @@ class NGOpt15(NGOpt12):
             and not self.has_noise
             and self.num_objectives < 2
         ):
-            return MetaModelOpO  # OnePlusOne seems equivalent so far
+            return MetaModelOnePlusOne  # OnePlusOne seems equivalent so far
         elif self.fully_continuous and self.budget is not None and self.budget < 600:
             return MetaModel
         else:
