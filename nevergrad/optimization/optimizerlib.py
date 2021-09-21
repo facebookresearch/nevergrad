@@ -2665,7 +2665,7 @@ class MultipleSingleRuns(base.ConfiguredOptimizer):
     # pylint: disable=unused-argument
     def __init__(
         self,
-        *
+        *,
         num_single_runs: int = 9,
         base_optimizer: base.OptCls = NGOpt,
     ) -> None:
