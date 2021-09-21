@@ -6,7 +6,6 @@ import os
 import math
 import logging
 import itertools
-import time
 from collections import deque
 import warnings
 import numpy as np
@@ -19,6 +18,7 @@ from nevergrad.parametrization import transforms
 from nevergrad.parametrization import discretization
 from nevergrad.parametrization import _layering
 from nevergrad.parametrization import _datalayers
+from . import callbacks
 from . import oneshot
 from . import base
 from . import mutations
@@ -1458,17 +1458,12 @@ def learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.Arra
     try:
         for cls in (Powell, DE):  # Powell excellent here, DE as a backup for thread safety.
             optimizer = cls(parametrization=dimension, budget=45 * dimension + 30)
+            # limit to 20s at most
+            optimizer.register_callback("ask", callbacks.EarlyStopping.timer(20))
             try:
-                t0 = time.time()
-                for _ in range(45 * dimension + 30):
-                    x = optimizer.ask()
-                    fitness = float(model.predict(polynomial_features.fit_transform(x.value)))
-                    if time.time() - t0 > 20:  # Never more than 20s
-                        break
-                    optimizer.tell(x, fitness)
-                # minimum = optimizer.minimize(
-                #    lambda x: float(model.predict(polynomial_features.fit_transform(x[None, :])))
-                # ).value
+                minimum = optimizer.minimize(
+                    lambda x: float(model.predict(polynomial_features.fit_transform(x[None, :])))
+                ).value
                 minimum = optimizer.provide_recommendation().value
             except RuntimeError:
                 assert cls == Powell, "Only Powell is allowed to crash here."
