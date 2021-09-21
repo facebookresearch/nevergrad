@@ -430,7 +430,7 @@ class _CMA(base.Optimizer):
                     x0=self.parametrization.sample().get_standardized_data(reference=self.parametrization)
                     if self._config.random_init
                     else np.zeros(self.dimension, dtype=np.float_),
-                    sigma0=self._config.scale,
+                    sigma0=self._config.scale if self._normalizer is None else 0.3,
                     inopts=inopts,
                 )
             else:
