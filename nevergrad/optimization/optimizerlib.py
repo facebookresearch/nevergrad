@@ -420,8 +420,8 @@ class _CMA(base.Optimizer):
                     CMA_elitist=self._config.elitist,
                 )
                 # Bullshit pseudo-code as a first step.
-                if self._use_bounded_mode and self.parametrization.upper and self.parametrization.lower:  # No idea how to check that.
-                    inopts["bounds"] = [lower, upper]
+                if p.helpers.Normalizer(self.parametrization).fully_bounded:
+                    inopts["bounds"] = [0, 1]
                 inopts.update(self._config.inopts if self._config.inopts is not None else {})
                 self._es = cma.CMAEvolutionStrategy(
                     x0=self.parametrization.sample().get_standardized_data(reference=self.parametrization)
