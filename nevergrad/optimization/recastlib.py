@@ -281,10 +281,9 @@ class _PymooBatchMinimizeBase(recaster.BatchRecastOptimizer):
             algorithm=self.algorithm,
         )
         # set num_objectives in sub-instance for Pymoo to use in problem definition
-        if self.num_objectives > 0:
-            subinstance.num_objectives = self.num_objectives
-        else:
+        if self.num_objectives <= 0:
             raise RuntimeError("num_objectives should have been set.")
+        subinstance.num_objectives = self.num_objectives
         return subinstance._optimization_function
         # pylint:disable=useless-return
 
