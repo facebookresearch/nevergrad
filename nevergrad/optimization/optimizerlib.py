@@ -1464,7 +1464,6 @@ def learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.Arra
                 minimum = optimizer.minimize(
                     lambda x: float(model.predict(polynomial_features.fit_transform(x[None, :])))
                 ).value
-                minimum = optimizer.provide_recommendation().value
             except RuntimeError:
                 assert cls == Powell, "Only Powell is allowed to crash here."
             else:
