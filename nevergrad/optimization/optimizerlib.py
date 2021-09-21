@@ -390,12 +390,10 @@ class _CMA(base.Optimizer):
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
         config: tp.Optional["ParametrizedCMA"] = None,
-        use_bounded_mode: bool = False,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._config = ParametrizedCMA() if config is None else config
         pop = self._config.popsize
-        self._use_bounded_mode = use_bounded_mode
         self._popsize = max(num_workers, 4 + int(3 * np.log(self.dimension))) if pop is None else pop
         # internal attributes
         self._to_be_asked: tp.Deque[np.ndarray] = deque()
