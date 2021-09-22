@@ -45,7 +45,7 @@ import numpy as _np
 
 
 ArgsKwargs = Tuple[Tuple[Any, ...], Dict[str, Any]]
-ArrayLike = Union[Tuple[float, ...], List[float], _np.ndarray]
+ArrayLike = Union[Tuple[float, ...], List[float], _np.ndarray]  # most common
 PathLike = Union[str, Path]
 FloatLoss = float
 Loss = Union[float, ArrayLike]

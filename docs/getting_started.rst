@@ -12,11 +12,11 @@ Nevergrad is a Python 3.6+ library. It can be installed with:
 
     pip install nevergrad
 
-You can also install the master branch instead of the latest release with:
+You can also install the :code:`main` branch instead of the latest release with:
 
 .. code-block:: bash
 
-    pip install git+https://github.com/facebookresearch/nevergrad@master#egg=nevergrad
+    pip install git+https://github.com/facebookresearch/nevergrad@main#egg=nevergrad
 
 
 A conda-forge version is also `available <https://github.com/conda-forge/nevergrad-feedstock>`_ thanks to @oblute:

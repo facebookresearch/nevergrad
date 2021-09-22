@@ -3,23 +3,14 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import time
 import numpy as np
 import nevergrad as ng
 import nevergrad.common.typing as tp
-from nevergrad.common import testing
+from nevergrad.functions import ArtificialFunction
+from nevergrad.benchmark import experiments
+from nevergrad.benchmark.xpbase import Experiment
 from . import recaster
 from . import optimizerlib
-
-
-def test_message() -> None:
-    message = recaster.Message(1, 2, blublu=3)
-    np.testing.assert_equal(message.done, False)
-    np.testing.assert_equal(message.args, [1, 2])
-    np.testing.assert_equal(message.kwargs, {"blublu": 3})
-    message.result = 3
-    np.testing.assert_equal(message.done, True)
-    np.testing.assert_equal(message.result, 3)
 
 
 def fake_caller(func: tp.Callable[[int], int]) -> int:
@@ -27,22 +18,6 @@ def fake_caller(func: tp.Callable[[int], int]) -> int:
     for k in range(10):
         output += func(k)
     return output
-
-
-@testing.parametrized(
-    finished=(10, 30),
-    unfinished=(2, None),  # should not hang at deletion!
-)
-def test_messaging_thread(num_iter: int, output: tp.Optional[int]) -> None:
-    thread = recaster.MessagingThread(fake_caller)
-    num_answers = 0
-    while num_answers < num_iter:
-        if thread.messages and not thread.messages[0].done:
-            thread.messages[0].result = 3
-            num_answers += 1
-        time.sleep(0.001)
-    with testing.skip_error_on_systems(AssertionError, systems=("Windows",)):  # TODO fix
-        np.testing.assert_equal(thread.output, output)
 
 
 def test_automatic_thread_deletion() -> None:
@@ -95,3 +70,10 @@ def test_provide_recommendation() -> None:
     opt.tell(x2, 5)
     recommendation = opt.provide_recommendation()
     np.testing.assert_array_almost_equal(recommendation.value, x2.value)
+
+
+def test_sqp_with_constraint() -> None:
+    func = ArtificialFunction("ellipsoid", block_dimension=10, rotation=True, translation_factor=0.1)
+    func.parametrization.register_cheap_constraint(experiments._Constraint("sum", as_bool=True))
+    xp = Experiment(func, optimizer="ChainMetaModelSQP", budget=150, seed=4290846341)
+    xp._run_with_error()

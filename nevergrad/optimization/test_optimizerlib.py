@@ -747,7 +747,7 @@ def test_ngopt_selection(
             assert choice == expected
         else:
             print(f"Continuous param={param} budget={budget} workers={num_workers} --> {choice}")
-            if num_workers >= budget and budget > 600:
+            if num_workers >= budget > 600:
                 assert choice == "MetaTuneRecentering"
             if num_workers > 1:
                 assert choice not in ["SQP", "Cobyla"]
@@ -901,3 +901,44 @@ def test_cma_logs(capsys: tp.Any) -> None:
     captured = capsys.readouterr()
     assert captured.out == ""
     assert captured.err == ""
+
+
+def _simple_multiobjective(x):
+    return [np.sum(x ** 2), np.sum((x - 1) ** 2)]
+
+
+def test_pymoo_pf() -> None:
+    optimizer = ng.optimizers.PymooNSGA2(parametrization=2, budget=300)
+    optimizer.parametrization.random_state.seed(12)
+    optimizer.minimize(_simple_multiobjective)
+    pf = optimizer.pareto_front()
+    fixed_points = [[0.25, 0.75], [0.75, 0.25]]
+    for fixed_point in fixed_points:
+        values = _simple_multiobjective(np.array(fixed_point))
+        # check pareto front contains a candidate dominating fixed point
+        assert any(
+            _simple_multiobjective(x.value)[0] < values[0] and _simple_multiobjective(x.value)[1] < values[1]
+            for x in pf
+        )
+
+
+def test_pymoo_batched() -> None:
+    optimizer = ng.optimizers.PymooBatchNSGA2(parametrization=2, budget=300)
+    optimizer.parametrization.random_state.seed(12)
+    candidates = []
+    losses = []
+    optimizer.num_objectives = 2
+    for _ in range(3):
+        asks_from_batch = 0
+        while (optimizer.num_ask == optimizer.num_tell) or asks_from_batch < optimizer.batch_size:  # type: ignore
+            x = optimizer.ask()
+            loss = _simple_multiobjective(*x.args, **x.kwargs)
+            candidates.append(x)
+            losses.append(loss)
+            asks_from_batch += 1
+        assert asks_from_batch == 100
+        while optimizer.num_ask > optimizer.num_tell:
+            x = candidates.pop()
+            loss = losses.pop()
+            optimizer.tell(x, loss)
+    assert len(optimizer._current_batch) == 0  # type: ignore
