@@ -2183,7 +2183,7 @@ class ModCMA(base.Optimizer):
         )
 
     def _internal_ask_candidate(self) -> p.Parameter:
-        data = self.ModCMA.ask()
+        data = self._modcma.ask()
         ng_data = np.asarray(data, dtype=np.float_).flatten()
         out = self.parametrization.spawn_child()
         out._meta["ModCMA_data"] = data
@@ -2194,7 +2194,7 @@ class ModCMA(base.Optimizer):
             raise base.errors.TellNotAskedNotSupportedError
         data = candidate._meta["ModCMA_data"]
         assert len(data) == self.dimension
-        self.ModCMA.tell(data, loss)
+        self._modcma.tell(data, loss)
 
 
 # Discussions with Jialin Liu and Fabien Teytaud helped the following development.
