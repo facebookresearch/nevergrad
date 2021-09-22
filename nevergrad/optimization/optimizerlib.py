@@ -1476,15 +1476,13 @@ def learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.Arra
     return middle + normalization * minimum
 
 
-@registry.register
-class MetaModel(base.Optimizer):
-    """Adding a metamodel into CMA."""
-
+class _MetaModel(base.Optimizer):
     def __init__(
         self,
         parametrization: IntOrParameter,
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
+        *,
         multivariate_optimizer: tp.Optional[base.OptCls] = None,
         modulo: float = 0.5,
     ) -> None:
@@ -1514,6 +1512,33 @@ class MetaModel(base.Optimizer):
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         self._optim.tell(candidate, loss)
+
+
+class ParametrizedMetaModel(base.ConfiguredOptimizer):
+    """
+    Adding a metamodel into CMA or OnePlusOne (if dimension is 1) by default.
+
+    Parameters
+    ----------
+    multivariate_optimizer: base.OptCls or None
+        Optimizer to which the metamodel is added
+    """
+
+    no_parallelization = False
+
+    def __init__(
+        self,
+        *,
+        multivariate_optimizer: tp.Optional[base.OptCls] = None,
+    ) -> None:
+        super().__init__(_MetaModel, locals())
+        self.multivariate_optimizer = multivariate_optimizer
+
+
+MetaModel = ParametrizedMetaModel().set_name("MetaModel", register=True)
+MetaModelOnePlusOne = ParametrizedMetaModel(multivariate_optimizer=OnePlusOne).set_name(
+    "MetaModelOnePlusOne", register=True
+)
 
 
 @registry.register
@@ -1873,7 +1898,7 @@ class _BayesOptim(base.Optimizer):
 
             self._alg = BayesOptimBO_(
                 search_space=space,
-                obj_fun=None,  # Assuming that this is not used :-)
+                obj_fun=None,
                 model=model,
                 DoE_size=init_budget if init_budget is not None else 5,
                 max_FEs=budget,
@@ -2620,7 +2645,42 @@ class NGOpt14(NGOpt12):  # Also known as NGOpt12H_nohyperopt
 
 
 @registry.register
-class NGOpt(NGOpt14):
+class NGOpt15(NGOpt12):
+    def _select_optimizer_cls(self) -> base.OptCls:
+        if (
+            self.budget is not None
+            and self.fully_continuous
+            and self.budget < self.dimension ** 2 * 2
+            and self.num_workers == 1
+            and not self.has_noise
+            and self.num_objectives < 2
+        ):
+            return MetaModelOnePlusOne  # OnePlusOne seems equivalent so far
+        elif self.fully_continuous and self.budget is not None and self.budget < 600:
+            return MetaModel
+        else:
+            return super()._select_optimizer_cls()
+
+
+@registry.register
+class NGOpt16(NGOpt15):
+    def _select_optimizer_cls(self) -> base.OptCls:
+        if (
+            self.budget is not None
+            and self.fully_continuous
+            and self.budget < 200 * self.dimension
+            and self.num_workers == 1
+            and not self.has_noise
+            and self.num_objectives < 2
+            and p.helpers.Normalizer(self.parametrization).fully_bounded
+        ):
+            return Cobyla
+        else:
+            return super()._select_optimizer_cls()
+
+
+@registry.register
+class NGOpt(NGOpt16):
     pass
 
 
