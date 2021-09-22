@@ -27,10 +27,10 @@ from .base import registry as registry
 from .base import addCompare  # pylint: disable=unused-import
 from .base import IntOrParameter
 
-
 # families of optimizers
 # pylint: disable=unused-wildcard-import,wildcard-import,too-many-lines,too-many-arguments,too-many-branches
-# pylint: disable=import-outside-toplevel
+# pylint: disable=import-outside-toplevel,too-many-nested-blocks,too-many-instance-attributes,
+# pylint: disable=too-many-boolean-expressions,too-many-ancestors,too-many-statements
 from .differentialevolution import *  # type: ignore  # noqa: F403
 from .es import *  # type: ignore  # noqa: F403
 from .oneshot import *  # noqa: F403
@@ -44,6 +44,7 @@ except ModuleNotFoundError:
 # run with LOGLEVEL=DEBUG for more debug information
 logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
 logger = logging.getLogger(__name__)
+
 
 # # # # # optimizers # # # # #
 
@@ -378,6 +379,7 @@ RecombiningPortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(
     crossover=True,
     mutation="portfolio",
 ).set_name("RecombiningPortfolioDiscreteOnePlusOne", register=True)
+
 
 # pylint: too-many-arguments,too-many-instance-attributes
 
@@ -1472,15 +1474,13 @@ def learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.Arra
     return middle + normalization * minimum
 
 
-@registry.register
-class MetaModel(base.Optimizer):
-    """Adding a metamodel into CMA."""
-
+class _MetaModel(base.Optimizer):
     def __init__(
         self,
         parametrization: IntOrParameter,
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
+        *,
         multivariate_optimizer: tp.Optional[base.OptCls] = None,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
@@ -1508,6 +1508,33 @@ class MetaModel(base.Optimizer):
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         self._optim.tell(candidate, loss)
+
+
+class ParametrizedMetaModel(base.ConfiguredOptimizer):
+    """
+    Adding a metamodel into CMA or OnePlusOne (if dimension is 1) by default.
+
+    Parameters
+    ----------
+    multivariate_optimizer: base.OptCls or None
+        Optimizer to which the metamodel is added
+    """
+
+    no_parallelization = False
+
+    def __init__(
+        self,
+        *,
+        multivariate_optimizer: tp.Optional[base.OptCls] = None,
+    ) -> None:
+        super().__init__(_MetaModel, locals())
+        self.multivariate_optimizer = multivariate_optimizer
+
+
+MetaModel = ParametrizedMetaModel().set_name("MetaModel", register=True)
+MetaModelOnePlusOne = ParametrizedMetaModel(multivariate_optimizer=OnePlusOne).set_name(
+    "MetaModelOnePlusOne", register=True
+)
 
 
 @registry.register
@@ -1677,7 +1704,7 @@ class _BO(base.Optimizer):
         gp_parameters: tp.Optional[tp.Dict[str, tp.Any]] = None,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        self._transform = transforms.ArctanBound(0, 1)
+        self._normalizer = p.helpers.Normalizer(self.parametrization)
         self._bo: tp.Optional[BayesianOptimization] = None
         self._fake_function = _FakeFunction(num_digits=len(str(self.dimension)))
         # initialization
@@ -1726,7 +1753,7 @@ class _BO(base.Optimizer):
                 self._bo.probe([0.5] * self.dimension, lazy=True)
                 init_budget -= 1
             if self._InitOpt is not None and init_budget > 0:
-                param = p.Array(shape=(self.dimension,)).set_bounds(lower=0, upper=1.0)
+                param = p.Array(shape=(self.dimension,)).set_bounds(lower=0, upper=1)
                 param.random_state = self._rng
                 opt = self._InitOpt(param, budget=init_budget)
                 for _ in range(init_budget):
@@ -1743,7 +1770,7 @@ class _BO(base.Optimizer):
         else:
             x_probe = self.bo.suggest(util)  # this is time consuming
             x_probe = [x_probe[self._fake_function.key(i)] for i in range(len(x_probe))]
-        data = self._transform.backward(np.array(x_probe, copy=False))
+        data = self._normalizer.backward(np.array(x_probe, copy=False))
         candidate = self.parametrization.spawn_child().set_standardized_data(data)
         candidate._meta["x_probe"] = x_probe
         return candidate
@@ -1753,7 +1780,7 @@ class _BO(base.Optimizer):
             y = candidate._meta["x_probe"]
         else:
             data = candidate.get_standardized_data(reference=self.parametrization)
-            y = self._transform.forward(data)  # tell not asked
+            y = self._normalizer.forward(data)  # tell not asked
         self._fake_function.register(y, -loss)  # minimizing
         self.bo.probe(y, lazy=False)
         # for some unknown reasons, BO wants to evaluate twice the same point,
@@ -1764,7 +1791,7 @@ class _BO(base.Optimizer):
     def _internal_provide_recommendation(self) -> tp.Optional[tp.ArrayLike]:
         if not self.archive:
             return None
-        return self._transform.backward(
+        return self._normalizer.backward(
             np.array([self.bo.max["params"][self._fake_function.key(i)] for i in range(self.dimension)])
         )
 
@@ -1813,6 +1840,147 @@ BO = ParametrizedBO().set_name("BO", register=True)
 BOSplit = ConfSplitOptimizer(max_num_vars=15, progressive=False, multivariate_optimizer=BO).set_name(
     "BOSplit", register=True
 )
+
+
+class _BayesOptim(base.Optimizer):
+    def __init__(
+        self,
+        parametrization: IntOrParameter,
+        budget: tp.Optional[int] = None,
+        num_workers: int = 1,
+        *,
+        config: tp.Optional["BayesOptim"] = None,
+    ) -> None:
+        self._config = BayesOptim() if config is None else config
+        cfg = self._config
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        self._normalizer = p.helpers.Normalizer(self.parametrization)
+
+        from bayes_optim import RealSpace
+        from bayes_optim.surrogate import GaussianProcess
+
+        lb, ub = 1e-7, 1 - 1e-7
+        space = RealSpace([lb, ub]) * self.dimension
+
+        self._buffer: tp.List[float] = []
+        self._newX: tp.List[float] = []
+        self._losses: tp.List[float] = []
+
+        # Setting DoE size as a percentage of the total budget if prop_doe_factor is not None
+        init_budget = cfg.init_budget
+        if cfg.prop_doe_factor and budget is not None:
+            init_budget = round(cfg.prop_doe_factor * budget) if budget >= 10 else 5
+
+        if cfg.pca:
+            from bayes_optim.extension import PCABO as PcaBO
+
+            self._alg = PcaBO(
+                search_space=space,
+                obj_fun=None,  # Assuming that this is not used :-)
+                DoE_size=init_budget if init_budget is not None else 5,
+                max_FEs=budget,
+                verbose=True,
+                n_point=1,  # We start with a sequential procedure, maybe we'll extend in a second moment
+                n_components=cfg.n_components,
+                acquisition_optimization={"optimizer": "BFGS"},
+            )
+        else:
+            from bayes_optim import BO as BayesOptimBO_
+
+            # hyperparameters of the GPR model
+            thetaL = 1e-10 * (ub - lb) * np.ones(self.dimension)
+            thetaU = 10 * (ub - lb) * np.ones(self.dimension)
+            model = GaussianProcess(thetaL=thetaL, thetaU=thetaU)  # create the GPR model
+
+            self._alg = BayesOptimBO_(
+                search_space=space,
+                obj_fun=None,
+                model=model,
+                DoE_size=init_budget if init_budget is not None else 5,
+                max_FEs=budget,
+                verbose=True,
+            )
+
+    def _internal_ask_candidate(self) -> p.Parameter:
+        if not self._buffer:
+            candidate = self._alg.ask()
+            if not isinstance(candidate, list):
+                candidate = candidate.tolist()
+            self._buffer = candidate
+        x_probe = self._buffer.pop()
+        data = self._normalizer.backward(np.array(x_probe, copy=False))
+        candidate = self.parametrization.spawn_child().set_standardized_data(data)
+        candidate._meta["x_probe"] = x_probe
+        return candidate
+
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        self._newX.append(candidate._meta["x_probe"])
+        self._losses.append(loss)
+        if not self._buffer:
+            if "x_probe" in candidate._meta:
+                self._alg.tell(self._newX, self._losses)
+            else:
+                data = candidate.get_standardized_data(reference=self.parametrization)
+                # Tell not asked:
+                self._alg.tell(self._normalizer.forward(data), loss)
+            self._newX = []
+            self._losses = []
+
+    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        raise errors.TellNotAskedNotSupportedError
+
+
+class BayesOptim(base.ConfiguredOptimizer):
+    """
+    Algorithms from bayes-optim package.
+
+    We use:
+    - BO
+    - PCA-BO: Principle Component Analysis (PCA) Bayesian Optimization for dimensionality reduction in BO
+
+    References
+
+    [RaponiWB+20]
+        Raponi, Elena, Hao Wang, Mariusz Bujny, Simonetta Boria, and Carola Doerr.
+        "High dimensional bayesian optimization assisted by principal component analysis."
+        In International Conference on Parallel Problem Solving from Nature, pp. 169-183.
+        Springer, Cham, 2020.
+
+
+    Parameters
+    ----------
+    init_budget: int or None
+        Number of initialization algorithm steps
+    pca: bool
+        whether to use the PCA transformation defining PCA-BO rather than BO
+    n_components: float or 0.95
+        Principal axes in feature space, representing the directions of maximum variance in the data.
+        It represents the percentage of explained variance
+    prop_doe_factor: float or None
+        Percentage of the initial budget used for DoE and eventually overwriting init_budget
+    """
+
+    no_parallelization = True
+    recast = True
+
+    # pylint: disable=unused-argument
+    def __init__(
+        self,
+        *,
+        init_budget: tp.Optional[int] = None,
+        pca: tp.Optional[bool] = False,
+        n_components: tp.Optional[float] = 0.95,
+        prop_doe_factor: tp.Optional[float] = None,
+    ) -> None:
+        super().__init__(_BayesOptim, locals(), as_config=True)
+        self.init_budget = init_budget
+        self.pca = pca
+        self.n_components = n_components
+        self.prop_doe_factor = prop_doe_factor
+
+
+PCABO = BayesOptim(pca=True).set_name("PCABO", register=True)
+BayesOptimBO = BayesOptim().set_name("BayesOptimBO", register=True)
 
 
 class _Chain(base.Optimizer):
@@ -1898,27 +2066,10 @@ class Chaining(base.ConfiguredOptimizer):
         super().__init__(_Chain, locals())
 
 
-# depreated: old names (need a capital letter for consistency
-chainCMAPowell = Chaining([CMA, Powell], ["half"]).set_name("chainCMAPowell", register=True)
-chainCMAPowell.no_parallelization = True
-chainMetaModelSQP = Chaining([MetaModel, SQP], ["half"]).set_name("chainMetaModelSQP", register=True)
-chainMetaModelSQP.no_parallelization = True
-chainMetaModelPowell = Chaining([MetaModel, Powell], ["half"]).set_name("chainMetaModelPowell", register=True)
-chainMetaModelPowell.no_parallelization = True
-chainDiagonalCMAPowell = Chaining([DiagonalCMA, Powell], ["half"]).set_name(
-    "chainDiagonalCMAPowell", register=True
-)
-chainDiagonalCMAPowell.no_parallelization = True
-chainNaiveTBPSAPowell = Chaining([NaiveTBPSA, Powell], ["half"]).set_name(
-    "chainNaiveTBPSAPowell", register=True
-)
-chainNaiveTBPSAPowell.no_parallelization = True
-chainNaiveTBPSACMAPowell = Chaining([NaiveTBPSA, CMA, Powell], ["third", "third"]).set_name(
-    "chainNaiveTBPSACMAPowell", register=True
-)
-chainNaiveTBPSACMAPowell.no_parallelization = True
-
 # new names
+GeneticDE = Chaining([RotatedTwoPointsDE, TwoPointsDE], [200]).set_name(
+    "GeneticDE", register=True
+)  # Also known as CGDE
 ChainCMAPowell = Chaining([CMA, Powell], ["half"]).set_name("ChainCMAPowell", register=True)
 ChainCMAPowell.no_parallelization = True  # TODO make this automatic
 ChainMetaModelSQP = Chaining([MetaModel, SQP], ["half"]).set_name("ChainMetaModelSQP", register=True)
@@ -2302,7 +2453,7 @@ class NGOptBase(base.Optimizer):
 
 @registry.register
 class Shiwa(NGOptBase):
-    """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
 
     def _select_optimizer_cls(self) -> base.OptCls:
         optCls: base.OptCls = NGOptBase
@@ -2321,7 +2472,7 @@ class NGO(NGOptBase):  # compatibility
 
 @registry.register
 class NGOpt4(NGOptBase):
-    """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
 
     def _select_optimizer_cls(self) -> base.OptCls:
         self.fully_continuous = (
@@ -2410,7 +2561,7 @@ class NGOpt4(NGOptBase):
 
 @registry.register
 class NGOpt8(NGOpt4):
-    """Nevergrad optimizer by competence map. You might modify this one for designing youe own competence map."""
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
 
     def _select_optimizer_cls(self) -> base.OptCls:
         # Extracting info as far as possible.
@@ -2477,7 +2628,7 @@ class NGOpt12(NGOpt10):
             and self.budget < self.dimension * 50
             and self.budget > min(50, self.dimension * 5)
         ):
-            return chainMetaModelSQP
+            return ChainMetaModelSQP
         elif (
             not self.has_noise
             and self.fully_continuous
@@ -2517,7 +2668,42 @@ class NGOpt14(NGOpt12):  # Also known as NGOpt12H_nohyperopt
 
 
 @registry.register
-class NGOpt(NGOpt14):
+class NGOpt15(NGOpt12):
+    def _select_optimizer_cls(self) -> base.OptCls:
+        if (
+            self.budget is not None
+            and self.fully_continuous
+            and self.budget < self.dimension ** 2 * 2
+            and self.num_workers == 1
+            and not self.has_noise
+            and self.num_objectives < 2
+        ):
+            return MetaModelOnePlusOne  # OnePlusOne seems equivalent so far
+        elif self.fully_continuous and self.budget is not None and self.budget < 600:
+            return MetaModel
+        else:
+            return super()._select_optimizer_cls()
+
+
+@registry.register
+class NGOpt16(NGOpt15):
+    def _select_optimizer_cls(self) -> base.OptCls:
+        if (
+            self.budget is not None
+            and self.fully_continuous
+            and self.budget < 200 * self.dimension
+            and self.num_workers == 1
+            and not self.has_noise
+            and self.num_objectives < 2
+            and p.helpers.Normalizer(self.parametrization).fully_bounded
+        ):
+            return Cobyla
+        else:
+            return super()._select_optimizer_cls()
+
+
+@registry.register
+class NGOpt(NGOpt16):
     pass
 
 

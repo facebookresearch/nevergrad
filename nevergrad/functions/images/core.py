@@ -88,7 +88,7 @@ class Image(base.ExperimentFunction):
         self.loss_function = loss(reference=self.data)
 
     def _generate_images(self, x: np.ndarray) -> np.ndarray:
-        """ Generates images tensor of shape [nb_images, x, y, 3] with pixels between 0 and 255"""
+        """Generates images tensor of shape [nb_images, x, y, 3] with pixels between 0 and 255"""
         # pylint: disable=not-callable
         noise = torch.tensor(x.astype("float32"))
         return (
@@ -201,6 +201,7 @@ class ImageAdversarial(base.ExperimentFunction):
         max_size = ng.p.Scalar(lower=1, upper=200).set_integer_casting()
         array = ng.p.mutation.Crossover(axis=(1, 2), max_size=max_size)(array)
         super().__init__(self._loss, array)
+        self._descriptors.pop("label")  # automatically added by __new__, but not needed
 
     def _loss(self, x: np.ndarray) -> float:
         output_adv = self._get_classifier_output(x)
@@ -221,7 +222,7 @@ class ImageAdversarial(base.ExperimentFunction):
         output_adv = self._get_classifier_output(x)
         _, pred = torch.max(output_adv, axis=1)
         actual = int(self.label)
-        return float(pred == actual if self.targeted else pred != actual)
+        return float(pred != actual if self.targeted else pred == actual)
 
     @classmethod
     def make_folder_functions(
@@ -337,7 +338,7 @@ class ImageFromPGAN(base.ExperimentFunction):
         return loss
 
     def _generate_images(self, x: np.ndarray) -> np.ndarray:
-        """ Generates images tensor of shape [nb_images, x, y, 3] with pixels between 0 and 255"""
+        """Generates images tensor of shape [nb_images, x, y, 3] with pixels between 0 and 255"""
         # pylint: disable=not-callable
         noise = torch.tensor(x.astype("float32"))
         return ((self.pgan_model.test(noise).clamp(min=-1, max=1) + 1) * 255.99 / 2).permute(0, 2, 3, 1).cpu().numpy()  # type: ignore
