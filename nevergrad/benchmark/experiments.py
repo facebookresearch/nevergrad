@@ -748,7 +748,9 @@ def yabbob(
         for name in names
         for rotation in [True, False]
         for num_blocks in ([1] if not split else [7, 12])
-        for d in ([100, 1000, 3000] if hd else ([2, 5, 10, 15] if tuning else [2, 10, 50]))
+        for d in (
+            [100, 1000, 3000] if hd else ([2, 5, 10, 15] if tuning else ([40] if bounded else [2, 10, 50]))
+        )
     ]
     if tiny:
         functions = functions[::13]
