@@ -500,6 +500,20 @@ def get_tests_metamodel(seq: bool = False):
     return tests_metamodel
 
 
+class QuadFunction:
+    """Quadratic function for testing purposes"""
+
+    def __init__(self, scale: float, ellipse: bool) -> None:
+        self.scale = scale
+        self.ellipse = ellipse
+
+    def __call__(self, x: np.ndarray) -> float:
+        y = x - self.scale
+        if self.ellipse:
+            y *= np.arange(1, x.size + 1) ** 2
+        return float(sum(y ** 2))
+
+
 @testing.suppress_nevergrad_warnings()
 @skip_win_perf  # type: ignore
 @pytest.mark.parametrize(
@@ -508,15 +522,7 @@ def get_tests_metamodel(seq: bool = False):
 )
 def test_metamodel(dimension: int, num_workers: int, scale: float, budget: int, ellipsoid: bool) -> None:
     """The test can operate on the sphere or on an elliptic funciton."""
-
-    def _square(x: np.ndarray) -> float:
-        return sum((-scale + x) ** 2)
-
-    def _ellips(x: np.ndarray) -> float:
-        return sum(((-scale + x) * (np.arange(1, dimension + 1) ** 2)) ** 2)
-
-    _target = _ellips if ellipsoid else _square
-
+    target = QuadFunction(scale=scale, ellipse=ellipsoid)
     # In both cases we compare MetaModel and CMA for a same given budget.
     # But we expect MetaModel to be clearly better only for a larger budget in the ellipsoid case.
     contextual_budget = budget if ellipsoid else 3 * budget
@@ -533,85 +539,24 @@ def test_metamodel(dimension: int, num_workers: int, scale: float, budget: int, 
             recommendations: tp.List[np.ndarray] = []
             for name in ("MetaModel", baseline if dimension > 1 else "OnePlusOne"):
                 opt = registry[name](dimension, contextual_budget, num_workers=num_workers)
-                recommendations.append(opt.minimize(_target).value)
+                recommendations.append(opt.minimize(target).value)
             metamodel_recom, default_recom = recommendations  # pylint: disable=unbalanced-tuple-unpacking
 
             # Let us assert that MetaModel is better.
-            if not _target(default_recom) > _target(metamodel_recom):
+            if not target(default_recom) > target(metamodel_recom):
                 continue
 
             # With large budget, the difference should be significant.
             if budget > 60 * dimension:
-                if not _target(default_recom) > 4.0 * _target(metamodel_recom):
+                if not target(default_recom) > 4.0 * target(metamodel_recom):
                     continue
 
             # ... even more in the non ellipsoid case.
             if budget > 60 * dimension and not ellipsoid:
-                if not _target(default_recom) > 7.0 * _target(metamodel_recom):
+                if not target(default_recom) > 7.0 * target(metamodel_recom):
                     continue
             successes += 1
         assert successes > num_trials // 2, f"Problem for beating {baseline}."
-
-
-@testing.suppress_nevergrad_warnings()
-@skip_win_perf  # type: ignore
-@pytest.mark.parametrize(
-    "dimension, num_workers, scale, budget, ellipsoid, baseline",
-    [
-        (d, 1, s, b, e, baseline)
-        for e in [True, False]
-        for b in [200, 500]
-        for s in [8.0]
-        for d in [7]
-        for baseline in ["MetaModel", "CMA", "ECMA"]
-    ][::5],
-)
-def test_metamodel_sqp_chaining(
-    dimension: int, num_workers: int, scale: float, budget: int, ellipsoid: bool, baseline: str
-) -> None:
-    """The test can operate on the sphere or on an elliptic funciton."""
-
-    if os.environ.get("CIRCLECI", False):  # This test is too expensive for CircleCI.
-        return
-
-    def _square(x: np.ndarray) -> float:
-        return sum((-scale + x) ** 2)
-
-    def _ellips(x: np.ndarray) -> float:
-        return sum(((-scale + x) * (np.arange(1, dimension + 1) ** 2)) ** 2)
-
-    _target = _ellips if ellipsoid else _square
-
-    # In both cases we compare MetaModel and CMA for a same given budget.
-    # But we expect MetaModel to be clearly better only for a larger budget in the ellipsoid case.
-    contextual_budget = budget if ellipsoid else 3 * budget
-    contextual_budget *= 5 * int(max(1, np.sqrt(scale)))
-
-    num_trials = 15
-    successes = 0.0
-    for _ in range(num_trials):
-        if successes >= num_trials / 2:
-            break
-        # Let us run the comparison.
-        recommendations: tp.List[np.ndarray] = []
-        for name in ("ChainMetaModelSQP", baseline if dimension > 1 else "OnePlusOne"):
-            opt = registry[name](dimension, contextual_budget, num_workers=num_workers)
-            recommendations.append(opt.minimize(_target).value)
-        chaining_recom, default_recom = recommendations  # pylint: disable=unbalanced-tuple-unpacking
-
-        if _target(default_recom) < _target(chaining_recom):
-            successes += 1
-        if _target(default_recom) == _target(chaining_recom):
-            successes += 0.5
-
-    if successes <= num_trials // 2:
-        print(
-            f"ChainMetaModelSQP fails ({successes}/{num_trials}) for d={dimension}, scale={scale}, num_workers={num_workers}, ellipsoid={ellipsoid}, budget={budget}, vs {baseline}"
-        )
-        assert False, "ChaingMetaModelSQP fails."
-    print(
-        f"ChainMetaModelSQP wins for d={dimension}, scale={scale}, num_workers={num_workers}, ellipsoid={ellipsoid}, budget={budget}, vs {baseline}"
-    )
 
 
 @pytest.mark.parametrize(  # type: ignore
