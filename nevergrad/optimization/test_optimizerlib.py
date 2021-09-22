@@ -470,14 +470,27 @@ def test_parallel_es() -> None:
             opt.tell(cand, 1)
 
 
-def get_tests_metamodel(seq: bool = False):
+class QuadFunction:
+    """Quadratic function for testing purposes"""
+
+    def __init__(self, scale: float, ellipse: bool) -> None:
+        self.scale = scale
+        self.ellipse = ellipse
+
+    def __call__(self, x: np.ndarray) -> float:
+        y = x - self.scale
+        if self.ellipse:
+            y *= np.arange(1, x.size + 1) ** 2
+        return float(sum(y ** 2))
+
+
+def get_metamodel_test_settings(seq: bool = False, special: bool = False):
     tests_metamodel = [
         (2, 8, 1.0, 120, False),
         (2, 3, 8.0, 130, True),
         (5, 1, 1.0, 150, False),
     ]
-
-    if not os.environ.get("CIRCLECI", False):
+    if special:
         # Interesting tests removed from CircleCI for flakiness (and we do stats when not on CircleCI):
         tests_metamodel += [
             (8, 27, 8.0, 380, True),
@@ -494,34 +507,25 @@ def get_tests_metamodel(seq: bool = False):
             (10, 27, 8.0, 400, False),
         ]
     if seq:
-        for i in range(len(tests_metamodel)):
-            d, _, s, b, e = tests_metamodel[i]
+        for i, (d, _, s, b, e) in enumerate(tests_metamodel):
             tests_metamodel[i] = (d, 1, s, b, e)
     return tests_metamodel
 
 
-class QuadFunction:
-    """Quadratic function for testing purposes"""
-
-    def __init__(self, scale: float, ellipse: bool) -> None:
-        self.scale = scale
-        self.ellipse = ellipse
-
-    def __call__(self, x: np.ndarray) -> float:
-        y = x - self.scale
-        if self.ellipse:
-            y *= np.arange(1, x.size + 1) ** 2
-        return float(sum(y ** 2))
-
-
 @testing.suppress_nevergrad_warnings()
 @skip_win_perf  # type: ignore
-@pytest.mark.parametrize(
-    "dimension, num_workers, scale, budget, ellipsoid",
-    get_tests_metamodel(),
-)
+@pytest.mark.parametrize("dimension, num_workers, scale, budget, ellipsoid", get_metamodel_test_settings())
 def test_metamodel(dimension: int, num_workers: int, scale: float, budget: int, ellipsoid: bool) -> None:
     """The test can operate on the sphere or on an elliptic funciton."""
+    check_metamodel(
+        dimension=dimension, num_workers=num_workers, scale=scale, budget=budget, ellipsoid=ellipsoid
+    )
+
+
+def check_metamodel(dimension: int, num_workers: int, scale: float, budget: int, ellipsoid: bool) -> None:
+    """This check is called in parametrized tests, with several different parametrization
+    (see test_special.py)
+    """
     target = QuadFunction(scale=scale, ellipse=ellipsoid)
     # In both cases we compare MetaModel and CMA for a same given budget.
     # But we expect MetaModel to be clearly better only for a larger budget in the ellipsoid case.
@@ -543,7 +547,7 @@ def test_metamodel(dimension: int, num_workers: int, scale: float, budget: int, 
             metamodel_recom, default_recom = recommendations  # pylint: disable=unbalanced-tuple-unpacking
 
             # Let us assert that MetaModel is better.
-            if not target(default_recom) > target(metamodel_recom):
+            if target(default_recom) < target(metamodel_recom):
                 continue
 
             # With large budget, the difference should be significant.

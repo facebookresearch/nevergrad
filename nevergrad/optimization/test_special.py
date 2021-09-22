@@ -47,39 +47,24 @@ def test_metamodel_sqp_chaining(
 
     if successes <= num_trials // 2:
         print(
-            f"ChainMetaModelSQP fails ({successes}/{num_trials}) for d={dimension}, scale={scale}, num_workers={num_workers}, ellipsoid={ellipsoid}, budget={budget}, vs {baseline}"
+            f"ChainMetaModelSQP fails ({successes}/{num_trials}) for d={dimension}, scale={scale}, "
+            f"num_workers={num_workers}, ellipsoid={ellipsoid}, budget={budget}, vs {baseline}"
         )
         assert False, "ChaingMetaModelSQP fails."
     print(
-        f"ChainMetaModelSQP wins for d={dimension}, scale={scale}, num_workers={num_workers}, ellipsoid={ellipsoid}, budget={budget}, vs {baseline}"
+        f"ChainMetaModelSQP wins for d={dimension}, scale={scale}, num_workers={num_workers}, "
+        f"ellipsoid={ellipsoid}, budget={budget}, vs {baseline}"
     )
 
 
-def get_tests_metamodel(seq: bool = False):
-    tests_metamodel = [
-        (2, 8, 1.0, 120, False),
-        (2, 3, 8.0, 130, True),
-        (5, 1, 1.0, 150, False),
-    ]
-
-    if not os.environ.get("CIRCLECI", False):
-        # Interesting tests removed from CircleCI for flakiness (and we do stats when not on CircleCI):
-        tests_metamodel += [
-            (8, 27, 8.0, 380, True),
-            (2, 1, 8.0, 120, True),
-            (2, 3, 8.0, 70, False),
-            (1, 1, 1.0, 20, True),
-            (1, 3, 5.0, 20, False),
-            (2, 3, 1.0, 70, True),
-            (2, 1, 8.0, 40, False),
-            (5, 3, 1.0, 225, True),
-            (5, 1, 8.0, 150, False),
-            (5, 3, 8.0, 500, True),
-            (9, 27, 8.0, 700, True),
-            (10, 27, 8.0, 400, False),
-        ]
-    if seq:
-        for i in range(len(tests_metamodel)):
-            d, _, s, b, e = tests_metamodel[i]
-            tests_metamodel[i] = (d, 1, s, b, e)
-    return tests_metamodel
+@pytest.mark.parametrize(
+    "dimension, num_workers, scale, budget, ellipsoid",
+    test_optimizerlib.get_metamodel_test_settings(special=True),
+)
+def test_metamodel_special(
+    dimension: int, num_workers: int, scale: float, budget: int, ellipsoid: bool
+) -> None:
+    """The test can operate on the sphere or on an elliptic funciton."""
+    test_optimizerlib.check_metamodel(
+        dimension=dimension, num_workers=num_workers, scale=scale, budget=budget, ellipsoid=ellipsoid
+    )
