@@ -1484,10 +1484,10 @@ class _MetaModel(base.Optimizer):
         num_workers: int = 1,
         *,
         multivariate_optimizer: tp.Optional[base.OptCls] = None,
-        modulo: float = 0.5,
+        frequency_ratio: float = 0.5,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        self.modulo = modulo
+        self.frequency_ratio = frequency_ratio
         if multivariate_optimizer is None:
             multivariate_optimizer = ParametrizedCMA(elitist=True) if self.dimension > 1 else OnePlusOne
         self._optim = multivariate_optimizer(
@@ -1497,10 +1497,8 @@ class _MetaModel(base.Optimizer):
     def _internal_ask_candidate(self) -> p.Parameter:
         # We request a bit more points than what is really necessary for our dimensionality (+dimension).
         sample_size = int((self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1)
-        if (
-            self._num_ask % max(13, self.num_workers, self.dimension, int(self.modulo * sample_size)) == 0
-            and len(self.archive) >= sample_size
-        ):
+        freq = max(13, self.num_workers, self.dimension, int(self.frequency_ratio * sample_size))
+        if len(self.archive) >= sample_size and not self._num_ask % freq:
             try:
                 data = learn_on_k_best(self.archive, sample_size)
                 candidate = self.parametrization.spawn_child().set_standardized_data(data)
@@ -1522,16 +1520,19 @@ class ParametrizedMetaModel(base.ConfiguredOptimizer):
     ----------
     multivariate_optimizer: base.OptCls or None
         Optimizer to which the metamodel is added
+    frequency_ratio: float
+        used for deciding the frequency at which we use the metamodel
     """
 
-    no_parallelization = False
-
+    # pylint: disable=unused-argument
     def __init__(
         self,
         *,
         multivariate_optimizer: tp.Optional[base.OptCls] = None,
+        frequency_ratio: float = 0.5,
     ) -> None:
         super().__init__(_MetaModel, locals())
+        assert 0 <= frequency_ratio <= 1.0
         self.multivariate_optimizer = multivariate_optimizer
 
 
