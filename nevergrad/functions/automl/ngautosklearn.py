@@ -136,7 +136,7 @@ def get_parametrization(config_space: cs.ConfigurationSpace):
 def get_configuration(values, config_space):
     val_dict = to_dict(values)
     return cs.Configuration(
-        configuration_space=config_space, values=val_dict, allow_inactive_with_values=False
+        configuration_space=config_space, values=val_dict, allow_inactive_with_values=True
     )
 
 
