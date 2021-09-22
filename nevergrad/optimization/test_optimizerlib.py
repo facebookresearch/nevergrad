@@ -483,6 +483,9 @@ class QuadFunction:
         return float(sum(y ** 2))
 
 
+META_TEST_ARGS = "dimension,num_workers,scale,budget,ellipsoid".split(",")
+
+
 def get_metamodel_test_settings(seq: bool = False, special: bool = False):
     tests_metamodel = [
         (2, 8, 1.0, 120, False),
@@ -513,20 +516,12 @@ def get_metamodel_test_settings(seq: bool = False, special: bool = False):
 
 @testing.suppress_nevergrad_warnings()
 @skip_win_perf  # type: ignore
-@pytest.mark.parametrize("dimension, num_workers, scale, budget, ellipsoid", get_metamodel_test_settings())
+@pytest.mark.parametrize("args", get_metamodel_test_settings())
 @pytest.mark.parametrize("baseline", ("CMA", "ECMA"))
-def test_metamodel(
-    dimension: int, num_workers: int, scale: float, budget: int, ellipsoid: bool, baseline: str
-) -> None:
+def test_metamodel(baseline: str, args: tp.Tuple[tp.Any, ...]) -> None:
     """The test can operate on the sphere or on an elliptic funciton."""
-    check_metamodel(
-        dimension=dimension,
-        num_workers=num_workers,
-        scale=scale,
-        budget=budget,
-        ellipsoid=ellipsoid,
-        baseline=baseline,
-    )
+    kwargs = dict(zip(META_TEST_ARGS, args))
+    check_metamodel(baseline=baseline, **kwargs)
 
 
 def check_metamodel(
