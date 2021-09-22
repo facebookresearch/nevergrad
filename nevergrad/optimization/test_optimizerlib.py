@@ -10,7 +10,6 @@ import random
 import inspect
 import logging
 import platform
-import os
 import tempfile
 import warnings
 from pathlib import Path
@@ -515,14 +514,30 @@ def get_metamodel_test_settings(seq: bool = False, special: bool = False):
 @testing.suppress_nevergrad_warnings()
 @skip_win_perf  # type: ignore
 @pytest.mark.parametrize("dimension, num_workers, scale, budget, ellipsoid", get_metamodel_test_settings())
-def test_metamodel(dimension: int, num_workers: int, scale: float, budget: int, ellipsoid: bool) -> None:
+@pytest.mark.parametrize("baseline", ("CMA", "ECMA"))
+def test_metamodel(
+    dimension: int, num_workers: int, scale: float, budget: int, ellipsoid: bool, baseline: str
+) -> None:
     """The test can operate on the sphere or on an elliptic funciton."""
     check_metamodel(
-        dimension=dimension, num_workers=num_workers, scale=scale, budget=budget, ellipsoid=ellipsoid
+        dimension=dimension,
+        num_workers=num_workers,
+        scale=scale,
+        budget=budget,
+        ellipsoid=ellipsoid,
+        baseline=baseline,
     )
 
 
-def check_metamodel(dimension: int, num_workers: int, scale: float, budget: int, ellipsoid: bool) -> None:
+def check_metamodel(
+    dimension: int,
+    num_workers: int,
+    scale: float,
+    budget: int,
+    ellipsoid: bool,
+    baseline: str,
+    num_trials: int = 1,
+) -> None:
     """This check is called in parametrized tests, with several different parametrization
     (see test_special.py)
     """
@@ -531,35 +546,32 @@ def check_metamodel(dimension: int, num_workers: int, scale: float, budget: int,
     # But we expect MetaModel to be clearly better only for a larger budget in the ellipsoid case.
     contextual_budget = budget if ellipsoid else 3 * budget
     contextual_budget *= int(max(1, np.sqrt(scale)))
+    successes = 0
+    for _ in range(num_trials):
+        if successes > num_trials // 2:  # We already have enough
+            break
 
-    for baseline in ["CMA", "ECMA"]:
-        num_trials = 1 if os.environ.get("CIRCLECI", False) else 7
-        successes = 0
-        for _ in range(num_trials):
-            if successes > num_trials // 2:  # We already have enough
-                break
+        # Let us run the comparison.
+        recommendations: tp.List[np.ndarray] = []
+        for name in ("MetaModel", baseline if dimension > 1 else "OnePlusOne"):
+            opt = registry[name](dimension, contextual_budget, num_workers=num_workers)
+            recommendations.append(opt.minimize(target).value)
+        metamodel_recom, default_recom = recommendations  # pylint: disable=unbalanced-tuple-unpacking
 
-            # Let us run the comparison.
-            recommendations: tp.List[np.ndarray] = []
-            for name in ("MetaModel", baseline if dimension > 1 else "OnePlusOne"):
-                opt = registry[name](dimension, contextual_budget, num_workers=num_workers)
-                recommendations.append(opt.minimize(target).value)
-            metamodel_recom, default_recom = recommendations  # pylint: disable=unbalanced-tuple-unpacking
+        # Let us assert that MetaModel is better.
+        if target(default_recom) < target(metamodel_recom):
+            continue
 
-            # Let us assert that MetaModel is better.
-            if target(default_recom) < target(metamodel_recom):
+        # With large budget, the difference should be significant.
+        if budget > 60 * dimension:
+            if not target(default_recom) > 4.0 * target(metamodel_recom):
                 continue
 
-            # With large budget, the difference should be significant.
-            if budget > 60 * dimension:
-                if not target(default_recom) > 4.0 * target(metamodel_recom):
-                    continue
-
-            # ... even more in the non ellipsoid case.
-            if budget > 60 * dimension and not ellipsoid:
-                if not target(default_recom) > 7.0 * target(metamodel_recom):
-                    continue
-            successes += 1
+        # ... even more in the non ellipsoid case.
+        if budget > 60 * dimension and not ellipsoid:
+            if not target(default_recom) > 7.0 * target(metamodel_recom):
+                continue
+        successes += 1
         assert successes > num_trials // 2, f"Problem for beating {baseline}."
 
 

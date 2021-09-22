@@ -61,10 +61,17 @@ def test_metamodel_sqp_chaining(
     "dimension, num_workers, scale, budget, ellipsoid",
     test_optimizerlib.get_metamodel_test_settings(special=True),
 )
+@pytest.mark.parametrize("baseline", ("CMA", "ECMA"))
 def test_metamodel_special(
-    dimension: int, num_workers: int, scale: float, budget: int, ellipsoid: bool
+    dimension: int, num_workers: int, scale: float, budget: int, ellipsoid: bool, baseline: str
 ) -> None:
     """The test can operate on the sphere or on an elliptic funciton."""
     test_optimizerlib.check_metamodel(
-        dimension=dimension, num_workers=num_workers, scale=scale, budget=budget, ellipsoid=ellipsoid
+        dimension=dimension,
+        num_workers=num_workers,
+        scale=scale,
+        budget=budget,
+        ellipsoid=ellipsoid,
+        baseline=baseline,
+        num_trials=7,
     )
