@@ -223,6 +223,18 @@ class ConcatActionsHistogram(gym.ObservationWrapper):
 # Class for direct optimization of CompilerGym problems.
 # We have two variants: a limited (small action space) and a full version.
 class CompilerGym(ExperimentFunction):
+    @staticmethod
+    def import_package() -> None:
+        # CompilerGym sends http requests that CircleCI does not like.
+        if os.environ.get("CIRCLECI", False):
+            raise ng.errors.UnsupportedExperiment("No HTTP request in CircleCI")
+        try:
+            import compiler_gym  # noqa
+        except ImportError as e:
+            raise ng.errors.UnsupportedExperiment(
+                "Please install compiler_gym for CompilerGym experiments"
+            ) from e
+
     def __init__(self, compiler_gym_pb_index: int, limited_compiler_gym: tp.Optional[bool] = None):
         """Creating a compiler gym environement.
 
@@ -232,15 +244,7 @@ class CompilerGym(ExperimentFunction):
             limited_compiler_gym: bool
                 whether we use a limited action space.
         """
-        try:
-            import compiler_gym  # noqa
-        except ImportError as e:
-            raise ng.errors.UnsupportedExperiment(
-                "Please install compiler_gym for CompilerGym experiments"
-            ) from e
-        # CompilerGym sends http requests that CircleCI does not like.
-        if os.environ.get("CIRCLECI", False):
-            raise ng.errors.UnsupportedExperiment("No HTTP request in CircleCI")
+        self.import_package()
         env = gym.make("llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
         action_space_size = (
             len(SmallActionSpaceLlvmEnv.action_space_subset) if limited_compiler_gym else env.action_space.n
@@ -367,14 +371,6 @@ class GymMulti(ExperimentFunction):
     ) -> None:
         import gym_anm  # noqa
 
-        if "compilergym" in name:
-            try:
-                import compiler_gym  # noqa
-            except ImportError as e:
-                raise ng.errors.UnsupportedExperiment(
-                    "Please install compiler_gym for CompilerGym experiments"
-                ) from e
-
         # limited_compiler_gym: bool or None.
         #        whether we work with the limited version
         self.limited_compiler_gym = limited_compiler_gym
@@ -388,9 +384,7 @@ class GymMulti(ExperimentFunction):
         if os.name == "nt":
             raise ng.errors.UnsupportedExperiment("Windows is not supported")
         if self.uses_compiler_gym:  # Long special case for Compiler Gym.
-            # CompilerGym sends http requests that CircleCI does not like.
-            if os.environ.get("CIRCLECI", False):
-                raise ng.errors.UnsupportedExperiment("No HTTP request in CircleCI")
+            CompilerGym.import_package()
             assert limited_compiler_gym is not None
             self.num_episode_steps = 45 if limited_compiler_gym else 50
             env = gym.make("llvm-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
