@@ -127,11 +127,15 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
         num_workers: int = 1,
         *,
         algorithm: str,
+        enable_pickling: bool,
     ) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        super().__init__(
+            parametrization, budget=budget, num_workers=num_workers, enable_pickling=enable_pickling
+        )
         # configuration
         self.algorithm = algorithm
         self._no_hypervolume = True
+        self.initial_seed = -1
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         """Called whenever calling "tell" on a candidate that was not "asked".
@@ -139,6 +143,7 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
         """  # We do not do anything; this just updates the current best.
 
     def get_optimization_function(self) -> tp.Callable[[tp.Callable[..., tp.Any]], tp.Optional[tp.ArrayLike]]:
+        # Q: Why would it hang?
         # create a different sub-instance, so that the current instance is not referenced by the thread
         # (consequence: do not create a thread at initialization, or we get a thread explosion)
         subinstance = self.__class__(
@@ -146,7 +151,13 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
             budget=self.budget,
             num_workers=self.num_workers,
             algorithm=self.algorithm,
+            enable_pickling=self._enable_pickling,
         )
+
+        if self.initial_seed == -1:
+            self.initial_seed = self._rng.randint(2 ** 30)
+        subinstance.initial_seed = self.initial_seed
+
         # set num_objectives in sub-instance for Pymoo to use in problem definition
         if self.num_objectives > 0:
             subinstance.num_objectives = self.num_objectives
@@ -180,8 +191,7 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
         # else:
         algorithm = get_pymoo_algorithm(self.algorithm)
         problem = _create_pymoo_problem(self, objective_function)
-        seed = self._rng.randint(2 ** 30)
-        pymoooptimize.minimize(problem, algorithm, seed=seed)
+        pymoooptimize.minimize(problem, algorithm, seed=self.initial_seed)
         return None
 
     def _internal_ask_candidate(self) -> p.Parameter:
@@ -248,7 +258,7 @@ class Pymoo(base.ConfiguredOptimizer):
     no_parallelization = True
 
     # pylint: disable=unused-argument
-    def __init__(self, *, algorithm: str) -> None:
+    def __init__(self, *, algorithm: str, enable_pickling: bool) -> None:
         super().__init__(_PymooMinimizeBase, locals())
 
 
@@ -389,9 +399,9 @@ def _create_pymoo_problem(
     elementwise: bool = True,
 ):
     # pylint:disable=import-outside-toplevel
-    from pymoo.model.problem import Problem  # type: ignore
+    from pymoo.core.problem import ElementwiseProblem  # type: ignore
 
-    class _PymooProblem(Problem):
+    class _PymooProblem(ElementwiseProblem):
         def __init__(self, optimizer, objective_function, elementwise):
             self.objective_function = objective_function
             super().__init__(
@@ -400,7 +410,7 @@ def _create_pymoo_problem(
                 n_constr=0,  # constraints handled already by nevergrad
                 xl=-math.pi * 0.5,
                 xu=math.pi * 0.5,
-                elementwise_evaluation=elementwise,
+                # elementwise_evaluation=elementwise,
             )
 
         def _evaluate(self, X, out, *args, **kwargs):
@@ -411,7 +421,11 @@ def _create_pymoo_problem(
     return _PymooProblem(optimizer, objective_function, elementwise)
 
 
-PymooNSGA2 = Pymoo(algorithm="nsga2").set_name(
+PymooNSGA2 = Pymoo(algorithm="nsga2", enable_pickling=True).set_name(
     "PymooNSGA2", register=False
 )  # , register=True)   temporarily removed!
 PymooBatchNSGA2 = PymooBatch(algorithm="nsga2").set_name("PymooBatchNSGA2", register=False)
+
+# TODO:
+#  batch version
+#  understand why subinstance needed
