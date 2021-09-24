@@ -28,7 +28,7 @@ GUARANTEED_GYM_ENV_NAMES = [
     "CartPole-v1",
     "MountainCar-v0",
     "Acrobot-v1",
-    "Blackjack-v0",
+    "Blackjack-v1",  # v0 is not available anymore
     # "FrozenLake-v0",   # deprecated
     # "FrozenLake8x8-v0",
     "CliffWalking-v0",
@@ -306,7 +306,8 @@ class GymMulti(ExperimentFunction):
         # need a copy because dict is changing for unknown reason:
         registered_envs = list(gym.envs.registry.all())
         for e in registered_envs:
-            if any(x in str(e.id) for x in ("Kelly", "llvm")):
+            name = str(e.id)
+            if any(x in name for x in ("Kelly", "llvm")):
                 continue
             try:
                 env = gym.make(e.id)
@@ -322,6 +323,9 @@ class GymMulti(ExperimentFunction):
                 gym_env_names.append(e.id)
             except Exception as exc:  # pylint: disable=broad-except
                 print(f"{e.id} not included in full list because of {exc}.")
+                if name in GUARANTEED_GYM_ENV_NAMES:
+                    print(f"{name} should have been guaranteed")
+                    raise exc
         return gym_env_names
 
     controllers = CONTROLLERS
