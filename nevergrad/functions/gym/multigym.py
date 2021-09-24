@@ -29,8 +29,8 @@ GUARANTEED_GYM_ENV_NAMES = [
     "MountainCar-v0",
     "Acrobot-v1",
     "Blackjack-v0",
-    "FrozenLake-v0",
-    "FrozenLake8x8-v0",
+    # "FrozenLake-v0",   # deprecated
+    # "FrozenLake8x8-v0",
     "CliffWalking-v0",
     "NChain-v0",
     "Roulette-v0",
@@ -265,6 +265,8 @@ class CompilerGym(ExperimentFunction):
         """Convenience function to create the environment that we'll use."""
         # User the time-limited wrapper to fix the length of episodes.
         if self.limited_compiler_gym:
+            import compiler_gym
+
             env = gym.wrappers.TimeLimit(
                 env=SmallActionSpaceLlvmEnv(env=gym.make("llvm-v0", reward_space="IrInstructionCountOz")),
                 max_episode_steps=self.num_episode_steps,
@@ -332,8 +334,8 @@ class GymMulti(ExperimentFunction):
         "CartPole-v0",
         "CartPole-v1",
         "Acrobot-v1",
-        "FrozenLake-v0",
-        "FrozenLake8x8-v0",
+        # "FrozenLake-v0",  # deprecated
+        # "FrozenLake8x8-v0",
         "NChain-v0",
         "Roulette-v0",
     ]
@@ -387,6 +389,8 @@ class GymMulti(ExperimentFunction):
             CompilerGym.import_package()
             assert limited_compiler_gym is not None
             self.num_episode_steps = 45 if limited_compiler_gym else 50
+            import compiler_gym
+
             env = gym.make("llvm-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
             env = self.observation_wrap(self.wrap_env(env))
             self.uris = list(env.datasets["benchmark://cbench-v1"].benchmark_uris())
