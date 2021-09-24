@@ -265,8 +265,6 @@ class CompilerGym(ExperimentFunction):
         """Convenience function to create the environment that we'll use."""
         # User the time-limited wrapper to fix the length of episodes.
         if self.limited_compiler_gym:
-            import compiler_gym
-
             env = gym.wrappers.TimeLimit(
                 env=SmallActionSpaceLlvmEnv(env=gym.make("llvm-v0", reward_space="IrInstructionCountOz")),
                 max_episode_steps=self.num_episode_steps,
@@ -302,18 +300,20 @@ class GymMulti(ExperimentFunction):
     @staticmethod
     def get_env_names() -> tp.List[str]:
         import gym_anm  # noqa
+        import gym_algorithmic  # noqa
 
         gym_env_names = []
-        for e in gym.envs.registry.all():
+        registered_envs = list(
+            gym.envs.registry.all()
+        )  # need a copy because dict is changing for unknown reason
+        for e in registered_envs:
+            if any(x in str(e.id) for x in ("Kelly", "llvm")):
+                continue
             try:
-                assert "Kelly" not in str(e.id)  # We should have another check than that.
-                assert "llvm" not in str(e.id)  # We should have another check than that.
                 env = gym.make(e.id)
                 env.reset()
                 env.step(env.action_space.sample())
-                a1 = np.asarray(env.action_space.sample())
-                a2 = np.asarray(env.action_space.sample())
-                a3 = np.asarray(env.action_space.sample())
+                a1, a2, a3 = (np.asarray(env.action_space.sample()) for _ in range(3))
                 a1 = a1 + a2 + a3
                 if hasattr(a1, "size"):
                     try:
@@ -321,8 +321,8 @@ class GymMulti(ExperimentFunction):
                     except Exception:  # pylint: disable=broad-except
                         assert a1.size() < 15000  # type: ignore
                 gym_env_names.append(e.id)
-            except Exception as exception:  # pylint: disable=broad-except
-                print(f"{e.id} not included in full list becaue of {exception}.")
+            except Exception as exc:  # pylint: disable=broad-except
+                print(f"{e.id} not included in full list because of {exc}.")
         return gym_env_names
 
     controllers = CONTROLLERS
