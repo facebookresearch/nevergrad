@@ -1,4 +1,4 @@
-[![CircleCI](https://circleci.com/gh/facebookresearch/nevergrad/tree/master.svg?style=svg)](https://circleci.com/gh/facebookresearch/nevergrad/tree/master)
+[![CircleCI](https://circleci.com/gh/facebookresearch/nevergrad/tree/main.svg?style=svg)](https://circleci.com/gh/facebookresearch/nevergrad/tree/main)
 
 # Nevergrad - A gradient-free optimization platform
 
