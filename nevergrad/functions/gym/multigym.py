@@ -174,26 +174,25 @@ class ConcatActionsHistogram(gym.ObservationWrapper):
     def __init__(self, env: tp.Any, norm_to_episode_len: int = 0) -> None:
         """Creating a counterpart of a compiler gym environement with an extended observation space."""
         super().__init__(env=env)
-        assert isinstance(
-            self.observation_space, gym.spaces.Box  # type: ignore
-        ), "Can only contatenate actions histogram to box shape"
-        assert isinstance(
-            self.action_space, gym.spaces.Discrete
-        ), "Can only construct histograms from discrete spaces"
-        assert len(self.observation_space.shape) == 1, "Requires 1-D observation space"  # type: ignore
+        self.observation_space: gym.spaces.Box  # enforce type (actually, that makes it an "Any")
+        if not isinstance(self.observation_space, gym.spaces.Box):
+            raise AssertionError("Can only contatenate actions histogram to box shape")
+        if not isinstance(self.action_space, gym.spaces.Discrete):
+            raise AssertionError("Can only construct histograms from discrete spaces")
+        assert len(self.observation_space.shape) == 1, "Requires 1-D observation space"
         self.increment = 1 / norm_to_episode_len if norm_to_episode_len else 1
 
         # Reshape the observation space.
         self.observation_space = gym.spaces.Box(
             low=np.concatenate(
                 (
-                    self.observation_space.low,  # type: ignore
+                    self.observation_space.low,
                     np.full(self.action_space.n, 0, dtype=np.float32),
                 )
             ),
             high=np.concatenate(
                 (
-                    self.observation_space.high,  # type: ignore
+                    self.observation_space.high,
                     np.full(
                         self.action_space.n,
                         1 if norm_to_episode_len else float("inf"),
@@ -301,12 +300,11 @@ class GymMulti(ExperimentFunction):
     def get_env_names() -> tp.List[str]:
         import gym_anm  # noqa
         import gym_algorithmic  # noqa
-        import gym_toytext
+        import gym_toytext  # noqa
 
         gym_env_names = []
-        registered_envs = list(
-            gym.envs.registry.all()
-        )  # need a copy because dict is changing for unknown reason
+        # need a copy because dict is changing for unknown reason:
+        registered_envs = list(gym.envs.registry.all())
         for e in registered_envs:
             if any(x in str(e.id) for x in ("Kelly", "llvm")):
                 continue
@@ -318,7 +316,7 @@ class GymMulti(ExperimentFunction):
                 a1 = a1 + a2 + a3
                 if hasattr(a1, "size"):
                     try:
-                        assert a1.size < 15000
+                        assert a1.size < 15000  # type: ignore
                     except Exception:  # pylint: disable=broad-except
                         assert a1.size() < 15000  # type: ignore
                 gym_env_names.append(e.id)
