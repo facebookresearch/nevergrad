@@ -301,6 +301,7 @@ class GymMulti(ExperimentFunction):
     def get_env_names() -> tp.List[str]:
         import gym_anm  # noqa
         import gym_algorithmic  # noqa
+        import gym_toytext
 
         gym_env_names = []
         registered_envs = list(
