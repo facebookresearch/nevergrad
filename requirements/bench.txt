@@ -30,5 +30,5 @@ compiler_gym>=0.1.8 ; sys_platform == "linux"
 pymoo>=0.4.2.2
 bayes-optim>=0.2.5.5
 olymp==0.0.1b0 ; sys_platform == "linux"
-silence_tensorflow
-tensorflow_probability
+silence_tensorflow==1.1.1
+tensorflow_probability==0.13.0
