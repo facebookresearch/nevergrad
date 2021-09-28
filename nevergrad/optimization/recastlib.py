@@ -73,9 +73,18 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
             if self.method == "CmaFmin2":
                 if p.helpers.Normalizer(self.parametrization).fully_bounded:
                     self._normalizer = p.helpers.Normalizer(self.parametrization)  # type: ignore
-                #cma.fmin2(objective_function, [0.0] * self.dimension, [1.0] * self.dimension, remaining)
+                # cma.fmin2(objective_function, [0.0] * self.dimension, [1.0] * self.dimension, remaining)
                 propose_x0 = f"np.random.uniform() * np.random.uniform(size={self.dimension})"  # QO-sampling.
-                xopt, es = cma.fmin(objective_function, x0=propose_x0, sigma=0.2, options={'maxfevals':remaining, 'verbose':-9, bounds: [0., 1.]}, restarts=9)
+                res = cma.fmin(
+                    objective_function,
+                    x0=propose_x0,
+                    sigma=0.2,
+                    options={"maxfevals": remaining, "verbose": -9, bounds: [0.0, 1.0]},
+                    restarts=9,
+                )
+                if res[1] < best_res:
+                    best_res = res[1]
+                    best_x = res[0]
             else:
                 res = scipyoptimize.minimize(
                     objective_function,

@@ -776,11 +776,11 @@ class GymMulti(ExperimentFunction):
         try:
 
             assert env.action_space.contains(a), (
-              f"In {self.name}, high={env.action_space.high} low={env.action_space.low} {a} "
-             f"is not sufficiently close to {[env.action_space.sample() for _ in range(10)]}"
-             f"Action space = {env.action_space} (sample has type {type(env.action_space.sample())})"
-             f"and a={a} with type {type(a)} (case={cast_path})"
-             )
+                f"In {self.name}, high={env.action_space.high} low={env.action_space.low} {a} "
+                f"is not sufficiently close to {[env.action_space.sample() for _ in range(10)]}"
+                f"Action space = {env.action_space} (sample has type {type(env.action_space.sample())})"
+                f"and a={a} with type {type(a)} (case={cast_path})"
+            )
             pass
         except AttributeError:
             pass  # Not all env can do "contains".
