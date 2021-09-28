@@ -72,7 +72,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
             options: tp.Dict[str, tp.Any] = {} if self.budget is None else {"maxiter": remaining}
             if self.method == "CmaFmin2":
                 assert p.helpers.Normalizer(self.parametrization).fully_bounded
-                self._normalizer = p.helpers.Normalizer(self.parametrization)
+                self._normalizer = p.helpers.Normalizer(self.parametrization)  # type: ignore
                 cma.fmin2(objective_function, [0.0] * self.dimension, [1.0] * self.dimension, remaining)
             else:
                 res = scipyoptimize.minimize(
