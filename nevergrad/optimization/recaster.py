@@ -160,6 +160,8 @@ class RecastOptimizer(base.Optimizer):
             data = self._rng.normal(0, 1, self.dimension)
             return self.parametrization.spawn_child().set_standardized_data(data)
         point = self._messaging_thread.messages_ask.get()
+        if self._normalizer is not None:
+            data = self._normalizer.backward(data)
         candidate = self.parametrization.spawn_child().set_standardized_data(point)
         return candidate
 
