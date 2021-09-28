@@ -18,7 +18,6 @@ from ..base import ExperimentFunction
 
 
 GUARANTEED_GYM_ENV_NAMES = [
-    "RepeatCopy-v0",
     "ReversedAddition-v0",
     "ReversedAddition3-v0",
     "DuplicatedInput-v0",
@@ -323,7 +322,6 @@ class GymMulti(ExperimentFunction):
     controllers = CONTROLLERS
 
     ng_gym = [
-        "RepeatCopy-v0",
         "Reverse-v0",
         "CartPole-v0",
         "CartPole-v1",
