@@ -129,6 +129,7 @@ class RecastOptimizer(base.Optimizer):
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
         super().__init__(parametrization, budget, num_workers=num_workers)
+        self._normalizer = None
         self._messaging_thread: tp.Optional[MessagingThread] = None  # instantiate at runtime
 
     def get_optimization_function(self) -> tp.Callable[[tp.Callable[..., tp.Any]], tp.Optional[tp.ArrayLike]]:
