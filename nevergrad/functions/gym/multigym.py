@@ -26,7 +26,7 @@ GUARANTEED_GYM_ENV_NAMES = [
     "CartPole-v1",
     "MountainCar-v0",
     "Acrobot-v1",
-    "Blackjack-v0",
+    # "Blackjack-v0",
     # "FrozenLake-v0",   # deprecated
     # "FrozenLake8x8-v0",
     "CliffWalking-v0",
