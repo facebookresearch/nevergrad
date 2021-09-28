@@ -79,7 +79,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
                     objective_function,
                     x0=propose_x0,
                     sigma=0.2,
-                    options={"maxfevals": remaining, "verbose": -9, bounds: [0.0, 1.0]},
+                    options={"maxfevals": remaining, "verbose": -9, "bounds": [0.0, 1.0]},
                     restarts=9,
                 )
                 if res[1] < best_res:
