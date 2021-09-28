@@ -21,7 +21,7 @@ GUARANTEED_GYM_ENV_NAMES = [
     "ReversedAddition-v0",
     "ReversedAddition3-v0",
     "DuplicatedInput-v0",
-    "Reverse-v0",
+    # "Reverse-v0",
     "CartPole-v0",
     "CartPole-v1",
     "MountainCar-v0",
@@ -322,7 +322,7 @@ class GymMulti(ExperimentFunction):
     controllers = CONTROLLERS
 
     ng_gym = [
-        "Reverse-v0",
+        # "Reverse-v0",
         "CartPole-v0",
         "CartPole-v1",
         "Acrobot-v1",
