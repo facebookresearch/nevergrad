@@ -33,6 +33,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         assert method in ["CmaFmin2", "Nelder-Mead", "COBYLA", "SLSQP", "Powell"], f"Unknown method '{method}'"
         self.method = method
         self.random_restart = random_restart
+        self._normalizer = None
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         """Called whenever calling "tell" on a candidate that was not "asked".
