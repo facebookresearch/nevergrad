@@ -30,12 +30,12 @@ def test_compiler_gym() -> None:
 
 
 def test_roulette() -> None:
-    func = multigym.GymMulti(name="Roulette-v0", control="neural", neural_factor=1, randomized=True)
+    func = multigym.GymMulti(name="CartPole-v0", control="neural", neural_factor=1, randomized=True)
     results = [func(np.zeros(func.dimension)) for _ in range(40)]
-    assert min(results) != max(results), "Roulette should not be deterministic."
+    assert min(results) != max(results), "CartPole should not be deterministic."
     candidate = func.parametrization.sample()
     results = [func.evaluation_function(candidate) for _ in range(40)]
-    assert min(results) != max(results), "Roulette should not be deterministic."
+    assert min(results) != max(results), "CartPole should not be deterministic."
 
 
 @pytest.mark.parametrize("name", GYM_ENV_NAMES)  # type: ignore
