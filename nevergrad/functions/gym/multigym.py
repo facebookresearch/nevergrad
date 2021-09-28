@@ -744,25 +744,32 @@ class GymMulti(ExperimentFunction):
     def action_cast(self, a):
         """Transforms an action into an action of type as expected by the gym step function."""
         env = self.env
+        cast_path = 0
         if type(a) == np.float64:
             a = np.asarray((a,))
+            cast_path += 1000
         if self.discrete:
             a = self.discretize(a)
+            cast_path += 1
         else:
             if type(a) != self.action_type:  # , f"{a} does not have type {self.action_type}"
                 a = self.action_type(a)
+                case_path += 10
             try:
                 if env.action_space.low is not None and env.action_space.high is not None:
                     # Projection to [0, 1]
                     a = 0.5 * (1.0 + np.tanh(a))
                     # Projection to the right space.
                     a = env.action_space.low + (env.action_space.high - env.action_space.low) * a
+                    cast_path += 100
             except AttributeError:
                 pass  # Sometimes an action space has no low and no high.
             if self.subaction_type is not None:
                 if type(a) == tuple:
                     a = tuple(int(_a + 0.5) for _a in a)
+                    cast_path += 1000
                 else:
+                    cast_path += 2000
                     for i in range(len(a)):
                         a[i] = self.subaction_type(a[i])
         assert type(a) == self.action_type, f"{a} should have type {self.action_type} "
@@ -771,7 +778,7 @@ class GymMulti(ExperimentFunction):
                 f"In {self.name}, high={env.action_space.high} low={env.action_space.low} {a} "
                 f"is not sufficiently close to {[env.action_space.sample() for _ in range(10)]}"
                 f"Action space = {env.action_space} (sample has type {type(env.action_space.sample())})"
-                f"and a={a} with type {type(a)}"
+                f"and a={a} with type {type(a)} (case={cast_path})"
             )
         except AttributeError:
             pass  # Not all env can do "contains".
