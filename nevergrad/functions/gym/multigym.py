@@ -20,7 +20,7 @@ from ..base import ExperimentFunction
 GUARANTEED_GYM_ENV_NAMES = [
     # "ReversedAddition-v0",
     # "ReversedAddition3-v0",
-    "DuplicatedInput-v0",
+    # "DuplicatedInput-v0",
     # "Reverse-v0",
     "CartPole-v0",
     "CartPole-v1",
