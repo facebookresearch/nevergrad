@@ -57,5 +57,7 @@ def test_run_multigym(name: str) -> None:
     )
     y = func.parametrization.sample()
     func(y.value)
-    if "stac" in control:  # Let's check if the memory works.
-        np.testing.assert_almost_equal(func(y.value), 500 if "Acrobat" in name else 20.41, decimal=2)
+    if "stac" in control and "Acrobat" in name:  # Let's check if the memory works.
+        np.testing.assert_almost_equal(func(y.value), 500, decimal=2)
+    if "stac" in control and "Pendulum-v0" in name:  # Let's check if the memory works.
+        np.testing.assert_almost_equal(func(y.value), 1688.82, decimal=2)
