@@ -31,7 +31,7 @@ GUARANTEED_GYM_ENV_NAMES = [
     # "FrozenLake8x8-v0",
     "CliffWalking-v0",
     # "NChain-v0",
-    "Roulette-v0",
+    # "Roulette-v0",
     "Taxi-v3",
     "CubeCrash-v0",
     "CubeCrashSparse-v0",
@@ -329,7 +329,7 @@ class GymMulti(ExperimentFunction):
         # "FrozenLake-v0",  # deprecated
         # "FrozenLake8x8-v0",
         # "NChain-v0",
-        "Roulette-v0",
+        # "Roulette-v0",
     ]
 
     def wrap_env(self, input_env):
