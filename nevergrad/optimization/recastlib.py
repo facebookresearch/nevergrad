@@ -75,9 +75,9 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
                     options=options,
                     tol=0,
                 )
-            if res.fun < best_res:
-                best_res = res.fun
-                best_x = res.x
+                if res.fun < best_res:
+                    best_res = res.fun
+                    best_x = res.x
             remaining = budget - self._num_ask
         return best_x
 
