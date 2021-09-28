@@ -30,7 +30,13 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         self.multirun = 1  # work in progress
         self.initial_guess: tp.Optional[tp.ArrayLike] = None
         # configuration
-        assert method in ["CmaFmin2", "Nelder-Mead", "COBYLA", "SLSQP", "Powell"], f"Unknown method '{method}'"
+        assert method in [
+            "CmaFmin2",
+            "Nelder-Mead",
+            "COBYLA",
+            "SLSQP",
+            "Powell",
+        ], f"Unknown method '{method}'"
         self.method = method
         self.random_restart = random_restart
         self._normalizer = None
@@ -67,7 +73,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
             if self.method == "CmaFmin2":
                 assert p.helpers.Normalizer(self.parametrization).fully_bounded
                 self._normalizer = p.helpers.Normalizer(self.parametrization)
-                cma.fmin2(objective_function, [0.] * self.dimension, [1.] * self.dimension, remaining)
+                cma.fmin2(objective_function, [0.0] * self.dimension, [1.0] * self.dimension, remaining)
             else:
                 res = scipyoptimize.minimize(
                     objective_function,
