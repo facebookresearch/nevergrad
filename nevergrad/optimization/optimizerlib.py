@@ -40,8 +40,6 @@ try:
 except ModuleNotFoundError:
     pass
 
-# run with LOGLEVEL=DEBUG for more debug information
-logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
 logger = logging.getLogger(__name__)
 
 

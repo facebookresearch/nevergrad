@@ -18,7 +18,6 @@ from nevergrad.parametrization import parameter as p
 from nevergrad.parametrization import helpers
 from . import base
 
-logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
 global_logger = logging.getLogger(__name__)
 
 
