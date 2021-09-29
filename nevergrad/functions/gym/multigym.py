@@ -772,7 +772,8 @@ class GymMulti(ExperimentFunction):
                     cast_path += 2000
                     for i in range(len(a)):
                         a[i] = self.subaction_type(a[i])
-        a = np.asarray(a, dtype=env.action_space.sample().dtype)
+        if not np.isscalar(a):
+            a = np.asarray(a, dtype=env.action_space.sample().dtype)
         assert type(a) == self.action_type, f"{a} should have type {self.action_type} "
         # assert env.action_space.contains(env.action_space.sample())
         try:
