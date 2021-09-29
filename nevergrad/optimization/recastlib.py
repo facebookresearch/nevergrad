@@ -71,15 +71,17 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         while remaining > 0:  # try to restart if budget is not elapsed
             options: tp.Dict[str, tp.Any] = {} if self.budget is None else {"maxiter": remaining}
             if self.method == "CmaFmin2":
+                options = {"maxfevals": remaining, "verbose": -9}
                 if p.helpers.Normalizer(self.parametrization).fully_bounded:
                     self._normalizer = p.helpers.Normalizer(self.parametrization)  # type: ignore
+                    options["bounds"] = [0.0, 1.0]
                 # cma.fmin2(objective_function, [0.0] * self.dimension, [1.0] * self.dimension, remaining)
-                propose_x0 = f"np.random.uniform() * np.random.uniform(size={self.dimension})"  # QO-sampling.
+                propose_x0 = lambda: np.random.uniform() * np.random.uniform(size=self.dimension)
                 res = cma.fmin(
                     objective_function,
                     x0=propose_x0,
                     sigma0=0.2,
-                    options={"maxfevals": remaining, "verbose": -9, "bounds": [0.0, 1.0]},
+                    options=options,
                     restarts=9,
                 )
                 if res[1] < best_res:
