@@ -772,18 +772,18 @@ class GymMulti(ExperimentFunction):
                     cast_path += 2000
                     for i in range(len(a)):
                         a[i] = self.subaction_type(a[i])
+        a = np.asarray(a, dtype=env.action_space.sample().dtype)
         assert type(a) == self.action_type, f"{a} should have type {self.action_type} "
-        assert env.action_space.contains(env.action_space.sample())
-        #        try:
-        #            assert env.action_space.contains(a), (
-        #                f"In {self.name}, high={env.action_space.high} low={env.action_space.low} {a} "
-        #                f"is not sufficiently close to {[env.action_space.sample() for _ in range(10)]}"
-        #                f"Action space = {env.action_space} (sample has type {type(env.action_space.sample())})"
-        #                f"and a={a} with type {type(a)} (case={cast_path})"
-        #            )
-        #            pass
-        #        except AttributeError:
-        #            pass  # Not all env can do "contains".
+        # assert env.action_space.contains(env.action_space.sample())
+        try:
+            assert env.action_space.contains(a), (
+                f"In {self.name}, high={env.action_space.high} low={env.action_space.low} {a} "
+                f"is not sufficiently close to {[env.action_space.sample() for _ in range(10)]}"
+                f"Action space = {env.action_space} (sample has type {type(env.action_space.sample())})"
+                f"and a={a} with type {type(a)} (case={cast_path})"
+            )
+        except AttributeError:
+            pass  # Not all env can do "contains".
         return a
 
     def step(self, a):
