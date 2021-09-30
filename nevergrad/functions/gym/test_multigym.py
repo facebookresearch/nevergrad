@@ -40,7 +40,7 @@ def test_roulette() -> None:
 
 @pytest.mark.parametrize("name", GYM_ENV_NAMES)  # type: ignore
 def test_run_multigym(name: str) -> None:
-    if os.name == "nt" or np.random.randint(8):
+    if os.name == "nt" or np.random.randint(8) or "u" in name:
         raise SkipTest("Skipping Windows and running only 1 out of 8")
     func = multigym.GymMulti(randomized=False, neural_factor=None)
     x = np.zeros(func.dimension)
