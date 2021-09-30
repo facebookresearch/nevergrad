@@ -2673,16 +2673,18 @@ class NGOpt16(NGOpt15):
         else:
             return super()._select_optimizer_cls()
 
-        
+
 @registry.register
 class NGOpt17(NGOpt16):
     def _select_optimizer_cls(self) -> base.OptCls:
-        if self.budget > 500 * self.dimension and self.fully_continuous:  # Discrete case ?
-            return ConfPortfolio(optimizers=[NGOpt14] * 9, warmup_ratio=.7)
+        if (
+            self.budget is not None and self.budget > 500 * self.dimension and self.fully_continuous
+        ):  # Discrete case ?
+            return ConfPortfolio(optimizers=[NGOpt14] * 9, warmup_ratio=0.7)
         else:
-            return super()._select_optimizer_cls() 
-        
-        
+            return super()._select_optimizer_cls()
+
+
 @registry.register
 class NGOpt(NGOpt16):
     pass
