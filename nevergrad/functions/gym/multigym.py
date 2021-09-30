@@ -33,9 +33,9 @@ GUARANTEED_GYM_ENV_NAMES = [
     # "NChain-v0",
     # "Roulette-v0",
     "Taxi-v3",
-    "CubeCrash-v0",
-    "CubeCrashSparse-v0",
-    "CubeCrashScreenBecomesBlack-v0",
+    #"CubeCrash-v0",
+    #"CubeCrashSparse-v0",
+    #"CubeCrashScreenBecomesBlack-v0",
     "MemorizeDigits-v0",
 ]
 
