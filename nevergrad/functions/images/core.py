@@ -63,7 +63,9 @@ class Image(base.ExperimentFunction):
             array.set_mutation(sigma=35)
             array.set_bounds(lower=0, upper=255.99, method="clipping", full_range_sampling=True)
             max_size = ng.p.Scalar(lower=1, upper=200).set_integer_casting()
-            array = ng.ops.mutations.Crossover(axis=(0, 1), max_size=max_size)(array).set_name("")  # type: ignore
+            array = ng.ops.mutations.Crossover(axis=(0, 1), max_size=max_size)(array).set_name(
+                ""
+            )  # type: ignore
             super().__init__(loss(reference=self.data), array)
         else:
             self.pgan_model = torch.hub.load(
@@ -189,6 +191,7 @@ class ImageAdversarial(base.ExperimentFunction):
         self.label = torch.Tensor([label])  # if (label is not None) else torch.Tensor([0])
         self.label = self.label.long()
         self.classifier = classifier  # if (classifier is not None) else Classifier()
+        self.classifier.eval()
         self.criterion = nn.CrossEntropyLoss()
         self.imsize = self.image.shape[1]
 
@@ -247,19 +250,21 @@ class ImageAdversarial(base.ExperimentFunction):
         assert model in {"resnet50", "test"}
         tags = {"folder": "#FAKE#" if folder is None else Path(folder).name, "model": model}
         classifier: tp.Any = Resnet50() if model == "resnet50" else TestClassifier()
-        imsize = 224
-        transform = tr.Compose([tr.Resize(imsize), tr.CenterCrop(imsize), tr.ToTensor()])
+        classifier.eval()
+
+        transform = tr.Compose([tr.Resize(256), tr.CenterCrop(224), tr.ToTensor()])
         if folder is None:
             x = torch.zeros(1, 3, 224, 224)
             _, pred = torch.max(classifier(x), axis=1)
             data_loader: tp.Iterable[tp.Tuple[tp.Any, tp.Any]] = [(x, pred)]
         elif Path(folder).is_dir():
-            ifolder = torchvision.datasets.ImageFolder(folder, transform)
-            data_loader = torch.utils.DataLoader(
+            ifolder = torchvision.datasets.ImageFolder(folder, transform=transform)
+            data_loader = torch.utils.data.DataLoader(
                 ifolder, batch_size=1, shuffle=True, num_workers=8, pin_memory=True
             )
         else:
             raise ValueError(f"{folder} is not a valid folder.")
+
         for data, target in itertools.islice(data_loader, 0, 100):
             _, pred = torch.max(classifier(data), axis=1)
             if pred == target:
@@ -341,4 +346,10 @@ class ImageFromPGAN(base.ExperimentFunction):
         """Generates images tensor of shape [nb_images, x, y, 3] with pixels between 0 and 255"""
         # pylint: disable=not-callable
         noise = torch.tensor(x.astype("float32"))
-        return ((self.pgan_model.test(noise).clamp(min=-1, max=1) + 1) * 255.99 / 2).permute(0, 2, 3, 1).cpu().numpy()  # type: ignore
+        # type: ignore
+        return (
+            ((self.pgan_model.test(noise).clamp(min=-1, max=1) + 1) * 255.99 / 2)
+            .permute(0, 2, 3, 1)
+            .cpu()
+            .numpy()
+        )
