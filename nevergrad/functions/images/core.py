@@ -204,6 +204,7 @@ class ImageAdversarial(base.ExperimentFunction):
         max_size = ng.p.Scalar(lower=1, upper=200).set_integer_casting()
         array = ng.p.mutation.Crossover(axis=(1, 2), max_size=max_size)(array)
         super().__init__(self._loss, array)
+        self._descriptors.pop("label")  # automatically added by __new__, but not needed
 
     def _loss(self, x: np.ndarray) -> float:
         output_adv = self._get_classifier_output(x)

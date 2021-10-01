@@ -40,7 +40,7 @@ class CausalDiscovery(ExperimentFunction):
         self,
         generator: str = "sachs",
         causal_mechanism: str = "linear",
-        noise="gaussian",
+        noise: str = "gaussian",
         noise_coeff: float = 0.4,
         npoints: int = 500,
         nodes: int = 20,
@@ -73,6 +73,7 @@ class CausalDiscovery(ExperimentFunction):
             )
             self._data, self._ground_truth_graph = _generator.generate()
 
+        self._nodes_list = list(self._ground_truth_graph.nodes())
         self._nvars = self._data.shape[1]
         param_links = ng.p.Choice([-1, 0, 1], repetitions=self._nvars * (self._nvars - 1) // 2)
         instru = ng.p.Instrumentation(network_links=param_links).set_name("")
@@ -83,19 +84,24 @@ class CausalDiscovery(ExperimentFunction):
         score = self.graph_score(output_graph)
         return -score
 
-    def graph_score(self, test_graph) -> float:
+    def graph_score(self, test_graph: nx.DiGraph) -> float:
         pr_score, _ = precision_recall(self._ground_truth_graph, test_graph)
         shd_score = SHD(self._ground_truth_graph, test_graph)
         return float(pr_score - shd_score)  # Higher better
 
-    def choices_to_graph(self, network_links):
+    def add_missing_nodes(self, graph):
+        for n in set(self._nodes_list) - set(graph.nodes()):
+            graph.add_node(n)
+        return graph
+
+    def choices_to_graph(self, network_links: tp.Tuple[int]) -> nx.DiGraph:
         output_graph = nx.DiGraph()
         k = 0
         for i in range(1, self._nvars):
             for j in range(i + 1, self._nvars):
                 if network_links[k] == -1:
-                    output_graph.add_edge(j, i)
+                    output_graph.add_edge(self._nodes_list[j], self._nodes_list[i])
                 elif network_links[k] == +1:
-                    output_graph.add_edge(i, j)
+                    output_graph.add_edge(self._nodes_list[i], self._nodes_list[j])
                 k += 1
-        return output_graph
+        return self.add_missing_nodes(output_graph)
