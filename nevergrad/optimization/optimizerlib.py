@@ -1423,7 +1423,7 @@ class InfiniteMetaModelOptimum(ValueError):
     """Sometimes the optimum of the metamodel is at infinity."""
 
 
-def learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.ArrayLike:
+def _learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.ArrayLike:
     """Approximate optimum learnt from the k best.
 
     Parameters
@@ -1497,7 +1497,7 @@ class _MetaModel(base.Optimizer):
             and len(self.archive) >= sample_size
         ):
             try:
-                data = learn_on_k_best(self.archive, sample_size)
+                data = _learn_on_k_best(self.archive, sample_size)
                 candidate = self.parametrization.spawn_child().set_standardized_data(data)
             except InfiniteMetaModelOptimum:  # The optimum is at infinity. Shit happens.
                 candidate = self._optim.ask()
@@ -1511,7 +1511,8 @@ class _MetaModel(base.Optimizer):
 
 class ParametrizedMetaModel(base.ConfiguredOptimizer):
     """
-    Adding a metamodel into CMA or OnePlusOne (if dimension is 1) by default.
+    Adds a metamodel to an optimizer.
+    The optimizer is alway OnePlusOne if dimension is 1.
 
     Parameters
     ----------
@@ -1519,15 +1520,13 @@ class ParametrizedMetaModel(base.ConfiguredOptimizer):
         Optimizer to which the metamodel is added
     """
 
-    no_parallelization = False
-
+    # pylint: disable=unused-argument
     def __init__(
         self,
         *,
         multivariate_optimizer: tp.Optional[base.OptCls] = None,
     ) -> None:
         super().__init__(_MetaModel, locals())
-        self.multivariate_optimizer = multivariate_optimizer
 
 
 MetaModel = ParametrizedMetaModel().set_name("MetaModel", register=True)
