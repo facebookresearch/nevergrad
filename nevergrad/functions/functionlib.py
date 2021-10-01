@@ -246,7 +246,6 @@ class ArtificialFunction(ExperimentFunction):
         """
         assert len(recommendations) == 1, "Should not be a pareto set for a singleobjective function"
         assert len(recommendations[0].args) == 1 and not recommendations[0].kwargs
-        print("recom", recommendations)
         data = self._transform(recommendations[0].args[0])
         return self.function_from_transform(data)
 
