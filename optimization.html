@@ -1,73 +1,34 @@
-
-
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
-  
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  
   <title>How to perform optimization &mdash; nevergrad  documentation</title>
-  
-
-  
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-
-  
-  
-
-  
-  
-
-  
-
-  
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
         <script src="_static/doctools.js"></script>
-    
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-
-    
+    <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Parametrizing your optimization" href="parametrization.html" />
     <link rel="prev" title="Getting started" href="getting_started.html" /> 
 </head>
 
-<body class="wy-body-for-nav">
-
-   
+<body class="wy-body-for-nav"> 
   <div class="wy-grid-for-nav">
-    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-          
-
-          
             <a href="index.html" class="icon icon-home"> nevergrad
-          
-
-          
           </a>
-
-          
-            
-            
-          
-
-          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -75,18 +36,7 @@
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-
-          
-        </div>
-
-        
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
-              
-            
-            
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting started</a></li>
@@ -117,76 +67,35 @@
 <li class="toctree-l1"><a class="reference internal" href="opencompetition2020.html">Open Optimization Competition 2020</a></li>
 </ul>
 
-            
-          
         </div>
-        
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
-
-      
-      <nav class="wy-nav-top" aria-label="top navigation">
-        
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="index.html">nevergrad</a>
-        
       </nav>
 
-
       <div class="wy-nav-content">
-        
         <div class="rst-content">
-        
-          
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div role="navigation" aria-label="breadcrumbs navigation">
-
+          <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-    
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-        
       <li>How to perform optimization</li>
-    
-    
       <li class="wy-breadcrumbs-aside">
-        
-          
             <a href="_sources/optimization.rst.txt" rel="nofollow"> View page source</a>
-          
-        
       </li>
-    
   </ul>
-
-  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-            
-  <div class="section" id="how-to-perform-optimization">
-<h1>How to perform optimization<a class="headerlink" href="#how-to-perform-optimization" title="Permalink to this headline">¶</a></h1>
+             
+  <section id="how-to-perform-optimization">
+<h1>How to perform optimization<a class="headerlink" href="#how-to-perform-optimization" title="Permalink to this headline"></a></h1>
 <p><strong>By default, all optimizers assume a centered and reduced prior at the beginning of the optimization (i.e. 0 mean and unitary standard deviation). They are however able to find solutions far from this initial prior.</strong></p>
-<div class="section" id="basic-example">
-<h2>Basic example<a class="headerlink" href="#basic-example" title="Permalink to this headline">¶</a></h2>
+<section id="basic-example">
+<h2>Basic example<a class="headerlink" href="#basic-example" title="Permalink to this headline"></a></h2>
 <p>Minimizing a function using an optimizer (here <code class="code docutils literal notranslate"><span class="pre">NGOpt</span></code>, our adaptative optimization algorithm) can be easily run with:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nevergrad</span> <span class="k">as</span> <span class="nn">ng</span>
 
@@ -236,9 +145,9 @@ and <a class="reference internal" href="parametrization_ref.html#parametrization
 <span class="c1"># &gt;&gt;&gt; (1, 1, 0, 1, 1, 4, 1, 1, 1, 1)</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="using-several-workers">
-<h2>Using several workers<a class="headerlink" href="#using-several-workers" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="using-several-workers">
+<h2>Using several workers<a class="headerlink" href="#using-several-workers" title="Permalink to this headline"></a></h2>
 <p>Running the function evaluation in parallel with several workers is as easy as providing an executor:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">concurrent</span> <span class="kn">import</span> <span class="n">futures</span>
 
@@ -249,9 +158,9 @@ and <a class="reference internal" href="parametrization_ref.html#parametrization
 </pre></div>
 </div>
 <p>With <code class="code docutils literal notranslate"><span class="pre">batch_mode=True</span></code> it will ask the optimizer for <code class="code docutils literal notranslate"><span class="pre">num_workers</span></code> points to evaluate, run the evaluations, then update the optimizer with the <code class="code docutils literal notranslate"><span class="pre">num_workers</span></code> function outputs, and repeat until the budget is all spent. Since no executor is provided, the evaluations will be sequential. <code class="code docutils literal notranslate"><span class="pre">num_workers</span> <span class="pre">&gt;</span> <span class="pre">1</span></code> with no executor is therefore suboptimal but nonetheless useful for evaluation purpose (i.e. we simulate parallelism but have no actual parallelism). <code class="code docutils literal notranslate"><span class="pre">batch_mode=False</span></code> (steady state mode) will ask for a new evaluation whenever a worker is ready.</p>
-</div>
-<div class="section" id="ask-and-tell-interface">
-<h2>Ask and tell interface<a class="headerlink" href="#ask-and-tell-interface" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="ask-and-tell-interface">
+<h2>Ask and tell interface<a class="headerlink" href="#ask-and-tell-interface" title="Permalink to this headline"></a></h2>
 <p>An <em>ask and tell</em> interface is also available. The 3 key methods for this interface are respectively:</p>
 <ul class="simple">
 <li><p><code class="code docutils literal notranslate"><span class="pre">ask</span></code>: suggest a candidate on which to evaluate the function to optimize.</p></li>
@@ -279,9 +188,9 @@ and <a class="reference internal" href="parametrization_ref.html#parametrization
 </pre></div>
 </div>
 <p>Please make sure that your function returns a float, and that you indeed want to perform minimization and not maximization ;)</p>
-</div>
-<div class="section" id="choosing-an-optimizer">
-<h2>Choosing an optimizer<a class="headerlink" href="#choosing-an-optimizer" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="choosing-an-optimizer">
+<h2>Choosing an optimizer<a class="headerlink" href="#choosing-an-optimizer" title="Permalink to this headline"></a></h2>
 <p><code class="code docutils literal notranslate"><span class="pre">ng.optimizers.registry</span></code> is a <code class="code docutils literal notranslate"><span class="pre">dict</span></code> of all optimizers, so you <code class="code docutils literal notranslate"><span class="pre">ng.optimizers.NGOpt</span></code> is equivalent to <code class="code docutils literal notranslate"><span class="pre">ng.optimizers.registry[&quot;NGOpt&quot;]</span></code>.
 Also, <strong>you can print the full list of optimizers</strong> with:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nevergrad</span> <span class="k">as</span> <span class="nn">ng</span>
@@ -301,9 +210,9 @@ Also, <strong>you can print the full list of optimizers</strong> with:</p>
 <li><p><code class="code docutils literal notranslate"><span class="pre">ScrHammersleySearchPlusMiddlePoint</span></code> is excellent for super parallel cases (fully one-shot, i.e. <code class="code docutils literal notranslate"><span class="pre">num_workers</span></code> = budget included) or for very multimodal cases (such as some of our MLDA problems); don’t use softmax with this optimizer.</p></li>
 <li><p><code class="code docutils literal notranslate"><span class="pre">RandomSearch</span></code> is the classical random search baseline; don’t use softmax with this optimizer.</p></li>
 </ul>
-</div>
-<div class="section" id="telling-non-asked-points-or-suggesting-points">
-<h2>Telling non-asked points, or suggesting points<a class="headerlink" href="#telling-non-asked-points-or-suggesting-points" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="telling-non-asked-points-or-suggesting-points">
+<h2>Telling non-asked points, or suggesting points<a class="headerlink" href="#telling-non-asked-points-or-suggesting-points" title="Permalink to this headline"></a></h2>
 <p>There are two ways to inoculate information you already have about some points:</p>
 <ul class="simple">
 <li><p><code class="code docutils literal notranslate"><span class="pre">optimizer.sugggest(*args,</span> <span class="pre">**kwargs)</span></code>: after suggesting a point, the next <code class="code docutils literal notranslate"><span class="pre">ask</span></code> will be a point with the provided inputs. Make sure you call <code class="code docutils literal notranslate"><span class="pre">optimizer.suggest</span></code> the same way (= with the same arguments) that you would call your function to optimize.</p></li>
@@ -336,9 +245,9 @@ Also, <strong>you can print the full list of optimizers</strong> with:</p>
 </pre></div>
 </div>
 <p><strong>Note:</strong> some optimizers do not support such inoculation. Those will raise a <code class="code docutils literal notranslate"><span class="pre">TellNotAskedNotSupportedError</span></code>.</p>
-</div>
-<div class="section" id="adding-callbacks">
-<h2>Adding callbacks<a class="headerlink" href="#adding-callbacks" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="adding-callbacks">
+<h2>Adding callbacks<a class="headerlink" href="#adding-callbacks" title="Permalink to this headline"></a></h2>
 <p>You can add callbacks to the <code class="code docutils literal notranslate"><span class="pre">ask</span></code> and <code class="code docutils literal notranslate"><span class="pre">tell</span></code> methods through the <code class="code docutils literal notranslate"><span class="pre">register_callback</span></code> method.
 The functions/callbacks registered on <code class="code docutils literal notranslate"><span class="pre">ask</span></code> must have signature <code class="code docutils literal notranslate"><span class="pre">callback</span> <span class="pre">(optimizer)</span></code> and functions registered on <code class="code docutils literal notranslate"><span class="pre">tell</span></code> must have signature <code class="code docutils literal notranslate"><span class="pre">function(optimizer,</span> <span class="pre">candidate,</span> <span class="pre">value)</span></code>.</p>
 <p>The example below shows a callback which prints <code class="code docutils literal notranslate"><span class="pre">candidate</span></code> and <code class="code docutils literal notranslate"><span class="pre">value</span></code> on <code class="code docutils literal notranslate"><span class="pre">tell</span></code>:</p>
@@ -356,9 +265,9 @@ The functions/callbacks registered on <code class="code docutils literal notrans
 </pre></div>
 </div>
 <p>Two callbacks are available through <code class="code docutils literal notranslate"><span class="pre">ng.callbacks</span></code>, see the <a class="reference internal" href="optimizers_ref.html#callbacks"><span class="std std-ref">callbacks module documentation</span></a>.</p>
-</div>
-<div class="section" id="optimization-with-constraints">
-<h2>Optimization with constraints<a class="headerlink" href="#optimization-with-constraints" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="optimization-with-constraints">
+<h2>Optimization with constraints<a class="headerlink" href="#optimization-with-constraints" title="Permalink to this headline"></a></h2>
 <p>Nevergrad has a mechanism for cheap constraints.
 “Cheap” means that we do not try to reduce the number of calls to such constraints.
 We basically repeat mutations until we get a satisfiable point.</p>
@@ -377,9 +286,9 @@ We basically repeat mutations until we get a satisfiable point.</p>
 <span class="c1"># &gt;&gt;&gt; [1.00037625, 0.50683314]</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="optimizing-machine-learning-hyperparameters">
-<h2>Optimizing machine learning hyperparameters<a class="headerlink" href="#optimizing-machine-learning-hyperparameters" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="optimizing-machine-learning-hyperparameters">
+<h2>Optimizing machine learning hyperparameters<a class="headerlink" href="#optimizing-machine-learning-hyperparameters" title="Permalink to this headline"></a></h2>
 <p>When optimizing hyperparameters as e.g. in machine learning. If you don’t know what variables (see <a class="reference internal" href="parametrization.html#parametrizing"><span class="std std-ref">Parametrization</span></a> to use:</p>
 <ul class="simple">
 <li><p>use <code class="code docutils literal notranslate"><span class="pre">Choice</span></code> for discrete variables</p></li>
@@ -390,9 +299,9 @@ We basically repeat mutations until we get a satisfiable point.</p>
 <li><p>use <code class="code docutils literal notranslate"><span class="pre">TransitionChoice</span></code> for discrete variables, taking care that the default value is in the middle.</p></li>
 <li><p>Use <code class="code docutils literal notranslate"><span class="pre">ScrHammersleySearchPlusMiddlePoint</span></code> (<code class="code docutils literal notranslate"><span class="pre">PlusMiddlePoint</span></code> only if you have continuous parameters or good default values for discrete parameters).</p></li>
 </ul>
-</div>
-<div class="section" id="example-of-chaining-or-inoculation-or-initialization-of-an-evolutionary-algorithm">
-<h2>Example of chaining, or inoculation, or initialization of an evolutionary algorithm<a class="headerlink" href="#example-of-chaining-or-inoculation-or-initialization-of-an-evolutionary-algorithm" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="example-of-chaining-or-inoculation-or-initialization-of-an-evolutionary-algorithm">
+<h2>Example of chaining, or inoculation, or initialization of an evolutionary algorithm<a class="headerlink" href="#example-of-chaining-or-inoculation-or-initialization-of-an-evolutionary-algorithm" title="Permalink to this headline"></a></h2>
 <p>Chaining consists in running several algorithms in turn, information being forwarded from the first to the second and so on.
 More precisely, the budget is distributed over several algorithms, and when an objective function value is computed, all algorithms are informed.</p>
 <p>Here is how to create such optimizers:</p>
@@ -421,9 +330,9 @@ More precisely, the budget is distributed over several algorithms, and when an o
 <span class="o">&gt;&gt;&gt;</span> <span class="p">[</span><span class="mf">0.50843113</span><span class="p">,</span> <span class="mf">0.5104554</span><span class="p">]</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="multiobjective-minimization-with-nevergrad">
-<h2>Multiobjective minimization with Nevergrad<a class="headerlink" href="#multiobjective-minimization-with-nevergrad" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="multiobjective-minimization-with-nevergrad">
+<h2>Multiobjective minimization with Nevergrad<a class="headerlink" href="#multiobjective-minimization-with-nevergrad" title="Permalink to this headline"></a></h2>
 <p>Multiobjective minimization is a <strong>work in progress</strong> in <code class="code docutils literal notranslate"><span class="pre">nevergrad</span></code>. It is:</p>
 <blockquote>
 <div><ul class="simple">
@@ -477,9 +386,9 @@ More precisely, the budget is distributed over several algorithms, and when an o
 <code class="code docutils literal notranslate"><span class="pre">DE</span></code> and its variants have however been updated to make use of the full multi-objective losses
 [#789](<a class="reference external" href="https://github.com/facebookresearch/nevergrad/pull/789">https://github.com/facebookresearch/nevergrad/pull/789</a>), which make them good candidates for multi-objective minimization (<code class="code docutils literal notranslate"><span class="pre">NGOpt</span></code> will
 delegate to DE in the case of multi-objective functions).</p>
-</div>
-<div class="section" id="reproducibility">
-<h2>Reproducibility<a class="headerlink" href="#reproducibility" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="reproducibility">
+<h2>Reproducibility<a class="headerlink" href="#reproducibility" title="Permalink to this headline"></a></h2>
 <p>Each parametrization has its own <code class="code docutils literal notranslate"><span class="pre">random_state</span></code> for generating random numbers. All optimizers pull from it when they require stochastic behaviors.
 For reproducibility, this random state can be seeded in two ways:</p>
 <ul class="simple">
@@ -487,55 +396,38 @@ For reproducibility, this random state can be seeded in two ways:</p>
 the parametrization’s random state is seeded with a seed drawn from the global random state.</p></li>
 <li><p>by manually seeding the parametrization random state (E.g.: <code class="code docutils literal notranslate"><span class="pre">parametrization.random_state.seed(12)</span></code> or <code class="code docutils literal notranslate"><span class="pre">optimizer.parametrization.random_state</span> <span class="pre">=</span> <span class="pre">np.random.RandomState(12)</span></code>)</p></li>
 </ul>
-</div>
-</div>
+</section>
+</section>
 
 
            </div>
-           
           </div>
-          <footer>
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-        <a href="parametrization.html" class="btn btn-neutral float-right" title="Parametrizing your optimization" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="getting_started.html" class="btn btn-neutral float-left" title="Getting started" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="parametrization.html" class="btn btn-neutral float-right" title="Parametrizing your optimization" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>
-        &#169; Copyright 2019, Facebook AI Research.
-
-    </p>
+    <p>&#169; Copyright 2019, Facebook AI Research.</p>
   </div>
-    
-    
-    
-    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
-    
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    
-    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
 
 </footer>
         </div>
       </div>
-
     </section>
-
   </div>
-  
-
-  <script type="text/javascript">
+  <script>
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-
-  
-  
-    
-   
+  </script> 
 
 </body>
 </html>
