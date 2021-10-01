@@ -191,9 +191,7 @@ def test_pareto_experiment() -> None:
 def test_easy_pareto_experiment() -> None:
     # Checking MOO in cross-validation.
     objective_functions: tp.List[tp.Any] = [
-        ArtificialFunction("sphere", block_dimension=2, translation_factor=0.0),
-        ArtificialFunction("sphere", block_dimension=2, translation_factor=0.0),
-        ArtificialFunction("sphere", block_dimension=2, translation_factor=0.0),
+        ArtificialFunction("sphere", block_dimension=2, translation_factor=0.0) for _ in range(3)
     ]
     xps = helpers.SpecialEvaluationExperiment.create_crossvalidation_experiments(
         objective_functions, pareto_size=16
