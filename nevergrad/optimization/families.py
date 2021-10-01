@@ -9,10 +9,11 @@ Caution
 This module and its available classes are experimental and may change quickly in the near future.
 """
 from .optimizerlib import ParametrizedOnePlusOne
-from .optimizerlib import EMNA
 from .optimizerlib import ParametrizedTBPSA
+from .optimizerlib import ParametrizedMetaModel
 from .optimizerlib import ParametrizedBO
 from .optimizerlib import ParametrizedCMA
+from .optimizerlib import EMNA
 from .optimizerlib import Chaining
 from .optimizerlib import NoisySplit
 from .optimizerlib import ConfSplitOptimizer
@@ -30,6 +31,8 @@ __all__ = [
     "ParametrizedOnePlusOne",
     "ParametrizedCMA",
     "ParametrizedBO",
+    "ParametrizedTBPSA",
+    "ParametrizedMetaModel",
     "DifferentialEvolution",
     "EvolutionStrategy",
     "ScipyOptimizer",
@@ -38,7 +41,6 @@ __all__ = [
     "SamplingSearch",
     "Chaining",
     "EMNA",
-    "ParametrizedTBPSA",
     "NoisySplit",
     "ConfSplitOptimizer",
     "ConfPortfolio",
