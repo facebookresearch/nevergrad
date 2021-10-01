@@ -212,6 +212,7 @@ def test_easy_pareto_experiment() -> None:
     xps = helpers.SpecialEvaluationExperiment.create_crossvalidation_experiments(
         objective_functions, pareto_size=16
     )
+    print(xps[0])
     optimizer = ng.optimizers.OnePlusOne(parametrization=2, budget=100)
-    recom = optimizer.minimize(xps[0])
-    assert xps[0].evaluation_function(recom) ** 2 < 0.001
+    optimizer.minimize(xps[0], verbosity=2)
+    assert xps[0].evaluation_function(optimizer.pareto_front()[0]) ** 2 < 0.001
