@@ -4,6 +4,8 @@
 # LICENSE file in the root directory of this source tree.
 
 from pathlib import Path
+import logging
+import os
 import numpy as np
 import nevergrad as ng
 import nevergrad.common.typing as tp
@@ -18,9 +20,9 @@ def _func(x: tp.Any, y: tp.Any, blublu: str, array: tp.Any, multiobjective: bool
 
 def test_log_parameters(tmp_path: Path) -> None:
     filepath = tmp_path / "logs.txt"
-    cases = [0, np.int(1), np.float(2.0), np.nan, float("inf"), np.inf]
+    cases = [0, np.int_(1), np.float_(2.0), np.nan, float("inf"), np.inf]
     instrum = ng.p.Instrumentation(
-        ng.p.Array(shape=(1,)).set_mutation(custom=ng.p.mutation.Translation()),
+        ng.ops.mutations.Translation()(ng.p.Array(shape=(1,))),
         ng.p.Scalar(),
         blublu=ng.p.Choice(cases),
         array=ng.p.Array(shape=(3, 2)),
@@ -33,7 +35,7 @@ def test_log_parameters(tmp_path: Path) -> None:
     logs = logger.load_flattened()
     assert len(logs) == 32
     assert isinstance(logs[-1]["1"], float)
-    assert len(logs[-1]) == 35
+    assert len(logs[-1]) == 31
     logs = logger.load_flattened(max_list_elements=2)
     assert len(logs[-1]) == 27
     # deletion
@@ -53,6 +55,24 @@ def test_multiobjective_log_parameters(tmp_path: Path) -> None:
     logger = callbacks.ParametersLogger(filepath)
     logs = logger.load_flattened()
     assert len(logs) == 2
+
+
+def test_chaining_log_parameters(tmp_path: Path) -> None:
+    filepath = tmp_path / "logs.txt"
+    params = ng.p.Instrumentation(
+        None, 2.0, blublu="blublu", array=ng.p.Array(shape=(3, 2)), multiobjective=False
+    )
+    zmethods = ["CauchyLHSSearch", "DE", "CMA"]
+    ztmp1 = [ng.optimizers.registry[zmet] for zmet in zmethods]
+    optmodel = ng.families.Chaining(ztmp1, [50, 50])  #
+    optim = optmodel(parametrization=params, budget=100, num_workers=3)
+    logger = ng.callbacks.ParametersLogger(filepath)
+    optim.register_callback("tell", logger)
+    optim.minimize(_func, verbosity=2)
+    # read
+    logger = callbacks.ParametersLogger(filepath)
+    logs = logger.load_flattened()
+    assert len(logs) == 100
 
 
 def test_dump_callback(tmp_path: Path) -> None:
@@ -81,3 +101,68 @@ def test_progressbar_dump(tmp_path: Path) -> None:
     for _ in range(12):
         cand = optimizer.ask()
         optimizer.tell(cand, 0)
+
+
+class _EarlyStoppingTestee:
+    def __init__(self) -> None:
+        self.num_calls = 0
+
+    def __call__(self, *args, **kwds) -> float:
+        self.num_calls += 1
+        return np.random.rand()
+
+
+def test_early_stopping() -> None:
+    instrum = ng.p.Instrumentation(None, 2.0, blublu="blublu", array=ng.p.Array(shape=(3, 2)))
+    func = _EarlyStoppingTestee()
+    optimizer = optimizerlib.OnePlusOne(parametrization=instrum, budget=100)
+    early_stopping = ng.callbacks.EarlyStopping(lambda opt: opt.num_ask > 3)
+    optimizer.register_callback("ask", early_stopping)
+    optimizer.minimize(func, verbosity=2)
+    # num_ask is set at the end of ask, so the callback sees the old value.
+    assert func.num_calls == 4
+    # below functions are included in the docstring of EarlyStopping
+    assert optimizer.current_bests["minimum"].mean < 12
+    assert optimizer.recommend().loss < 12  # type: ignore
+
+
+def test_optimization_logger(caplog) -> None:
+    instrum = ng.p.Instrumentation(
+        None, 2.0, blublu="blublu", array=ng.p.Array(shape=(3, 2)), multiobjective=False
+    )
+    logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
+    logger = logging.getLogger(__name__)
+    optimizer = optimizerlib.OnePlusOne(parametrization=instrum, budget=3)
+    optimizer.register_callback(
+        "tell",
+        callbacks.OptimizationLogger(
+            logger=logger, log_level=logging.INFO, log_interval_tells=10, log_interval_seconds=0.1
+        ),
+    )
+    with caplog.at_level(logging.INFO):
+        optimizer.minimize(_func, verbosity=2)
+    assert (
+        "After 0, recommendation is Instrumentation(Tuple(None,2.0),Dict(array=Array{(3,2)},blublu=blublu,multiobjective=False))"
+        in caplog.text
+    )
+
+
+def test_optimization_logger_MOO(caplog) -> None:
+    instrum = ng.p.Instrumentation(
+        None, 2.0, blublu="blublu", array=ng.p.Array(shape=(3, 2)), multiobjective=True
+    )
+    logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
+    logger = logging.getLogger(__name__)
+    optimizer = optimizerlib.OnePlusOne(parametrization=instrum, budget=3)
+    optimizer.register_callback(
+        "tell",
+        callbacks.OptimizationLogger(
+            logger=logger, log_level=logging.INFO, log_interval_tells=10, log_interval_seconds=0.1
+        ),
+    )
+    with caplog.at_level(logging.INFO):
+        optimizer.minimize(_func, verbosity=2)
+    assert (
+        "After 0, the respective minimum loss for each objective in the pareto front is [12. 12.]"
+        in caplog.text
+    )

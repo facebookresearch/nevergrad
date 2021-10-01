@@ -21,7 +21,8 @@ def impedance_pix(x: tp.ArrayLike, dpix: float, lam: float, ep0: float, epf: flo
     """
     k0d = 2 * pi * dpix / lam
     Z = 1 / sqrt(epf)
-    for n in reversed(np.sqrt(x)):  # refraction index slab
+    # refraction index slab
+    for n in reversed(np.sqrt(x)):  # type: ignore
         etha = 1 / n  # bulk impedance slab
         Z = etha * (Z + 1j * etha * tan(k0d * n)) / (etha + 1j * Z * tan(k0d * n))
     R = abs((Z - 1 / sqrt(ep0)) / (Z + 1 / sqrt(ep0))) ** 2 * 100  # reflection in %
@@ -68,7 +69,7 @@ class ARCoating(base.ExperimentFunction):
         )
         array.set_mutation(sigma=sigma)
         array.set_bounds(self.epmin, self.epf, method=bounding_method, full_range_sampling=True)
-        array.set_recombination(ng.p.mutation.Crossover(0)).set_name("")
+        array = ng.ops.mutations.Crossover(0)(array).set_name("")
         super().__init__(self._get_minimum_average_reflexion, array)
 
     def _get_minimum_average_reflexion(self, x: np.ndarray) -> float:
@@ -83,7 +84,7 @@ class ARCoating(base.ExperimentFunction):
         return value
 
     def evaluation_function(self, *recommendations: ng.p.Parameter) -> float:
-        assert len(recommendations) == 1, "Should not be a pareto set for a monoobjective function"
+        assert len(recommendations) == 1, "Should not be a pareto set for a singleobjective function"
         x = recommendations[0].value
         loss = self.function(x)
         assert isinstance(loss, float)

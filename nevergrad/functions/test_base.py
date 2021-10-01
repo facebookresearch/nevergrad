@@ -50,6 +50,23 @@ def test_experiment_function() -> None:
     )
 
 
+def test_array_experiment_function() -> None:
+    iarrayfuncs = [
+        base.ArrayExperimentFunction(
+            sum,
+            ng.p.Array(shape=(10,)).set_bounds(-0.5, 6.0).set_name(""),
+            symmetry=s,
+        )
+        for s in [247, 111, 111]
+    ]
+    np.testing.assert_equal(iarrayfuncs[0].dimension, 10)
+    assert iarrayfuncs[0](np.zeros(10)) == iarrayfuncs[0].copy()(np.zeros(10))
+    assert iarrayfuncs[0](np.zeros(10)) == 16.5
+    assert iarrayfuncs[1](np.zeros(10)) == 22.0
+    assert iarrayfuncs[0](np.ones(10)) != iarrayfuncs[1](np.ones(10))
+    assert iarrayfuncs[2](np.ones(10)) == iarrayfuncs[1](np.ones(10))
+
+
 def test_instrumented_function_kwarg_order() -> None:
     ifunc = base.ExperimentFunction(
         _arg_return,
@@ -96,16 +113,14 @@ def test_deterministic_data_setter() -> None:
     ifunc = base.ExperimentFunction(_Callable(), instru)
     data = [0.01, 0, 0, 0, 0.01, 0, 0, 0]
     for _ in range(20):
-        args, kwargs = (
-            ifunc.parametrization.spawn_child().set_standardized_data(data, deterministic=True).value
-        )
+        child = ifunc.parametrization.spawn_child()
+        with ng.p.helpers.deterministic_sampling(child):
+            args, kwargs = child.set_standardized_data(data).value
         testing.printed_assert_equal(args, [0])
         testing.printed_assert_equal(kwargs, {"y": 0})
     arg_sum, kwarg_sum = 0, 0
     for _ in range(24):
-        args, kwargs = (
-            ifunc.parametrization.spawn_child().set_standardized_data(data, deterministic=False).value
-        )
+        args, kwargs = ifunc.parametrization.spawn_child().set_standardized_data(data).value
         arg_sum += args[0]
         kwarg_sum += kwargs["y"]
     assert arg_sum != 0
@@ -127,8 +142,9 @@ def test_parametrization_continuous_noisy(
     variables: tp.Tuple[ng.p.Parameter, ...], continuous: bool, noisy: bool
 ) -> None:
     instru = ng.p.Instrumentation(*variables)
-    assert instru.descriptors.continuous == continuous
-    assert instru.descriptors.deterministic != noisy
+    analysis = ng.p.helpers.analyze(instru)
+    assert analysis.continuous == continuous
+    assert analysis.deterministic != noisy
 
 
 class ExampleFunction(base.ExperimentFunction):

@@ -15,7 +15,7 @@ from . import core
 
 
 def test_hypervolume_pareto_function() -> None:
-    hvol = core.HypervolumePareto((100, 100))
+    hvol = core.HypervolumePareto(upper_bounds=(100, 100))
     tuples = [
         (110, 110),  # -0 + distance
         (110, 90),  # -0 + distance
@@ -39,7 +39,7 @@ def test_hypervolume_pareto_function() -> None:
 
 
 def test_hypervolume_pareto_with_no_good_point() -> None:
-    hvol = core.HypervolumePareto((100, 100))
+    hvol = core.HypervolumePareto(upper_bounds=(100, 100))
     tuples = [(110, 110), (110, 90), (90, 110)]
     values = []
     for tup in tuples:
@@ -74,7 +74,7 @@ def test_optimizers_multiobjective(name: str) -> None:  # pylint: disable=redefi
         raise SkipTest("BO is currently failing for unclear reasons")  # TODO solve
     with warnings.catch_warnings():
         # tests do not need to be efficient
-        warnings.simplefilter("ignore", category=base.InefficientSettingsWarning)
+        warnings.simplefilter("ignore", category=base.errors.InefficientSettingsWarning)
         optimizer = registry[name](parametrization=4, budget=100)
         candidate = optimizer.ask()
         optimizer.tell(candidate, mofunc(candidate.value))

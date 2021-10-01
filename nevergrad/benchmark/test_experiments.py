@@ -13,7 +13,7 @@ from unittest import SkipTest
 import pytest
 import numpy as np
 from nevergrad.optimization import registry as optregistry
-from nevergrad.functions.base import UnsupportedExperiment
+import nevergrad.functions.base as fbase
 from nevergrad.functions.mlda import datasets
 from nevergrad.functions import rl
 from nevergrad.common import testing
@@ -32,24 +32,30 @@ def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[expe
     if "_pgan" in name and os.environ.get("CIRCLECI", False):
         raise SkipTest("Too slow in CircleCI")
 
+    # mixsimulator is not accepted by circleci pytest.
+    if "mixsimulator" in name and os.environ.get("CIRCLECI", False):
+        raise SkipTest("Sigkill in CircleCI")
+
     # Our IQAs and our ScikitLearn are not well guaranteed on Windows.
     if all(x in name for x in ["image", "quality"]) and platform.system() == "Windows":
         raise SkipTest("Image quality not guaranteed on Windows.")
 
     # Basic test.
+    print(f"Testing {name}")
     with tools.set_env(NEVERGRAD_PYTEST=1):
         with datasets.mocked_data():  # mock mlda data that should be downloaded
             check_maker(maker)  # this is to extract the function for reuse if other external packages need it
 
     # Some tests are skipped on CircleCI (but they do work well locally, if memory enough).
     if os.environ.get("CIRCLECI", False):
-        if any(name == x for x in ["images_using_gan", "mlda", "realworld"]):
+        if any(x in name for x in ["image", "mlda", "realworld", "adversarial_attack"]):
             raise SkipTest("Too slow in CircleCI")
 
     check_experiment(
         maker,
-        "mltuning" in name,
-        skip_seed=(name in ["rocket", "images_using_gan"]) or any(x in name for x in ["tuning", "image_"]),
+        ("mltuning" in name or "anm" in name),
+        skip_seed=(name in ["rocket", "images_using_gan"])
+        or any(x in name for x in ["tuning", "image_", "compiler", "anm"]),
     )  # this is a basic test on first elements, do not fully rely on it
 
 
@@ -79,7 +85,7 @@ def check_maker(maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> 
     # check 1 sample
     try:
         sample = next(maker())
-    except UnsupportedExperiment as e:
+    except fbase.UnsupportedExperiment as e:
         raise SkipTest("Skipping because unsupported") from e
     assert isinstance(sample, experiments.Experiment)
     # check names, coherence and non-randomness
@@ -118,7 +124,8 @@ def check_experiment(maker: tp.Any, short: bool = False, skip_seed: bool = False
             )
             for xp in xps
         ]
-        np.random.shuffle(simplified)  # compute in any order
+        # compute in any order
+        np.random.shuffle(simplified)  # type: ignore
         selector = Selector(data=[xp.run() for xp in simplified])
         results.append(Selector(selector.loc[:, ["loss", "seed", "error"]]))  # elapsed_time can vary...
         assert results[-1].unique("error") == {""}, f"An error was raised during optimization:\n{results[-1]}"

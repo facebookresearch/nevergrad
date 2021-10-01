@@ -223,12 +223,12 @@ class MLTuning(ExperimentFunction):
             evalparams = dict(params)
         # For the evaluation we remove the noise (unless overfitter)
         evalparams["noise_free"] = not overfitter
-        parametrization.descriptors.non_proxy_function = overfitter
+        parametrization.function.proxy = not overfitter
         super().__init__(partial(self._ml_parametrization, **params), parametrization.set_name(""))
         self._evalparams = evalparams
 
     def evaluation_function(self, *recommendations: p.Parameter) -> float:
-        assert len(recommendations) == 1, "Should not be a pareto set for a monoobjective function"
+        assert len(recommendations) == 1, "Should not be a pareto set for a singleobjective function"
         assert not recommendations[0].args
         kwargs = dict(recommendations[0].kwargs)
         # override with eval parameters (with partial, the eval parameters would be overriden by kwargs)
@@ -305,7 +305,7 @@ class MLTuning(ExperimentFunction):
         X = X.reshape(-1, data_dimension)
         rng.shuffle(X)
 
-        target_function = {
+        target_function: tp.Callable[[np.ndarray], np.ndarray] = {  # type: ignore
             "artificial": np.sin,
             "artificialcos": np.cos,
             "artificialsquare": np.square,

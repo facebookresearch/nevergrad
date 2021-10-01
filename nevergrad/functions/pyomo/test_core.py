@@ -56,6 +56,7 @@ def test_abstract_model_with_constraints() -> None:
     model = abs_model.create_instance(filename)
 
     func = core.Pyomo(model)
+    func.parametrization.random_state.seed(12)
     optimizer = ng.optimizers.OnePlusOne(parametrization=func.parametrization, budget=200)
     recommendation = optimizer.minimize(func.function)
 
@@ -67,7 +68,7 @@ def test_abstract_model_with_constraints() -> None:
 
 def test_pyomo_set() -> None:
     def square2(m: tp.Any) -> float:
-        return (m.x - 1) ** 2
+        return (m.x - 1) ** 2  # type: ignore
 
     model = pyomo.ConcreteModel()
     model.P = pyomo.Set(initialize=list(range(1, 11)))
@@ -78,6 +79,7 @@ def test_pyomo_set() -> None:
     model.constraint1 = pyomo.Constraint(rule=lambda m: m.x >= 2)
 
     func = core.Pyomo(model)
+    func.parametrization.random_state.seed(12)
     optimizer = ng.optimizers.OnePlusOne(parametrization=func.parametrization, budget=100)
     recommendation = optimizer.minimize(func.function)
 

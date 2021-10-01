@@ -28,6 +28,7 @@ DESCRIPTION_KEYS = {
     "hashing",
     "parametrization",
     "noise_dissymmetry",
+    "bounded",
 }
 
 
@@ -72,19 +73,25 @@ def test_ptb_no_overfitting() -> None:
 
 
 @testing.parametrized(
-    sphere=({"name": "sphere", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2}, 9.630),
-    cigar=({"name": "cigar", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2}, 3527289.665),
+    sphere=(
+        {"name": "sphere", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2},
+        13.377591870607294,
+    ),
+    cigar=(
+        {"name": "cigar", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2},
+        12492378.626191331,
+    ),
     cigar_rot=(
         {"rotation": True, "name": "cigar", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2},
-        5239413.576,
+        2575881.272645816,
     ),
     hashed=(
         {"name": "sphere", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2, "hashing": True},
-        6.174957533,
+        8.916424986561422,
     ),
     noisy_sphere=(
         {"name": "sphere", "block_dimension": 3, "useless_variables": 6, "num_blocks": 2, "noise_level": 0.2},
-        9.576,
+        14.512132049518083,
     ),
     noisy_very_sphere=(
         {
@@ -95,12 +102,13 @@ def test_ptb_no_overfitting() -> None:
             "noise_dissymmetry": True,
             "noise_level": 0.2,
         },
-        7.615,
+        19.33566196119778,
     ),
 )
 def test_testcase_function_value(config: tp.Dict[str, tp.Any], expected: float) -> None:
     # make sure no change is made to the computation
     func = functionlib.ArtificialFunction(**config)
+    np.random.seed(1)  # don't know how to control to randomness
     func = func.copy()
     np.random.seed(2)  # initialization is delayed
     x = np.random.normal(0, 1, func.dimension)
@@ -173,7 +181,7 @@ def test_compute_pseudotime() -> None:
     np.testing.assert_equal(func.compute_pseudotime(((x,), {}), 3), 1.0)
     np.random.seed(12)
     func = functionlib.ArtificialFunction("DelayedSphere", 2)
-    np.testing.assert_almost_equal(func.compute_pseudotime(((x,), {}), 3), 0.00034702)
+    np.testing.assert_almost_equal(func.compute_pseudotime(((x,), {}), 3), 0.00025003021607278633)
     # check minimum
     np.random.seed(None)
     func = functionlib.ArtificialFunction("DelayedSphere", 2)
@@ -197,6 +205,7 @@ def test_noisy_call(x: int, noise: bool, noise_dissymmetry: bool, expect_noisy: 
         func=lambda y: np.arctanh(y)[0],  # type: ignore
         noise_level=float(noise),
         noise_dissymmetry=noise_dissymmetry,
+        random_state=np.random.RandomState(0),
     )
     assert not np.isnan(fx)  # noise addition should not get out of function domain
     if expect_noisy:
@@ -214,12 +223,12 @@ def test_far_optimum_function(independent_sigma: bool, mutable_sigma: bool) -> N
     param = func.parametrization.spawn_child()
     assert isinstance(param, p.Array)
     assert isinstance(param.sigma, p.Array) == mutable_sigma
-    assert param.sigma.value.size == (1 + independent_sigma)
+    assert param.sigma.value.size == (1 + independent_sigma)  # type: ignore
     param.mutate()
     new_val = param.sigma.value
     assert bool(np.sum(np.abs(new_val - func.parametrization.sigma.value))) == mutable_sigma  # type: ignore
     if independent_sigma and mutable_sigma:
-        assert new_val[0] != new_val[1]
+        assert new_val[0] != new_val[1]  # type: ignore
 
 
 def test_far_optimum_function_cases() -> None:

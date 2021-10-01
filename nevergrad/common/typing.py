@@ -29,9 +29,11 @@ from typing import MutableMapping as MutableMapping
 from typing import Iterator as Iterator
 from typing import Iterable as Iterable
 from typing import Generator as Generator
+from typing import KeysView as KeysView
+from typing import ValuesView as ValuesView
+from typing import ItemsView as ItemsView
 
 # others
-from typing import ValuesView as ValuesView
 from typing import Callable as Callable
 from typing import Hashable as Hashable
 from typing import Match as Match
@@ -43,10 +45,11 @@ import numpy as _np
 
 
 ArgsKwargs = Tuple[Tuple[Any, ...], Dict[str, Any]]
-ArrayLike = Union[Tuple[float, ...], List[float], _np.ndarray]
+ArrayLike = Union[Tuple[float, ...], List[float], _np.ndarray]  # most common
 PathLike = Union[str, Path]
 FloatLoss = float
 Loss = Union[float, ArrayLike]
+BoundValue = Optional[Union[float, int, _np.int_, _np.float_, ArrayLike]]
 
 
 # %% Protocol definitions for executor typing

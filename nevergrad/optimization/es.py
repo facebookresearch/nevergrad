@@ -27,18 +27,21 @@ class _EvolutionStrategy(base.Optimizer):
         config: tp.Optional["EvolutionStrategy"] = None,
     ) -> None:
         if budget is not None and budget < 60:
-            warnings.warn("ES algorithms are inefficient with budget < 60", base.InefficientSettingsWarning)
+            warnings.warn(
+                "ES algorithms are inefficient with budget < 60", base.errors.InefficientSettingsWarning
+            )
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._population: tp.Dict[str, p.Parameter] = {}
         self._uid_queue = UidQueue()
         self._waiting: tp.List[p.Parameter] = []
         # configuration
         self._config = EvolutionStrategy() if config is None else config
-        self._ranker: tp.Any = None  # TODO better typing (eventually)
+        self._rank_method: tp.Any = None  # TODO better typing (eventually)
         if self._config.ranker == "nsga2":
-            self._ranker = nsga2.NSGA2Ranking()
+            self._rank_method = nsga2.rank
         elif self._config.ranker != "simple":
             raise NotImplementedError(f"Unknown ranker {self._config.ranker}")
+        self._no_hypervolume = self._config.offsprings is None
 
     def _internal_ask_candidate(self) -> p.Parameter:
         if self.num_ask < self._config.popsize:
@@ -56,21 +59,16 @@ class _EvolutionStrategy(base.Optimizer):
             param.recombine(self._population[selected])
         return param
 
-    def _internal_tell_candidate(self, candidate: p.Parameter, value: tp.FloatLoss) -> None:
-        candidate._meta["value"] = value
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: float) -> None:
         if self._config.offsprings is None:
             uid = candidate.heritage["lineage"]
             self._uid_queue.tell(uid)
-            parent_value = (
-                float("inf") if uid not in self._population else self._population[uid]._meta["value"]
-            )
-            if value < parent_value:
+            parent_value = float("inf") if uid not in self._population else base._loss(self._population[uid])
+            if loss < parent_value:
                 self._population[uid] = candidate
         else:
-            if (
-                candidate.parents_uids[0] not in self._population
-                and len(self._population) < self._config.popsize
-            ):
+            no_parent = next(iter(candidate.parents_uids), "#no_parent#") not in self._population
+            if no_parent and len(self._population) < self._config.popsize:
                 self._population[candidate.uid] = candidate
                 self._uid_queue.tell(candidate.uid)
             else:
@@ -78,13 +76,13 @@ class _EvolutionStrategy(base.Optimizer):
             if len(self._waiting) >= self._config.offsprings:
                 self._select()
 
-    def _select(self):
+    def _select(self) -> None:
         choices = self._waiting + ([] if self._config.only_offsprings else list(self._population.values()))
-        if self._ranker is not None:
-            choices_rank = self._ranker.rank(choices, n_selected=self._config.popsize)
+        if self._rank_method is not None and self.num_objectives > 1:
+            choices_rank = self._rank_method(choices, n_selected=self._config.popsize)
             choices = [x for x in choices if x.uid in choices_rank]
         else:
-            choices.sort(key=lambda x: x._meta["value"])
+            choices.sort(key=base._loss)
         self._population = {x.uid: x for x in choices[: self._config.popsize]}
         self._uid_queue.clear()
         self._waiting.clear()
@@ -95,6 +93,19 @@ class _EvolutionStrategy(base.Optimizer):
 class EvolutionStrategy(base.ConfiguredOptimizer):
     """Experimental evolution-strategy-like algorithm
     The API is going to evolve
+
+    Parameters
+    ----------
+    recombination_ratio: float
+        probability of using a recombination (after the mutation) for generating new offsprings
+    popsize: int
+        population size of the parents (lambda)
+    offsprings: int
+        number of generated offsprings (mu)
+    only_offsprings: bool
+        use only offsprings for the new generation if True (True: lambda,mu, False: lambda+mu)
+    ranker: str
+        ranker for the multiobjective case (defaults to NSGA2)
     """
 
     # pylint: disable=unused-argument
@@ -105,8 +116,7 @@ class EvolutionStrategy(base.ConfiguredOptimizer):
         popsize: int = 40,
         offsprings: tp.Optional[int] = None,
         only_offsprings: bool = False,
-        # de_step: bool = False,
-        ranker: str = "simple",
+        ranker: str = "nsga2",
     ) -> None:
         super().__init__(_EvolutionStrategy, locals(), as_config=True)
         assert offsprings is None or not only_offsprings or offsprings > popsize
@@ -139,6 +149,6 @@ MixES = EvolutionStrategy(recombination_ratio=0, only_offsprings=False, offsprin
 MutDE = EvolutionStrategy(recombination_ratio=0, only_offsprings=False, offsprings=None).set_name(
     "MutDE", register=True
 )
-NSGAIIES = EvolutionStrategy(
-    recombination_ratio=0, only_offsprings=True, offsprings=60, ranker="nsga2"
-).set_name("NSGAIIES", register=True)
+NonNSGAIIES = EvolutionStrategy(
+    recombination_ratio=0, only_offsprings=True, offsprings=60, ranker="simple"
+).set_name("NonNSGAIIES", register=True)
