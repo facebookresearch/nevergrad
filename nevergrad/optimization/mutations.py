@@ -21,9 +21,9 @@ class Mutator:
         1/arity, 2/arity, ..., (arity-1)/arity.
         """
         w = v
-        while discretization.threshold_discretization(
-            [w], arity
-        ) == discretization.threshold_discretization([v], arity):
+        while discretization.threshold_discretization([w], arity) == discretization.threshold_discretization(
+            [v], arity
+        ):
             w = self.random_state.normal(0.0, 1.0)
         return w
 
@@ -75,9 +75,7 @@ class Mutator:
         boolean_vector = np.ones(dimension, dtype=bool)
         while all(boolean_vector) and dimension != 1:
             boolean_vector = self.random_state.rand(dimension) > float(intensity) / dimension
-        return [
-            s if b else self.significantly_mutate(s, arity) for (b, s) in zip(boolean_vector, parent)
-        ]
+        return [s if b else self.significantly_mutate(s, arity) for (b, s) in zip(boolean_vector, parent)]
 
     def coordinatewise_mutation(
         self,

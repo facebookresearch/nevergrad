@@ -37,7 +37,10 @@ def threshold_discretization(x: tp.ArrayLike, arity: int = 2, sparse: bool = Fal
         return (np.array(x) > 0).astype(int).tolist()  # type: ignore
     elif sparse:  # We're ok for continuous values, except around zero.
         tentative = np.clip(arity * scipy.stats.norm.cdf(x), 0, arity - 1)  # type: ignore
-        y = np.asarray(np.random.randint(tentative.size + 1, size=tentative.size).reshape(tentative.shape)) == 0
+        y = (
+            np.asarray(np.random.randint(tentative.size + 1, size=tentative.size).reshape(tentative.shape))
+            == 0
+        )
         tentative[y] = 0.0
         return tentative.tolist()
     else:
