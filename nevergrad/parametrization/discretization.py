@@ -14,7 +14,7 @@ import nevergrad.common.typing as tp
 # - by a softmax transformation, a k-valued categorical variable is converted into k continuous variables.
 # - by a discretization - as we often use Gaussian random values, we discretize according to quantiles of the normal
 #   distribution.
-def threshold_discretization(x: tp.ArrayLike, arity: int = 2, sparse: bool = False) -> tp.List[int]:
+def threshold_discretization(x: tp.ArrayLike, arity: int = 2) -> tp.List[int]:
     """Discretize by casting values from 0 to arity -1, assuming that x values
     follow a normal distribution.
 
@@ -35,14 +35,6 @@ def threshold_discretization(x: tp.ArrayLike, arity: int = 2, sparse: bool = Fal
         x[np.isnan(x)] = -np.inf
     if arity == 2:  # special case, to have 0 yield 0
         return (np.array(x) > 0).astype(int).tolist()  # type: ignore
-    elif sparse:  # We're ok for continuous values, except around zero.
-        tentative = np.clip(arity * scipy.stats.norm.cdf(x), 0, arity - 1)  # type: ignore
-        y = (
-            np.asarray(np.random.randint(tentative.size + 1, size=tentative.size).reshape(tentative.shape))
-            == 0
-        )
-        tentative[y] = 0.0
-        return tentative.tolist()
     else:
         return np.clip(arity * scipy.stats.norm.cdf(x), 0, arity - 1).astype(int).tolist()  # type: ignore
 

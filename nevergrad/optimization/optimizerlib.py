@@ -188,6 +188,11 @@ class _OnePlusOne(base.Optimizer):
                 if mutation == "gaussian"
                 else self._rng.standard_cauchy(self.dimension)
             )
+            if self.sparse:
+                zeroing = (
+                    np.asarray(np.random.randint(step.size + 1,
+                    size=step.size).reshape(step.shape)) == 0)
+                step[zeroing] = 0.0
             out = pessimistic.set_standardized_data(self._sigma * step)
             out._meta["sigma"] = self._sigma
             return out
@@ -256,12 +261,10 @@ class _OnePlusOne(base.Optimizer):
                 }[mutation]
                 data = func(pessimistic_data, arity=self.arity_for_discrete_mutation)
             if self.sparse:
-                undata = discretization.inverse_threshold_discretization(
-                    data, arity=self.arity_for_discrete_mutation
-                )
-                data = discretization.threshold_discretization(
-                    undata, arity=self.arity_for_discrete_mutation, sparse=True
-                )
+                zeroing = (
+                    np.asarray(np.random.randint(data.size + 1,
+                    size=data.size).reshape(data.shape)) == 0)
+                data[zeroing] = 0.0
             return pessimistic.set_standardized_data(data, reference=ref)
 
     def _internal_tell(self, x: tp.ArrayLike, loss: tp.FloatLoss) -> None:
