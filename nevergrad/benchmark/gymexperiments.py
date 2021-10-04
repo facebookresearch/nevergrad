@@ -283,7 +283,7 @@ def unlimited_stochastic_compiler_gym(seed: tp.Optional[int] = None) -> tp.Itera
 
 @registry.register
 def unlimited_direct_problems23_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Working on CompilerGym. 11 problems, randomly drawn, but always the same ones."""
+    """Working on CompilerGym. All 23 problems."""
     for compiler_gym_pb_index in range(23):
         pb = gym_problem(
             seed,
@@ -297,7 +297,7 @@ def unlimited_direct_problems23_compiler_gym(seed: tp.Optional[int] = None) -> t
 
 @registry.register
 def limited_direct_problems23_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Working on CompilerGym. 11 problems, randomly drawn, but always the same ones."""
+    """Working on CompilerGym. All 23 problems."""
     for compiler_gym_pb_index in range(23):
         pb = gym_problem(
             seed,
