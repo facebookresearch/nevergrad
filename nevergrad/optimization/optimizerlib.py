@@ -76,6 +76,7 @@ class _OnePlusOne(base.Optimizer):
         crossover: bool = False,
         rotation: bool = False,
         use_pareto: bool = False,
+        sparse: bool = False,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert crossover or (not rotation), "We can not have both rotation and not crossover."
@@ -86,7 +87,9 @@ class _OnePlusOne(base.Optimizer):
         arity = max(
             len(param.choices) if isinstance(param, p.TransitionChoice) else 500 for _, param in all_params
         )
-        self.arity_for_discrete_mutation = arity
+        self.arity_for_discrete_mutation = (
+            arity if not sparse else -arity
+        )  # Negative values are a code for "sparse".
         # configuration
         if noise_handling is not None:
             if isinstance(noise_handling, str):
@@ -330,6 +333,7 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
         crossover: bool = False,
         rotation: bool = False,
         use_pareto: bool = False,
+        sparse: bool = False,
     ) -> None:
         super().__init__(_OnePlusOne, locals())
 
@@ -337,6 +341,9 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
 OnePlusOne = ParametrizedOnePlusOne().set_name("OnePlusOne", register=True)
 NoisyOnePlusOne = ParametrizedOnePlusOne(noise_handling="random").set_name("NoisyOnePlusOne", register=True)
 DiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete").set_name("DiscreteOnePlusOne", register=True)
+SparseDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete", sparse=True).set_name(
+    "SparseDiscreteOnePlusOne", register=True
+)
 PortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="portfolio").set_name(
     "PortfolioDiscreteOnePlusOne", register=True
 )
@@ -370,6 +377,9 @@ NoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
 ).set_name("NoisyDiscreteOnePlusOne", register=True)
 DoubleFastGADiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="doublefastga").set_name(
     "DoubleFastGADiscreteOnePlusOne", register=True
+)
+SparseDoubleFastGADiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="doublefastga", sparse=True).set_name(
+    "SparseDoubleFastGADiscreteOnePlusOne", register=True
 )
 RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
     crossover=True, mutation="portfolio", noise_handling="optimistic"
