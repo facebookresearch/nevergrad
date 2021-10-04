@@ -50,7 +50,7 @@ def inverse_threshold_discretization(indexes: tp.List[int], arity: int = 2) -> n
     indexes_arr = np.array(indexes, copy=True)
     assert not np.any(np.isnan(indexes_arr))
     internal_arity = abs(arity)
-    pdf_bin_size = 1 / inernal_arity
+    pdf_bin_size = 1 / internal_arity
     # We take the center of each bin (in the pdf space)
     x = scipy.stats.norm.ppf(indexes_arr * pdf_bin_size + (pdf_bin_size / 2))  # type: ignore
     nan_indices = np.where(np.isnan(x))
