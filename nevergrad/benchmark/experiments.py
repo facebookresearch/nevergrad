@@ -622,6 +622,7 @@ def yabbob(
     tiny: bool = False,
     tuning: bool = False,
     bounded: bool = False,
+    box: bool = False,
 ) -> tp.Iterator[Experiment]:
     """Yet Another Black-Box Optimization Benchmark.
     Related to, but without special effort for exactly sticking to, the BBOB/COCO dataset.
@@ -673,7 +674,7 @@ def yabbob(
     # List of objective functions.
     functions = [
         ArtificialFunction(
-            name, block_dimension=d, rotation=rotation, noise_level=noise_level, split=split, bounded=bounded
+            name, block_dimension=d, rotation=rotation, noise_level=noise_level, split=split, bounded=bounded or box
         )
         for name in names
         for rotation in [True, False]
@@ -816,6 +817,12 @@ def yanoisybbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 def yaboundedbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with bounded domain, (-5,5)**n by default."""
     return yabbob(seed, bounded=True)
+
+
+@registry.register
+def yaboxbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with bounded domain, (-5,5)**n by default."""
+    return yabbob(seed, box=True)
 
 
 @registry.register
