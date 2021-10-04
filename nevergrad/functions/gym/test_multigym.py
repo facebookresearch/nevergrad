@@ -19,7 +19,7 @@ def test_multigym() -> None:
         assert env_name not in multigym.NO_LENGTH, f"{env_name} in no length and in ng_gym!"
     for env_name in multigym.GUARANTEED_GYM_ENV_NAMES:
         assert env_name in GYM_ENV_NAMES, f"{env_name} should be guaranteed!"
-    assert len(GYM_ENV_NAMES) >= 26 or os.name == "nt"
+    assert len(GYM_ENV_NAMES) >= 16 or os.name == "nt"
 
 
 def test_compiler_gym() -> None:
@@ -30,17 +30,17 @@ def test_compiler_gym() -> None:
 
 
 def test_roulette() -> None:
-    func = multigym.GymMulti(name="Roulette-v0", control="neural", neural_factor=1, randomized=True)
+    func = multigym.GymMulti(name="CartPole-v0", control="neural", neural_factor=1, randomized=True)
     results = [func(np.zeros(func.dimension)) for _ in range(40)]
-    assert min(results) != max(results), "Roulette should not be deterministic."
+    assert min(results) != max(results), "CartPole should not be deterministic."
     candidate = func.parametrization.sample()
     results = [func.evaluation_function(candidate) for _ in range(40)]
-    assert min(results) != max(results), "Roulette should not be deterministic."
+    assert min(results) != max(results), "CartPole should not be deterministic."
 
 
 @pytest.mark.parametrize("name", GYM_ENV_NAMES)  # type: ignore
 def test_run_multigym(name: str) -> None:
-    if os.name == "nt" or np.random.randint(8):
+    if os.name == "nt" or np.random.randint(8) or "CubeCrash" in name:
         raise SkipTest("Skipping Windows and running only 1 out of 8")
     func = multigym.GymMulti(randomized=False, neural_factor=None)
     x = np.zeros(func.dimension)
@@ -57,5 +57,7 @@ def test_run_multigym(name: str) -> None:
     )
     y = func.parametrization.sample()
     func(y.value)
-    if "stac" in control:  # Let's check if the memory works.
-        np.testing.assert_almost_equal(func(y.value), 500 if "Acrobat" in name else 20.41, decimal=2)
+    if "stac" in control and "Acrobat" in name:  # Let's check if the memory works.
+        np.testing.assert_almost_equal(func(y.value), 500, decimal=2)
+    if "stac" in control and "Pendulum-v0" in name:  # Let's check if the memory works.
+        np.testing.assert_almost_equal(func(y.value), 1688.82, decimal=2)

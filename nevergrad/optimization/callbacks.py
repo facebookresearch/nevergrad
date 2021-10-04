@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import os
 import json
 import time
 import warnings
@@ -18,7 +17,6 @@ from nevergrad.parametrization import parameter as p
 from nevergrad.parametrization import helpers
 from . import base
 
-logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
 global_logger = logging.getLogger(__name__)
 
 

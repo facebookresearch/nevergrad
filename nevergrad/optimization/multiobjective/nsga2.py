@@ -3,15 +3,12 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import os
 import logging
 import numpy as np
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
 
 
-# run with LOGLEVEL=DEBUG for more debug information
-logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
 logger = logging.getLogger(__name__)
 
 
