@@ -290,6 +290,21 @@ def unlimited_direct_problems23_compiler_gym(seed: tp.Optional[int] = None) -> t
 
 
 @registry.register
+def maveric_direct(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Working on CompilerGym. All 23 problems."""
+    for compiler_gym_pb_index in range(23):
+        pb = gym_problem(
+            seed,
+            specific_problem="directcompilergym" + str(compiler_gym_pb_index),
+            compiler_gym_pb_index=compiler_gym_pb_index,
+        )
+        for xp in pb:
+            yield xp
+
+
+
+
+@registry.register
 def limited_direct_problems23_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Working on CompilerGym. 11 problems, randomly drawn, but always the same ones."""
     for compiler_gym_pb_index in range(23):
