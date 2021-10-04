@@ -101,13 +101,19 @@ def ng_full_gym(
 
 @registry.register
 def multi_ng_full_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Counterpart of ng_full_gym with one neural net per time step."""
+    """Counterpart of ng_full_gym with one neural net per time step. 
+
+    Each neural net is used for many problems, but only for one of the time steps."""
     return ng_full_gym(seed, multi=True)
 
 
 @registry.register
 def conformant_ng_full_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Counterpart of ng_full_gym with fixed, predetermined actions for each time step."""
+    """Counterpart of ng_full_gym with fixed, predetermined actions for each time step.
+
+    This is conformant: we optimize directly the actions for a given context.
+    This does not prevent stochasticity, but actions do not depend on observationos.
+    """
     return ng_full_gym(seed, conformant=True)
 
 
