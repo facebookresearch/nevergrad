@@ -83,13 +83,12 @@ class _OnePlusOne(base.Optimizer):
         self._sigma: float = 1
         self._previous_best_loss = float("inf")
         self.use_pareto = use_pareto
+        self.sparse = sparse
         all_params = p.helpers.flatten(self.parametrization)
         arity = max(
             len(param.choices) if isinstance(param, p.TransitionChoice) else 500 for _, param in all_params
         )
-        self.arity_for_discrete_mutation = (
-            arity if not sparse else -arity
-        )  # Negative values are a code for "sparse".
+        self.arity_for_discrete_mutation = arity
         # configuration
         if noise_handling is not None:
             if isinstance(noise_handling, str):
@@ -197,7 +196,7 @@ class _OnePlusOne(base.Optimizer):
             if mutation == "crossover":
                 if self._num_ask % 2 == 0 or len(self.archive) < 3:
                     data = mutator.portfolio_discrete_mutation(
-                        pessimistic_data, arity=self.arity_for_discrete_mutation
+                        pessimistic_data, arity=self.arity_for_discrete_mutation, sparse=self.sparse
                     )
                 else:
                     data = mutator.crossover(pessimistic_data, mutator.get_roulette(self.archive, num=2))
@@ -206,6 +205,7 @@ class _OnePlusOne(base.Optimizer):
                     pessimistic_data,
                     intensity=max(1, int(self._adaptive_mr * self.dimension)),
                     arity=self.arity_for_discrete_mutation,
+                    sparse=self.space,
                 )
             elif mutation == "discreteBSO":
                 assert self.budget is not None, "DiscreteBSO needs a budget."
@@ -213,7 +213,10 @@ class _OnePlusOne(base.Optimizer):
                 if intensity < 1:
                     intensity = 1
                 data = mutator.portfolio_discrete_mutation(
-                    pessimistic_data, intensity=intensity, arity=self.arity_for_discrete_mutation
+                    pessimistic_data,
+                    intensity=intensity,
+                    arity=self.arity_for_discrete_mutation,
+                    sparse=self.space,
                 )
             elif mutation == "coordinatewise_adaptive":
                 self._modified_variables = np.array([True] * self.dimension)
@@ -222,12 +225,16 @@ class _OnePlusOne(base.Optimizer):
                     self._velocity,
                     self._modified_variables,
                     arity=self.arity_for_discrete_mutation,
+                    sparse=self.space,
                 )
             elif mutation == "lengler":
                 alpha = 1.54468
                 intensity = int(max(1, self.dimension * (alpha * np.log(self.num_ask) / self.num_ask)))
                 data = mutator.portfolio_discrete_mutation(
-                    pessimistic_data, intensity=intensity, arity=self.arity_for_discrete_mutation
+                    pessimistic_data,
+                    intensity=intensity,
+                    arity=self.arity_for_discrete_mutation,
+                    sparse=self.space,
                 )
             elif mutation == "doerr":
                 # Selection, either random, or greedy, or a mutation rate.
@@ -240,7 +247,10 @@ class _OnePlusOne(base.Optimizer):
                     self._doerr_index = -1
                 intensity = self._doerr_mutation_rates[index]
                 data = mutator.portfolio_discrete_mutation(
-                    pessimistic_data, intensity=intensity, arity=self.arity_for_discrete_mutation
+                    pessimistic_data,
+                    intensity=intensity,
+                    arity=self.arity_for_discrete_mutation,
+                    sparse=self.space,
                 )
             else:
                 func: tp.Any = {  # type: ignore
@@ -249,7 +259,7 @@ class _OnePlusOne(base.Optimizer):
                     "doublefastga": mutator.doubledoerr_discrete_mutation,
                     "portfolio": mutator.portfolio_discrete_mutation,
                 }[mutation]
-                data = func(pessimistic_data, arity=self.arity_for_discrete_mutation)
+                data = func(pessimistic_data, arity=self.arity_for_discrete_mutation, sparse=self.sparse)
             return pessimistic.set_standardized_data(data, reference=ref)
 
     def _internal_tell(self, x: tp.ArrayLike, loss: tp.FloatLoss) -> None:

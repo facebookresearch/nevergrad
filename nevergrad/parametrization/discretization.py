@@ -14,7 +14,7 @@ import nevergrad.common.typing as tp
 # - by a softmax transformation, a k-valued categorical variable is converted into k continuous variables.
 # - by a discretization - as we often use Gaussian random values, we discretize according to quantiles of the normal
 #   distribution.
-def threshold_discretization(x: tp.ArrayLike, arity: int = 2) -> tp.List[int]:
+def threshold_discretization(x: tp.ArrayLike, arity: int = 2, sparse: bool = False) -> tp.List[int]:
     """Discretize by casting values from 0 to arity -1, assuming that x values
     follow a normal distribution.
 
@@ -29,34 +29,30 @@ def threshold_discretization(x: tp.ArrayLike, arity: int = 2) -> tp.List[int]:
     ----
     - nans are processed as negative infs (yields 0)
     """
-    internal_arity = abs(arity)
     x = np.array(x, copy=True)
     if np.any(np.isnan(x)):
         warnings.warn("Encountered NaN values for discretization")
         x[np.isnan(x)] = -np.inf
-    if internal_arity == 2:  # special case, to have 0 yield 0
+    if arity == 2:  # special case, to have 0 yield 0
         return (np.array(x) > 0).astype(int).tolist()  # type: ignore
-    elif arity < 0:  # We're ok for continuous values, except around zero.
-        tentative = np.clip(internal_arity * scipy.stats.norm.cdf(x), 0, internal_arity - 1)  # type: ignore
+    elif sparse:  # We're ok for continuous values, except around zero.
+        tentative = np.clip(arity * scipy.stats.norm.cdf(x), 0, arity - 1)  # type: ignore
         y = np.asarray(np.random.randint(tentative.size, size=tentative.size).reshape(tentative.shape)) == 0
         tentative[y] = 0.0
         return tentative.tolist()
     else:
-        return np.clip(internal_arity * scipy.stats.norm.cdf(x), 0, internal_arity - 1).astype(int).tolist()  # type: ignore
+        return np.clip(arity * scipy.stats.norm.cdf(x), 0, arity - 1).astype(int).tolist()  # type: ignore
 
 
 # The function below is the opposite of the function above.
 def inverse_threshold_discretization(indexes: tp.List[int], arity: int = 2) -> np.ndarray:
     indexes_arr = np.array(indexes, copy=True)
     assert not np.any(np.isnan(indexes_arr))
-    internal_arity = abs(arity)
-    pdf_bin_size = 1 / internal_arity
+    pdf_bin_size = 1 / arity
     # We take the center of each bin (in the pdf space)
     x = scipy.stats.norm.ppf(indexes_arr * pdf_bin_size + (pdf_bin_size / 2))  # type: ignore
     nan_indices = np.where(np.isnan(x))
-    x[nan_indices] = (
-        np.sign(indexes_arr[nan_indices] - (internal_arity / 2.0)) * np.finfo(np.dtype("float")).max
-    )
+    x[nan_indices] = np.sign(indexes_arr[nan_indices] - (arity / 2.0)) * np.finfo(np.dtype("float")).max
     return x
 
 

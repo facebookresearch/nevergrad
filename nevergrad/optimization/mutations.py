@@ -16,26 +16,28 @@ class Mutator:
     def __init__(self, random_state: np.random.RandomState) -> None:
         self.random_state = random_state
 
-    def significantly_mutate(self, v: float, arity: int):
+    def significantly_mutate(self, v: float, arity: int, sparse: bool = False):
         """Randomly drawn a normal value, and redraw until it's different after discretization by the quantiles
         1/arity, 2/arity, ..., (arity-1)/arity.
         """
         w = v
-        while discretization.threshold_discretization([w], arity) == discretization.threshold_discretization(
-            [v], arity
-        ):
+        while discretization.threshold_discretization(
+            [w], arity, sparse
+        ) == discretization.threshold_discretization([v], arity, sparse):
             w = self.random_state.normal(0.0, 1.0)
         return w
 
-    def doerr_discrete_mutation(self, parent: tp.ArrayLike, arity: int = 2) -> tp.ArrayLike:
+    def doerr_discrete_mutation(
+        self, parent: tp.ArrayLike, arity: int = 2, sparse: bool = False
+    ) -> tp.ArrayLike:
         """Mutation as in the fast 1+1-ES, Doerr et al. The exponent is 1.5."""
         dimension = len(parent)
         if dimension < 5:
             return self.discrete_mutation(parent)
-        return self.doubledoerr_discrete_mutation(parent, max_ratio=0.5, arity=arity)
+        return self.doubledoerr_discrete_mutation(parent, max_ratio=0.5, arity=arity, sparse=sparse)
 
     def doubledoerr_discrete_mutation(
-        self, parent: tp.ArrayLike, max_ratio: float = 1.0, arity: int = 2
+        self, parent: tp.ArrayLike, max_ratio: float = 1.0, arity: int = 2, sparse: bool = False
     ) -> tp.ArrayLike:
         """Doerr's recommendation above can mutate up to half variables
         in average.
@@ -54,10 +56,10 @@ class Mutator:
         p = 1.0 / np.arange(1, max_mutations) ** 1.5
         p /= np.sum(p)
         u = self.random_state.choice(np.arange(1, max_mutations), p=p)
-        return self.portfolio_discrete_mutation(parent, intensity=u, arity=arity)
+        return self.portfolio_discrete_mutation(parent, intensity=u, arity=arity, sparse=sparse)
 
     def portfolio_discrete_mutation(
-        self, parent: tp.ArrayLike, intensity: tp.Optional[int] = None, arity: int = 2
+        self, parent: tp.ArrayLike, intensity: tp.Optional[int] = None, arity: int = 2, sparse: bool = False
     ) -> tp.ArrayLike:
         """Mutation discussed in
         https://arxiv.org/pdf/1606.05551v1.pdf
@@ -73,10 +75,17 @@ class Mutator:
         boolean_vector = np.ones(dimension, dtype=bool)
         while all(boolean_vector) and dimension != 1:
             boolean_vector = self.random_state.rand(dimension) > float(intensity) / dimension
-        return [s if b else self.significantly_mutate(s, arity) for (b, s) in zip(boolean_vector, parent)]
+        return [
+            s if b else self.significantly_mutate(s, arity, sparse) for (b, s) in zip(boolean_vector, parent)
+        ]
 
     def coordinatewise_mutation(
-        self, parent: tp.ArrayLike, velocity: tp.ArrayLike, boolean_vector: tp.ArrayLike, arity: int
+        self,
+        parent: tp.ArrayLike,
+        velocity: tp.ArrayLike,
+        boolean_vector: tp.ArrayLike,
+        arity: int,
+        sparse: bool = False,
     ) -> tp.ArrayLike:
         """This is the anisotropic counterpart of the classical 1+1 mutations in discrete domains
         with tunable intensity: it is useful for anisotropic adaptivity."""
@@ -84,7 +93,7 @@ class Mutator:
         boolean_vector = np.zeros(dimension, dtype=bool)
         while not any(boolean_vector):
             boolean_vector = self.random_state.rand(dimension) < (1.0 / dimension)
-        discrete_data = discretization.threshold_discretization(parent, arity=arity)
+        discrete_data = discretization.threshold_discretization(parent, arity=arity, sparse=sparse)
         discrete_data = np.where(
             boolean_vector,
             discrete_data + self.random_state.choice([-1.0, 1.0], size=dimension) * velocity,
@@ -92,13 +101,15 @@ class Mutator:
         )
         return discretization.inverse_threshold_discretization(discrete_data)
 
-    def discrete_mutation(self, parent: tp.ArrayLike, arity: int = 2) -> tp.ArrayLike:
+    def discrete_mutation(self, parent: tp.ArrayLike, arity: int = 2, sparse: bool = False) -> tp.ArrayLike:
         """This is the most classical discrete 1+1 mutation of the evolution literature."""
         dimension = len(parent)
         boolean_vector = np.ones(dimension, dtype=bool)
         while all(boolean_vector):
             boolean_vector = self.random_state.rand(dimension) > (1.0 / dimension)
-        return [s if b else self.significantly_mutate(s, arity) for (b, s) in zip(boolean_vector, parent)]
+        return [
+            s if b else self.significantly_mutate(s, arity, sparse) for (b, s) in zip(boolean_vector, parent)
+        ]
 
     def crossover(self, parent: tp.ArrayLike, donor: tp.ArrayLike, rotation: bool = False) -> tp.ArrayLike:
         if rotation:
