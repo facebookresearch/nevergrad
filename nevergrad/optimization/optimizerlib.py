@@ -259,7 +259,7 @@ class _OnePlusOne(base.Optimizer):
                 undata = discretization.inverse_threshold_discretization(
                     data, arity=self.arity_for_discrete_mutation
                 )
-                data = discretization.inverse_threshold_discretization(
+                data = discretization.threshold_discretization(
                     undata, arity=self.arity_for_discrete_mutation, sparse=True
                 )
             return pessimistic.set_standardized_data(data, reference=ref)
