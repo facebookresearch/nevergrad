@@ -1033,7 +1033,11 @@ class _Rescaled(base.Optimizer):
             assert self.budget is not None, "Either scale or budget must be known in _Rescaled."
             scale = math.sqrt(math.log(self.budget) / self.dimension)
         self.scale = scale
-        self.initialization = np.zeros(self.dimension) if translate is None else self.parametrization.random_state.normal(0., translate, size=dimension)
+        self.initialization = (
+            np.zeros(self.dimension)
+            if translate is None
+            else self.parametrization.random_state.normal(0.0, translate, size=dimension)
+        )
         assert self.scale != 0.0, "scale should be non-zero in Rescaler."
 
     def rescale_candidate(self, candidate: p.Parameter, inverse: bool = False) -> p.Parameter:
