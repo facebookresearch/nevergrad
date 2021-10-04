@@ -35,7 +35,7 @@ def test_log_parameters(tmp_path: Path) -> None:
     logs = logger.load_flattened()
     assert len(logs) == 32
     assert isinstance(logs[-1]["1"], float)
-    assert len(logs[-1]) == 31
+    assert len(logs[-1]) == 32
     logs = logger.load_flattened(max_list_elements=2)
     assert len(logs[-1]) == 27
     # deletion
