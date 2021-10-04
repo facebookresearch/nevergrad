@@ -188,11 +188,6 @@ class _OnePlusOne(base.Optimizer):
                 if mutation == "gaussian"
                 else self._rng.standard_cauchy(self.dimension)
             )
-            if self.sparse:
-                zeroing = (
-                    np.asarray(np.random.randint(step.size + 1,
-                    size=step.size).reshape(step.shape)) == 0)
-                step[zeroing] = 0.0
             out = pessimistic.set_standardized_data(self._sigma * step)
             out._meta["sigma"] = self._sigma
             return out
