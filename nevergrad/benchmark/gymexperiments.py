@@ -297,6 +297,7 @@ def maveric_direct(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
             seed,
             specific_problem="directcompilergym" + str(compiler_gym_pb_index),
             compiler_gym_pb_index=compiler_gym_pb_index,
+            conformant=True,
         )
         for xp in pb:
             yield xp
