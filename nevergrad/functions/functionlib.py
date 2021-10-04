@@ -241,7 +241,7 @@ class ArtificialFunction(ExperimentFunction):
         try:
             return float(self._aggregator(results))
         except OverflowError:
-            return 1.e20
+            return 1.0e20
 
     def evaluation_function(self, *recommendations: ng.p.Parameter) -> float:
         """Implements the call of the function.
