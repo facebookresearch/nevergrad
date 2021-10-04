@@ -255,9 +255,13 @@ class _OnePlusOne(base.Optimizer):
                     "portfolio": mutator.portfolio_discrete_mutation,
                 }[mutation]
                 data = func(pessimistic_data, arity=self.arity_for_discrete_mutation)
-            discretization.threshold_discretization(
-                data, arity=self.arity_for_discrete_mutation, sparse=self.sparse
-            )
+            if self.sparse:
+                undata = discretization.inverse_threshold_discretization(
+                    data, arity=self.arity_for_discrete_mutation
+                )
+                data = discretization.inverse_threshold_discretization(
+                    undata, arity=self.arity_for_discrete_mutation, sparse=True
+                )
             return pessimistic.set_standardized_data(data, reference=ref)
 
     def _internal_tell(self, x: tp.ArrayLike, loss: tp.FloatLoss) -> None:
