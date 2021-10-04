@@ -1036,7 +1036,7 @@ class _Rescaled(base.Optimizer):
         self.initialization = (
             np.zeros(self.dimension)
             if translate is None
-            else self.parametrization.random_state.normal(0.0, translate, size=dimension)
+            else self.parametrization.random_state.normal(0.0, translate, size=self.dimension)
         )
         assert self.scale != 0.0, "scale should be non-zero in Rescaler."
 
