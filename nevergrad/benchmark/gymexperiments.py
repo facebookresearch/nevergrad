@@ -101,7 +101,7 @@ def ng_full_gym(
 
 @registry.register
 def multi_ng_full_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Counterpart of ng_full_gym with one neural net per time step. 
+    """Counterpart of ng_full_gym with one neural net per time step.
 
     Each neural net is used for many problems, but only for one of the time steps."""
     return ng_full_gym(seed, multi=True)
