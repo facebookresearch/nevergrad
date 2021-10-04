@@ -670,11 +670,17 @@ def yabbob(
 
     if bounded:
         optims = ["BO", "PCABO", "BayesOptimBO", "CMA", "PSO", "DE"]
-
+    if box:
+        optims = ["DiagonalCMA", "Cobyla", "NGOpt16", "NGOpt15", "CMandAS2", "OnePlusOne"]
     # List of objective functions.
     functions = [
         ArtificialFunction(
-            name, block_dimension=d, rotation=rotation, noise_level=noise_level, split=split, bounded=bounded or box
+            name,
+            block_dimension=d,
+            rotation=rotation,
+            noise_level=noise_level,
+            split=split,
+            bounded=bounded or box,
         )
         for name in names
         for rotation in [True, False]
