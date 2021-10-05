@@ -54,9 +54,12 @@ class _MessagingThread(threading.Thread):
         try:
             self.output = self._caller(self._fake_callable, *self._args, **self._kwargs)
         except StopOptimizerThread:  # gracefully stopping the thread
-            pass
+            self.messages_ask.put(ValueError("Optimization told to finish"))
         except Exception as e:  # pylint: disable=broad-except
+            self.messages_ask.put(e)
             self.error = e
+        else:
+            self.messages_ask.put(ValueError("Optimization finished"))
 
     def _fake_callable(self, *args: tp.Any) -> tp.Any:
         """
@@ -121,6 +124,15 @@ class RecastOptimizer(base.Optimizer):
     ----
     These implementations are not necessarily robust. More specifically, one cannot "tell" any
     point which was not "asked" before.
+
+    An optimization is performed by a third-party library in a background thread. This communicates
+    with the main thread using two queue objects. Specifically:
+
+        messages_ask is filled by the background thread with a candidate (or batch of candidates)
+        it wants evaluated for, or an Exception which needs to be raised to the user.
+
+        messages_tell supplies the background thread with a value to return from the fake function.
+        A value of None means the background thread is no longer relevant and should exit.
     """
 
     recast = True
@@ -160,6 +172,8 @@ class RecastOptimizer(base.Optimizer):
             data = self._rng.normal(0, 1, self.dimension)
             return self.parametrization.spawn_child().set_standardized_data(data)
         point = self._messaging_thread.messages_ask.get()
+        if isinstance(point, Exception):
+            raise point
         candidate = self.parametrization.spawn_child().set_standardized_data(point)
         return candidate
 
@@ -264,6 +278,8 @@ class BatchRecastOptimizer(RecastOptimizer):
                     "You can't get a new batch until the old one has been fully told on. See docstring for more info."
                 )
             points = self._messaging_thread.messages_ask.get()
+            if isinstance(points, Exception):
+                raise points
             self.batch_size = len(points)
             self._current_batch = [
                 self.parametrization.spawn_child().set_standardized_data(point) for point in points
