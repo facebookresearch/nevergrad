@@ -397,10 +397,11 @@ def _create_pymoo_problem(
     except ImportError:
         # Used if pymoo < 0.5.0
         # pylint:disable=import-outside-toplevel
-        from pymoo.model.problem import Problem as Base # type: ignore
+        from pymoo.model.problem import Problem as Base  # type: ignore
+
         kwargs = {"elementwise_evaluation": elementwise}
 
-    class _PymooProblem(Base):
+    class _PymooProblem(Base):  # type: ignore
         def __init__(self, optimizer, objective_function):
             self.objective_function = objective_function
             super().__init__(
