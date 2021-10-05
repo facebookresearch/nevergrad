@@ -395,10 +395,11 @@ def _create_pymoo_problem(
 
         Base = ElementwiseProblem if elementwise else Problem
     except ImportError:
-        # pymoo < 0.5.0
+        # Used if pymoo < 0.5.0
         # pylint:disable=import-outside-toplevel
         from pymoo.model.problem import Problem as Base # type: ignore
         kwargs = {"elementwise_evaluation": elementwise}
+
     class _PymooProblem(Base):
         def __init__(self, optimizer, objective_function):
             self.objective_function = objective_function
@@ -419,7 +420,5 @@ def _create_pymoo_problem(
     return _PymooProblem(optimizer, objective_function)
 
 
-PymooNSGA2 = Pymoo(algorithm="nsga2").set_name(
-    "PymooNSGA2", register=False
-)  # , register=True)   temporarily removed!
+PymooNSGA2 = Pymoo(algorithm="nsga2").set_name("PymooNSGA2", register=True)
 PymooBatchNSGA2 = PymooBatch(algorithm="nsga2").set_name("PymooBatchNSGA2", register=False)
