@@ -1040,6 +1040,8 @@ class _Rescaled(base.Optimizer):
     def rescale_candidate(self, candidate: p.Parameter, inverse: bool = False) -> p.Parameter:
         data = candidate.get_standardized_data(reference=self.parametrization)
         scale = self.scale if not inverse else 1.0 / self.scale
+        if inverse:
+            return self.parametrization.spawn_child().set_standardized_data(scale * (data - self.initialization))
         return self.parametrization.spawn_child().set_standardized_data(scale * data + self.initialization)
 
     def _internal_ask_candidate(self) -> p.Parameter:
