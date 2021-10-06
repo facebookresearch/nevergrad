@@ -1021,7 +1021,7 @@ class _Rescaled(base.Optimizer):
         num_workers: int = 1,
         base_optimizer: base.OptCls = CMA,
         scale: tp.Optional[float] = None,
-        translate: tp.Optional[float] = None,
+        translation: float = 0.0,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._optimizer = base_optimizer(self.parametrization, budget=budget, num_workers=num_workers)
