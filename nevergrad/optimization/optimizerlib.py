@@ -1066,7 +1066,8 @@ class Rescaled(base.ConfiguredOptimizer):
         optimization algorithm to be rescaled.
     scale: how much do we rescale. E.g. 0.001 if we want to focus on the center
         with std 0.001 (assuming the std of the domain is set to 1).
-    translate: how much do we randomly move the center of the domain.
+    translation: float
+        standard deviation for randomly moving the center of the domain.
     """
 
     # pylint: disable=unused-argument
