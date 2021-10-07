@@ -41,8 +41,6 @@ class TTPSolution:
 class TTPInstance(base.ExperimentFunction):
     def __init__(self, file: str = "a20_n95_01.ttp") -> None:
 
-        
-
         self.file_path = Path(os.path.dirname(__file__) + "/instances/" + file)
 
         with self.file_path.open() as reader:
@@ -124,9 +122,9 @@ class TTPInstance(base.ExperimentFunction):
                 count += 1
 
         init1 = np.zeros(self.number_of_nodes - 1)
-        p1 = p.Array(init=init1 , lower = 0 , upper = 4)
+        p1 = p.Array(init=init1, lower=0, upper=4)
 
-        #p2 = p.Choice([0,1], repetitions = self.number_of_items)
+        # p2 = p.Choice([0,1], repetitions = self.number_of_items)
         init2 = np.zeros(self.number_of_items)
         p2 = p.Array(init=init2, lower=0, upper=1).set_integer_casting()
 
