@@ -1021,7 +1021,7 @@ class _Rescaled(base.Optimizer):
         num_workers: int = 1,
         base_optimizer: base.OptCls = CMA,
         scale: tp.Optional[float] = None,
-        translation: float = 0.0,
+        translate: float = 0.0,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._optimizer = base_optimizer(self.parametrization, budget=budget, num_workers=num_workers)
@@ -1030,18 +1030,16 @@ class _Rescaled(base.Optimizer):
             assert self.budget is not None, "Either scale or budget must be known in _Rescaled."
             scale = math.sqrt(math.log(self.budget) / self.dimension)
         self.scale = scale
-        self.initialization = (
-            np.zeros(self.dimension)
-            if translate is None
-            else self.parametrization.random_state.normal(0.0, translate, size=self.dimension)
-        )
+        self.initialization = self.parametrization.random_state.normal(0.0, translate, size=self.dimension)
         assert self.scale != 0.0, "scale should be non-zero in Rescaler."
 
     def rescale_candidate(self, candidate: p.Parameter, inverse: bool = False) -> p.Parameter:
         data = candidate.get_standardized_data(reference=self.parametrization)
         scale = self.scale if not inverse else 1.0 / self.scale
         if inverse:
-            return self.parametrization.spawn_child().set_standardized_data(scale * (data - self.initialization))
+            return self.parametrization.spawn_child().set_standardized_data(
+                scale * (data - self.initialization)
+            )
         return self.parametrization.spawn_child().set_standardized_data(scale * data + self.initialization)
 
     def _internal_ask_candidate(self) -> p.Parameter:
@@ -1078,7 +1076,7 @@ class Rescaled(base.ConfiguredOptimizer):
         *,
         base_optimizer: base.OptCls = CMA,
         scale: tp.Optional[float] = None,
-        translate: tp.Optional[float] = None,
+        translate: float = 0.0,
     ) -> None:
         super().__init__(_Rescaled, locals())
 
