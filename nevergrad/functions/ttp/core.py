@@ -124,9 +124,8 @@ class TTPInstance(base.ExperimentFunction):
         init1 = np.zeros((self.number_of_nodes - 1,))
         p1 = p.Array(init=init1, lower=0, upper=4)
 
-        p2 = p.Choice([0, 1], repetitions=self.number_of_items)
-        # init2 = np.zeros(self.number_of_items)
-        # p2 = p.Array(init=init2, lower=0, upper=1).set_integer_casting()
+        init2 = np.zeros(self.number_of_items)
+        p2 = p.Array(init=init2, lower=0, upper=1).set_integer_casting()
 
         instru = ng.p.Instrumentation(tsp_tour=p1, packing_plan=p2).set_name("")
 
@@ -141,7 +140,7 @@ class TTPInstance(base.ExperimentFunction):
         tsp_tl.insert(0, 0)
         tsp_tl.append(0)
 
-        packing_plan = list(packing_plan)
+        packing_plan = packing_plan.tolist()
 
         solution = TTPSolution(tsp_tl, packing_plan)
 
