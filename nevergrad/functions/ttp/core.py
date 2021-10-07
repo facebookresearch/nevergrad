@@ -121,12 +121,12 @@ class TTPInstance(base.ExperimentFunction):
 
                 count += 1
 
-        init1 = np.zeros(self.number_of_nodes - 1)
+        init1 = np.zeros((self.number_of_nodes - 1,))
         p1 = p.Array(init=init1, lower=0, upper=4)
 
-        # p2 = p.Choice([0,1], repetitions = self.number_of_items)
-        init2 = np.zeros(self.number_of_items)
-        p2 = p.Array(init=init2, lower=0, upper=1).set_integer_casting()
+        p2 = p.Choice([0, 1], repetitions=self.number_of_items)
+        # init2 = np.zeros(self.number_of_items)
+        # p2 = p.Array(init=init2, lower=0, upper=1).set_integer_casting()
 
         instru = ng.p.Instrumentation(tsp_tour=p1, packing_plan=p2).set_name("")
 
@@ -134,7 +134,6 @@ class TTPInstance(base.ExperimentFunction):
 
     def evaluate(self, tsp_tour: np.ndarray, packing_plan: np.ndarray) -> float:
 
-        np.reshape(tsp_tour, (1, -1))
         tsp_tour = np.argsort(tsp_tour)
 
         tsp_tour = tsp_tour + 1
@@ -142,7 +141,7 @@ class TTPInstance(base.ExperimentFunction):
         tsp_tl.insert(0, 0)
         tsp_tl.append(0)
 
-        packing_plan = packing_plan.tolist()
+        packing_plan = list(packing_plan)
 
         solution = TTPSolution(tsp_tl, packing_plan)
 
@@ -157,7 +156,7 @@ class TTPInstance(base.ExperimentFunction):
         if tour[0] != tour[-1]:
             print("ERROR: The last city must be the same as the first city")
             solution.reset()
-            return float(-1)
+            return float("inf")
 
         wc = float(0)
         solution.ft = 0
