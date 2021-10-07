@@ -134,7 +134,7 @@ class RecastOptimizer(base.Optimizer):
     ) -> None:
         super().__init__(parametrization, budget, num_workers=num_workers)
         self._messaging_thread: tp.Optional[MessagingThread] = None  # instantiate at runtime
-        self.replay_archive_tell = []
+        self.replay_archive_tell: tp.List[p.Parameter] = []
         self._enable_pickling = enable_pickling
 
     def get_optimization_function(self) -> tp.Callable[[tp.Callable[..., tp.Any]], tp.Optional[tp.ArrayLike]]:
