@@ -263,6 +263,9 @@ class Pymoo(base.ConfiguredOptimizer):
 
 
 class _PymooBatchMinimizeBase(recaster.BatchRecastOptimizer):
+
+    # pylint: disable=abstract-method
+
     def __init__(
         self,
         parametrization: IntOrParameter,
@@ -398,11 +401,21 @@ def _create_pymoo_problem(
     objective_function: tp.Callable[[tp.ArrayLike], float],
     elementwise: bool = True,
 ):
-    # pylint:disable=import-outside-toplevel
-    from pymoo.core.problem import ElementwiseProblem  # type: ignore
+    kwargs = {}
+    try:
+        # pylint:disable=import-outside-toplevel
+        from pymoo.core.problem import ElementwiseProblem, Problem  # type: ignore
 
-    class _PymooProblem(ElementwiseProblem):
-        def __init__(self, optimizer, objective_function, elementwise):
+        Base = ElementwiseProblem if elementwise else Problem
+    except ImportError:
+        # Used if pymoo < 0.5.0
+        # pylint:disable=import-outside-toplevel
+        from pymoo.model.problem import Problem as Base  # type: ignore
+
+        kwargs = {"elementwise_evaluation": elementwise}
+
+    class _PymooProblem(Base):  # type: ignore
+        def __init__(self, optimizer, objective_function):
             self.objective_function = objective_function
             super().__init__(
                 n_var=optimizer.dimension,
@@ -410,7 +423,7 @@ def _create_pymoo_problem(
                 n_constr=0,  # constraints handled already by nevergrad
                 xl=-math.pi * 0.5,
                 xu=math.pi * 0.5,
-                # elementwise_evaluation=elementwise,
+                **kwargs,
             )
 
         def _evaluate(self, X, out, *args, **kwargs):
@@ -418,12 +431,10 @@ def _create_pymoo_problem(
             # pymoo is supplying us with bounded parameters in [-pi/2,pi/2]. Nevergrad wants unbounded reals from us.
             out["F"] = self.objective_function(np.tan(X))
 
-    return _PymooProblem(optimizer, objective_function, elementwise)
+    return _PymooProblem(optimizer, objective_function)
 
 
-PymooNSGA2 = Pymoo(algorithm="nsga2", enable_pickling=True).set_name(
-    "PymooNSGA2", register=False
-)  # , register=True)   temporarily removed!
+PymooNSGA2 = Pymoo(algorithm="nsga2", enable_pickling=True).set_name("PymooNSGA2", register=True)
 PymooBatchNSGA2 = PymooBatch(algorithm="nsga2").set_name("PymooBatchNSGA2", register=False)
 
 # TODO:
