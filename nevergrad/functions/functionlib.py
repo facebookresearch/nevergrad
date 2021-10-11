@@ -238,7 +238,10 @@ class ArtificialFunction(ExperimentFunction):
         results = []
         for block in x:
             results.append(self._func(block))
-        return float(self._aggregator(results))
+        try:
+            return float(self._aggregator(results))
+        except OverflowError:
+            return float("inf")
 
     def evaluation_function(self, *recommendations: ng.p.Parameter) -> float:
         """Implements the call of the function.
