@@ -864,7 +864,6 @@ def _simple_multiobjective(x):
 
 
 def test_pymoo_pf() -> None:
-    raise SkipTest("Pymoo has troubles!")
     optimizer = ng.optimizers.PymooNSGA2(parametrization=2, budget=300)
     optimizer.parametrization.random_state.seed(12)
     optimizer.minimize(_simple_multiobjective)
@@ -880,7 +879,6 @@ def test_pymoo_pf() -> None:
 
 
 def test_pymoo_batched() -> None:
-    raise SkipTest("Pymoo has troubles!")
     optimizer = ng.optimizers.PymooBatchNSGA2(parametrization=2, budget=300)
     optimizer.parametrization.random_state.seed(12)
     candidates = []
