@@ -1455,6 +1455,13 @@ def _learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.Arr
     model = LinearRegression()
     model.fit(X2, y)
 
+    # Check model quality.
+    model_outputs = model.predict(X2)
+    indices = np.argsort(y)
+    ordered_model_outputs = [model_outputs[i] for i in indices]
+    if not all(x < y for x, y in zip(ordered_model_outputs, ordered_model_outputs[1:])):
+        raise InfiniteMetaModelOptimum("Infinite meta-model optimum in learn_on_k_best.")
+
     try:
         for cls in (Powell, DE):  # Powell excellent here, DE as a backup for thread safety.
             optimizer = cls(parametrization=dimension, budget=45 * dimension + 30)
@@ -2606,7 +2613,8 @@ class NGOpt12(NGOpt10):
             and self.budget < self.dimension * 50
             and self.budget > min(50, self.dimension * 5)
         ):
-            return ChainMetaModelSQP
+            return MetaModel
+            #return ChainMetaModelSQP
         elif (
             not self.has_noise
             and self.fully_continuous
