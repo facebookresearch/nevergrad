@@ -308,7 +308,7 @@ class BatchRecastOptimizer(RecastOptimizer):
         self._tell_counter += 1
         # if batch size number of tells since new batch, send array of losses to fake callable
         if self._tell_counter == self.batch_size:
-            self._messaging_thread.messages_ask.put(np.array(self._batch_losses))
+            self._messaging_thread.messages_tell.put(np.array(self._batch_losses))
             self._batch_losses = []
             self._tell_counter = 0
 
