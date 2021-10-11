@@ -1420,7 +1420,7 @@ MultiScaleCMA = ConfPortfolio(
 ).set_name("MultiScaleCMA", register=True)
 
 
-class InfiniteMetaModelOptimum(ValueError):
+class MetaModelFailure(ValueError):
     """Sometimes the optimum of the metamodel is at infinity."""
 
 
@@ -1460,7 +1460,7 @@ def _learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.Arr
     indices = np.argsort(y)
     ordered_model_outputs = [model_outputs[i] for i in indices]
     if not all(x < y for x, y in zip(ordered_model_outputs, ordered_model_outputs[1:])):
-        raise InfiniteMetaModelOptimum("Infinite meta-model optimum in learn_on_k_best.")
+        raise MetaModelFailure("Unlearnable objective function.")
 
     try:
         for cls in (Powell, DE):  # Powell excellent here, DE as a backup for thread safety.
@@ -1476,10 +1476,10 @@ def _learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.Arr
             else:
                 break
     except ValueError:
-        raise InfiniteMetaModelOptimum("Infinite meta-model optimum in learn_on_k_best.")
+        raise MetaModelFailure("Infinite meta-model optimum in learn_on_k_best.")
 
     if np.sum(minimum ** 2) > 1.0:
-        raise InfiniteMetaModelOptimum("huge meta-model optimum in learn_on_k_best.")
+        raise MetaModelFailure("huge meta-model optimum in learn_on_k_best.")
     return middle + normalization * minimum
 
 
@@ -1509,7 +1509,7 @@ class _MetaModel(base.Optimizer):
             try:
                 data = _learn_on_k_best(self.archive, sample_size)
                 candidate = self.parametrization.spawn_child().set_standardized_data(data)
-            except InfiniteMetaModelOptimum:  # The optimum is at infinity. Shit happens.
+            except MetaModelFailure:  # The optimum is at infinity. Shit happens.
                 candidate = self._optim.ask()
         else:
             candidate = self._optim.ask()
