@@ -3,12 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 import os
-import time
-import collections
 import typing as tp
 import pytest
-import numpy as np
-from .optimizerlib import registry
 from . import test_optimizerlib
 
 
