@@ -2611,7 +2611,7 @@ class NGOpt12(NGOpt10):
             and self.budget > min(50, self.dimension * 5)
         ):
             return MetaModel
-            #return ChainMetaModelSQP
+            # return ChainMetaModelSQP
         elif (
             not self.has_noise
             and self.fully_continuous
