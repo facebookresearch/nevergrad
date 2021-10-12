@@ -258,11 +258,11 @@ class _PymooBatchMinimizeBase(recaster.BatchRecastOptimizer):
         # configuration
         self.algorithm = algorithm
         self._no_hypervolume = True
-        self.initial_seed = self._rng.randint(2 ** 30)
+        self._initial_seed = -1
 
     def get_optimization_function(self) -> tp.Callable[[tp.Callable[..., tp.Any]], tp.Optional[tp.ArrayLike]]:
-        # create a different sub-instance, so that the current instance is not referenced by the thread
-        # (consequence: do not create a thread at initialization, or we get a thread explosion)
+        if self._initial_seed == -1:
+            self._initial_seed = self._rng.randint(2 ** 30)
         return functools.partial(self._optimization_function, weakref.proxy(self))
         # pylint:disable=useless-return
 
@@ -292,7 +292,7 @@ class _PymooBatchMinimizeBase(recaster.BatchRecastOptimizer):
         # else:
         algorithm = get_pymoo_algorithm(weakself.algorithm)
         problem = _create_pymoo_problem(weakself, objective_function, False)
-        pymoooptimize.minimize(problem, algorithm, seed=weakself.initial_seed)
+        pymoooptimize.minimize(problem, algorithm, seed=weakself._initial_seed)
         return None
 
     def _internal_ask_candidate(self) -> p.Parameter:
@@ -402,7 +402,3 @@ def _create_pymoo_problem(
 
 PymooNSGA2 = Pymoo(algorithm="nsga2", enable_pickling=True).set_name("PymooNSGA2", register=True)
 PymooBatchNSGA2 = PymooBatch(algorithm="nsga2").set_name("PymooBatchNSGA2", register=False)
-
-# TODO:
-#  batch version
-#  understand why subinstance needed
