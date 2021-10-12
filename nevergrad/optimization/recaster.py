@@ -132,8 +132,6 @@ class RecastOptimizer(base.Optimizer):
     - calls to the fake functions are returned by the "ask()" interface
     - return values of the fake functions are provided to the thread when calling "tell(x, value)"
 
-    If enable_pickling is True, we store the entire history to enable replaying.
-
     Note
     ----
     These implementations are not necessarily robust. More specifically, one cannot "tell" any
@@ -157,13 +155,9 @@ class RecastOptimizer(base.Optimizer):
         parametrization: IntOrParameter,
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
-        *,
-        enable_pickling: bool = False,
     ) -> None:
         super().__init__(parametrization, budget, num_workers=num_workers)
         self._messaging_thread: tp.Optional[MessagingThread] = None  # instantiate at runtime
-        self.replay_archive_tell: tp.List[p.Parameter] = []
-        self._enable_pickling = enable_pickling
 
     def get_optimization_function(self) -> tp.Callable[[tp.Callable[..., tp.Any]], tp.Optional[tp.ArrayLike]]:
         """Return an optimization procedure function (taking a function to optimize as input)
@@ -178,62 +172,12 @@ class RecastOptimizer(base.Optimizer):
             " reference to this instance in the returned object"
         )
 
-    def _internal_ask_candidate(self) -> p.Parameter:
-        """Reads messages from the thread in which the underlying optimization function is running
-        New messages are sent as "ask".
-        """
-        if self._messaging_thread is None:
-            self._messaging_thread = MessagingThread(self.get_optimization_function())
-        alive = self._messaging_thread.is_alive()
-        if alive:
-            point = self._messaging_thread.messages_ask.get()
-            if isinstance(point, Exception):
-                raise point
-        if not alive or point is None:  # In case the algorithm stops before the budget is elapsed.
-            warnings.warn(
-                "Underlying optimizer has already converged, returning random points",
-                base.errors.FinishedUnderlyingOptimizerWarning,
-            )
-            self._check_error()
-            data = self._rng.normal(0, 1, self.dimension)
-            return self.parametrization.spawn_child().set_standardized_data(data)
-        candidate = self.parametrization.spawn_child().set_standardized_data(point)
-        return candidate
-
     def _check_error(self) -> None:
         if self._messaging_thread is not None:
             if self._messaging_thread.error is not None:
                 raise RuntimeError(
                     f"Recast optimizer raised an error:\n{self._messaging_thread.error}"
                 ) from self._messaging_thread.error
-
-    def __getstate__(self):
-        if not self._enable_pickling:
-            raise ValueError("If you want picklability your optimizer should have asked for it")
-        thread = self._messaging_thread
-        self._messaging_thread = None
-        state = self.__dict__.copy()
-        self._messaging_thread = thread
-        return state
-
-    def __setstate__(self, state):
-        self.__dict__.update(state)
-        for i in range(self.num_tell):
-            self._internal_ask_candidate()
-            candidate = self.replay_archive_tell[i]
-            self._internal_tell_candidate(candidate, candidate.loss)
-
-    def _internal_tell_candidate(self, candidate: p.Parameter, loss: float) -> None:
-        """Returns value for a point which was "asked"
-        (none asked point cannot be "tell")
-        """
-        assert self._messaging_thread is not None, 'Start by using "ask" method, instead of "tell" method'
-        if not self._messaging_thread.is_alive():  # optimizer is done
-            self._check_error()
-            return
-        if self._enable_pickling:
-            self.replay_archive_tell.append(candidate)
-        self._messaging_thread.messages_tell.put(self._post_loss(candidate, loss))
 
     def _post_loss(self, candidate: p.Parameter, loss: float) -> tp.Loss:
         # pylint: disable=unused-argument
@@ -277,7 +221,8 @@ class SequentialRecastOptimizer(RecastOptimizer):
 
     If you want your optimizer to be picklable, we have to store
     every candidate during optimization, which may use a lot
-    of memory. To enable this:
+    of memory. This lets us replay the optimization when
+    unpickling. To enable this:
         - set enable_pickling to True in __init__.
         - The optimization must be reproducible, asking for the same
           candidates every time. If you need a seed from nevergrad's
@@ -293,6 +238,74 @@ class SequentialRecastOptimizer(RecastOptimizer):
     # pylint: disable=abstract-method
 
     no_parallelization = True
+
+    def __init__(
+        self,
+        parametrization: IntOrParameter,
+        budget: tp.Optional[int],
+        num_workers: int = 1,
+        *,
+        enable_pickling: bool = False,
+    ) -> None:
+        super().__init__(parametrization=parametrization, budget=budget, num_workers=num_workers)
+        self._enable_pickling = enable_pickling
+        self.replay_archive_tell: tp.List[p.Parameter] = []
+
+    def _internal_ask_candidate(self) -> p.Parameter:
+        """Reads messages from the thread in which the underlying optimization function is running
+        New messages are sent as "ask".
+        """
+        if self._messaging_thread is None:
+            self._messaging_thread = MessagingThread(self.get_optimization_function())
+        alive = self._messaging_thread.is_alive()
+        if alive:
+            point = self._messaging_thread.messages_ask.get()
+            if isinstance(point, Exception):
+                raise point
+        if not alive or point is None:  # In case the algorithm stops before the budget is elapsed.
+            warnings.warn(
+                "Underlying optimizer has already converged, returning random points",
+                base.errors.FinishedUnderlyingOptimizerWarning,
+            )
+            self._check_error()
+            data = self._rng.normal(0, 1, self.dimension)
+            return self.parametrization.spawn_child().set_standardized_data(data)
+        candidate = self.parametrization.spawn_child().set_standardized_data(point)
+        return candidate
+
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: float) -> None:
+        """Returns value for a point which was "asked"
+        (none asked point cannot be "tell")
+        """
+        assert self._messaging_thread is not None, 'Start by using "ask" method, instead of "tell" method'
+        if not self._messaging_thread.is_alive():  # optimizer is done
+            self._check_error()
+            return
+        if self._enable_pickling:
+            self.replay_archive_tell.append(candidate)
+        self._messaging_thread.messages_tell.put(self._post_loss(candidate, loss))
+
+    def __getstate__(self):
+        if not self._enable_pickling:
+            raise ValueError("If you want picklability your optimizer should have asked for it")
+        thread = self._messaging_thread
+        self._messaging_thread = None
+        state = self.__dict__.copy()
+        self._messaging_thread = thread
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        if not self._enable_pickling:
+            raise ValueError("Cannot unpickle the unpicklable")
+
+        # We temporarily unset _enable_pickling so that the replays do not
+        # get archived again.
+        self._enable_pickling = False
+        for candidate in self.replay_archive_tell:
+            self._internal_ask_candidate()
+            self._internal_tell_candidate(candidate, candidate.loss)
+        self._enable_pickling = True
 
 
 class BatchRecastOptimizer(RecastOptimizer):

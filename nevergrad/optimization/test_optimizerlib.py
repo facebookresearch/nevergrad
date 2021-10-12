@@ -909,18 +909,32 @@ def test_recast_pickle() -> None:
         loss = _simple_multiobjective(*x.args, **x.kwargs)
         optimizer.tell(x, loss)
     optimizer_remade = pickle.loads(pickle.dumps(optimizer))
+    optimizer_reremade = pickle.loads(pickle.dumps(optimizer))
     for _ in range(50):
         x = optimizer_remade.ask()
         loss = _simple_multiobjective(*x.args, **x.kwargs)
         optimizer_remade.tell(x, loss)
+
+    for _ in range(50):
+        x = optimizer_reremade.ask()
+        loss = _simple_multiobjective(*x.args, **x.kwargs)
+        optimizer_reremade.tell(x, loss)
+
     optimizer_2 = ng.optimizers.PymooNSGA2(parametrization=2, budget=300)
     optimizer_2.parametrization.random_state.seed(12)
     for _ in range(60):
         x = optimizer_2.ask()
         loss = _simple_multiobjective(*x.args, **x.kwargs)
         optimizer_2.tell(x, loss)
+
     pf1 = optimizer_remade.pareto_front()
     pf2 = optimizer_2.pareto_front()
     assert len(pf1) == len(pf2)
     for a_value, b_value in zip([i.value for i in pf1], [i.value for i in pf2]):
+        assert np.allclose(a_value, b_value)
+
+    pf11 = optimizer_reremade.pareto_front()
+    pf2 = optimizer_2.pareto_front()
+    assert len(pf11) == len(pf2)
+    for a_value, b_value in zip([i.value for i in pf11], [i.value for i in pf2]):
         assert np.allclose(a_value, b_value)
