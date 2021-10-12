@@ -3,6 +3,18 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+"""
+Nevergrad's API provides ask/tell, letting the user run the objective function
+in their own way. Some libraries for optimization take the objective function
+as a parameter and run it themselves.
+This module is a system for adapting such a library to be used in nevergrad,
+by running the optimization on a background thread.
+The file recastlib.py has some uses of it.
+For instructions for doing this for another library, see
+SequentialRecastOptimizer.
+"""
+
+
 import warnings
 import threading
 import queue
@@ -120,6 +132,8 @@ class RecastOptimizer(base.Optimizer):
     - calls to the fake functions are returned by the "ask()" interface
     - return values of the fake functions are provided to the thread when calling "tell(x, value)"
 
+    If enable_pickling is True, we store the entire history to enable replaying.
+
     Note
     ----
     These implementations are not necessarily robust. More specifically, one cannot "tell" any
@@ -143,6 +157,7 @@ class RecastOptimizer(base.Optimizer):
         parametrization: IntOrParameter,
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
+        *,
         enable_pickling: bool = False,
     ) -> None:
         super().__init__(parametrization, budget, num_workers=num_workers)
@@ -246,7 +261,34 @@ class RecastOptimizer(base.Optimizer):
 
 
 class SequentialRecastOptimizer(RecastOptimizer):
-    """Recast Optimizer which cannot deal with parallelization"""
+    """Recast Optimizer which cannot deal with parallelization
+
+    There can only be one worker. Each ask must be followed by
+    a tell.
+
+    A simple usage is that you have a library which can minimize
+    a function which returns a scalar.
+    Just make an optimizer inheriting from this class, and inplement
+    get_optimization_function to return a callable which runs the
+    optimization, taking the objective as its only parameter. The
+    callable must not have any references to the optimizer itself.
+    (This avoids a reference cycle between the background thread and
+    the optimizer, aiding cleanup.) It can have a weakref though.
+
+    If you want your optimizer to be picklable, we have to store
+    every candidate during optimization, which may use a lot
+    of memory. To enable this:
+        - set enable_pickling to True in __init__.
+        - The optimization must be reproducible, asking for the same
+          candidates every time. If you need a seed from nevergrad's
+          generator, you can't necessarily generate this again after
+          unpickling. One solution is to store it in self, if it is
+          not there yet, in the body of get_optimization_function.
+
+          As in general in nevergrad, do not set the seed from the
+          RNG in your own __init__ because it will cause surprises
+          to anyone re-seeding your parametrization after init.
+    """
 
     # pylint: disable=abstract-method
 

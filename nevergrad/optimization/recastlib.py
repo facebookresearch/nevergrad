@@ -4,8 +4,10 @@
 # LICENSE file in the root directory of this source tree.
 
 
+import functools
 import math
 import warnings
+import weakref
 import numpy as np
 from scipy import optimize as scipyoptimize
 import nevergrad.common.typing as tp
@@ -135,39 +137,17 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
         # configuration
         self.algorithm = algorithm
         self._no_hypervolume = True
-        self.initial_seed = -1
-
-    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.Loss) -> None:
-        """Called whenever calling "tell" on a candidate that was not "asked".
-        Defaults to the standard tell pipeline.
-        """  # We do not do anything; this just updates the current best.
+        self._initial_seed = -1
 
     def get_optimization_function(self) -> tp.Callable[[tp.Callable[..., tp.Any]], tp.Optional[tp.ArrayLike]]:
-        # Q: Why would it hang?
-        # create a different sub-instance, so that the current instance is not referenced by the thread
-        # (consequence: do not create a thread at initialization, or we get a thread explosion)
-        subinstance = self.__class__(
-            parametrization=self.parametrization,
-            budget=self.budget,
-            num_workers=self.num_workers,
-            algorithm=self.algorithm,
-            enable_pickling=self._enable_pickling,
-        )
-
-        if self.initial_seed == -1:
-            self.initial_seed = self._rng.randint(2 ** 30)
-        subinstance.initial_seed = self.initial_seed
-
-        # set num_objectives in sub-instance for Pymoo to use in problem definition
-        if self.num_objectives > 0:
-            subinstance.num_objectives = self.num_objectives
-        else:
-            raise RuntimeError("num_objectives should have been set.")
-        return subinstance._optimization_function
+        if self._initial_seed == -1:
+            self._initial_seed = self._rng.randint(2 ** 30)
+        return functools.partial(self._optimization_function, weakref.proxy(self))
         # pylint:disable=useless-return
 
+    @staticmethod
     def _optimization_function(
-        self, objective_function: tp.Callable[[tp.ArrayLike], float]
+        weakself: tp.Any, objective_function: tp.Callable[[tp.ArrayLike], float]
     ) -> tp.Optional[tp.ArrayLike]:
         # pylint:disable=unused-argument, import-outside-toplevel
         from pymoo import optimize as pymoooptimize
@@ -189,9 +169,9 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
         #     ref_dirs = get_reference_directions("das-dennis", self.num_objectives, n_partitions=12)
         #     algorithm = get_pymoo_algorithm(self.algorithm, ref_dirs)
         # else:
-        algorithm = get_pymoo_algorithm(self.algorithm)
-        problem = _create_pymoo_problem(self, objective_function)
-        pymoooptimize.minimize(problem, algorithm, seed=self.initial_seed)
+        algorithm = get_pymoo_algorithm(weakself.algorithm)
+        problem = _create_pymoo_problem(weakself, objective_function)
+        pymoooptimize.minimize(problem, algorithm, seed=weakself._initial_seed)
         return None
 
     def _internal_ask_candidate(self) -> p.Parameter:
@@ -278,30 +258,17 @@ class _PymooBatchMinimizeBase(recaster.BatchRecastOptimizer):
         # configuration
         self.algorithm = algorithm
         self._no_hypervolume = True
-
-    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.Loss) -> None:
-        """Called whenever calling "tell" on a candidate that was not "asked".
-        Defaults to the standard tell pipeline.
-        """  # We do not do anything; this just updates the current best.
+        self.initial_seed = self._rng.randint(2 ** 30)
 
     def get_optimization_function(self) -> tp.Callable[[tp.Callable[..., tp.Any]], tp.Optional[tp.ArrayLike]]:
         # create a different sub-instance, so that the current instance is not referenced by the thread
         # (consequence: do not create a thread at initialization, or we get a thread explosion)
-        subinstance = self.__class__(
-            parametrization=self.parametrization,
-            budget=self.budget,
-            num_workers=self.num_workers,
-            algorithm=self.algorithm,
-        )
-        # set num_objectives in sub-instance for Pymoo to use in problem definition
-        if self.num_objectives <= 0:
-            raise RuntimeError("num_objectives should have been set.")
-        subinstance.num_objectives = self.num_objectives
-        return subinstance._optimization_function
+        return functools.partial(self._optimization_function, weakref.proxy(self))
         # pylint:disable=useless-return
 
+    @staticmethod
     def _optimization_function(
-        self, objective_function: tp.Callable[[tp.ArrayLike], float]
+        weakself: tp.Any, objective_function: tp.Callable[[tp.ArrayLike], float]
     ) -> tp.Optional[tp.ArrayLike]:
         # pylint:disable=unused-argument, import-outside-toplevel
         from pymoo import optimize as pymoooptimize
@@ -323,10 +290,9 @@ class _PymooBatchMinimizeBase(recaster.BatchRecastOptimizer):
         #     ref_dirs = get_reference_directions("das-dennis", self.num_objectives, n_partitions=12)
         #     algorithm = get_pymoo_algorithm(self.algorithm, ref_dirs)
         # else:
-        algorithm = get_pymoo_algorithm(self.algorithm)
-        problem = _create_pymoo_problem(self, objective_function, False)
-        seed = self._rng.randint(2 ** 30)
-        pymoooptimize.minimize(problem, algorithm, seed=seed)
+        algorithm = get_pymoo_algorithm(weakself.algorithm)
+        problem = _create_pymoo_problem(weakself, objective_function, False)
+        pymoooptimize.minimize(problem, algorithm, seed=weakself.initial_seed)
         return None
 
     def _internal_ask_candidate(self) -> p.Parameter:
