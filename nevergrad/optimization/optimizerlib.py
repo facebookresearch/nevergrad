@@ -1456,7 +1456,7 @@ def _learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.Arr
     model_outputs = model.predict(X2)
     indices = np.argsort(y)
     ordered_model_outputs = [model_outputs[i] for i in indices]
-    if not all(x < y for x, y in zip(ordered_model_outputs, ordered_model_outputs[1:])):
+    if not np.all(np.diff(ordered_model_outputs) > 0):
         raise MetaModelFailure("Unlearnable objective function.")
 
     try:
