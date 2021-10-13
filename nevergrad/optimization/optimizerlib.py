@@ -323,6 +323,8 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
         whether to add a genetic crossover step every other iteration.
     use_pareto: bool
         whether to restart from a random pareto element in multiobjective mode, instead of the last one added
+    sparsse: bool
+        whether we have random mutations setting variables to 0.
 
     Notes
     -----
