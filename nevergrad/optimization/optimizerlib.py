@@ -257,7 +257,7 @@ class _OnePlusOne(base.Optimizer):
                 data = func(pessimistic_data, arity=self.arity_for_discrete_mutation)
             if self.sparse:
                 data = np.asarray(data)
-                zeroing = np.random.randint(data.size + 1, size=data.size).reshape(data.shape)) == 0
+                zeroing = np.random.randint(data.size + 1, size=data.size).reshape(data.shape) == 0
                 data[zeroing] = 0.0
             return pessimistic.set_standardized_data(data, reference=ref)
 
