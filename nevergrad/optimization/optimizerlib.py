@@ -1283,8 +1283,6 @@ class ConfPortfolio(base.ConfiguredOptimizer):
         the list of optimizers to use.
     warmup_ratio: optional float
         ratio of the budget used before choosing to focus on one optimizer
-    distribute_workers: bool
-        If we want the parallelism to be distributed over workers.
 
     Notes
     -----
@@ -1299,10 +1297,8 @@ class ConfPortfolio(base.ConfiguredOptimizer):
         *,
         optimizers: tp.Sequence[tp.Union[base.Optimizer, base.OptCls, str]] = (),
         warmup_ratio: tp.Optional[float] = None,
-        distribute_workers: float = False,
     ) -> None:
         self.optimizers = optimizers
-        assert warmup_ratio == 1. or not distribute_workers
         self.warmup_ratio = warmup_ratio
         super().__init__(Portfolio, locals(), as_config=True)
 
@@ -1317,8 +1313,8 @@ class Portfolio(base.Optimizer):
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
         config: tp.Optional["ConfPortfolio"] = None,
-        distribute_workers: bool = False,  # False by default for compatibility.
     ) -> None:
+        distribute_workers = (warmup_ratio == 1.)
         self._config = ConfPortfolio() if config is None else config
         cfg = self._config
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
