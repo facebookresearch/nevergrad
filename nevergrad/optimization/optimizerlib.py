@@ -1283,7 +1283,7 @@ class ConfPortfolio(base.ConfiguredOptimizer):
         the list of optimizers to use.
     warmup_ratio: optional float
         ratio of the budget used before choosing to focus on one optimizer
-    distribute_workers: float
+    distribute_workers: bool
         If we want the parallelism to be distributed over workers.
 
     Notes
