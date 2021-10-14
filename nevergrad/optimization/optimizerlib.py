@@ -1283,6 +1283,8 @@ class ConfPortfolio(base.ConfiguredOptimizer):
         the list of optimizers to use.
     warmup_ratio: optional float
         ratio of the budget used before choosing to focus on one optimizer
+    distribute_workers: float
+        If we want the parallelism to be distributed over workers.
 
     Notes
     -----
@@ -1297,6 +1299,7 @@ class ConfPortfolio(base.ConfiguredOptimizer):
         *,
         optimizers: tp.Sequence[tp.Union[base.Optimizer, base.OptCls, str]] = (),
         warmup_ratio: tp.Optional[float] = None,
+        distribute_workers: float = False,
     ) -> None:
         self.optimizers = optimizers
         self.warmup_ratio = warmup_ratio
@@ -1313,6 +1316,7 @@ class Portfolio(base.Optimizer):
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
         config: tp.Optional["ConfPortfolio"] = None,
+        distribute_workers: bool = False,  # False by default for compatibility.
     ) -> None:
         self._config = ConfPortfolio() if config is None else config
         cfg = self._config
@@ -1327,6 +1331,8 @@ class Portfolio(base.Optimizer):
         num = len(optimizers)
         self.optims: tp.List[base.Optimizer] = []
         sub_budget = None if budget is None else budget // num + (budget % num > 0)
+        first_optimizer = True
+        default_sub_workers = num_workers // len(optimizers)
         for opt in optimizers:
             if isinstance(opt, base.Optimizer):
                 if opt.parametrization is not self.parametrization:
@@ -1338,6 +1344,13 @@ class Portfolio(base.Optimizer):
                 continue
             Optim: base.OptCls = registry[opt] if isinstance(opt, str) else opt
             sub_workers = 1 if Optim.no_parallelization else num_workers  # could be reduced in some settings
+            if distribute_workers:
+                if first_optimizer:  # The first optimizer takes care of the 
+                    sub_workers = num_workers - (len(optimizers) - 1) * default_sub_workers
+                    first_optimizer = False
+                else:
+                    sub_workers = default_sub_workers
+            assert sub_workers == 1 or not Optim.no_parallelization
             self.optims.append(
                 Optim(
                     self.parametrization,  # share parametrization and its rng
