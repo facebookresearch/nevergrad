@@ -175,21 +175,28 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
         return None
 
     def _internal_ask_candidate(self) -> p.Parameter:
-        """Reads messages from the thread in which the underlying optimization function is running
-        New messages are sent as "ask".
         """
-        # get a datapoint that is a random point in parameter space
-        if self.num_objectives == 0:  # dummy ask i.e. not activating pymoo until num_objectives is set
+        Special version to make sure that num_objectives has been set before
+        the proper _internal_ask_candidate, in our parent class, is called.
+        """
+        if self.num_objectives == 0:
+            # dummy ask i.e. not activating pymoo until num_objectives is set
             warnings.warn(
                 "with this optimizer, it is more efficient to set num_objectives before the optimization begins",
                 errors.NevergradRuntimeWarning,
             )
+            # We need to get a datapoint that is a random point in parameter space,
+            # and waste an evaluation on it.
             return self.parametrization.spawn_child()
         return super()._internal_ask_candidate()
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: float) -> None:
-        """Returns value for a point which was "asked"
-        (none asked point cannot be "tell")
+        """
+        Special version to make sure that we the extra initial evaluation which
+        we may have done in order to get num_objectives, is discarded.
+        Note that this discarding means that the extra point will not make it into
+        replay_archive_tell. Correspondingly, because num_objectives will make it into
+        the pickle, __setstate__ will never need a dummy ask.
         """
         if self._messaging_thread is None:
             return  # dummy tell i.e. not activating pymoo until num_objectives is set

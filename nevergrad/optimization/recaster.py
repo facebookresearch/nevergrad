@@ -302,8 +302,14 @@ class SequentialRecastOptimizer(RecastOptimizer):
         # We temporarily unset _enable_pickling so that the replays do not
         # get archived again.
         self._enable_pickling = False
-        for candidate in self.replay_archive_tell:
-            self._internal_ask_candidate()
+        for i, candidate in enumerate(self.replay_archive_tell):
+            new_candidate = self._internal_ask_candidate()
+            norm = np.linalg.norm(new_candidate.get_standardized_data(reference=candidate))
+            # Check that the replay wants the same value as we had the first time.
+            # If an error is raised here then you might want to
+            # check the reproducibility of your optimizer.
+            if norm > 0.00001:
+                raise RuntimeError(f"Mismatch in replay at index {i} of {len(self.replay_archive_tell)}.")
             self._internal_tell_candidate(candidate, candidate.loss)
         self._enable_pickling = True
 
