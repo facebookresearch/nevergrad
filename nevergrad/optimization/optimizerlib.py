@@ -1345,7 +1345,7 @@ class Portfolio(base.Optimizer):
             Optim: base.OptCls = registry[opt] if isinstance(opt, str) else opt
             sub_workers = 1 if Optim.no_parallelization else num_workers  # could be reduced in some settings
             if distribute_workers:
-                if first_optimizer:  # The first optimizer takes care of the 
+                if first_optimizer:  # The first optimizer takes care of the
                     sub_workers = num_workers - (len(optimizers) - 1) * default_sub_workers
                     first_optimizer = False
                 else:
