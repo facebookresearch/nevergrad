@@ -1332,7 +1332,7 @@ class Portfolio(base.Optimizer):
         self.optims: tp.List[base.Optimizer] = []
         sub_budget = None if budget is None else budget // num + (budget % num > 0)
         first_optimizer = True
-        default_sub_workers = num_workers // len(optimizers)
+        default_sub_workers = max(1, num_workers // len(optimizers))
         for opt in optimizers:
             if isinstance(opt, base.Optimizer):
                 if opt.parametrization is not self.parametrization:
@@ -1346,7 +1346,7 @@ class Portfolio(base.Optimizer):
             sub_workers = 1 if Optim.no_parallelization else num_workers  # could be reduced in some settings
             if distribute_workers:
                 if first_optimizer:  # The first optimizer takes care of the
-                    sub_workers = num_workers - (len(optimizers) - 1) * default_sub_workers
+                    sub_workers = max(1, num_workers - (len(optimizers) - 1) * default_sub_workers)
                     first_optimizer = False
                 else:
                     sub_workers = default_sub_workers
