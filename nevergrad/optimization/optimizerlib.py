@@ -1302,6 +1302,7 @@ class ConfPortfolio(base.ConfiguredOptimizer):
         distribute_workers: float = False,
     ) -> None:
         self.optimizers = optimizers
+        assert warmup_ratio == 1. or not distribute_workers
         self.warmup_ratio = warmup_ratio
         super().__init__(Portfolio, locals(), as_config=True)
 
