@@ -54,9 +54,12 @@ class _MessagingThread(threading.Thread):
         try:
             self.output = self._caller(self._fake_callable, *self._args, **self._kwargs)
         except StopOptimizerThread:  # gracefully stopping the thread
-            pass
+            self.messages_ask.put(ValueError("Optimization told to finish"))
         except Exception as e:  # pylint: disable=broad-except
+            self.messages_ask.put(e)
             self.error = e
+        else:
+            self.messages_ask.put(None)
 
     def _fake_callable(self, *args: tp.Any) -> tp.Any:
         """
@@ -121,6 +124,16 @@ class RecastOptimizer(base.Optimizer):
     ----
     These implementations are not necessarily robust. More specifically, one cannot "tell" any
     point which was not "asked" before.
+
+    An optimization is performed by a third-party library in a background thread. This communicates
+    with the main thread using two queue objects. Specifically:
+
+        messages_ask is filled by the background thread with a candidate (or batch of candidates)
+        it wants evaluated for, or None if the background thread is over, or an Exception
+        which needs to be raised to the user.
+
+        messages_tell supplies the background thread with a value to return from the fake function.
+        A value of None means the background thread is no longer relevant and should exit.
     """
 
     recast = True
@@ -150,8 +163,12 @@ class RecastOptimizer(base.Optimizer):
         """
         if self._messaging_thread is None:
             self._messaging_thread = MessagingThread(self.get_optimization_function())
-        # wait for a message
-        if not self._messaging_thread.is_alive():  # In case the algorithm stops before the budget is elapsed.
+        alive = self._messaging_thread.is_alive()
+        if alive:
+            point = self._messaging_thread.messages_ask.get()
+            if isinstance(point, Exception):
+                raise point
+        if not alive or point is None:  # In case the algorithm stops before the budget is elapsed.
             warnings.warn(
                 "Underlying optimizer has already converged, returning random points",
                 base.errors.FinishedUnderlyingOptimizerWarning,
@@ -159,7 +176,6 @@ class RecastOptimizer(base.Optimizer):
             self._check_error()
             data = self._rng.normal(0, 1, self.dimension)
             return self.parametrization.spawn_child().set_standardized_data(data)
-        point = self._messaging_thread.messages_ask.get()
         candidate = self.parametrization.spawn_child().set_standardized_data(point)
         return candidate
 
@@ -247,8 +263,20 @@ class BatchRecastOptimizer(RecastOptimizer):
         """
         if self._messaging_thread is None:
             self._messaging_thread = MessagingThread(self.get_optimization_function())
+        if self._current_batch:
+            return self._current_batch.pop()
+        # if there are any points in the previous batch that haven't been told on, you cannot update the current batch.
+        if not self.can_ask():
+            raise TooManyAskError(
+                "You can't get a new batch until the old one has been fully told on. See docstring for more info."
+            )
+        alive = self._messaging_thread.is_alive()
         # wait for a message
-        if not self._messaging_thread.is_alive():  # In case the algorithm stops before the budget is elapsed.
+        if alive:
+            points = self._messaging_thread.messages_ask.get()
+            if isinstance(points, Exception):
+                raise points
+        if not alive or points is None:  # In case the algorithm stops before the budget is elapsed.
             warnings.warn(
                 "Underlying optimizer has already converged, returning random points",
                 base.errors.FinishedUnderlyingOptimizerWarning,
@@ -256,23 +284,16 @@ class BatchRecastOptimizer(RecastOptimizer):
             self._check_error()
             data = self._rng.normal(0, 1, self.dimension)
             return self.parametrization.spawn_child().set_standardized_data(data)
-        # if no more points left in batch, wait for new batch from fake callable
-        if not self._current_batch:
-            # if there are any points in the previous batch that haven't been told on, you cannot update the current batch.
-            if not self.can_ask():
-                raise TooManyAskError(
-                    "You can't get a new batch until the old one has been fully told on. See docstring for more info."
-                )
-            points = self._messaging_thread.messages_ask.get()
-            self.batch_size = len(points)
-            self._current_batch = [
-                self.parametrization.spawn_child().set_standardized_data(point) for point in points
-            ]
-            self._batch_losses = [None] * len(points)  # type: ignore
-            # map each point to an index in preparation to build loss array in tell
-            self.indices = {candidate.uid: i for i, candidate in enumerate(self._current_batch)}
-        candidate = self._current_batch.pop()
-        return candidate
+
+        # We have a new batch
+        self.batch_size = len(points)
+        self._current_batch = [
+            self.parametrization.spawn_child().set_standardized_data(point) for point in points
+        ]
+        self._batch_losses = [None] * len(points)  # type: ignore
+        # map each point to an index in preparation to build loss array in tell
+        self.indices = {candidate.uid: i for i, candidate in enumerate(self._current_batch)}
+        return self._current_batch.pop()
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: float) -> None:
         """Returns value for a point which was "asked"
@@ -287,7 +308,7 @@ class BatchRecastOptimizer(RecastOptimizer):
         self._tell_counter += 1
         # if batch size number of tells since new batch, send array of losses to fake callable
         if self._tell_counter == self.batch_size:
-            self._messaging_thread.messages_ask.put(np.array(self._batch_losses))
+            self._messaging_thread.messages_tell.put(np.array(self._batch_losses))
             self._batch_losses = []
             self._tell_counter = 0
 

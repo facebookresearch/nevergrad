@@ -7,6 +7,7 @@ from .oneshot import SamplingSearch
 from .differentialevolution import DifferentialEvolution
 from .optimizerlib import RandomSearchMaker, SQP, LHSSearch, DE, RandomSearch, MetaRecentering, MetaTuneRecentering  # type: ignore
 from .optimizerlib import (
+    ParametrizedMetaModel,
     ParametrizedOnePlusOne,
     ParametrizedCMA,
     ParametrizedBO,
@@ -39,6 +40,9 @@ MicroCMA = ParametrizedCMA(scale=1e-6).set_name("MicroCMA", register=True)
 FCMAs03 = ParametrizedCMA(fcmaes=True, scale=0.3).set_name("FCMAs03", register=True)
 FCMAp13 = ParametrizedCMA(fcmaes=True, scale=0.1, popsize=13).set_name("FCMAp13", register=True)
 ECMA = ParametrizedCMA(elitist=True).set_name("ECMA", register=True)
+MetaModelDiagonalCMA = ParametrizedMetaModel(multivariate_optimizer=ParametrizedCMA(diagonal=True)).set_name(
+    "MetaModelDiagonalCMA", register=True
+)
 
 # OnePlusOne
 FastGADiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="fastga").set_name(
