@@ -66,7 +66,7 @@ class OlympusSurface(ExperimentFunction):
         return surface.run(x - self.shift)[0][0]
 
     def evaluation_function(self, *recommendations) -> float:
-        """Averages multiple evaluations if necessary."""
+        """Averages multiple evaluations if necessary"""
         x = recommendations[0].value
         return self.surface_without_noise(x - self.shift)
 
