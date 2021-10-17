@@ -134,7 +134,7 @@ SLOW = [
 ]
 
 
-UNSEEDABLE: tp.List[str] = ["CmaFmin2"]
+UNSEEDABLE: tp.List[str] = ["CmaFmin2", "MetaModelFmin2"]
 
 
 def buggy_function(x: np.ndarray) -> float:
