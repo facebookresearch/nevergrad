@@ -29,6 +29,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.multirun = 1  # work in progress
+        self._normalizer: tp.Any = None
         self.initial_guess: tp.Optional[tp.ArrayLike] = None
         # configuration
         assert method in [
