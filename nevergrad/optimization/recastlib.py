@@ -82,6 +82,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
                     options["bounds"] = [0.0, 1.0]
 
                 num_calls = 0
+
                 def cma_objective_function(data):
                     num_calls += 1
                     # Hopefully the line below does nothing if unbounded and rescales from [0, 1] if bounded.
