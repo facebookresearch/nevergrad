@@ -84,7 +84,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
                     return objective_function(data)
 
                 # cma.fmin2(objective_function, [0.0] * self.dimension, [1.0] * self.dimension, remaining)
-                x0 = [.5] * self.dimension
+                x0 = [0.5] * self.dimension
                 while budget - self._num_ask > 0:
                     options = {"maxfevals": budget - self._num_ask, "verbose": -9}
                     res = cma.fmin(
@@ -94,7 +94,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
                         options=options,
                         restarts=9,
                     )
-                    x0 = .5 + np.random.uniform() * (2. * np.random.uniform(size=self.dimension) - 1) / 2.
+                    x0 = 0.5 + np.random.uniform() * (2.0 * np.random.uniform(size=self.dimension) - 1) / 2.0
                 if res[1] < best_res:
                     best_res = res[1]
                     best_x = self._normalizer.backward(np.asarray(res[0], dtype=np.float))
