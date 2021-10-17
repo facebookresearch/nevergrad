@@ -42,7 +42,10 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         self.method = method
         self.random_restart = random_restart
         # The following line rescales to [0, 1] if fully bounded.
-        self._normalizer = p.helpers.Normalizer(self.parametrization)
+        if method == "CmaFmin2" and p.helpers.Normalizer(self.parametrization).fully_bounded:
+            self._normalizer = p.helpers.Normalizer(self.parametrization)
+        else:
+            self._normalizer = None
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         """Called whenever calling "tell" on a candidate that was not "asked".
@@ -80,7 +83,8 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
 
                 def cma_objective_function(data):
                     # Hopefully the line below does nothing if unbounded and rescales from [0, 1] if bounded.
-                    data = self._normalizer.backward(np.asarray(data, dtype=np.float))
+                    if self._normalizer is not None:
+                        data = self._normalizer.backward(np.asarray(data, dtype=np.float32))
                     return objective_function(data)
 
                 # cma.fmin2(objective_function, [0.0] * self.dimension, [1.0] * self.dimension, remaining)
@@ -94,10 +98,14 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
                         options=options,
                         restarts=9,
                     )
-                    x0 = 0.5 + np.random.uniform() * (2.0 * np.random.uniform(size=self.dimension) - 1) / 2.0
+                    x0 = list(
+                        0.5 + np.random.uniform() * (2.0 * np.random.uniform(size=self.dimension) - 1) / 2.0
+                    )
                 if res[1] < best_res:
                     best_res = res[1]
-                    best_x = self._normalizer.backward(np.asarray(res[0], dtype=np.float))
+                    best_x = res[0]
+                    if self._normalizer is not None:
+                        best_x = self._normalizer.backward(np.asarray(best_x, dtype=np.float32))
             else:
                 res = scipyoptimize.minimize(
                     objective_function,
