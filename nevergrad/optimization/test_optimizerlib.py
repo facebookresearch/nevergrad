@@ -327,8 +327,8 @@ def test_optimizer_families_repr() -> None:
     optim: base.ConfiguredOptimizer = optlib.RandomSearchMaker(sampler="cauchy")
     np.testing.assert_equal(repr(optim), "RandomSearchMaker(sampler='cauchy')")
     #
-    optim = optlib.ScipyOptimizer(method="COBYLA")
-    np.testing.assert_equal(repr(optim), "ScipyOptimizer(method='COBYLA')")
+    optim = optlib.NonObjectOptimizer(method="COBYLA")
+    np.testing.assert_equal(repr(optim), "NonObjectOptimizer(method='COBYLA')")
     assert optim.no_parallelization
     #
     optim = optlib.ParametrizedCMA(diagonal=True)

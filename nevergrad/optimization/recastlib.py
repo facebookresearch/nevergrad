@@ -17,7 +17,7 @@ from .base import IntOrParameter
 from . import recaster
 
 
-class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
+class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
     def __init__(
         self,
         parametrization: IntOrParameter,
@@ -124,7 +124,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         return best_x
 
 
-class ScipyOptimizer(base.ConfiguredOptimizer):
+class NonObjectOptimizer(base.ConfiguredOptimizer):
     """Wrapper over Scipy optimizer implementations, in standard ask and tell format.
     This is actually an import from scipy-optimize, including Sequential Quadratic Programming,
 
@@ -152,18 +152,18 @@ class ScipyOptimizer(base.ConfiguredOptimizer):
 
     # pylint: disable=unused-argument
     def __init__(self, *, method: str = "Nelder-Mead", random_restart: bool = False) -> None:
-        super().__init__(_ScipyMinimizeBase, locals())
+        super().__init__(_NonObjectMinimizeBase, locals())
 
 
-NelderMead = ScipyOptimizer(method="Nelder-Mead").set_name("NelderMead", register=True)
-CmaFmin2 = ScipyOptimizer(method="CmaFmin2").set_name("CmaFmin2", register=True)
-Powell = ScipyOptimizer(method="Powell").set_name("Powell", register=True)
-RPowell = ScipyOptimizer(method="Powell", random_restart=True).set_name("RPowell", register=True)
-Cobyla = ScipyOptimizer(method="COBYLA").set_name("Cobyla", register=True)
-RCobyla = ScipyOptimizer(method="COBYLA", random_restart=True).set_name("RCobyla", register=True)
-SQP = ScipyOptimizer(method="SLSQP").set_name("SQP", register=True)
+NelderMead = NonObjectOptimizer(method="Nelder-Mead").set_name("NelderMead", register=True)
+CmaFmin2 = NonObjectOptimizer(method="CmaFmin2").set_name("CmaFmin2", register=True)
+Powell = NonObjectOptimizer(method="Powell").set_name("Powell", register=True)
+RPowell = NonObjectOptimizer(method="Powell", random_restart=True).set_name("RPowell", register=True)
+Cobyla = NonObjectOptimizer(method="COBYLA").set_name("Cobyla", register=True)
+RCobyla = NonObjectOptimizer(method="COBYLA", random_restart=True).set_name("RCobyla", register=True)
+SQP = NonObjectOptimizer(method="SLSQP").set_name("SQP", register=True)
 SLSQP = SQP  # Just so that people who are familiar with SLSQP naming are not lost.
-RSQP = ScipyOptimizer(method="SLSQP", random_restart=True).set_name("RSQP", register=True)
+RSQP = NonObjectOptimizer(method="SLSQP", random_restart=True).set_name("RSQP", register=True)
 RSLSQP = RSQP  # Just so that people who are familiar with SLSQP naming are not lost.
 
 
