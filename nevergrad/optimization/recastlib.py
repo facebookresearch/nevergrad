@@ -41,6 +41,8 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         ], f"Unknown method '{method}'"
         self.method = method
         self.random_restart = random_restart
+        # The following line rescales to [0, 1] if fully bounded.
+        self._normalizer = p.helpers.Normalizer(self.parametrization)
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         """Called whenever calling "tell" on a candidate that was not "asked".
@@ -74,12 +76,18 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
             if self.method == "CmaFmin2":
                 options = {"maxfevals": remaining, "verbose": -9}
                 if p.helpers.Normalizer(self.parametrization).fully_bounded:
-                    self._normalizer = p.helpers.Normalizer(self.parametrization)  # type: ignore
+                    # Tell CMA to work in [0, 1].
                     options["bounds"] = [0.0, 1.0]
+
+                def cma_objective_function(data):
+                    # Hopefully the line below does nothing if unbounded and rescales from [0, 1] if bounded.
+                    data = self._normalizer.backward(np.asarray(data, dtype=np.float))
+                    return objective_function(data)
+
                 # cma.fmin2(objective_function, [0.0] * self.dimension, [1.0] * self.dimension, remaining)
                 propose_x0 = lambda: np.random.uniform() * np.random.uniform(size=self.dimension)
                 res = cma.fmin(
-                    objective_function,
+                    cma_objective_function,
                     x0=propose_x0,
                     sigma0=0.2,
                     options=options,
@@ -87,7 +95,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
                 )
                 if res[1] < best_res:
                     best_res = res[1]
-                    best_x = res[0]
+                    best_x = self._normalizer.backward(np.asarray(res[0], dtype=np.float))
             else:
                 res = scipyoptimize.minimize(
                     objective_function,

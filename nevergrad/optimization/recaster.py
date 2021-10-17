@@ -178,9 +178,6 @@ class RecastOptimizer(base.Optimizer):
             return self.parametrization.spawn_child().set_standardized_data(data)
         candidate = self.parametrization.spawn_child().set_standardized_data(point)
         return candidate
-        # I'm lost, do we need something like this:
-        # if self._normalizer is not None:
-        #    data = self._normalizer.backward(data)
 
     def _check_error(self) -> None:
         if self._messaging_thread is not None:
