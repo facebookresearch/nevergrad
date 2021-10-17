@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import numpy as np
+import pytest
 import nevergrad as ng
 import nevergrad.common.typing as tp
 from nevergrad.functions import ArtificialFunction
@@ -77,3 +78,36 @@ def test_sqp_with_constraint() -> None:
     func.parametrization.register_cheap_constraint(experiments._Constraint("sum", as_bool=True))
     xp = Experiment(func, optimizer="ChainMetaModelSQP", budget=150, seed=4290846341)
     xp._run_with_error()
+
+
+class ErroringSequentialRecastOptimizer(recaster.SequentialRecastOptimizer):
+    def get_optimization_function(self) -> tp.Callable[[tp.Callable[..., tp.Any]], tp.ArrayLike]:
+        def optim_function(func: tp.Callable[..., tp.Any]) -> tp.ArrayLike:
+            func(np.zeros(2))
+            raise ValueError("ErroringOptimizer")
+
+        return optim_function
+
+
+class ErroringBatchRecastOptimizer(recaster.BatchRecastOptimizer):
+
+    # pylint: disable=abstract-method
+
+    def get_optimization_function(self) -> tp.Callable[[tp.Callable[..., tp.Any]], tp.ArrayLike]:
+        def optim_function(func: tp.Callable[..., tp.Any]) -> tp.ArrayLike:
+            func(np.zeros((1, 2)))
+            raise ValueError("ErroringOptimizer")
+
+        return optim_function
+
+
+def test_recast_optimizer_error() -> None:
+    sequential = ErroringSequentialRecastOptimizer(parametrization=2, budget=100)
+    sequential.tell(sequential.ask(), 4.2)
+    with pytest.raises(ValueError, match="ErroringOptimizer"):
+        sequential.ask()
+
+    batch = ErroringBatchRecastOptimizer(parametrization=2, budget=100)
+    batch.tell(batch.ask(), 4.2)
+    with pytest.raises(ValueError, match="ErroringOptimizer"):
+        batch.ask()
