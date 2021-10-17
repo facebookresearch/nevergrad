@@ -81,11 +81,8 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
                     # Tell CMA to work in [0, 1].
                     options["bounds"] = [0.0, 1.0]
 
-                num_calls = 0
 
                 def cma_objective_function(data):
-                    global num_calls
-                    num_calls += 1
                     # Hopefully the line below does nothing if unbounded and rescales from [0, 1] if bounded.
                     if self._normalizer is not None:
                         data = self._normalizer.backward(np.asarray(data, dtype=np.float32))
@@ -93,6 +90,7 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
 
                 # cma.fmin2(objective_function, [0.0] * self.dimension, [1.0] * self.dimension, remaining)
                 x0 = [0.5] * self.dimension
+                num_calls = 0
                 while budget - num_calls > 0:
                     options = {"maxfevals": budget - num_calls, "verbose": -9}
                     res = cma.fmin(
@@ -105,11 +103,12 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
                     x0 = list(
                         0.5 + np.random.uniform() * (2.0 * np.random.uniform(size=self.dimension) - 1) / 2.0
                     )
-                if res[1] < best_res:
-                    best_res = res[1]
-                    best_x = res[0]
-                    if self._normalizer is not None:
-                        best_x = self._normalizer.backward(np.asarray(best_x, dtype=np.float32))
+                    if res[1] < best_res:
+                        best_res = res[1]
+                        best_x = res[0]
+                        if self._normalizer is not None:
+                            best_x = self._normalizer.backward(np.asarray(best_x, dtype=np.float32))
+                    num_calls += res[2]
             else:
                 res = scipyoptimize.minimize(
                     objective_function,
