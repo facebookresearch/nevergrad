@@ -1488,7 +1488,7 @@ class _MetaModel(base.Optimizer):
         num_workers: int = 1,
         *,
         multivariate_optimizer: tp.Optional[base.OptCls] = None,
-        frequency_ratio: float = 0.5,
+        frequency_ratio: float = 0.1,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.frequency_ratio = frequency_ratio
