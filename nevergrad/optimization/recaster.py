@@ -57,7 +57,6 @@ class _MessagingThread(threading.Thread):
         self._args = args
         self._kwargs = kwargs
         self.output: tp.Optional[tp.Any] = None  # TODO add a "done" attribute ?
-        self._last_evaluation_duration = 0.0001
 
     def run(self) -> None:
         """Starts the thread and run the "caller" function argument on
@@ -311,6 +310,10 @@ class SequentialRecastOptimizer(RecastOptimizer):
             if norm > 0.00001:
                 raise RuntimeError(f"Mismatch in replay at index {i} of {len(self.replay_archive_tell)}.")
             self._internal_tell_candidate(candidate, candidate.loss)
+
+        if self.num_ask > self.num_tell:
+            self._internal_ask_candidate()
+
         self._enable_pickling = True
 
 

@@ -901,31 +901,48 @@ def test_pymoo_batched() -> None:
     assert len(optimizer._current_batch) == 0  # type: ignore
 
 
-def test_recast_pickle() -> None:
+@pytest.mark.parametrize("after_ask", [False, True])  # type: ignore
+def test_recast_pickle(after_ask: bool) -> None:
+    # Do 10 ask/tells and optionally another ask.
     optimizer = ng.optimizers.PymooNSGA2(parametrization=2, budget=300)
     optimizer.parametrization.random_state.seed(12)
     for _ in range(10):
         x = optimizer.ask()
         loss = _simple_multiobjective(*x.args, **x.kwargs)
         optimizer.tell(x, loss)
+    if after_ask:
+        x_active = optimizer.ask()
+        x_active_2 = pickle.loads(pickle.dumps(x_active))
+
+    # Copy the optimizer and copy the copy and complete both to a total
+    # of 60 ask/tells
     optimizer_remade = pickle.loads(pickle.dumps(optimizer))
     optimizer_remade_remade = pickle.loads(pickle.dumps(optimizer_remade))
-    for _ in range(50):
-        x = optimizer_remade.ask()
+    for i in range(50):
+        x = x_active if (i == 0 and after_ask) else optimizer_remade.ask()
         loss = _simple_multiobjective(*x.args, **x.kwargs)
         optimizer_remade.tell(x, loss)
 
-    for _ in range(50):
-        x = optimizer_remade_remade.ask()
+    for i in range(50):
+        x = x_active_2 if (i == 0 and after_ask) else optimizer_remade_remade.ask()
         loss = _simple_multiobjective(*x.args, **x.kwargs)
         optimizer_remade_remade.tell(x, loss)
 
+    # Do a single optimization with 60 ask/tells
     optimizer_2 = ng.optimizers.PymooNSGA2(parametrization=2, budget=300)
     optimizer_2.parametrization.random_state.seed(12)
     for _ in range(60):
         x = optimizer_2.ask()
         loss = _simple_multiobjective(*x.args, **x.kwargs)
         optimizer_2.tell(x, loss)
+
+    # Check the results all agree.
+    assert optimizer_remade.num_ask == 60
+    assert optimizer_remade.num_tell == 60
+    assert optimizer_remade_remade.num_ask == 60
+    assert optimizer_remade_remade.num_tell == 60
+    assert optimizer_2.num_ask == 60
+    assert optimizer_2.num_tell == 60
 
     pf1 = optimizer_remade.pareto_front()
     pf2 = optimizer_2.pareto_front()
@@ -938,3 +955,8 @@ def test_recast_pickle() -> None:
     assert len(pf11) == len(pf2)
     for a_value, b_value in zip([i.value for i in pf11], [i.value for i in pf2]):
         assert np.allclose(a_value, b_value)
+
+    # Check that unpickling hasn't caused extra random draws.
+    expected_rand = optimizer_2._rng.randint(999999)
+    assert optimizer_remade._rng.randint(999999) == expected_rand
+    assert optimizer_remade_remade._rng.randint(999999) == expected_rand
