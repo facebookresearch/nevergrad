@@ -905,7 +905,7 @@ def test_pymoo_batched() -> None:
 def test_recast_pickle(after_ask: bool) -> None:
     # Do 10 ask/tells and optionally another ask.
     optimizer = ng.optimizers.PymooNSGA2(parametrization=2, budget=300)
-    optimizer.enable_pickling()
+    tp.cast(optlib.recaster.SequentialRecastOptimizer, optimizer).enable_pickling()
     optimizer.parametrization.random_state.seed(12)
     for _ in range(10):
         x = optimizer.ask()
@@ -964,21 +964,3 @@ def test_recast_pickle(after_ask: bool) -> None:
 
     with pytest.raises(ValueError, match="you should have asked"):
         pickle.dumps(optimizer_2)
-
-
-@pytest.mark.parametrize("name", ["NelderMead", "Powell", "SQP"])  # type: ignore
-def test_scipy_reproducible(name):
-    # For pickling scipy, we care that it isn't random.
-    opt1 = ng.optimizers.registry[name](2, budget=100)
-    opt2 = ng.optimizers.registry[name](2, budget=100)
-
-    for _ in range(10):
-        cand1 = opt1.ask()
-        a1 = np.array(*cand1.args)
-        cand2 = opt2.ask()
-        a2 = np.array(*cand2.args)
-        assert np.allclose(a1, a2)
-
-        result = np.random.rand()
-        opt1.tell(cand1, result)
-        opt2.tell(cand2, result)
