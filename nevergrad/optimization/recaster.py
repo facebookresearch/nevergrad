@@ -218,11 +218,10 @@ class SequentialRecastOptimizer(RecastOptimizer):
     (This avoids a reference cycle between the background thread and
     the optimizer, aiding cleanup.) It can have a weakref though.
 
-    If you want your optimizer to be picklable, we have to store
-    every candidate during optimization, which may use a lot
+    If you want your optimizer instance to be picklable, we have to
+    store every candidate during optimization, which may use a lot
     of memory. This lets us replay the optimization when
-    unpickling. To enable this:
-        - set enable_pickling to True in __init__.
+    unpickling. We only do this if you ask for it. To enable:
         - The optimization must be reproducible, asking for the same
           candidates every time. If you need a seed from nevergrad's
           generator, you can't necessarily generate this again after
@@ -232,6 +231,8 @@ class SequentialRecastOptimizer(RecastOptimizer):
           As in general in nevergrad, do not set the seed from the
           RNG in your own __init__ because it will cause surprises
           to anyone re-seeding your parametrization after init.
+        - The user must call enable_pickling() after initializing
+          the optimizer instance.
     """
 
     # pylint: disable=abstract-method
@@ -243,12 +244,18 @@ class SequentialRecastOptimizer(RecastOptimizer):
         parametrization: IntOrParameter,
         budget: tp.Optional[int],
         num_workers: int = 1,
-        *,
-        enable_pickling: bool = False,
     ) -> None:
         super().__init__(parametrization=parametrization, budget=budget, num_workers=num_workers)
-        self._enable_pickling = enable_pickling
+        self._enable_pickling = False
         self.replay_archive_tell: tp.List[p.Parameter] = []
+
+    def enable_pickling(self):
+        """Make the optimizer store its history of tells, so
+        that it can be serialized.
+        """
+        if self.num_ask != 0:
+            raise ValueError("Can only enable pickling before all asks.")
+        self._enable_pickling = True
 
     def _internal_ask_candidate(self) -> p.Parameter:
         """Reads messages from the thread in which the underlying optimization function is running
@@ -286,7 +293,7 @@ class SequentialRecastOptimizer(RecastOptimizer):
 
     def __getstate__(self):
         if not self._enable_pickling:
-            raise ValueError("If you want picklability your optimizer should have asked for it")
+            raise ValueError("If you want picklability you should have asked for it")
         thread = self._messaging_thread
         self._messaging_thread = None
         state = self.__dict__.copy()

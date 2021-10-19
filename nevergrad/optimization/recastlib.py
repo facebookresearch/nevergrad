@@ -129,11 +129,8 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
         num_workers: int = 1,
         *,
         algorithm: str,
-        enable_pickling: bool,
     ) -> None:
-        super().__init__(
-            parametrization, budget=budget, num_workers=num_workers, enable_pickling=enable_pickling
-        )
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
         # configuration
         self.algorithm = algorithm
         self._no_hypervolume = True
@@ -245,7 +242,7 @@ class Pymoo(base.ConfiguredOptimizer):
     no_parallelization = True
 
     # pylint: disable=unused-argument
-    def __init__(self, *, algorithm: str, enable_pickling: bool) -> None:
+    def __init__(self, *, algorithm: str) -> None:
         super().__init__(_PymooMinimizeBase, locals())
 
 
@@ -407,5 +404,5 @@ def _create_pymoo_problem(
     return _PymooProblem(optimizer, objective_function)
 
 
-PymooNSGA2 = Pymoo(algorithm="nsga2", enable_pickling=True).set_name("PymooNSGA2", register=True)
+PymooNSGA2 = Pymoo(algorithm="nsga2").set_name("PymooNSGA2", register=True)
 PymooBatchNSGA2 = PymooBatch(algorithm="nsga2").set_name("PymooBatchNSGA2", register=False)

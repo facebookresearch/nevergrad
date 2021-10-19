@@ -905,6 +905,7 @@ def test_pymoo_batched() -> None:
 def test_recast_pickle(after_ask: bool) -> None:
     # Do 10 ask/tells and optionally another ask.
     optimizer = ng.optimizers.PymooNSGA2(parametrization=2, budget=300)
+    optimizer.enable_pickling()
     optimizer.parametrization.random_state.seed(12)
     for _ in range(10):
         x = optimizer.ask()
@@ -960,3 +961,6 @@ def test_recast_pickle(after_ask: bool) -> None:
     expected_rand = optimizer_2._rng.randint(999999)
     assert optimizer_remade._rng.randint(999999) == expected_rand
     assert optimizer_remade_remade._rng.randint(999999) == expected_rand
+
+    with pytest.raises(ValueError, match="you should have asked"):
+        pickle.dumps(optimizer_2)
