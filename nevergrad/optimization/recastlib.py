@@ -42,40 +42,32 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         """  # We do not do anything; this just updates the current best.
 
     def get_optimization_function(self) -> tp.Callable[[tp.Callable[[tp.ArrayLike], float]], tp.ArrayLike]:
-        # create a different sub-instance, so that the current instance is not referenced by the thread
-        # (consequence: do not create a thread at initialization, or we get a thread explosion)
-        subinstance = self.__class__(
-            parametrization=self.parametrization,
-            budget=self.budget,
-            num_workers=self.num_workers,
-            method=self.method,
-            random_restart=self.random_restart,
-        )
-        subinstance.archive = self.archive
-        subinstance.current_bests = self.current_bests
-        return subinstance._optimization_function
+        return functools.partial(self._optimization_function, weakref.proxy(self))
 
-    def _optimization_function(self, objective_function: tp.Callable[[tp.ArrayLike], float]) -> tp.ArrayLike:
+    @staticmethod
+    def _optimization_function(
+        weakself: tp.Any, objective_function: tp.Callable[[tp.ArrayLike], float]
+    ) -> tp.ArrayLike:
         # pylint:disable=unused-argument
-        budget = np.inf if self.budget is None else self.budget
+        budget = np.inf if weakself.budget is None else weakself.budget
         best_res = np.inf
-        best_x: np.ndarray = self.current_bests["average"].x  # np.zeros(self.dimension)
-        if self.initial_guess is not None:
-            best_x = np.array(self.initial_guess, copy=True)  # copy, just to make sure it is not modified
-        remaining: float = budget - self._num_ask
+        best_x: np.ndarray = weakself.current_bests["average"].x  # np.zeros(self.dimension)
+        if weakself.initial_guess is not None:
+            best_x = np.array(weakself.initial_guess, copy=True)  # copy, just to make sure it is not modified
+        remaining: float = budget - weakself._num_ask
         while remaining > 0:  # try to restart if budget is not elapsed
-            options: tp.Dict[str, tp.Any] = {} if self.budget is None else {"maxiter": remaining}
+            options: tp.Dict[str, tp.Any] = {} if weakself.budget is None else {"maxiter": remaining}
             res = scipyoptimize.minimize(
                 objective_function,
-                best_x if not self.random_restart else self._rng.normal(0.0, 1.0, self.dimension),
-                method=self.method,
+                best_x if not weakself.random_restart else weakself._rng.normal(0.0, 1.0, weakself.dimension),
+                method=weakself.method,
                 options=options,
                 tol=0,
             )
             if res.fun < best_res:
                 best_res = res.fun
                 best_x = res.x
-            remaining = budget - self._num_ask
+            remaining = budget - weakself._num_ask
         return best_x
 
 
