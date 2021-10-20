@@ -3,8 +3,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import os
 import typing as tp
-from nevergrad.functions import gym
+from unittest import SkipTest
+from nevergrad.functions import gym as nevergrad_gym
 from nevergrad.functions import ExperimentFunction
 from .xpbase import registry
 from .xpbase import create_seed_generator
@@ -43,25 +45,16 @@ def ng_full_gym(
         conformant: bool
            do we restrict to conformant planning, i.e. deterministic controls.
     """
-    env_names = gym.GymMulti.get_env_names()
+    env_names = nevergrad_gym.GymMulti.get_env_names()
     assert int(ng_gym) + int(gp) <= 1, "At most one specific list of environment"
     if ng_gym:
-        env_names = gym.GymMulti.ng_gym
+        env_names = nevergrad_gym.GymMulti.ng_gym
     if gp:
-        try:
-            import pybullet  # pylint: disable=unused-import
-            #import pybullet_envs  # pylint: disable=unused-import
-            import pybulletgym  # pylint: disable=unused-import
-        except:
-            print("please install pybullet and pybullet-gym: ")
-            print("pip install pybullet")
-            print("pip install git+https://github.com/benelot/pybullet-gym")
-            return
         env_names = [
             "CartPole-v1",
             "Acrobot-v1",
             "MountainCarContinuous-v0",
-            "Pendulum-v1",  # Warning! V0 deprecated.
+            "Pendulum-v0",
             "InvertedPendulumSwingupBulletEnv-v0",
             "BipedalWalker-v3",
             "BipedalWalkerHardcore-v3",
@@ -111,7 +104,7 @@ def ng_full_gym(
         for neural_factor in neural_factors:
             for name in env_names:
                 try:
-                    func = gym.GymMulti(
+                    func = nevergrad_gym.GymMulti(
                         name, control=control, neural_factor=neural_factor, randomized=randomized
                     )
                 except MemoryError:
@@ -147,6 +140,8 @@ def gp(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
     Counterpart of ng_full_gym with a specific, reduced list of problems for matching
     a genetic programming benchmark."""
+    if os.environ.get("CIRCLECI", False):
+        SkipTest("No pybullet in CircleCI because pybulletgym is not in pypi!")
     return ng_full_gym(seed, gp=True)
 
 
@@ -172,7 +167,7 @@ def deterministic_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experi
 def gym_multifid_anm(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Gym simulator for Active Network Management."""
 
-    func = gym.GymMulti("multifidLANM")
+    func = nevergrad_gym.GymMulti("multifidLANM")
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", "progressive", "splitters", "baselines", seed=next(seedg))
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600, 51200]:
@@ -219,14 +214,14 @@ def gym_problem(
         assert compiler_gym_pb_index >= 0
         assert greedy_bias is False
         funcs: tp.List[ExperimentFunction] = [
-            gym.CompilerGym(
+            nevergrad_gym.CompilerGym(
                 compiler_gym_pb_index=compiler_gym_pb_index, limited_compiler_gym=limited_compiler_gym
             )
         ]
     else:
         if conformant:
             funcs = [
-                gym.GymMulti(
+                nevergrad_gym.GymMulti(
                     specific_problem,
                     control="conformant",
                     limited_compiler_gym=limited_compiler_gym,
@@ -236,7 +231,7 @@ def gym_problem(
             ]
         else:
             funcs = [
-                gym.GymMulti(
+                nevergrad_gym.GymMulti(
                     specific_problem,
                     control=control,
                     neural_factor=1 if control != "linear" else None,

@@ -14,6 +14,18 @@ import nevergrad as ng
 from nevergrad.parametrization import parameter
 from ..base import ExperimentFunction
 
+try:
+    import pybullet  # pylint: disable=unused-import
+    import pybullet_envs  # pylint: disable=unused-import
+    import pybulletgym  # pylint: disable=unused-import
+    import pyvirtualdisplay
+    # I deserve eternal damnation for this hack:
+    pyvirtualdisplay.Display(visible=0, size=(1400, 900)).start()
+except:
+    print("Pybullet stuff not installed. If you need it, please do something like:")
+    print("pip install pybullet")
+    print("pip install git+https://github.com/benelot/pybullet-gym")
+
 # pylint: disable=unused-import,import-outside-toplevel
 
 
@@ -298,6 +310,7 @@ class GymMulti(ExperimentFunction):
         import gym_anm  # noqa
 
         gym_env_names = []
+        max_displays = 10
         for e in gym.envs.registry.all():
             try:
                 assert "Kelly" not in str(e.id)  # We should have another check than that.
@@ -316,7 +329,11 @@ class GymMulti(ExperimentFunction):
                         assert a1.size() < 15000  # type: ignore
                 gym_env_names.append(e.id)
             except Exception as exception:  # pylint: disable=broad-except
-                print(f"{e.id} not included in full list becaue of {exception}.")
+                max_displays -= 1
+                if max_displays > 0:
+                    print(f"{e.id} not included in full list because of {exception}.")
+                if max_displays == 0:
+                    print("(similar issue for other environments)")
         return gym_env_names
 
     controllers = CONTROLLERS
