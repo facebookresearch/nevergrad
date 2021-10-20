@@ -19,6 +19,7 @@ try:
     import pybullet_envs  # pylint: disable=unused-import
     import pybulletgym  # pylint: disable=unused-import
     import pyvirtualdisplay
+
     # I deserve eternal damnation for this hack:
     pyvirtualdisplay.Display(visible=0, size=(1400, 900)).start()
 except:
