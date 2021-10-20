@@ -141,7 +141,7 @@ def gp(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     Counterpart of ng_full_gym with a specific, reduced list of problems for matching
     a genetic programming benchmark."""
     if os.environ.get("CIRCLECI", False):
-        SkipTest("No pybullet in CircleCI because pybulletgym is not in pypi!")
+        ng.errors.UnsupportedExperiment("No pybullet in CircleCI because pybulletgym is not in pypi!")
     return ng_full_gym(seed, gp=True)
 
 
