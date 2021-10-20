@@ -49,7 +49,7 @@ def ng_full_gym(
         env_names = gym.GymMulti.ng_gym
     if gp:
         try:
-            import pybullet
+            import pybullet  # pylint: disable=unused-import
         except:
             print("please install pybullet!")
             raise ImportError("PyBullet missing")
@@ -57,7 +57,7 @@ def ng_full_gym(
             "CartPole-v1",
             "Acrobot-v1",
             "MountainCarContinuous-v0",
-            "Pendulum-v0",
+            "Pendulum-v1",  # Warning! V0 deprecated.
             "InvertedPendulumSwingupBulletEnv-v0",
             "BipedalWalker-v3",
             "BipedalWalkerHardcore-v3",
