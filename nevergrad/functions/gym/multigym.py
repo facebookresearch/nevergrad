@@ -14,19 +14,6 @@ import nevergrad as ng
 from nevergrad.parametrization import parameter
 from ..base import ExperimentFunction
 
-try:
-    import pybullet  # pylint: disable=unused-import
-    import pybullet_envs  # pylint: disable=unused-import
-    import pybulletgym  # pylint: disable=unused-import
-    import pyvirtualdisplay
-
-    # I deserve eternal damnation for this hack:
-    pyvirtualdisplay.Display(visible=0, size=(1400, 900)).start()
-except:
-    print("Pybullet stuff not installed. If you need it, please do something like:")
-    print("pip install pybullet")
-    print("pip install git+https://github.com/benelot/pybullet-gym")
-
 # pylint: disable=unused-import,import-outside-toplevel
 
 
