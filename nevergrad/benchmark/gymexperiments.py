@@ -54,16 +54,16 @@ def ng_full_gym(
             print("please install pybullet!")
             raise ImportError("PyBullet missing")
         env_names = [
-            CartPole - v1,
-            Acrobot - v1,
-            MountainCarContinuous - v0,
-            Pendulum - v0,
-            InvertedPendulumSwingupBulletEnv - v0,
-            BipedalWalker - v3,
-            BipedalWalkerHardcore - v3,
-            HopperBulletEnv - v0,
-            InvertedDoublePendulumBulletEnv - v0,
-            LunarLanderContinuous - v2,
+            CartPole-v1,
+            Acrobot-v1,
+            MountainCarContinuous-v0,
+            Pendulum-v0,
+            InvertedPendulumSwingupBulletEnv-v0,
+            BipedalWalker-v3,
+            BipedalWalkerHardcore-v3,
+            HopperBulletEnv-v0,
+            InvertedDoublePendulumBulletEnv-v0,
+            LunarLanderContinuous-v2,
         ]
     seedg = create_seed_generator(seed)
     optims = ["DiagonalCMA", "OnePlusOne", "PSO", "DiscreteOnePlusOne", "DE", "CMandAS2"]
