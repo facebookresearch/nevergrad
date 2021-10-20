@@ -50,11 +50,13 @@ def ng_full_gym(
     if gp:
         try:
             import pybullet  # pylint: disable=unused-import
-            import pybullet_envs  # pylint: disable=unused-import
+            #import pybullet_envs  # pylint: disable=unused-import
             import pybulletgym  # pylint: disable=unused-import
         except:
-            print("please install pybullet!")
-            raise ImportError("PyBullet missing")
+            print("please install pybullet and pybullet-gym: ")
+            print("pip install pybullet")
+            print("pip install git+https://github.com/benelot/pybullet-gym")
+            return
         env_names = [
             "CartPole-v1",
             "Acrobot-v1",
