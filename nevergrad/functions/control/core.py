@@ -92,8 +92,9 @@ class BaseFunction(base.ExperimentFunction):
             noise_level=self.noise_level,
             deterministic_sim=deterministic_sim,
         )
-        if self.noise_level > 0.0 or not deterministic_sim:
-            self.parametrization.function.deterministic = False
+        #This was interesting, but the noise level in mujoco is not sufficient for making this flag useful: 
+        #if self.noise_level > 0.0 or not deterministic_sim:
+        #    self.parametrization.function.deterministic = False
         self._descriptors.pop("random_state", None)  # remove it from automatically added descriptors
 
     def _simulate(self, x: tp.Tuple) -> float:
