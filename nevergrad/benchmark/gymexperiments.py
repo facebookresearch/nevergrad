@@ -23,6 +23,7 @@ def ng_full_gym(
     memory: bool = False,
     ng_gym: bool = False,  # pylint: disable=redefined-outer-name
     conformant: bool = False,
+    gp: bool = False,
 ) -> tp.Iterator[Experiment]:
     """Gym simulator. Maximize reward.  Many distinct problems.
 
@@ -43,8 +44,27 @@ def ng_full_gym(
            do we restrict to conformant planning, i.e. deterministic controls.
     """
     env_names = gym.GymMulti.get_env_names()
+    assert int(ng_gym) + int(gp) <= 1, "At most one specific list of environment"
     if ng_gym:
         env_names = gym.GymMulti.ng_gym
+    if gp:
+        try:
+            import pybullet
+        except:
+            print("please install pybullet!")
+            raise ImportError("PyBullet missing")
+        env_names = [
+            CartPole - v1,
+            Acrobot - v1,
+            MountainCarContinuous - v0,
+            Pendulum - v0,
+            InvertedPendulumSwingupBulletEnv - v0,
+            BipedalWalker - v3,
+            BipedalWalkerHardcore - v3,
+            HopperBulletEnv - v0,
+            InvertedDoublePendulumBulletEnv - v0,
+            LunarLanderContinuous - v2,
+        ]
     seedg = create_seed_generator(seed)
     optims = ["DiagonalCMA", "OnePlusOne", "PSO", "DiscreteOnePlusOne", "DE", "CMandAS2"]
     if multi:
@@ -115,6 +135,15 @@ def conformant_ng_full_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experim
 def ng_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of ng_full_gym with a specific, reduced list of problems."""
     return ng_full_gym(seed, ng_gym=True)
+
+
+@registry.register
+def gp(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """GP benchmark.
+
+    Counterpart of ng_full_gym with a specific, reduced list of problems for matching
+    a genetic programming benchmark."""
+    return gp(seed, gp=True)
 
 
 @registry.register
