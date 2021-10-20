@@ -15,5 +15,7 @@ def test_ttp() -> None:
     func = core.TTPInstance()
     tsp_tour = np.random.random_sample((19,))
     packing_plan = np.random.random_sample((95,))
+    packing_plan = packing_plan > 0.5
+    packing_plan = packing_plan.astype(int)
     value = func.function(tsp_tour, packing_plan)
-    np.testing.assert_almost_equal(value, 15740.25)
+    np.testing.assert_almost_equal(value, 21071817.386196714)
