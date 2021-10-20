@@ -143,7 +143,7 @@ def gp(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
     Counterpart of ng_full_gym with a specific, reduced list of problems for matching
     a genetic programming benchmark."""
-    return gp(seed, gp=True)
+    return ng_full_gym(seed, gp=True)
 
 
 @registry.register
