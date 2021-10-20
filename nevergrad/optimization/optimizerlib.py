@@ -257,9 +257,7 @@ class _OnePlusOne(base.Optimizer):
                 data = func(pessimistic_data, arity=self.arity_for_discrete_mutation)
             if self.sparse:
                 data = np.asarray(data)
-                zeroing = (
-                    np.asarray(np.random.randint(data.size + 1, size=data.size).reshape(data.shape)) == 0
-                )
+                zeroing = self._rng.randint(data.size + 1, size=data.size).reshape(data.shape) == 0
                 data[zeroing] = 0.0
             return pessimistic.set_standardized_data(data, reference=ref)
 
@@ -325,6 +323,8 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
         whether to add a genetic crossover step every other iteration.
     use_pareto: bool
         whether to restart from a random pareto element in multiobjective mode, instead of the last one added
+    sparsse: bool
+        whether we have random mutations setting variables to 0.
 
     Notes
     -----
@@ -352,9 +352,6 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
 OnePlusOne = ParametrizedOnePlusOne().set_name("OnePlusOne", register=True)
 NoisyOnePlusOne = ParametrizedOnePlusOne(noise_handling="random").set_name("NoisyOnePlusOne", register=True)
 DiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete").set_name("DiscreteOnePlusOne", register=True)
-SparseDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete", sparse=True).set_name(
-    "SparseDiscreteOnePlusOne", register=True
-)
 PortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="portfolio").set_name(
     "PortfolioDiscreteOnePlusOne", register=True
 )
