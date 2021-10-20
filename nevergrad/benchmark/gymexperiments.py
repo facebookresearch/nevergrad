@@ -5,7 +5,7 @@
 
 import os
 import typing as tp
-from unittest import SkipTest
+import nevergrad as ng
 from nevergrad.functions import gym as nevergrad_gym
 from nevergrad.functions import ExperimentFunction
 from .xpbase import registry
