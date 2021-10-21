@@ -81,12 +81,17 @@ def ng_full_gym(
 
     seedg = create_seed_generator(seed)
     optims = [
+        "CMA",
         "DiagonalCMA",
         "OnePlusOne",
         "PSO",
         "DiscreteOnePlusOne",
         "DE",
         "CMandAS2",
+        "NelderMead",
+        "DoubleFastGADiscreteOnePlusOne",
+        "DiscreteLenglerOnePlusOne",
+        "AnisotropicAdaptiveDiscreteOnePlusOne",
         "TBPSA",
         "SPSA",
         "SQP",
