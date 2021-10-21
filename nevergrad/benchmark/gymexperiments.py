@@ -76,7 +76,7 @@ def ng_full_gym(
             print("pip install pyvirtualdisplay")
             print("pip install git+https://github.com/benelot/pybullet-gym")
             if os.environ.get("CIRCLECI", False):
-                ng.errors.UnsupportedExperiment("No pybullet in CircleCI because pybulletgym is not in pypi!")
+                raise ng.errors.UnsupportedExperiment("No pybullet in CircleCI because pybulletgym is not in pypi!")
             raise ImportError("Please install pybullet, pyvirtualdisplay and pybulletgym.")
 
     seedg = create_seed_generator(seed)
