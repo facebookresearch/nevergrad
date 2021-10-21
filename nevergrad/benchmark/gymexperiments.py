@@ -58,27 +58,40 @@ def ng_full_gym(
 
             # I deserve eternal damnation for this hack:
             pyvirtualdisplay.Display(visible=0, size=(1400, 900)).start()
+            env_names = [
+                "CartPole-v1",
+                "Acrobot-v1",
+                "MountainCarContinuous-v0",
+                "Pendulum-v0",
+                "InvertedPendulumSwingupBulletEnv-v0",
+                "BipedalWalker-v3",
+                "BipedalWalkerHardcore-v3",
+                "HopperBulletEnv-v0",
+                "InvertedDoublePendulumBulletEnv-v0",
+                "LunarLanderContinuous-v2",
+            ]
         except:
             print("Pybullet stuff not installed. If you need it, please do something like:")
             print("pip install pybullet")
             print("pip install pyvirtualdisplay")
             print("pip install git+https://github.com/benelot/pybullet-gym")
-            raise ImportError("Install pybullet, pybulletgym, pyvirtualdisplay")
+            if os.environ.get("CIRCLECI", False):
+                ng.errors.UnsupportedExperiment("No pybullet in CircleCI because pybulletgym is not in pypi!")
+            raise ImportError("Please install pybullet, pyvirtualdisplay and pybulletgym.")
 
-        env_names = [
-            "CartPole-v1",
-            "Acrobot-v1",
-            "MountainCarContinuous-v0",
-            "Pendulum-v0",
-            "InvertedPendulumSwingupBulletEnv-v0",
-            "BipedalWalker-v3",
-            "BipedalWalkerHardcore-v3",
-            "HopperBulletEnv-v0",
-            "InvertedDoublePendulumBulletEnv-v0",
-            "LunarLanderContinuous-v2",
-        ]
     seedg = create_seed_generator(seed)
-    optims = ["DiagonalCMA", "OnePlusOne", "PSO", "DiscreteOnePlusOne", "DE", "CMandAS2"]
+    optims = [
+        "DiagonalCMA",
+        "OnePlusOne",
+        "PSO",
+        "DiscreteOnePlusOne",
+        "DE",
+        "CMandAS2",
+        "TBPSA",
+        "SPSA",
+        "SQP",
+        "MetaModel",
+    ]
     if multi:
         controls = ["multi_neural"]
     else:
@@ -109,12 +122,12 @@ def ng_full_gym(
         assert not multi
     if conformant:
         controls = ["stochastic_conformant"]
-    budgets = [50, 200, 800, 3200, 6400, 100, 25, 400, 1600]
+    budgets = [204800, 12800, 25600, 51200, 50, 200, 800, 3200, 6400, 100, 25, 400, 1600, 102400]
     for control in controls:
         neural_factors: tp.Any = (
             [None]
             if (conformant or control == "linear")
-            else ([1] if "memory" in control else [3 if big else 1])
+            else ([1] if "memory" in control else ([3] if big else [1, 2, 3, 4, 5, 6, 7]))
         )
         for neural_factor in neural_factors:
             for name in env_names:
@@ -155,8 +168,6 @@ def gp(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
     Counterpart of ng_full_gym with a specific, reduced list of problems for matching
     a genetic programming benchmark."""
-    if os.environ.get("CIRCLECI", False):
-        ng.errors.UnsupportedExperiment("No pybullet in CircleCI because pybulletgym is not in pypi!")
     return ng_full_gym(seed, gp=True)
 
 
