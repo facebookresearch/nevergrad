@@ -259,7 +259,7 @@ class _OnePlusOne(base.Optimizer):
                 data = np.asarray(data)
                 zeroing = self._rng.randint(data.size + 1, size=data.size).reshape(
                     data.shape
-                ) < 1 + self._rng.randint(sparse)
+                ) < 1 + self._rng.randint(self.sparse)
                 data[zeroing] = 0.0
             return pessimistic.set_standardized_data(data, reference=ref)
 
