@@ -76,14 +76,14 @@ class _OnePlusOne(base.Optimizer):
         crossover: bool = False,
         rotation: bool = False,
         use_pareto: bool = False,
-        sparse: bool = False,
+        sparse: tp.Union[bool, int] = False,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert crossover or (not rotation), "We can not have both rotation and not crossover."
         self._sigma: float = 1
         self._previous_best_loss = float("inf")
         self.use_pareto = use_pareto
-        self.sparse = sparse
+        self.sparse = int(sparse)   # True --> 1
         all_params = p.helpers.flatten(self.parametrization)
         arity = max(
             len(param.choices) if isinstance(param, p.TransitionChoice) else 500 for _, param in all_params
@@ -255,9 +255,9 @@ class _OnePlusOne(base.Optimizer):
                     "portfolio": mutator.portfolio_discrete_mutation,
                 }[mutation]
                 data = func(pessimistic_data, arity=self.arity_for_discrete_mutation)
-            if self.sparse:
+            if self.sparse > 0:
                 data = np.asarray(data)
-                zeroing = self._rng.randint(data.size + 1, size=data.size).reshape(data.shape) == 0
+                zeroing = self._rng.randint(data.size + 1, size=data.size).reshape(data.shape) < 1 + self._rng.randint(sparse)
                 data[zeroing] = 0.0
             return pessimistic.set_standardized_data(data, reference=ref)
 
