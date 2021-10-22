@@ -1484,7 +1484,9 @@ class _MetaModel(base.Optimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if multivariate_optimizer is None:
-            multivariate_optimizer = ParametrizedCMA(elitist=(self.dimension < 3)) if self.dimension > 1 else OnePlusOne
+            multivariate_optimizer = (
+                ParametrizedCMA(elitist=(self.dimension < 3)) if self.dimension > 1 else OnePlusOne
+            )
         self._optim = multivariate_optimizer(
             self.parametrization, budget, num_workers
         )  # share parametrization and its rng
@@ -2679,8 +2681,11 @@ class NGOpt21(NGOpt16):
         if (
             self.budget is not None and self.budget > 500 * self.dimension and self.fully_continuous
         ):  # Discrete case ?
-            num = 1 + (4 * self.budget) // (self.dimension * 1000)   # was: 9
-            return ConfPortfolio(optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3**i) for i in range(num)], warmup_ratio=0.5)
+            num = 1 + (4 * self.budget) // (self.dimension * 1000)  # was: 9
+            return ConfPortfolio(
+                optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3 ** i) for i in range(num)],
+                warmup_ratio=0.5,
+            )
         else:
             return super()._select_optimizer_cls()
 
