@@ -1314,7 +1314,7 @@ class Portfolio(base.Optimizer):
         num_workers: int = 1,
         config: tp.Optional["ConfPortfolio"] = None,
     ) -> None:
-        distribute_workers = config.warmup_ratio == 1.0
+        distribute_workers = config is not None and config.warmup_ratio == 1.0
         self._config = ConfPortfolio() if config is None else config
         cfg = self._config
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
