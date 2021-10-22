@@ -2038,7 +2038,7 @@ class _Chain(base.Optimizer):
                 opt.tell(candidate, loss)
 
     def _internal_provide_recommendation(self) -> tp.ArrayLike:
-        return self.optimizers[-1]._internal_provide_recommendation()
+        return self.optimizers[-1]._internal_provide_recommendation()  # type: ignore
 
 
 class Chaining(base.ConfiguredOptimizer):
