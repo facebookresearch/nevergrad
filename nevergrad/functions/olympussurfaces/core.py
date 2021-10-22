@@ -13,7 +13,6 @@ from ..base import ExperimentFunction
 import nevergrad as ng
 
 
-
 class OlympusSurface(ExperimentFunction):
 
     SURFACE_KINDS = (
