@@ -37,6 +37,7 @@ from typing import ItemsView as ItemsView
 from typing import Callable as Callable
 from typing import Hashable as Hashable
 from typing import Match as Match
+from typing import cast as cast
 from pathlib import Path as Path
 from typing_extensions import Protocol
 
@@ -45,7 +46,7 @@ import numpy as _np
 
 
 ArgsKwargs = Tuple[Tuple[Any, ...], Dict[str, Any]]
-ArrayLike = Union[Tuple[float, ...], List[float], _np.ndarray]
+ArrayLike = Union[Tuple[float, ...], List[float], _np.ndarray]  # most common
 PathLike = Union[str, Path]
 FloatLoss = float
 Loss = Union[float, ArrayLike]

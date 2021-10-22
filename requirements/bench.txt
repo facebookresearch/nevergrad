@@ -6,7 +6,7 @@ opencv-python>=4.1.2.30
 matplotlib>=2.2.3
 gym>=0.12.1
 gym-anm>=1.0.1
-torch>=1.2.0
+torch>=1.7.0
 hiplot
 fcmaes>=1.2.7
 pandas>=0.23.4
@@ -22,8 +22,11 @@ IOHexperimenter>=0.2.8.7
 cdt>=0.5.23
 koncept>=0.2.2
 tensorflow-estimator>=2.3.0
+scikit-learn>=0.24
 tensorflow>=2.5.0
 image-quality>=1.2.7
 keras>=2.4.3
 compiler_gym>=0.1.8 ; sys_platform == "linux"
+pymoo>=0.4.2.2
+bayes-optim>=0.2.5.5
 olymp==0.0.1b0 ; sys_platform == "linux"
