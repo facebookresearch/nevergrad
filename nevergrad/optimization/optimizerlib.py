@@ -2037,6 +2037,9 @@ class _Chain(base.Optimizer):
             if self.num_tell < sum_budget:
                 opt.tell(candidate, loss)
 
+    def _internal_provide_recommendation(self) -> tp.ArrayLike:
+        return self.optimizers[-1]._internal_provide_recommendation()
+
 
 class Chaining(base.ConfiguredOptimizer):
     """
