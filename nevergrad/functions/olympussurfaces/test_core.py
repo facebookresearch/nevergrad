@@ -6,6 +6,7 @@
 import os
 import numpy as np
 from unittest import SkipTest
+import nevergrad as ng
 from . import core
 import pytest
 
@@ -16,9 +17,13 @@ import pytest
 )
 @pytest.mark.parametrize("noise_kind", ["GaussianNoise", "UniformNoise", "GammaNoise"])
 def test_olympus_surface(kind: str, noise_kind: str) -> None:
-    if os.name == "nt":
-        raise SkipTest("Skipping Windows and running only 1 out of 8")
-    func = core.OlympusSurface(kind=kind, noise_kind=noise_kind)
+    try:
+        func = core.OlympusSurface(kind=kind, noise_kind=noise_kind)
+    except Exception as e:
+        if os.name == "nt":
+            raise ng.errors.UnsupportedExperiment("Unavailable under Windows.")
+        else:
+            raise e
     func2 = core.OlympusSurface(kind=kind, noise_kind=noise_kind)  # Let us check the randomization.
     x = 2 * np.random.rand(func.dimension)
     value = func(x)  # should not touch boundaries, so value should be < np.inf

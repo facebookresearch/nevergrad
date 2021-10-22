@@ -12,16 +12,11 @@ from ..base import ExperimentFunction
 
 import nevergrad as ng
 
-try:
-    from olympus import surfaces  # type: ignore
-    from olympus import noises  # type: ignore
-except ImportError as e:
-    raise ng.errors.UnsupportedExperiment("Please install olympus for Olympus experiments") from e
 
 
 class OlympusSurface(ExperimentFunction):
 
-    traditional_surfaces = {
+    SURFACE_KINDS = {
         "Michalewicz": surfaces.Michalewicz,
         "AckleyPath": surfaces.AckleyPath,
         "Dejong": surfaces.Dejong,
@@ -43,11 +38,16 @@ class OlympusSurface(ExperimentFunction):
 
     @classmethod
     def get_surfaces_kinds(cls):
-        return list(cls.traditional_surfaces)
+        return list(cls.SURFACE_KINDS)
 
     def __init__(
         self, kind: str, dimension: int = 10, noise_kind: str = "GaussianNoise", noise_scale: float = 1
     ) -> None:
+        try:
+            from olympus import surfaces  # type: ignore
+            from olympus import noises  # type: ignore
+        except ImportError as e:
+            raise ng.errors.UnsupportedExperiment("Please install olympus for Olympus experiments") from e
         self.kind = kind
         self.param_dim = dimension
         self.noise_kind = noise_kind
