@@ -83,7 +83,7 @@ class _OnePlusOne(base.Optimizer):
         self._sigma: float = 1
         self._previous_best_loss = float("inf")
         self.use_pareto = use_pareto
-        self.sparse = int(sparse)   # True --> 1
+        self.sparse = int(sparse)  # True --> 1
         all_params = p.helpers.flatten(self.parametrization)
         arity = max(
             len(param.choices) if isinstance(param, p.TransitionChoice) else 500 for _, param in all_params
@@ -257,7 +257,9 @@ class _OnePlusOne(base.Optimizer):
                 data = func(pessimistic_data, arity=self.arity_for_discrete_mutation)
             if self.sparse > 0:
                 data = np.asarray(data)
-                zeroing = self._rng.randint(data.size + 1, size=data.size).reshape(data.shape) < 1 + self._rng.randint(sparse)
+                zeroing = self._rng.randint(data.size + 1, size=data.size).reshape(
+                    data.shape
+                ) < 1 + self._rng.randint(sparse)
                 data[zeroing] = 0.0
             return pessimistic.set_standardized_data(data, reference=ref)
 
