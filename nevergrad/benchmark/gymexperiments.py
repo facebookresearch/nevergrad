@@ -134,7 +134,7 @@ def ng_full_gym(
         neural_factors: tp.Any = (
             [None]
             if (conformant or control == "linear")
-            else ([1] if "memory" in control else ([3] if big else [1, 2, 3, 4, 5, 6, 7]))
+            else ([1] if "memory" in control else ([3] if big else [1, 2, 3]))
         )
         for neural_factor in neural_factors:
             for name in env_names:
