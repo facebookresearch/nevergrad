@@ -38,11 +38,6 @@ class OlympusSurface(ExperimentFunction):
     def __init__(
         self, kind: str, dimension: int = 10, noise_kind: str = "GaussianNoise", noise_scale: float = 1
     ) -> None:
-        try:
-            from olympus import surfaces  # type: ignore
-            from olympus import noises  # type: ignore
-        except ImportError as e:
-            raise ng.errors.UnsupportedExperiment("Please install olympus for Olympus experiments") from e
         self.kind = kind
         self.param_dim = dimension
         self.noise_kind = noise_kind
@@ -57,7 +52,11 @@ class OlympusSurface(ExperimentFunction):
     def _simulate_surface(self, x: np.ndarray, noise: bool = True) -> float:
         assert self.kind in OlympusSurface.SURFACE_KINDS
         assert self.noise_kind in ["GaussianNoise", "UniformNoise", "GammaNoise"]
-
+        try:
+            from olympus import surfaces  # type: ignore
+            from olympus import noises  # type: ignore
+        except ImportError as e:
+            raise ng.errors.UnsupportedExperiment("Please install olympus for Olympus experiments") from e
         if noise:
             noise = noises.Noise(kind=self.noise_kind, scale=self.noise_scale)
             surface = surfaces.traditional_surfaces[self.kind](param_dim=self.param_dim, noise=noise)
