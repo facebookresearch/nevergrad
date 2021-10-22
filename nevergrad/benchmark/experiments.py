@@ -1252,7 +1252,7 @@ def neuro_control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experime
 
 @registry.register
 def olympus_surfaces(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Olympus surfaces """
+    """Olympus surfaces"""
     from nevergrad.functions.olympussurfaces import OlympusSurface
 
     funcs = []
@@ -1261,6 +1261,28 @@ def olympus_surfaces(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
             for noise in ["GaussianNoise", "UniformNoise", "GammaNoise"]:
                 for noise_scale in [0.5, 1]:
                     funcs.append(OlympusSurface(kind, 10 ** k, noise, noise_scale))
+
+    seedg = create_seed_generator(seed)
+    optims = get_optimizers("basics", "noisy", seed=next(seedg))
+    for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600]:
+        for num_workers in [1]:  # , 10, 100]:
+            if num_workers < budget:
+                for algo in optims:
+                    for fu in funcs:
+                        xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        if not xp.is_incoherent:
+                            yield xp
+
+
+@registry.register
+def olympus_emulators(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Olympus emulators"""
+    from nevergrad.functions.olympussurfaces import OlympusEmulator
+
+    funcs = []
+    for dataset_kind in OlympusEmulator.DATASETS:
+        for model_kind in ["BayesNeuralNet", "NeuralNet"]:
+            funcs.append(OlympusEmulator(dataset_kind, model_kind))
 
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", "noisy", seed=next(seedg))

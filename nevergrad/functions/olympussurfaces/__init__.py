@@ -4,3 +4,4 @@
 # LICENSE file in the root directory of this source tree.
 
 from .core import OlympusSurface as OlympusSurface
+from .core import OlympusEmulator as OlympusEmulator
