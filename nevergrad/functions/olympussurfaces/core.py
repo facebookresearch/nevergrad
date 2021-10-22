@@ -16,29 +16,25 @@ import nevergrad as ng
 
 class OlympusSurface(ExperimentFunction):
 
-    SURFACE_KINDS = {
-        "Michalewicz": surfaces.Michalewicz,
-        "AckleyPath": surfaces.AckleyPath,
-        "Dejong": surfaces.Dejong,
-        "HyperEllipsoid": surfaces.HyperEllipsoid,
-        "Levy": surfaces.Levy,
-        "Michalewicz": surfaces.Michalewicz,
-        "Rastrigin": surfaces.Rastrigin,
-        "Rosenbrock": surfaces.Rosenbrock,
-        "Schwefel": surfaces.Schwefel,
-        "StyblinskiTang": surfaces.StyblinskiTang,
-        "Zakharov": surfaces.Zakharov,
-        "DiscreteAckley": surfaces.DiscreteAckley,
-        "DiscreteDoubleWell": surfaces.DiscreteDoubleWell,
-        "DiscreteMichalewicz": surfaces.DiscreteMichalewicz,
-        "LinearFunnel": surfaces.LinearFunnel,
-        "NarrowFunnel": surfaces.NarrowFunnel,
-        "GaussianMixture": surfaces.GaussianMixture,
-    }
-
-    @classmethod
-    def get_surfaces_kinds(cls):
-        return list(cls.SURFACE_KINDS)
+    SURFACE_KINDS = (
+        "Michalewicz",
+        "AckleyPath",
+        "Dejong",
+        "HyperEllipsoid",
+        "Levy",
+        "Michalewicz",
+        "Rastrigin",
+        "Rosenbrock",
+        "Schwefel",
+        "StyblinskiTang",
+        "Zakharov",
+        "DiscreteAckley",
+        "DiscreteDoubleWell",
+        "DiscreteMichalewicz",
+        "LinearFunnel",
+        "NarrowFunnel",
+        "GaussianMixture",
+    )
 
     def __init__(
         self, kind: str, dimension: int = 10, noise_kind: str = "GaussianNoise", noise_scale: float = 1
@@ -60,7 +56,7 @@ class OlympusSurface(ExperimentFunction):
         self.shift = self.parametrization.random_state.normal(size=self.dimension)
 
     def _simulate_surface(self, x: np.ndarray, noise: bool = True) -> float:
-        assert self.kind in OlympusSurface.get_surfaces_kinds()
+        assert self.kind in OlympusSurface.SURFACE_KINDS
         assert self.noise_kind in ["GaussianNoise", "UniformNoise", "GammaNoise"]
 
         if noise:

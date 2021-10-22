@@ -1256,7 +1256,7 @@ def olympus_surfaces(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     from nevergrad.functions.olympussurfaces import OlympusSurface
 
     funcs = []
-    for kind in OlympusSurface.get_surfaces_kinds():
+    for kind in OlympusSurface.SURFACE_KINDS:
         for k in range(2, 5):
             for noise in ["GaussianNoise", "UniformNoise", "GammaNoise"]:
                 for noise_scale in [0.5, 1]:
