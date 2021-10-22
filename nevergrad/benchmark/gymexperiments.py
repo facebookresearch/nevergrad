@@ -71,7 +71,7 @@ def ng_full_gym(
                 "LunarLanderContinuous-v2",
             ]
         except:
-            print("Pybullet stuff not installed. If you need it, please do something like:")
+            print("Pybullet not installed. If you need it, please do something like:")
             print("pip install pybullet")
             print("pip install pyvirtualdisplay")
             print("pip install git+https://github.com/benelot/pybullet-gym")
