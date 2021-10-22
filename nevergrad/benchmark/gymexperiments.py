@@ -46,7 +46,7 @@ def ng_full_gym(
            do we restrict to conformant planning, i.e. deterministic controls.
     """
     env_names = nevergrad_gym.GymMulti.get_env_names()
-    assert int(ng_gym) + int(gp) <= 1, "At most one specific list of environment"
+    assert int(ng_gym) + int(gp) <= 1, "At most one specific list of environments."
     if ng_gym:
         env_names = nevergrad_gym.GymMulti.ng_gym
     if gp:
