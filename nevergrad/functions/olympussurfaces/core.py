@@ -61,9 +61,9 @@ class OlympusSurface(ExperimentFunction):
 
         if noise:
             noise = noises.Noise(kind=self.noise_kind, scale=self.noise_scale)
-            surface = OlympusSurface.traditional_surfaces[self.kind](param_dim=self.param_dim, noise=noise)
+            surface = surfaces.traditional_surfaces[self.kind](param_dim=self.param_dim, noise=noise)
         else:
-            surface = OlympusSurface.traditional_surfaces[self.kind](param_dim=self.param_dim)
+            surface = surfaces.traditional_surfaces[self.kind](param_dim=self.param_dim)
         return surface.run(x - self.shift)[0][0]
 
     def evaluation_function(self, *recommendations) -> float:
