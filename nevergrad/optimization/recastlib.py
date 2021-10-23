@@ -4,8 +4,10 @@
 # LICENSE file in the root directory of this source tree.
 
 
+import functools
 import math
 import warnings
+import weakref
 import numpy as np
 from scipy import optimize as scipyoptimize
 import nevergrad.common.typing as tp
@@ -40,40 +42,32 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         """  # We do not do anything; this just updates the current best.
 
     def get_optimization_function(self) -> tp.Callable[[tp.Callable[[tp.ArrayLike], float]], tp.ArrayLike]:
-        # create a different sub-instance, so that the current instance is not referenced by the thread
-        # (consequence: do not create a thread at initialization, or we get a thread explosion)
-        subinstance = self.__class__(
-            parametrization=self.parametrization,
-            budget=self.budget,
-            num_workers=self.num_workers,
-            method=self.method,
-            random_restart=self.random_restart,
-        )
-        subinstance.archive = self.archive
-        subinstance.current_bests = self.current_bests
-        return subinstance._optimization_function
+        return functools.partial(self._optimization_function, weakref.proxy(self))
 
-    def _optimization_function(self, objective_function: tp.Callable[[tp.ArrayLike], float]) -> tp.ArrayLike:
+    @staticmethod
+    def _optimization_function(
+        weakself: tp.Any, objective_function: tp.Callable[[tp.ArrayLike], float]
+    ) -> tp.ArrayLike:
         # pylint:disable=unused-argument
-        budget = np.inf if self.budget is None else self.budget
+        budget = np.inf if weakself.budget is None else weakself.budget
         best_res = np.inf
-        best_x: np.ndarray = self.current_bests["average"].x  # np.zeros(self.dimension)
-        if self.initial_guess is not None:
-            best_x = np.array(self.initial_guess, copy=True)  # copy, just to make sure it is not modified
-        remaining: float = budget - self._num_ask
+        best_x: np.ndarray = weakself.current_bests["average"].x  # np.zeros(self.dimension)
+        if weakself.initial_guess is not None:
+            best_x = np.array(weakself.initial_guess, copy=True)  # copy, just to make sure it is not modified
+        remaining: float = budget - weakself._num_ask
         while remaining > 0:  # try to restart if budget is not elapsed
-            options: tp.Dict[str, tp.Any] = {} if self.budget is None else {"maxiter": remaining}
+            options: tp.Dict[str, tp.Any] = {} if weakself.budget is None else {"maxiter": remaining}
             res = scipyoptimize.minimize(
                 objective_function,
-                best_x if not self.random_restart else self._rng.normal(0.0, 1.0, self.dimension),
-                method=self.method,
+                best_x if not weakself.random_restart else weakself._rng.normal(0.0, 1.0, weakself.dimension),
+                method=weakself.method,
                 options=options,
                 tol=0,
             )
             if res.fun < best_res:
                 best_res = res.fun
                 best_x = res.x
-            remaining = budget - self._num_ask
+            remaining = budget - weakself._num_ask
         return best_x
 
 
@@ -132,31 +126,17 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
         # configuration
         self.algorithm = algorithm
         self._no_hypervolume = True
-
-    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.Loss) -> None:
-        """Called whenever calling "tell" on a candidate that was not "asked".
-        Defaults to the standard tell pipeline.
-        """  # We do not do anything; this just updates the current best.
+        self._initial_seed = -1
 
     def get_optimization_function(self) -> tp.Callable[[tp.Callable[..., tp.Any]], tp.Optional[tp.ArrayLike]]:
-        # create a different sub-instance, so that the current instance is not referenced by the thread
-        # (consequence: do not create a thread at initialization, or we get a thread explosion)
-        subinstance = self.__class__(
-            parametrization=self.parametrization,
-            budget=self.budget,
-            num_workers=self.num_workers,
-            algorithm=self.algorithm,
-        )
-        # set num_objectives in sub-instance for Pymoo to use in problem definition
-        if self.num_objectives > 0:
-            subinstance.num_objectives = self.num_objectives
-        else:
-            raise RuntimeError("num_objectives should have been set.")
-        return subinstance._optimization_function
+        if self._initial_seed == -1:
+            self._initial_seed = self._rng.randint(2 ** 30)
+        return functools.partial(self._optimization_function, weakref.proxy(self))
         # pylint:disable=useless-return
 
+    @staticmethod
     def _optimization_function(
-        self, objective_function: tp.Callable[[tp.ArrayLike], float]
+        weakself: tp.Any, objective_function: tp.Callable[[tp.ArrayLike], float]
     ) -> tp.Optional[tp.ArrayLike]:
         # pylint:disable=unused-argument, import-outside-toplevel
         from pymoo import optimize as pymoooptimize
@@ -178,28 +158,34 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
         #     ref_dirs = get_reference_directions("das-dennis", self.num_objectives, n_partitions=12)
         #     algorithm = get_pymoo_algorithm(self.algorithm, ref_dirs)
         # else:
-        algorithm = get_pymoo_algorithm(self.algorithm)
-        problem = _create_pymoo_problem(self, objective_function)
-        seed = self._rng.randint(2 ** 30)
-        pymoooptimize.minimize(problem, algorithm, seed=seed)
+        algorithm = get_pymoo_algorithm(weakself.algorithm)
+        problem = _create_pymoo_problem(weakself, objective_function)
+        pymoooptimize.minimize(problem, algorithm, seed=weakself._initial_seed)
         return None
 
     def _internal_ask_candidate(self) -> p.Parameter:
-        """Reads messages from the thread in which the underlying optimization function is running
-        New messages are sent as "ask".
         """
-        # get a datapoint that is a random point in parameter space
-        if self.num_objectives == 0:  # dummy ask i.e. not activating pymoo until num_objectives is set
+        Special version to make sure that num_objectives has been set before
+        the proper _internal_ask_candidate, in our parent class, is called.
+        """
+        if self.num_objectives == 0:
+            # dummy ask i.e. not activating pymoo until num_objectives is set
             warnings.warn(
                 "with this optimizer, it is more efficient to set num_objectives before the optimization begins",
                 errors.NevergradRuntimeWarning,
             )
+            # We need to get a datapoint that is a random point in parameter space,
+            # and waste an evaluation on it.
             return self.parametrization.spawn_child()
         return super()._internal_ask_candidate()
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: float) -> None:
-        """Returns value for a point which was "asked"
-        (none asked point cannot be "tell")
+        """
+        Special version to make sure that we the extra initial evaluation which
+        we may have done in order to get num_objectives, is discarded.
+        Note that this discarding means that the extra point will not make it into
+        replay_archive_tell. Correspondingly, because num_objectives will make it into
+        the pickle, __setstate__ will never need a dummy ask.
         """
         if self._messaging_thread is None:
             return  # dummy tell i.e. not activating pymoo until num_objectives is set
@@ -253,6 +239,9 @@ class Pymoo(base.ConfiguredOptimizer):
 
 
 class _PymooBatchMinimizeBase(recaster.BatchRecastOptimizer):
+
+    # pylint: disable=abstract-method
+
     def __init__(
         self,
         parametrization: IntOrParameter,
@@ -265,30 +254,17 @@ class _PymooBatchMinimizeBase(recaster.BatchRecastOptimizer):
         # configuration
         self.algorithm = algorithm
         self._no_hypervolume = True
-
-    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.Loss) -> None:
-        """Called whenever calling "tell" on a candidate that was not "asked".
-        Defaults to the standard tell pipeline.
-        """  # We do not do anything; this just updates the current best.
+        self._initial_seed = -1
 
     def get_optimization_function(self) -> tp.Callable[[tp.Callable[..., tp.Any]], tp.Optional[tp.ArrayLike]]:
-        # create a different sub-instance, so that the current instance is not referenced by the thread
-        # (consequence: do not create a thread at initialization, or we get a thread explosion)
-        subinstance = self.__class__(
-            parametrization=self.parametrization,
-            budget=self.budget,
-            num_workers=self.num_workers,
-            algorithm=self.algorithm,
-        )
-        # set num_objectives in sub-instance for Pymoo to use in problem definition
-        if self.num_objectives <= 0:
-            raise RuntimeError("num_objectives should have been set.")
-        subinstance.num_objectives = self.num_objectives
-        return subinstance._optimization_function
+        if self._initial_seed == -1:
+            self._initial_seed = self._rng.randint(2 ** 30)
+        return functools.partial(self._optimization_function, weakref.proxy(self))
         # pylint:disable=useless-return
 
+    @staticmethod
     def _optimization_function(
-        self, objective_function: tp.Callable[[tp.ArrayLike], float]
+        weakself: tp.Any, objective_function: tp.Callable[[tp.ArrayLike], float]
     ) -> tp.Optional[tp.ArrayLike]:
         # pylint:disable=unused-argument, import-outside-toplevel
         from pymoo import optimize as pymoooptimize
@@ -310,10 +286,9 @@ class _PymooBatchMinimizeBase(recaster.BatchRecastOptimizer):
         #     ref_dirs = get_reference_directions("das-dennis", self.num_objectives, n_partitions=12)
         #     algorithm = get_pymoo_algorithm(self.algorithm, ref_dirs)
         # else:
-        algorithm = get_pymoo_algorithm(self.algorithm)
-        problem = _create_pymoo_problem(self, objective_function, False)
-        seed = self._rng.randint(2 ** 30)
-        pymoooptimize.minimize(problem, algorithm, seed=seed)
+        algorithm = get_pymoo_algorithm(weakself.algorithm)
+        problem = _create_pymoo_problem(weakself, objective_function, False)
+        pymoooptimize.minimize(problem, algorithm, seed=weakself._initial_seed)
         return None
 
     def _internal_ask_candidate(self) -> p.Parameter:
