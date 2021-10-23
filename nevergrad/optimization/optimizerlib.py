@@ -1488,7 +1488,7 @@ class _MetaModel(base.Optimizer):
         num_workers: int = 1,
         *,
         multivariate_optimizer: tp.Optional[base.OptCls] = None,
-        frequency_ratio: float = 0.1,
+        frequency_ratio: float = 0.9,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.frequency_ratio = frequency_ratio
@@ -1536,7 +1536,7 @@ class ParametrizedMetaModel(base.ConfiguredOptimizer):
         self,
         *,
         multivariate_optimizer: tp.Optional[base.OptCls] = None,
-        frequency_ratio: float = 0.5,
+        frequency_ratio: float = 0.9,
     ) -> None:
         super().__init__(_MetaModel, locals())
         assert 0 <= frequency_ratio <= 1.0
