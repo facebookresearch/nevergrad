@@ -30,7 +30,7 @@ Alternatively, you can clone the repository and run :code:`pip install -e .` fro
 
 By default, this only installs requirements for the optimization and parametrization subpackages. If you are also interested in the benchmarking part,
 you should install with the :code:`[benchmark]` flag (example: :code:`pip install nevergrad[benchmark]`), and if you also want the test tools, use
-the :code:`[all]` flag (example: :code:`pip install -e .[all]`).
+the :code:`[all]` flag (example: :code:`pip install --use-deprecated=legacy-resolver -e .[all]`).
 
 **Notes**:
 
