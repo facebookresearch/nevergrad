@@ -505,7 +505,7 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
     def __init__(
         self,
         *,
-        scale: float = 1.0,
+        scale: tp.Optional[float] = None,
         elitist: bool = False,
         popsize: tp.Optional[int] = None,
         diagonal: bool = False,
@@ -514,6 +514,11 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         inopts: tp.Optional[tp.Dict[str, tp.Any]] = None,
     ) -> None:
         super().__init__(_CMA, locals(), as_config=True)
+        if scale is None:
+            if p.helpers.Normalizer(self.parametrization).fully_bounded:
+                scale = 0.3
+            else:
+                scale = 1.
         if fcmaes:
             if diagonal:
                 raise RuntimeError("fcmaes doesn't support diagonal=True, use fcmaes=False")
