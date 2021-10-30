@@ -390,6 +390,8 @@ class _CMA(base.Optimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._config = ParametrizedCMA() if config is None else config
+        if p.helpers.Normalizer(self.parametrization).fully_bounded:
+            self._config.scale *= 0.3
         pop = self._config.popsize
         self._popsize = max(num_workers, 4 + int(3 * np.log(self.dimension))) if pop is None else pop
         # internal attributes
@@ -505,7 +507,7 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
     def __init__(
         self,
         *,
-        scale: tp.Optional[float] = None,
+        scale: float = 1,
         elitist: bool = False,
         popsize: tp.Optional[int] = None,
         diagonal: bool = False,
@@ -514,11 +516,6 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         inopts: tp.Optional[tp.Dict[str, tp.Any]] = None,
     ) -> None:
         super().__init__(_CMA, locals(), as_config=True)
-        if scale is None:
-            if p.helpers.Normalizer(self.parametrization).fully_bounded:
-                scale = 0.3
-            else:
-                scale = 1.
         if fcmaes:
             if diagonal:
                 raise RuntimeError("fcmaes doesn't support diagonal=True, use fcmaes=False")
