@@ -507,7 +507,7 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
     def __init__(
         self,
         *,
-        scale: float = 1,
+        scale: float = 1.0,
         elitist: bool = False,
         popsize: tp.Optional[int] = None,
         diagonal: bool = False,
