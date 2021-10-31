@@ -2693,15 +2693,15 @@ class NGOpt36(NGOpt16):
         if (
             self.budget is not None and self.budget > 500 * self.dimension and self.fully_continuous
         ):  # Discrete case ?
-            num = 1 + int(np.sqrt(4. * (4 * self.budget) // (self.dimension * 1000)))
+            num = 1 + int(np.sqrt(4.0 * (4 * self.budget) // (self.dimension * 1000)))
             return ConfPortfolio(
-                optimizers=[Rescaled(base_optimizer=NGOpt14, scale=0.9**i) for i in range(num)], 
+                optimizers=[Rescaled(base_optimizer=NGOpt14, scale=0.9 ** i) for i in range(num)],
                 warmup_ratio=0.5,
             )
         else:
             return super()._select_optimizer_cls()
-        
-        
+
+
 @registry.register
 class NGOpt(NGOpt36):
     pass
