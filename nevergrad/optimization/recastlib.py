@@ -85,7 +85,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                     return objective_function(data)
 
                 # cma.fmin2(objective_function, [0.0] * self.dimension, [1.0] * self.dimension, remaining)
-                x0 = [0.5] * self.dimension
+                x0 = 0.5 * np.ones(self.dimension)
                 num_calls = 0
                 while budget - num_calls > 0:
                     options = {"maxfevals": budget - num_calls, "verbose": -9}
