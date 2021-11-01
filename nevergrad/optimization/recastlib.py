@@ -42,10 +42,11 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
         self.method = method
         self.random_restart = random_restart
         # The following line rescales to [0, 1] if fully bounded.
-        if method == "CmaFmin2" and p.helpers.Normalizer(self.parametrization).fully_bounded:
-            self._normalizer = p.helpers.Normalizer(self.parametrization)
-        else:
-            self._normalizer = None
+        self._normalizer: tp.Optional[p.helpers.Normalizer] = None
+        if method == "CmaFmin2":
+             normalizer = p.helpers.Normalizer(self.parametrization)
+             if normalizer.fully_bounded:
+            self._normalizer = normalizer
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         """Called whenever calling "tell" on a candidate that was not "asked".
