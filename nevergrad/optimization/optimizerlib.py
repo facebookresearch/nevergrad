@@ -2715,17 +2715,19 @@ class NGOpt38(NGOpt16):
             and self.num_workers == 1
             and p.helpers.Normalizer(self.parametrization).fully_bounded
         ):
-            if self.budget > 5000 * self.dimension:  # Asymptotically let us trust NGOpt36 and its subtle restart.
+            if (
+                self.budget > 5000 * self.dimension
+            ):  # Asymptotically let us trust NGOpt36 and its subtle restart.
                 return NGOpt36
             if self.dimension < 5:  # Low dimension: let us hit the bounds.
                 return NGOpt21
             if self.dimension < 10:  # Moderate dimension: reasonable restart + bet and run.
-                num = 1 + np.sqrt(8. * (8 * self.budget) // (self.dimension * 1000))
+                num = 1 + np.sqrt(8.0 * (8 * self.budget) // (self.dimension * 1000))
                 return ConfPortfolio(optimizers=[NGOpt14] * num, warmup_ratio=0.7)
             if self.dimension < 20:  # Nobody knows why this seems to be so good.
                 num = self.budget // (500 * self.dimension)
                 return ConfPortfolio(
-                    optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3**i) for i in range(num)],
+                    optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3 ** i) for i in range(num)],
                     warmup_ratio=0.5,
                 )
             # We need a special case for dim < 30 ---> let's see later.
@@ -2733,8 +2735,8 @@ class NGOpt38(NGOpt16):
             return NGOpt16
         else:
             return super()._select_optimizer_cls()
-        
-        
+
+
 @registry.register
 class NGOpt(NGOpt38):
     # Learning something automatically so that it's less unreadable would be great.
