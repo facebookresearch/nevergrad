@@ -108,9 +108,10 @@ jobs:
           command: |
             . venv/bin/activate
             rm -rf dist  # make sure it's clean
-            echo "Creating sdist"
-            python setup.py sdist
-            echo "Created sdist, now creating wheel"
+            # echo "Creating sdist"
+            # python setup.py sdist
+            # echo "Created sdist, now creating wheel"
+            echo "Creating wheel"
             python setup.py bdist_wheel
             echo "Created wheel"
             mkdir nevergrad-build
