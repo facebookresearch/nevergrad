@@ -76,7 +76,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
 
                 def cma_objective_function(data):
                     # Hopefully the line below does nothing if unbounded and rescales from [0, 1] if bounded.
-                    if self._normalizer is not None:
+                    if weakself._normalizer is not None:
                         data = self._normalizer.backward(np.asarray(data, dtype=np.float32))
                     return objective_function(data)
 
