@@ -48,7 +48,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
         if method == "CmaFmin2":
              normalizer = p.helpers.Normalizer(self.parametrization)
              if normalizer.fully_bounded:
-            self._normalizer = normalizer
+                 self._normalizer = normalizer
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         """Called whenever calling "tell" on a candidate that was not "asked".
@@ -72,7 +72,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
         while remaining > 0:  # try to restart if budget is not elapsed
             options: tp.Dict[str, tp.Any] = {} if weakself.budget is None else {"maxiter": remaining}
             # options: tp.Dict[str, tp.Any] = {} if self.budget is None else {"maxiter": remaining}
-            if self.method == "CmaFmin2":
+            if weakself.method == "CmaFmin2":
                 def cma_objective_function(data):
                     # Hopefully the line below does nothing if unbounded and rescales from [0, 1] if bounded.
                     if self._normalizer is not None:
