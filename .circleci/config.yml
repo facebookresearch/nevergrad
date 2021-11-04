@@ -120,6 +120,7 @@ jobs:
             python -c "from pathlib import Path;files = Path('nevergrad.egg-info/SOURCES.txt').read_text().split(); assert 'LICENSE' in files"
             python3 -m venv test_wheel
             . test_wheel/bin/activate
+            pip install -U pip
             cd ..  # don't use nevergrad locally
             echo "Installing wheel"
             pip install --progress-bar off --use-deprecated=legacy-resolver repo/nevergrad-build/dist/nevergrad-*any.whl
