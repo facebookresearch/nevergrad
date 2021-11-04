@@ -402,6 +402,10 @@ class _CMA(base.Optimizer):
 
     @property
     def es(self) -> tp.Any:  # typing not possible since cmaes not imported :(
+        if p.helpers.Normalizer(self.parametrization).fully_bounded:
+            scale_multiplier = 0.3 if self.dimension < 18 else 0.15
+        else:
+            scale_multiplier = 1.0
         if self._es is None:
             if not self._config.fcmaes:
                 import cma  # import inline in order to avoid matplotlib initialization warning
@@ -420,7 +424,7 @@ class _CMA(base.Optimizer):
                     x0=self.parametrization.sample().get_standardized_data(reference=self.parametrization)
                     if self._config.random_init
                     else np.zeros(self.dimension, dtype=np.float_),
-                    sigma0=self._config.scale,
+                    sigma0=self._config.scale * scale_multiplier,
                     inopts=inopts,
                 )
             else:
@@ -432,7 +436,7 @@ class _CMA(base.Optimizer):
                     ) from e
                 self._es = cmaes.Cmaes(
                     x0=np.zeros(self.dimension, dtype=np.float_),
-                    input_sigma=self._config.scale,
+                    input_sigma=self._config.scale * scale_multiplier,
                     popsize=self._popsize,
                     randn=self._rng.randn,
                 )
