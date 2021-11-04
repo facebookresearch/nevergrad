@@ -12,6 +12,7 @@ from .optimizerlib import (
     ParametrizedCMA,
     ParametrizedBO,
     EMNA,
+    CmaFmin2,
     NGOpt10,
     NGOpt12,
     BayesOptim,
