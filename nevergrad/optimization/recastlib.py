@@ -85,7 +85,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 num_calls = 0
                 while budget - num_calls > 0:
                     options = {"maxfevals": budget - num_calls, "verbose": -9}
-                    if self._normalizer is not None:
+                    if weakself._normalizer is not None:
                         # Tell CMA to work in [0, 1].
                         options["bounds"] = [0.0, 1.0]
                     res = cma.fmin(
