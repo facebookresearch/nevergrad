@@ -27,9 +27,9 @@ commands:
       - restore_cache:
           name: "[all] Restore cache"
           keys:
-          - v9-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          - v1-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
           # fallback to installing main requirements
-          - v9-dependencies-main-{{ checksum "requirements/main.txt"}}
+          - v1-dependencies-main-{{ checksum "requirements/main.txt"}}
 
       - run:
           name: "[all] Install dependencies"
@@ -39,6 +39,7 @@ commands:
             pip install --progress-bar off -U pip setuptools
             pip install --progress-bar off --use-deprecated=legacy-resolver -e .[all]
             pip install --progress-bar off -U numpy>=1.20.0
+            pip install keras==2.6.0  # issue on Nov 4th 2021
 
 jobs:
   install:
@@ -51,7 +52,7 @@ jobs:
       - restore_cache:
           name: "[no-extra] Restore cache"
           keys:
-          - v9-dependencies-main-{{ checksum "requirements/main.txt"}}
+          - v1-dependencies-main-{{ checksum "requirements/main.txt"}}
           # fallback to using the latest cache if no exact match is found
 
       - run:
@@ -78,7 +79,7 @@ jobs:
           name: "[no-extra] Save cache"
           paths:
             - ./venv
-          key: v9-dependencies-main-{{ checksum "requirements/main.txt"}}
+          key: v1-dependencies-main-{{ checksum "requirements/main.txt"}}
 
       - run:
           name: "[no-extra] Run basic tests (checking dependencies)"
@@ -93,7 +94,7 @@ jobs:
           name: "[all] Save cache"
           paths:
             - ./venv
-          key: v9-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          key: v1-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
 
       - run:
           name: "[all] Print installation"
@@ -108,15 +109,23 @@ jobs:
           command: |
             . venv/bin/activate
             rm -rf dist  # make sure it's clean
-            python setup.py sdist bdist_wheel
+            # echo "Creating sdist"
+            # python setup.py sdist
+            # echo "Created sdist, now creating wheel"
+            echo "Creating wheel"
+            python setup.py bdist_wheel
+            echo "Created wheel"
             mkdir nevergrad-build
             mv dist nevergrad-build/
             #
             python -c "from pathlib import Path;files = Path('nevergrad.egg-info/SOURCES.txt').read_text().split(); assert 'LICENSE' in files"
             python3 -m venv test_wheel
             . test_wheel/bin/activate
+            pip install -U pip
             cd ..  # don't use nevergrad locally
-            pip install --progress-bar off repo/nevergrad-build/dist/nevergrad-*any.whl
+            echo "Installing wheel"
+            pip install --progress-bar off --use-deprecated=legacy-resolver repo/nevergrad-build/dist/nevergrad-*any.whl
+            echo "Installed wheel"
             python -c "from nevergrad import functions;f = functions.ArtificialFunction(name='sphere', block_dimension=2);f([2, 3])"
 
       - persist_to_workspace:
@@ -238,7 +247,7 @@ jobs:
       - restore_cache:
           name: "[all] Restore cache"
           keys:
-          - v9-win-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          - v1-win-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
 
       - run:
           name: Setup nevergrad in virtualenv
@@ -253,7 +262,7 @@ jobs:
           name: "[all] Save cache"
           paths:
             - ./venv
-          key: v9-win-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          key: v1-win-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
 
       - run:
           name: "[all] Print installation"
