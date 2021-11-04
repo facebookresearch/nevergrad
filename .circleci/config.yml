@@ -256,7 +256,7 @@ jobs:
             pip install --progress-bar off -U pip setuptools
             #  pip install --progress-bar off torch==1.4.0+cpu torchvision==0.5.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
             pip install --use-deprecated=legacy-resolver --progress-bar off .[all]
-            pip install keras==2.6.0
+            pip install keras==2.6.0  # issue on Nov 4th 2021
 
       - save_cache:
           name: "[all] Save cache"
