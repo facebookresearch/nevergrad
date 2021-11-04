@@ -46,9 +46,9 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
         # The following line rescales to [0, 1] if fully bounded.
 
         if method == "CmaFmin2":
-             normalizer = p.helpers.Normalizer(self.parametrization)
-             if normalizer.fully_bounded:
-                 self._normalizer = normalizer
+            normalizer = p.helpers.Normalizer(self.parametrization)
+            if normalizer.fully_bounded:
+                self._normalizer = normalizer
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         """Called whenever calling "tell" on a candidate that was not "asked".
@@ -73,6 +73,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
             options: tp.Dict[str, tp.Any] = {} if weakself.budget is None else {"maxiter": remaining}
             # options: tp.Dict[str, tp.Any] = {} if self.budget is None else {"maxiter": remaining}
             if weakself.method == "CmaFmin2":
+
                 def cma_objective_function(data):
                     # Hopefully the line below does nothing if unbounded and rescales from [0, 1] if bounded.
                     if self._normalizer is not None:
@@ -94,7 +95,10 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                         options=options,
                         restarts=9,
                     )
-                    x0 = 0.5 + np.random.uniform() * (2.0 * np.random.uniform(size=weakself.dimension) - 1) / 2.0
+                    x0 = (
+                        0.5
+                        + np.random.uniform() * (2.0 * np.random.uniform(size=weakself.dimension) - 1) / 2.0
+                    )
                     if res[1] < best_res:
                         best_res = res[1]
                         best_x = res[0]
@@ -104,7 +108,9 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
             else:
                 res = scipyoptimize.minimize(
                     objective_function,
-                    best_x if not weakself.random_restart else weakself._rng.normal(0.0, 1.0, weakself.dimension),
+                    best_x
+                    if not weakself.random_restart
+                    else weakself._rng.normal(0.0, 1.0, weakself.dimension),
                     method=weakself.method,
                     options=options,
                     tol=0,
