@@ -1532,10 +1532,6 @@ MetaModel = ParametrizedMetaModel().set_name("MetaModel", register=True)
 MetaModelOnePlusOne = ParametrizedMetaModel(multivariate_optimizer=OnePlusOne).set_name(
     "MetaModelOnePlusOne", register=True
 )
-MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2).set_name(
-    "MetaModelFmin2", register=True
-)
-MetaModelFmin2.no_parallelization = True
 
 
 @registry.register
