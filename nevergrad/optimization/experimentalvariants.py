@@ -320,3 +320,6 @@ PCABO80 = BayesOptim(pca=True, n_components=0.80).set_name("PCABO80", register=T
 PCABO95DoE20 = BayesOptim(pca=True, n_components=0.95, prop_doe_factor=0.20).set_name(
     "PCABO95DoE20", register=True
 )
+SparseDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete", sparse=True).set_name(
+    "SparseDiscreteOnePlusOne", register=True
+)
