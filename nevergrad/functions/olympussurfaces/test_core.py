@@ -5,7 +5,6 @@
 
 import os
 import numpy as np
-from unittest import SkipTest
 import nevergrad as ng
 from . import core
 import pytest
