@@ -74,12 +74,14 @@ class _OnePlusOne(base.Optimizer):
         crossover: bool = False,
         rotation: bool = False,
         use_pareto: bool = False,
+        sparse: tp.Union[bool, int] = False,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert crossover or (not rotation), "We can not have both rotation and not crossover."
         self._sigma: float = 1
         self._previous_best_loss = float("inf")
         self.use_pareto = use_pareto
+        self.sparse = int(sparse)  # True --> 1
         all_params = p.helpers.flatten(self.parametrization)
         arity = max(
             len(param.choices) if isinstance(param, p.TransitionChoice) else 500 for _, param in all_params
@@ -208,7 +210,9 @@ class _OnePlusOne(base.Optimizer):
                 if intensity < 1:
                     intensity = 1
                 data = mutator.portfolio_discrete_mutation(
-                    pessimistic_data, intensity=intensity, arity=self.arity_for_discrete_mutation
+                    pessimistic_data,
+                    intensity=intensity,
+                    arity=self.arity_for_discrete_mutation,
                 )
             elif mutation == "coordinatewise_adaptive":
                 self._modified_variables = np.array([True] * self.dimension)
@@ -222,7 +226,9 @@ class _OnePlusOne(base.Optimizer):
                 alpha = 1.54468
                 intensity = int(max(1, self.dimension * (alpha * np.log(self.num_ask) / self.num_ask)))
                 data = mutator.portfolio_discrete_mutation(
-                    pessimistic_data, intensity=intensity, arity=self.arity_for_discrete_mutation
+                    pessimistic_data,
+                    intensity=intensity,
+                    arity=self.arity_for_discrete_mutation,
                 )
             elif mutation == "doerr":
                 # Selection, either random, or greedy, or a mutation rate.
@@ -235,7 +241,9 @@ class _OnePlusOne(base.Optimizer):
                     self._doerr_index = -1
                 intensity = self._doerr_mutation_rates[index]
                 data = mutator.portfolio_discrete_mutation(
-                    pessimistic_data, intensity=intensity, arity=self.arity_for_discrete_mutation
+                    pessimistic_data,
+                    intensity=intensity,
+                    arity=self.arity_for_discrete_mutation,
                 )
             else:
                 func: tp.Any = {  # type: ignore
@@ -245,6 +253,12 @@ class _OnePlusOne(base.Optimizer):
                     "portfolio": mutator.portfolio_discrete_mutation,
                 }[mutation]
                 data = func(pessimistic_data, arity=self.arity_for_discrete_mutation)
+            if self.sparse > 0:
+                data = np.asarray(data)
+                zeroing = self._rng.randint(data.size + 1, size=data.size).reshape(
+                    data.shape
+                ) < 1 + self._rng.randint(self.sparse)
+                data[zeroing] = 0.0
             return pessimistic.set_standardized_data(data, reference=ref)
 
     def _internal_tell(self, x: tp.ArrayLike, loss: tp.FloatLoss) -> None:
@@ -309,6 +323,8 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
         whether to add a genetic crossover step every other iteration.
     use_pareto: bool
         whether to restart from a random pareto element in multiobjective mode, instead of the last one added
+    sparsse: bool
+        whether we have random mutations setting variables to 0.
 
     Notes
     -----
@@ -328,6 +344,7 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
         crossover: bool = False,
         rotation: bool = False,
         use_pareto: bool = False,
+        sparse: bool = False,
     ) -> None:
         super().__init__(_OnePlusOne, locals())
 
@@ -368,6 +385,9 @@ NoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
 ).set_name("NoisyDiscreteOnePlusOne", register=True)
 DoubleFastGADiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="doublefastga").set_name(
     "DoubleFastGADiscreteOnePlusOne", register=True
+)
+SparseDoubleFastGADiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="doublefastga", sparse=True).set_name(
+    "SparseDoubleFastGADiscreteOnePlusOne", register=True
 )
 RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
     crossover=True, mutation="portfolio", noise_handling="optimistic"
