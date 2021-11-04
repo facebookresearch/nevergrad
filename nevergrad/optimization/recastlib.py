@@ -95,10 +95,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                         options=options,
                         restarts=9,
                     )
-                    x0 = (
-                        0.5
-                        + np.random.uniform() * (2.0 * np.random.uniform(size=weakself.dimension) - 1) / 2.0
-                    )
+                    x0 = 0.5 + np.random.uniform() * np.random.uniform(low=-0.5, high=0.5, size=self.dimension)
                     if res[1] < best_res:
                         best_res = res[1]
                         best_x = res[0]
