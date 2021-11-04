@@ -44,7 +44,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
         self.method = method
         self.random_restart = random_restart
         # The following line rescales to [0, 1] if fully bounded.
-        self._normalizer: tp.Optional[p.helpers.Normalizer] = None
+
         if method == "CmaFmin2":
              normalizer = p.helpers.Normalizer(self.parametrization)
              if normalizer.fully_bounded:
@@ -80,11 +80,11 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                     return objective_function(data)
 
                 # cma.fmin2(objective_function, [0.0] * self.dimension, [1.0] * self.dimension, remaining)
-                x0 = 0.5 * np.ones(self.dimension)
+                x0 = 0.5 * np.ones(weakself.dimension)
                 num_calls = 0
                 while budget - num_calls > 0:
                     options = {"maxfevals": budget - num_calls, "verbose": -9}
-                    if p.helpers.Normalizer(self.parametrization).fully_bounded:
+                    if p.helpers.Normalizer(weakself.parametrization).fully_bounded:
                         # Tell CMA to work in [0, 1].
                         options["bounds"] = [0.0, 1.0]
                     res = cma.fmin(
@@ -94,14 +94,12 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                         options=options,
                         restarts=9,
                     )
-                    x0 = list(
-                        0.5 + np.random.uniform() * (2.0 * np.random.uniform(size=self.dimension) - 1) / 2.0
-                    )
+                    x0 = 0.5 + np.random.uniform() * (2.0 * np.random.uniform(size=weakself.dimension) - 1) / 2.0
                     if res[1] < best_res:
                         best_res = res[1]
                         best_x = res[0]
-                        if self._normalizer is not None:
-                            best_x = self._normalizer.backward(np.asarray(best_x, dtype=np.float32))
+                        if weakself._normalizer is not None:
+                            best_x = weakself._normalizer.backward(np.asarray(best_x, dtype=np.float32))
                     num_calls += res[2]
             else:
                 res = scipyoptimize.minimize(
