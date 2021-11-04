@@ -21,7 +21,7 @@ from .optimizerlib import ConfPortfolio
 from .optimizerlib import BayesOptim
 from .differentialevolution import DifferentialEvolution
 from .es import EvolutionStrategy
-from .recastlib import ScipyOptimizer
+from .recastlib import NonObjectOptimizer
 from .recastlib import Pymoo
 from .oneshot import RandomSearchMaker
 from .oneshot import SamplingSearch
@@ -35,7 +35,7 @@ __all__ = [
     "ParametrizedMetaModel",
     "DifferentialEvolution",
     "EvolutionStrategy",
-    "ScipyOptimizer",
+    "NonObjectOptimizer",
     "Pymoo",
     "RandomSearchMaker",
     "SamplingSearch",
