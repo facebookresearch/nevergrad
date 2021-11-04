@@ -91,6 +91,6 @@ setup(
         "benchmark": requirements["bench"],
     },
     package_data={"nevergrad": ["py.typed", "*.csv", "*.py"]},
+    # cmdclass={"verify_circleci_version": VerifyCircleCiVersionCommand},
     python_requires=">=3.6",
-    cmdclass={"verify_circleci_version": VerifyCircleCiVersionCommand},
 )
