@@ -2733,6 +2733,15 @@ class NGOpt38(NGOpt16):
             # We need a special case for dim < 30 ---> let's see later.
             # Otherwise, let us go back to normal life: NGOpt16 which rocks in many cases, possibly Cobyla.
             return NGOpt16
+        elif (  # This might be specific of high-precision cases.
+            self.budget is not None
+            and self.fully_continuous
+            and not self.has_noise
+            and self.num_objectives < 2
+            and self.num_workers == 1
+            and p.helpers.Normalizer(self.parametrization).fully_bounded
+        ):
+            return NGOpt15
         else:
             return super()._select_optimizer_cls()
 
