@@ -389,6 +389,12 @@ if the loss is below 12:</p>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">early_stopping</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">callbacks</span><span class="o">.</span><span class="n">EarlyStopping</span><span class="p">(</span><span class="k">lambda</span> <span class="n">opt</span><span class="p">:</span> <span class="n">opt</span><span class="o">.</span><span class="n">current_bests</span><span class="p">[</span><span class="s2">&quot;minimum&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span> <span class="o">&lt;</span> <span class="mi">12</span><span class="p">)</span>
 </pre></div>
 </div>
+<dl class="py method">
+<dt class="sig sig-object py" id="nevergrad.callbacks.EarlyStopping.timer">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">timer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_duration</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#nevergrad.callbacks.EarlyStopping" title="nevergrad.optimization.callbacks.EarlyStopping"><span class="pre">nevergrad.optimization.callbacks.EarlyStopping</span></a></span></span><a class="headerlink" href="#nevergrad.callbacks.EarlyStopping.timer" title="Permalink to this definition"></a></dt>
+<dd><p>Early stop when max_duration seconds has been reached (from the first ask)</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
@@ -784,12 +790,15 @@ if objective function evaluation is fast.</p></li>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="nevergrad.families.ParametrizedMetaModel">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">nevergrad.families.</span></span><span class="sig-name descname"><span class="pre">ParametrizedMetaModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">multivariate_optimizer</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">ConfiguredOptimizer</span><span class="p"><span class="pre">,</span> </span><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><span class="pre">Optimizer</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.ParametrizedMetaModel" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">nevergrad.families.</span></span><span class="sig-name descname"><span class="pre">ParametrizedMetaModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">multivariate_optimizer</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">ConfiguredOptimizer</span><span class="p"><span class="pre">,</span> </span><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><span class="pre">Optimizer</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frequency_ratio</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">0.9</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.ParametrizedMetaModel" title="Permalink to this definition"></a></dt>
 <dd><p>Adds a metamodel to an optimizer.
 The optimizer is alway OnePlusOne if dimension is 1.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>multivariate_optimizer</strong> (<em>base.OptCls</em><em> or </em><em>None</em>) – Optimizer to which the metamodel is added</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>multivariate_optimizer</strong> (<em>base.OptCls</em><em> or </em><em>None</em>) – Optimizer to which the metamodel is added</p></li>
+<li><p><strong>frequency_ratio</strong> (<em>float</em>) – used for deciding the frequency at which we use the metamodel</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
@@ -1206,12 +1215,6 @@ average of the final population.</p></li>
 </dl>
 </dd></dl>
 
-<dl class="py exception">
-<dt class="sig sig-object py" id="nevergrad.optimization.optimizerlib.InfiniteMetaModelOptimum">
-<em class="property"><span class="pre">exception</span> </em><span class="sig-prename descclassname"><span class="pre">nevergrad.optimization.optimizerlib.</span></span><span class="sig-name descname"><span class="pre">InfiniteMetaModelOptimum</span></span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.InfiniteMetaModelOptimum" title="Permalink to this definition"></a></dt>
-<dd><p>Sometimes the optimum of the metamodel is at infinity.</p>
-</dd></dl>
-
 <dl class="py class">
 <dt class="sig sig-object py" id="nevergrad.optimization.optimizerlib.MEDA">
 <em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">nevergrad.optimization.optimizerlib.</span></span><span class="sig-name descname"><span class="pre">MEDA</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parametrization</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="parametrization_ref.html#nevergrad.p.Parameter" title="nevergrad.parametrization.core.Parameter"><span class="pre">nevergrad.parametrization.core.Parameter</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">budget</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_workers</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.MEDA" title="Permalink to this definition"></a></dt>
@@ -1221,6 +1224,12 @@ average of the final population.</p></li>
 <dt class="sig sig-object py" id="nevergrad.optimization.optimizerlib.MPCEDA">
 <em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">nevergrad.optimization.optimizerlib.</span></span><span class="sig-name descname"><span class="pre">MPCEDA</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parametrization</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="parametrization_ref.html#nevergrad.p.Parameter" title="nevergrad.parametrization.core.Parameter"><span class="pre">nevergrad.parametrization.core.Parameter</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">budget</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_workers</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.MPCEDA" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="nevergrad.optimization.optimizerlib.MetaModelFailure">
+<em class="property"><span class="pre">exception</span> </em><span class="sig-prename descclassname"><span class="pre">nevergrad.optimization.optimizerlib.</span></span><span class="sig-name descname"><span class="pre">MetaModelFailure</span></span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.MetaModelFailure" title="Permalink to this definition"></a></dt>
+<dd><p>Sometimes the optimum of the metamodel is at infinity.</p>
+</dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="nevergrad.optimization.optimizerlib.MultiDiscrete">
@@ -1417,12 +1426,15 @@ if objective function evaluation is fast.</p></li>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="nevergrad.optimization.optimizerlib.ParametrizedMetaModel">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">nevergrad.optimization.optimizerlib.</span></span><span class="sig-name descname"><span class="pre">ParametrizedMetaModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">multivariate_optimizer</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">ConfiguredOptimizer</span><span class="p"><span class="pre">,</span> </span><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><span class="pre">Optimizer</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.ParametrizedMetaModel" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">nevergrad.optimization.optimizerlib.</span></span><span class="sig-name descname"><span class="pre">ParametrizedMetaModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">multivariate_optimizer</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">ConfiguredOptimizer</span><span class="p"><span class="pre">,</span> </span><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><span class="pre">Optimizer</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frequency_ratio</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">0.9</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.ParametrizedMetaModel" title="Permalink to this definition"></a></dt>
 <dd><p>Adds a metamodel to an optimizer.
 The optimizer is alway OnePlusOne if dimension is 1.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>multivariate_optimizer</strong> (<em>base.OptCls</em><em> or </em><em>None</em>) – Optimizer to which the metamodel is added</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>multivariate_optimizer</strong> (<em>base.OptCls</em><em> or </em><em>None</em>) – Optimizer to which the metamodel is added</p></li>
+<li><p><strong>frequency_ratio</strong> (<em>float</em>) – used for deciding the frequency at which we use the metamodel</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
