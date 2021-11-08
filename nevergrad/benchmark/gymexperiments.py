@@ -227,6 +227,8 @@ def gym_problem(
     ]
     if "stochastic" in specific_problem:
         optims = ["DiagonalCMA", "TBPSA"] if big_noise else ["DiagonalCMA"]
+    if specific_problem == "mav":
+        optims = ['DiscreteOnePlusOne', 'PortfolioDiscreteOnePlusOne', 'DiscreteLenglerOnePlusOne', 'AdaptiveDiscreteOnePlusOne', 'AnisotropicAdaptiveDiscreteOnePlusOne', 'DiscreteBSOOnePlusOne', 'DiscreteDoerrOnePlusOne', 'OptimisticDiscreteOnePlusOne', 'NoisyDiscreteOnePlusOne', 'DoubleFastGADiscreteOnePlusOne', 'SparseDoubleFastGADiscreteOnePlusOne', 'RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne', 'RecombiningPortfolioDiscreteOnePlusOne', 'MultiDiscrete', 'NGOpt']
     for func in funcs:
         for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600]:
             for num_workers in [1]:
@@ -256,6 +258,13 @@ def unlimited_hardcore_stochastic_compiler_gym(seed: tp.Optional[int] = None) ->
     """Working on CompilerGym. Stochastic problem: we are optimizing a net for driving compilation."""
     return gym_problem(
         seed, specific_problem="stochasticcompilergym", limited_compiler_gym=False, big_noise=True
+    )
+
+
+@registry.register
+def mav(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    return gym_problem(
+        seed, specific_problem="EnergySavingsGym", big_noise=False,
     )
 
 
