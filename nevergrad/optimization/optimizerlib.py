@@ -2739,6 +2739,7 @@ class NGOpt38(NGOpt16):
             and not self.has_noise
             and self.num_objectives < 2
             and self.num_workers == 1
+            and self.budget > 50 * self.dimension
             and p.helpers.Normalizer(self.parametrization).fully_bounded
         ):
             return NGOpt15
