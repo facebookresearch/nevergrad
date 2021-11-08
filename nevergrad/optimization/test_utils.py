@@ -108,8 +108,8 @@ def test_pruning() -> None:
 @pytest.mark.parametrize(  # type: ignore
     "nw,dimension,expected_min,expected_max",
     [
-        (12, 8, 100, 1000),
-        (24, 8, 168, 1680),
+        (12, 8, 52, 156),
+        (24, 8, 52, 156),
         (24, 100000, 168, 671),
         (24, 1000000, 168, 504),
     ],
