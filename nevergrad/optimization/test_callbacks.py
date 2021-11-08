@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import time
 from pathlib import Path
 import logging
 import os
@@ -118,12 +119,23 @@ def test_early_stopping() -> None:
     optimizer = optimizerlib.OnePlusOne(parametrization=instrum, budget=100)
     early_stopping = ng.callbacks.EarlyStopping(lambda opt: opt.num_ask > 3)
     optimizer.register_callback("ask", early_stopping)
+    optimizer.register_callback("ask", ng.callbacks.EarlyStopping.timer(100))  # should not get triggered
     optimizer.minimize(func, verbosity=2)
     # num_ask is set at the end of ask, so the callback sees the old value.
     assert func.num_calls == 4
     # below functions are included in the docstring of EarlyStopping
     assert optimizer.current_bests["minimum"].mean < 12
     assert optimizer.recommend().loss < 12  # type: ignore
+
+
+def test_duration_criterion() -> None:
+    optim = optimizerlib.OnePlusOne(2, budget=100)
+    crit = ng.callbacks._DurationCriterion(0.01)
+    assert not crit(optim)
+    assert not crit(optim)
+    assert not crit(optim)
+    time.sleep(0.01)
+    assert crit(optim)
 
 
 def test_optimization_logger(caplog) -> None:
