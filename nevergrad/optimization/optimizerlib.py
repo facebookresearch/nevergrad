@@ -2762,7 +2762,7 @@ class NGOpt38(NGOpt16):
             and self.budget > 50 * self.dimension
             and p.helpers.Normalizer(self.parametrization).fully_bounded
         ):
-            return NGOpt15
+            return NGOpt8 if self.dimension < 3 else NGOpt15
         else:
             return super()._select_optimizer_cls()
 
