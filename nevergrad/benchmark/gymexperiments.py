@@ -214,6 +214,7 @@ def gym_problem(
                     control=control,
                     neural_factor=1 if control != "linear" else None,
                     limited_compiler_gym=limited_compiler_gym,
+                    optimization_scale=scale,
                     greedy_bias=greedy_bias,
                 )
                 for scale in ([-6, -4, -2, 0] if multi_scale else [0])
