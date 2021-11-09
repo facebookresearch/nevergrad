@@ -30,7 +30,7 @@ from . import optgroups
 def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> None:
     # "mav" is not availablefor now.
     if name == "conformant_planning" or name == "neuro_planning":
-        raise SkipTest("Mav not available for now.")
+        raise SkipTest("This is user parametric and can not be tested.")
 
     # Our PGAN is not well accepted by circleci.
     if "_pgan" in name and os.environ.get("CIRCLECI", False):
