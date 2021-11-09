@@ -282,8 +282,8 @@ def unlimited_hardcore_stochastic_compiler_gym(seed: tp.Optional[int] = None) ->
 def mav(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     specific_problem = "EnergySavingsGym"
     # You might modify this problem by specifying an environment variable.
-    if os.environ.get("TARGET_GYM_ENV", None) is not None:
-        specific_problem = os.environ.get("TARGET_GYM_ENV", None)
+    if os.environ.get("TARGET_GYM_ENV") is not None:
+        specific_problem = os.environ.get("TARGET_GYM_ENV")
     return gym_problem(
         seed,
         specific_problem=specific_problem,
