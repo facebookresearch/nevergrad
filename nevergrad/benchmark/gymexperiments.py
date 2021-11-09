@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import os
 import typing as tp
 from nevergrad.functions import gym
 from nevergrad.functions import ExperimentFunction
@@ -279,9 +280,13 @@ def unlimited_hardcore_stochastic_compiler_gym(seed: tp.Optional[int] = None) ->
 
 @registry.register
 def mav(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    specific_problem = "EnergySavingsGym"
+    # You might modify this problem by specifying an environment variable.
+    if os.environ.get("TARGET_GYM_ENV", None) is not None:
+        specific_problem = os.environ.get("TARGET_GYM_ENV", None)
     return gym_problem(
         seed,
-        specific_problem="EnergySavingsGym",
+        specific_problem=specific_problem,
         conformant=True,
         big_noise=False,
     )
