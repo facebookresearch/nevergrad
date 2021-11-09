@@ -1478,7 +1478,7 @@ def _learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.Arr
     # Fit a linear model.
     y = np.asarray(y)
     if not max(y) - min(y) > 1e-20:
-        raise InfiniteMetaModelOptimum
+        raise MetaModelFailure
 
     y = y / (max(y) - min(y))
     model = LinearRegression()
