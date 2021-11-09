@@ -1479,7 +1479,7 @@ def _learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.Arr
     if not max(y) - min(y) > 1e-20:
         raise MetaModelFailure
 
-    y = y / (max(y) - min(y))
+    y = (y - min(y)) / (max(y) - min(y))
     model = LinearRegression()
     model.fit(X2, y)
 
