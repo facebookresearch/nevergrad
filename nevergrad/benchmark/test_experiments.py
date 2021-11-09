@@ -29,7 +29,7 @@ from . import optgroups
 @testing.parametrized(**{name: (name, maker) for name, maker in experiments.registry.items()})
 def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> None:
     # "mav" is not availablefor now.
-    if name == "mav":
+    if name == "conformant_planning" or name == "neuro_planning":
         raise SkipTest("Mav not available for now.")
 
     # Our PGAN is not well accepted by circleci.
