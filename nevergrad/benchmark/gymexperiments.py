@@ -264,7 +264,7 @@ def unlimited_hardcore_stochastic_compiler_gym(seed: tp.Optional[int] = None) ->
 @registry.register
 def mav(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     return gym_problem(
-        seed, specific_problem="EnergySavingsGym", big_noise=False,
+        seed, specific_problem="EnergySavingsGym", conformant=True, big_noise=False,
     )
 
 
