@@ -283,7 +283,7 @@ def mav(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     specific_problem = "EnergySavingsGym"
     # You might modify this problem by specifying an environment variable.
     if os.environ.get("TARGET_GYM_ENV") is not None:
-        specific_problem = os.environ.get("TARGET_GYM_ENV")
+        specific_problem = os.environ.get("TARGET_GYM_ENV")  # type: ignore
     return gym_problem(
         seed,
         specific_problem=specific_problem,
