@@ -1476,7 +1476,7 @@ def _learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.Arr
     X2 = polynomial_features.fit_transform(X)
 
     # Fit a linear model.
-    if not max(y) - min(y) > 1e-20:
+    if not max(y) - min(y) > 1e-20:  # better use "not" for dealing with nans
         raise MetaModelFailure
 
     y = (y - min(y)) / (max(y) - min(y))
