@@ -1476,6 +1476,11 @@ def _learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.Arr
     X2 = polynomial_features.fit_transform(X)
 
     # Fit a linear model.
+    y = np.asarray(y)
+    if not max(y) - min(y) > 1e-20:
+        raise InfiniteMetaModelOptimum
+
+    y = y / (max(y) - min(y))
     model = LinearRegression()
     model.fit(X2, y)
 
