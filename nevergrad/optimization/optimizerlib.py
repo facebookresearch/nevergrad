@@ -1465,7 +1465,7 @@ def _learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.Arr
     # Recenter the best.
     middle = np.array(sum(p[0] for p in first_k_individuals) / k)
     normalization = 1e-15 + np.sqrt(np.sum((first_k_individuals[-1][0] - first_k_individuals[0][0]) ** 2))
-    y = [archive[c[0]].get_estimation("pessimistic") for c in first_k_individuals]
+    y = np.asarray([archive[c[0]].get_estimation("pessimistic") for c in first_k_individuals])
     X = np.asarray([(c[0] - middle) / normalization for c in first_k_individuals])
 
     # We need SKLearn.
@@ -1476,7 +1476,6 @@ def _learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.Arr
     X2 = polynomial_features.fit_transform(X)
 
     # Fit a linear model.
-    y = np.asarray(y)
     if not max(y) - min(y) > 1e-20:
         raise MetaModelFailure
 
