@@ -294,7 +294,7 @@ class Pruning:
         """
         # safer to keep at least 7 time the workers
         sample_size = 7 + int((dimension * (dimension - 1)) / 2 + 2 * dimension + 1)
-        min_len = min(max(100, 7 * num_workers), sample_size)
+        min_len = max(max(100, 7 * num_workers), sample_size)
         max_len_1gb = 1024 ** 3 // (dimension * 8 * 2)  # stored twice: as key and as Parameter
         max_len = max(3 * min_len, min(10 * min_len, max_len_1gb, sample_size))
         return cls(min_len, max_len)
