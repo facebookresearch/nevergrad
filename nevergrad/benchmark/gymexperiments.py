@@ -224,11 +224,11 @@ def gym_problem(
             ]
     seedg = create_seed_generator(seed)
     optims = [
-        "TwoPointsDE",
+        "TwoPointsDE", "GeneticDE", "PSO", "DiagonalCMA",
     ]
     if "stochastic" in specific_problem:
         optims = ["DiagonalCMA", "TBPSA"] if big_noise else ["DiagonalCMA"]
-    if specific_problem == "mav":
+    if specific_problem == "EnergySavingsGym" and conformant:  # Do this for all conformant discrete ?
         optims = [
             "DiscreteOnePlusOne",
             "PortfolioDiscreteOnePlusOne",
@@ -279,7 +279,7 @@ def unlimited_hardcore_stochastic_compiler_gym(seed: tp.Optional[int] = None) ->
 
 
 @registry.register
-def mav(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def conformant_planning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     specific_problem = "EnergySavingsGym"
     # You might modify this problem by specifying an environment variable.
     if os.environ.get("TARGET_GYM_ENV") is not None:
@@ -288,6 +288,20 @@ def mav(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         seed,
         specific_problem=specific_problem,
         conformant=True,
+        big_noise=False,
+    )
+
+
+@registry.register
+def neuro_planning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    specific_problem = "EnergySavingsGym"
+    # You might modify this problem by specifying an environment variable.
+    if os.environ.get("TARGET_GYM_ENV") is not None:
+        specific_problem = os.environ.get("TARGET_GYM_ENV")  # type: ignore
+    return gym_problem(
+        seed,
+        specific_problem=specific_problem,
+        conformant=False,
         big_noise=False,
     )
 
