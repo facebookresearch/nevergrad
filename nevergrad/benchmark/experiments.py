@@ -76,6 +76,7 @@ class _Constraint:
         return value > 0 if self.as_bool else value
 
 
+@registry.register
 def keras_tuning(
     seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool = False
 ) -> tp.Iterator[Experiment]:
@@ -93,7 +94,7 @@ def keras_tuning(
             )
             for budget in [50, 150, 500]:
                 for num_workers in (
-                    [1, budget // 4] if seq else [budget]
+                    [1] if seq else [budget // 4, budget]
                 ):  # Seq for sequential optimization experiments.
                     for optim in optims:
                         xp = Experiment(
@@ -104,6 +105,7 @@ def keras_tuning(
                             yield xp
 
 
+@registry.register
 def mltuning(
     seed: tp.Optional[int] = None,
     overfitter: bool = False,
@@ -139,12 +141,12 @@ def mltuning(
                                 yield xp
 
 
+@registry.register
 def naivemltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of mltuning with overfitting of valid loss, i.e. train/valid/valid instead of train/valid/test."""
     return mltuning(seed, overfitter=True)
 
 
-# We register only the sequential counterparts for the moment.
 @registry.register
 def seq_keras_tuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Sequential counterpart of keras tuning."""
