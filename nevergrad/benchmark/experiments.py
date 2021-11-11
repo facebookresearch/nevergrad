@@ -87,6 +87,7 @@ def keras_tuning(
     # First, a few functions with constraints.
     optims: tp.List[str] = ["PSO", "OnePlusOne"] + get_optimizers("basics", seed=next(seedg))  # type: ignore
     datasets = ["kerasBoston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
+    optims += ["Shiwa", "NGO", "NGOpt4", "NGOpt8", "NGOpt10", "NGOpt12", "NGOpt13", "NGOpt14", "NGOpt15", "NGOpt16", "NGOpt21", "NGOpt36", "NGOpt38", "NGOpt"]
     for dimension in [None]:
         for dataset in datasets:
             function = MLTuning(
@@ -94,7 +95,7 @@ def keras_tuning(
             )
             for budget in [50, 150, 500]:
                 for num_workers in (
-                    [1] if seq else [budget // 4, budget]
+                    [1, budget // 4] if seq else [budget]
                 ):  # Seq for sequential optimization experiments.
                     for optim in optims:
                         xp = Experiment(
@@ -117,6 +118,7 @@ def mltuning(
     optims: tp.List[str] = get_optimizers("basics", seed=next(seedg))  # type: ignore
     if not seq:
         optims = get_optimizers("oneshot", seed=next(seedg))  # type: ignore
+    optims += ["Shiwa", "NGO", "NGOpt4", "NGOpt8", "NGOpt10", "NGOpt12", "NGOpt13", "NGOpt14", "NGOpt15", "NGOpt16", "NGOpt21", "NGOpt36", "NGOpt38", "NGOpt"]
     for dimension in [None, 1, 2, 3]:
         if dimension is None:
             datasets = ["boston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
