@@ -2768,7 +2768,7 @@ class NGOpt38(NGOpt16):
             if self.dimension < 5:  # Low dimension: let us hit the bounds.
                 return NGOpt21
             if self.dimension < 10:  # Moderate dimension: reasonable restart + bet and run.
-                num = 1 + np.sqrt(8.0 * (8 * self.budget) // (self.dimension * 1000))
+                num = 1 + int(np.sqrt(8.0 * (8 * self.budget) // (self.dimension * 1000)))
                 return ConfPortfolio(optimizers=[NGOpt14] * num, warmup_ratio=0.7)
             if self.dimension < 20:  # Nobody knows why this seems to be so good.
                 num = self.budget // (500 * self.dimension)
