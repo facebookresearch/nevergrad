@@ -150,10 +150,10 @@ def buggy_function(x: np.ndarray) -> float:
 @pytest.mark.parametrize("num_workers", [1, 2, 20])  # type: ignore
 @pytest.mark.parametrize("bounded", [False, True])  # type: ignore
 @pytest.mark.parametrize("discrete", [False, True])  # type: ignore
-def test_ngopt(dim: int, budget_multiplier: int, num_workers: int, bounded: bool) -> None:
+def test_ngopt(dim: int, budget_multiplier: int, num_workers: int, bounded: bool, discrete: bool) -> None:
     instrumentation = ng.p.Array(shape=(dim,))
     if bounded:
-        instrumentation.set_bounds(lower=12.0, upper=15.0)
+        instrumentation.set_bounds(lower=-12.0, upper=15.0)
     if discrete:
         instrumentation.set_integer_casting()
     ngopt = optlib.NGOpt(ng.p.Array(shape=(dim,)), budget=budget_multiplier * dim, num_workers=num_workers)
