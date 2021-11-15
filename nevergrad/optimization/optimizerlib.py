@@ -820,10 +820,10 @@ class _PSO(base.Optimizer):
         parametrization: IntOrParameter,
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
-        config: tp.Optional["ConfiguredPSO"] = None,
+        config: tp.Optional["ConfPSO"] = None,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        self._config = ConfiguredPSO() if config is None else config
+        self._config = ConfPSO() if config is None else config
         if budget is not None and budget < 60:
             warnings.warn("PSO is inefficient with budget < 60", errors.InefficientSettingsWarning)
         cases: tp.Dict[str, tp.Tuple[tp.Optional[float], transforms.Transform]] = dict(
@@ -914,7 +914,7 @@ class _PSO(base.Optimizer):
             self._best = candidate
 
 
-class ConfiguredPSO(base.ConfiguredOptimizer):
+class ConfPSO(base.ConfiguredOptimizer):
     """`Particle Swarm Optimization <https://en.wikipedia.org/wiki/Particle_swarm_optimization>`_
     is based on a set of particles with their inertia.
     Wikipedia provides a beautiful illustration ;) (see link)
@@ -962,8 +962,9 @@ class ConfiguredPSO(base.ConfiguredOptimizer):
         self.phig = phig
 
 
-RealSpacePSO = ConfiguredPSO().set_name("RealSpacePSO", register=True)
-PSO = ConfiguredPSO(transform="arctan").set_name("PSO", register=True)
+ConfiguredPSO = ConfPSO  # backward compatibility (to be removed)
+RealSpacePSO = ConfPSO().set_name("RealSpacePSO", register=True)
+PSO = ConfPSO(transform="arctan").set_name("PSO", register=True)
 
 
 @registry.register
