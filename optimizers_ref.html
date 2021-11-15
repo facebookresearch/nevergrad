@@ -591,6 +591,37 @@ Each algorithm is fed with what happened before it.</p>
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="nevergrad.families.ConfPSO">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">nevergrad.families.</span></span><span class="sig-name descname"><span class="pre">ConfPSO</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transform</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'identity'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">popsize</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">omega</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">0.7213475204444817</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phip</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">1.1931471805599454</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phig</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">1.1931471805599454</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.ConfPSO" title="Permalink to this definition"></a></dt>
+<dd><p><a class="reference external" href="https://en.wikipedia.org/wiki/Particle_swarm_optimization">Particle Swarm Optimization</a>
+is based on a set of particles with their inertia.
+Wikipedia provides a beautiful illustration ;) (see link)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>transform</strong> (<em>str</em>) – name of the transform to use to map from PSO optimization space to R-space.</p></li>
+<li><p><strong>popsize</strong> (<em>int</em>) – population size of the particle swarm. Defaults to max(40, num_workers)</p></li>
+<li><p><strong>omega</strong> (<em>float</em>) – particle swarm optimization parameter</p></li>
+<li><p><strong>phip</strong> (<em>float</em>) – particle swarm optimization parameter</p></li>
+<li><p><strong>phig</strong> (<em>float</em>) – particle swarm optimization parameter</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul class="simple">
+<li><p>Using non-default “transform” and “wide” parameters can lead to extreme values</p></li>
+<li><p>Implementation partially following SPSO2011. However, no randomization of the population order.</p></li>
+<li><p>Reference:
+M. Zambrano-Bigiarini, M. Clerc and R. Rojas,
+Standard Particle Swarm Optimisation 2011 at CEC-2013: A baseline for future PSO improvements,
+2013 IEEE Congress on Evolutionary Computation, Cancun, 2013, pp. 2337-2344.
+<a class="reference external" href="https://ieeexplore.ieee.org/document/6557848">https://ieeexplore.ieee.org/document/6557848</a></p></li>
+</ul>
+</div>
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="nevergrad.families.ConfPortfolio">
 <em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">nevergrad.families.</span></span><span class="sig-name descname"><span class="pre">ConfPortfolio</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizers</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#nevergrad.optimizers.base.Optimizer" title="nevergrad.optimization.base.Optimizer"><span class="pre">nevergrad.optimization.base.Optimizer</span></a><span class="p"><span class="pre">,</span> </span><span class="pre">ConfiguredOptimizer</span><span class="p"><span class="pre">,</span> </span><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><span class="pre">Optimizer</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warmup_ratio</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.ConfPortfolio" title="Permalink to this definition"></a></dt>
 <dd><p>Alternates <code class="code docutils literal notranslate"><span class="pre">ask()</span></code> on several optimizers</p>
@@ -1095,6 +1126,37 @@ Each algorithm is fed with what happened before it.</p>
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="nevergrad.optimization.optimizerlib.ConfPSO">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">nevergrad.optimization.optimizerlib.</span></span><span class="sig-name descname"><span class="pre">ConfPSO</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transform</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'identity'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">popsize</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">omega</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">0.7213475204444817</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phip</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">1.1931471805599454</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phig</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">1.1931471805599454</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.ConfPSO" title="Permalink to this definition"></a></dt>
+<dd><p><a class="reference external" href="https://en.wikipedia.org/wiki/Particle_swarm_optimization">Particle Swarm Optimization</a>
+is based on a set of particles with their inertia.
+Wikipedia provides a beautiful illustration ;) (see link)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>transform</strong> (<em>str</em>) – name of the transform to use to map from PSO optimization space to R-space.</p></li>
+<li><p><strong>popsize</strong> (<em>int</em>) – population size of the particle swarm. Defaults to max(40, num_workers)</p></li>
+<li><p><strong>omega</strong> (<em>float</em>) – particle swarm optimization parameter</p></li>
+<li><p><strong>phip</strong> (<em>float</em>) – particle swarm optimization parameter</p></li>
+<li><p><strong>phig</strong> (<em>float</em>) – particle swarm optimization parameter</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul class="simple">
+<li><p>Using non-default “transform” and “wide” parameters can lead to extreme values</p></li>
+<li><p>Implementation partially following SPSO2011. However, no randomization of the population order.</p></li>
+<li><p>Reference:
+M. Zambrano-Bigiarini, M. Clerc and R. Rojas,
+Standard Particle Swarm Optimisation 2011 at CEC-2013: A baseline for future PSO improvements,
+2013 IEEE Congress on Evolutionary Computation, Cancun, 2013, pp. 2337-2344.
+<a class="reference external" href="https://ieeexplore.ieee.org/document/6557848">https://ieeexplore.ieee.org/document/6557848</a></p></li>
+</ul>
+</div>
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="nevergrad.optimization.optimizerlib.ConfPortfolio">
 <em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">nevergrad.optimization.optimizerlib.</span></span><span class="sig-name descname"><span class="pre">ConfPortfolio</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizers</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#nevergrad.optimizers.base.Optimizer" title="nevergrad.optimization.base.Optimizer"><span class="pre">nevergrad.optimization.base.Optimizer</span></a><span class="p"><span class="pre">,</span> </span><span class="pre">ConfiguredOptimizer</span><span class="p"><span class="pre">,</span> </span><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><span class="pre">Optimizer</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warmup_ratio</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.ConfPortfolio" title="Permalink to this definition"></a></dt>
 <dd><p>Alternates <code class="code docutils literal notranslate"><span class="pre">ask()</span></code> on several optimizers</p>
@@ -1151,35 +1213,10 @@ For example, a categorical variable with 5 possible values becomes 5 continuous 
 </div>
 </dd></dl>
 
-<dl class="py class">
+<dl class="py attribute">
 <dt class="sig sig-object py" id="nevergrad.optimization.optimizerlib.ConfiguredPSO">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">nevergrad.optimization.optimizerlib.</span></span><span class="sig-name descname"><span class="pre">ConfiguredPSO</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transform</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'identity'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">popsize</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">omega</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">0.7213475204444817</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phip</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">1.1931471805599454</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phig</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">1.1931471805599454</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.ConfiguredPSO" title="Permalink to this definition"></a></dt>
-<dd><p><a class="reference external" href="https://en.wikipedia.org/wiki/Particle_swarm_optimization">Particle Swarm Optimization</a>
-is based on a set of particles with their inertia.
-Wikipedia provides a beautiful illustration ;) (see link)</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>transform</strong> (<em>str</em>) – name of the transform to use to map from PSO optimization space to R-space.</p></li>
-<li><p><strong>popsize</strong> (<em>int</em>) – population size of the particle swarm. Defaults to max(40, num_workers)</p></li>
-<li><p><strong>omega</strong> (<em>float</em>) – particle swarm optimization parameter</p></li>
-<li><p><strong>phip</strong> (<em>float</em>) – particle swarm optimization parameter</p></li>
-<li><p><strong>phig</strong> (<em>float</em>) – particle swarm optimization parameter</p></li>
-</ul>
-</dd>
-</dl>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<ul class="simple">
-<li><p>Using non-default “transform” and “wide” parameters can lead to extreme values</p></li>
-<li><p>Implementation partially following SPSO2011. However, no randomization of the population order.</p></li>
-<li><p>Reference:
-M. Zambrano-Bigiarini, M. Clerc and R. Rojas,
-Standard Particle Swarm Optimisation 2011 at CEC-2013: A baseline for future PSO improvements,
-2013 IEEE Congress on Evolutionary Computation, Cancun, 2013, pp. 2337-2344.
-<a class="reference external" href="https://ieeexplore.ieee.org/document/6557848">https://ieeexplore.ieee.org/document/6557848</a></p></li>
-</ul>
-</div>
+<span class="sig-prename descclassname"><span class="pre">nevergrad.optimization.optimizerlib.</span></span><span class="sig-name descname"><span class="pre">ConfiguredPSO</span></span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.ConfiguredPSO" title="Permalink to this definition"></a></dt>
+<dd><p>alias of <a class="reference internal" href="#nevergrad.optimization.optimizerlib.ConfPSO" title="nevergrad.optimization.optimizerlib.ConfPSO"><code class="xref py py-class docutils literal notranslate"><span class="pre">nevergrad.optimization.optimizerlib.ConfPSO</span></code></a></p>
 </dd></dl>
 
 <dl class="py class">
