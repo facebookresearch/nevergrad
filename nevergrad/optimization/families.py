@@ -16,8 +16,9 @@ from .optimizerlib import ParametrizedCMA
 from .optimizerlib import EMNA
 from .optimizerlib import Chaining
 from .optimizerlib import NoisySplit
-from .optimizerlib import ConfSplitOptimizer
 from .optimizerlib import ConfPortfolio
+from .optimizerlib import ConfPSO
+from .optimizerlib import ConfSplitOptimizer
 from .optimizerlib import BayesOptim
 from .differentialevolution import DifferentialEvolution
 from .es import EvolutionStrategy
@@ -42,7 +43,8 @@ __all__ = [
     "Chaining",
     "EMNA",
     "NoisySplit",
-    "ConfSplitOptimizer",
     "ConfPortfolio",
+    "ConfPSO",
+    "ConfSplitOptimizer",
     "BayesOptim",
 ]
