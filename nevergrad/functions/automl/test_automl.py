@@ -9,7 +9,7 @@ from .core import AutoSKlearnBenchmark
 
 
 def test_parametrization():
-    func = AutoSKlearnBenchmark(
+    AutoSKlearnBenchmark(
         openml_task_id=3,
         cv=3,
         time_budget_per_run=60,
