@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import os
 import typing as tp
 from nevergrad.functions import gym
 from nevergrad.functions import ExperimentFunction
@@ -101,13 +102,19 @@ def ng_full_gym(
 
 @registry.register
 def multi_ng_full_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Counterpart of ng_full_gym with one neural net per time step."""
+    """Counterpart of ng_full_gym with one neural net per time step.
+
+    Each neural net is used for many problems, but only for one of the time steps."""
     return ng_full_gym(seed, multi=True)
 
 
 @registry.register
 def conformant_ng_full_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Counterpart of ng_full_gym with fixed, predetermined actions for each time step."""
+    """Counterpart of ng_full_gym with fixed, predetermined actions for each time step.
+
+    This is conformant: we optimize directly the actions for a given context.
+    This does not prevent stochasticity, but actions do not depend on observationos.
+    """
     return ng_full_gym(seed, conformant=True)
 
 
@@ -208,6 +215,7 @@ def gym_problem(
                     control=control,
                     neural_factor=1 if control != "linear" else None,
                     limited_compiler_gym=limited_compiler_gym,
+                    optimization_scale=scale,
                     greedy_bias=greedy_bias,
                 )
                 for scale in ([-6, -4, -2, 0] if multi_scale else [0])
@@ -218,9 +226,30 @@ def gym_problem(
     seedg = create_seed_generator(seed)
     optims = [
         "TwoPointsDE",
+        "GeneticDE",
+        "PSO",
+        "DiagonalCMA",
     ]
     if "stochastic" in specific_problem:
         optims = ["DiagonalCMA", "TBPSA"] if big_noise else ["DiagonalCMA"]
+    if specific_problem == "EnergySavingsGym" and conformant:  # Do this for all conformant discrete ?
+        optims = [
+            "DiscreteOnePlusOne",
+            "PortfolioDiscreteOnePlusOne",
+            "DiscreteLenglerOnePlusOne",
+            "AdaptiveDiscreteOnePlusOne",
+            "AnisotropicAdaptiveDiscreteOnePlusOne",
+            "DiscreteBSOOnePlusOne",
+            "DiscreteDoerrOnePlusOne",
+            "OptimisticDiscreteOnePlusOne",
+            "NoisyDiscreteOnePlusOne",
+            "DoubleFastGADiscreteOnePlusOne",
+            "SparseDoubleFastGADiscreteOnePlusOne",
+            "RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne",
+            "RecombiningPortfolioDiscreteOnePlusOne",
+            "MultiDiscrete",
+            "NGOpt",
+        ]
     for func in funcs:
         for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600]:
             for num_workers in [1]:
@@ -254,6 +283,34 @@ def unlimited_hardcore_stochastic_compiler_gym(seed: tp.Optional[int] = None) ->
 
 
 @registry.register
+def conformant_planning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    specific_problem = "EnergySavingsGym"
+    # You might modify this problem by specifying an environment variable.
+    if os.environ.get("TARGET_GYM_ENV") is not None:
+        specific_problem = os.environ.get("TARGET_GYM_ENV")  # type: ignore
+    return gym_problem(
+        seed,
+        specific_problem=specific_problem,
+        conformant=True,
+        big_noise=False,
+    )
+
+
+@registry.register
+def neuro_planning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    specific_problem = "EnergySavingsGym"
+    # You might modify this problem by specifying an environment variable.
+    if os.environ.get("TARGET_GYM_ENV") is not None:
+        specific_problem = os.environ.get("TARGET_GYM_ENV")  # type: ignore
+    return gym_problem(
+        seed,
+        specific_problem=specific_problem,
+        conformant=False,
+        big_noise=False,
+    )
+
+
+@registry.register
 def limited_hardcore_stochastic_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Working on CompilerGym. Stochastic problem: we are optimizing a net for driving compilation."""
     return gym_problem(
@@ -277,7 +334,7 @@ def unlimited_stochastic_compiler_gym(seed: tp.Optional[int] = None) -> tp.Itera
 
 @registry.register
 def unlimited_direct_problems23_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Working on CompilerGym. 11 problems, randomly drawn, but always the same ones."""
+    """Working on CompilerGym. All 23 problems."""
     for compiler_gym_pb_index in range(23):
         pb = gym_problem(
             seed,
@@ -291,7 +348,7 @@ def unlimited_direct_problems23_compiler_gym(seed: tp.Optional[int] = None) -> t
 
 @registry.register
 def limited_direct_problems23_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Working on CompilerGym. 11 problems, randomly drawn, but always the same ones."""
+    """Working on CompilerGym. All 23 problems."""
     for compiler_gym_pb_index in range(23):
         pb = gym_problem(
             seed,
