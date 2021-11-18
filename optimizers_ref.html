@@ -772,6 +772,34 @@ The API is going to evolve</p>
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="nevergrad.families.NonObjectOptimizer">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">nevergrad.families.</span></span><span class="sig-name descname"><span class="pre">NonObjectOptimizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'Nelder-Mead'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_restart</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.NonObjectOptimizer" title="Permalink to this definition"></a></dt>
+<dd><p>Wrapper over Scipy optimizer implementations, in standard ask and tell format.
+This is actually an import from scipy-optimize, including Sequential Quadratic Programming,</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>method</strong> (<em>str</em>) – <p>Name of the method to use among:</p>
+<ul>
+<li><p>Nelder-Mead</p></li>
+<li><p>COBYLA</p></li>
+<li><p>SQP (or SLSQP): very powerful e.g. in continuous noisy optimization. It is based on
+approximating the objective function by quadratic models.</p></li>
+<li><p>Powell</p></li>
+</ul>
+</p></li>
+<li><p><strong>random_restart</strong> (<em>bool</em>) – whether to restart at a random point if the optimizer converged but the budget is not entirely
+spent yet (otherwise, restarts from best point)</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>These optimizers do not support asking several candidates in a row</p>
+</div>
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="nevergrad.families.ParametrizedBO">
 <em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">nevergrad.families.</span></span><span class="sig-name descname"><span class="pre">ParametrizedBO</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initialization</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init_budget</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">middle_point</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">utility_kind</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'ucb'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">utility_kappa</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">2.576</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">utility_xi</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gp_parameters</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.ParametrizedBO" title="Permalink to this definition"></a></dt>
 <dd><p>Bayesian optimization.
@@ -1015,34 +1043,6 @@ than the original Halton search.</p></li>
 Though partially incremental versions exist, this implementation needs the budget in advance.
 This can be great in terms of discrepancy when the budget is not very high.</p></li>
 </ul>
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="nevergrad.families.ScipyOptimizer">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">nevergrad.families.</span></span><span class="sig-name descname"><span class="pre">ScipyOptimizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'Nelder-Mead'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_restart</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.families.ScipyOptimizer" title="Permalink to this definition"></a></dt>
-<dd><p>Wrapper over Scipy optimizer implementations, in standard ask and tell format.
-This is actually an import from scipy-optimize, including Sequential Quadratic Programming,</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>method</strong> (<em>str</em>) – <p>Name of the method to use among:</p>
-<ul>
-<li><p>Nelder-Mead</p></li>
-<li><p>COBYLA</p></li>
-<li><p>SQP (or SLSQP): very powerful e.g. in continuous noisy optimization. It is based on
-approximating the objective function by quadratic models.</p></li>
-<li><p>Powell</p></li>
-</ul>
-</p></li>
-<li><p><strong>random_restart</strong> (<em>bool</em>) – whether to restart at a random point if the optimizer converged but the budget is not entirely
-spent yet (otherwise, restarts from best point)</p></li>
-</ul>
-</dd>
-</dl>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>These optimizers do not support asking several candidates in a row</p>
-</div>
 </dd></dl>
 
 </section>
