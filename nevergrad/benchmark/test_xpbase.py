@@ -25,6 +25,7 @@ DESCRIPTION_KEYS = {
     "optimizer_name",
     "pseudotime",
     "num_workers",
+    "num_objectives",
     "budget",
     "error",
     "batch_mode",
@@ -36,7 +37,7 @@ def test_run_artificial_function() -> None:
     xp = xpbase.Experiment(func, optimizer="OnePlusOne", budget=24, num_workers=2, batch_mode=True, seed=12)
     summary = xp.run()
     assert summary["elapsed_time"] < 0.5  # should be much faster
-    np.testing.assert_almost_equal(summary["loss"], 0.00078544)  # makes sure seeding works!
+    np.testing.assert_almost_equal(summary["loss"], 0.08444784112287358)  # makes sure seeding works!
     testing.assert_set_equal(summary.keys(), DESCRIPTION_KEYS)
     np.testing.assert_equal(summary["elapsed_budget"], 24)
     np.testing.assert_equal(summary["pseudotime"], 12)  # defaults to 1 unit per eval ( /2 because 2 workers)
@@ -48,21 +49,23 @@ def test_run_packed_artificial_function() -> None:
     )
     xp = xpbase.Experiment(func, optimizer="OnePlusOne", budget=24, num_workers=2, batch_mode=True, seed=14)
     summary = xp.run()
-    np.testing.assert_almost_equal(summary["loss"], -9676.5, decimal=1)  # makes sure seeding works!
+    np.testing.assert_almost_equal(summary["loss"], -9784.8, decimal=1)  # makes sure seeding works!
 
 
 def test_noisy_artificial_function_loss() -> None:
     func = ArtificialFunction(name="sphere", block_dimension=5, noise_level=0.3)
     seed = np.random.randint(99999)
     xp = xpbase.Experiment(func, optimizer="OnePlusOne", budget=5, seed=seed)
+    # Because copy() can have different random initialization for the parameters
+    # The function should be copied early.
+    np.random.seed(seed)
+    pfunc = func.copy()
     xp.run()
     loss_ref = xp.result["loss"]
     # now with copy
     assert xp._optimizer is not None
     reco = xp._optimizer.provide_recommendation()
     assert reco is not None
-    np.random.seed(seed)
-    pfunc = func.copy()
     np.testing.assert_equal(pfunc.evaluation_function(reco), loss_ref)
     np.random.seed(None)
 
@@ -84,8 +87,8 @@ def test_run_with_error() -> None:
 
 
 @testing.parametrized(
-    concurrent=("OnePlusOne", 10, False),  # no true case implemented for now
-)
+    concurrent=("OnePlusOne", 10, False),
+)  # no true case implemented for now
 def test_is_incoherent(optimizer: str, num_workers: int, expected: bool) -> None:
     func = ArtificialFunction(name="sphere", block_dimension=2)
     xp = xpbase.Experiment(func, optimizer=optimizer, budget=300, num_workers=num_workers)

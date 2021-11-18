@@ -8,6 +8,15 @@ import itertools
 import numpy as np
 from scipy import stats
 import nevergrad.common.typing as tp
+from . import utils
+
+
+def bound_to_array(x: tp.BoundValue) -> np.ndarray:
+    """Updates type of bounds to use arrays"""
+    if isinstance(x, (tuple, list, np.ndarray)):
+        return np.array(x, copy=False)
+    else:
+        return np.array([x], dtype=float)
 
 
 class Transform:
@@ -63,13 +72,13 @@ class Affine(Transform):
     b: float
     """
 
-    def __init__(self, a: float, b: float) -> None:
+    def __init__(self, a: tp.BoundValue, b: tp.BoundValue) -> None:
         super().__init__()
-        if not a:
+        self.a = bound_to_array(a)
+        self.b = bound_to_array(b)
+        if not np.any(self.a):
             raise ValueError('"a" parameter should be non-zero to prevent information loss.')
-        self.a = a
-        self.b = b
-        self.name = f"Af({self.a},{self.b})"
+        self.name = f"Af({a},{b})"
 
     def forward(self, x: np.ndarray) -> np.ndarray:
         return self.a * x + self.b  # type: ignore
@@ -194,20 +203,23 @@ class Clipping(BoundTransform):
         self._bounce = bounce
         b = ",b" if bounce else ""
         self.name = f"Cl({_f(a_min)},{_f(a_max)}{b})"
+        self.checker = utils.BoundChecker(self.a_min, self.a_max)
 
     def forward(self, x: np.ndarray) -> np.ndarray:
         self._check_shape(x)
-        out = np.clip(x, self.a_min, self.a_max)
+        if self.checker(x):
+            return x
+        out = np.clip(x, self.a_min, self.a_max)  # type: ignore
         if self._bounce:
-            out = np.clip(2 * out - x, self.a_min, self.a_max)
+            out = np.clip(2 * out - x, self.a_min, self.a_max)  # type: ignore
         return out  # type: ignore
 
     def backward(self, y: np.ndarray) -> np.ndarray:
         self._check_shape(y)
-        if (self.a_max is not None and (y > self.a_max).any()) or (
-            self.a_min is not None and (y < self.a_min).any()
-        ):
-            raise ValueError(f"Only data between {self.a_min} and {self.a_max} " "can be transformed back.")
+        if not self.checker(y):
+            raise ValueError(
+                f"Only data between {self.a_min} and {self.a_max} can be transformed back.\n" f"Got: {y}"
+            )
         return y
 
 
@@ -231,29 +243,58 @@ class ArctanBound(BoundTransform):
 
     def forward(self, x: np.ndarray) -> np.ndarray:
         self._check_shape(x)
-        return self._b + self._a * np.arctan(x)
+        return self._b + self._a * np.arctan(x)  # type: ignore
 
     def backward(self, y: np.ndarray) -> np.ndarray:
         self._check_shape(y)
         if (y > self.a_max).any() or (y < self.a_min).any():
             raise ValueError(f"Only data between {self.a_min} and {self.a_max} can be transformed back.")
-        return np.tan((y - self._b) / self._a)
+        return np.tan((y - self._b) / self._a)  # type: ignore
 
 
 class CumulativeDensity(BoundTransform):
     """Bounds all real values into [0, 1] using a gaussian cumulative density function (cdf)
     Beware, cdf goes very fast to its limits.
+
+    Parameters
+    ----------
+    lower: float
+        lower bound
+    upper: float
+        upper bound
+    eps: float
+        small values to avoid hitting the bounds
+    scale: float
+        scaling factor of the density
+    density: str
+        either gaussian, or cauchy distributions
     """
 
-    def __init__(self, lower: float = 0.0, upper: float = 1.0, eps: float = 1e-9) -> None:
+    def __init__(
+        self,
+        lower: float = 0.0,
+        upper: float = 1.0,
+        eps: float = 1e-9,
+        scale: float = 1.0,
+        density: str = "gaussian",
+    ) -> None:
         super().__init__(a_min=lower, a_max=upper)
         self._b = lower
         self._a = upper - lower
         self._eps = eps
+        self._scale = scale
         self.name = f"Cd({_f(lower)},{_f(upper)})"
+        if density not in ("gaussian", "cauchy"):
+            raise ValueError("Unknown density")
+        if density == "gaussian":
+            self._forw = stats.norm.cdf
+            self._back = stats.norm.ppf
+        else:
+            self._forw = stats.cauchy.cdf
+            self._back = stats.cauchy.ppf
 
     def forward(self, x: np.ndarray) -> np.ndarray:
-        return self._a * stats.norm.cdf(x) + self._b
+        return self._a * self._forw(x / self._scale) + self._b  # type: ignore
 
     def backward(self, y: np.ndarray) -> np.ndarray:
         if (y > self.a_max).any() or (y < self.a_min).any():
@@ -261,7 +302,7 @@ class CumulativeDensity(BoundTransform):
                 f"Only data between {self.a_min} and {self.a_max} can be transformed back.\nGot: {y}"
             )
         y = np.clip((y - self._b) / self._a, self._eps, 1 - self._eps)
-        return stats.norm.ppf(y)
+        return self._scale * self._back(y)
 
 
 class Fourrier(Transform):

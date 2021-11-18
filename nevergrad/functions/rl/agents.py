@@ -142,7 +142,7 @@ class TorchAgentFunction(ExperimentFunction):
         self.runner = env_runner.copy()
         self.reward_postprocessing = reward_postprocessing
         super().__init__(self.compute, self.agent.instrumentation.copy().set_name(""))
-        self.parametrization.descriptors.deterministic_function = False
+        self.parametrization.function.deterministic = False
         self.add_descriptors(
             num_repetitions=self.runner.num_repetitions, archi=self.agent.module.__class__.__name__
         )
@@ -163,7 +163,7 @@ class TorchAgentFunction(ExperimentFunction):
         """Implements the call of the function.
         Under the hood, __call__ delegates to oracle_call + add some noise if noise_level > 0.
         """
-        assert len(recommendations) == 1, "Should not be a pareto set for a monoobjective function"
+        assert len(recommendations) == 1, "Should not be a pareto set for a singleobjective function"
         num_tests = max(1, int(self._num_test_evaluations / self.runner.num_repetitions))
         return sum(self.compute(**recommendations[0].kwargs) for _ in range(num_tests)) / num_tests
 

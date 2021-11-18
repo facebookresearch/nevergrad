@@ -1,3 +1,5 @@
+.. _parametrization_ref:
+
 Parametrization API reference
 =============================
 
@@ -36,4 +38,4 @@ Parameter API
 
 .. autoclass:: nevergrad.p.Parameter
     :members:
-
+    :inherited-members:

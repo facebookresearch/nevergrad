@@ -27,20 +27,19 @@ commands:
       - restore_cache:
           name: "[all] Restore cache"
           keys:
-          - v6-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          - v1-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
           # fallback to installing main requirements
-          - v6-dependencies-main-{{ checksum "requirements/main.txt"}}
+          - v1-dependencies-main-{{ checksum "requirements/main.txt"}}
 
       - run:
           name: "[all] Install dependencies"
           command: |
             python3 -m venv venv
             . venv/bin/activate
-            pip install -U pip
-            pip install -e .[all]
-            # master numpy-stubs adds a lot of messy warnings :s
-            pip install git+https://github.com/numpy/numpy-stubs@2c8d8f26adb1eef54571ccc85ef8ad4f2fb90c4c
-
+            pip install --progress-bar off -U pip setuptools
+            pip install --progress-bar off --use-deprecated=legacy-resolver -e .[all]
+            pip install --progress-bar off -U numpy>=1.20.0
+            pip install keras==2.6.0  # issue on Nov 4th 2021
 
 jobs:
   install:
@@ -53,7 +52,7 @@ jobs:
       - restore_cache:
           name: "[no-extra] Restore cache"
           keys:
-          - v6-dependencies-main-{{ checksum "requirements/main.txt"}}
+          - v1-dependencies-main-{{ checksum "requirements/main.txt"}}
           # fallback to using the latest cache if no exact match is found
 
       - run:
@@ -61,8 +60,8 @@ jobs:
           command: |
             python3 -m venv venv
             . venv/bin/activate
-            pip install --upgrade pip
-            pip install -e .
+            pip install --progress-bar off pip==21.0.1
+            pip install --progress-bar off -e .
 
       - run:
           name: "[no-extra] Print installation"
@@ -80,7 +79,7 @@ jobs:
           name: "[no-extra] Save cache"
           paths:
             - ./venv
-          key: v6-dependencies-main-{{ checksum "requirements/main.txt"}}
+          key: v1-dependencies-main-{{ checksum "requirements/main.txt"}}
 
       - run:
           name: "[no-extra] Run basic tests (checking dependencies)"
@@ -95,7 +94,7 @@ jobs:
           name: "[all] Save cache"
           paths:
             - ./venv
-          key: v6-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          key: v1-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
 
       - run:
           name: "[all] Print installation"
@@ -110,15 +109,22 @@ jobs:
           command: |
             . venv/bin/activate
             rm -rf dist  # make sure it's clean
-            python setup.py sdist bdist_wheel
+            echo "Creating sdist"
+            python setup.py sdist
+            echo "Created sdist, now creating wheel"
+            python setup.py bdist_wheel
+            echo "Created wheel"
             mkdir nevergrad-build
             mv dist nevergrad-build/
             #
             python -c "from pathlib import Path;files = Path('nevergrad.egg-info/SOURCES.txt').read_text().split(); assert 'LICENSE' in files"
             python3 -m venv test_wheel
             . test_wheel/bin/activate
+            pip install -U pip
             cd ..  # don't use nevergrad locally
-            pip install repo/nevergrad-build/dist/nevergrad-*any.whl
+            echo "Installing wheel"
+            pip install --progress-bar off --use-deprecated=legacy-resolver repo/nevergrad-build/dist/nevergrad-*any.whl
+            echo "Installed wheel"
             python -c "from nevergrad import functions;f = functions.ArtificialFunction(name='sphere', block_dimension=2);f([2, 3])"
 
       - persist_to_workspace:
@@ -131,11 +137,25 @@ jobs:
             . venv/bin/activate
             cd docs/
             make html
-            make linkcheck
 
       - persist_to_workspace:
           root: docs/_build
           paths: html
+
+  docs-links:
+    executor: ubuntu-python37
+
+    steps:
+
+      - ubuntu_restore_all
+
+      - run:
+          name: "Check links"
+          when: always
+          command: |
+            . venv/bin/activate
+            cd docs/
+            make linkcheck
 
   static:
     executor: ubuntu-python37
@@ -158,7 +178,7 @@ jobs:
           command: |
             . venv/bin/activate
             pylint --version
-            pylint nevergrad --disable=all --enable=unused-import,unused-argument,unused-variable,undefined-loop-variable,redefined-builtin,used-before-assignment,super-init-not-called,useless-super-delegation,dangerous-default-value
+            pylint nevergrad --disable=all --enable=unused-import,unused-argument,unused-variable,undefined-loop-variable,redefined-builtin,used-before-assignment,super-init-not-called,useless-super-delegation,dangerous-default-value,unnecessary-pass,attribute-defined-outside-init
 
       - run:
           name: "Run black"
@@ -226,22 +246,29 @@ jobs:
       - restore_cache:
           name: "[all] Restore cache"
           keys:
-          - v6-win-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          - v1-win-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
 
       - run:
           name: Setup nevergrad in virtualenv
           command: |
             py -3 -m venv venv
             . ./venv/Scripts/activate
-            pip install -U pip
-            pip install torch==1.4.0+cpu torchvision==0.5.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
-            pip install .[all]
+            pip install --progress-bar off -U pip setuptools
+            #  pip install --progress-bar off torch==1.4.0+cpu torchvision==0.5.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
+            pip install --use-deprecated=legacy-resolver --progress-bar off .[all]
 
       - save_cache:
           name: "[all] Save cache"
           paths:
             - ./venv
-          key: v6-win-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          key: v1-win-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+
+      - run:
+          name: "[all] Print installation"
+          when: always
+          command: |
+            . ./venv/Scripts/activate
+            pip freeze
 
       - run:
           name: pytest
@@ -251,8 +278,9 @@ jobs:
 
 
   pypi-deploy:
-    docker:
-      - image: python:3.6
+
+    executor: ubuntu-python37
+
     steps:
 
       - ubuntu_restore_all
@@ -307,9 +335,15 @@ workflows:
             - install
           filters:
             branches:
-              only: master
+              only: main
             tags:
               only: /(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/
+      - docs-links:  # a bit noisy, so only running on main, and does not stop deployments
+          requires:
+            - install
+          filters:
+            branches:
+              only: main
       - pypi-deploy:
           requires:
             - install

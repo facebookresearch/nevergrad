@@ -13,7 +13,7 @@ Creating data from experiments
 Experiment plans are described in :code:`nevergrad.benchmark.experiments`. Each experiment plan is a generator yielding different :code:`Experiment` instances (defining function and optimizer settings).
 To run an experiment plan, use:
 
-.. code-block: bash
+.. code-block:: bash
 
     python -m nevergrad.benchmark <experiment_name>
 
@@ -29,7 +29,7 @@ Plotting results
 
 In order to plot the data in the csv file, just run:
 
-.. code-block: bash
+.. code-block:: bash
 
     python -m nevergrad.benchmark.plotting <csv_file>
 
@@ -56,11 +56,11 @@ This system however does not work on Windows (yet? feel free to help us!)
 
 Example (please note that :code:`nevergrad` needs to be cloned in your working directory for this example to work):
 
-.. code-block: bash
+.. code-block:: bash
 
     python -m nevergrad.benchmark additional_experiment --imports=nevergrad/benchmark/additional/example.py
 
-See the `example file <https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/benchmark/additional/example.py>`_ to understand more precisely how functions/optimizers/experiments are specified. You can also submit a pull request to add your code directly in :code:`nevergrad`.
+See the `example file <https://github.com/facebookresearch/nevergrad/blob/main/nevergrad/benchmark/additional/example.py>`_ to understand more precisely how functions/optimizers/experiments are specified. You can also submit a pull request to add your code directly in :code:`nevergrad`.
 In this case, please refer to these [guidelines](adding_an_algorithm.md).
 
 Functions used for the experiments must derive from :code:`nevergrad.functions.ExperimentFunction`. This class implements features necessary for the benchmarks:
@@ -72,6 +72,6 @@ Functions used for the experiments must derive from :code:`nevergrad.functions.E
 - implements a :code:`copy` method for creating a new instance, using the same parameters you provided to initialize the function. The initilization of functions may draw random variables
   so that two copies can differ, providing more robustness to benchmarks.
 
-See the docstrings for more information, and `arcoating/core.py <https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/functions/arcoating/core.py>`_ and `example.py <https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/benchmark/additional/example.py>`_ for examples.
+See the docstrings for more information, and `arcoating/core.py <https://github.com/facebookresearch/nevergrad/blob/main/nevergrad/functions/arcoating/core.py>`_ and `example.py <https://github.com/facebookresearch/nevergrad/blob/main/nevergrad/benchmark/additional/example.py>`_ for examples.
 
-If you want your experiment plan to be seedable, be extra careful as to how you handle randomness in the experiment generator, since each individual experiment may be run in any order. See `experiments.py <https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/benchmark/experiments.py>`_ for examples of seedable experiment plans. If you do not care for it. For simplicity's sake, the experiment plan generator is however not required to have a seed parameter (but will not be reproducible in this case).
+If you want your experiment plan to be seedable, be extra careful as to how you handle randomness in the experiment generator, since each individual experiment may be run in any order. See `experiments.py <https://github.com/facebookresearch/nevergrad/blob/main/nevergrad/benchmark/experiments.py>`_ for examples of seedable experiment plans. If you do not care for it. For simplicity's sake, the experiment plan generator is however not required to have a seed parameter (but will not be reproducible in this case).

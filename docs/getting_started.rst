@@ -12,11 +12,11 @@ Nevergrad is a Python 3.6+ library. It can be installed with:
 
     pip install nevergrad
 
-You can also install the master branch instead of the latest release with:
+You can also install the :code:`main` branch instead of the latest release with:
 
 .. code-block:: bash
 
-    pip install git+https://github.com/facebookresearch/nevergrad@master#egg=nevergrad
+    pip install git+https://github.com/facebookresearch/nevergrad@main#egg=nevergrad
 
 
 A conda-forge version is also `available <https://github.com/conda-forge/nevergrad-feedstock>`_ thanks to @oblute:
@@ -30,7 +30,7 @@ Alternatively, you can clone the repository and run :code:`pip install -e .` fro
 
 By default, this only installs requirements for the optimization and parametrization subpackages. If you are also interested in the benchmarking part,
 you should install with the :code:`[benchmark]` flag (example: :code:`pip install nevergrad[benchmark]`), and if you also want the test tools, use
-the :code:`[all]` flag (example: :code:`pip install -e .[all]`).
+the :code:`[all]` flag (example: :code:`pip install --use-deprecated=legacy-resolver -e .[all]`).
 
 **Notes**:
 
@@ -47,7 +47,7 @@ Basic optimization example
 
 **By default all optimizers assume a centered and reduced prior at the beginning of the optimization (i.e. 0 mean and unitary standard deviation).**
 
-Optimizing (minimizing!) a function using an optimizer (here :code:`OnePlusOne`) can be easily run with:
+Optimizing (minimizing!) a function using an optimizer (here :code:`NGOpt`, our adaptative optimization algorithm) can be easily run with:
 
 .. literalinclude:: ../nevergrad/optimization/test_doc.py
     :language: python

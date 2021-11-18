@@ -8,12 +8,16 @@ import time
 import warnings
 import inspect
 import datetime
+import logging
 from pathlib import Path
 import numpy as np
 import nevergrad.common.typing as tp
+from nevergrad.common import errors
 from nevergrad.parametrization import parameter as p
 from nevergrad.parametrization import helpers
 from . import base
+
+global_logger = logging.getLogger(__name__)
 
 
 class OptimizationPrinter:
@@ -42,6 +46,56 @@ class OptimizationPrinter:
             self._next_tell = optimizer.num_tell + self._print_interval_tells
             x = optimizer.provide_recommendation()
             print(f"After {optimizer.num_tell}, recommendation is {x}")  # TODO fetch value
+
+
+class OptimizationLogger:
+    """Logger to register as callback in an optimizer, for Logging
+    best point regularly.
+
+    Parameters
+    ----------
+    logger:
+        given logger that callback will use to log
+    log_level:
+        log level that logger will write to
+    log_interval_tells: int
+        max number of evaluation before performing another log
+    log_interval_seconds:
+        max number of seconds before performing another log
+    """
+
+    def __init__(
+        self,
+        *,
+        logger: logging.Logger = global_logger,
+        log_level: int = logging.INFO,
+        log_interval_tells: int = 1,
+        log_interval_seconds: float = 60.0,
+    ) -> None:
+        assert log_interval_tells > 0
+        assert log_interval_seconds > 0
+        self._logger = logger
+        self._log_level = log_level
+        self._log_interval_tells = int(log_interval_tells)
+        self._log_interval_seconds = log_interval_seconds
+        self._next_tell = self._log_interval_tells
+        self._next_time = time.time() + log_interval_seconds
+
+    def __call__(self, optimizer: base.Optimizer, *args: tp.Any, **kwargs: tp.Any) -> None:
+        if time.time() >= self._next_time or self._next_tell >= optimizer.num_tell:
+            self._next_time = time.time() + self._log_interval_seconds
+            self._next_tell = optimizer.num_tell + self._log_interval_tells
+            if optimizer.num_objectives == 1:
+                x = optimizer.provide_recommendation()
+                self._logger.log(self._log_level, "After %s, recommendation is %s", optimizer.num_tell, x)
+            else:
+                losses = optimizer._hypervolume_pareto.get_min_losses()  # type: ignore
+                self._logger.log(
+                    self._log_level,
+                    "After %s, the respective minimum loss for each objective in the pareto front is %s",
+                    optimizer.num_tell,
+                    losses,
+                )
 
 
 class ParametersLogger:
@@ -100,17 +154,19 @@ class ParametersLogger:
         if hasattr(optimizer, "_configured_optimizer"):
             configopt = optimizer._configured_optimizer  # type: ignore
             if isinstance(configopt, base.ConfiguredOptimizer):
-                data.update({"#optimizer#" + x: y for x, y in configopt.config().items()})
+                data.update({"#optimizer#" + x: str(y) for x, y in configopt.config().items()})
         if isinstance(candidate._meta.get("sigma"), float):
             data["#meta-sigma"] = candidate._meta["sigma"]  # for TBPSA-like algorithms
         if candidate.generation > 1:
             data["#parents_uids"] = candidate.parents_uids
-        for name, param in helpers.flatten_parameter(candidate, with_containers=False, order=1).items():
+        for name, param in helpers.flatten(candidate, with_containers=False, order=1):
             val = param.value
+            if isinstance(val, (np.float_, np.int_, np.bool_)):
+                val = val.item()
             if inspect.ismethod(val):
                 val = repr(val.__self__)  # show mutation class
             data[name if name else "0"] = val.tolist() if isinstance(val, np.ndarray) else val
-            if isinstance(param, p.Array):
+            if isinstance(param, p.Data):
                 val = param.sigma.value
                 data[(name if name else "0") + "#sigma"] = (
                     val.tolist() if isinstance(val, np.ndarray) else val
@@ -246,3 +302,58 @@ class ProgressBar:
         state = dict(self.__dict__)
         state["_progress_bar"] = None
         return state
+
+
+class EarlyStopping:
+    """Callback for stopping the :code:`minimize` method before the budget is
+    fully used.
+
+    Parameters
+    ----------
+    stopping_criterion: func(optimizer) -> bool
+        function that takes the current optimizer as input and returns True
+        if the minimization must be stopped
+
+    Note
+    ----
+    This callback must be register on the "ask" method only.
+
+    Example
+    -------
+    In the following code, the :code:`minimize` method will be stopped at the 4th "ask"
+
+    >>> early_stopping = ng.callbacks.EarlyStopping(lambda opt: opt.num_ask > 3)
+    >>> optimizer.register_callback("ask", early_stopping)
+    >>> optimizer.minimize(_func, verbosity=2)
+
+    A couple other options (equivalent in case of non-noisy optimization) for stopping
+    if the loss is below 12:
+
+    >>> early_stopping = ng.callbacks.EarlyStopping(lambda opt: opt.recommend().loss < 12)
+    >>> early_stopping = ng.callbacks.EarlyStopping(lambda opt: opt.current_bests["minimum"].mean < 12)
+    """
+
+    def __init__(self, stopping_criterion: tp.Callable[[base.Optimizer], bool]) -> None:
+        self.stopping_criterion = stopping_criterion
+
+    def __call__(self, optimizer: base.Optimizer, *args: tp.Any, **kwargs: tp.Any) -> None:
+        if args or kwargs:
+            raise errors.NevergradRuntimeError("EarlyStopping must be registered on ask method")
+        if self.stopping_criterion(optimizer):
+            raise errors.NevergradEarlyStopping("Early stopping criterion is reached")
+
+    @classmethod
+    def timer(cls, max_duration: float) -> "EarlyStopping":
+        """Early stop when max_duration seconds has been reached (from the first ask)"""
+        return cls(_DurationCriterion(max_duration))
+
+
+class _DurationCriterion:
+    def __init__(self, max_duration: float) -> None:
+        self._start = float("inf")
+        self._max_duration = max_duration
+
+    def __call__(self, optimizer: base.Optimizer) -> bool:
+        if np.isinf(self._start):
+            self._start = time.time()
+        return time.time() > self._start + self._max_duration

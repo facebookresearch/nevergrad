@@ -76,7 +76,11 @@ class Mutator:
         return [s if b else self.significantly_mutate(s, arity) for (b, s) in zip(boolean_vector, parent)]
 
     def coordinatewise_mutation(
-        self, parent: tp.ArrayLike, velocity: tp.ArrayLike, boolean_vector: tp.ArrayLike, arity: int
+        self,
+        parent: tp.ArrayLike,
+        velocity: tp.ArrayLike,
+        boolean_vector: tp.ArrayLike,
+        arity: int,
     ) -> tp.ArrayLike:
         """This is the anisotropic counterpart of the classical 1+1 mutations in discrete domains
         with tunable intensity: it is useful for anisotropic adaptivity."""
@@ -87,7 +91,7 @@ class Mutator:
         discrete_data = discretization.threshold_discretization(parent, arity=arity)
         discrete_data = np.where(
             boolean_vector,
-            discrete_data + np.random.choice([-1.0, 1.0], size=dimension) * velocity,
+            discrete_data + self.random_state.choice([-1.0, 1.0], size=dimension) * velocity,
             discrete_data,
         )
         return discretization.inverse_threshold_discretization(discrete_data)
@@ -100,8 +104,13 @@ class Mutator:
             boolean_vector = self.random_state.rand(dimension) > (1.0 / dimension)
         return [s if b else self.significantly_mutate(s, arity) for (b, s) in zip(boolean_vector, parent)]
 
-    def crossover(self, parent: tp.ArrayLike, donor: tp.ArrayLike) -> tp.ArrayLike:
-        mix = [self.random_state.choice([d, p]) for (p, d) in zip(parent, donor)]
+    def crossover(self, parent: tp.ArrayLike, donor: tp.ArrayLike, rotation: bool = False) -> tp.ArrayLike:
+        if rotation:
+            dim = len(parent)
+            k = self.random_state.randint(1, dim)
+            mix = [self.random_state.choice([donor[(i + k) % dim], parent[i]]) for i in range(len(parent))]
+        else:
+            mix = [self.random_state.choice([d, p]) for (p, d) in zip(parent, donor)]
         return self.discrete_mutation(mix)
 
     def get_roulette(self, archive: utils.Archive[utils.MultiValue], num: tp.Optional[int] = None) -> tp.Any:

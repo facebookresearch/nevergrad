@@ -6,9 +6,12 @@
 import inspect
 from pathlib import Path
 import numbers
-import unittest
 import numpy as np
 import nevergrad.common.typing as tp
+from nevergrad.common import errors
+from nevergrad.common.errors import (  # pylint: disable=unused-import
+    UnsupportedExperiment as UnsupportedExperiment,
+)
 from nevergrad.parametrization import parameter as p
 from nevergrad.optimization import multiobjective as mobj
 
@@ -16,15 +19,11 @@ EF = tp.TypeVar("EF", bound="ExperimentFunction")
 ME = tp.TypeVar("ME", bound="MultiExperiment")
 
 
-class ExperimentFunctionCopyError(NotImplementedError):
-    """Raised when the experiment function fails to copy itself (for benchmarks)"""
-
-
-class UnsupportedExperiment(RuntimeError, unittest.SkipTest):
-    """Raised if the experiment is not compatible with the current settings:
-    Eg: missing data, missing import, unsupported OS etc
-    This automatically skips tests.
-    """
+def _reset_copy(obj: p.Parameter) -> p.Parameter:
+    """Copy a parameter and resets its random state to obtain variability"""
+    out = obj.copy()
+    out._set_random_state(None)  # propagates None to sub-parameters
+    return out
 
 
 # pylint: disable=too-many-instance-attributes
@@ -75,9 +74,6 @@ class ExperimentFunction:
         parametrization: p.Parameter,
     ) -> None:
         assert callable(function)
-        assert not hasattr(
-            self, "_initialization_kwargs"
-        ), '"register_initialization" was called before super().__init__'
         self._auto_init: tp.Dict[str, tp.Any]  # filled by __new__
         self._descriptors: tp.Dict[str, tp.Any]  # filled by __new__
         self._parametrization: p.Parameter
@@ -119,7 +115,7 @@ class ExperimentFunction:
         return self.__function
 
     def __call__(self, *args: tp.Any, **kwargs: tp.Any) -> tp.Loss:
-        """Call the function directly (equivaluent to parametrized_function.function(*args, **kwargs))"""
+        """Call the function directly (equivalent to parametrized_function.function(*args, **kwargs))"""
         return self.function(*args, **kwargs)
 
     @property
@@ -159,7 +155,7 @@ class ExperimentFunction:
         """
         # auto_init is automatically filled by __new__, aka when creating the instance
         output: EF = self.__class__(
-            **{x: y.copy() if isinstance(y, p.Parameter) else y for x, y in self._auto_init.items()}
+            **{x: _reset_copy(y) if isinstance(y, p.Parameter) else y for x, y in self._auto_init.items()}
         )
         return output
 
@@ -178,10 +174,10 @@ class ExperimentFunction:
         # parametrization may have been overriden, so let's always update it
         # Caution: only if names differ!
         if output.parametrization.name != self.parametrization.name:
-            output.parametrization = self.parametrization.copy()
+            output.parametrization = _reset_copy(self.parametrization)
         # then if there are still differences, something went wrong
         if not output.equivalent_to(self):
-            raise ExperimentFunctionCopyError(
+            raise errors.ExperimentFunctionCopyError(
                 f"Copy of\n{self}\nwith descriptors:\n{self._descriptors}\nreturned non-equivalent\n"
                 f"{output}\nwith descriptors\n{output._descriptors}.\n\n"
                 "This means that the auto-copy behavior of ExperimentFunction does not work.\n"
@@ -230,12 +226,12 @@ class ExperimentFunction:
             pareto front provided by the optimizer
         """
 
-        if self.multiobjective_upper_bounds is None:  # monoobjective case
+        if self.multiobjective_upper_bounds is None:  # singleobjective case
             assert len(recommendations) == 1
             output = self.function(*recommendations[0].args, **recommendations[0].kwargs)
             assert isinstance(
                 output, numbers.Number
-            ), f"evaluation_function can only be called on monoobjective experiments (output={output}) function={self.function}."
+            ), f"evaluation_function can only be called on singleobjective experiments (output={output}) function={self.function}."
             return output
         # multiobjective case
         hypervolume = mobj.HypervolumePareto(
@@ -280,9 +276,70 @@ def update_leaderboard(identifier: str, loss: float, array: np.ndarray, verbose:
             bests = bests.loc[sorted(x for x in bests.index), :]
             bests.to_csv(filepath)
             if verbose:
-                print(f"New best value for {identifier}: {loss}\nwith: {string}")
+                print(f"New best value for {identifier}: {loss}\nwith: {string[:80]}")
     except Exception:  # pylint: disable=broad-except
         pass  # better avoir bugs for this
+
+
+class ArrayExperimentFunction(ExperimentFunction):
+    """Combines a function and its parametrization for running experiments (see benchmark subpackage).
+    Extends ExperimentFunction, in the special case of an array, by allowing the creation of symmetries
+    of a single function. We can create ArrayExperimentFunction(callable, symmetry=i) for i in range(0, 2**d)
+    when the callable works on R^d.
+    Works only if there are no constraints.
+
+    Parameters
+    ----------
+    function: callable
+        the callable to convert
+    parametrization: Parameter
+        the parametrization of the function
+    symmetry: int
+        number parametrizing how we symmetrize the function.
+    """
+
+    def __init__(
+        self, function: tp.Callable[..., tp.Loss], parametrization: p.Parameter, symmetry: int = 0
+    ) -> None:
+        """Adds a "symmetry" parameter, which allows the creation of many symmetries of a given function.
+
+        symmetry: an int, 0 by default.
+        if not zero, a symmetrization is applied to the input; each of the 2^d possible values
+        for symmetry % 2^d gives one different function.
+        Makes sense if and only if (1) the input is a single ndarray (2) the domains are symmetric."""
+        self._inner_function = function
+        super().__init__(self.symmetrized_function, parametrization)
+        assert isinstance(
+            parametrization, p.Array
+        ), f"{type(parametrization)} is not p.Array; {parametrization}."
+        assert (parametrization.bounds[0] is None) == (parametrization.bounds[1] is None)
+        assert len(parametrization._constraint_checkers) == 0
+        assert symmetry >= 0
+        assert symmetry < 2 ** self.dimension
+        # The number 11111111111111111111111 is prime (using a prime is an overkill but ok).
+        symmetry = (symmetry * 11111111111111111111111) % (2 ** self.dimension)
+        if symmetry != 0:
+            self._function = self.symmetrized_function
+            self.threshold_coefficients = np.zeros(self.dimension)
+            self.slope_coefficients = np.ones(self.dimension)
+            for i in range(self.dimension):  # pylint: disable=consider-using-enumerate
+                if symmetry % 2 == 1:
+                    if self.parametrization.bounds[0] is not None and self.parametrization.bounds[1] is not None:  # type: ignore
+                        middle = (self.parametrization.bounds[0][0] + self.parametrization.bounds[1][0]) / 2.0  # type: ignore
+                    else:
+                        middle = 0.0
+                    self.threshold_coefficients[i] = 2.0 * middle  # Otherwise we keep 0.
+                    self.slope_coefficients[i] = -1.0  # Otherwise we keep 1.
+                symmetry = symmetry // 2
+        else:
+            self._function = function
+            self.threshold_coefficients = np.zeros(self.dimension)
+            self.slope_coefficients = np.ones(self.dimension)
+
+    def symmetrized_function(self, x: np.ndarray) -> tp.Loss:
+        assert isinstance(x, np.ndarray), "symmetry != 0 works only when the input is an array."
+        assert len(x.shape) == 1, "only one-dimensional arrays for now."
+        return self._inner_function(self.threshold_coefficients + self.slope_coefficients * x)  # type: ignore
 
 
 class MultiExperiment(ExperimentFunction):

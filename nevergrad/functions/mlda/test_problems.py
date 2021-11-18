@@ -56,16 +56,13 @@ def test_compute_perceptron() -> None:
 
 def test_perceptron() -> None:
     func = problems.Perceptron.from_mlda(name="quadratic").copy()
-    output = func([k for k in range(10)])
+    output = func(list(range(10)))
     np.testing.assert_almost_equal(output, 876.837, decimal=4)
     np.testing.assert_equal(func.descriptors["name"], "quadratic")
 
 
-@testing.parametrized(
-    virus=("Virus",),
-    employees=("Employees",),
-)
-def test_sammon_mapping(name: str) -> None:
+def test_sammon_mapping() -> None:
+    name = "Virus"  # employee is not available anymore
     data = np.arange(6).reshape(3, 2) if name == "Virus" else pd.DataFrame(data=np.arange(12).reshape(3, 4))
     with patch("nevergrad.functions.mlda.datasets.get_data") as data_getter:
         data_getter.return_value = data

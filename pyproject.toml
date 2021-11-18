@@ -8,8 +8,6 @@ exclude = '''
     | .mypy_cache
     | dist
     | docs
-    | nevergrad/functions/control
-    | nevergrad/functions/photonics
   )
 )
 '''

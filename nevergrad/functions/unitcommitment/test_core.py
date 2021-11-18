@@ -15,4 +15,5 @@ def test_unit_commitment_p1() -> None:
     op_out = np.ones((N, T))
     op_states = np.ones((N, T))
     value = func.function(operational_output=op_out, operational_states=op_states)
+    assert isinstance(value, float)
     assert np.allclose([value], [38721960.61493097], rtol=1e-04, atol=1e-05)
