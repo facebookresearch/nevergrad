@@ -2726,7 +2726,10 @@ class NGOpt21(NGOpt16):
         cma_vars = max(1, 4 + int(3 * np.log(self.dimension)))
         num = 1 + (4 * self.budget) // (self.dimension * 1000)
         if (
-            self.budget is not None and self.budget > 500 * self.dimension and self.fully_continuous and self.num_workers <= num * cma_vars
+            self.budget is not None
+            and self.budget > 500 * self.dimension
+            and self.fully_continuous
+            and self.num_workers <= num * cma_vars
         ):  # Discrete case ?
             return ConfPortfolio(
                 optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3 ** i) for i in range(num)],
@@ -2742,7 +2745,10 @@ class NGOpt36(NGOpt16):
         num = 1 + int(np.sqrt(4.0 * (4 * self.budget) // (self.dimension * 1000)))
         cma_vars = max(1, 4 + int(3 * np.log(self.dimension)))
         if (
-            self.budget is not None and self.budget > 500 * self.dimension and self.fully_continuous and self.num_workers <= num * cma_vars
+            self.budget is not None
+            and self.budget > 500 * self.dimension
+            and self.fully_continuous
+            and self.num_workers <= num * cma_vars
         ):  # Discrete case ?
             return ConfPortfolio(
                 optimizers=[Rescaled(base_optimizer=NGOpt14, scale=0.9 ** i) for i in range(num)],
