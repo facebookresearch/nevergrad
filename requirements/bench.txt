@@ -15,7 +15,7 @@ pyproj>=2.6.1
 Pillow
 tqdm
 torchvision
-pyomo>=5.7
+pyomo==5.7.1
 mixsimulator>=0.3.3
 hyperopt>=0.2.5
 IOHexperimenter>=0.2.8.7
