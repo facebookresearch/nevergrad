@@ -2724,7 +2724,7 @@ class NGOpt16(NGOpt15):
 class NGOpt21(NGOpt16):
     def _select_optimizer_cls(self) -> base.OptCls:
         cma_vars = max(1, 4 + int(3 * np.log(self.dimension)))
-        num = 1 + (4 * self.budget) // (self.dimension * 1000)
+        num = 1 + (4 * self.budget) // (self.dimension * 1000) if self.budget is not None else None
         if (
             self.budget is not None
             and self.budget > 500 * self.dimension
@@ -2742,7 +2742,7 @@ class NGOpt21(NGOpt16):
 @registry.register
 class NGOpt36(NGOpt16):
     def _select_optimizer_cls(self) -> base.OptCls:
-        num = 1 + int(np.sqrt(4.0 * (4 * self.budget) // (self.dimension * 1000)))
+        num = 1 + int(np.sqrt(4.0 * (4 * self.budget) // (self.dimension * 1000))) if self.budget is not None else None
         cma_vars = max(1, 4 + int(3 * np.log(self.dimension)))
         if (
             self.budget is not None
@@ -2762,12 +2762,12 @@ class NGOpt36(NGOpt16):
 class NGOpt38(NGOpt16):
     def _select_optimizer_cls(self) -> base.OptCls:
         cma_vars = max(1, 4 + int(3 * np.log(self.dimension)))
-        num36 = 1 + int(np.sqrt(4.0 * (4 * self.budget) // (self.dimension * 1000)))
-        num21 = 1 + (4 * self.budget) // (self.dimension * 1000)
-        num_dim10 = 1 + int(np.sqrt(8.0 * (8 * self.budget) // (self.dimension * 1000)))
-        num_dim20 = self.budget // (500 * self.dimension)
+        num36 = 1 + int(np.sqrt(4.0 * (4 * self.budget) // (self.dimension * 1000))) if self.budget is not None else None
+        num21 = 1 + (4 * self.budget) // (self.dimension * 1000) if self.budget is not None else None
+        num_dim10 = 1 + int(np.sqrt(8.0 * (8 * self.budget) // (self.dimension * 1000))) if self.budget is not None else None
+        num_dim20 = self.budget // (500 * self.dimension) if self.budget is not None else None
         para = 1
-        if self.budget > 5000 * self.dimension:
+        if self.budget is not None and self.budget > 5000 * self.dimension:
             para = num36 * cma_vars
         elif self.dimension < 5:
             para = num21 * cma_vars
