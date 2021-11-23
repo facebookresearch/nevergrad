@@ -2765,6 +2765,55 @@ class NGOpt36(NGOpt16):
 @registry.register
 class NGOpt38(NGOpt16):
     def _select_optimizer_cls(self) -> base.OptCls:
+        # Special cases in the bounded case
+        if (
+            self.budget is not None
+            and self.budget > 500 * self.dimension
+            and self.fully_continuous
+            and not self.has_noise
+            and self.num_objectives < 2
+            and self.num_workers == 1
+            and p.helpers.Normalizer(self.parametrization).fully_bounded
+        ):
+            if (
+                self.budget > 5000 * self.dimension
+            ):  # Asymptotically let us trust NGOpt36 and its subtle restart.
+                return NGOpt36
+            if self.dimension < 5:  # Low dimension: let us hit the bounds.
+                return NGOpt21
+            if self.dimension < 10:  # Moderate dimension: reasonable restart + bet and run.
+                num = 1 + int(np.sqrt(8.0 * (8 * self.budget) // (self.dimension * 1000)))
+                return ConfPortfolio(optimizers=[NGOpt14] * num, warmup_ratio=0.7)
+            if self.dimension < 20:  # Nobody knows why this seems to be so good.
+                num = self.budget // (500 * self.dimension)
+                return ConfPortfolio(
+                    optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3 ** i) for i in range(num)],
+                    warmup_ratio=0.5,
+                )
+            # We need a special case for dim < 30 ---> let's see later.
+            # Otherwise, let us go back to normal life: NGOpt16 which rocks in many cases, possibly Cobyla.
+            return NGOpt16
+        elif (  # This might be specific of high-precision cases.
+            self.budget is not None
+            and self.fully_continuous
+            and not self.has_noise
+            and self.num_objectives < 2
+            and self.num_workers == 1
+            and self.budget > 50 * self.dimension
+            and p.helpers.Normalizer(self.parametrization).fully_bounded
+        ):
+            return NGOpt8 if self.dimension < 3 else NGOpt15
+        else:
+            return super()._select_optimizer_cls()
+
+
+@registry.register
+class NGOpt39(NGOpt16):
+    def _select_optimizer_cls(self) -> base.OptCls:
+        if self.fully_continuous and self.has_noise:  # In particular for neuro-DPS.
+            DeterministicMix = ConfPortfolio(optimizers=[DiagonalCMA, PSO, GeneticDE])
+            return Chaining([DeterministicMix, OptimisticNoisyOnePlusOne], ["half"])
+
         cma_vars = max(1, 4 + int(3 * np.log(self.dimension)))
         num36 = (
             1 + int(np.sqrt(4.0 * (4 * self.budget) // (self.dimension * 1000)))
@@ -2834,51 +2883,6 @@ class NGOpt38(NGOpt16):
                 MetaModelFmin2.no_parallelization = True
                 return MetaModelFmin2
             return NGOpt15
-        else:
-            return super()._select_optimizer_cls()
-
-
-@registry.register
-class NGOpt39(NGOpt16):
-    def _select_optimizer_cls(self) -> base.OptCls:
-        # Special cases in the bounded case
-        if (
-            self.budget is not None
-            and self.budget > 500 * self.dimension
-            and self.fully_continuous
-            and not self.has_noise
-            and self.num_objectives < 2
-            and self.num_workers == 1
-            and p.helpers.Normalizer(self.parametrization).fully_bounded
-        ):
-            if (
-                self.budget > 5000 * self.dimension
-            ):  # Asymptotically let us trust NGOpt36 and its subtle restart.
-                return NGOpt36
-            if self.dimension < 5:  # Low dimension: let us hit the bounds.
-                return NGOpt21
-            if self.dimension < 10:  # Moderate dimension: reasonable restart + bet and run.
-                num = 1 + int(np.sqrt(8.0 * (8 * self.budget) // (self.dimension * 1000)))
-                return ConfPortfolio(optimizers=[NGOpt14] * num, warmup_ratio=0.7)
-            if self.dimension < 20:  # Nobody knows why this seems to be so good.
-                num = self.budget // (500 * self.dimension)
-                return ConfPortfolio(
-                    optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3 ** i) for i in range(num)],
-                    warmup_ratio=0.5,
-                )
-            # We need a special case for dim < 30 ---> let's see later.
-            # Otherwise, let us go back to normal life: NGOpt16 which rocks in many cases, possibly Cobyla.
-            return NGOpt16
-        elif (  # This might be specific of high-precision cases.
-            self.budget is not None
-            and self.fully_continuous
-            and not self.has_noise
-            and self.num_objectives < 2
-            and self.num_workers == 1
-            and self.budget > 50 * self.dimension
-            and p.helpers.Normalizer(self.parametrization).fully_bounded
-        ):
-            return NGOpt8 if self.dimension < 3 else NGOpt15
         else:
             return super()._select_optimizer_cls()
 
