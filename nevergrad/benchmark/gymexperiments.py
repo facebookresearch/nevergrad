@@ -232,7 +232,7 @@ def gym_problem(
     ]
     if "stochastic" in specific_problem:
         optims = ["DiagonalCMA", "TBPSA"] if big_noise else ["DiagonalCMA"]
-    if specific_problem == "EnergySavingsGym" and conformant:  # Do this for all conformant discrete ?
+    if specific_problem == "EnergySavingsGym-v0" and conformant:  # Do this for all conformant discrete ?
         optims = [
             "DiscreteOnePlusOne",
             "PortfolioDiscreteOnePlusOne",
@@ -284,7 +284,7 @@ def unlimited_hardcore_stochastic_compiler_gym(seed: tp.Optional[int] = None) ->
 
 @registry.register
 def conformant_planning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    specific_problem = "EnergySavingsGym"
+    specific_problem = "EnergySavingsGym-v0"
     # You might modify this problem by specifying an environment variable.
     if os.environ.get("TARGET_GYM_ENV") is not None:
         specific_problem = os.environ.get("TARGET_GYM_ENV")  # type: ignore
