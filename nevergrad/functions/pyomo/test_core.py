@@ -16,7 +16,7 @@ def test_concrete_model_without_constraints() -> None:
     model.obj = pyomo.Objective(expr=(model.x[1] - 0.5) ** 2 + (model.x[2] - 0.5) ** 2)
 
     func = core.Pyomo(model)
-    optimizer = ng.optimizers.OnePlusOne(parametrization=func.parametrization, budget=100)
+    optimizer = ng.optimizers.NGO(parametrization=func.parametrization, budget=100)
     recommendation = optimizer.minimize(func.function)
 
     np.testing.assert_almost_equal(recommendation.kwargs["x[1]"], 0.5, decimal=1)
