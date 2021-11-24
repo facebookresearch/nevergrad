@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import os
 import re
 import sys
 import time
@@ -158,6 +159,62 @@ def test_ngopt(dim: int, budget_multiplier: int, num_workers: int, bounded: bool
         instrumentation.set_integer_casting()
     ngopt = optlib.NGOpt(ng.p.Array(shape=(dim,)), budget=budget_multiplier * dim, num_workers=num_workers)
     ngopt.tell(ngopt.ask(), 42.0)
+
+
+class SimpleFitness:
+    """Simple quadratic fitness function which can be used with dimension up to 4"""
+
+    def __init__(self, x0: tp.ArrayLike, x1: tp.ArrayLike) -> None:
+        self.x0 = np.array(x0, copy=True)
+        self.x1 = np.array(np.exp(x1), copy=True)
+
+    def __call__(self, x: tp.ArrayLike) -> float:
+        assert len(self.x0) == len(x)
+        return float(np.sum(self.x1 * np.cos(np.array(x, copy=False) - self.x0) ** 2))
+
+
+@pytest.mark.parametrize("dim", [2, 10, 40, 200])  # type: ignore
+@pytest.mark.parametrize("budget_multiplier", [40, 100, 1000])  # type: ignore
+@pytest.mark.parametrize("num_workers", [1, 2, 20])  # type: ignore
+@pytest.mark.parametrize("bounded", [True])  # type: ignore
+@pytest.mark.parametrize("discrete", [False])  # type: ignore
+def test_performance_ngopt(
+    dim: int, budget_multiplier: int, num_workers: int, bounded: bool, discrete: bool
+) -> None:
+    KEY = "NEVERGRAD_SPECIAL_TESTS"
+    if not os.environ.get(KEY, ""):
+        pytest.skip(f"These tests only run if {KEY} is set in the environment")
+    instrumentation = ng.p.Array(shape=(dim,))
+    if dim > 40 and not discrete or dim <= 40 and discrete:
+        return
+    if bounded:
+        instrumentation.set_bounds(lower=-12.0, upper=15.0)
+    if discrete:
+        instrumentation.set_integer_casting()
+    algorithms = [optlib.NGOpt, optlib.OnePlusOne, optlib.CMA]
+    if discrete:
+        algorithms = [optlib.NGOpt, optlib.DiscreteOnePlusOne, optlib.DoubleFastGADiscreteOnePlusOne]
+    num_tests = 39
+    fitness = []
+    for i in range(num_tests):
+        target = np.random.normal(0.0, 1.0, size=dim)
+        factors = np.random.normal(0.0, 7.0, size=dim)
+        fitness += [SimpleFitness(target, factors)]
+    result_tab = []
+    for alg in algorithms:
+        results = []
+        for i in range(num_tests):
+            result_for_this_fitness = []
+            for _ in range(1):
+                opt = alg(ng.p.Array(shape=(dim,)), budget=budget_multiplier * dim, num_workers=num_workers)
+                recom = opt.minimize(fitness[i])
+                result_for_this_fitness += [fitness[i](recom.value)]
+            results += result_for_this_fitness
+        result_tab += [results]
+        won_comparisons = [r < ngopt_res for (r, ngopt_res) in zip(result_tab[-1], result_tab[0])]
+        assert (
+            sum(won_comparisons) < len(won_comparisons) // 2
+        ), f"alg={alg}, dim={dim}, budget_multiplier={budget_multiplier}, num_workers={num_workers}, bounded={bounded}, discrete={discrete}, result = {result_tab}"
 
 
 @skip_win_perf  # type: ignore
