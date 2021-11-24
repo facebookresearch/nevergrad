@@ -450,8 +450,8 @@ class XpPlotter:
         self._overlays: tp.List[tp.Any] = []
         legend_infos: tp.List[LegendInfo] = []
         for optim_name in (
-            sorted_optimizers[:1] + sorted_optimizers[-13:]
-            if len(sorted_optimizers) > 12
+            sorted_optimizers[:1] + sorted_optimizers[-12:]
+            if len(sorted_optimizers) > 13
             else sorted_optimizers
         ):
             vals = optim_vals[optim_name]
