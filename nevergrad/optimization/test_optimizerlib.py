@@ -176,9 +176,7 @@ class SimpleFitness:
 @pytest.mark.parametrize("dim", [2, 10, 40, 200])  # type: ignore
 @pytest.mark.parametrize("bounded", [True])  # type: ignore
 @pytest.mark.parametrize("discrete", [False])  # type: ignore
-def test_performance_ngopt(
-    dim: int, bounded: bool, discrete: bool
-) -> None:
+def test_performance_ngopt(dim: int, bounded: bool, discrete: bool) -> None:
     KEY = "NEVERGRAD_SPECIAL_TESTS"
     if not os.environ.get(KEY, ""):
         pytest.skip(f"These tests only run if {KEY} is set in the environment")
@@ -205,7 +203,9 @@ def test_performance_ngopt(
             result_for_this_fitness = []
             for budget_multiplier in [10, 100, 1000]:
                 for num_workers in [1, 20]:
-                    opt = alg(ng.p.Array(shape=(dim,)), budget=budget_multiplier * dim, num_workers=num_workers)
+                    opt = alg(
+                        ng.p.Array(shape=(dim,)), budget=budget_multiplier * dim, num_workers=num_workers
+                    )
                     recom = opt.minimize(fitness[i])
                     result_for_this_fitness += [fitness[i](recom.value)]
             results += result_for_this_fitness

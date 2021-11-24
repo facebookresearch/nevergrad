@@ -99,6 +99,8 @@ def ng_full_gym(
         "SQP",
         "MetaModel",
     ]
+    if os.environ.get("GYM_OPTIMIZER") is not None:
+        optims = [o for o in optims if os.environ.get("GYM_OPTIMIZER") in str(o)]
     if multi:
         controls = ["multi_neural"]
     else:
@@ -130,6 +132,8 @@ def ng_full_gym(
     if conformant:
         controls = ["stochastic_conformant"]
     budgets = [204800, 12800, 25600, 51200, 50, 200, 800, 3200, 6400, 100, 25, 400, 1600, 102400]
+    if os.environ.get("MAX_GYM_BUDGET") is not None:
+        budgets = [b for b in budgets if b < int(float(os.environ.get("MAX_GYM_BUDGET")))]
     for control in controls:
         neural_factors: tp.Any = (
             [None]
@@ -358,7 +362,7 @@ def conformant_planning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment
 
 @registry.register
 def neuro_planning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    specific_problem = "EnergySavingsGym"
+    specific_problem = "EnergySavingsGym-v0"
     # You might modify this problem by specifying an environment variable.
     if os.environ.get("TARGET_GYM_ENV") is not None:
         specific_problem = os.environ.get("TARGET_GYM_ENV")  # type: ignore
