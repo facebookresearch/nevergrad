@@ -174,12 +174,10 @@ class SimpleFitness:
 
 
 @pytest.mark.parametrize("dim", [2, 10, 40, 200])  # type: ignore
-@pytest.mark.parametrize("budget_multiplier", [40, 100, 1000])  # type: ignore
-@pytest.mark.parametrize("num_workers", [1, 2, 20])  # type: ignore
 @pytest.mark.parametrize("bounded", [True])  # type: ignore
 @pytest.mark.parametrize("discrete", [False])  # type: ignore
 def test_performance_ngopt(
-    dim: int, budget_multiplier: int, num_workers: int, bounded: bool, discrete: bool
+    dim: int, bounded: bool, discrete: bool
 ) -> None:
     KEY = "NEVERGRAD_SPECIAL_TESTS"
     if not os.environ.get(KEY, ""):
@@ -205,10 +203,11 @@ def test_performance_ngopt(
         results = []
         for i in range(num_tests):
             result_for_this_fitness = []
-            for _ in range(1):
-                opt = alg(ng.p.Array(shape=(dim,)), budget=budget_multiplier * dim, num_workers=num_workers)
-                recom = opt.minimize(fitness[i])
-                result_for_this_fitness += [fitness[i](recom.value)]
+            for budget_multiplier in [10, 100, 1000]:
+                for num_workers in [1, 20]:
+                    opt = alg(ng.p.Array(shape=(dim,)), budget=budget_multiplier * dim, num_workers=num_workers)
+                    recom = opt.minimize(fitness[i])
+                    result_for_this_fitness += [fitness[i](recom.value)]
             results += result_for_this_fitness
         result_tab += [results]
         won_comparisons = [r < ngopt_res for (r, ngopt_res) in zip(result_tab[-1], result_tab[0])]
