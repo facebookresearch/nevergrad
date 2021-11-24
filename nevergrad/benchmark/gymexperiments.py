@@ -83,21 +83,14 @@ def ng_full_gym(
 
     seedg = create_seed_generator(seed)
     optims = [
-        "CMA",
         "DiagonalCMA",
-        "OnePlusOne",
+        "GeneticDE",
+        "NoisyRL1",
+        "NoisyRL2",
+        "NoisyRL3",
+        "MixDeterministicRL",
+        "SpecialRL",
         "PSO",
-        "DiscreteOnePlusOne",
-        "DE",
-        "CMandAS2",
-        "NelderMead",
-        "DoubleFastGADiscreteOnePlusOne",
-        "DiscreteLenglerOnePlusOne",
-        "AnisotropicAdaptiveDiscreteOnePlusOne",
-        "TBPSA",
-        "SPSA",
-        "SQP",
-        "MetaModel",
     ]
     if multi:
         controls = ["multi_neural"]
