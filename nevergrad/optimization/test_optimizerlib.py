@@ -192,7 +192,7 @@ def test_performance_ngopt(
     algorithms = [optlib.NGOpt, optlib.OnePlusOne, optlib.CMA]
     if discrete:
         algorithms = [optlib.NGOpt, optlib.DiscreteOnePlusOne, optlib.DoubleFastGADiscreteOnePlusOne]
-    num_tests = 39
+    num_tests = 7
     fitness = []
     for i in range(num_tests):
         target = np.random.normal(0.0, 1.0, size=dim)
