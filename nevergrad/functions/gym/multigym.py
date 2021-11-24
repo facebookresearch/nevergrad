@@ -508,7 +508,6 @@ class GymMulti(ExperimentFunction):
         output_dim = output_dim + self.memory_len
         self.input_dim = input_dim
         self.output_dim = output_dim
-        self.num_neurons = 1 + ((neural_factor * (input_dim - self.extended_input_len)) // 7)
         self.num_neurons = neural_factor * (input_dim - self.extended_input_len)
         self.num_internal_layers = 1 if "semi" in control else 3
         internal = self.num_internal_layers * (self.num_neurons ** 2) if "deep" in control else 0
