@@ -12,6 +12,7 @@ from .optimizerlib import (
     ParametrizedCMA,
     ParametrizedBO,
     EMNA,
+    CmaFmin2,
     NGOpt10,
     NGOpt12,
     BayesOptim,
@@ -43,6 +44,10 @@ ECMA = ParametrizedCMA(elitist=True).set_name("ECMA", register=True)
 MetaModelDiagonalCMA = ParametrizedMetaModel(multivariate_optimizer=ParametrizedCMA(diagonal=True)).set_name(
     "MetaModelDiagonalCMA", register=True
 )
+MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2).set_name(
+    "MetaModelFmin2", register=True
+)
+MetaModelFmin2.no_parallelization = True
 
 # OnePlusOne
 FastGADiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="fastga").set_name(
@@ -319,4 +324,7 @@ PCABO80 = BayesOptim(pca=True, n_components=0.80).set_name("PCABO80", register=T
 # Testing the influence of the DoE size on the performance of PCABO
 PCABO95DoE20 = BayesOptim(pca=True, n_components=0.95, prop_doe_factor=0.20).set_name(
     "PCABO95DoE20", register=True
+)
+SparseDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete", sparse=True).set_name(
+    "SparseDiscreteOnePlusOne", register=True
 )

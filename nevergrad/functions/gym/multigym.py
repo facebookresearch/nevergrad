@@ -432,7 +432,10 @@ class GymMulti(ExperimentFunction):
             self.name += "_unseeded"
         self.randomized = randomized
         try:
-            self.num_time_steps = env._max_episode_steps  # I know! This is a private variable.
+            try:
+                self.num_time_steps = env._max_episode_steps  # I know! This is a private variable.
+            except AttributeError:  # Second chance! Some environments use self.horizon.
+                self.num_time_steps = env.horizon
         except AttributeError:  # Not all environements have a max number of episodes!
             assert any(x in name for x in NO_LENGTH), name
             if (
@@ -441,8 +444,8 @@ class GymMulti(ExperimentFunction):
                 self.num_time_steps = 50
             elif self.uses_compiler_gym and self.limited_compiler_gym:  # Other Compiler Gym: 45 time steps.
                 self.num_time_steps = 45
-            elif "LANM" not in name:  # Most cases: let's say 100 time steps.
-                self.num_time_steps = 100
+            elif "LANM" not in name:  # Most cases: let's say 5000 time steps.
+                self.num_time_steps = 200 if control == "conformant" else 5000
             else:  # LANM is a special case with 3000 time steps.
                 self.num_time_steps = 3000
         self.gamma = 0.995 if "LANM" in name else 1.0
