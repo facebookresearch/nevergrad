@@ -173,49 +173,6 @@ class SimpleFitness:
         return float(np.sum(self.x1 * np.cos(np.array(x, copy=False) - self.x0) ** 2))
 
 
-@pytest.mark.parametrize("dim", [2, 10, 40, 200])  # type: ignore
-@pytest.mark.parametrize("bounded", [True])  # type: ignore
-@pytest.mark.parametrize("discrete", [False])  # type: ignore
-def test_performance_ngopt(dim: int, bounded: bool, discrete: bool) -> None:
-    KEY = "NEVERGRAD_SPECIAL_TESTS"
-    if not os.environ.get(KEY, ""):
-        pytest.skip(f"These tests only run if {KEY} is set in the environment")
-    instrumentation = ng.p.Array(shape=(dim,))
-    if dim > 40 and not discrete or dim <= 40 and discrete:
-        return
-    if bounded:
-        instrumentation.set_bounds(lower=-12.0, upper=15.0)
-    if discrete:
-        instrumentation.set_integer_casting()
-    algorithms = [optlib.NGOpt, optlib.OnePlusOne, optlib.CMA]
-    if discrete:
-        algorithms = [optlib.NGOpt, optlib.DiscreteOnePlusOne, optlib.DoubleFastGADiscreteOnePlusOne]
-    num_tests = 7
-    fitness = []
-    for i in range(num_tests):
-        target = np.random.normal(0.0, 1.0, size=dim)
-        factors = np.random.normal(0.0, 7.0, size=dim)
-        fitness += [SimpleFitness(target, factors)]
-    result_tab = []
-    for alg in algorithms:
-        results = []
-        for i in range(num_tests):
-            result_for_this_fitness = []
-            for budget_multiplier in [10, 100, 1000]:
-                for num_workers in [1, 20]:
-                    opt = alg(  # type: ignore
-                        ng.p.Array(shape=(dim,)), budget=budget_multiplier * dim, num_workers=num_workers
-                    )
-                    recom = opt.minimize(fitness[i])
-                    result_for_this_fitness += [fitness[i](recom.value)]
-            results += result_for_this_fitness
-        result_tab += [results]
-        won_comparisons = [r < ngopt_res for (r, ngopt_res) in zip(result_tab[-1], result_tab[0])]
-        assert (
-            sum(won_comparisons) < len(won_comparisons) // 2
-        ), f"alg={alg}, dim={dim}, budget_multiplier={budget_multiplier}, num_workers={num_workers}, bounded={bounded}, discrete={discrete}, result = {result_tab}"
-
-
 @skip_win_perf  # type: ignore
 @pytest.mark.parametrize("name", registry)  # type: ignore
 @testing.suppress_nevergrad_warnings()  # hides bad loss
