@@ -203,7 +203,7 @@ def test_performance_ngopt(dim: int, bounded: bool, discrete: bool) -> None:
             result_for_this_fitness = []
             for budget_multiplier in [10, 100, 1000]:
                 for num_workers in [1, 20]:
-                    opt = alg(
+                    opt = alg(  # type: ignore
                         ng.p.Array(shape=(dim,)), budget=budget_multiplier * dim, num_workers=num_workers
                     )
                     recom = opt.minimize(fitness[i])
