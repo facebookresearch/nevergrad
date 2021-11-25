@@ -18,8 +18,7 @@ from .optgroups import get_optimizers
 
 # A few GYM modifiers based on environment variables.
 def gym_problem_modifier(specific_problem):
-    if os.environ.get("TARGET_GYM_ENV") is not None:
-        specific_problem = os.environ.get("TARGET_GYM_ENV")  # type: ignore
+    specific_problem = os.environ.get("TARGET_GYM_ENV", specific_problem)
     print("problem=", specific_problem)
     return specific_problem
 
