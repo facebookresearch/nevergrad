@@ -161,18 +161,6 @@ def test_ngopt(dim: int, budget_multiplier: int, num_workers: int, bounded: bool
     ngopt.tell(ngopt.ask(), 42.0)
 
 
-class SimpleFitness:
-    """Simple quadratic fitness function which can be used with dimension up to 4"""
-
-    def __init__(self, x0: tp.ArrayLike, x1: tp.ArrayLike) -> None:
-        self.x0 = np.array(x0, copy=True)
-        self.x1 = np.array(np.exp(x1), copy=True)
-
-    def __call__(self, x: tp.ArrayLike) -> float:
-        assert len(self.x0) == len(x)
-        return float(np.sum(self.x1 * np.cos(np.array(x, copy=False) - self.x0) ** 2))
-
-
 @skip_win_perf  # type: ignore
 @pytest.mark.parametrize("name", registry)  # type: ignore
 @testing.suppress_nevergrad_warnings()  # hides bad loss

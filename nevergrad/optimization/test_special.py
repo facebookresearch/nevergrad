@@ -7,11 +7,24 @@ import typing as tp
 import pytest
 from . import test_optimizerlib
 from . import optimizerlib as optlib
+import nevergrad as ng
 
 
 KEY = "NEVERGRAD_SPECIAL_TESTS"
 if not os.environ.get(KEY, ""):
     pytest.skip(f"These tests only run if {KEY} is set in the environment", allow_module_level=True)
+
+
+class SimpleFitness:
+    """Simple quadratic fitness function which can be used with dimension up to 4"""
+
+    def __init__(self, x0: tp.ArrayLike, x1: tp.ArrayLike) -> None:
+        self.x0 = np.array(x0, copy=True)
+        self.x1 = np.array(np.exp(x1), copy=True)
+
+    def __call__(self, x: tp.ArrayLike) -> float:
+        assert len(self.x0) == len(x)
+        return float(np.sum(self.x1 * np.cos(np.array(x, copy=False) - self.x0) ** 2))
 
 
 @pytest.mark.parametrize("dim", [2, 10, 40, 200])  # type: ignore
