@@ -29,7 +29,9 @@ def gym_optimizer_modifier(optims):
     if os.environ.get("GYM_OPTIMIZER") is not None:
         optimizer_string = os.environ.get("GYM_OPTIMIZER")
         print(f"Considering optimizers with {optimizer_string} in their name.")
-        optims = [o for o in optims if optimizer_string in str(o)]
+        optims = [o for o in optims if optimizer_string in str(o)]  # type: ignore
+        if len(optims) == 0:
+            optims = [optimizer_string]  # type: ignore
     print("optims=", optims)
     return optims
 
@@ -37,7 +39,7 @@ def gym_optimizer_modifier(optims):
 def gym_budget_modifier(budgets):
     if os.environ.get("MAX_GYM_BUDGET") is not None:
         budget_string = os.environ.get("MAX_GYM_BUDGET")
-        budgets = [b for b in budgets if b < int(budget_string)]
+        budgets = [b for b in budgets if b < int(budget_string)]  # type: ignore
     print("budgets=", budgets)
     return budgets
 
