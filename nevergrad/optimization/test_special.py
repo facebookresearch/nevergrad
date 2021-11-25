@@ -3,8 +3,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 import os
-import typing as tp
+import numpy as np
 import pytest
+import nevergrad.common.typing as tp
 from . import test_optimizerlib
 from . import optimizerlib as optlib
 import nevergrad as ng
