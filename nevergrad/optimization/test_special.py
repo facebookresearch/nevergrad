@@ -18,9 +18,6 @@ if not os.environ.get(KEY, ""):
 @pytest.mark.parametrize("bounded", [True])  # type: ignore
 @pytest.mark.parametrize("discrete", [False])  # type: ignore
 def test_performance_ngopt(dim: int, bounded: bool, discrete: bool) -> None:
-    KEY = "NEVERGRAD_SPECIAL_TESTS"
-    if not os.environ.get(KEY, ""):
-        pytest.skip(f"These tests only run if {KEY} is set in the environment")
     instrumentation = ng.p.Array(shape=(dim,))
     if dim > 40 and not discrete or dim <= 40 and discrete:
         return
