@@ -8,8 +8,6 @@ import typing as tp
 import torch
 import numpy as np
 
-
-import lpips
 import cv2
 from nevergrad.functions.base import UnsupportedExperiment as UnsupportedExperiment
 from nevergrad.common.decorators import Registry
@@ -51,8 +49,14 @@ class Lpips(ImageLoss):
 
     def __call__(self, img: np.ndarray) -> float:
         if self.net not in MODELS:
-            MODELS[self.net] = lpips.LPIPS(net=self.net)
-        loss_fn = MODELS[self.net]
+            try:
+                import lpips
+
+                MODELS[self.net] = lpips.LPIPS(net=self.net)
+                loss_fn = MODELS[self.net]
+            except ImportError as e:
+                raise ImportError("Please install lpips (pip install lpips) to use lpips") from e
+
         assert img.shape[2] == 3
         assert len(img.shape) == 3
         assert img.max() <= 256.0, f"Image max = {img.max()}"
@@ -113,9 +117,14 @@ class Koncept512(ImageLoss):
         if key not in MODELS:
             if os.name != "nt":
                 # pylint: disable=import-outside-toplevel
-                from koncept.models import Koncept512 as K512Model
+                try:
+                    from koncept.models import Koncept512 as K512Model
 
-                MODELS[key] = K512Model()
+                    MODELS[key] = K512Model()
+                except ImportError as e:
+                    raise ImportError(
+                        "Please install koncept (pip install koncept) to use Koncept512 network"
+                    ) from e
             else:
                 raise UnsupportedExperiment("Koncept512 is not working properly under Windows")
         return MODELS[key]
