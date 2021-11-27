@@ -118,14 +118,14 @@ class Koncept512(ImageLoss):
                 # pylint: disable=import-outside-toplevel
                 try:
                     from koncept.models import Koncept512 as K512Model
-
-                    MODELS[key] = K512Model()
                 except ImportError as e:
                     raise ImportError(
                         "Please install koncept (pip install koncept) to use Koncept512 network"
                     ) from e
             else:
                 raise UnsupportedExperiment("Koncept512 is not working properly under Windows")
+
+        MODELS[key] = K512Model()
         return MODELS[key]
 
     def __call__(self, img: np.ndarray) -> float:
