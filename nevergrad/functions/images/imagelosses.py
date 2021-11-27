@@ -51,12 +51,11 @@ class Lpips(ImageLoss):
         if self.net not in MODELS:
             try:
                 import lpips
-
                 MODELS[self.net] = lpips.LPIPS(net=self.net)
-                loss_fn = MODELS[self.net]
             except ImportError as e:
                 raise ImportError("Please install lpips (pip install lpips) to use lpips") from e
 
+        loss_fn = MODELS[self.net]
         assert img.shape[2] == 3
         assert len(img.shape) == 3
         assert img.max() <= 256.0, f"Image max = {img.max()}"
