@@ -51,6 +51,7 @@ class Lpips(ImageLoss):
         if self.net not in MODELS:
             try:
                 import lpips
+
                 MODELS[self.net] = lpips.LPIPS(net=self.net)
             except ImportError as e:
                 raise ImportError("Please install lpips (pip install lpips) to use lpips") from e
@@ -118,6 +119,7 @@ class Koncept512(ImageLoss):
                 # pylint: disable=import-outside-toplevel
                 try:
                     from koncept.models import Koncept512 as K512Model
+
                     MODELS[key] = K512Model()
                 except ImportError as e:
                     raise ImportError(
