@@ -120,7 +120,7 @@ class Koncept512(ImageLoss):
                 # pylint: disable=import-outside-toplevel
                 try:
                     from koncept.models import Koncept512 as K512Model
-                except ImportError
+                except ImportError:
                     raise UnsupportedExperiment("Koncept512 is not installed, please run 'pip install koncept'")
 
                 MODELS[key] = K512Model()
