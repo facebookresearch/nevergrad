@@ -508,7 +508,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         candidate.value  # pylint: disable=pointless-statement
         candidate.freeze()  # make sure it is not modified somewhere
         self._internal_timer += time.time() - this_ask_start_time
-        time_multiplier = (self.budget / self._num_ask) if self.budget > 0 else 1.
+        time_multiplier = (self.budget / self._num_ask) if self.budget is not None else 1.
         if time_multiplier * self._internal_timer > 5 * 3600:  # The internal cost should never exceed 5h, or we switch to economy mode.
             self._is_bored = True
         return candidate
