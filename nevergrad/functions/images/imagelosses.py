@@ -48,7 +48,10 @@ class Lpips(ImageLoss):
         super().__init__(reference)
         self.net = net
         # pylint: disable=import-outside-toplevel
-        import lpips
+        try:
+            import lpips
+        except ImportError:
+            raise UnsupportedExperiment("LPIPS is not installed, please run 'pip install lpips'")
         self.LPIPS = lpips.LPIPS
 
     def __call__(self, img: np.ndarray) -> float:
@@ -115,7 +118,10 @@ class Koncept512(ImageLoss):
         if key not in MODELS:
             if os.name != "nt":
                 # pylint: disable=import-outside-toplevel
-                from koncept.models import Koncept512 as K512Model
+                try:
+                    from koncept.models import Koncept512 as K512Model
+                except ImportError
+                    raise UnsupportedExperiment("Koncept512 is not installed, please run 'pip install koncept'")
 
                 MODELS[key] = K512Model()
             else:
