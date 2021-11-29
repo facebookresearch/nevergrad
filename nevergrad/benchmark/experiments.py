@@ -28,7 +28,6 @@ from nevergrad.functions.unitcommitment import UnitCommitmentProblem
 from nevergrad.functions import control
 from nevergrad.functions import rl
 from nevergrad.functions.games import game
-from nevergrad.functions.causaldiscovery import CausalDiscovery
 from nevergrad.functions import iohprofiler
 from nevergrad.functions import helpers
 from .xpbase import Experiment as Experiment
@@ -1851,6 +1850,8 @@ def pbo_suite(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 def causal_similarity(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Finding the best causal graph"""
+    # pylint: disable=import-outside-toplevel
+    from nevergrad.functions.causaldiscovery import CausalDiscovery
     seedg = create_seed_generator(seed)
     optims = ["CMA", "NGOpt8", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
     func = CausalDiscovery()

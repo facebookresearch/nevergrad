@@ -9,7 +9,6 @@ import torch
 import numpy as np
 
 
-import lpips
 import cv2
 from nevergrad.functions.base import UnsupportedExperiment as UnsupportedExperiment
 from nevergrad.common.decorators import Registry
@@ -48,10 +47,13 @@ class Lpips(ImageLoss):
     def __init__(self, reference: tp.Optional[np.ndarray] = None, net: str = "") -> None:
         super().__init__(reference)
         self.net = net
+        # pylint: disable=import-outside-toplevel
+        import lpips
+        self.LPIPS = lpips.LPIPS
 
     def __call__(self, img: np.ndarray) -> float:
         if self.net not in MODELS:
-            MODELS[self.net] = lpips.LPIPS(net=self.net)
+            MODELS[self.net] = self.LPIPS(net=self.net)
         loss_fn = MODELS[self.net]
         assert img.shape[2] == 3
         assert len(img.shape) == 3
