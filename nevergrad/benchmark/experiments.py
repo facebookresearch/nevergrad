@@ -1852,6 +1852,7 @@ def causal_similarity(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Finding the best causal graph"""
     # pylint: disable=import-outside-toplevel
     from nevergrad.functions.causaldiscovery import CausalDiscovery
+
     seedg = create_seed_generator(seed)
     optims = ["CMA", "NGOpt8", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
     func = CausalDiscovery()
