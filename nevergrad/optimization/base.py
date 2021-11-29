@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import pickle
+import time
 import warnings
 from pathlib import Path
 from numbers import Real
@@ -90,6 +91,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # you can also replace or reinitialize this random state
         self.num_workers = int(num_workers)
         self.budget = budget
+        self._internal_timer = 0.
+        self._is_bored = False
 
         # How do we deal with cheap constraints i.e. constraints which are fast and use low resources and easy ?
         # True ==> we penalize them (infinite values for candidates which violate the constraint).
@@ -445,6 +448,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             The candidate to try on the objective function. :code:`p.Parameter` have field :code:`args` and :code:`kwargs`
             which can be directly used on the function (:code:`objective_function(*candidate.args, **candidate.kwargs)`).
         """
+        this_ask_start_time = time.time()
         # call callbacks for logging etc...
         for callback in self._callbacks.get("ask", []):
             callback(self)
@@ -503,6 +507,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # make sure to call value getter which may update the value, before we freeze the paremeter
         candidate.value  # pylint: disable=pointless-statement
         candidate.freeze()  # make sure it is not modified somewhere
+        self._internal_timer += time.time() - this_ask_start_time
+        time_multiplier = (self.budget / self._num_ask) if self.budget > 0 else 1.
+        if time_multiplier * self._internal_timer > 5 * 3600:  # The internal cost should never exceed 5h, or we switch to economy mode.
+            self._is_bored = True
         return candidate
 
     def provide_recommendation(self) -> p.Parameter:

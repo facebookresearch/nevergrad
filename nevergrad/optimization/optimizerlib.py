@@ -1536,7 +1536,7 @@ class _MetaModel(base.Optimizer):
         # We request a bit more points than what is really necessary for our dimensionality (+dimension).
         sample_size = int((self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1)
         freq = max(13, self.num_workers, self.dimension, int(self.frequency_ratio * sample_size))
-        if len(self.archive) >= sample_size and not self._num_ask % freq:
+        if len(self.archive) >= sample_size and not self._num_ask % freq and not self._is_bored:
             try:
                 data = _learn_on_k_best(self.archive, sample_size)
                 candidate = self.parametrization.spawn_child().set_standardized_data(data)
