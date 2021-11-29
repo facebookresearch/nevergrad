@@ -91,7 +91,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # you can also replace or reinitialize this random state
         self.num_workers = int(num_workers)
         self.budget = budget
-        self._internal_timer = 0.
+        self._internal_timer = 0.0
         self._is_bored = False
 
         # How do we deal with cheap constraints i.e. constraints which are fast and use low resources and easy ?
@@ -508,8 +508,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         candidate.value  # pylint: disable=pointless-statement
         candidate.freeze()  # make sure it is not modified somewhere
         self._internal_timer += time.time() - this_ask_start_time
-        time_multiplier = (self.budget / self._num_ask) if self.budget is not None else 1.
-        if time_multiplier * self._internal_timer > 5 * 3600:  # The internal cost should never exceed 5h, or we switch to economy mode.
+        time_multiplier = (self.budget / self._num_ask) if self.budget is not None else 1.0
+        if (
+            time_multiplier * self._internal_timer > 5 * 3600
+        ):  # The internal cost should never exceed 5h, or we switch to economy mode.
             self._is_bored = True
         return candidate
 
