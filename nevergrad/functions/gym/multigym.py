@@ -18,26 +18,24 @@ from ..base import ExperimentFunction
 
 
 GUARANTEED_GYM_ENV_NAMES = [
-    "Copy-v0",
-    "RepeatCopy-v0",
-    "ReversedAddition-v0",
-    "ReversedAddition3-v0",
-    "DuplicatedInput-v0",
-    "Reverse-v0",
+    # "ReversedAddition-v0",
+    # "ReversedAddition3-v0",
+    # "DuplicatedInput-v0",
+    # "Reverse-v0",
     "CartPole-v0",
     "CartPole-v1",
     "MountainCar-v0",
     "Acrobot-v1",
-    "Blackjack-v0",
+    # "Blackjack-v0",
     # "FrozenLake-v0",   # deprecated
     # "FrozenLake8x8-v0",
     "CliffWalking-v0",
-    "NChain-v0",
-    "Roulette-v0",
+    # "NChain-v0",
+    # "Roulette-v0",
     "Taxi-v3",
-    "CubeCrash-v0",
-    "CubeCrashSparse-v0",
-    "CubeCrashScreenBecomesBlack-v0",
+    # "CubeCrash-v0",
+    # "CubeCrashSparse-v0",
+    # "CubeCrashScreenBecomesBlack-v0",
     "MemorizeDigits-v0",
 ]
 
@@ -300,6 +298,7 @@ class GymMulti(ExperimentFunction):
         import gym_anm  # noqa
 
         gym_env_names = []
+        max_displays = 10
         for e in gym.envs.registry.all():
             try:
                 assert "Kelly" not in str(e.id)  # We should have another check than that.
@@ -318,22 +317,24 @@ class GymMulti(ExperimentFunction):
                         assert a1.size() < 15000  # type: ignore
                 gym_env_names.append(e.id)
             except Exception as exception:  # pylint: disable=broad-except
-                print(f"{e.id} not included in full list becaue of {exception}.")
+                max_displays -= 1
+                if max_displays > 0:
+                    print(f"{e.id} not included in full list because of {exception}.")
+                if max_displays == 0:
+                    print("(similar issue for other environments)")
         return gym_env_names
 
     controllers = CONTROLLERS
 
     ng_gym = [
-        "Copy-v0",
-        "RepeatCopy-v0",
-        "Reverse-v0",
+        # "Reverse-v0",
         "CartPole-v0",
         "CartPole-v1",
         "Acrobot-v1",
         # "FrozenLake-v0",  # deprecated
         # "FrozenLake8x8-v0",
-        "NChain-v0",
-        "Roulette-v0",
+        # "NChain-v0",
+        # "Roulette-v0",
     ]
 
     def wrap_env(self, input_env):
@@ -435,7 +436,10 @@ class GymMulti(ExperimentFunction):
             self.name += "_unseeded"
         self.randomized = randomized
         try:
-            self.num_time_steps = env._max_episode_steps  # I know! This is a private variable.
+            try:
+                self.num_time_steps = env._max_episode_steps  # I know! This is a private variable.
+            except AttributeError:  # Second chance! Some environments use self.horizon.
+                self.num_time_steps = env.horizon
         except AttributeError:  # Not all environements have a max number of episodes!
             assert any(x in name for x in NO_LENGTH), name
             if (
@@ -444,8 +448,8 @@ class GymMulti(ExperimentFunction):
                 self.num_time_steps = 50
             elif self.uses_compiler_gym and self.limited_compiler_gym:  # Other Compiler Gym: 45 time steps.
                 self.num_time_steps = 45
-            elif "LANM" not in name:  # Most cases: let's say 100 time steps.
-                self.num_time_steps = 100
+            elif "LANM" not in name:  # Most cases: let's say 5000 time steps.
+                self.num_time_steps = 200 if control == "conformant" else 5000
             else:  # LANM is a special case with 3000 time steps.
                 self.num_time_steps = 3000
         self.gamma = 0.995 if "LANM" in name else 1.0
@@ -508,7 +512,6 @@ class GymMulti(ExperimentFunction):
         output_dim = output_dim + self.memory_len
         self.input_dim = input_dim
         self.output_dim = output_dim
-        self.num_neurons = 1 + ((neural_factor * (input_dim - self.extended_input_len)) // 7)
         self.num_neurons = neural_factor * (input_dim - self.extended_input_len)
         self.num_internal_layers = 1 if "semi" in control else 3
         internal = self.num_internal_layers * (self.num_neurons ** 2) if "deep" in control else 0
@@ -773,11 +776,16 @@ class GymMulti(ExperimentFunction):
                 else:
                     for i in range(len(a)):
                         a[i] = self.subaction_type(a[i])
+        if not np.isscalar(a):
+            a = np.asarray(a, dtype=env.action_space.sample().dtype)
         assert type(a) == self.action_type, f"{a} should have type {self.action_type} "
+        # assert env.action_space.contains(env.action_space.sample())
         try:
             assert env.action_space.contains(a), (
                 f"In {self.name}, high={env.action_space.high} low={env.action_space.low} {a} "
                 f"is not sufficiently close to {[env.action_space.sample() for _ in range(10)]}"
+                f"Action space = {env.action_space} (sample has type {type(env.action_space.sample())})"
+                f"and a={a} with type {type(a)}"
             )
         except AttributeError:
             pass  # Not all env can do "contains".
