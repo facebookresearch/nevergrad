@@ -48,7 +48,14 @@ def ng_full_gym(
     seedg = create_seed_generator(seed)
     optims = ["DiagonalCMA", "OnePlusOne", "PSO", "DiscreteOnePlusOne", "DE", "CMandAS2"]
 
-    optims = ["DiagonalCMA", "CMA", "OnePlusOne", "SMAC"]
+    optims = ["DiagonalCMA", "CMA", "OnePlusOne", "SMAC", "Cobyla", "RandomSearch", "QORandomSearch", "MetaTuneRecentering", "DE", "PSO"]
+    optims += ["DE", "GeneticDE", "RotatedTwoPointsDE", "TwoPointsDE"]
+    optims += ["NGOpt"]
+    optims += ["SMAC2", "BOBYQA", "Powell", "SQP", "CMandAS2", "HyperOpt", "BO"]
+    optims += ["Lamcts", "Zero"]
+    optims = ["RotatedTwoPointsDE", "QORandomSearch", "SQP"]
+    optims = ["NGOpt38", "MixDeterministicRL", "SpecialRL", "NGOpt21", "NGOpt22"]
+    optims = ["MixDeterministicRL", "SpecialRL", "SMAC", "Lamcts", "Zero", "RotatedTwoPointsDE", "DE", "GeneticDE", "MetaTuneRecentering", "PSO", "SMAC2", "AX", "BO", "Cobyla", "BOBYQA", "CMA", "DiagonalCMA", "OnePlusOne"]
     if multi:
         controls = ["multi_neural"]
     else:
@@ -80,7 +87,9 @@ def ng_full_gym(
     if conformant:
         controls = ["stochastic_conformant"]
     budgets = [50, 200, 800, 3200, 6400, 100, 25, 400, 1600]
-    budgets = [25, 50, 100]
+    budgets = [1600, 3200]
+    #budgets = [25, 50, 100, 200, 400, 800]
+    budgets = [1600, 3200, 6400]
     for control in controls:
         neural_factors: tp.Any = (
             [None]
@@ -91,7 +100,8 @@ def ng_full_gym(
             for name in env_names:
                 try:
                     func = gym.GymMulti(
-                        name, control=control, neural_factor=neural_factor, randomized=randomized
+                        name, control=control, neural_factor=neural_factor, randomized=randomized,
+                        gym_seed=next(seedg)
                     )
                 except MemoryError:
                     continue
@@ -115,9 +125,21 @@ def conformant_ng_full_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experim
 
 
 @registry.register
-def small_ng_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def tiny_ng_gym_multideterministic(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of ng_full_gym with a specific, reduced list of problems."""
     return ng_full_gym(seed, ng_gym=True)
+
+
+@registry.register
+def tiny_ng_full_gym_multideterministic(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of ng_full_gym with a specific, reduced list of problems."""
+    return ng_full_gym(seed)#, ng_gym=True)
+
+@registry.register
+def notsotiny_ng_full_gym_multideterministic(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of ng_full_gym with a specific, reduced list of problems."""
+    return ng_full_gym(seed, big=True)#, ng_gym=True)
+
 
 
 @registry.register

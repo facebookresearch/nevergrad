@@ -366,6 +366,7 @@ class GymMulti(ExperimentFunction):
         limited_compiler_gym: tp.Optional[bool] = None,
         optimization_scale: int = 0,
         greedy_bias: bool = False,
+        gym_seed: tp.Optional[int] = None,
     ) -> None:
         # limited_compiler_gym: bool or None.
         #        whether we work with the limited version
@@ -375,6 +376,7 @@ class GymMulti(ExperimentFunction):
         self.uses_compiler_gym = "compiler" in name
         self.stochastic_problem = "stoc" in name
         self.greedy_bias = greedy_bias
+        self.gym_seed = gym_seed
         if "conformant" in control or control == "linear":
             assert neural_factor is None
         if os.name == "nt":
@@ -416,6 +418,8 @@ class GymMulti(ExperimentFunction):
                 compiler_gym_pb_index is None
             ), "compiler_gym_pb_index should not be defined if not CompilerGym."
             env = gym.make(name if "LANM" not in name else "gym_anm:ANM6Easy-v0")
+            if self.gym_seed:
+                env.seed(self.gym_seed)
             o = env.reset()
         self.env = env
 
@@ -850,6 +854,8 @@ class GymMulti(ExperimentFunction):
                 o = env.reset(benchmark=self.uris[compiler_gym_pb_index])
         else:
             assert compiler_gym_pb_index is None
+            if self.gym_seed:
+                env.seed(self.gym_seed)
             o = env.reset()
         control = self.control
         if (

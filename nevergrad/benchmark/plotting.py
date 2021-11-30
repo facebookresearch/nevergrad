@@ -337,12 +337,13 @@ def create_plots(
                 mid = 120
                 name = name[:mid] + hashcode + name[-mid:]
             fplotter.save(str(output_folder / name), dpi=_DPI)
-            if name == "fight_all.png":  # second version restricted to completely run algorithms.
+            if True:  #name == "fight_all.png":  # second version restricted to completely run algorithms.
                 data_df = FightPlotter.winrates_from_selection(
                     casedf, fight_descriptors, num_rows=num_rows, complete_runs_only=True
                 )
                 fplotter = FightPlotter(data_df)
-                fplotter.save(str(output_folder / "fight_all_pure.png"), dpi=_DPI)
+                fplotter.save(str(output_folder / name), dpi=_DPI)
+                #fplotter.save(str(output_folder / "fight_all_pure.png"), dpi=_DPI)
 
             if order == 2 and competencemaps and best_algo:  # With order 2 we can create a competence map.
                 print("\n# Competence map")
@@ -421,9 +422,11 @@ class XpPlotter:
     ) -> None:
         if name_style is None:
             name_style = NameStyle()
-        upperbound = max(
+        upperbound = min(
+        #upperbound = max(
             np.max(vals["loss"]) for vals in optim_vals.values() if np.max(vals["loss"]) < np.inf
         )
+        #upperbound = min(upperbound, )
         for optim, vals in optim_vals.items():
             if optim.lower() in ["stupid", "idiot"] or optim in ["Zero", "StupidRandom"]:
                 upperbound = min(upperbound, np.max(vals["loss"]))
@@ -451,7 +454,7 @@ class XpPlotter:
         legend_infos: tp.List[LegendInfo] = []
         for optim_name in (
             sorted_optimizers[:1] + sorted_optimizers[-12:]
-            if len(sorted_optimizers) > 13
+            if len(sorted_optimizers) > 1366666
             else sorted_optimizers
         ):
             vals = optim_vals[optim_name]

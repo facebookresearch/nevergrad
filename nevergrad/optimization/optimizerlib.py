@@ -40,6 +40,8 @@ try:
 except ModuleNotFoundError:
     pass
 
+Lamcts = LamctsOptimizer(random_restart=True, device='cpu').set_name("Lamcts", register=True)
+
 # run with LOGLEVEL=DEBUG for more debug information
 logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
 logger = logging.getLogger(__name__)
@@ -2667,3 +2669,5 @@ class MultipleSingleRuns(base.ConfiguredOptimizer):
         base_optimizer: base.OptCls = NGOpt,
     ) -> None:
         super().__init__(_MSR, locals())
+
+
