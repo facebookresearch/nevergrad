@@ -438,12 +438,16 @@ class _CMA(base.Optimizer):
                     seed=np.nan,
                     CMA_elitist=self._config.elitist,
                 )
-
+                x0 = np.zeros(self.dimension, dtype=np.float_)
+                # We use here the BBOB proposal tool.
+                # I am not sure this makes sense, maybe this is very BBOB specific.
+                if self._config.random_init or (self._es is not None and self._es.stop()):
+                    x0 = self.parametrization.sample().get_standardized_data(reference=self.parametrization)
+                    x0 += self.parametrization.sample().get_standardized_data(reference=self.parametrization)
+                    x0 = 0.5 * x0
                 inopts.update(self._config.inopts if self._config.inopts is not None else {})
                 self._es = cma.CMAEvolutionStrategy(
-                    x0=self.parametrization.sample().get_standardized_data(reference=self.parametrization)
-                    if self._config.random_init
-                    else np.zeros(self.dimension, dtype=np.float_),
+                    x0=x0,
                     sigma0=self._config.scale * scale_multiplier,
                     inopts=inopts,
                 )
