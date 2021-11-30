@@ -1514,10 +1514,7 @@ def _learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.Arr
 
     if not np.sum(minimum ** 2) < 1.0:    # Not < for rejecting NaN.
         raise MetaModelFailure("huge meta-model optimum in learn_on_k_best.")
-        
-    if time.time() - fitting_start > 600.:   # 10 minutes for metamodel is the maximum we accept.
-        raise UnmanageableMetaModelFailure
-        
+
     return middle + normalization * minimum
 
 
