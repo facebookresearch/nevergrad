@@ -6,6 +6,7 @@ import math
 import logging
 import itertools
 from collections import deque
+import time
 import warnings
 import numpy as np
 from bayes_opt import UtilityFunction
