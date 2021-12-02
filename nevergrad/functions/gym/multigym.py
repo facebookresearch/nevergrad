@@ -567,12 +567,12 @@ class GymMulti(ExperimentFunction):
             parametrization2.set_integer_casting()
             parametrization2.set_bounds(0, 1)
             parametrization = ng.p.Dict(
-                    weights=parametrization1,
-                    enablers=parametrization2,
-                    )
+                weights=parametrization1,
+                enablers=parametrization2,
+            )
             parametrization.set_name("ng_sparse" + str(sparse_limit))
             assert "conformant" not in control and "structured" not in control
-            
+
         if "structured" in control and "neural" in control and "multi" not in control:
             parametrization = parameter.Instrumentation(  # type: ignore
                 parameter.Array(shape=tuple(map(int, self.first_layer_shape))),
@@ -632,10 +632,12 @@ class GymMulti(ExperimentFunction):
             )
             for compiler_gym_pb_index in range(23)
         ]
-        loss = -np.exp(sum(rewards) / len(rewards)) 
+        loss = -np.exp(sum(rewards) / len(rewards))
         sparse_penalty = 0
         if self.sparse_limit is not None:  # Then we penalize the weights above the threshold "sparse_limit".
-            sparse_penalty = (1 + np.abs(loss)) * max(0, np.sum(recommendations["weights"].value) - self.sparse_limit)
+            sparse_penalty = (1 + np.abs(loss)) * max(
+                0, np.sum(recommendations["weights"].value) - self.sparse_limit
+            )
         return loss + sparse_penalty
 
     def forked_env(self):
