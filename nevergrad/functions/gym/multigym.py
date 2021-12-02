@@ -724,10 +724,11 @@ class GymMulti(ExperimentFunction):
     def sparse_gym_multi_function(
         self, x: np.ndarray, limited_fidelity: bool = False, compiler_gym_pb_index: tp.Optional[int] = None
     ) -> float:
-        half = len(x) // 2
-        for u in range(half, len(x)):
-            assert x[u] == 0 or x[u] == 1, f"{x[half:]} is not binary."
-        x = x[0:half] * x[half:]
+        if self.sparse_limit is not None:
+            half = len(x) // 2
+            for u in range(half, len(x)):
+                assert x[u] == 0 or x[u] == 1, f"{x[half:]} is not binary."
+            x = x[0:half] * x[half:]
         return self.gym_multi_function(
             x, limited_fidelity=limited_fidelity, compiler_gym_pb_index=compiler_gym_pb_index
         )
