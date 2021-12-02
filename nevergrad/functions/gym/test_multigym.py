@@ -39,7 +39,9 @@ def test_roulette() -> None:
 
 
 def test_sparse_roulette() -> None:
-    func = multigym.GymMulti(name="CartPole-v0", control="neural", neural_factor=1, randomized=True, sparse_limit=2)
+    func = multigym.GymMulti(
+        name="CartPole-v0", control="neural", neural_factor=1, randomized=True, sparse_limit=2
+    )
     results = [func(np.zeros(func.dimension)) for _ in range(40)]
     assert min(results) != max(results), "CartPole should not be deterministic."
     candidate = func.parametrization.sample()

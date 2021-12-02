@@ -593,7 +593,7 @@ class GymMulti(ExperimentFunction):
             parametrization.set_name("conformant")
 
         # Now initializing.
-        super().__init__(self.gym_multi_function, parametrization=parametrization)
+        super().__init__(self.sparse_gym_multi_function, parametrization=parametrization)
         self.greedy_coefficient = 0.0
         self.parametrization.function.deterministic = not self.uses_compiler_gym
         self.archive: tp.List[tp.Any] = []
@@ -605,7 +605,7 @@ class GymMulti(ExperimentFunction):
         if self.sparse_limit is None:  # Life is simple here, we directly have the weights.
             x = recommendations[0].value
         else:  # Here 0 in the enablers means that the weight is forced to 0.
-            x = recommendations.value["weights"] * recommendations.value["enablers"]
+            x = recommendations[0].value["weights"] * recommendations[0].value["enablers"]
         if not self.randomized:
             assert not self.uses_compiler_gym
             return self.gym_multi_function(x, limited_fidelity=False)
@@ -720,6 +720,17 @@ class GymMulti(ExperimentFunction):
             assert current_index == len(x)
         output = np.matmul(np.tanh(output + first_matrix[0]), second_matrix)
         return output[self.memory_len :].reshape(self.output_shape), output[: self.memory_len]
+
+    def sparse_gym_multi_function(
+        self, x: np.ndarray, limited_fidelity: bool = False, compiler_gym_pb_index: tp.Optional[int] = None
+    ) -> float:
+        half = len(x) // 2
+        for u in range(half, len(x)):
+            assert x[u] == 0 or x[u] == 1, f"{x[half:]} is not binary."
+        x = x[0:half] * x[half:]
+        return self.gym_multi_function(
+            x, limited_fidelity=limited_fidelity, compiler_gym_pb_index=compiler_gym_pb_index
+        )
 
     def gym_multi_function(
         self, x: np.ndarray, limited_fidelity: bool = False, compiler_gym_pb_index: tp.Optional[int] = None
