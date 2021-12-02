@@ -566,7 +566,7 @@ class GymMulti(ExperimentFunction):
             parametrization2 = parameter.Array(shape=shape)
             parametrization2.set_integer_casting()
             parametrization2.set_bounds(0, 1)
-            parametrization = ng.p.Dict(
+            parametrization = ng.p.Dict(  # type: ignore
                 weights=parametrization1,
                 enablers=parametrization2,
             )
@@ -605,7 +605,7 @@ class GymMulti(ExperimentFunction):
         if self.sparse_limit is None:  # Life is simple here, we directly have the weights.
             x = recommendations[0].value
         else:  # Here 0 in the enablers means that the weight is forced to 0.
-            x = recommendations["weights"].value * recommendations["enablers"].value
+            x = recommendations.value["weights"] * recommendations.value["enablers"]
         if not self.randomized:
             assert not self.uses_compiler_gym
             return self.gym_multi_function(x, limited_fidelity=False)
