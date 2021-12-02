@@ -636,7 +636,7 @@ class GymMulti(ExperimentFunction):
         sparse_penalty = 0
         if self.sparse_limit is not None:  # Then we penalize the weights above the threshold "sparse_limit".
             sparse_penalty = (1 + np.abs(loss)) * max(
-                0, np.sum(recommendations["weights"].value) - self.sparse_limit
+                0, np.sum(recommendations[0].value["weights"]) - self.sparse_limit
             )
         return loss + sparse_penalty
 
