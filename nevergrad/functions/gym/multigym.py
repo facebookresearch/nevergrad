@@ -367,7 +367,7 @@ class GymMulti(ExperimentFunction):
         limited_compiler_gym: tp.Optional[bool] = None,
         optimization_scale: int = 0,
         greedy_bias: bool = False,
-        sparse_limit: tp.Optional[int] = None,
+        sparse_limit: tp.Optional[int] = None,  # if not None, we penalize solutions with more than sparse_limit weights !=0
     ) -> None:
         # limited_compiler_gym: bool or None.
         #        whether we work with the limited version
@@ -563,7 +563,7 @@ class GymMulti(ExperimentFunction):
         parametrization = parameter.Array(shape=shape).set_name("ng_default")
         if sparse_limit is not None:
             parametrization1 = parameter.Array(shape=shape)
-            parametrization2 = parameter.Array(shape=shape)
+            parametrization2 = parameter.Array(shape=shape)  # 0/1 weights for enabling/disabling
             parametrization2.set_integer_casting()
             parametrization2.set_bounds(0, 1)
             parametrization = ng.p.Dict(  # type: ignore
