@@ -229,7 +229,16 @@ def test_suggest_optimizers(name: str) -> None:
 
 
 def good_at_suggest(name: str) -> bool:
-    keywords = ["Noisy", "Optimistic", "Multi", "Anisotropic", "BSO", "Sparse", "Recombining"]
+    keywords = [
+        "Noisy",
+        "Optimistic",
+        "Multi",
+        "Anisotropic",
+        "BSO",
+        "Sparse",
+        "Recombining",
+        "PortfolioDiscreteOne",
+    ]
     return not any(k in name for k in keywords)
 
 
@@ -250,13 +259,7 @@ def test_harder_suggest_optimizers(name: str) -> None:
 
 
 def good_at_c0_suggest(r: str) -> bool:
-    return (
-        "ECMA" in r
-        or "NGOpt" == r
-        or ("DE" in r and "Mini" in r)
-        or "GeneticDE" in r
-        or "LhsDE" in r
-    )
+    return "ECMA" in r or "NGOpt" == r or ("DE" in r and "Mini" in r) or "GeneticDE" in r or "LhsDE" in r
 
 
 @skip_win_perf  # type: ignore
