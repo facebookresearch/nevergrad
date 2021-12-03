@@ -382,36 +382,6 @@ def create_plots(
             xpplotter = XpPlotter(data, title=description, name_style=name_style, xaxis=xpaxis)
         except Exception as e:  # pylint: disable=broad-except
             warnings.warn(f"Bypassing error in xpplotter:\n{e}", RuntimeWarning)
-    # xp plots: for each experimental setup, we plot curves with budget in x-axis.
-    # plot mean loss / budget for each optimizer for 1 context
-    print("# Xp plots")
-    name_style = NameStyle()  # keep the same style for each algorithm
-    cases = df.unique(descriptors)
-    if not cases:
-        cases = [()]
-    # Average normalized plot with everything.
-    out_filepath = output_folder / "xpresults_all.png"
-    data = XpPlotter.make_data(df, normalized_loss=True)
-    xpplotter = XpPlotter(data, title=os.path.basename(output_folder), name_style=name_style, xaxis=xpaxis)
-    xpplotter.save(out_filepath)
-    # Now one xp plot per case.
-    for case in cases:
-        subdf = df.select_and_drop(**dict(zip(descriptors, case)))
-        description = ",".join("{}:{}".format(x, y) for x, y in zip(descriptors, case))
-        if len(description) > 280:
-            hash_ = hashlib.md5(bytes(description, "utf8")).hexdigest()
-            description = description[:140] + hash_ + description[-140:]
-        out_filepath = output_folder / "xpresults{}{}.png".format(
-            "_" if description else "", description.replace(":", "")
-        )
-        txt_out_filepath = output_folder / "xpresults{}{}.leaderboard.txt".format(
-            "_" if description else "", description.replace(":", "")
-        )
-        data = XpPlotter.make_data(subdf)
-        try:
-            xpplotter = XpPlotter(data, title=description, name_style=name_style, xaxis=xpaxis)
-        except Exception as e:  # pylint: disable=broad-except
-            warnings.warn(f"Bypassing error in xpplotter:\n{e}", RuntimeWarning)
         else:
             xpplotter.save(out_filepath)
             xpplotter.save_txt(txt_out_filepath, data)
