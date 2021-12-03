@@ -351,7 +351,6 @@ def create_plots(
                 print("Competence map data:", fixed, case, best_algo)
 
     plt.close("all")
-
     # xp plots: for each experimental setup, we plot curves with budget in x-axis.
     # plot mean loss / budget for each optimizer for 1 context
     print("# Xp plots")
