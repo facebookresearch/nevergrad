@@ -197,10 +197,26 @@ def test_infnan(name: str) -> None:
         result < 2.0, f"{name} failed and got {result} with {recom.value} (type is {type(optim)})."
 
 
+def suggestable(name: str) -> bool:
+    # Some methods are not good with suggestions.
+    if "TBSA" in name:
+        return False
+    if "EMNA" in name or "EDA" in name:
+        return False
+    if "Stupid" in name:
+        return False
+    if "BO" in name:
+        return False
+    if "Pymoo" in name:
+        return False
+    return True
+
+
 @skip_win_perf  # type: ignore
-@pytest.mark.parametrize("name", registry)  # type: ignore
+@pytest.mark.parametrize("name", [r for r in registry if suggestable(r)])  # type: ignore
 def test_tell_not_asked_optimizers(name: str) -> None:
     """Checks that each optimizer is able to converge when optimum is given"""
+
     optimizer_cls = registry[name]
     instrum = ng.p.Array(shape=(100,)).set_bounds(0.0, 1.0)
     instrum.set_integer_casting()
@@ -212,8 +228,13 @@ def test_tell_not_asked_optimizers(name: str) -> None:
     assert np.all(optim.recommend().value == xs), "{name} proposes {optim.recommend().value} instead of {xs}"
 
 
+def good_at_suggest(name: str) -> bool:
+    keywords = ["Noisy", "Optimistic", "Multi", "Anisotropic", "BSO", "Sparse", "Recombining"]
+    return not any(k in name for k in keywords)
+
+
 @skip_win_perf  # type: ignore
-@pytest.mark.parametrize("name", [r for r in registry if "iscre" in r])  # type: ignore
+@pytest.mark.parametrize("name", [r for r in registry if "iscre" in r and good_at_suggest(r)])  # type: ignore
 def test_harder_tell_not_asked_optimizers(name: str) -> None:
     """Checks that discrete optimizers are good when a suggestion is nearby."""
     optimizer_cls = registry[name]
@@ -228,8 +249,19 @@ def test_harder_tell_not_asked_optimizers(name: str) -> None:
     assert np.all(optim.recommend().value == xs), "{name} proposes {optim.recommend().value} instead of {xs}"
 
 
+def good_at_c0_suggest(name: str) -> bool:
+    return (
+        "ECMA" in r
+        or "NGOpt" == r
+        or ("DE" in r and "Mini" in r)
+        or "GeneticDE" in r
+        or "LhsDE" in r
+        or "PSO" in r
+    )
+
+
 @skip_win_perf  # type: ignore
-@pytest.mark.parametrize("name", [r for r in registry if "ECMA" in r or "NGOpt" == r or ("DE" in r and "Mini" in r) or "GeneticDE" in r or "LhsDE" in r or "PSO" in r])  # type: ignore
+@pytest.mark.parametrize("name", [r for r in registry if good_at_c0_suggest(r)])  # type: ignore
 def test_harder_continuous_tell_not_asked_optimizers(name: str) -> None:
     """Checks that somes optimizer can converge when provided with a good suggestion."""
     optimizer_cls = registry[name]
