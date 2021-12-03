@@ -29,7 +29,7 @@ def test_compiler_gym() -> None:
     assert min(results) == max(results), "CompilerGym should be deterministic."
 
 
-def test_roulette() -> None:
+def test_cartpole() -> None:
     func = multigym.GymMulti(name="CartPole-v0", control="neural", neural_factor=1, randomized=True)
     results = [func(np.zeros(func.dimension)) for _ in range(40)]
     assert min(results) != max(results), "CartPole should not be deterministic."
@@ -38,7 +38,7 @@ def test_roulette() -> None:
     assert min(results) != max(results), "CartPole should not be deterministic."
 
 
-def test_sparse_roulette() -> None:
+def test_sparse_cartpole() -> None:
     func = multigym.GymMulti(
         name="CartPole-v0", control="neural", neural_factor=1, randomized=True, sparse_limit=2
     )
