@@ -199,6 +199,52 @@ def test_infnan(name: str) -> None:
 
 @skip_win_perf  # type: ignore
 @pytest.mark.parametrize("name", registry)  # type: ignore
+def test_tell_not_asked_optimizers(name: str) -> None:
+    """Checks that each optimizer is able to converge when optimum is given"""
+    optimizer_cls = registry[name]
+    instrum = ng.p.Array(shape=(100,)).set_bounds(0.0, 1.0)
+    instrum.set_integer_casting()
+    xs = np.asarray([0] * 17 + [1] * 17 + [0] * 66)
+    optim = optimizer_cls(instrum, budget=7)
+    target = lambda x: 0 if np.all(np.asarray(x, dtype=int) == xs) else 1
+    optim.suggest(xs)
+    optim.minimize(target)
+    assert np.all(optim.recommend().value == xs), "{name} proposes {optim.recommend().value} instead of {xs}"
+
+
+@skip_win_perf  # type: ignore
+@pytest.mark.parametrize("name", [r for r in registry if "iscre" in r])  # type: ignore
+def test_harder_tell_not_asked_optimizers(name: str) -> None:
+    """Checks that discrete optimizers are good when a suggestion is nearby."""
+    optimizer_cls = registry[name]
+    instrum = ng.p.Array(shape=(100,)).set_bounds(0.0, 1.0)
+    instrum.set_integer_casting()
+    xs = np.asarray([0] * 17 + [1] * 17 + [0] * 66)
+    optim = optimizer_cls(instrum, budget=1500)
+    target = lambda x: min(3, np.sum((np.asarray(x, dtype=int) - xs) ** 2))
+    xsn = np.asarray([0] * 17 + [1] * 16 + [0] * 67)
+    optim.suggest(xsn)
+    optim.minimize(target)
+    assert np.all(optim.recommend().value == xs), "{name} proposes {optim.recommend().value} instead of {xs}"
+
+
+@skip_win_perf  # type: ignore
+@pytest.mark.parametrize("name", [r for r in registry if "ECMA" in r or "NGOpt" == r or ("DE" in r and "Mini" in r) or "GeneticDE" in r or "LhsDE" in r or "PSO" in r])  # type: ignore
+def test_harder_continuous_tell_not_asked_optimizers(name: str) -> None:
+    """Checks that somes optimizer can converge when provided with a good suggestion."""
+    optimizer_cls = registry[name]
+    instrum = ng.p.Array(shape=(100,)).set_bounds(0.0, 1.0)
+    xs = np.asarray([0] * 17 + [1] * 17 + [0] * 66)
+    optim = optimizer_cls(instrum, budget=3000)
+    target = lambda x: min(2.0, np.sum((x - xs) ** 2))
+    xsn = np.asarray([0] * 17 + [1] * 16 + [0] * 67)
+    optim.suggest(xsn)
+    optim.minimize(target)
+    assert target(optim.recommend().value) < 0.9, f"Value is {target(optim.recommend().value)}."
+
+
+@skip_win_perf  # type: ignore
+@pytest.mark.parametrize("name", registry)  # type: ignore
 def test_optimizers(name: str) -> None:
     """Checks that each optimizer is able to converge on a simple test case"""
     optimizer_cls = registry[name]
