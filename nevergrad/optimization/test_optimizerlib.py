@@ -249,7 +249,7 @@ def test_harder_tell_not_asked_optimizers(name: str) -> None:
     assert np.all(optim.recommend().value == xs), "{name} proposes {optim.recommend().value} instead of {xs}"
 
 
-def good_at_c0_suggest(name: str) -> bool:
+def good_at_c0_suggest(r: str) -> bool:
     return (
         "ECMA" in r
         or "NGOpt" == r
