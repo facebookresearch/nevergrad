@@ -6,6 +6,7 @@ import math
 import logging
 import itertools
 from collections import deque
+import time
 import warnings
 import numpy as np
 from bayes_opt import UtilityFunction
@@ -1448,6 +1449,8 @@ MultiScaleCMA = ConfPortfolio(
 class MetaModelFailure(ValueError):
     """Sometimes the optimum of the metamodel is at infinity."""
 
+class UnmanageableMetaModelFailure(ValueError):
+    """Sometimes the MetaModel takes forever or fails for some reason."""
 
 def _learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.ArrayLike:
     """Approximate optimum learnt from the k best.
@@ -1482,8 +1485,11 @@ def _learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.Arr
 
     y = (y - min(y)) / (max(y) - min(y))
     model = LinearRegression()
+    fitting_start = time.time()
     model.fit(X2, y)
-
+    if time.time() - fitting_start > 300.:   # 5 minutes for fitting is the maximum we accept.
+        raise UnmanageableMetaModelFailure
+        
     # Check model quality.
     model_outputs = model.predict(X2)
     indices = np.argsort(y)
@@ -1507,8 +1513,9 @@ def _learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.Arr
     except ValueError:
         raise MetaModelFailure("Infinite meta-model optimum in learn_on_k_best.")
 
-    if np.sum(minimum ** 2) > 1.0:
+    if not np.sum(minimum ** 2) < 1.0:    # Not < for rejecting NaN.
         raise MetaModelFailure("huge meta-model optimum in learn_on_k_best.")
+
     return middle + normalization * minimum
 
 
@@ -1524,6 +1531,7 @@ class _MetaModel(base.Optimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.frequency_ratio = frequency_ratio
+        self._manageable_metamodel = True  # Will switch to False if it fails too hard.
         if multivariate_optimizer is None:
             multivariate_optimizer = (
                 ParametrizedCMA(elitist=(self.dimension < 3)) if self.dimension > 1 else OnePlusOne
@@ -1536,10 +1544,13 @@ class _MetaModel(base.Optimizer):
         # We request a bit more points than what is really necessary for our dimensionality (+dimension).
         sample_size = int((self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1)
         freq = max(13, self.num_workers, self.dimension, int(self.frequency_ratio * sample_size))
-        if len(self.archive) >= sample_size and not self._num_ask % freq:
+        if len(self.archive) >= sample_size and not self._num_ask % freq and self._manageable_metamodel:
             try:
                 data = _learn_on_k_best(self.archive, sample_size)
                 candidate = self.parametrization.spawn_child().set_standardized_data(data)
+            except UnmanageableMetaModelFailure:
+                self._manageable_metamodel = False
+                candidate = self._optim.ask()
             except MetaModelFailure:  # The optimum is at infinity. Shit happens.
                 candidate = self._optim.ask()
         else:
