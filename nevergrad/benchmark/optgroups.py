@@ -42,6 +42,11 @@ def get_optimizers(*names: str, seed: tp.Optional[int] = None) -> tp.List[Optim]
 
 
 @registry.register
+def ngopts() -> tp.Sequence[Optim]:
+    return [o for o in optimizerlib_registry if "NGOpt" in o] + ["Shiwa"]
+
+
+@registry.register
 def large() -> tp.Sequence[Optim]:
     return [
         "NGO",

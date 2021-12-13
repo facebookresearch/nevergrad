@@ -85,24 +85,8 @@ def keras_tuning(
     # Continuous case,
 
     # First, a few functions with constraints.
-    optims: tp.List[str] = ["PSO", "OnePlusOne"] + get_optimizers("basics", seed=next(seedg))  # type: ignore
+    optims: tp.List[str] = ["PSO", "OnePlusOne"] + get_optimizers("basics", "ngopts", seed=next(seedg))  # type: ignore
     datasets = ["kerasBoston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
-    optims += [
-        "Shiwa",
-        "NGO",
-        "NGOpt4",
-        "NGOpt8",
-        "NGOpt10",
-        "NGOpt12",
-        "NGOpt13",
-        "NGOpt14",
-        "NGOpt15",
-        "NGOpt16",
-        "NGOpt21",
-        "NGOpt36",
-        "NGOpt38",
-        "NGOpt",
-    ]
     for dimension in [None]:
         for dataset in datasets:
             function = MLTuning(
