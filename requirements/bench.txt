@@ -29,6 +29,6 @@ keras>=2.4.3
 compiler_gym>=0.1.8 ; sys_platform == "linux"
 pymoo>=0.4.2.2
 olymp==0.0.1b0 ; sys_platform == "linux"
-silence_tensorflow
-tensorflow_probability
+silence_tensorflow  # for olymp
+tensorflow_probability  # for olymp
 bayes-optim==0.2.5.5
