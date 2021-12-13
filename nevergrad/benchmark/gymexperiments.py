@@ -5,7 +5,8 @@
 
 import os
 import typing as tp
-from nevergrad.functions import gym
+import nevergrad as ng
+from nevergrad.functions import gym as nevergrad_gym
 from nevergrad.functions import ExperimentFunction
 from .xpbase import registry
 from .xpbase import create_seed_generator
@@ -13,6 +14,33 @@ from .xpbase import Experiment
 from .optgroups import get_optimizers
 
 # pylint: disable=too-many-nested-blocks,stop-iteration-return
+
+
+# A few GYM modifiers based on environment variables.
+def gym_problem_modifier(specific_problem):
+    specific_problem = os.environ.get("TARGET_GYM_ENV", specific_problem)
+    print("problem=", specific_problem)
+    return specific_problem
+
+
+def gym_optimizer_modifier(optims):
+    print(optims)
+    if os.environ.get("GYM_OPTIMIZER") is not None:
+        optimizer_string = os.environ.get("GYM_OPTIMIZER")
+        print(f"Considering optimizers with {optimizer_string} in their name.")
+        optims = [o for o in optims if optimizer_string in str(o)]  # type: ignore
+        if len(optims) == 0:
+            optims = [optimizer_string]  # type: ignore
+    print("optims=", optims)
+    return optims
+
+
+def gym_budget_modifier(budgets):
+    if os.environ.get("MAX_GYM_BUDGET") is not None:
+        budget_string = os.environ.get("MAX_GYM_BUDGET")
+        budgets = [b for b in budgets if b < int(budget_string)]  # type: ignore
+    print("budgets=", budgets)
+    return budgets
 
 
 @registry.register
@@ -24,6 +52,7 @@ def ng_full_gym(
     memory: bool = False,
     ng_gym: bool = False,  # pylint: disable=redefined-outer-name
     conformant: bool = False,
+    gp: bool = False,
 ) -> tp.Iterator[Experiment]:
     """Gym simulator. Maximize reward.  Many distinct problems.
 
@@ -43,11 +72,60 @@ def ng_full_gym(
         conformant: bool
            do we restrict to conformant planning, i.e. deterministic controls.
     """
-    env_names = gym.GymMulti.get_env_names()
+    env_names = nevergrad_gym.GymMulti.get_env_names()
+    assert int(ng_gym) + int(gp) <= 1, "At most one specific list of environments."
     if ng_gym:
-        env_names = gym.GymMulti.ng_gym
+        env_names = nevergrad_gym.GymMulti.ng_gym
+    if gp:
+        try:
+            import pybullet  # pylint: disable=unused-import
+            import pybullet_envs  # pylint: disable=unused-import
+            import pybulletgym  # pylint: disable=unused-import
+            import pyvirtualdisplay
+
+            # I deserve eternal damnation for this hack:
+            pyvirtualdisplay.Display(visible=0, size=(1400, 900)).start()
+            env_names = [
+                "CartPole-v1",
+                "Acrobot-v1",
+                "MountainCarContinuous-v0",
+                "Pendulum-v0",
+                "InvertedPendulumSwingupBulletEnv-v0",
+                "BipedalWalker-v3",
+                "BipedalWalkerHardcore-v3",
+                "HopperBulletEnv-v0",
+                "InvertedDoublePendulumBulletEnv-v0",
+                "LunarLanderContinuous-v2",
+            ]
+        except:
+            print("Pybullet not installed. If you need it, please do something like:")
+            print("pip install pybullet")
+            print("pip install pyvirtualdisplay")
+            print("pip install git+https://github.com/benelot/pybullet-gym")
+            if os.environ.get("CIRCLECI", False):
+                raise ng.errors.UnsupportedExperiment(
+                    "No pybullet in CircleCI because pybulletgym is not in pypi!"
+                )
+            raise ImportError("Please install pybullet, pyvirtualdisplay and pybulletgym.")
+
     seedg = create_seed_generator(seed)
-    optims = ["DiagonalCMA", "OnePlusOne", "PSO", "DiscreteOnePlusOne", "DE", "CMandAS2"]
+    optims = [
+        "CMA",
+        "DiagonalCMA",
+        "OnePlusOne",
+        "PSO",
+        "DiscreteOnePlusOne",
+        "DE",
+        "CMandAS2",
+        "NelderMead",
+        "DoubleFastGADiscreteOnePlusOne",
+        "DiscreteLenglerOnePlusOne",
+        "AnisotropicAdaptiveDiscreteOnePlusOne",
+        "TBPSA",
+        "SPSA",
+        "SQP",
+        "MetaModel",
+    ]
     if multi:
         controls = ["multi_neural"]
     else:
@@ -78,17 +156,18 @@ def ng_full_gym(
         assert not multi
     if conformant:
         controls = ["stochastic_conformant"]
-    budgets = [50, 200, 800, 3200, 6400, 100, 25, 400, 1600]
+    budgets = [204800, 12800, 25600, 51200, 50, 200, 800, 3200, 6400, 100, 25, 400, 1600, 102400]
+    budgets = gym_budget_modifier(budgets)
     for control in controls:
         neural_factors: tp.Any = (
             [None]
             if (conformant or control == "linear")
-            else ([1] if "memory" in control else [3 if big else 1])
+            else ([1] if "memory" in control else ([3] if big else [1, 2, 3]))
         )
         for neural_factor in neural_factors:
             for name in env_names:
                 try:
-                    func = gym.GymMulti(
+                    func = nevergrad_gym.GymMulti(
                         name, control=control, neural_factor=neural_factor, randomized=randomized
                     )
                 except MemoryError:
@@ -125,6 +204,15 @@ def ng_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
+def gp(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """GP benchmark.
+
+    Counterpart of ng_full_gym with a specific, reduced list of problems for matching
+    a genetic programming benchmark."""
+    return ng_full_gym(seed, gp=True)
+
+
+@registry.register
 def ng_stacking_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of ng_gym with a recurrent network."""
     return ng_full_gym(seed, ng_gym=True, memory=True)
@@ -146,7 +234,7 @@ def deterministic_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experi
 def gym_multifid_anm(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Gym simulator for Active Network Management."""
 
-    func = gym.GymMulti("multifidLANM")
+    func = nevergrad_gym.GymMulti("multifidLANM")
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", "progressive", "splitters", "baselines", seed=next(seedg))
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600, 51200]:
@@ -193,14 +281,14 @@ def gym_problem(
         assert compiler_gym_pb_index >= 0
         assert greedy_bias is False
         funcs: tp.List[ExperimentFunction] = [
-            gym.CompilerGym(
+            nevergrad_gym.CompilerGym(
                 compiler_gym_pb_index=compiler_gym_pb_index, limited_compiler_gym=limited_compiler_gym
             )
         ]
     else:
         if conformant:
             funcs = [
-                gym.GymMulti(
+                nevergrad_gym.GymMulti(
                     specific_problem,
                     control="conformant",
                     limited_compiler_gym=limited_compiler_gym,
@@ -210,7 +298,7 @@ def gym_problem(
             ]
         else:
             funcs = [
-                gym.GymMulti(
+                nevergrad_gym.GymMulti(
                     specific_problem,
                     control=control,
                     neural_factor=1 if control != "linear" else None,
@@ -229,10 +317,20 @@ def gym_problem(
         "GeneticDE",
         "PSO",
         "DiagonalCMA",
+        "DoubleFastGADiscreteOnePlusOne",
+        "DiscreteLenglerOnePlusOne",
+        "PortfolioDiscreteOnePlusOne",
+        "MixDeterministicRL",
+        "NoisyRL2",
+        "NoisyRL3",
+        "SpecialRL",
+        "NGOpt39",
+        "CMA",
+        "DE",
     ]
     if "stochastic" in specific_problem:
         optims = ["DiagonalCMA", "TBPSA"] if big_noise else ["DiagonalCMA"]
-    if specific_problem == "EnergySavingsGym" and conformant:  # Do this for all conformant discrete ?
+    if specific_problem == "EnergySavingsGym-v0" and conformant:  # Do this for all conformant discrete ?
         optims = [
             "DiscreteOnePlusOne",
             "PortfolioDiscreteOnePlusOne",
@@ -250,8 +348,12 @@ def gym_problem(
             "MultiDiscrete",
             "NGOpt",
         ]
+
+    optims = gym_optimizer_modifier(optims)
+    budgets = [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600]
+    budgets = gym_budget_modifier(budgets)
     for func in funcs:
-        for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600]:
+        for budget in budgets:
             for num_workers in [1]:
                 if num_workers < budget:
                     for algo in optims:
@@ -284,13 +386,12 @@ def unlimited_hardcore_stochastic_compiler_gym(seed: tp.Optional[int] = None) ->
 
 @registry.register
 def conformant_planning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    specific_problem = "EnergySavingsGym"
     # You might modify this problem by specifying an environment variable.
-    if os.environ.get("TARGET_GYM_ENV") is not None:
-        specific_problem = os.environ.get("TARGET_GYM_ENV")  # type: ignore
+    specific_problem = "EnergySavingsGym-v0"
+
     return gym_problem(
         seed,
-        specific_problem=specific_problem,
+        specific_problem=gym_problem_modifier(specific_problem),
         conformant=True,
         big_noise=False,
     )
@@ -298,13 +399,11 @@ def conformant_planning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment
 
 @registry.register
 def neuro_planning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    specific_problem = "EnergySavingsGym"
     # You might modify this problem by specifying an environment variable.
-    if os.environ.get("TARGET_GYM_ENV") is not None:
-        specific_problem = os.environ.get("TARGET_GYM_ENV")  # type: ignore
+    specific_problem = "EnergySavingsGym-v0"
     return gym_problem(
         seed,
-        specific_problem=specific_problem,
+        specific_problem=gym_problem_modifier(specific_problem),
         conformant=False,
         big_noise=False,
     )

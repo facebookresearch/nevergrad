@@ -298,6 +298,7 @@ class GymMulti(ExperimentFunction):
         import gym_anm  # noqa
 
         gym_env_names = []
+        max_displays = 10
         for e in gym.envs.registry.all():
             try:
                 assert "Kelly" not in str(e.id)  # We should have another check than that.
@@ -316,7 +317,11 @@ class GymMulti(ExperimentFunction):
                         assert a1.size() < 15000  # type: ignore
                 gym_env_names.append(e.id)
             except Exception as exception:  # pylint: disable=broad-except
-                print(f"{e.id} not included in full list becaue of {exception}.")
+                max_displays -= 1
+                if max_displays > 0:
+                    print(f"{e.id} not included in full list because of {exception}.")
+                if max_displays == 0:
+                    print("(similar issue for other environments)")
         return gym_env_names
 
     controllers = CONTROLLERS
@@ -503,7 +508,6 @@ class GymMulti(ExperimentFunction):
         output_dim = output_dim + self.memory_len
         self.input_dim = input_dim
         self.output_dim = output_dim
-        self.num_neurons = 1 + ((neural_factor * (input_dim - self.extended_input_len)) // 7)
         self.num_neurons = neural_factor * (input_dim - self.extended_input_len)
         self.num_internal_layers = 1 if "semi" in control else 3
         internal = self.num_internal_layers * (self.num_neurons ** 2) if "deep" in control else 0
