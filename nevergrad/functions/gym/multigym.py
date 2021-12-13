@@ -367,7 +367,9 @@ class GymMulti(ExperimentFunction):
         limited_compiler_gym: tp.Optional[bool] = None,
         optimization_scale: int = 0,
         greedy_bias: bool = False,
-        sparse_limit: tp.Optional[int] = None,  # if not None, we penalize solutions with more than sparse_limit weights !=0
+        sparse_limit: tp.Optional[
+            int
+        ] = None,  # if not None, we penalize solutions with more than sparse_limit weights !=0
     ) -> None:
         # limited_compiler_gym: bool or None.
         #        whether we work with the limited version
