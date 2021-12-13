@@ -22,7 +22,8 @@ IOHexperimenter>=0.2.8.7
 cdt>=0.5.23
 koncept==0.2.2
 tensorflow-estimator==2.7.0
-scikit-learn>=0.24
+scikit-learn==1.0.1
+scikit-image==0.18.3
 tensorflow==2.7.0
 image-quality==1.2.7
 keras>=2.4.3
