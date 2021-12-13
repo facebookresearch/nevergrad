@@ -164,6 +164,13 @@ Let us say that we want to minimize :code:`(x[0]-.5)**2 + (x[1]-.5)**2` under th
     :start-after: DOC_CONSTRAINED_0
     :end-before: DOC_CONSTRAINED_1
 
+Note that we can provide a richer information by using float-valued constraints (>= 0 if ok):
+
+.. literalinclude:: ../nevergrad/optimization/test_doc.py
+    :language: python
+    :dedent: 8
+    :start-after: DOC_CONSTRAINED_2
+    :end-before: DOC_CONSTRAINED_3
 Optimizing machine learning hyperparameters
 -------------------------------------------
 

@@ -16,6 +16,33 @@ from .optgroups import get_optimizers
 # pylint: disable=too-many-nested-blocks,stop-iteration-return
 
 
+# A few GYM modifiers based on environment variables.
+def gym_problem_modifier(specific_problem):
+    specific_problem = os.environ.get("TARGET_GYM_ENV", specific_problem)
+    print("problem=", specific_problem)
+    return specific_problem
+
+
+def gym_optimizer_modifier(optims):
+    print(optims)
+    if os.environ.get("GYM_OPTIMIZER") is not None:
+        optimizer_string = os.environ.get("GYM_OPTIMIZER")
+        print(f"Considering optimizers with {optimizer_string} in their name.")
+        optims = [o for o in optims if optimizer_string in str(o)]  # type: ignore
+        if len(optims) == 0:
+            optims = [optimizer_string]  # type: ignore
+    print("optims=", optims)
+    return optims
+
+
+def gym_budget_modifier(budgets):
+    if os.environ.get("MAX_GYM_BUDGET") is not None:
+        budget_string = os.environ.get("MAX_GYM_BUDGET")
+        budgets = [b for b in budgets if b < int(budget_string)]  # type: ignore
+    print("budgets=", budgets)
+    return budgets
+
+
 @registry.register
 def ng_full_gym(
     seed: tp.Optional[int] = None,
@@ -123,6 +150,7 @@ def ng_full_gym(
     if conformant:
         controls = ["stochastic_conformant"]
     budgets = [204800, 12800, 25600, 51200, 50, 200, 800, 3200, 6400, 100, 25, 400, 1600, 102400]
+    budgets = gym_budget_modifier(budgets)
     for control in controls:
         neural_factors: tp.Any = (
             [None]
@@ -282,6 +310,16 @@ def gym_problem(
         "GeneticDE",
         "PSO",
         "DiagonalCMA",
+        "DoubleFastGADiscreteOnePlusOne",
+        "DiscreteLenglerOnePlusOne",
+        "PortfolioDiscreteOnePlusOne",
+        "MixDeterministicRL",
+        "NoisyRL2",
+        "NoisyRL3",
+        "SpecialRL",
+        "NGOpt39",
+        "CMA",
+        "DE",
     ]
     if "stochastic" in specific_problem:
         optims = ["DiagonalCMA", "TBPSA"] if big_noise else ["DiagonalCMA"]
@@ -303,8 +341,12 @@ def gym_problem(
             "MultiDiscrete",
             "NGOpt",
         ]
+
+    optims = gym_optimizer_modifier(optims)
+    budgets = [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600]
+    budgets = gym_budget_modifier(budgets)
     for func in funcs:
-        for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600]:
+        for budget in budgets:
             for num_workers in [1]:
                 if num_workers < budget:
                     for algo in optims:
@@ -337,13 +379,12 @@ def unlimited_hardcore_stochastic_compiler_gym(seed: tp.Optional[int] = None) ->
 
 @registry.register
 def conformant_planning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    specific_problem = "EnergySavingsGym-v0"
     # You might modify this problem by specifying an environment variable.
-    if os.environ.get("TARGET_GYM_ENV") is not None:
-        specific_problem = os.environ.get("TARGET_GYM_ENV")  # type: ignore
+    specific_problem = "EnergySavingsGym-v0"
+
     return gym_problem(
         seed,
-        specific_problem=specific_problem,
+        specific_problem=gym_problem_modifier(specific_problem),
         conformant=True,
         big_noise=False,
     )
@@ -351,13 +392,11 @@ def conformant_planning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment
 
 @registry.register
 def neuro_planning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    specific_problem = "EnergySavingsGym"
     # You might modify this problem by specifying an environment variable.
-    if os.environ.get("TARGET_GYM_ENV") is not None:
-        specific_problem = os.environ.get("TARGET_GYM_ENV")  # type: ignore
+    specific_problem = "EnergySavingsGym-v0"
     return gym_problem(
         seed,
-        specific_problem=specific_problem,
+        specific_problem=gym_problem_modifier(specific_problem),
         conformant=False,
         big_noise=False,
     )
