@@ -76,7 +76,11 @@ class Mutator:
         return [s if b else self.significantly_mutate(s, arity) for (b, s) in zip(boolean_vector, parent)]
 
     def coordinatewise_mutation(
-        self, parent: tp.ArrayLike, velocity: tp.ArrayLike, boolean_vector: tp.ArrayLike, arity: int
+        self,
+        parent: tp.ArrayLike,
+        velocity: tp.ArrayLike,
+        boolean_vector: tp.ArrayLike,
+        arity: int,
     ) -> tp.ArrayLike:
         """This is the anisotropic counterpart of the classical 1+1 mutations in discrete domains
         with tunable intensity: it is useful for anisotropic adaptivity."""

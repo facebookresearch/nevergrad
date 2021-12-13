@@ -22,10 +22,10 @@ def test_images_adversarial() -> None:
 def test_image_adversarial_eval() -> None:
     func = next(core.ImageAdversarial.make_folder_functions(None, model="test"))
     output = func.evaluation_function(func.parametrization)
-    assert output == 0
+    assert output == 1
     func.targeted = True
     output = func.evaluation_function(func.parametrization)
-    assert output == 1
+    assert output == 0
 
 
 def test_images() -> None:

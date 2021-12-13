@@ -225,6 +225,8 @@ def create_plots(
     df = remove_errors(df)
     df.loc[:, "loss"] = pd.to_numeric(df.loc[:, "loss"])
     df = df.loc[:, [x for x in df.columns if not x.startswith("info/")]]
+    if "num_objectives" in df.columns:
+        df = df[df.num_objectives != 0]  # the optimization did not even start
     # If we have a descriptor "instrum_str",
     # we assume that it describes the instrumentation as a string,
     # that we should include the various instrumentations as distinct curves in the same plot.
@@ -312,7 +314,9 @@ def create_plots(
         for case in df.unique(fixed) if fixed else [()]:
             print("\n# new case #", fixed, case)
             casedf = df.select(**dict(zip(fixed, case)))
-            data_df = FightPlotter.winrates_from_selection(casedf, fight_descriptors, num_rows=num_rows)
+            data_df = FightPlotter.winrates_from_selection(
+                casedf, fight_descriptors, num_rows=num_rows, num_cols=30
+            )
             fplotter = FightPlotter(data_df)
             # Competence maps: we find out the best algorithm for each attribute1=valuei/attribute2=valuej.
             if order == 2 and competencemaps and best_algo:
@@ -445,14 +449,18 @@ class XpPlotter:
         self._ax.grid(True, which="both")
         self._overlays: tp.List[tp.Any] = []
         legend_infos: tp.List[LegendInfo] = []
-        for optim_name in sorted_optimizers:  # [-12:]:
+        for optim_name in (
+            sorted_optimizers[:1] + sorted_optimizers[-12:]
+            if len(sorted_optimizers) > 13
+            else sorted_optimizers
+        ):
             vals = optim_vals[optim_name]
             lowerbound = min(lowerbound, np.min(vals["loss"]))
             line = plt.plot(vals[xaxis], vals["loss"], name_style[optim_name], label=optim_name)
             # confidence lines
             for conf in self._get_confidence_arrays(vals, log=logplot):
                 plt.plot(vals[xaxis], conf, name_style[optim_name], label=optim_name, alpha=0.1)
-            text = "{} ({:.3g})".format(optim_name, vals["loss"][-1])
+            text = "{} ({:.3g} <{:.3g}>)".format(optim_name, vals["loss"][-1], vals["loss"][-2])
             if vals[xaxis].size:
                 legend_infos.append(LegendInfo(vals[xaxis][-1], vals["loss"][-1], line, text))
         if not (np.isnan(upperbound) or np.isinf(upperbound)):
@@ -565,6 +573,13 @@ class XpPlotter:
 
     @staticmethod
     def save_txt(output_filepath: tp.PathLike, optim_vals: tp.Dict[str, tp.Dict[str, np.ndarray]]) -> None:
+        """Saves a list of best performances.
+
+        output_filepath: Path or str
+            path where the figure must be saved
+        optim_vals: dict
+            dict of losses obtained by a given optimizer.
+        """
         best_performance: tp.Dict[int, tp.Any] = defaultdict(lambda: (float("inf"), "none"))
         for optim in optim_vals.keys():
             for i, l in zip(optim_vals[optim]["budget"], optim_vals[optim]["loss"]):
@@ -586,9 +601,15 @@ class XpPlotter:
         output_filepath: Path or str
             path where the figure must be saved
         """
-        self._fig.savefig(
-            str(output_filepath), bbox_extra_artists=self._overlays, bbox_inches="tight", dpi=_DPI
-        )
+        try:  # Let us catch errors due to too many DPIs.
+            self._fig.savefig(
+                str(output_filepath), bbox_extra_artists=self._overlays, bbox_inches="tight", dpi=_DPI
+            )
+        except ValueError as v:
+            print(f"We catch {v} which means that image = too big.")
+            self._fig.savefig(
+                str(output_filepath), bbox_extra_artists=self._overlays, bbox_inches="tight", dpi=_DPI / 5
+            )
 
     def __del__(self) -> None:
         plt.close(self._fig)
@@ -650,6 +671,7 @@ class FightPlotter:
         df: utils.Selector,
         categories: tp.List[str],
         num_rows: int = 5,
+        num_cols: int = 30,
         complete_runs_only: bool = False,
     ) -> pd.DataFrame:
         """Creates a fight plot win rate data out of the given run dataframe,
@@ -689,14 +711,15 @@ class FightPlotter:
         sorted_names = winrates.index
         # number of subcases actually computed is twice self-victories
         sorted_names = ["{} ({}/{})".format(n, int(2 * victories.loc[n, n]), total) for n in sorted_names]
-        sorted_names = [sorted_names[i] for i in range(min(30, len(sorted_names)))]
+        num_names = len(sorted_names)
+        sorted_names = [sorted_names[i] for i in range(min(num_cols, num_names))]
         data = np.array(winrates.iloc[:num_rows, : len(sorted_names)])
         # pylint: disable=anomalous-backslash-in-string
         best_names = [
             (
-                f"{name} ({100 * val:2.1f}% +- {25 * np.sqrt(val*(1-val)/int(2 * victories.loc[name, name])):2.1f})"
+                f"{name} ({i+1}/{num_names}:{100 * val:2.1f}% +- {25 * np.sqrt(val*(1-val)/int(2 * victories.loc[name, name])):2.1f})"
             ).replace("Search", "")
-            for name, val in zip(mean_win.index[:num_rows], mean_win)
+            for i, (name, val) in enumerate(zip(mean_win.index[:num_rows], mean_win))
         ]
         return pd.DataFrame(index=best_names, columns=sorted_names, data=data)
 

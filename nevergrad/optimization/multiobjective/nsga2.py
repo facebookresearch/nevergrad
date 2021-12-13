@@ -3,9 +3,13 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import logging
 import numpy as np
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
+
+
+logger = logging.getLogger(__name__)
 
 
 class CrowdingDistance:
@@ -40,7 +44,7 @@ class CrowdingDistance:
                     pass  # undefined
                 else:
                     distance = distance / float(objective_maxn - objective_minn)
-                print(f"front[j]: {front[j].uid} distance: {distance}")
+                logger.debug("front[j]: %s distance: %s", front[j].uid, distance)
                 # The overall crowding-distance value is calculated as the sum of
                 # individual distance values corresponding to each objective.
                 front[j]._meta["crowding_distance"] += distance
@@ -111,7 +115,7 @@ class CrowdingDistance:
 
 
 class FastNonDominatedRanking:
-    """ Non-dominated ranking of NSGA-II proposed by Deb et al., see [Deb2002] """
+    """Non-dominated ranking of NSGA-II proposed by Deb et al., see [Deb2002]"""
 
     def compare(self, candidate1: p.Parameter, candidate2: p.Parameter) -> int:
         """Compare the domainance relation of two candidates.

@@ -28,6 +28,7 @@ DESCRIPTION_KEYS = {
     "hashing",
     "parametrization",
     "noise_dissymmetry",
+    "bounded",
 }
 
 

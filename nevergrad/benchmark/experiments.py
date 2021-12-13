@@ -14,7 +14,7 @@ from nevergrad.functions import base as fbase
 from nevergrad.functions import ExperimentFunction
 from nevergrad.functions import ArtificialFunction
 from nevergrad.functions import FarOptimumFunction
-from nevergrad.functions import PBT
+from nevergrad.functions.pbt import PBT
 from nevergrad.functions.ml import MLTuning
 from nevergrad.functions import mlda as _mlda
 from nevergrad.functions.photonics import Photonics
@@ -36,8 +36,10 @@ from .xpbase import create_seed_generator
 from .xpbase import registry as registry  # noqa
 from .optgroups import get_optimizers
 
-# register all frozen experiments
-from . import frozenexperiments  # noqa # pylint: disable=unused-import
+# register all experiments from other files
+# pylint: disable=unused-import
+from . import frozenexperiments  # noqa
+from . import gymexperiments  # noqa
 
 # pylint: disable=stop-iteration-return, too-many-nested-blocks, too-many-locals
 
@@ -77,7 +79,7 @@ class _Constraint:
 def keras_tuning(
     seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool = False
 ) -> tp.Iterator[Experiment]:
-    """Machine learning hyperparameter tuning experiment. Based on scikit models."""
+    """Machine learning hyperparameter tuning experiment. Based on Keras models."""
     seedg = create_seed_generator(seed)
     # Continuous case,
 
@@ -152,7 +154,7 @@ def seq_keras_tuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 # We register only the sequential counterparts for the moment.
 @registry.register
 def naive_seq_keras_tuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Sequential counterpart of mltuning."""
+    """Naive counterpart (no overfitting, see naivemltuning)of seq_keras_tuning."""
     return keras_tuning(seed, overfitter=True, seq=True)
 
 
@@ -171,13 +173,14 @@ def seq_mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 @registry.register
 def nano_seq_mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Sequential counterpart of mltuning."""
+    """Sequential counterpart of seq_mltuning with smaller budget."""
     return mltuning(seed, overfitter=False, seq=True, nano=True)
 
 
 @registry.register
 def nano_naive_seq_mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Sequential counterpart of mltuning with overfitting of valid loss, i.e. train/valid/valid instead of train/valid/test."""
+    """Sequential counterpart of mltuning with overfitting of valid loss, i.e. train/valid/valid instead of train/valid/test,
+    and with lower budget."""
     return mltuning(seed, overfitter=True, seq=True, nano=True)
 
 
@@ -233,7 +236,6 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # This problem is intended as a stable basis forever.
     # The list of optimizers should contain only the basic for comparison and "baselines".
     optims: tp.List[str] = ["NGOpt10"] + get_optimizers("baselines", seed=next(seedg))  # type: ignore
-
     index = 0
     for function in functions:
         for budget in [50, 1500, 25000]:
@@ -619,6 +621,8 @@ def yabbob(
     split: bool = False,
     tuning: bool = False,
     reduction_factor: int = 1,
+    bounded: bool = False,
+    box: bool = False,
 ) -> tp.Iterator[Experiment]:
     """Yet Another Black-Box Optimization Benchmark.
     Related to, but without special effort for exactly sticking to, the BBOB/COCO dataset.
@@ -662,14 +666,28 @@ def yabbob(
         optims += get_optimizers("splitters", seed=next(seedg))  # type: ignore
 
     if hd and small:
-        optims = ["BO", "BOSplit", "CMA", "PSO", "DE"]
+        optims = ["BO", "CMA", "PSO", "DE"]
+
+    if bounded:
+        optims = ["BO", "PCABO", "BayesOptimBO", "CMA", "PSO", "DE"]
+    if box:
+        optims = ["DiagonalCMA", "Cobyla", "NGOpt16", "NGOpt15", "CMandAS2", "OnePlusOne"]
     # List of objective functions.
     functions = [
-        ArtificialFunction(name, block_dimension=d, rotation=rotation, noise_level=noise_level, split=split)
+        ArtificialFunction(
+            name,
+            block_dimension=d,
+            rotation=rotation,
+            noise_level=noise_level,
+            split=split,
+            bounded=bounded or box,
+        )
         for name in names
         for rotation in [True, False]
         for num_blocks in ([1] if not split else [7, 12])
-        for d in ([100, 1000, 3000] if hd else ([2, 5, 10, 15] if tuning else [2, 10, 50]))
+        for d in (
+            [100, 1000, 3000] if hd else ([2, 5, 10, 15] if tuning else ([40] if bounded else [2, 10, 50]))
+        )
     ]
 
     assert reduction_factor in [1, 7, 13, 17]  # needs to be a cofactor
@@ -700,6 +718,8 @@ def yabbob(
     )
     if small and not noise:
         budgets = [10, 20, 40]
+    if bounded:
+        budgets = [10, 20, 40, 100, 300]
     for optim in optims:
         for function in functions:
             for budget in budgets:
@@ -804,6 +824,18 @@ def yanoisybbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     This is different from the original BBOB/COCO from that point of view.
     """
     return yabbob(seed, noise=True)
+
+
+@registry.register
+def yaboundedbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with bounded domain, (-5,5)**n by default."""
+    return yabbob(seed, bounded=True)
+
+
+@registry.register
+def yaboxbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with bounded domain, (-5,5)**n by default."""
+    return yabbob(seed, box=True)
 
 
 @registry.register
@@ -1481,15 +1513,17 @@ def image_quality(
         )
     ]
     # TODO: add the proxy info in the parametrization.
+    mofuncs: tp.Sequence[ExperimentFunction]
     if cross_val:
         mofuncs = helpers.SpecialEvaluationExperiment.create_crossvalidation_experiments(
             experiments=[funcs[0], funcs[2]],
-            training_only_experiments=[funcs[1]],  # Blur is not good enough as an IQA for being in the list.
+            # Blur is not good enough as an IQA for being in the list.
+            training_only_experiments=[funcs[1]],
             pareto_size=16,
         )
     else:
         upper_bounds = [func(func.parametrization.value) for func in funcs]
-        mofuncs: tp.Sequence[ExperimentFunction] = [fbase.MultiExperiment(funcs, upper_bounds=upper_bounds)]  # type: ignore
+        mofuncs = [fbase.MultiExperiment(funcs, upper_bounds=upper_bounds)]  # type: ignore
     for budget in [100 * 5 ** k for k in range(3)]:
         for num_workers in [1]:
             for algo in optims:
@@ -1653,7 +1687,8 @@ def multiobjective_example(
                 ]
                 + (
                     [
-                        ArtificialFunction(name1, block_dimension=dim),  # Addendum for many-objective optim.
+                        # Addendum for many-objective optim.
+                        ArtificialFunction(name1, block_dimension=dim),
                         ArtificialFunction(name2, block_dimension=dim),
                     ]
                     if many
@@ -1774,6 +1809,8 @@ def adversarial_attack(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]
     seedg = create_seed_generator(seed)
     optims = get_optimizers("structure", "structured_moo", seed=next(seedg))
     folder = os.environ.get("NEVERGRAD_ADVERSARIAL_EXPERIMENT_FOLDER", None)
+    # folder = "/datasets01/imagenet_full_size/061417/val"
+
     if folder is None:
         warnings.warn(
             "Using random images, set variable NEVERGRAD_ADVERSARIAL_EXPERIMENT_FOLDER to specify a folder"

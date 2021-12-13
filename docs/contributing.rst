@@ -16,9 +16,6 @@ To install :code:`nevergrad` in development mode (if you wish to contribute to i
 or :code:`pip install -e '.[all]'` if you use :code:`zsh`. If the install fails because of :code:`torch`, you can preinstall it with the instructions `on Pytorch website <https://pytorch.org/get-started/locally/>`_
 and rerun :code:`nevergrad`'s installation.
 
-You will also need to install :code:`numpy-stubs` with :code:`pip install git+https://github.com/numpy/numpy-stubs@master`
-
-
 Most of the code is covered by unit tests. You can run them with:
 
 .. code-block:: bash
@@ -52,7 +49,7 @@ Pull Requests
 
 We actively welcome your pull requests.
 
-1. Fork the repo and create your branch from :code:`master`.
+1. Fork the repo and create your branch from :code:`main`.
 2. If you've added code that should be tested, add tests.
 3. If you've changed APIs, update the documentation.
 4. Ensure the test suite passes.
@@ -107,12 +104,12 @@ All optimizers are implemented in the :code:`ng.optimization` subpackage, and al
 
 Implementations are however spread into several files:
 
-- `optimizerlib.py <https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/optimization/optimizerlib.py>`_: this is the default file, where most algorithms are implemented. It also imports optimizers from all other files.
-- `oneshot.py <https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/optimization/oneshot.py>`_: this is where one-shot optimizers are implemented
-- `differentialevolution.py <https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/optimization/differentialevolution.py>`_: this is where differential evolution algorithms are implemented.
-- `recastlib.py <https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/optimization/recastlib.py>`_: this is where we implement ask & tell versions of existing Python implementations which do not follow this pattern. The underlying class which helps spawn a subprocess to run the existing implementation into is in `recaster.py <https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/optimization/recaster.py>`_. Hopefully, you won't need this.
+- `optimizerlib.py <https://github.com/facebookresearch/nevergrad/blob/main/nevergrad/optimization/optimizerlib.py>`_: this is the default file, where most algorithms are implemented. It also imports optimizers from all other files.
+- `oneshot.py <https://github.com/facebookresearch/nevergrad/blob/main/nevergrad/optimization/oneshot.py>`_: this is where one-shot optimizers are implemented
+- `differentialevolution.py <https://github.com/facebookresearch/nevergrad/blob/main/nevergrad/optimization/differentialevolution.py>`_: this is where differential evolution algorithms are implemented.
+- `recastlib.py <https://github.com/facebookresearch/nevergrad/blob/main/nevergrad/optimization/recastlib.py>`_: this is where we implement ask & tell versions of existing Python implementations which do not follow this pattern. The underlying class which helps spawn a subprocess to run the existing implementation into is in `recaster.py <https://github.com/facebookresearch/nevergrad/blob/main/nevergrad/optimization/recaster.py>`_. Hopefully, you won't need this.
 
-If you implement one new algorithm and if this algorithm is not one-shot/evolutionary/recast, you should implement it into `optimizerlib.py <https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/optimization/optimizerlib.py>`_. If you implement a whole family of algorithms, you are welcome to create a new corresponding file.
+If you implement one new algorithm and if this algorithm is not one-shot/evolutionary/recast, you should implement it into `optimizerlib.py <https://github.com/facebookresearch/nevergrad/blob/main/nevergrad/optimization/optimizerlib.py>`_. If you implement a whole family of algorithms, you are welcome to create a new corresponding file.
 Still, this structure is not final, it is bound to evolve and you are welcome to amend it.
 
 
@@ -122,7 +119,7 @@ How to implement it?
 Base class features
 ^^^^^^^^^^^^^^^^^^^
 
-All algorithms derive from a base class named :code:`Optimizer` and are registered through a decorator. The implementation of the base class is `here <https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/optimization/base.py>`_.
+All algorithms derive from a base class named :code:`Optimizer` and are registered through a decorator. The implementation of the base class is `here <https://github.com/facebookresearch/nevergrad/blob/main/nevergrad/optimization/base.py>`_.
 This base class implements the :code:`ask` and :code:`tell` interface.
 
 It records a sample of the best evaluated points through the :code:`archive` attribute of class :code:`Archive`.  The archive can be seen be used as if it was of type
@@ -130,7 +127,7 @@ It records a sample of the best evaluated points through the :code:`archive` att
 register them into the :code:`archive.bytesdict` dictionary. :code:`Archive` however does not implement :code:`keys` and :code:`items` methods
 because converting from bytes to array is not very efficient, one should therefore integrate on :code:`bytesdict` and the keys can then be
 transformed back to arrays using :code:`np.frombuffer(key)`. See
-`OnePlusOne implementation <https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/optimization/optimizerlib.py>`_ for an example.
+`OnePlusOne implementation <https://github.com/facebookresearch/nevergrad/blob/main/nevergrad/optimization/optimizerlib.py>`_ for an example.
 
 
 The key tuple if the point location, and :code:`Value` is a class with attributes:
@@ -139,7 +136,7 @@ The key tuple if the point location, and :code:`Value` is a class with attribute
 - :code:`mean`: mean value of the evaluations at this point.
 - :code:`variance`: variance of the evaluations at this point.
 
-For more details, see the implementation in `utils.py <https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/optimization/utils.py>`_.
+For more details, see the implementation in `utils.py <https://github.com/facebookresearch/nevergrad/blob/main/nevergrad/optimization/utils.py>`_.
 
 Through the archive, you can therefore access most useful information about past evaluations. A pruning mechanism makes sure this archive does
 not grow too much. This pruning can be tuned through the :code:`pruning` attribute of the optimizer.
@@ -198,7 +195,7 @@ However, **we do not want typing to be an annoyance** for contributors who do no
 Optimizer families
 ^^^^^^^^^^^^^^^^^^
 
-If it makes sense to create several variations of your optimizer, using different hyperparameters, you can implement an :code:`OptimizerFamily`. The only aim of this class is to create :code:`Optimizers` and set the parameters before returning it. This is still an experimental API which may evolve soon, and an example can be found in the implementation of `differential evolution algorithms <https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/optimization/differentialevolution.py>`_.
+If it makes sense to create several variations of your optimizer, using different hyperparameters, you can implement an :code:`OptimizerFamily`. The only aim of this class is to create :code:`Optimizers` and set the parameters before returning it. This is still an experimental API which may evolve soon, and an example can be found in the implementation of `differential evolution algorithms <https://github.com/facebookresearch/nevergrad/blob/main/nevergrad/optimization/differentialevolution.py>`_.
 
 How to test it
 --------------
@@ -221,7 +218,7 @@ If for any reason one of this test is not suitable for your algorithm, we'll dis
 How to benchmark it
 -------------------
 
-Benchmarks are implemented in two files `experiments.py <https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/benchmark/experiments.py>`_ and `frozenexperiments.py <https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/benchmark/frozenexperiments.py>`_.
+Benchmarks are implemented in two files `experiments.py <https://github.com/facebookresearch/nevergrad/blob/main/nevergrad/benchmark/experiments.py>`_ and `frozenexperiments.py <https://github.com/facebookresearch/nevergrad/blob/main/nevergrad/benchmark/frozenexperiments.py>`_.
 While the former can be freely modified (benchmarks will be regularly added and removed), the latter file implements experiments which should not be modified when adding an algorithm, because they are used in tests, or for reproducibility of published results.
 
 Providing some benchmark results along your pull requests will highlight the interest of your algorithm. It is however not required. For now, there is no standard approach for benchmarking your algorithm. You can implement your own benchmark, or copy an existing one and add your algorithm. Feel free to propose other solutions.
@@ -231,4 +228,4 @@ How benchmarks are implemented
 
 A benchmark is made of many :code:`Experiment` instances.  An :code:`Experiment` is basically the combination of a test function, and settings for the optimization (optimizer, budget, etc...).
 
-Benchmarks are specified using a generator of :code:`Experiment` instances. See examples in `experiments.py <https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/benchmark/experiments.py>`_. If you want to make sure your benchmark is perfectly reproducible, you will need to be careful of properly seeding the functions and/or the experiments.
+Benchmarks are specified using a generator of :code:`Experiment` instances. See examples in `experiments.py <https://github.com/facebookresearch/nevergrad/blob/main/nevergrad/benchmark/experiments.py>`_. If you want to make sure your benchmark is perfectly reproducible, you will need to be careful of properly seeding the functions and/or the experiments.
