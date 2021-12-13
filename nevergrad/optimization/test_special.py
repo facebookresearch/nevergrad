@@ -3,13 +3,12 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 import os
-import time
-import collections
-import typing as tp
-import pytest
 import numpy as np
-from .optimizerlib import registry
+import pytest
+import nevergrad.common.typing as tp
 from . import test_optimizerlib
+from . import optimizerlib as optlib
+import nevergrad as ng
 
 
 KEY = "NEVERGRAD_SPECIAL_TESTS"
@@ -17,55 +16,56 @@ if not os.environ.get(KEY, ""):
     pytest.skip(f"These tests only run if {KEY} is set in the environment", allow_module_level=True)
 
 
-@pytest.mark.parametrize("dimension", (2, 4, 7, 77))
-@pytest.mark.parametrize("num_workers", (1,))
-@pytest.mark.parametrize("scale", (4.0,))
-@pytest.mark.parametrize("baseline", ["MetaModel", "CMA", "ECMA"])
-@pytest.mark.parametrize("budget", [400, 4000])
-@pytest.mark.parametrize("ellipsoid", [True, False])
-def test_metamodel_sqp_chaining(
-    dimension: int, num_workers: int, scale: float, budget: int, ellipsoid: bool, baseline: str
-) -> None:
-    """The test can operate on the sphere or on an elliptic funciton."""
-    target = test_optimizerlib.QuadFunction(scale=scale, ellipse=ellipsoid)
-    baseline = baseline if dimension > 1 else "OnePlusOne"
-    chaining = "ChainMetaModelSQP"
+class SimpleFitness:
+    """Simple quadratic fitness function which can be used with dimension up to 4"""
 
-    # In both cases we compare MetaModel and CMA for a same given budget.
-    # But we expect MetaModel to be clearly better only for a larger budget in the ellipsoid case.
-    contextual_budget = budget if ellipsoid else 3 * budget
-    contextual_budget *= 5 * int(max(1, np.sqrt(scale)))
+    def __init__(self, x0: tp.ArrayLike, x1: tp.ArrayLike) -> None:
+        self.x0 = np.array(x0, copy=True)
+        self.x1 = np.array(np.exp(x1), copy=True)
 
-    num_trials = 27
-    successes = 0.0
-    durations: tp.Dict[str, float] = collections.defaultdict(int)
-    for _ in range(num_trials):
-        if successes >= num_trials / 2:
-            break
-        # Let us run the comparison.
-        recoms: tp.Dict[str, np.ndarray] = {}
-        for name in (chaining, baseline):
-            opt = registry[name](dimension, contextual_budget, num_workers=num_workers)
-            t0 = time.time()
-            recoms[name] = opt.minimize(target).value
-            durations[name] += time.time() - t0
+    def __call__(self, x: tp.ArrayLike) -> float:
+        assert len(self.x0) == len(x)
+        return float(np.sum(self.x1 * np.cos(np.array(x, copy=False) - self.x0) ** 2))
 
-        if target(recoms[baseline]) < target(recoms[chaining]):
-            successes += 1
-        if target(recoms[baseline]) == target(recoms[chaining]):
-            successes += 0.5
 
-    if successes <= num_trials // 2:
-        print(
-            f"ChainMetaModelSQP fails ({successes}/{num_trials}) for d={dimension}, scale={scale}, "
-            f"num_workers={num_workers}, ellipsoid={ellipsoid}, budget={budget}, vs {baseline}"
-        )
-        raise AssertionError("ChaingMetaModelSQP fails by performance.")
-    print(
-        f"ChainMetaModelSQP wins for d={dimension}, scale={scale}, num_workers={num_workers}, "
-        f"ellipsoid={ellipsoid}, budget={budget}, vs {baseline}"
-    )
-    assert durations[chaining] < 7 * durations[baseline], "Computationally more than 7x more expensive."
+@pytest.mark.parametrize("dim", [2, 10, 40, 200])  # type: ignore
+@pytest.mark.parametrize("bounded", [True])  # type: ignore
+@pytest.mark.parametrize("discrete", [False])  # type: ignore
+def test_performance_ngopt(dim: int, bounded: bool, discrete: bool) -> None:
+    instrumentation = ng.p.Array(shape=(dim,))
+    if dim > 40 and not discrete or dim <= 40 and discrete:
+        return
+    if bounded:
+        instrumentation.set_bounds(lower=-12.0, upper=15.0)
+    if discrete:
+        instrumentation.set_integer_casting()
+    algorithms = [optlib.NGOpt, optlib.OnePlusOne, optlib.CMA]
+    if discrete:
+        algorithms = [optlib.NGOpt, optlib.DiscreteOnePlusOne, optlib.DoubleFastGADiscreteOnePlusOne]
+    num_tests = 7
+    fitness = []
+    for i in range(num_tests):
+        target = np.random.normal(0.0, 1.0, size=dim)
+        factors = np.random.normal(0.0, 7.0, size=dim)
+        fitness += [SimpleFitness(target, factors)]
+    result_tab = []
+    for alg in algorithms:
+        results = []
+        for i in range(num_tests):
+            result_for_this_fitness = []
+            for budget_multiplier in [10, 100, 1000]:
+                for num_workers in [1, 20]:
+                    opt = alg(  # type: ignore
+                        ng.p.Array(shape=(dim,)), budget=budget_multiplier * dim, num_workers=num_workers
+                    )
+                    recom = opt.minimize(fitness[i])
+                    result_for_this_fitness += [fitness[i](recom.value)]
+            results += result_for_this_fitness
+        result_tab += [results]
+        won_comparisons = [r < ngopt_res for (r, ngopt_res) in zip(result_tab[-1], result_tab[0])]
+        assert (
+            sum(won_comparisons) < len(won_comparisons) // 2
+        ), f"alg={alg}, dim={dim}, budget_multiplier={budget_multiplier}, num_workers={num_workers}, bounded={bounded}, discrete={discrete}, result = {result_tab}"
 
 
 @pytest.mark.parametrize("args", test_optimizerlib.get_metamodel_test_settings(special=True))

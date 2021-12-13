@@ -81,7 +81,7 @@ Ask and tell version
 .. code-block:: python
 
     for name in names:
-        optim = ng.optimizers.registry[name](parametrization=parametrization, budget=budget)
+        optim = ng.optimizers.registry[name](parametrization=parametrization, budget=budget, num_workers=3)
         for u in range(budget // 3):
             x1 = optim.ask()
             # Ask and tell can be asynchronous.

@@ -15,7 +15,7 @@ pyproj>=2.6.1
 Pillow
 tqdm
 torchvision
-pyomo>=5.7
+pyomo==5.7.1
 mixsimulator>=0.3.3
 hyperopt>=0.2.5
 IOHexperimenter>=0.2.8.7
@@ -28,7 +28,7 @@ image-quality>=1.2.7
 keras>=2.4.3
 compiler_gym>=0.1.8 ; sys_platform == "linux"
 pymoo>=0.4.2.2
-bayes-optim>=0.2.5.5
 olymp==0.0.1b0 ; sys_platform == "linux"
 silence_tensorflow
-#tensorflow_probability
+tensorflow_probability
+bayes-optim==0.2.5.5

@@ -12,6 +12,7 @@ from .optimizerlib import (
     ParametrizedCMA,
     ParametrizedBO,
     EMNA,
+    CmaFmin2,
     NGOpt10,
     NGOpt12,
     BayesOptim,
@@ -43,6 +44,10 @@ ECMA = ParametrizedCMA(elitist=True).set_name("ECMA", register=True)
 MetaModelDiagonalCMA = ParametrizedMetaModel(multivariate_optimizer=ParametrizedCMA(diagonal=True)).set_name(
     "MetaModelDiagonalCMA", register=True
 )
+MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2).set_name(
+    "MetaModelFmin2", register=True
+)
+MetaModelFmin2.no_parallelization = True
 
 # OnePlusOne
 FastGADiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="fastga").set_name(
