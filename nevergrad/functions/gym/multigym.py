@@ -566,7 +566,7 @@ class GymMulti(ExperimentFunction):
         if sparse_limit is not None:
             parametrization1 = parameter.Array(shape=shape)
             parametrization2 = parameter.Array(shape=shape)  # 0/1 weights for enabling/disabling
-            parametrization2 = ng.p.Choice([0, 1], repetitions=np.prod(shape))
+            parametrization2 = ng.p.Choice([0, 1], repetitions=np.prod(shape))  # type: ignore
             parametrization = ng.p.Dict(  # type: ignore
                 weights=parametrization1,
                 enablers=parametrization2,
