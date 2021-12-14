@@ -42,7 +42,10 @@ def test_sparse_cartpole() -> None:
     func = multigym.GymMulti(
         name="CartPole-v0", control="neural", neural_factor=1, randomized=True, sparse_limit=2
     )
-    results = [func(func.parametrization.sample().value) for _ in range(40)]
+    results = []
+    for _ in range(40):
+        param = func.parametrization.sample()
+        results.append(func(*param.args, **param.kwargs))
     assert min(results) != max(results), "CartPole should not be deterministic."
     candidate = func.parametrization.sample()
     results = [func.evaluation_function(candidate) for _ in range(40)]
@@ -71,4 +74,4 @@ def test_run_multigym(name: str) -> None:
     if "stac" in control and "Acrobat" in name:  # Let's check if the memory works.
         np.testing.assert_almost_equal(func(y.value), 500, decimal=2)
     if "stac" in control and "Pendulum-v0" in name:  # Let's check if the memory works.
-        np.testing.assert_almost_equal(func(y.value), 1688.82, decimal=2)
+        np.testing.assert_almost_equal(func(y.value), 1720.39, decimal=2)

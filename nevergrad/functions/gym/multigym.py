@@ -607,9 +607,12 @@ class GymMulti(ExperimentFunction):
         if self.sparse_limit is None:  # Life is simple here, we directly have the weights.
             x = recommendations[0].value
         else:  # Here 0 in the enablers means that the weight is forced to 0.
-            assert np.prod(recommendations[0].value["weights"].shape) == np.prod(recommendations[0].value["enablers"].shape)
-            x = recommendations[0].value["weights"]
-            x *= recommendations[0].value["enablers"].reshape(x.shape)
+            #assert np.prod(recommendations[0].value["weights"].shape) == np.prod(recommendations[0].value["enablers"].shape)
+            weights = recommendations[0].kwargs["weights"]
+            enablers = np.asarray(recommendations[0].kwargs["enablers"])
+            assert all(x_ in [0, 1] for x_ in enablers), f"non-binary enablers: {enablers}."
+            enablers = enablers.reshape(weights.shape)
+            x = weights * enablers
         if not self.randomized:
             assert not self.uses_compiler_gym
             return self.gym_multi_function(x, limited_fidelity=False)
