@@ -199,17 +199,8 @@ def test_infnan(name: str) -> None:
 
 def suggestable(name: str) -> bool:
     # Some methods are not good with suggestions.
-    if "TBPSA" in name:
-        return False
-    if "EMNA" in name or "EDA" in name:
-        return False
-    if "Stupid" in name:
-        return False
-    if "BO" in name:
-        return False
-    if "Pymoo" in name:
-        return False
-    return True
+    keywords = ["TBPSA", "BO", "EMNA", "EDA", "BO", "Stupid", "Pymoo"]
+    return not any(x in name for x in keywords)
 
 
 @skip_win_perf  # type: ignore
