@@ -574,7 +574,6 @@ class GymMulti(ExperimentFunction):
                 enablers=parametrization2,
             )
             parametrization.set_name("ng_sparse" + str(sparse_limit))
-            assert parametrization.dimension == 84, f"parametrization.dimension={parametrization.dimension}"
             assert "conformant" not in control and "structured" not in control
 
         if "structured" in control and "neural" in control and "multi" not in control:
