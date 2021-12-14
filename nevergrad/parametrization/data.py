@@ -78,7 +78,7 @@ class Data(core.Parameter):
         else:
             assert isinstance(shape, (list, tuple)) and all(
                 isinstance(n, int) for n in shape
-            ), f"Incorrect shape: {shape}."
+            ), f"Incorrect shape: {shape} (type: {type(shape)} and subtype: {type(n) for n in shape})."
             init = np.zeros(shape, dtype=float)
             if lower is not None and upper is not None:
                 init += (lower + upper) / 2.0

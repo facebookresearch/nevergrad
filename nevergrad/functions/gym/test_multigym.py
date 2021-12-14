@@ -42,7 +42,7 @@ def test_sparse_cartpole() -> None:
     func = multigym.GymMulti(
         name="CartPole-v0", control="neural", neural_factor=1, randomized=True, sparse_limit=2
     )
-    results = [func(np.zeros(func.dimension)) for _ in range(40)]
+    results = [func(func.parametrization.sample().value) for _ in range(40)]
     assert min(results) != max(results), "CartPole should not be deterministic."
     candidate = func.parametrization.sample()
     results = [func.evaluation_function(candidate) for _ in range(40)]

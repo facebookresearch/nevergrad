@@ -565,13 +565,17 @@ class GymMulti(ExperimentFunction):
         parametrization = parameter.Array(shape=shape).set_name("ng_default")
         if sparse_limit is not None:
             parametrization1 = parameter.Array(shape=shape)
-            parametrization2 = parameter.Array(shape=shape)  # 0/1 weights for enabling/disabling
-            parametrization2 = ng.p.Choice([0, 1], repetitions=np.prod(shape))  # type: ignore
-            parametrization = ng.p.Dict(  # type: ignore
+            repetitions = int(np.prod(shape))
+            assert isinstance(repetitions, int), f"{repetitions}"
+            assert repetitions == 28    # TEYTAUD
+            #parametrization2 = parameter.Array(shape=shape)  # 0/1 weights for enabling/disabling
+            parametrization2 = ng.p.Choice([0, 1], repetitions=repetitions)  # type: ignore
+            parametrization = ng.p.Instrumentation(  # type: ignore
                 weights=parametrization1,
                 enablers=parametrization2,
             )
             parametrization.set_name("ng_sparse" + str(sparse_limit))
+            assert parametrization.dimension == 84, f"parametrization.dimension={parametrization.dimension}"
             assert "conformant" not in control and "structured" not in control
 
         if "structured" in control and "neural" in control and "multi" not in control:
@@ -594,7 +598,7 @@ class GymMulti(ExperimentFunction):
             parametrization.set_name("conformant")
 
         # Now initializing.
-        super().__init__(self.sparse_gym_multi_function, parametrization=parametrization)
+        super().__init__(self.sparse_gym_multi_function if sparse_limit is not None else self.gym_multi_function, parametrization=parametrization)
         self.greedy_coefficient = 0.0
         self.parametrization.function.deterministic = not self.uses_compiler_gym
         self.archive: tp.List[tp.Any] = []
@@ -606,6 +610,7 @@ class GymMulti(ExperimentFunction):
         if self.sparse_limit is None:  # Life is simple here, we directly have the weights.
             x = recommendations[0].value
         else:  # Here 0 in the enablers means that the weight is forced to 0.
+            assert np.prod(recommendations[0].value["weights"].shape) == np.prod(recommendations[0].value["enablers"].shape)
             x = recommendations[0].value["weights"]
             x *= recommendations[0].value["enablers"].reshape(x.shape)
         if not self.randomized:
@@ -724,13 +729,10 @@ class GymMulti(ExperimentFunction):
         return output[self.memory_len :].reshape(self.output_shape), output[: self.memory_len]
 
     def sparse_gym_multi_function(
-        self, x: np.ndarray, limited_fidelity: bool = False, compiler_gym_pb_index: tp.Optional[int] = None
+            self, weights: np.ndarray, enablers: np.ndarray, limited_fidelity: bool = False, compiler_gym_pb_index: tp.Optional[int] = None
     ) -> float:
-        if self.sparse_limit is not None:
-            half = len(x) // 2
-            for u in range(half, len(x)):
-                assert x[u] == 0 or x[u] == 1, f"{x[half:]} is not binary."
-            x = x[0:half] * x[half:]
+        assert all(x_ in [0, 1] for x_ in enablers)
+        x = weights * enablers
         return self.gym_multi_function(
             x, limited_fidelity=limited_fidelity, compiler_gym_pb_index=compiler_gym_pb_index
         )
