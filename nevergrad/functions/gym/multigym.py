@@ -635,9 +635,8 @@ class GymMulti(ExperimentFunction):
                     tmp_env = copy.deepcopy(self.env)
                 _, r, _, _ = tmp_env.step(action)
                 a[i] += self.greedy_coefficient * r
-        a_no_nan = np.where(np.logical_not(a <= 1e20), 1e20, a)  
-        a_no_nan = np.where(np.logical_not(a >= -1e20), -1e20, a_no_nan)
-        probabilities = np.exp(a_no_nan - max(a_no_nan))        
+        a = np.nan_to_num(a, copy=False, nan=-1e20, posinf=1e20, neginf=-1e20)
+        probabilities = np.exp(a - max(a))        
         probabilities = probabilities / sum(probabilities)
         assert sum(probabilities) <= 1.0 + 1e-7, f"{probabilities} with greediness {self.greedy_coefficient}."
         return int(list(np.random.multinomial(1, probabilities)).index(1))
