@@ -28,7 +28,6 @@ from nevergrad.functions.unitcommitment import UnitCommitmentProblem
 from nevergrad.functions import control
 from nevergrad.functions import rl
 from nevergrad.functions.games import game
-from nevergrad.functions.causaldiscovery import CausalDiscovery
 from nevergrad.functions import iohprofiler
 from nevergrad.functions import helpers
 from .xpbase import Experiment as Experiment
@@ -622,6 +621,7 @@ def yabbob(
     tiny: bool = False,
     tuning: bool = False,
     bounded: bool = False,
+    box: bool = False,
 ) -> tp.Iterator[Experiment]:
     """Yet Another Black-Box Optimization Benchmark.
     Related to, but without special effort for exactly sticking to, the BBOB/COCO dataset.
@@ -669,11 +669,17 @@ def yabbob(
 
     if bounded:
         optims = ["BO", "PCABO", "BayesOptimBO", "CMA", "PSO", "DE"]
-
+    if box:
+        optims = ["DiagonalCMA", "Cobyla", "NGOpt16", "NGOpt15", "CMandAS2", "OnePlusOne"]
     # List of objective functions.
     functions = [
         ArtificialFunction(
-            name, block_dimension=d, rotation=rotation, noise_level=noise_level, split=split, bounded=bounded
+            name,
+            block_dimension=d,
+            rotation=rotation,
+            noise_level=noise_level,
+            split=split,
+            bounded=bounded or box,
         )
         for name in names
         for rotation in [True, False]
@@ -816,6 +822,12 @@ def yanoisybbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 def yaboundedbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with bounded domain, (-5,5)**n by default."""
     return yabbob(seed, bounded=True)
+
+
+@registry.register
+def yaboxbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with bounded domain, (-5,5)**n by default."""
+    return yabbob(seed, box=True)
 
 
 @registry.register
@@ -1261,7 +1273,22 @@ def simple_tsp(seed: tp.Optional[int] = None, complex_tsp: bool = False) -> tp.I
     """
     funcs = [STSP(10 ** k, complex_tsp) for k in range(2, 6)]
     seedg = create_seed_generator(seed)
-    optims = get_optimizers("basics", "noisy", seed=next(seedg))
+    optims = [
+        "RotatedTwoPointsDE",
+        "DiscreteLenglerOnePlusOne",
+        "DiscreteDoerrOnePlusOne",
+        "DiscreteBSOOnePlusOne",
+        "AdaptiveDiscreteOnePlusOne",
+        "GeneticDE",
+        "RotatedTwoPointsDE",
+        "DE",
+        "TwoPointsDE",
+        "DiscreteOnePlusOne",
+        "NGOpt38",
+        "CMA",
+        "MetaModel",
+        "DiagonalCMA",
+    ]
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600]:
         for num_workers in [1]:  # , 10, 100]:
             if num_workers < budget:
@@ -1838,6 +1865,9 @@ def pbo_suite(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 def causal_similarity(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Finding the best causal graph"""
+    # pylint: disable=import-outside-toplevel
+    from nevergrad.functions.causaldiscovery import CausalDiscovery
+
     seedg = create_seed_generator(seed)
     optims = ["CMA", "NGOpt8", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
     func = CausalDiscovery()

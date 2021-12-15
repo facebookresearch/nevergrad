@@ -10,6 +10,7 @@ import warnings
 import weakref
 import numpy as np
 from scipy import optimize as scipyoptimize
+import cma
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
 from nevergrad.common import errors
@@ -18,7 +19,7 @@ from .base import IntOrParameter
 from . import recaster
 
 
-class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
+class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
     def __init__(
         self,
         parametrization: IntOrParameter,
@@ -30,11 +31,24 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.multirun = 1  # work in progress
+        self._normalizer: tp.Any = None
         self.initial_guess: tp.Optional[tp.ArrayLike] = None
         # configuration
-        assert method in ["Nelder-Mead", "COBYLA", "SLSQP", "Powell"], f"Unknown method '{method}'"
+        assert method in [
+            "CmaFmin2",
+            "Nelder-Mead",
+            "COBYLA",
+            "SLSQP",
+            "Powell",
+        ], f"Unknown method '{method}'"
         self.method = method
         self.random_restart = random_restart
+        # The following line rescales to [0, 1] if fully bounded.
+
+        if method == "CmaFmin2":
+            normalizer = p.helpers.Normalizer(self.parametrization)
+            if normalizer.fully_bounded:
+                self._normalizer = normalizer
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         """Called whenever calling "tell" on a candidate that was not "asked".
@@ -57,21 +71,57 @@ class _ScipyMinimizeBase(recaster.SequentialRecastOptimizer):
         remaining: float = budget - weakself._num_ask
         while remaining > 0:  # try to restart if budget is not elapsed
             options: tp.Dict[str, tp.Any] = {} if weakself.budget is None else {"maxiter": remaining}
-            res = scipyoptimize.minimize(
-                objective_function,
-                best_x if not weakself.random_restart else weakself._rng.normal(0.0, 1.0, weakself.dimension),
-                method=weakself.method,
-                options=options,
-                tol=0,
-            )
-            if res.fun < best_res:
-                best_res = res.fun
-                best_x = res.x
+            # options: tp.Dict[str, tp.Any] = {} if self.budget is None else {"maxiter": remaining}
+            if weakself.method == "CmaFmin2":
+
+                def cma_objective_function(data):
+                    # Hopefully the line below does nothing if unbounded and rescales from [0, 1] if bounded.
+                    if weakself._normalizer is not None:
+                        data = weakself._normalizer.backward(np.asarray(data, dtype=np.float32))
+                    return objective_function(data)
+
+                # cma.fmin2(objective_function, [0.0] * self.dimension, [1.0] * self.dimension, remaining)
+                x0 = 0.5 * np.ones(weakself.dimension)
+                num_calls = 0
+                while budget - num_calls > 0:
+                    options = {"maxfevals": budget - num_calls, "verbose": -9}
+                    if weakself._normalizer is not None:
+                        # Tell CMA to work in [0, 1].
+                        options["bounds"] = [0.0, 1.0]
+                    res = cma.fmin(
+                        cma_objective_function,
+                        x0=x0,
+                        sigma0=0.2,
+                        options=options,
+                        restarts=9,
+                    )
+                    x0 = 0.5 + np.random.uniform() * np.random.uniform(
+                        low=-0.5, high=0.5, size=weakself.dimension
+                    )
+                    if res[1] < best_res:
+                        best_res = res[1]
+                        best_x = res[0]
+                        if weakself._normalizer is not None:
+                            best_x = weakself._normalizer.backward(np.asarray(best_x, dtype=np.float32))
+                    num_calls += res[2]
+            else:
+                res = scipyoptimize.minimize(
+                    objective_function,
+                    best_x
+                    if not weakself.random_restart
+                    else weakself._rng.normal(0.0, 1.0, weakself.dimension),
+                    method=weakself.method,
+                    options=options,
+                    tol=0,
+                )
+                if res.fun < best_res:
+                    best_res = res.fun
+                    best_x = res.x
             remaining = budget - weakself._num_ask
         return best_x
 
 
-class ScipyOptimizer(base.ConfiguredOptimizer):
+class NonObjectOptimizer(base.ConfiguredOptimizer):
     """Wrapper over Scipy optimizer implementations, in standard ask and tell format.
     This is actually an import from scipy-optimize, including Sequential Quadratic Programming,
 
@@ -99,17 +149,18 @@ class ScipyOptimizer(base.ConfiguredOptimizer):
 
     # pylint: disable=unused-argument
     def __init__(self, *, method: str = "Nelder-Mead", random_restart: bool = False) -> None:
-        super().__init__(_ScipyMinimizeBase, locals())
+        super().__init__(_NonObjectMinimizeBase, locals())
 
 
-NelderMead = ScipyOptimizer(method="Nelder-Mead").set_name("NelderMead", register=True)
-Powell = ScipyOptimizer(method="Powell").set_name("Powell", register=True)
-RPowell = ScipyOptimizer(method="Powell", random_restart=True).set_name("RPowell", register=True)
-Cobyla = ScipyOptimizer(method="COBYLA").set_name("Cobyla", register=True)
-RCobyla = ScipyOptimizer(method="COBYLA", random_restart=True).set_name("RCobyla", register=True)
-SQP = ScipyOptimizer(method="SLSQP").set_name("SQP", register=True)
+NelderMead = NonObjectOptimizer(method="Nelder-Mead").set_name("NelderMead", register=True)
+CmaFmin2 = NonObjectOptimizer(method="CmaFmin2").set_name("CmaFmin2", register=True)
+Powell = NonObjectOptimizer(method="Powell").set_name("Powell", register=True)
+RPowell = NonObjectOptimizer(method="Powell", random_restart=True).set_name("RPowell", register=True)
+Cobyla = NonObjectOptimizer(method="COBYLA").set_name("Cobyla", register=True)
+RCobyla = NonObjectOptimizer(method="COBYLA", random_restart=True).set_name("RCobyla", register=True)
+SQP = NonObjectOptimizer(method="SLSQP").set_name("SQP", register=True)
 SLSQP = SQP  # Just so that people who are familiar with SLSQP naming are not lost.
-RSQP = ScipyOptimizer(method="SLSQP", random_restart=True).set_name("RSQP", register=True)
+RSQP = NonObjectOptimizer(method="SLSQP", random_restart=True).set_name("RSQP", register=True)
 RSLSQP = RSQP  # Just so that people who are familiar with SLSQP naming are not lost.
 
 

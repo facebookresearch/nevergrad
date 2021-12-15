@@ -12,9 +12,17 @@ from .optimizerlib import (
     ParametrizedCMA,
     ParametrizedBO,
     EMNA,
+    CmaFmin2,
     NGOpt10,
     NGOpt12,
     BayesOptim,
+    ConfPortfolio,
+    DiagonalCMA,
+    GeneticDE,
+    TBPSA,
+    NoisyOnePlusOne,
+    RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne,
+    OptimisticNoisyOnePlusOne,
 )
 from . import optimizerlib as opts
 from .optimizerlib import CMA, Chaining, PSO, BO
@@ -43,6 +51,10 @@ ECMA = ParametrizedCMA(elitist=True).set_name("ECMA", register=True)
 MetaModelDiagonalCMA = ParametrizedMetaModel(multivariate_optimizer=ParametrizedCMA(diagonal=True)).set_name(
     "MetaModelDiagonalCMA", register=True
 )
+MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2).set_name(
+    "MetaModelFmin2", register=True
+)
+MetaModelFmin2.no_parallelization = True
 
 # OnePlusOne
 FastGADiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="fastga").set_name(
@@ -322,4 +334,17 @@ PCABO95DoE20 = BayesOptim(pca=True, n_components=0.95, prop_doe_factor=0.20).set
 )
 SparseDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete", sparse=True).set_name(
     "SparseDiscreteOnePlusOne", register=True
+)
+
+# Specifically for RL.
+MixDeterministicRL = ConfPortfolio(optimizers=[DiagonalCMA, PSO, GeneticDE]).set_name(
+    "MixDeterministicRL", register=True
+)
+SpecialRL = Chaining([MixDeterministicRL, TBPSA], ["half"]).set_name("SpecialRL", register=True)
+NoisyRL1 = Chaining([MixDeterministicRL, NoisyOnePlusOne], ["half"]).set_name("NoisyRL1", register=True)
+NoisyRL2 = Chaining(
+    [MixDeterministicRL, RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne], ["half"]
+).set_name("NoisyRL2", register=True)
+NoisyRL3 = Chaining([MixDeterministicRL, OptimisticNoisyOnePlusOne], ["half"]).set_name(
+    "NoisyRL3", register=True
 )

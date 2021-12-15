@@ -134,7 +134,7 @@ SLOW = [
 ]
 
 
-UNSEEDABLE: tp.List[str] = []
+UNSEEDABLE: tp.List[str] = ["CmaFmin2", "MetaModelFmin2"]
 
 
 def buggy_function(x: np.ndarray) -> float:
@@ -143,6 +143,21 @@ def buggy_function(x: np.ndarray) -> float:
     if any(x > 0.0):
         return float("inf")
     return np.sum(x ** 2)
+
+
+@pytest.mark.parametrize("dim", [2, 10, 20, 40, 80, 160, 320, 640, 1280, 25600, 51200, 102400])  # type: ignore
+@pytest.mark.parametrize("budget_multiplier", [10, 100, 1000, 10000])  # type: ignore
+@pytest.mark.parametrize("num_workers", [1, 2, 20])  # type: ignore
+@pytest.mark.parametrize("bounded", [False, True])  # type: ignore
+@pytest.mark.parametrize("discrete", [False, True])  # type: ignore
+def test_ngopt(dim: int, budget_multiplier: int, num_workers: int, bounded: bool, discrete: bool) -> None:
+    instrumentation = ng.p.Array(shape=(dim,))
+    if bounded:
+        instrumentation.set_bounds(lower=-12.0, upper=15.0)
+    if discrete:
+        instrumentation.set_integer_casting()
+    ngopt = optlib.NGOpt(ng.p.Array(shape=(dim,)), budget=budget_multiplier * dim, num_workers=num_workers)
+    ngopt.tell(ngopt.ask(), 42.0)
 
 
 @skip_win_perf  # type: ignore
@@ -159,6 +174,7 @@ def test_infnan(name: str) -> None:
                 "EMNA",
                 "Stupid",
                 "Large",
+                "Fmin2",
                 "TBPSA",
                 "BO",
                 "Noisy",
@@ -175,6 +191,7 @@ def test_infnan(name: str) -> None:
             any(x == name for x in ["WidePSO", "SPSA", "NGOptBase", "Shiwa", "NGO"])
             or isinstance(optim, (optlib.Portfolio, optlib._CMA, optlib.recaster.SequentialRecastOptimizer))
             or "NGOpt" in name
+            or "MetaModelDiagonalCMA" in name
         )  # Second chance!
         recom = optim.minimize(buggy_function)
         result = buggy_function(recom.value)
@@ -326,8 +343,8 @@ def test_optimizer_families_repr() -> None:
     optim: base.ConfiguredOptimizer = optlib.RandomSearchMaker(sampler="cauchy")
     np.testing.assert_equal(repr(optim), "RandomSearchMaker(sampler='cauchy')")
     #
-    optim = optlib.ScipyOptimizer(method="COBYLA")
-    np.testing.assert_equal(repr(optim), "ScipyOptimizer(method='COBYLA')")
+    optim = optlib.NonObjectOptimizer(method="COBYLA")
+    np.testing.assert_equal(repr(optim), "NonObjectOptimizer(method='COBYLA')")
     assert optim.no_parallelization
     #
     optim = optlib.ParametrizedCMA(diagonal=True)

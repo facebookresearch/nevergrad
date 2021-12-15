@@ -16,12 +16,13 @@ from .optimizerlib import ParametrizedCMA
 from .optimizerlib import EMNA
 from .optimizerlib import Chaining
 from .optimizerlib import NoisySplit
-from .optimizerlib import ConfSplitOptimizer
 from .optimizerlib import ConfPortfolio
+from .optimizerlib import ConfPSO
+from .optimizerlib import ConfSplitOptimizer
 from .optimizerlib import BayesOptim
 from .differentialevolution import DifferentialEvolution
 from .es import EvolutionStrategy
-from .recastlib import ScipyOptimizer
+from .recastlib import NonObjectOptimizer
 from .recastlib import Pymoo
 from .oneshot import RandomSearchMaker
 from .oneshot import SamplingSearch
@@ -35,14 +36,15 @@ __all__ = [
     "ParametrizedMetaModel",
     "DifferentialEvolution",
     "EvolutionStrategy",
-    "ScipyOptimizer",
+    "NonObjectOptimizer",
     "Pymoo",
     "RandomSearchMaker",
     "SamplingSearch",
     "Chaining",
     "EMNA",
     "NoisySplit",
-    "ConfSplitOptimizer",
     "ConfPortfolio",
+    "ConfPSO",
+    "ConfSplitOptimizer",
     "BayesOptim",
 ]
