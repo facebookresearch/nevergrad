@@ -122,9 +122,7 @@ class Koncept512(ImageLoss):
             try:
                 from koncept.models import Koncept512 as K512Model
             except ImportError:
-                raise UnsupportedExperiment(
-                    "Koncept512 is not installed, please run 'pip install koncept'"
-                )
+                raise UnsupportedExperiment("Koncept512 is not installed, please run 'pip install koncept'")
             MODELS[key] = K512Model()
         return MODELS[key]
 
