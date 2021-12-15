@@ -678,7 +678,7 @@ class GymMulti(ExperimentFunction):
                 _, r, _, _ = tmp_env.step(action)
                 a[i] += self.greedy_coefficient * r
         a = np.nan_to_num(a, copy=False, nan=-1e20, posinf=1e20, neginf=-1e20)
-        probabilities = np.exp(a - max(a))        
+        probabilities = np.exp(a - max(a))
         probabilities = probabilities / sum(probabilities)
         assert sum(probabilities) <= 1.0 + 1e-7, f"{probabilities} with greediness {self.greedy_coefficient}."
         return int(list(np.random.multinomial(1, probabilities)).index(1))
