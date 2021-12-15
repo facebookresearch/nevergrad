@@ -115,19 +115,17 @@ class Koncept512(ImageLoss):
     @property
     def koncept(self) -> tp.Any:  # cache the model
         key = "koncept"
+        if os.name == "nt":
+            raise UnsupportedExperiment("Koncept512 is not working properly under Windows")
         if key not in MODELS:
-            if os.name != "nt":
-                # pylint: disable=import-outside-toplevel
-                try:
-                    from koncept.models import Koncept512 as K512Model
-                except ImportError:
-                    raise UnsupportedExperiment(
-                        "Koncept512 is not installed, please run 'pip install koncept'"
-                    )
-
-                MODELS[key] = K512Model()
-            else:
-                raise UnsupportedExperiment("Koncept512 is not working properly under Windows")
+            # pylint: disable=import-outside-toplevel
+            try:
+                from koncept.models import Koncept512 as K512Model
+            except ImportError:
+                raise UnsupportedExperiment(
+                    "Koncept512 is not installed, please run 'pip install koncept'"
+                )
+            MODELS[key] = K512Model()
         return MODELS[key]
 
     def __call__(self, img: np.ndarray) -> float:
