@@ -1506,7 +1506,8 @@ def _learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.Arr
                 break
     except ValueError:
         raise MetaModelFailure("Infinite meta-model optimum in learn_on_k_best.")
-
+    if float(model.predict(polynomial_features.fit_transform(minimum[None, :]))) > y[0]:
+        raise MetaModelFailure("Not a good proposal.")
     if np.sum(minimum ** 2) > 1.0:
         raise MetaModelFailure("huge meta-model optimum in learn_on_k_best.")
     return middle + normalization * minimum
