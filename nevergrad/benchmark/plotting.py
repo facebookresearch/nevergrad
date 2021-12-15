@@ -387,7 +387,7 @@ def create_plots(
     plt.close("all")
 
 
-def gp_sota() -> tp.Dict[str, tp.Tuple[float]]:
+def gp_sota() -> tp.Dict[str, tp.Tuple[float, float]]:
     gp = {}
     gp["CartPole-v1"] = (-500.0, 100000.0)
     gp["Acrobot-v1"] = (83.17, 200000.0)
@@ -471,6 +471,7 @@ class XpPlotter:
             else sorted_optimizers
         ):
             vals = optim_vals[optim_name]
+            indices = np.where(vals["num_eval"] > 0)
             lowerbound = min(lowerbound, np.min(vals["loss"]))
             # We here add some state of the art results.
             # This adds a cross on figures, x-axis = budget and y-axis = loss.
