@@ -160,7 +160,7 @@ def ng_full_gym(
         )
         for neural_factor in neural_factors:
             for name in env_names:
-                sparse_limits = [None]
+                sparse_limits: tp.List[tp.Optional[int]] = [None]
                 if sparse:
                     sparse_limits += [10, 100, 1000]
                 for sparse_limit in sparse_limits:
