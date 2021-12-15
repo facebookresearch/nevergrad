@@ -216,7 +216,7 @@ def test_suggest_optimizers(name: str) -> None:
     target = lambda x: 0 if np.all(np.asarray(x, dtype=int) == xs) else 1
     optim.suggest(xs)
     optim.minimize(target)
-    assert np.all(optim.recommend().value == xs), "{name} proposes {optim.recommend().value} instead of {xs}"
+    assert not target(optim.recommend().value), "{name} proposes {optim.recommend().value} instead of {xs}"
 
 
 def good_at_suggest(name: str) -> bool:
