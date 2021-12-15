@@ -52,11 +52,11 @@ class Lpips(ImageLoss):
             import lpips
         except ImportError:
             raise UnsupportedExperiment("LPIPS is not installed, please run 'pip install lpips'")
-        self.LPIPS = lpips.LPIPS
+        self._LPIPS = lpips.LPIPS
 
     def __call__(self, img: np.ndarray) -> float:
         if self.net not in MODELS:
-            MODELS[self.net] = self.LPIPS(net=self.net)
+            MODELS[self.net] = self._LPIPS(net=self.net)
         loss_fn = MODELS[self.net]
         assert img.shape[2] == 3
         assert len(img.shape) == 3
