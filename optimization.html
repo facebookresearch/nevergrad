@@ -49,6 +49,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#adding-callbacks">Adding callbacks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#optimization-with-constraints">Optimization with constraints</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#optimizing-machine-learning-hyperparameters">Optimizing machine learning hyperparameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#example-with-permutation">Example with permutation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#example-of-chaining-or-inoculation-or-initialization-of-an-evolutionary-algorithm">Example of chaining, or inoculation, or initialization of an evolutionary algorithm</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#multiobjective-minimization-with-nevergrad">Multiobjective minimization with Nevergrad</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#reproducibility">Reproducibility</a></li>
@@ -314,6 +315,13 @@ We basically repeat mutations until we get a satisfiable point.</p>
 <li><p>use <code class="code docutils literal notranslate"><span class="pre">TransitionChoice</span></code> for discrete variables, taking care that the default value is in the middle.</p></li>
 <li><p>Use <code class="code docutils literal notranslate"><span class="pre">ScrHammersleySearchPlusMiddlePoint</span></code> (<code class="code docutils literal notranslate"><span class="pre">PlusMiddlePoint</span></code> only if you have continuous parameters or good default values for discrete parameters).</p></li>
 </ul>
+</section>
+<section id="example-with-permutation">
+<h2>Example with permutation<a class="headerlink" href="#example-with-permutation" title="Permalink to this headline"></a></h2>
+<p>SimpleTSP and ComplexTSP are two cases of optimization on a domain of permutations:
+<a class="reference external" href="https://docs.google.com/document/d/1B5yVOx1H1nnjY3EOf14487hAr8CzwJ9zEkDwQnZ5nbE/edit?usp=sharing">example here.</a>
+This is relevant when you optimize a single big permutation.
+Also includes cases with many small permutations.</p>
 </section>
 <section id="example-of-chaining-or-inoculation-or-initialization-of-an-evolutionary-algorithm">
 <h2>Example of chaining, or inoculation, or initialization of an evolutionary algorithm<a class="headerlink" href="#example-of-chaining-or-inoculation-or-initialization-of-an-evolutionary-algorithm" title="Permalink to this headline"></a></h2>
