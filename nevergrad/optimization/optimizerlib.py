@@ -1535,7 +1535,7 @@ class _MetaModel(base.Optimizer):
 
     def _internal_ask_candidate(self) -> p.Parameter:
         # We request a bit more points than what is really necessary for our dimensionality (+dimension).
-        sample_size = int((self.dimension * (self.dimension - 1)) / 2 + 7 * self.dimension + 1)
+        sample_size = int((self.dimension * (self.dimension - 1)) / 2 + 23 * self.dimension + 1)
         freq = max(13, self.num_workers, self.dimension, int(self.frequency_ratio * sample_size))
         if len(self.archive) >= sample_size and not self._num_ask % freq:
             try:
