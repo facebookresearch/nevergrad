@@ -426,7 +426,10 @@ class _CMA(base.Optimizer):
         scale_multiplier = 1.0
         if p.helpers.Normalizer(self.parametrization).fully_bounded:
             scale_multiplier = 0.3 if self.dimension < 18 else 0.15
-        if self._es is None:
+        # IPOP mechanism: double the pop size at each stop.
+        if self._es is not None and self._es.stop() and self.dimension > 15:
+            self._popsize *= 2
+        if self._es is None or self._es.stop():   
             if not self._config.fcmaes:
                 import cma  # import inline in order to avoid matplotlib initialization warning
 
@@ -2809,7 +2812,7 @@ class NGOpt38(NGOpt16):
 
 
 @registry.register
-class NGOpt39(NGOpt16):
+class NGOpt40(NGOpt16):
     def _select_optimizer_cls(self) -> base.OptCls:
         if self.fully_continuous and self.has_noise:  # In particular for neuro-DPS.
             DeterministicMix = ConfPortfolio(optimizers=[DiagonalCMA, PSO, GeneticDE])
@@ -2855,9 +2858,13 @@ class NGOpt39(NGOpt16):
             if self.dimension < 5:  # Low dimension: let us hit the bounds.
                 return NGOpt21
             if self.dimension < 10:  # Moderate dimension: reasonable restart + bet and run.
+                if self.num_workers <= cma_vars:
+                    return ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
                 num = 1 + int(np.sqrt(8.0 * (8 * self.budget) // (self.dimension * 1000)))
                 return ConfPortfolio(optimizers=[NGOpt14] * num, warmup_ratio=0.7)
             if self.dimension < 20:  # Nobody knows why this seems to be so good.
+                if self.num_workers <= cma_vars:
+                    return CmaFmin2
                 num = self.budget // (500 * self.dimension)
                 return ConfPortfolio(
                     optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3 ** i) for i in range(num)],
