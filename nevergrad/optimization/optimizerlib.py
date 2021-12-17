@@ -1455,7 +1455,7 @@ def train_sklearn(model, X2, y, return_dict) -> None:
     return_dict["model"] = model
 
 
-def _learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.ArrayLike:
+def _learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int, timeout: int = 1000) -> tp.ArrayLike:
     """Approximate optimum learnt from the k best.
 
     Parameters
@@ -1490,10 +1490,10 @@ def _learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.Arr
     model = LinearRegression()
 
     # Wait for 1000 seconds or until process finishes
-    return_dict = multiprocessing.Manager().dict()
+    return_dict: tp.Dict[str, tp.Any] = multiprocessing.Manager().dict()
     p = multiprocessing.Process(target=train_sklearn, args=(model, X2, y, return_dict))
     p.start()
-    p.join(1000)
+    p.join(timeout)
     if p.is_alive():
         p.terminate()
         p.join()
