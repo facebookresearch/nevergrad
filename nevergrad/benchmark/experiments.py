@@ -28,8 +28,6 @@ from nevergrad.functions.unitcommitment import UnitCommitmentProblem
 from nevergrad.functions import control
 from nevergrad.functions import rl
 from nevergrad.functions.games import game
-from nevergrad.functions.automl import AutoSKlearnBenchmark
-from nevergrad.functions.causaldiscovery import CausalDiscovery
 from nevergrad.functions import iohprofiler
 from nevergrad.functions import helpers
 from .xpbase import Experiment as Experiment
@@ -146,6 +144,9 @@ def naivemltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 def autosklearntuning(seed: tp.Optional[int] = None):
+    # pylint: disable=import-outside-toplevel
+    from nevergrad.functions.automl import AutoSKlearnBenchmark
+
     seedg = create_seed_generator(seed)
 
     # Only considered small subset of OpenML-CC18
@@ -689,9 +690,10 @@ def yabbob(
     hd: bool = False,
     constraint_case: int = 0,
     split: bool = False,
-    tiny: bool = False,
     tuning: bool = False,
+    reduction_factor: int = 1,
     bounded: bool = False,
+    box: bool = False,
 ) -> tp.Iterator[Experiment]:
     """Yet Another Black-Box Optimization Benchmark.
     Related to, but without special effort for exactly sticking to, the BBOB/COCO dataset.
@@ -739,11 +741,17 @@ def yabbob(
 
     if bounded:
         optims = ["BO", "PCABO", "BayesOptimBO", "CMA", "PSO", "DE"]
-
+    if box:
+        optims = ["DiagonalCMA", "Cobyla", "NGOpt16", "NGOpt15", "CMandAS2", "OnePlusOne"]
     # List of objective functions.
     functions = [
         ArtificialFunction(
-            name, block_dimension=d, rotation=rotation, noise_level=noise_level, split=split, bounded=bounded
+            name,
+            block_dimension=d,
+            rotation=rotation,
+            noise_level=noise_level,
+            split=split,
+            bounded=bounded or box,
         )
         for name in names
         for rotation in [True, False]
@@ -752,8 +760,9 @@ def yabbob(
             [100, 1000, 3000] if hd else ([2, 5, 10, 15] if tuning else ([40] if bounded else [2, 10, 50]))
         )
     ]
-    if tiny:
-        functions = functions[::13]
+
+    assert reduction_factor in [1, 7, 13, 17]  # needs to be a cofactor
+    functions = functions[::reduction_factor]
 
     # We possibly add constraints.
     max_num_constraints = 4
@@ -796,6 +805,12 @@ def yabbob(
 def yahdlbbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with HD and low budget."""
     return yabbob(seed, hd=True, small=True)
+
+
+@registry.register
+def reduced_yahdlbbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with HD and low budget."""
+    return yabbob(seed, hd=True, small=True, reduction_factor=17)
 
 
 @registry.register
@@ -845,13 +860,13 @@ def yahdsplitbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 @registry.register
 def yatuningbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with less budget."""
-    return yabbob(seed, parallel=False, big=False, small=True, tiny=True, tuning=True)
+    return yabbob(seed, parallel=False, big=False, small=True, reduction_factor=13, tuning=True)
 
 
 @registry.register
 def yatinybbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with less budget."""
-    return yabbob(seed, parallel=False, big=False, small=True, tiny=True)
+    return yabbob(seed, parallel=False, big=False, small=True, reduction_factor=13)
 
 
 @registry.register
@@ -886,6 +901,12 @@ def yanoisybbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 def yaboundedbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with bounded domain, (-5,5)**n by default."""
     return yabbob(seed, bounded=True)
+
+
+@registry.register
+def yaboxbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with bounded domain, (-5,5)**n by default."""
+    return yabbob(seed, box=True)
 
 
 @registry.register
@@ -1321,6 +1342,52 @@ def neuro_control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experime
 
 
 @registry.register
+def olympus_surfaces(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Olympus surfaces"""
+    from nevergrad.functions.olympussurfaces import OlympusSurface
+
+    funcs = []
+    for kind in OlympusSurface.SURFACE_KINDS:
+        for k in range(2, 5):
+            for noise in ["GaussianNoise", "UniformNoise", "GammaNoise"]:
+                for noise_scale in [0.5, 1]:
+                    funcs.append(OlympusSurface(kind, 10 ** k, noise, noise_scale))
+
+    seedg = create_seed_generator(seed)
+    optims = get_optimizers("basics", "noisy", seed=next(seedg))
+    for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600]:
+        for num_workers in [1]:  # , 10, 100]:
+            if num_workers < budget:
+                for algo in optims:
+                    for fu in funcs:
+                        xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        if not xp.is_incoherent:
+                            yield xp
+
+
+@registry.register
+def olympus_emulators(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Olympus emulators"""
+    from nevergrad.functions.olympussurfaces import OlympusEmulator
+
+    funcs = []
+    for dataset_kind in OlympusEmulator.DATASETS:
+        for model_kind in ["BayesNeuralNet", "NeuralNet"]:
+            funcs.append(OlympusEmulator(dataset_kind, model_kind))
+
+    seedg = create_seed_generator(seed)
+    optims = get_optimizers("basics", "noisy", seed=next(seedg))
+    for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600]:
+        for num_workers in [1]:  # , 10, 100]:
+            if num_workers < budget:
+                for algo in optims:
+                    for fu in funcs:
+                        xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        if not xp.is_incoherent:
+                            yield xp
+
+
+@registry.register
 def simple_tsp(seed: tp.Optional[int] = None, complex_tsp: bool = False) -> tp.Iterator[Experiment]:
     """Simple TSP problems. Please note that the methods we use could be applied or complex variants, whereas
     specialized methods can not always do it; therefore this comparisons from a black-box point of view makes sense
@@ -1331,7 +1398,22 @@ def simple_tsp(seed: tp.Optional[int] = None, complex_tsp: bool = False) -> tp.I
     """
     funcs = [STSP(10 ** k, complex_tsp) for k in range(2, 6)]
     seedg = create_seed_generator(seed)
-    optims = get_optimizers("basics", "noisy", seed=next(seedg))
+    optims = [
+        "RotatedTwoPointsDE",
+        "DiscreteLenglerOnePlusOne",
+        "DiscreteDoerrOnePlusOne",
+        "DiscreteBSOOnePlusOne",
+        "AdaptiveDiscreteOnePlusOne",
+        "GeneticDE",
+        "RotatedTwoPointsDE",
+        "DE",
+        "TwoPointsDE",
+        "DiscreteOnePlusOne",
+        "NGOpt38",
+        "CMA",
+        "MetaModel",
+        "DiagonalCMA",
+    ]
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600]:
         for num_workers in [1]:  # , 10, 100]:
             if num_workers < budget:
@@ -1908,6 +1990,9 @@ def pbo_suite(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 def causal_similarity(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Finding the best causal graph"""
+    # pylint: disable=import-outside-toplevel
+    from nevergrad.functions.causaldiscovery import CausalDiscovery
+
     seedg = create_seed_generator(seed)
     optims = ["CMA", "NGOpt8", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
     func = CausalDiscovery()
