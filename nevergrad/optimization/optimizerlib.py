@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 import math
+import multiprocessing
 import logging
 import itertools
 from collections import deque
@@ -1482,7 +1483,21 @@ def _learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.Arr
 
     y = (y - min(y)) / (max(y) - min(y))
     model = LinearRegression()
-    model.fit(X2, y)
+    
+    
+    def train_sklearn() -> None:
+        model.fit(X2, y)
+    p = multiprocessing.Process(target=train_sklearn)
+    p.start()
+
+    # Wait for 1000 seconds or until process finishes
+    p.join(1000)
+
+    # If thread is still active
+    if p.is_alive():
+        p.terminate()
+        p.join()
+        raise MetaModelFailure
 
     # Check model quality.
     model_outputs = model.predict(X2)
