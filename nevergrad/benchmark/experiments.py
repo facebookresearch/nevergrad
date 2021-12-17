@@ -143,6 +143,7 @@ def naivemltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     return mltuning(seed, overfitter=True)
 
 
+@registry.register
 def autosklearntuning(seed: tp.Optional[int] = None):
     # pylint: disable=import-outside-toplevel
     from nevergrad.functions.automl import AutoSKlearnBenchmark
