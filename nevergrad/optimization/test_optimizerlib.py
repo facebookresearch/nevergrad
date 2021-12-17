@@ -592,7 +592,7 @@ def check_metamodel(
     [
         (False, [1.005573e00, 3.965783e-04], False),
         (True, [0.999975, -0.111235], False),
-        (False, [1.000760, -5.116619e-4], True),
+        (False, [1.000132, -3.67935e-4], True),
     ],
 )
 @testing.suppress_nevergrad_warnings()  # hides failed constraints
