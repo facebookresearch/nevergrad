@@ -427,7 +427,7 @@ class _CMA(base.Optimizer):
         if p.helpers.Normalizer(self.parametrization).fully_bounded:
             scale_multiplier = 0.3 if self.dimension < 18 else 0.15
         # IPOP mechanism: double the pop size at each stop.
-        if self._es is not None and self._es.stop() and self.dimension > 15:
+        if self._es is not None and not self._config.fcmaes and self._es.stop() and self.dimension > 15:
             self._popsize *= 2
         if self._es is None or self._es.stop():
             if not self._config.fcmaes:
@@ -1540,7 +1540,7 @@ class _MetaModel(base.Optimizer):
 
     def _internal_ask_candidate(self) -> p.Parameter:
         # We request a bit more points than what is really necessary for our dimensionality (+dimension).
-        sample_size = int((self.dimension * (self.dimension - 1)) / 2 + 33 * self.dimension + 1)
+        sample_size = int((self.dimension * (self.dimension - 1)) / 2 + 17 * self.dimension + 1)
         freq = max(13, self.num_workers, self.dimension, int(self.frequency_ratio * sample_size))
         if len(self.archive) >= sample_size and not self._num_ask % freq:
             try:
