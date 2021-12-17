@@ -2818,7 +2818,7 @@ class NGOpt38(NGOpt16):
 
 
 @registry.register
-class NGOpt45(NGOpt16):
+class NGOpt46(NGOpt16):
     def _select_optimizer_cls(self) -> base.OptCls:
         if self.fully_continuous and self.has_noise:  # In particular for neuro-DPS.
             DeterministicMix = ConfPortfolio(optimizers=[DiagonalCMA, PSO, GeneticDE])
@@ -2902,7 +2902,7 @@ class NGOpt45(NGOpt16):
 
 
 @registry.register
-class NGOpt(NGOpt45):
+class NGOpt(NGOpt46):
     # Learning something automatically so that it's less unreadable would be great.
     pass
 
