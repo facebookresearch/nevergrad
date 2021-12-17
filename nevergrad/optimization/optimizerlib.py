@@ -2896,7 +2896,7 @@ class NGOpt40(NGOpt16):
 
 
 @registry.register
-class NGOpt(NGOpt39):
+class NGOpt(NGOpt40):
     # Learning something automatically so that it's less unreadable would be great.
     pass
 
