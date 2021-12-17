@@ -1449,12 +1449,12 @@ MultiScaleCMA = ConfPortfolio(
 class MetaModelFailure(ValueError):
     """Sometimes the optimum of the metamodel is at infinity."""
 
-    
+
 def train_sklearn(model, X2, y, return_dict) -> None:
     model.fit(X2, y)
     return_dict["model"] = model
 
-    
+
 def _learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.ArrayLike:
     """Approximate optimum learnt from the k best.
 
@@ -1488,7 +1488,7 @@ def _learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.Arr
 
     y = (y - min(y)) / (max(y) - min(y))
     model = LinearRegression()
-    
+
     # Wait for 1000 seconds or until process finishes
     return_dict = multiprocessing.Manager().dict()
     p = multiprocessing.Process(target=train_sklearn, args=(model, X2, y, return_dict))
@@ -1500,7 +1500,6 @@ def _learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.Arr
         raise MetaModelFailure
     else:
         model = return_dict["model"]
-
 
     # Check model quality.
     model_outputs = model.predict(X2)
