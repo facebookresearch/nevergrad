@@ -491,12 +491,13 @@ class _CMA(base.Optimizer):
         pessimistic = self.current_bests["pessimistic"].parameter.get_standardized_data(
             reference=self.parametrization
         )
-        if self._es is None:
-            return pessimistic
-        cma_best: tp.Optional[np.ndarray] = self.es.best_x if self._config.fcmaes else self.es.result.xbest
-        if cma_best is None:
-            return pessimistic
-        return cma_best
+        return pessimistic
+        # if self._es is None:
+        #    return pessimistic
+        # cma_best: tp.Optional[np.ndarray] = self.es.best_x if self._config.fcmaes else self.es.result.xbest
+        # if cma_best is None:
+        #    return pessimistic
+        # return cma_best
 
 
 class ParametrizedCMA(base.ConfiguredOptimizer):
