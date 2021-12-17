@@ -429,7 +429,7 @@ class _CMA(base.Optimizer):
         # IPOP mechanism: double the pop size at each stop.
         if self._es is not None and not self._config.fcmaes and self._es.stop() and self.dimension > 15:
             self._popsize *= 2
-        if self._es is None or self._es.stop():
+        if self._es is None or (not self._config.fcmaes and self._es.stop()):
             if not self._config.fcmaes:
                 import cma  # import inline in order to avoid matplotlib initialization warning
 
