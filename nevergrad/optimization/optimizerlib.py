@@ -1485,9 +1485,9 @@ def _learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.Arr
     model = LinearRegression()
     
     
-    def train_sklearn() -> None:
+    def train_sklearn(model, X2, y) -> None:
         model.fit(X2, y)
-    p = multiprocessing.Process(target=train_sklearn)
+    p = multiprocessing.Process(target=train_sklearn, args=(model, X2, y))
     p.start()
 
     # Wait for 1000 seconds or until process finishes
