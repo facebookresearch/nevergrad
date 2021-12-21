@@ -120,7 +120,7 @@ class SmallActionSpaceLlvmEnv(gym.ActionWrapper):
     ]
 
     def __init__(self, env) -> None:
-        """Creating a counterpart of a compiler gym environement with a reduced action space."""
+        """Creating a counterpart of a compiler gym environment with a reduced action space."""
         super().__init__(env=env)
         # Array for translating from this tiny action space to the action space of
         # the wrapped environment.
@@ -643,13 +643,8 @@ class GymMulti(ExperimentFunction):
             for compiler_gym_pb_index in range(23)
         ]
         loss = -np.exp(sum(rewards) / len(rewards))
-        sparse_penalty = 0
-        if self.sparse_limit is not None:  # Then we penalize the weights above the threshold "sparse_limit".
-            sparse_penalty = (1 + np.abs(loss)) * max(
-                0, np.sum(recommendations[0].value["weights"]) - self.sparse_limit
-            )
-        return loss + sparse_penalty
-
+        return loss
+        
     def forked_env(self):
         assert "compiler" in self.name
         env = self.env
@@ -740,9 +735,15 @@ class GymMulti(ExperimentFunction):
     ) -> float:
         assert all(x_ in [0, 1] for x_ in enablers)
         x = weights * enablers
-        return self.gym_multi_function(
+        loss = self.gym_multi_function(
             x, limited_fidelity=limited_fidelity, compiler_gym_pb_index=compiler_gym_pb_index
-        )
+        ) 
+        sparse_penalty = 0
+        if self.sparse_limit is not None:  # Then we penalize the weights above the threshold "sparse_limit".
+            sparse_penalty = (1 + np.abs(loss)) * max(
+                0, np.sum(recommendations[0].value["weights"]) - self.sparse_limit
+            )
+        return loss + sparse_penalty
 
     def gym_multi_function(
         self, x: np.ndarray, limited_fidelity: bool = False, compiler_gym_pb_index: tp.Optional[int] = None
