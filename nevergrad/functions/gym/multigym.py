@@ -815,12 +815,15 @@ class GymMulti(ExperimentFunction):
             except AttributeError:
                 pass  # Sometimes an action space has no low and no high.
             if self.subaction_type is not None:
-                if type(a) == tuple:
-                    a = tuple(int(_a + 0.5) for _a in a)
+                if type(a) == tuple:      	
+                    try:
+                        a = tuple(int(_a + 0.5) for _a in a)
+                    except:  # oh my FSM! A tuple of nd-array probably.
+                        a = tuple(np.asarray(_a+.5, dtype=int) for _a in a)
                 else:
                     for i in range(len(a)):
                         a[i] = self.subaction_type(a[i])
-        if not np.isscalar(a):
+        if not np.isscalar(a) and type(a) != tuple:
             a = np.asarray(a, dtype=env.action_space.sample().dtype)
         assert type(a) == self.action_type, f"{a} should have type {self.action_type} "
         # assert env.action_space.contains(env.action_space.sample())
