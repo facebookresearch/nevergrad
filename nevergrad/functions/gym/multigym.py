@@ -644,7 +644,7 @@ class GymMulti(ExperimentFunction):
         ]
         loss = -np.exp(sum(rewards) / len(rewards))
         return loss
-        
+
     def forked_env(self):
         assert "compiler" in self.name
         env = self.env
@@ -737,12 +737,10 @@ class GymMulti(ExperimentFunction):
         x = weights * enablers
         loss = self.gym_multi_function(
             x, limited_fidelity=limited_fidelity, compiler_gym_pb_index=compiler_gym_pb_index
-        ) 
+        )
         sparse_penalty = 0
         if self.sparse_limit is not None:  # Then we penalize the weights above the threshold "sparse_limit".
-            sparse_penalty = (1 + np.abs(loss)) * max(
-                0, np.sum(recommendations[0].value["weights"]) - self.sparse_limit
-            )
+            sparse_penalty = (1 + np.abs(loss)) * max(0, np.sum(enablers) - self.sparse_limit)
         return loss + sparse_penalty
 
     def gym_multi_function(
