@@ -1450,7 +1450,7 @@ class MetaModelFailure(ValueError):
     """Sometimes the optimum of the metamodel is at infinity."""
 
 
-def train_sklearn(model, X2, y, return_dict) -> None:
+def _train_sklearn(model, X2, y, return_dict) -> None:
     model.fit(X2, y)
     return_dict["model"] = model
 
@@ -1491,7 +1491,7 @@ def _learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int, timeout: 
 
     # Wait for 1000 seconds or until process finishes
     return_dict: tp.Dict[str, tp.Any] = multiprocessing.Manager().dict()
-    p = multiprocessing.Process(target=train_sklearn, args=(model, X2, y, return_dict))
+    p = multiprocessing.Process(target=_train_sklearn, args=(model, X2, y, return_dict))
     p.start()
     p.join(timeout)
     if p.is_alive():
