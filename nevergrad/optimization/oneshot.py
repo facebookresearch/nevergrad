@@ -175,7 +175,7 @@ class _RandomSearch(OneShotOptimizer):
             point = self.parametrization.sample().get_standardized_data(reference=self.parametrization)
         else:
             raise ValueError("Unkwnown sampler {self.sampler}")
-        self._opposable_data = scale * point
+        self._opposable_data = scale * point  # type: ignore
         return self._opposable_data  # type: ignore
 
     def _internal_provide_recommendation(self) -> tp.Optional[tp.ArrayLike]:
