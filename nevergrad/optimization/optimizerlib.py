@@ -2779,9 +2779,9 @@ class NGOpt38(NGOpt16):
             if (
                 self.budget > 5000 * self.dimension
             ):  # Asymptotically let us trust NGOpt36 and its subtle restart.
-                return NGOpt36._select_optimizer_cls(self)
+                return NGOpt36._select_optimizer_cls(self)  # type: ignore
             if self.dimension < 5:  # Low dimension: let us hit the bounds.
-                return NGOpt21._select_optimizer_cls(self)
+                return NGOpt21._select_optimizer_cls(self)  # type: ignore
             if self.dimension < 10:  # Moderate dimension: reasonable restart + bet and run.
                 num = 1 + int(np.sqrt(8.0 * (8 * self.budget) // (self.dimension * 1000)))
                 return ConfPortfolio(optimizers=[NGOpt14] * num, warmup_ratio=0.7)
@@ -2793,7 +2793,7 @@ class NGOpt38(NGOpt16):
                 )
             # We need a special case for dim < 30 ---> let's see later.
             # Otherwise, let us go back to normal life: NGOpt16 which rocks in many cases, possibly Cobyla.
-            return NGOpt16._select_optimizer_cls(self)
+            return NGOpt16._select_optimizer_cls(self)  # type: ignore
         elif (  # This might be specific of high-precision cases.
             self.budget is not None
             and self.fully_continuous
@@ -2804,9 +2804,9 @@ class NGOpt38(NGOpt16):
             and p.helpers.Normalizer(self.parametrization).fully_bounded
         ):
             return (
-                NGOpt8._select_optimizer_cls(self)
+                NGOpt8._select_optimizer_cls(self)  # type: ignore
                 if self.dimension < 3
-                else NGOpt15._select_optimizer_cls(self)
+                else NGOpt15._select_optimizer_cls(self)  # type: ignore
             )
         else:
             return super()._select_optimizer_cls()
@@ -2855,9 +2855,9 @@ class NGOpt39(NGOpt16):
             if (
                 self.budget > 5000 * self.dimension
             ):  # Asymptotically let us trust NGOpt36 and its subtle restart.
-                return NGOpt36._select_optimizer_cls(self)
+                return NGOpt36._select_optimizer_cls(self)  # type: ignore
             if self.dimension < 5:  # Low dimension: let us hit the bounds.
-                return NGOpt21._select_optimizer_cls(self)
+                return NGOpt21._select_optimizer_cls(self)  # type: ignore
             if self.dimension < 10:  # Moderate dimension: reasonable restart + bet and run.
                 num = 1 + int(np.sqrt(8.0 * (8 * self.budget) // (self.dimension * 1000)))
                 return ConfPortfolio(optimizers=[NGOpt14] * num, warmup_ratio=0.7)
@@ -2871,7 +2871,7 @@ class NGOpt39(NGOpt16):
                 return CmaFmin2
             # We need a special case for dim < 30 ---> let's see later.
             # Otherwise, let us go back to normal life: NGOpt16 which rocks in many cases, possibly Cobyla.
-            return NGOpt16._select_optimizer_cls(self)
+            return NGOpt16._select_optimizer_cls(self)  # type: ignore
         elif (  # This might be specific of high-precision cases.
             self.budget is not None
             and self.fully_continuous
@@ -2882,12 +2882,12 @@ class NGOpt39(NGOpt16):
             and p.helpers.Normalizer(self.parametrization).fully_bounded
         ):
             if self.dimension < 3:
-                return NGOpt8._select_optimizer_cls(self)
+                return NGOpt8._select_optimizer_cls(self)  # type: ignore
             if self.dimension <= 20 and self.num_workers == 1:
                 MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
                 MetaModelFmin2.no_parallelization = True
                 return MetaModelFmin2
-            return NGOpt15._select_optimizer_cls(self)
+            return NGOpt15._select_optimizer_cls(self)  # type: ignore
         else:
             return super()._select_optimizer_cls()
 
