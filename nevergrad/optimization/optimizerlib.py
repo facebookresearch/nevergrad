@@ -2889,7 +2889,36 @@ class NGOpt39(NGOpt16):
 
 
 @registry.register
-class NGOpt(NGOpt39):
+class NGOpt50(NGOpt39):
+    def _select_optimizer_cls(self) -> base.OptCls:
+        cma_vars = max(1, 4 + int(3 * np.log(self.dimension)))
+        key_factor = self.budget // self.dimension
+        if (
+            self.budget is not None
+            and key_factor > 50
+            and key_factor < 5000
+            and self.fully_continuous
+            and not self.has_noise
+            and self.num_objectives < 2
+            and self.num_workers <= cma_vars
+            and p.helpers.Normalizer(self.parametrization).fully_bounded
+        ):
+            if key_factor < 500:
+                if self.dimension < 8:
+                    return MetaModel
+                elif self.dimension < 30:
+                    return super()._select_optimizer_cls()
+                return CMA
+            elif key_factor < 5000:
+                if self.dimension >= 5 and self.dimension < 15:
+                    return ConfPortfolio(
+                        optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3 ** i) for i in range(num)],
+                        warmup_ratio=0.5,
+                    )
+        return super()._select_optimizer_cls()
+
+@registry.register
+class NGOpt(NGOpt50):
     # Learning something automatically so that it's less unreadable would be great.
     pass
 
