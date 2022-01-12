@@ -2889,7 +2889,7 @@ class NGOpt39(NGOpt16):
 
 
 @registry.register
-class NGOpt50(NGOpt39):
+class NGOpt51(NGOpt39):
     def _select_optimizer_cls(self) -> base.OptCls:
         cma_vars = max(1, 4 + int(3 * np.log(self.dimension)))
         key_factor = self.budget // self.dimension
@@ -2905,20 +2905,22 @@ class NGOpt50(NGOpt39):
         ):
             if key_factor < 500:
                 if self.dimension < 8:
-                    return MetaModel
+                    MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                    return MetaModelFmin2  # was MetaModel for NGOpt50
                 elif self.dimension < 30:
                     return super()._select_optimizer_cls()
                 return CMA
             elif key_factor < 5000:
                 if self.dimension >= 5 and self.dimension < 15:
+                    num = self.budget // (500 * self.dimension)
                     return ConfPortfolio(
-                        optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3 ** i) for i in range(num)],
+                        optimizers=[Rescaled(base_optimizer=CMA, scale=1.3 ** i) for i in range(num)],
                         warmup_ratio=0.5,
                     )
         return super()._select_optimizer_cls()
 
 @registry.register
-class NGOpt(NGOpt50):
+class NGOpt(NGOpt51):
     # Learning something automatically so that it's less unreadable would be great.
     pass
 
