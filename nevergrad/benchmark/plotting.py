@@ -503,8 +503,8 @@ class XpPlotter:
             for conf in self._get_confidence_arrays(vals, log=logplot):
                 plt.plot(vals[xaxis], conf, name_style[optim_name], label=optim_name, alpha=0.1)
             text = "{} ({:.3g} <{:.3g}>)".format(
-                optim_name, 
-                vals["loss"][-1], 
+                optim_name,
+                vals["loss"][-1],
                 vals["loss"][-2] if len(vals["loss"]) > 2 else float("nan"),
             )
             if vals[xaxis].size:
