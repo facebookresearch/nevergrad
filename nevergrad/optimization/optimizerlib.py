@@ -6,6 +6,7 @@ import math
 import multiprocessing
 import logging
 import itertools
+import time
 from collections import deque
 import warnings
 import numpy as np
@@ -1541,6 +1542,8 @@ class _MetaModel(base.Optimizer):
         frequency_ratio: float = 0.9,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        self._starting_time = time.time()
+        self._metamodel_time = 0
         self.frequency_ratio = frequency_ratio
         if multivariate_optimizer is None:
             multivariate_optimizer = (
@@ -1554,12 +1557,16 @@ class _MetaModel(base.Optimizer):
         # We request a bit more points than what is really necessary for our dimensionality (+dimension).
         sample_size = int((self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1)
         freq = max(13, self.num_workers, self.dimension, int(self.frequency_ratio * sample_size))
-        if len(self.archive) >= sample_size and not self._num_ask % freq:
+        current_time = time.time() - self._starting_time
+
+        if len(self.archive) >= sample_size and not self._num_ask % freq and self._metamodel_time < .5 * current_time:
+            start_time = time.time()
             try:
                 data = _learn_on_k_best(self.archive, sample_size)
                 candidate = self.parametrization.spawn_child().set_standardized_data(data)
             except MetaModelFailure:  # The optimum is at infinity. Shit happens.
                 candidate = self._optim.ask()
+            self._metamodel_time += time.time() - start_time
         else:
             candidate = self._optim.ask()
         return candidate
