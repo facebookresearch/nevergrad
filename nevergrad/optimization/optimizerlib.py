@@ -1559,10 +1559,14 @@ class _MetaModel(base.Optimizer):
         freq = max(13, self.num_workers, self.dimension, int(self.frequency_ratio * sample_size))
         current_time = time.time() - self._starting_time
 
-        if len(self.archive) >= sample_size and not self._num_ask % freq and self._metamodel_time < .5 * current_time:
+        if (
+            len(self.archive) >= sample_size
+            and not self._num_ask % freq
+            and self._metamodel_time < 0.5 * current_time
+        ):
             start_time = time.time()
             try:
-                data = _learn_on_k_best(self.archive, sample_size, timeout = current_time)
+                data = _learn_on_k_best(self.archive, sample_size, timeout=current_time)
                 candidate = self.parametrization.spawn_child().set_standardized_data(data)
             except MetaModelFailure:  # The optimum is at infinity. Shit happens.
                 candidate = self._optim.ask()
