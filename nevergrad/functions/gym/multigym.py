@@ -621,7 +621,7 @@ class GymMulti(ExperimentFunction):
             assert not self.uses_compiler_gym
             return self.gym_multi_function(x, limited_fidelity=False)
         if not self.uses_compiler_gym:
-            num = max(self.num_calls // 2, 23)
+            num = max(self.num_calls // 5, 23)
             # Pb_index >= 0 refers to the test set.
             return (
                 np.sum(
