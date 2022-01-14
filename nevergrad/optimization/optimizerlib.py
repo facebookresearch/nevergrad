@@ -1543,7 +1543,7 @@ class _MetaModel(base.Optimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._starting_time = time.time()
-        self._metamodel_time = 0
+        self._metamodel_time = 0.
         self.frequency_ratio = frequency_ratio
         if multivariate_optimizer is None:
             multivariate_optimizer = (
@@ -1566,7 +1566,7 @@ class _MetaModel(base.Optimizer):
         ):
             start_time = time.time()
             try:
-                data = _learn_on_k_best(self.archive, sample_size, timeout=current_time)
+                data = _learn_on_k_best(self.archive, sample_size, timeout=int(current_time+1))
                 candidate = self.parametrization.spawn_child().set_standardized_data(data)
             except MetaModelFailure:  # The optimum is at infinity. Shit happens.
                 candidate = self._optim.ask()
