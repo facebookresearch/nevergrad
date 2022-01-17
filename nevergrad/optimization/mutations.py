@@ -56,9 +56,7 @@ class Mutator:
         u = self.random_state.choice(np.arange(1, max_mutations), p=p)
         return self.portfolio_discrete_mutation(parent, intensity=u, arity=arity)
 
-    def rls_mutation(
-        self, parent: tp.ArrayLike, arity: int = 2
-    ) -> tp.ArrayLike:
+    def rls_mutation(self, parent: tp.ArrayLike, arity: int = 2) -> tp.ArrayLike:
         """Good old one-variable mutation.
 
         Parameters

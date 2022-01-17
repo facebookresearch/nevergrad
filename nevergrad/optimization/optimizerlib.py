@@ -390,9 +390,7 @@ NoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
 DoubleFastGADiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="doublefastga").set_name(
     "DoubleFastGADiscreteOnePlusOne", register=True
 )
-RLSOnePlusOne = ParametrizedOnePlusOne(mutation="rls").set_name(
-    "RLSOnePlusOne", register=True
-)
+RLSOnePlusOne = ParametrizedOnePlusOne(mutation="rls").set_name("RLSOnePlusOne", register=True)
 SparseDoubleFastGADiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="doublefastga", sparse=True).set_name(
     "SparseDoubleFastGADiscreteOnePlusOne", register=True
 )
