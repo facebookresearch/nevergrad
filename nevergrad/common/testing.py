@@ -148,7 +148,7 @@ def skip_error_on_systems(error_type: tp.Type[Exception], systems: tp.Iterable[s
     except error_type as e:
         system = platform.system()
         if system in systems:
-            raise unittest.SkipTest("Not on this system.")
+            raise unittest.SkipTest(f"Skipping on system {system}")
         if systems:  # only print if the context is actually active for some system
             print(f'This is system "{system}" (should it be skipped for the test?)')
         raise e
