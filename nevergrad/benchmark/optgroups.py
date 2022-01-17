@@ -187,6 +187,7 @@ def structure() -> tp.Sequence[Optim]:
 def small_discrete() -> tp.Sequence[Optim]:
     return [
         "DiscreteOnePlusOne",
+        "RLSOnePlusOne",
         "Shiwa",
         "CMA",
         "PSO",

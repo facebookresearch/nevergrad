@@ -56,6 +56,27 @@ class Mutator:
         u = self.random_state.choice(np.arange(1, max_mutations), p=p)
         return self.portfolio_discrete_mutation(parent, intensity=u, arity=arity)
 
+    def rls_mutation(
+        self, parent: tp.ArrayLike, arity: int = 2
+    ) -> tp.ArrayLike:
+        """Good old one-variable mutation.
+
+        Parameters
+        ----------
+        parent: array-like
+            the point to mutate
+        arity: int
+            the number of possible distinct values
+        """
+        dimension = len(parent)
+        if dimension == 1:  # corner case.
+            return self.random_state.normal(0.0, 1.0, size=1)  # type: ignore
+        boolean_vector = np.ones(dimension, dtype=bool)  # True means: don't change.
+        while all(boolean_vector):
+            boolean_vector = np.ones(dimension, dtype=bool)  # True means: don't change.
+            boolean_vector[np.random.randint(dimension)] = False
+        return [s if b else self.significantly_mutate(s, arity) for (b, s) in zip(boolean_vector, parent)]
+
     def portfolio_discrete_mutation(
         self, parent: tp.ArrayLike, intensity: tp.Optional[int] = None, arity: int = 2
     ) -> tp.ArrayLike:
