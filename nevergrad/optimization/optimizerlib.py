@@ -1576,6 +1576,7 @@ class ParametrizedMetaModel(base.ConfiguredOptimizer):
 
 
 MetaModel = ParametrizedMetaModel().set_name("MetaModel", register=True)
+MM = ParametrizedMetaModel().set_name("MM", register=True)
 MetaModelOnePlusOne = ParametrizedMetaModel(multivariate_optimizer=OnePlusOne).set_name(
     "MetaModelOnePlusOne", register=True
 )
@@ -2887,16 +2888,20 @@ class NGOpt39(NGOpt16):
         else:
             return super()._select_optimizer_cls()
 
+MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2).set_name(
+    "MetaModelFmin2", register=True
+)
+MetaModelFmin2.no_parallelization = True
 
 @registry.register
-class NGOpt51(NGOpt39):
+class NGOpt52(NGOpt39):
     def _select_optimizer_cls(self) -> base.OptCls:
         cma_vars = max(1, 4 + int(3 * np.log(self.dimension)))
         key_factor = self.budget // self.dimension
         if (
             self.budget is not None
             and key_factor > 50
-            and key_factor < 5000
+            and key_factor < 8000
             and self.fully_continuous
             and not self.has_noise
             and self.num_objectives < 2
@@ -2905,13 +2910,21 @@ class NGOpt51(NGOpt39):
         ):
             if key_factor < 500:
                 if self.dimension < 8:
+                    if self.dimension == 2:
+                        return MetaModel
                     MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
-                    return MetaModelFmin2  # was MetaModel for NGOpt50
+                    return MetaModelFmin2
+                elif self.dimension < 15:
+                    return MetaModel
                 elif self.dimension < 30:
                     return super()._select_optimizer_cls()
-                return CMA
+                return NGOpt36
             elif key_factor < 5000:
-                if self.dimension >= 5 and self.dimension < 15:
+                if self.dimension == 2:
+                    return MetaModel
+                if self.dimension >= 5 and self.dimension < 8:
+                    return NGOpt36
+                if self.dimension >= 8 and self.dimension < 15:
                     num = self.budget // (500 * self.dimension)
                     return ConfPortfolio(
                         optimizers=[Rescaled(base_optimizer=CMA, scale=1.3 ** i) for i in range(num)],
@@ -2920,7 +2933,45 @@ class NGOpt51(NGOpt39):
         return super()._select_optimizer_cls()
 
 @registry.register
-class NGOpt(NGOpt51):
+class NGOpt53(NGOpt52):
+    def _select_optimizer_cls(self) -> base.OptCls:
+        cma_vars = max(1, 4 + int(3 * np.log(self.dimension)))
+        key_factor = self.budget // self.dimension
+        if (
+            self.budget is not None
+            and key_factor > 50
+            and key_factor < 8000
+            and self.fully_continuous
+            and not self.has_noise
+            and self.num_objectives < 2
+            and self.num_workers <= cma_vars
+            and p.helpers.Normalizer(self.parametrization).fully_bounded
+        ):
+            if key_factor < 500:
+                if self.dimension < 5:
+                    return MetaModel
+                if self.dimension < 8:
+                    MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                    return MetaModelFmin2
+                return super()._select_optimizer_cls()
+            elif key_factor < 5000:
+                if self.dimension < 5:
+                    return NGOpt21
+                if self.dimension < 10:
+                    return NGOpt36
+                return super()._select_optimizer_cls()
+        return super()._select_optimizer_cls()
+
+@registry.register
+class NGOpt1021(NGOpt21):
+    pass
+@registry.register
+class NGOpt1036(NGOpt36):
+    pass
+
+
+@registry.register
+class NGOpt(NGOpt53):
     # Learning something automatically so that it's less unreadable would be great.
     pass
 
