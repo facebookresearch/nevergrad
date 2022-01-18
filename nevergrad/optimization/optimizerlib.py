@@ -26,6 +26,18 @@ from .base import registry as registry
 from .base import addCompare  # pylint: disable=unused-import
 from .base import IntOrParameter
 
+PARAM1 = 5000.# float in [1, 10000]
+PARAM2 = 5    # int in [1, 200]   (more density in [1,50]...)
+PARAM3 = 10   # int in [1, 200]   (more density in [1,50]...)
+PARAM4 = 20   # int in [1, 200]   (more density in [1,50]...)
+PARAM5 = 1    # int in [1, 200]   (more density in [1,50]...)
+PARAM6 = 3    # int in [1, 200]   (more density in [1,50]...)
+PARAM7 = 20   # int in [1, 200]   (more density in [1,50]...)
+PARAM8 = 1.3  # float in [0.2, 3.]   
+PARAM9 = 0.5  # 4 possible values {0.2, 0.5, 0.75, 1.0} 
+PARAM10 = 0.3  # float in [0.1, 0.9]
+PARAM11 = 0.15  # float in [0.1, 0.9]
+
 # families of optimizers
 # pylint: disable=unused-wildcard-import,wildcard-import,too-many-lines,too-many-arguments,too-many-branches
 # pylint: disable=import-outside-toplevel,too-many-nested-blocks,too-many-instance-attributes,
@@ -425,7 +437,7 @@ class _CMA(base.Optimizer):
     def es(self) -> tp.Any:  # typing not possible since cmaes not imported :(
         scale_multiplier = 1.0
         if p.helpers.Normalizer(self.parametrization).fully_bounded:
-            scale_multiplier = 0.3 if self.dimension < 18 else 0.15
+            scale_multiplier = PARAM10 if self.dimension < 18 else PARAM11 
         if self._es is None:
             if not self._config.fcmaes:
                 import cma  # import inline in order to avoid matplotlib initialization warning
@@ -2880,6 +2892,85 @@ class NGOpt39(NGOpt16):
             if self.dimension < 3:
                 return NGOpt8
             if self.dimension <= 20 and self.num_workers == 1:
+                MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                MetaModelFmin2.no_parallelization = True
+                return MetaModelFmin2
+            return NGOpt15
+        else:
+            return super()._select_optimizer_cls()
+
+@registry.register
+class ParametrizedNGOpt(NGOpt16):
+    def _select_optimizer_cls(self) -> base.OptCls:
+        if self.fully_continuous and self.has_noise:  # In particular for neuro-DPS.
+            DeterministicMix = ConfPortfolio(optimizers=[DiagonalCMA, PSO, GeneticDE])
+            return Chaining([DeterministicMix, OptimisticNoisyOnePlusOne], ["half"])
+
+        cma_vars = max(1, 4 + int(3 * np.log(self.dimension)))
+        num36 = (
+            1 + int(np.sqrt(4.0 * (4 * self.budget) // (self.dimension * 1000)))
+            if self.budget is not None
+            else 1
+        )
+        num21 = 1 + (4 * self.budget) // (self.dimension * 1000) if self.budget is not None else 1
+        num_dim10 = (
+            1 + int(np.sqrt(8.0 * (8 * self.budget) // (self.dimension * 1000)))
+            if self.budget is not None
+            else 1
+        )
+        num_dim20 = self.budget // (500 * self.dimension) if self.budget is not None else 1
+        para = 1
+        if self.budget is not None and self.budget > 5000 * self.dimension:
+            para = num36 * cma_vars
+        elif self.dimension < PARAM2:
+            para = num21 * cma_vars
+        elif self.dimension < PARAM3:
+            para = num_dim10 * cma_vars
+        elif self.dimension < PARAM7:
+            para = num_dim20 * cma_vars
+
+        # Special cases in the bounded case
+        if (
+            self.budget is not None
+            and self.budget > 500 * self.dimension
+            and self.fully_continuous
+            and not self.has_noise
+            and self.num_objectives < 2
+            and self.num_workers <= para
+            and p.helpers.Normalizer(self.parametrization).fully_bounded
+        ):
+            if (
+                self.budget > PARAM1 * self.dimension
+            ):  # Asymptotically let us trust NGOpt36 and its subtle restart.
+                return NGOpt36
+            if self.dimension < PARAM2:  # Low dimension: let us hit the bounds.
+                return NGOpt21
+            if self.dimension < PARAM3:  # Moderate dimension: reasonable restart + bet and run.
+                num = 1 + int(np.sqrt(8.0 * (8 * self.budget) // (self.dimension * 1000)))
+                return ConfPortfolio(optimizers=[NGOpt14] * num, warmup_ratio=0.7)
+            if self.dimension < PARAM4:  # Nobody knows why this seems to be so good.
+                num = self.budget // (500 * self.dimension)
+                return ConfPortfolio(
+                    optimizers=[Rescaled(base_optimizer=NGOpt14, scale=PARAM8 ** i) for i in range(num)],
+                    warmup_ratio=PARAM9,
+                )
+            if self.num_workers =< PARAM5:
+                return CmaFmin2
+            # We need a special case for dim < 30 ---> let's see later.
+            # Otherwise, let us go back to normal life: NGOpt16 which rocks in many cases, possibly Cobyla.
+            return NGOpt16
+        elif (  # This might be specific of high-precision cases.
+            self.budget is not None
+            and self.fully_continuous
+            and not self.has_noise
+            and self.num_objectives < 2
+            and self.num_workers <= cma_vars
+            and self.budget > 50 * self.dimension
+            and p.helpers.Normalizer(self.parametrization).fully_bounded
+        ):
+            if self.dimension < PARAM6:
+                return NGOpt8
+            if self.dimension <= PARAM7 and self.num_workers == 1:
                 MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
                 MetaModelFmin2.no_parallelization = True
                 return MetaModelFmin2
