@@ -7,10 +7,12 @@ import sys
 import time
 import random
 import numbers
+import os
 import warnings
 import traceback
 import typing as tp
 import numpy as np
+from concurrent import futures
 from nevergrad.parametrization import parameter as p
 from nevergrad.common import decorators
 from nevergrad.common import errors
@@ -57,7 +59,11 @@ class OptimizerSettings:
         self.optimizer = optimizer
         self.budget = budget
         self.num_workers = num_workers
-        self.executor = execution.MockedTimedExecutor(batch_mode)
+        ng_cpus_per_task = int(os.getenv("NG_CPUS_PER_TASK", "1"))
+        if ng_cpus_per_task > 0:
+            self.executor = futures.ThreadPoolExecutor(max_workers=ng_cpus_per_task)
+        else:
+            self.executor = execution.MockedTimedExecutor(batch_mode)
 
     @property
     def name(self) -> str:
