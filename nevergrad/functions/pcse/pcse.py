@@ -167,7 +167,9 @@ class Pcse(ArrayExperimentFunction):
         #super().__init__(objfunc_calculator, parametrization=param)
     
         #param = ng.p.Array(shape=(2,), lower=(TDWI_range[0], SPAN_range[0]), upper=(TDWI_range[1], SPAN_range[1]))
+        import nevergrad as ng
+
         param = ng.p.Array(
             shape=(2,), lower=(TDWI_range[0], SPAN_range[0]), upper=(TDWI_range[1], SPAN_range[1])
-        )
+        ).set_name("2hp")
         super().__init__(objfunc_calculator, parametrization=param)
