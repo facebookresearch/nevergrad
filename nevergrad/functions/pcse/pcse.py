@@ -53,7 +53,7 @@ class Pcse(ArrayExperimentFunction):
             TimedEvents: null
             StateEvents: null
         """
-        agro = yaml.load(agro_yaml)
+        agro = yaml.safe_load(agro_yaml)
 
         wofost = Wofost72_PP(params, wdp, agro)
         wofost.run_till_terminate()
