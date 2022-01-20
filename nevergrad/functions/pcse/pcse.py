@@ -37,15 +37,16 @@ class Pcse(ArrayExperimentFunction):
         import pandas as pd
         import numpy as np
         from itertools import product
-        #from progressbar import printProgressBar
-        
+
+        # from progressbar import printProgressBar
+
         import pcse
         from pcse.models import Wofost72_PP
         from pcse.base import ParameterProvider
         from pcse.db import NASAPowerWeatherDataProvider
         from pcse.fileinput import YAMLAgroManagementReader, YAMLCropDataProvider
         from pcse.util import WOFOST72SiteDataProvider, DummySoilDataProvider
-    
+
         # Weather data for Netherlands
         wdp = NASAPowerWeatherDataProvider(latitude=52, longitude=5)
         # Standard crop parameter library
@@ -78,22 +79,23 @@ class Pcse(ArrayExperimentFunction):
         df = pd.DataFrame(wofost.get_output())
         df.index = pd.to_datetime(df.day)
         df.tail()
-        
+
         # get daily observations for those
         ix = (df.index.dayofweek == 0) & (df.LAI.notnull())
         df_pseudo_obs = df.loc[ix]
-        fig, axes = plt.subplots(figsize=(12,8))
+        fig, axes = plt.subplots(figsize=(12, 8))
         axes.plot_date(df_pseudo_obs.index, df_pseudo_obs.LAI)
         r = axes.set_title("Pseudo LAI observations")
-        
+
         class ModelRerunner(object):
             """Reruns a given model with different values of parameters TWDI and SPAN.
-            
+
             Returns a pandas DataFrame with simulation results of the model with given
             parameter values.
             """
+
             parameters = ["TDWI", "SPAN"]
-            
+
             def __init__(self, params, wdp, agro):
                 self.params = params
                 self.wdp = wdp
