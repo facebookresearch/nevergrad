@@ -82,7 +82,7 @@ class Pcse(ArrayExperimentFunction):
             def __call__(self, par_values):
                 # Check if correct number of parameter values were provided
                 if len(par_values) != len(self.parameters):
-                    msg = "Optimizing %i parameters, but only % values were provided!" % (
+                    msg = "Optimizing %i parameters, but %i values were provided!" % (
                         len(self.parameters),
                         len(par_values),
                     )
