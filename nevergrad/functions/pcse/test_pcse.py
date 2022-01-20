@@ -12,6 +12,6 @@ def test_rocket() -> None:
     x = 0 * np.random.rand(func.dimension)
     value = func(x)
     value2 = func(x)
-    assert value > -1000.0
-    assert value < 1000.0
+    assert value > -1000.0  # type: ignore
+    assert value < 1000.0  # type: ignore
     np.testing.assert_almost_equal(value, value2)
