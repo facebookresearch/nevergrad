@@ -10,10 +10,7 @@ https://raw.githubusercontent.com/purdue-orbital/pcse-simulation/master/Simulati
 """
 
 
-import math
-import pyproj
 import numpy as np
-from nevergrad.parametrization import parameter
 from ..base import ArrayExperimentFunction
 
 # pylint: disable=too-many-locals,too-many-statements
@@ -21,17 +18,9 @@ from ..base import ArrayExperimentFunction
 
 class Pcse(ArrayExperimentFunction):
     def __init__(self) -> None:
-        import sys
-        import matplotlib
-        import matplotlib.pyplot as plt
         import yaml
         import pandas as pd
         import numpy as np
-        from itertools import product
-
-        # from progressbar import printProgressBar
-
-        import pcse
         from pcse.models import Wofost72_PP
         from pcse.base import ParameterProvider
         from pcse.db import NASAPowerWeatherDataProvider
@@ -89,9 +78,6 @@ class Pcse(ArrayExperimentFunction):
         # get daily observations for those
         ix = (df.index.dayofweek == 0) & (df.LAI.notnull())
         df_pseudo_obs = df.loc[ix]
-        fig, axes = plt.subplots(figsize=(12, 8))
-        axes.plot_date(df_pseudo_obs.index, df_pseudo_obs.LAI)
-        r = axes.set_title("Pseudo LAI observations")
 
         class ModelRerunner(object):
             """Reruns a given model with different values of parameters TWDI and SPAN.
