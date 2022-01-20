@@ -69,7 +69,6 @@ class Pcse(ArrayExperimentFunction):
             StateEvents: null
         """
         agro = yaml.safe_load(agro_yaml)
-        
         wofost = Wofost72_PP(params, wdp, agro)
         wofost.run_till_terminate()
         df = pd.DataFrame(wofost.get_output())
