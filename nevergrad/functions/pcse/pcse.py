@@ -20,11 +20,12 @@ class Pcse(ArrayExperimentFunction):
     def __init__(self) -> None:
         import yaml
         import pandas as pd
-        import numpy as np
         from pcse.models import Wofost72_PP
         from pcse.base import ParameterProvider
         from pcse.db import NASAPowerWeatherDataProvider
-        from pcse.fileinput import YAMLAgroManagementReader, YAMLCropDataProvider
+
+        # from pcse.fileinput import YAMLAgroManagementReader, YAMLCropDataProvider
+        from pcse.fileinput import YAMLCropDataProvider
         from pcse.util import WOFOST72SiteDataProvider, DummySoilDataProvider
 
         # Weather data for Netherlands
@@ -133,10 +134,10 @@ class Pcse(ArrayExperimentFunction):
                 self.n_calls += 1
                 # print(".", end="")
                 # Run the model and collect output
-                self.df_simulations = self.modelrerunner(par_values)
+                df_simulations = self.modelrerunner(par_values)
                 # compute the differences by subtracting the DataFrames
                 # Note that the dataframes automatically join on the index (dates) and column names
-                df_differences = self.df_simulations - self.df_observations
+                df_differences = df_simulations - self.df_observations
                 # Compute the RMSE on the LAI column
                 obj_func = np.sqrt(np.mean(df_differences.LAI ** 2))
                 return obj_func
