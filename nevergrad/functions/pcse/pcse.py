@@ -139,7 +139,6 @@ class CropSimulator(ArrayExperimentFunction):
         # defaults = [cropd["TDWI"], cropd["SPAN"]]
         # error = objfunc_calculator(defaults)
         # print("Objective function value with default parameters (%s): %s" % (defaults, error))
-
         TDWI_range = [0.1, 0.6]
         SPAN_range = [30, 40]
         param = ng.p.Array(
