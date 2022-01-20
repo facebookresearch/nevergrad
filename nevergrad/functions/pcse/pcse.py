@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 """
-Approximate Pcse Simulation
+Approximate crop Simulation
 Based on
 https://raw.githubusercontent.com/purdue-orbital/pcse-simulation/master/Simulation2.py
 """
@@ -22,7 +22,7 @@ from ..base import ArrayExperimentFunction
 class Pcse(ArrayExperimentFunction):
 
 
-    def __init__(self, symmetry: int = 0) -> None:
+    def __init__(self) -> None:
         import sys
         import matplotlib
         import matplotlib.pyplot as plt
@@ -165,4 +165,4 @@ class Pcse(ArrayExperimentFunction):
         #super().__init__(objfunc_calculator, parametrization=param)
     
         param = ng.p.Array(shape=(2,), lower=(TDWI_range[0], SPAN_range[0]), upper=(TDWI_range[1], SPAN_range[1]))
-        super().__init__(objfunc_calculator, parametrization=param, symmetry=symmetry)
+        super().__init__(objfunc_calculator, parametrization=param)
