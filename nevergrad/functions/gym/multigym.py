@@ -494,6 +494,7 @@ class GymMulti(ExperimentFunction):
         else:
             input_dim = np.prod(env.observation_space.shape) if env.observation_space is not None else 0
             if input_dim is None:
+                o = env.reset()
                 input_dim = np.prod(np.asarray(o).shape)
             self.discrete_input = False
 
@@ -748,7 +749,7 @@ class GymMulti(ExperimentFunction):
         return loss + sparse_penalty
 
     def gym_multi_function(
-            self, x: np.ndarray, limited_fidelity: bool = False, compiler_gym_pb_index: tp.Optional[int] = None
+        self, x: np.ndarray, limited_fidelity: bool = False, compiler_gym_pb_index: tp.Optional[int] = None
     ) -> float:
         """Do a simulation with parametrization x and return the result.
 
