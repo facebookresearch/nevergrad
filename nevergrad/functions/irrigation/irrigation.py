@@ -48,7 +48,8 @@ def leaf_area_index(x: np.ndarray):
     import pcse
     from pcse.models import Wofost72_WLP_FD
     from pcse.fileinput import CABOFileReader, YAMLCropDataProvider
-    from pcse.db import NASAPowerWeatherDataProvider
+
+    # from pcse.db import NASAPowerWeatherDataProvider
     from pcse.util import WOFOST72SiteDataProvider
     from pcse.base import ParameterProvider
 
