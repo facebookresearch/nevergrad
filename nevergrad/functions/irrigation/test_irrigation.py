@@ -4,14 +4,16 @@
 # LICENSE file in the root directory of this source tree.
 
 import numpy as np
-from . import pcse
+from . import irrigation
 
 
-def test_pcse() -> None:
-    func = pcse.Pcse()
-    x = 0 * np.random.rand(func.dimension)
+def test_irrigation() -> None:
+    func = irrigation.Irrigation(2)
+    x = np.random.rand(func.dimension)
     value = func(x)
     value2 = func(x)
-    assert value > -1000.0  # type: ignore
-    assert value < 1000.0  # type: ignore
+    x = np.random.rand(func.dimension)
+    value3 = func(x)
+    assert value <= 0.0  # type: ignore
+    assert value3 != value  # this should not be flat.
     np.testing.assert_almost_equal(value, value2)
