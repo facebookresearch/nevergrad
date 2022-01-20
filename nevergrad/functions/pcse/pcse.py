@@ -20,11 +20,9 @@ from ..base import ArrayExperimentFunction
 
 
 class Pcse(ArrayExperimentFunction):
-
-
     def __init__(self, symmetry: int = 0) -> None:
         try:
-            #raise Exception("We do not import EUPL code by default.")
+            # raise Exception("We do not import EUPL code by default.")
             import pcse  # pylint: disable=unused-import
         except:
             raise ng.errors.UnsupportedExperiment(
@@ -139,7 +137,7 @@ class Pcse(ArrayExperimentFunction):
                 # Note that the dataframes automatically join on the index (dates) and column names
                 df_differences = df_simulations - self.df_observations
                 # Compute the RMSE on the LAI column
-                obj_func = np.sqrt(np.mean(df_differences.LAI ** 2))
+                obj_func = np.sqrt(np.mean(df_differences.LAI**2))
                 return obj_func
 
         objfunc_calculator = ObjectiveFunctionCalculator(params, wdp, agro, df_pseudo_obs)
@@ -147,13 +145,14 @@ class Pcse(ArrayExperimentFunction):
         # error = objfunc_calculator(defaults)
         # print("Objective function value with default parameters (%s): %s" % (defaults, error))
 
-
         TDWI_range = [0.1, 0.6]
         SPAN_range = [30, 40]
         param = ng.p.Array(
             shape=(2,), lower=(TDWI_range[0], SPAN_range[0]), upper=(TDWI_range[1], SPAN_range[1])
         ).set_name("2hp")
-        #super().__init__(objfunc_calculator, parametrization=param)
-        #param = ng.p.Array(shape=(2,), lower=(TDWI_range[0], SPAN_range[0]), upper=(TDWI_range[1], SPAN_range[1]))
+        # super().__init__(objfunc_calculator, parametrization=param)
+        # param = ng.p.Array(shape=(2,), lower=(TDWI_range[0], SPAN_range[0]), upper=(TDWI_range[1], SPAN_range[1]))
         super().__init__(objfunc_calculator, parametrization=param, symmetry=symmetry)
-        param = ng.p.Array(shape=(2,), lower=(TDWI_range[0], SPAN_range[0]), upper=(TDWI_range[1], SPAN_range[1]))
+        param = ng.p.Array(
+            shape=(2,), lower=(TDWI_range[0], SPAN_range[0]), upper=(TDWI_range[1], SPAN_range[1])
+        )
