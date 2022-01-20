@@ -379,10 +379,10 @@ class GymMulti(ExperimentFunction):
             if self.stochastic_problem:
                 assert self.compilergym_index is None
                 # In training, we randomly draw in csmith (but we are allowed to use 100x more budget :-) ).
-                o = env.reset(benchmark=np.random.choice(self.csmith))
+                env.reset(benchmark=np.random.choice(self.csmith))
             else:
                 assert self.compilergym_index is not None
-                o = env.reset(benchmark=self.uris[self.compilergym_index])
+                env.reset(benchmark=self.uris[self.compilergym_index])
             # env.require_dataset("cBench-v1")
             # env.unwrapped.benchmark = "benchmark://cBench-v1/qsort"
         else:  # Here we are not in CompilerGym anymore.
@@ -391,7 +391,7 @@ class GymMulti(ExperimentFunction):
             #    self.compilergym_index is None
             # ), "compiler_gym_pb_index should not be defined if not CompilerGym."
             env = gym.make(self.short_name if "LANM" not in self.short_name else "gym_anm:ANM6Easy-v0")
-            o = env.reset()
+            env.reset()
         return env
 
     def __init__(
