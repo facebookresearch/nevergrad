@@ -711,12 +711,12 @@ def test_ngopt_selection(
         # pylint: disable=expression-not-assigned
         opt = optlib.registry[name](param, budget=budget, num_workers=num_workers)
         # pylint: disable=pointless-statement
-        opt.optim  # type: ignore
+        o = str(opt.optim)  # type: ignore
         pattern = rf".*{name} selected (?P<name>\w+?) optimizer\."
         try:
             match = re.match(pattern, caplog.text.splitlines()[-1])
         except Exception as e:
-            assert False, f"{caplog.text}"
+            assert False, f"{caplog.text} ==> {o}"
             raise e
         assert match is not None, f"Did not detect selection in logs: {caplog.text}"
         choice = match.group("name")
