@@ -743,16 +743,12 @@ def test_ngopt_selection(
         else:
             # print(f"Continuous param={param} budget={budget} workers={num_workers} --> {choice}")
             if num_workers >= budget > 600:
-                # assert choice == "MetaTuneRecentering"
-                assert "MetaTuneRecentering" in optim_string
+                #assert choice == "MetaTuneRecentering"
+                assert "MetaTuneRecentering" in o
             if num_workers > 1:
-                assert choice not in ["SQP", "Cobyla"]
-        if "CMA" not in choice:
-            assert choice == opt._info()["sub-optim"]
-        else:
-            assert choice in opt._info()["sub-optim"]
-        #assert expected == opt._info()["sub-optim"]
-        #assert opt._info()["sub-optim"] in o
+                #assert choice not in ["SQP", "Cobyla"]
+                assert "SQP" not in o and "Cobyla" not in o
+        assert expected == opt._info()["sub-optim"]
 
 
 def test_bo_ordering() -> None:
