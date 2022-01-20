@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import re
 import sys
 import time
 import random
@@ -724,6 +723,7 @@ def test_ngopt_selection(
         # The pattern matching from the log does not work anymore,
         # hence some modifications below. We might delete the old version.
         o = str(opt.optim)  # type: ignore
+        # import re
         # pattern = rf".*{name} selected (?P<name>\w+?) optimizer\."
         # match = re.match(pattern, caplog.text.splitlines()[-1])
         # assert match is not None, f"Did not detect selection in logs: {caplog.text}"
