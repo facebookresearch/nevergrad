@@ -728,6 +728,15 @@ def test_ngopt_selection(
         # match = re.match(pattern, caplog.text.splitlines()[-1])
         # assert match is not None, f"Did not detect selection in logs: {caplog.text}"
         # choice = match.group("name")
+#        opt.optim  # type: ignore
+#        pattern = rf".*{name} selected (?P<name>\w+?) optimizer\."
+#        try:
+#            match = re.match(pattern, caplog.text.splitlines()[-1])
+#        except Error as e:
+#            print(f"{caplog.text.splitlines()}")
+#            raise e
+#        assert match is not None, f"Did not detect selection in logs: {caplog.text}"
+        choice = match.group("name")
         if expected != "#CONTINUOUS":
             # assert choice == expected
             assert expected in optim_string
