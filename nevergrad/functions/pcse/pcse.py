@@ -35,11 +35,12 @@ class Pcse(ArrayExperimentFunction):
         import matplotlib.pyplot as plt
         import yaml
         import pandas as pd
-        import numpy as np
         from pcse.models import Wofost72_PP
         from pcse.base import ParameterProvider
         from pcse.db import NASAPowerWeatherDataProvider
-        from pcse.fileinput import YAMLAgroManagementReader, YAMLCropDataProvider
+
+        # from pcse.fileinput import YAMLAgroManagementReader, YAMLCropDataProvider
+        from pcse.fileinput import YAMLCropDataProvider
         from pcse.util import WOFOST72SiteDataProvider, DummySoilDataProvider
 
         # Weather data for Netherlands
