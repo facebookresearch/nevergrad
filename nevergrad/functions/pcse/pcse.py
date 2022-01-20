@@ -160,3 +160,4 @@ class Pcse(ArrayExperimentFunction):
         #super().__init__(objfunc_calculator, parametrization=param)
         #param = ng.p.Array(shape=(2,), lower=(TDWI_range[0], SPAN_range[0]), upper=(TDWI_range[1], SPAN_range[1]))
         super().__init__(objfunc_calculator, parametrization=param, symmetry=symmetry)
+        param = ng.p.Array(shape=(2,), lower=(TDWI_range[0], SPAN_range[0]), upper=(TDWI_range[1], SPAN_range[1]))
