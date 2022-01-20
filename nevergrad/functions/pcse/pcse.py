@@ -145,7 +145,11 @@ class Pcse(ArrayExperimentFunction):
         # error = objfunc_calculator(defaults)
         # print("Objective function value with default parameters (%s): %s" % (defaults, error))
 
+        import nevergrad as ng
+
+        TDWI_range = [0.1, 0.6]
+        SPAN_range = [30, 40]
         param = ng.p.Array(
             shape=(2,), lower=(TDWI_range[0], SPAN_range[0]), upper=(TDWI_range[1], SPAN_range[1])
-        )
+        ).set_name("2hp")
         super().__init__(objfunc_calculator, parametrization=param)
