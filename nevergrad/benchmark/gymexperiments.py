@@ -223,7 +223,6 @@ def conformant_gp(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     return ng_full_gym(seed, conformant=True, gp=True)
 
 
-
 @registry.register
 def sparse_gp(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """GP benchmark.
