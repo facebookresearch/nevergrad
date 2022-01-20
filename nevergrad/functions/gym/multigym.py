@@ -362,8 +362,8 @@ class GymMulti(ExperimentFunction):
             # CompilerGym sends http requests that CircleCI does not like.
             if os.environ.get("CIRCLECI", False):
                 raise ng.errors.UnsupportedExperiment("No HTTP request in CircleCI")
-            assert limited_compiler_gym is not None
-            self.num_episode_steps = 45 if limited_compiler_gym else 50
+            assert self.limited_compiler_gym is not None
+            self.num_episode_steps = 45 if self.limited_compiler_gym else 50
             import compiler_gym
 
             env = gym.make("llvm-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
@@ -377,15 +377,11 @@ class GymMulti(ExperimentFunction):
             )
 
             if self.stochastic_problem:
-                assert (
-                    compiler_gym_pb_index is None
-                ), "compiler_gym_pb_index should not be defined in the stochastic case."
-                self.compilergym_index = None
+                assert self.compilergym_index is None
                 # In training, we randomly draw in csmith (but we are allowed to use 100x more budget :-) ).
                 o = env.reset(benchmark=np.random.choice(self.csmith))
             else:
-                assert compiler_gym_pb_index is not None
-                self.compilergym_index = compiler_gym_pb_index
+                assert self.compilergym_index is not None
                 o = env.reset(benchmark=self.uris[self.compilergym_index])
             # env.require_dataset("cBench-v1")
             # env.unwrapped.benchmark = "benchmark://cBench-v1/qsort"
@@ -415,6 +411,7 @@ class GymMulti(ExperimentFunction):
         # limited_compiler_gym: bool or None.
         #        whether we work with the limited version
         self.limited_compiler_gym = limited_compiler_gym
+        self.compilergym_index = compiler_gym_pb_index
         self.optimization_scale = optimization_scale
         self.num_training_codes = 100 if limited_compiler_gym else 5000
         self.uses_compiler_gym = "compiler" in name
@@ -429,6 +426,7 @@ class GymMulti(ExperimentFunction):
 
         # Build various attributes.
         self.short_name = name  # Just the environment name.
+        env = self.create_env()
         self.name = (
             (name if not self.uses_compiler_gym else name + str(env))
             + "__"
@@ -441,7 +439,6 @@ class GymMulti(ExperimentFunction):
         if randomized:
             self.name += "_unseeded"
         self.randomized = randomized
-        env = self.create_env()
         try:
             try:
                 self.num_time_steps = env._max_episode_steps  # I know! This is a private variable.
