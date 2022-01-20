@@ -26,7 +26,6 @@ from nevergrad.functions.ac import NgAquacrop
 from nevergrad.functions.stsp import STSP
 from nevergrad.functions.rocket import Rocket
 from nevergrad.functions.irrigation import Irrigation
-from nevergrad.functions.pcse import CropSimulator
 from nevergrad.functions.mixsimulator import OptimizeMix
 from nevergrad.functions.unitcommitment import UnitCommitmentProblem
 from nevergrad.functions import control
@@ -1520,6 +1519,14 @@ def kenya_new_many_crop_and_variety_irrigation(seed: tp.Optional[int] = None) ->
     return irrigation(seed, kenya=True, variety_choice=True, multi_crop=True, year_min=2016, year_max=2021)
 
 @registry.register
+def kenya_future_many_crop_and_variety_irrigation(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    return irrigation(seed, kenya=True, variety_choice=True, multi_crop=True, year_min=2026, year_max=2031)
+
+@registry.register
+def kenya_farfuture_many_crop_and_variety_irrigation(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    return irrigation(seed, kenya=True, variety_choice=True, multi_crop=True, year_min=2036, year_max=2041)
+
+@registry.register
 def kenya_old_many_crop_and_variety_irrigation(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     return irrigation(seed, kenya=True, variety_choice=True, multi_crop=True, year_min=1996, year_max=2001)
 
@@ -1551,7 +1558,7 @@ def crop_simulator(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     Low dimensional problem, only 2 vars. This is optimization for model identification: we want
     to find parameters so that the simulation matches observations.
     """
-    funcs = [CropSimulator()]
+    funcs = [Pcse()]
     seedg = create_seed_generator(seed)
     optims = ["DE", "PSO", "CMA", "NGOpt"]
     for budget in [25, 50, 100, 200]:

@@ -8,7 +8,7 @@ from . import pcse
 
 
 def test_pcse() -> None:
-    func = pcse.CropSimulator()
+    func = pcse.Pcse()
     x = 0 * np.random.rand(func.dimension)
     value = func(x)
     value2 = func(x)
