@@ -1,0 +1,17 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
+import numpy as np
+from . import pcse
+
+
+def test_rocket() -> None:
+    func = pcse.Pcse()
+    x = 0 * np.random.rand(func.dimension)
+    value = func(x)
+    value2 = func(x)
+    assert value > -1000.
+    assert value < 1000.
+    np.testing.assert_almost_equal(value, value2)
