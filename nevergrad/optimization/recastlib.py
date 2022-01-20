@@ -39,13 +39,14 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
             "Nelder-Mead",
             "COBYLA",
             "SLSQP",
+            "NLOPT",
             "Powell",
         ], f"Unknown method '{method}'"
         self.method = method
         self.random_restart = random_restart
         # The following line rescales to [0, 1] if fully bounded.
 
-        if method == "CmaFmin2":
+        if method == "CmaFmin2" or method == "NLOPT":
             normalizer = p.helpers.Normalizer(self.parametrization)
             if normalizer.fully_bounded:
                 self._normalizer = normalizer
@@ -72,7 +73,41 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
         while remaining > 0:  # try to restart if budget is not elapsed
             options: tp.Dict[str, tp.Any] = {} if weakself.budget is None else {"maxiter": remaining}
             # options: tp.Dict[str, tp.Any] = {} if self.budget is None else {"maxiter": remaining}
-            if weakself.method == "CmaFmin2":
+            if weakself.method == "NLOPT":
+                # This is NLOPT, used as in the PCSE simulator notebook.
+                import nlopt
+
+                def nlopt_objective_function(*args):
+                    data = np.asarray([arg for arg in args])[0]
+                    assert len(data) == weakself.dimension, (
+                        str(data) + " does not have length " + str(weakself.dimension)
+                    )
+                    if weakself._normalizer is not None:
+                        data = weakself._normalizer.backward(np.asarray(data, dtype=np.float32))
+                    return objective_function(data)
+
+                opt = nlopt.opt(nlopt.LN_SBPLX, weakself.dimension)
+                # Assign the objective function calculator
+                opt.set_min_objective(nlopt_objective_function)
+                # Set the bounds.
+                opt.set_lower_bounds([0.0] * weakself.dimension)
+                opt.set_upper_bounds([1.0] * weakself.dimension)
+                # opt.set_initial_step([0.05, 0.05])
+                opt.set_maxeval(budget)
+                # Relative tolerance for convergence
+                opt.set_ftol_rel(1.0e-10)
+
+                # Start the optimization with the first guess
+                firstguess = [0.5] * weakself.dimension
+                best_x = opt.optimize(firstguess)
+                # print("\noptimum at TDWI: %s, SPAN: %s" % (x[0], x[1]))
+                # print("minimum value = ",  opt.last_optimum_value())
+                # print("result code = ", opt.last_optimize_result())
+                # print("With %i function calls" % objfunc_calculator.n_calls)
+                if weakself._normalizer is not None:
+                    best_x = weakself._normalizer.backward(np.asarray(best_x, dtype=np.float32))
+
+            elif weakself.method == "CmaFmin2":
 
                 def cma_objective_function(data):
                     # Hopefully the line below does nothing if unbounded and rescales from [0, 1] if bounded.
@@ -154,6 +189,7 @@ class NonObjectOptimizer(base.ConfiguredOptimizer):
 
 NelderMead = NonObjectOptimizer(method="Nelder-Mead").set_name("NelderMead", register=True)
 CmaFmin2 = NonObjectOptimizer(method="CmaFmin2").set_name("CmaFmin2", register=True)
+NLOPT = NonObjectOptimizer(method="NLOPT").set_name("NLOPT", register=True)
 Powell = NonObjectOptimizer(method="Powell").set_name("Powell", register=True)
 RPowell = NonObjectOptimizer(method="Powell", random_restart=True).set_name("RPowell", register=True)
 Cobyla = NonObjectOptimizer(method="COBYLA").set_name("Cobyla", register=True)
