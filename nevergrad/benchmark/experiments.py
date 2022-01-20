@@ -25,6 +25,7 @@ from nevergrad.functions.powersystems import PowerSystem
 from nevergrad.functions.ac import NgAquacrop
 from nevergrad.functions.stsp import STSP
 from nevergrad.functions.rocket import Rocket
+from nevergrad.functions.pcse import Pcse
 from nevergrad.functions.mixsimulator import OptimizeMix
 from nevergrad.functions.unitcommitment import UnitCommitmentProblem
 from nevergrad.functions import control
@@ -1270,6 +1271,25 @@ def rocket(seed: tp.Optional[int] = None, seq: bool = False) -> tp.Iterator[Expe
                     for fu in funcs:
                         xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
                         skip_ci(reason="Too slow")
+                        if not xp.is_incoherent:
+                            yield xp
+
+
+@registry.register
+def pcse(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Crop simulator.
+
+    Low dimensional problem, only 2 vars.
+    """
+    funcs = [Pcse()]
+    seedg = create_seed_generator(seed)
+    optims = get_optimizers("basics", seed=next(seedg))
+    for budget in [25, 50, 100, 200]:
+        for num_workers in [1, 10, 40]:
+            if num_workers < budget:
+                for algo in optims:
+                    for fu in funcs:
+                        xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
                         if not xp.is_incoherent:
                             yield xp
 
