@@ -23,6 +23,7 @@ from nevergrad.functions import images as imagesxp
 from nevergrad.functions.powersystems import PowerSystem
 from nevergrad.functions.stsp import STSP
 from nevergrad.functions.rocket import Rocket
+from nevergrad.functions.irrigation import Irrigation
 from nevergrad.functions.pcse import Pcse
 from nevergrad.functions.mixsimulator import OptimizeMix
 from nevergrad.functions.unitcommitment import UnitCommitmentProblem
@@ -1181,7 +1182,7 @@ def irrigation(seed: tp.Optional[int] = None, seq: bool = False) -> tp.Iterator[
     """Irrigation simulator. Maximize leaf area index,
     so that you get a lot of primary production.
     Sequential or 30 workers."""
-    funcs = [Rocket(i) for i in range(17)]
+    funcs = [Irrigation(i) for i in range(17)]
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", seed=next(seedg))
     for budget in [25, 50, 100, 200]:
