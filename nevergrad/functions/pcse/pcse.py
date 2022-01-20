@@ -13,13 +13,16 @@ import pandas as pd
 import yaml
 import numpy as np
 import nevergrad as ng
+
 from ..base import ArrayExperimentFunction
 
 # pylint: disable=too-many-locals,too-many-statements
 
 
-class CropSimulator(ArrayExperimentFunction):
-    def __init__(self) -> None:
+class Pcse(ArrayExperimentFunction):
+
+
+    def __init__(self, symmetry: int = 0) -> None:
         try:
             #raise Exception("We do not import EUPL code by default.")
             import pcse  # pylint: disable=unused-import
@@ -27,14 +30,22 @@ class CropSimulator(ArrayExperimentFunction):
             raise ng.errors.UnsupportedExperiment(
                 "You need to install PCSE. Check that the EUPL license is ok for you."
             )
+        import sys
+        import matplotlib
+        import matplotlib.pyplot as plt
+        import yaml
+        import pandas as pd
+        import numpy as np
+        from itertools import product
+        #from progressbar import printProgressBar
+        
+        import pcse
         from pcse.models import Wofost72_PP
         from pcse.base import ParameterProvider
         from pcse.db import NASAPowerWeatherDataProvider
-
-        # from pcse.fileinput import YAMLAgroManagementReader, YAMLCropDataProvider
-        from pcse.fileinput import YAMLCropDataProvider
+        from pcse.fileinput import YAMLAgroManagementReader, YAMLCropDataProvider
         from pcse.util import WOFOST72SiteDataProvider, DummySoilDataProvider
-
+    
         # Weather data for Netherlands
         wdp = NASAPowerWeatherDataProvider(latitude=52, longitude=5)
         # Standard crop parameter library
@@ -61,26 +72,28 @@ class CropSimulator(ArrayExperimentFunction):
             StateEvents: null
         """
         agro = yaml.safe_load(agro_yaml)
-
+        
         wofost = Wofost72_PP(params, wdp, agro)
         wofost.run_till_terminate()
         df = pd.DataFrame(wofost.get_output())
         df.index = pd.to_datetime(df.day)
         df.tail()
-
+        
         # get daily observations for those
         ix = (df.index.dayofweek == 0) & (df.LAI.notnull())
         df_pseudo_obs = df.loc[ix]
-
+        fig, axes = plt.subplots(figsize=(12,8))
+        axes.plot_date(df_pseudo_obs.index, df_pseudo_obs.LAI)
+        r = axes.set_title("Pseudo LAI observations")
+        
         class ModelRerunner(object):
             """Reruns a given model with different values of parameters TWDI and SPAN.
-
+            
             Returns a pandas DataFrame with simulation results of the model with given
             parameter values.
             """
-
             parameters = ["TDWI", "SPAN"]
-
+            
             def __init__(self, params, wdp, agro):
                 self.params = params
                 self.wdp = wdp
@@ -144,4 +157,6 @@ class CropSimulator(ArrayExperimentFunction):
         param = ng.p.Array(
             shape=(2,), lower=(TDWI_range[0], SPAN_range[0]), upper=(TDWI_range[1], SPAN_range[1])
         ).set_name("2hp")
-        super().__init__(objfunc_calculator, parametrization=param)
+        #super().__init__(objfunc_calculator, parametrization=param)
+        #param = ng.p.Array(shape=(2,), lower=(TDWI_range[0], SPAN_range[0]), upper=(TDWI_range[1], SPAN_range[1]))
+        super().__init__(objfunc_calculator, parametrization=param, symmetry=symmetry)

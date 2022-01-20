@@ -5,4 +5,4 @@
 
 # Based on https://github.com/ajwdewit/pcse_notebooks
 # MIT License.
-from .pcse import CropSimulator as CropSimulator
+from .pcse import Pcse as Pcse
