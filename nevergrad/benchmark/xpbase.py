@@ -61,7 +61,7 @@ class OptimizerSettings:
         self.num_workers = num_workers
         ng_cpus_per_task = int(os.getenv("NG_CPUS_PER_TASK", "1"))
         if ng_cpus_per_task > 1:
-            self.executor = futures.ThreadPoolExecutor(max_workers=ng_cpus_per_task)  # type: ignore
+            self.executor: tp.Any = futures.ThreadPoolExecutor(max_workers=ng_cpus_per_task)
             assert not batch_mode
         else:
             self.executor = execution.MockedTimedExecutor(batch_mode)
