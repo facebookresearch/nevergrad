@@ -22,8 +22,8 @@ from ..base import ArrayExperimentFunction
 class Pcse(ArrayExperimentFunction):
     def __init__(self, symmetry: int = 0) -> None:
         try:
-            raise Exception("We do not import EUPL code by default.")
-            # import pcse  # pylint: disable=unused-import
+            # raise Exception("We do not import EUPL code by default.")
+            import pcse  # pylint: disable=unused-import
         except:
             raise ng.errors.UnsupportedExperiment(
                 "You need to install PCSE. Check that the EUPL license is ok for you."
