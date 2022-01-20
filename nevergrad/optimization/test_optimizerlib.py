@@ -715,7 +715,7 @@ def test_ngopt_selection(
         pattern = rf".*{name} selected (?P<name>\w+?) optimizer\."
         try:
             match = re.match(pattern, caplog.text.splitlines()[-1])
-        except Error as e:
+        except Exception as e:
             print(f"{caplog.text.splitlines()}")
             raise e
         assert match is not None, f"Did not detect selection in logs: {caplog.text}"
