@@ -711,21 +711,23 @@ def test_ngopt_selection(
         # pylint: disable=expression-not-assigned
         opt = optlib.registry[name](param, budget=budget, num_workers=num_workers)
         # pylint: disable=pointless-statement
+        # The pattern matching from the log does not work anymore,
+        # hence some modifications below. We might delete the old version.
         o = str(opt.optim)  # type: ignore
         # pattern = rf".*{name} selected (?P<name>\w+?) optimizer\."
         # match = re.match(pattern, caplog.text.splitlines()[-1])
-        #assert match is not None, f"Did not detect selection in logs: {caplog.text}"
-        #choice = match.group("name")
+        # assert match is not None, f"Did not detect selection in logs: {caplog.text}"
+        # choice = match.group("name")
         if expected != "#CONTINUOUS":
-            #assert choice == expected
+            # assert choice == expected
             assert expected in o
         else:
-            print(f"Continuous param={param} budget={budget} workers={num_workers} --> {choice}")
+            # print(f"Continuous param={param} budget={budget} workers={num_workers} --> {choice}")
             if num_workers >= budget > 600:
-                #assert choice == "MetaTuneRecentering"
+                # assert choice == "MetaTuneRecentering"
                 assert "MetaTuneRecentering" in o
             if num_workers > 1:
-                #assert choice not in ["SQP", "Cobyla"]
+                # assert choice not in ["SQP", "Cobyla"]
                 assert "SQP" not in o and "Cobyla" not in o
         assert expected == opt._info()["sub-optim"]
 
