@@ -716,7 +716,7 @@ def test_ngopt_selection(
         try:
             match = re.match(pattern, caplog.text.splitlines()[-1])
         except Exception as e:
-            print(f"{caplog.text.splitlines()}")
+            assert False, f"{caplog.text}"
             raise e
         assert match is not None, f"Did not detect selection in logs: {caplog.text}"
         choice = match.group("name")
