@@ -1181,7 +1181,8 @@ def rocket(seed: tp.Optional[int] = None, seq: bool = False) -> tp.Iterator[Expe
 def pcse(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Crop simulator.
 
-    Low dimensional problem, only 2 vars.
+    Low dimensional problem, only 2 vars. This is optimization for model identification: we want
+    to find parameters so that the simulation matches observations.
     """
     funcs = [Pcse()]
     seedg = create_seed_generator(seed)
