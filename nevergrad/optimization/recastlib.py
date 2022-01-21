@@ -75,6 +75,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
             # options: tp.Dict[str, tp.Any] = {} if self.budget is None else {"maxiter": remaining}
             if weakself.method == "NLOPT":
                 # This is NLOPT, used as in the PCSE simulator notebook.
+                # ( https://github.com/ajwdewit/pcse_notebooks ).
                 import nlopt
 
                 def nlopt_objective_function(*args):
