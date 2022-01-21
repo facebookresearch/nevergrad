@@ -9,9 +9,9 @@ Based on
 https://raw.githubusercontent.com/purdue-orbital/rocket-simulation/master/Simulation2.py
 """
 
-import math
-import pyproj
-import numpy as np
+# import math
+# import pyproj
+# import numpy as np
 from nevergrad.parametrization import parameter
 from ..base import ExperimentFunction
 
@@ -59,7 +59,7 @@ class Ac(ExperimentFunction):
             model.step(till_termination=True)
             return model.Outputs.Final
 
-        import numpy as np  # import numpy library
+        # import numpy as np  # import numpy library
 
         def evaluate(smts) -> float:  # ,max_irr_season,test=False):
             """
@@ -71,7 +71,7 @@ class Ac(ExperimentFunction):
             out = run_model(smts, max_irr_season, year1=2016, year2=2018)
             # get yields and total irrigation
             yld = out["Yield (tonne/ha)"].mean()
-            tirr = out["Seasonal irrigation (mm)"].mean()
+            # tirr = out["Seasonal irrigation (mm)"].mean()
 
             reward = yld
 
