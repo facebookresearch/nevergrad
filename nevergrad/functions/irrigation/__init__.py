@@ -3,5 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# Based on https://github.com/facebookresearch/nevergrad/compare/main...fteytaud:opttorch
+# Based on https://github.com/ajwdewit/pcse_notebooks
+# (MIT License).
 from .irrigation import Irrigation as Irrigation
