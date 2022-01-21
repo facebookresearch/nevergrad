@@ -13,12 +13,15 @@ import math
 import pyproj
 import numpy as np
 from nevergrad.parametrization import parameter
-from ..base import ArrayExperimentFunction
+from ..base import ExperimentFunction
 
 # pylint: disable=too-many-locals,too-many-statements
 
 # Inspired by
 # https://colab.research.google.com/github/thomasdkelly/aquacrop/blob/master/tutorials/AquaCrop_OSPy_Notebook_3.ipynb#scrollTo=YDm931IGNxCb
+
+from aquacrop.classes import *
+from aquacrop.core import *
 
 
 class Ac(ExperimentFunction):
@@ -31,9 +34,6 @@ class Ac(ExperimentFunction):
         import sys
 
         # _=[sys.path.append(i) for i in ['.', '..']]
-
-        from aquacrop.classes import *
-        from aquacrop.core import *
 
         path = get_filepath("champion_climate.txt")
         wdf = prepare_weather(path)

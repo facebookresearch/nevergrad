@@ -1162,7 +1162,7 @@ def realworld(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 def aquacrop_fao(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """FAO Crop simulator. Maximize yield."""
 
-    funcs = [Ac(i, 300.0 + 150.0 * cos(i)) for i in range(3, 7)]
+    funcs = [Ac(i, 300.0 + 150.0 * np.cos(i)) for i in range(3, 7)]
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", seed=next(seedg))
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
