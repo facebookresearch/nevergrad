@@ -426,7 +426,10 @@ class _CMA(base.Optimizer):
         scale_multiplier = 1.0
         if p.helpers.Normalizer(self.parametrization).fully_bounded:
             scale_multiplier = 0.3 if self.dimension < 18 else 0.15
-        if self._es is None:
+        # IPOP mechanism: double the pop size at each stop.
+        if self._es is not None and not self._config.fcmaes and self._es.stop() and self.dimension > 15:
+            self._popsize *= 2
+        if self._es is None or (not self._config.fcmaes and self._es.stop()):
             if not self._config.fcmaes:
                 import cma  # import inline in order to avoid matplotlib initialization warning
 
@@ -438,12 +441,16 @@ class _CMA(base.Optimizer):
                     seed=np.nan,
                     CMA_elitist=self._config.elitist,
                 )
-
+                x0 = np.zeros(self.dimension, dtype=np.float_)
+                # We use here the BBOB proposal tool.
+                # I am not sure this makes sense, maybe this is very BBOB specific.
+                if self._config.random_init or (self._es is not None and self._es.stop()):
+                    x0 = self.parametrization.sample().get_standardized_data(reference=self.parametrization)
+                    x0 += self.parametrization.sample().get_standardized_data(reference=self.parametrization)
+                    x0 = 0.5 * x0
                 inopts.update(self._config.inopts if self._config.inopts is not None else {})
                 self._es = cma.CMAEvolutionStrategy(
-                    x0=self.parametrization.sample().get_standardized_data(reference=self.parametrization)
-                    if self._config.random_init
-                    else np.zeros(self.dimension, dtype=np.float_),
+                    x0=x0,
                     sigma0=self._config.scale * scale_multiplier,
                     inopts=inopts,
                 )
@@ -488,12 +495,14 @@ class _CMA(base.Optimizer):
         pessimistic = self.current_bests["pessimistic"].parameter.get_standardized_data(
             reference=self.parametrization
         )
-        if self._es is None:
-            return pessimistic
-        cma_best: tp.Optional[np.ndarray] = self.es.best_x if self._config.fcmaes else self.es.result.xbest
-        if cma_best is None:
-            return pessimistic
-        return cma_best
+        return pessimistic
+        # Are there cases in which we should return self.es.best_x ?
+        # if self._es is None:
+        #    return pessimistic
+        # cma_best: tp.Optional[np.ndarray] = self.es.best_x if self._config.fcmaes else self.es.result.xbest
+        # if cma_best is None:
+        #    return pessimistic
+        # return cma_best
 
 
 class ParametrizedCMA(base.ConfiguredOptimizer):
@@ -1535,7 +1544,7 @@ class _MetaModel(base.Optimizer):
 
     def _internal_ask_candidate(self) -> p.Parameter:
         # We request a bit more points than what is really necessary for our dimensionality (+dimension).
-        sample_size = int((self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1)
+        sample_size = int((self.dimension * (self.dimension - 1)) / 2 + 17 * self.dimension + 1)
         freq = max(13, self.num_workers, self.dimension, int(self.frequency_ratio * sample_size))
         if len(self.archive) >= sample_size and not self._num_ask % freq:
             try:
@@ -2809,7 +2818,7 @@ class NGOpt38(NGOpt16):
 
 
 @registry.register
-class NGOpt39(NGOpt16):
+class NGOpt46(NGOpt16):
     def _select_optimizer_cls(self) -> base.OptCls:
         if self.fully_continuous and self.has_noise:  # In particular for neuro-DPS.
             DeterministicMix = ConfPortfolio(optimizers=[DiagonalCMA, PSO, GeneticDE])
@@ -2855,9 +2864,13 @@ class NGOpt39(NGOpt16):
             if self.dimension < 5:  # Low dimension: let us hit the bounds.
                 return NGOpt21
             if self.dimension < 10:  # Moderate dimension: reasonable restart + bet and run.
+                if self.num_workers <= cma_vars:
+                    return ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
                 num = 1 + int(np.sqrt(8.0 * (8 * self.budget) // (self.dimension * 1000)))
                 return ConfPortfolio(optimizers=[NGOpt14] * num, warmup_ratio=0.7)
             if self.dimension < 20:  # Nobody knows why this seems to be so good.
+                if self.num_workers <= cma_vars:
+                    return CmaFmin2
                 num = self.budget // (500 * self.dimension)
                 return ConfPortfolio(
                     optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3 ** i) for i in range(num)],
@@ -2889,7 +2902,7 @@ class NGOpt39(NGOpt16):
 
 
 @registry.register
-class NGOpt(NGOpt39):
+class NGOpt(NGOpt46):
     # Learning something automatically so that it's less unreadable would be great.
     pass
 
