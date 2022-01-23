@@ -9,9 +9,6 @@ Based on
 https://colab.research.google.com/github/thomasdkelly/aquacrop/blob/master/tutorials/AquaCrop_OSPy_Notebook_3.ipynb#scrollTo=YDm931IGNxCb
 """
 
-# import math
-# import pyproj
-# import numpy as np
 from nevergrad.parametrization import parameter
 from ..base import ExperimentFunction
 
@@ -25,15 +22,14 @@ from aquacrop.core import *
 
 
 class Ac(ExperimentFunction):
+    
     def __init__(self, num_smts: int, max_irr_seasonal: float) -> None:
         self.num_smts = num_smts
         self.max_irr_seasonal = max_irr_seasonal
         super().__init__(self.loss, parametrization=parameter.Array(shape=(num_smts,)))
 
+        
     def loss(self, smts):
-        # import sys
-
-        # _=[sys.path.append(i) for i in ['.', '..']]
 
         path = get_filepath("champion_climate.txt")
         wdf = prepare_weather(path)
@@ -59,8 +55,7 @@ class Ac(ExperimentFunction):
             model.step(till_termination=True)
             return model.Outputs.Final
 
-        # import numpy as np  # import numpy library
-
+        
         def evaluate(smts) -> float:  # ,max_irr_season,test=False):
             """
             Function to run model and calculate reward (yield) for given set of soil moisture targets
