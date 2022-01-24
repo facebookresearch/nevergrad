@@ -22,13 +22,11 @@ from aquacrop.core import *
 
 
 class Ac(ExperimentFunction):
-    
     def __init__(self, num_smts: int, max_irr_seasonal: float) -> None:
         self.num_smts = num_smts
         self.max_irr_seasonal = max_irr_seasonal
         super().__init__(self.loss, parametrization=parameter.Array(shape=(num_smts,)))
 
-        
     def loss(self, smts):
 
         path = get_filepath("champion_climate.txt")
@@ -55,7 +53,6 @@ class Ac(ExperimentFunction):
             model.step(till_termination=True)
             return model.Outputs.Final
 
-        
         def evaluate(smts) -> float:  # ,max_irr_season,test=False):
             """
             Function to run model and calculate reward (yield) for given set of soil moisture targets
