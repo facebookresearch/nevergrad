@@ -82,7 +82,8 @@ def ng_full_gym(
         try:
             import pybullet  # pylint: disable=unused-import
             import pybullet_envs  # pylint: disable=unused-import
-            import pybulletgym  # pylint: disable=unused-import
+
+            # import pybulletgym  # pylint: disable=unused-import
             import pyvirtualdisplay
 
             # I deserve eternal damnation for this hack:
