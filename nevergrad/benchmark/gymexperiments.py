@@ -54,6 +54,7 @@ def ng_full_gym(
     conformant: bool = False,
     gp: bool = False,
     sparse: bool = False,
+    multi_scale: bool = False,
 ) -> tp.Iterator[Experiment]:
     """Gym simulator. Maximize reward.  Many distinct problems.
 
@@ -90,7 +91,7 @@ def ng_full_gym(
                 "CartPole-v1",
                 "Acrobot-v1",
                 "MountainCarContinuous-v0",
-                "Pendulum-v0",
+                "Pendulum-v1",
                 "InvertedPendulumSwingupBulletEnv-v0",
                 "BipedalWalker-v3",
                 "BipedalWalkerHardcore-v3",
@@ -164,21 +165,26 @@ def ng_full_gym(
                 if sparse:
                     sparse_limits += [10, 100, 1000]
                 for sparse_limit in sparse_limits:
-                    try:
-                        func = nevergrad_gym.GymMulti(
-                            name,
-                            control=control,
-                            neural_factor=neural_factor,
-                            randomized=randomized,
-                            sparse_limit=sparse_limit,
-                        )
-                    except MemoryError:
-                        continue
-                    for budget in budgets:
-                        for algo in optims:
-                            xp = Experiment(func, algo, budget, num_workers=1, seed=next(seedg))
-                            if not xp.is_incoherent:
-                                yield xp
+                    optimization_scales: tp.List[int] = [0]
+                    if multi_scale:
+                        optimization_scales = [-6, -4, -2, 0]
+                    for optimization_scale in optimization_scales:
+                        try:
+                            func = nevergrad_gym.GymMulti(
+                                name,
+                                control=control,
+                                neural_factor=neural_factor,
+                                randomized=randomized,
+                                optimization_scale=optimization_scale,
+                                sparse_limit=sparse_limit,
+                            )
+                        except MemoryError:
+                            continue
+                        for budget in budgets:
+                            for algo in optims:
+                                xp = Experiment(func, algo, budget, num_workers=1, seed=next(seedg))
+                                if not xp.is_incoherent:
+                                    yield xp
 
 
 @registry.register
@@ -211,7 +217,7 @@ def gp(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
     Counterpart of ng_full_gym with a specific, reduced list of problems for matching
     a genetic programming benchmark."""
-    return ng_full_gym(seed, gp=True)
+    return ng_full_gym(seed, gp=True, multi_scale=True)
 
 
 @registry.register
@@ -220,7 +226,7 @@ def sparse_gp(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
     Counterpart of ng_full_gym with a specific, reduced list of problems for matching
     a genetic programming benchmark."""
-    return ng_full_gym(seed, gp=True, sparse=True)
+    return ng_full_gym(seed, gp=True, sparse=True, multi_scale=True)
 
 
 @registry.register
