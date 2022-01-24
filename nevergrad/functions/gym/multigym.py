@@ -56,13 +56,12 @@ CONTROLLERS = [
     "deep_extrapolatestackingmemory_neural",
     "semideep_extrapolatestackingmemory_neural",
     "semideep_memory_neural",
-    "scrambled_semideep_neural",
-    "noisy_scrambled_semideep_neural",
-    "scrambled_deep_neural",
+    "noisy_semideep_neural",
+    "noisy_scrambled_semideep_neural",  # Scrambling: why not perturbating the order of variables ?
+    "noisy_deep_neural",
     "noisy_scrambled_deep_neural",
     "multi_neural",  # One neural net per time step.
     "noisy_neural",  # Do not start at 0 but at a random point.
-    "scrambled_neural",  # Why not perturbating the order of variables ?
     "noisy_scrambled_neural",
     "stochastic_conformant",  # Conformant planning, but still not deterministic.
 ]
@@ -547,6 +546,10 @@ class GymMulti(ExperimentFunction):
             "neural": neural_size,
             "deep_neural": neural_size,
             "semideep_neural": neural_size,
+            "noisy_semideep_neural": neural_size,
+            "noisy_deep_neural": neural_size,
+            "noisy_scrambled_semideep_neural": neural_size,
+            "noisy_scrambled_deep_neural": neural_size,
             "deep_memory_neural": neural_size,
             "semideep_memory_neural": neural_size,
             "deep_stackingmemory_neural": neural_size,
@@ -573,7 +576,8 @@ class GymMulti(ExperimentFunction):
         if sparse_limit is not None:
             parametrization1 = parameter.Array(shape=shape)
             repetitions = int(np.prod(shape))
-            assert isinstance(repetitions, int), f"{repetitions}"
+            
+            isinstance(repetitions, int), f"{repetitions}"
             parametrization2 = ng.p.Choice([0, 1], repetitions=repetitions)  # type: ignore
             parametrization = ng.p.Instrumentation(  # type: ignore
                 weights=parametrization1,
