@@ -123,6 +123,18 @@ def progressive() -> tp.Sequence[Optim]:
 
 
 @registry.register
+def anisotropic_progressive() -> tp.Sequence[Optim]:
+    optims: tp.List[Optim] = []
+    for num_optims in [None, 3, 5, 9, 13]:
+        for str_optim in ["CMA", "ECMA", "DE", "TwoPointsDE", "PSO", "NoisyRL2", "NoisyRL3", "NoisyRL1", "MixDeterministicRL"]:
+            optim = optimizerlib_registry[str_optim]
+            name = "Prog" + str_optim + ("Auto" if num_optims is None else str(num_optims))
+            opt = ConfSplitOptimizer(multivariate_optimizer=optim, num_optims=num_optims, progressive=True).set_name(name)
+            optims.append(opt)
+    return optims
+
+
+@registry.register
 def basics() -> tp.Sequence[Optim]:
     return ["NGOpt10", "CMandAS2", "CMA", "DE", "MetaModel"]
 
