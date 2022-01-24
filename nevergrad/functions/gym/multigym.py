@@ -56,6 +56,10 @@ CONTROLLERS = [
     "deep_extrapolatestackingmemory_neural",
     "semideep_extrapolatestackingmemory_neural",
     "semideep_memory_neural",
+    "scrambled_semideep_neural",
+    "noisy_scrambled_semideep_neural",
+    "scrambled_deep_neural",
+    "noisy_scrambled_deep_neural",
     "multi_neural",  # One neural net per time step.
     "noisy_neural",  # Do not start at 0 but at a random point.
     "scrambled_neural",  # Why not perturbating the order of variables ?
