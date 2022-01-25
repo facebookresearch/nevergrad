@@ -1049,6 +1049,7 @@ class _Rescaled(base.Optimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._optimizer = base_optimizer(self.parametrization, budget=budget, num_workers=num_workers)
+        self._optimizer.archive.delegate_to(self.archive)
         self._subcandidates: tp.Dict[str, p.Parameter] = {}
         if scale is None:
             assert self.budget is not None, "Either scale or budget must be known in _Rescaled."
@@ -1374,6 +1375,8 @@ class Portfolio(base.Optimizer):
                     num_workers=sub_workers,
                 )
             )
+        for optim in self.optims:
+            optim.archive.delegate_to(self.archive)
         # current optimizer choice
         self._selected_ind: tp.Optional[int] = None
         self._current = -1
@@ -2407,6 +2410,7 @@ class NGOptBase(base.Optimizer):
         if self._optim is None:
             self._optim = self._select_optimizer_cls()(self.parametrization, self.budget, self.num_workers)
             self._optim = self._optim if not isinstance(self._optim, NGOptBase) else self._optim.optim
+            self._optim.archive.delegate_to(self.archive)
             logger.debug("%s selected %s optimizer.", *(x.name for x in (self, self._optim)))
         return self._optim
 

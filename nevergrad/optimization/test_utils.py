@@ -97,12 +97,12 @@ def test_pruning() -> None:
     # pruning
     pruning = utils.Pruning(min_len=1, max_len=3)
     # 0 is best optimistic and average, and 3 is best pessimistic (variance=0)
-    archive = pruning(archive)
+    pruning(archive)
     testing.assert_set_equal([x[0] for x in archive.keys_as_arrays()], [0, 3], err_msg=f"Repetition #{k+1}")
     pickle.dumps(archive)  # should be picklable
     # should not change anything this time
-    archive2 = pruning(archive)
-    testing.assert_set_equal([x[0] for x in archive2.keys_as_arrays()], [0, 3], err_msg=f"Repetition #{k+1}")
+    pruning(archive)
+    testing.assert_set_equal([x[0] for x in archive.keys_as_arrays()], [0, 3], err_msg=f"Repetition #{k+1}")
 
 
 @pytest.mark.parametrize(  # type: ignore

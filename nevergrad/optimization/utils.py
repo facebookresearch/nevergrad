@@ -173,9 +173,27 @@ class Archive(tp.Generic[Y]):
     """
 
     def __init__(self) -> None:
-        self.bytesdict: tp.Dict[bytes, Y] = {}
+        self._data: tp.Union["Archive[Y]", tp.Dict[bytes, Y]] = {}
+
+    @property
+    def bytesdict(self) -> tp.Dict[bytes, Y]:
+        if not isinstance(self._data, Archive):
+            return self._data
+        else:
+            while self._data.is_delegated:  # unroll
+                self._data = self._data._data
+            return self._data._data  # type: ignore
+
+    def delegate_to(self, archive: "Archive[Y]") -> None:
+        self._data = archive
+
+    @property
+    def is_delegated(self) -> bool:
+        return isinstance(self._data, Archive)
 
     def __setitem__(self, x: tp.ArrayLike, value: Y) -> None:
+        if self.is_delegated:
+            raise RuntimeError("Cannot set from a delegated instance")
         self.bytesdict[_tobytes(x)] = value
 
     def __getitem__(self, x: tp.ArrayLike) -> Y:
@@ -255,13 +273,13 @@ class Pruning:
         self.max_len = max_len
         self._num_prunings = 0  # for testing it is not called too often
 
-    def __call__(self, archive: Archive[MultiValue]) -> Archive[MultiValue]:
-        if len(archive) < self.max_len:
-            return archive
-        return self._prune(archive)
+    def __call__(self, archive: Archive[MultiValue]) -> None:
+        if len(archive) >= self.max_len:
+            self._prune(archive)
 
-    def _prune(self, archive: Archive[MultiValue]) -> Archive[MultiValue]:
+    def _prune(self, archive: Archive[MultiValue]) -> None:
         self._num_prunings += 1
+        assert not isinstance(archive._data, Archive), "Cannot prune on delegated instance"
         # separate function to ease profiling
         quantiles: tp.Dict[str, float] = {}
         threshold = float(self.min_len + 1) / len(archive)
@@ -270,14 +288,13 @@ class Pruning:
             quantiles[name] = np.quantile(
                 [v.get_estimation(name) for v in archive.values()], threshold, interpolation="lower"
             )
-        new_archive: Archive[MultiValue] = Archive()
-        new_archive.bytesdict = {
+        bytesdict = {
             b: v
             for b, v in archive.bytesdict.items()
             if any(v.get_estimation(n) < quantiles[n] for n in names)
         }  # strict comparison to make sure we prune even for values repeated maaany times
         # this may remove all points though, but nevermind for now
-        return new_archive
+        archive._data = bytesdict
 
     @classmethod
     def sensible_default(cls, num_workers: int, dimension: int) -> "Pruning":
