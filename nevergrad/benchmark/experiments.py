@@ -1202,10 +1202,21 @@ def mixsimulator(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                             yield xp
 
 
+def check_mujoco():
+    try:
+        import mujoco_py
+    except:
+        print(
+            "MuJoCo not installed (Linux/OSX support only). If you need it, please follow this installation guide:"
+        )
+        print("https://github.com/openai/mujoco-py#install-mujoco")
+
+
 @registry.register
 def control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """MuJoCo testbed. Learn linear policy for different control problems.
     Budget 500, 1000, 3000, 5000."""
+    check_mujoco()
     seedg = create_seed_generator(seed)
     num_rollouts = 1
     funcs = [
@@ -1245,6 +1256,7 @@ def control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 @registry.register
 def neuro_control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """MuJoCo testbed. Learn neural policies."""
+    check_mujoco()
     seedg = create_seed_generator(seed)
     num_rollouts = 1
     funcs = [
