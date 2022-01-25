@@ -125,14 +125,18 @@ def ng_full_gym(
     else:
         controls = (
             [
+                "noisy_semideep_neural",
+                "noisy_scrambled_semideep_neural",  # Scrambling: why not perturbating the order of variables ?
+                "noisy_deep_neural",
+                "noisy_scrambled_deep_neural",
                 "neural",
-                "structured_neural",
+                # "structured_neural",
                 # "memory_neural",
                 "stackingmemory_neural",
                 "deep_neural",
                 "semideep_neural",
-                # "noisy_neural",
-                # "noisy_scrambled_neural",
+                "noisy_neural",
+                "noisy_scrambled_neural",
                 # "scrambled_neural",
                 # "linear",
             ]
