@@ -402,6 +402,8 @@ RecombiningPortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(
 
 
 class _CMA(base.Optimizer):
+    _CACHE_KEY = "#CMA#datacache"
+
     def __init__(
         self,
         parametrization: IntOrParameter,
@@ -471,9 +473,13 @@ class _CMA(base.Optimizer):
         return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        if self._CACHE_KEY not in candidate._meta:
+            # since we try several times to tell to es, to avoid duplicated work let's keep
+            # the data in a cache. This can be useful for other CMA as well
+            candidate._meta[self._CACHE_KEY] = candidate.get_standardized_data(reference=self.parametrization)
         self._to_be_told.append(candidate)
         if len(self._to_be_told) >= self.es.popsize:
-            listx = [c.get_standardized_data(reference=self.parametrization) for c in self._to_be_told]
+            listx = [c._meta[self._CACHE_KEY] for c in self._to_be_told]
             listy = [c.loss for c in self._to_be_told]
             args = (listy, listx) if self._config.fcmaes else (listx, listy)
             try:
