@@ -406,6 +406,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             self._warn(f"Updating fitness with {loss} value", errors.BadLossWarning)
         mvalue: tp.Optional[utils.MultiValue] = None
         if not self.archive.is_delegated:
+            print(f"Updating archive for {candidate.uid[:8]} in {self.__class__.__name__}")
             if x not in self.archive:
                 self.archive[x] = utils.MultiValue(candidate, loss, reference=self.parametrization)
             else:
@@ -415,6 +416,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 if mvalue.parameter.loss > candidate.loss:  # type: ignore
                     mvalue.parameter = candidate  # keep best candidate
         else:
+            print(f"Delegated archive for {candidate.uid[:8]} in {self.__class__.__name__}")
             mvalue = self.archive[x]  # should exist for sure
         # update current best records
         # this may have to be improved if we want to keep more kinds of best losss
