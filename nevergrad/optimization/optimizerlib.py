@@ -29,7 +29,7 @@ from .base import IntOrParameter
 # families of optimizers
 # pylint: disable=unused-wildcard-import,wildcard-import,too-many-lines,too-many-arguments,too-many-branches
 # pylint: disable=import-outside-toplevel,too-many-nested-blocks,too-many-instance-attributes,
-# pylint: disable=too-many-boolean-expressions,too-many-ancestors,too-many-statements
+# pylint: disable=too-many-boolean-expressions,too-many-ancestors,too-many-statements,too-many-return-statements
 from .differentialevolution import *  # type: ignore  # noqa: F403
 from .es import *  # type: ignore  # noqa: F403
 from .oneshot import *  # noqa: F403
@@ -1375,7 +1375,6 @@ class Portfolio(base.Optimizer):
                 )
             )
         # current optimizer choice
-        self._selected_ind: tp.Optional[int] = None
         self._current = -1
         self._warmup_budget: tp.Optional[int] = None
         if cfg.warmup_ratio is not None and budget is None:
@@ -1386,23 +1385,21 @@ class Portfolio(base.Optimizer):
     def _internal_ask_candidate(self) -> p.Parameter:
         # optimizer selection if budget is over
         if self._warmup_budget is not None:
-            if self._selected_ind is None and self._warmup_budget < self.num_tell:
+            if len(self.optims) > 1 and self._warmup_budget < self.num_tell:
                 ind = self.current_bests["pessimistic"].parameter._meta.get("optim_index", -1)
                 if ind >= 0:  # not a tell not asked
                     if self.num_workers == 1 or self.optims[ind].num_workers > 1:
-                        self._selected_ind = ind  # don't select non-parallelizable in parallel settings
-        optim_index = self._selected_ind
-        if optim_index is None:
-            num = len(self.optims)
-            for k in range(2 * num):
-                self._current += 1
-                optim_index = self._current % len(self.optims)
-                opt = self.optims[optim_index]
-                if opt.num_workers > opt.num_ask - (opt.num_tell - opt.num_tell_not_asked):
-                    break  # if there are workers left, use this optimizer
-                if k > num:
-                    if not opt.no_parallelization:
-                        break  # if no worker is available, try the first parallelizable optimizer
+                        self.optims = [self.optims[ind]]  # throw away everything else
+        num = len(self.optims)
+        for k in range(2 * num):
+            self._current += 1
+            optim_index = self._current % len(self.optims)
+            opt = self.optims[optim_index]
+            if opt.num_workers > opt.num_ask - (opt.num_tell - opt.num_tell_not_asked):
+                break  # if there are workers left, use this optimizer
+            if k > num:
+                if not opt.no_parallelization:
+                    break  # if no worker is available, try the first parallelizable optimizer
         if optim_index is None:
             raise RuntimeError("Something went wrong in optimizer selection")
         opt = self.optims[optim_index]
