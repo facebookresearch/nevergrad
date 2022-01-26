@@ -423,7 +423,6 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         mvalue = self.archive.get(x, mvalue)  # type: ignore  # update with master archive
         # update current best records
         # this may have to be improved if we want to keep more kinds of best losss
-
         for name in self.current_bests:
             if mvalue is self.current_bests[name]:  # reboot
                 best = min(self.archive.values(), key=lambda mv, n=name: mv.get_estimation(n))  # type: ignore
