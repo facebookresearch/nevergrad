@@ -426,7 +426,7 @@ class _CMA(base.Optimizer):
         scale_multiplier = 1.0
         if p.helpers.Normalizer(self.parametrization).fully_bounded:
             scale_multiplier = 0.3 if self.dimension < 18 else 0.15
-        if self._es is None:
+        if self._es is None or (not self._config.fcmaes and self._es.stop()):
             if not self._config.fcmaes:
                 import cma  # import inline in order to avoid matplotlib initialization warning
 
@@ -478,11 +478,11 @@ class _CMA(base.Optimizer):
             args = (listy, listx) if self._config.fcmaes else (listx, listy)
             try:
                 self.es.tell(*args)
-            except RuntimeError:
+            except (RuntimeError, AssertionError):
                 pass
             else:
                 self._parents = sorted(self._to_be_told, key=base._loss)[: self._num_spawners]
-                self._to_be_told = []
+            self._to_be_told = []
 
     def _internal_provide_recommendation(self) -> np.ndarray:
         pessimistic = self.current_bests["pessimistic"].parameter.get_standardized_data(
