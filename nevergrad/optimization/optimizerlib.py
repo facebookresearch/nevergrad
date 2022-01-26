@@ -482,7 +482,7 @@ class _CMA(base.Optimizer):
                 pass
             else:
                 self._parents = sorted(self._to_be_told, key=base._loss)[: self._num_spawners]
-                self._to_be_told = []
+            self._to_be_told = []
 
     def _internal_provide_recommendation(self) -> np.ndarray:
         pessimistic = self.current_bests["pessimistic"].parameter.get_standardized_data(
