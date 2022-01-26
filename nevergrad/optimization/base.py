@@ -404,9 +404,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             )
         if np.isnan(loss) or loss == np.inf:
             self._warn(f"Updating fitness with {loss} value", errors.BadLossWarning)
-        mvalue: tp.Optional[utils.MultiValue] = None
         if not self.archive.is_delegated:
-            print(f"Updating archive for {candidate.uid[:8]} in {self.__class__.__name__}")
+            # print(f"Updating archive for {candidate.uid[:8]} in {self.__class__.__name__}")
             if x not in self.archive:
                 self.archive[x] = utils.MultiValue(candidate, loss, reference=self.parametrization)
             else:
@@ -415,9 +414,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 # both parameters should be non-None
                 if mvalue.parameter.loss > candidate.loss:  # type: ignore
                     mvalue.parameter = candidate  # keep best candidate
-        else:
-            print(f"Delegated archive for {candidate.uid[:8]} in {self.__class__.__name__}")
-            mvalue = self.archive[x]  # should exist for sure
+        mvalue = self.archive[x]  # should exist for sure
         # update current best records
         # this may have to be improved if we want to keep more kinds of best losss
 
@@ -439,6 +436,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 #                            f"Best value is {bval} and archive is within range {avals} for {name}")
         if self.pruning is not None and not self.archive.is_delegated:
             self.pruning(self.archive)
+            self.archive[x] = mvalue  # we must make sure that the current point is available for suboptim
 
     def ask(self) -> p.Parameter:
         """Provides a point to explore.

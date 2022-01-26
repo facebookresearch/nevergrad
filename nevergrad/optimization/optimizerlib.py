@@ -1049,6 +1049,7 @@ class _Rescaled(base.Optimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._optimizer = base_optimizer(self.parametrization, budget=budget, num_workers=num_workers)
+        # cannot delegate the archive since the parametrization is different :(
         self._subcandidates: tp.Dict[str, p.Parameter] = {}
         if scale is None:
             assert self.budget is not None, "Either scale or budget must be known in _Rescaled."
