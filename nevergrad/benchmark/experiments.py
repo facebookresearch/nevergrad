@@ -1206,10 +1206,9 @@ def check_mujoco():
     try:
         import mujoco_py
     except:
-        print(
-            "MuJoCo not installed (Linux/OSX support only). If you need it, please follow this installation guide:"
+        raise ImportError(
+            "MuJoCo not installed (Linux/OSX support only). If you need it, please follow this installation guide: https://github.com/openai/mujoco-py#install-mujoco"
         )
-        print("https://github.com/openai/mujoco-py#install-mujoco")
 
 
 @registry.register
