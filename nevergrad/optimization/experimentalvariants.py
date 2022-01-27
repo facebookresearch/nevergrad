@@ -351,8 +351,8 @@ NoisyRL3 = Chaining([MixDeterministicRL, OptimisticNoisyOnePlusOne], ["half"]).s
 
 # portfolio settings
 BestPortfolio = ConfPortfolio(optimizers=[CMA] * 3, tell_not_asked="best").set_name(
-    "BestPorfolio", register=True
+    "BestPortfolio", register=True
 )
 UnsharedPortfolio = ConfPortfolio(optimizers=[CMA] * 3, tell_not_asked="none").set_name(
-    "UnsharedPorfolio", register=True
+    "UnsharedPortfolio", register=True
 )
