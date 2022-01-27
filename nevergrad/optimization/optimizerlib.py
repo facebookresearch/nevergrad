@@ -1314,6 +1314,12 @@ class ConfPortfolio(base.ConfiguredOptimizer):
         the list of optimizers to use.
     warmup_ratio: optional float
         ratio of the budget used before choosing to focus on one optimizer
+    tell_not_asked: str
+        one of the following options:
+        - "all": all evaluations are told to all optimizers
+        - "none": evaluations are only told to the optimizer which asked for it
+        - "best": optimizers are only told the candidates they asked for *and* any new
+          better evaluation.
 
     Notes
     -----
@@ -1327,8 +1333,8 @@ class ConfPortfolio(base.ConfiguredOptimizer):
         self,
         *,
         optimizers: tp.Sequence[tp.Union[base.Optimizer, base.OptCls, str]] = (),
-        tell_not_asked: str = "all",
         warmup_ratio: tp.Optional[float] = None,
+        tell_not_asked: str = "all",
     ) -> None:
         super().__init__(Portfolio, locals(), as_config=True)
         self.optimizers = optimizers
