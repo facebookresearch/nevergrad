@@ -83,7 +83,7 @@ def ng_full_gym(
             import pybullet  # pylint: disable=unused-import
             import pybullet_envs  # pylint: disable=unused-import
 
-            # import pybulletgym  # pylint: disable=unused-import
+            import pybulletgym  # pylint: disable=unused-import
             import pyvirtualdisplay
 
             # I deserve eternal damnation for this hack:
@@ -159,6 +159,9 @@ def ng_full_gym(
         assert not multi
     if conformant:
         controls = ["stochastic_conformant"]
+    optimization_scales: tp.List[int] = [0]
+    if multi_scale:
+        optimization_scales = [-6, -4, -2, 0]
     budgets = [50, 200, 800, 3200, 6400, 100, 25, 400, 1600]  # Let's go with low budget.
     budgets = gym_budget_modifier(budgets)
     for control in controls:
@@ -173,9 +176,6 @@ def ng_full_gym(
                 if sparse:
                     sparse_limits += [10, 100, 1000]
                 for sparse_limit in sparse_limits:
-                    optimization_scales: tp.List[int] = [0]
-                    if multi_scale:
-                        optimization_scales = [-6, -4, -2, 0]
                     for optimization_scale in optimization_scales:
                         try:
                             func = nevergrad_gym.GymMulti(
