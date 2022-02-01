@@ -34,6 +34,7 @@ from .differentialevolution import *  # type: ignore  # noqa: F403
 from .es import *  # type: ignore  # noqa: F403
 from .oneshot import *  # noqa: F403
 from .recastlib import *  # noqa: F403
+from .recaster import SequentialRecastOptimizer
 
 try:
     from .externalbo import HyperOpt  # pylint: disable=unused-import
@@ -1426,6 +1427,17 @@ class Portfolio(base.Optimizer):
         if not accepted:
             raise errors.TellNotAskedNotSupportedError("No sub-optimizer accepted the tell-not-asked")
 
+    def enable_pickling(self) -> None:
+        """
+        Some optimizers are only optionally picklable (because picklability
+        requires saving the whole history).
+        If an underlying optimizer is such a thing, calling this function
+        enables its picklability.
+        """
+        for opt in self.optims:
+            if hasattr(opt, "enable_pickling"):
+                opt.enable_pickling()
+
 
 ParaPortfolio = ConfPortfolio(optimizers=[CMA, TwoPointsDE, PSO, SQP, ScrHammersleySearch]).set_name(
     "ParaPortfolio", register=True
@@ -2469,6 +2481,17 @@ class NGOptBase(base.Optimizer):
         out = {"sub-optim": self.optim.name}
         out.update(self.optim._info())  # this will work for recursive NGOpt calls
         return out
+
+    def enable_pickling(self) -> None:
+        """
+        Some optimizers are only optionally picklable (because picklability
+        requires saving the whole history).
+        If the underlying optimizer is such a thing, calling this function
+        enables its picklability.
+        """
+        opt = self.optim
+        if hasattr(opt, "enable_pickling"):
+            opt.enable_pickling()
 
 
 @registry.register
