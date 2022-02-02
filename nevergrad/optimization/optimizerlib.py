@@ -34,7 +34,6 @@ from .differentialevolution import *  # type: ignore  # noqa: F403
 from .es import *  # type: ignore  # noqa: F403
 from .oneshot import *  # noqa: F403
 from .recastlib import *  # noqa: F403
-from .recaster import SequentialRecastOptimizer
 
 try:
     from .externalbo import HyperOpt  # pylint: disable=unused-import
@@ -1435,8 +1434,9 @@ class Portfolio(base.Optimizer):
         enables its picklability.
         """
         for opt in self.optims:
-            if hasattr(opt, "enable_pickling"):
-                opt.enable_pickling()
+            enable = getattr(opt, "enable_pickling", None)
+            if enable is not None:
+                enable()
 
 
 ParaPortfolio = ConfPortfolio(optimizers=[CMA, TwoPointsDE, PSO, SQP, ScrHammersleySearch]).set_name(
@@ -2490,8 +2490,9 @@ class NGOptBase(base.Optimizer):
         enables its picklability.
         """
         opt = self.optim
-        if hasattr(opt, "enable_pickling"):
-            opt.enable_pickling()
+        enable = getattr(opt, "enable_pickling", None)
+        if enable is not None:
+            enable()
 
 
 @registry.register
