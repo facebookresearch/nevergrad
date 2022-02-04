@@ -914,6 +914,7 @@ class GymMulti(ExperimentFunction):
             return self.gym_conformant(x, env)
         if "scrambled" in control:  # We shuffle the variables, typically so that progressive methods optimize
             # everywhere in parallel instead of focusing on one single layer for years.
+            x = x.copy()
             np.random.RandomState(1234).shuffle(x)
         if "noisy" in control:  # We add a randomly chosen but fixed perturbation of the x, i.e. we do not
             # start at 0.
