@@ -1428,7 +1428,7 @@ class Portfolio(base.Optimizer):
 
     def enable_pickling(self) -> None:
         for opt in self.optims:
-           opt.enable_pickling()
+            opt.enable_pickling()
 
 
 ParaPortfolio = ConfPortfolio(optimizers=[CMA, TwoPointsDE, PSO, SQP, ScrHammersleySearch]).set_name(
