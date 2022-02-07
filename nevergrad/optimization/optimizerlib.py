@@ -1427,16 +1427,8 @@ class Portfolio(base.Optimizer):
             raise errors.TellNotAskedNotSupportedError("No sub-optimizer accepted the tell-not-asked")
 
     def enable_pickling(self) -> None:
-        """
-        Some optimizers are only optionally picklable (because picklability
-        requires saving the whole history).
-        If an underlying optimizer is such a thing, calling this function
-        enables its picklability.
-        """
         for opt in self.optims:
-            enable = getattr(opt, "enable_pickling", None)
-            if enable is not None:
-                enable()
+           opt.enable_pickling()
 
 
 ParaPortfolio = ConfPortfolio(optimizers=[CMA, TwoPointsDE, PSO, SQP, ScrHammersleySearch]).set_name(
@@ -1564,6 +1556,10 @@ class _MetaModel(base.Optimizer):
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         self._optim.tell(candidate, loss)
+
+    def enable_pickling(self):
+        super().enable_pickling()
+        self._optim.enable_pickling()
 
 
 class ParametrizedMetaModel(base.ConfiguredOptimizer):
@@ -2101,6 +2097,10 @@ class _Chain(base.Optimizer):
             if self.num_tell < sum_budget:
                 opt.tell(candidate, loss)
 
+    def enable_pickling(self):
+        for opt in self.optimizers:
+            opt.enable_pickling()
+
 
 class Chaining(base.ConfiguredOptimizer):
     """
@@ -2483,16 +2483,7 @@ class NGOptBase(base.Optimizer):
         return out
 
     def enable_pickling(self) -> None:
-        """
-        Some optimizers are only optionally picklable (because picklability
-        requires saving the whole history).
-        If the underlying optimizer is such a thing, calling this function
-        enables its picklability.
-        """
-        opt = self.optim
-        enable = getattr(opt, "enable_pickling", None)
-        if enable is not None:
-            enable()
+        self.optim.enable_pickling()
 
 
 @registry.register
