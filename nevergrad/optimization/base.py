@@ -569,8 +569,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         requires saving the whole history which would be a waste of memory
         in general. To tell an optimizer to be picklable, call this function
         before any asks.
+
+        In this base class, the function is a no-op, but it is overridden
+        in some optimizers.
         """
-        pass
 
     def minimize(
         self,
