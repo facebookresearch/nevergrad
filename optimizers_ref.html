@@ -148,6 +148,17 @@ which can be directly used on the function (<code class="code docutils literal n
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="nevergrad.optimizers.base.Optimizer.enable_pickling">
+<span class="sig-name descname"><span class="pre">enable_pickling</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.enable_pickling" title="Permalink to this definition"></a></dt>
+<dd><p>Some optimizers are only optionally picklable, because picklability
+requires saving the whole history which would be a waste of memory
+in general. To tell an optimizer to be picklable, call this function
+before any asks.</p>
+<p>In this base class, the function is a no-op, but it is overridden
+in some optimizers.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="nevergrad.optimizers.base.Optimizer.load">
 <em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filepath</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">pathlib.Path</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">nevergrad.optimization.base.X</span></span></span><a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.load" title="Permalink to this definition"></a></dt>
 <dd><p>Loads a pickle and checks that the class is correct.</p>
@@ -1373,6 +1384,17 @@ on the function (<code class="code docutils literal notranslate"><span class="pr
 <dt class="sig sig-object py" id="nevergrad.optimization.optimizerlib.NGOptBase">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">nevergrad.optimization.optimizerlib.</span></span><span class="sig-name descname"><span class="pre">NGOptBase</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parametrization</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="parametrization_ref.html#nevergrad.p.Parameter" title="nevergrad.parametrization.core.Parameter"><span class="pre">nevergrad.parametrization.core.Parameter</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">budget</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_workers</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.NGOptBase" title="Permalink to this definition"></a></dt>
 <dd><p>Nevergrad optimizer by competence map.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="nevergrad.optimization.optimizerlib.NGOptBase.enable_pickling">
+<span class="sig-name descname"><span class="pre">enable_pickling</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.NGOptBase.enable_pickling" title="Permalink to this definition"></a></dt>
+<dd><p>Some optimizers are only optionally picklable, because picklability
+requires saving the whole history which would be a waste of memory
+in general. To tell an optimizer to be picklable, call this function
+before any asks.</p>
+<p>In this base class, the function is a no-op, but it is overridden
+in some optimizers.</p>
+</dd></dl>
+
 <dl class="py property">
 <dt class="sig sig-object py" id="nevergrad.optimization.optimizerlib.NGOptBase.optim">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">optim</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#nevergrad.optimizers.base.Optimizer" title="nevergrad.optimization.base.Optimizer"><span class="pre">nevergrad.optimization.base.Optimizer</span></a></em><a class="headerlink" href="#nevergrad.optimization.optimizerlib.NGOptBase.optim" title="Permalink to this definition"></a></dt>
@@ -1568,6 +1590,17 @@ Reaches the Lower Performance Bound – the pcCMSA-ES.
 <dt class="sig sig-object py" id="nevergrad.optimization.optimizerlib.Portfolio">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">nevergrad.optimization.optimizerlib.</span></span><span class="sig-name descname"><span class="pre">Portfolio</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parametrization</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="parametrization_ref.html#nevergrad.p.Parameter" title="nevergrad.parametrization.core.Parameter"><span class="pre">nevergrad.parametrization.core.Parameter</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">budget</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_workers</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#nevergrad.optimization.optimizerlib.ConfPortfolio" title="nevergrad.optimization.optimizerlib.ConfPortfolio"><span class="pre">nevergrad.optimization.optimizerlib.ConfPortfolio</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.Portfolio" title="Permalink to this definition"></a></dt>
 <dd><p>Passive portfolio of CMA, 2-pt DE and Scr-Hammersley.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="nevergrad.optimization.optimizerlib.Portfolio.enable_pickling">
+<span class="sig-name descname"><span class="pre">enable_pickling</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#nevergrad.optimization.optimizerlib.Portfolio.enable_pickling" title="Permalink to this definition"></a></dt>
+<dd><p>Some optimizers are only optionally picklable, because picklability
+requires saving the whole history which would be a waste of memory
+in general. To tell an optimizer to be picklable, call this function
+before any asks.</p>
+<p>In this base class, the function is a no-op, but it is overridden
+in some optimizers.</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
