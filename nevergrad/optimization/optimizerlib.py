@@ -1081,6 +1081,9 @@ class _Rescaled(base.Optimizer):
         candidate = self.rescale_candidate(candidate, inverse=True)
         self._optimizer.tell(candidate, loss)
 
+    def enable_pickling(self) -> None:
+        self._optimizer.enable_pickling()
+
 
 class Rescaled(base.ConfiguredOptimizer):
     """Configured optimizer for creating rescaled optimization algorithms.
