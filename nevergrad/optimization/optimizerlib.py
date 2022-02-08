@@ -1426,6 +1426,10 @@ class Portfolio(base.Optimizer):
         if not accepted:
             raise errors.TellNotAskedNotSupportedError("No sub-optimizer accepted the tell-not-asked")
 
+    def enable_pickling(self) -> None:
+        for opt in self.optims:
+            opt.enable_pickling()
+
 
 ParaPortfolio = ConfPortfolio(optimizers=[CMA, TwoPointsDE, PSO, SQP, ScrHammersleySearch]).set_name(
     "ParaPortfolio", register=True
@@ -1552,6 +1556,10 @@ class _MetaModel(base.Optimizer):
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         self._optim.tell(candidate, loss)
+
+    def enable_pickling(self):
+        super().enable_pickling()
+        self._optim.enable_pickling()
 
 
 class ParametrizedMetaModel(base.ConfiguredOptimizer):
@@ -2089,6 +2097,10 @@ class _Chain(base.Optimizer):
             if self.num_tell < sum_budget:
                 opt.tell(candidate, loss)
 
+    def enable_pickling(self):
+        for opt in self.optimizers:
+            opt.enable_pickling()
+
 
 class Chaining(base.ConfiguredOptimizer):
     """
@@ -2469,6 +2481,9 @@ class NGOptBase(base.Optimizer):
         out = {"sub-optim": self.optim.name}
         out.update(self.optim._info())  # this will work for recursive NGOpt calls
         return out
+
+    def enable_pickling(self) -> None:
+        self.optim.enable_pickling()
 
 
 @registry.register
