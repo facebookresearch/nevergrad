@@ -550,8 +550,7 @@ class GymMulti(ExperimentFunction):
             "linear": (input_dim + 1, output_dim),
             "multi_neural": (min(self.num_time_steps, 50),) + unstructured_neural_size,
         }
-        shape = shape_dict.get(control, neural_size)
-        shape = tuple(map(int, shape))
+        shape = tuple(map(int,shape_dict.get(control, neural_size)))
         self.policy_shape = shape if "structured" not in control else None
 
         # Create the parametrization.
