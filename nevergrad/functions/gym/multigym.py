@@ -50,7 +50,7 @@ CONTROLLERS = [
     "resid_scrambled_deep_neural",
     "resid_noisy_scrambled_neural",
     "resid_noisy_scrambled_semideep_neural",
-    "resid_noisy_scrambled_deep_neural",    
+    "resid_noisy_scrambled_deep_neural",
     "linear",  # Simple linear controller.
     "neural",  # Simple neural controller.
     "deep_neural",  # Deeper neural controller.
@@ -677,8 +677,9 @@ class GymMulti(ExperimentFunction):
             self.greedy_coefficient = x[-1:]  # We have decided that we can not have two runs in parallel.
             x = x[:-1]
         o = o.ravel()
+        my_scale = 2 ** self.optimization_scale
         if "structured" not in self.name and self.optimization_scale != 0:
-            x = np.asarray((2 ** self.optimization_scale) * x, dtype=np.float32)
+            x = np.asarray(my_scale * x, dtype=np.float32)
         if self.control == "linear":
             # The linear case is simplle.
             output = np.matmul(o, x[1:, :])
@@ -702,8 +703,8 @@ class GymMulti(ExperimentFunction):
                 second_matrix.shape == self.second_layer_shape
             ), f"{second_matrix} does not match {self.second_layer_shape}"
         if "resid" in self.control:
-            first_matrix += np.eye(*first_matrix.shape)
-            second_matrix += np.eye(*second_matrix.shape)
+            first_matrix += my_scale * np.eye(*first_matrix.shape)
+            second_matrix += my_scale * np.eye(*second_matrix.shape)
         assert len(o) == len(first_matrix[1:]), f"{o.shape} coming in matrix of shape {first_matrix.shape}"
         output = np.matmul(o, first_matrix[1:])
         if "deep" in self.control:
@@ -715,10 +716,8 @@ class GymMulti(ExperimentFunction):
                 output = np.tanh(output)
                 layer = x[current_index : current_index + internal_layer_size].reshape(s)
                 if "resid" in self.control:
-                    layer += np.eye(*layer.shape)
-                output = np.matmul(
-                    output, layer
-                ) / np.sqrt(self.num_neurons)
+                    layer += my_scale * np.eye(*layer.shape)
+                output = np.matmul(output, layer) / np.sqrt(self.num_neurons)
                 current_index += internal_layer_size
             assert current_index == len(x)
         output = np.matmul(np.tanh(output + first_matrix[0]), second_matrix)

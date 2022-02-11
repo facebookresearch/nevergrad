@@ -127,7 +127,7 @@ def ng_full_gym(
             [
                 "neural",
                 "resid_neural",
-                "resid_semideep_neural", 
+                "resid_semideep_neural",
                 "resid_deep_neural",
             ]
             if not big
