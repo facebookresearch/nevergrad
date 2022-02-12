@@ -1,4 +1,4 @@
-numpy>=1.22.1
+numpy>=1.21.1
 cma>=2.6.0
 bayesian-optimization>=1.2.0
 typing_extensions>=3.6.6
