@@ -494,6 +494,12 @@ class _CMA(base.Optimizer):
         pessimistic = self.current_bests["pessimistic"].parameter.get_standardized_data(
             reference=self.parametrization
         )
+        d = self.dimension
+        n = self.num_ask
+        sample_size = d * d/ 2 + d / 2 + 3
+        if self.high_speed and n >= sample_size:
+            data = _learn_on_kbest(self.archive, sample_size)
+            return self.parametrization.spawn_child().set_standardized_data(data)
         if self._es is None:
             return pessimistic
         cma_best: tp.Optional[np.ndarray] = self.es.best_x if self._config.fcmaes else self.es.result.xbest
@@ -520,6 +526,8 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         default is max(self.num_workers, 4 + int(3 * np.log(self.dimension)))
     diagonal: bool
         use the diagonal version of CMA (advised in big dimension)
+    high_speed: bool
+        use metamodel for recommendation
     fcmaes: bool
         use fast implementation, doesn't support diagonal=True.
         produces equivalent results, preferable for high dimensions or
@@ -539,6 +547,7 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         elitist: bool = False,
         popsize: tp.Optional[int] = None,
         diagonal: bool = False,
+        high_speed: bool = False,
         fcmaes: bool = False,
         random_init: bool = False,
         inopts: tp.Optional[tp.Dict[str, tp.Any]] = None,
@@ -552,6 +561,7 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         self.popsize = popsize
         self.diagonal = diagonal
         self.fcmaes = fcmaes
+        self.high_speed = high_speed
         self.random_init = random_init
         self.inopts = inopts
 
@@ -559,7 +569,7 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
 CMA = ParametrizedCMA().set_name("CMA", register=True)
 DiagonalCMA = ParametrizedCMA(diagonal=True).set_name("DiagonalCMA", register=True)
 FCMA = ParametrizedCMA(fcmaes=True).set_name("FCMA", register=True)
-
+HSCMA = ParametrizedCMA(high_speed=True).set_name("HSCMA", register=True)
 
 class _PopulationSizeController:
     """Population control scheme for TBPSA and EDA"""
