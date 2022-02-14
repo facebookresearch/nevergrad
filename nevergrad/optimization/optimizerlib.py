@@ -496,9 +496,9 @@ class _CMA(base.Optimizer):
         )
         d = self.dimension
         n = self.num_ask
-        sample_size = d * d/ 2 + d / 2 + 3
+        sample_size = d * d / 2 + d / 2 + 3
         if self._config.high_speed and n >= sample_size:
-            data = _learn_on_kbest(self.archive, sample_size)
+            data = _learn_on_k_best(self.archive, sample_size)
             return self.parametrization.spawn_child().set_standardized_data(data)
         if self._es is None:
             return pessimistic
@@ -570,6 +570,7 @@ CMA = ParametrizedCMA().set_name("CMA", register=True)
 DiagonalCMA = ParametrizedCMA(diagonal=True).set_name("DiagonalCMA", register=True)
 FCMA = ParametrizedCMA(fcmaes=True).set_name("FCMA", register=True)
 HSCMA = ParametrizedCMA(high_speed=True).set_name("HSCMA", register=True)
+
 
 class _PopulationSizeController:
     """Population control scheme for TBPSA and EDA"""
