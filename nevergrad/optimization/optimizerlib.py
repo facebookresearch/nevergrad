@@ -496,10 +496,10 @@ class _CMA(base.Optimizer):
         )
         d = self.dimension
         n = self.num_ask
-        sample_size = d * d / 2 + d / 2 + 3
+        sample_size = int(d * d / 2 + d / 2 + 3)
         if self._config.high_speed and n >= sample_size:
             data = _learn_on_k_best(self.archive, sample_size)
-            return self.parametrization.spawn_child().set_standardized_data(data)
+            return data  # self.parametrization.spawn_child().set_standardized_data(data)
         if self._es is None:
             return pessimistic
         cma_best: tp.Optional[np.ndarray] = self.es.best_x if self._config.fcmaes else self.es.result.xbest
