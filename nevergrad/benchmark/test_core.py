@@ -154,6 +154,8 @@ def test_benchmark_chunk_resuming() -> None:
     with warnings.catch_warnings(record=True) as w:
         warnings.filterwarnings("ignore", category=errors.InefficientSettingsWarning)
         chunk.compute()
-        assert (
-            not w or ("Seeding" in str(w[0].message))  # We accept warnings due to seeding stuff.
-        ), f"A warning was raised while it should not have (experiment could not be resumed): {w[0].message}"
+        assert not w or (
+            "Seeding" in str(w[0].message)
+        ), (  # We accept warnings due to seeding stuff.
+            f"A warning was raised while it should not have (experiment could not be resumed): {w[0].message}"
+        )
