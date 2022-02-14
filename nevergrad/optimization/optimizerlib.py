@@ -497,7 +497,7 @@ class _CMA(base.Optimizer):
         d = self.dimension
         n = self.num_ask
         sample_size = d * d/ 2 + d / 2 + 3
-        if self.high_speed and n >= sample_size:
+        if self._config.high_speed and n >= sample_size:
             data = _learn_on_kbest(self.archive, sample_size)
             return self.parametrization.spawn_child().set_standardized_data(data)
         if self._es is None:
