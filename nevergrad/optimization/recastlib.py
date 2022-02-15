@@ -46,7 +46,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
         self.random_restart = random_restart
         # The following line rescales to [0, 1] if fully bounded.
 
-        if method == "CmaFmin2" or method == "NLOPT":
+        if method in ("CmaFmin2", "NLOPT"):
             normalizer = p.helpers.Normalizer(self.parametrization)
             if normalizer.fully_bounded:
                 self._normalizer = normalizer
