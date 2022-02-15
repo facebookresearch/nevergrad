@@ -91,8 +91,8 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 # Assign the objective function calculator
                 opt.set_min_objective(nlopt_objective_function)
                 # Set the bounds.
-                opt.set_lower_bounds([0.0] * weakself.dimension)
-                opt.set_upper_bounds([1.0] * weakself.dimension)
+                opt.set_lower_bounds(np.zeros(weakself.dimension))
+                opt.set_upper_bounds(np.ones(weakself.dimension))
                 # opt.set_initial_step([0.05, 0.05])
                 opt.set_maxeval(budget)
                 # Relative tolerance for convergence
