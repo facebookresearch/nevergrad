@@ -99,7 +99,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 opt.set_ftol_rel(1.0e-10)
 
                 # Start the optimization with the first guess
-                firstguess = [0.5] * weakself.dimension
+                firstguess = 0.5 * np.ones(weakself.dimension)
                 best_x = opt.optimize(firstguess)
                 # print("\noptimum at TDWI: %s, SPAN: %s" % (x[0], x[1]))
                 # print("minimum value = ",  opt.last_optimum_value())
