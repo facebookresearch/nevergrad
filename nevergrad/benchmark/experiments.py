@@ -21,7 +21,7 @@ from nevergrad.functions.photonics import Photonics
 from nevergrad.functions.arcoating import ARCoating
 from nevergrad.functions import images as imagesxp
 from nevergrad.functions.powersystems import PowerSystem
-from nevergrad.functions.ac import Ac
+from nevergrad.functions.ac import NgAquacrop
 from nevergrad.functions.stsp import STSP
 from nevergrad.functions.rocket import Rocket
 from nevergrad.functions.mixsimulator import OptimizeMix
@@ -1162,7 +1162,7 @@ def realworld(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 def aquacrop_fao(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """FAO Crop simulator. Maximize yield."""
 
-    funcs = [Ac(i, 300.0 + 150.0 * np.cos(i)) for i in range(3, 7)]
+    funcs = [NgAquacrop(i, 300.0 + 150.0 * np.cos(i)) for i in range(3, 7)]
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", seed=next(seedg))
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
@@ -1171,7 +1171,6 @@ def aquacrop_fao(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                 for algo in optims:
                     for fu in funcs:
                         xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
-                        skip_ci(reason="Too slow")
                         if not xp.is_incoherent:
                             yield xp
 
