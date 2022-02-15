@@ -13,4 +13,3 @@ autodocsumm>=0.1.11
 pandas>=0.23.4
 pyparsing==2.2.1  # temporarily fixed to avoid incompatibilities (to be removed)
 docutils==0.17.1  # 0.18 is buggy
-nlopt
