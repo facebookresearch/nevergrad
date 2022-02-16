@@ -735,7 +735,7 @@ def test_ngopt_selection(
             # print(f"Continuous param={param} budget={budget} workers={num_workers} --> {choice}")
             if num_workers >= budget > 600:
                 # assert choice == "MetaTuneRecentering"
-                assert "MetaTuneRecentering" in o
+                assert "MetaTuneRecentering" in optim_string
             if num_workers > 1:
                 # assert choice not in ["SQP", "Cobyla"]
                 assert "SQP" not in o and "Cobyla" not in o
