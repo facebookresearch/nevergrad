@@ -21,7 +21,7 @@ from aquacrop.classes import *
 from aquacrop.core import *
 
 
-class Ac(ExperimentFunction):
+class NgAquacrop(ExperimentFunction):
     def __init__(self, num_smts: int, max_irr_seasonal: float) -> None:
         self.num_smts = num_smts
         self.max_irr_seasonal = max_irr_seasonal

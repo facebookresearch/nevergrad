@@ -8,7 +8,7 @@ from . import ac
 
 
 def test_ac() -> None:
-    func = ac.Ac(4, 12.0)
+    func = ac.NgAquacrop(4, 12.0)
     x = 50.0 * np.random.rand(func.dimension)
     value = func(x)
     value2 = func(x)
