@@ -1608,7 +1608,7 @@ def pcse(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     Low dimensional problem, only 2 vars. This is optimization for model identification: we want
     to find parameters so that the simulation matches observations.
     """
-    funcs = [Pcse()]
+    funcs = [CropSimulator()]
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", seed=next(seedg))
     for budget in [25, 50, 100, 200]:
