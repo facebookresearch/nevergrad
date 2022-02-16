@@ -1470,7 +1470,9 @@ def _learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int, mean: boo
     dimension = len(items[0][0])
 
     # Select the k best.
-    first_k_individuals = sorted(items, key=lambda indiv: archive[indiv[0]].get_estimation("average" if mean else "pessimistic"))[:k]
+    first_k_individuals = sorted(
+        items, key=lambda indiv: archive[indiv[0]].get_estimation("average" if mean else "pessimistic")
+    )[:k]
     assert len(first_k_individuals) == k
 
     # Recenter the best.
