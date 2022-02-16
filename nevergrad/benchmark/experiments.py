@@ -26,7 +26,7 @@ from nevergrad.functions.ac import NgAquacrop
 from nevergrad.functions.stsp import STSP
 from nevergrad.functions.rocket import Rocket
 from nevergrad.functions.irrigation import Irrigation
-#from nevergrad.functions.pcse import Pcse
+from nevergrad.functions.pcse import Pcse
 from nevergrad.functions.mixsimulator import OptimizeMix
 from nevergrad.functions.unitcommitment import UnitCommitmentProblem
 from nevergrad.functions import control
@@ -1573,13 +1573,13 @@ def crop_simulator(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def pcse(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def crop_simulator(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Crop simulator.
 
     Low dimensional problem, only 2 vars. This is optimization for model identification: we want
     to find parameters so that the simulation matches observations.
     """
-    funcs = [Pcse()]
+    funcs = [CropSimulator()]
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", seed=next(seedg))
     for budget in [25, 50, 100, 200]:
