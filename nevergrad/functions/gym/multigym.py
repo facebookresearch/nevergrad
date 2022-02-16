@@ -42,6 +42,15 @@ GUARANTEED_GYM_ENV_NAMES = [
 
 # We do not use "conformant" which is not consistent with the rest.
 CONTROLLERS = [
+    "resid_neural",
+    "resid_semideep_neural",
+    "resid_deep_neural",
+    "resid_scrambled_neural",
+    "resid_scrambled_semideep_neural",
+    "resid_scrambled_deep_neural",
+    "resid_noisy_scrambled_neural",
+    "resid_noisy_scrambled_semideep_neural",
+    "resid_noisy_scrambled_deep_neural",
     "linear",  # Simple linear controller.
     "neural",  # Simple neural controller.
     "deep_neural",  # Deeper neural controller.
@@ -357,6 +366,43 @@ class GymMulti(ExperimentFunction):
         env3 = ConcatActionsHistogram(env2)
         return env3
 
+    def create_env(self) -> tp.Any:
+        if self.uses_compiler_gym:  # Long special case for Compiler Gym.
+            # CompilerGym sends http requests that CircleCI does not like.
+            if os.environ.get("CIRCLECI", False):
+                raise ng.errors.UnsupportedExperiment("No HTTP request in CircleCI")
+            assert self.limited_compiler_gym is not None
+            self.num_episode_steps = 45 if self.limited_compiler_gym else 50
+            import compiler_gym
+
+            env = gym.make("llvm-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
+            env = self.observation_wrap(self.wrap_env(env))
+            self.uris = list(env.datasets["benchmark://cbench-v1"].benchmark_uris())
+            # For training, in the "stochastic" case, we use Csmith.
+            from itertools import islice
+
+            self.csmith = list(
+                islice(env.datasets["generator://csmith-v0"].benchmark_uris(), self.num_training_codes)
+            )
+
+            if self.stochastic_problem:
+                assert self.compilergym_index is None
+                # In training, we randomly draw in csmith (but we are allowed to use 100x more budget :-) ).
+                env.reset(benchmark=np.random.choice(self.csmith))
+            else:
+                assert self.compilergym_index is not None
+                env.reset(benchmark=self.uris[self.compilergym_index])
+            # env.require_dataset("cBench-v1")
+            # env.unwrapped.benchmark = "benchmark://cBench-v1/qsort"
+        else:  # Here we are not in CompilerGym anymore.
+            assert self.limited_compiler_gym is None
+            # assert (
+            #    self.compilergym_index is None
+            # ), "compiler_gym_pb_index should not be defined if not CompilerGym."
+            env = gym.make(self.short_name if "LANM" not in self.short_name else "gym_anm:ANM6Easy-v0")
+            env.reset()
+        return env
+
     def __init__(
         self,
         name: str = "gym_anm:ANM6Easy-v0",
@@ -374,6 +420,7 @@ class GymMulti(ExperimentFunction):
         # limited_compiler_gym: bool or None.
         #        whether we work with the limited version
         self.limited_compiler_gym = limited_compiler_gym
+        self.compilergym_index = compiler_gym_pb_index
         self.optimization_scale = optimization_scale
         self.num_training_codes = 100 if limited_compiler_gym else 5000
         self.uses_compiler_gym = "compiler" in name
@@ -384,47 +431,11 @@ class GymMulti(ExperimentFunction):
             assert neural_factor is None
         if os.name == "nt":
             raise ng.errors.UnsupportedExperiment("Windows is not supported")
-        if self.uses_compiler_gym:  # Long special case for Compiler Gym.
-            # CompilerGym sends http requests that CircleCI does not like.
-            if os.environ.get("CIRCLECI", False):
-                raise ng.errors.UnsupportedExperiment("No HTTP request in CircleCI")
-            assert limited_compiler_gym is not None
-            self.num_episode_steps = 45 if limited_compiler_gym else 50
-            import compiler_gym
-
-            env = gym.make("llvm-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
-            env = self.observation_wrap(self.wrap_env(env))
-            self.uris = list(env.datasets["benchmark://cbench-v1"].benchmark_uris())
-            # For training, in the "stochastic" case, we use Csmith.
-            from itertools import islice
-
-            self.csmith = list(
-                islice(env.datasets["generator://csmith-v0"].benchmark_uris(), self.num_training_codes)
-            )
-
-            if self.stochastic_problem:
-                assert (
-                    compiler_gym_pb_index is None
-                ), "compiler_gym_pb_index should not be defined in the stochastic case."
-                self.compilergym_index = None
-                # In training, we randomly draw in csmith (but we are allowed to use 100x more budget :-) ).
-                o = env.reset(benchmark=np.random.choice(self.csmith))
-            else:
-                assert compiler_gym_pb_index is not None
-                self.compilergym_index = compiler_gym_pb_index
-                o = env.reset(benchmark=self.uris[self.compilergym_index])
-            # env.require_dataset("cBench-v1")
-            # env.unwrapped.benchmark = "benchmark://cBench-v1/qsort"
-        else:  # Here we are not in CompilerGym anymore.
-            assert limited_compiler_gym is None
-            assert (
-                compiler_gym_pb_index is None
-            ), "compiler_gym_pb_index should not be defined if not CompilerGym."
-            env = gym.make(name if "LANM" not in name else "gym_anm:ANM6Easy-v0")
-            o = env.reset()
-        self.env = env
+        # self.env = None  # self.create_env() let us have no self.env
 
         # Build various attributes.
+        self.short_name = name  # Just the environment name.
+        env = self.create_env()
         self.name = (
             (name if not self.uses_compiler_gym else name + str(env))
             + "__"
@@ -489,6 +500,7 @@ class GymMulti(ExperimentFunction):
         else:
             input_dim = np.prod(env.observation_space.shape) if env.observation_space is not None else 0
             if input_dim is None:
+                o = env.reset()
                 input_dim = np.prod(np.asarray(o).shape)
             self.discrete_input = False
 
@@ -536,29 +548,9 @@ class GymMulti(ExperimentFunction):
             "conformant": (self.num_time_steps,) + output_shape,
             "stochastic_conformant": (self.num_time_steps,) + output_shape,
             "linear": (input_dim + 1, output_dim),
-            "memory_neural": neural_size,
-            "neural": neural_size,
-            "deep_neural": neural_size,
-            "semideep_neural": neural_size,
-            "deep_memory_neural": neural_size,
-            "semideep_memory_neural": neural_size,
-            "deep_stackingmemory_neural": neural_size,
-            "stackingmemory_neural": neural_size,
-            "semideep_stackingmemory_neural": neural_size,
-            "deep_extrapolatestackingmemory_neural": neural_size,
-            "extrapolatestackingmemory_neural": neural_size,
-            "semideep_extrapolatestackingmemory_neural": neural_size,
-            "structured_neural": neural_size,
             "multi_neural": (min(self.num_time_steps, 50),) + unstructured_neural_size,
-            "noisy_neural": neural_size,
-            "noisy_scrambled_neural": neural_size,
-            "scrambled_neural": neural_size,
         }
-        shape = shape_dict[control]
-        assert all(
-            c in shape_dict for c in self.controllers
-        ), f"{self.controllers} subset of {shape_dict.keys()}"
-        shape = tuple(map(int, shape))
+        shape = tuple(map(int, shape_dict.get(control, neural_size)))
         self.policy_shape = shape if "structured" not in control else None
 
         # Create the parametrization.
@@ -645,9 +637,8 @@ class GymMulti(ExperimentFunction):
         loss = -np.exp(sum(rewards) / len(rewards))
         return loss
 
-    def forked_env(self):
+    def forked_env(self, env):
         assert "compiler" in self.name
-        env = self.env
         forked = env.unwrapped.fork()
         forked = self.wrap_env(forked)
         # pylint: disable=W0201
@@ -661,15 +652,15 @@ class GymMulti(ExperimentFunction):
             forked.histogram = env.histogram.copy()
         return forked
 
-    def discretize(self, a):
+    def discretize(self, a, env):
         """Transforms a logit into an int obtained through softmax."""
         if self.greedy_bias:
             a = np.asarray(a, dtype=np.float32)
             for i, action in enumerate(range(len(a))):
                 if "compiler" in self.name:
-                    tmp_env = self.forked_env()
+                    tmp_env = self.forked_env(env)
                 else:
-                    tmp_env = copy.deepcopy(self.env)
+                    tmp_env = copy.deepcopy(env)
                 _, r, _, _ = tmp_env.step(action)
                 a[i] += self.greedy_coefficient * r
         probabilities = np.exp(a - max(a))
@@ -685,8 +676,9 @@ class GymMulti(ExperimentFunction):
             self.greedy_coefficient = x[-1:]  # We have decided that we can not have two runs in parallel.
             x = x[:-1]
         o = o.ravel()
+        my_scale = 2 ** self.optimization_scale
         if "structured" not in self.name and self.optimization_scale != 0:
-            x = np.asarray((2 ** self.optimization_scale) * x, dtype=np.float32)
+            x = np.asarray(my_scale * x, dtype=np.float32)
         if self.control == "linear":
             # The linear case is simplle.
             output = np.matmul(o, x[1:, :])
@@ -709,6 +701,9 @@ class GymMulti(ExperimentFunction):
             assert (
                 second_matrix.shape == self.second_layer_shape
             ), f"{second_matrix} does not match {self.second_layer_shape}"
+        if "resid" in self.control:
+            first_matrix += my_scale * np.eye(*first_matrix.shape)
+            second_matrix += my_scale * np.eye(*second_matrix.shape)
         assert len(o) == len(first_matrix[1:]), f"{o.shape} coming in matrix of shape {first_matrix.shape}"
         output = np.matmul(o, first_matrix[1:])
         if "deep" in self.control:
@@ -718,9 +713,10 @@ class GymMulti(ExperimentFunction):
             s = (self.num_neurons, self.num_neurons)
             for _ in range(self.num_internal_layers):
                 output = np.tanh(output)
-                output = np.matmul(
-                    output, x[current_index : current_index + internal_layer_size].reshape(s)
-                ) / np.sqrt(self.num_neurons)
+                layer = x[current_index : current_index + internal_layer_size].reshape(s)
+                if "resid" in self.control:
+                    layer += my_scale * np.eye(*layer.shape)
+                output = np.matmul(output, layer) / np.sqrt(self.num_neurons)
                 current_index += internal_layer_size
             assert current_index == len(x)
         output = np.matmul(np.tanh(output + first_matrix[0]), second_matrix)
@@ -795,13 +791,12 @@ class GymMulti(ExperimentFunction):
             )
         return loss / num_simulations
 
-    def action_cast(self, a):
+    def action_cast(self, a, env):
         """Transforms an action into an action of type as expected by the gym step function."""
-        env = self.env
         if type(a) == np.float64:
             a = np.asarray((a,))
         if self.discrete:
-            a = self.discretize(a)
+            a = self.discretize(a, env)
         else:
             if type(a) != self.action_type:  # , f"{a} does not have type {self.action_type}"
                 a = self.action_type(a)
@@ -834,13 +829,13 @@ class GymMulti(ExperimentFunction):
             pass  # Not all env can do "contains".
         return a
 
-    def step(self, a):
+    def step(self, a, env):
         """Apply an action.
 
         We have a step on top of Gym's step for possibly storing some statistics."""
-        o, r, done, info = self.env.step(
+        o, r, done, info = env.step(
             a
-        )  # We work on self.env... we can not have two threads working on the same function.
+        )  # We work on env... we can not have two threads working on the same function.
         return o, r, done, info
 
     def heuristic(self, o, current_observations):
@@ -887,7 +882,7 @@ class GymMulti(ExperimentFunction):
         except:
             assert False, f"x has shape {x.shape} and needs {self.policy_shape} for control {self.control}"
         assert seed == 0 or self.control != "conformant" or self.randomized
-        env = self.env
+        env = self.create_env()
         env.seed(seed=seed)
         if self.uses_compiler_gym:
             if self.stochastic_problem:
@@ -910,9 +905,10 @@ class GymMulti(ExperimentFunction):
         if (
             "conformant" in control
         ):  # Conformant planning: we just optimize a sequence of actions. No reactivity.
-            return self.gym_conformant(x)
+            return self.gym_conformant(x, env)
         if "scrambled" in control:  # We shuffle the variables, typically so that progressive methods optimize
             # everywhere in parallel instead of focusing on one single layer for years.
+            x = x.copy()
             np.random.RandomState(1234).shuffle(x)
         if "noisy" in control:  # We add a randomly chosen but fixed perturbation of the x, i.e. we do not
             # start at 0.
@@ -932,9 +928,9 @@ class GymMulti(ExperimentFunction):
                 f"({control} / {env} {self.name} (limited={self.limited_compiler_gym}))"
             )
             a, memory = self.neural(x[i % len(x)] if "multi" in control else x, o)
-            a = self.action_cast(a)
+            a = self.action_cast(a, env)
             try:
-                o, r, done, _ = self.step(a)  # Outputs = observation, reward, done, info.
+                o, r, done, _ = self.step(a, env)  # Outputs = observation, reward, done, info.
                 current_time_index += 1
                 if "multifidLANM" in self.name and current_time_index > 500 and limited_fidelity:
                     done = True
@@ -964,13 +960,13 @@ class GymMulti(ExperimentFunction):
                 break
         return -reward
 
-    def gym_conformant(self, x: np.ndarray):
+    def gym_conformant(self, x: np.ndarray, env: tp.Any):
         """Conformant: we directly optimize inputs, not parameters of a policy."""
         reward = 0.0
         for i, a in enumerate(10.0 * x):
-            a = self.action_cast(a)
+            a = self.action_cast(a, env)
             try:
-                _, r, done, _ = self.step(a)  # Outputs = observation, reward, done, info.
+                _, r, done, _ = self.step(a, env)  # Outputs = observation, reward, done, info.
             except AssertionError:  # Illegal action.
                 return 1e20 / (1.0 + i)  # We encourage late failures rather than early failures.
             reward *= self.gamma
