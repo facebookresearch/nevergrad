@@ -7,7 +7,7 @@ import numpy as np
 from . import pcse
 
 
-def test_rocket() -> None:
+def test_pcse() -> None:
     func = pcse.Pcse()
     x = 0 * np.random.rand(func.dimension)
     value = func(x)
