@@ -139,9 +139,12 @@ def ng_full_gym(
                 "noisy_scrambled_neural",
                 # "scrambled_neural",
                 # "linear",
+                "resid_neural",
+                "resid_semideep_neural",
+                "resid_deep_neural",
             ]
             if not big
-            else ["neural"]
+            else ["resid_neural"]
         )
     if memory:
         controls = ["stackingmemory_neural", "deep_stackingmemory_neural", "semideep_stackingmemory_neural"]
@@ -154,7 +157,7 @@ def ng_full_gym(
         assert not multi
     if conformant:
         controls = ["stochastic_conformant"]
-    budgets = [25, 50, 100, 200, 400, 800, 1600, 3200, 6400]
+    budgets = [50, 200, 800, 3200, 6400, 100, 25, 400, 1600]  # Let's go with low budget.
     budgets = gym_budget_modifier(budgets)
     for control in controls:
         neural_factors: tp.Any = (

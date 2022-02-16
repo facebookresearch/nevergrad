@@ -110,7 +110,9 @@ class BaseFunction(base.ExperimentFunction):
                 random_state=self.parametrization.random_state,
             )
         except gym.error.DependencyNotInstalled as e:
-            raise base.UnsupportedExperiment("Missing mujoco_py") from e
+            raise base.UnsupportedExperiment(
+                "MuJoCo not installed (Linux/OSX support only). If you need it, please follow this installation guide: https://github.com/openai/mujoco-py#install-mujoco"
+            ) from e
         env.env.seed(
             self.random_state if self.deterministic_sim else self.parametrization.random_state.randint(10000)
         )

@@ -122,7 +122,7 @@ def _simple_multiobjective(x):
 def test_recast_pickle(after_ask: bool) -> None:
     # Do 10 ask/tells and optionally another ask.
     optimizer = ng.optimizers.PymooNSGA2(parametrization=2, budget=300)
-    tp.cast(recaster.SequentialRecastOptimizer, optimizer).enable_pickling()
+    optimizer.enable_pickling()
     optimizer.parametrization.random_state.seed(12)
     for _ in range(10):
         x = optimizer.ask()

@@ -42,6 +42,15 @@ GUARANTEED_GYM_ENV_NAMES = [
 
 # We do not use "conformant" which is not consistent with the rest.
 CONTROLLERS = [
+    "resid_neural",
+    "resid_semideep_neural",
+    "resid_deep_neural",
+    "resid_scrambled_neural",
+    "resid_scrambled_semideep_neural",
+    "resid_scrambled_deep_neural",
+    "resid_noisy_scrambled_neural",
+    "resid_noisy_scrambled_semideep_neural",
+    "resid_noisy_scrambled_deep_neural",
     "linear",  # Simple linear controller.
     "neural",  # Simple neural controller.
     "deep_neural",  # Deeper neural controller.
@@ -542,33 +551,9 @@ class GymMulti(ExperimentFunction):
             "conformant": (self.num_time_steps,) + output_shape,
             "stochastic_conformant": (self.num_time_steps,) + output_shape,
             "linear": (input_dim + 1, output_dim),
-            "memory_neural": neural_size,
-            "neural": neural_size,
-            "deep_neural": neural_size,
-            "semideep_neural": neural_size,
-            "noisy_semideep_neural": neural_size,
-            "noisy_deep_neural": neural_size,
-            "noisy_scrambled_semideep_neural": neural_size,
-            "noisy_scrambled_deep_neural": neural_size,
-            "deep_memory_neural": neural_size,
-            "semideep_memory_neural": neural_size,
-            "deep_stackingmemory_neural": neural_size,
-            "stackingmemory_neural": neural_size,
-            "semideep_stackingmemory_neural": neural_size,
-            "deep_extrapolatestackingmemory_neural": neural_size,
-            "extrapolatestackingmemory_neural": neural_size,
-            "semideep_extrapolatestackingmemory_neural": neural_size,
-            "structured_neural": neural_size,
             "multi_neural": (min(self.num_time_steps, 50),) + unstructured_neural_size,
-            "noisy_neural": neural_size,
-            "noisy_scrambled_neural": neural_size,
-            "scrambled_neural": neural_size,
         }
-        shape = shape_dict[control]
-        assert all(
-            c in shape_dict for c in self.controllers
-        ), f"{self.controllers} subset of {shape_dict.keys()}"
-        shape = tuple(map(int, shape))
+        shape = tuple(map(int, shape_dict.get(control, neural_size)))
         self.policy_shape = shape if "structured" not in control else None
 
         # Create the parametrization.
@@ -695,8 +680,9 @@ class GymMulti(ExperimentFunction):
             self.greedy_coefficient = x[-1:]  # We have decided that we can not have two runs in parallel.
             x = x[:-1]
         o = o.ravel()
+        my_scale = 2 ** self.optimization_scale
         if "structured" not in self.name and self.optimization_scale != 0:
-            x = np.asarray((2 ** self.optimization_scale) * x, dtype=np.float32)
+            x = np.asarray(my_scale * x, dtype=np.float32)
         if self.control == "linear":
             # The linear case is simplle.
             output = np.matmul(o, x[1:, :])
@@ -719,6 +705,9 @@ class GymMulti(ExperimentFunction):
             assert (
                 second_matrix.shape == self.second_layer_shape
             ), f"{second_matrix} does not match {self.second_layer_shape}"
+        if "resid" in self.control:
+            first_matrix += my_scale * np.eye(*first_matrix.shape)
+            second_matrix += my_scale * np.eye(*second_matrix.shape)
         assert len(o) == len(first_matrix[1:]), f"{o.shape} coming in matrix of shape {first_matrix.shape}"
         output = np.matmul(o, first_matrix[1:])
         if "deep" in self.control:
@@ -728,9 +717,10 @@ class GymMulti(ExperimentFunction):
             s = (self.num_neurons, self.num_neurons)
             for _ in range(self.num_internal_layers):
                 output = np.tanh(output)
-                output = np.matmul(
-                    output, x[current_index : current_index + internal_layer_size].reshape(s)
-                ) / np.sqrt(self.num_neurons)
+                layer = x[current_index : current_index + internal_layer_size].reshape(s)
+                if "resid" in self.control:
+                    layer += my_scale * np.eye(*layer.shape)
+                output = np.matmul(output, layer) / np.sqrt(self.num_neurons)
                 current_index += internal_layer_size
             assert current_index == len(x)
         output = np.matmul(np.tanh(output + first_matrix[0]), second_matrix)
@@ -922,6 +912,7 @@ class GymMulti(ExperimentFunction):
             return self.gym_conformant(x, env)
         if "scrambled" in control:  # We shuffle the variables, typically so that progressive methods optimize
             # everywhere in parallel instead of focusing on one single layer for years.
+            x = x.copy()
             np.random.RandomState(1234).shuffle(x)
         if "noisy" in control:  # We add a randomly chosen but fixed perturbation of the x, i.e. we do not
             # start at 0.
