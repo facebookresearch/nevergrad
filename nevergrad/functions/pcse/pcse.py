@@ -9,17 +9,17 @@ Based on
 https://raw.githubusercontent.com/purdue-orbital/pcse-simulation/master/Simulation2.py
 """
 
-
+import pandas as pd
+import yaml
 import numpy as np
+import nevergrad as ng
 from ..base import ArrayExperimentFunction
 
 # pylint: disable=too-many-locals,too-many-statements
 
 
-class Pcse(ArrayExperimentFunction):
+class CropSimulator(ArrayExperimentFunction):
     def __init__(self) -> None:
-        import yaml
-        import pandas as pd
         from pcse.models import Wofost72_PP
         from pcse.base import ParameterProvider
         from pcse.db import NASAPowerWeatherDataProvider
@@ -147,6 +147,7 @@ class Pcse(ArrayExperimentFunction):
         # defaults = [cropd["TDWI"], cropd["SPAN"]]
         # error = objfunc_calculator(defaults)
         # print("Objective function value with default parameters (%s): %s" % (defaults, error))
+
         TDWI_range = [0.1, 0.6]
         SPAN_range = [30, 40]
         #param = ng.p.Array(
