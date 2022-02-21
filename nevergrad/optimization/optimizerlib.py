@@ -1604,6 +1604,7 @@ MetaModel = ParametrizedMetaModel().set_name("MetaModel", register=True)
 MetaModelOnePlusOne = ParametrizedMetaModel(multivariate_optimizer=OnePlusOne).set_name(
     "MetaModelOnePlusOne", register=True
 )
+HSMetaModel = ParametrizedMetaModel(multivariate_optimizer=HSCMA).set_name("HSMetaModel", register=True)
 
 
 @registry.register
