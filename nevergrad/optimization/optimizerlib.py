@@ -1571,6 +1571,9 @@ class _MetaModel(base.Optimizer):
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         self._optim.tell(candidate, loss)
 
+    def _internal_provide_recommendation(self) -> tp.Optional[tp.ArrayLike]:
+        return self._optim._internal_provide_recommendation()
+
     def enable_pickling(self):
         super().enable_pickling()
         self._optim.enable_pickling()
