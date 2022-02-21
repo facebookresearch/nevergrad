@@ -498,8 +498,11 @@ class _CMA(base.Optimizer):
         n = self.num_ask
         sample_size = int(d * d / 2 + d / 2 + 3)
         if self._config.high_speed and n >= sample_size:
-            data = _learn_on_k_best(self.archive, sample_size)
-            return data  # self.parametrization.spawn_child().set_standardized_data(data)
+            try:
+                data = _learn_on_k_best(self.archive, sample_size)
+                return data  # type: ignore
+            except MetaModelFailure:  # Failures in the metamodeling can happen.
+                pass
         if self._es is None:
             return pessimistic
         cma_best: tp.Optional[np.ndarray] = self.es.best_x if self._config.fcmaes else self.es.result.xbest
