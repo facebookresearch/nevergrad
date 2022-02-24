@@ -1317,6 +1317,12 @@ class ConfPortfolio(base.ConfiguredOptimizer):
         the list of optimizers to use.
     warmup_ratio: optional float
         ratio of the budget used before choosing to focus on one optimizer
+    tell_not_asked: str
+        one of the following options:
+        - "all": all evaluations are told to all optimizers
+        - "none": evaluations are only told to the optimizer which asked for it
+        - "best": optimizers are only told the candidates they asked for *and* any new
+          better evaluation.
 
     Notes
     -----
@@ -1331,10 +1337,15 @@ class ConfPortfolio(base.ConfiguredOptimizer):
         *,
         optimizers: tp.Sequence[tp.Union[base.Optimizer, base.OptCls, str]] = (),
         warmup_ratio: tp.Optional[float] = None,
+        tell_not_asked: str = "all",
     ) -> None:
+        super().__init__(Portfolio, locals(), as_config=True)
         self.optimizers = optimizers
         self.warmup_ratio = warmup_ratio
-        super().__init__(Portfolio, locals(), as_config=True)
+        options = ("all", "none", "best")
+        if tell_not_asked not in options:
+            raise ValueError(f"Got tell_not_asked={tell_not_asked}, but available options: {options}")
+        self.tell_not_asked = tell_not_asked
 
 
 @registry.register
@@ -1390,6 +1401,7 @@ class Portfolio(base.Optimizer):
             raise ValueError("warmup_ratio is only available if a budget is provided")
         if not any(x is None for x in (cfg.warmup_ratio, budget)):
             self._warmup_budget = int(cfg.warmup_ratio * budget)  # type: ignore
+        self._min_loss = float("inf")
 
     def _internal_ask_candidate(self) -> p.Parameter:
         # optimizer selection if budget is over
@@ -1420,14 +1432,20 @@ class Portfolio(base.Optimizer):
         # Telling all optimizers is presumably better than just
         # self.optims[optim_index].tell(candidate, value)
         accepted = 0
-        for opt in self.optims:
-            try:
-                opt.tell(candidate, loss)
-                accepted += 1
-            except errors.TellNotAskedNotSupportedError:
-                pass
+        optim_index: tp.Optional[int] = candidate._meta.get("optim_index", None)
+        option = self._config.tell_not_asked
+        if option == "all" or (option == "best" and loss <= self._min_loss):
+            optim_index = None
+        for index, opt in enumerate(self.optims):
+            if optim_index in (None, index):
+                try:
+                    opt.tell(candidate, loss)
+                    accepted += 1
+                except errors.TellNotAskedNotSupportedError:
+                    pass
         if not accepted:
             raise errors.TellNotAskedNotSupportedError("No sub-optimizer accepted the tell-not-asked")
+        self._min_loss = min(self._min_loss, loss)  # keep track of minimal loss for "best" tell-not-asked
 
     def enable_pickling(self) -> None:
         for opt in self.optims:
