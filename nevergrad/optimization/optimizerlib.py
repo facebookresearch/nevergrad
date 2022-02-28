@@ -22,8 +22,8 @@ from . import oneshot
 from . import base
 from . import mutations
 from . import utils
-from .base import _learn_on_k_best as _learn_on_k_best
-from .base import MetaModelFailure as MetaModelFailure
+from .metamodel import MetaModelFailure as MetaModelFailure
+from .metamodel import _learn_on_k_best as _learn_on_k_best
 from .base import registry as registry
 from .base import addCompare  # pylint: disable=unused-import
 from .base import IntOrParameter

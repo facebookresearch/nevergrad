@@ -191,6 +191,7 @@ def test_infnan(name: str) -> None:
             any(x == name for x in ["WidePSO", "SPSA", "NGOptBase", "Shiwa", "NGO"])
             or isinstance(optim, (optlib.Portfolio, optlib._CMA, optlib.recaster.SequentialRecastOptimizer))
             or "NGOpt" in name
+            or "HS" in name
             or "MetaModelDiagonalCMA" in name
         )  # Second chance!
         recom = optim.minimize(buggy_function)

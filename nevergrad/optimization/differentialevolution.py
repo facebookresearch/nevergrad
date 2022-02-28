@@ -7,6 +7,8 @@ import warnings
 import numpy as np
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
+from .metamodel import MetaModelFailure as MetaModelFailure
+from .metamodel import _learn_on_k_best as _learn_on_k_best
 from . import base
 from . import oneshot
 
@@ -115,11 +117,12 @@ class _DE(base.Optimizer):
         self._no_hypervolume = self._config.multiobjective_adaptation
 
     def recommend(self) -> p.Parameter:  # This is NOT the naive version. We deal with noise.
+        sample_size = int((self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1)
         if self._config.high_speed and len(self.archive) >= sample_size:
             try:
-                data = base._learn_on_k_best(self.archive, sample_size)
+                data = _learn_on_k_best(self.archive, sample_size)
                 return self.parametrization.spawn_child().set_standardized_data(data)
-            except base.MetaModelFailure:  # The optimum is at infinity. Shit happens.
+            except MetaModelFailure:  # The optimum is at infinity. Shit happens.
                 pass  # MetaModel failures are something which happens, no worries.
         if self._config.recommendation != "noisy":
             return self.current_bests[self._config.recommendation].parameter
