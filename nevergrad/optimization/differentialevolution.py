@@ -91,6 +91,7 @@ class _DE(base.Optimizer):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         # config
         self._config = DifferentialEvolution() if config is None else config
+        self.high_speed = self._config.high_speed
         self.scale = (
             float(1.0 / np.sqrt(self.dimension))
             if isinstance(self._config.scale, str)
@@ -114,6 +115,12 @@ class _DE(base.Optimizer):
         self._no_hypervolume = self._config.multiobjective_adaptation
 
     def recommend(self) -> p.Parameter:  # This is NOT the naive version. We deal with noise.
+        if self._config.high_speed and len(self.archive) >= sample_size:
+            try:
+                data = base._learn_on_k_best(self.archive, sample_size)
+                return self.parametrization.spawn_child().set_standardized_data(data)
+            except base.MetaModelFailure:  # The optimum is at infinity. Shit happens.
+                pass  # MetaModel failures are something which happens, no worries.
         if self._config.recommendation != "noisy":
             return self.current_bests[self._config.recommendation].parameter
         med_fitness = np.median([p.loss for p in self.population.values() if p.loss is not None])
@@ -286,6 +293,7 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
         popsize: tp.Union[str, int] = "standard",
         propagate_heritage: bool = False,  # experimental
         multiobjective_adaptation: bool = True,
+        high_speed: bool = False,
     ) -> None:
         super().__init__(_DE, locals(), as_config=True)
         assert recommendation in ["optimistic", "pessimistic", "noisy", "mean"]
@@ -303,6 +311,7 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
         ]
         self.initialization = initialization
         self.scale = scale
+        self.high_speed = high_speed
         self.recommendation = recommendation
         self.propagate_heritage = propagate_heritage
         self.F1 = F1
@@ -313,12 +322,15 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
 
 
 DE = DifferentialEvolution().set_name("DE", register=True)
+HSDE = DifferentialEvolution(high_speed=True).set_name("HSDE", register=True)
 TwoPointsDE = DifferentialEvolution(crossover="twopoints").set_name("TwoPointsDE", register=True)
 RotatedTwoPointsDE = DifferentialEvolution(crossover="rotated_twopoints").set_name(
     "RotatedTwoPointsDE", register=True
 )
 
 LhsDE = DifferentialEvolution(initialization="LHS").set_name("LhsDE", register=True)
+LhsHSDE = DifferentialEvolution(initialization="LHS", high_speed=True).set_name("LhsHSDE", register=True)
+
 QrDE = DifferentialEvolution(initialization="QR").set_name("QrDE", register=True)
 NoisyDE = DifferentialEvolution(recommendation="noisy").set_name("NoisyDE", register=True)
 AlmostRotationInvariantDE = DifferentialEvolution(crossover=0.9).set_name(
