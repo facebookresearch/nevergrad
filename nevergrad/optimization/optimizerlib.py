@@ -17,11 +17,9 @@ from nevergrad.parametrization import transforms
 from nevergrad.parametrization import discretization
 from nevergrad.parametrization import _layering
 from nevergrad.parametrization import _datalayers
-from . import callbacks
 from . import oneshot
 from . import base
 from . import mutations
-from . import utils
 from .metamodel import MetaModelFailure as MetaModelFailure
 from .metamodel import _learn_on_k_best as _learn_on_k_best
 from .base import registry as registry
