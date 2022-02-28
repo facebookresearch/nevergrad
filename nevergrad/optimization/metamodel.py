@@ -3,19 +3,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import pickle
-import warnings
-from pathlib import Path
-from numbers import Real
-from collections import deque
 import numpy as np
 import nevergrad.common.typing as tp
-from nevergrad.parametrization import parameter as p
-from nevergrad.common import tools as ngtools
-from nevergrad.common import errors as errors
-from nevergrad.common.decorators import Registry
 from . import utils
-from . import multiobjective as mobj
 from .base import registry
 from . import callbacks
 
