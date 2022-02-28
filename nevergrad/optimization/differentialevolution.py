@@ -120,8 +120,8 @@ class _DE(base.Optimizer):
         sample_size = int((self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1)
         if self._config.high_speed and len(self.archive) >= sample_size:
             try:
-                data = _learn_on_k_best(self.archive, sample_size)
-                return self.parametrization.spawn_child().set_standardized_data(data)
+                meta_data = _learn_on_k_best(self.archive, sample_size)
+                return self.parametrization.spawn_child().set_standardized_data(meta_data)
             except MetaModelFailure:  # The optimum is at infinity. Shit happens.
                 pass  # MetaModel failures are something which happens, no worries.
         if self._config.recommendation != "noisy":
