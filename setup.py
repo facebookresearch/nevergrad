@@ -18,7 +18,7 @@ from setuptools.command.install import install
 
 requirements: tp.Dict[str, tp.List[str]] = {}
 for extra in ["dev", "bench", "main"]:
-    requirements[extra] = Path(f"requirements/{extra}.txt").read_text().splitlines()
+    requirements[extra] = Path(f"requirements/{extra}.txt").open().read().splitlines()
 
 
 # build long description
