@@ -61,7 +61,7 @@ jobs:
             python3 -m venv venv
             . venv/bin/activate
             pip install --progress-bar off pip==21.0.1
-            pip3 install --progress-bar off -e .
+            pip install --progress-bar off -e .
 
       - run:
           name: "[no-extra] Print installation"
@@ -117,7 +117,7 @@ jobs:
             mkdir nevergrad-build
             mv dist nevergrad-build/
             #
-            python -c "from pathlib import Path;files = Path('nevergrad.egg-info/SOURCES.txt').read_text().split(); assert 'LICENSE' in files"
+            python -c "from pathlib import Path;files = Path('nevergrad.egg-info/SOURCES.txt').open().read().split(); assert 'LICENSE' in files"
             python3 -m venv test_wheel
             . test_wheel/bin/activate
             pip install -U pip
