@@ -10,7 +10,6 @@ import warnings
 import weakref
 import numpy as np
 from scipy import optimize as scipyoptimize
-import cma
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
 from nevergrad.common import errors
@@ -73,6 +72,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
             options: tp.Dict[str, tp.Any] = {} if weakself.budget is None else {"maxiter": remaining}
             # options: tp.Dict[str, tp.Any] = {} if self.budget is None else {"maxiter": remaining}
             if weakself.method == "CmaFmin2":
+                import cma  # import inline in order to avoid matplotlib initialization warning
 
                 def cma_objective_function(data):
                     # Hopefully the line below does nothing if unbounded and rescales from [0, 1] if bounded.

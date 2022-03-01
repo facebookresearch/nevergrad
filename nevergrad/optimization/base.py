@@ -563,6 +563,17 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         """Override to provide a recommendation in standardized space"""
         return None
 
+    def enable_pickling(self) -> None:
+        """
+        Some optimizers are only optionally picklable, because picklability
+        requires saving the whole history which would be a waste of memory
+        in general. To tell an optimizer to be picklable, call this function
+        before any asks.
+
+        In this base class, the function is a no-op, but it is overridden
+        in some optimizers.
+        """
+
     def minimize(
         self,
         objective_function: tp.Callable[..., tp.Loss],
