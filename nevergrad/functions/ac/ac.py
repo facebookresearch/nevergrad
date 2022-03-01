@@ -17,8 +17,9 @@ from ..base import ExperimentFunction
 # Inspired by
 # https://colab.research.google.com/github/thomasdkelly/aquacrop/blob/master/tutorials/AquaCrop_OSPy_Notebook_3.ipynb#scrollTo=YDm931IGNxCb
 
-from aquacrop.classes import *
-from aquacrop.core import *
+# from aquacrop.classes import *
+# from aquacrop.core import *
+import aquacrop
 
 
 class NgAquacrop(ExperimentFunction):
@@ -29,24 +30,26 @@ class NgAquacrop(ExperimentFunction):
 
     def loss(self, smts):
 
-        path = get_filepath("champion_climate.txt")
-        wdf = prepare_weather(path)
+        path = aquacrop.core.get_filepath("champion_climate.txt")
+        wdf = aquacrop.core.prepare_weather(path)
 
         def run_model(smts, max_irr_season, year1, year2):
             """
             Function to run model and return results for given set of soil moisture targets.
             """
 
-            maize = CropClass("Maize", PlantingDate="05/01")  # define crop
-            loam = SoilClass("ClayLoam")  # define soil
-            init_wc = InitWCClass(wc_type="Pct", value=[70])  # define initial soil water conditions
+            maize = aquacrop.classes.CropClass("Maize", PlantingDate="05/01")  # define crop
+            loam = aquacrop.classes.SoilClass("ClayLoam")  # define soil
+            init_wc = aquacrop.classes.InitWCClass(
+                wc_type="Pct", value=[70]
+            )  # define initial soil water conditions
 
-            irrmngt = IrrMngtClass(
+            irrmngt = aquacrop.classes.IrrMngtClass(
                 IrrMethod=1, SMT=smts, MaxIrrSeason=max_irr_season
             )  # define irrigation management
 
             # create and run model
-            model = AquaCropModel(
+            model = aquacrop.core.AquaCropModel(
                 f"{year1}/05/01", f"{year2}/10/31", wdf, loam, maize, IrrMngt=irrmngt, InitWC=init_wc
             )
             model.initialize()
