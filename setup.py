@@ -8,7 +8,7 @@ import re
 import os
 import sys
 import typing as tp
-from pathlib import Path
+from pathlib2 import Path
 from setuptools import setup
 from setuptools import find_packages
 from setuptools.command.install import install
@@ -18,7 +18,7 @@ from setuptools.command.install import install
 
 requirements: tp.Dict[str, tp.List[str]] = {}
 for extra in ["dev", "bench", "main"]:
-    requirements[extra] = Path(f"requirements/{extra}.txt").open().read().splitlines()
+    requirements[extra] = Path(f"requirements/{extra}.txt").read_text().splitlines()
 
 
 # build long description
