@@ -8,7 +8,7 @@ import re
 import os
 import sys
 import typing as tp
-from pathlib2 import Path
+from pathlib import Path
 from setuptools import setup
 from setuptools import find_packages
 from setuptools.command.install import install
@@ -18,7 +18,7 @@ from setuptools.command.install import install
 
 requirements: tp.Dict[str, tp.List[str]] = {}
 for extra in ["dev", "bench", "main"]:
-    requirements[extra] = Path(f"requirements/{extra}.txt").read_text().splitlines()
+    requirements[extra] = Path(f"requirements/{extra}.txt").read().open().splitlines()
 
 
 # build long description
@@ -28,7 +28,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 # find version
 
-init_str = Path("nevergrad/__init__.py").read_text()
+init_str = Path("nevergrad/__init__.py").read().open()
 match = re.search(r"^__version__ = \"(?P<version>[\w\.]+?)\"$", init_str, re.MULTILINE)
 assert match is not None, "Could not find version in nevergrad/__init__.py"
 version = match.group("version")
