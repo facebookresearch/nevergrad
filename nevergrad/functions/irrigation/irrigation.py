@@ -13,6 +13,7 @@ https://raw.githubusercontent.com/purdue-orbital/pcse-simulation/master/Simulati
 from pathlib import Path
 import urllib.request
 import numpy as np
+import warning
 import nevergrad as ng
 from ..base import ArrayExperimentFunction
 
@@ -65,6 +66,7 @@ def leaf_area_index(x: np.ndarray):
     crop = YAMLCropDataProvider()
     if os.environ.get("CIRCLECI", False):
         raise ng.errors.UnsupportedExperiment("No HTTP request in CircleCI")
+    warnings.warn("Check that you have no problem with the EUPL license.")
     urllib.request.urlretrieve(
         "https://raw.githubusercontent.com/ajwdewit/ggcmi/master/pcse/doc/ec3.soil",
         str(data_dir) + "/soil/ec3.soil",
