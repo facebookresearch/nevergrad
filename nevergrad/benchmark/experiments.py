@@ -24,7 +24,6 @@ from nevergrad.functions.powersystems import PowerSystem
 from nevergrad.functions.stsp import STSP
 from nevergrad.functions.rocket import Rocket
 from nevergrad.functions.irrigation import Irrigation
-from nevergrad.functions.pcse import Pcse
 from nevergrad.functions.pcse import CropSimulator
 from nevergrad.functions.mixsimulator import OptimizeMix
 from nevergrad.functions.unitcommitment import UnitCommitmentProblem
