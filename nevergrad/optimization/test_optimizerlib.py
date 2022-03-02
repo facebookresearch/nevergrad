@@ -714,7 +714,7 @@ def test_ngopt_selection(
         # pylint: disable=pointless-statement
         # The pattern matching from the log does not work anymore,
         # hence some modifications below. We might delete the old version.
-        o = str(opt.optim)  # type: ignore
+        optim_string = str(opt.optim)  # type: ignore
         # import re
         # pattern = rf".*{name} selected (?P<name>\w+?) optimizer\."
         # match = re.match(pattern, caplog.text.splitlines()[-1])
@@ -722,16 +722,16 @@ def test_ngopt_selection(
         # choice = match.group("name")
         if expected != "#CONTINUOUS":
             # assert choice == expected
-            assert expected in o
+            assert expected in optim_string
         else:
             # print(f"Continuous param={param} budget={budget} workers={num_workers} --> {choice}")
             if num_workers >= budget > 600:
                 # assert choice == "MetaTuneRecentering"
-                assert "MetaTuneRecentering" in o
+                assert "MetaTuneRecentering" in optim_string
             if num_workers > 1:
                 # assert choice not in ["SQP", "Cobyla"]
-                assert "SQP" not in o and "Cobyla" not in o
-        assert opt._info()["sub-optim"] in o
+                assert "SQP" not in o and "Cobyla" not in optim_string
+        assert opt._info()["sub-optim"] in optim_string
 
 
 def test_bo_ordering() -> None:
