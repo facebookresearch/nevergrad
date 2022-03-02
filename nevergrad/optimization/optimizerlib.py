@@ -21,7 +21,7 @@ from . import oneshot
 from . import base
 from . import mutations
 from .metamodel import MetaModelFailure as MetaModelFailure
-from .metamodel import _learn_on_k_best as _learn_on_k_best
+from .metamodel import learn_on_k_best as learn_on_k_best
 from .base import registry as registry
 from .base import addCompare  # pylint: disable=unused-import
 from .base import IntOrParameter
@@ -1481,7 +1481,7 @@ class _MetaModel(base.Optimizer):
         freq = max(13, self.num_workers, self.dimension, int(self.frequency_ratio * sample_size))
         if len(self.archive) >= sample_size and not self._num_ask % freq:
             try:
-                data = _learn_on_k_best(self.archive, sample_size)
+                data = learn_on_k_best(self.archive, sample_size)
                 candidate = self.parametrization.spawn_child().set_standardized_data(data)
             except MetaModelFailure:  # The optimum is at infinity. Shit happens.
                 candidate = self._optim.ask()

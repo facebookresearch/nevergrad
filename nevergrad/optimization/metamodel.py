@@ -14,7 +14,7 @@ class MetaModelFailure(ValueError):
     """Sometimes the optimum of the metamodel is at infinity."""
 
 
-def _learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.ArrayLike:
+def learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.ArrayLike:
     """Approximate optimum learnt from the k best.
 
     Parameters
