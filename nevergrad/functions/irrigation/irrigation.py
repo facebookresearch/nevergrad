@@ -11,7 +11,6 @@ https://raw.githubusercontent.com/purdue-orbital/pcse-simulation/master/Simulati
 
 
 from pathlib import Path
-import os
 import urllib.request
 import numpy as np
 import nevergrad as ng
