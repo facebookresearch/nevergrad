@@ -92,7 +92,6 @@ class _DE(base.Optimizer):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         # config
         self._config = DifferentialEvolution() if config is None else config
-        self.high_speed = self._config.high_speed
         self.scale = (
             float(1.0 / np.sqrt(self.dimension))
             if isinstance(self._config.scale, str)
