@@ -1,4 +1,4 @@
-pathlib=1.0.0
+pathlib==1.0.0
 numpy>=1.21.1
 cma>=2.6.0
 bayesian-optimization>=1.2.0
