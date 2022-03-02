@@ -7,8 +7,7 @@ import warnings
 import numpy as np
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
-from .metamodel import MetaModelFailure as MetaModelFailure
-from .metamodel import _learn_on_k_best as _learn_on_k_best
+from . import metamodel
 from . import base
 from . import oneshot
 
