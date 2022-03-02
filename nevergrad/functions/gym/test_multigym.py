@@ -54,14 +54,20 @@ def test_sparse_cartpole() -> None:
     assert min(results) != max(results), "CartPole should not be deterministic."
 
 
-@pytest.mark.parametrize("name", GYM_ENV_NAMES)  # type: ignore
-def test_run_multigym(name: str) -> None:
-    if os.name == "nt" or np.random.randint(8) or "CubeCrash" in name:
+
+def test_default_run_multigym() -> None:
+    if os.name == "nt":
         raise SkipTest("Skipping Windows and running only 1 out of 8")
     func = multigym.GymMulti(randomized=False, neural_factor=None)
     x = np.zeros(func.dimension)
     value = func(x)
     np.testing.assert_almost_equal(value, 184.07, decimal=2)
+
+
+@pytest.mark.parametrize("name", GYM_ENV_NAMES)  # type: ignore
+def test_run_multigym(name: str) -> None:
+    if os.name == "nt" or np.random.randint(8) or "CubeCrash" in name:
+        raise SkipTest("Skipping Windows and running only 1 out of 8")
     i = GYM_ENV_NAMES.index(name)
     control = multigym.CONTROLLERS[i % len(multigym.CONTROLLERS)]
     print(f"Working with {control} on {name}.")

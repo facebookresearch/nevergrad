@@ -405,7 +405,7 @@ class GymMulti(ExperimentFunction):
 
     def __init__(
         self,
-        name: str = "gym_anm:ANM6Easy-v0",
+        name: str = "ANM6Easy-v0",
         control: str = "conformant",
         neural_factor: tp.Optional[int] = 1,
         randomized: bool = True,
