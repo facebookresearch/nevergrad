@@ -54,7 +54,6 @@ def test_sparse_cartpole() -> None:
     assert min(results) != max(results), "CartPole should not be deterministic."
 
 
-
 def test_default_run_multigym() -> None:
     if os.name == "nt":
         raise SkipTest("Skipping Windows and running only 1 out of 8")
