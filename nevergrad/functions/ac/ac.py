@@ -11,15 +11,16 @@ https://colab.research.google.com/github/thomasdkelly/aquacrop/blob/master/tutor
 
 from nevergrad.parametrization import parameter
 from ..base import ExperimentFunction
+from ..base import UnsupportedExperiment as UnsupportedExperiment
 
 # pylint: disable=too-many-locals,too-many-statements
 
 # Inspired by
 # https://colab.research.google.com/github/thomasdkelly/aquacrop/blob/master/tutorials/AquaCrop_OSPy_Notebook_3.ipynb#scrollTo=YDm931IGNxCb
 
+# In the colab it was:
 # from aquacrop.classes import *
 # from aquacrop.core import *
-import aquacrop
 
 
 class NgAquacrop(ExperimentFunction):
@@ -29,7 +30,10 @@ class NgAquacrop(ExperimentFunction):
         super().__init__(self.loss, parametrization=parameter.Array(shape=(num_smts,)))
 
     def loss(self, smts):
-
+        try:
+            import aquacrop
+        except ImportError:
+            raise UnsupportedExperiment("Please install aquacrop==0.2 for FAO aquacrop experiments") from e
         path = aquacrop.core.get_filepath("champion_climate.txt")
         wdf = aquacrop.core.prepare_weather(path)
 
