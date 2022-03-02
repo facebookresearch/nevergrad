@@ -138,7 +138,7 @@ Descriptors are automatically filled up based on int/bool/float/str variables yo
 so that two copies can differ, providing more robustness to benchmarks.</p></li>
 </ul>
 <p>See the docstrings for more information, and <a class="reference external" href="https://github.com/facebookresearch/nevergrad/blob/main/nevergrad/functions/arcoating/core.py">arcoating/core.py</a> and <a class="reference external" href="https://github.com/facebookresearch/nevergrad/blob/main/nevergrad/benchmark/additional/example.py">example.py</a> for examples.</p>
-<p>If you want your experiment plan to be seedable, be extra careful as to how you handle randomness in the experiment generator, since each individual experiment may be run in any order. See <a class="reference external" href="https://github.com/facebookresearch/nevergrad/blob/main/nevergrad/benchmark/experiments.py">experiments.py</a> for examples of seedable experiment plans. If you do not care for it. For simplicity’s sake, the experiment plan generator is however not required to have a seed parameter (but will not be reproducible in this case).</p>
+<p>If you want your experiment plan to be seedable, be extra careful as to how you handle randomness in the experiment generator, since each individual experiment may be run in any order. See <a class="reference external" href="https://github.com/facebookresearch/nevergrad/blob/main/nevergrad/benchmark/experiments.py">experiments.py</a> for examples of seedable experiment plans. For simplicity’s sake, the experiment plan generator is however not required to have a seed parameter (but will not be reproducible in this case).</p>
 </section>
 </section>
 
