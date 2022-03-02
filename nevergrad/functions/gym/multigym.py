@@ -399,7 +399,7 @@ class GymMulti(ExperimentFunction):
             # assert (
             #    self.compilergym_index is None
             # ), "compiler_gym_pb_index should not be defined if not CompilerGym."
-            env = gym.make(self.short_name if "LANM" not in self.short_name else "gym_anm:ANM6Easy-v0")
+            env = gym.make(self.short_name if "LANM" not in self.short_name else "ANM6Easy-v0")
             env.reset()
         return env
 
