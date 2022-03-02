@@ -21,7 +21,7 @@ def test_multigym() -> None:
         if any(x in env_name for x in ["MemorizeDigit"]):
             continue
         assert env_name in GYM_ENV_NAMES, f"{env_name} should be guaranteed!"
-    assert len(GYM_ENV_NAMES) >= 16 or os.name == "nt"
+    assert len(GYM_ENV_NAMES) >= 12 or os.name == "nt"
 
 
 def test_compiler_gym() -> None:
