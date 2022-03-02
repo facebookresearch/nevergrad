@@ -245,6 +245,9 @@ class Parameter(Layered):
             strings.append(str(self.value))
         return ":".join(strings)
 
+    def __bool__(self) -> bool:
+        raise RuntimeError("bool check is not allowed to avoid confusion")
+
     # %% Constraint management
     def satisfies_constraints(self) -> bool:
         """Whether the instance satisfies the constraints added through
