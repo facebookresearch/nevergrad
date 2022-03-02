@@ -44,6 +44,11 @@ pybullet>=3.2.2
 box2d-py>=2.3.5
 glfw
 mujoco
+<<<<<<< HEAD
 pcse>=5.5.0
 #yaml>=5.3.1
 #yaml
+=======
+pcse
+pygame
+>>>>>>> e4668916 (ZZPcse2: irrigation challenge (#1341))
