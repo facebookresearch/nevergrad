@@ -33,7 +33,7 @@ class NgAquacrop(ExperimentFunction):
         try:
             import aquacrop
         except ImportError:
-            raise UnsupportedExperiment("Please install aquacrop==0.2 for FAO aquacrop experiments") from e
+            raise UnsupportedExperiment("Please install aquacrop==0.2 for FAO aquacrop experiments")
         path = aquacrop.core.get_filepath("champion_climate.txt")
         wdf = aquacrop.core.prepare_weather(path)
 
