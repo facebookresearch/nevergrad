@@ -60,7 +60,7 @@ def test_default_run_multigym() -> None:
     func = multigym.GymMulti(randomized=False, neural_factor=None)
     x = np.zeros(func.dimension)
     value = func(x)
-    np.testing.assert_almost_equal(value, 184.07, decimal=2)
+    np.testing.assert_almost_equal(value, 178.20, decimal=2)
 
 
 @pytest.mark.parametrize("name", GYM_ENV_NAMES)  # type: ignore
