@@ -33,4 +33,4 @@ olymp==0.0.1b0 ; sys_platform == "linux"
 silence_tensorflow  # for olymp
 tensorflow_probability  # for olymp
 bayes-optim==0.2.5.5
-aquacrop==0.2
+aquacrop>=0.2
