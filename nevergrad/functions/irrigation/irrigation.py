@@ -13,7 +13,7 @@ https://raw.githubusercontent.com/purdue-orbital/pcse-simulation/master/Simulati
 from pathlib import Path
 import urllib.request
 import numpy as np
-import warning
+import warnings
 import nevergrad as ng
 from ..base import ArrayExperimentFunction
 
@@ -79,6 +79,11 @@ def leaf_area_index(x: np.ndarray):
 
     from pcse.fileinput import ExcelWeatherDataProvider
 
+    warnings.warn("Check that you have no problem with the EUPL license.")
+    urllib.request.urlretrieve(
+        "https://pcse.readthedocs.io/en/stable/_downloads/78c1c853e9911098db9e3d8e6f362550/nl1.xlsx",
+        str(data_dir) + "/meteo/nl1.xlsx",
+    )
     weatherfile = os.path.join(data_dir, "meteo", "nl1.xlsx")
     weatherdataprovider = ExcelWeatherDataProvider(weatherfile)
 
