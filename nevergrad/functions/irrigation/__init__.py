@@ -4,5 +4,5 @@
 # LICENSE file in the root directory of this source tree.
 
 # Based on https://github.com/ajwdewit/pcse_notebooks
-# MIT License.
-from .pcse import CropSimulator as CropSimulator
+# (MIT License).
+from .irrigation import Irrigation as Irrigation

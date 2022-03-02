@@ -42,3 +42,4 @@ box2d-py>=2.3.5
 glfw
 mujoco
 pcse
+pygame
