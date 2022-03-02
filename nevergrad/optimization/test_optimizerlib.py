@@ -730,7 +730,7 @@ def test_ngopt_selection(
                 assert "MetaTuneRecentering" in optim_string
             if num_workers > 1:
                 # assert choice not in ["SQP", "Cobyla"]
-                assert "SQP" not in o and "Cobyla" not in optim_string
+                assert "SQP" not in optim_string and "Cobyla" not in optim_string
         assert opt._info()["sub-optim"] in optim_string
 
 
