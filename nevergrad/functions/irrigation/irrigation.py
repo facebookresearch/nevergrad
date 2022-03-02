@@ -62,7 +62,10 @@ def leaf_area_index(x: np.ndarray):
     print("PCSE version: %s" % pcse.__version__)
 
     crop = YAMLCropDataProvider()
-    urllib.request.urlretrieve("https://raw.githubusercontent.com/ajwdewit/ggcmi/master/pcse/doc/ec3.soil", str(data_dir) + "/soil/ec3.soil")
+    urllib.request.urlretrieve(
+        "https://raw.githubusercontent.com/ajwdewit/ggcmi/master/pcse/doc/ec3.soil",
+        str(data_dir) + "/soil/ec3.soil",
+    )
     soil = CABOFileReader(os.path.join(data_dir, "soil", "ec3.soil"))
     site = WOFOST72SiteDataProvider(WAV=100, CO2=360)
     parameterprovider = ParameterProvider(soildata=soil, cropdata=crop, sitedata=site)
