@@ -16,6 +16,7 @@ from pathlib import Path
 import urllib.request  # Necessary for people who will uncomment the part using data under EUPL license.
 import numpy as np
 import time
+import warnings
 import nevergrad as ng
 from ..base import ArrayExperimentFunction
 import os
