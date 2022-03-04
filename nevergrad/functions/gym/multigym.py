@@ -308,7 +308,6 @@ class GymMulti(ExperimentFunction):
 
         gym_env_names = []
         max_displays = 10
-        gymenvs = gym.envs.registry.all()
         for e in gym.envs.registry.all():
             try:
                 assert "Kelly" not in str(e.id)  # We should have another check than that.
