@@ -399,13 +399,13 @@ class GymMulti(ExperimentFunction):
             # assert (
             #    self.compilergym_index is None
             # ), "compiler_gym_pb_index should not be defined if not CompilerGym."
-            env = gym.make(self.short_name if "LANM" not in self.short_name else "gym_anm:ANM6Easy-v0")
+            env = gym.make(self.short_name if "LANM" not in self.short_name else "ANM6Easy-v0")
             env.reset()
         return env
 
     def __init__(
         self,
-        name: str = "gym_anm:ANM6Easy-v0",
+        name: str = "ANM6Easy-v0",
         control: str = "conformant",
         neural_factor: tp.Optional[int] = 1,
         randomized: bool = True,
@@ -687,7 +687,7 @@ class GymMulti(ExperimentFunction):
         if "structured" not in self.control:
             # If not structured then we split into two matrices.
             first_matrix = x[: self.first_size].reshape(self.first_layer_shape) / np.sqrt(len(o))
-            second_matrix = x[self.first_size : (self.first_size + self.second_size)].reshape(
+            second_matrix = x[self.first_size: (self.first_size + self.second_size)].reshape(
                 self.second_layer_shape
             ) / np.sqrt(self.num_neurons)
         else:
@@ -713,14 +713,14 @@ class GymMulti(ExperimentFunction):
             s = (self.num_neurons, self.num_neurons)
             for _ in range(self.num_internal_layers):
                 output = np.tanh(output)
-                layer = x[current_index : current_index + internal_layer_size].reshape(s)
+                layer = x[current_index: current_index + internal_layer_size].reshape(s)
                 if "resid" in self.control:
                     layer += my_scale * np.eye(*layer.shape)
                 output = np.matmul(output, layer) / np.sqrt(self.num_neurons)
                 current_index += internal_layer_size
             assert current_index == len(x)
         output = np.matmul(np.tanh(output + first_matrix[0]), second_matrix)
-        return output[self.memory_len :].reshape(self.output_shape), output[: self.memory_len]
+        return output[self.memory_len:].reshape(self.output_shape), output[: self.memory_len]
 
     def sparse_gym_multi_function(
         self,
@@ -857,7 +857,7 @@ class GymMulti(ExperimentFunction):
             assert len(to) == len(ta)
             if len(current_observations) > len(to) and "extrapolate" not in self.control:
                 continue
-            to = np.asarray(to[(-len(current_observations)) :], dtype=np.float32)
+            to = np.asarray(to[(-len(current_observations)):], dtype=np.float32)
             # if all((_to - _o) for _to, _o in zip(to, current_observations)) <= 1e-7:
             if np.array_equal(to, current_observations):
                 return np.asarray(ta[len(current_observations) - 1], dtype=np.float32)
@@ -954,7 +954,7 @@ class GymMulti(ExperimentFunction):
                 additional_input = np.concatenate([np.asarray(a).ravel(), previous_o])
                 shift = len(additional_input)
                 self.extended_input[: (len(self.extended_input) - shift)] = self.extended_input[shift:]
-                self.extended_input[(len(self.extended_input) - shift) :] = additional_input
+                self.extended_input[(len(self.extended_input) - shift):] = additional_input
             reward += r
             if done:
                 break
