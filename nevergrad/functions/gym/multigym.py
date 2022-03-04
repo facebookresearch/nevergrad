@@ -36,7 +36,7 @@ GUARANTEED_GYM_ENV_NAMES = [
     # "CubeCrash-v0",
     # "CubeCrashSparse-v0",
     # "CubeCrashScreenBecomesBlack-v0",
-    "MemorizeDigits-v0",
+    # "MemorizeDigits-v0",
 ]
 
 
@@ -399,13 +399,13 @@ class GymMulti(ExperimentFunction):
             # assert (
             #    self.compilergym_index is None
             # ), "compiler_gym_pb_index should not be defined if not CompilerGym."
-            env = gym.make(self.short_name if "LANM" not in self.short_name else "gym_anm:ANM6Easy-v0")
+            env = gym.make(self.short_name if "LANM" not in self.short_name else "ANM6Easy-v0")
             env.reset()
         return env
 
     def __init__(
         self,
-        name: str = "gym_anm:ANM6Easy-v0",
+        name: str = "ANM6Easy-v0",
         control: str = "conformant",
         neural_factor: tp.Optional[int] = 1,
         randomized: bool = True,
