@@ -59,7 +59,7 @@ def test_run_multigym(name: str) -> None:
     func = multigym.GymMulti(randomized=False, neural_factor=None)
     x = np.zeros(func.dimension)
     value = func(x)
-    np.testing.assert_almost_equal(value, 184.07, decimal=2)
+    np.testing.assert_almost_equal(value, 178.2, decimal=2)
     i = GYM_ENV_NAMES.index(name)
     control = multigym.CONTROLLERS[i % len(multigym.CONTROLLERS)]
     print(f"Working with {control} on {name}.")
