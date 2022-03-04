@@ -19,7 +19,7 @@ def test_multigym() -> None:
         assert env_name not in multigym.NO_LENGTH, f"{env_name} in no length and in ng_gym!"
     for env_name in multigym.GUARANTEED_GYM_ENV_NAMES:
         assert env_name in GYM_ENV_NAMES, f"{env_name} should be guaranteed!"
-    assert len(GYM_ENV_NAMES) >= 16 or os.name == "nt"
+    assert len(GYM_ENV_NAMES) >= 10 or os.name == "nt"
 
 
 def test_compiler_gym() -> None:
