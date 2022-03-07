@@ -178,7 +178,10 @@ def leaf_area_index(x: np.ndarray):
     import pandas as pd
     import yaml
 
-    import pcse
+    try:
+        import pcse
+    except:
+        raise ng.errors.UnsupportedExperiment("You need to install PCSE. Not done in CircleCI.")
     from pcse.models import Wofost72_WLP_FD
     from pcse.fileinput import CABOFileReader, YAMLCropDataProvider
 
