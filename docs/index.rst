@@ -3,6 +3,10 @@ Nevergrad - A gradient-free optimization platform
 
 .. image:: ./resources/Nevergrad-LogoMark.png
 
+.. image:: https://img.shields.io/badge/Support-Ukraine-FFD500?style=flat&labelColor=005BBB
+   :alt: Support Ukraine - Help Provide Humanitarian Aid to Ukraine.
+   :target: https://opensource.fb.com/support-ukraine
+
 This documentation is a work in progress, feel free to help us update/improve/restucture it!
 
 Quick start

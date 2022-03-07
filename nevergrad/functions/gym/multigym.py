@@ -36,7 +36,7 @@ GUARANTEED_GYM_ENV_NAMES = [
     # "CubeCrash-v0",
     # "CubeCrashSparse-v0",
     # "CubeCrashScreenBecomesBlack-v0",
-    "MemorizeDigits-v0",
+    # "MemorizeDigits-v0",
 ]
 
 

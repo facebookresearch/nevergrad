@@ -21,7 +21,7 @@ def test_multigym() -> None:
         if any(x in env_name for x in ["MemorizeDigit"]):
             continue
         assert env_name in GYM_ENV_NAMES, f"{env_name} should be guaranteed!"
-    assert len(GYM_ENV_NAMES) >= 12 or os.name == "nt"
+    assert len(GYM_ENV_NAMES) >= 10 or os.name == "nt"
 
 
 def test_compiler_gym() -> None:
@@ -60,7 +60,7 @@ def test_default_run_multigym() -> None:
     func = multigym.GymMulti(randomized=False, neural_factor=None)
     x = np.zeros(func.dimension)
     value = func(x)
-    np.testing.assert_almost_equal(value, 178.20, decimal=2)
+    np.testing.assert_almost_equal(value, 178.2, decimal=2)
 
 
 @pytest.mark.parametrize("name", GYM_ENV_NAMES)  # type: ignore
