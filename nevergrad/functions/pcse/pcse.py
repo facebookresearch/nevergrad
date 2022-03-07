@@ -23,7 +23,9 @@ class CropSimulator(ArrayExperimentFunction):
         try:
             import pcse  # pylint: disable=unused-import
         except:
-            raise ng.errors.UnsupportedExperiment("You need to install PCSE. Check that the EUPL license is ok for you.")
+            raise ng.errors.UnsupportedExperiment(
+                "You need to install PCSE. Check that the EUPL license is ok for you."
+            )
         from pcse.models import Wofost72_PP
         from pcse.base import ParameterProvider
         from pcse.db import NASAPowerWeatherDataProvider
