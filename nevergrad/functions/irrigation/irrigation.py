@@ -11,7 +11,7 @@ https://raw.githubusercontent.com/purdue-orbital/pcse-simulation/master/Simulati
 
 
 from pathlib import Path
-import urllib.request  # Necessary for people who will uncomment the part using data under EUPL license.
+import urllib.request
 import numpy as np
 import time
 import warnings
