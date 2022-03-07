@@ -170,7 +170,6 @@ def merge_optimizer_name_pattern(
     df = df.copy()
     if remove_suffix:
          df["optimizer_name"] = df["optimizer_name"].replace(r'[0-9\.\-]*$', '', regex=True)
-         all_optimizers = list(df.unique("optimizer_name"))  # optimizers for which no run exists are not shown    
     okey = "optimizer_name"
     elements = [tup[1] for tup in string.Formatter().parse(pattern) if tup[1] is not None]
     assert okey in elements, (
