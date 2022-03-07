@@ -21,7 +21,7 @@ from ..base import ArrayExperimentFunction
 class CropSimulator(ArrayExperimentFunction):
     def __init__(self) -> None:
         try:
-            import pcse  # type: ignore
+            import pcse  # pylint: disable=unused-import
         except:
             raise ng.errors.UnsupportedExperiment("You need to install PCSE. Not done in CircleCI.")
         from pcse.models import Wofost72_PP
