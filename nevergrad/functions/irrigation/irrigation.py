@@ -11,7 +11,8 @@ https://raw.githubusercontent.com/purdue-orbital/pcse-simulation/master/Simulati
 
 
 from pathlib import Path
-#import urllib.request  # Necessary for people who will uncomment the part using data under EUPL license.
+
+# import urllib.request  # Necessary for people who will uncomment the part using data under EUPL license.
 import numpy as np
 import nevergrad as ng
 from ..base import ArrayExperimentFunction
@@ -68,7 +69,9 @@ def leaf_area_index(x: np.ndarray):
     crop = YAMLCropDataProvider()
     if os.environ.get("CIRCLECI", False):
         raise ng.errors.UnsupportedExperiment("No HTTP request in CircleCI")
-    raise Exception("Check that you have no problem with the EUPL license before uncommenting the lines below.")
+    raise Exception(
+        "Check that you have no problem with the EUPL license before uncommenting the lines below."
+    )
     # urllib.request.urlretrieve(
     #     "https://raw.githubusercontent.com/ajwdewit/ggcmi/master/pcse/doc/ec3.soil",
     #     str(data_dir) + "/soil/ec3.soil",
@@ -81,7 +84,9 @@ def leaf_area_index(x: np.ndarray):
 
     from pcse.fileinput import ExcelWeatherDataProvider
 
-    raise Exception("Check that you have no problem with the EUPL license before uncommenting the lines below.")
+    raise Exception(
+        "Check that you have no problem with the EUPL license before uncommenting the lines below."
+    )
     # urllib.request.urlretrieve(
     #     "https://pcse.readthedocs.io/en/stable/_downloads/78c1c853e9911098db9e3d8e6f362550/nl1.xlsx",
     #     str(data_dir) + "/meteo/nl1.xlsx",
