@@ -45,3 +45,4 @@ mujoco
 #pygame
 pcse>=5.5.0
 pygame>=2.0.2
+yaml>=5.3.1
