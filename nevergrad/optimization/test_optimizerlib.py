@@ -432,10 +432,9 @@ def test_bo_parametrization_and_parameters() -> None:
     parametrization = ng.p.Instrumentation(ng.p.Choice([True, False]))
     with pytest.warns(errors.InefficientSettingsWarning):
         xpvariants.QRBO(parametrization, budget=10)
-    # No idea what was test here: TODO.
-    # with pytest.warns() as record:
-    opt = optlib.ParametrizedBO(gp_parameters={"alpha": 1})(parametrization, budget=10)
-    # assert not record, record.list  # no warning
+    with pytest.warns(None) as record:
+        opt = optlib.ParametrizedBO(gp_parameters={"alpha": 1})(parametrization, budget=10)
+    assert not record, record.list  # no warning
 
     # parameters
     # make sure underlying BO optimizer gets instantiated correctly
