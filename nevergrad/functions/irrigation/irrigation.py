@@ -73,7 +73,7 @@ def leaf_area_index(x: np.ndarray):
         "Check that you have no problem with the EUPL license before uncommenting the lines below."
     )
     # urllib.request.urlretrieve(
-    #     "https://raw.githubusercontent.com/ajwdewit/ggcmi/master/pcse/doc/ec3.soil",
+    #     "https://raw.githubusercontent.com/ajwdewit/pcse_notebooks/master/data/soil/ec3.soil",
     #     str(data_dir) + "/soil/ec3.soil",
     # )
     soil = CABOFileReader(os.path.join(data_dir, "soil", "ec3.soil"))
@@ -88,7 +88,7 @@ def leaf_area_index(x: np.ndarray):
         "Check that you have no problem with the EUPL license before uncommenting the lines below."
     )
     # urllib.request.urlretrieve(
-    #     "https://pcse.readthedocs.io/en/stable/_downloads/78c1c853e9911098db9e3d8e6f362550/nl1.xlsx",
+    #     "https://github.com/ajwdewit/pcse_notebooks/blob/master/data/meteo/nl1.xlsx?raw=true",
     #     str(data_dir) + "/meteo/nl1.xlsx",
     # )
     weatherfile = os.path.join(data_dir, "meteo", "nl1.xlsx")
