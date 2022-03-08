@@ -66,6 +66,8 @@ def test_photonics_bragg_recombination() -> None:
 
 
 def test_photonics_custom_mutation() -> None:
+    if os.environ.get("CIRCLECI", False):
+        raise SkipTest("Skipping in CI because way too slow on their machine (weird)")
     func = core.Photonics("morpho", 16, rolling=True)
     param = func.parametrization.spawn_child()
     for _ in range(10):
