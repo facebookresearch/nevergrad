@@ -85,7 +85,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                     if weakself._normalizer is not None:
                         data = weakself._normalizer.backward(np.asarray(data, dtype=np.float32))
                     return objective_function(data)
-                
+
                 # Sbplx (based on Subplex) is used by default.
                 opt = nlopt.opt(nlopt.LN_SBPLX, weakself.dimension)
                 # Assign the objective function calculator
@@ -172,7 +172,7 @@ class NonObjectOptimizer(base.ConfiguredOptimizer):
         - SQP (or SLSQP): very powerful e.g. in continuous noisy optimization. It is based on
           approximating the objective function by quadratic models.
         - Powell
-        - NLOPT (https://nlopt.readthedocs.io/en/latest/; uses Sbplx, based on Subplex) 
+        - NLOPT (https://nlopt.readthedocs.io/en/latest/; uses Sbplx, based on Subplex)
     random_restart: bool
         whether to restart at a random point if the optimizer converged but the budget is not entirely
         spent yet (otherwise, restarts from best point)
