@@ -211,7 +211,7 @@ def test_optimizers(name: str) -> None:
             optimizer_cls.__class__(**optimizer_cls._config) == optimizer_cls
         ), "Similar configuration are not equal"
     # some classes of optimizer are eigher slow or not good with small budgets:
-    nameparts = ["Many", "Chain", "BO", "Discrete"] + ["chain"]  # TODO remove chain when possible
+    nameparts = ["Many", "Chain", "BO", "Discrete", "NLOPT"] + ["chain"]  # TODO remove chain when possible
     is_ngopt = inspect.isclass(optimizer_cls) and issubclass(optimizer_cls, NGOptBase)  # type: ignore
     verify = (
         not optimizer_cls.one_shot
@@ -435,6 +435,7 @@ def test_bo_parametrization_and_parameters() -> None:
     with pytest.warns(None) as record:  # type: ignore
         opt = optlib.ParametrizedBO(gp_parameters={"alpha": 1})(parametrization, budget=10)
     assert not record, record.list  # no warning
+
     # parameters
     # make sure underlying BO optimizer gets instantiated correctly
     new_candidate = opt.parametrization.spawn_child(new_value=((True,), {}))
