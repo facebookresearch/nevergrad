@@ -168,8 +168,6 @@ def merge_optimizer_name_pattern(
     if not pattern:
         return df
     df = df.copy()
-    if remove_suffix:
-        df["optimizer_name"] = df["optimizer_name"].replace(r"[0-9\.\-]*$", "", regex=True)
     okey = "optimizer_name"
     elements = [tup[1] for tup in string.Formatter().parse(pattern) if tup[1] is not None]
     assert okey in elements, (
@@ -184,6 +182,8 @@ def merge_optimizer_name_pattern(
             inds = sub.loc[:, okey] == optim
             if len(sub.loc[inds, :].unique(others)) > 1:
                 df.loc[inds, okey] = sub.loc[inds, elements].agg(aggregate, axis=1)
+    if remove_suffix:
+        df["optimizer_name"] = df["optimizer_name"].replace(r"[0-9\.\-]*$", "", regex=True)
     return df.drop(columns=others)  # type: ignore
 
 
