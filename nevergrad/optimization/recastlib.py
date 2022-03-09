@@ -109,8 +109,6 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                     nlopt.LN_SBPLX,
                 ]
                 nlopt_index = int(weakself.method[5:]) if len(weakself.method) > 5 else 0
-                if nlopt_index == 5 and platform.system() == "Windows":
-                    raise SkipTest("NLOPT5 does not work on Windows for some reason.")
                 nlopt_param = list_nlopts[nlopt_index]
                 opt = nlopt.opt(nlopt_param, weakself.dimension)
                 # Assign the objective function calculator
@@ -223,7 +221,8 @@ NLOPT1 = NonObjectOptimizer(method="NLOPT1").set_name("NLOPT1", register=True)
 NLOPT2 = NonObjectOptimizer(method="NLOPT2").set_name("NLOPT2", register=True)
 NLOPT3 = NonObjectOptimizer(method="NLOPT3").set_name("NLOPT3", register=True)
 NLOPT4 = NonObjectOptimizer(method="NLOPT4").set_name("NLOPT4", register=True)
-NLOPT5 = NonObjectOptimizer(method="NLOPT5").set_name("NLOPT5", register=True)
+if platform.system() != "Windows":
+    NLOPT5 = NonObjectOptimizer(method="NLOPT5").set_name("NLOPT5", register=True)
 NLOPT6 = NonObjectOptimizer(method="NLOPT6").set_name("NLOPT6", register=True)
 NLOPT7 = NonObjectOptimizer(method="NLOPT7").set_name("NLOPT7", register=True)
 NLOPT8 = NonObjectOptimizer(method="NLOPT8").set_name("NLOPT8", register=True)
