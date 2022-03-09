@@ -11,7 +11,6 @@ import warnings
 import weakref
 import numpy as np
 from scipy import optimize as scipyoptimize
-from unittest import SkipTest
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
 from nevergrad.common import errors
