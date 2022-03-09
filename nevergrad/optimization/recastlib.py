@@ -99,8 +99,8 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                     nlopt.GN_AGS,
                     nlopt.GN_ISRES,
                     nlopt.GN_ESCH,
-                    nlopt.NL_COBYLA,
-                    nlopt.NL_BOBYQA,
+                    nlopt.LN_COBYLA,
+                    nlopt.LN_BOBYQA,
                     nlopt.LN_NEWUOA_BOUND,
                     nlopt.LN_PRAXIS,
                     nlopt.LN_NELDERMEAD,
@@ -194,7 +194,7 @@ class NonObjectOptimizer(base.ConfiguredOptimizer):
           approximating the objective function by quadratic models.
         - Powell
         - NLOPT* (https://nlopt.readthedocs.io/en/latest/; by default, uses Sbplx, based on Subplex);
-            can be NLOPT, NLOPT2, ..., NLOPT13.
+            can be NLOPT (or NLOPT0), NLOPT1, NLOPT2, ..., NLOPT13.
     random_restart: bool
         whether to restart at a random point if the optimizer converged but the budget is not entirely
         spent yet (otherwise, restarts from best point)
@@ -215,6 +215,7 @@ class NonObjectOptimizer(base.ConfiguredOptimizer):
 NelderMead = NonObjectOptimizer(method="Nelder-Mead").set_name("NelderMead", register=True)
 CmaFmin2 = NonObjectOptimizer(method="CmaFmin2").set_name("CmaFmin2", register=True)
 NLOPT = NonObjectOptimizer(method="NLOPT").set_name("NLOPT", register=True)
+NLOPT1 = NonObjectOptimizer(method="NLOPT1").set_name("NLOPT1", register=True)
 NLOPT2 = NonObjectOptimizer(method="NLOPT2").set_name("NLOPT2", register=True)
 NLOPT3 = NonObjectOptimizer(method="NLOPT3").set_name("NLOPT3", register=True)
 NLOPT4 = NonObjectOptimizer(method="NLOPT4").set_name("NLOPT4", register=True)
@@ -227,7 +228,6 @@ NLOPT10 = NonObjectOptimizer(method="NLOPT10").set_name("NLOPT10", register=True
 NLOPT11 = NonObjectOptimizer(method="NLOPT11").set_name("NLOPT11", register=True)
 NLOPT12 = NonObjectOptimizer(method="NLOPT12").set_name("NLOPT12", register=True)
 NLOPT13 = NonObjectOptimizer(method="NLOPT13").set_name("NLOPT13", register=True)
-NLOPT14 = NonObjectOptimizer(method="NLOPT14").set_name("NLOPT14", register=True)
 Powell = NonObjectOptimizer(method="Powell").set_name("Powell", register=True)
 RPowell = NonObjectOptimizer(method="Powell", random_restart=True).set_name("RPowell", register=True)
 Cobyla = NonObjectOptimizer(method="COBYLA").set_name("Cobyla", register=True)
