@@ -117,7 +117,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 # opt.set_initial_step([0.05, 0.05])
                 opt.set_maxeval(budget)
                 # Relative tolerance for convergence
-                opt.set_ftol_rel(1.0e-10)
+                # opt.set_ftol_rel(1.0e-10)
 
                 # Start the optimization with the first guess
                 firstguess = 0.5 * np.ones(weakself.dimension)
@@ -223,8 +223,8 @@ NLOPT5 = NonObjectOptimizer(method="NLOPT5").set_name("NLOPT5", register=True)
 NLOPT6 = NonObjectOptimizer(method="NLOPT6").set_name("NLOPT6", register=True)
 NLOPT7 = NonObjectOptimizer(method="NLOPT7").set_name("NLOPT7", register=True)
 NLOPT8 = NonObjectOptimizer(method="NLOPT8").set_name("NLOPT8", register=True)
-NLOPT9 = NonObjectOptimizer(method="NLOPT9").set_name("NLOPT9", register=True)
-NLOPT10 = NonObjectOptimizer(method="NLOPT10").set_name("NLOPT10", register=True)
+# NLOPT9 = NonObjectOptimizer(method="NLOPT9").set_name("NLOPT9", register=True)   # Unexpected roundoff errors.
+# NLOPT10 = NonObjectOptimizer(method="NLOPT10").set_name("NLOPT10", register=True)   # Slow.
 NLOPT11 = NonObjectOptimizer(method="NLOPT11").set_name("NLOPT11", register=True)
 NLOPT12 = NonObjectOptimizer(method="NLOPT12").set_name("NLOPT12", register=True)
 NLOPT13 = NonObjectOptimizer(method="NLOPT13").set_name("NLOPT13", register=True)
