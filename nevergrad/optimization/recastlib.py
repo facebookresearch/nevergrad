@@ -33,19 +33,22 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
         self._normalizer: tp.Any = None
         self.initial_guess: tp.Optional[tp.ArrayLike] = None
         # configuration
-        assert method in [
-            "CmaFmin2",
-            "Nelder-Mead",
-            "COBYLA",
-            "SLSQP",
-            "NLOPT",
-            "Powell",
-        ], f"Unknown method '{method}'"
+        assert (
+            method
+            in [
+                "CmaFmin2",
+                "Nelder-Mead",
+                "COBYLA",
+                "SLSQP",
+                "Powell",
+            ]
+            or "NLOPT" in method
+        ), f"Unknown method '{method}'"
         self.method = method
         self.random_restart = random_restart
         # The following line rescales to [0, 1] if fully bounded.
 
-        if method in ("CmaFmin2", "NLOPT"):
+        if method == "CmaFmin2" or "NLOPT" in method:
             normalizer = p.helpers.Normalizer(self.parametrization)
             if normalizer.fully_bounded:
                 self._normalizer = normalizer
@@ -72,7 +75,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
         while remaining > 0:  # try to restart if budget is not elapsed
             options: tp.Dict[str, tp.Any] = {} if weakself.budget is None else {"maxiter": remaining}
             # options: tp.Dict[str, tp.Any] = {} if self.budget is None else {"maxiter": remaining}
-            if weakself.method == "NLOPT":
+            if weakself.method[:5] == "NLOPT":
                 # This is NLOPT, used as in the PCSE simulator notebook.
                 # ( https://github.com/ajwdewit/pcse_notebooks ).
                 import nlopt
@@ -87,7 +90,25 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                     return objective_function(data)
 
                 # Sbplx (based on Subplex) is used by default.
-                opt = nlopt.opt(nlopt.LN_SBPLX, weakself.dimension)
+                list_nlopts = [
+                    nlopt.LN_SBPLX,
+                    nlopt.LN_PRAXIS,
+                    nlopt.GN_DIRECT,
+                    nlopt.GN_DIRECT_L,
+                    nlopt.GN_CRS2_LM,
+                    nlopt.GN_AGS,
+                    nlopt.GN_ISRES,
+                    nlopt.GN_ESCH,
+                    nlopt.NL_COBYLA,
+                    nlopt.NL_BOBYQA,
+                    nlopt.LN_NEWUOA_BOUND,
+                    nlopt.LN_PRAXIS,
+                    nlopt.LN_NELDERMEAD,
+                    nlopt.LN_SBPLX,
+                ]
+                nlopt_index = int(weakself.method[5:]) if len(weakself.method) > 5 else 0
+                nlopt_param = list_nlopts[nlopt_index]
+                opt = nlopt.opt(nlopt_param, weakself.dimension)
                 # Assign the objective function calculator
                 opt.set_min_objective(nlopt_objective_function)
                 # Set the bounds.
@@ -172,7 +193,8 @@ class NonObjectOptimizer(base.ConfiguredOptimizer):
         - SQP (or SLSQP): very powerful e.g. in continuous noisy optimization. It is based on
           approximating the objective function by quadratic models.
         - Powell
-        - NLOPT (https://nlopt.readthedocs.io/en/latest/; uses Sbplx, based on Subplex)
+        - NLOPT* (https://nlopt.readthedocs.io/en/latest/; by default, uses Sbplx, based on Subplex);
+            can be NLOPT, NLOPT2, ..., NLOPT13.
     random_restart: bool
         whether to restart at a random point if the optimizer converged but the budget is not entirely
         spent yet (otherwise, restarts from best point)
@@ -193,6 +215,19 @@ class NonObjectOptimizer(base.ConfiguredOptimizer):
 NelderMead = NonObjectOptimizer(method="Nelder-Mead").set_name("NelderMead", register=True)
 CmaFmin2 = NonObjectOptimizer(method="CmaFmin2").set_name("CmaFmin2", register=True)
 NLOPT = NonObjectOptimizer(method="NLOPT").set_name("NLOPT", register=True)
+NLOPT2 = NonObjectOptimizer(method="NLOPT2").set_name("NLOPT2", register=True)
+NLOPT3 = NonObjectOptimizer(method="NLOPT3").set_name("NLOPT3", register=True)
+NLOPT4 = NonObjectOptimizer(method="NLOPT4").set_name("NLOPT4", register=True)
+NLOPT5 = NonObjectOptimizer(method="NLOPT5").set_name("NLOPT5", register=True)
+NLOPT6 = NonObjectOptimizer(method="NLOPT6").set_name("NLOPT6", register=True)
+NLOPT7 = NonObjectOptimizer(method="NLOPT7").set_name("NLOPT7", register=True)
+NLOPT8 = NonObjectOptimizer(method="NLOPT8").set_name("NLOPT8", register=True)
+NLOPT9 = NonObjectOptimizer(method="NLOPT9").set_name("NLOPT9", register=True)
+NLOPT10 = NonObjectOptimizer(method="NLOPT10").set_name("NLOPT10", register=True)
+NLOPT11 = NonObjectOptimizer(method="NLOPT11").set_name("NLOPT11", register=True)
+NLOPT12 = NonObjectOptimizer(method="NLOPT12").set_name("NLOPT12", register=True)
+NLOPT13 = NonObjectOptimizer(method="NLOPT13").set_name("NLOPT13", register=True)
+NLOPT14 = NonObjectOptimizer(method="NLOPT14").set_name("NLOPT14", register=True)
 Powell = NonObjectOptimizer(method="Powell").set_name("Powell", register=True)
 RPowell = NonObjectOptimizer(method="Powell", random_restart=True).set_name("RPowell", register=True)
 Cobyla = NonObjectOptimizer(method="COBYLA").set_name("Cobyla", register=True)
