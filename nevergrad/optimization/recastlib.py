@@ -6,10 +6,12 @@
 
 import functools
 import math
+import platform
 import warnings
 import weakref
 import numpy as np
 from scipy import optimize as scipyoptimize
+from unittest import SkipTest
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
 from nevergrad.common import errors
@@ -107,6 +109,8 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                     nlopt.LN_SBPLX,
                 ]
                 nlopt_index = int(weakself.method[5:]) if len(weakself.method) > 5 else 0
+                if nlopt_index == 5 and platform.system() == "Windows":
+                    raise SkipTest("NLOPT5 does not work on Windows for some reason.")
                 nlopt_param = list_nlopts[nlopt_index]
                 opt = nlopt.opt(nlopt_param, weakself.dimension)
                 # Assign the objective function calculator
@@ -194,7 +198,7 @@ class NonObjectOptimizer(base.ConfiguredOptimizer):
           approximating the objective function by quadratic models.
         - Powell
         - NLOPT* (https://nlopt.readthedocs.io/en/latest/; by default, uses Sbplx, based on Subplex);
-            can be NLOPT (or NLOPT0), NLOPT1, NLOPT2, ..., NLOPT13.
+            can be NLOPT, NLOPT1, NLOPT2, ..., NLOPT13.
     random_restart: bool
         whether to restart at a random point if the optimizer converged but the budget is not entirely
         spent yet (otherwise, restarts from best point)
