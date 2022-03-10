@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -66,6 +66,8 @@ def test_photonics_bragg_recombination() -> None:
 
 
 def test_photonics_custom_mutation() -> None:
+    if os.environ.get("CIRCLECI", False):
+        raise SkipTest("Skipping in CI because way too slow on their machine (weird)")
     func = core.Photonics("morpho", 16, rolling=True)
     param = func.parametrization.spawn_child()
     for _ in range(10):

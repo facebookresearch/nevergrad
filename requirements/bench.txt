@@ -34,6 +34,10 @@ olymp==0.0.1b0 ; sys_platform == "linux"
 silence_tensorflow  # for olymp
 tensorflow_probability  # for olymp
 bayes-optim==0.2.5.5
+<<<<<<< HEAD
 # pcse>=5.5.0  # removed due to PCSE license issues.
 pygame>=2.0.2
 pyyaml>=5.3.1
+=======
+nlopt
+>>>>>>> 3a5e9a0d4c737ea4a4f9fdbd08d49d519d6dfd77
