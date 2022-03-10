@@ -37,3 +37,4 @@ bayes-optim==0.2.5.5
 # pcse>=5.5.0  # removed due to PCSE license issues.
 pygame>=2.0.2
 pyyaml>=5.3.1
+nlopt
