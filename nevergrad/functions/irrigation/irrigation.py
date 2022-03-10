@@ -49,9 +49,7 @@ def leaf_area_index(x: np.ndarray):
     import yaml
 
     try:
-        raise Exception(
-            "We do not import EUPL-licensed packages by default. Check if EUPL is ok for you."
-        )
+        raise Exception("We do not import EUPL-licensed packages by default. Check if EUPL is ok for you.")
         import pcse
     except:
         raise ng.errors.UnsupportedExperiment("You need to install PCSE. Not done in CircleCI.")
