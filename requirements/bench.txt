@@ -44,3 +44,4 @@ mujoco
 pcse>=5.5.0
 pygame>=2.0.2
 pyyaml>=5.3.1
+nlopt
