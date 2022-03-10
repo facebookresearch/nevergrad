@@ -21,18 +21,19 @@ from ..base import ArrayExperimentFunction
 class CropSimulator(ArrayExperimentFunction):
     def __init__(self) -> None:
         try:
-            import pcse  # pylint: disable=unused-import
+            raise Exception("We do not import EUPL code by default.")
+            # import pcse  # pylint: disable=unused-import
         except:
             raise ng.errors.UnsupportedExperiment(
                 "You need to install PCSE. Check that the EUPL license is ok for you."
             )
-        from pcse.models import Wofost72_PP
-        from pcse.base import ParameterProvider
-        from pcse.db import NASAPowerWeatherDataProvider
+        # from pcse.models import Wofost72_PP
+        # from pcse.base import ParameterProvider
+        # from pcse.db import NASAPowerWeatherDataProvider
 
-        # from pcse.fileinput import YAMLAgroManagementReader, YAMLCropDataProvider
-        from pcse.fileinput import YAMLCropDataProvider
-        from pcse.util import WOFOST72SiteDataProvider, DummySoilDataProvider
+        # # from pcse.fileinput import YAMLAgroManagementReader, YAMLCropDataProvider
+        # from pcse.fileinput import YAMLCropDataProvider
+        # from pcse.util import WOFOST72SiteDataProvider, DummySoilDataProvider
 
         # Weather data for Netherlands
         wdp = NASAPowerWeatherDataProvider(latitude=52, longitude=5)
