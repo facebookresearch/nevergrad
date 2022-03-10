@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 # Copyright (c) Meta Platforms, Inc. and affiliates. All Rights Reserved.
-=======
-# Copyright (c) Meta, Inc. and its affiliates. All Rights Reserved.
->>>>>>> 5d780eb6 (fix)
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
