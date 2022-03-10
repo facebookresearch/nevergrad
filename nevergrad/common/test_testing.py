@@ -79,9 +79,7 @@ def test_header() -> None:
             missing.append(filepath)
     if missing:
         missing_str = "\n - ".join(missing)
-        raise AssertionError(
-            f"Following files are missing standard header (see other files):\n - {missing_str}"
-        )
+        raise AssertionError(f"Following files are missing standard header ({header}):\n - {missing_str}")
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="not compatible test")  # type: ignore
