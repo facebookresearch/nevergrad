@@ -41,8 +41,6 @@ pybullet>=3.2.2
 box2d-py>=2.3.5
 glfw
 mujoco
-#pcse
-#pygame
 pcse>=5.5.0
 pygame>=2.0.2
 pyyaml>=5.3.1
