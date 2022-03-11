@@ -6,6 +6,7 @@ opencv-python>=4.1.2.30
 matplotlib>=2.2.3
 gym>=0.12.1
 gym-anm>=1.0.1
+pygame>=2.1.2
 torch>=1.7.0
 hiplot
 fcmaes>=1.2.7
@@ -33,3 +34,4 @@ olymp==0.0.1b0 ; sys_platform == "linux"
 silence_tensorflow  # for olymp
 tensorflow_probability  # for olymp
 bayes-optim==0.2.5.5
+nlopt
