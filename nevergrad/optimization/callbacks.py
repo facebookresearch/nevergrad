@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -341,3 +341,19 @@ class EarlyStopping:
             raise errors.NevergradRuntimeError("EarlyStopping must be registered on ask method")
         if self.stopping_criterion(optimizer):
             raise errors.NevergradEarlyStopping("Early stopping criterion is reached")
+
+    @classmethod
+    def timer(cls, max_duration: float) -> "EarlyStopping":
+        """Early stop when max_duration seconds has been reached (from the first ask)"""
+        return cls(_DurationCriterion(max_duration))
+
+
+class _DurationCriterion:
+    def __init__(self, max_duration: float) -> None:
+        self._start = float("inf")
+        self._max_duration = max_duration
+
+    def __call__(self, optimizer: base.Optimizer) -> bool:
+        if np.isinf(self._start):
+            self._start = time.time()
+        return time.time() > self._start + self._max_duration

@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -562,6 +562,17 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
     def _internal_provide_recommendation(self) -> tp.Optional[tp.ArrayLike]:
         """Override to provide a recommendation in standardized space"""
         return None
+
+    def enable_pickling(self) -> None:
+        """
+        Some optimizers are only optionally picklable, because picklability
+        requires saving the whole history which would be a waste of memory
+        in general. To tell an optimizer to be picklable, call this function
+        before any asks.
+
+        In this base class, the function is a no-op, but it is overridden
+        in some optimizers.
+        """
 
     def minimize(
         self,
