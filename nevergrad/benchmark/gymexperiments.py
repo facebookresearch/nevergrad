@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -126,18 +126,12 @@ def ng_full_gym(
         controls = (
             [
                 "neural",
-                "structured_neural",
-                # "memory_neural",
-                "stackingmemory_neural",
-                "deep_neural",
-                "semideep_neural",
-                # "noisy_neural",
-                # "noisy_scrambled_neural",
-                # "scrambled_neural",
-                # "linear",
+                "resid_neural",
+                "resid_semideep_neural",
+                "resid_deep_neural",
             ]
             if not big
-            else ["neural"]
+            else ["resid_neural"]
         )
     if memory:
         controls = ["stackingmemory_neural", "deep_stackingmemory_neural", "semideep_stackingmemory_neural"]
@@ -150,7 +144,7 @@ def ng_full_gym(
         assert not multi
     if conformant:
         controls = ["stochastic_conformant"]
-    budgets = [204800, 12800, 25600, 51200, 50, 200, 800, 3200, 6400, 100, 25, 400, 1600, 102400]
+    budgets = [50, 200, 800, 3200, 6400, 100, 25, 400, 1600]  # Let's go with low budget.
     budgets = gym_budget_modifier(budgets)
     for control in controls:
         neural_factors: tp.Any = (
