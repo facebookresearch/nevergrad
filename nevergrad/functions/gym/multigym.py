@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -36,7 +36,7 @@ GUARANTEED_GYM_ENV_NAMES = [
     # "CubeCrash-v0",
     # "CubeCrashSparse-v0",
     # "CubeCrashScreenBecomesBlack-v0",
-    "MemorizeDigits-v0",
+    # "MemorizeDigits-v0",
 ]
 
 
@@ -399,13 +399,13 @@ class GymMulti(ExperimentFunction):
             # assert (
             #    self.compilergym_index is None
             # ), "compiler_gym_pb_index should not be defined if not CompilerGym."
-            env = gym.make(self.short_name if "LANM" not in self.short_name else "gym_anm:ANM6Easy-v0")
+            env = gym.make(self.short_name if "LANM" not in self.short_name else "ANM6Easy-v0")
             env.reset()
         return env
 
     def __init__(
         self,
-        name: str = "gym_anm:ANM6Easy-v0",
+        name: str = "ANM6Easy-v0",
         control: str = "conformant",
         neural_factor: tp.Optional[int] = 1,
         randomized: bool = True,
@@ -419,6 +419,7 @@ class GymMulti(ExperimentFunction):
     ) -> None:
         # limited_compiler_gym: bool or None.
         #        whether we work with the limited version
+        self.num_calls = 0
         self.limited_compiler_gym = limited_compiler_gym
         self.compilergym_index = compiler_gym_pb_index
         self.optimization_scale = optimization_scale
@@ -612,15 +613,19 @@ class GymMulti(ExperimentFunction):
             assert not self.uses_compiler_gym
             return self.gym_multi_function(x, limited_fidelity=False)
         if not self.uses_compiler_gym:
+            # We want to reduce noise by averaging without
+            # spending more than 20% of the whole experiment,
+            # hence the line below:
+            num = max(self.num_calls // 5, 23)
             # Pb_index >= 0 refers to the test set.
             return (
                 np.sum(
                     [
                         self.gym_multi_function(x, limited_fidelity=False)
-                        for compiler_gym_pb_index in range(23)
+                        for compiler_gym_pb_index in range(num)
                     ]
                 )
-                / 23.0  # This is not compiler_gym but we keep this 23 constant.
+                / num  # This is not compiler_gym but we keep this 23 constant.
             )
         assert self.uses_compiler_gym
         rewards = [
@@ -750,6 +755,7 @@ class GymMulti(ExperimentFunction):
             compiler_gym_pb_index: int or None.
                 index of the compiler_gym pb: set only for testing
         """
+        self.num_calls += 1
         # Deterministic conformant: do  the average of 7 simullations always with the same seed.
         # Otherwise: apply a random seed and do a single simulation.
         train_set = compiler_gym_pb_index is None
