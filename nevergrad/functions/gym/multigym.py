@@ -310,17 +310,13 @@ class GymMulti(ExperimentFunction):
         import gym_toytext  # noqa
 
         gym_env_names = []
-<<<<<<< HEAD
         max_displays = 10
-        for e in gym.envs.registry.all():
-=======
         # need a copy because dict is changing for unknown reason:
         registered_envs = list(gym.envs.registry.all())
         for e in registered_envs:
             name = str(e.id)
             if any(x in name for x in ("Kelly", "llvm")):
                 continue
->>>>>>> 62a2551f402243e82a81539deea48b4d6e47f9ac
             try:
                 env = gym.make(e.id)
                 env.reset()
@@ -333,20 +329,15 @@ class GymMulti(ExperimentFunction):
                     except Exception:  # pylint: disable=broad-except
                         assert a1.size() < 15000  # type: ignore
                 gym_env_names.append(e.id)
-<<<<<<< HEAD
             except Exception as exception:  # pylint: disable=broad-except
                 max_displays -= 1
                 if max_displays > 0:
                     print(f"{e.id} not included in full list because of {exception}.")
                 if max_displays == 0:
                     print("(similar issue for other environments)")
-=======
-            except Exception as exc:  # pylint: disable=broad-except
-                print(f"{e.id} not included in full list because of {exc}.")
                 if name in GUARANTEED_GYM_ENV_NAMES:
                     print(f"{name} should have been guaranteed")
-                    raise exc
->>>>>>> 62a2551f402243e82a81539deea48b4d6e47f9ac
+                    raise exception
         return gym_env_names
 
     controllers = CONTROLLERS
@@ -450,9 +441,6 @@ class GymMulti(ExperimentFunction):
             assert neural_factor is None
         if os.name == "nt":
             raise ng.errors.UnsupportedExperiment("Windows is not supported")
-<<<<<<< HEAD
-        # self.env = None  # self.create_env() let us have no self.env
-=======
         if self.uses_compiler_gym:  # Long special case for Compiler Gym.
             CompilerGym.import_package()
             assert limited_compiler_gym is not None
@@ -490,7 +478,6 @@ class GymMulti(ExperimentFunction):
             env = gym.make(name if "LANM" not in name else "gym_anm:ANM6Easy-v0")
             o = env.reset()
         self.env = env
->>>>>>> 62a2551f402243e82a81539deea48b4d6e47f9ac
 
         # Build various attributes.
         self.short_name = name  # Just the environment name.
