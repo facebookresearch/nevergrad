@@ -52,13 +52,15 @@ def leaf_area_index(x: np.ndarray):
         raise Exception("We do not import EUPL-licensed packages by default. Check if EUPL is ok for you.")
         import pcse
     except:
-        raise ng.errors.UnsupportedExperiment("You need to install PCSE. We remove all imports in case you do not want EUPL code.")
-    # from pcse.models import Wofost72_WLP_FD
-    # from pcse.fileinput import CABOFileReader, YAMLCropDataProvider
-    #
-    # # from pcse.db import NASAPowerWeatherDataProvider
-    # from pcse.util import WOFOST72SiteDataProvider
-    # from pcse.base import ParameterProvider
+        raise ng.errors.UnsupportedExperiment(
+            "You need to install PCSE. We remove all imports in case you do not want EUPL code."
+        )
+    from pcse.models import Wofost72_WLP_FD
+    from pcse.fileinput import CABOFileReader, YAMLCropDataProvider
+
+    # from pcse.db import NASAPowerWeatherDataProvider
+    from pcse.util import WOFOST72SiteDataProvider
+    from pcse.base import ParameterProvider
 
     # data_dir = os.path.join(os.getcwd(), "data")
     data_dir = Path(__file__).with_name("data")
