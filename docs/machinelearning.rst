@@ -250,6 +250,7 @@ Optimization of parameters for reinforcement learning
 We do not average evaluations over multiple episodes - the algorithm is in charge of averaging, if need be.
 :code:`TBPSA`, based on population-control mechanisms, performs quite well in this case.
 
+If you want to run Open AI Gym, see `One-line for learning state-of-the-art OpenAI Gym controllers with Nevergrad <https://docs.google.com/document/d/1noubQ_ZTZ4PZeQ1St7Asi1Af02q7k0nRoX_Pipu9ZKs/edit?usp=sharing/>`_
 
 .. code-block:: python
 

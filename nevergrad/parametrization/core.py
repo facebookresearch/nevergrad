@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -244,6 +244,9 @@ class Parameter(Layered):
         if not callable(self.value):  # not a mutation
             strings.append(str(self.value))
         return ":".join(strings)
+
+    def __bool__(self) -> bool:
+        raise RuntimeError("bool check is not allowed to avoid confusion")
 
     # %% Constraint management
     def satisfies_constraints(self) -> bool:

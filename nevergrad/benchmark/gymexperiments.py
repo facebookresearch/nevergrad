@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -53,6 +53,7 @@ def ng_full_gym(
     ng_gym: bool = False,  # pylint: disable=redefined-outer-name
     conformant: bool = False,
     gp: bool = False,
+    sparse: bool = False,
 ) -> tp.Iterator[Experiment]:
     """Gym simulator. Maximize reward.  Many distinct problems.
 
@@ -110,21 +111,14 @@ def ng_full_gym(
 
     seedg = create_seed_generator(seed)
     optims = [
-        "CMA",
         "DiagonalCMA",
-        "OnePlusOne",
+        "GeneticDE",
+        "NoisyRL1",
+        "NoisyRL2",
+        "NoisyRL3",
+        "MixDeterministicRL",
+        "SpecialRL",
         "PSO",
-        "DiscreteOnePlusOne",
-        "DE",
-        "CMandAS2",
-        "NelderMead",
-        "DoubleFastGADiscreteOnePlusOne",
-        "DiscreteLenglerOnePlusOne",
-        "AnisotropicAdaptiveDiscreteOnePlusOne",
-        "TBPSA",
-        "SPSA",
-        "SQP",
-        "MetaModel",
     ]
     if multi:
         controls = ["multi_neural"]
@@ -132,18 +126,12 @@ def ng_full_gym(
         controls = (
             [
                 "neural",
-                "structured_neural",
-                # "memory_neural",
-                "stackingmemory_neural",
-                "deep_neural",
-                "semideep_neural",
-                # "noisy_neural",
-                # "noisy_scrambled_neural",
-                # "scrambled_neural",
-                # "linear",
+                "resid_neural",
+                "resid_semideep_neural",
+                "resid_deep_neural",
             ]
             if not big
-            else ["neural"]
+            else ["resid_neural"]
         )
     if memory:
         controls = ["stackingmemory_neural", "deep_stackingmemory_neural", "semideep_stackingmemory_neural"]
@@ -156,7 +144,7 @@ def ng_full_gym(
         assert not multi
     if conformant:
         controls = ["stochastic_conformant"]
-    budgets = [204800, 12800, 25600, 51200, 50, 200, 800, 3200, 6400, 100, 25, 400, 1600, 102400]
+    budgets = [50, 200, 800, 3200, 6400, 100, 25, 400, 1600]  # Let's go with low budget.
     budgets = gym_budget_modifier(budgets)
     for control in controls:
         neural_factors: tp.Any = (
@@ -166,17 +154,25 @@ def ng_full_gym(
         )
         for neural_factor in neural_factors:
             for name in env_names:
-                try:
-                    func = nevergrad_gym.GymMulti(
-                        name, control=control, neural_factor=neural_factor, randomized=randomized
-                    )
-                except MemoryError:
-                    continue
-                for budget in budgets:
-                    for algo in optims:
-                        xp = Experiment(func, algo, budget, num_workers=1, seed=next(seedg))
-                        if not xp.is_incoherent:
-                            yield xp
+                sparse_limits: tp.List[tp.Optional[int]] = [None]
+                if sparse:
+                    sparse_limits += [10, 100, 1000]
+                for sparse_limit in sparse_limits:
+                    try:
+                        func = nevergrad_gym.GymMulti(
+                            name,
+                            control=control,
+                            neural_factor=neural_factor,
+                            randomized=randomized,
+                            sparse_limit=sparse_limit,
+                        )
+                    except MemoryError:
+                        continue
+                    for budget in budgets:
+                        for algo in optims:
+                            xp = Experiment(func, algo, budget, num_workers=1, seed=next(seedg))
+                            if not xp.is_incoherent:
+                                yield xp
 
 
 @registry.register
@@ -210,6 +206,15 @@ def gp(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     Counterpart of ng_full_gym with a specific, reduced list of problems for matching
     a genetic programming benchmark."""
     return ng_full_gym(seed, gp=True)
+
+
+@registry.register
+def sparse_gp(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """GP benchmark.
+
+    Counterpart of ng_full_gym with a specific, reduced list of problems for matching
+    a genetic programming benchmark."""
+    return ng_full_gym(seed, gp=True, sparse=True)
 
 
 @registry.register
