@@ -55,6 +55,8 @@ MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2).set_name
     "MetaModelFmin2", register=True
 )
 MetaModelFmin2.no_parallelization = True
+HSCMA = ParametrizedCMA(high_speed=True).set_name("HSCMA", register=True)
+HSMetaModel = ParametrizedMetaModel(multivariate_optimizer=HSCMA).set_name("HSMetaModel", register=True)
 
 # OnePlusOne
 FastGADiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="fastga").set_name(

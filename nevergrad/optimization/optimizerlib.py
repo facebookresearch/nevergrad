@@ -572,7 +572,6 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
 CMA = ParametrizedCMA().set_name("CMA", register=True)
 DiagonalCMA = ParametrizedCMA(diagonal=True).set_name("DiagonalCMA", register=True)
 FCMA = ParametrizedCMA(fcmaes=True).set_name("FCMA", register=True)
-HSCMA = ParametrizedCMA(high_speed=True).set_name("HSCMA", register=True)
 
 
 class _PopulationSizeController:
@@ -1610,7 +1609,6 @@ MetaModel = ParametrizedMetaModel().set_name("MetaModel", register=True)
 MetaModelOnePlusOne = ParametrizedMetaModel(multivariate_optimizer=OnePlusOne).set_name(
     "MetaModelOnePlusOne", register=True
 )
-HSMetaModel = ParametrizedMetaModel(multivariate_optimizer=HSCMA).set_name("HSMetaModel", register=True)
 
 
 @registry.register
