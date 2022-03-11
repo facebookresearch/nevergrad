@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -175,7 +175,7 @@ class _RandomSearch(OneShotOptimizer):
             point = self.parametrization.sample().get_standardized_data(reference=self.parametrization)
         else:
             raise ValueError("Unkwnown sampler {self.sampler}")
-        self._opposable_data = scale * point
+        self._opposable_data = scale * point  # type: ignore
         return self._opposable_data  # type: ignore
 
     def _internal_provide_recommendation(self) -> tp.Optional[tp.ArrayLike]:

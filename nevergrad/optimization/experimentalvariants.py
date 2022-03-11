@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -16,6 +16,13 @@ from .optimizerlib import (
     NGOpt10,
     NGOpt12,
     BayesOptim,
+    ConfPortfolio,
+    DiagonalCMA,
+    GeneticDE,
+    TBPSA,
+    NoisyOnePlusOne,
+    RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne,
+    OptimisticNoisyOnePlusOne,
 )
 from . import optimizerlib as opts
 from .optimizerlib import CMA, Chaining, PSO, BO
@@ -327,4 +334,17 @@ PCABO95DoE20 = BayesOptim(pca=True, n_components=0.95, prop_doe_factor=0.20).set
 )
 SparseDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete", sparse=True).set_name(
     "SparseDiscreteOnePlusOne", register=True
+)
+
+# Specifically for RL.
+MixDeterministicRL = ConfPortfolio(optimizers=[DiagonalCMA, PSO, GeneticDE]).set_name(
+    "MixDeterministicRL", register=True
+)
+SpecialRL = Chaining([MixDeterministicRL, TBPSA], ["half"]).set_name("SpecialRL", register=True)
+NoisyRL1 = Chaining([MixDeterministicRL, NoisyOnePlusOne], ["half"]).set_name("NoisyRL1", register=True)
+NoisyRL2 = Chaining(
+    [MixDeterministicRL, RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne], ["half"]
+).set_name("NoisyRL2", register=True)
+NoisyRL3 = Chaining([MixDeterministicRL, OptimisticNoisyOnePlusOne], ["half"]).set_name(
+    "NoisyRL3", register=True
 )
