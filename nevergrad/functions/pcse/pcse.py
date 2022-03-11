@@ -37,9 +37,9 @@ class Pcse(ArrayExperimentFunction):
         from pcse.base import ParameterProvider
         from pcse.db import NASAPowerWeatherDataProvider
 
-        # # from pcse.fileinput import YAMLAgroManagementReader, YAMLCropDataProvider
-        # from pcse.fileinput import YAMLCropDataProvider
-        # from pcse.util import WOFOST72SiteDataProvider, DummySoilDataProvider
+        # from pcse.fileinput import YAMLAgroManagementReader, YAMLCropDataProvider
+        from pcse.fileinput import YAMLCropDataProvider
+        from pcse.util import WOFOST72SiteDataProvider, DummySoilDataProvider
 
         # Weather data for Netherlands
         wdp = NASAPowerWeatherDataProvider(latitude=52, longitude=5)
