@@ -325,14 +325,12 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
 
 
 DE = DifferentialEvolution().set_name("DE", register=True)
-HSDE = DifferentialEvolution(high_speed=True).set_name("HSDE", register=True)
 TwoPointsDE = DifferentialEvolution(crossover="twopoints").set_name("TwoPointsDE", register=True)
 RotatedTwoPointsDE = DifferentialEvolution(crossover="rotated_twopoints").set_name(
     "RotatedTwoPointsDE", register=True
 )
 
 LhsDE = DifferentialEvolution(initialization="LHS").set_name("LhsDE", register=True)
-LhsHSDE = DifferentialEvolution(initialization="LHS", high_speed=True).set_name("LhsHSDE", register=True)
 
 QrDE = DifferentialEvolution(initialization="QR").set_name("QrDE", register=True)
 NoisyDE = DifferentialEvolution(recommendation="noisy").set_name("NoisyDE", register=True)
