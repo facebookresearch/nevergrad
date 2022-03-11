@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -254,7 +254,7 @@ class SequentialRecastOptimizer(RecastOptimizer):
         that it can be serialized.
         """
         if self.num_ask != 0:
-            raise ValueError("Can only enable pickling before all asks.")
+            raise ValueError("Can only enable pickling before all asks.")
         self._enable_pickling = True
 
     def _internal_ask_candidate(self) -> p.Parameter:

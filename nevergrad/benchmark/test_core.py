@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -154,6 +154,8 @@ def test_benchmark_chunk_resuming() -> None:
     with warnings.catch_warnings(record=True) as w:
         warnings.filterwarnings("ignore", category=errors.InefficientSettingsWarning)
         chunk.compute()
-        assert (
-            not w
-        ), f"A warning was raised while it should not have (experiment could not be resumed): {w[0].message}"
+        assert not w or (
+            "Seeding" in str(w[0].message)
+        ), (  # We accept warnings due to seeding stuff.
+            f"A warning was raised while it should not have (experiment could not be resumed): {w[0].message}"
+        )

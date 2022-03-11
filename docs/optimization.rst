@@ -185,6 +185,14 @@ Or if you want something more aimed at robustly outperforming random search in h
 - Use :code:`ScrHammersleySearchPlusMiddlePoint` (:code:`PlusMiddlePoint` only if you have continuous parameters or good default values for discrete parameters).
 
 
+Example with permutation
+------------------------
+
+SimpleTSP and ComplexTSP are two cases of optimization on a domain of permutations:
+`example here. <https://docs.google.com/document/d/1B5yVOx1H1nnjY3EOf14487hAr8CzwJ9zEkDwQnZ5nbE/edit?usp=sharing>`_
+This is relevant when you optimize a single big permutation.
+Also includes cases with many small permutations.
+
 Example of chaining, or inoculation, or initialization of an evolutionary algorithm
 -----------------------------------------------------------------------------------
 

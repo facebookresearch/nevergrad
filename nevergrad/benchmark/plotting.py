@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -502,7 +502,11 @@ class XpPlotter:
             # confidence lines
             for conf in self._get_confidence_arrays(vals, log=logplot):
                 plt.plot(vals[xaxis], conf, name_style[optim_name], label=optim_name, alpha=0.1)
-            text = "{} ({:.3g} <{:.3g}>)".format(optim_name, vals["loss"][-1], vals["loss"][-2])
+            text = "{} ({:.3g} <{:.3g}>)".format(
+                optim_name,
+                vals["loss"][-1],
+                vals["loss"][-2] if len(vals["loss"]) > 2 else float("nan"),
+            )
             if vals[xaxis].size:
                 legend_infos.append(LegendInfo(vals[xaxis][-1], vals["loss"][-1], line, text))
         if not (np.isnan(upperbound) or np.isinf(upperbound)):
