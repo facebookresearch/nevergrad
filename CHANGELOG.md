@@ -2,6 +2,8 @@
 
 ## main
 
+## 0.5.0 (2022-03-08)
+
 ### Breaking changes
 
 - `copy()` method of a `Parameter` does not change the parameters's random state anymore (it used to reset it to `None` [#1048](https://github.com/facebookresearch/nevergrad/pull/1048)
@@ -70,6 +72,11 @@
   [#1197](https://github.com/facebookresearch/nevergrad/pull/1197).
 - An interface with [BayesOptim](https://github.com/wangronin/Bayesian-Optimization) optimizers has been added
   [#1179](https://github.com/facebookresearch/nevergrad/pull/1179).
+- Fix for abnormally slow iterations for large budgets using CMA in a portfolio
+  [#1350](https://github.com/facebookresearch/nevergrad/pull/1350).
+- A new `enable_pickling` option was added to optimizers. This is only necessary for some of them (among which `scipy`-based optimizer), and comes at the cost of additional memory usage
+  [#1356](https://github.com/facebookresearch/nevergrad/pull/1356)
+  [#1358](https://github.com/facebookresearch/nevergrad/pull/1358).
 
 ## 0.4.3 (2021-01-28)
 
