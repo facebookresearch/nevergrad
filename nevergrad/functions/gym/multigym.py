@@ -563,7 +563,7 @@ class GymMulti(ExperimentFunction):
             parametrization1 = parameter.Array(shape=shape)
             repetitions = int(np.prod(shape))
 
-            isinstance(repetitions, int), f"{repetitions}"
+            assert isinstance(repetitions, int), f"{repetitions}"
             parametrization2 = ng.p.Choice([0, 1], repetitions=repetitions)  # type: ignore
             parametrization = ng.p.Instrumentation(  # type: ignore
                 weights=parametrization1,
