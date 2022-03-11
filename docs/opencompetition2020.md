@@ -31,8 +31,8 @@ We explicitly allow portfolio-based algorithms such as landscape-aware algorithm
 
 ## Submission
 
-All contributions are directly made to either one of the tools, Nevergrad or IOHprofiler, via pull requests on our GitHub pages. You do not have to do anything else than a pull request: 
-- [https://github.com/facebookresearch/nevergrad](https://github.com/facebookresearch/nevergrad) for Nevergrad 
+All contributions are directly made to either one of the tools, Nevergrad or IOHprofiler, via pull requests on our GitHub pages. You do not have to do anything else than a pull request:
+- [https://github.com/facebookresearch/nevergrad](https://github.com/facebookresearch/nevergrad) for Nevergrad
 - [https://github.com/IOHprofiler/](https://github.com/IOHprofiler/) for IOHprofiler [for IOHprofiler, please use the competition branch of the repositories "IOHanalyzer" or "IOHexperimenter" for your submissions]
 
 All supporting material should be uploaded together with the pull request. Links to arXiv papers etc are possible and welcome, but by no means mandatory. Keep in mind that a good description of your contribution increases the chance that jury members will understand and value your contribution.
@@ -44,12 +44,12 @@ Nevergrad requires a CLA for contributors (see in the "Contributing to Nevergad"
 - Open source: no matter how good the results are, if they can not be reproduced or the code can not be checked, this is not in the scope.
 - Reproducibility: if the code can not be run easily, it is also not in the scope.
 
-## Papers in the ACM GECCO Proceedings Companion  
-Documentations of your submissions can also be submitted for publication in the **GECCO companion materials**. 
+## Papers in the ACM GECCO Proceedings Companion
+Documentations of your submissions can also be submitted for publication in the **GECCO companion materials**.
 For all details, please check [https://gecco-2020.sigevo.org/index.html/Workshops](https://gecco-2020.sigevo.org/index.html/Workshops)
 Note that the page limit is **2 pages in ACM format**, including references
 Submission deadline: April 17, 2020
-Make sure to select the Open Optimization Competition 2020 as track when you submit your paper. 
+Make sure to select the Open Optimization Competition 2020 as track when you submit your paper.
 
 ## Dates
 **Submission deadline is Sept. 30, 2020, AoE**
@@ -60,28 +60,28 @@ Up to 12 000 euros of awards, to be used for traveling to PPSN or GECCO 2020 or 
 In addition, a limited number of registration fee waivers are available for PPSN 2020.
 
 ## Winners:
-The winning entries of the Open Optimization Competition 2020 are 
+The winning entries of the Open Optimization Competition 2020 are
 (ordered by pull request ID):
 
-- nojhan 
+- nojhan
     [https://github.com/IOHprofiler/IOHexperimenter/pull/45](https://github.com/IOHprofiler/IOHexperimenter/pull/45)
-    On-the-fly computation of the area under the EDCF curve, for use within automated algorithm configuration frameworks. A proxy for integrating problems defined in Python. 
+    On-the-fly computation of the area under the EDCF curve, for use within automated algorithm configuration frameworks. A proxy for integrating problems defined in Python.
 
-- teftimov 
+- teftimov
     [https://github.com/IOHprofiler/IOHanalyzer/pull/56](https://github.com/IOHprofiler/IOHanalyzer/pull/56)
-    Interface to the Deep Statistical Comparison Toolbox and PerformViz. 
+    Interface to the Deep Statistical Comparison Toolbox and PerformViz.
 
-- Corwinpro 
+- Corwinpro
     [https://github.com/facebookresearch/nevergrad/pull/484](https://github.com/facebookresearch/nevergrad/pull/484)
-    Hypervolume (pyhv.py) module rewrite. Makes the code more readable, and makes the license more compliant. 
+    Hypervolume (pyhv.py) module rewrite. Makes the code more readable, and makes the license more compliant.
 
 - Foloso
-    [https://github.com/facebookresearch/nevergrad/pull/812](https://github.com/facebookresearch/nevergrad/pull/812)  
-    Adds a real-world objective function describing Madagascar’s electricity mix. 
+    [https://github.com/facebookresearch/nevergrad/pull/812](https://github.com/facebookresearch/nevergrad/pull/812)
+    Adds a real-world objective function describing Madagascar’s electricity mix.
 
-- Pacowong 
-    [https://github.com/facebookresearch/nevergrad/pull/823](https://github.com/facebookresearch/nevergrad/pull/823)  
-    Draft of an NSGA-II implementation  
+- Pacowong
+    [https://github.com/facebookresearch/nevergrad/pull/823](https://github.com/facebookresearch/nevergrad/pull/823)
+    Draft of an NSGA-II implementation
 
 Second Prize
 (ordered by pull request ID):
@@ -90,33 +90,33 @@ Second Prize
     [https://github.com/facebookresearch/nevergrad/pull/551](https://github.com/facebookresearch/nevergrad/pull/551)  [https://github.com/facebookresearch/nevergrad/pull/561](https://github.com/facebookresearch/nevergrad/pull/561)  [https://github.com/facebookresearch/nevergrad/pull/404](https://github.com/facebookresearch/nevergrad/pull/404)
     EMNA and EMNA combined with population control methods.
 
-- Herilalaina 
-    [https://github.com/facebookresearch/nevergrad/pull/790](https://github.com/facebookresearch/nevergrad/pull/790) 
+- Herilalaina
+    [https://github.com/facebookresearch/nevergrad/pull/790](https://github.com/facebookresearch/nevergrad/pull/790)
     Adding Mujoco support from Lamcts and Ars papers.
 
-- Alexd314    
+- Alexd314
     [https://github.com/facebookresearch/nevergrad/pull/828](https://github.com/facebookresearch/nevergrad/pull/828)
     Real-world problem: fitting an animatable 3D human mesh template to data
 
-Honorable mention (in no particular order): 
+Honorable mention (in no particular order):
 
-- thomasWeise 
-    [https://github.com/IOHprofiler/IOHanalyzer/pull/39](https://github.com/IOHprofiler/IOHanalyzer/pull/39) 
+- thomasWeise
+    [https://github.com/IOHprofiler/IOHanalyzer/pull/39](https://github.com/IOHprofiler/IOHanalyzer/pull/39)
     Support for string-based function IDs in IOHanalyzer and bug fixing in uploading zip files containing multiple algorithms
-    
+
 - Ljialin
     Variations around NGOpt, an algorithm for algorithm selection implemented in Nevergrad. Led to a paper published with the Nevergrad team.
-    
+
 - Dvermetten
     Adding experiments from IOHexperimenter.
-    
+
 - Dietermarwo
     add support for alternative cmaes implementation (fcmaes)
-    
+
 - Fmder
     Cooperative Coevolution Optimization with DEAP
-    
-List of winners: [https://github.com/facebookresearch/nevergrad/blob/master/docs/winners2020.rst](https://github.com/facebookresearch/nevergrad/blob/master/docs/winners2020.rst)
+
+List of winners: [https://github.com/facebookresearch/nevergrad/blob/main/docs/winners2020.rst](https://github.com/facebookresearch/nevergrad/blob/main/docs/winners2020.rst)
 
 
 ## About Nevergrad and IOHprofiler

@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -22,10 +22,10 @@ def test_images_adversarial() -> None:
 def test_image_adversarial_eval() -> None:
     func = next(core.ImageAdversarial.make_folder_functions(None, model="test"))
     output = func.evaluation_function(func.parametrization)
-    assert output == 0
+    assert output == 1
     func.targeted = True
     output = func.evaluation_function(func.parametrization)
-    assert output == 1
+    assert output == 0
 
 
 def test_images() -> None:

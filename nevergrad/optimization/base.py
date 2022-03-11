@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -133,6 +133,18 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # to make optimize function stoppable halway through
         self._running_jobs: tp.List[tp.Tuple[p.Parameter, tp.JobLike[tp.Loss]]] = []
         self._finished_jobs: tp.Deque[tp.Tuple[p.Parameter, tp.JobLike[tp.Loss]]] = deque()
+        self._sent_warnings: tp.Set[tp.Any] = set()  # no use printing several time the same
+        # Most optimizers are designed for single objective and use a float loss.
+        # To use these in a multi-objective optimization, we provide the negative of
+        # the hypervolume of the pareto front as the loss.
+        # If not needed, an optimizer can set this to True.
+        self._no_hypervolume = False
+
+    def _warn(self, msg: str, e: tp.Any) -> None:
+        """Warns only once per warning type"""
+        if e not in self._sent_warnings:
+            warnings.warn(msg, e)
+            self._sent_warnings.add(e)
 
     @property
     def _rng(self) -> np.random.RandomState:
@@ -312,7 +324,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             # Non-sense values including NaNs should not be accepted.
             # We do not use max-float as various later transformations could lead to greater values.
             if not loss < 5.0e20:  # pylint: disable=unneeded-not
-                warnings.warn(
+                self._warn(
                     f"Clipping very high value {loss} in tell (rescale the cost function?).",
                     errors.LossTooLargeWarning,
                 )
@@ -342,7 +354,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 raise RuntimeError("MultiobjectiveReference can only be provided before the first tell.")
             if not isinstance(loss, np.ndarray):
                 raise RuntimeError("MultiobjectiveReference must only be used for multiobjective losses")
-            self._hypervolume_pareto = mobj.HypervolumePareto(upper_bounds=loss, seed=self._rng)
+            self._hypervolume_pareto = mobj.HypervolumePareto(
+                upper_bounds=loss, seed=self._rng, no_hypervolume=self._no_hypervolume
+            )
             if candidate.value is None:
                 return  # no value, so stopping processing there
             candidate = candidate.value
@@ -361,7 +375,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         if not candidate.satisfies_constraints() and self.budget is not None:
             penalty = self._constraints_manager.penalty(candidate, self.num_ask, self.budget)
             loss = loss + penalty
-        if isinstance(loss, float):
+        if isinstance(loss, float) and (
+            self.num_objectives == 1 or self.num_objectives > 1 and not self._no_hypervolume
+        ):
             self._update_archive_and_bests(candidate, loss)
         if candidate.uid in self._asked:
             self._internal_tell_candidate(candidate, loss)
@@ -373,7 +389,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
 
     def _preprocess_multiobjective(self, candidate: p.Parameter) -> tp.FloatLoss:
         if self._hypervolume_pareto is None:
-            self._hypervolume_pareto = mobj.HypervolumePareto(auto_bound=self._MULTIOBJECTIVE_AUTO_BOUND)
+            self._hypervolume_pareto = mobj.HypervolumePareto(
+                auto_bound=self._MULTIOBJECTIVE_AUTO_BOUND, no_hypervolume=self._no_hypervolume
+            )
         return self._hypervolume_pareto.add(candidate)
 
     def _update_archive_and_bests(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
@@ -385,7 +403,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 f'"tell" method only supports float values but the passed loss was: {loss} (type: {type(loss)}.'
             )
         if np.isnan(loss) or loss == np.inf:
-            warnings.warn(f"Updating fitness with {loss} value", errors.BadLossWarning)
+            self._warn(f"Updating fitness with {loss} value", errors.BadLossWarning)
         mvalue: tp.Optional[utils.MultiValue] = None
         if x not in self.archive:
             self.archive[x] = utils.MultiValue(candidate, loss, reference=self.parametrization)
@@ -441,7 +459,6 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # - no memory of previous iterations.
         # - just projection to constraint satisfaction.
         # We try using the normal tool during half constraint budget, in order to reduce the impact on the normal run.
-        constraint_issue = False
         for _ in range(max_trials):
             is_suggestion = False
             if self._suggestions:  # use suggestions if available
@@ -450,15 +467,14 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             else:
                 try:  # Sometimes we have a limited budget so that
                     candidate = self._internal_ask_candidate()
-                except AssertionError:
-                    assert constraint_issue  # This should not happen without constraint issues.
+                except AssertionError as e:
+                    assert (
+                        self.parametrization._constraint_checkers
+                    ), f"Error: {e}"  # This should not happen without constraint issues.
                     candidate = self.parametrization.spawn_child()
             if candidate.satisfies_constraints():
                 break  # good to go!
-            constraint_issue = (
-                True  # It is normal that we exceed the sampler budget -- constraint satisfaction.
-            )
-            if self._penalize_cheap_violations:
+            if self._penalize_cheap_violations or self.no_parallelization:
                 # Warning! This might be a tell not asked.
                 self._internal_tell_candidate(candidate, float("Inf"))  # DE requires a tell
             # updating num_ask  is necessary for some algorithms which need new num to ask another point
@@ -468,7 +484,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             # still not solving, let's run sub-optimization
             candidate = _constraint_solver(candidate, budget=max_trials)
         if not (satisfies or candidate.satisfies_constraints()):
-            warnings.warn(
+            self._warn(
                 f"Could not bypass the constraint after {max_trials} tentatives, "
                 "sending candidate anyway.",
                 errors.FailedConstraintWarning,
@@ -509,6 +525,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             The candidate with minimal loss. :code:`p.Parameters` have field :code:`args` and :code:`kwargs` which can be directly used
             on the function (:code:`objective_function(*candidate.args, **candidate.kwargs)`).
         """
+        if self.num_objectives > 1:
+            raise RuntimeError(
+                "No best candidate in MOO. Use optimizer.pareto_front() instead to get the set of all non-dominated candidates."
+            )
         recom_data = self._internal_provide_recommendation()  # pylint: disable=assignment-from-none
         if recom_data is None or any(np.isnan(recom_data)):
             name = "minimum" if self.parametrization.function.deterministic else "pessimistic"
@@ -542,6 +562,17 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
     def _internal_provide_recommendation(self) -> tp.Optional[tp.ArrayLike]:
         """Override to provide a recommendation in standardized space"""
         return None
+
+    def enable_pickling(self) -> None:
+        """
+        Some optimizers are only optionally picklable, because picklability
+        requires saving the whole history which would be a waste of memory
+        in general. To tell an optimizer to be picklable, call this function
+        before any asks.
+
+        In this base class, the function is a no-op, but it is overridden
+        in some optimizers.
+        """
 
     def minimize(
         self,
@@ -584,7 +615,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         if executor is None:
             executor = utils.SequentialExecutor()  # defaults to run everything locally and sequentially
             if self.num_workers > 1:
-                warnings.warn(
+                self._warn(
                     f"num_workers = {self.num_workers} > 1 is suboptimal when run sequentially",
                     errors.InefficientSettingsWarning,
                 )
@@ -643,7 +674,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 (tmp_finished if x_job[1].done() else tmp_runnings).append(x_job)
             self._running_jobs, self._finished_jobs = tmp_runnings, tmp_finished
             first_iteration = False
-        return self.provide_recommendation()
+        return self.provide_recommendation() if self.num_objectives == 1 else p.Constant(None)
 
     def _info(self) -> tp.Dict[str, tp.Any]:
         """Easy access to debug/benchmark info"""
@@ -711,7 +742,11 @@ class ConfiguredOptimizer:
         if not as_config:
             # try instantiating for init checks
             # if as_config: check can be done before setting attributes
-            self(parametrization=4, budget=100)
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    "ignore", category=errors.InefficientSettingsWarning
+                )  # this check does not need to be efficient
+                self(parametrization=4, budget=100)
 
     def config(self) -> tp.Dict[str, tp.Any]:
         return dict(self._config)

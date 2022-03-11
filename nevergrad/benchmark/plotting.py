@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -225,6 +225,8 @@ def create_plots(
     df = remove_errors(df)
     df.loc[:, "loss"] = pd.to_numeric(df.loc[:, "loss"])
     df = df.loc[:, [x for x in df.columns if not x.startswith("info/")]]
+    if "num_objectives" in df.columns:
+        df = df[df.num_objectives != 0]  # the optimization did not even start
     # If we have a descriptor "instrum_str",
     # we assume that it describes the instrumentation as a string,
     # that we should include the various instrumentations as distinct curves in the same plot.
@@ -385,6 +387,21 @@ def create_plots(
     plt.close("all")
 
 
+def gp_sota() -> tp.Dict[str, tp.Tuple[float, float]]:
+    gp = {}
+    gp["CartPole-v1"] = (-500.0, 100000.0)
+    gp["Acrobot-v1"] = (83.17, 200000.0)
+    gp["MountainCarContinuous-v0"] = (-99.31, 900000.0)
+    gp["Pendulum-v0"] = (154.36, 1100000.0)
+    gp["InvertedPendulumSwingupBulletEnv-v0"] = (-893.35, 400000.0)
+    gp["BipedalWalker-v3"] = (-268.85, 1100000.0)
+    gp["BipedalWalkerHardcore-v3"] = (-9.25, 1100000.0)
+    gp["HopperBulletEnv-v0"] = (-999.19, 1000000.0)
+    gp["InvertedDoublePendulumBulletEnv-v0"] = (-9092.17, 300000.0)
+    gp["LunarLanderContinuous-v2"] = (-287.58, 1000000.0)
+    return gp
+
+
 class LegendInfo(tp.NamedTuple):
     """Handle for information used to create a legend."""
 
@@ -447,18 +464,49 @@ class XpPlotter:
         self._ax.grid(True, which="both")
         self._overlays: tp.List[tp.Any] = []
         legend_infos: tp.List[LegendInfo] = []
+        title_addendum = ""
         for optim_name in (
             sorted_optimizers[:1] + sorted_optimizers[-12:]
             if len(sorted_optimizers) > 13
             else sorted_optimizers
         ):
             vals = optim_vals[optim_name]
+            indices = np.where(vals["num_eval"] > 0)
             lowerbound = min(lowerbound, np.min(vals["loss"]))
+            # We here add some state of the art results.
+            # This adds a cross on figures, x-axis = budget and y-axis = loss.
+            for sota_name, sota in [("GP", gp_sota())]:
+                for k in sota.keys():
+                    if k in title:
+                        th = sota[k][0]  # loss of proposed solution.
+                        cost = sota[k][1]  # Computational cost for the proposed result.
+                        title_addendum = f"({sota_name}:{th})"
+                        lowerbound = min(lowerbound, th, 0.9 * th, 1.1 * th)
+                        plt.plot(  # Horizontal line at the obtained GP cost.
+                            vals[xaxis][indices],
+                            th + 0 * vals["loss"][indices],
+                            name_style[optim_name],
+                            label="gp",
+                        )
+                        plt.plot(  # Vertical line, showing the budget of the GP solution.
+                            [cost] * 3,
+                            [
+                                min(vals["loss"][indices]),
+                                sum(vals["loss"][indices]) / len(indices),
+                                max(vals["loss"][indices]),
+                            ],
+                            name_style[optim_name],
+                            label="gp",
+                        )
             line = plt.plot(vals[xaxis], vals["loss"], name_style[optim_name], label=optim_name)
             # confidence lines
             for conf in self._get_confidence_arrays(vals, log=logplot):
                 plt.plot(vals[xaxis], conf, name_style[optim_name], label=optim_name, alpha=0.1)
-            text = "{} ({:.3g})".format(optim_name, vals["loss"][-1])
+            text = "{} ({:.3g} <{:.3g}>)".format(
+                optim_name,
+                vals["loss"][-1],
+                vals["loss"][-2] if len(vals["loss"]) > 2 else float("nan"),
+            )
             if vals[xaxis].size:
                 legend_infos.append(LegendInfo(vals[xaxis][-1], vals["loss"][-1], line, text))
         if not (np.isnan(upperbound) or np.isinf(upperbound)):
@@ -476,7 +524,7 @@ class XpPlotter:
         self.add_legends(legend_infos)
         # global info
         if "tmp" not in title:
-            self._ax.set_title(split_long_title(title))
+            self._ax.set_title(split_long_title(title + title_addendum))
         self._ax.tick_params(axis="both", which="both")
         # self._fig.tight_layout()
 

@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -82,3 +82,11 @@ def test_header() -> None:
         raise AssertionError(
             f"Following files are missing standard header (see other files):\n - {missing_str}"
         )
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="not compatible test")  # type: ignore
+def test_no_import_warning() -> None:
+    out = subprocess.run(
+        ["python", "-c", "import nevergrad as ng"], check=True, stderr=subprocess.PIPE
+    ).stderr
+    assert not out

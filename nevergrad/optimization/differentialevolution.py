@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -111,6 +111,7 @@ class _DE(base.Optimizer):
         self._uid_queue = base.utils.UidQueue()
         self.population: tp.Dict[str, p.Parameter] = {}
         self.sampler: tp.Optional[base.Optimizer] = None
+        self._no_hypervolume = self._config.multiobjective_adaptation
 
     def recommend(self) -> p.Parameter:  # This is NOT the naive version. We deal with noise.
         if self._config.recommendation != "noisy":

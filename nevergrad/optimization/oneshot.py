@@ -1,14 +1,14 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
 import copy
 import numpy as np
-from scipy import stats
 from scipy.spatial import ConvexHull  # pylint: disable=no-name-in-module
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
+from nevergrad.parametrization import transforms as trans
 from . import sequences
 from . import base
 from .base import IntOrParameter
@@ -143,6 +143,7 @@ class _RandomSearch(OneShotOptimizer):
         self.scale = scale
         self.sampler = sampler
         self._opposable_data: tp.Optional[np.ndarray] = None
+        self._no_hypervolume = True
 
     def _internal_ask(self) -> tp.ArrayLike:
         # pylint: disable=not-callable
@@ -174,7 +175,7 @@ class _RandomSearch(OneShotOptimizer):
             point = self.parametrization.sample().get_standardized_data(reference=self.parametrization)
         else:
             raise ValueError("Unkwnown sampler {self.sampler}")
-        self._opposable_data = scale * point
+        self._opposable_data = scale * point  # type: ignore
         return self._opposable_data  # type: ignore
 
     def _internal_provide_recommendation(self) -> tp.Optional[tp.ArrayLike]:
@@ -274,7 +275,8 @@ class _SamplingSearch(OneShotOptimizer):
         self.rescaled = rescaled
         self.recommendation_rule = recommendation_rule
         # rescale to the bounds if both are provided
-        self._scaler = utils.BoundScaler(self.parametrization)
+        self._no_hypervolume = True
+        self._normalizer = p.helpers.Normalizer(self.parametrization)
 
     @property
     def sampler(self) -> sequences.Sampler:
@@ -319,10 +321,13 @@ class _SamplingSearch(OneShotOptimizer):
             assert self.budget is not None
             self.scale = np.sqrt(np.log(self.budget) / self.dimension)
 
-        def transf(x: np.ndarray) -> np.ndarray:
-            return self.scale * (stats.cauchy.ppf if self.cauchy else stats.norm.ppf)(x)  # type: ignore
+        transf = trans.CumulativeDensity(
+            0, 1, scale=self.scale, density="cauchy" if self.cauchy else "gaussian"
+        )
+        # hack since scale is not defined before the first hack (TODO: refactor)
+        self._normalizer.unbounded_transform = transf
 
-        self._opposable_data = self._scaler.transform(sample, transf)
+        self._opposable_data = self._normalizer.backward(sample)
         assert self._opposable_data is not None
         return self._opposable_data
 

@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -13,7 +13,7 @@ from unittest import SkipTest
 import pytest
 import numpy as np
 from nevergrad.optimization import registry as optregistry
-from nevergrad.functions.base import UnsupportedExperiment
+import nevergrad.functions.base as fbase
 from nevergrad.functions.mlda import datasets
 from nevergrad.functions import rl
 from nevergrad.common import testing
@@ -28,6 +28,10 @@ from . import optgroups
 
 @testing.parametrized(**{name: (name, maker) for name, maker in experiments.registry.items()})
 def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> None:
+    # "mav" is not availablefor now.
+    if name == "conformant_planning" or name == "neuro_planning":
+        raise SkipTest("This is user parametric and can not be tested.")
+
     # Our PGAN is not well accepted by circleci.
     if "_pgan" in name and os.environ.get("CIRCLECI", False):
         raise SkipTest("Too slow in CircleCI")
@@ -40,8 +44,6 @@ def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[expe
     if all(x in name for x in ["image", "quality"]) and platform.system() == "Windows":
         raise SkipTest("Image quality not guaranteed on Windows.")
 
-    # ANM does not work under Windows.
-
     # Basic test.
     print(f"Testing {name}")
     with tools.set_env(NEVERGRAD_PYTEST=1):
@@ -50,14 +52,14 @@ def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[expe
 
     # Some tests are skipped on CircleCI (but they do work well locally, if memory enough).
     if os.environ.get("CIRCLECI", False):
-        if any(x in name for x in ["images_using_gan", "mlda", "realworld"]):
+        if any(x in name for x in ["image", "mlda", "realworld", "adversarial_attack"]):
             raise SkipTest("Too slow in CircleCI")
 
     check_experiment(
         maker,
         ("mltuning" in name or "anm" in name),
         skip_seed=(name in ["rocket", "images_using_gan"])
-        or any(x in name for x in ["tuning", "image_", "compiler", "anm"]),
+        or any(x in name for x in ["tuning", "image_", "compiler", "anm", "olympus"]),
     )  # this is a basic test on first elements, do not fully rely on it
 
 
@@ -87,7 +89,7 @@ def check_maker(maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> 
     # check 1 sample
     try:
         sample = next(maker())
-    except UnsupportedExperiment as e:
+    except fbase.UnsupportedExperiment as e:
         raise SkipTest("Skipping because unsupported") from e
     assert isinstance(sample, experiments.Experiment)
     # check names, coherence and non-randomness

@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -9,7 +9,6 @@ import torch
 import numpy as np
 
 
-import lpips
 import cv2
 from nevergrad.functions.base import UnsupportedExperiment as UnsupportedExperiment
 from nevergrad.common.decorators import Registry
@@ -48,10 +47,16 @@ class Lpips(ImageLoss):
     def __init__(self, reference: tp.Optional[np.ndarray] = None, net: str = "") -> None:
         super().__init__(reference)
         self.net = net
+        # pylint: disable=import-outside-toplevel
+        try:
+            import lpips
+        except ImportError:
+            raise UnsupportedExperiment("LPIPS is not installed, please run 'pip install lpips'")
+        self._LPIPS = lpips.LPIPS
 
     def __call__(self, img: np.ndarray) -> float:
         if self.net not in MODELS:
-            MODELS[self.net] = lpips.LPIPS(net=self.net)
+            MODELS[self.net] = self._LPIPS(net=self.net)
         loss_fn = MODELS[self.net]
         assert img.shape[2] == 3
         assert len(img.shape) == 3
@@ -110,14 +115,15 @@ class Koncept512(ImageLoss):
     @property
     def koncept(self) -> tp.Any:  # cache the model
         key = "koncept"
+        if os.name == "nt":
+            raise UnsupportedExperiment("Koncept512 is not working properly under Windows")
         if key not in MODELS:
-            if os.name != "nt":
-                # pylint: disable=import-outside-toplevel
+            # pylint: disable=import-outside-toplevel
+            try:
                 from koncept.models import Koncept512 as K512Model
-
-                MODELS[key] = K512Model()
-            else:
-                raise UnsupportedExperiment("Koncept512 is not working properly under Windows")
+            except ImportError:
+                raise UnsupportedExperiment("Koncept512 is not installed, please run 'pip install koncept'")
+            MODELS[key] = K512Model()
         return MODELS[key]
 
     def __call__(self, img: np.ndarray) -> float:

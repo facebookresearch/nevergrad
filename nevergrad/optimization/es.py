@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -41,6 +41,7 @@ class _EvolutionStrategy(base.Optimizer):
             self._rank_method = nsga2.rank
         elif self._config.ranker != "simple":
             raise NotImplementedError(f"Unknown ranker {self._config.ranker}")
+        self._no_hypervolume = self._config.offsprings is None
 
     def _internal_ask_candidate(self) -> p.Parameter:
         if self.num_ask < self._config.popsize:

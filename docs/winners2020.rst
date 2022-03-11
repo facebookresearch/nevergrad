@@ -1,6 +1,6 @@
 .. _winners2020:
 
-Results of the `Open Competition 2020 <https://github.com/facebookresearch/nevergrad/blob/master/docs/opencompetition2020.md>`_ are in :-) 
+Results of the `Open Competition 2020 <https://github.com/facebookresearch/nevergrad/blob/main/docs/opencompetition2020.md>`_ are in :-)
 
 Open competition 2020
 =====================
@@ -23,10 +23,8 @@ Winners (above) should contact oteytaud@fb.com and Carola.Doerr@mpi-inf.mpg.de.
 
 Honorable mention:
 
-- thomasWeise 
+- thomasWeise
 - Ljialin
 - Dvermetten
 - Dietermarwo
 - Fmder
-
-
