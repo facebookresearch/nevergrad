@@ -42,6 +42,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
             # "BB",
             "RBFOPT",
             "NLOPT",
+            "RBFOPT",
         ], f"Unknown method '{method}'"
         self.method = method
         self.random_restart = random_restart
@@ -73,6 +74,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
             best_x = np.array(weakself.initial_guess, copy=True)  # copy, just to make sure it is not modified
         remaining: float = budget - weakself._num_ask
         while remaining > 0:  # try to restart if budget is not elapsed
+            options: tp.Dict[str, tp.Any] = {} if weakself.budget is None else {"maxiter": remaining}
             if weakself.method == "RBFOPT":
                 import rbfopt
 
