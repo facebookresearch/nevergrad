@@ -56,6 +56,9 @@ def test_sparse_cartpole() -> None:
 def test_run_multigym(name: str) -> None:
     if os.name == "nt" or np.random.randint(8) or "CubeCrash" in name:
         raise SkipTest("Skipping Windows and running only 1 out of 8")
+    if "ANM" in name:
+        raise SkipTest("We skip ANM6Easy and related problems.")
+
     func = multigym.GymMulti(randomized=False, neural_factor=None)
     x = np.zeros(func.dimension)
     value = func(x)

@@ -125,7 +125,20 @@ def ng_full_gym(
     else:
         controls = (
             [
+                "noisy_semideep_neural",
+                "noisy_scrambled_semideep_neural",  # Scrambling: why not perturbating the order of variables ?
+                "noisy_deep_neural",
+                "noisy_scrambled_deep_neural",
                 "neural",
+                # "structured_neural",
+                # "memory_neural",
+                "stackingmemory_neural",
+                "deep_neural",
+                "semideep_neural",
+                "noisy_neural",
+                "noisy_scrambled_neural",
+                # "scrambled_neural",
+                # "linear",
                 "resid_neural",
                 "resid_semideep_neural",
                 "resid_deep_neural",
@@ -206,6 +219,15 @@ def gp(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     Counterpart of ng_full_gym with a specific, reduced list of problems for matching
     a genetic programming benchmark."""
     return ng_full_gym(seed, gp=True)
+
+
+@registry.register
+def conformant_gp(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """GP benchmark.
+
+    Counterpart of ng_full_gym with a specific, reduced list of problems for matching
+    a genetic programming benchmark."""
+    return ng_full_gym(seed, conformant=True, gp=True)
 
 
 @registry.register

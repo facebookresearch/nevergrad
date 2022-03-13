@@ -17,11 +17,11 @@ from nevergrad.parametrization import transforms
 from nevergrad.parametrization import discretization
 from nevergrad.parametrization import _layering
 from nevergrad.parametrization import _datalayers
-from . import callbacks
 from . import oneshot
 from . import base
 from . import mutations
-from . import utils
+from .metamodel import MetaModelFailure as MetaModelFailure
+from .metamodel import learn_on_k_best as learn_on_k_best
 from .base import registry as registry
 from .base import addCompare  # pylint: disable=unused-import
 from .base import IntOrParameter
@@ -1455,74 +1455,6 @@ MultiScaleCMA = ConfPortfolio(
 ).set_name("MultiScaleCMA", register=True)
 
 
-class MetaModelFailure(ValueError):
-    """Sometimes the optimum of the metamodel is at infinity."""
-
-
-def _learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.ArrayLike:
-    """Approximate optimum learnt from the k best.
-
-    Parameters
-    ----------
-    archive: utils.Archive[utils.Value]
-    """
-    items = list(archive.items_as_arrays())
-    dimension = len(items[0][0])
-
-    # Select the k best.
-    first_k_individuals = sorted(items, key=lambda indiv: archive[indiv[0]].get_estimation("pessimistic"))[:k]
-    assert len(first_k_individuals) == k
-
-    # Recenter the best.
-    middle = np.array(sum(p[0] for p in first_k_individuals) / k)
-    normalization = 1e-15 + np.sqrt(np.sum((first_k_individuals[-1][0] - first_k_individuals[0][0]) ** 2))
-    y = np.asarray([archive[c[0]].get_estimation("pessimistic") for c in first_k_individuals])
-    X = np.asarray([(c[0] - middle) / normalization for c in first_k_individuals])
-
-    # We need SKLearn.
-    from sklearn.linear_model import LinearRegression
-    from sklearn.preprocessing import PolynomialFeatures
-
-    polynomial_features = PolynomialFeatures(degree=2)
-    X2 = polynomial_features.fit_transform(X)
-
-    # Fit a linear model.
-    if not max(y) - min(y) > 1e-20:  # better use "not" for dealing with nans
-        raise MetaModelFailure
-
-    y = (y - min(y)) / (max(y) - min(y))
-    model = LinearRegression()
-    model.fit(X2, y)
-
-    # Check model quality.
-    model_outputs = model.predict(X2)
-    indices = np.argsort(y)
-    ordered_model_outputs = [model_outputs[i] for i in indices]
-    if not np.all(np.diff(ordered_model_outputs) > 0):
-        raise MetaModelFailure("Unlearnable objective function.")
-
-    try:
-        for cls in (Powell, DE):  # Powell excellent here, DE as a backup for thread safety.
-            optimizer = cls(parametrization=dimension, budget=45 * dimension + 30)
-            # limit to 20s at most
-            optimizer.register_callback("ask", callbacks.EarlyStopping.timer(20))
-            try:
-                minimum = optimizer.minimize(
-                    lambda x: float(model.predict(polynomial_features.fit_transform(x[None, :])))
-                ).value
-            except RuntimeError:
-                assert cls == Powell, "Only Powell is allowed to crash here."
-            else:
-                break
-    except ValueError:
-        raise MetaModelFailure("Infinite meta-model optimum in learn_on_k_best.")
-    if float(model.predict(polynomial_features.fit_transform(minimum[None, :]))) > y[0]:
-        raise MetaModelFailure("Not a good proposal.")
-    if np.sum(minimum ** 2) > 1.0:
-        raise MetaModelFailure("huge meta-model optimum in learn_on_k_best.")
-    return middle + normalization * minimum
-
-
 class _MetaModel(base.Optimizer):
     def __init__(
         self,
@@ -1549,7 +1481,7 @@ class _MetaModel(base.Optimizer):
         freq = max(13, self.num_workers, self.dimension, int(self.frequency_ratio * sample_size))
         if len(self.archive) >= sample_size and not self._num_ask % freq:
             try:
-                data = _learn_on_k_best(self.archive, sample_size)
+                data = learn_on_k_best(self.archive, sample_size)
                 candidate = self.parametrization.spawn_child().set_standardized_data(data)
             except MetaModelFailure:  # The optimum is at infinity. Shit happens.
                 candidate = self._optim.ask()

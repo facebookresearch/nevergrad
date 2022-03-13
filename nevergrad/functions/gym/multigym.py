@@ -65,9 +65,12 @@ CONTROLLERS = [
     "deep_extrapolatestackingmemory_neural",
     "semideep_extrapolatestackingmemory_neural",
     "semideep_memory_neural",
+    "noisy_semideep_neural",
+    "noisy_scrambled_semideep_neural",  # Scrambling: why not perturbating the order of variables ?
+    "noisy_deep_neural",
+    "noisy_scrambled_deep_neural",
     "multi_neural",  # One neural net per time step.
     "noisy_neural",  # Do not start at 0 but at a random point.
-    "scrambled_neural",  # Why not perturbating the order of variables ?
     "noisy_scrambled_neural",
     "stochastic_conformant",  # Conformant planning, but still not deterministic.
 ]
@@ -668,6 +671,7 @@ class GymMulti(ExperimentFunction):
                     tmp_env = copy.deepcopy(env)
                 _, r, _, _ = tmp_env.step(action)
                 a[i] += self.greedy_coefficient * r
+        a = np.nan_to_num(a, copy=False, nan=-1e20, posinf=1e20, neginf=-1e20)
         probabilities = np.exp(a - max(a))
         probabilities = probabilities / sum(probabilities)
         assert sum(probabilities) <= 1.0 + 1e-7, f"{probabilities} with greediness {self.greedy_coefficient}."
