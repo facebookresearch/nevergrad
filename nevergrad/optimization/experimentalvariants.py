@@ -348,3 +348,7 @@ NoisyRL2 = Chaining(
 NoisyRL3 = Chaining([MixDeterministicRL, OptimisticNoisyOnePlusOne], ["half"]).set_name(
     "NoisyRL3", register=True
 )
+
+# High-Speed variants
+HSDE = DifferentialEvolution(high_speed=True).set_name("HSDE", register=True)
+LhsHSDE = DifferentialEvolution(initialization="LHS", high_speed=True).set_name("LhsHSDE", register=True)
