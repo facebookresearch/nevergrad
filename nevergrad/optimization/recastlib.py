@@ -49,7 +49,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
         self.objective_function: tp.Optional[tp.Any] = None
         # The following line rescales to [0, 1] if fully bounded.
 
-        if method in ("CmaFmin2", "NLOPT"):
+        if method in ("CmaFmin2", "NLOPT", "RBFOPT"):
             normalizer = p.helpers.Normalizer(self.parametrization)
             if normalizer.fully_bounded:
                 self._normalizer = normalizer
@@ -78,20 +78,27 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
             if weakself.method == "RBFOPT":
                 import rbfopt
 
-                d = weakself.dimension
+                def rbfopt_objective_function(*args):
+                    data = np.asarray([arg for arg in args])[0]
+                    assert len(data) == weakself.dimension, (
+                        str(data) + " does not have length " + str(weakself.dimension)
+                    )
+                    if weakself._normalizer is not None:
+                        data = weakself._normalizer.backward(np.asarray(data, dtype=np.float32))
+                    return objective_function(data)
+
                 bb = rbfopt.RbfoptUserBlackBox(
-                    d,
-                    np.array([-1.0] * d),
-                    np.array([1.0] * d),
-                    np.array(["R"] * d),
-                    weakself.local_objective_function,
+                    weakself.dimension,
+                    np.zeros(weakself.dimension),
+                    np.ones(weakself.dimension),
+                    np.array(["R"] * weakself.dimension),
+                    rbfopt_objective_function,
                 )
                 settings = rbfopt.RbfoptSettings(max_evaluations=budget)
                 alg = rbfopt.RbfoptAlgorithm(settings, bb)
-                val, x, _, _, _ = alg.optimize()
-                if val < best_res:
-                    best_x = np.arctanh(x)
-                    best_res = val
+                val, best_x, _, _, _ = alg.optimize()
+                if weakself._normalizer is not None:
+                    best_x = weakself._normalizer.backward(np.asarray(best_x, dtype=np.float32))
             elif weakself.method == "NLOPT":
                 # This is NLOPT, used as in the PCSE simulator notebook.
                 # ( https://github.com/ajwdewit/pcse_notebooks ).
