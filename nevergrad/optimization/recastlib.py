@@ -88,7 +88,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 )
                 settings = rbfopt.RbfoptSettings(max_evaluations=budget)
                 alg = rbfopt.RbfoptAlgorithm(settings, bb)
-                val, x, _, _, fast_evalcount = alg.optimize()
+                val, x, _, _, _ = alg.optimize()
                 if val < best_res:
                     best_x = np.arctanh(x)
                     best_res = val
