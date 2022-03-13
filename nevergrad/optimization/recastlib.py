@@ -34,34 +34,24 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
         self.initial_guess: tp.Optional[tp.ArrayLike] = None
         # configuration
         assert method in [
-<<<<<<< HEAD
             "Nelder-Mead",
+            "CmaFmin2",
             "COBYLA",
             "SLSQP",
             "Powell",
             # "BB",
             "RBFOPT",
+            "NLOPT",
         ], f"Unknown method '{method}'"
         self.method = method
         self.random_restart = random_restart
         self.objective_function: tp.Optional[tp.Any] = None
-=======
-            "CmaFmin2",
-            "Nelder-Mead",
-            "COBYLA",
-            "SLSQP",
-            "NLOPT",
-            "Powell",
-        ], f"Unknown method '{method}'"
-        self.method = method
-        self.random_restart = random_restart
         # The following line rescales to [0, 1] if fully bounded.
 
         if method in ("CmaFmin2", "NLOPT"):
             normalizer = p.helpers.Normalizer(self.parametrization)
             if normalizer.fully_bounded:
                 self._normalizer = normalizer
->>>>>>> c403b088520adf938c4461b8510e90df8792ee75
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         """Called whenever calling "tell" on a candidate that was not "asked".
@@ -69,28 +59,6 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
         """  # We do not do anything; this just updates the current best.
 
     def get_optimization_function(self) -> tp.Callable[[tp.Callable[[tp.ArrayLike], float]], tp.ArrayLike]:
-<<<<<<< HEAD
-        # create a different sub-instance, so that the current instance is not referenced by the thread
-        # (consequence: do not create a thread at initialization, or we get a thread explosion)
-        subinstance = self.__class__(
-            parametrization=self.parametrization,
-            budget=self.budget,
-            num_workers=self.num_workers,
-            method=self.method,
-            random_restart=self.random_restart,
-        )
-        subinstance.archive = self.archive
-        subinstance.current_bests = self.current_bests
-        return subinstance._optimization_function
-
-    def local_objective_function(self, x) -> float:
-        return self.objective_function(np.arctanh(x))
-
-    def _optimization_function(self, objective_function: tp.Callable[[tp.ArrayLike], float]) -> tp.ArrayLike:
-        # pylint:disable=unused-argument
-        self.objective_function = objective_function
-        budget = np.inf if self.budget is None else self.budget
-=======
         return functools.partial(self._optimization_function, weakref.proxy(self))
 
     @staticmethod
@@ -99,42 +67,22 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
     ) -> tp.ArrayLike:
         # pylint:disable=unused-argument
         budget = np.inf if weakself.budget is None else weakself.budget
->>>>>>> c403b088520adf938c4461b8510e90df8792ee75
         best_res = np.inf
         best_x: np.ndarray = weakself.current_bests["average"].x  # np.zeros(self.dimension)
         if weakself.initial_guess is not None:
             best_x = np.array(weakself.initial_guess, copy=True)  # copy, just to make sure it is not modified
         remaining: float = budget - weakself._num_ask
         while remaining > 0:  # try to restart if budget is not elapsed
-<<<<<<< HEAD
-            options: tp.Dict[str, tp.Any] = {} if self.budget is None else {"maxiter": remaining}
-            ### Failed so solve the pickle issue.
-            # if self.method == "BB":
-            #    import black_box as bb
-            #    domain = [[-1.0, 1.0]] * self.dimension
-            #    try:
-            #        res = bb.search_min(
-            #            f=self.local_objective_function,  # given function
-            #            domain=domain,
-            #            budget=max(budget, 2 + 2 * len(domain)),  # total number of function calls available
-            #            batch=1,
-            #            resfile="/dev/null",
-            #        )
-            #    except RuntimeError:  # Can not be pickled... leads to various errors.
-            #        res = None
-            #    if res is None:
-            #        res = np.array([0.0] * self.dimension)
-            #    best_x = np.arctanh(res)
-            if self.method == "RBFOPT":
+            if weakself.method == "RBFOPT":
                 import rbfopt
 
-                d = self.dimension
+                d = weakself.dimension
                 bb = rbfopt.RbfoptUserBlackBox(
                     d,
                     np.array([-1.0] * d),
                     np.array([1.0] * d),
                     np.array(["R"] * d),
-                    self.local_objective_function,
+                    weakself.local_objective_function,
                 )
                 settings = rbfopt.RbfoptSettings(max_evaluations=budget)
                 alg = rbfopt.RbfoptAlgorithm(settings, bb)
@@ -142,15 +90,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 if val < best_res:
                     best_x = np.arctanh(x)
                     best_res = val
-            else:
-                res = scipyoptimize.minimize(
-                    objective_function,
-                    best_x if not self.random_restart else self._rng.normal(0.0, 1.0, self.dimension),
-                    method=self.method,
-=======
-            options: tp.Dict[str, tp.Any] = {} if weakself.budget is None else {"maxiter": remaining}
-            # options: tp.Dict[str, tp.Any] = {} if self.budget is None else {"maxiter": remaining}
-            if weakself.method == "NLOPT":
+            elif weakself.method == "NLOPT":
                 # This is NLOPT, used as in the PCSE simulator notebook.
                 # ( https://github.com/ajwdewit/pcse_notebooks ).
                 import nlopt
@@ -226,18 +166,13 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                     if not weakself.random_restart
                     else weakself._rng.normal(0.0, 1.0, weakself.dimension),
                     method=weakself.method,
->>>>>>> c403b088520adf938c4461b8510e90df8792ee75
                     options=options,
                     tol=0,
                 )
                 if res.fun < best_res:
                     best_res = res.fun
                     best_x = res.x
-<<<<<<< HEAD
-            remaining = budget - self._num_ask
-=======
             remaining = budget - weakself._num_ask
->>>>>>> c403b088520adf938c4461b8510e90df8792ee75
         return best_x
 
 
@@ -255,11 +190,8 @@ class NonObjectOptimizer(base.ConfiguredOptimizer):
         - SQP (or SLSQP): very powerful e.g. in continuous noisy optimization. It is based on
           approximating the objective function by quadratic models.
         - Powell
-<<<<<<< HEAD
         - RBFOPT
-=======
         - NLOPT (https://nlopt.readthedocs.io/en/latest/; uses Sbplx, based on Subplex)
->>>>>>> c403b088520adf938c4461b8510e90df8792ee75
     random_restart: bool
         whether to restart at a random point if the optimizer converged but the budget is not entirely
         spent yet (otherwise, restarts from best point)
@@ -277,15 +209,7 @@ class NonObjectOptimizer(base.ConfiguredOptimizer):
         super().__init__(_NonObjectMinimizeBase, locals())
 
 
-<<<<<<< HEAD
-NelderMead = ScipyOptimizer(method="Nelder-Mead").set_name("NelderMead", register=True)
-RBFOPT = ScipyOptimizer(method="RBFOPT").set_name("RBFOPT", register=True)
-Powell = ScipyOptimizer(method="Powell").set_name("Powell", register=True)
-RPowell = ScipyOptimizer(method="Powell", random_restart=True).set_name("RPowell", register=True)
-Cobyla = ScipyOptimizer(method="COBYLA").set_name("Cobyla", register=True)
-RCobyla = ScipyOptimizer(method="COBYLA", random_restart=True).set_name("RCobyla", register=True)
-SQP = ScipyOptimizer(method="SLSQP").set_name("SQP", register=True)
-=======
+RBFOPT = NonObjectOptimizer(method="RBFOPT").set_name("RBFOPT", register=True)
 NelderMead = NonObjectOptimizer(method="Nelder-Mead").set_name("NelderMead", register=True)
 CmaFmin2 = NonObjectOptimizer(method="CmaFmin2").set_name("CmaFmin2", register=True)
 NLOPT = NonObjectOptimizer(method="NLOPT").set_name("NLOPT", register=True)
@@ -294,7 +218,6 @@ RPowell = NonObjectOptimizer(method="Powell", random_restart=True).set_name("RPo
 Cobyla = NonObjectOptimizer(method="COBYLA").set_name("Cobyla", register=True)
 RCobyla = NonObjectOptimizer(method="COBYLA", random_restart=True).set_name("RCobyla", register=True)
 SQP = NonObjectOptimizer(method="SLSQP").set_name("SQP", register=True)
->>>>>>> c403b088520adf938c4461b8510e90df8792ee75
 SLSQP = SQP  # Just so that people who are familiar with SLSQP naming are not lost.
 RSQP = NonObjectOptimizer(method="SLSQP", random_restart=True).set_name("RSQP", register=True)
 RSLSQP = RSQP  # Just so that people who are familiar with SLSQP naming are not lost.
