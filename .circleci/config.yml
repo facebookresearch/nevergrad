@@ -234,13 +234,13 @@ jobs:
             fi
 
 
-  windows-pytests:
-    executor:
-      name: win/default
-      shell: bash.exe
-
-    steps:
-
+#  windows-pytests:
+#    executor:
+#      name: win/default
+#      shell: bash.exe
+#
+#    steps:
+#
 #      - checkout
 #
 #      - restore_cache:
