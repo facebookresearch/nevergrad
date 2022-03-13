@@ -241,7 +241,7 @@ jobs:
 
     steps:
 
-      - checkout
+      #- checkout
 
       - restore_cache:
           name: "[all] Restore cache"
