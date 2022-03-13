@@ -331,7 +331,6 @@ RotatedTwoPointsDE = DifferentialEvolution(crossover="rotated_twopoints").set_na
 )
 
 LhsDE = DifferentialEvolution(initialization="LHS").set_name("LhsDE", register=True)
-
 QrDE = DifferentialEvolution(initialization="QR").set_name("QrDE", register=True)
 NoisyDE = DifferentialEvolution(recommendation="noisy").set_name("NoisyDE", register=True)
 AlmostRotationInvariantDE = DifferentialEvolution(crossover=0.9).set_name(
