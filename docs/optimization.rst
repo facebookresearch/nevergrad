@@ -164,6 +164,13 @@ Let us say that we want to minimize :code:`(x[0]-.5)**2 + (x[1]-.5)**2` under th
     :start-after: DOC_CONSTRAINED_0
     :end-before: DOC_CONSTRAINED_1
 
+Note that we can provide a richer information by using float-valued constraints (>= 0 if ok):
+
+.. literalinclude:: ../nevergrad/optimization/test_doc.py
+    :language: python
+    :dedent: 8
+    :start-after: DOC_CONSTRAINED_2
+    :end-before: DOC_CONSTRAINED_3
 Optimizing machine learning hyperparameters
 -------------------------------------------
 
@@ -177,6 +184,14 @@ Or if you want something more aimed at robustly outperforming random search in h
 - use :code:`TransitionChoice` for discrete variables, taking care that the default value is in the middle.
 - Use :code:`ScrHammersleySearchPlusMiddlePoint` (:code:`PlusMiddlePoint` only if you have continuous parameters or good default values for discrete parameters).
 
+
+Example with permutation
+------------------------
+
+SimpleTSP and ComplexTSP are two cases of optimization on a domain of permutations:
+`example here. <https://docs.google.com/document/d/1B5yVOx1H1nnjY3EOf14487hAr8CzwJ9zEkDwQnZ5nbE/edit?usp=sharing>`_
+This is relevant when you optimize a single big permutation.
+Also includes cases with many small permutations.
 
 Example of chaining, or inoculation, or initialization of an evolutionary algorithm
 -----------------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -7,6 +7,7 @@ import warnings
 import numpy as np
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
+from . import metamodel
 from . import base
 from . import oneshot
 
@@ -20,13 +21,15 @@ class Crossover:
             self.CR = crossover
         elif crossover == "random":
             self.CR = self.random_state.uniform(0.0, 1.0)
-        elif crossover not in ["twopoints", "onepoint"]:
+        elif crossover not in ["twopoints", "onepoint", "rotated_twopoints"]:
             raise ValueError(f'Unknown crossover "{crossover}"')
 
     def apply(self, donor: np.ndarray, individual: np.ndarray) -> None:
         dim = donor.size
         if self.crossover == "twopoints" and dim >= 4:
             return self.twopoints(donor, individual)
+        elif self.crossover == "rotated_twopoints" and dim >= 4:
+            return self.rotated_twopoints(donor, individual)
         elif self.crossover == "onepoint" and dim >= 3:
             return self.onepoint(donor, individual)
         else:
@@ -56,6 +59,15 @@ class Crossover:
         else:
             donor[: bounds[0]] = individual[: bounds[0]]
             donor[bounds[1] :] = individual[bounds[1] :]
+
+    def rotated_twopoints(self, donor: np.ndarray, individual: np.ndarray) -> None:
+        bounds = sorted(self.random_state.choice(donor.size + 1, size=2, replace=False).tolist())
+        if bounds[1] == donor.size and not bounds[0]:  # make sure there is at least one point crossover
+            bounds[self.random_state.randint(2)] = self.random_state.randint(1, donor.size)
+        bounds2 = [self.random_state.choice(donor.size + 1 - bounds[1] + bounds[0])]
+        bounds2.append(bounds2[0] + bounds[1] - bounds[0])
+        assert bounds[1] < donor.size + 1
+        donor[bounds[0] : bounds[1]] = individual[bounds2[0] : bounds2[1]]
 
 
 class _DE(base.Optimizer):
@@ -100,8 +112,16 @@ class _DE(base.Optimizer):
         self._uid_queue = base.utils.UidQueue()
         self.population: tp.Dict[str, p.Parameter] = {}
         self.sampler: tp.Optional[base.Optimizer] = None
+        self._no_hypervolume = self._config.multiobjective_adaptation
 
     def recommend(self) -> p.Parameter:  # This is NOT the naive version. We deal with noise.
+        sample_size = int((self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1)
+        if self._config.high_speed and len(self.archive) >= sample_size:
+            try:
+                meta_data = metamodel.learn_on_k_best(self.archive, sample_size)
+                return self.parametrization.spawn_child().set_standardized_data(meta_data)
+            except metamodel.MetaModelFailure:  # The optimum is at infinity. Shit happens.
+                pass  # MetaModel failures are something which happens, no worries.
         if self._config.recommendation != "noisy":
             return self.current_bests[self._config.recommendation].parameter
         med_fitness = np.median([p.loss for p in self.population.values() if p.loss is not None])
@@ -248,6 +268,7 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
         - "random": different random (uniform) crossover rate at each iteration
         - "onepoint": one point crossover
         - "twopoints": two points crossover
+        - "rotated_twopoints": more genetic 2p cross-over
         - "parametrization": use the parametrization recombine method
     F1: float
         differential weight #1
@@ -259,6 +280,8 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
     multiobjective_adaptation: bool
         Automatically adapts to handle multiobjective case.  This is a very basic **experimental** version,
         activated by default because the non-multiobjective implementation is performing very badly.
+    high_speed: bool
+        Trying to make the optimization faster by a metamodel for the recommendation step.
     """
 
     def __init__(
@@ -273,6 +296,7 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
         popsize: tp.Union[str, int] = "standard",
         propagate_heritage: bool = False,  # experimental
         multiobjective_adaptation: bool = True,
+        high_speed: bool = False,
     ) -> None:
         super().__init__(_DE, locals(), as_config=True)
         assert recommendation in ["optimistic", "pessimistic", "noisy", "mean"]
@@ -283,12 +307,14 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
         assert isinstance(crossover, float) or crossover in [
             "onepoint",
             "twopoints",
+            "rotated_twopoints",
             "dimension",
             "random",
             "parametrization",
         ]
         self.initialization = initialization
         self.scale = scale
+        self.high_speed = high_speed
         self.recommendation = recommendation
         self.propagate_heritage = propagate_heritage
         self.F1 = F1
@@ -300,6 +326,10 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
 
 DE = DifferentialEvolution().set_name("DE", register=True)
 TwoPointsDE = DifferentialEvolution(crossover="twopoints").set_name("TwoPointsDE", register=True)
+RotatedTwoPointsDE = DifferentialEvolution(crossover="rotated_twopoints").set_name(
+    "RotatedTwoPointsDE", register=True
+)
+
 LhsDE = DifferentialEvolution(initialization="LHS").set_name("LhsDE", register=True)
 QrDE = DifferentialEvolution(initialization="QR").set_name("QrDE", register=True)
 NoisyDE = DifferentialEvolution(recommendation="noisy").set_name("NoisyDE", register=True)

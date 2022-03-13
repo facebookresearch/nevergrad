@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.(an
+# Copyright (c) Meta Platforms, Inc. and affiliates.(an
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -67,6 +67,10 @@ class Data(core.Parameter):
         super().__init__()
         sigma: tp.Any = np.array([1.0])
         # make sure either shape or
+        if isinstance(lower, (list, tuple)):
+            lower = np.array(lower, dtype=float)
+        if isinstance(upper, (list, tuple)):
+            upper = np.array(upper, dtype=float)
         if sum(x is None for x in [init, shape]) != 1:
             raise ValueError('Exactly one of "init" or "shape" must be provided')
         if init is not None:
@@ -74,7 +78,7 @@ class Data(core.Parameter):
         else:
             assert isinstance(shape, (list, tuple)) and all(
                 isinstance(n, int) for n in shape
-            ), f"Incorrect shape: {shape}."
+            ), f"Incorrect shape: {shape} (type: {type(shape)})."
             init = np.zeros(shape, dtype=float)
             if lower is not None and upper is not None:
                 init += (lower + upper) / 2.0

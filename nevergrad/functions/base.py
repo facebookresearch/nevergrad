@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -22,7 +22,7 @@ ME = tp.TypeVar("ME", bound="MultiExperiment")
 def _reset_copy(obj: p.Parameter) -> p.Parameter:
     """Copy a parameter and resets its random state to obtain variability"""
     out = obj.copy()
-    out.random_state = None
+    out._set_random_state(None)  # propagates None to sub-parameters
     return out
 
 

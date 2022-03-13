@@ -1,6 +1,8 @@
 # Changelog
 
-## master
+## main
+
+## 0.5.0 (2022-03-08)
 
 ### Breaking changes
 
@@ -29,9 +31,12 @@
 - Experimental methods `Array.set_recombination` and `Array.set_mutation(custom=.)` are removed in favor of
   layers changing `Array` behaviors [#1086](https://github.com/facebookresearch/nevergrad/pull/1086).
   Caution: this is still very experimental (and undocumented).
+- Important bug correction on the shape of bounds if specified as tuple or list instead of np.ndarray
+  [#1221](https://github.com/facebookresearch/nevergrad/pull/1221).
 
 ### Important changes
 
+- `master` branch has been renamed to `main`. See [#1230](https://github.com/facebookresearch/nevergrad/pull/1230) for more context.
 - `Parameter` classes are undergoing heavy changes, please open an issue if you encounter any problem.
   The midterm aim is to allow for simpler constraint management.
 - `Parameter` have been updated  have undergone heavy changes to ease the handling of their tree structure (
@@ -51,6 +56,8 @@
 - `DE` initial sampling as been updated to take bounds into accounts [#1058](https://github.com/facebookresearch/nevergrad/pull/1058)
 - `Array` can now take `lower` and `upper` bounds as initialization arguments. The array is initialized at its average
   if not `init` is provided and both bounds are provided. In this case, sampling will be uniformm between these bounds.
+- Bayesian optimizers are now properly using the bounds for bounded problem, which may improve performance
+  [#1222](https://github.com/facebookresearch/nevergrad/pull/1222).
 
 
 ### Other changes
@@ -61,6 +68,15 @@
   [#1054](https://github.com/facebookresearch/nevergrad/pull/1054).
 - `Choice`-like parameters now accept integers are inputs instead of a list, as a shortcut for `range(num)`
   [#1106](https://github.com/facebookresearch/nevergrad/pull/1106).
+- An interface with [Pymoo](https://pymoo.org/) optimizers has been added
+  [#1197](https://github.com/facebookresearch/nevergrad/pull/1197).
+- An interface with [BayesOptim](https://github.com/wangronin/Bayesian-Optimization) optimizers has been added
+  [#1179](https://github.com/facebookresearch/nevergrad/pull/1179).
+- Fix for abnormally slow iterations for large budgets using CMA in a portfolio
+  [#1350](https://github.com/facebookresearch/nevergrad/pull/1350).
+- A new `enable_pickling` option was added to optimizers. This is only necessary for some of them (among which `scipy`-based optimizer), and comes at the cost of additional memory usage
+  [#1356](https://github.com/facebookresearch/nevergrad/pull/1356)
+  [#1358](https://github.com/facebookresearch/nevergrad/pull/1358).
 
 ## 0.4.3 (2021-01-28)
 

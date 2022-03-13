@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -21,7 +21,8 @@ def impedance_pix(x: tp.ArrayLike, dpix: float, lam: float, ep0: float, epf: flo
     """
     k0d = 2 * pi * dpix / lam
     Z = 1 / sqrt(epf)
-    for n in reversed(np.sqrt(x)):  # refraction index slab
+    # refraction index slab
+    for n in reversed(np.sqrt(x)):  # type: ignore
         etha = 1 / n  # bulk impedance slab
         Z = etha * (Z + 1j * etha * tan(k0d * n)) / (etha + 1j * Z * tan(k0d * n))
     R = abs((Z - 1 / sqrt(ep0)) / (Z + 1 / sqrt(ep0))) ** 2 * 100  # reflection in %
