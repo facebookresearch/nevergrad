@@ -222,6 +222,15 @@ def gp(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
+def conformant_gp(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """GP benchmark.
+
+    Counterpart of ng_full_gym with a specific, reduced list of problems for matching
+    a genetic programming benchmark."""
+    return ng_full_gym(seed, conformant=True, gp=True)
+
+
+@registry.register
 def sparse_gp(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """GP benchmark.
 
