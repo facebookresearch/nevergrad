@@ -42,11 +42,9 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
             # "BB",
             "RBFOPT",
             "NLOPT",
-            "RBFOPT",
         ], f"Unknown method '{method}'"
         self.method = method
         self.random_restart = random_restart
-        self.objective_function: tp.Optional[tp.Any] = None
         # The following line rescales to [0, 1] if fully bounded.
 
         if method in ("CmaFmin2", "NLOPT", "RBFOPT"):
