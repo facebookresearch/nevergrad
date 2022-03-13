@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -245,6 +245,9 @@ class Parameter(Layered):
             strings.append(str(self.value))
         return ":".join(strings)
 
+    def __bool__(self) -> bool:
+        raise RuntimeError("bool check is not allowed to avoid confusion")
+
     # %% Constraint management
     def satisfies_constraints(self) -> bool:
         """Whether the instance satisfies the constraints added through
@@ -314,10 +317,10 @@ class Parameter(Layered):
         return self._random_state
 
     @random_state.setter
-    def random_state(self, random_state: np.random.RandomState) -> None:
+    def random_state(self, random_state: tp.Optional[np.random.RandomState]) -> None:
         self._set_random_state(random_state)
 
-    def _set_random_state(self, random_state: np.random.RandomState) -> None:
+    def _set_random_state(self, random_state: tp.Optional[np.random.RandomState]) -> None:
         self._random_state = random_state
         self._subobjects.apply("_set_random_state", random_state)
 

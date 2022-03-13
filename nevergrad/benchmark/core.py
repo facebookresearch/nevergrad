@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -29,8 +29,8 @@ def import_additional_module(filepath: tp.PathLike) -> None:
     spec = importlib.util.spec_from_file_location(
         "nevergrad.additionalimport." + filepath.with_suffix("").name, str(filepath)
     )
-    module = importlib.util.module_from_spec(spec)
-    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)  # type: ignore
+    assert spec.loader is not None  # type: ignore
     spec.loader.exec_module(module)  # type: ignore
 
 

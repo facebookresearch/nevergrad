@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -406,9 +406,9 @@ def test_array_bounded_initialization() -> None:
 @pytest.mark.parametrize("exponent", [2.0, None])  # type: ignore
 @pytest.mark.parametrize("sigma", [1.0, 1000, 0.001])  # type: ignore
 def test_array_sampling(method: str, exponent: tp.Optional[float], sigma: float) -> None:
-    mbound = 10000
+    mbound = 10000.0
     param = par.Array(init=2 * np.ones((2, 3))).set_bounds(
-        [1, 1, 1], [mbound] * 3, method=method, full_range_sampling=True
+        [[1.0, 1, 1]], [[mbound] * 3], method=method, full_range_sampling=True  # type: ignore
     )
     param.set_mutation(exponent=exponent, sigma=sigma)
     new_param = param.sample()
