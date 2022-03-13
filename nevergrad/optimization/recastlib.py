@@ -94,7 +94,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 )
                 settings = rbfopt.RbfoptSettings(max_evaluations=budget)
                 alg = rbfopt.RbfoptAlgorithm(settings, bb)
-                val, best_x, _, _, _ = alg.optimize()
+                _, best_x, _, _, _ = alg.optimize()
                 if weakself._normalizer is not None:
                     best_x = weakself._normalizer.backward(np.asarray(best_x, dtype=np.float32))
             elif weakself.method == "NLOPT":
