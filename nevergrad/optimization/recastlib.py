@@ -42,7 +42,6 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
             # "BB",
             "RBFOPT",
             "NLOPT",
-            "RBFOPT",
         ], f"Unknown method '{method}'"
         self.method = method
         self.random_restart = random_restart
