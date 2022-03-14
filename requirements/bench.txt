@@ -4,12 +4,8 @@ xlrd>=1.2.0
 #lpips>=0.1.3  # removed because sometimes complicated.
 opencv-python>=4.1.2.30
 matplotlib>=2.2.3
-<<<<<<< HEAD
 gym>=0.12.1
-gym-anm>=1.0.1
 pygame>=2.1.2
-=======
->>>>>>> 62a2551f402243e82a81539deea48b4d6e47f9ac
 torch>=1.7.0
 hiplot
 fcmaes>=1.2.7
@@ -32,13 +28,11 @@ tensorflow>=2.7.0
 image-quality>=1.2.7
 keras>=2.4.3
 pymoo>=0.4.2.2
-<<<<<<< HEAD
 olymp==0.0.1b0 ; sys_platform == "linux"
 silence_tensorflow  # for olymp
 tensorflow_probability  # for olymp
 bayes-optim==0.2.5.5
 nlopt
-=======
 bayes-optim>=0.2.5.5
 # gym environments
 gym[atari,box2d,classic_control,toy_text,other]>=0.20.0
@@ -46,4 +40,3 @@ gym-legacy-toytext>=0.0.1
 gym-algorithmic>=0.0.1
 gym-anm>=1.0.1
 compiler_gym>=0.1.8 ; sys_platform == "linux"
->>>>>>> 62a2551f402243e82a81539deea48b4d6e47f9ac
