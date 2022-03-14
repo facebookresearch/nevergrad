@@ -65,9 +65,12 @@ CONTROLLERS = [
     "deep_extrapolatestackingmemory_neural",
     "semideep_extrapolatestackingmemory_neural",
     "semideep_memory_neural",
+    "noisy_semideep_neural",
+    "noisy_scrambled_semideep_neural",  # Scrambling: why not perturbating the order of variables ?
+    "noisy_deep_neural",
+    "noisy_scrambled_deep_neural",
     "multi_neural",  # One neural net per time step.
     "noisy_neural",  # Do not start at 0 but at a random point.
-    "scrambled_neural",  # Why not perturbating the order of variables ?
     "noisy_scrambled_neural",
     "stochastic_conformant",  # Conformant planning, but still not deterministic.
 ]
@@ -419,6 +422,7 @@ class GymMulti(ExperimentFunction):
     ) -> None:
         # limited_compiler_gym: bool or None.
         #        whether we work with the limited version
+        self.num_calls = 0
         self.limited_compiler_gym = limited_compiler_gym
         self.compilergym_index = compiler_gym_pb_index
         self.optimization_scale = optimization_scale
@@ -612,15 +616,19 @@ class GymMulti(ExperimentFunction):
             assert not self.uses_compiler_gym
             return self.gym_multi_function(x, limited_fidelity=False)
         if not self.uses_compiler_gym:
+            # We want to reduce noise by averaging without
+            # spending more than 20% of the whole experiment,
+            # hence the line below:
+            num = max(self.num_calls // 5, 23)
             # Pb_index >= 0 refers to the test set.
             return (
                 np.sum(
                     [
                         self.gym_multi_function(x, limited_fidelity=False)
-                        for compiler_gym_pb_index in range(23)
+                        for compiler_gym_pb_index in range(num)
                     ]
                 )
-                / 23.0  # This is not compiler_gym but we keep this 23 constant.
+                / num  # This is not compiler_gym but we keep this 23 constant.
             )
         assert self.uses_compiler_gym
         rewards = [
@@ -663,6 +671,7 @@ class GymMulti(ExperimentFunction):
                     tmp_env = copy.deepcopy(env)
                 _, r, _, _ = tmp_env.step(action)
                 a[i] += self.greedy_coefficient * r
+        a = np.nan_to_num(a, copy=False, nan=-1e20, posinf=1e20, neginf=-1e20)
         probabilities = np.exp(a - max(a))
         probabilities = probabilities / sum(probabilities)
         assert sum(probabilities) <= 1.0 + 1e-7, f"{probabilities} with greediness {self.greedy_coefficient}."
@@ -750,6 +759,7 @@ class GymMulti(ExperimentFunction):
             compiler_gym_pb_index: int or None.
                 index of the compiler_gym pb: set only for testing
         """
+        self.num_calls += 1
         # Deterministic conformant: do  the average of 7 simullations always with the same seed.
         # Otherwise: apply a random seed and do a single simulation.
         train_set = compiler_gym_pb_index is None

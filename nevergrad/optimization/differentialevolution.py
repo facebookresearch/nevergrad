@@ -7,6 +7,7 @@ import warnings
 import numpy as np
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
+from . import metamodel
 from . import base
 from . import oneshot
 
@@ -114,6 +115,13 @@ class _DE(base.Optimizer):
         self._no_hypervolume = self._config.multiobjective_adaptation
 
     def recommend(self) -> p.Parameter:  # This is NOT the naive version. We deal with noise.
+        sample_size = int((self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1)
+        if self._config.high_speed and len(self.archive) >= sample_size:
+            try:
+                meta_data = metamodel.learn_on_k_best(self.archive, sample_size)
+                return self.parametrization.spawn_child().set_standardized_data(meta_data)
+            except metamodel.MetaModelFailure:  # The optimum is at infinity. Shit happens.
+                pass  # MetaModel failures are something which happens, no worries.
         if self._config.recommendation != "noisy":
             return self.current_bests[self._config.recommendation].parameter
         med_fitness = np.median([p.loss for p in self.population.values() if p.loss is not None])
@@ -272,6 +280,8 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
     multiobjective_adaptation: bool
         Automatically adapts to handle multiobjective case.  This is a very basic **experimental** version,
         activated by default because the non-multiobjective implementation is performing very badly.
+    high_speed: bool
+        Trying to make the optimization faster by a metamodel for the recommendation step.
     """
 
     def __init__(
@@ -286,6 +296,7 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
         popsize: tp.Union[str, int] = "standard",
         propagate_heritage: bool = False,  # experimental
         multiobjective_adaptation: bool = True,
+        high_speed: bool = False,
     ) -> None:
         super().__init__(_DE, locals(), as_config=True)
         assert recommendation in ["optimistic", "pessimistic", "noisy", "mean"]
@@ -303,6 +314,7 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
         ]
         self.initialization = initialization
         self.scale = scale
+        self.high_speed = high_speed
         self.recommendation = recommendation
         self.propagate_heritage = propagate_heritage
         self.F1 = F1
