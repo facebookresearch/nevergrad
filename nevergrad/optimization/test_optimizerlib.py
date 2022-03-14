@@ -201,8 +201,9 @@ def test_infnan(name: str) -> None:
         # Third and last chance.
         recom = optim.minimize(buggy_function)
         result = buggy_function(recom.value)
-        assert (
-            result < 2.0 or name is "NLOPT"
+        assert result < 2.0 or name in (
+            "NLOPT",
+            "RPowell",
         ), f"{name} failed and got {result} with {recom.value} (type is {type(optim)})."
 
 
