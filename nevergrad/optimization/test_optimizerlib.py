@@ -207,7 +207,7 @@ def suggestable(name: str) -> bool:
 
 def suggestion_testing(
     name: str,
-    instrumentation: ng.p.Instrumentation,
+    instrumentation: tp.Union[ng.p.Array, ng.p.Instrumentation],
     suggestion: np.ndarray,
     budget: int,
     objective_function: tp.Callable,
@@ -222,7 +222,7 @@ def suggestion_testing(
     optim.minimize(objective_function)
     if threshold is not None:
         assert (
-            target(optim.recommend().value) < threshold
+            objective_function(optim.recommend().value) < threshold
         ), "{name} proposes {optim.recommend().value} instead of {optimum} (threshold={threshold})"
         return
     assert np.all(
@@ -260,7 +260,6 @@ def good_at_suggest(name: str) -> bool:
 @pytest.mark.parametrize("name", [r for r in registry if "iscre" in r and good_at_suggest(r)])  # type: ignore
 def test_harder_suggest_optimizers(name: str) -> None:
     """Checks that discrete optimizers are good when a suggestion is nearby."""
-    optimizer_cls = registry[name]
     instrum = ng.p.Array(shape=(100,)).set_bounds(0.0, 1.0)
     instrum.set_integer_casting()
     optimum = np.asarray([0] * 17 + [1] * 17 + [0] * 66)
@@ -274,12 +273,12 @@ def good_at_c0_suggest(r: str) -> bool:
 
 
 @skip_win_perf  # type: ignore
-@pytest.mark.parametrize("name", [r for r in registry if good_at_c0_suggest(r)])  # type: ignore
+@pytest.mark.parametrize("name", [o for o in registry if good_at_c0_suggest(o)])  # type: ignore
 def test_harder_continuous_suggest_optimizers(name: str) -> None:
     """Checks that somes optimizer can converge when provided with a good suggestion."""
     instrum = ng.p.Array(shape=(100,)).set_bounds(0.0, 1.0)
     optimum = np.asarray([0] * 17 + [1] * 17 + [0] * 66)
-    target = lambda x: min(2.0, np.sum((x - xs) ** 2))
+    target = lambda x: min(2.0, np.sum((x - optimum) ** 2))
     suggestion = np.asarray([0] * 17 + [1] * 16 + [0] * 67)
     suggestion_testing(name, instrum, suggestion, 1500, target, optimum, threshold=0.9)
 
