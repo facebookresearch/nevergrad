@@ -191,7 +191,7 @@ jobs:
 
   pytests:
     executor: ubuntu-python37
-    parallelism: 40 
+    parallelism: 8
 
     steps:
 
@@ -199,6 +199,7 @@ jobs:
 
       - run:
           name: "[all] Run pytest"
+          parallel: true
           when: always
           command: |
             . venv/bin/activate
