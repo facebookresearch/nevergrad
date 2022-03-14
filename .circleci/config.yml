@@ -15,7 +15,6 @@ executors:
     docker:
       - image: circleci/python:3.7
     working_directory: ~/repo
-    parallelism: 4
 
 
 commands:
@@ -192,6 +191,7 @@ jobs:
 
   pytests:
     executor: ubuntu-python37
+    parallelism: 4    
 
     steps:
 
