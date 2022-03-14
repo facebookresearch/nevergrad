@@ -203,20 +203,41 @@ def suggestable(name: str) -> bool:
     return not any(x in name for x in keywords)
 
 
+def suggestion_testing(
+    name: str,
+    instrumentation: ng.p.Instrumentation,
+    suggestion: np.ndarray,
+    budget: int,
+    objective_function: tp.Callable,
+    optimum: tp.Optional[np.ndarray] = None,
+    threshold: tp.Optional[float] = None,
+):
+    optimizer_cls = registry[name]
+    optim = optimizer_cls(instrumentation, budget)
+    if optimum is None:
+        optimum = suggestion
+    optim.suggest(suggestion)
+    optim.minimize(objective_function)
+    if threshold is not None:
+        assert (
+            target(optim.recommend().value) < threshold
+        ), "{name} proposes {optim.recommend().value} instead of {optimum} (threshold={threshold})"
+        return
+    assert np.all(
+        optim.recommend().value == optimum
+    ), "{name} proposes {optim.recommend().value} instead of {optimum}"
+
+
 @skip_win_perf  # type: ignore
 @pytest.mark.parametrize("name", [r for r in registry if suggestable(r)])  # type: ignore
 def test_suggest_optimizers(name: str) -> None:
     """Checks that each optimizer is able to converge when optimum is given"""
 
-    optimizer_cls = registry[name]
     instrum = ng.p.Array(shape=(100,)).set_bounds(0.0, 1.0)
     instrum.set_integer_casting()
-    xs = np.asarray([0] * 17 + [1] * 17 + [0] * 66)
-    optim = optimizer_cls(instrum, budget=7)
-    target = lambda x: 0 if np.all(np.asarray(x, dtype=int) == xs) else 1
-    optim.suggest(xs)
-    optim.minimize(target)
-    assert not target(optim.recommend().value), "{name} proposes {optim.recommend().value} instead of {xs}"
+    suggestion = np.asarray([0] * 17 + [1] * 17 + [0] * 66)  # The optimum is the suggestion.
+    target = lambda x: 0 if np.all(np.asarray(x, dtype=int) == suggestion) else 1
+    suggestion_testing(name, instrum, suggestion, 7, target)
 
 
 def good_at_suggest(name: str) -> bool:
@@ -240,13 +261,10 @@ def test_harder_suggest_optimizers(name: str) -> None:
     optimizer_cls = registry[name]
     instrum = ng.p.Array(shape=(100,)).set_bounds(0.0, 1.0)
     instrum.set_integer_casting()
-    xs = np.asarray([0] * 17 + [1] * 17 + [0] * 66)
-    optim = optimizer_cls(instrum, budget=1500)
-    target = lambda x: min(3, np.sum((np.asarray(x, dtype=int) - xs) ** 2))
-    xsn = np.asarray([0] * 17 + [1] * 16 + [0] * 67)
-    optim.suggest(xsn)
-    optim.minimize(target)
-    assert np.all(optim.recommend().value == xs), "{name} proposes {optim.recommend().value} instead of {xs}"
+    optimum = np.asarray([0] * 17 + [1] * 17 + [0] * 66)
+    target = lambda x: min(3, np.sum((np.asarray(x, dtype=int) - optimum) ** 2))
+    suggestion = np.asarray([0] * 17 + [1] * 16 + [0] * 67)
+    suggestion_testing(name, instrum, suggestion, 1500, target, optimum)
 
 
 def good_at_c0_suggest(r: str) -> bool:
@@ -257,15 +275,11 @@ def good_at_c0_suggest(r: str) -> bool:
 @pytest.mark.parametrize("name", [r for r in registry if good_at_c0_suggest(r)])  # type: ignore
 def test_harder_continuous_suggest_optimizers(name: str) -> None:
     """Checks that somes optimizer can converge when provided with a good suggestion."""
-    optimizer_cls = registry[name]
     instrum = ng.p.Array(shape=(100,)).set_bounds(0.0, 1.0)
-    xs = np.asarray([0] * 17 + [1] * 17 + [0] * 66)
-    optim = optimizer_cls(instrum, budget=3000)
+    optimum = np.asarray([0] * 17 + [1] * 17 + [0] * 66)
     target = lambda x: min(2.0, np.sum((x - xs) ** 2))
-    xsn = np.asarray([0] * 17 + [1] * 16 + [0] * 67)
-    optim.suggest(xsn)
-    optim.minimize(target)
-    assert target(optim.recommend().value) < 0.9, f"Value is {target(optim.recommend().value)}."
+    suggestion = np.asarray([0] * 17 + [1] * 16 + [0] * 67)
+    suggestion_testing(name, instrum, suggestion, 1500, target, optimum, threshold=0.9)
 
 
 @skip_win_perf  # type: ignore
