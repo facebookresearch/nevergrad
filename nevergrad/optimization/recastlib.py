@@ -90,7 +90,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                     return objective_function(data)
 
                 # Sbplx (based on Subplex) is used by default.
-                #list_nlopts = [
+                # list_nlopts = [
                 #    "NLOPT_LN_SBPLX",
                 #    "NLOPT_LN_PRAXIS",
                 #    "NLOPT_GN_DIRECT",
@@ -103,8 +103,10 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 #    "NLOPT_LN_BOBYQA",
                 #    "NLOPT_LN_NEWUOA_BOUND",
                 #    "NLOPT_LN_NELDERMEAD",
-                #]
-                nlopt_param = getattr(nlopt, weakself.method[6:]) if len(weakself.method) > 5 else "NLOPT_LN_SBPLX"
+                # ]
+                nlopt_param = (
+                    getattr(nlopt, weakself.method[6:]) if len(weakself.method) > 5 else "NLOPT_LN_SBPLX"
+                )
                 opt = nlopt.opt(nlopt_param, weakself.dimension)
                 # Assign the objective function calculator
                 opt.set_min_objective(nlopt_objective_function)
