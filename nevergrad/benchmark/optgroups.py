@@ -192,6 +192,15 @@ def all_bo() -> tp.Sequence[Optim]:
     return sorted(x for x in ng.optimizers.registry if "BO" in x)
 
 
+def all_ngopts() -> tp.Sequence[Optim]:
+    yield NonObjectOptimizer(method="NLOPT").set_name("NLOPT")
+    for u in range(1, 14):
+        if u == 5 and platform.system() == "Windows" or u == 9 or u == 10:
+            continue
+        name = "NLOPT" + str(u)
+        yield NonObjectOptimizer(method=name).set_name(name)
+
+
 @registry.register
 def discrete() -> tp.Sequence[Optim]:
     return [name for name in optimizerlib_registry.keys() if "iscrete" in name and "oisy" not in name]

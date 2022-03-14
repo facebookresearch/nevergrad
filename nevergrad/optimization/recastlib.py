@@ -216,20 +216,6 @@ class NonObjectOptimizer(base.ConfiguredOptimizer):
 NelderMead = NonObjectOptimizer(method="Nelder-Mead").set_name("NelderMead", register=True)
 CmaFmin2 = NonObjectOptimizer(method="CmaFmin2").set_name("CmaFmin2", register=True)
 NLOPT = NonObjectOptimizer(method="NLOPT").set_name("NLOPT", register=True)
-NLOPT1 = NonObjectOptimizer(method="NLOPT1").set_name("NLOPT1", register=True)
-NLOPT2 = NonObjectOptimizer(method="NLOPT2").set_name("NLOPT2", register=True)
-NLOPT3 = NonObjectOptimizer(method="NLOPT3").set_name("NLOPT3", register=True)
-NLOPT4 = NonObjectOptimizer(method="NLOPT4").set_name("NLOPT4", register=True)
-if platform.system() != "Windows":
-    NLOPT5 = NonObjectOptimizer(method="NLOPT5").set_name("NLOPT5", register=True)
-NLOPT6 = NonObjectOptimizer(method="NLOPT6").set_name("NLOPT6", register=True)
-NLOPT7 = NonObjectOptimizer(method="NLOPT7").set_name("NLOPT7", register=True)
-NLOPT8 = NonObjectOptimizer(method="NLOPT8").set_name("NLOPT8", register=True)
-# NLOPT9 = NonObjectOptimizer(method="NLOPT9").set_name("NLOPT9", register=True)   # Unexpected roundoff errors.
-# NLOPT10 = NonObjectOptimizer(method="NLOPT10").set_name("NLOPT10", register=True)   # Slow.
-NLOPT11 = NonObjectOptimizer(method="NLOPT11").set_name("NLOPT11", register=True)
-NLOPT12 = NonObjectOptimizer(method="NLOPT12").set_name("NLOPT12", register=True)
-NLOPT13 = NonObjectOptimizer(method="NLOPT13").set_name("NLOPT13", register=True)
 Powell = NonObjectOptimizer(method="Powell").set_name("Powell", register=True)
 RPowell = NonObjectOptimizer(method="Powell", random_restart=True).set_name("RPowell", register=True)
 Cobyla = NonObjectOptimizer(method="COBYLA").set_name("Cobyla", register=True)
