@@ -6,7 +6,6 @@
 
 import functools
 import math
-import platform
 import warnings
 import weakref
 import numpy as np

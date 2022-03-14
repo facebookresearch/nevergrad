@@ -6,6 +6,7 @@
 """
 import typing as tp
 import numpy as np
+import platform
 import nevergrad as ng
 from nevergrad.common.decorators import Registry
 
@@ -193,12 +194,13 @@ def all_bo() -> tp.Sequence[Optim]:
 
 
 def all_ngopts() -> tp.Sequence[Optim]:
-    yield NonObjectOptimizer(method="NLOPT").set_name("NLOPT")
+    optims = [NonObjectOptimizer(method="NLOPT").set_name("NLOPT")]
     for u in range(1, 14):
         if u == 5 and platform.system() == "Windows" or u == 9 or u == 10:
             continue
         name = "NLOPT" + str(u)
-        yield NonObjectOptimizer(method=name).set_name(name)
+        optims += [NonObjectOptimizer(method=name).set_name(name)]
+    return optims
 
 
 @registry.register
