@@ -181,6 +181,7 @@ def test_infnan(name: str) -> None:
                 "Stupid",
                 "Large",
                 "Fmin2",
+                "NLOPT",
                 "TBPSA",
                 "BO",
                 "Noisy",

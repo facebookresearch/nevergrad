@@ -6,7 +6,6 @@
 """
 import typing as tp
 import numpy as np
-import platform
 import nevergrad as ng
 from nevergrad.common.decorators import Registry
 

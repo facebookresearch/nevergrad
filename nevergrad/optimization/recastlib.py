@@ -90,25 +90,21 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                     return objective_function(data)
 
                 # Sbplx (based on Subplex) is used by default.
-                list_nlopts = [
-                    "NLOPT_LN_SBPLX",
-                    "NLOPT_LN_PRAXIS",
-                    "NLOPT_GN_DIRECT",
-                    "NLOPT_GN_DIRECT_L",
-                    "NLOPT_GN_CRS2_LM",
-                    "NLOPT_GN_AGS",
-                    "NLOPT_GN_ISRES",
-                    "NLOPT_GN_ESCH",
-                    "NLOPT_LN_COBYLA",
-                    "NLOPT_LN_BOBYQA",
-                    "NLOPT_LN_NEWUOA_BOUND",
-                    "NLOPT_LN_NELDERMEAD",
-                ]
-                # nlopt_indicator = weakself.method[6:]
-                # nlopt_indices = [i for i in range(len(list_nlopts)) if str(list_nlopts[i])[6:] == nlopt_indicator]
-                # assert len(nlopt_indices) == 1, f"{weakself.method} not identified ({nlopt_indicator} / {[str(u) for u in list_nlopts]})."
-                # nlopt_param = list_nlopts[nlopt_indices[0]]
-                nlopt_param = getattr(nlopt, weakself.method[6:])
+                #list_nlopts = [
+                #    "NLOPT_LN_SBPLX",
+                #    "NLOPT_LN_PRAXIS",
+                #    "NLOPT_GN_DIRECT",
+                #    "NLOPT_GN_DIRECT_L",
+                #    "NLOPT_GN_CRS2_LM",
+                #    "NLOPT_GN_AGS",
+                #    "NLOPT_GN_ISRES",
+                #    "NLOPT_GN_ESCH",
+                #    "NLOPT_LN_COBYLA",
+                #    "NLOPT_LN_BOBYQA",
+                #    "NLOPT_LN_NEWUOA_BOUND",
+                #    "NLOPT_LN_NELDERMEAD",
+                #]
+                nlopt_param = getattr(nlopt, weakself.method[6:]) if len(weakself.method) > 5 else "NLOPT_LN_SBPLX"
                 opt = nlopt.opt(nlopt_param, weakself.dimension)
                 # Assign the objective function calculator
                 opt.set_min_objective(nlopt_objective_function)
