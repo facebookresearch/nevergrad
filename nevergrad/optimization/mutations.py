@@ -70,8 +70,10 @@ class Mutator:
         if dimension == 1:  # corner case.
             return self.random_state.normal(0.0, 1.0, size=1)  # type: ignore
         boolean_vector = np.ones(dimension, dtype=bool)  # True means: don't change.
-        boolean_vector[self.random_state.randint(dimension)] = False
-        return [s if b else self.significantly_mutate(s, arity) for (b, s) in zip(boolean_vector, parent)]
+        out = np.array(parent, copy=True)
+        ind = self.random_state.randint(dimension)
+        out[ind] = self.significantly_mutate(out[ind], arity)
+        return out
 
     def portfolio_discrete_mutation(
         self, parent: tp.ArrayLike, intensity: tp.Optional[int] = None, arity: int = 2
