@@ -105,7 +105,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 #    "NLOPT_LN_NELDERMEAD",
                 # ]
                 nlopt_param = (
-                    getattr(nlopt, weakself.method[6:]) if len(weakself.method) > 5 else "NLOPT_LN_SBPLX"
+                    getattr(nlopt, weakself.method[6:]) if len(weakself.method) > 5 else nlopt.LN_SBPLX
                 )
                 opt = nlopt.opt(nlopt_param, weakself.dimension)
                 # Assign the objective function calculator
