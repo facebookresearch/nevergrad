@@ -69,7 +69,6 @@ class Mutator:
         dimension = len(parent)
         if dimension == 1:  # corner case.
             return self.random_state.normal(0.0, 1.0, size=1)  # type: ignore
-        boolean_vector = np.ones(dimension, dtype=bool)  # True means: don't change.
         out = np.array(parent, copy=True)
         ind = self.random_state.randint(dimension)
         out[ind] = self.significantly_mutate(out[ind], arity)
