@@ -191,7 +191,7 @@ jobs:
 
   pytests:
     executor: ubuntu-python37
-    parallelism: 4    
+    parallelism: 40 
 
     steps:
 
