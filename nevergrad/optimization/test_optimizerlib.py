@@ -193,7 +193,7 @@ def test_infnan(name: str) -> None:
             or "NGOpt" in name
             or "HS" in name
             or "MetaModelDiagonalCMA" in name
-        )  # Second chance!
+        )
 
 
 @skip_win_perf  # type: ignore
