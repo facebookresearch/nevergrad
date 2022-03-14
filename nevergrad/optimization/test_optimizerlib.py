@@ -194,18 +194,6 @@ def test_infnan(name: str) -> None:
             or "HS" in name
             or "MetaModelDiagonalCMA" in name
         )  # Second chance!
-        recom = optim.minimize(buggy_function)
-        result = buggy_function(recom.value)
-        if result < 2.0:
-            return
-        # Third and last chance.
-        recom = optim.minimize(buggy_function)
-        result = buggy_function(recom.value)
-        assert result < 2.0 or name in (
-            "NLOPT",
-            "RPowell",
-            "RCobyla",
-        ), f"{name} failed and got {result} with {recom.value} (type is {type(optim)})."
 
 
 @skip_win_perf  # type: ignore
