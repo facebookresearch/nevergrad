@@ -177,6 +177,8 @@ def altellipsoid(y: np.ndarray) -> float:
 
 
 def step(s: float) -> float:
+    if s == 0.0:
+        s = np.nextafter(0.0, 1.0)
     return float(np.exp(int(np.log(s))))
 
 
