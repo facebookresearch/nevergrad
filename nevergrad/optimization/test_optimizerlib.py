@@ -204,6 +204,7 @@ def test_infnan(name: str) -> None:
         assert result < 2.0 or name in (
             "NLOPT",
             "RPowell",
+            "RCobyla",
         ), f"{name} failed and got {result} with {recom.value} (type is {type(optim)})."
 
 
