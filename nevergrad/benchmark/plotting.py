@@ -153,7 +153,7 @@ _PARAM_MERGE_PATTERN = "{optimizer_name},{parametrization}"
 
 
 def merge_optimizer_name_pattern(
-    df: utils.Selector, pattern: str, merge_parametrization: bool = False
+    df: utils.Selector, pattern: str, merge_parametrization: bool = False, remove_suffix: bool = False
 ) -> utils.Selector:
     """Merge the optimizer name with other descriptors based on a pattern
     Nothing happens if merge_parametrization is false and pattern is empty string
@@ -182,6 +182,8 @@ def merge_optimizer_name_pattern(
             inds = sub.loc[:, okey] == optim
             if len(sub.loc[inds, :].unique(others)) > 1:
                 df.loc[inds, okey] = sub.loc[inds, elements].agg(aggregate, axis=1)
+    if remove_suffix:
+        df["optimizer_name"] = df["optimizer_name"].replace(r"[0-9\.\-]*$", "", regex=True)
     return df.drop(columns=others)  # type: ignore
 
 
@@ -899,6 +901,11 @@ def main() -> None:
         help="if present, parametrization is merge into the optimizer name",
     )
     parser.add_argument(
+        "--remove-suffix",
+        action="store_true",
+        help="if present, remove numerical suffixes in fight plots",
+    )
+    parser.add_argument(
         "--merge-pattern",
         type=str,
         default="",
@@ -907,7 +914,10 @@ def main() -> None:
     )
     args = parser.parse_args()
     exp_df = merge_optimizer_name_pattern(
-        utils.Selector.read_csv(args.filepath), args.merge_pattern, args.merge_parametrization
+        utils.Selector.read_csv(args.filepath),
+        args.merge_pattern,
+        args.merge_parametrization,
+        args.remove_suffix,
     )
     # merging names
     #

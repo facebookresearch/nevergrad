@@ -494,6 +494,15 @@ class _CMA(base.Optimizer):
         pessimistic = self.current_bests["pessimistic"].parameter.get_standardized_data(
             reference=self.parametrization
         )
+        d = self.dimension
+        n = self.num_ask
+        sample_size = int(d * d / 2 + d / 2 + 3)
+        if self._config.high_speed and n >= sample_size:
+            try:
+                data = learn_on_k_best(self.archive, sample_size)
+                return data  # type: ignore
+            except MetaModelFailure:  # Failures in the metamodeling can happen.
+                pass
         if self._es is None:
             return pessimistic
         cma_best: tp.Optional[np.ndarray] = self.es.best_x if self._config.fcmaes else self.es.result.xbest
@@ -520,6 +529,8 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         default is max(self.num_workers, 4 + int(3 * np.log(self.dimension)))
     diagonal: bool
         use the diagonal version of CMA (advised in big dimension)
+    high_speed: bool
+        use metamodel for recommendation
     fcmaes: bool
         use fast implementation, doesn't support diagonal=True.
         produces equivalent results, preferable for high dimensions or
@@ -539,6 +550,7 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         elitist: bool = False,
         popsize: tp.Optional[int] = None,
         diagonal: bool = False,
+        high_speed: bool = False,
         fcmaes: bool = False,
         random_init: bool = False,
         inopts: tp.Optional[tp.Dict[str, tp.Any]] = None,
@@ -552,6 +564,7 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         self.popsize = popsize
         self.diagonal = diagonal
         self.fcmaes = fcmaes
+        self.high_speed = high_speed
         self.random_init = random_init
         self.inopts = inopts
 
@@ -1491,6 +1504,9 @@ class _MetaModel(base.Optimizer):
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         self._optim.tell(candidate, loss)
+
+    def _internal_provide_recommendation(self) -> tp.Optional[tp.ArrayLike]:
+        return self._optim._internal_provide_recommendation()
 
     def enable_pickling(self):
         super().enable_pickling()
