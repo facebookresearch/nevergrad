@@ -269,7 +269,7 @@ def test_harder_suggest_optimizers(name: str) -> None:
 
 
 def good_at_c0_suggest(r: str) -> bool:
-    return "ECMA" in r or "NGOpt" == r or "GeneticDE" in r or "LhsDE" in r
+    return "NGOpt" == r or "GeneticDE" in r or "LhsDE" in r
 
 
 @skip_win_perf  # type: ignore
