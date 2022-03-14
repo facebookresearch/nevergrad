@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -17,11 +17,11 @@ from nevergrad.parametrization import transforms
 from nevergrad.parametrization import discretization
 from nevergrad.parametrization import _layering
 from nevergrad.parametrization import _datalayers
-from . import callbacks
 from . import oneshot
 from . import base
 from . import mutations
-from . import utils
+from .metamodel import MetaModelFailure as MetaModelFailure
+from .metamodel import learn_on_k_best as learn_on_k_best
 from .base import registry as registry
 from .base import addCompare  # pylint: disable=unused-import
 from .base import IntOrParameter
@@ -29,7 +29,7 @@ from .base import IntOrParameter
 # families of optimizers
 # pylint: disable=unused-wildcard-import,wildcard-import,too-many-lines,too-many-arguments,too-many-branches
 # pylint: disable=import-outside-toplevel,too-many-nested-blocks,too-many-instance-attributes,
-# pylint: disable=too-many-boolean-expressions,too-many-ancestors,too-many-statements
+# pylint: disable=too-many-boolean-expressions,too-many-ancestors,too-many-statements,too-many-return-statements
 from .differentialevolution import *  # type: ignore  # noqa: F403
 from .es import *  # type: ignore  # noqa: F403
 from .oneshot import *  # noqa: F403
@@ -402,6 +402,8 @@ RecombiningPortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(
 
 
 class _CMA(base.Optimizer):
+    _CACHE_KEY = "#CMA#datacache"
+
     def __init__(
         self,
         parametrization: IntOrParameter,
@@ -426,7 +428,7 @@ class _CMA(base.Optimizer):
         scale_multiplier = 1.0
         if p.helpers.Normalizer(self.parametrization).fully_bounded:
             scale_multiplier = 0.3 if self.dimension < 18 else 0.15
-        if self._es is None:
+        if self._es is None or (not self._config.fcmaes and self._es.stop()):
             if not self._config.fcmaes:
                 import cma  # import inline in order to avoid matplotlib initialization warning
 
@@ -471,18 +473,22 @@ class _CMA(base.Optimizer):
         return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        if self._CACHE_KEY not in candidate._meta:
+            # since we try several times to tell to es, to avoid duplicated work let's keep
+            # the data in a cache. This can be useful for other CMA as well
+            candidate._meta[self._CACHE_KEY] = candidate.get_standardized_data(reference=self.parametrization)
         self._to_be_told.append(candidate)
         if len(self._to_be_told) >= self.es.popsize:
-            listx = [c.get_standardized_data(reference=self.parametrization) for c in self._to_be_told]
+            listx = [c._meta[self._CACHE_KEY] for c in self._to_be_told]
             listy = [c.loss for c in self._to_be_told]
             args = (listy, listx) if self._config.fcmaes else (listx, listy)
             try:
                 self.es.tell(*args)
-            except RuntimeError:
+            except (RuntimeError, AssertionError):
                 pass
             else:
                 self._parents = sorted(self._to_be_told, key=base._loss)[: self._num_spawners]
-                self._to_be_told = []
+            self._to_be_told = []
 
     def _internal_provide_recommendation(self) -> np.ndarray:
         pessimistic = self.current_bests["pessimistic"].parameter.get_standardized_data(
@@ -1075,6 +1081,9 @@ class _Rescaled(base.Optimizer):
         candidate = self.rescale_candidate(candidate, inverse=True)
         self._optimizer.tell(candidate, loss)
 
+    def enable_pickling(self) -> None:
+        self._optimizer.enable_pickling()
+
 
 class Rescaled(base.ConfiguredOptimizer):
     """Configured optimizer for creating rescaled optimization algorithms.
@@ -1375,7 +1384,6 @@ class Portfolio(base.Optimizer):
                 )
             )
         # current optimizer choice
-        self._selected_ind: tp.Optional[int] = None
         self._current = -1
         self._warmup_budget: tp.Optional[int] = None
         if cfg.warmup_ratio is not None and budget is None:
@@ -1386,23 +1394,21 @@ class Portfolio(base.Optimizer):
     def _internal_ask_candidate(self) -> p.Parameter:
         # optimizer selection if budget is over
         if self._warmup_budget is not None:
-            if self._selected_ind is None and self._warmup_budget < self.num_tell:
+            if len(self.optims) > 1 and self._warmup_budget < self.num_tell:
                 ind = self.current_bests["pessimistic"].parameter._meta.get("optim_index", -1)
                 if ind >= 0:  # not a tell not asked
                     if self.num_workers == 1 or self.optims[ind].num_workers > 1:
-                        self._selected_ind = ind  # don't select non-parallelizable in parallel settings
-        optim_index = self._selected_ind
-        if optim_index is None:
-            num = len(self.optims)
-            for k in range(2 * num):
-                self._current += 1
-                optim_index = self._current % len(self.optims)
-                opt = self.optims[optim_index]
-                if opt.num_workers > opt.num_ask - (opt.num_tell - opt.num_tell_not_asked):
-                    break  # if there are workers left, use this optimizer
-                if k > num:
-                    if not opt.no_parallelization:
-                        break  # if no worker is available, try the first parallelizable optimizer
+                        self.optims = [self.optims[ind]]  # throw away everything else
+        num = len(self.optims)
+        for k in range(2 * num):
+            self._current += 1
+            optim_index = self._current % len(self.optims)
+            opt = self.optims[optim_index]
+            if opt.num_workers > opt.num_ask - (opt.num_tell - opt.num_tell_not_asked):
+                break  # if there are workers left, use this optimizer
+            if k > num:
+                if not opt.no_parallelization:
+                    break  # if no worker is available, try the first parallelizable optimizer
         if optim_index is None:
             raise RuntimeError("Something went wrong in optimizer selection")
         opt = self.optims[optim_index]
@@ -1422,6 +1428,10 @@ class Portfolio(base.Optimizer):
                 pass
         if not accepted:
             raise errors.TellNotAskedNotSupportedError("No sub-optimizer accepted the tell-not-asked")
+
+    def enable_pickling(self) -> None:
+        for opt in self.optims:
+            opt.enable_pickling()
 
 
 ParaPortfolio = ConfPortfolio(optimizers=[CMA, TwoPointsDE, PSO, SQP, ScrHammersleySearch]).set_name(
@@ -1443,74 +1453,6 @@ MultiScaleCMA = ConfPortfolio(
     optimizers=[ParametrizedCMA(random_init=True, scale=scale) for scale in [1.0, 1e-3, 1e-6]],
     warmup_ratio=0.33,
 ).set_name("MultiScaleCMA", register=True)
-
-
-class MetaModelFailure(ValueError):
-    """Sometimes the optimum of the metamodel is at infinity."""
-
-
-def _learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.ArrayLike:
-    """Approximate optimum learnt from the k best.
-
-    Parameters
-    ----------
-    archive: utils.Archive[utils.Value]
-    """
-    items = list(archive.items_as_arrays())
-    dimension = len(items[0][0])
-
-    # Select the k best.
-    first_k_individuals = sorted(items, key=lambda indiv: archive[indiv[0]].get_estimation("pessimistic"))[:k]
-    assert len(first_k_individuals) == k
-
-    # Recenter the best.
-    middle = np.array(sum(p[0] for p in first_k_individuals) / k)
-    normalization = 1e-15 + np.sqrt(np.sum((first_k_individuals[-1][0] - first_k_individuals[0][0]) ** 2))
-    y = np.asarray([archive[c[0]].get_estimation("pessimistic") for c in first_k_individuals])
-    X = np.asarray([(c[0] - middle) / normalization for c in first_k_individuals])
-
-    # We need SKLearn.
-    from sklearn.linear_model import LinearRegression
-    from sklearn.preprocessing import PolynomialFeatures
-
-    polynomial_features = PolynomialFeatures(degree=2)
-    X2 = polynomial_features.fit_transform(X)
-
-    # Fit a linear model.
-    if not max(y) - min(y) > 1e-20:  # better use "not" for dealing with nans
-        raise MetaModelFailure
-
-    y = (y - min(y)) / (max(y) - min(y))
-    model = LinearRegression()
-    model.fit(X2, y)
-
-    # Check model quality.
-    model_outputs = model.predict(X2)
-    indices = np.argsort(y)
-    ordered_model_outputs = [model_outputs[i] for i in indices]
-    if not np.all(np.diff(ordered_model_outputs) > 0):
-        raise MetaModelFailure("Unlearnable objective function.")
-
-    try:
-        for cls in (Powell, DE):  # Powell excellent here, DE as a backup for thread safety.
-            optimizer = cls(parametrization=dimension, budget=45 * dimension + 30)
-            # limit to 20s at most
-            optimizer.register_callback("ask", callbacks.EarlyStopping.timer(20))
-            try:
-                minimum = optimizer.minimize(
-                    lambda x: float(model.predict(polynomial_features.fit_transform(x[None, :])))
-                ).value
-            except RuntimeError:
-                assert cls == Powell, "Only Powell is allowed to crash here."
-            else:
-                break
-    except ValueError:
-        raise MetaModelFailure("Infinite meta-model optimum in learn_on_k_best.")
-    if float(model.predict(polynomial_features.fit_transform(minimum[None, :]))) > y[0]:
-        raise MetaModelFailure("Not a good proposal.")
-    if np.sum(minimum ** 2) > 1.0:
-        raise MetaModelFailure("huge meta-model optimum in learn_on_k_best.")
-    return middle + normalization * minimum
 
 
 class _MetaModel(base.Optimizer):
@@ -1539,7 +1481,7 @@ class _MetaModel(base.Optimizer):
         freq = max(13, self.num_workers, self.dimension, int(self.frequency_ratio * sample_size))
         if len(self.archive) >= sample_size and not self._num_ask % freq:
             try:
-                data = _learn_on_k_best(self.archive, sample_size)
+                data = learn_on_k_best(self.archive, sample_size)
                 candidate = self.parametrization.spawn_child().set_standardized_data(data)
             except MetaModelFailure:  # The optimum is at infinity. Shit happens.
                 candidate = self._optim.ask()
@@ -1549,6 +1491,10 @@ class _MetaModel(base.Optimizer):
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         self._optim.tell(candidate, loss)
+
+    def enable_pickling(self):
+        super().enable_pickling()
+        self._optim.enable_pickling()
 
 
 class ParametrizedMetaModel(base.ConfiguredOptimizer):
@@ -2086,6 +2032,10 @@ class _Chain(base.Optimizer):
             if self.num_tell < sum_budget:
                 opt.tell(candidate, loss)
 
+    def enable_pickling(self):
+        for opt in self.optimizers:
+            opt.enable_pickling()
+
 
 class Chaining(base.ConfiguredOptimizer):
     """
@@ -2406,8 +2356,8 @@ class NGOptBase(base.Optimizer):
     def optim(self) -> base.Optimizer:
         if self._optim is None:
             self._optim = self._select_optimizer_cls()(self.parametrization, self.budget, self.num_workers)
-            optim = self._optim if not isinstance(self._optim, NGOptBase) else self._optim.optim
-            logger.debug("%s selected %s optimizer.", *(x.name for x in (self, optim)))
+            self._optim = self._optim if not isinstance(self._optim, NGOptBase) else self._optim.optim
+            logger.debug("%s selected %s optimizer.", *(x.name for x in (self, self._optim)))
         return self._optim
 
     def _select_optimizer_cls(self) -> base.OptCls:
@@ -2466,6 +2416,9 @@ class NGOptBase(base.Optimizer):
         out = {"sub-optim": self.optim.name}
         out.update(self.optim._info())  # this will work for recursive NGOpt calls
         return out
+
+    def enable_pickling(self) -> None:
+        self.optim.enable_pickling()
 
 
 @registry.register
