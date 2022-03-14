@@ -14,7 +14,6 @@ from nevergrad.optimization import base as obase
 from nevergrad.optimization.optimizerlib import ConfSplitOptimizer
 from nevergrad.optimization.optimizerlib import registry as optimizerlib_registry
 from nevergrad.optimization.optimizerlib import ParametrizedOnePlusOne
-from nevergrad.optimization.optimizerlib import NonObjectOptimizer
 
 Optim = tp.Union[obase.ConfiguredOptimizer, str]
 registry: Registry[tp.Callable[[], tp.Iterable[Optim]]] = Registry()
@@ -194,14 +193,8 @@ def all_bo() -> tp.Sequence[Optim]:
     return sorted(x for x in ng.optimizers.registry if "BO" in x)
 
 
-def all_ngopts() -> tp.Sequence[Optim]:
-    optims = [NonObjectOptimizer(method="NLOPT").set_name("NLOPT")]
-    for u in range(1, 14):
-        if u == 5 and platform.system() == "Windows" or u == 9 or u == 10:
-            continue
-        name = "NLOPT" + str(u)
-        optims += [NonObjectOptimizer(method=name).set_name(name)]
-    return optims
+def all_nlopts() -> tp.Sequence[Optim]:
+    return sorted(x for x in ng.optimizers.registry if "NLOPT" in x)
 
 
 @registry.register
