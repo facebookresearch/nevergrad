@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -117,6 +117,30 @@ def progressive() -> tp.Sequence[Optim]:
             mv = ParametrizedOnePlusOne(noise_handling="optimistic", mutation=mutation)
             opt = ConfSplitOptimizer(
                 num_optims=num_optims, progressive=True, multivariate_optimizer=mv
+            ).set_name(name)
+            optims.append(opt)
+    return optims
+
+
+@registry.register
+def anisotropic_progressive() -> tp.Sequence[Optim]:
+    optims: tp.List[Optim] = []
+    for num_optims in [None, 3, 5, 9, 13]:
+        for str_optim in [
+            "CMA",
+            "ECMA",
+            "DE",
+            "TwoPointsDE",
+            "PSO",
+            "NoisyRL2",
+            "NoisyRL3",
+            "NoisyRL1",
+            "MixDeterministicRL",
+        ]:
+            optim = optimizerlib_registry[str_optim]
+            name = "Prog" + str_optim + ("Auto" if num_optims is None else str(num_optims))
+            opt = ConfSplitOptimizer(
+                multivariate_optimizer=optim, num_optims=num_optims, progressive=True
             ).set_name(name)
             optims.append(opt)
     return optims
