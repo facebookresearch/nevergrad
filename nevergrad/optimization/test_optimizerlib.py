@@ -269,7 +269,7 @@ def test_harder_suggest_optimizers(name: str) -> None:
 
 
 def good_at_c0_suggest(r: str) -> bool:
-    return "NGOpt" == r or "GeneticDE" in r or "LhsDE" in r
+    return "NGOpt" == r  # Let us check on NGOpt only for now.
 
 
 @skip_win_perf  # type: ignore
