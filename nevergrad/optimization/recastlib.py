@@ -132,9 +132,11 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 import os
                 import time
                 from pathlib import Path
+
                 the_date = str(time.time())
                 feed = "/tmp/smac_feed" + the_date + ".txt"
                 fed = "/tmp/smac_fed" + the_date + ".txt"
+
                 def dummy_function():
                     for u in range(remaining):
                         print(f"side thread waiting for request... ({u}/{weakself.budget})")
@@ -151,16 +153,16 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                         f.write(str(res))
                         f.close()
                     return
+
                 thread = threading.Thread(target=dummy_function)
                 thread.start()
-
 
                 print(f"start SMAC2 optimization with budget {budget} in dimension {weakself.dimension}")
                 cs = ConfigurationSpace()
                 cs.add_hyperparameters(
                     [
                         UniformFloatHyperparameter(f"x{i}", 0.0, 1.0, default_value=0.0)
-                        #UniformFloatHyperparameter(f"x{i}", -1.0, 1.0, default_value=0.0)
+                        # UniformFloatHyperparameter(f"x{i}", -1.0, 1.0, default_value=0.0)
                         for i in range(weakself.dimension)
                     ]
                 )
@@ -172,6 +174,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                         "deterministic": "true",
                     }
                 )
+
                 def smac2_obj(p):
                     print(f"SMAC2 proposes {p}")
                     p = [p[f"x{i}"] for i in range(len(p.keys()))]
@@ -188,6 +191,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                     f.close()
                     print(f"SMAC2 will receive {res}")
                     return res
+
                 smac = SMAC4HPO(scenario=scenario, rng=weakself._rng.randint(5000), tae_runner=smac2_obj)
                 res = smac.optimize()
                 best_x = [res[f"x{k}"] for k in range(len(res.keys()))]
@@ -210,9 +214,11 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 import os
                 import time
                 from pathlib import Path
+
                 the_date = str(time.time())
                 feed = "/tmp/smac_feed" + the_date + ".txt"
                 fed = "/tmp/smac_fed" + the_date + ".txt"
+
                 def dummy_function():
                     for u in range(remaining):
                         print(f"side thread waiting for request... ({u}/{weakself.budget})")
@@ -229,12 +235,15 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                         f.write(str(res))
                         f.close()
                     return
+
                 thread = threading.Thread(target=dummy_function)
                 thread.start()
 
                 def smac_obj(p):
                     print(f"SMAC proposes {p}")
-                    data = weakself._normalizer.backward(np.asarray([p[i] for i in range(len(p))], dtype=np.float))
+                    data = weakself._normalizer.backward(
+                        np.asarray([p[i] for i in range(len(p))], dtype=np.float)
+                    )
                     print(f"converted to {data}")
                     if Path(fed).is_file():
                         os.remove(fed)
@@ -251,7 +260,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 print(f"start SMAC optimization with budget {budget} in dimension {weakself.dimension}")
                 assert budget is not None
                 x, cost, _ = fmin_smac(
-                    #func=lambda x: sum([(x_ - 1.234)**2  for x_ in x]),
+                    # func=lambda x: sum([(x_ - 1.234)**2  for x_ in x]),
                     func=smac_obj,
                     x0=[0.0] * weakself.dimension,
                     bounds=[(0, 1)] * weakself.dimension,
