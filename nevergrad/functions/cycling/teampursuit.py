@@ -1,11 +1,10 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates. All Rights Reserved.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
 from abc import ABC, abstractmethod
 import math
-import sys
 
 
 class teampursuit(ABC):

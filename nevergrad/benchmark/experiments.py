@@ -1973,7 +1973,6 @@ def team_cycling(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     for function in funcs:
         for budget in [3000]:
             for optim in optims:
-                for i in range(10):
-                    xp = Experiment(function, optim, budget=budget, num_workers=10, seed=next(seedg))
-                    if not xp.is_incoherent:
-                        yield xp
+                xp = Experiment(function, optim, budget=budget, num_workers=10, seed=next(seedg))
+                if not xp.is_incoherent:
+                    yield xp
