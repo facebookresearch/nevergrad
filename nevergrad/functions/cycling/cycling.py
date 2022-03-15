@@ -43,21 +43,21 @@ class cycling(base.ExperimentFunction):
 
         # optimising transition strategy for men's team
         if strategy_index == 30:
-            strategy: tp.Any = p.Choice([False, True], repetitions=strategy)
+            strategy: tp.Any = p.Choice([False, True], repetitions=strategy_index)
             parameter = p.Instrumentation(strategy).set_name("")
             super().__init__(mens_team_pursuit_simulation, parameter)
 
         # optimising pacing strategy for men's team
         elif strategy_index == 31:
             init = 550 * np.ones(strategy_index)
-            parameter = p.Array(init=init, lower=200, upper=1200)
+            parameter = p.Array(init=init, lower=200, upper=1200)  # type: ignore
             parameter.set_name("Mens Pacing strategy")
             super().__init__(mens_team_pursuit_simulation, parameter)
 
         # optimising pacing and transition strategies for men's team
         elif strategy_index == 61:
-            init = 0.5 * np.ones(strategy_index)
-            parameter = p.Array(init=init, lower=0, upper=1)
+            init = 0.5 * np.ones(strategy_index)  # type: ignore
+            parameter = p.Array(init=init, lower=0, upper=1)  # type: ignore
             parameter.set_name("Pacing and Transition")
             super().__init__(mens_team_pursuit_simulation, parameter)
 
@@ -70,14 +70,14 @@ class cycling(base.ExperimentFunction):
         # optimising pacing strategy for women's team
         elif strategy_index == 23:
             init = 400 * np.ones(strategy_index)
-            parameter = p.Array(init=init, lower=200, upper=1200)
+            parameter = p.Array(init=init, lower=200, upper=1200)  # type: ignore
             parameter.set_name("Womens Pacing strategy")
             super().__init__(womens_team_pursuit_simulation, parameter)
 
         # optimising pacing and transition strategies for women's team
         elif strategy_index == 45:
-            init = 0.5 * np.ones(strategy_index)
-            parameter = p.Array(init=init, lower=0, upper=1)
+            init = 0.5 * np.ones(strategy_index)  # type: ignore
+            parameter = p.Array(init=init, lower=0, upper=1)  # type: ignore
             parameter.set_name("Pacing and Transition")
             super().__init__(womens_team_pursuit_simulation, parameter)
 
