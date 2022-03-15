@@ -35,3 +35,6 @@ silence_tensorflow  # for olymp
 tensorflow_probability  # for olymp
 bayes-optim==0.2.5.5
 nlopt
+auto-sklearn>=0.14.0
+openml>=0.12.2
+submitit
