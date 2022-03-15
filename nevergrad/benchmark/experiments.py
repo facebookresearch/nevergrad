@@ -144,6 +144,79 @@ def naivemltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     return mltuning(seed, overfitter=True)
 
 
+@registry.register
+def autosklearntuning(seed: tp.Optional[int] = None):
+    # pylint: disable=import-outside-toplevel
+    from nevergrad.functions.automl import AutoSKlearnBenchmark
+
+    seedg = create_seed_generator(seed)
+
+    # Only considered small subset of OpenML-CC18
+    list_tasks = [
+        3,
+        11,
+        15,
+        18,
+        23,
+        29,
+        31,
+        37,
+        45,
+        49,
+        53,
+        2079,
+        3022,
+        3549,
+        3560,
+        3902,
+        3903,
+        3913,
+        3917,
+        3918,
+        9946,
+        9957,
+        9964,
+        9971,
+        9978,
+        9981,
+        10093,
+        10101,
+        14954,
+        125920,
+        146800,
+        146817,
+        146819,
+        146821,
+        146822,
+    ]
+    optims = [
+        "HyperOpt",
+        "RandomSearch",
+        "CMA",
+        "DE",
+        "BO",
+    ]
+    optims += get_optimizers("splitters", seed=next(seedg))  # type: ignore
+
+    for budget in [10, 50, 100]:
+        for task_id in list_tasks:
+            for algo in optims:
+                for seed in range(10):
+                    func = AutoSKlearnBenchmark(
+                        openml_task_id=task_id,
+                        cv=3,
+                        overfitter=False,
+                        time_budget_per_run=300,
+                        memory_limit=1024 * 10,
+                        scoring_func="balanced_accuracy",
+                        random_state=next(seedg),
+                    )
+                    xp = Experiment(func, algo, budget, num_workers=1, seed=next(seedg))  # type: ignore
+                    skip_ci(reason="Too slow")
+                    if not xp.is_incoherent:
+                        yield xp
+
+
 # We register only the sequential counterparts for the moment.
 @registry.register
 def seq_keras_tuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
