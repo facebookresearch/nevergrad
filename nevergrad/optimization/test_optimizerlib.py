@@ -923,9 +923,9 @@ def test_pymoo_batched() -> None:
 
 def test_bounded_cma() -> None:
     x = (
-        ng.optimizers.CMA(ng.p.Array(shape=(4,), lower=-12, upper=12), budget=2000)
+        ng.optimizers.CMA(ng.p.Array(shape=(3,), lower=-3, upper=3), budget=10000)
         .minimize(lambda x: sum([x_ ** 2 for x_ in x]) - 1000 * x[0])
         .value
     )
-    assert x[0] >= 11.95
-    assert all(x[1:] < 0.001)
+    assert x[0] >= 2.95
+    assert all(x[1:] < 0.05)
