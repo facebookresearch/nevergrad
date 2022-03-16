@@ -208,7 +208,7 @@ def all_nlopts() -> tp.Sequence[Optim]:
         "LN_NEWUOA_BOUND",
         "LN_NELDERMEAD",
     ]
-    return [NonObjectOptimizer("NLOPT_" + x).set_name("NLOPT_" + x) for x in list_nlopt_options]
+    return [NonObjectOptimizer(method="NLOPT_" + x).set_name("NLOPT_" + x) for x in list_nlopt_options]
 
 
 @registry.register
