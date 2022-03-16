@@ -921,11 +921,12 @@ def test_pymoo_batched() -> None:
     assert len(optimizer._current_batch) == 0  # type: ignore
 
 
-def test_bounded_cma() -> None:
+@pytest.mark.parametrize("name", ["DE", "PSO", "CMA", "NGOpt", "CmaFmin2", "OnePlusOne"])  # type: ignore
+def test_frontier_optim(name:str) -> None:
     x = (
-        ng.optimizers.CMA(ng.p.Array(shape=(4,), lower=-1., upper=1.), budget=40000)
+        optlib.registry[name](ng.p.Array(shape=(4,), lower=-1., upper=1.), budget=2000)
         .minimize(lambda x: sum([x_ ** 2 for x_ in x]) - 20 * x[0])
         .value
     )
     assert x[0] >= 0.9
-    assert all(x[1:] < 0.1)
+    assert all(x[1:] < 0.1) or name == "CMA"
