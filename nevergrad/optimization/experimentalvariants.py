@@ -353,24 +353,3 @@ NoisyRL3 = Chaining([MixDeterministicRL, OptimisticNoisyOnePlusOne], ["half"]).s
 # High-Speed variants
 HSDE = DifferentialEvolution(high_speed=True).set_name("HSDE", register=True)
 LhsHSDE = DifferentialEvolution(initialization="LHS", high_speed=True).set_name("LhsHSDE", register=True)
-
-
-# NLOPT variants
-NLOPT_LN_SBPLX = NonObjectOptimizer(method="NLOPT_LN_SBPLX").set_name("NLOPT_LN_SBPLX", register=True)
-NLOPT_LN_PRAXIS = NonObjectOptimizer(method="NLOPT_LN_PRAXIS").set_name("NLOPT_LN_PRAXIS", register=True)
-NLOPT_GN_DIRECT = NonObjectOptimizer(method="NLOPT_GN_DIRECT").set_name("NLOPT_GN_DIRECT", register=True)
-NLOPT_GN_DIRECT_L = NonObjectOptimizer(method="NLOPT_GN_DIRECT_L").set_name(
-    "NLOPT_GN_DIRECT_L", register=True
-)
-NLOPT_GN_CRS2_LM = NonObjectOptimizer(method="NLOPT_GN_CRS2_LM").set_name("NLOPT_GN_CRS2_LM", register=True)
-NLOPT_GN_AGS = NonObjectOptimizer(method="NLOPT_GN_AGS").set_name("NLOPT_GN_AGS", register=True)
-NLOPT_GN_ISRES = NonObjectOptimizer(method="NLOPT_GN_ISRES").set_name("NLOPT_GN_ISRES", register=True)
-NLOPT_GN_ESCH = NonObjectOptimizer(method="NLOPT_GN_ESCH").set_name("NLOPT_GN_ESCH", register=True)
-NLOPT_LN_COBYLA = NonObjectOptimizer(method="NLOPT_LN_COBYLA").set_name("NLOPT_LN_COBYLA", register=True)
-NLOPT_LN_BOBYQA = NonObjectOptimizer(method="NLOPT_LN_BOBYQA").set_name("NLOPT_LN_BOBYQA", register=True)
-NLOPT_LN_NEWUOA_BOUND = NonObjectOptimizer(method="NLOPT_LN_NEWUOA_BOUND").set_name(
-    "NLOPT_LN_NEWUOA_BOUND", register=True
-)
-NLOPT_LN_NELDERMEAD = NonObjectOptimizer(method="NLOPT_LN_NELDERMEAD").set_name(
-    "NLOPT_LN_NELDERMEAD", register=True
-)

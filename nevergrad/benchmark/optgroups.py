@@ -193,7 +193,21 @@ def all_bo() -> tp.Sequence[Optim]:
 
 
 def all_nlopts() -> tp.Sequence[Optim]:
-    return sorted(x for x in ng.optimizers.registry if "NLOPT" in x)
+    list_nlopt_options = [
+        "LN_SBPLX",
+        "LN_PRAXIS",
+        "GN_DIRECT",
+        "GN_DIRECT_L",
+        "GN_CRS2_LM",
+        "GN_AGS",
+        "GN_ISRES",
+        "GN_ESCH",
+        "LN_COBYLA",
+        "LN_BOBYQA",
+        "LN_NEWUOA_BOUND",
+        "LN_NELDERMEAD",
+    ]
+    return [NonObjectOptimizer("NLOPT_" + x).set_name("NLOPT_" + x) for x in list_nlopt_options]
 
 
 @registry.register
