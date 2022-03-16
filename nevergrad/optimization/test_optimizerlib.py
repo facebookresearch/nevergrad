@@ -204,7 +204,7 @@ def suggestable(name: str) -> bool:
 
 def suggestion_testing(
     name: str,
-    instrumentation: tp.Union[ng.p.Array, ng.p.Instrumentation],
+    instrumentation: np.p.Array,
     suggestion: np.ndarray,
     budget: int,
     objective_function: tp.Callable,
