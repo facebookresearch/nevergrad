@@ -1909,29 +1909,30 @@ def pbo_suite(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     for dim in [16, 64, 100]:
         for fid in range(1, 24):
             for iid in range(1, 5):
-                try:
-                    func = iohprofiler.PBOFunction(fid, iid, dim)
-                except ModuleNotFoundError as e:
-                    raise fbase.UnsupportedExperiment("IOHexperimenter needs to be installed") from e
-                for optim in [
-                    "DiscreteOnePlusOne",
-                    "Shiwa",
-                    "CMA",
-                    "PSO",
-                    "TwoPointsDE",
-                    "DE",
-                    "OnePlusOne",
-                    "AdaptiveDiscreteOnePlusOne",
-                    "CMandAS2",
-                    "PortfolioDiscreteOnePlusOne",
-                    "DoubleFastGADiscreteOnePlusOne",
-                    "MultiDiscrete",
-                    "cGA",
-                    dde,
-                ]:
-                    for nw in [1, 10]:
-                        for budget in [100, 1000, 10000]:
-                            yield Experiment(func, optim, num_workers=nw, budget=budget, seed=next(seedg))  # type: ignore
+                for instrumentation in ["Softmax", "Ordered"]:
+                    try:
+                        func = iohprofiler.PBOFunction(fid, iid, dim, instrumentation=instrumentation)
+                    except ModuleNotFoundError as e:
+                        raise fbase.UnsupportedExperiment("IOHexperimenter needs to be installed") from e
+                    for optim in [
+                        "DiscreteOnePlusOne",
+                        "Shiwa",
+                        "CMA",
+                        "PSO",
+                        "TwoPointsDE",
+                        "DE",
+                        "OnePlusOne",
+                        "AdaptiveDiscreteOnePlusOne",
+                        "CMandAS2",
+                        "PortfolioDiscreteOnePlusOne",
+                        "DoubleFastGADiscreteOnePlusOne",
+                        "MultiDiscrete",
+                        "cGA",
+                        dde,
+                    ]:
+                        for nw in [1, 10]:
+                            for budget in [100, 1000, 10000]:
+                                yield Experiment(func, optim, num_workers=nw, budget=budget, seed=next(seedg))  # type: ignore
 
 
 def causal_similarity(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
