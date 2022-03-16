@@ -23,7 +23,6 @@ from .optimizerlib import (
     NoisyOnePlusOne,
     RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne,
     OptimisticNoisyOnePlusOne,
-    NonObjectOptimizer,
 )
 from . import optimizerlib as opts
 from .optimizerlib import CMA, Chaining, PSO, BO
