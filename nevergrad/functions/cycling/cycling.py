@@ -12,14 +12,12 @@
 # https://link.springer.com/chapter/10.1007/978-1-4614-6322-1_4
 # Java code: https://cs.adelaide.edu.au/~markus/pub/TeamPursuit.zip
 
-from .womensteampursuit import womensteampursuit
-from .mensteampursuit import mensteampursuit
-import random
 import numpy as np
 import typing as tp
-import nevergrad as ng
-from nevergrad.parametrization import parameter as p
 from .. import base
+from nevergrad.parametrization import parameter as p
+from .womensteampursuit import womensteampursuit
+from .mensteampursuit import mensteampursuit
 
 
 class cycling(base.ExperimentFunction):
@@ -41,125 +39,71 @@ class cycling(base.ExperimentFunction):
 
     def __init__(self, strategy_index: int = 30) -> None:
 
-        # optimising transition strategy for men's team
-        if strategy_index == 30:
-            strategy: tp.Any = p.Choice([False, True], repetitions=strategy_index)
-            parameter = p.Instrumentation(strategy).set_name("")
-            super().__init__(mens_team_pursuit_simulation, parameter)
+        # Preliminary stuff.
+        women = strategy_index in [22, 23, 45]
+        param_transition = p.TransitionChoice([False, True], repetitions=22 if women else 30)
+        init = (400 if women else 550) * np.ones(23 if women else 31)
+        gender = "Women" if women else "Men"
+        param_pacing = p.Array(init=init, lower=200, upper=1200)
+        target_function = team_pursuit_simulation
 
-        # optimising pacing strategy for men's team
-        elif strategy_index == 31:
+        # optimising transition strategy
+        if strategy_index in (22, 30):
+            parameter: tp.Any = param_transition
+            parameter.set_name(f"{gender} Transition strategy")
+            parameter.set_name("")
+
+        # optimising pacing strategy
+        elif strategy_index in (23, 31):
             init = 550 * np.ones(strategy_index)
-            parameter = p.Array(init=init, lower=200, upper=1200)  # type: ignore
-            parameter.set_name("Mens Pacing strategy")
-            super().__init__(mens_team_pursuit_simulation, parameter)
+            parameter = param_pacing
+            parameter.set_name(f"{gender} Pacing strategy")
+            parameter.set_name("")
 
-        # optimising pacing and transition strategies for men's team
-        elif strategy_index == 61:
+        # optimising pacing and transition strategies
+        elif strategy_index in (45, 61):
             init = 0.5 * np.ones(strategy_index)  # type: ignore
-            parameter = p.Array(init=init, lower=0, upper=1)  # type: ignore
-            parameter.set_name("Pacing and Transition")
-            super().__init__(mens_team_pursuit_simulation, parameter)
-
-        # optimising transition strategy for women's team
-        elif strategy_index == 22:
-            strategy = ng.p.Choice([False, True], repetitions=strategy_index)
-            parameter = ng.p.Instrumentation(strategy).set_name("")
-            super().__init__(womens_team_pursuit_simulation, parameter)
-
-        # optimising pacing strategy for women's team
-        elif strategy_index == 23:
-            init = 400 * np.ones(strategy_index)
-            parameter = p.Array(init=init, lower=200, upper=1200)  # type: ignore
-            parameter.set_name("Womens Pacing strategy")
-            super().__init__(womens_team_pursuit_simulation, parameter)
-
-        # optimising pacing and transition strategies for women's team
-        elif strategy_index == 45:
-            init = 0.5 * np.ones(strategy_index)  # type: ignore
-            parameter = p.Array(init=init, lower=0, upper=1)  # type: ignore
-            parameter.set_name("Pacing and Transition")
-            super().__init__(womens_team_pursuit_simulation, parameter)
+            parameter = p.Instrumentation(transition=param_transition, pacing=param_pacing)
+            parameter.set_name(f"{gender} Pacing and Transition")
+            # For some reason the name above does not work...
+            # It generates a very long name like
+            # "(Wom|M)ens Pacing and Transition:[0.5,...
+            parameter.set_name("")
 
         # error raised if invalid strategy length given
         else:
             raise ValueError("Strategy length must be any of 22, 23, 30, 31, 45, 61")
+        super().__init__(target_function, parameter)
+        # assert len(self.parametrization.sample().value) == strategy_index, f"{len(self.parametrization.sample().value)} != {strategy_index} (init={init} with len={len(init)})."
 
 
-def mens_team_pursuit_simulation(x: np.ndarray) -> float:
+def team_pursuit_simulation(x) -> float:
 
-    mens_transition_strategy: tp.Any = None
-    mens_pacing_strategy: tp.Any = None
-
-    if len(x) == 30:
-        mens_transition_strategy = x
-        mens_pacing_strategy = [550] * 31
-
-    elif len(x) == 31:
-        mens_transition_strategy = [True, False] * 15
-        mens_pacing_strategy = x
-
-    elif len(x) == 45:
-        mens_transition_strategy = x[:30]
-        for i in range(0, len(mens_transition_strategy)):
-            if mens_transition_strategy[i] < 0.5:
-                mens_transition_strategy[i] = False
-            elif mens_transition_strategy[i] > 0.5:
-                mens_transition_strategy[i] = True
-            elif mens_transition_strategy[i] == 0.5:
-                mens_transition_strategy[i] = random.choice([True, False])
-
-        mens_pacing_strategy = x[30:]
-        for i in range(0, len(mens_pacing_strategy)):
-            mens_pacing_strategy[i] = 100 * mens_pacing_strategy[i] + 200
-
-    # Create a mensteampursuit object
-    mens_team_pursuit = mensteampursuit()
-
-    # Simulate event with the default strategies
-    result = mens_team_pursuit.simulate(mens_transition_strategy, mens_pacing_strategy)
-
-    # print(result.get_finish_time())
-
-    if result.get_finish_time() > 10000:  # in case of inf
-        return 10000
+    if len(x) == 2:  # Let us concatenate the instrumentation.
+        pacing = x[1]["pacing"]
+        transition = x[1]["transition"]
+    elif len(x) in (30, 22):
+        transition = x
+        pacing = [550 if len(x) == 30 else 400] * (len(x) + 1)
+    elif len(x) in (31, 23):
+        pacing = x
+        transition = [True, False] * ((len(x) - 1) // 2)
     else:
-        return float(result.get_finish_time())
+        raise ValueError(f"len(x) == {len(x)}")
 
+        # What is this ?
+        # for i in range(0, len(pacing_strategy)):
+        #    pacing_strategy[i] = 100 * pacing_strategy[i] + 200
 
-def womens_team_pursuit_simulation(x: np.ndarray) -> float:
-
-    womens_transition_strategy: tp.Any = None
-    womens_pacing_strategy: tp.Any = None
-    if len(x) == 22:
-        womens_transition_strategy = x
-        womens_pacing_strategy = [400] * 23
-
-    elif len(x) == 23:
-        womens_transition_strategy = [True, False] * 11
-        womens_pacing_strategy = x
-
-    elif len(x) == 45:
-        womens_transition_strategy = x[:22]
-        for i in range(0, len(womens_transition_strategy)):
-            if womens_transition_strategy[i] < 0.5:
-                womens_transition_strategy[i] = False
-            elif womens_transition_strategy[i] > 0.5:
-                womens_transition_strategy[i] = True
-            elif womens_transition_strategy[i] == 0.5:
-                womens_transition_strategy[i] = random.choice([True, False])
-
-        womens_pacing_strategy = x[22:]
-        for i in range(0, len(womens_pacing_strategy)):
-            womens_pacing_strategy[i] = 100 * womens_pacing_strategy[i] + 200
-
-    # Create a womensteampursuit object
-    womens_team_pursuit = womensteampursuit()
+    # Create a mensteampursuit oor womensteampursuit object.
+    if len(pacing) == 31:
+        team_pursuit = mensteampursuit()
+    else:
+        team_pursuit = womensteampursuit()
+        assert len(pacing) == 23
 
     # Simulate event with the default strategies
-    result = womens_team_pursuit.simulate(womens_transition_strategy, womens_pacing_strategy)
-
-    print(result.get_finish_time())
+    result = team_pursuit.simulate(transition, pacing)
 
     if result.get_finish_time() > 10000:  # in case of inf
         return 10000
