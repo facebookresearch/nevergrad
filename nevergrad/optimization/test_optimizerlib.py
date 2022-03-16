@@ -7,7 +7,7 @@ import re
 import sys
 import time
 import random
-import inspect
+import inspect 
 import logging
 import platform
 import tempfile
@@ -265,19 +265,14 @@ def test_harder_suggest_optimizers(name: str) -> None:
     suggestion_testing(name, instrum, suggestion, 1500, target, optimum)
 
 
-def good_at_c0_suggest(r: str) -> bool:
-    return "NGOpt" == r  # Let us check on NGOpt only for now.
-
-
 @skip_win_perf  # type: ignore
-@pytest.mark.parametrize("name", [o for o in registry if good_at_c0_suggest(o)])  # type: ignore
 def test_harder_continuous_suggest_optimizers(name: str) -> None:
     """Checks that somes optimizer can converge when provided with a good suggestion."""
     instrum = ng.p.Array(shape=(100,)).set_bounds(0.0, 1.0)
     optimum = np.asarray([0] * 17 + [1] * 17 + [0] * 66)
     target = lambda x: min(2.0, np.sum((x - optimum) ** 2))
     suggestion = np.asarray([0] * 17 + [1] * 16 + [0] * 67)
-    suggestion_testing(name, instrum, suggestion, 1500, target, optimum, threshold=0.9)
+    suggestion_testing("NGOpt", instrum, suggestion, 1500, target, optimum, threshold=0.9)
 
 
 @skip_win_perf  # type: ignore
