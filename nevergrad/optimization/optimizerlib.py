@@ -55,8 +55,9 @@ class _OnePlusOne(base.Optimizer):
     performs quite well in such a context - this is naturally close to 1+lambda.
 
     Posssible mutations include gaussian and cauchy for the continuous case, and in the discrete case:
-    discrete, fastga, doublefastga, adaptive, portfolio, discreteBSO, doerr.
+    discrete, fastga, rls, doublefastga, adaptive, portfolio, discreteBSO, doerr.
     - discrete is the most classical discrete mutation operator,
+    - rls is the Randomized Local Search,
     - doubleFastGA is an adaptation of FastGA to arity > 2, Portfolio corresponds to random mutation rates,
     - discreteBSO corresponds to a decreasing schedule of mutation rate.
     - adaptive and doerr correspond to various self-adaptive mutation rates.
@@ -108,6 +109,7 @@ class _OnePlusOne(base.Optimizer):
             "cauchy",
             "discrete",
             "fastga",
+            "rls",
             "doublefastga",
             "adaptive",
             "coordinatewise_adaptive",
@@ -250,6 +252,7 @@ class _OnePlusOne(base.Optimizer):
                     "discrete": mutator.discrete_mutation,
                     "fastga": mutator.doerr_discrete_mutation,
                     "doublefastga": mutator.doubledoerr_discrete_mutation,
+                    "rls": mutator.rls_mutation,
                     "portfolio": mutator.portfolio_discrete_mutation,
                 }[mutation]
                 data = func(pessimistic_data, arity=self.arity_for_discrete_mutation)
@@ -316,6 +319,7 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
         - `"discreteBSO"`: as in brainstorm optimization, we slowly decrease the mutation rate from 1 to 1/d.
         - `"fastga"`: FastGA mutations from the current best
         - `"doublefastga"`: double-FastGA mutations from the current best (Doerr et al, Fast Genetic Algorithms, 2017)
+        - `"rls"`: Randomized Local Search (randomly mutate one and only one variable).
         - `"portfolio"`: Random number of mutated bits (called niform mixing in
           Dang & Lehre "Self-adaptation of Mutation Rates in Non-elitist Population", 2016)
         - `"lengler"`: specific mutation rate chosen as a function of the dimension and iteration index.
@@ -386,6 +390,7 @@ NoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
 DoubleFastGADiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="doublefastga").set_name(
     "DoubleFastGADiscreteOnePlusOne", register=True
 )
+RLSOnePlusOne = ParametrizedOnePlusOne(mutation="rls").set_name("RLSOnePlusOne", register=True)
 SparseDoubleFastGADiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="doublefastga", sparse=True).set_name(
     "SparseDoubleFastGADiscreteOnePlusOne", register=True
 )
