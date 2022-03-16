@@ -921,12 +921,29 @@ def test_pymoo_batched() -> None:
     assert len(optimizer._current_batch) == 0  # type: ignore
 
 
-@pytest.mark.parametrize("name", ["DE", "PSO", "CMA", "NGOpt", "CmaFmin2", "OnePlusOne"])  # type: ignore
-def test_frontier_optim(name:str) -> None:
+@pytest.mark.parametrize("name", ["DE", "PSO", "CMA", "RandomSearch", "DiscreteOnePlusOne", "NGOpt", "CmaFmin2", "OnePlusOne"])  # type: ignore
+def test_frontier_optim(name: str) -> None:
     x = (
-        optlib.registry[name](ng.p.Array(shape=(4,), lower=-1., upper=1.), budget=2000)
-        .minimize(lambda x: sum(x **2) - 20 * x[0])
+        optlib.registry[name](ng.p.Array(shape=(4,), lower=-1.0, upper=1.0), budget=4000)
+        .minimize(lambda x: sum(x ** 2) - 20 * x[0])
         .value
     )
+    # Good news! NGOpt is good here.
+    # The most important variable is correctly handled by everyone.
     assert x[0] >= 0.9
-    assert all(x[1:] < 0.1) or name == "CMA"
+    # Those ones are not super fast for secundary variables.
+    assert all(np.abs(x[1:]) < 0.1) or name in (
+        "CMA",
+        "PSO",
+        "OnePlusOne",
+        "RandomSearch",
+    ), f"0.1 not reached by {name}: {x[1:]}."
+    # Those ones will not be able to deal with secundary variables.
+    assert all(np.abs(x[1:]) < 0.2) or name in (
+        "CMA",
+        "RandomSearch",
+        "PSO",
+        "OnePlusOne",
+    ), f"0.2 not reached by {name}: {x[1:]}."
+    # PSO and OnePlusOne have big difficulties for secundary variables.
+    assert all(np.abs(x[1:]) < 0.4) or name in ("PSO", "OnePlusOne")
