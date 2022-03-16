@@ -149,8 +149,8 @@ class Pyomo(base.ExperimentFunction):
         self._descriptors.update(name=exp_tag, with_offset=bool(loss_offset))
 
     def add_loss_offset(self, budget: int) ->None:
-        """Stores in self._best_pyomo_val the best value obtained by a solver on the same instance for a given budget in a sequential optimization.
-        TODO: investigate what Pyomo does in the parallel case."""
+        """Offsets the loss by the value obtained by Pyomo's solver with a given budget.
+        """
         #solver = "glpk"
         solver = "ipopt"
         solver  = pyomo.SolverFactory(solver)
