@@ -925,7 +925,7 @@ def test_pymoo_batched() -> None:
 def test_frontier_optim(name:str) -> None:
     x = (
         optlib.registry[name](ng.p.Array(shape=(4,), lower=-1., upper=1.), budget=2000)
-        .minimize(lambda x: sum([x_ ** 2 for x_ in x]) - 20 * x[0])
+        .minimize(lambda x: sum(x **2) - 20 * x[0])
         .value
     )
     assert x[0] >= 0.9
