@@ -946,4 +946,4 @@ def test_frontier_optim(name: str) -> None:
         "OnePlusOne",
     ), f"0.2 not reached by {name}: {x[1:]}."
     # PSO and OnePlusOne have big difficulties for secundary variables.
-    assert all(np.abs(x[1:]) < 0.4) or name in ("PSO", "OnePlusOne")
+    assert all(np.abs(x[1:]) < 0.4) or name in ("PSO", "RandomSearch", "OnePlusOne")
