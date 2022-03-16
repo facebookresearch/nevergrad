@@ -96,11 +96,8 @@ def team_pursuit_simulation(x) -> float:
         #    pacing_strategy[i] = 100 * pacing_strategy[i] + 200
 
     # Create a mensteampursuit oor womensteampursuit object.
-    if len(pacing) == 31:
-        team_pursuit = mensteampursuit()
-    else:
-        team_pursuit = womensteampursuit()
-        assert len(pacing) == 23
+    team_pursuit: tp.Any = womensteampursuit() if len(pacing) == 23 else mensteampursuit()
+    assert len(pacing) in (23, 31)
 
     # Simulate event with the default strategies
     result = team_pursuit.simulate(transition, pacing)
