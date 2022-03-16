@@ -101,7 +101,7 @@ class Pyomo(base.ExperimentFunction):
     - Any changes on the model externally can lead to unexpected behaviours.
     """
 
-    def __init__(self, model: pyomo.Model, best_pyomo_val: float=float("nan")) -> None:
+    def __init__(self, model: pyomo.Model, loss_offset: float = 0.0) -> None:
         if isinstance(model, pyomo.ConcreteModel):
             self._model_instance = model.clone()  # To enable the objective function to run in parallel
         else:
