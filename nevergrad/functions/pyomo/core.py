@@ -146,7 +146,7 @@ class Pyomo(base.ExperimentFunction):
         exp_tag += "|" + ",".join([n.name for n in self.all_constraints])
         self.register_initialization(model=self._model_instance, best_pyomo_val=self._best_pyomo_val)
         #self.register_initialization(name=exp_tag, model=self._model_instance)
-        self._descriptors.update(name=exp_tag)
+        self._descriptors.update(name=exp_tag, with_offset=bool(loss_offset))
 
     def add_loss_offset(self, budget: int) ->None:
         """Stores in self._best_pyomo_val the best value obtained by a solver on the same instance for a given budget in a sequential optimization.
