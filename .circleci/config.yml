@@ -203,7 +203,7 @@ jobs:
           when: always
           command: |
             . venv/bin/activate
-            TESTFILES=$(circleci tests glob tests/**/test*.py | circleci tests split --split-by=timings)
+            TESTFILES=$(circleci tests glob **/test*.py | circleci tests split --split-by=timings)
             pytest $TESTFILES -v --exitfirst --durations=20 --cov=nevergrad
 
 
