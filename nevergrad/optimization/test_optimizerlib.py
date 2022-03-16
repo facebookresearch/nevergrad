@@ -7,7 +7,7 @@ import re
 import sys
 import time
 import random
-import inspect 
+import inspect
 import logging
 import platform
 import tempfile
@@ -204,7 +204,7 @@ def suggestable(name: str) -> bool:
 
 def suggestion_testing(
     name: str,
-    instrumentation: np.p.Array,
+    instrumentation: ng.p.Array,
     suggestion: np.ndarray,
     budget: int,
     objective_function: tp.Callable[..., tp.Any],
