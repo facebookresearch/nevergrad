@@ -28,7 +28,7 @@ class AutoSKlearnBenchmark(base.ExperimentFunction):
     ) -> None:
         if os.name == "nt":
             raise UnsupportedExperiment("Auto-Sklearn is not working under Windows")
-            
+
         from .ngautosklearn import get_parametrization, _eval_function, get_config_space
         import openml
         import submitit
