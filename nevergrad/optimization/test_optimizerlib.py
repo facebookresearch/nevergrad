@@ -210,7 +210,7 @@ def suggestion_testing(
     instrumentation: tp.Union[ng.p.Array, ng.p.Instrumentation],
     suggestion: np.ndarray,
     budget: int,
-    objective_function: tp.Callable,
+    objective_function: tp.Callable[..., tp.Any],
     optimum: tp.Optional[np.ndarray] = None,
     threshold: tp.Optional[float] = None,
 ):
