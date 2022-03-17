@@ -14,6 +14,7 @@ from nevergrad.functions import base as fbase
 from nevergrad.functions import ExperimentFunction
 from nevergrad.functions import ArtificialFunction
 from nevergrad.functions import FarOptimumFunction
+from nevergrad.functions.fishing import OptimizeFish
 from nevergrad.functions.pbt import PBT
 from nevergrad.functions.ml import MLTuning
 from nevergrad.functions import mlda as _mlda
@@ -1175,6 +1176,21 @@ def aquacrop_fao(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                             yield xp
 
 
+@registry.register
+def fishing(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Lotka-Volterra equations"""
+    funcs = [OptimizeFish(i) for i in [35, 70, 105]
+    seedg = create_seed_generator(seed)
+    optims = get_optimizers("basics", seed=next(seedg))
+    for budget in [25, 50, 100, 200, 400, 800, 1600]:
+        if num_workers < budget:
+            for algo in optims:
+                for fu in funcs:
+                    xp = Experiment(fu, algo, budget, seed=next(seedg))
+                    if not xp.is_incoherent:
+                        yield xp
+                            
+                            
 @registry.register
 def rocket(seed: tp.Optional[int] = None, seq: bool = False) -> tp.Iterator[Experiment]:
     """Rocket simulator. Maximize max altitude by choosing the thrust schedule, given a total thrust.
