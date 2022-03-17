@@ -266,7 +266,7 @@ def test_harder_suggest_optimizers(name: str) -> None:
 
 
 @skip_win_perf  # type: ignore
-def test_harder_continuous_suggest_optimizers(name: str) -> None:
+def test_harder_continuous_suggest_optimizers() -> None:
     """Checks that somes optimizer can converge when provided with a good suggestion."""
     instrum = ng.p.Array(shape=(100,)).set_bounds(0.0, 1.0)
     optimum = np.asarray([0] * 17 + [1] * 17 + [0] * 66)
