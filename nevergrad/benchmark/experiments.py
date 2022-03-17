@@ -1201,7 +1201,7 @@ def irrigation(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Irrigation simulator. Maximize leaf area index,
     so that you get a lot of primary production.
     Sequential or 30 workers."""
-    funcs = [Irrigation(i) for i in range(17)]
+    funcs = [Irrigation(i) for i in range(57)]
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", seed=next(seedg))
     for budget in [25, 50, 100, 200]:

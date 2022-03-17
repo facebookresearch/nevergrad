@@ -8,7 +8,7 @@ from . import irrigation
 
 
 def test_irrigation() -> None:
-    func = irrigation.Irrigation(2)
+    func = irrigation.Irrigation(3)
     x = np.random.rand(func.dimension)
     value = func(x)
     value2 = func(x)
