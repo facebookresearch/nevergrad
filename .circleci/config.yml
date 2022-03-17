@@ -186,7 +186,7 @@ jobs:
           command: |
             . venv/bin/activate
             black --version
-            black nevergrad --check
+            black nevergrad --check --diff
 
 
   pytests:
