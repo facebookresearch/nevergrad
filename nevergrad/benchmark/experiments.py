@@ -1183,12 +1183,11 @@ def fishing(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", seed=next(seedg))
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
-        if num_workers < budget:
-            for algo in optims:
-                for fu in funcs:
-                    xp = Experiment(fu, algo, budget, seed=next(seedg))
-                    if not xp.is_incoherent:
-                        yield xp
+        for algo in optims:
+            for fu in funcs:
+                xp = Experiment(fu, algo, budget, seed=next(seedg))
+                if not xp.is_incoherent:
+                    yield xp
                             
                             
 @registry.register
