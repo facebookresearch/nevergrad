@@ -39,22 +39,29 @@ class Irrigation(ArrayExperimentFunction):
         self.soil = CABOFileReader(os.path.join(data_dir, "soil", "ec3.soil"))
         param = ng.p.Array(shape=(8,), lower=(0.0), upper=(1.0)).set_name("irrigation8")
         super().__init__(self.leaf_area_index, parametrization=param, symmetry=symmetry)
+        self.address = self.parametrization.random_state.choice(
+            [
+                "Saint-Leger-Bridereix",
+                "Dun-Le-Palestel",
+                "Kolkata",
+                "Antananarivo",
+                "Santiago",
+                "Lome",
+                "Cairo",
+                "Ouagadougou",
+                "Yamoussoukro",
+                "Yaounde",
+                "Kiev",
+            ]
+        )
+        geolocator = Nominatim(user_agent="NG/PCSE")
+        location = geolocator.geocode(self.address)
+        self.weatherdataprovider = NASAPowerWeatherDataProvider(
+            latitude=location.latitude, longitude=location.longitude
+        )
+
+        
         for _ in range(1000):
-            self.address = self.parametrization.random_state.choice(
-                [
-                    "Saint-Leger-Bridereix",
-                    "Dun-Le-Palestel",
-                    "Kolkata",
-                    "Antananarivo",
-                    "Santiago",
-                    "Lome",
-                    "Cairo",
-                    "Ouagadougou",
-                    "Yamoussoukro",
-                    "Yaounde",
-                    "Kiev",
-                ]
-            )
 
             cropd = YAMLCropDataProvider()
             crop_types = [c for c in cropd.crop_types if "obacco" not in c]
@@ -86,13 +93,6 @@ class Irrigation(ArrayExperimentFunction):
 
         crop = YAMLCropDataProvider()
 
-        geolocator = Nominatim(user_agent="NG/PCSE")
-        location = geolocator.geocode(self.address)
-
-        weatherdataprovider = NASAPowerWeatherDataProvider(
-            latitude=location.latitude, longitude=location.longitude
-        )
-
         yaml_agro = f"""
         - 2006-01-01:
             CropCalendar:
@@ -116,7 +116,7 @@ class Irrigation(ArrayExperimentFunction):
         """
         try:
             agromanagement = yaml.safe_load(yaml_agro)
-            wofost = Wofost72_WLP_FD(parameterprovider, weatherdataprovider, agromanagement)
+            wofost = Wofost72_WLP_FD(parameterprovider, self.weatherdataprovider, agromanagement)
             wofost.run_till_terminate()
         except Exception as e:
             assert (
