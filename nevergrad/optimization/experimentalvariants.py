@@ -357,24 +357,40 @@ LhsHSDE = DifferentialEvolution(initialization="LHS", high_speed=True).set_name(
 
 # CMA variants built by Risto.
 # The four configurations obtained on yasmallbbob (CMA1 is supposed to be the best).
-#49  --solver=CMA-ES --scale=0.4151 --popsize_factor=9 --elitist=False --diagonal=False --fcmaes=True --random_init=False
-#35  --solver=CMA-ES --scale=0.3177 --popsize_factor=7 --elitist=False --diagonal=False --fcmaes=True --random_init=False
-#10  --solver=CMA-ES --scale=6.1404 --popsize_factor=8 --elitist=True --diagonal=False --fcmaes=False --random_init=False
-#60  --solver=CMA-ES --scale=0.4267 --popsize_factor=9 --elitist=False --diagonal=False --fcmaes=True --random_init=False
-CMA1 = ParametrizedCMA(scale=0.4151, popsize_factor=9, elitist=False, diagonal=False, fcmaes=True).set_name("CMA1", register=True)
-CMA2 = ParametrizedCMA(scale=0.3177, popsize_factor=7, elitist=False, diagonal=False, fcmaes=True).set_name("CMA2", register=True)
-CMA3 = ParametrizedCMA(scale=6.1404, popsize_factor=8, elitist=True, diagonal=False, fcmaes=False).set_name("CMA3", register=True)
-CMA4 = ParametrizedCMA(scale=0.4267, popsize_factor=9, elitist=False, diagonal=False, fcmaes=True).set_name("CMA4", register=True)
+# 49  --solver=CMA-ES --scale=0.4151 --popsize_factor=9 --elitist=False --diagonal=False --fcmaes=True --random_init=False
+# 35  --solver=CMA-ES --scale=0.3177 --popsize_factor=7 --elitist=False --diagonal=False --fcmaes=True --random_init=False
+# 10  --solver=CMA-ES --scale=6.1404 --popsize_factor=8 --elitist=True --diagonal=False --fcmaes=False --random_init=False
+# 60  --solver=CMA-ES --scale=0.4267 --popsize_factor=9 --elitist=False --diagonal=False --fcmaes=True --random_init=False
+CMA1 = ParametrizedCMA(scale=0.4151, popsize_factor=9, elitist=False, diagonal=False, fcmaes=True).set_name(
+    "CMA1", register=True
+)
+CMA2 = ParametrizedCMA(scale=0.3177, popsize_factor=7, elitist=False, diagonal=False, fcmaes=True).set_name(
+    "CMA2", register=True
+)
+CMA3 = ParametrizedCMA(scale=6.1404, popsize_factor=8, elitist=True, diagonal=False, fcmaes=False).set_name(
+    "CMA3", register=True
+)
+CMA4 = ParametrizedCMA(scale=0.4267, popsize_factor=9, elitist=False, diagonal=False, fcmaes=True).set_name(
+    "CMA4", register=True
+)
 # The four configurations obtained on yabbob.
-#51  --solver=CMA-ES --scale=0.3739 --popsize_factor=3 --elitist=False --diagonal=False --fcmaes=False
-#--random_init=False
-#45  --solver=CMA-ES --scale=0.3607 --popsize_factor=3 --elitist=False --diagonal=False --fcmaes=False
+# 51  --solver=CMA-ES --scale=0.3739 --popsize_factor=3 --elitist=False --diagonal=False --fcmaes=False
+# --random_init=False
+# 45  --solver=CMA-ES --scale=0.3607 --popsize_factor=3 --elitist=False --diagonal=False --fcmaes=False
 ##--random_init=False
-#44  --solver=CMA-ES --scale=0.4699 --popsize_factor=3 --elitist=False --diagonal=False --fcmaes=False
-#--random_init=False
-#27  --solver=CMA-ES --scale=0.6221 --popsize_factor=4 --elitist=False --diagonal=False --fcmaes=False
-#--random_init=False
-CMA5 = ParametrizedCMA(scale=0.3739, popsize_factor=3, elitist=False, diagonal=False, fcmaes=False).set_name("CMA5", register=True)
-CMA6 = ParametrizedCMA(scale=0.3607, popsize_factor=3, elitist=False, diagonal=False, fcmaes=False).set_name("CMA6", register=True)
-CMA7 = ParametrizedCMA(scale=0.4699, popsize_factor=3, elitist=False, diagonal=False, fcmaes=False).set_name("CMA7", register=True)
-CMA8 = ParametrizedCMA(scale=0.6221, popsize_factor=4, elitist=False, diagonal=False, fcmaes=False).set_name("CMA8", register=True)
+# 44  --solver=CMA-ES --scale=0.4699 --popsize_factor=3 --elitist=False --diagonal=False --fcmaes=False
+# --random_init=False
+# 27  --solver=CMA-ES --scale=0.6221 --popsize_factor=4 --elitist=False --diagonal=False --fcmaes=False
+# --random_init=False
+CMA5 = ParametrizedCMA(scale=0.3739, popsize_factor=3, elitist=False, diagonal=False, fcmaes=False).set_name(
+    "CMA5", register=True
+)
+CMA6 = ParametrizedCMA(scale=0.3607, popsize_factor=3, elitist=False, diagonal=False, fcmaes=False).set_name(
+    "CMA6", register=True
+)
+CMA7 = ParametrizedCMA(scale=0.4699, popsize_factor=3, elitist=False, diagonal=False, fcmaes=False).set_name(
+    "CMA7", register=True
+)
+CMA8 = ParametrizedCMA(scale=0.6221, popsize_factor=4, elitist=False, diagonal=False, fcmaes=False).set_name(
+    "CMA8", register=True
+)
