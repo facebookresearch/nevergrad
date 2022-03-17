@@ -1,8 +1,8 @@
 black==20.8b1
-mypy==0.931
+mypy==0.9
 pytest>=4.3.0
 pytest-cov>=2.6.1
-pylint>=2.4.4
+pylint==2.4.4
 wheel>=0.33.6
 setuptools>=41.2.0
 sphinx>=3.3.0
