@@ -1188,8 +1188,8 @@ def fishing(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                 xp = Experiment(fu, algo, budget, seed=next(seedg))
                 if not xp.is_incoherent:
                     yield xp
-                            
-                            
+
+
 @registry.register
 def rocket(seed: tp.Optional[int] = None, seq: bool = False) -> tp.Iterator[Experiment]:
     """Rocket simulator. Maximize max altitude by choosing the thrust schedule, given a total thrust.
