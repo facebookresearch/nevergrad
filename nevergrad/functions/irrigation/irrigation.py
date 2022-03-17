@@ -17,10 +17,8 @@ import nevergrad as ng
 from ..base import ArrayExperimentFunction
 from geopy.geocoders import Nominatim
 import os
-import sys
 import pandas as pd
 import yaml
-import pcse
 from pcse.fileinput import CABOFileReader, YAMLCropDataProvider
 from pcse.models import Wofost72_WLP_FD
 from pcse.db import NASAPowerWeatherDataProvider
@@ -41,7 +39,7 @@ class Irrigation(ArrayExperimentFunction):
         self.soil = CABOFileReader(os.path.join(data_dir, "soil", "ec3.soil"))
         param = ng.p.Array(shape=(8,), lower=(0.0), upper=(1.0)).set_name("irrigation8")
         super().__init__(self.leaf_area_index, parametrization=param, symmetry=symmetry)
-        for u in range(1000):
+        for _ in range(1000):
             self.address = self.parametrization.random_state.choice(
                 [
                     "Saint-Leger-Bridereix",
