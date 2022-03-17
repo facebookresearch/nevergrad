@@ -11,44 +11,62 @@ https://raw.githubusercontent.com/purdue-orbital/pcse-simulation/master/Simulati
 
 
 from pathlib import Path
-
 import urllib.request  # Necessary for people who will uncomment the part using data under EUPL license.
 import numpy as np
 import nevergrad as ng
 from ..base import ArrayExperimentFunction
 from geopy.geocoders import Nominatim
+import os
+import sys
+import pandas as pd
+import yaml
+import pcse
+from pcse.fileinput import CABOFileReader, YAMLCropDataProvider
+from pcse.models import Wofost72_WLP_FD
+from pcse.db import NASAPowerWeatherDataProvider
+from pcse.util import WOFOST72SiteDataProvider
+from pcse.base import ParameterProvider
+
 
 # pylint: disable=too-many-locals,too-many-statements
 
 
 class Irrigation(ArrayExperimentFunction):
     def __init__(self, symmetry: int) -> None:
-        import nevergrad as ng
-
+        data_dir = Path(__file__).with_name("data")
+        urllib.request.urlretrieve(
+            "https://raw.githubusercontent.com/ajwdewit/pcse_notebooks/master/data/soil/ec3.soil",
+            str(data_dir) + "/soil/ec3.soil",
+        )
+        self.soil = CABOFileReader(os.path.join(data_dir, "soil", "ec3.soil"))
         param = ng.p.Array(shape=(8,), lower=(0.0), upper=(1.0)).set_name("irrigation8")
         super().__init__(self.leaf_area_index, parametrization=param, symmetry=symmetry)
-        self.address = self.parametrization.random_state.choice(
-            [
-                "Saint-Leger-Bridereix",
-                "Dun-Le-Palestel",
-                "Kolkata",
-                "Antananarivo",
-                "Santiago",
-                "Lome",
-                "Cairo",
-                "Ouagadougou",
-                "Yamoussoukro",
-                "Yaounde",
-                "Kiev",
-            ]
-        )
-        from pcse.fileinput import YAMLCropDataProvider
+        for u in range(1000):
+            self.address = self.parametrization.random_state.choice(
+                [
+                    "Saint-Leger-Bridereix",
+                    "Dun-Le-Palestel",
+                    "Kolkata",
+                    "Antananarivo",
+                    "Santiago",
+                    "Lome",
+                    "Cairo",
+                    "Ouagadougou",
+                    "Yamoussoukro",
+                    "Yaounde",
+                    "Kiev",
+                ]
+            )
 
-        cropd = YAMLCropDataProvider()
-        self.cropname = self.parametrization.random_state.choice(cropd.crop_types)
-        self.cropvariety = self.parametrization.random_state.choice(
-            list(cropd.get_crops_varieties()[self.cropname])
-        )
+            cropd = YAMLCropDataProvider()
+            self.cropname = self.parametrization.random_state.choice(cropd.crop_types)
+            self.cropvariety = self.parametrization.random_state.choice(
+                list(cropd.get_crops_varieties()[self.cropname])
+            )
+            # We check if the problem is challenging.
+            v = [self.leaf_area_index(np.random.rand(8)) for _ in range(5)]
+            if min(v) != max(v):
+                break
         print(f"we work on {self.cropname} with variety {self.cropvariety}")
 
     def leaf_area_index(self, x: np.ndarray):
@@ -60,31 +78,6 @@ class Irrigation(ArrayExperimentFunction):
         a1 = 15.0 * x[5] / (x[4] + x[5] + x[6] + x[7])
         a2 = 15.0 * x[6] / (x[4] + x[5] + x[6] + x[7])
         a3 = 15.0 * x[7] / (x[4] + x[5] + x[6] + x[7])
-        import os, sys
-
-        # import matplotlib
-        # matplotlib.style.use("ggplot")
-        # import matplotlib.pyplot as plt
-        import pandas as pd
-        import yaml
-
-        # try:
-        #    raise Exception("We do not import EUPL-licensed packages by default. Check if EUPL is ok for you.")
-        import pcse
-
-        # except:
-        #    raise ng.errors.UnsupportedExperiment(
-        #        "You need to install PCSE. We remove all imports in case you do not want EUPL code."
-        #    )
-        from pcse.models import Wofost72_WLP_FD
-        from pcse.fileinput import CABOFileReader, YAMLCropDataProvider
-
-        from pcse.db import NASAPowerWeatherDataProvider
-        from pcse.util import WOFOST72SiteDataProvider
-        from pcse.base import ParameterProvider
-
-        # data_dir = os.path.join(os.getcwd(), "data")
-        data_dir = Path(__file__).with_name("data")
 
         # print("This notebook was built with:")
         # print("python version: %s " % sys.version)
@@ -93,23 +86,17 @@ class Irrigation(ArrayExperimentFunction):
         crop = YAMLCropDataProvider()
         if os.environ.get("CIRCLECI", False):
             raise ng.errors.UnsupportedExperiment("No HTTP request in CircleCI")
-        # raise Exception(
-        #    "Check that you have no problem with the EUPL license before uncommenting the lines below."
-        # )
-        urllib.request.urlretrieve(
-            "https://raw.githubusercontent.com/ajwdewit/pcse_notebooks/master/data/soil/ec3.soil",
-            str(data_dir) + "/soil/ec3.soil",
-        )
-        soil = CABOFileReader(os.path.join(data_dir, "soil", "ec3.soil"))
         site = WOFOST72SiteDataProvider(WAV=100, CO2=360)
-        parameterprovider = ParameterProvider(soildata=soil, cropdata=crop, sitedata=site)
+        parameterprovider = ParameterProvider(soildata=self.soil, cropdata=crop, sitedata=site)
 
         crop = YAMLCropDataProvider()
 
         geolocator = Nominatim(user_agent="NG/PCSE")
         location = geolocator.geocode(self.address)
 
-        weatherdataprovider = NASAPowerWeatherDataProvider(latitude=52, longitude=5)
+        weatherdataprovider = NASAPowerWeatherDataProvider(
+            latitude=location.latitude, longitude=location.longitude
+        )
 
         yaml_agro = f"""
         - 2006-01-01:

@@ -4,16 +4,23 @@
 # LICENSE file in the root directory of this source tree.
 
 import numpy as np
+import pytest
 from . import irrigation
 
 
-def test_irrigation() -> None:
-    func = irrigation.Irrigation(3)
+@pytest.mark.parametrize("i", list(range(7)))
+def test_irrigation(i: int) -> None:
+    func = irrigation.Irrigation(i)
     x = np.random.rand(func.dimension)
     value = func(x)
     value2 = func(x)
-    x = np.random.rand(func.dimension)
-    value3 = func(x)
+    value3 = func(np.random.rand(func.dimension))
+    value4 = func(np.random.rand(func.dimension))
+    value5 = func(np.random.rand(func.dimension))
+    value6 = func(np.random.rand(func.dimension))
+    value7 = func(np.random.rand(func.dimension))
+    value8 = func(np.random.rand(func.dimension))
     assert value <= 0.0  # type: ignore
-    assert value3 != value  # this should not be flat.
+    v = [value, value3, value4, value5, value6, value7, value8]
+    assert min(v) != max(v)  # this should not be flat.
     np.testing.assert_almost_equal(value, value2)
