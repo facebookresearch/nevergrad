@@ -59,7 +59,8 @@ class Irrigation(ArrayExperimentFunction):
             )
 
             cropd = YAMLCropDataProvider()
-            self.cropname = self.parametrization.random_state.choice(cropd.crop_types)
+            crop_types = [c for c in cropd.crop_types if "obacco" not in c]
+            self.cropname = self.parametrization.random_state.choice(crop_types)
             self.cropvariety = self.parametrization.random_state.choice(
                 list(cropd.get_crops_varieties()[self.cropname])
             )
@@ -67,7 +68,7 @@ class Irrigation(ArrayExperimentFunction):
             v = [self.leaf_area_index(np.random.rand(8)) for _ in range(5)]
             if min(v) != max(v):
                 break
-        print(f"we work on {self.cropname} with variety {self.cropvariety}")
+        print(f"we work on {self.cropname} with variety {self.cropvariety} in {self.address}.")
 
     def leaf_area_index(self, x: np.ndarray):
         d0 = int(1.01 + 29.98 * x[0])
@@ -78,10 +79,6 @@ class Irrigation(ArrayExperimentFunction):
         a1 = 15.0 * x[5] / (x[4] + x[5] + x[6] + x[7])
         a2 = 15.0 * x[6] / (x[4] + x[5] + x[6] + x[7])
         a3 = 15.0 * x[7] / (x[4] + x[5] + x[6] + x[7])
-
-        # print("This notebook was built with:")
-        # print("python version: %s " % sys.version)
-        # print("PCSE version: %s" % pcse.__version__)
 
         crop = YAMLCropDataProvider()
         if os.environ.get("CIRCLECI", False):
@@ -133,10 +130,4 @@ class Irrigation(ArrayExperimentFunction):
         df = pd.DataFrame(output).set_index("day")
         df.tail()
 
-        # print(output)
-        # print(len(output))
         return -sum([float(o["LAI"]) for o in output if o["LAI"] is not None])
-        # fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(16,8))
-        # df['LAI'].plot(ax=axes[0], title="Leaf Area Index")
-        # df['SM'].plot(ax=axes[1], title="Root zone soil moisture")
-        # fig.autofmt_xdate()
