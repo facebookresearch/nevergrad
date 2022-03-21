@@ -1179,7 +1179,7 @@ def aquacrop_fao(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 @registry.register
 def fishing(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Lotka-Volterra equations"""
-    funcs = [OptimizeFish(i) for i in [35, 70, 105]]
+    funcs = [OptimizeFish(i) for i in [17, 35, 52, 70, 88, 105]]
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", seed=next(seedg))
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
