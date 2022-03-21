@@ -22,7 +22,7 @@ class Mutator:
         """
         w = v
         while discretization.threshold_discretization(
-            [w - shif], arity
+            [w], arity
         ) == discretization.threshold_discretization([v], arity):
             w = self.random_state.normal(0.0, 1.0) if arity == 0 else self.random_state.randint(arity)
         return w
