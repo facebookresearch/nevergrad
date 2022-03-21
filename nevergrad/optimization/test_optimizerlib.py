@@ -938,4 +938,4 @@ def test_frontier_optim(name: str) -> None:
     tol.update({name: 0.4 for name in ["PSO", "RandomSearch", "OnePlusOne"]})
     for error in [0.1, 0.2, 0.4]:
         if tol.get(name, 0.05) < error:
-            assert all(np.abs(x[1:]) < error, f"{error} not reached by {name}: {x[1:]}."")
+            assert all(np.abs(x[1:]) < error), f"{error} not reached by {name}: {x[1:]}."")
