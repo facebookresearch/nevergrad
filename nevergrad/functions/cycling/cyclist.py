@@ -7,7 +7,7 @@ from .teampursuit import teampursuit
 import math
 
 
-class cyclist:
+class Cyclist:
 
     # static class variables
     max_power = 1200

@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 from .teampursuit import teampursuit
-from .cyclist import cyclist
+from .cyclist import Cyclist
 from .simulationresult import simulationresult
 import math
 
@@ -21,7 +21,7 @@ class mensteampursuit(teampursuit):
         super().__init__()
         self.team = []
         for i in range(0, self.team_size):
-            self.team.append(cyclist(1.75, 75.0, 6.0, self, i + 1, "male"))
+            self.team.append(Cyclist(1.75, 75.0, 6.0, self, i + 1, "male"))
 
     def simulate(self, transition_strategy, pacing_strategy):
 
@@ -34,9 +34,9 @@ class mensteampursuit(teampursuit):
                 f"Pacing strategy for the mens team pursuit must have exactly {self.race_segments} elements"
             )
         for i in range(0, self.race_segments):
-            if pacing_strategy[i] > cyclist.max_power or pacing_strategy[i] < cyclist.min_power:
+            if pacing_strategy[i] > Cyclist.max_power or pacing_strategy[i] < Cyclist.min_power:
                 raise ValueError(
-                    f"All power elements of the pacing strategy must be in the range {cyclist.min_power}-{cyclist.max_power} Watts, was {pacing_strategy[i]}"
+                    f"All power elements of the pacing strategy must be in the range {Cyclist.min_power}-{Cyclist.max_power} Watts, was {pacing_strategy[i]}"
                 )
 
         for i in range(0, len(self.team)):
