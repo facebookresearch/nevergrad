@@ -916,3 +916,20 @@ def test_pymoo_batched() -> None:
             loss = losses.pop()
             optimizer.tell(x, loss)
     assert len(optimizer._current_batch) == 0  # type: ignore
+
+
+@skip_win_perf  # type: ignore
+@pytest.mark.parametrize("name", [r for r in registry if "Discrete" in r])  # type: ignore
+def test_performance_discrete(name: str) -> None:
+    instrum = ng.p.TransitionChoice(range(30), repetitions=10)
+    all_scores = []
+    # Randomly draw corners, and optimize a simple function in each case to see if we have nearly the same performance for
+    # all corners.
+    for _ in range(10):
+        target = np.random.choice([0, 29], size=10)
+        scores = []
+        for _ in range(11):
+            scores += [np.sum(registry[name](instrum, budget=30).minimize(lambda x: np.sum(x-target)**2).value - target)**2]
+        all_scores += [np.median(scores)]
+    assert max(all_scores) < 7 * min(all_scores)
+
