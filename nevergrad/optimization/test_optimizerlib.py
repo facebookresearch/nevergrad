@@ -929,7 +929,12 @@ def test_performance_discrete(name: str) -> None:
         target = np.random.choice([0, 29], size=10)
         scores = []
         for _ in range(11):
-            scores += [np.sum(registry[name](instrum, budget=30).minimize(lambda x: np.sum(x-target)**2).value - target)**2]
+            scores += [
+                np.sum(
+                    registry[name](instrum, budget=30).minimize(lambda x: np.sum(x - target) ** 2).value
+                    - target
+                )
+                ** 2
+            ]
         all_scores += [np.median(scores)]
     assert max(all_scores) < 7 * min(all_scores)
-

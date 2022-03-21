@@ -29,7 +29,7 @@ def threshold_discretization(x: tp.ArrayLike, arity: int = 2) -> tp.List[int]:
     ----
     - nans are processed as negative infs (yields 0)
     """
-    if arity > 0:
+    if arity > 1:
         return np.clip(x, 0, arity - 1).astype(int).tolist()  # type: ignore
     x = np.array(x, copy=True)
     if np.any(np.isnan(x)):
