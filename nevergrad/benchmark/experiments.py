@@ -266,7 +266,9 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                         total_xp_per_optim += 1
                         for optim in optims:
                             yield Experiment(dfunc, optim, num_workers=nw, budget=budget, seed=next(seedg))
-    assert total_xp_per_optim == 57, f"Including discrete, we check xps per optimizer (got {total_xp_per_optim})."
+    assert (
+        total_xp_per_optim == 57
+    ), f"Including discrete, we check xps per optimizer (got {total_xp_per_optim})."
 
     # The multiobjective case.
     # TODO the upper bounds are really not well set for this experiment with cigar
