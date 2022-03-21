@@ -20,7 +20,8 @@ from .womensteampursuit import womensteampursuit
 from .mensteampursuit import mensteampursuit
 
 
-class cycling(base.ExperimentFunction):
+class Cycling(base.ExperimentFunction):
+
     """
     Team Pursuit Track Cycling Simulator.
 
