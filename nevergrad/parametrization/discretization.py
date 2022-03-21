@@ -37,9 +37,9 @@ def threshold_discretization(x: tp.ArrayLike, arity: int = 2) -> tp.List[int]:
         x[np.isnan(x)] = -np.inf
     return x
     # Deprecated.
-    #if arity == 2:  # special case, to have 0 yield 0
+    # if arity == 2:  # special case, to have 0 yield 0
     #    return (np.array(x) > 0).astype(int).tolist()  # type: ignore
-    #else:
+    # else:
     #    return np.clip(arity * scipy.stats.norm.cdf(x), 0, arity - 1).astype(int).tolist()  # type: ignore
 
 
