@@ -21,10 +21,10 @@ class Mutator:
         1/arity, 2/arity, ..., (arity-1)/arity.
         """
         w = v
-        while discretization.threshold_discretization([w], arity) == discretization.threshold_discretization(
-            [v], arity
-        ):
-            w = self.random_state.normal(0.0, 1.0)
+        while discretization.threshold_discretization(
+            [w - arity / 2.0], arity
+        ) == discretization.threshold_discretization([v - arity / 2.0], arity):
+            w = self.random_state.normal(arity / 2.0, 1.0)
         return w
 
     def doerr_discrete_mutation(self, parent: tp.ArrayLike, arity: int = 2) -> tp.ArrayLike:
@@ -68,7 +68,7 @@ class Mutator:
         """
         dimension = len(parent)
         if dimension == 1:  # corner case.
-            return self.random_state.normal(0.0, 1.0, size=1)  # type: ignore
+            return self.random_state.normal(arity / 2.0, 1.0, size=1)  # type: ignore
         out = np.array(parent, copy=True)
         ind = self.random_state.randint(dimension)
         out[ind] = self.significantly_mutate(out[ind], arity)
@@ -87,7 +87,7 @@ class Mutator:
         if intensity is None:
             intensity = 1 if dimension == 1 else int(self.random_state.randint(1, dimension))
         if dimension == 1:  # corner case.
-            return self.random_state.normal(0.0, 1.0, size=1)  # type: ignore
+            return self.random_state.normal(arity / 2.0, 1.0, size=1)  # type: ignore
         boolean_vector = np.ones(dimension, dtype=bool)
         while all(boolean_vector) and dimension != 1:
             boolean_vector = self.random_state.rand(dimension) > float(intensity) / dimension
