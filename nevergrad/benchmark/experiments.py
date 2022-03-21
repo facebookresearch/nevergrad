@@ -1970,7 +1970,7 @@ def team_cycling(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Experiment to optimise team pursuit track cycling problem."""
     seedg = create_seed_generator(seed)
     optims = ["NGOpt10", "CMA", "DE"]
-    funcs = [cycling(num) for num in [30, 31, 61, 22, 23, 45]]
+    funcs = [Cycling(num) for num in [30, 31, 61, 22, 23, 45]]
     for function in funcs:
         for budget in [3000]:
             for optim in optims:
