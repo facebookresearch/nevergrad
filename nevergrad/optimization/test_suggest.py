@@ -12,6 +12,13 @@ from . import base
 from .optimizerlib import registry
 
 
+# decorators to be used when testing on Windows is unecessary
+# or cumbersome
+skip_win_perf = pytest.mark.skipif(
+    sys.platform == "win32", reason="Slow, and no need to test performance on all platforms"
+)
+
+
 def suggestable(name: str) -> bool:
     # Some methods are not good with suggestions.
     keywords = ["TBPSA", "BO", "EMNA", "EDA", "BO", "Stupid", "Pymoo"]
