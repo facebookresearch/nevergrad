@@ -14,6 +14,7 @@ from nevergrad.functions import base as fbase
 from nevergrad.functions import ExperimentFunction
 from nevergrad.functions import ArtificialFunction
 from nevergrad.functions import FarOptimumFunction
+from nevergrad.functions.fishing import OptimizeFish
 from nevergrad.functions.pbt import PBT
 from nevergrad.functions.ml import MLTuning
 from nevergrad.functions import mlda as _mlda
@@ -1173,6 +1174,20 @@ def aquacrop_fao(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                         xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
                         if not xp.is_incoherent:
                             yield xp
+
+
+@registry.register
+def fishing(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Lotka-Volterra equations"""
+    funcs = [OptimizeFish(i) for i in [17, 35, 52, 70, 88, 105]]
+    seedg = create_seed_generator(seed)
+    optims = get_optimizers("basics", seed=next(seedg))
+    for budget in [25, 50, 100, 200, 400, 800, 1600]:
+        for algo in optims:
+            for fu in funcs:
+                xp = Experiment(fu, algo, budget, seed=next(seedg))
+                if not xp.is_incoherent:
+                    yield xp
 
 
 @registry.register
