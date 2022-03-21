@@ -90,20 +90,6 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                     return objective_function(data)
 
                 # Sbplx (based on Subplex) is used by default.
-                # list_nlopts = [
-                #    "NLOPT_LN_SBPLX",
-                #    "NLOPT_LN_PRAXIS",
-                #    "NLOPT_GN_DIRECT",
-                #    "NLOPT_GN_DIRECT_L",
-                #    "NLOPT_GN_CRS2_LM",
-                #    "NLOPT_GN_AGS",
-                #    "NLOPT_GN_ISRES",
-                #    "NLOPT_GN_ESCH",
-                #    "NLOPT_LN_COBYLA",
-                #    "NLOPT_LN_BOBYQA",
-                #    "NLOPT_LN_NEWUOA_BOUND",
-                #    "NLOPT_LN_NELDERMEAD",
-                # ]
                 nlopt_param = (
                     getattr(nlopt, weakself.method[6:]) if len(weakself.method) > 5 else nlopt.LN_SBPLX
                 )
@@ -115,8 +101,6 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 opt.set_upper_bounds(np.ones(weakself.dimension))
                 # opt.set_initial_step([0.05, 0.05])
                 opt.set_maxeval(budget)
-                # Relative tolerance for convergence
-                # opt.set_ftol_rel(1.0e-10)
 
                 # Start the optimization with the first guess
                 firstguess = 0.5 * np.ones(weakself.dimension)
@@ -193,7 +177,19 @@ class NonObjectOptimizer(base.ConfiguredOptimizer):
           approximating the objective function by quadratic models.
         - Powell
         - NLOPT* (https://nlopt.readthedocs.io/en/latest/; by default, uses Sbplx, based on Subplex);
-            can be NLOPT, NLOPT1, NLOPT2, ..., NLOPT13.
+            can be NLOPT,
+                NLOPT_LN_SBPLX,
+                NLOPT_LN_PRAXIS,
+                NLOPT_GN_DIRECT,
+                NLOPT_GN_DIRECT_L,
+                NLOPT_GN_CRS2_LM,
+                NLOPT_GN_AGS,
+                NLOPT_GN_ISRES,
+                NLOPT_GN_ESCH,
+                NLOPT_LN_COBYLA,
+                NLOPT_LN_BOBYQA,
+                NLOPT_LN_NEWUOA_BOUND,
+                NLOPT_LN_NELDERMEAD.
     random_restart: bool
         whether to restart at a random point if the optimizer converged but the budget is not entirely
         spent yet (otherwise, restarts from best point)
