@@ -5,6 +5,7 @@
 
 import pytest
 import numpy as np
+import sys
 import nevergrad as ng
 import nevergrad.common.typing as tp
 from nevergrad.common import testing
