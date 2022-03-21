@@ -798,7 +798,25 @@ This is actually an import from scipy-optimize, including Sequential Quadratic P
 <li><p>SQP (or SLSQP): very powerful e.g. in continuous noisy optimization. It is based on
 approximating the objective function by quadratic models.</p></li>
 <li><p>Powell</p></li>
-<li><p>NLOPT (<a class="reference external" href="https://nlopt.readthedocs.io/en/latest/">https://nlopt.readthedocs.io/en/latest/</a>; uses Sbplx, based on Subplex)</p></li>
+<li><dl class="simple">
+<dt>NLOPT* (<a class="reference external" href="https://nlopt.readthedocs.io/en/latest/">https://nlopt.readthedocs.io/en/latest/</a>; by default, uses Sbplx, based on Subplex);</dt><dd><dl class="simple">
+<dt>can be NLOPT,</dt><dd><p>NLOPT_LN_SBPLX,
+NLOPT_LN_PRAXIS,
+NLOPT_GN_DIRECT,
+NLOPT_GN_DIRECT_L,
+NLOPT_GN_CRS2_LM,
+NLOPT_GN_AGS,
+NLOPT_GN_ISRES,
+NLOPT_GN_ESCH,
+NLOPT_LN_COBYLA,
+NLOPT_LN_BOBYQA,
+NLOPT_LN_NEWUOA_BOUND,
+NLOPT_LN_NELDERMEAD.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</li>
 </ul>
 </p></li>
 <li><p><strong>random_restart</strong> (<em>bool</em>) – whether to restart at a random point if the optimizer converged but the budget is not entirely
