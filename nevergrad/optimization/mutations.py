@@ -21,9 +21,9 @@ class Mutator:
         1/arity, 2/arity, ..., (arity-1)/arity.
         """
         w = v
-        while discretization.threshold_discretization(
-            [w], arity
-        ) == discretization.threshold_discretization([v], arity):
+        while discretization.threshold_discretization([w], arity) == discretization.threshold_discretization(
+            [v], arity
+        ):
             w = self.random_state.normal(0.0, 1.0) if arity == 0 else self.random_state.randint(arity)
         return w
 
@@ -35,7 +35,7 @@ class Mutator:
         return self.doubledoerr_discrete_mutation(parent, max_ratio=0.5, arity=arity)
 
     def doubledoerr_discrete_mutation(
-        self, parent: tp.ArrayLike, max_ratio: float = 1.0, arity: int = 2
+        self, parent: tp.ArrayLike, max_ratio: float = 1.0, arity: int = 2  # type: ignore
     ) -> tp.ArrayLike:
         """Doerr's recommendation above can mutate up to half variables
         in average.
