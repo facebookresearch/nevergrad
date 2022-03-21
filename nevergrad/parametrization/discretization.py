@@ -29,14 +29,14 @@ def threshold_discretization(x: tp.ArrayLike, arity: int = 2) -> tp.List[int]:
     ----
     - nans are processed as negative infs (yields 0)
     """
-    if arity > 0 and arity < 500:  # We assume that 500 means << assume smoothness >>.
+    if arity > 0:
         return np.clip(x, 0, arity - 1).astype(int).tolist()  # type: ignore
     x = np.array(x, copy=True)
     if np.any(np.isnan(x)):
         warnings.warn("Encountered NaN values for discretization")
         x[np.isnan(x)] = -np.inf
     return x
-    #Deprecated.
+    # Deprecated.
     #if arity == 2:  # special case, to have 0 yield 0
     #    return (np.array(x) > 0).astype(int).tolist()  # type: ignore
     #else:
