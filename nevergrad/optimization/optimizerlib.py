@@ -85,7 +85,7 @@ class _OnePlusOne(base.Optimizer):
         self.sparse = int(sparse)  # True --> 1
         all_params = p.helpers.flatten(self.parametrization)
         arities = [len(param.choices) for _, param in all_params if isinstance(param, p.TransitionChoice)]
-        arity = max(arities) if len(arities) > 0 else 500
+        arity = max(arities, default=500)
         self.arity_for_discrete_mutation = arity
         # configuration
         if noise_handling is not None:
