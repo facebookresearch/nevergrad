@@ -921,14 +921,20 @@ def test_pymoo_batched() -> None:
 @skip_win_perf  # type: ignore
 @pytest.mark.parametrize("name", [r for r in registry if "Discrete" in r])  # type: ignore
 def test_performance_discrete(name: str) -> None:
-    instrum = ng.p.TransitionChoice(range(30), repetitions=10)
+    dimension = 5
+    instrum = ng.p.TransitionChoice(range(30), repetitions=dimension)
     all_scores = []
     # Randomly draw corners, and optimize a simple function in each case to see if we have nearly the same performance for
     # all corners.
+    optim = registry[name](instrum, budget=30)
+    first_guess = optim.ask()
+    optim.tell(first_guess, 0.)
+    second_guess = optim.ask()
+
     for _ in range(10):
-        target = np.random.choice([0, 29], size=10)
+        target = np.random.choice([0, 29], size=dimension)
         scores = []
-        for _ in range(11):
+        for _ in range(111):
             scores += [
                 np.sum(
                     registry[name](instrum, budget=30).minimize(lambda x: np.sum(x - target) ** 2).value
@@ -937,4 +943,4 @@ def test_performance_discrete(name: str) -> None:
                 ** 2
             ]
         all_scores += [np.median(scores)]
-    assert max(all_scores) < 7 * min(all_scores)
+    assert max(all_scores) < 7 * min(all_scores), f"First guess was {first_guess.value}, second guess was {second_guess.value}."
