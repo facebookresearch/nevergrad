@@ -932,18 +932,10 @@ def test_frontier_optim(name: str) -> None:
     # The most important variable is correctly handled by everyone.
     assert x[0] >= 0.9
     # Those ones are not super fast for secundary variables.
-    assert all(np.abs(x[1:]) < 0.1) or name in (
-        "CMA",
-        "PSO",
-        "OnePlusOne",
-        "RandomSearch",
-    ), f"0.1 not reached by {name}: {x[1:]}."
-    # Those ones will not be able to deal with secundary variables.
-    assert all(np.abs(x[1:]) < 0.2) or name in (
-        "CMA",
-        "RandomSearch",
-        "PSO",
-        "OnePlusOne",
-    ), f"0.2 not reached by {name}: {x[1:]}."
-    # PSO and OnePlusOne have big difficulties for secundary variables.
-    assert all(np.abs(x[1:]) < 0.4) or name in ("PSO", "RandomSearch", "OnePlusOne")
+    # Those ones are not super fast for secundary variables.
+    tol = {name: 0.2 for name in ["CMA", "RandomSearch"]}
+    # PSO and OnePlusOne have big difficulties for secundary variable
+    tol.update({name: 0.4 for name in ["PSO", "RandomSearch", "OnePlusOne"]})
+    for error in [0.1, 0.2, 0.4]:
+        if tol.get(name, 0.05) < error:
+            assert all(np.abs(x[1:]) < error, f"{error} not reached by {name}: {x[1:]}."")
