@@ -31,7 +31,7 @@ from nevergrad.functions import rl
 from nevergrad.functions.games import game
 from nevergrad.functions import iohprofiler
 from nevergrad.functions import helpers
-from nevergrad.functions.cycling import cycling
+from nevergrad.functions.cycling import Cycling
 from .xpbase import Experiment as Experiment
 from .xpbase import create_seed_generator
 from .xpbase import registry as registry  # noqa
