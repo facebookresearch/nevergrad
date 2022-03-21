@@ -1,7 +1,6 @@
+all_bo = ['BO', 'BOSplit', 'BayesOptimBO', 'ChainBOwithLHS', 'ChainBOwithLHS30', 'ChainBOwithLHSdim', 'ChainBOwithLHSsqrt', 'ChainBOwithMetaRecentering', 'ChainBOwithMetaRecentering30', 'ChainBOwithMetaRecenteringdim', 'ChainBOwithMetaRecenteringsqrt', 'ChainBOwithMetaTuneRecentering', 'ChainBOwithMetaTuneRecentering30', 'ChainBOwithMetaTuneRecenteringdim', 'ChainBOwithMetaTuneRecenteringsqrt', 'ChainBOwithR', 'ChainBOwithR30', 'ChainBOwithRdim', 'ChainBOwithRsqrt', 'LBO', 'MidQRBO', 'PCABO', 'PCABO80', 'PCABO95DoE20', 'QRBO', 'RBO']
 
-progressive = [ProgDiscAuto, ProgDisc13, ProgDiscInf, ProgAuto, Prog13, ProgInf]
-
-all_bo = ['BO', 'BOSplit', 'ChainBOwithLHS', 'ChainBOwithLHS30', 'ChainBOwithLHSdim', 'ChainBOwithLHSsqrt', 'ChainBOwithMetaRecentering', 'ChainBOwithMetaRecentering30', 'ChainBOwithMetaRecenteringdim', 'ChainBOwithMetaRecenteringsqrt', 'ChainBOwithMetaTuneRecentering', 'ChainBOwithMetaTuneRecentering30', 'ChainBOwithMetaTuneRecenteringdim', 'ChainBOwithMetaTuneRecenteringsqrt', 'ChainBOwithR', 'ChainBOwithR30', 'ChainBOwithRdim', 'ChainBOwithRsqrt', 'LBO', 'MidQRBO', 'QRBO', 'RBO']
+anisotropic_progressive = [ProgCMAAuto, ProgECMAAuto, ProgDEAuto, ProgTwoPointsDEAuto, ProgPSOAuto, ProgNoisyRL2Auto, ProgNoisyRL3Auto, ProgNoisyRL1Auto, ProgMixDeterministicRLAuto, ProgCMA3, ProgECMA3, ProgDE3, ProgTwoPointsDE3, ProgPSO3, ProgNoisyRL23, ProgNoisyRL33, ProgNoisyRL13, ProgMixDeterministicRL3, ProgCMA5, ProgECMA5, ProgDE5, ProgTwoPointsDE5, ProgPSO5, ProgNoisyRL25, ProgNoisyRL35, ProgNoisyRL15, ProgMixDeterministicRL5, ProgCMA9, ProgECMA9, ProgDE9, ProgTwoPointsDE9, ProgPSO9, ProgNoisyRL29, ProgNoisyRL39, ProgNoisyRL19, ProgMixDeterministicRL9, ProgCMA13, ProgECMA13, ProgDE13, ProgTwoPointsDE13, ProgPSO13, ProgNoisyRL213, ProgNoisyRL313, ProgNoisyRL113, ProgMixDeterministicRL13]
 
 baselines = ['OnePlusOne', 'DiscreteOnePlusOne', 'NoisyDiscreteOnePlusOne', 'PSO', 'DE', 'TwoPointsDE']
 
@@ -13,7 +12,7 @@ competence_map = ['NGO', 'Shiwa']
 
 competitive = ['DiagonalCMA', 'CMA', 'NGO', 'Shiwa', 'MetaNGOpt10', 'NaiveTBPSA', 'PSO', 'DE', 'LhsDE', 'RandomSearch', 'OnePlusOne', 'TwoPointsDE']
 
-discrete = ['DiscreteOnePlusOne', 'PortfolioDiscreteOnePlusOne', 'DiscreteLenglerOnePlusOne', 'AdaptiveDiscreteOnePlusOne', 'AnisotropicAdaptiveDiscreteOnePlusOne', 'DiscreteBSOOnePlusOne', 'DiscreteDoerrOnePlusOne', 'OptimisticDiscreteOnePlusOne', 'DoubleFastGADiscreteOnePlusOne', 'RecombiningPortfolioDiscreteOnePlusOne', 'MultiDiscrete', 'FastGADiscreteOnePlusOne']
+discrete = ['DiscreteOnePlusOne', 'PortfolioDiscreteOnePlusOne', 'DiscreteLenglerOnePlusOne', 'AdaptiveDiscreteOnePlusOne', 'AnisotropicAdaptiveDiscreteOnePlusOne', 'DiscreteBSOOnePlusOne', 'DiscreteDoerrOnePlusOne', 'OptimisticDiscreteOnePlusOne', 'DoubleFastGADiscreteOnePlusOne', 'SparseDoubleFastGADiscreteOnePlusOne', 'RecombiningPortfolioDiscreteOnePlusOne', 'MultiDiscrete', 'FastGADiscreteOnePlusOne', 'SparseDiscreteOnePlusOne']
 
 emna_variants = ['IsoEMNA', 'NaiveIsoEMNA', 'AnisoEMNA', 'NaiveAnisoEMNA', 'CMA', 'NaiveTBPSA', 'NaiveIsoEMNATBPSA', 'IsoEMNATBPSA', 'NaiveAnisoEMNATBPSA', 'AnisoEMNATBPSA']
 

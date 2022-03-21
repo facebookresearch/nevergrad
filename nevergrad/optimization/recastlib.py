@@ -33,19 +33,22 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
         self._normalizer: tp.Any = None
         self.initial_guess: tp.Optional[tp.ArrayLike] = None
         # configuration
-        assert method in [
-            "CmaFmin2",
-            "Nelder-Mead",
-            "COBYLA",
-            "SLSQP",
-            "NLOPT",
-            "Powell",
-        ], f"Unknown method '{method}'"
+        assert (
+            method
+            in [
+                "CmaFmin2",
+                "Nelder-Mead",
+                "COBYLA",
+                "SLSQP",
+                "Powell",
+            ]
+            or "NLOPT" in method
+        ), f"Unknown method '{method}'"
         self.method = method
         self.random_restart = random_restart
         # The following line rescales to [0, 1] if fully bounded.
 
-        if method in ("CmaFmin2", "NLOPT"):
+        if method == "CmaFmin2" or "NLOPT" in method:
             normalizer = p.helpers.Normalizer(self.parametrization)
             if normalizer.fully_bounded:
                 self._normalizer = normalizer
@@ -72,7 +75,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
         while remaining > 0:  # try to restart if budget is not elapsed
             options: tp.Dict[str, tp.Any] = {} if weakself.budget is None else {"maxiter": remaining}
             # options: tp.Dict[str, tp.Any] = {} if self.budget is None else {"maxiter": remaining}
-            if weakself.method == "NLOPT":
+            if weakself.method[:5] == "NLOPT":
                 # This is NLOPT, used as in the PCSE simulator notebook.
                 # ( https://github.com/ajwdewit/pcse_notebooks ).
                 import nlopt
@@ -87,7 +90,10 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                     return objective_function(data)
 
                 # Sbplx (based on Subplex) is used by default.
-                opt = nlopt.opt(nlopt.LN_SBPLX, weakself.dimension)
+                nlopt_param = (
+                    getattr(nlopt, weakself.method[6:]) if len(weakself.method) > 5 else nlopt.LN_SBPLX
+                )
+                opt = nlopt.opt(nlopt_param, weakself.dimension)
                 # Assign the objective function calculator
                 opt.set_min_objective(nlopt_objective_function)
                 # Set the bounds.
@@ -95,8 +101,6 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 opt.set_upper_bounds(np.ones(weakself.dimension))
                 # opt.set_initial_step([0.05, 0.05])
                 opt.set_maxeval(budget)
-                # Relative tolerance for convergence
-                opt.set_ftol_rel(1.0e-10)
 
                 # Start the optimization with the first guess
                 firstguess = 0.5 * np.ones(weakself.dimension)
@@ -172,7 +176,20 @@ class NonObjectOptimizer(base.ConfiguredOptimizer):
         - SQP (or SLSQP): very powerful e.g. in continuous noisy optimization. It is based on
           approximating the objective function by quadratic models.
         - Powell
-        - NLOPT (https://nlopt.readthedocs.io/en/latest/; uses Sbplx, based on Subplex)
+        - NLOPT* (https://nlopt.readthedocs.io/en/latest/; by default, uses Sbplx, based on Subplex);
+            can be NLOPT,
+                NLOPT_LN_SBPLX,
+                NLOPT_LN_PRAXIS,
+                NLOPT_GN_DIRECT,
+                NLOPT_GN_DIRECT_L,
+                NLOPT_GN_CRS2_LM,
+                NLOPT_GN_AGS,
+                NLOPT_GN_ISRES,
+                NLOPT_GN_ESCH,
+                NLOPT_LN_COBYLA,
+                NLOPT_LN_BOBYQA,
+                NLOPT_LN_NEWUOA_BOUND,
+                NLOPT_LN_NELDERMEAD.
     random_restart: bool
         whether to restart at a random point if the optimizer converged but the budget is not entirely
         spent yet (otherwise, restarts from best point)
