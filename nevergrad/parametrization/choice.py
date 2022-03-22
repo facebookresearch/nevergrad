@@ -200,6 +200,10 @@ class TransitionChoice(BaseChoice):
             transitions=transitions if isinstance(transitions, Array) else np.array(transitions, copy=False),
         )
         assert self.transitions.value.ndim == 1
+        self._ref = self.copy()  # always 0, standardized space of a transition choice is centered and Gaussian
+
+    def _internal_set_standardized_data(self: T, data: np.ndarray, reference: T) -> None:
+        super()._internal_set_standardized_data(data, self._ref)  # type: ignore
 
     @property
     def transitions(self) -> Array:
