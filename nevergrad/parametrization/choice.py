@@ -205,6 +205,9 @@ class TransitionChoice(BaseChoice):
     def _internal_set_standardized_data(self: T, data: np.ndarray, reference: T) -> None:
         super()._internal_set_standardized_data(data, self._ref)  # type: ignore
 
+    def _internal_get_standardized_data(self: T, reference: T) -> None:
+        return super()._internal_get_standardized_data(self._ref)  # type: ignore
+
     @property
     def transitions(self) -> Array:
         return self["transitions"]  # type: ignore
