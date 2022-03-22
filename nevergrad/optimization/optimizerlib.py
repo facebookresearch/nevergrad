@@ -1400,9 +1400,6 @@ class Portfolio(base.Optimizer):
                     num_workers=sub_workers,
                 )
             )
-            if k:
-                # hacky suggestion to avoid calling args and kwargs
-                self.optims[-1]._suggestions.append(self.parametrization.sample())
         # current optimizer choice
         self._current = -1
         self._warmup_budget: tp.Optional[int] = None
@@ -1424,6 +1421,7 @@ class Portfolio(base.Optimizer):
             self._current += 1
             optim_index = self._current % len(self.optims)
             opt = self.optims[optim_index]
+
             if opt.num_workers > opt.num_ask - (opt.num_tell - opt.num_tell_not_asked):
                 break  # if there are workers left, use this optimizer
             if k > num:
@@ -1432,6 +1430,10 @@ class Portfolio(base.Optimizer):
         if optim_index is None:
             raise RuntimeError("Something went wrong in optimizer selection")
         opt = self.optims[optim_index]
+        if optim_index > 1 and not opt.num_ask and not opt._suggestions and not opt.num_tell:
+            # most algorithms start at 0, lets avoid that for all but the first if they have no information
+            opt._suggestions.append(self.parametrization.sample())
+            # (hacky suggestion to avoid calling args and kwargs)
         candidate = opt.ask()
         candidate._meta["optim_index"] = optim_index
         return candidate
