@@ -194,7 +194,7 @@ class TransitionChoice(BaseChoice):
         indices = Array(init=len(choices) / 2.0 * np.ones((repetitions if repetitions is not None else 1,)))
         indices.set_bounds(0, len(choices), method="gaussian")
         indices = indices - 0.5
-        intcasting = _datalayers.Int()
+        intcasting = _datalayers.Int(deterministic=True, binned=True)
         intcasting.arity = len(choices)
         indices.add_layer(intcasting)
         super().__init__(

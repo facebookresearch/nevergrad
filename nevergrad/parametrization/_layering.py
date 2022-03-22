@@ -242,6 +242,9 @@ class Int(Layered, Filterable):
         if True, the data is rounded to the closest integer, if False, both surrounded
         integers can be sampled inversely proportionally to how close the actual value
         is from the integers.
+    binned: bool
+        save underlying data as a specific value for each bin instead of keeping the full
+        float precision
 
     Example
     -------
@@ -251,22 +254,20 @@ class Int(Layered, Filterable):
 
     _LAYER_LEVEL = Level.INTEGER_CASTING
 
-    def __init__(self, deterministic: bool = True) -> None:
+    def __init__(self, deterministic: bool = True, binned: bool = False) -> None:
         super().__init__()
         self.arity: tp.Optional[int] = None
         self.ordered = True
         self.deterministic = deterministic
+        self.binned = binned
         self._cache: tp.Optional[np.ndarray] = None
 
     def _get_name(self) -> str:
         tag = "" if self.deterministic else "{rand}"
         return self.__class__.__name__ + tag
 
-    def _layered_get_value(self) -> np.ndarray:
-        if self._cache is not None:
-            return self._cache
+    def _cast_value(self, out: np.ndarray) -> np.ndarray:
         bounds = self._layers[0].bounds  # type: ignore
-        out = super()._layered_get_value()
         if not self.deterministic:
             out += self.random_state.rand(*out.shape) - 0.5
         out = np.round(out).astype(int)
@@ -277,7 +278,17 @@ class Int(Layered, Filterable):
         if bounds[1] is not None:
             out = np.minimum(int(np.round(bounds[1] - 0.5 + eps)), out)
         # return out
-        self._cache = out
+        return out
+
+    def _layered_set_value(self, value: np.ndarray) -> np.ndarray:
+        if self.binned:
+            value = self._cast_value(value)
+            self._cache = value
+        super()._layered_set_value(value)
+
+    def _layered_get_value(self) -> np.ndarray:
+        if self._cache is None:
+            self._cache = self._cast_value(super()._layered_get_value())
         return self._cache
 
     def _layered_del_value(self) -> None:
