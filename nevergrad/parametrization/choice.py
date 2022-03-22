@@ -172,7 +172,7 @@ class TransitionChoice(BaseChoice):
         equal probabilities), then the transitions weights are normalized through softmax, the 1st value gives
         the probability to remain in the same state, the second to move one step (backward or forward) and so on.
     ordered: bool
-        change defaults behavior to be unordered and sampled uniformly through a Gaussian in the data space.
+        if False, changes defaults behavior to be unordered and sampled uniformly through a Gaussian in the data space.
 
     Note
     ----
