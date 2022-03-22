@@ -211,6 +211,8 @@ class TransitionChoice(BaseChoice):
     def _internal_set_standardized_data(self: T, data: np.ndarray, reference: T) -> None:
         ref = reference if self._ref is None else self._ref
         super()._internal_set_standardized_data(data, ref)  # type: ignore
+        # force to bin
+        super()._layered_set_value(super()._layered_get_value())
 
     def _internal_get_standardized_data(self: T, reference: T) -> None:
         ref = reference if self._ref is None else self._ref

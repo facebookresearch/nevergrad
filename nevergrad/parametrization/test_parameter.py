@@ -90,9 +90,9 @@ def check_parameter_features(param: par.Parameter) -> None:
     assert isinstance(child, type(param))
     assert child.heritage["lineage"] == param.uid
     assert child.generation == 1
-    assert not np.any(param.get_standardized_data(reference=param))
-    assert not np.any(child.get_standardized_data(reference=child))
-    assert not np.any(child.get_standardized_data(reference=param))
+    assert not np.any(param.get_standardized_data(reference=param) > 1e-7)
+    assert not np.any(child.get_standardized_data(reference=child) > 1e-7)
+    assert not np.any(child.get_standardized_data(reference=param) > 1e-7)
     assert child.name == param.name
     assert param._random_state is not None
     assert child.random_state is param.random_state

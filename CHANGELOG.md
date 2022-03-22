@@ -2,6 +2,9 @@
 
 ## main
 
+- `TransitionChoice` behavior has been changed to use bins instead of a full float representation. This may lead to slight
+  changes during optimizations.
+
 ## 0.5.0 (2022-03-08)
 
 ### Breaking changes
