@@ -206,7 +206,9 @@ class TransitionChoice(BaseChoice):
         assert self.transitions.value.ndim == 1
         self._ref: tp.Optional["TransitionChoice"] = None
         if not ordered:
-            self._ref = self.copy()  # always 0, standardized space of a transition choice is centered and Gaussian
+            self._ref = (
+                self.copy()
+            )  # always 0, standardized space of a transition choice is centered and Gaussian
 
     def _internal_set_standardized_data(self: T, data: np.ndarray, reference: T) -> None:
         ref = reference if self._ref is None else self._ref
@@ -214,7 +216,7 @@ class TransitionChoice(BaseChoice):
         # force to bin
         super()._layered_set_value(super()._layered_get_value())
 
-    def _internal_get_standardized_data(self: T, reference: T) -> None:
+    def _internal_get_standardized_data(self: T, reference: T) -> np.ndarray:
         ref = reference if self._ref is None else self._ref
         return super()._internal_get_standardized_data(ref)  # type: ignore
 
