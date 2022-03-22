@@ -254,21 +254,6 @@ def recomkeeper() -> tp.Generator[RecommendationKeeper, None, None]:
     keeper.save()
 
 
-@testing.suppress_nevergrad_warnings()
-@pytest.mark.parametrize("name", registry)  # type: ignore
-def test_optimizers_suggest(name: str) -> None:  # pylint: disable=redefined-outer-name
-    optimizer = registry[name](parametrization=4, budget=2)
-    optimizer.suggest(np.array([12.0] * 4))
-    candidate = optimizer.ask()
-    try:
-        optimizer.tell(candidate, 12)
-        # The optimizer should recommend its suggestion, except for a few optimization methods:
-        if name not in ["SPSA", "TBPSA", "StupidRandom"]:
-            np.testing.assert_array_almost_equal(optimizer.provide_recommendation().value, [12.0] * 4)
-    except base.errors.TellNotAskedNotSupportedError:
-        pass
-
-
 # pylint: disable=redefined-outer-name
 @pytest.mark.parametrize("name", registry)  # type: ignore
 def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper) -> None:
