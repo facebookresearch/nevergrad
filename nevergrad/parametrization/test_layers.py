@@ -148,8 +148,8 @@ def test_rand_int_casting() -> None:
     assert 50 < total < 500
 
 
-@pytest.mark.parametrize("deg", (True, False))  # type: ignore
-@pytest.mark.parametrize("bound_method", (None, "clipping", "arctan"))  # type: ignore
+@ pytest.mark.parametrize("deg", (True, False))  # type: ignore
+@ pytest.mark.parametrize("bound_method", (None, "clipping", "arctan"))  # type: ignore
 def test_angles(deg: bool, bound_method: tp.Any) -> None:
     span = 360 if deg else 2 * np.pi
     params = [
