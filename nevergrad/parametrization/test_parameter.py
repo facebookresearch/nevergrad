@@ -70,6 +70,7 @@ def _true(*args: tp.Any, **kwargs: tp.Any) -> bool:  # pylint: disable=unused-ar
         par.Choice([1, 2], repetitions=2),
         par.TransitionChoice([par.Array(shape=(2,)), par.Scalar()]),
         par.TransitionChoice(["a", "b", "c"], transitions=(0, 2, 1), repetitions=4),
+        par.TransitionChoice(["a", "b", "c"], ordered=False),
     ],
 )
 def test_parameters_basic_features(param: par.Parameter) -> None:

@@ -158,7 +158,8 @@ class Choice(BaseChoice):
 
 
 class TransitionChoice(BaseChoice):
-    """Ordered categorical parameter, choosing one of the provided choice options as a value, with continuous transitions.
+    """Categorical parameter, choosing one of the provided choice options as a value, with continuous transitions.
+    By default, this is ordered, and most algorithms except OnePlusOne based algorithms will consider it as ordered.
     The choices can be Parameters, in which case there value will be returned instead.
     The chosen parameter is drawn using transitions between current choice and the next/previous ones.
 
@@ -170,6 +171,8 @@ class TransitionChoice(BaseChoice):
         the transition weights. During transition, the direction (forward or backward will be drawn with
         equal probabilities), then the transitions weights are normalized through softmax, the 1st value gives
         the probability to remain in the same state, the second to move one step (backward or forward) and so on.
+    ordered: bool
+        change defaults behavior to be unordered and sampled uniformly through a Gaussian in the data space.
 
     Note
     ----
@@ -185,6 +188,7 @@ class TransitionChoice(BaseChoice):
         choices: tp.Union[int, tp.Iterable[tp.Any]],
         transitions: tp.Union[tp.ArrayLike, Array] = (1.0, 1.0),
         repetitions: tp.Optional[int] = None,
+        ordered: bool = True,
     ) -> None:
         choices = list(choices if not isinstance(choices, int) else range(choices))
         indices = Array(init=len(choices) / 2.0 * np.ones((repetitions if repetitions is not None else 1,)))
@@ -200,19 +204,27 @@ class TransitionChoice(BaseChoice):
             transitions=transitions if isinstance(transitions, Array) else np.array(transitions, copy=False),
         )
         assert self.transitions.value.ndim == 1
-        self._ref = self.copy()  # always 0, standardized space of a transition choice is centered and Gaussian
+        self._ref: tp.Optional["TransitionChoice"] = None
+        if not ordered:
+            self._ref = self.copy()  # always 0, standardized space of a transition choice is centered and Gaussian
 
     def _internal_set_standardized_data(self: T, data: np.ndarray, reference: T) -> None:
-        super()._internal_set_standardized_data(data, self._ref)  # type: ignore
+        ref = reference if self._ref is None else self._ref
+        super()._internal_set_standardized_data(data, ref)  # type: ignore
 
     def _internal_get_standardized_data(self: T, reference: T) -> None:
-        return super()._internal_get_standardized_data(self._ref)  # type: ignore
+        ref = reference if self._ref is None else self._ref
+        return super()._internal_get_standardized_data(ref)  # type: ignore
 
     @property
     def transitions(self) -> Array:
         return self["transitions"]  # type: ignore
 
     def mutate(self) -> None:
+        if self._ref is not None:
+            new = self.random_state.normal(size=self.indices.value.size)
+            self._internal_set_standardized_data(new, self._ref)
+            return
         # force random_state sync
         self.random_state  # pylint: disable=pointless-statement
         transitions = core.as_parameter(self.transitions)
