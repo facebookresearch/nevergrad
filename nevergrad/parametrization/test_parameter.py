@@ -360,7 +360,14 @@ def test_ordered_choice() -> None:
     assert choice.value in [0, 2]
     assert choice.get_standardized_data(reference=choice).size
     choice.set_standardized_data(np.array([12.0]))
-    assert choice.value == 3
+
+
+def test_transition_choice_bin() -> None:
+    choice = par.TransitionChoice([0, 1, 2, 3], ordered=False)
+    for val in [1000, 1.10]:
+        choice.set_standardized_data([val])
+        # value should be mapped to the bin
+        assert choice.get_standardized_data(reference=choice) == pytest.approx(1.15035)
 
 
 def test_ordered_choice_weird_values() -> None:
