@@ -593,7 +593,7 @@ class _PopulationSizeController:
         self._loss_record += [loss]
         if len(self._loss_record) >= 5 * self.llambda:
             first_fifth = self._loss_record[: self.llambda]
-            last_fifth = self._loss_record[-int(self.llambda) :]  # casting to int to avoid pylint bug
+            last_fifth = self._loss_record[-int(self.llambda):]  # casting to int to avoid pylint bug
             means = [sum(fitnesses) / float(self.llambda) for fitnesses in [first_fifth, last_fifth]]
             stds = [np.std(fitnesses) / np.sqrt(self.llambda - 1) for fitnesses in [first_fifth, last_fifth]]
             z = (means[0] - means[1]) / (np.sqrt(stds[0] ** 2 + stds[1] ** 2))
@@ -1220,7 +1220,7 @@ class SplitOptimizer(base.Optimizer):
         data = candidate.get_standardized_data(reference=self.parametrization)
         start = 0
         for opt in self.optims:
-            local_data = data[start : start + opt.dimension]
+            local_data = data[start: start + opt.dimension]
             start += opt.dimension
             local_candidate = opt.parametrization.spawn_child().set_standardized_data(local_data)
             opt.tell(local_candidate, loss)
@@ -1382,7 +1382,7 @@ class Portfolio(base.Optimizer):
         sub_workers = 1
         if distribute_workers:
             sub_workers = num_workers // num + (num_workers % num > 0)
-        for opt in optimizers:
+        for k, opt in enumerate(optimizers):
             if isinstance(opt, base.Optimizer):
                 if opt.parametrization is not self.parametrization:
                     raise errors.NevergradValueError(
@@ -1400,6 +1400,9 @@ class Portfolio(base.Optimizer):
                     num_workers=sub_workers,
                 )
             )
+            if k:
+                # hacky suggestion to avoid calling args and kwargs
+                self.optims[-1]._suggestions.append(self.parametrization.sample())
         # current optimizer choice
         self._current = -1
         self._warmup_budget: tp.Optional[int] = None
