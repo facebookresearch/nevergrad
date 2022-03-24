@@ -655,7 +655,7 @@ class XpPlotter:
         output_filepath = str(output_filepath)
         if len(output_filepath) > 70:  # System limit of filename length.
             hashcode = hashlib.md5(bytes(output_filepath, "utf8")).hexdigest()
-            output_filepath = output_filepath[:35] + hashcode + output_filepath[-35:]        
+            output_filepath = output_filepath[:35] + hashcode + output_filepath[-35:]
         try:  # Let us catch errors due to too many DPIs.
             self._fig.savefig(
                 output_filepath, bbox_extra_artists=self._overlays, bbox_inches="tight", dpi=_DPI
