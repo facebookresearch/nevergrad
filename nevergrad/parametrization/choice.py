@@ -159,7 +159,7 @@ class Choice(BaseChoice):
 
 class TransitionChoice(BaseChoice):
     """Categorical parameter, choosing one of the provided choice options as a value, with continuous transitions.
-    By default, this is ordered, and most algorithms except OnePlusOne based algorithms will consider it as ordered.
+    By default, this is ordered, and most algorithms except discrete OnePlusOne algorithms will consider it as ordered.
     The choices can be Parameters, in which case there value will be returned instead.
     The chosen parameter is drawn using transitions between current choice and the next/previous ones.
 
@@ -172,7 +172,8 @@ class TransitionChoice(BaseChoice):
         equal probabilities), then the transitions weights are normalized through softmax, the 1st value gives
         the probability to remain in the same state, the second to move one step (backward or forward) and so on.
     ordered: bool
-        if False, changes defaults behavior to be unordered and sampled uniformly through a Gaussian in the data space.
+        if False, changes the default behavior to be unordered and sampled uniformly when setting the data to a
+        normalized and centered Gaussian (used in DiscreteOnePlusOne only)
 
     Note
     ----
@@ -206,9 +207,8 @@ class TransitionChoice(BaseChoice):
         assert self.transitions.value.ndim == 1
         self._ref: tp.Optional["TransitionChoice"] = None
         if not ordered:
-            self._ref = (
-                self.copy()
-            )  # always 0, standardized space of a transition choice is centered and Gaussian
+            # always 0, standardized space of a transition choice is centered and Gaussian
+            self._ref = self.copy()
 
     def _internal_set_standardized_data(self: T, data: np.ndarray, reference: T) -> None:
         ref = reference if self._ref is None else self._ref
