@@ -54,11 +54,20 @@ class Irrigation(ArrayExperimentFunction):
                 "Kiev",
             ]
         )
-        geolocator = Nominatim(user_agent="NG/PCSE")
-        location = geolocator.geocode(self.address)
-        self.weatherdataprovider = NASAPowerWeatherDataProvider(
-            latitude=location.latitude, longitude=location.longitude
-        )
+        known_longitudes = {'Saint-Leger-Bridereix': 1.5887348, 'Dun-Le-Palestel': 1.6641173, 'Kolkata':
+            88.35769124388872, 'Antananarivo': 47.5255809, 'Santiago': -70.6504502, 'Lome': 1.215829, 'Cairo': 31.2357257,
+            'Ouagadougou': -1.5270944, 'Yamoussoukro': -5.273263, 'Yaounde': 11.5213344, 'Kiev': 30.5241361}
+        known_latitudes = {'Saint-Leger-Bridereix': 46.2861759, 'Dun-Le-Palestel': 46.3052049, 'Kolkata': 22.5414185,
+            'Antananarivo': -18.9100122, 'Santiago': -33.4377756, 'Lome': 6.130419, 'Cairo': 30.0443879, 'Ouagadougou':
+            12.3681873, 'Yamoussoukro': 6.809107, 'Yaounde': 3.8689867, 'Kiev': 50.4500336}
+        if self.address in known_latitudes and self.address in known_longitudes:
+            self.weatherdataprovider = NASAPowerWeatherDataProvider(latitude=known_latitudes[self.address], longitude=known_longitudes[self.address])
+        else:
+            geolocator = Nominatim(user_agent="NG/PCSE")
+            self.location = geolocator.geocode(self.address)
+            self.weatherdataprovider = NASAPowerWeatherDataProvider(
+                latitude=self.location.latitude, longitude=self.location.longitude
+            )
 
         
         for _ in range(1000):
