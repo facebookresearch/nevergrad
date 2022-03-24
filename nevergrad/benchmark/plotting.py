@@ -633,7 +633,10 @@ class XpPlotter:
             for i, l in zip(optim_vals[optim]["budget"], optim_vals[optim]["loss"]):
                 if l < best_performance[i][0]:
                     best_performance[i] = (l, optim)
-
+        output_filepath = str(output_filepath)
+        if len(output_filepath) > 70:
+            hashcode = hashlib.md5(bytes(output_filepath, "utf8")).hexdigest()
+            output_filepath = output_filepath[:35] + hashcode + output_filepath[-35:]
         with open(output_filepath, "w") as f:
             f.write("Best performance:\n")
             for i in best_performance.keys():
@@ -649,9 +652,13 @@ class XpPlotter:
         output_filepath: Path or str
             path where the figure must be saved
         """
+        output_filepath = str(output_filepath)
+        if len(output_filepath) > 70:  # System limit of filename length.
+            hashcode = hashlib.md5(bytes(output_filepath, "utf8")).hexdigest()
+            output_filepath = output_filepath[:35] + hashcode + output_filepath[-35:]        
         try:  # Let us catch errors due to too many DPIs.
             self._fig.savefig(
-                str(output_filepath), bbox_extra_artists=self._overlays, bbox_inches="tight", dpi=_DPI
+                output_filepath, bbox_extra_artists=self._overlays, bbox_inches="tight", dpi=_DPI
             )
         except ValueError as v:
             print(f"We catch {v} which means that image = too big.")
