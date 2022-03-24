@@ -1925,7 +1925,7 @@ def pbo_suite(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     for dim in [16, 64, 100]:
         for fid in range(1, 24):
             for iid in range(1, 5):
-                for instrumentation in ["Softmax", "Ordered"]:
+                for instrumentation in ["Softmax", "Ordered", "Unordered"]:
                     try:
                         func = iohprofiler.PBOFunction(fid, iid, dim, instrumentation=instrumentation)
                     except ModuleNotFoundError as e:
