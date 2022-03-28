@@ -273,12 +273,20 @@ class Int(Layered, Filterable):
         # make sure rounding does not reach beyond the bounds
         eps = 1e-12
         if bounds[0] is not None:
-            out = np.maximum(int(np.round(bounds[0] + 0.5 - eps)), out)
+            out = np.maximum(_to_int(bounds[0] + 0.5 - eps), out)
         if bounds[1] is not None:
-            out = np.minimum(int(np.round(bounds[1] - 0.5 + eps)), out)
+            out = np.minimum(_to_int(bounds[1] - 0.5 + eps), out)
         # return out
         self._cache = out
         return self._cache
 
     def _layered_del_value(self) -> None:
         self._cache = None  # clear cache!
+
+
+def _to_int(value: tp.Union[float, np.ndarray]) -> tp.Union[int, np.ndarray]:
+    """Returns a int from a float, or a int typed array from a float array"""
+    if not isinstance(value, np.ndarray):
+        return int(np.round(value))
+    else:
+        return np.round(value).astype(int)
