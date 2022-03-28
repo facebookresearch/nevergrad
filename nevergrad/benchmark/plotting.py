@@ -88,8 +88,15 @@ def aggregate_winners(
         return aggregate_winners(df, categories[1:], all_optimizers)
     iterdf, iternum = zip(
         *(
-            aggregate_winners(df.loc[df.loc[:, categories[0]] == val if categories[0] != "budget" else
-                                     df.loc[:, categories[0]] <= val], categories[1:], all_optimizers)
+            aggregate_winners(
+                df.loc[
+                    df.loc[:, categories[0]] == val
+                    if categories[0] != "budget"
+                    else df.loc[:, categories[0]] <= val
+                ],
+                categories[1:],
+                all_optimizers,
+            )
             for val in subcases
         )
     )
