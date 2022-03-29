@@ -104,7 +104,9 @@ def check_parameter_features(param: par.Parameter) -> None:
     except errors.UnsupportedParameterOperationError:
         mutable = False
     else:
-        assert np.any(child.get_standardized_data(reference=param))
+        if not isinstance(child, par.TransitionChoice):
+            # transition choice has a fixed set of values so can be the same
+            assert np.any(child.get_standardized_data(reference=param))
     param.set_name("blublu")
     child_hash = param.spawn_child()
     assert child_hash.name == "blublu"
@@ -368,6 +370,11 @@ def test_transition_choice_bin() -> None:
         choice.set_standardized_data([val])
         # value should be mapped to the bin
         assert choice.get_standardized_data(reference=choice) == pytest.approx(1.15035)
+    values = set()
+    for _ in range(20):
+        choice.mutate()
+        values.add(choice.get_standardized_data(reference=choice)[0])
+    assert 1 < len(values) < 5, values
 
 
 def test_ordered_choice_weird_values() -> None:
