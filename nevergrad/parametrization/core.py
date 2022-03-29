@@ -311,7 +311,7 @@ class Parameter(Layered):
         """
         if self._random_state is None:
             # use the setter, to make sure the random state is propagated to the variables
-            seed = np.random.randint(2 ** 32, dtype=np.uint32)  # better way?
+            seed = np.random.randint(2**32, dtype=np.uint32)  # better way?
             self._set_random_state(np.random.RandomState(seed))
         assert self._random_state is not None
         return self._random_state

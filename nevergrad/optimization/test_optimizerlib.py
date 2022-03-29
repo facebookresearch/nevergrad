@@ -148,7 +148,7 @@ def buggy_function(x: np.ndarray) -> float:
         return float("nan")
     if any(x > 0.0):
         return float("inf")
-    return np.sum(x ** 2)
+    return np.sum(x**2)
 
 
 @pytest.mark.parametrize("dim", [2, 10, 20, 40, 80, 160, 320, 640, 1280, 25600, 51200, 102400])  # type: ignore
@@ -490,7 +490,7 @@ class QuadFunction:
         y = x - self.scale
         if self.ellipse:
             y *= np.arange(1, x.size + 1) ** 2
-        return float(sum(y ** 2))
+        return float(sum(y**2))
 
 
 META_TEST_ARGS = "dimension,num_workers,scale,budget,ellipsoid".split(",")
@@ -870,7 +870,7 @@ def test_cma_logs(capsys: tp.Any) -> None:
 
 
 def _simple_multiobjective(x):
-    return [np.sum(x ** 2), np.sum((x - 1) ** 2)]
+    return [np.sum(x**2), np.sum((x - 1) ** 2)]
 
 
 def test_pymoo_pf() -> None:
