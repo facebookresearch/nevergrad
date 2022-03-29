@@ -2,6 +2,12 @@
 
 ## main
 
+
+### Breaking changes
+
+- Removed `descriptor` field of parameters which had been deprecated in previous versions. Use `function` field instead to specify if the function 
+  is deterministic or not [#X](https://github.com/facebookresearch/nevergrad/pull/X).
+
 ## 0.5.0 (2022-03-08)
 
 ### Breaking changes
