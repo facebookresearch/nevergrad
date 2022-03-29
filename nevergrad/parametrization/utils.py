@@ -7,11 +7,8 @@ import os
 import sys
 import shutil
 import tempfile
-import warnings
-import subprocess
 from pathlib import Path
 import numpy as np
-from nevergrad.common import errors
 from nevergrad.common import typing as tp
 
 
