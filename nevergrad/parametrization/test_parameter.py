@@ -391,6 +391,13 @@ def test_transition_choice_repetitions() -> None:
     assert choice.value == (3, 0)
 
 
+def test_integer_casting_array() -> None:
+    param = par.Array(lower=np.array([3.0] * 8), upper=np.array([8.0] * 8), shape=(8,))
+    param.set_integer_casting()
+    out = param  # <- error here
+    assert out.value.shape == (8,)
+
+
 def test_array_bounded_initialization() -> None:
     array = par.Array(shape=(1,), lower=-1)
     assert array.value[0] == 0
