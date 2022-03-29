@@ -7,6 +7,7 @@ import os
 import sys
 import shutil
 import tempfile
+import subprocess
 from pathlib import Path
 import numpy as np
 from nevergrad.common import typing as tp
