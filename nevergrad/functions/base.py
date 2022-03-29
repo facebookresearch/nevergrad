@@ -232,7 +232,7 @@ class ExperimentFunction:
             assert isinstance(
                 output, numbers.Number
             ), f"evaluation_function can only be called on singleobjective experiments (output={output}) function={self.function}."
-            return output
+            return output  # type: ignore
         # multiobjective case
         hypervolume = mobj.HypervolumePareto(
             upper_bounds=self.multiobjective_upper_bounds, seed=self.parametrization.random_state
