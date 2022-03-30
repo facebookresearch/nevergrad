@@ -26,7 +26,7 @@ GUARANTEED_GYM_ENV_NAMES = [
     "CartPole-v1",
     "MountainCar-v0",
     "Acrobot-v1",
-    # "Blackjack-v0",
+    "Blackjack-v1",  # v0 is not available anymore
     # "FrozenLake-v0",   # deprecated
     # "FrozenLake8x8-v0",
     "CliffWalking-v0",
@@ -184,26 +184,25 @@ class ConcatActionsHistogram(gym.ObservationWrapper):
     def __init__(self, env: tp.Any, norm_to_episode_len: int = 0) -> None:
         """Creating a counterpart of a compiler gym environement with an extended observation space."""
         super().__init__(env=env)
-        assert isinstance(
-            self.observation_space, gym.spaces.Box  # type: ignore
-        ), "Can only contatenate actions histogram to box shape"
-        assert isinstance(
-            self.action_space, gym.spaces.Discrete
-        ), "Can only construct histograms from discrete spaces"
-        assert len(self.observation_space.shape) == 1, "Requires 1-D observation space"  # type: ignore
+        self.observation_space: gym.spaces.Box  # enforce type (actually, that makes it an "Any")
+        if not isinstance(self.observation_space, gym.spaces.Box):
+            raise AssertionError("Can only contatenate actions histogram to box shape")
+        if not isinstance(self.action_space, gym.spaces.Discrete):
+            raise AssertionError("Can only construct histograms from discrete spaces")
+        assert len(self.observation_space.shape) == 1, "Requires 1-D observation space"
         self.increment = 1 / norm_to_episode_len if norm_to_episode_len else 1
 
         # Reshape the observation space.
         self.observation_space = gym.spaces.Box(
             low=np.concatenate(
                 (
-                    self.observation_space.low,  # type: ignore
+                    self.observation_space.low,
                     np.full(self.action_space.n, 0, dtype=np.float32),
                 )
             ),
             high=np.concatenate(
                 (
-                    self.observation_space.high,  # type: ignore
+                    self.observation_space.high,
                     np.full(
                         self.action_space.n,
                         1 if norm_to_episode_len else float("inf"),
@@ -233,6 +232,18 @@ class ConcatActionsHistogram(gym.ObservationWrapper):
 # Class for direct optimization of CompilerGym problems.
 # We have two variants: a limited (small action space) and a full version.
 class CompilerGym(ExperimentFunction):
+    @staticmethod
+    def import_package() -> None:
+        # CompilerGym sends http requests that CircleCI does not like.
+        if os.environ.get("CIRCLECI", False):
+            raise ng.errors.UnsupportedExperiment("No HTTP request in CircleCI")
+        try:
+            import compiler_gym  # noqa
+        except ImportError as e:
+            raise ng.errors.UnsupportedExperiment(
+                "Please install compiler_gym for CompilerGym experiments"
+            ) from e
+
     def __init__(self, compiler_gym_pb_index: int, limited_compiler_gym: tp.Optional[bool] = None):
         """Creating a compiler gym environement.
 
@@ -242,15 +253,7 @@ class CompilerGym(ExperimentFunction):
             limited_compiler_gym: bool
                 whether we use a limited action space.
         """
-        try:
-            import compiler_gym  # noqa
-        except ImportError as e:
-            raise ng.errors.UnsupportedExperiment(
-                "Please install compiler_gym for CompilerGym experiments"
-            ) from e
-        # CompilerGym sends http requests that CircleCI does not like.
-        if os.environ.get("CIRCLECI", False):
-            raise ng.errors.UnsupportedExperiment("No HTTP request in CircleCI")
+        self.import_package()
         env = gym.make("llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
         action_space_size = (
             len(SmallActionSpaceLlvmEnv.action_space_subset) if limited_compiler_gym else env.action_space.n
@@ -271,8 +274,6 @@ class CompilerGym(ExperimentFunction):
         """Convenience function to create the environment that we'll use."""
         # User the time-limited wrapper to fix the length of episodes.
         if self.limited_compiler_gym:
-            import compiler_gym
-
             env = gym.wrappers.TimeLimit(
                 env=SmallActionSpaceLlvmEnv(env=gym.make("llvm-v0", reward_space="IrInstructionCountOz")),
                 max_episode_steps=self.num_episode_steps,
@@ -308,23 +309,26 @@ class GymMulti(ExperimentFunction):
     @staticmethod
     def get_env_names() -> tp.List[str]:
         import gym_anm  # noqa
+        import gym_algorithmic  # noqa
+        import gym_toytext  # noqa
 
         gym_env_names = []
         max_displays = 10
-        for e in gym.envs.registry.all():
+        # need a copy because dict is changing for unknown reason:
+        registered_envs = list(gym.envs.registry.all())
+        for e in registered_envs:
+            name = str(e.id)
+            if any(x in name for x in ("Kelly", "llvm")):
+                continue
             try:
-                assert "Kelly" not in str(e.id)  # We should have another check than that.
-                assert "llvm" not in str(e.id)  # We should have another check than that.
                 env = gym.make(e.id)
                 env.reset()
                 env.step(env.action_space.sample())
-                a1 = np.asarray(env.action_space.sample())
-                a2 = np.asarray(env.action_space.sample())
-                a3 = np.asarray(env.action_space.sample())
+                a1, a2, a3 = (np.asarray(env.action_space.sample()) for _ in range(3))
                 a1 = a1 + a2 + a3
                 if hasattr(a1, "size"):
                     try:
-                        assert a1.size < 15000
+                        assert a1.size < 15000  # type: ignore
                     except Exception:  # pylint: disable=broad-except
                         assert a1.size() < 15000  # type: ignore
                 gym_env_names.append(e.id)
@@ -334,6 +338,9 @@ class GymMulti(ExperimentFunction):
                     print(f"{e.id} not included in full list because of {exception}.")
                 if max_displays == 0:
                     print("(similar issue for other environments)")
+                if name in GUARANTEED_GYM_ENV_NAMES:
+                    print(f"{name} should have been guaranteed")
+                    raise exception
         return gym_env_names
 
     controllers = CONTROLLERS
@@ -420,6 +427,8 @@ class GymMulti(ExperimentFunction):
             int
         ] = None,  # if not None, we penalize solutions with more than sparse_limit weights !=0
     ) -> None:
+        import gym_anm  # noqa
+
         # limited_compiler_gym: bool or None.
         #        whether we work with the limited version
         self.num_calls = 0
@@ -435,7 +444,43 @@ class GymMulti(ExperimentFunction):
             assert neural_factor is None
         if os.name == "nt":
             raise ng.errors.UnsupportedExperiment("Windows is not supported")
-        # self.env = None  # self.create_env() let us have no self.env
+        if self.uses_compiler_gym:  # Long special case for Compiler Gym.
+            CompilerGym.import_package()
+            assert limited_compiler_gym is not None
+            self.num_episode_steps = 45 if limited_compiler_gym else 50
+            import compiler_gym
+
+            env = gym.make("llvm-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
+            env = self.observation_wrap(self.wrap_env(env))
+            self.uris = list(env.datasets["benchmark://cbench-v1"].benchmark_uris())
+            # For training, in the "stochastic" case, we use Csmith.
+            from itertools import islice
+
+            self.csmith = list(
+                islice(env.datasets["generator://csmith-v0"].benchmark_uris(), self.num_training_codes)
+            )
+
+            if self.stochastic_problem:
+                assert (
+                    compiler_gym_pb_index is None
+                ), "compiler_gym_pb_index should not be defined in the stochastic case."
+                self.compilergym_index = None
+                # In training, we randomly draw in csmith (but we are allowed to use 100x more budget :-) ).
+                o = env.reset(benchmark=np.random.choice(self.csmith))
+            else:
+                assert compiler_gym_pb_index is not None
+                self.compilergym_index = compiler_gym_pb_index
+                o = env.reset(benchmark=self.uris[self.compilergym_index])
+            # env.require_dataset("cBench-v1")
+            # env.unwrapped.benchmark = "benchmark://cBench-v1/qsort"
+        else:  # Here we are not in CompilerGym anymore.
+            assert limited_compiler_gym is None
+            assert (
+                compiler_gym_pb_index is None
+            ), "compiler_gym_pb_index should not be defined if not CompilerGym."
+            env = gym.make(name if "LANM" not in name else "gym_anm:ANM6Easy-v0")
+            o = env.reset()
+        self.env = env
 
         # Build various attributes.
         self.short_name = name  # Just the environment name.
