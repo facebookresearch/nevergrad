@@ -388,6 +388,31 @@ def _square(x: np.ndarray, y: float = 12) -> float:
     return sum((x - 0.5) ** 2) + abs(y)
 
 
+@pytest.mark.parametrize("dim", [2 ** k for k in range(1, 10)])  # type: ignore
+def test_speed_fcma(dim: int) -> None:
+    instrum = ng.p.Instrumentation(ng.p.Array(shape=(dim,)), y=ng.p.Scalar())
+    elapsed: tp.Dict[str, float] = {}
+    speed_request = 1.01
+    speed_request_fcma = 1.1  # Actually on a real machine instead of CircleCI we get much better.
+    num_tests = 17
+
+    ok_cma = 0
+    ok_fcma = 0
+    for _ in range(num_tests):
+        for name in ["CMA", "FCMA"]:
+            optimizer = optlib.registry[name](parametrization=instrum, budget=150)
+            start = time.time()
+            optimizer.minimize(_square)
+            elapsed[name] = time.time() - start
+        if (speed_request_fcma if dim < 150 else speed_request) * elapsed["FCMA"] < elapsed["CMA"]:
+            ok_fcma += 1
+        if speed_request * elapsed["CMA"] < elapsed["FCMA"]:
+            ok_cma += 1
+    assert (
+        (ok_fcma > num_tests // 2) if True else (ok_cma > num_tests // 2)
+    ), f"FCMA ok {ok_fcma} times and CMA ok {ok_cma} times in dim {dim}."
+
+
 def test_optimization_doc_parametrization_example() -> None:
     instrum = ng.p.Instrumentation(ng.p.Array(shape=(2,)), y=ng.p.Scalar())
     optimizer = optlib.OnePlusOne(parametrization=instrum, budget=100)
