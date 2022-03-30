@@ -603,7 +603,10 @@ class XpPlotter:
                 ["optimizer_name", "budget", "loss"] + (["pseudotime"] if "pseudotime" in df.columns else []),
             ]
         )
-        groupeddf = df.groupby(["optimizer_name", "budget"])
+        # We first aggregate equivalent rows. The only point of this is that we want all contexts to have the same
+        # weight, in e.g. xpresults_all.png, even if not all contexts have been run the same number of times.
+        compact_df = df.groupby(df.columns).mean()  # We first aggregate equal contexts.
+        groupeddf = compact_df.groupby(["optimizer_name", "budget"])
         means = groupeddf.mean()
         stds = groupeddf.std()
         optim_vals: tp.Dict[str, tp.Dict[str, np.ndarray]] = {}
