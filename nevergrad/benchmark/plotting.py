@@ -605,7 +605,18 @@ class XpPlotter:
         )
         # We first aggregate equivalent rows. The only point of this is that we want all contexts to have the same
         # weight, in e.g. xpresults_all.png, even if not all contexts have been run the same number of times.
-        compact_df = df.groupby(df.columns).mean()  # We first aggregate equal contexts.
+        descriptors = sorted(
+            set(df.columns)
+            - {
+                "pseudotime",
+                "time",
+                "elapsed_time",
+                "elapsed_budget",
+                "loss",
+                "seed",
+            }
+        )
+        compact_df = df.groupby(list(descriptors)).mean()  # We first aggregate equal contexts.
         groupeddf = compact_df.groupby(["optimizer_name", "budget"])
         means = groupeddf.mean()
         stds = groupeddf.std()
