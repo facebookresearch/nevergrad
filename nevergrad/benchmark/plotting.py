@@ -30,6 +30,16 @@ _DPI = 250
 # %% Basic tools
 
 
+def compactize(name: str) -> str:
+    if len(name) < 70:
+        return name
+    hashcode = hashlib.md5(bytes(name, "utf8")).hexdigest()
+    name = re.sub(r"\([^()]*\)", "", name)
+    mid = 35
+    name = name[:mid] + hashcode + name[-mid:]
+    return name
+
+
 def _make_style_generator() -> tp.Iterator[str]:
     lines = itertools.cycle(["-", "--", ":", "-."])  # 4
     markers = itertools.cycle("ov^<>8sp*hHDd")  # 13
@@ -327,6 +337,7 @@ def create_plots(
             # save
             name = "fight_" + ",".join("{}{}".format(x, y) for x, y in zip(fixed, case)) + ".png"
             name = "fight_all.png" if name == "fight_.png" else name
+            name = compactize(name)
 
             if name == "fight_all.png":
                 with open(str(output_folder / name) + ".cp.txt", "w") as f:
@@ -369,6 +380,7 @@ def create_plots(
     for case in cases:
         subdf = df.select_and_drop(**dict(zip(descriptors, case)))
         description = ",".join("{}:{}".format(x, y) for x, y in zip(descriptors, case))
+        description = compactize(description)
         if len(description) > 280:
             hash_ = hashlib.md5(bytes(description, "utf8")).hexdigest()
             description = description[:140] + hash_ + description[-140:]
