@@ -77,6 +77,12 @@ def get_args() -> argparse.Namespace:
         help="Numbers of workers to use for the computation (splits the job in chunks)",
     )
     parser.add_argument(
+        "--random_skip",
+        type=float,
+        default=0.,
+        help="frequency of randomly skipping one of the experiment (for getting fast partial results)",
+    )
+    parser.add_argument(
         "--repetitions",
         type=int,
         default=1,
@@ -135,6 +141,7 @@ if __name__ == "__main__":
     args = get_args()
     repeated_launch(
         args.experiment,
+        random_skip=args.random_skip,
         num_workers=args.num_workers,
         cap_index=args.cap_index,
         output=args.output,
