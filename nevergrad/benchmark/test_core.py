@@ -37,7 +37,7 @@ def test_moduler(value: int, expected: bool) -> None:
 
 
 def test_compute() -> None:
-    output = core.compute("basic", random_skip=0.0)
+    output = core.compute("basic")
     assert isinstance(output, utils.Selector)
 
 

@@ -147,14 +147,12 @@ class Experiment:
         budget: int,
         num_workers: int = 1,
         batch_mode: bool = True,
-        random_skip: float = 0.0,
         seed: tp.Optional[int] = None,
     ) -> None:
         assert isinstance(function, fbase.ExperimentFunction), (
             "All experiment functions should " "derive from ng.functions.ExperimentFunction"
         )
         assert function.dimension, "Nothing to optimize"
-        self.random_skip = random_skip
         self.function = function
         self.seed = (
             seed  # depending on the inner workings of the function, the experiment may not be repeatable
@@ -233,8 +231,6 @@ class Experiment:
             a dictionary of callbacks to register on the optimizer with key "ask" and/or "tell" (see base Optimizer class).
             This is only for easier debugging.
         """
-        if random.SystemRandom().random() < self.random_skip:
-            return
         if self.seed is not None and self._optimizer is None:
             # Note: when resuming a job (if optimizer is not None), seeding is pointless (reproducibility is lost)
             np.random.seed(

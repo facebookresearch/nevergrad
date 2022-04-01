@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import random
 import datetime
 import warnings
 import itertools
@@ -92,6 +93,8 @@ class BenchmarkChunk:
         Name of the benchmark
     repetitions: int
         Number of repetitions to perform on the benchmark
+    random_skip: float
+        Frequency of skipping an experiment
     seed: int
         A seed for the experiment plan (if seedable)
     cap_index: int
@@ -103,12 +106,14 @@ class BenchmarkChunk:
     def __init__(
         self,
         name: str,
+        random_skip: float = 0.0,
         repetitions: int = 1,
         seed: tp.Optional[int] = None,
         cap_index: tp.Optional[int] = None,
     ) -> None:
         self.name = name
         self.seed = seed
+        self.random_skip = random_skip
         self.cap_index = None if cap_index is None else max(1, int(cap_index))
         self._moduler: tp.Optional[Moduler] = None
         self.repetitions = repetitions
@@ -142,7 +147,11 @@ class BenchmarkChunk:
             else range(self.seed, self.seed + self.repetitions)
         )
         # check experiments.py to see seedable xp
-        generators = [maker() if seed is None else maker(seed=seed) for seed in seeds]
+        generators = [
+            maker() if seed is None else maker(seed=seed)
+            for seed in seeds
+            if random.SystemRandom().random() > self.random_skip
+        ]
         generators = [itertools.islice(g, 0, self.cap_index) for g in generators]
         # pylint: disable=not-callable
         enumerated_selection = (
@@ -255,9 +264,9 @@ def _submit_jobs(
             raise ValueError("An executor must be provided to run multiple jobs in parallel")
         executor = SequentialExecutor()
     jobs: tp.List[tp.JobLike[utils.Selector]] = []
-    bench = BenchmarkChunk(name=experiment_name, seed=seed, cap_index=cap_index)
+    bench = BenchmarkChunk(name=experiment_name, random_skip=random_skip, seed=seed, cap_index=cap_index)
     # instanciate the experiment iterator once (in case data needs to be downloaded (MLDA))
-    next(registry[experiment_name](random_skip=random_skip))
+    next(registry[experiment_name]())
     # run
     for chunk in bench.split(num_workers):
         # split experiment this way to avoid one job running most slow settings
@@ -281,6 +290,8 @@ def compute(
     ----------
     experiment_name: str
         name of the experiment plan (must be registered in experiments.registry)
+    random_skip: float
+        probability of skipping the experiment
     num_workers: int
         number of workers onto which the jobs will be distributed
     seed: int
