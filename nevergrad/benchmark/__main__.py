@@ -79,7 +79,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument(
         "--random_skip",
         type=float,
-        default=0.,
+        default=0.0,
         help="frequency of randomly skipping one of the experiment (for getting fast partial results)",
     )
     parser.add_argument(

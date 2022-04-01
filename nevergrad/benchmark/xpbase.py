@@ -147,7 +147,7 @@ class Experiment:
         budget: int,
         num_workers: int = 1,
         batch_mode: bool = True,
-        skipping_rate: float = 0.,
+        skipping_rate: float = 0.0,
         seed: tp.Optional[int] = None,
     ) -> None:
         assert isinstance(function, fbase.ExperimentFunction), (
