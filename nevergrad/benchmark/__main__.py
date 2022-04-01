@@ -15,6 +15,7 @@ from . import plotting
 # pylint: disable=too-many-arguments
 def launch(
     experiment: str,
+    random_skip: float = 0.0,
     num_workers: int = 1,
     seed: tp.Optional[int] = None,
     cap_index: tp.Optional[int] = None,
@@ -26,11 +27,16 @@ def launch(
     # create the data
     csvpath = Path(experiment + ".csv") if output is None else Path(output)
     if num_workers == 1:
-        df = core.compute(experiment, cap_index=cap_index, seed=seed)
+        df = core.compute(experiment, random_skip=random_skip, cap_index=cap_index, seed=seed)
     else:
         with futures.ProcessPoolExecutor(max_workers=num_workers) as executor:
             df = core.compute(
-                experiment, seed=seed, cap_index=cap_index, executor=executor, num_workers=num_workers
+                experiment,
+                random_skip=random_skip,
+                seed=seed,
+                cap_index=cap_index,
+                executor=executor,
+                num_workers=num_workers,
             )
     # save data to csv
     try:
@@ -101,6 +107,7 @@ def get_args() -> argparse.Namespace:
 def repeated_launch(
     experiment: str,
     num_workers: int = 1,
+    random_skip: float = 0.0,
     seed: tp.Optional[int] = None,
     cap_index: tp.Optional[int] = None,
     output: tp.Optional[tp.PathLike] = None,
@@ -123,6 +130,7 @@ def repeated_launch(
         print(f"Starting repetition {k +1} / {repetitions}")
         csvpath = launch(
             experiment,
+            random_skip=random_skip,
             num_workers=num_workers,
             cap_index=cap_index,
             output=output,

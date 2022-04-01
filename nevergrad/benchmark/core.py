@@ -103,12 +103,14 @@ class BenchmarkChunk:
     def __init__(
         self,
         name: str,
+        random_skip: float = 0.0,
         repetitions: int = 1,
         seed: tp.Optional[int] = None,
         cap_index: tp.Optional[int] = None,
     ) -> None:
         self.name = name
         self.seed = seed
+        self.random_skip = random_skip
         self.cap_index = None if cap_index is None else max(1, int(cap_index))
         self._moduler: tp.Optional[Moduler] = None
         self.repetitions = repetitions
@@ -166,7 +168,11 @@ class BenchmarkChunk:
         chunks = []
         for submoduler in self.moduler.split(number):
             chunk = BenchmarkChunk(
-                name=self.name, repetitions=self.repetitions, seed=self.seed, cap_index=self.cap_index
+                name=self.name,
+                random_skip=self.random_skip,
+                repetitions=self.repetitions,
+                seed=self.seed,
+                cap_index=self.cap_index,
             )
             chunk._moduler = submoduler
             chunk._id = self._id
@@ -204,7 +210,7 @@ class BenchmarkChunk:
                     opt = self._current_experiment._optimizer
                     if opt is not None:
                         print(f"Resuming existing experiment from iteration {opt.num_ask}.", flush=True)
-            self._current_experiment.run()
+            self._current_experiment.run(random_skip=self.random_skip)
             summary = self._current_experiment.get_description()
             if process_function is not None:
                 process_function(self, self._current_experiment)
@@ -217,6 +223,7 @@ class BenchmarkChunk:
 # pylint: disable=too-many-arguments
 def _submit_jobs(
     experiment_name: str,
+    random_skip: float = 0.0,
     num_workers: int = 1,
     seed: tp.Optional[int] = None,
     executor: tp.Optional[tp.ExecutorLike] = None,
@@ -251,7 +258,7 @@ def _submit_jobs(
             raise ValueError("An executor must be provided to run multiple jobs in parallel")
         executor = SequentialExecutor()
     jobs: tp.List[tp.JobLike[utils.Selector]] = []
-    bench = BenchmarkChunk(name=experiment_name, seed=seed, cap_index=cap_index)
+    bench = BenchmarkChunk(name=experiment_name, random_skip=random_skip, seed=seed, cap_index=cap_index)
     # instanciate the experiment iterator once (in case data needs to be downloaded (MLDA))
     next(registry[experiment_name]())
     # run
@@ -264,6 +271,7 @@ def _submit_jobs(
 # pylint: disable=too-many-arguments
 def compute(
     experiment_name: str,
+    random_skip: float = 0.0,
     num_workers: int = 1,
     seed: tp.Optional[int] = None,
     executor: tp.Optional[tp.ExecutorLike] = None,
