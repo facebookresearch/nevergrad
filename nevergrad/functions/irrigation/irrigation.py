@@ -244,6 +244,8 @@ class Irrigation(ArrayExperimentFunction):
             self.wdp_extend(self.weatherdataprovider)
             self.set_data(symmetry, k, rice)
             v = [self.meta_total_yield(np.random.rand(self.this_dimension)) for _ in range(5)]
+            #self.set_data(symmetry, k)
+            #v = [self.leaf_area_index(np.random.rand(8)) for _ in range(5)]
             if min(v) != max(v):
                 break
             self.variant_choice[symmetry] = k
