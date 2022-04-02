@@ -172,6 +172,22 @@ class Irrigation(ArrayExperimentFunction):
         for k in range(1000):
             if symmetry in self.variant_choice and k < self.variant_choice[symmetry]:
                 continue
+#    def __init__(self, symmetry: int) -> None:
+#        data_dir = Path(__file__).with_name("data")
+#        #urllib.request.urlretrieve(
+#        #    "https://raw.githubusercontent.com/ajwdewit/pcse_notebooks/master/data/soil/ec3.soil",
+#        #    str(data_dir) + "/soil/ec3.soil",
+#        #)
+#        self.soil = CABOFileReader(os.path.join(data_dir, "soil", "ec3.soil"))
+#        param = ng.p.Array(shape=(8,), lower=(0.0), upper=(1.0)).set_name("irrigation8")
+#        super().__init__(self.leaf_area_index, parametrization=param, symmetry=symmetry)
+#        known_longitudes = {'Saint-Leger-Bridereix': 1.5887348, 'Dun-Le-Palestel': 1.6641173, 'Kolkata':
+#        88.35769124388872, 'Antananarivo': 47.5255809, 'Santiago': -70.6504502, 'Lome': 1.215829, 'Cairo': 31.2357257,
+#        'Ouagadougou': -1.5270944, 'Yamoussoukro': -5.273263, 'Yaounde': 11.5213344, 'Kiev': 30.5241361}
+#        known_latitudes = {'Saint-Leger-Bridereix': 46.2861759, 'Dun-Le-Palestel': 46.3052049, 'Kolkata': 22.5414185,
+#        'Antananarivo': -18.9100122, 'Santiago': -33.4377756, 'Lome': 6.130419, 'Cairo': 30.0443879, 'Ouagadougou':
+#        12.3681873, 'Yamoussoukro': 6.809107, 'Yaounde': 3.8689867, 'Kiev': 50.4500336}
+#        for k in range(1000):
             self.address = np.random.RandomState(symmetry+3*k).choice(
                 [
                     "Saint-Leger-Bridereix",
