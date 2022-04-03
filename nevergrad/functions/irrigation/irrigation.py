@@ -29,6 +29,8 @@ from pcse.base import ParameterProvider
 
 
 class Irrigation(ArrayExperimentFunction):
+    variant_choice = {}
+
     def __init__(self, symmetry: int) -> None:
         data_dir = Path(__file__).with_name("data")
         # urllib.request.urlretrieve(
@@ -68,6 +70,8 @@ class Irrigation(ArrayExperimentFunction):
         }
         self.cropd = YAMLCropDataProvider()
         for k in range(1000):
+            if symmetry in self.variant_choice and k < self.variant_choice[symmetry]:
+                continue
             self.address = np.random.RandomState(symmetry + 3 * k).choice(
                 [
                     "Saint-Leger-Bridereix",
@@ -100,6 +104,7 @@ class Irrigation(ArrayExperimentFunction):
             v = [self.leaf_area_index(np.random.rand(8)) for _ in range(5)]
             if min(v) != max(v):
                 break
+            self.variant_choice[symmetry] = k
         print(f"we work on {self.cropname} with variety {self.cropvariety} in {self.address}.")
 
     def set_data(self, symmetry: int, k: int):
