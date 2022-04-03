@@ -219,7 +219,6 @@ class Irrigation(ArrayExperimentFunction):
                 self.weatherdataprovider = WPD[self.address]
             else:           
                 from geopy.geocoders import Nominatim
-
                 geolocator = Nominatim(user_agent="NG/PCSE")
                 self.location = geolocator.geocode(self.address)
                 self.weatherdataprovider = NASAPowerWeatherDataProvider(
@@ -416,8 +415,8 @@ class Irrigation(ArrayExperimentFunction):
             return -float("inf")
             #assert (
             #    False
-            # ), f"Problem!\n Dates: {d0} {d1} {d2} {d3},\n amounts: {a0}, {a1}, {a2}, {a3}\n  ({e}).\n"
-            # raise e
+            #), f"Problem!\n Dates: {d0} {d1} {d2} {d3},\n amounts: {a0}, {a1}, {a2}, {a3}\n  ({e}).\n"
+            #raise e
 
         output = wofost.get_output()
         df = pd.DataFrame(output).set_index("day")
