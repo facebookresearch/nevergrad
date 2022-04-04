@@ -24,10 +24,13 @@ from torch import nn  # noqa
 from torch.utils.data import WeightedRandomSampler  # noqa
 
 
+AnyEnv = tp.Union[gym.Env, base.MultiAgentEnv]
+
+
 class RandomAgent(base.Agent):
     """Agent that plays randomly."""
 
-    def __init__(self, env: gym.Env) -> None:
+    def __init__(self, env: AnyEnv) -> None:
         self.env = env
         assert isinstance(env.action_space, gym.spaces.Discrete)
         self.num_outputs = env.action_space.n
@@ -48,7 +51,7 @@ class RandomAgent(base.Agent):
 class Agent007(base.Agent):
     """Agents that plays slighlty better than random on the 007 game."""
 
-    def __init__(self, env: gym.Env) -> None:
+    def __init__(self, env: AnyEnv) -> None:
         self.env = env
         assert isinstance(env, envs.DoubleOSeven) or (
             isinstance(env, base.SingleAgentEnv) and isinstance(env.env, envs.DoubleOSeven)
@@ -94,7 +97,7 @@ class TorchAgent(base.Agent):
     @classmethod
     def from_module_maker(
         cls,
-        env: gym.Env,
+        env: AnyEnv,
         module_maker: tp.Callable[[tp.Tuple[int, ...], int], nn.Module],
         deterministic: bool = True,
     ) -> "TorchAgent":
