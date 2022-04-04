@@ -70,6 +70,7 @@ def _true(*args: tp.Any, **kwargs: tp.Any) -> bool:  # pylint: disable=unused-ar
         par.Choice([1, 2], repetitions=2),
         par.TransitionChoice([par.Array(shape=(2,)), par.Scalar()]),
         par.TransitionChoice(["a", "b", "c"], transitions=(0, 2, 1), repetitions=4),
+        par.TransitionChoice(["a", "b", "c"], ordered=False),
     ],
 )
 def test_parameters_basic_features(param: par.Parameter) -> None:
@@ -89,9 +90,9 @@ def check_parameter_features(param: par.Parameter) -> None:
     assert isinstance(child, type(param))
     assert child.heritage["lineage"] == param.uid
     assert child.generation == 1
-    assert not np.any(param.get_standardized_data(reference=param))
-    assert not np.any(child.get_standardized_data(reference=child))
-    assert not np.any(child.get_standardized_data(reference=param))
+    assert not np.any(param.get_standardized_data(reference=param) > 1e-7)
+    assert not np.any(child.get_standardized_data(reference=child) > 1e-7)
+    assert not np.any(child.get_standardized_data(reference=param) > 1e-7)
     assert child.name == param.name
     assert param._random_state is not None
     assert child.random_state is param.random_state
@@ -103,7 +104,9 @@ def check_parameter_features(param: par.Parameter) -> None:
     except errors.UnsupportedParameterOperationError:
         mutable = False
     else:
-        assert np.any(child.get_standardized_data(reference=param))
+        if not isinstance(child, par.TransitionChoice):
+            # transition choice has a fixed set of values so can be the same
+            assert np.any(child.get_standardized_data(reference=param))
     param.set_name("blublu")
     child_hash = param.spawn_child()
     assert child_hash.name == "blublu"
@@ -359,7 +362,19 @@ def test_ordered_choice() -> None:
     assert choice.value in [0, 2]
     assert choice.get_standardized_data(reference=choice).size
     choice.set_standardized_data(np.array([12.0]))
-    assert choice.value == 3
+
+
+def test_transition_choice_bin() -> None:
+    choice = par.TransitionChoice([0, 1, 2, 3], ordered=False)
+    for val in [1000, 1.10]:
+        choice.set_standardized_data([val])
+        # value should be mapped to the bin
+        assert choice.get_standardized_data(reference=choice) == pytest.approx(1.15035)
+    values = set()
+    for _ in range(20):
+        choice.mutate()
+        values.add(choice.get_standardized_data(reference=choice)[0])
+    assert 1 < len(values) < 5, values
 
 
 def test_ordered_choice_weird_values() -> None:
