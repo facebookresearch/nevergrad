@@ -274,7 +274,7 @@ def absorption(
     k0 = 2 * np.pi / lam
     g = type_.size
     alpha = np.sqrt(epsilon[type_[0]] * mu[type_[0]]) * k0 * np.sin(theta)
-    gamma = np.sqrt(epsilon[type_] * mu[type_] * k0 ** 2 - np.ones(g) * alpha ** 2)
+    gamma = np.sqrt(epsilon[type_] * mu[type_] * k0**2 - np.ones(g) * alpha**2)
     if np.real(epsilon[type_[0]]) < 0 and np.real(mu[type_[0]]) < 0:
         gamma[0] = -gamma[0]
     if g > 2:
@@ -282,11 +282,11 @@ def absorption(
     if (
         np.real(epsilon[type_[g - 1]]) < 0
         and np.real(mu[type_[g - 1]]) < 0
-        and np.real(np.sqrt(epsilon[type_[g - 1]] * mu[type_[g - 1]] * k0 ** 2 - alpha ** 2)) != 0
+        and np.real(np.sqrt(epsilon[type_[g - 1]] * mu[type_[g - 1]] * k0**2 - alpha**2)) != 0
     ):
-        gamma[g - 1] = -np.sqrt(epsilon[type_[g - 1]] * mu[type_[g - 1]] * k0 ** 2 - alpha ** 2)
+        gamma[g - 1] = -np.sqrt(epsilon[type_[g - 1]] * mu[type_[g - 1]] * k0**2 - alpha**2)
     else:
-        gamma[g - 1] = np.sqrt(epsilon[type_[g - 1]] * mu[type_[g - 1]] * k0 ** 2 - alpha ** 2)
+        gamma[g - 1] = np.sqrt(epsilon[type_[g - 1]] * mu[type_[g - 1]] * k0**2 - alpha**2)
     T = np.zeros(((2 * g, 2, 2)), dtype=complex)
     T[0] = [[0, 1], [1, 0]]
     for k2 in range(g - 1):
