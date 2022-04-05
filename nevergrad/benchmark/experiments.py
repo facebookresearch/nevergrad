@@ -93,7 +93,7 @@ def keras_tuning(
             function = MLTuning(
                 regressor="keras_dense_nn", data_dimension=dimension, dataset=dataset, overfitter=overfitter
             )
-            for budget in [50, 150, 500]:
+            for budget in [150, 500]:
                 for num_workers in (
                     [1, budget // 4] if seq else [budget]
                 ):  # Seq for sequential optimization experiments.
@@ -127,7 +127,7 @@ def mltuning(
                 function = MLTuning(
                     regressor=regressor, data_dimension=dimension, dataset=dataset, overfitter=overfitter
                 )
-                for budget in [50, 150, 500] if not nano else [20, 40, 80, 160]:
+                for budget in [150, 500] if not nano else [80, 160]:
                     # Seq for sequential optimization experiments.
                     parallelization = [1, budget // 4] if seq else [budget]
                     for num_workers in parallelization:
