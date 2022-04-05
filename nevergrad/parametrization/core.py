@@ -62,10 +62,6 @@ class Parameter(Layered):
         self.function = utils.FunctionInfo()
 
     @property
-    def descriptors(self) -> utils.DeprecatedDescriptors:  # TODO remove
-        return utils.DeprecatedDescriptors(self)
-
-    @property
     def losses(self) -> np.ndarray:
         """Possibly multiobjective losses which were told
         to the optimizer along this parameter.

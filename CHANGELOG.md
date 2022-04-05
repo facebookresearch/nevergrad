@@ -4,6 +4,9 @@
 
 ### Breaking changes
 
+- Removed `descriptor` field of parameters which had been deprecated in previous versions. Use `function` field instead to specify if the function 
+  is deterministic or not [#X](https://github.com/facebookresearch/nevergrad/pull/X).
+
 ### Important changes
 
 - `TransitionChoice` behavior has been changed to use bins instead of a full float representation. This may lead to slight

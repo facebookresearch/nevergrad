@@ -47,8 +47,6 @@ def test_empty_parameters(param: par.Dict) -> None:
     analysis = par.helpers.analyze(param)
     assert analysis.continuous
     assert analysis.deterministic
-    assert param.descriptors.continuous
-    assert param.descriptors.deterministic
 
 
 def _true(*args: tp.Any, **kwargs: tp.Any) -> bool:  # pylint: disable=unused-argument
@@ -146,22 +144,15 @@ def check_parameter_features(param: par.Parameter) -> None:
     # sampling
     samp_param = param.sample()
     assert samp_param.uid == samp_param.heritage["lineage"]
-    # set descriptor
-    assert param.descriptors.deterministic_function
+    # set function properties
     assert param.function.deterministic
-    param.descriptors.deterministic_function = False
-    assert not param.descriptors.deterministic_function
-    assert not param.function.deterministic
-    #
-    assert param.descriptors.non_proxy_function
     assert not param.function.proxy
-    param.descriptors.non_proxy_function = False
-    assert not param.descriptors.non_proxy_function
-    assert param.function.proxy
-    #
-    descr_child = param.spawn_child()
-    assert not descr_child.descriptors.deterministic_function
-    assert not descr_child.descriptors.non_proxy_function
+    param.function.deterministic = False
+    param.function.proxy = True
+    # function properties should be transfered to children
+    func_child = param.spawn_child()
+    assert not func_child.function.deterministic
+    assert func_child.function.proxy
 
 
 def check_parameter_freezable(param: par.Parameter) -> None:
@@ -233,9 +224,6 @@ def test_parameter_analysis(
     assert analysis.continuous == continuous
     assert analysis.deterministic == deterministic
     assert analysis.ordered == ordered
-    assert param.descriptors.continuous == continuous
-    assert param.descriptors.deterministic == deterministic
-    assert param.descriptors.ordered == ordered
 
 
 def test_instrumentation() -> None:
