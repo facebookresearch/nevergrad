@@ -219,7 +219,6 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # Then, let us build a constraint-free case. We include the noisy case.
     names = ["hm", "rastrigin", "sphere", "doublelinearslope", "ellipsoid"]
 
-    # names += ["deceptiveillcond", "deceptivemultimodal", "deceptivepath"]
     functions += [
         ArtificialFunction(
             name, block_dimension=d, rotation=rotation, noise_level=nl, split=split, translation_factor=tf
@@ -249,6 +248,8 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                         xp = Experiment(function, optim, num_workers=nw, budget=budget, seed=next(seedg))
                         if not xp.is_incoherent:
                             yield xp
+
+    assert total_xp_per_optim == 33, f"We have 33 single-obj xps per optimizer (got {total_xp_per_optim})."
     # Discrete, unordered.
     index = 0
     for nv in [200, 2000]:
@@ -262,11 +263,14 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                     corefuncs.DiscreteFunction(name, arity), instrum.set_name("transition")
                 )
                 dfunc.add_descriptors(arity=arity)
-                for budget in [500, 5000]:
+                for budget in [500, 1500, 5000]:
                     for nw in [1, 100]:
                         total_xp_per_optim += 1
                         for optim in optims:
                             yield Experiment(dfunc, optim, num_workers=nw, budget=budget, seed=next(seedg))
+    assert (
+        total_xp_per_optim == 57
+    ), f"Including discrete, we check xps per optimizer (got {total_xp_per_optim})."
 
     # The multiobjective case.
     # TODO the upper bounds are really not well set for this experiment with cigar
@@ -301,14 +305,14 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                     mofuncs[-1].add_descriptors(num_objectives=3)
     index = 0
     for mofunc in mofuncs[::3]:
-        for budget in [2000, 8000]:
-            for nw in [1, 100]:
+        for budget in [2000, 4000, 8000]:
+            for nw in [1, 20, 100]:
                 index += 1
                 if index % 5 == 0:
                     total_xp_per_optim += 1
                     for optim in optims:
                         yield Experiment(mofunc, optim, budget=budget, num_workers=nw, seed=next(seedg))
-    assert total_xp_per_optim == 55, "We should have 55 xps per optimizer, not {total_xp_per_optim}."
+    assert total_xp_per_optim == 71, f"We should have 71 xps per optimizer, not {total_xp_per_optim}."
 
 
 # pylint: disable=redefined-outer-name
