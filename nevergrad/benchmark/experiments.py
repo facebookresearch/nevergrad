@@ -401,7 +401,9 @@ def sequential_instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Ex
                 if instrum_str == "Softmax":
                     instrum: ng.p.Parameter = ng.p.Choice(range(arity), repetitions=nv)
                 else:
-                    instrum = ng.p.TransitionChoice(range(arity), repetitions=nv, ordered=instrum_str == "Ordered")
+                    instrum = ng.p.TransitionChoice(
+                        range(arity), repetitions=nv, ordered=instrum_str == "Ordered"
+                    )
                 for name in ["onemax", "leadingones", "jump"]:
                     dfunc = ExperimentFunction(
                         corefuncs.DiscreteFunction(name, arity), instrum.set_name(instrum_str)
