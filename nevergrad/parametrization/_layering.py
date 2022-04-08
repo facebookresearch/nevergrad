@@ -286,6 +286,7 @@ class Int(Layered, Filterable):
     def __call__(self, layered: L) -> L:
         """Creates a new Data instance with int-casting"""
         from . import data  # pylint: disable=import-outside-toplevel
+
         if not isinstance(layered, data.Data):
             raise ValueError("Only data parameters can use Int operation")
         out = layered.copy()
