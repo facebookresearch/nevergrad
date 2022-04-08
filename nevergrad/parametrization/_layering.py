@@ -283,6 +283,10 @@ class Int(Layered, Filterable):
     def _layered_del_value(self) -> None:
         self._cache = None  # clear cache!
 
+    def __call__(self, layered: L) -> L:
+        layered.add_layer(self)
+        return layered
+
 
 def _to_int(value: tp.Union[float, np.ndarray]) -> tp.Union[int, np.ndarray]:
     """Returns a int from a float, or a int typed array from a float array"""
