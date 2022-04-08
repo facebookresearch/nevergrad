@@ -284,8 +284,13 @@ class Int(Layered, Filterable):
         self._cache = None  # clear cache!
 
     def __call__(self, layered: L) -> L:
-        layered.add_layer(self)
-        return layered
+        """Creates a new Data instance with int-casting"""
+        from . import data  # pylint: disable=import-outside-toplevel
+        if not isinstance(layered, data.Data):
+            raise ValueError("Only data parameters can use Int operation")
+        out = layered.copy()
+        out.add_layer(self)
+        return out  # type: ignore
 
 
 def _to_int(value: tp.Union[float, np.ndarray]) -> tp.Union[int, np.ndarray]:
