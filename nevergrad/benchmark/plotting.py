@@ -724,7 +724,7 @@ class FightPlotter:
         )
         x_names = self.winrates.columns
         self._ax.set_xticks(list(range(len(x_names))))
-        self._ax.set_xticklabels(x_names, rotation=90, fontsize=7)  # , ha="left")
+        self._ax.set_xticklabels(x_names, rotation=45, ha="right", fontsize=7)
         y_names = self.winrates.index
         self._ax.set_yticks(list(range(len(y_names))))
         self._ax.set_yticklabels(y_names, rotation=45, fontsize=7)
