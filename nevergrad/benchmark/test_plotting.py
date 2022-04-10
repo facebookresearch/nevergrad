@@ -57,8 +57,8 @@ def test_create_plots_from_csv_mocked() -> None:
         with patch("nevergrad.benchmark.plotting.FightPlotter") as fplt:
             plotting.create_plots(df, "", max_combsize=1)
             assert (
-                fplt.call_count == 7
-            ), "Should be called for all, 2 noise levels and 3 budgets, plus one ``pure'' context."
+                fplt.call_count == 12
+            ), "Should be called for all, 2 noise levels and 3 budgets, and, for each, a ``pure'' context."
 
 
 def test_fight_plotter() -> None:
