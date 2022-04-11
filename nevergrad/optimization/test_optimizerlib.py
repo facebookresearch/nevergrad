@@ -908,3 +908,23 @@ def test_pymoo_batched() -> None:
             loss = losses.pop()
             optimizer.tell(x, loss)
     assert len(optimizer._current_batch) == 0  # type: ignore
+
+
+@pytest.mark.parametrize("name", ["DE", "PSO", "CMA", "RandomSearch", "DiscreteOnePlusOne", "NGOpt", "CmaFmin2", "OnePlusOne"])  # type: ignore
+def test_frontier_optim(name: str) -> None:
+    x = (
+        optlib.registry[name](ng.p.Array(shape=(4,), lower=-1.0, upper=1.0), budget=4000)
+        .minimize(lambda x: sum(x ** 2) - 20 * x[0])
+        .value
+    )
+    # Good news! NGOpt is good here.
+    # The most important variable is correctly handled by everyone.
+    assert x[0] >= 0.9
+    # Those ones are not super fast for secundary variables.
+    # Those ones are not super fast for secundary variables.
+    tol = {name: 0.2 for name in ["CMA", "RandomSearch"]}
+    # PSO and OnePlusOne have big difficulties for secundary variable
+    tol.update({name: 0.4 for name in ["PSO", "RandomSearch", "OnePlusOne"]})
+    for error in [0.1, 0.2, 0.4]:
+        if tol.get(name, 0.05) < error:
+            assert all(np.abs(x[1:]) < error), f"{error} not reached by {name}: {x[1:]}."")
