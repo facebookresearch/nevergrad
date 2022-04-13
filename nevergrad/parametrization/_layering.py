@@ -247,6 +247,10 @@ class Int(Layered, Filterable):
     -------
     0.2 is cast to 0 in deterministic mode, and either 0 (80% chance) or 1 (20% chance) in
     non-deterministic mode
+
+    Usage
+    -----
+    :code:`param = ng.ops.Int(deterministic=True)(ng.p.Array(shape=(3,)))`
     """
 
     _LAYER_LEVEL = Level.INTEGER_CASTING
