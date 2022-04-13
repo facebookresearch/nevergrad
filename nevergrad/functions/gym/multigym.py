@@ -315,6 +315,9 @@ class GymMulti(ExperimentFunction):
             try:
                 assert "Kelly" not in str(e.id)  # We should have another check than that.
                 assert "llvm" not in str(e.id)  # We should have another check than that.
+                assert (
+                    "RacecarZedBulletEnv-v0" != e.id
+                )  # This specific environment causes X11 error when using pybullet_envs.
                 env = gym.make(e.id)
                 env.reset()
                 env.step(env.action_space.sample())
