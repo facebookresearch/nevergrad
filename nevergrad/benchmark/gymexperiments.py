@@ -97,10 +97,6 @@ def ng_full_gym(
         except:
             print("Pybullet not installed. If you need it, please do something like:")
             print("pip install pybullet")
-            if os.environ.get("CIRCLECI", False):
-                raise ng.errors.UnsupportedExperiment(
-                    "No pybullet in CircleCI because pybulletgym is not in pypi!"
-                )
             raise ImportError("Please install pybullet.")
 
     seedg = create_seed_generator(seed)
