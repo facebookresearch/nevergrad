@@ -25,7 +25,7 @@ class SimpleFitness:
 
     def __call__(self, x: tp.ArrayLike) -> float:
         assert len(self.x0) == len(x)
-        return float(np.sum(self.x1 * np.cos(np.array(x, copy=False) - self.x0) ** 2))
+        return float(np.sum(self.x1 * np.cos(np.array(x, copy=False) - self.x0)**2))
 
 
 @pytest.mark.parametrize("dim", [2, 10, 40, 200])  # type: ignore

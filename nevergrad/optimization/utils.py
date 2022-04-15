@@ -386,6 +386,6 @@ class ConstraintManager:
     def penalty(self, parameter: p.Parameter, num_ask: int, budget: tp.Optional[int]) -> float:
         """Computes the penalty associated with a Parameter, for constraint management"""
         budget = 1 if budget is None else budget
-        coeff = self.penalty_factor * (self.penalty_exponent ** (num_ask / np.sqrt(budget)))
+        coeff = self.penalty_factor * (self.penalty_exponent**(num_ask / np.sqrt(budget)))
         val = parameter.value
         return coeff * sum(_float_penalty(func(val)) for func in parameter._constraint_checkers)  # type: ignore

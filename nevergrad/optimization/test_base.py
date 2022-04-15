@@ -23,7 +23,7 @@ class CounterFunction:
     def __call__(self, value: tp.ArrayLike) -> float:
         assert len(value) == 1
         self.count += 1
-        return float(value[0] - 1) ** 2
+        return float(value[0] - 1)**2
 
 
 class LoggingOptimizer(base.Optimizer):

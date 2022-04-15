@@ -105,7 +105,7 @@ class Data(core.Parameter):
             # we want:
             # sigma *= exp(gaussian / sqrt(dim))
             base = float(np.exp(1.0 / np.sqrt(2 * init.size)))
-            sigma = base ** (Array if isinstance(sigma, np.ndarray) else Scalar)(
+            sigma = base**(Array if isinstance(sigma, np.ndarray) else Scalar)(
                 init=siginit, mutable_sigma=False
             )
             sigma.value = siginit

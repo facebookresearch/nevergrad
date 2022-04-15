@@ -49,7 +49,7 @@ def test_compute_perceptron() -> None:
         z = p[-1]
         for k in range(3):
             z += p[6 + k] * np.tanh(p[3 + k] + p[k] * x)
-        square_sum += (z - y) ** 2
+        square_sum += (z - y)**2
     output = problems.Perceptron(data[:, 0], data[:, 1]).copy()(p)
     np.testing.assert_almost_equal(output, square_sum / 5)
 

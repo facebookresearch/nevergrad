@@ -807,7 +807,7 @@ def _constraint_solver(parameter: p.Parameter, budget: int) -> p.Parameter:
         penalty = sum(utils._float_penalty(func(cand.value)) for func in parameter._constraint_checkers)
 
         # TODO: this may not scale well with dimension
-        distance = np.tanh(np.sum(cand.get_standardized_data(reference=parameter) ** 2))
+        distance = np.tanh(np.sum(cand.get_standardized_data(reference=parameter)**2))
         # TODO: because of the return whenever constraints are satisfied, the first case never arises
         loss = distance if penalty <= 0 else penalty + distance + 1.0
         opt.tell(cand, loss)

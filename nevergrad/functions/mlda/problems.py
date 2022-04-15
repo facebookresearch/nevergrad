@@ -22,7 +22,7 @@ def _kmeans_distance(points: np.ndarray, centers: np.ndarray) -> float:
     after affecting each points to the closest center.
     """
     assert points.shape[1] == centers.shape[1]
-    distances = np.sum((points[:, :, None] - centers.T[None, :, :]) ** 2, axis=1)
+    distances = np.sum((points[:, :, None] - centers.T[None, :, :])**2, axis=1)
     affect = np.min(distances, axis=1)
     return float(np.sum(affect))
 
@@ -137,7 +137,7 @@ class Perceptron(ExperimentFunction):
     def _compute_loss(self, x: tp.ArrayLike) -> float:
         """Compute perceptron"""
         gx = self.apply(x)
-        return float(np.mean((gx - self._y) ** 2))
+        return float(np.mean((gx - self._y)**2))
 
 
 class SammonMapping(ExperimentFunction):
@@ -202,7 +202,7 @@ class SammonMapping(ExperimentFunction):
     def _compute_distance(self, x: np.ndarray) -> float:
         """Compute the Sammon mapping metric for the input data"""
         proximity = scipy.spatial.distance_matrix(x, x)
-        norm_prox = (proximity - self._proximity) ** 2 / self._proximity_2
+        norm_prox = (proximity - self._proximity)**2 / self._proximity_2
         return float(np.sum(norm_prox.ravel()))
 
 

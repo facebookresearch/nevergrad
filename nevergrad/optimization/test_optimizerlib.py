@@ -50,7 +50,7 @@ class Fitness:
     def __call__(self, x: tp.ArrayLike) -> float:
         assert len(self.x0) == len(x)
         self.call_times.append(time.time())
-        return float(np.sum((np.array(x, copy=False) - self.x0) ** 2))
+        return float(np.sum((np.array(x, copy=False) - self.x0)**2))
 
     def get_factors(self) -> tp.Tuple[float, float]:
         logdiffs = np.log(np.maximum(1e-15, np.cumsum(np.diff(self.call_times))))
@@ -385,7 +385,7 @@ def test_tbpsa_recom_with_update() -> None:
 
 
 def _square(x: np.ndarray, y: float = 12) -> float:
-    return sum((x - 0.5) ** 2) + abs(y)
+    return sum((x - 0.5)**2) + abs(y)
 
 
 def test_optimization_doc_parametrization_example() -> None:
@@ -489,7 +489,7 @@ class QuadFunction:
     def __call__(self, x: np.ndarray) -> float:
         y = x - self.scale
         if self.ellipse:
-            y *= np.arange(1, x.size + 1) ** 2
+            y *= np.arange(1, x.size + 1)**2
         return float(sum(y**2))
 
 
@@ -787,7 +787,7 @@ def test_ngo_split_optimizer(
 def test_ngopt_on_simple_realistic_scenario(budget: int, with_int: bool) -> None:
     def fake_training(learning_rate: float, batch_size: int, architecture: str) -> float:
         # optimal for learning_rate=0.2, batch_size=4, architecture="conv"
-        return (learning_rate - 0.2) ** 2 + (batch_size - 4) ** 2 + (0 if architecture == "conv" else 10)
+        return (learning_rate - 0.2)**2 + (batch_size - 4)**2 + (0 if architecture == "conv" else 10)
 
     # Instrumentation class is used for functions with multiple inputs
     # (positional and/or keywords)
@@ -870,7 +870,7 @@ def test_cma_logs(capsys: tp.Any) -> None:
 
 
 def _simple_multiobjective(x):
-    return [np.sum(x**2), np.sum((x - 1) ** 2)]
+    return [np.sum(x**2), np.sum((x - 1)**2)]
 
 
 def test_pymoo_pf() -> None:

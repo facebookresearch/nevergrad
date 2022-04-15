@@ -84,7 +84,7 @@ def test_harder_suggest_optimizers(name: str) -> None:
     instrum = ng.p.Array(shape=(100,)).set_bounds(0.0, 1.0)
     instrum.set_integer_casting()
     optimum = np.asarray([0] * 17 + [1] * 17 + [0] * 66)
-    target = lambda x: min(3, np.sum((np.asarray(x, dtype=int) - optimum) ** 2))
+    target = lambda x: min(3, np.sum((np.asarray(x, dtype=int) - optimum)**2))
     suggestion = np.asarray([0] * 17 + [1] * 16 + [0] * 67)
     suggestion_testing(name, instrum, suggestion, 1500, target, optimum)
 
@@ -94,7 +94,7 @@ def test_harder_continuous_suggest_optimizers() -> None:
     """Checks that somes optimizer can converge when provided with a good suggestion."""
     instrum = ng.p.Array(shape=(100,)).set_bounds(0.0, 1.0)
     optimum = np.asarray([0] * 17 + [1] * 17 + [0] * 66)
-    target = lambda x: min(2.0, np.sum((x - optimum) ** 2))
+    target = lambda x: min(2.0, np.sum((x - optimum)**2))
     suggestion = np.asarray([0] * 17 + [1] * 16 + [0] * 67)
     suggestion_testing("NGOpt", instrum, suggestion, 1500, target, optimum, threshold=0.9)
 

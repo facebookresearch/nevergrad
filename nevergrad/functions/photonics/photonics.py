@@ -155,7 +155,7 @@ def creneau(
 
 def homogene(k0: float, a0: float, pol: float, epsilon: float, n: int) -> tp.Tuple[np.ndarray, np.ndarray]:
     nmod = int(n / 2)
-    valp = np.sqrt(epsilon * k0 * k0 - (a0 + 2 * np.pi * np.arange(-nmod, nmod + 1)) ** 2 + 0j)
+    valp = np.sqrt(epsilon * k0 * k0 - (a0 + 2 * np.pi * np.arange(-nmod, nmod + 1))**2 + 0j)
     valp = valp * (1 - 2 * (valp < 0)) * (pol / epsilon + (1 - pol))
     P = np.block([[np.eye(n)], [np.diag(valp)]])
     return P, valp
@@ -198,7 +198,7 @@ def morpho(X: np.ndarray) -> float:
     S = cascade(S, interface(P, Pc))
     R = np.zeros(3, dtype=np.float_)
     for j in range(-1, 2):
-        R[j] = abs(S[j + nmod, nmod]) ** 2 * np.real(V[j + nmod]) / k0
+        R[j] = abs(S[j + nmod, nmod])**2 * np.real(V[j + nmod]) / k0
     cost: float = 1 - (R[-1] + R[1]) / 2 + R[0] / 2
 
     lams = (np.array([400, 500, 600, 700, 800]) + 0.24587) / d
@@ -220,7 +220,7 @@ def morpho(X: np.ndarray) -> float:
             S = c_bas(S, V, spacers[j])
         Pc, Vc = homogene(k0, 0, pol, e2, n)
         S = cascade(S, interface(P, Pc))
-        bar += abs(S[nmod, nmod]) ** 2 * np.real(V[nmod]) / k0
+        bar += abs(S[nmod, nmod])**2 * np.real(V[nmod]) / k0
     cost += bar / lams.size
     return cost
 
