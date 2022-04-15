@@ -88,7 +88,7 @@ class Affine(Transform):
 
 
 class Exponentiate(Transform):
-    """Exponentiation transform base ** (coeff * x)
+    """Exponentiation transform base**(coeff * x)
     This can for instance be used for to get a logarithmicly distruted values 10**(-[1, 2, 3]).
 
     Parameters
