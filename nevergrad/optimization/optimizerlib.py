@@ -580,6 +580,115 @@ DiagonalCMA = ParametrizedCMA(diagonal=True).set_name("DiagonalCMA", register=Tr
 FCMA = ParametrizedCMA(fcmaes=True).set_name("FCMA", register=True)
 
 
+CMAbounded = ParametrizedCMA(
+    scale=1.5884, popsize_factor=1, elitist=True, diagonal=True, fcmaes=False
+).set_name("CMAbounded", register=True)
+CMAsmall = ParametrizedCMA(
+    scale=0.3607, popsize_factor=3, elitist=False, diagonal=False, fcmaes=False
+).set_name("CMAsmall", register=True)
+CMAstd = ParametrizedCMA(
+    scale=0.4699, popsize_factor=3, elitist=False, diagonal=False, fcmaes=False
+).set_name("CMAstd", register=True)
+CMApara = ParametrizedCMA(scale=0.8905, popsize_factor=8, elitist=True, diagonal=True, fcmaes=False).set_name(
+    "CMApara", register=True
+)
+CMAtuning = ParametrizedCMA(
+    scale=0.4847, popsize_factor=1, elitist=True, diagonal=False, fcmaes=False
+).set_name("CMAtuning", register=True)
+
+
+@registry.register
+class ChoiceBase(base.Optimizer):
+    """Nevergrad optimizer by competence map."""
+
+    # pylint: disable=too-many-branches
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        analysis = p.helpers.analyze(self.parametrization)
+        funcinfo = self.parametrization.function
+        self.has_noise = not (analysis.deterministic and funcinfo.deterministic)
+        # The noise coming from discrete variables goes to 0.
+        self.noise_from_instrumentation = self.has_noise and funcinfo.deterministic
+        self.fully_continuous = analysis.continuous
+        all_params = p.helpers.flatten(self.parametrization)
+        # figure out if there is any discretization layers
+        int_layers = list(
+            itertools.chain.from_iterable([_layering.Int.filter_from(x) for _, x in all_params])
+        )
+        int_layers = [x for x in int_layers if x.arity is not None]  # only "Choice" instances for now
+        self.has_discrete_not_softmax = any(
+            not isinstance(lay, _datalayers.SoftmaxSampling) for lay in int_layers
+        )
+        self._has_discrete = bool(int_layers)
+        self._arity: int = max((lay.arity for lay in int_layers), default=-1)  # type: ignore
+        if self.fully_continuous:
+            self._arity = -1
+        self._optim: tp.Optional[base.Optimizer] = None
+        self._constraints_manager.update(
+            max_trials=1000,
+            penalty_factor=1.0,
+            penalty_exponent=1.01,
+        )
+
+    @property
+    def optim(self) -> base.Optimizer:
+        if self._optim is None:
+            self._optim = self._select_optimizer_cls()(self.parametrization, self.budget, self.num_workers)
+            self._optim = self._optim if not isinstance(self._optim, NGOptBase) else self._optim.optim
+            logger.debug("%s selected %s optimizer.", *(x.name for x in (self, self._optim)))
+        return self._optim
+
+    def _select_optimizer_cls(self) -> base.OptCls:
+        return CMA
+
+    def _internal_ask_candidate(self) -> p.Parameter:
+        return self.optim.ask()
+
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        self.optim.tell(candidate, loss)
+
+    def recommend(self) -> p.Parameter:
+        return self.optim.recommend()
+
+    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        self.optim.tell(candidate, loss)
+
+    def _info(self) -> tp.Dict[str, tp.Any]:
+        out = {"sub-optim": self.optim.name}
+        out.update(self.optim._info())  # this will work for recursive NGOpt calls
+        return out
+
+    def enable_pickling(self) -> None:
+        self.optim.enable_pickling()
+
+
+@registry.register
+class MetaCMA(ChoiceBase):  # Adds Risto's CMA to CMA.
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
+
+    def _select_optimizer_cls(self) -> base.OptCls:
+        if (
+            self.budget is not None
+            and self.fully_continuous
+            and not self.has_noise
+            and self.num_objectives < 2
+        ):
+            if p.helpers.Normalizer(self.parametrization).fully_bounded:
+                return CMAbounded
+            if self.budget < 50:
+                if self.dimension <= 15:
+                    return CMAtuning
+                return CMAsmall
+            if self.num_workers > 20:
+                return CMApara
+            return CMAstd
+        else:
+            return CMA
+
+
+
 class _PopulationSizeController:
     """Population control scheme for TBPSA and EDA"""
 
@@ -2340,47 +2449,8 @@ NaiveIsoEMNA = EMNA().set_name("NaiveIsoEMNA", register=True)
 # Discussions with Jialin Liu and Fabien Teytaud helped the following development.
 # This includes discussion at Dagstuhl's 2019 seminars on randomized search heuristics and computational intelligence in games.
 @registry.register
-class NGOptBase(base.Optimizer):
+class NGOptBase(ChoiceBase):
     """Nevergrad optimizer by competence map."""
-
-    # pylint: disable=too-many-branches
-    def __init__(
-        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
-    ) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        analysis = p.helpers.analyze(self.parametrization)
-        funcinfo = self.parametrization.function
-        self.has_noise = not (analysis.deterministic and funcinfo.deterministic)
-        # The noise coming from discrete variables goes to 0.
-        self.noise_from_instrumentation = self.has_noise and funcinfo.deterministic
-        self.fully_continuous = analysis.continuous
-        all_params = p.helpers.flatten(self.parametrization)
-        # figure out if there is any discretization layers
-        int_layers = list(
-            itertools.chain.from_iterable([_layering.Int.filter_from(x) for _, x in all_params])
-        )
-        int_layers = [x for x in int_layers if x.arity is not None]  # only "Choice" instances for now
-        self.has_discrete_not_softmax = any(
-            not isinstance(lay, _datalayers.SoftmaxSampling) for lay in int_layers
-        )
-        self._has_discrete = bool(int_layers)
-        self._arity: int = max((lay.arity for lay in int_layers), default=-1)  # type: ignore
-        if self.fully_continuous:
-            self._arity = -1
-        self._optim: tp.Optional[base.Optimizer] = None
-        self._constraints_manager.update(
-            max_trials=1000,
-            penalty_factor=1.0,
-            penalty_exponent=1.01,
-        )
-
-    @property
-    def optim(self) -> base.Optimizer:
-        if self._optim is None:
-            self._optim = self._select_optimizer_cls()(self.parametrization, self.budget, self.num_workers)
-            self._optim = self._optim if not isinstance(self._optim, NGOptBase) else self._optim.optim
-            logger.debug("%s selected %s optimizer.", *(x.name for x in (self, self._optim)))
-        return self._optim
 
     def _select_optimizer_cls(self) -> base.OptCls:
         # pylint: disable=too-many-nested-blocks
@@ -2421,69 +2491,6 @@ class NGOptBase(base.Optimizer):
                                     DE if self.dimension > 2000 else CMA if self.dimension > 1 else OnePlusOne
                                 )
         return cls
-
-    def _internal_ask_candidate(self) -> p.Parameter:
-        return self.optim.ask()
-
-    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        self.optim.tell(candidate, loss)
-
-    def recommend(self) -> p.Parameter:
-        return self.optim.recommend()
-
-    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        self.optim.tell(candidate, loss)
-
-    def _info(self) -> tp.Dict[str, tp.Any]:
-        out = {"sub-optim": self.optim.name}
-        out.update(self.optim._info())  # this will work for recursive NGOpt calls
-        return out
-
-    def enable_pickling(self) -> None:
-        self.optim.enable_pickling()
-
-
-CMAbounded = ParametrizedCMA(
-    scale=1.5884, popsize_factor=1, elitist=True, diagonal=True, fcmaes=False
-).set_name("CMAbounded", register=True)
-CMAsmall = ParametrizedCMA(
-    scale=0.3607, popsize_factor=3, elitist=False, diagonal=False, fcmaes=False
-).set_name("CMAsmall", register=True)
-CMAstd = ParametrizedCMA(
-    scale=0.4699, popsize_factor=3, elitist=False, diagonal=False, fcmaes=False
-).set_name("CMAstd", register=True)
-CMApara = ParametrizedCMA(scale=0.8905, popsize_factor=8, elitist=True, diagonal=True, fcmaes=False).set_name(
-    "CMApara", register=True
-)
-CMAtuning = ParametrizedCMA(
-    scale=0.4847, popsize_factor=1, elitist=True, diagonal=False, fcmaes=False
-).set_name("CMAtuning", register=True)
-
-
-@registry.register
-class MetaCMA(NGOptBase):  # Adds Risto's CMA to CMA.
-    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
-
-    def _select_optimizer_cls(self) -> base.OptCls:
-        optCls: base.OptCls = NGOptBase
-        funcinfo = self.parametrization.function
-        if (
-            self.budget is not None
-            and self.fully_continuous
-            and not self.has_noise
-            and self.num_objectives < 2
-        ):
-            if p.helpers.Normalizer(self.parametrization).fully_bounded:
-                return CMAbounded
-            if self.budget < 50:
-                if self.dimension <= 15:
-                    return CMAtuning
-                return CMAsmall
-            if self.num_workers > 20:
-                return CMApara
-            return CMAstd
-        else:
-            return CMA
 
 
 @registry.register
