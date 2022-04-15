@@ -17,7 +17,7 @@ def test_simplest_example() -> None:
     import nevergrad as ng
 
     def square(x):
-        return sum((x - 0.5) ** 2)
+        return sum((x - 0.5)**2)
 
     # optimization on x as an array of shape (2,)
     optimizer = ng.optimizers.NGOpt(parametrization=2, budget=100)
@@ -34,7 +34,7 @@ def test_base_example() -> None:
     import nevergrad as ng
 
     def square(x, y=12):
-        return sum((x - 0.5) ** 2) + abs(y)
+        return sum((x - 0.5)**2) + abs(y)
 
     # optimization on x as an array of shape (2,)
     optimizer = ng.optimizers.NGOpt(parametrization=2, budget=100)
@@ -61,7 +61,7 @@ def test_base_example() -> None:
     import nevergrad as ng
 
     def square(x, y=12):
-        return sum((x - 0.5) ** 2) + abs(y)
+        return sum((x - 0.5)**2) + abs(y)
 
     instrum = ng.p.Instrumentation(ng.p.Array(shape=(2,)), y=ng.p.Scalar())  # We are working on R^2 x R.
     optimizer = ng.optimizers.NGOpt(parametrization=instrum, budget=100, num_workers=1)
@@ -117,7 +117,7 @@ def test_parametrization() -> None:
 
     def myfunction(arg1, arg2, arg3, amount=(2, 2)):
         print(arg1, arg2, arg3)
-        return amount[0] ** 2 + amount[1] ** 2
+        return amount[0]**2 + amount[1]**2
 
     optimizer = ng.optimizers.NGOpt(parametrization=instru, budget=100)
     recommendation = optimizer.minimize(myfunction)
@@ -138,7 +138,7 @@ def test_doc_constrained_optimization() -> None:
         import nevergrad as ng
 
         def square(x):
-            return sum((x - 0.5) ** 2)
+            return sum((x - 0.5)**2)
 
         optimizer = ng.optimizers.NGOpt(parametrization=2, budget=100)
         # define a constraint on first variable of x:
@@ -159,7 +159,7 @@ def test_doc_constrained_optimization() -> None:
         import nevergrad as ng
 
         def square(x):
-            return sum((x - 0.5) ** 2)
+            return sum((x - 0.5)**2)
 
         optimizer = ng.optimizers.NGOpt(parametrization=2, budget=100)
         # define a constraint on first variable of x:
