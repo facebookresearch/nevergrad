@@ -973,7 +973,7 @@ class GymMulti(ExperimentFunction):
     def gym_conformant(self, x: np.ndarray, env: tp.Any):
         """Conformant: we directly optimize inputs, not parameters of a policy."""
         reward = 0.0
-        for i, a in enumerate(10.0 * x):
+        for i, a in enumerate(x):
             a = self.action_cast(a, env)
             try:
                 _, r, done, _ = self.step(a, env)  # Outputs = observation, reward, done, info.
