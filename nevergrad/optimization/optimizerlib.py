@@ -575,49 +575,6 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         self.inopts = inopts
 
 
-CMAbounded = ParametrizedCMA(
-    scale=1.5884, popsize_factor=1, elitist=True, diagonal=True, fcmaes=False
-).set_name("CMAbounded", register=True)
-CMAsmall = ParametrizedCMA(
-    scale=0.3607, popsize_factor=3, elitist=False, diagonal=False, fcmaes=False
-).set_name("CMAsmall", register=True)
-CMAstd = ParametrizedCMA(
-    scale=0.4699, popsize_factor=3, elitist=False, diagonal=False, fcmaes=False
-).set_name("CMAstd", register=True)
-CMApara = ParametrizedCMA(scale=0.8905, popsize_factor=8, elitist=True, diagonal=True, fcmaes=False).set_name(
-    "CMApara", register=True
-)
-CMAtuning = ParametrizedCMA(
-    scale=0.4847, popsize_factor=1, elitist=True, diagonal=False, fcmaes=False
-).set_name("CMAtuning", register=True)
-
-
-@registry.register
-class MetaCMA(NGOptBase):  # Adds Risto's CMA to CMA.
-    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
-
-    def _select_optimizer_cls(self) -> base.OptCls:
-        optCls: base.OptCls = NGOptBase
-        funcinfo = self.parametrization.function
-        if (
-            self.budget is not None
-            and self.fully_continuous
-            and not self.has_noise
-            and self.num_objectives < 2
-        ):
-            if p.helpers.Normalizer(self.parametrization).fully_bounded:
-                return CMAbounded
-            if self.budget < 50:
-                if self.dimension <= 15:
-                    return CMAtuning
-                return CMAsmall
-            if self.num_workers > 20:
-                return CMApara
-            return CMAstd
-        else:
-            return CMA
-
-
 CMA = ParametrizedCMA().set_name("CMA", register=True)
 DiagonalCMA = ParametrizedCMA(diagonal=True).set_name("DiagonalCMA", register=True)
 FCMA = ParametrizedCMA(fcmaes=True).set_name("FCMA", register=True)
@@ -2484,6 +2441,49 @@ class NGOptBase(base.Optimizer):
 
     def enable_pickling(self) -> None:
         self.optim.enable_pickling()
+
+
+CMAbounded = ParametrizedCMA(
+    scale=1.5884, popsize_factor=1, elitist=True, diagonal=True, fcmaes=False
+).set_name("CMAbounded", register=True)
+CMAsmall = ParametrizedCMA(
+    scale=0.3607, popsize_factor=3, elitist=False, diagonal=False, fcmaes=False
+).set_name("CMAsmall", register=True)
+CMAstd = ParametrizedCMA(
+    scale=0.4699, popsize_factor=3, elitist=False, diagonal=False, fcmaes=False
+).set_name("CMAstd", register=True)
+CMApara = ParametrizedCMA(scale=0.8905, popsize_factor=8, elitist=True, diagonal=True, fcmaes=False).set_name(
+    "CMApara", register=True
+)
+CMAtuning = ParametrizedCMA(
+    scale=0.4847, popsize_factor=1, elitist=True, diagonal=False, fcmaes=False
+).set_name("CMAtuning", register=True)
+
+
+@registry.register
+class MetaCMA(NGOptBase):  # Adds Risto's CMA to CMA.
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
+
+    def _select_optimizer_cls(self) -> base.OptCls:
+        optCls: base.OptCls = NGOptBase
+        funcinfo = self.parametrization.function
+        if (
+            self.budget is not None
+            and self.fully_continuous
+            and not self.has_noise
+            and self.num_objectives < 2
+        ):
+            if p.helpers.Normalizer(self.parametrization).fully_bounded:
+                return CMAbounded
+            if self.budget < 50:
+                if self.dimension <= 15:
+                    return CMAtuning
+                return CMAsmall
+            if self.num_workers > 20:
+                return CMApara
+            return CMAstd
+        else:
+            return CMA
 
 
 @registry.register
