@@ -688,7 +688,6 @@ class MetaCMA(ChoiceBase):  # Adds Risto's CMA to CMA.
             return CMA
 
 
-
 class _PopulationSizeController:
     """Population control scheme for TBPSA and EDA"""
 
