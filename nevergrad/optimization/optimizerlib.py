@@ -1182,7 +1182,7 @@ class _Rescaled(base.Optimizer):
         parametrization: IntOrParameter,
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
-        base_optimizer: base.OptCls = CMA,
+        base_optimizer: base.OptCls = OldCMA,
         scale: tp.Optional[float] = None,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
@@ -1232,7 +1232,7 @@ class Rescaled(base.ConfiguredOptimizer):
     def __init__(
         self,
         *,
-        base_optimizer: base.OptCls = CMA,
+        base_optimizer: base.OptCls = OldCMA,
         scale: tp.Optional[float] = None,
     ) -> None:
         super().__init__(_Rescaled, locals())
