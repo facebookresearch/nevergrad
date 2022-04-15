@@ -91,7 +91,7 @@ class _Callable:
 
 
 def test_callable_parametrization() -> None:
-    ifunc = base.ExperimentFunction(lambda x: x**2, ng.p.Scalar(2).set_mutation(2).set_name(""))  # type: ignore
+    ifunc = base.ExperimentFunction(lambda x: x ** 2, ng.p.Scalar(2).set_mutation(2).set_name(""))  # type: ignore
     np.testing.assert_equal(ifunc.descriptors["name"], "<lambda>")
     ifunc = base.ExperimentFunction(_Callable(), ng.p.Scalar(2).set_mutation(sigma=2).set_name(""))
     np.testing.assert_equal(ifunc.descriptors["name"], "_Callable")

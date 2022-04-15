@@ -135,7 +135,7 @@ class _HyperOpt(base.Optimizer):
         # Inspired from FMinIter class (hyperopt)
         next_id = self.trials.new_trial_ids(1)
         new_trial = tpe.suggest(
-            next_id, self.domain, self.trials, self._rng.randint(2**31 - 1), **self.tpe_args
+            next_id, self.domain, self.trials, self._rng.randint(2 ** 31 - 1), **self.tpe_args
         )[0]
         self.trials.insert_trial_doc(new_trial)
         self.trials.refresh()
@@ -180,7 +180,7 @@ class _HyperOpt(base.Optimizer):
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: float) -> None:
         next_id = self.trials.new_trial_ids(1)
-        new_trial = hyperopt.rand.suggest(next_id, self.domain, self.trials, self._rng.randint(2**31 - 1))
+        new_trial = hyperopt.rand.suggest(next_id, self.domain, self.trials, self._rng.randint(2 ** 31 - 1))
         self.trials.insert_trial_docs(new_trial)
         self.trials.refresh()
         tid = next_id[0]

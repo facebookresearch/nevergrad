@@ -237,7 +237,7 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
 
     def get_optimization_function(self) -> tp.Callable[[tp.Callable[..., tp.Any]], tp.Optional[tp.ArrayLike]]:
         if self._initial_seed == -1:
-            self._initial_seed = self._rng.randint(2**30)
+            self._initial_seed = self._rng.randint(2 ** 30)
         return functools.partial(self._optimization_function, weakref.proxy(self))
         # pylint:disable=useless-return
 
@@ -365,7 +365,7 @@ class _PymooBatchMinimizeBase(recaster.BatchRecastOptimizer):
 
     def get_optimization_function(self) -> tp.Callable[[tp.Callable[..., tp.Any]], tp.Optional[tp.ArrayLike]]:
         if self._initial_seed == -1:
-            self._initial_seed = self._rng.randint(2**30)
+            self._initial_seed = self._rng.randint(2 ** 30)
         return functools.partial(self._optimization_function, weakref.proxy(self))
         # pylint:disable=useless-return
 
