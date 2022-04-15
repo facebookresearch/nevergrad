@@ -78,7 +78,7 @@ def test_parameters_basic_features(param: par.Parameter) -> None:
 
 # pylint: disable=too-many-statements
 def check_parameter_features(param: par.Parameter) -> None:
-    seed = np.random.randint(2**32, dtype=np.uint32)
+    seed = np.random.randint(2 ** 32, dtype=np.uint32)
     print(f"Seeding with {seed} from reproducibility.")
     np.random.seed(seed)
     assert isinstance(param.name, str)

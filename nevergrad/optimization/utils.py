@@ -79,10 +79,10 @@ class MultiValue:
         self._minimum = min(self._minimum, y)
         self.mean = (self.count * self.mean + y) / float(self.count + 1)
         self.square = (self.count * self.square + y * y) / float(self.count + 1)
-        self.square = max(self.square, self.mean**2)
+        self.square = max(self.square, self.mean ** 2)
         self.count += 1
         factor = math.sqrt(float(self.count) / float(self.count - 1.0))
-        self.variance = factor * (self.square - self.mean**2)
+        self.variance = factor * (self.square - self.mean ** 2)
 
     def as_array(self, reference: p.Parameter) -> np.ndarray:
         return self.parameter.get_standardized_data(reference=reference)
@@ -294,7 +294,7 @@ class Pruning:
         """
         # safer to keep at least 7 time the workers
         min_len = max(100, 7 * num_workers)
-        max_len_1gb = 1024**3 // (dimension * 8 * 2)  # stored twice: as key and as Parameter
+        max_len_1gb = 1024 ** 3 // (dimension * 8 * 2)  # stored twice: as key and as Parameter
         max_len = max(3 * min_len, min(10 * min_len, max_len_1gb))
         return cls(min_len, max_len)
 
