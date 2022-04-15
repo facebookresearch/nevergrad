@@ -84,8 +84,9 @@ class _OnePlusOne(base.Optimizer):
         self.use_pareto = use_pareto
         self.sparse = int(sparse)  # True --> 1
         all_params = p.helpers.flatten(self.parametrization)
-        arities = [len(param.choices) for _, param in all_params if isinstance(param, p.TransitionChoice)]
-        arity = max(arities, default=500)
+        arity = max(
+            len(param.choices) if isinstance(param, p.TransitionChoice) else 500 for _, param in all_params
+        )
         self.arity_for_discrete_mutation = arity
         # configuration
         if noise_handling is not None:
@@ -418,7 +419,50 @@ class _CMA(base.Optimizer):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._config = ParametrizedCMA() if config is None else config
         pop = self._config.popsize
-        self._popsize = max(num_workers, 4 + int(3 * np.log(self.dimension))) if pop is None else pop
+        # Special case: CMA becomes a Risto CMA for parametrizations dedicated to it.
+        analysis = p.helpers.analyze(self.parametrization)
+        self.fully_continuous = analysis.continuous
+        funcinfo = self.parametrization.function
+        self.has_noise = not (analysis.deterministic and funcinfo.deterministic)
+        if hasattr(parametrization, "is_risto") and parametrization.is_risto:
+            if (
+                self.budget is not None
+                and self.fully_continuous
+                and not self.has_noise
+                and self.num_objectives < 2
+            ):
+                if p.helpers.Normalizer(self.parametrization).fully_bounded:
+                    self._config.scale = 1.5884
+                    self._config.popsize_factor = 1
+                    self._config.elitist = True
+                    self._config.diagonal = True
+                elif self.budget < 50:
+                    self._config.scale = 0.3607
+                    self._config.popsize_factor = 3
+                    self._config.elitist = False
+                    self._config.diagonal = False
+                    if self.dimension <= 15:
+                        self._config.scale = 0.4847
+                        self._config.popsize_factor = 1
+                        self._config.elitist = True
+                        self._config.diagonal = False
+                elif self.num_workers > 20:
+                    # 49  --solver=CMA-ES --scale=0.8905 --popsize_factor=8 --elitist=True --diagonal=True --random_init=False
+                    self._config.scale = 0.8905
+                    self._config.popsize_factor = 8
+                    self._config.elitist = True
+                    self._config.diagonal = True
+                else:
+                    self._config.scale = 0.4699
+                    self._config.popsize_factor = 3
+                    self._config.elitist = False
+                    self._config.diagonal = False
+
+        self._popsize = (
+            max(num_workers, 4 + int(self._config.popsize_factor * np.log(self.dimension)))
+            if pop is None
+            else pop
+        )
         # internal attributes
         self._to_be_asked: tp.Deque[np.ndarray] = deque()
         self._to_be_told: tp.List[p.Parameter] = []
@@ -507,6 +551,7 @@ class _CMA(base.Optimizer):
                 return data  # type: ignore
             except MetaModelFailure:  # Failures in the metamodeling can happen.
                 pass
+            # return self.parametrization.spawn_child().set_standardized_data(data)
         if self._es is None:
             return pessimistic
         cma_best: tp.Optional[np.ndarray] = self.es.best_x if self._config.fcmaes else self.es.result.xbest
@@ -553,6 +598,7 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         scale: float = 1.0,
         elitist: bool = False,
         popsize: tp.Optional[int] = None,
+        popsize_factor: float = 3.0,
         diagonal: bool = False,
         high_speed: bool = False,
         fcmaes: bool = False,
@@ -566,6 +612,7 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         self.scale = scale
         self.elitist = elitist
         self.popsize = popsize
+        self.popsize_factor = popsize_factor
         self.diagonal = diagonal
         self.fcmaes = fcmaes
         self.high_speed = high_speed
@@ -576,6 +623,7 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
 CMA = ParametrizedCMA().set_name("CMA", register=True)
 DiagonalCMA = ParametrizedCMA(diagonal=True).set_name("DiagonalCMA", register=True)
 FCMA = ParametrizedCMA(fcmaes=True).set_name("FCMA", register=True)
+HSCMA = ParametrizedCMA(high_speed=True).set_name("HSCMA", register=True)
 
 
 class _PopulationSizeController:
@@ -1472,6 +1520,78 @@ MultiScaleCMA = ConfPortfolio(
 ).set_name("MultiScaleCMA", register=True)
 
 
+class MetaModelFailure(ValueError):
+    """Sometimes the optimum of the metamodel is at infinity."""
+
+
+def _this_learn_on_k_best(
+    archive: utils.Archive[utils.MultiValue], k: int, mean: bool = False
+) -> tp.ArrayLike:
+    """Approximate optimum learnt from the k best.
+
+    Parameters
+    ----------
+    archive: utils.Archive[utils.Value]
+    """
+    items = list(archive.items_as_arrays())
+    dimension = len(items[0][0])
+
+    # Select the k best.
+    first_k_individuals = sorted(
+        items, key=lambda indiv: archive[indiv[0]].get_estimation("average" if mean else "pessimistic")
+    )[:k]
+    assert len(first_k_individuals) == k
+
+    # Recenter the best.
+    middle = np.array(sum(p[0] for p in first_k_individuals) / k)
+    normalization = 1e-15 + np.sqrt(np.sum((first_k_individuals[-1][0] - first_k_individuals[0][0]) ** 2))
+    y = np.asarray([archive[c[0]].get_estimation("pessimistic") for c in first_k_individuals])
+    X = np.asarray([(c[0] - middle) / normalization for c in first_k_individuals])
+
+    # We need SKLearn.
+    from sklearn.linear_model import LinearRegression
+    from sklearn.preprocessing import PolynomialFeatures
+
+    polynomial_features = PolynomialFeatures(degree=2)
+    X2 = polynomial_features.fit_transform(X)
+
+    # Fit a linear model.
+    if not max(y) - min(y) > 1e-20:  # better use "not" for dealing with nans
+        raise MetaModelFailure
+
+    y = (y - min(y)) / (max(y) - min(y))
+    model = LinearRegression()
+    model.fit(X2, y)
+
+    # Check model quality.
+    model_outputs = model.predict(X2)
+    indices = np.argsort(y)
+    ordered_model_outputs = [model_outputs[i] for i in indices]
+    if not np.all(np.diff(ordered_model_outputs) > 0):
+        raise MetaModelFailure("Unlearnable objective function.")
+
+    try:
+        for cls in (Powell, DE):  # Powell excellent here, DE as a backup for thread safety.
+            optimizer = cls(parametrization=dimension, budget=45 * dimension + 30)
+            # limit to 20s at most
+            optimizer.register_callback("ask", callbacks.EarlyStopping.timer(20))
+            try:
+                minimum = optimizer.minimize(
+                    lambda x: float(model.predict(polynomial_features.fit_transform(x[None, :])))
+                ).value
+            except RuntimeError:
+                assert cls == Powell, "Only Powell is allowed to crash here."
+            else:
+                break
+    except ValueError:
+        raise MetaModelFailure("Infinite meta-model optimum in learn_on_k_best.")
+    if float(model.predict(polynomial_features.fit_transform(minimum[None, :]))) > y[0]:
+        raise MetaModelFailure("Not a good proposal.")
+    if np.sum(minimum ** 2) > 1.0:
+        raise MetaModelFailure("huge meta-model optimum in learn_on_k_best.")
+    return middle + normalization * minimum
+
+
 class _MetaModel(base.Optimizer):
     def __init__(
         self,
@@ -1481,9 +1601,11 @@ class _MetaModel(base.Optimizer):
         *,
         multivariate_optimizer: tp.Optional[base.OptCls] = None,
         frequency_ratio: float = 0.9,
+        mean: bool = False,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.frequency_ratio = frequency_ratio
+        self.mean = mean
         if multivariate_optimizer is None:
             multivariate_optimizer = (
                 ParametrizedCMA(elitist=(self.dimension < 3)) if self.dimension > 1 else OnePlusOne
@@ -1500,7 +1622,7 @@ class _MetaModel(base.Optimizer):
             try:
                 data = learn_on_k_best(self.archive, sample_size)
                 candidate = self.parametrization.spawn_child().set_standardized_data(data)
-            except MetaModelFailure:  # The optimum is at infinity. Shit happens.
+            except:  # The optimum is at infinity. Shit happens.
                 candidate = self._optim.ask()
         else:
             candidate = self._optim.ask()
@@ -1536,12 +1658,15 @@ class ParametrizedMetaModel(base.ConfiguredOptimizer):
         *,
         multivariate_optimizer: tp.Optional[base.OptCls] = None,
         frequency_ratio: float = 0.9,
+        mean: bool = False,
     ) -> None:
         super().__init__(_MetaModel, locals())
         assert 0 <= frequency_ratio <= 1.0
 
 
 MetaModel = ParametrizedMetaModel().set_name("MetaModel", register=True)
+MMetaModel = ParametrizedMetaModel(mean=True).set_name("MMetaModel", register=True)
+HSMetaModel = ParametrizedMetaModel(multivariate_optimizer=HSCMA).set_name("HSMetaModel", register=True)
 MetaModelOnePlusOne = ParametrizedMetaModel(multivariate_optimizer=OnePlusOne).set_name(
     "MetaModelOnePlusOne", register=True
 )
@@ -2455,6 +2580,51 @@ class Shiwa(NGOptBase):
         return optCls
 
 
+CMAbounded = ParametrizedCMA(
+    scale=1.5884, popsize_factor=1, elitist=True, diagonal=True, fcmaes=False
+).set_name("CMAbounded", register=True)
+CMAsmall = ParametrizedCMA(
+    scale=0.3607, popsize_factor=3, elitist=False, diagonal=False, fcmaes=False
+).set_name("CMAsmall", register=True)
+CMAstd = ParametrizedCMA(
+    scale=0.4699, popsize_factor=3, elitist=False, diagonal=False, fcmaes=False
+).set_name("CMAstd", register=True)
+CMApara = ParametrizedCMA(scale=0.8905, popsize_factor=8, elitist=True, diagonal=True, fcmaes=False).set_name(
+    "CMApara", register=True
+)
+CMAtuning = ParametrizedCMA(
+    scale=0.4847, popsize_factor=1, elitist=True, diagonal=False, fcmaes=False
+).set_name("CMAtuning", register=True)
+# 49  --solver=CMA-ES --scale=0.8905 --popsize_factor=8 --elitist=True --diagonal=True --random_init=False
+# 70  --solver=CMA-ES --scale=0.4847 --popsize_factor=1 --elitist=True --diagonal=False --fcmaes=False --random_init=False
+
+
+@registry.register
+class MetaCMA(NGOptBase):  # Adds Risto's CMA to CMA.
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
+
+    def _select_optimizer_cls(self) -> base.OptCls:
+        optCls: base.OptCls = NGOptBase
+        funcinfo = self.parametrization.function
+        if (
+            self.budget is not None
+            and self.fully_continuous
+            and not self.has_noise
+            and self.num_objectives < 2
+        ):
+            if p.helpers.Normalizer(self.parametrization).fully_bounded:
+                return CMAbounded
+            if self.budget < 50:
+                if self.dimension <= 15:
+                    return CMAtuning
+                return CMAsmall
+            if self.num_workers > 20:
+                return CMApara
+            return CMAstd
+        else:
+            return CMA
+
+
 @registry.register
 class NGO(NGOptBase):  # compatibility
     pass
@@ -2536,12 +2706,12 @@ class NGOpt4(NGOptBase):
                                             if (
                                                 self.dimension > 40
                                                 and num_workers > self.dimension
-                                                and budget < 7 * self.dimension**2
+                                                and budget < 7 * self.dimension ** 2
                                             ):
                                                 optimClass = DiagonalCMA
                                             elif (
-                                                3 * num_workers > self.dimension**2
-                                                and budget > self.dimension**2
+                                                3 * num_workers > self.dimension ** 2
+                                                and budget > self.dimension ** 2
                                             ):
                                                 optimClass = MetaModel
                                             else:
@@ -2665,7 +2835,7 @@ class NGOpt15(NGOpt12):
         if (
             self.budget is not None
             and self.fully_continuous
-            and self.budget < self.dimension**2 * 2
+            and self.budget < self.dimension ** 2 * 2
             and self.num_workers == 1
             and not self.has_noise
             and self.num_objectives < 2
@@ -2706,7 +2876,7 @@ class NGOpt21(NGOpt16):
             and self.num_workers <= num * cma_vars
         ):  # Discrete case ?
             return ConfPortfolio(
-                optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3**i) for i in range(num)],
+                optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3 ** i) for i in range(num)],
                 warmup_ratio=0.5,
             )
         else:
@@ -2729,7 +2899,7 @@ class NGOpt36(NGOpt16):
             and self.num_workers <= num * cma_vars
         ):  # Discrete case ?
             return ConfPortfolio(
-                optimizers=[Rescaled(base_optimizer=NGOpt14, scale=0.9**i) for i in range(num)],
+                optimizers=[Rescaled(base_optimizer=NGOpt14, scale=0.9 ** i) for i in range(num)],
                 warmup_ratio=0.5,
             )
         else:
@@ -2761,7 +2931,7 @@ class NGOpt38(NGOpt16):
             if self.dimension < 20:  # Nobody knows why this seems to be so good.
                 num = self.budget // (500 * self.dimension)
                 return ConfPortfolio(
-                    optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3**i) for i in range(num)],
+                    optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3 ** i) for i in range(num)],
                     warmup_ratio=0.5,
                 )
             # We need a special case for dim < 30 ---> let's see later.
@@ -2833,7 +3003,7 @@ class NGOpt39(NGOpt16):
             if self.dimension < 20:  # Nobody knows why this seems to be so good.
                 num = self.budget // (500 * self.dimension)
                 return ConfPortfolio(
-                    optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3**i) for i in range(num)],
+                    optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3 ** i) for i in range(num)],
                     warmup_ratio=0.5,
                 )
             if self.num_workers == 1:
@@ -2859,6 +3029,18 @@ class NGOpt39(NGOpt16):
             return NGOpt15
         else:
             return super()._select_optimizer_cls()
+
+
+@registry.register
+class NGOptTuned2(NGOpt39):  # We add para and tuning, compared to NGOptTuned
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        import copy
+
+        parametrization = copy.deepcopy(parametrization)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        self.parametrization.is_risto = True
 
 
 @registry.register
