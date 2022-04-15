@@ -358,13 +358,15 @@ def create_plots(
                 mid = 120
                 name = name[:mid] + hashcode + name[-mid:]
             fplotter.save(str(output_folder / name), dpi=_DPI)
-            if name == "fight_all.png":  # second version restricted to completely run algorithms.
-                data_df = FightPlotter.winrates_from_selection(
-                    casedf, fight_descriptors, num_rows=num_rows, complete_runs_only=True
-                )
-                fplotter = FightPlotter(data_df)
+            # Second version, restricted to cases with all data available.
+            data_df = FightPlotter.winrates_from_selection(
+                casedf, fight_descriptors, num_rows=num_rows, complete_runs_only=True
+            )
+            fplotter = FightPlotter(data_df)
+            if name == "fight_all.png":
                 fplotter.save(str(output_folder / "fight_all_pure.png"), dpi=_DPI)
-
+            else:
+                fplotter.save(str(output_folder / name) + "_pure.png", dpi=_DPI)
             if order == 2 and competencemaps and best_algo:  # With order 2 we can create a competence map.
                 print("\n# Competence map")
                 name = "competencemap_" + ",".join("{}".format(x) for x in fixed) + ".tex"
