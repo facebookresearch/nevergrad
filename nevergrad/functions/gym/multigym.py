@@ -321,7 +321,7 @@ class GymMulti(ExperimentFunction):
                 assert (
                     "RacecarZedBulletEnv-v0" != e.id
                 ), "This specific environment causes X11 error when using pybullet_envs."
-                assert 'CarRacing-v' not in str(e.id), "Pixel based task not supported yet"
+                assert "CarRacing-v" not in str(e.id), "Pixel based task not supported yet"
                 env = gym.make(e.id)
                 env.reset()
                 env.step(env.action_space.sample())
