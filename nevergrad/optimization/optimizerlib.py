@@ -131,7 +131,7 @@ class _OnePlusOne(base.Optimizer):
             self._doerr_mutation_rates = [1, 2]
             self._doerr_mutation_rewards = [0.0, 0.0]
             self._doerr_counters = [0.0, 0.0]
-            self._doerr_epsilon = 0.25  # self.dimension ** (-0.01)
+            self._doerr_epsilon = 0.25  # self.dimension**(-0.01)
             self._doerr_gamma = 1 - 2 / self.dimension
             self._doerr_current_best = float("inf")
             i = 3
@@ -153,7 +153,7 @@ class _OnePlusOne(base.Optimizer):
             return out
         # for noisy version
         if noise_handling is not None:
-            limit = (0.05 if isinstance(noise_handling, str) else noise_handling[1]) * len(self.archive) ** 3
+            limit = (0.05 if isinstance(noise_handling, str) else noise_handling[1]) * len(self.archive)**3
             strategy = noise_handling if isinstance(noise_handling, str) else noise_handling[0]
             if self._num_ask <= limit:
                 if strategy in ["cubic", "random"]:
@@ -706,7 +706,7 @@ class _PopulationSizeController:
             last_fifth = self._loss_record[-int(self.llambda) :]  # casting to int to avoid pylint bug
             means = [sum(fitnesses) / float(self.llambda) for fitnesses in [first_fifth, last_fifth]]
             stds = [np.std(fitnesses) / np.sqrt(self.llambda - 1) for fitnesses in [first_fifth, last_fifth]]
-            z = (means[0] - means[1]) / (np.sqrt(stds[0] ** 2 + stds[1] ** 2))
+            z = (means[0] - means[1]) / (np.sqrt(stds[0]**2 + stds[1]**2))
             if z < 2.0:
                 self.mu *= 2
             else:
@@ -932,11 +932,11 @@ class NoisyBandit(base.Optimizer):
     """UCB.
     This is upper confidence bound (adapted to minimization),
     with very poor parametrization; in particular, the logarithmic term is set to zero.
-    Infinite arms: we add one arm when `20 * #ask >= #arms ** 3`.
+    Infinite arms: we add one arm when `20 * #ask >= #arms**3`.
     """
 
     def _internal_ask(self) -> tp.ArrayLike:
-        if 20 * self._num_ask >= len(self.archive) ** 3:
+        if 20 * self._num_ask >= len(self.archive)**3:
             return self._rng.normal(0, 1, self.dimension)  # type: ignore
         if self._rng.choice([True, False]):
             # numpy does not accept choice on list of tuples, must choose index instead
@@ -1142,11 +1142,11 @@ class SPSA(base.Optimizer):
 
     def _ck(self, k: int) -> float:
         "c_k determines the pertubation."
-        return self.c / (k // 2 + 1) ** 0.101
+        return self.c / (k // 2 + 1)**0.101
 
     def _ak(self, k: int) -> float:
         "a_k is the learning rate."
-        return self.a / (k // 2 + 1 + self.A) ** 0.602
+        return self.a / (k // 2 + 1 + self.A)**0.602
 
     def _internal_ask(self) -> tp.ArrayLike:
         k = self.idx
@@ -2381,7 +2381,7 @@ class _EMNA(base.Optimizer):
                             self.parents[i].get_standardized_data(reference=self.parametrization)
                             - self.current_center
                         )
-                        ** 2
+                       **2
                         for i in range(self.popsize.mu)
                     ]
                     self.sigma = np.sqrt(
@@ -2394,7 +2394,7 @@ class _EMNA(base.Optimizer):
                         self.parents[i].get_standardized_data(reference=self.parametrization)
                         - self.current_center
                     )
-                    ** 2
+                   **2
                     for i in range(self.popsize.mu)
                 ]
                 self.sigma = np.sqrt(
@@ -2403,7 +2403,7 @@ class _EMNA(base.Optimizer):
                 )
 
             if self.num_workers / self.dimension > 32:  # faster decrease of sigma if large parallel context
-                imp = max(1, (np.log(self.popsize.llambda) / 2) ** (1 / self.dimension))
+                imp = max(1, (np.log(self.popsize.llambda) / 2)**(1 / self.dimension))
                 self.sigma /= imp
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
@@ -2587,12 +2587,12 @@ class NGOpt4(NGOptBase):
                                             if (
                                                 self.dimension > 40
                                                 and num_workers > self.dimension
-                                                and budget < 7 * self.dimension ** 2
+                                                and budget < 7 * self.dimension**2
                                             ):
                                                 optimClass = DiagonalCMA
                                             elif (
-                                                3 * num_workers > self.dimension ** 2
-                                                and budget > self.dimension ** 2
+                                                3 * num_workers > self.dimension**2
+                                                and budget > self.dimension**2
                                             ):
                                                 optimClass = MetaModel
                                             else:
@@ -2716,7 +2716,7 @@ class NGOpt15(NGOpt12):
         if (
             self.budget is not None
             and self.fully_continuous
-            and self.budget < self.dimension ** 2 * 2
+            and self.budget < self.dimension**2 * 2
             and self.num_workers == 1
             and not self.has_noise
             and self.num_objectives < 2
@@ -2757,7 +2757,7 @@ class NGOpt21(NGOpt16):
             and self.num_workers <= num * cma_vars
         ):  # Discrete case ?
             return ConfPortfolio(
-                optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3 ** i) for i in range(num)],
+                optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3**i) for i in range(num)],
                 warmup_ratio=0.5,
             )
         else:
@@ -2780,7 +2780,7 @@ class NGOpt36(NGOpt16):
             and self.num_workers <= num * cma_vars
         ):  # Discrete case ?
             return ConfPortfolio(
-                optimizers=[Rescaled(base_optimizer=NGOpt14, scale=0.9 ** i) for i in range(num)],
+                optimizers=[Rescaled(base_optimizer=NGOpt14, scale=0.9**i) for i in range(num)],
                 warmup_ratio=0.5,
             )
         else:
@@ -2812,7 +2812,7 @@ class NGOpt38(NGOpt16):
             if self.dimension < 20:  # Nobody knows why this seems to be so good.
                 num = self.budget // (500 * self.dimension)
                 return ConfPortfolio(
-                    optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3 ** i) for i in range(num)],
+                    optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3**i) for i in range(num)],
                     warmup_ratio=0.5,
                 )
             # We need a special case for dim < 30 ---> let's see later.
@@ -2884,7 +2884,7 @@ class NGOpt39(NGOpt16):
             if self.dimension < 20:  # Nobody knows why this seems to be so good.
                 num = self.budget // (500 * self.dimension)
                 return ConfPortfolio(
-                    optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3 ** i) for i in range(num)],
+                    optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3**i) for i in range(num)],
                     warmup_ratio=0.5,
                 )
             if self.num_workers == 1:
