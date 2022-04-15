@@ -105,7 +105,7 @@ class Data(core.Parameter):
             # we want:
             # sigma *= exp(gaussian / sqrt(dim))
             base = float(np.exp(1.0 / np.sqrt(2 * init.size)))
-            sigma = base ** (Array if isinstance(sigma, np.ndarray) else Scalar)(
+            sigma = base**(Array if isinstance(sigma, np.ndarray) else Scalar)(
                 init=siginit, mutable_sigma=False
             )
             sigma.value = siginit
@@ -373,7 +373,7 @@ class Data(core.Parameter):
         return self.__mul__(1.0 / value)
 
     def __rtruediv__(self: D, value: tp.Any) -> D:
-        return value * (self ** -1)  # type: ignore
+        return value * (self**-1)  # type: ignore
 
     def __pow__(self: D, power: float) -> D:
         return self._new_with_data_layer("Power", power)

@@ -91,7 +91,7 @@ class _Callable:
 
 
 def test_callable_parametrization() -> None:
-    ifunc = base.ExperimentFunction(lambda x: x ** 2, ng.p.Scalar(2).set_mutation(2).set_name(""))  # type: ignore
+    ifunc = base.ExperimentFunction(lambda x: x**2, ng.p.Scalar(2).set_mutation(2).set_name(""))  # type: ignore
     np.testing.assert_equal(ifunc.descriptors["name"], "<lambda>")
     ifunc = base.ExperimentFunction(_Callable(), ng.p.Scalar(2).set_mutation(sigma=2).set_name(""))
     np.testing.assert_equal(ifunc.descriptors["name"], "_Callable")
@@ -215,4 +215,4 @@ def test_easy_pareto_experiment() -> None:
     print(xps[0])
     optimizer = ng.optimizers.OnePlusOne(parametrization=2, budget=100)
     optimizer.minimize(xps[0], verbosity=2)
-    assert xps[0].evaluation_function(optimizer.pareto_front()[0]) ** 2 < 0.001
+    assert xps[0].evaluation_function(optimizer.pareto_front()[0])**2 < 0.001

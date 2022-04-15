@@ -18,7 +18,7 @@ def test_readme_parametrization() -> None:
 
     def fake_training(learning_rate: float, batch_size: int, architecture: str) -> float:
         # optimal for learning_rate=0.2, batch_size=4, architecture="conv"
-        return (learning_rate - 0.2) ** 2 + (batch_size - 4) ** 2 + (0 if architecture == "conv" else 10)
+        return (learning_rate - 0.2)**2 + (batch_size - 4)**2 + (0 if architecture == "conv" else 10)
 
     # Instrumentation class is used for functions with multiple inputs
     # (positional and/or keywords)

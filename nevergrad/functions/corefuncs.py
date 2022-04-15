@@ -64,7 +64,7 @@ class DiscreteFunction:
 
 def _styblinksitang(x: np.ndarray, noise: float) -> float:
     """Classical function for testing noisy optimization."""
-    x2 = x ** 2
+    x2 = x**2
     val = x2.dot(x2) + np.sum(5 * x - 16 * x2)
     # return a positive value for maximization
     return float(39.16599 * len(x) + 0.5 * val + noise * np.random.normal(size=val.shape))
@@ -72,7 +72,7 @@ def _styblinksitang(x: np.ndarray, noise: float) -> float:
 
 class DelayedSphere:
     def __call__(self, x: np.ndarray) -> float:
-        return float(np.sum(x ** 2))
+        return float(np.sum(x**2))
 
     def compute_pseudotime(  # pylint: disable=unused-argument
         self, input_parameter: tp.Any, value: float
@@ -113,13 +113,13 @@ def sphere4(x: np.ndarray) -> float:
 
 @registry.register
 def maxdeceptive(x: np.ndarray) -> float:
-    dec = 3 * x ** 2 - (2 / (3 ** (x - 2) ** 2 + 0.1))
+    dec = 3 * x**2 - (2 / (3**(x - 2)**2 + 0.1))
     return float(np.max(dec))
 
 
 @registry.register
 def sumdeceptive(x: np.ndarray) -> float:
-    dec = 3 * x ** 2 - (2 / (3 ** (x - 2) ** 2 + 0.1))
+    dec = 3 * x**2 - (2 / (3**(x - 2)**2 + 0.1))
     return float(np.sum(dec))
 
 
@@ -128,13 +128,13 @@ def altcigar(x: np.ndarray) -> float:
     """Similar to cigar, but variables in inverse order.
 
     E.g. for pointing out algorithms not invariant to the order of variables."""
-    return float(x[-1]) ** 2 + 1000000.0 * sphere(x[:-1])
+    return float(x[-1])**2 + 1000000.0 * sphere(x[:-1])
 
 
 @registry.register
 def discus(x: np.ndarray) -> float:
     """Only one variable is very penalized."""
-    return sphere(x[1:]) + 1000000.0 * float(x[0]) ** 2
+    return sphere(x[1:]) + 1000000.0 * float(x[0])**2
 
 
 @registry.register
@@ -143,7 +143,7 @@ def cigar(x: np.ndarray) -> float:
 
     The other classical example is ellipsoid.
     """
-    return float(x[0]) ** 2 + 1000000.0 * sphere(x[1:])
+    return float(x[0])**2 + 1000000.0 * sphere(x[1:])
 
 
 @registry.register
@@ -151,11 +151,11 @@ def bentcigar(x: np.ndarray) -> float:
     """Classical example of ill conditioned function, but bent."""
     y = np.asarray(
         [
-            x[i] ** (1 + 0.5 * np.sqrt(x[i]) * (i - 1) / (len(x) - 1)) if x[i] > 0.0 else x[i]
+            x[i]**(1 + 0.5 * np.sqrt(x[i]) * (i - 1) / (len(x) - 1)) if x[i] > 0.0 else x[i]
             for i in range(len(x))
         ]
     )
-    return float(y[0]) ** 2 + 1000000.0 * sphere(y[1:])
+    return float(y[0])**2 + 1000000.0 * sphere(y[1:])
 
 
 @registry.register
@@ -190,8 +190,8 @@ def stepellipsoid(x: np.ndarray) -> float:
     Compared to some existing testbeds, we decided to have infinitely many steps.
     """
     dim = x.size
-    weights = 10 ** np.linspace(0, 6, dim)
-    return float(step(weights.dot(x ** 2)))
+    weights = 10**np.linspace(0, 6, dim)
+    return float(step(weights.dot(x**2)))
 
 
 @registry.register
@@ -201,8 +201,8 @@ def ellipsoid(x: np.ndarray) -> float:
     The other classical example is cigar.
     """
     dim = x.size
-    weights = 10 ** np.linspace(0, 6, dim)
-    return float(weights.dot(x ** 2))
+    weights = 10**np.linspace(0, 6, dim)
+    return float(weights.dot(x**2))
 
 
 @registry.register
@@ -217,7 +217,7 @@ def bucherastrigin(x: np.ndarray) -> float:
     """Classical multimodal function. No box-constraint penalization here."""
     s = np.asarray(
         [
-            x[i] * (10 if x[i] > 0.0 and i % 2 else 1) * (10 ** ((i - 1) / (2 * (len(x) - 1))))
+            x[i] * (10 if x[i] > 0.0 and i % 2 else 1) * (10**((i - 1) / (2 * (len(x) - 1))))
             for i in range(len(x))
         ]
     )
@@ -240,13 +240,13 @@ def stepdoublelinearslope(x: np.ndarray) -> float:
 @registry.register
 def hm(x: np.ndarray) -> float:
     """New multimodal function (proposed for Nevergrad)."""
-    return float((x ** 2).dot(1.1 + np.cos(1.0 / x)))
+    return float((x**2).dot(1.1 + np.cos(1.0 / x)))
 
 
 @registry.register
 def rosenbrock(x: np.ndarray) -> float:
     x_m_1 = x[:-1] - 1
-    x_diff = x[:-1] ** 2 - x[1:]
+    x_diff = x[:-1]**2 - x[1:]
     return float(100 * x_diff.dot(x_diff) + x_m_1.dot(x_m_1))
 
 
@@ -278,7 +278,7 @@ def deceptiveillcond(x: np.ndarray) -> float:
     The condition number increases to infinity as we get closer to the optimum."""
     assert len(x) >= 2
     return float(
-        max(np.abs(np.arctan(x[1] / x[0])), np.sqrt(x[0] ** 2.0 + x[1] ** 2.0), 1.0 if x[0] > 0 else 0.0)
+        max(np.abs(np.arctan(x[1] / x[0])), np.sqrt(x[0]**2.0 + x[1]**2.0), 1.0 if x[0] > 0 else 0.0)
         if x[0] != 0.0
         else float("inf")
     )
@@ -290,7 +290,7 @@ def deceptivepath(x: np.ndarray) -> float:
 
     The path becomes thiner as we get closer to the optimum."""
     assert len(x) >= 2
-    distance = np.sqrt(x[0] ** 2 + x[1] ** 2)
+    distance = np.sqrt(x[0]**2 + x[1]**2)
     if distance == 0.0:
         return 0.0
     angle = np.arctan(x[0] / x[1]) if x[1] != 0.0 else np.pi / 2.0
@@ -304,7 +304,7 @@ def deceptivepath(x: np.ndarray) -> float:
 def deceptivemultimodal(x: np.ndarray) -> float:
     """Infinitely many local optima, as we get closer to the optimum."""
     assert len(x) >= 2
-    distance = np.sqrt(x[0] ** 2 + x[1] ** 2)
+    distance = np.sqrt(x[0]**2 + x[1]**2)
     if distance == 0.0:
         return 0.0
     angle = np.arctan(x[0] / x[1]) if x[1] != 0.0 else np.pi / 2.0
@@ -322,13 +322,13 @@ def lunacek(x: np.ndarray) -> float:
     problemDimensions = len(x)
     s = 1.0 - (1.0 / (2.0 * np.sqrt(problemDimensions + 20.0) - 8.2))
     mu1 = 2.5
-    mu2 = -np.sqrt(abs((mu1 ** 2 - 1.0) / s))
+    mu2 = -np.sqrt(abs((mu1**2 - 1.0) / s))
     firstSum = 0.0
     secondSum = 0.0
     thirdSum = 0.0
     for i in range(problemDimensions):
-        firstSum += (x[i] - mu1) ** 2
-        secondSum += (x[i] - mu2) ** 2
+        firstSum += (x[i] - mu1)**2
+        secondSum += (x[i] - mu2)**2
         thirdSum += 1.0 - np.cos(2 * np.pi * (x[i] - mu1))
     return min(firstSum, 1.0 * problemDimensions + secondSum) + 10 * thirdSum
 
@@ -341,7 +341,7 @@ def genzcornerpeak(y: np.ndarray) -> float:
     value = float(1 + np.mean(np.tanh(y)))
     if value == 0:
         return float("inf")
-    return value ** (-len(y) - 1)
+    return value**(-len(y) - 1)
 
 
 @registry.register_with_info(no_transform=True)

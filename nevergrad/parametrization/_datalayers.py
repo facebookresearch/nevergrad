@@ -189,7 +189,7 @@ class Exponent(ForwardableOperation):
         self._name = f"exp={base:.2f}"
 
     def forward(self, value: tp.Any) -> tp.Any:
-        return self._base ** value
+        return self._base**value
 
     def backward(self, value: tp.Any) -> tp.Any:
         return np.log(value) / np.log(self._base)
@@ -203,10 +203,10 @@ class Power(ForwardableOperation):
         self._power = power
 
     def forward(self, value: tp.Any) -> tp.Any:
-        return value ** self._power
+        return value**self._power
 
     def backward(self, value: tp.Any) -> tp.Any:
-        return value ** (1.0 / self._power)
+        return value**(1.0 / self._power)
 
 
 class Add(ForwardableOperation):

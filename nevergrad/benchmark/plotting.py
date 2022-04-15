@@ -471,7 +471,7 @@ class XpPlotter:
         self._ax = self._fig.add_subplot(111)
         # use log plot? yes, if no negative value
         logplot = not any(
-            x <= 0 or x > 10 ** 8 for ov in optim_vals.values() for x in ov["loss"]
+            x <= 0 or x > 10**8 for ov in optim_vals.values() for x in ov["loss"]
         )  # if x < np.inf)
         if logplot:
             self._ax.set_yscale("log")
@@ -537,7 +537,7 @@ class XpPlotter:
                 self._ax.set_ylim(bottom=lowerbound)
                 upperbound_up += 0.02 * (upperbound - lowerbound)
                 if logplot:
-                    upperbound_up = 10 ** (
+                    upperbound_up = 10**(
                         np.log10(upperbound) + 0.02 * (np.log10(upperbound) - np.log10(lowerbound))
                     )
             self._ax.set_ylim(top=upperbound_up)
@@ -560,7 +560,7 @@ class XpPlotter:
             return loss - conf, loss + conf
         lloss = np.log10(loss)
         lstd = 0.434 * conf / loss
-        return tuple(10 ** (lloss + x) for x in [-lstd, lstd])  # type: ignore
+        return tuple(10**(lloss + x) for x in [-lstd, lstd])  # type: ignore
 
     def add_legends(self, legend_infos: tp.List[LegendInfo]) -> None:
         """Adds the legends"""

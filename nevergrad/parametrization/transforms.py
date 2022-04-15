@@ -88,7 +88,7 @@ class Affine(Transform):
 
 
 class Exponentiate(Transform):
-    """Exponentiation transform base ** (coeff * x)
+    """Exponentiation transform base**(coeff * x)
     This can for instance be used for to get a logarithmicly distruted values 10**(-[1, 2, 3]).
 
     Parameters
@@ -104,7 +104,7 @@ class Exponentiate(Transform):
         self.name = f"Ex({self.base},{self.coeff})"
 
     def forward(self, x: np.ndarray) -> np.ndarray:
-        return self.base ** (float(self.coeff) * x)  # type: ignore
+        return self.base**(float(self.coeff) * x)  # type: ignore
 
     def backward(self, y: np.ndarray) -> np.ndarray:
         return np.log(y) / (float(self.coeff) * np.log(self.base))  # type: ignore

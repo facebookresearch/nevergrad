@@ -118,7 +118,7 @@ class Image(base.ExperimentFunction):
             movability = 0.5  # If only one image, then we move by 0.5.
             if self.num_images > 1:
                 movability = 4 * (
-                    0.25 - (i / (num_total_images - 1) - 0.5) ** 2
+                    0.25 - (i / (num_total_images - 1) - 0.5)**2
                 )  # 1 if i == num_total_images/2, 0 if 0 or num_images-1
             moving = (
                 movability

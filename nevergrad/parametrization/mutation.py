@@ -171,7 +171,7 @@ class Crossover(DataMutation):
         # settings
         axis = tuple(range(len(shape))) if self.axis is None else self.axis
         max_size = root.parameters["max_size"].value
-        max_size = int(((arrays[0].size + 1) / 2) ** (1 / len(axis))) if max_size is None else max_size
+        max_size = int(((arrays[0].size + 1) / 2)**(1 / len(axis))) if max_size is None else max_size
         max_size = min(max_size, *(shape[a] - 1 for a in axis))
         size = 1 if max_size == 1 else self.random_state.randint(1, max_size)
         # slices
