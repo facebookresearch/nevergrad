@@ -42,7 +42,7 @@ def rocket(thrust_bias: np.ndarray):
             p = float(22.65 * (math.exp(1.73 - 0.000157 * alt))).real
         else:
             T = -131.21 + (0.00299 * alt)
-            p = 2.488 * (((T + 273.1) / 216.6)**-11.388).real
+            p = 2.488 * (((T + 273.1) / 216.6) ** -11.388).real
         d = p / (0.2869 * (T + 273.1))
         return d
 
@@ -61,11 +61,11 @@ def rocket(thrust_bias: np.ndarray):
         # b = 6356752  # polar radius
         # R = math.sqrt((math.pow(math.pow(a, 2) * math.cos(lat), 2) + (math.pow(math.pow(b, 2) * math.sin(lat), 2))) / (
         #            math.pow(a * math.cos(lat), 2) + (math.pow(b * math.sin(lat), 2))))  # Radius of earth (m)
-        r = (Ex**2 + Ey**2 + Ez**2)**0.5
+        r = (Ex**2 + Ey**2 + Ez**2) ** 0.5
         F = (G * M * m) / (r**2)  # Force of gravity (N)
         F_z = F * Ez / r
-        F_x = F * (Ex / ((Ex**2 + Ey**2)**0.5))
-        F_y = F * (Ey / ((Ex**2 + Ey**2)**0.5))
+        F_x = F * (Ex / ((Ex**2 + Ey**2) ** 0.5))
+        F_y = F * (Ey / ((Ex**2 + Ey**2) ** 0.5))
         return F_x, F_y, F_z  # in the -r direction
 
     def drag_force(Ex, Ey, Ez, Evx, Evy, Evz):
@@ -152,7 +152,7 @@ def rocket(thrust_bias: np.ndarray):
     transformer = pyproj.Transformer.from_proj(lla, ecef)
     Ex, Ey, Ez = transformer.transform(longitude, latitude, altitude, radians=True)
     Evx, Evy, Evz = 0, 0, 0
-    r_initial = (Ex**2 + Ey**2 + Ez**2)**0.5
+    r_initial = (Ex**2 + Ey**2 + Ez**2) ** 0.5
     # print(Ex, Ey, Ez, r_initial, sep="\t")
 
     # Rocket specs
@@ -240,7 +240,7 @@ def rocket(thrust_bias: np.ndarray):
     Ex_list, Ey_list, Ez_list = np.asarray([Ex]), np.asarray([Ey]), np.asarray([Ez])
     Evx_list, Evy_list, Evz_list = np.asarray([Evx]), np.asarray([Evy]), np.asarray([Evz])
     time_list = np.asarray([0])
-    r_list = np.asarray([(Ex**2 + Ey**2 + Ez**2)**0.5])
+    r_list = np.asarray([(Ex**2 + Ey**2 + Ez**2) ** 0.5])
 
     # Initializing variables
     time = 0.0  # time in seconds
@@ -248,7 +248,7 @@ def rocket(thrust_bias: np.ndarray):
     # while thrust is greater than zero
     # this is while the rocket engine is firing
     for i in range(len(thrust) - 2):
-        r = (Ex**2 + Ey**2 + Ez**2)**0.5
+        r = (Ex**2 + Ey**2 + Ez**2) ** 0.5
         dt = thrust[i][1]
         Efx, Efy, Efz = net_force(Ex, Ey, Ez, Evx, Evy, Evz, mass_list[i])
         Ex += Evx * dt
@@ -273,7 +273,7 @@ def rocket(thrust_bias: np.ndarray):
     time_step = 0.05  # time time_step in seconds
     dt = time_step
     while r > r_initial:
-        r = (Ex**2 + Ey**2 + Ez**2)**0.5
+        r = (Ex**2 + Ey**2 + Ez**2) ** 0.5
         Efx, Efy, Efz = net_force(Ex, Ey, Ez, Evx, Evy, Evz, final_roc_mass)
         Ex += Evx * dt
         Ey += Evy * dt

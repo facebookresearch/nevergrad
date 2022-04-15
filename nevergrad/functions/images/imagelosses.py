@@ -88,7 +88,7 @@ class LpipsVgg(Lpips):
 class SumSquareDifferences(ImageLoss):
     def __call__(self, x: np.ndarray) -> float:
         assert x.shape == self.domain_shape, f"Shape = {x.shape} vs {self.domain_shape}"
-        value = float(np.sum((x - self.reference)**2))
+        value = float(np.sum((x - self.reference) ** 2))
         return value
 
 

@@ -13,7 +13,7 @@ from . import core
 def test_concrete_model_without_constraints() -> None:
     model = pyomo.ConcreteModel()
     model.x = pyomo.Var([1, 2], domain=pyomo.NonNegativeReals)
-    model.obj = pyomo.Objective(expr=(model.x[1] - 0.5)**2 + (model.x[2] - 0.5)**2)
+    model.obj = pyomo.Objective(expr=(model.x[1] - 0.5) ** 2 + (model.x[2] - 0.5) ** 2)
 
     func = core.Pyomo(model)
     optimizer = ng.optimizers.NGO(parametrization=func.parametrization, budget=100)
@@ -24,7 +24,7 @@ def test_concrete_model_without_constraints() -> None:
 
 
 def square(m: tp.Any) -> float:
-    return pyomo.quicksum((m.x[i] - 0.5)**2 for i in m.x)
+    return pyomo.quicksum((m.x[i] - 0.5) ** 2 for i in m.x)
 
 
 def test_concrete_model_with_constraints() -> None:
@@ -68,7 +68,7 @@ def test_abstract_model_with_constraints() -> None:
 
 def test_pyomo_set() -> None:
     def square2(m: tp.Any) -> float:
-        return (m.x - 1)**2  # type: ignore
+        return (m.x - 1) ** 2  # type: ignore
 
     model = pyomo.ConcreteModel()
     model.P = pyomo.Set(initialize=list(range(1, 11)))

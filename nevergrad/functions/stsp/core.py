@@ -28,11 +28,11 @@ class STSP(ExperimentFunction):
         self.order = order
         x = self.x[order]
         y = self.y[order]
-        output = np.sqrt((x[0] - x[-1])**2 + (y[0] - y[-1])**2) + sum(
-            np.sqrt((x[i] - x[i + 1])**2 + (y[i] - y[i + 1])**2) for i in range(self.dimension - 1)
+        output = np.sqrt((x[0] - x[-1]) ** 2 + (y[0] - y[-1]) ** 2) + sum(
+            np.sqrt((x[i] - x[i + 1]) ** 2 + (y[i] - y[i + 1]) ** 2) for i in range(self.dimension - 1)
         )
         if self.complex:
-            output += np.sum(np.diff(order)**2) / np.sqrt(self.dimension + 1.0)
+            output += np.sum(np.diff(order) ** 2) / np.sqrt(self.dimension + 1.0)
         return float(output)
 
     def make_plots(self, filename: str = "stsp.png") -> None:

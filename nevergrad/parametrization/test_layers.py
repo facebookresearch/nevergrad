@@ -32,7 +32,7 @@ def test_bound_module() -> None:
 
 def test_log_layer() -> None:
     ref = ng.p.Scalar()
-    x = 2**ng.p.Scalar()
+    x = 2 ** ng.p.Scalar()
     assert x.value == 1
     x.value = 16
     assert x.get_standardized_data(reference=ref)[0] == 4  # find the closest
@@ -62,7 +62,7 @@ def test_power() -> None:
 
 
 @testing.parametrized(
-    new_unary=(10**-ng.p.Scalar(lower=0, upper=5),),
+    new_unary=(10 ** -ng.p.Scalar(lower=0, upper=5),),
     legacy_log=(ng.p.Log(lower=1e-10, upper=1.0, exponent=5),),
     legacy_array=(
         ng.p.Array(init=1e-5 * np.ones(100)).set_bounds(lower=1e-5, upper=1.0).set_mutation(exponent=10),
