@@ -575,28 +575,6 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         self.inopts = inopts
 
 
-CMA = ParametrizedCMA().set_name("CMA", register=True)
-DiagonalCMA = ParametrizedCMA(diagonal=True).set_name("DiagonalCMA", register=True)
-FCMA = ParametrizedCMA(fcmaes=True).set_name("FCMA", register=True)
-
-
-CMAbounded = ParametrizedCMA(
-    scale=1.5884, popsize_factor=1, elitist=True, diagonal=True, fcmaes=False
-).set_name("CMAbounded", register=True)
-CMAsmall = ParametrizedCMA(
-    scale=0.3607, popsize_factor=3, elitist=False, diagonal=False, fcmaes=False
-).set_name("CMAsmall", register=True)
-CMAstd = ParametrizedCMA(
-    scale=0.4699, popsize_factor=3, elitist=False, diagonal=False, fcmaes=False
-).set_name("CMAstd", register=True)
-CMApara = ParametrizedCMA(scale=0.8905, popsize_factor=8, elitist=True, diagonal=True, fcmaes=False).set_name(
-    "CMApara", register=True
-)
-CMAtuning = ParametrizedCMA(
-    scale=0.4847, popsize_factor=1, elitist=True, diagonal=False, fcmaes=False
-).set_name("CMAtuning", register=True)
-
-
 @registry.register
 class ChoiceBase(base.Optimizer):
     """Nevergrad optimizer by competence map."""
@@ -665,7 +643,7 @@ class ChoiceBase(base.Optimizer):
 
 
 @registry.register
-class MetaCMA(ChoiceBase):  # Adds Risto's CMA to CMA.
+class CMA(ChoiceBase):  # Adds Risto's CMA to CMA.
     """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
 
     def _select_optimizer_cls(self) -> base.OptCls:
@@ -686,6 +664,28 @@ class MetaCMA(ChoiceBase):  # Adds Risto's CMA to CMA.
             return CMAstd
         else:
             return CMA
+
+
+OldCMA = ParametrizedCMA().set_name("OldCMA", register=True)
+DiagonalCMA = ParametrizedCMA(diagonal=True).set_name("DiagonalCMA", register=True)
+FCMA = ParametrizedCMA(fcmaes=True).set_name("FCMA", register=True)
+
+
+CMAbounded = ParametrizedCMA(
+    scale=1.5884, popsize_factor=1, elitist=True, diagonal=True, fcmaes=False
+).set_name("CMAbounded", register=True)
+CMAsmall = ParametrizedCMA(
+    scale=0.3607, popsize_factor=3, elitist=False, diagonal=False, fcmaes=False
+).set_name("CMAsmall", register=True)
+CMAstd = ParametrizedCMA(
+    scale=0.4699, popsize_factor=3, elitist=False, diagonal=False, fcmaes=False
+).set_name("CMAstd", register=True)
+CMApara = ParametrizedCMA(scale=0.8905, popsize_factor=8, elitist=True, diagonal=True, fcmaes=False).set_name(
+    "CMApara", register=True
+)
+CMAtuning = ParametrizedCMA(
+    scale=0.4847, popsize_factor=1, elitist=True, diagonal=False, fcmaes=False
+).set_name("CMAtuning", register=True)
 
 
 class _PopulationSizeController:
