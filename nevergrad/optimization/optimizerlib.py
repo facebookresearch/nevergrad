@@ -553,6 +553,7 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         scale: float = 1.0,
         elitist: bool = False,
         popsize: tp.Optional[int] = None,
+        popsize_factor: float = 3.0,
         diagonal: bool = False,
         high_speed: bool = False,
         fcmaes: bool = False,
@@ -566,11 +567,55 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         self.scale = scale
         self.elitist = elitist
         self.popsize = popsize
+        self.popsize_factor = popsize_factor
         self.diagonal = diagonal
         self.fcmaes = fcmaes
         self.high_speed = high_speed
         self.random_init = random_init
         self.inopts = inopts
+
+
+CMAbounded = ParametrizedCMA(
+    scale=1.5884, popsize_factor=1, elitist=True, diagonal=True, fcmaes=False
+).set_name("CMAbounded", register=True)
+CMAsmall = ParametrizedCMA(
+    scale=0.3607, popsize_factor=3, elitist=False, diagonal=False, fcmaes=False
+).set_name("CMAsmall", register=True)
+CMAstd = ParametrizedCMA(
+    scale=0.4699, popsize_factor=3, elitist=False, diagonal=False, fcmaes=False
+).set_name("CMAstd", register=True)
+CMApara = ParametrizedCMA(scale=0.8905, popsize_factor=8, elitist=True, diagonal=True, fcmaes=False).set_name(
+    "CMApara", register=True
+)
+CMAtuning = ParametrizedCMA(
+    scale=0.4847, popsize_factor=1, elitist=True, diagonal=False, fcmaes=False
+).set_name("CMAtuning", register=True)
+
+
+@registry.register
+class MetaCMA(NGOptBase):  # Adds Risto's CMA to CMA.
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
+
+    def _select_optimizer_cls(self) -> base.OptCls:
+        optCls: base.OptCls = NGOptBase
+        funcinfo = self.parametrization.function
+        if (
+            self.budget is not None
+            and self.fully_continuous
+            and not self.has_noise
+            and self.num_objectives < 2
+        ):
+            if p.helpers.Normalizer(self.parametrization).fully_bounded:
+                return CMAbounded
+            if self.budget < 50:
+                if self.dimension <= 15:
+                    return CMAtuning
+                return CMAsmall
+            if self.num_workers > 20:
+                return CMApara
+            return CMAstd
+        else:
+            return CMA
 
 
 CMA = ParametrizedCMA().set_name("CMA", register=True)
@@ -2536,12 +2581,12 @@ class NGOpt4(NGOptBase):
                                             if (
                                                 self.dimension > 40
                                                 and num_workers > self.dimension
-                                                and budget < 7 * self.dimension**2
+                                                and budget < 7 * self.dimension ** 2
                                             ):
                                                 optimClass = DiagonalCMA
                                             elif (
-                                                3 * num_workers > self.dimension**2
-                                                and budget > self.dimension**2
+                                                3 * num_workers > self.dimension ** 2
+                                                and budget > self.dimension ** 2
                                             ):
                                                 optimClass = MetaModel
                                             else:
@@ -2665,7 +2710,7 @@ class NGOpt15(NGOpt12):
         if (
             self.budget is not None
             and self.fully_continuous
-            and self.budget < self.dimension**2 * 2
+            and self.budget < self.dimension ** 2 * 2
             and self.num_workers == 1
             and not self.has_noise
             and self.num_objectives < 2
@@ -2706,7 +2751,7 @@ class NGOpt21(NGOpt16):
             and self.num_workers <= num * cma_vars
         ):  # Discrete case ?
             return ConfPortfolio(
-                optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3**i) for i in range(num)],
+                optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3 ** i) for i in range(num)],
                 warmup_ratio=0.5,
             )
         else:
@@ -2729,7 +2774,7 @@ class NGOpt36(NGOpt16):
             and self.num_workers <= num * cma_vars
         ):  # Discrete case ?
             return ConfPortfolio(
-                optimizers=[Rescaled(base_optimizer=NGOpt14, scale=0.9**i) for i in range(num)],
+                optimizers=[Rescaled(base_optimizer=NGOpt14, scale=0.9 ** i) for i in range(num)],
                 warmup_ratio=0.5,
             )
         else:
@@ -2761,7 +2806,7 @@ class NGOpt38(NGOpt16):
             if self.dimension < 20:  # Nobody knows why this seems to be so good.
                 num = self.budget // (500 * self.dimension)
                 return ConfPortfolio(
-                    optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3**i) for i in range(num)],
+                    optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3 ** i) for i in range(num)],
                     warmup_ratio=0.5,
                 )
             # We need a special case for dim < 30 ---> let's see later.
@@ -2835,7 +2880,7 @@ class NGOpt39(NGOpt16):
             if self.dimension < 20:  # Nobody knows why this seems to be so good.
                 num = self.budget // (500 * self.dimension)
                 return ConfPortfolio(
-                    optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3**i) for i in range(num)],
+                    optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3 ** i) for i in range(num)],
                     warmup_ratio=0.5,
                 )
             if self.num_workers == 1:
