@@ -315,9 +315,9 @@ class ArrayExperimentFunction(ExperimentFunction):
         assert (parametrization.bounds[0] is None) == (parametrization.bounds[1] is None)
         assert len(parametrization._constraint_checkers) == 0
         assert symmetry >= 0
-        assert symmetry < 2**self.dimension
+        assert symmetry < 2 ** self.dimension
         # The number 11111111111111111111111 is prime (using a prime is an overkill but ok).
-        symmetry = (symmetry * 11111111111111111111111) % (2**self.dimension)
+        symmetry = (symmetry * 11111111111111111111111) % (2 ** self.dimension)
         if symmetry != 0:
             self._function = self.symmetrized_function
             self.threshold_coefficients = np.zeros(self.dimension)
