@@ -206,7 +206,7 @@ class Power(ForwardableOperation):
         return value**self._power
 
     def backward(self, value: tp.Any) -> tp.Any:
-        return value**(1.0 / self._power)
+        return value ** (1.0 / self._power)
 
 
 class Add(ForwardableOperation):

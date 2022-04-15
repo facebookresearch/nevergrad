@@ -30,7 +30,7 @@ class CustomFunction(ngfuncs.ExperimentFunction):
         """Implements the call of the function.
         Under the hood, __call__ delegates to oracle_call + add some noise if noise_level > 0.
         """
-        return (x - self.offset)**2
+        return (x - self.offset) ** 2
 
 
 @ng.optimizers.registry.register  # register optimizers in the optimization registry

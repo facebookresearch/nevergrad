@@ -15,7 +15,7 @@ def test_concrete_model_example() -> None:
     import pyomo.environ as pyomo
 
     def square(m):
-        return pyomo.quicksum((m.x[i] - 0.5)**2 for i in m.x)
+        return pyomo.quicksum((m.x[i] - 0.5) ** 2 for i in m.x)
 
     model = pyomo.ConcreteModel()
     model.x = pyomo.Var([0, 1], domain=pyomo.Reals)
@@ -49,7 +49,7 @@ def test_abstract_model_example() -> None:
     import pyomo.environ as pyomo
 
     def square(m):
-        return pyomo.quicksum((m.x[i] - 0.5)**2 for i in m.x)
+        return pyomo.quicksum((m.x[i] - 0.5) ** 2 for i in m.x)
 
     abstract_model = pyomo.AbstractModel()
     abstract_model.F = pyomo.Set()

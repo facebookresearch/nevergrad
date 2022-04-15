@@ -215,4 +215,4 @@ def test_easy_pareto_experiment() -> None:
     print(xps[0])
     optimizer = ng.optimizers.OnePlusOne(parametrization=2, budget=100)
     optimizer.minimize(xps[0], verbosity=2)
-    assert xps[0].evaluation_function(optimizer.pareto_front()[0])**2 < 0.001
+    assert xps[0].evaluation_function(optimizer.pareto_front()[0]) ** 2 < 0.001

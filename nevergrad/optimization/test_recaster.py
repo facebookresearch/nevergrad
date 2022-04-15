@@ -28,7 +28,7 @@ def test_automatic_thread_deletion() -> None:
 
 
 def fake_cost_function(x: tp.ArrayLike) -> float:
-    return float(np.sum(np.array(x)**2))
+    return float(np.sum(np.array(x) ** 2))
 
 
 class FakeOptimizer(recaster.SequentialRecastOptimizer):
@@ -115,7 +115,7 @@ def test_recast_optimizer_error() -> None:
 
 
 def _simple_multiobjective(x):
-    return [np.sum(x**2), np.sum((x - 1)**2)]
+    return [np.sum(x**2), np.sum((x - 1) ** 2)]
 
 
 @pytest.mark.parametrize("after_ask", [False, True])  # type: ignore
