@@ -153,7 +153,7 @@ class _OnePlusOne(base.Optimizer):
             return out
         # for noisy version
         if noise_handling is not None:
-            limit = (0.05 if isinstance(noise_handling, str) else noise_handling[1]) * len(self.archive) ** 3
+            limit = (0.05 if isinstance(noise_handling, str) else noise_handling[1]) * len(self.archive)**3
             strategy = noise_handling if isinstance(noise_handling, str) else noise_handling[0]
             if self._num_ask <= limit:
                 if strategy in ["cubic", "random"]:
@@ -706,7 +706,7 @@ class _PopulationSizeController:
             last_fifth = self._loss_record[-int(self.llambda) :]  # casting to int to avoid pylint bug
             means = [sum(fitnesses) / float(self.llambda) for fitnesses in [first_fifth, last_fifth]]
             stds = [np.std(fitnesses) / np.sqrt(self.llambda - 1) for fitnesses in [first_fifth, last_fifth]]
-            z = (means[0] - means[1]) / (np.sqrt(stds[0] ** 2 + stds[1] ** 2))
+            z = (means[0] - means[1]) / (np.sqrt(stds[0]**2 + stds[1]**2))
             if z < 2.0:
                 self.mu *= 2
             else:
@@ -936,7 +936,7 @@ class NoisyBandit(base.Optimizer):
     """
 
     def _internal_ask(self) -> tp.ArrayLike:
-        if 20 * self._num_ask >= len(self.archive) ** 3:
+        if 20 * self._num_ask >= len(self.archive)**3:
             return self._rng.normal(0, 1, self.dimension)  # type: ignore
         if self._rng.choice([True, False]):
             # numpy does not accept choice on list of tuples, must choose index instead
@@ -1142,11 +1142,11 @@ class SPSA(base.Optimizer):
 
     def _ck(self, k: int) -> float:
         "c_k determines the pertubation."
-        return self.c / (k // 2 + 1) ** 0.101
+        return self.c / (k // 2 + 1)**0.101
 
     def _ak(self, k: int) -> float:
         "a_k is the learning rate."
-        return self.a / (k // 2 + 1 + self.A) ** 0.602
+        return self.a / (k // 2 + 1 + self.A)**0.602
 
     def _internal_ask(self) -> tp.ArrayLike:
         k = self.idx
@@ -2381,7 +2381,7 @@ class _EMNA(base.Optimizer):
                             self.parents[i].get_standardized_data(reference=self.parametrization)
                             - self.current_center
                         )
-                        ** 2
+                       **2
                         for i in range(self.popsize.mu)
                     ]
                     self.sigma = np.sqrt(
@@ -2394,7 +2394,7 @@ class _EMNA(base.Optimizer):
                         self.parents[i].get_standardized_data(reference=self.parametrization)
                         - self.current_center
                     )
-                    ** 2
+                   **2
                     for i in range(self.popsize.mu)
                 ]
                 self.sigma = np.sqrt(
@@ -2403,7 +2403,7 @@ class _EMNA(base.Optimizer):
                 )
 
             if self.num_workers / self.dimension > 32:  # faster decrease of sigma if large parallel context
-                imp = max(1, (np.log(self.popsize.llambda) / 2) ** (1 / self.dimension))
+                imp = max(1, (np.log(self.popsize.llambda) / 2)**(1 / self.dimension))
                 self.sigma /= imp
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
