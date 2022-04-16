@@ -2821,6 +2821,8 @@ class NGOpt39(NGOpt16):
             and self.num_workers <= para
             and p.helpers.Normalizer(self.parametrization).fully_bounded
         ):
+            if self.dimension == 1:
+                return NGOpt16
             if (
                 self.budget > 5000 * self.dimension
             ):  # Asymptotically let us trust NGOpt36 and its subtle restart.
