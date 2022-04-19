@@ -55,7 +55,7 @@ def smooth_copy(array: p.Array, possible_radii: tp.List[int] = None) -> p.Array:
     radii = [array.random_state.choice(possible_radii) for _ in value.shape]
     value2 = ndimage.convolve(value, np.ones(radii) / np.prod(radii))
     # DE style operator.
-    indices = np.random.randint(7, size=value.shape) == 0
+    indices = array.random_state.randint(7, size=value.shape) == 0
     value[indices] = value2[indices]
     candidate._value = value
     return candidate
