@@ -6,6 +6,7 @@
 import uuid
 import warnings
 import numpy as np
+import scipy.ndimage as ndimage
 import nevergrad.common.typing as tp
 from nevergrad.common import errors
 from . import utils
@@ -18,6 +19,7 @@ from ._layering import Level as Level
 
 
 P = tp.TypeVar("P", bound="Parameter")
+A = tp.TypeVar("A", bound="Array")
 
 
 # pylint: disable=too-many-public-methods
@@ -60,6 +62,16 @@ class Parameter(Layered):
         self._frozen = False
         self._meta: tp.Dict[tp.Hashable, tp.Any] = {}  # for anything algorithm related
         self.function = utils.FunctionInfo()
+
+    def smooth_copy(self: A, possible_radii: tp.List[int] = None) -> A:
+        candidate = self.copy()
+        if possible_radii is None:
+            possible_radii = [3, 5, 7]
+        value = candidate.get_standardized_data(reference=self)
+        radii = [self._random_state.choice(possible_radii) for _ in value.shape]
+        value = ndimage.convolve(value, np.ones(radii))
+        candidate.set_standardized_data(value, reference=self)
+        return candidate
 
     @property
     def losses(self) -> np.ndarray:
