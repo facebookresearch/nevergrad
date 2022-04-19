@@ -168,7 +168,7 @@ class _OnePlusOne(base.Optimizer):
         pessimistic = self.current_bests["pessimistic"].parameter.spawn_child()
         if (
             self.smoother
-            and self._num_ask % max(self.num_workers + 1, 45) == 0
+            and self._num_ask % max(self.num_workers + 1, 55) == 0
             and isinstance(self.parametrization, p.Array)
         ):
             self.suggest(p.smooth_copy(pessimistic).value)
