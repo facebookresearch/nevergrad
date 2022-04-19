@@ -111,7 +111,7 @@ def check_optimizer(
             ) from e
     else:
         assert optimizer.num_tell == budget + 1
-        assert optimizer.num_tell_not_asked == 1
+        assert optimizer.num_tell_not_asked == 1 or "Smooth" in str(optimizer_cls)
 
 
 SLOW = [
@@ -388,6 +388,14 @@ def _square(x: np.ndarray, y: float = 12) -> float:
     return sum((x - 0.5) ** 2) + abs(y)
 
 
+def _smooth_target(x : np.ndarray) -> float:
+    result = 0
+    for h in range(len(x)):
+        for v in range(len(x[h])):
+            sign = 1.0 if np.abs(h - 5) < 3 and np.abs(v - 5) < 3 else -1.0
+            result += max(sign * x[h][v], -1.)
+    return result
+
 def test_optimization_doc_parametrization_example() -> None:
     instrum = ng.p.Instrumentation(ng.p.Array(shape=(2,)), y=ng.p.Scalar())
     optimizer = optlib.OnePlusOne(parametrization=instrum, budget=100)
@@ -401,6 +409,15 @@ def test_optimization_doc_parametrization_example() -> None:
 def test_optimization_discrete_with_one_sample() -> None:
     optimizer = optlib.PortfolioDiscreteOnePlusOne(parametrization=1, budget=10)
     optimizer.minimize(_square)
+
+
+def test_smooth_portfolio_discrete_one_plus_one() -> None:
+    for u in range(3):
+        optimizer = xpvariants.SmoothPortfolioDiscreteOnePlusOne(parametrization=ng.p.Array(shape=(10, 10)), budget=100)
+        recom_smooth = optimizer.minimize(_smooth_target).value
+        optimizer = optlib.PortfolioDiscreteOnePlusOne(parametrization=ng.p.Array(shape=(10, 10)), budget=100)
+        recom = optimizer.minimize(_smooth_target).value
+        assert _smooth_target(recom_smooth) < _smooth_target(recom) / 2.
 
 
 @pytest.mark.parametrize("name", ["TBPSA", "PSO", "TwoPointsDE", "CMA", "BO"])  # type: ignore

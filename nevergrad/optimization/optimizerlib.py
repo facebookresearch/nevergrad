@@ -76,12 +76,14 @@ class _OnePlusOne(base.Optimizer):
         rotation: bool = False,
         use_pareto: bool = False,
         sparse: tp.Union[bool, int] = False,
+        smoother: bool = False,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert crossover or (not rotation), "We can not have both rotation and not crossover."
         self._sigma: float = 1
         self._previous_best_loss = float("inf")
         self.use_pareto = use_pareto
+        self.smoother = smoother
         self.sparse = int(sparse)  # True --> 1
         all_params = p.helpers.flatten(self.parametrization)
         arities = [len(param.choices) for _, param in all_params if isinstance(param, p.TransitionChoice)]
@@ -164,6 +166,8 @@ class _OnePlusOne(base.Optimizer):
         # crossover
         mutator = mutations.Mutator(self._rng)
         pessimistic = self.current_bests["pessimistic"].parameter.spawn_child()
+        if self._num_ask % max(self.num_workers, 13) == 3 and isinstance(self.parametrization, p.Array):
+            self.suggest(pessimistic.smooth_copy().value)
         if self.num_objectives > 1 and self.use_pareto:  # multiobjective
             # revert to using a sample of the pareto front (not "pessimistic" though)
             pareto = (
@@ -326,8 +330,10 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
         whether to add a genetic crossover step every other iteration.
     use_pareto: bool
         whether to restart from a random pareto element in multiobjective mode, instead of the last one added
-    sparsse: bool
+    sparse: bool
         whether we have random mutations setting variables to 0.
+    smoother: bool
+        whether we suggest smooth mutations.
 
     Notes
     -----
@@ -348,6 +354,7 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
         rotation: bool = False,
         use_pareto: bool = False,
         sparse: bool = False,
+        smoother: bool = False,
     ) -> None:
         super().__init__(_OnePlusOne, locals())
 
