@@ -942,12 +942,12 @@ def test_pymoo_batched() -> None:
 
 
 def test_smoother() -> None:
-    x = p.Array(shape=(5, 5))
+    x = ng.p.Array(shape=(5, 5))
     assert (
         optlib.smooth_copy(x).get_standardized_data(reference=x).shape
         == x.get_standardized_data(reference=x).shape
     )
-    x = p.Array(shape=(5, 5)).set_integer_casting()
+    x = ng.p.Array(shape=(5, 5)).set_integer_casting()
     assert (
         optlib.smooth_copy(x).get_standardized_data(reference=x).shape
         == x.get_standardized_data(reference=x).shape
