@@ -166,7 +166,11 @@ class _OnePlusOne(base.Optimizer):
         # crossover
         mutator = mutations.Mutator(self._rng)
         pessimistic = self.current_bests["pessimistic"].parameter.spawn_child()
-        if self._num_ask % max(self.num_workers, 13) == 3 and isinstance(self.parametrization, p.Array):
+        if (
+            self.smoother
+            and self._num_ask % max(self.num_workers, 13) == 3
+            and isinstance(self.parametrization, p.Array)
+        ):
             self.suggest(pessimistic.smooth_copy().value)
         if self.num_objectives > 1 and self.use_pareto:  # multiobjective
             # revert to using a sample of the pareto front (not "pessimistic" though)
