@@ -186,7 +186,7 @@ class _OnePlusOne(base.Optimizer):
             and self._num_ask % max(self.num_workers + 1, 55) == 0
             and isinstance(self.parametrization, p.Array)
         ):
-            self.suggest(smooth_copy(pessimistic).value)
+            self.suggest(smooth_copy(pessimistic).value)  # type: ignore
         if self.num_objectives > 1 and self.use_pareto:  # multiobjective
             # revert to using a sample of the pareto front (not "pessimistic" though)
             pareto = (
