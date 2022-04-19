@@ -432,7 +432,7 @@ class Array(Data):
 
     value: core.ValueProperty[tp.ArrayLike, np.ndarray] = core.ValueProperty()
 
-    def smooth_copy(self, possible_radii: tp.List[int] = None) -> A:
+    def smooth_copy(self: A, possible_radii: tp.List[int] = None) -> A:
         candidate = self.copy()
         if possible_radii is None:
             possible_radii = [3, 5, 7]
