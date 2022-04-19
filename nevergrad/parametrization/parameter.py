@@ -6,9 +6,6 @@
 # pylint: disable=unused-import
 # import with "as" to explicitely allow reexport (mypy)
 
-# helper
-from .core import smooth_copy as smooth_copy
-
 # abstract types
 from .core import Parameter as Parameter
 from .container import Container as Container

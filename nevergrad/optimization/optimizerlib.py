@@ -8,6 +8,7 @@ import itertools
 from collections import deque
 import warnings
 import numpy as np
+import scipy.ndimage as ndimage
 from bayes_opt import UtilityFunction
 from bayes_opt import BayesianOptimization
 import nevergrad.common.typing as tp
@@ -44,6 +45,22 @@ logger = logging.getLogger(__name__)
 
 
 # # # # # optimizers # # # # #
+
+A = tp.TypeVar("A", bound="Array")
+
+
+def smooth_copy(array: A, possible_radii: tp.List[int] = None) -> A:
+    candidate = array.spawn_child()
+    if possible_radii is None:
+        possible_radii = [3]
+    value = candidate._value
+    radii = [array.random_state.choice(possible_radii) for _ in value.shape]
+    value2 = ndimage.convolve(value, np.ones(radii) / np.prod(radii))
+    # DE style operator.
+    indices = np.random.randint(7, size=value.shape) == 0
+    value[indices] = value2[indices]
+    candidate._value = value
+    return candidate
 
 
 class _OnePlusOne(base.Optimizer):
@@ -171,7 +188,7 @@ class _OnePlusOne(base.Optimizer):
             and self._num_ask % max(self.num_workers + 1, 55) == 0
             and isinstance(self.parametrization, p.Array)
         ):
-            self.suggest(p.smooth_copy(pessimistic).value)
+            self.suggest(smooth_copy(pessimistic).value)
         if self.num_objectives > 1 and self.use_pareto:  # multiobjective
             # revert to using a sample of the pareto front (not "pessimistic" though)
             pareto = (

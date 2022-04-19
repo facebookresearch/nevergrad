@@ -389,7 +389,7 @@ def _square(x: np.ndarray, y: float = 12) -> float:
 
 
 def _smooth_target(x: np.ndarray) -> float:
-    result = 0
+    result = 0.0
     d = len(x)
     for h in range(d):
         for v in range(d):

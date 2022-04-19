@@ -6,7 +6,6 @@
 import uuid
 import warnings
 import numpy as np
-import scipy.ndimage as ndimage
 import nevergrad.common.typing as tp
 from nevergrad.common import errors
 from . import utils
@@ -19,7 +18,6 @@ from ._layering import Level as Level
 
 
 P = tp.TypeVar("P", bound="Parameter")
-A = tp.TypeVar("A", bound="Array")
 
 
 # pylint: disable=too-many-public-methods
@@ -403,22 +401,7 @@ class Parameter(Layered):
         self._subobjects.apply("_check_frozen")
 
 
-# Basic types and helpers #
-def smooth_copy(array: A, possible_radii: tp.List[int] = None) -> A:
-    candidate = array.copy()
-    if possible_radii is None:
-        possible_radii = [3]
-    value = candidate._value  # get_standardized_data(reference=array)
-    radii = [np.random.choice(possible_radii) for _ in value.shape]
-    value2 = ndimage.convolve(value, np.ones(radii) / np.prod(radii))
-    # DE style operator.
-    indices = np.random.randint(10, size=value.shape) == 0
-    value[indices] = value2[indices]  # 0.5 * (value2[indices] + value[indices])
-    # print("becomes:", value)
-    candidate._value = value
-    return candidate
-
-
+# Basic types #
 class Constant(Parameter):
     """Parameter-like object for simplifying management of constant parameters:
     mutation/recombination do nothing, value cannot be changed, standardize data is an empty array,
