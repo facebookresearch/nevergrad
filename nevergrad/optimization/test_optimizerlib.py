@@ -390,10 +390,11 @@ def _square(x: np.ndarray, y: float = 12) -> float:
 
 def _smooth_target(x: np.ndarray) -> float:
     result = 0
-    for h in range(len(x)):
-        for v in range(len(x[h])):
-            sign = 1.0 if np.abs(h - 5) < 3 and np.abs(v - 5) < 3 else -1.0
-            result += max(sign * x[h][v], -1.0)
+    d = len(x)
+    for h in range(d):
+        for v in range(d):
+            val = x[h][v]
+            result = max(result, ((h / 10.0) + (v / 10.0) - 2 * val) ** 2.0)
     return result
 
 
@@ -413,14 +414,23 @@ def test_optimization_discrete_with_one_sample() -> None:
 
 
 def test_smooth_portfolio_discrete_one_plus_one() -> None:
-    for _ in range(3):
+    n = 7
+    win = 0
+    budget = 100
+    d = 20
+    for _ in range(n):
         optimizer = xpvariants.SmoothPortfolioDiscreteOnePlusOne(
-            parametrization=ng.p.Array(shape=(10, 10)), budget=100
+            parametrization=ng.p.Array(shape=(d, d), upper=1.0, lower=-1.0), budget=budget
         )
         recom_smooth = optimizer.minimize(_smooth_target).value
-        optimizer = optlib.PortfolioDiscreteOnePlusOne(parametrization=ng.p.Array(shape=(10, 10)), budget=100)
+        optimizer = optlib.PortfolioDiscreteOnePlusOne(
+            parametrization=ng.p.Array(shape=(d, d), upper=1.0, lower=-1.0), budget=budget
+        )
         recom = optimizer.minimize(_smooth_target).value
-        assert _smooth_target(recom_smooth) < _smooth_target(recom) / 2.0
+        print(_smooth_target(recom_smooth), _smooth_target(recom))
+        if _smooth_target(recom_smooth) < _smooth_target(recom):
+            win += 1
+    assert win >= n / 2
 
 
 @pytest.mark.parametrize("name", ["TBPSA", "PSO", "TwoPointsDE", "CMA", "BO"])  # type: ignore

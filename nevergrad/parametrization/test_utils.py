@@ -251,11 +251,13 @@ def test_normalizer_backward() -> None:
 def test_smoother() -> None:
     x = p.Array(shape=(5, 5))
     assert (
-        x.smooth_copy().get_standardized_data(reference=x).shape == x.get_standardized_data(reference=x).shape
+        p.smooth_copy(x).get_standardized_data(reference=x).shape
+        == x.get_standardized_data(reference=x).shape
     )
     x = p.Array(shape=(5, 5)).set_integer_casting()
     assert (
-        x.smooth_copy().get_standardized_data(reference=x).shape == x.get_standardized_data(reference=x).shape
+        p.smooth_copy(x).get_standardized_data(reference=x).shape
+        == x.get_standardized_data(reference=x).shape
     )
 
 

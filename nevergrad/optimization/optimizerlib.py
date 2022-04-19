@@ -168,10 +168,10 @@ class _OnePlusOne(base.Optimizer):
         pessimistic = self.current_bests["pessimistic"].parameter.spawn_child()
         if (
             self.smoother
-            and self._num_ask % max(self.num_workers, 13) == 3
+            and self._num_ask % max(self.num_workers + 1, 45) == 0
             and isinstance(self.parametrization, p.Array)
         ):
-            self.suggest(pessimistic.smooth_copy().value)
+            self.suggest(p.smooth_copy(pessimistic).value)
         if self.num_objectives > 1 and self.use_pareto:  # multiobjective
             # revert to using a sample of the pareto front (not "pessimistic" though)
             pareto = (

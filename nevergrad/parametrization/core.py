@@ -63,16 +63,6 @@ class Parameter(Layered):
         self._meta: tp.Dict[tp.Hashable, tp.Any] = {}  # for anything algorithm related
         self.function = utils.FunctionInfo()
 
-    def smooth_copy(self: A, possible_radii: tp.List[int] = None) -> A:
-        candidate = self.copy()
-        if possible_radii is None:
-            possible_radii = [3, 5, 7]
-        value = candidate.get_standardized_data(reference=self)
-        radii = [self._random_state.choice(possible_radii) for _ in value.shape]
-        value = ndimage.convolve(value, np.ones(radii))
-        candidate.set_standardized_data(value, reference=self)
-        return candidate
-
     @property
     def losses(self) -> np.ndarray:
         """Possibly multiobjective losses which were told
@@ -414,6 +404,19 @@ class Parameter(Layered):
 
 
 # Basic types and helpers #
+def smooth_copy(array: A, possible_radii: tp.List[int] = None) -> A:
+    candidate = array.copy()
+    if possible_radii is None:
+        possible_radii = [3]
+    value = candidate._value  # get_standardized_data(reference=array)
+    radii = [np.random.choice(possible_radii) for _ in value.shape]
+    value2 = ndimage.convolve(value, np.ones(radii) / np.prod(radii))
+    # DE style operator.
+    indices = np.random.randint(2, size=value.shape) == 0
+    value[indices] = 0.5 * (value2[indices] + value[indices])
+    # print("becomes:", value)
+    candidate._value = value
+    return candidate
 
 
 class Constant(Parameter):
