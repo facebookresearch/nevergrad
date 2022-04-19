@@ -413,7 +413,7 @@ def test_optimization_discrete_with_one_sample() -> None:
 
 
 def test_smooth_portfolio_discrete_one_plus_one() -> None:
-    for u in range(3):
+    for _ in range(3):
         optimizer = xpvariants.SmoothPortfolioDiscreteOnePlusOne(
             parametrization=ng.p.Array(shape=(10, 10)), budget=100
         )
