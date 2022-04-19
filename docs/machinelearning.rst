@@ -1,6 +1,6 @@
 .. _machinelearning:
 
-nstExamples - Nevergrad for machine learning
+Examples - Nevergrad for machine learning
 =========================================
 
 Let us assume that you have defined an objective function as in:
