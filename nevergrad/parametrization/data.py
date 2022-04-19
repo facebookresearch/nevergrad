@@ -432,8 +432,10 @@ class Array(Data):
 
     value: core.ValueProperty[tp.ArrayLike, np.ndarray] = core.ValueProperty()
 
-    def smooth_copy(self, possible_radii=[3, 5, 7]) -> A:
+    def smooth_copy(self, possible_radii: tp.List[int] = None) -> A:
         candidate = self.copy()
+        if possible_radii is None:
+            possible_radii = [3, 5, 7]
         value = candidate.get_standardized_data(reference=self)
         radii = [np.random.choice(possible_radii) for _ in value.shape]
         value = ndimage.convolve(value, np.ones(radii))
