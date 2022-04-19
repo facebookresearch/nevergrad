@@ -248,6 +248,17 @@ def test_normalizer_backward() -> None:
     assert param.value[1]["stuff"] == pytest.approx(0.5)
 
 
+def test_smoother() -> None:
+    x = p.Array(shape=(5, 5))
+    assert (
+        x.smooth_copy().get_standardized_data(reference=x).shape == x.get_standardized_data(reference=x).shape
+    )
+    x = p.Array(shape=(5, 5)).set_integer_casting()
+    assert (
+        x.smooth_copy().get_standardized_data(reference=x).shape == x.get_standardized_data(reference=x).shape
+    )
+
+
 def test_normalizer_forward() -> None:
     ref = p.Tuple(
         p.Scalar(init=0), p.Scalar(init=1), p.Scalar(lower=-1, upper=3, init=0), p.Scalar(lower=-1, upper=1)

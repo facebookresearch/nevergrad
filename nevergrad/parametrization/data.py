@@ -5,6 +5,7 @@
 
 # import warnings
 import numpy as np
+import scipy.ndimage as ndimage
 import nevergrad.common.typing as tp
 from nevergrad.common import errors
 
@@ -19,6 +20,7 @@ from . import utils
 
 
 D = tp.TypeVar("D", bound="Data")
+A = tp.TypeVar("A", bound="Array")
 P = tp.TypeVar("P", bound=core.Parameter)
 
 
@@ -429,6 +431,14 @@ def _fix_legacy(parameter: Data) -> None:
 class Array(Data):
 
     value: core.ValueProperty[tp.ArrayLike, np.ndarray] = core.ValueProperty()
+
+    def smooth_copy(self, possible_radii=[3, 5, 7]) -> A:
+        candidate = self.copy()
+        value = candidate.get_standardized_data(reference=self)
+        radii = [np.random.choice(possible_radii) for _ in value.shape]
+        value = ndimage.convolve(value, np.ones(radii))
+        candidate.set_standardized_data(value, reference=self)
+        return candidate
 
 
 class Scalar(Data):
