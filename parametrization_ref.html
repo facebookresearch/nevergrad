@@ -47,6 +47,7 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Parametrization API reference</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#parameters">Parameters</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#parameter-api">Parameter API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#operators">Operators</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="benchmarking.html">Running algorithm benchmarks</a></li>
@@ -89,6 +90,7 @@
 The parametrization subpackage will help you do thanks to:</p>
 <ul class="simple">
 <li><p>the <cite>parameter</cite> modules (accessed by the shortcut <cite>nevergrad.p</cite>) providing classes that should be used to specify each parameter.</p></li>
+<li><p>the <cite>ops</cite> module (accessed through <cite>ng.ops</cite>) providing experimental objects for modifying a parameter behavior (eg: casting to int, adding complex constraints).</p></li>
 <li><p>the <cite>FolderFunction</cite> which helps transform any code into a Python function in a few lines. This can be especially helpful to optimize parameters in non-Python 3.6+ code (C++, Octave, etc…) or parameters in scripts.</p></li>
 </ul>
 <section id="parameters">
@@ -640,6 +642,27 @@ to optimize.</p>
 </div>
 </dd></dl>
 
+</dd></dl>
+
+</section>
+<section id="operators">
+<h2>Operators<a class="headerlink" href="#operators" title="Permalink to this headline"></a></h2>
+<p>These experimental operators are designed to be instantiated and called with a parameter as input, creating a new parameter with the required behavior.</p>
+<span class="target" id="module-nevergrad.ops"></span><dl class="py class">
+<dt class="sig sig-object py" id="nevergrad.ops.Int">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">nevergrad.ops.</span></span><span class="sig-name descname"><span class="pre">Int</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">deterministic</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nevergrad.ops.Int" title="Permalink to this definition"></a></dt>
+<dd><p>Cast Data as integer (or integer array)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>deterministic</strong> (<em>bool</em>) – if True, the data is rounded to the closest integer, if False, both surrounded
+integers can be sampled inversely proportionally to how close the actual value
+is from the integers.</p>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<p>0.2 is cast to 0 in deterministic mode, and either 0 (80% chance) or 1 (20% chance) in
+non-deterministic mode</p>
+<p><code class="code docutils literal notranslate"><span class="pre">param</span> <span class="pre">=</span> <span class="pre">ng.ops.Int(deterministic=True)(ng.p.Array(shape=(3,)))</span></code></p>
 </dd></dl>
 
 </section>
