@@ -416,7 +416,7 @@ def test_optimization_discrete_with_one_sample() -> None:
 
 
 def test_smooth_discrete_one_plus_one() -> None:
-    n = 25
+    n = 45
     d = 22
     budget = d * d // 2
     parametrization = ng.p.Array(shape=(d, d), upper=1.0, lower=-1.0)
@@ -430,6 +430,7 @@ def test_smooth_discrete_one_plus_one() -> None:
         values_smooth += [_smooth_target(recom_smooth)]
         values += [_smooth_target(recom)]
     pval = stats.mannwhitneyu(values_smooth, values, alternative="less").pvalue
+    print(f"pval={pval}")
     assert pval < 0.4, f"P-Value for smooth methods = {pval}."
 
 
