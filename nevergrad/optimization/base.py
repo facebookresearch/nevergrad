@@ -678,7 +678,14 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
 
     def _info(self) -> tp.Dict[str, tp.Any]:
         """Easy access to debug/benchmark info"""
-        return {}
+        vector = (
+            int(np.log10(self.dimension + 8)),
+            int(np.log10(self.budget / self.dimension)),
+            int(np.log(self.num_objectives + 8)),
+            p.helpers.Normalizer(self.parametrization).fully_bounded,
+            int(np.log10(self.num_workers + 8)),
+        )
+        return {"hex": hash(vector)}
 
 
 # Adding a comparison-only functionality to an optimizer.
