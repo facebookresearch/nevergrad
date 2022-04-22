@@ -591,7 +591,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             An executor object, with method :code:`submit(callable, *args, **kwargs)` and returning a Future-like object
             with methods :code:`done() -> bool` and :code:`result() -> float`. The executor role is to dispatch the execution of
             the jobs locally/on a cluster/with multithreading depending on the implementation.
-            Eg: :code:`concurrent.futures.ThreadPoolExecutor`
+            Eg: :code:`concurrent.futures.ProcessPoolExecutor`
         batch_mode: bool
             when :code:`num_workers = n > 1`, whether jobs are executed by batch (:code:`n` function evaluations are launched,
             we wait for all results and relaunch n evals) or not (whenever an evaluation is finished, we launch
