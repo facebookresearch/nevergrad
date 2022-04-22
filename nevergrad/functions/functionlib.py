@@ -191,7 +191,7 @@ class ArtificialFunction(ExperimentFunction):
             parametrization.set_name("split")
         if noise_level > 0:
             parametrization.function.deterministic = False
-        super().__init__(self.noisy_function if not split else self.split_noisy_function, parametrization)
+        super().__init__(self.noisy_function, parametrization)
         # variable, must come after super().__init__(...) to bind the random_state
         # may consider having its a local random_state instead but less reproducible
         self.transform_var = ArtificialVariable(
@@ -252,9 +252,6 @@ class ArtificialFunction(ExperimentFunction):
         data = np.array(a for a in recommendations[0].args)
         data = self._transform(data)
         return self.function_from_transform(data)
-
-    def split_noisy_function(self, *x: tp.ArrayLike) -> float:
-        return self.noisy_function(np.array(x).flatten())
 
     def noisy_function(self, *argv: tp.ArrayLike) -> float:
         x = np.array(argv).flatten()
