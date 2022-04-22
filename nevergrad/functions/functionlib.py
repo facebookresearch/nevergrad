@@ -250,12 +250,12 @@ class ArtificialFunction(ExperimentFunction):
         """
         assert len(recommendations) == 1, "Should not be a pareto set for a singleobjective function"
         assert not recommendations[0].kwargs
-        data = np.concatenate(recommendations[0].args, axis=0)
+        data = np.concatenate(recommendations[0].args, axis=0)  # we can concatenate since blocks are necessarily sorted
         data = self._transform(data)
         return self.function_from_transform(data)
 
     def noisy_function(self, *x: tp.ArrayLike) -> float:
-        data = np.concatenate(x, axis=0)
+        data = np.concatenate(x, axis=0)  # we can concatenate since blocks are necessarily sorted
         return _noisy_call(
             x=data,
             transf=self._transform,
