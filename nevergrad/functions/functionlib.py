@@ -220,7 +220,7 @@ class ArtificialFunction(ExperimentFunction):
     @property
     def dimension(self) -> int:
         # bypass the parametrization one (because of the "hashing" case)  # TODO: remove
-        return self._dimension  
+        return self._dimension
 
     @staticmethod
     def list_sorted_function_names() -> tp.List[str]:
@@ -249,7 +249,8 @@ class ArtificialFunction(ExperimentFunction):
         """
         assert len(recommendations) == 1, "Should not be a pareto set for a singleobjective function"
         assert not recommendations[0].kwargs
-        data = np.concatenate(recommendations[0].args, axis=0)  # we can concatenate since blocks are necessarily sorted
+        # we can concatenate since blocks are necessarily sorted
+        data = np.concatenate(recommendations[0].args, axis=0)
         data = self._transform(data)
         return self.function_from_transform(data)
 
