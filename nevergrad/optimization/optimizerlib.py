@@ -638,10 +638,10 @@ class ChoiceBase(base.Optimizer):
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         self.optim.tell(candidate, loss)
 
-    def _info(self) -> tp.Dict[str, tp.Any]:
-        out = {"sub-optim": self.optim.name}
-        out.update(self.optim._info())  # this will work for recursive NGOpt calls
-        return out
+    #def _info(self) -> tp.Dict[str, tp.Any]:
+    #    out = {"sub-optim": self.optim.name}
+    #    out.update(self.optim._info())  # this will work for recursive NGOpt calls
+    #    return out
 
     def enable_pickling(self) -> None:
         self.optim.enable_pickling()
@@ -1340,10 +1340,10 @@ class SplitOptimizer(base.Optimizer):
             local_candidate = opt.parametrization.spawn_child().set_standardized_data(local_data)
             opt.tell(local_candidate, loss)
 
-    def _info(self) -> tp.Dict[str, tp.Any]:
-        key = "sub-optim"
-        optims = [x.name if key not in x._info() else x._info()[key] for x in self.optims]
-        return {key: ",".join(optims)}
+    #def _info(self) -> tp.Dict[str, tp.Any]:
+    #    key = "sub-optim"
+    #    optims = [x.name if key not in x._info() else x._info()[key] for x in self.optims]
+    #    return {key: ",".join(optims)}
 
 
 class ConfSplitOptimizer(base.ConfiguredOptimizer):
@@ -2918,6 +2918,293 @@ class NGOpt39(NGOpt16):
         else:
             return super()._select_optimizer_cls()
 
+
+
+@registry.register
+class NGOpt40(NGOpt39):
+    def _select_optimizer_cls(self) -> base.OptCls:
+
+        all_params = p.helpers.flatten(self.parametrization)
+        arities = [len(param.choices) for _, param in all_params if isinstance(param, p.TransitionChoice)]
+        arity = max(arities, default=500)
+        analysis = p.helpers.analyze(self.parametrization)
+        funcinfo = self.parametrization.function
+        has_noise = not (analysis.deterministic and funcinfo.deterministic)
+        vector = (
+            p.helpers.analyze(self.parametrization).continuous,
+            int(np.log10(arity + 8)),
+            has_noise,
+            int(np.log10(self.dimension + 8)),
+            int(np.log10(self.budget / self.dimension)),
+            int(np.log(self.num_objectives + 8)),
+            p.helpers.Normalizer(self.parametrization).fully_bounded,
+            int(np.log10(self.num_workers + 8)),
+        )
+        context_hash = str(hash(vector))
+        if context_hash == "-1253813875962624177":
+            return  NGOpt39
+        if context_hash == "-3142463683671125544":
+            return  CMA
+        if context_hash == "-3142463683671125544":
+            return  Cobyla
+        if context_hash == "-3142466042608805568":
+            return  NGOpt10
+        if context_hash == "-3142466042610383267":
+            return  DE
+        if context_hash == "-3142466042613538665":
+            return  CMA
+        if context_hash == "-390644475573303682":
+            return  NGOpt15
+        if context_hash == "-390646834506250609":
+            return  DE
+        if context_hash == "-390646834509406007":
+            return  NGO
+        if context_hash == "-390646834509406007":
+            return  NGOpt39
+        if context_hash == "-390646834510983706":
+            return  DiscreteDE
+        if context_hash == "-390646834512561405":
+            return  CMApara
+        if context_hash == "-4968765888811913207":
+            return  PSO
+        if context_hash == "-4968765888813490906":
+            return  NGOpt10
+        if context_hash == "-4968765888815068605":
+            return  NGOpt10
+        if context_hash == "-4968765888815068605":
+            return  NGOpt39
+        if context_hash == "-4997093848372773832":
+            return  DE
+        if context_hash == "-4997093848374351531":
+            return  NGOpt39
+        if context_hash == "-5018878603933883281":
+            return  NGOpt10
+        if context_hash == "-5956429975822199264":
+            return  DiscreteLenglerOnePlusOne
+        if context_hash == "-5956429975825354662":
+            return  DiscreteLenglerOnePlusOne
+        if context_hash == "-6105472457276787776":
+            return  CMAbounded
+        if context_hash == "-6105472457279943174":
+            return  CMAbounded
+        if context_hash == "-6105472457281520873":
+            return  DiscreteLenglerOnePlusOne
+        if context_hash == "-6542629510390896086":
+            return  GeneticDE
+        if context_hash == "-6542629510390896086":
+            return  NGOpt10
+        if context_hash == "-6542629510392473785":
+            return  TwoPointsDE
+        if context_hash == "-7920435094151570162":
+            return  TwoPointsDE
+        if context_hash == "-7920435094153147861":
+            return  GeneticDE
+        if context_hash == "-8431281677038655176":
+            return  Shiwa
+        if context_hash == "-8431281677038655176":
+            return  PortfolioDiscreteOnePlusOne
+        if context_hash == "-8431281677040232875":
+            return  PortfolioDiscreteOnePlusOne
+        if context_hash == "-8431281677041810574":
+            return  NGOpt39
+        if context_hash == "-8431284035981068297":
+            return  NGOpt16
+        if context_hash == "108862539047776055":
+            return  NGOpt10
+        if context_hash == "108862539049353754":
+            return  GeneticDE
+        if context_hash == "1498005332138353083":
+            return  DE
+        if context_hash == "1498005332139930782":
+            return  DE
+        if context_hash == "1498005332141508481":
+            return  DiscreteLenglerOnePlusOne
+        if context_hash == "1498005332143086180":
+            return  PSO
+        if context_hash == "2532692052328554901":
+            return  NGOpt15
+        if context_hash == "2532694411264657226":
+            return  CMA
+        if context_hash == "2532694411264657226":
+            return  CMAbounded
+        if context_hash == "2532694411266234925":
+            return  NGOpt10
+        if context_hash == "2532694411267812624":
+            return  CMApara
+        if context_hash == "320054463491718750":
+            return  DiscreteLenglerOnePlusOne
+        if context_hash == "320054463493296449":
+            return  NGOpt39
+        if context_hash == "320054463494874148":
+            return  DiscreteLenglerOnePlusOne
+        if context_hash == "320054463494874148":
+            return  DiscreteLenglerOnePlusOne
+        if context_hash == "4421346577917149413":
+            return  GeneticDE
+        if context_hash == "4421346577918727112":
+            return  DiscreteLenglerOnePlusOne
+        if context_hash == "5397682891356141109":
+            return  NGOpt39
+        if context_hash == "5397682891357718808":
+            return  NGOpt10
+        if context_hash == "5995210199494554593":
+            return  NGOpt39
+        if context_hash == "5995210199496132292":
+            return  NGOpt39
+        if context_hash == "7384352992585131621":
+            return  NGOpt10
+        if context_hash == "8149502099453962971":
+            return  NGOpt39
+        if context_hash == "8149502099455540670":
+            return  DiscreteLenglerOnePlusOne
+        return super()._select_optimizer_cls()
+
+@registry.register
+class NGOpt41(NGOpt39):
+    def _select_optimizer_cls(self) -> base.OptCls:
+        
+        
+        all_params = p.helpers.flatten(self.parametrization)
+        arities = [len(param.choices) for _, param in all_params if isinstance(param, p.TransitionChoice)]
+        arity = max(arities, default=500)
+        analysis = p.helpers.analyze(self.parametrization)
+        funcinfo = self.parametrization.function
+        has_noise = not (analysis.deterministic and funcinfo.deterministic)
+        vector = (
+            p.helpers.analyze(self.parametrization).continuous,
+            int(np.log10(arity + 8)),
+            has_noise,
+            int(np.log10(self.dimension + 8)),
+            int(np.log10(self.budget / self.dimension)),
+            int(np.log(self.num_objectives + 8)),
+            p.helpers.Normalizer(self.parametrization).fully_bounded,
+            int(np.log10(self.num_workers + 8)),
+        )
+        context_hash = str(hash(vector))
+        if context_hash == "-1253813875959468779":
+            return  SQP
+        if context_hash == "-1253813875962624177":
+            return  NGOpt39
+        if context_hash == "-3142463683671125544":
+            return  CMA
+        if context_hash == "-3142463683671125544":
+            return  Cobyla
+        if context_hash == "-3142466042608805568":
+            return  NGOpt10
+        if context_hash == "-3142466042610383267":
+            return  DE
+        if context_hash == "-3142466042613538665":
+            return  CMA
+        if context_hash == "-390644475573303682":
+            return  NGOpt15
+        if context_hash == "-390646834506250609":
+            return  DE
+        if context_hash == "-390646834509406007":
+            return  NGO
+        if context_hash == "-390646834509406007":
+            return  NGOpt39
+        if context_hash == "-390646834510983706":
+            return  DiscreteDE
+        if context_hash == "-390646834512561405":
+            return  CMApara
+        if context_hash == "-4968765888811913207":
+            return  PSO
+        if context_hash == "-4968765888813490906":
+            return  DiscreteLenglerOnePlusOne
+        if context_hash == "-4968765888815068605":
+            return  NGOpt10
+        if context_hash == "-4968765888815068605":
+            return  NGOpt39
+        if context_hash == "-4997093848372773832":
+            return  NGOpt39
+        if context_hash == "-4997093848374351531":
+            return  GeneticDE
+        if context_hash == "-5018878603933883281":
+            return  NGOpt10
+        if context_hash == "-5956429975822199264":
+            return  DiscreteLenglerOnePlusOne
+        if context_hash == "-5956429975825354662":
+            return  DiscreteLenglerOnePlusOne
+        if context_hash == "-6105472457276787776":
+            return  CMAbounded
+        if context_hash == "-6105472457279943174":
+            return  CMAbounded
+        if context_hash == "-6105472457281520873":
+            return  DiscreteLenglerOnePlusOne
+        if context_hash == "-6542629510390896086":
+            return  DE
+        if context_hash == "-6542629510390896086":
+            return  NoisyDiscreteOnePlusOne
+        if context_hash == "-6542629510390896086":
+            return  NGOpt10
+        if context_hash == "-6542629510392473785":
+            return  TwoPointsDE
+        if context_hash == "-7920435094151570162":
+            return  PSO
+        if context_hash == "-7920435094153147861":
+            return  DE
+        if context_hash == "-8431281677038655176":
+            return  Shiwa
+        if context_hash == "-8431281677038655176":
+            return  PortfolioDiscreteOnePlusOne
+        if context_hash == "-8431281677040232875":
+            return  PortfolioDiscreteOnePlusOne
+        if context_hash == "-8431281677041810574":
+            return  NGOpt39
+        if context_hash == "-8431284035981068297":
+            return  NGOpt16
+        if context_hash == "108862539047776055":
+            return  NGOpt39
+        if context_hash == "108862539049353754":
+            return  NGOpt39
+        if context_hash == "1498005332138353083":
+            return  DE
+        if context_hash == "1498005332138353083":
+            return  SQP
+        if context_hash == "1498005332139930782":
+            return  DE
+        if context_hash == "1498005332141508481":
+            return  DiscreteLenglerOnePlusOne
+        if context_hash == "1498005332143086180":
+            return  PSO
+        if context_hash == "2532692052328554901":
+            return  CMandAS2
+        if context_hash == "2532694411264657226":
+            return  Shiwa
+        if context_hash == "2532694411264657226":
+            return  CMAbounded
+        if context_hash == "2532694411266234925":
+            return  NGOpt10
+        if context_hash == "2532694411267812624":
+            return  CMApara
+        if context_hash == "320054463491718750":
+            return  DiscreteLenglerOnePlusOne
+        if context_hash == "320054463493296449":
+            return  DiscreteLenglerOnePlusOne
+        if context_hash == "320054463494874148":
+            return  DiscreteLenglerOnePlusOne
+        if context_hash == "320054463494874148":
+            return  DiscreteLenglerOnePlusOne
+        if context_hash == "4421346577917149413":
+            return  DE
+        if context_hash == "4421346577918727112":
+            return  PSO
+        if context_hash == "5397682891356141109":
+            return  CMAbounded
+        if context_hash == "5397682891357718808":
+            return  NGOpt10
+        if context_hash == "5995210199494554593":
+            return  NGOpt10
+        if context_hash == "5995210199496132292":
+            return  NGOpt39
+        if context_hash == "7384352992585131621":
+            return  NGOpt10
+        if context_hash == "8149502099453962971":
+            return  DiscreteLenglerOnePlusOne
+        if context_hash == "8149502099455540670":
+            return  DiscreteLenglerOnePlusOne
+        
+        return super()._select_optimizer_cls()
 
 @registry.register
 class NGOpt(NGOpt39):

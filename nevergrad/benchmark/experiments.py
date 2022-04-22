@@ -45,6 +45,10 @@ from . import gymexperiments  # noqa
 
 # pylint: disable=stop-iteration-return, too-many-nested-blocks, too-many-locals
 
+def optims_tune():
+    dde = ng.optimizers.DifferentialEvolution(crossover="dimension").set_name("DiscreteDE")
+    optims = ["NGOpt39", "CMAtuning", "CMAstd", "CMAbounded", "CMAsmall", "CMApara", "DE", "TwoPointsDE", "GeneticDE", "PSO", dde, "PortfolioDiscreteOnePlusOne", "DiscreteLenglerOnePlusOne", "NGOpt10", "Cobyla", "NGOpt40", "PSO", "NGOpt41"]
+    return optims
 
 def skip_ci(*, reason: str) -> None:
     """Only use this if there is a good reason for not testing the xp,
@@ -243,6 +247,9 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # This problem is intended as a stable basis forever.
     # The list of optimizers should contain only the basic for comparison and "baselines".
     optims: tp.List[str] = ["NGOpt10"] + get_optimizers("baselines", seed=next(seedg))  # type: ignore
+    dde = ng.optimizers.DifferentialEvolution(crossover="dimension").set_name("DiscreteDE")
+    optims = ["NGOpt39", "CMAbounded", "CMApara", "DE", "TwoPointsDE", "GeneticDE", "PSO", dde, "PortfolioDiscreteOnePlusOne", "DiscreteLenglerOnePlusOne", "NGOpt10", "Cobyla"]
+    optims = optims_tune()
     index = 0
     for function in functions:
         for budget in [50, 1500, 25000]:
@@ -253,6 +260,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                     for optim in optims:
                         xp = Experiment(function, optim, num_workers=nw, budget=budget, seed=next(seedg))
                         if not xp.is_incoherent:
+                          if np.random.randint(8) == 0:
                             yield xp
 
     assert total_xp_per_optim == 33, f"We have 33 single-obj xps per optimizer (got {total_xp_per_optim})."
@@ -273,6 +281,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                     for nw in [1, 100]:
                         total_xp_per_optim += 1
                         for optim in optims:
+                          if np.random.randint(8) == 0:
                             yield Experiment(dfunc, optim, num_workers=nw, budget=budget, seed=next(seedg))
     assert (
         total_xp_per_optim == 57
@@ -317,6 +326,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                 if index % 5 == 0:
                     total_xp_per_optim += 1
                     for optim in optims:
+                      if np.random.randint(8) == 0:
                         yield Experiment(mofunc, optim, budget=budget, num_workers=nw, seed=next(seedg))
     assert total_xp_per_optim == 71, f"We should have 71 xps per optimizer, not {total_xp_per_optim}."
 
@@ -740,6 +750,7 @@ def yabbob(
                     function, optim, num_workers=100 if parallel else 1, budget=budget, seed=next(seedg)
                 )
                 if not xp.is_incoherent:
+                  if np.random.randint(6) == 0:
                     yield xp
 
 
@@ -1932,6 +1943,7 @@ def pbo_suite(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # Discrete, unordered.
     dde = ng.optimizers.DifferentialEvolution(crossover="dimension").set_name("DiscreteDE")
     seedg = create_seed_generator(seed)
+    optims = optims_tune()
     for dim in [16, 64, 100]:
         for fid in range(1, 24):
             for iid in range(1, 5):
@@ -1940,24 +1952,10 @@ def pbo_suite(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                         func = iohprofiler.PBOFunction(fid, iid, dim, instrumentation=instrumentation)
                     except ModuleNotFoundError as e:
                         raise fbase.UnsupportedExperiment("IOHexperimenter needs to be installed") from e
-                    for optim in [
-                        "DiscreteOnePlusOne",
-                        "Shiwa",
-                        "CMA",
-                        "PSO",
-                        "TwoPointsDE",
-                        "DE",
-                        "OnePlusOne",
-                        "AdaptiveDiscreteOnePlusOne",
-                        "CMandAS2",
-                        "PortfolioDiscreteOnePlusOne",
-                        "DoubleFastGADiscreteOnePlusOne",
-                        "MultiDiscrete",
-                        "cGA",
-                        dde,
-                    ]:
+                    for optim in optims:
                         for nw in [1, 10]:
                             for budget in [100, 1000, 10000]:
+                              if np.random.randint(8) == 0:
                                 yield Experiment(func, optim, num_workers=nw, budget=budget, seed=next(seedg))  # type: ignore
 
 

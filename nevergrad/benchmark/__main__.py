@@ -11,6 +11,8 @@ from . import utils
 from . import core
 from . import plotting
 
+import warnings
+warnings.filterwarnings("ignore")
 
 # pylint: disable=too-many-arguments
 def launch(

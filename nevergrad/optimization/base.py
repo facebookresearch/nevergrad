@@ -678,14 +678,23 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
 
     def _info(self) -> tp.Dict[str, tp.Any]:
         """Easy access to debug/benchmark info"""
+        all_params = p.helpers.flatten(self.parametrization)
+        arities = [len(param.choices) for _, param in all_params if isinstance(param, p.TransitionChoice)]
+        arity = max(arities, default=500)
+        analysis = p.helpers.analyze(self.parametrization)
+        funcinfo = self.parametrization.function
+        has_noise = not (analysis.deterministic and funcinfo.deterministic)
         vector = (
+            p.helpers.analyze(self.parametrization).continuous,
+            int(np.log10(arity + 8)),
+            has_noise,
             int(np.log10(self.dimension + 8)),
             int(np.log10(self.budget / self.dimension)),
             int(np.log(self.num_objectives + 8)),
             p.helpers.Normalizer(self.parametrization).fully_bounded,
             int(np.log10(self.num_workers + 8)),
         )
-        return {"hex": hash(vector)}
+        return {"hex": "hashtune" + str(hash(vector))}
 
 
 # Adding a comparison-only functionality to an optimizer.
