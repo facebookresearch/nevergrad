@@ -272,7 +272,7 @@ class ArtificialFunction(ExperimentFunction):
         args, kwargs = input_parameter
         assert not kwargs
         if hasattr(self._func, "compute_pseudotime"):
-            data = self._transform(args[0] if len(args) == 1 else np.array(a[0] for a in a).flatten())
+            data = self._transform(np.array(a[0] for a in args))
             total = 0.0
             for block in data:
                 total += self._func.compute_pseudotime(((block,), {}), loss)  # type: ignore
