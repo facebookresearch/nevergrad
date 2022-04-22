@@ -221,7 +221,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
     functions += [
         ArtificialFunction(
-            name, block_dimension=d, rotation=rotation, noise_level=nl, split=split, translation_factor=tf
+            name, block_dimension=d, rotation=rotation, noise_level=nl, split=split, translation_factor=tf, num_blocks=num_blocks
         )
         for name in names  # period 5
         for rotation in [True, False]  # period 2
@@ -686,6 +686,7 @@ def yabbob(
             rotation=rotation,
             noise_level=noise_level,
             split=split,
+            num_blocks=num_blocks,
             bounded=bounded or box,
         )
         for name in names
@@ -714,7 +715,7 @@ def yabbob(
     for func in functions[:: 13 if constraint_case > 0 else 1]:
         # We add a window of the list of constraints. This windows finishes at "constraints" (hence, is empty if
         # constraint_case=0).
-        for constraint in constraints[max(0, constraint_case - max_num_constraints) : constraint_case]:
+        for constraint in constraints[max(0, constraint_case - max_num_constraints): constraint_case]:
             func.parametrization.register_cheap_constraint(constraint)
 
     budgets = (
