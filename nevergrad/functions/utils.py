@@ -34,7 +34,7 @@ class Transform:
         try:
             y: np.ndarray = x[self.indices] - self.translation
         except:
-            assert False, f"{x}[{self.indices}] - {self.translation}"
+            assert False, f"x.dtype={x.dtype} type(x)={type(x)} x.shape={x.shape}   {x}[{self.indices}] - {self.translation}"
         if self.rotation_matrix is not None:
             y = self.rotation_matrix.dot(y)  # type: ignore
         return y
