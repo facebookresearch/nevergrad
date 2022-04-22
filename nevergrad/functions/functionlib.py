@@ -249,7 +249,8 @@ class ArtificialFunction(ExperimentFunction):
         """
         assert len(recommendations) == 1, "Should not be a pareto set for a singleobjective function"
         assert not recommendations[0].kwargs
-        data = recommendations[0].args[0] if len(recommendations[0].args) == 1 else np.array(a for a in recommendations[0].args)
+        assert False, f"{np.array([a for a in recommendations[0].args])}"
+        data = recommendations[0].args[0] if len(recommendations[0].args) == 1 else np.transpose(a for a in recommendations[0].args)
         data = self._transform(data)
         return self.function_from_transform(data)
 
