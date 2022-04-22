@@ -257,6 +257,13 @@ class ArtificialFunction(ExperimentFunction):
         return self.noisy_function(np.array(x).flatten())
 
     def noisy_function(self, x: tp.ArrayLike) -> float:
+        #assert len(recommendations) == 1, "Should not be a pareto set for a singleobjective function"
+        #assert len(recommendations[0].args) == 1 and not recommendations[0].kwargs
+        data = self._transform(np.array(r.args[0] for r in recommendations).flatten())
+        return self.function_from_transform(data)
+
+    def noisy_function(self, *argv: tp.ArrayLike) -> float:
+        x = np.array(argv).flatten()
         return _noisy_call(
             x=np.array(x, copy=False),
             transf=self._transform,
@@ -266,7 +273,7 @@ class ArtificialFunction(ExperimentFunction):
             random_state=self._parametrization.random_state,
         )
 
-    def compute_pseudotime(self, input_parameter: tp.Any, loss: tp.Loss) -> float:
+    def compute_pseudotime(self, *input_parameter: tp.Any, loss: tp.Loss) -> float:
         """Delay before returning results in steady state mode benchmarks (fake execution time)"""
         args, kwargs = input_parameter
         assert not kwargs
