@@ -265,13 +265,12 @@ class ArtificialFunction(ExperimentFunction):
             random_state=self._parametrization.random_state,
         )
 
-    def compute_pseudotime(self, input_parameter: tp.Any, loss: tp.Loss) -> float:
+    def compute_pseudotime(self, input_parameter: tp.ArgsKwargs, loss: tp.Loss) -> float:
         """Delay before returning results in steady state mode benchmarks (fake execution time)"""
         args, kwargs = input_parameter
         assert not kwargs
-        assert len(args) == 1
         if hasattr(self._func, "compute_pseudotime"):
-            data = self._transform(args[0])
+            data = self._transform(np.concatenate(args, axis=0))
             total = 0.0
             for block in data:
                 total += self._func.compute_pseudotime(((block,), {}), loss)  # type: ignore

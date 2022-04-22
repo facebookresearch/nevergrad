@@ -192,7 +192,7 @@ class ExperimentFunction:
         return output
 
     def compute_pseudotime(  # pylint: disable=unused-argument
-        self, input_parameter: tp.Any, loss: tp.Loss
+        self, input_parameter: tp.ArgsKwargs, loss: tp.Loss
     ) -> float:
         """Computes a pseudotime used during benchmarks for mocking parallelization in a reproducible way.
         By default, each call takes 1 unit of pseudotime, but this can be modified by overriding this
