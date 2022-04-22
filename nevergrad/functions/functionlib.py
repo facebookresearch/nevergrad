@@ -254,7 +254,7 @@ class ArtificialFunction(ExperimentFunction):
         return self.function_from_transform(data)
 
     def noisy_function(self, *argv: tp.ArrayLike) -> float:
-        x = np.array(argv).flatten()
+        x = np.array(argv)
         return _noisy_call(
             x=np.array(x, copy=False),
             transf=self._transform,
