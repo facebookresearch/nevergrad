@@ -31,7 +31,10 @@ class Transform:
             self.rotation_matrix = np.linalg.qr(random_state.normal(0, 1, size=(dim, dim)))[0]
 
     def __call__(self, x: np.ndarray) -> np.ndarray:
-        y: np.ndarray = x[self.indices] - self.translation
+        try:
+            y: np.ndarray = x[self.indices] - self.translation
+        except:
+            assert False, f"{x}[{self.indices}] - {self.translation}"
         if self.rotation_matrix is not None:
             y = self.rotation_matrix.dot(y)  # type: ignore
         return y
