@@ -221,7 +221,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
     functions += [
         ArtificialFunction(
-            name, block_dimension=d, rotation=rotation, noise_level=nl, split=split, translation_factor=tf
+            name, block_dimension=d, num_blocks=num_blocks, rotation=rotation, noise_level=nl, split=split, translation_factor=tf
         )
         for name in names  # period 5
         for rotation in [True, False]  # period 2
@@ -683,6 +683,7 @@ def yabbob(
         ArtificialFunction(
             name,
             block_dimension=d,
+            num_blocks =  num_blocks,
             rotation=rotation,
             noise_level=noise_level,
             split=split,
