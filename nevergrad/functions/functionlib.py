@@ -219,9 +219,8 @@ class ArtificialFunction(ExperimentFunction):
 
     @property
     def dimension(self) -> int:
-        return (
-            self._dimension
-        )  # bypass the parametrization one (because of the "hashing" case)  # TODO: remove
+        # bypass the parametrization one (because of the "hashing" case)  # TODO: remove
+        return self._dimension  
 
     @staticmethod
     def list_sorted_function_names() -> tp.List[str]:
