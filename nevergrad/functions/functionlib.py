@@ -191,7 +191,7 @@ class ArtificialFunction(ExperimentFunction):
             parametrization.set_name("split")
         if noise_level > 0:
             parametrization.function.deterministic = False
-        super().__init__(self.noisy_function, parametrization)
+        super().__init__(self.noisy_function if not split else self.split_noisy_function, parametrization)
         # variable, must come after super().__init__(...) to bind the random_state
         # may consider having its a local random_state instead but less reproducible
         self.transform_var = ArtificialVariable(
@@ -247,6 +247,16 @@ class ArtificialFunction(ExperimentFunction):
         """Implements the call of the function.
         Under the hood, __call__ delegates to oracle_call + add some noise if noise_level > 0.
         """
+        assert len(recommendations) == 1, "Should not be a pareto set for a singleobjective function"
+        assert not recommendations[0].kwargs
+        data = recommendations[0].args[0] if len(recommendations[0].args) == 1 else np.array(a for a in recommendations[0].args)
+        data = self._transform(data)
+        return self.function_from_transform(data)
+
+    def split_noisy_function(self, *x: tp.ArrayLike) -> float:
+        return self.noisy_function(np.array(x).flatten())
+
+    def noisy_function(self, x: tp.ArrayLike) -> float:
         #assert len(recommendations) == 1, "Should not be a pareto set for a singleobjective function"
         #assert len(recommendations[0].args) == 1 and not recommendations[0].kwargs
         data = self._transform(np.array(r.args[0] for r in recommendations).flatten())
@@ -267,9 +277,8 @@ class ArtificialFunction(ExperimentFunction):
         """Delay before returning results in steady state mode benchmarks (fake execution time)"""
         args, kwargs = input_parameter
         assert not kwargs
-        assert len(args) == 1
         if hasattr(self._func, "compute_pseudotime"):
-            data = self._transform(np.array(arg[0] for arg in args).flatten())
+            data = self._transform(args[0] if len(args) == 1 else np.array(a[0] for a in a).flatten())
             total = 0.0
             for block in data:
                 total += self._func.compute_pseudotime(((block,), {}), loss)  # type: ignore
