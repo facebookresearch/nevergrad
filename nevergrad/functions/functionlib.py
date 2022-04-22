@@ -249,18 +249,12 @@ class ArtificialFunction(ExperimentFunction):
         """
         assert len(recommendations) == 1, "Should not be a pareto set for a singleobjective function"
         assert not recommendations[0].kwargs
-        data = recommendations[0].args[0] if len(recommendations[0].args) == 1 else np.transpose(a for a in recommendations[0].args)
+        data = recommendations[0].args[0] if len(recommendations[0].args) == 1 else np.array(a for a in recommendations[0].args)
         data = self._transform(data)
         return self.function_from_transform(data)
 
     def split_noisy_function(self, *x: tp.ArrayLike) -> float:
         return self.noisy_function(np.array(x).flatten())
-
-    def noisy_function(self, x: tp.ArrayLike) -> float:
-        #assert len(recommendations) == 1, "Should not be a pareto set for a singleobjective function"
-        #assert len(recommendations[0].args) == 1 and not recommendations[0].kwargs
-        data = self._transform(np.array(r.args[0] for r in recommendations).flatten())
-        return self.function_from_transform(data)
 
     def noisy_function(self, *argv: tp.ArrayLike) -> float:
         x = np.array(argv).flatten()
