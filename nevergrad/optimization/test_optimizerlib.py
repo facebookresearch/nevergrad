@@ -417,7 +417,7 @@ def test_optimization_discrete_with_one_sample() -> None:
 
 def test_smooth_discrete_one_plus_one() -> None:
     n = 45
-    d = 22
+    d = 25
     budget = d * d // 2
     parametrization = ng.p.Array(shape=(d, d), upper=1.0, lower=-1.0)
     values = []
