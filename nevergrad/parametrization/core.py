@@ -401,9 +401,7 @@ class Parameter(Layered):
         self._subobjects.apply("_check_frozen")
 
 
-# Basic types and helpers #
-
-
+# Basic types #
 class Constant(Parameter):
     """Parameter-like object for simplifying management of constant parameters:
     mutation/recombination do nothing, value cannot be changed, standardize data is an empty array,

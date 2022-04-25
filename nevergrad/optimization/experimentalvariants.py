@@ -338,6 +338,21 @@ SparseDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete", sparse=Tr
     "SparseDiscreteOnePlusOne", register=True
 )
 
+# Smooth variants of evolutionary algorithms.
+SmoothDiscreteOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="discrete").set_name(
+    "SmoothDiscreteOnePlusOne", register=True
+)
+SmoothPortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="portfolio").set_name(
+    "SmoothPortfolioDiscreteOnePlusOne", register=True
+)
+SmoothDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="lengler").set_name(
+    "SmoothDiscreteLenglerOnePlusOne", register=True
+)
+
+SmoothAdaptiveDiscreteOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="adaptive").set_name(
+    "SmoothAdaptiveDiscreteOnePlusOne", register=True
+)
+
 # Specifically for RL.
 MixDeterministicRL = ConfPortfolio(optimizers=[DiagonalCMA, PSO, GeneticDE]).set_name(
     "MixDeterministicRL", register=True

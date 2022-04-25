@@ -111,7 +111,7 @@ def check_optimizer(
             ) from e
     else:
         assert optimizer.num_tell == budget + 1
-        assert optimizer.num_tell_not_asked == 1
+        assert optimizer.num_tell_not_asked == 1 or "Smooth" in str(optimizer_cls)
 
 
 SLOW = [
@@ -388,6 +388,18 @@ def _square(x: np.ndarray, y: float = 12) -> float:
     return sum((x - 0.5) ** 2) + abs(y)
 
 
+def _smooth_target(x: np.ndarray) -> float:
+    result = 0.0
+    d = len(x)
+    for h in range(d):
+        for v in range(d):
+            val = x[h][v]
+            assert np.abs(val) <= 1.0
+            target = h / d - v / d
+            result += 1.0 if np.abs(target - val) > 0.1 else 0.0
+    return result
+
+
 def test_optimization_doc_parametrization_example() -> None:
     instrum = ng.p.Instrumentation(ng.p.Array(shape=(2,)), y=ng.p.Scalar())
     optimizer = optlib.OnePlusOne(parametrization=instrum, budget=100)
@@ -401,6 +413,25 @@ def test_optimization_doc_parametrization_example() -> None:
 def test_optimization_discrete_with_one_sample() -> None:
     optimizer = optlib.PortfolioDiscreteOnePlusOne(parametrization=1, budget=10)
     optimizer.minimize(_square)
+
+
+def test_smooth_discrete_one_plus_one() -> None:
+    n = 45
+    d = 25
+    budget = d * d // 2
+    parametrization = ng.p.Array(shape=(d, d), upper=1.0, lower=-1.0)
+    values = []
+    values_smooth = []
+    for _ in range(n):
+        optimizer = xpvariants.SmoothDiscreteOnePlusOne(parametrization=parametrization, budget=budget)
+        recom_smooth = optimizer.minimize(_smooth_target).value
+        optimizer = optlib.DiscreteOnePlusOne(parametrization=parametrization, budget=budget)
+        recom = optimizer.minimize(_smooth_target).value
+        values_smooth += [_smooth_target(recom_smooth)]
+        values += [_smooth_target(recom)]
+    pval = stats.mannwhitneyu(values_smooth, values, alternative="less").pvalue
+    print(f"pval={pval}")
+    assert pval < 0.4, f"P-Value for smooth methods = {pval}."
 
 
 @pytest.mark.parametrize("name", ["TBPSA", "PSO", "TwoPointsDE", "CMA", "BO"])  # type: ignore
@@ -908,3 +939,16 @@ def test_pymoo_batched() -> None:
             loss = losses.pop()
             optimizer.tell(x, loss)
     assert len(optimizer._current_batch) == 0  # type: ignore
+
+
+def test_smoother() -> None:
+    x = ng.p.Array(shape=(5, 5))
+    assert (
+        optlib.smooth_copy(x).get_standardized_data(reference=x).shape
+        == x.get_standardized_data(reference=x).shape
+    )
+    x = ng.p.Array(shape=(5, 5)).set_integer_casting()
+    assert (
+        optlib.smooth_copy(x).get_standardized_data(reference=x).shape
+        == x.get_standardized_data(reference=x).shape
+    )
