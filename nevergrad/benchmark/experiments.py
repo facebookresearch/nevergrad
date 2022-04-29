@@ -363,18 +363,9 @@ def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
             for instrum_str in ["Unordered", "Softmax", "Ordered"]:
                 if instrum_str == "Softmax":
                     instrum: ng.p.Parameter = ng.p.Choice(range(arity), repetitions=nv)
-                    # Equivalent to, but much faster than, the following:
-                    # instrum = ng.p.Tuple(*(ng.p.Choice(range(arity)) for _ in range(nv)))
-                #                 else:
-                #                     assert instrum_str == "Threshold"
-                #                     # instrum = ng.p.Tuple(*(ng.p.TransitionChoice(range(arity)) for _ in range(nv)))
-                #                     init = np.random.RandomState(seed=next(seedg)).uniform(-0.5, arity -0.5, size=nv)
-                #                     instrum = ng.p.Array(init=init).set_bounds(-0.5, arity -0.5)  # type: ignore
-                elif instrum_str == "Ordered":
-                    instrum = ng.p.TransitionChoice(range(arity), repetitions=nv, ordered=True)
                 else:
-                    assert instrum_str == "Unordered"
-                    instrum = ng.p.TransitionChoice(range(arity), repetitions=nv, ordered=False)
+                    assert instrum_str in ("Ordered", "Unordered"):
+                    instrum = ng.p.TransitionChoice(range(arity), repetitions=nv, ordered=instrum_str == "Ordered")
                 for name in ["onemax", "leadingones", "jump"]:
                     dfunc = ExperimentFunction(
                         corefuncs.DiscreteFunction(name, arity), instrum.set_name(instrum_str)
