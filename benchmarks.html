@@ -605,7 +605,7 @@ Budget 100 to 3200</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="nevergrad.benchmark.experiments.naive_seq_mltuning">
 <span class="sig-prename descclassname"><span class="pre">nevergrad.benchmark.experiments.</span></span><span class="sig-name descname"><span class="pre">naive_seq_mltuning</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterator</span><span class="p"><span class="pre">[</span></span><span class="pre">nevergrad.benchmark.xpbase.Experiment</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#nevergrad.benchmark.experiments.naive_seq_mltuning" title="Permalink to this definition"></a></dt>
-<dd><p>Sequential counterpart of mltuning with overfitting of valid loss, i.e. train/valid/valid instead of train/valid/test.</p>
+<dd><p>Iterative counterpart of mltuning with overfitting of valid loss, i.e. train/valid/valid instead of train/valid/test.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -617,14 +617,14 @@ Budget 100 to 3200</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="nevergrad.benchmark.experiments.nano_naive_seq_mltuning">
 <span class="sig-prename descclassname"><span class="pre">nevergrad.benchmark.experiments.</span></span><span class="sig-name descname"><span class="pre">nano_naive_seq_mltuning</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterator</span><span class="p"><span class="pre">[</span></span><span class="pre">nevergrad.benchmark.xpbase.Experiment</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#nevergrad.benchmark.experiments.nano_naive_seq_mltuning" title="Permalink to this definition"></a></dt>
-<dd><p>Sequential counterpart of mltuning with overfitting of valid loss, i.e. train/valid/valid instead of train/valid/test,
+<dd><p>Iterative counterpart of mltuning with overfitting of valid loss, i.e. train/valid/valid instead of train/valid/test,
 and with lower budget.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="nevergrad.benchmark.experiments.nano_seq_mltuning">
 <span class="sig-prename descclassname"><span class="pre">nevergrad.benchmark.experiments.</span></span><span class="sig-name descname"><span class="pre">nano_seq_mltuning</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterator</span><span class="p"><span class="pre">[</span></span><span class="pre">nevergrad.benchmark.xpbase.Experiment</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#nevergrad.benchmark.experiments.nano_seq_mltuning" title="Permalink to this definition"></a></dt>
-<dd><p>Sequential counterpart of seq_mltuning with smaller budget.</p>
+<dd><p>Iterative counterpart of seq_mltuning with smaller budget.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -793,13 +793,13 @@ Sequential or 30 workers.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="nevergrad.benchmark.experiments.seq_keras_tuning">
 <span class="sig-prename descclassname"><span class="pre">nevergrad.benchmark.experiments.</span></span><span class="sig-name descname"><span class="pre">seq_keras_tuning</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterator</span><span class="p"><span class="pre">[</span></span><span class="pre">nevergrad.benchmark.xpbase.Experiment</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#nevergrad.benchmark.experiments.seq_keras_tuning" title="Permalink to this definition"></a></dt>
-<dd><p>Sequential counterpart of keras tuning.</p>
+<dd><p>Iterative counterpart of keras tuning.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="nevergrad.benchmark.experiments.seq_mltuning">
 <span class="sig-prename descclassname"><span class="pre">nevergrad.benchmark.experiments.</span></span><span class="sig-name descname"><span class="pre">seq_mltuning</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterator</span><span class="p"><span class="pre">[</span></span><span class="pre">nevergrad.benchmark.xpbase.Experiment</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#nevergrad.benchmark.experiments.seq_mltuning" title="Permalink to this definition"></a></dt>
-<dd><p>Sequential counterpart of mltuning.</p>
+<dd><p>Iterative counterpart of mltuning.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -875,7 +875,7 @@ Both rotated or not rotated.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="nevergrad.benchmark.experiments.yaboundedbbob">
 <span class="sig-prename descclassname"><span class="pre">nevergrad.benchmark.experiments.</span></span><span class="sig-name descname"><span class="pre">yaboundedbbob</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterator</span><span class="p"><span class="pre">[</span></span><span class="pre">nevergrad.benchmark.xpbase.Experiment</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#nevergrad.benchmark.experiments.yaboundedbbob" title="Permalink to this definition"></a></dt>
-<dd><p>Counterpart of yabbob with bounded domain, (-5,5)**n by default.</p>
+<dd><p>Counterpart of yabbob with bounded domain and dim only 40, (-5,5)**n by default.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -917,7 +917,7 @@ Both rotated or not rotated.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="nevergrad.benchmark.experiments.yahdsplitbbob">
 <span class="sig-prename descclassname"><span class="pre">nevergrad.benchmark.experiments.</span></span><span class="sig-name descname"><span class="pre">yahdsplitbbob</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterator</span><span class="p"><span class="pre">[</span></span><span class="pre">nevergrad.benchmark.xpbase.Experiment</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#nevergrad.benchmark.experiments.yahdsplitbbob" title="Permalink to this definition"></a></dt>
-<dd><p>Counterpart of yabbob with more budget.</p>
+<dd><p>Counterpart of yasplitbbob with more dimension.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -950,19 +950,19 @@ This is different from the original BBOB/COCO from that point of view.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="nevergrad.benchmark.experiments.yasplitbbob">
 <span class="sig-prename descclassname"><span class="pre">nevergrad.benchmark.experiments.</span></span><span class="sig-name descname"><span class="pre">yasplitbbob</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterator</span><span class="p"><span class="pre">[</span></span><span class="pre">nevergrad.benchmark.xpbase.Experiment</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#nevergrad.benchmark.experiments.yasplitbbob" title="Permalink to this definition"></a></dt>
-<dd><p>Counterpart of yabbob with more budget.</p>
+<dd><p>Counterpart of yabbob with splitting info in the instrumentation.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="nevergrad.benchmark.experiments.yatinybbob">
 <span class="sig-prename descclassname"><span class="pre">nevergrad.benchmark.experiments.</span></span><span class="sig-name descname"><span class="pre">yatinybbob</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterator</span><span class="p"><span class="pre">[</span></span><span class="pre">nevergrad.benchmark.xpbase.Experiment</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#nevergrad.benchmark.experiments.yatinybbob" title="Permalink to this definition"></a></dt>
-<dd><p>Counterpart of yabbob with less budget.</p>
+<dd><p>Counterpart of yabbob with less budget and less xps.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="nevergrad.benchmark.experiments.yatuningbbob">
 <span class="sig-prename descclassname"><span class="pre">nevergrad.benchmark.experiments.</span></span><span class="sig-name descname"><span class="pre">yatuningbbob</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterator</span><span class="p"><span class="pre">[</span></span><span class="pre">nevergrad.benchmark.xpbase.Experiment</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#nevergrad.benchmark.experiments.yatuningbbob" title="Permalink to this definition"></a></dt>
-<dd><p>Counterpart of yabbob with less budget.</p>
+<dd><p>Counterpart of yabbob with less budget and less dimension.</p>
 </dd></dl>
 
 <dl class="py function">
