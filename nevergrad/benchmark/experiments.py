@@ -149,7 +149,7 @@ def naivemltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 # We register only the sequential counterparts for the moment.
 @registry.register
 def seq_keras_tuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Sequential counterpart of keras tuning."""
+    """Iterative counterpart of keras tuning."""
     return keras_tuning(seed, overfitter=False, seq=True)
 
 
@@ -169,26 +169,26 @@ def oneshot_mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 # We register only the (almost) sequential counterparts for the moment.
 @registry.register
 def seq_mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Sequential counterpart of mltuning."""
+    """Iterative counterpart of mltuning."""
     return mltuning(seed, overfitter=False, seq=True)
 
 
 @registry.register
 def nano_seq_mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Sequential counterpart of seq_mltuning with smaller budget."""
+    """Iterative counterpart of seq_mltuning with smaller budget."""
     return mltuning(seed, overfitter=False, seq=True, nano=True)
 
 
 @registry.register
 def nano_naive_seq_mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Sequential counterpart of mltuning with overfitting of valid loss, i.e. train/valid/valid instead of train/valid/test,
+    """Iterative counterpart of mltuning with overfitting of valid loss, i.e. train/valid/valid instead of train/valid/test,
     and with lower budget."""
     return mltuning(seed, overfitter=True, seq=True, nano=True)
 
 
 @registry.register
 def naive_seq_mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Sequential counterpart of mltuning with overfitting of valid loss, i.e. train/valid/valid instead of train/valid/test."""
+    """Iterative counterpart of mltuning with overfitting of valid loss, i.e. train/valid/valid instead of train/valid/test."""
     return mltuning(seed, overfitter=True, seq=True)
 
 
@@ -366,19 +366,14 @@ def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     optims = get_optimizers("small_discrete", seed=next(seedg))
     for nv in [10, 50, 200, 1000, 5000]:
         for arity in [2, 3, 7, 30]:
-            for instrum_str in ["Unordered", "Softmax"]:
+            for instrum_str in ["Unordered", "Softmax", "Ordered"]:
                 if instrum_str == "Softmax":
                     instrum: ng.p.Parameter = ng.p.Choice(range(arity), repetitions=nv)
-                    # Equivalent to, but much faster than, the following:
-                    # instrum = ng.p.Tuple(*(ng.p.Choice(range(arity)) for _ in range(nv)))
-                #                 else:
-                #                     assert instrum_str == "Threshold"
-                #                     # instrum = ng.p.Tuple(*(ng.p.TransitionChoice(range(arity)) for _ in range(nv)))
-                #                     init = np.random.RandomState(seed=next(seedg)).uniform(-0.5, arity -0.5, size=nv)
-                #                     instrum = ng.p.Array(init=init).set_bounds(-0.5, arity -0.5)  # type: ignore
                 else:
-                    assert instrum_str == "Unordered"
-                    instrum = ng.p.TransitionChoice(range(arity), repetitions=nv)
+                    assert instrum_str in ("Ordered", "Unordered")
+                    instrum = ng.p.TransitionChoice(
+                        range(arity), repetitions=nv, ordered=instrum_str == "Ordered"
+                    )
                 for name in ["onemax", "leadingones", "jump"]:
                     dfunc = ExperimentFunction(
                         corefuncs.DiscreteFunction(name, arity), instrum.set_name(instrum_str)
@@ -401,9 +396,13 @@ def sequential_instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Ex
     optims = get_optimizers("discrete", seed=next(seedg))
     for nv in [10, 50, 200, 1000, 5000]:
         for arity in [2, 3, 7, 30]:
-            for instrum_str in ["Unordered"]:
-                assert instrum_str == "Unordered"
-                instrum = ng.p.TransitionChoice(range(arity), repetitions=nv)
+            for instrum_str in ["Unordered", "Softmax", "Ordered"]:
+                if instrum_str == "Softmax":
+                    instrum: ng.p.Parameter = ng.p.Choice(range(arity), repetitions=nv)
+                else:
+                    instrum = ng.p.TransitionChoice(
+                        range(arity), repetitions=nv, ordered=instrum_str == "Ordered"
+                    )
                 for name in ["onemax", "leadingones", "jump"]:
                     dfunc = ExperimentFunction(
                         corefuncs.DiscreteFunction(name, arity), instrum.set_name(instrum_str)
@@ -789,25 +788,25 @@ def yabigbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 @registry.register
 def yasplitbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Counterpart of yabbob with more budget."""
+    """Counterpart of yabbob with splitting info in the instrumentation."""
     return yabbob(seed, parallel=False, split=True)
 
 
 @registry.register
 def yahdsplitbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Counterpart of yabbob with more budget."""
+    """Counterpart of yasplitbbob with more dimension."""
     return yabbob(seed, hd=True, split=True)
 
 
 @registry.register
 def yatuningbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Counterpart of yabbob with less budget."""
+    """Counterpart of yabbob with less budget and less dimension."""
     return yabbob(seed, parallel=False, big=False, small=True, reduction_factor=13, tuning=True)
 
 
 @registry.register
 def yatinybbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Counterpart of yabbob with less budget."""
+    """Counterpart of yabbob with less budget and less xps."""
     return yabbob(seed, parallel=False, big=False, small=True, reduction_factor=13)
 
 
@@ -841,7 +840,7 @@ def yanoisybbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 @registry.register
 def yaboundedbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Counterpart of yabbob with bounded domain, (-5,5)**n by default."""
+    """Counterpart of yabbob with bounded domain and dim only 40, (-5,5)**n by default."""
     return yabbob(seed, bounded=True)
 
 
