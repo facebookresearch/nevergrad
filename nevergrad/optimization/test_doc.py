@@ -54,8 +54,10 @@ def test_base_example() -> None:
     from concurrent import futures
 
     optimizer = ng.optimizers.NGOpt(parametrization=instrum, budget=10, num_workers=2)
-
-    with futures.ProcessPoolExecutor(max_workers=optimizer.num_workers) as executor:
+    # We use ThreadPoolExecutor for CircleCI but please
+    # use the line below:
+    with futures.ThreadPoolExecutor(max_workers=optimizer.num_workers) as executor:
+    #with futures.ProcessPoolExecutor(max_workers=optimizer.num_workers) as executor:
         recommendation = optimizer.minimize(square, executor=executor, batch_mode=False)
     # DOC_BASE_3
     import nevergrad as ng
