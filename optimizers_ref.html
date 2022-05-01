@@ -175,7 +175,7 @@ in some optimizers.</p>
 <li><p><strong>executor</strong> (<em>Executor</em>) – An executor object, with method <code class="code docutils literal notranslate"><span class="pre">submit(callable,</span> <span class="pre">*args,</span> <span class="pre">**kwargs)</span></code> and returning a Future-like object
 with methods <code class="code docutils literal notranslate"><span class="pre">done()</span> <span class="pre">-&gt;</span> <span class="pre">bool</span></code> and <code class="code docutils literal notranslate"><span class="pre">result()</span> <span class="pre">-&gt;</span> <span class="pre">float</span></code>. The executor role is to dispatch the execution of
 the jobs locally/on a cluster/with multithreading depending on the implementation.
-Eg: <code class="code docutils literal notranslate"><span class="pre">concurrent.futures.ThreadPoolExecutor</span></code></p></li>
+Eg: <code class="code docutils literal notranslate"><span class="pre">concurrent.futures.ProcessPoolExecutor</span></code></p></li>
 <li><p><strong>batch_mode</strong> (<em>bool</em>) – when <code class="code docutils literal notranslate"><span class="pre">num_workers</span> <span class="pre">=</span> <span class="pre">n</span> <span class="pre">&gt;</span> <span class="pre">1</span></code>, whether jobs are executed by batch (<code class="code docutils literal notranslate"><span class="pre">n</span></code> function evaluations are launched,
 we wait for all results and relaunch n evals) or not (whenever an evaluation is finished, we launch
 another one)</p></li>
