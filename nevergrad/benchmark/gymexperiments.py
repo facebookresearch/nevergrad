@@ -5,7 +5,6 @@
 
 import os
 import typing as tp
-import nevergrad as ng
 from nevergrad.functions import gym as nevergrad_gym
 from nevergrad.functions import ExperimentFunction
 from .xpbase import registry
@@ -79,37 +78,20 @@ def ng_full_gym(
     if ng_gym:
         env_names = nevergrad_gym.GymMulti.ng_gym
     if gp:
-        try:
-            import pybullet  # pylint: disable=unused-import
-            import pybullet_envs  # pylint: disable=unused-import
+        import pybullet_envs  # pylint: disable=unused-import
 
-            import pybulletgym  # pylint: disable=unused-import
-            import pyvirtualdisplay
-
-            # I deserve eternal damnation for this hack:
-            pyvirtualdisplay.Display(visible=0, size=(1400, 900)).start()
-            env_names = [
-                "CartPole-v1",
-                "Acrobot-v1",
-                "MountainCarContinuous-v0",
-                "Pendulum-v1",
-                "InvertedPendulumSwingupBulletEnv-v0",
-                "BipedalWalker-v3",
-                "BipedalWalkerHardcore-v3",
-                "HopperBulletEnv-v0",
-                "InvertedDoublePendulumBulletEnv-v0",
-                "LunarLanderContinuous-v2",
-            ]
-        except:
-            print("Pybullet not installed. If you need it, please do something like:")
-            print("pip install pybullet")
-            print("pip install pyvirtualdisplay")
-            print("pip install git+https://github.com/benelot/pybullet-gym")
-            if os.environ.get("CIRCLECI", False):
-                raise ng.errors.UnsupportedExperiment(
-                    "No pybullet in CircleCI because pybulletgym is not in pypi!"
-                )
-            raise ImportError("Please install pybullet, pyvirtualdisplay and pybulletgym.")
+        env_names = [
+            "CartPole-v1",
+            "Acrobot-v1",
+            "MountainCarContinuous-v0",
+            "Pendulum-v1",
+            "InvertedPendulumSwingupBulletEnv-v0",
+            "BipedalWalker-v3",
+            "BipedalWalkerHardcore-v3",
+            "HopperBulletEnv-v0",
+            "InvertedDoublePendulumBulletEnv-v0",
+            "LunarLanderContinuous-v2",
+        ]
 
     seedg = create_seed_generator(seed)
     optims = [

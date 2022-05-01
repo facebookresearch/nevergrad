@@ -313,8 +313,13 @@ class GymMulti(ExperimentFunction):
         max_displays = 10
         for e in gym.envs.registry.all():
             try:
-                assert "Kelly" not in str(e.id)  # We should have another check than that.
-                assert "llvm" not in str(e.id)  # We should have another check than that.
+                assert not any(
+                    x in str(e.id) for x in "Kelly llvm BulletEnv Minitaur Kuka".split()
+                )  # We should have another check than that.
+                assert (
+                    "RacecarZedBulletEnv-v0" != e.id
+                ), "This specific environment causes X11 error when using pybullet_envs."
+                assert "CarRacing-v" not in str(e.id), "Pixel based task not supported yet"
                 env = gym.make(e.id)
                 env.reset()
                 env.step(env.action_space.sample())
