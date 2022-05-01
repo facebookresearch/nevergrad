@@ -90,6 +90,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # you can also replace or reinitialize this random state
         self.num_workers = int(num_workers)
         self.budget = budget
+        self.last_best_modification = -1
 
         # How do we deal with cheap constraints i.e. constraints which are fast and use low resources and easy ?
         # True ==> we penalize them (infinite values for candidates which violate the constraint).
@@ -139,6 +140,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # the hypervolume of the pareto front as the loss.
         # If not needed, an optimizer can set this to True.
         self._no_hypervolume = False
+
+    def stagnation_rate() -> float:
+        # Returns .5 if the last 50% of the run did not improve any "best" criterion.
+        return (self.num_tell - self.last_best_modification) / self.num_tell
 
     def _warn(self, msg: str, e: tp.Any) -> None:
         """Warns only once per warning type"""
@@ -424,6 +429,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             else:
                 if self.archive[x].get_estimation(name) <= self.current_bests[name].get_estimation(name):
                     self.current_bests[name] = self.archive[x]
+                    self.last_best_modification = self.num_tell
                 # deactivated checks
                 # if not (np.isnan(loss) or loss == np.inf):
                 #     if not self.current_bests[name].x in self.archive:
