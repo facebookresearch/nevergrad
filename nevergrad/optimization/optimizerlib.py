@@ -8,6 +8,7 @@ import itertools
 from collections import deque
 import warnings
 import numpy as np
+import scipy.ndimage as ndimage
 from bayes_opt import UtilityFunction
 from bayes_opt import BayesianOptimization
 import nevergrad.common.typing as tp
@@ -46,6 +47,20 @@ logger = logging.getLogger(__name__)
 # # # # # optimizers # # # # #
 
 
+def smooth_copy(array: p.Array, possible_radii: tp.List[int] = None) -> p.Array:
+    candidate = array.spawn_child()
+    if possible_radii is None:
+        possible_radii = [3]
+    value = candidate._value
+    radii = [array.random_state.choice(possible_radii) for _ in value.shape]
+    value2 = ndimage.convolve(value, np.ones(radii) / np.prod(radii))
+    # DE style operator.
+    indices = array.random_state.randint(4, size=value.shape) == 0
+    value[indices] = value2[indices]
+    candidate._value = value
+    return candidate
+
+
 class _OnePlusOne(base.Optimizer):
     """Simple but sometimes powerful optimization algorithm.
 
@@ -55,8 +70,9 @@ class _OnePlusOne(base.Optimizer):
     performs quite well in such a context - this is naturally close to 1+lambda.
 
     Posssible mutations include gaussian and cauchy for the continuous case, and in the discrete case:
-    discrete, fastga, doublefastga, adaptive, portfolio, discreteBSO, doerr.
+    discrete, fastga, rls, doublefastga, adaptive, portfolio, discreteBSO, doerr.
     - discrete is the most classical discrete mutation operator,
+    - rls is the Randomized Local Search,
     - doubleFastGA is an adaptation of FastGA to arity > 2, Portfolio corresponds to random mutation rates,
     - discreteBSO corresponds to a decreasing schedule of mutation rate.
     - adaptive and doerr correspond to various self-adaptive mutation rates.
@@ -75,17 +91,18 @@ class _OnePlusOne(base.Optimizer):
         rotation: bool = False,
         use_pareto: bool = False,
         sparse: tp.Union[bool, int] = False,
+        smoother: bool = False,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         assert crossover or (not rotation), "We can not have both rotation and not crossover."
         self._sigma: float = 1
         self._previous_best_loss = float("inf")
         self.use_pareto = use_pareto
+        self.smoother = smoother
         self.sparse = int(sparse)  # True --> 1
         all_params = p.helpers.flatten(self.parametrization)
-        arity = max(
-            len(param.choices) if isinstance(param, p.TransitionChoice) else 500 for _, param in all_params
-        )
+        arities = [len(param.choices) for _, param in all_params if isinstance(param, p.TransitionChoice)]
+        arity = max(arities, default=500)
         self.arity_for_discrete_mutation = arity
         # configuration
         if noise_handling is not None:
@@ -108,6 +125,7 @@ class _OnePlusOne(base.Optimizer):
             "cauchy",
             "discrete",
             "fastga",
+            "rls",
             "doublefastga",
             "adaptive",
             "coordinatewise_adaptive",
@@ -163,6 +181,12 @@ class _OnePlusOne(base.Optimizer):
         # crossover
         mutator = mutations.Mutator(self._rng)
         pessimistic = self.current_bests["pessimistic"].parameter.spawn_child()
+        if (
+            self.smoother
+            and self._num_ask % max(self.num_workers + 1, 55) == 0
+            and isinstance(self.parametrization, p.Array)
+        ):
+            self.suggest(smooth_copy(pessimistic).value)  # type: ignore
         if self.num_objectives > 1 and self.use_pareto:  # multiobjective
             # revert to using a sample of the pareto front (not "pessimistic" though)
             pareto = (
@@ -250,6 +274,7 @@ class _OnePlusOne(base.Optimizer):
                     "discrete": mutator.discrete_mutation,
                     "fastga": mutator.doerr_discrete_mutation,
                     "doublefastga": mutator.doubledoerr_discrete_mutation,
+                    "rls": mutator.rls_mutation,
                     "portfolio": mutator.portfolio_discrete_mutation,
                 }[mutation]
                 data = func(pessimistic_data, arity=self.arity_for_discrete_mutation)
@@ -316,6 +341,7 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
         - `"discreteBSO"`: as in brainstorm optimization, we slowly decrease the mutation rate from 1 to 1/d.
         - `"fastga"`: FastGA mutations from the current best
         - `"doublefastga"`: double-FastGA mutations from the current best (Doerr et al, Fast Genetic Algorithms, 2017)
+        - `"rls"`: Randomized Local Search (randomly mutate one and only one variable).
         - `"portfolio"`: Random number of mutated bits (called niform mixing in
           Dang & Lehre "Self-adaptation of Mutation Rates in Non-elitist Population", 2016)
         - `"lengler"`: specific mutation rate chosen as a function of the dimension and iteration index.
@@ -323,8 +349,10 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
         whether to add a genetic crossover step every other iteration.
     use_pareto: bool
         whether to restart from a random pareto element in multiobjective mode, instead of the last one added
-    sparsse: bool
+    sparse: bool
         whether we have random mutations setting variables to 0.
+    smoother: bool
+        whether we suggest smooth mutations.
 
     Notes
     -----
@@ -345,6 +373,7 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
         rotation: bool = False,
         use_pareto: bool = False,
         sparse: bool = False,
+        smoother: bool = False,
     ) -> None:
         super().__init__(_OnePlusOne, locals())
 
@@ -386,6 +415,7 @@ NoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
 DoubleFastGADiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="doublefastga").set_name(
     "DoubleFastGADiscreteOnePlusOne", register=True
 )
+RLSOnePlusOne = ParametrizedOnePlusOne(mutation="rls").set_name("RLSOnePlusOne", register=True)
 SparseDoubleFastGADiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="doublefastga", sparse=True).set_name(
     "SparseDoubleFastGADiscreteOnePlusOne", register=True
 )
@@ -1417,6 +1447,7 @@ class Portfolio(base.Optimizer):
             self._current += 1
             optim_index = self._current % len(self.optims)
             opt = self.optims[optim_index]
+
             if opt.num_workers > opt.num_ask - (opt.num_tell - opt.num_tell_not_asked):
                 break  # if there are workers left, use this optimizer
             if k > num:
@@ -1425,6 +1456,10 @@ class Portfolio(base.Optimizer):
         if optim_index is None:
             raise RuntimeError("Something went wrong in optimizer selection")
         opt = self.optims[optim_index]
+        if optim_index > 1 and not opt.num_ask and not opt._suggestions and not opt.num_tell:
+            # most algorithms start at 0, lets avoid that for all but the first if they have no information
+            opt._suggestions.append(self.parametrization.sample())
+            # (hacky suggestion to avoid calling args and kwargs)
         candidate = opt.ask()
         candidate._meta["optim_index"] = optim_index
         return candidate
@@ -2532,12 +2567,12 @@ class NGOpt4(NGOptBase):
                                             if (
                                                 self.dimension > 40
                                                 and num_workers > self.dimension
-                                                and budget < 7 * self.dimension ** 2
+                                                and budget < 7 * self.dimension**2
                                             ):
                                                 optimClass = DiagonalCMA
                                             elif (
-                                                3 * num_workers > self.dimension ** 2
-                                                and budget > self.dimension ** 2
+                                                3 * num_workers > self.dimension**2
+                                                and budget > self.dimension**2
                                             ):
                                                 optimClass = MetaModel
                                             else:
@@ -2661,7 +2696,7 @@ class NGOpt15(NGOpt12):
         if (
             self.budget is not None
             and self.fully_continuous
-            and self.budget < self.dimension ** 2 * 2
+            and self.budget < self.dimension**2 * 2
             and self.num_workers == 1
             and not self.has_noise
             and self.num_objectives < 2
@@ -2702,7 +2737,7 @@ class NGOpt21(NGOpt16):
             and self.num_workers <= num * cma_vars
         ):  # Discrete case ?
             return ConfPortfolio(
-                optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3 ** i) for i in range(num)],
+                optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3**i) for i in range(num)],
                 warmup_ratio=0.5,
             )
         else:
@@ -2725,7 +2760,7 @@ class NGOpt36(NGOpt16):
             and self.num_workers <= num * cma_vars
         ):  # Discrete case ?
             return ConfPortfolio(
-                optimizers=[Rescaled(base_optimizer=NGOpt14, scale=0.9 ** i) for i in range(num)],
+                optimizers=[Rescaled(base_optimizer=NGOpt14, scale=0.9**i) for i in range(num)],
                 warmup_ratio=0.5,
             )
         else:
@@ -2757,7 +2792,7 @@ class NGOpt38(NGOpt16):
             if self.dimension < 20:  # Nobody knows why this seems to be so good.
                 num = self.budget // (500 * self.dimension)
                 return ConfPortfolio(
-                    optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3 ** i) for i in range(num)],
+                    optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3**i) for i in range(num)],
                     warmup_ratio=0.5,
                 )
             # We need a special case for dim < 30 ---> let's see later.
@@ -2817,6 +2852,8 @@ class NGOpt39(NGOpt16):
             and self.num_workers <= para
             and p.helpers.Normalizer(self.parametrization).fully_bounded
         ):
+            if self.dimension == 1:
+                return NGOpt16
             if (
                 self.budget > 5000 * self.dimension
             ):  # Asymptotically let us trust NGOpt36 and its subtle restart.
@@ -2829,7 +2866,7 @@ class NGOpt39(NGOpt16):
             if self.dimension < 20:  # Nobody knows why this seems to be so good.
                 num = self.budget // (500 * self.dimension)
                 return ConfPortfolio(
-                    optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3 ** i) for i in range(num)],
+                    optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3**i) for i in range(num)],
                     warmup_ratio=0.5,
                 )
             if self.num_workers == 1:

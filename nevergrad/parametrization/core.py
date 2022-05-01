@@ -62,10 +62,6 @@ class Parameter(Layered):
         self.function = utils.FunctionInfo()
 
     @property
-    def descriptors(self) -> utils.DeprecatedDescriptors:  # TODO remove
-        return utils.DeprecatedDescriptors(self)
-
-    @property
     def losses(self) -> np.ndarray:
         """Possibly multiobjective losses which were told
         to the optimizer along this parameter.
@@ -311,7 +307,7 @@ class Parameter(Layered):
         """
         if self._random_state is None:
             # use the setter, to make sure the random state is propagated to the variables
-            seed = np.random.randint(2 ** 32, dtype=np.uint32)  # better way?
+            seed = np.random.randint(2**32, dtype=np.uint32)  # better way?
             self._set_random_state(np.random.RandomState(seed))
         assert self._random_state is not None
         return self._random_state
@@ -405,9 +401,7 @@ class Parameter(Layered):
         self._subobjects.apply("_check_frozen")
 
 
-# Basic types and helpers #
-
-
+# Basic types #
 class Constant(Parameter):
     """Parameter-like object for simplifying management of constant parameters:
     mutation/recombination do nothing, value cannot be changed, standardize data is an empty array,

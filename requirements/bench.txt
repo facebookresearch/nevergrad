@@ -38,3 +38,5 @@ nlopt
 auto-sklearn>=0.14.0
 openml>=0.12.2
 submitit
+pybullet>=3.2.2
+box2d-py>=2.3.5

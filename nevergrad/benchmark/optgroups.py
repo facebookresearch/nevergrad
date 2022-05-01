@@ -13,6 +13,7 @@ from nevergrad.optimization import base as obase
 from nevergrad.optimization.optimizerlib import ConfSplitOptimizer
 from nevergrad.optimization.optimizerlib import registry as optimizerlib_registry
 from nevergrad.optimization.optimizerlib import ParametrizedOnePlusOne
+from nevergrad.optimization.optimizerlib import NonObjectOptimizer
 
 Optim = tp.Union[obase.ConfiguredOptimizer, str]
 registry: Registry[tp.Callable[[], tp.Iterable[Optim]]] = Registry()
@@ -192,6 +193,24 @@ def all_bo() -> tp.Sequence[Optim]:
     return sorted(x for x in ng.optimizers.registry if "BO" in x)
 
 
+def all_nlopts() -> tp.Sequence[Optim]:
+    list_nlopt_options = [
+        "LN_SBPLX",
+        "LN_PRAXIS",
+        "GN_DIRECT",
+        "GN_DIRECT_L",
+        "GN_CRS2_LM",
+        "GN_AGS",
+        "GN_ISRES",
+        "GN_ESCH",
+        "LN_COBYLA",
+        "LN_BOBYQA",
+        "LN_NEWUOA_BOUND",
+        "LN_NELDERMEAD",
+    ]
+    return [NonObjectOptimizer(method="NLOPT_" + x).set_name("NLOPT_" + x) for x in list_nlopt_options]
+
+
 @registry.register
 def discrete() -> tp.Sequence[Optim]:
     return [name for name in optimizerlib_registry.keys() if "iscrete" in name and "oisy" not in name]
@@ -211,6 +230,7 @@ def structure() -> tp.Sequence[Optim]:
 def small_discrete() -> tp.Sequence[Optim]:
     return [
         "DiscreteOnePlusOne",
+        "RLSOnePlusOne",
         "Shiwa",
         "CMA",
         "PSO",

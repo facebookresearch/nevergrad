@@ -47,8 +47,6 @@ def test_empty_parameters(param: par.Dict) -> None:
     analysis = par.helpers.analyze(param)
     assert analysis.continuous
     assert analysis.deterministic
-    assert param.descriptors.continuous
-    assert param.descriptors.deterministic
 
 
 def _true(*args: tp.Any, **kwargs: tp.Any) -> bool:  # pylint: disable=unused-argument
@@ -70,6 +68,7 @@ def _true(*args: tp.Any, **kwargs: tp.Any) -> bool:  # pylint: disable=unused-ar
         par.Choice([1, 2], repetitions=2),
         par.TransitionChoice([par.Array(shape=(2,)), par.Scalar()]),
         par.TransitionChoice(["a", "b", "c"], transitions=(0, 2, 1), repetitions=4),
+        par.TransitionChoice(["a", "b", "c"], ordered=False),
     ],
 )
 def test_parameters_basic_features(param: par.Parameter) -> None:
@@ -79,7 +78,7 @@ def test_parameters_basic_features(param: par.Parameter) -> None:
 
 # pylint: disable=too-many-statements
 def check_parameter_features(param: par.Parameter) -> None:
-    seed = np.random.randint(2 ** 32, dtype=np.uint32)
+    seed = np.random.randint(2**32, dtype=np.uint32)
     print(f"Seeding with {seed} from reproducibility.")
     np.random.seed(seed)
     assert isinstance(param.name, str)
@@ -89,9 +88,9 @@ def check_parameter_features(param: par.Parameter) -> None:
     assert isinstance(child, type(param))
     assert child.heritage["lineage"] == param.uid
     assert child.generation == 1
-    assert not np.any(param.get_standardized_data(reference=param))
-    assert not np.any(child.get_standardized_data(reference=child))
-    assert not np.any(child.get_standardized_data(reference=param))
+    assert not np.any(param.get_standardized_data(reference=param) > 1e-7)
+    assert not np.any(child.get_standardized_data(reference=child) > 1e-7)
+    assert not np.any(child.get_standardized_data(reference=param) > 1e-7)
     assert child.name == param.name
     assert param._random_state is not None
     assert child.random_state is param.random_state
@@ -103,7 +102,9 @@ def check_parameter_features(param: par.Parameter) -> None:
     except errors.UnsupportedParameterOperationError:
         mutable = False
     else:
-        assert np.any(child.get_standardized_data(reference=param))
+        if not isinstance(child, par.TransitionChoice):
+            # transition choice has a fixed set of values so can be the same
+            assert np.any(child.get_standardized_data(reference=param))
     param.set_name("blublu")
     child_hash = param.spawn_child()
     assert child_hash.name == "blublu"
@@ -143,22 +144,15 @@ def check_parameter_features(param: par.Parameter) -> None:
     # sampling
     samp_param = param.sample()
     assert samp_param.uid == samp_param.heritage["lineage"]
-    # set descriptor
-    assert param.descriptors.deterministic_function
+    # set function properties
     assert param.function.deterministic
-    param.descriptors.deterministic_function = False
-    assert not param.descriptors.deterministic_function
-    assert not param.function.deterministic
-    #
-    assert param.descriptors.non_proxy_function
     assert not param.function.proxy
-    param.descriptors.non_proxy_function = False
-    assert not param.descriptors.non_proxy_function
-    assert param.function.proxy
-    #
-    descr_child = param.spawn_child()
-    assert not descr_child.descriptors.deterministic_function
-    assert not descr_child.descriptors.non_proxy_function
+    param.function.deterministic = False
+    param.function.proxy = True
+    # function properties should be transfered to children
+    func_child = param.spawn_child()
+    assert not func_child.function.deterministic
+    assert func_child.function.proxy
 
 
 def check_parameter_freezable(param: par.Parameter) -> None:
@@ -230,9 +224,6 @@ def test_parameter_analysis(
     assert analysis.continuous == continuous
     assert analysis.deterministic == deterministic
     assert analysis.ordered == ordered
-    assert param.descriptors.continuous == continuous
-    assert param.descriptors.deterministic == deterministic
-    assert param.descriptors.ordered == ordered
 
 
 def test_instrumentation() -> None:
@@ -359,7 +350,19 @@ def test_ordered_choice() -> None:
     assert choice.value in [0, 2]
     assert choice.get_standardized_data(reference=choice).size
     choice.set_standardized_data(np.array([12.0]))
-    assert choice.value == 3
+
+
+def test_transition_choice_bin() -> None:
+    choice = par.TransitionChoice([0, 1, 2, 3], ordered=False)
+    for val in [1000, 1.10]:
+        choice.set_standardized_data([val])
+        # value should be mapped to the bin
+        assert choice.get_standardized_data(reference=choice) == pytest.approx(1.15035)
+    values = set()
+    for _ in range(20):
+        choice.mutate()
+        values.add(choice.get_standardized_data(reference=choice)[0])
+    assert 1 < len(values) < 5, values
 
 
 def test_ordered_choice_weird_values() -> None:
@@ -389,6 +392,13 @@ def test_transition_choice_repetitions() -> None:
     np.testing.assert_almost_equal(choice.indices.value, [3, 1], decimal=3)
     choice.mutate()
     assert choice.value == (3, 0)
+
+
+def test_integer_casting_array() -> None:
+    param = par.Array(lower=np.array([3.0] * 8), upper=np.array([8.0] * 8), shape=(8,))
+    param.set_integer_casting()
+    out = param  # <- error here
+    assert out.value.shape == (8,)
 
 
 def test_array_bounded_initialization() -> None:

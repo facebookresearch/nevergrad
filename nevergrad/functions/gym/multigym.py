@@ -313,8 +313,13 @@ class GymMulti(ExperimentFunction):
         max_displays = 10
         for e in gym.envs.registry.all():
             try:
-                assert "Kelly" not in str(e.id)  # We should have another check than that.
-                assert "llvm" not in str(e.id)  # We should have another check than that.
+                assert not any(
+                    x in str(e.id) for x in "Kelly llvm BulletEnv Minitaur Kuka".split()
+                )  # We should have another check than that.
+                assert (
+                    "RacecarZedBulletEnv-v0" != e.id
+                ), "This specific environment causes X11 error when using pybullet_envs."
+                assert "CarRacing-v" not in str(e.id), "Pixel based task not supported yet"
                 env = gym.make(e.id)
                 env.reset()
                 env.step(env.action_space.sample())
@@ -532,7 +537,7 @@ class GymMulti(ExperimentFunction):
         self.output_dim = output_dim
         self.num_neurons = neural_factor * (input_dim - self.extended_input_len)
         self.num_internal_layers = 1 if "semi" in control else 3
-        internal = self.num_internal_layers * (self.num_neurons ** 2) if "deep" in control else 0
+        internal = self.num_internal_layers * (self.num_neurons**2) if "deep" in control else 0
         unstructured_neural_size = (
             output_dim * self.num_neurons + self.num_neurons * (input_dim + 1) + internal,
         )
@@ -685,7 +690,7 @@ class GymMulti(ExperimentFunction):
             self.greedy_coefficient = x[-1:]  # We have decided that we can not have two runs in parallel.
             x = x[:-1]
         o = o.ravel()
-        my_scale = 2 ** self.optimization_scale
+        my_scale = 2**self.optimization_scale
         if "structured" not in self.name and self.optimization_scale != 0:
             x = np.asarray(my_scale * x, dtype=np.float32)
         if self.control == "linear":
@@ -718,7 +723,7 @@ class GymMulti(ExperimentFunction):
         if "deep" in self.control:
             # The deep case must be split into several layers.
             current_index = self.first_size + self.second_size
-            internal_layer_size = self.num_neurons ** 2
+            internal_layer_size = self.num_neurons**2
             s = (self.num_neurons, self.num_neurons)
             for _ in range(self.num_internal_layers):
                 output = np.tanh(output)
@@ -973,7 +978,7 @@ class GymMulti(ExperimentFunction):
     def gym_conformant(self, x: np.ndarray, env: tp.Any):
         """Conformant: we directly optimize inputs, not parameters of a policy."""
         reward = 0.0
-        for i, a in enumerate(10.0 * x):
+        for i, a in enumerate(x):
             a = self.action_cast(a, env)
             try:
                 _, r, done, _ = self.step(a, env)  # Outputs = observation, reward, done, info.

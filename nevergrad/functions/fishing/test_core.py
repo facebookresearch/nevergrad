@@ -7,7 +7,7 @@ import numpy as np
 from . import core
 
 
-def test_mixsimulator() -> None:
+def test_fishing() -> None:
     np.random.seed(17)
     func = core.OptimizeFish()
     x = np.random.rand(func.dimension)
