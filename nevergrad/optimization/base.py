@@ -441,8 +441,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 self.current_bests[name] = best
             else:
                 if self.archive[x].get_estimation(name) <= self.current_bests[name].get_estimation(name):
+                    if self.archive[x].get_estimation(name) < self.current_bests[name].get_estimation(name):
+                        self.last_best_modification = self.num_tell
                     self.current_bests[name] = self.archive[x]
-                    self.last_best_modification = self.num_tell
                 # deactivated checks
                 # if not (np.isnan(loss) or loss == np.inf):
                 #     if not self.current_bests[name].x in self.archive:
