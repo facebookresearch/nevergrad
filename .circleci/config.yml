@@ -192,7 +192,7 @@ jobs:
 
   pytests:
     executor: ubuntu-python37
-    parallelism: 10
+    parallelism: 4
     steps:
 
       - ubuntu_restore_all
@@ -200,7 +200,7 @@ jobs:
       - run:
           name: "[all] Run pytest"
           when: always
-          parallelism: 10
+          parallelism: 4
           command: |
             . venv/bin/activate
             pytest nevergrad -v --exitfirst --durations=20 --cov=nevergrad --circleci-parallelize
