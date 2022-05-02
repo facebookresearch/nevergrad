@@ -144,7 +144,7 @@ def ng_full_gym(
     optimization_scales: tp.List[int] = [0]
     if multi_scale:
         optimization_scales = [-6, -4, -2, 0]
-    budgets = [50, 200, 800, 3200, 6400, 100, 25, 400, 1600]  # Let's go with low budget.
+    budgets = [50, 200, 100, 25, 400]  # Let's go with low budget.
     budgets = gym_budget_modifier(budgets)
     for control in controls:
         neural_factors: tp.Any = (
@@ -368,7 +368,7 @@ def gym_problem(
         ]
 
     optims = gym_optimizer_modifier(optims)
-    budgets = [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600]
+    budgets = [25, 50, 100, 200]
     budgets = gym_budget_modifier(budgets)
     for func in funcs:
         for budget in budgets:
