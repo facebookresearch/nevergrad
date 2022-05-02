@@ -212,9 +212,7 @@ def test_stagnation() -> None:
         x = optim.ask()
         v = int(sum(10 * ((x.value - 3.0) ** 2)))
         optim.tell(x, ((max(0, v)), max(0, 5 - v)))
-        assert (
-            u > 20 or optim.stagnation_rate() < 0.9
-        ), f"At iteration {u}, we get {optim.stagnation_rate()}."
+        assert u > 20 or optim.stagnation_rate() < 0.9, f"At iteration {u}, we get {optim.stagnation_rate()}."
         assert (
             u < 590 or optim.stagnation_rate() > 0.9
         ), f"At iteration {u}, we get {optim.stagnation_rate()}."
