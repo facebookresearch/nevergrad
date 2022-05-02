@@ -370,9 +370,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # preprocess multiobjective loss
         if isinstance(loss, np.ndarray):
             candidate._losses = loss
-            if not self.min_moo_loss:
+            if self.min_moo_loss is None:
                 self.min_moo_loss = np.array(loss, copy=True)
-            if not self.sum_moo_loss:
                 self.sum_moo_loss = np.array(loss, copy=True)
             else:
                 self.sum_moo_loss += loss
