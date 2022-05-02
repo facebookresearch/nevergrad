@@ -143,7 +143,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # If not needed, an optimizer can set this to True.
         self._no_hypervolume = False
 
-    def stagnation_rate() -> float:
+    def stagnation_rate(self) -> float:
         # Returns .3 if the last 30% of the run did not improve any "best" criterion.
         return (self.num_tell - self.last_best_modification) / self.num_tell if self.num_tell > 10 else 0.0
 
@@ -380,7 +380,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 # In MOO cases, we update min only if significant change.
                 if loss[i] < self.min_moo_loss[i] - (mean_moo_loss[i] - self.min_moo_loss[i]) / 100.0:
                     self.last_best_modification = self.num_tell
-                    self.min_moo_loss[i] = min(self.min_moo_loss[i], loss[i])
+                    self.min_moo_loss[i] = min(self.min_moo_loss[i], loss[i])  # type: ignore
         if not isinstance(loss, float):
             loss = self._preprocess_multiobjective(candidate)
         # call callbacks for logging etc...
