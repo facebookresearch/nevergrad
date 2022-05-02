@@ -2,6 +2,7 @@ black==22.3.0
 mypy>=0.800
 pytest>=4.3.0
 pytest-cov>=2.6.1
+pytest-circleci-parallelized
 pylint>=2.4.4
 wheel>=0.33.6
 setuptools>=41.2.0
