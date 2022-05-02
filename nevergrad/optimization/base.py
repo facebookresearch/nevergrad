@@ -148,7 +148,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
 
     def stagnation_rate(self) -> float:
         """Returns .3 if the last 30% of the run did not improve any "best" criterion."""
-        return (self.num_tell - self.last_best_modification) / self.num_tell if self.num_tell > _STAGNATION_ZERO_UNTIL else 0.0
+        return (
+            (self.num_tell - self.last_best_modification) / self.num_tell
+            if self.num_tell > _STAGNATION_ZERO_UNTIL
+            else 0.0
 
     def _warn(self, msg: str, e: tp.Any) -> None:
         """Warns only once per warning type"""
@@ -443,8 +446,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 # rebuild best point may change, and which value did not track the updated value anyway
                 self.current_bests[name] = best
             else:
-                difference = self.archive[x].get_estimation(name) - self.current_bests[name].get_estimation(name)
-                if difference <= 0.:  # TODO: are we sure we want <= and not < ?
+                difference = self.archive[x].get_estimation(name) - self.current_bests[name].get_estimation(
+                    name
+                )
+                if difference <= 0.0:  # TODO: are we sure we want <= and not < ?
                     if difference < 0:
                         self.last_best_modification = self.num_tell
                     self.current_bests[name] = self.archive[x]
