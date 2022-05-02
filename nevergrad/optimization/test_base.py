@@ -206,7 +206,7 @@ def test_stagnation() -> None:
         ), f"At iteration {u}, we get {optim.stagnation_rate()}."
 
     # Test in the multi-objective case.
-    optim = ng.optimizers.DE(2, budget=600)
+    optim = ng.optimizers.DE(2, budget=800)
     for u in range(optim.budget):
         print(u)
         x = optim.ask()
@@ -214,5 +214,5 @@ def test_stagnation() -> None:
         optim.tell(x, ((max(0, v)), max(0, 5 - v)))
         assert u > 20 or optim.stagnation_rate() < 0.9, f"At iteration {u}, we get {optim.stagnation_rate()}."
         assert (
-            u < 590 or optim.stagnation_rate() > 0.9
+            u < 790 or optim.stagnation_rate() > 0.9
         ), f"At iteration {u}, we get {optim.stagnation_rate()}."
