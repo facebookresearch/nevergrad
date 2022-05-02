@@ -62,6 +62,7 @@ jobs:
             . venv/bin/activate
             pip install --progress-bar off pip==21.0.1
             pip install --progress-bar off -e .
+            pip install pytest-circleci-parallelized
 
       - run:
           name: "[no-extra] Print installation"
@@ -199,9 +200,10 @@ jobs:
       - run:
           name: "[all] Run pytest"
           when: always
+          parallelism: 10
           command: |
             . venv/bin/activate
-            pytest nevergrad -v --exitfirst --durations=20 --cov=nevergrad
+            pytest nevergrad -v --exitfirst --durations=20 --cov=nevergrad --circleci-parallelize
 
 
   docs-deploy:
