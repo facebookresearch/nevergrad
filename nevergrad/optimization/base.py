@@ -91,6 +91,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         self.num_workers = int(num_workers)
         self.budget = budget
         self.last_best_modification = -1
+        self.min_moo_loss: tp.Optional[tp.ArrayLike] = None
+        self.sum_moo_loss: tp.Optional[tp.ArrayLike] = None
 
         # How do we deal with cheap constraints i.e. constraints which are fast and use low resources and easy ?
         # True ==> we penalize them (infinite values for candidates which violate the constraint).
@@ -141,9 +143,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # If not needed, an optimizer can set this to True.
         self._no_hypervolume = False
 
-    def stagnation_rate() -> float:
-        # Returns .5 if the last 50% of the run did not improve any "best" criterion.
-        return (self.num_tell - self.last_best_modification) / self.num_tell
+    def stagnation_rate(self) -> float:
+        # Returns .3 if the last 30% of the run did not improve any "best" criterion.
+        return (self.num_tell - self.last_best_modification) / self.num_tell if self.num_tell > 10 else 0.0
 
     def _warn(self, msg: str, e: tp.Any) -> None:
         """Warns only once per warning type"""
@@ -368,6 +370,17 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # preprocess multiobjective loss
         if isinstance(loss, np.ndarray):
             candidate._losses = loss
+            if self.min_moo_loss is None:
+                self.min_moo_loss = np.array(loss, copy=True)
+                self.sum_moo_loss = np.array(loss, copy=True)
+            else:
+                self.sum_moo_loss += loss
+            mean_moo_loss = self.sum_moo_loss / (self.num_tell + 1)
+            for i in range(self.num_objectives):
+                # In MOO cases, we update min only if significant change.
+                if loss[i] < self.min_moo_loss[i] - (mean_moo_loss[i] - self.min_moo_loss[i]) / 100.0:
+                    self.last_best_modification = self.num_tell
+                    self.min_moo_loss[i] = min(self.min_moo_loss[i], loss[i])  # type: ignore
         if not isinstance(loss, float):
             loss = self._preprocess_multiobjective(candidate)
         # call callbacks for logging etc...
@@ -428,8 +441,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 self.current_bests[name] = best
             else:
                 if self.archive[x].get_estimation(name) <= self.current_bests[name].get_estimation(name):
+                    if self.archive[x].get_estimation(name) < self.current_bests[name].get_estimation(name):
+                        self.last_best_modification = self.num_tell
                     self.current_bests[name] = self.archive[x]
-                    self.last_best_modification = self.num_tell
                 # deactivated checks
                 # if not (np.isnan(loss) or loss == np.inf):
                 #     if not self.current_bests[name].x in self.archive:
