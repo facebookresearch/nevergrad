@@ -18,6 +18,9 @@ from . import utils
 from . import multiobjective as mobj
 
 
+_STAGNATION_ZERO_UNTIL: int = 10  # steps until stagnation_rate starts returning positive
+    
+    
 OptCls = tp.Union["ConfiguredOptimizer", tp.Type["Optimizer"]]
 registry: Registry[OptCls] = Registry()
 _OptimCallBack = tp.Union[
@@ -90,9 +93,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # you can also replace or reinitialize this random state
         self.num_workers = int(num_workers)
         self.budget = budget
-        self.last_best_modification = -1
-        self.min_moo_loss: tp.Optional[tp.ArrayLike] = None
-        self.sum_moo_loss: tp.Optional[tp.ArrayLike] = None
+        self.last_best_modification = -1  # Last time index at which the best so far moved.
+        self.min_moo_loss: tp.Optional[tp.ArrayLike] = None  # Minimum loss for each of multiple objective functions.
+        self.sum_moo_loss: tp.Optional[tp.ArrayLike] = None  # Sum of losses for each of multiple objective functions.
 
         # How do we deal with cheap constraints i.e. constraints which are fast and use low resources and easy ?
         # True ==> we penalize them (infinite values for candidates which violate the constraint).
@@ -144,8 +147,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         self._no_hypervolume = False
 
     def stagnation_rate(self) -> float:
-        # Returns .3 if the last 30% of the run did not improve any "best" criterion.
-        return (self.num_tell - self.last_best_modification) / self.num_tell if self.num_tell > 10 else 0.0
+        """Returns .3 if the last 30% of the run did not improve any "best" criterion."""
+        return (self.num_tell - self.last_best_modification) / self.num_tell if self.num_tell > _STAGNATION_ZERO_UNTIL else 0.0
 
     def _warn(self, msg: str, e: tp.Any) -> None:
         """Warns only once per warning type"""
@@ -440,8 +443,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 # rebuild best point may change, and which value did not track the updated value anyway
                 self.current_bests[name] = best
             else:
-                if self.archive[x].get_estimation(name) <= self.current_bests[name].get_estimation(name):
-                    if self.archive[x].get_estimation(name) < self.current_bests[name].get_estimation(name):
+                difference = self.archive[x].get_estimation(name) - self.current_bests[name].get_estimation(name)
+                if difference <= 0.:  # TODO: are we sure we want <= and not < ?
+                    if difference < 0:
                         self.last_best_modification = self.num_tell
                     self.current_bests[name] = self.archive[x]
                 # deactivated checks
