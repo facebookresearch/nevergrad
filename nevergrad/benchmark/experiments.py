@@ -1926,14 +1926,17 @@ def adversarial_attack(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]
                     yield xp
 
 
-@registry.register
-def pbo_suite(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def pbo_suite(seed: tp.Optional[int] = None, reduced: bool = False) -> tp.Iterator[Experiment]:
     # Discrete, unordered.
     dde = ng.optimizers.DifferentialEvolution(crossover="dimension").set_name("DiscreteDE")
     seedg = create_seed_generator(seed)
+    index = 0
     for dim in [16, 64, 100]:
         for fid in range(1, 24):
             for iid in range(1, 5):
+                index += 1
+                if reduced and index % 13:
+                    continue
                 for instrumentation in ["Softmax", "Ordered", "Unordered"]:
                     try:
                         func = iohprofiler.PBOFunction(fid, iid, dim, instrumentation=instrumentation)
@@ -1958,6 +1961,11 @@ def pbo_suite(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                         for nw in [1, 10]:
                             for budget in [100, 1000, 10000]:
                                 yield Experiment(func, optim, num_workers=nw, budget=budget, seed=next(seedg))  # type: ignore
+
+
+@registry.register
+def pbo_reduced_suite(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    return pbo_suite(seed, reduced=True)
 
 
 def causal_similarity(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
