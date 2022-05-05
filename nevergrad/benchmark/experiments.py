@@ -1962,7 +1962,7 @@ def pbo_suite(seed: tp.Optional[int] = None, reduced: bool = False) -> tp.Iterat
                             for budget in [100, 1000, 10000]:
                                 yield Experiment(func, optim, num_workers=nw, budget=budget, seed=next(seedg))  # type: ignore
 
-                                
+
 @registry.register
 def pbo_reduced_suite(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     return pbo_suite(seed, reduced=True)
