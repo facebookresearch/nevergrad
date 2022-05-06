@@ -342,15 +342,15 @@ class EarlyStopping:
 
     @classmethod
     def timer(cls, max_duration: float) -> "EarlyStopping":
-        """Early stop when max_duration seconds has been reached (from the first ask)"""
+        """Early stop when max_duration seconds has been reached (from the first call)"""
         return cls(_DurationCriterion(max_duration))
 
     @classmethod
-    def stagnation(cls, stagnation_iterations: int) -> "EarlyStopping":
+    def stagnation(cls, stagnation_iterations: int) -> "Stagnation":
         """Stops if no improvement has been achieved after stagnation_iterations steps
         This callback should be preferably set on the tell method.
         """
-        return cls(_Stagnation(stagnation_iterations))
+        return Stagnation(stagnation_iterations)
 
 
 class _DurationCriterion:
@@ -364,7 +364,7 @@ class _DurationCriterion:
         return time.time() > self._start + self._max_duration
 
 
-class _Stagnation:
+class Stagnation(EarlyStopping):
     def __init__(self, stagnation_iterations: int = 10) -> None:
         self._stagnation_iterations = stagnation_iterations
         self._min_losses = np.array([])
@@ -372,13 +372,15 @@ class _Stagnation:
         self._last_improvement = 0
         self._num_tell = 0
         self._current_bests: tp.Dict[str, float] = {}
+        super().__init__(self._criterion)
 
     @property
     def stagnation_rate(self) -> float:
         """Returns .3 if the last 30% of the run did not improve any "best" criterion."""
         return float(self._num_tell - self._last_improvement) / max(1, self._num_tell)
 
-    def __call__(self, optimizer: base.Optimizer, candidate: p.Parameter, loss: float) -> bool:
+    # pylint: disable=unused-argument
+    def _criterion(self, optimizer: base.Optimizer, candidate: p.Parameter, loss: float) -> bool:
         self._num_tell = optimizer.num_tell
         for name, val in optimizer.current_bests.items():
             current = val.get_estimation(name)
