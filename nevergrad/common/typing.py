@@ -67,9 +67,8 @@ class JobLike(Protocol[X]):
     def result(self) -> X:
         ...
 
-
-def cancel(self) -> None:
-    ...
+    def cancel(self) -> None:
+        ...
 
 
 class ExecutorLike(Protocol):
