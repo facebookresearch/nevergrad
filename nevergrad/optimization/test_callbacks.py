@@ -139,10 +139,16 @@ def test_duration_criterion() -> None:
     assert crit(optim)
 
 
-@pytest.mark.parametrize("multiobjective,text", [  # type: ignore
-    (False, "After 1, recommendation is Instrumentation(Tuple(None,2.0),Dict(array=Array{(3,2)},blublu=blublu,multiobjective=False))"),
-    (True, "After 1, the respective minimum loss for each objective in the pareto front is [12. 12.]"),
-])
+@pytest.mark.parametrize(
+    "multiobjective,text",
+    [  # type: ignore
+        (
+            False,
+            "After 1, recommendation is Instrumentation(Tuple(None,2.0),Dict(array=Array{(3,2)},blublu=blublu,multiobjective=False))",
+        ),
+        (True, "After 1, the respective minimum loss for each objective in the pareto front is [12. 12.]"),
+    ],
+)
 def test_optimization_logger(caplog: tp.Any, multiobjective: bool, text: str) -> None:
     instrum = ng.p.Instrumentation(
         None, 2.0, blublu="blublu", array=ng.p.Array(shape=(3, 2)), multiobjective=multiobjective
