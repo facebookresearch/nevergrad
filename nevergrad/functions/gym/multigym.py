@@ -481,7 +481,6 @@ class GymMulti(ExperimentFunction):
         # Infer the action space.
         self.arities = []
         if isinstance(env.action_space, gym.spaces.Tuple):
-            num_parts = len(env.action_space)
             assert all(isinstance(p, gym.spaces.MultiDiscrete) for p in env.action_space)
             self.arities = [p.nvec for p in env.action_space]
             if control == "conformant":
@@ -496,7 +495,6 @@ class GymMulti(ExperimentFunction):
             discrete = True
             assert output_dim is not None, env.action_space.n
         else:  # Continuous action space
-            assert all(isinstance(x_, float) for x_ in env.action_space.sample()), env.action_space.sample()
             output_shape = env.action_space.shape
             if output_shape is None:
                 output_shape = tuple(np.asarray(env.action_space.sample()).shape)
@@ -1029,7 +1027,7 @@ class GymMulti(ExperimentFunction):
     def gym_conformant(self, x: np.ndarray, env: tp.Any):
         """Conformant: we directly optimize inputs, not parameters of a policy."""
         reward = 0.0
-        for i, a in enumerate(x):
+        for _, a in enumerate(x):
             a = self.action_cast(a, env)
             # try:
             _, r, done, _ = self.step(a, env)  # Outputs = observation, reward, done, info.
