@@ -7,7 +7,7 @@ import math
 import operator
 import numpy as np
 from nevergrad.parametrization import parameter as p
-from nevergrad.parametrization.utils import float_penalty as _float_penalty
+from nevergrad.parametrization.utils import float_penalty as float_penalty
 import nevergrad.common.typing as tp
 from nevergrad.common.tools import OrderedSet
 
@@ -388,4 +388,4 @@ class ConstraintManager:
         budget = 1 if budget is None else budget
         coeff = self.penalty_factor * (self.penalty_exponent ** (num_ask / np.sqrt(budget)))
         val = parameter.value
-        return coeff * sum(_float_penalty(func(val)) for func in parameter._constraint_checkers)  # type: ignore
+        return coeff * sum(float_penalty(func(val)) for func in parameter._constraint_checkers)  # type: ignore
