@@ -9,7 +9,6 @@ from unittest import SkipTest
 import numpy as np
 import nevergrad as ng
 import pytest
-from gym.spaces import Box, Tuple, MultiDiscrete
 from . import multigym
 
 
