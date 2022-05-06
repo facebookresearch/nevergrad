@@ -90,14 +90,14 @@ gym.envs.register(
 def test_tuple_action_space_random() -> None:
     func = multigym.GymMulti(name="TupleActionSpace-v0", control="conformant", neural_factor=None)
     reward = func(func.parametrization.sample().value)
-    assert reward < 100000  # type: ignore
-    assert reward > 0  # type: ignore
+    assert reward > -80000  # type: ignore
+    assert reward < 0  # type: ignore
 
 
 def test_tuple_action_space_optim() -> None:
     func = multigym.GymMulti(name="TupleActionSpace-v0", control="conformant", neural_factor=None)
     val = ng.optimizers.DiscreteLenglerOnePlusOne(func.parametrization, budget=200).minimize(func).value
-    assert func(val) < 0.0  # type: ignore
+    assert func(val) < -30000.0  # type: ignore
 
 
 def test_tuple_action_space_neural() -> None:

@@ -1,3 +1,8 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 import gym
 import numpy as np
 from gym.spaces import Box, Tuple, MultiDiscrete
@@ -35,7 +40,9 @@ class TupleActionSpace(gym.Env):
     def _take_action(self, action):
         assert len(action) == 2
         assert len(action[0]) == self.num_cells
-        self._reward = np.sum(action[0]) - np.sum(action[1])
+        for u in action[1]:
+            assert int(u) == u
+        self._reward = np.sum(action[1]) - np.sum(action[0])
         return self._reward
 
     def reset(self):
