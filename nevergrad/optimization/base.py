@@ -774,7 +774,9 @@ class ConfiguredOptimizer:
         config = dict(config=self) if self._as_config else self.config()
         if isinstance(self._OptimizerClass, ConfiguredOptimizer):
             config = {}  # ignore, it's already configured
-        run = self._OptimizerClass(parametrization=parametrization, budget=budget, num_workers=num_workers, **config)
+        run = self._OptimizerClass(
+            parametrization=parametrization, budget=budget, num_workers=num_workers, **config
+        )
         run.name = self.name
         # hacky but convenient to have around:
         run._configured_optimizer = self  # type: ignore
