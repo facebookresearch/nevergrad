@@ -368,10 +368,6 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # call callbacks for logging etc...
         candidate.loss = loss
         assert isinstance(loss, float)
-        for callback in self._callbacks.get("tell", []):
-            # multiobjective reference is not handled :s
-            # but this allows obtaining both scalar and multiobjective loss (through losses)
-            callback(self, candidate, loss)
         if not candidate.satisfies_constraints() and self.budget is not None:
             penalty = self._constraints_manager.penalty(candidate, self.num_ask, self.budget)
             loss = loss + penalty
@@ -386,6 +382,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             self._internal_tell_not_asked(candidate, loss)
             self._num_tell_not_asked += 1
         self._num_tell += 1
+        for callback in self._callbacks.get("tell", []):
+            # multiobjective reference is not handled :s
+            # but this allows obtaining both scalar and multiobjective loss (through losses)
+            callback(self, candidate, loss)
 
     def _preprocess_multiobjective(self, candidate: p.Parameter) -> tp.FloatLoss:
         if self._hypervolume_pareto is None:

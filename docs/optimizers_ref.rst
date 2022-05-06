@@ -16,8 +16,14 @@ All the optimizers share the following common API:
 Callbacks
 ---------
 
-Callbacks can be registered through the :code:`optimizer.register_callback` for call on either :code:`ask` or :code:`tell` methods. Two of them are available through the
-`ng.callbacks` namespace.
+Callbacks can be registered through the :code:`optimizer.register_callback` for call on either :code:`ask` or :code:`tell` methods. 
+Callbacks just need to be functions with parameters depending on what they are registered upon:
+
+- on :code:`ask` they only take the optimizer as input. The callback is called at the beginning of the :code:`ask` method.
+- on :code:`tell` they take the optimizer as input, as well as the candidate and the loss as a float. 
+  The callback is called at the end of the :code:`tell` method.
+
+Some predefined callbacks are available through the `ng.callbacks` namespace:
 
 .. automodule:: nevergrad.callbacks
     :members: OptimizerDump, ParametersLogger, ProgressBar, EarlyStopping

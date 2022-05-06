@@ -6,6 +6,7 @@
 
 - Removed `descriptor` field of parameters which had been deprecated in previous versions. Use `function` field instead to specify if the function 
   is deterministic or not [#X](https://github.com/facebookresearch/nevergrad/pull/X).
+- Callbacks registered on the `tell` method are now called at the end of the method instead of the beginning.
 
 ### Important changes
 
