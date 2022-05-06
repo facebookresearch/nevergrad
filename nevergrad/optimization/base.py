@@ -644,7 +644,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                     except errors.NevergradEarlyStopping:
                         remaining_budget = 0
                         for _, j in self._running_jobs:
-                            j.cancel()
+                            if hasattr(j, "cancel"):
+                                j.cancel()  # type: ignore
                         self._running_jobs = []
                     self._finished_jobs.popleft()  # remove it after the tell to make sure it was indeed "told" (in case of interruption)
                     if verbosity:

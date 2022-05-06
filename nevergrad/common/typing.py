@@ -67,9 +67,6 @@ class JobLike(Protocol[X]):
     def result(self) -> X:
         ...
 
-    def cancel(self) -> None:
-        ...
-
 
 class ExecutorLike(Protocol):
     # pylint: disable=pointless-statement, unused-argument
