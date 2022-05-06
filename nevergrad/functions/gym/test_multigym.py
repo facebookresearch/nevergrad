@@ -3,10 +3,13 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import gym
 import os
 from unittest import SkipTest
 import numpy as np
+import nevergrad as ng
 import pytest
+from gym.spaces import Box, Tuple, MultiDiscrete
 from . import multigym
 
 
@@ -78,3 +81,21 @@ def test_run_multigym(name: str) -> None:
         np.testing.assert_almost_equal(func(y.value), 500, decimal=2)
     if "stac" in control and "Pendulum-v0" in name:  # Let's check if the memory works.
         np.testing.assert_almost_equal(func(y.value), 1720.39, decimal=2)
+
+
+gym.envs.register(
+    id="TupleActionSpace-v0", entry_point="nevergrad.functions.gym:TupleActionSpace", max_episode_steps=168
+)
+
+
+def test_tuple_action_space() -> None:
+    func = multigym.GymMulti(name="TupleActionSpace-v0", control="conformant", neural_factor=None)
+    reward = func(func.parametrization.sample().value)
+    assert reward < 100000
+    assert reward > 0
+    val = ng.optimizers.PortfolioDiscreteOnePlusOne(func.parametrization, budget=100).minimize(func).val
+    assert False, func(val)
+    func = multigym.GymMulti(name="TupleActionSpace-v0", control="neural", neural_factor=1)
+    results_neural = [func(np.random.normal(size=func.dimension)) for _ in range(40)]
+    assert min(results_neural) != max(results_neural)
+    assert all(int(r) == r for r in results_neural)

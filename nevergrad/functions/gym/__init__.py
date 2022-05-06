@@ -5,3 +5,4 @@
 
 from .multigym import GymMulti as GymMulti
 from .multigym import CompilerGym as CompilerGym
+from .tuple_gym_env import TupleActionSpace
