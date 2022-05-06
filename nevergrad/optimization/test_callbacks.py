@@ -159,3 +159,14 @@ def test_optimization_logger(caplog: tp.Any, multiobjective: bool, text: str) ->
     with caplog.at_level(logging.INFO):
         optimizer.minimize(_func, verbosity=2)
     assert text in caplog.text
+
+
+def test_stagnation() -> None:
+    # DOC_STAGNATION_0
+    optim = ng.optimizers.NGOpt(2, budget=100)
+    cb = ng.callbacks.EarlyStopping.stagnation(10)
+    optim.register_callback("tell", cb)
+    optim.minimize(lambda x: [12.0, 12.0])
+    assert optim.num_tell == 11  # stopping after 1 improvement and 10 stagnations
+    # DOC_STAGNATION_1
+    assert cb.stopping_criterion.stagnation_rate == 10 / 11  # type: ignore

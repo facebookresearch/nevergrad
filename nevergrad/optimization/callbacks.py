@@ -386,8 +386,9 @@ class _Stagnation:
                 self._current_bests[name] = current
                 self._last_improvement = optimizer.num_tell
         if optimizer.num_objectives > 1:
-            if not self._min_losses:
+            if not self._min_losses.size:
                 self._min_losses = candidate.losses
+                self._sum_losses = 0 * self._min_losses
             self._sum_losses += candidate.losses
             mean_losses = self._sum_losses / optimizer.num_tell
             tol = np.maximum(0, (mean_losses - self._min_losses) / 100.0)
@@ -395,4 +396,4 @@ class _Stagnation:
             if np.any(significant_improvement):
                 self._last_improvement = optimizer.num_tell
                 self._min_losses[significant_improvement] = candidate.losses[significant_improvement]
-        return self._last_improvement >= optimizer.num_tell - self._stagnation_iterations
+        return self._last_improvement <= optimizer.num_tell - self._stagnation_iterations

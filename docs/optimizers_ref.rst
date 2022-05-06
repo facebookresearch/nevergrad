@@ -28,6 +28,14 @@ Some predefined callbacks are available through the `ng.callbacks` namespace:
 .. automodule:: nevergrad.callbacks
     :members: OptimizerDump, ParametersLogger, ProgressBar, EarlyStopping
 
+Below is an example of usage of a predefined callback:
+
+.. literalinclude:: ../nevergrad/optimization/test_callbacks.py
+    :language: python
+    :dedent: 4
+    :start-after: DOC_STAGNATION_0
+    :end-before: DOC_STAGNATION_1
+
 Configurable optimizers
 -----------------------
 
