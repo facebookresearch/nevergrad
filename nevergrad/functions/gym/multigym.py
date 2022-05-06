@@ -496,7 +496,7 @@ class GymMulti(ExperimentFunction):
             discrete = True
             assert output_dim is not None, env.action_space.n
         else:  # Continuous action space
-            assert all(isinstance(x_, float) for x_ in env.action_space.sample())
+            assert all(isinstance(x_, float) for x_ in env.action_space.sample()), env.action_space.sample()
             output_shape = env.action_space.shape
             if output_shape is None:
                 output_shape = tuple(np.asarray(env.action_space.sample()).shape)
