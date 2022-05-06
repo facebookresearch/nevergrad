@@ -171,6 +171,8 @@ Note that we can provide a richer information by using float-valued constraints 
     :dedent: 8
     :start-after: DOC_CONSTRAINED_2
     :end-before: DOC_CONSTRAINED_3
+
+
 Optimizing machine learning hyperparameters
 -------------------------------------------
 

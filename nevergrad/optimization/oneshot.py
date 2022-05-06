@@ -31,7 +31,7 @@ def convex_limit(struct_points: np.ndarray) -> int:
     k = len(points) - 1
     for i in range(num_points, len(points)):
         # We add the ith point.
-        hull.add_points(points[i : (i + 1)])
+        hull.add_points(points[i: (i + 1)])
         num_points += 1
         if len(hull.vertices) != num_points:
             return num_points - 1
@@ -39,7 +39,7 @@ def convex_limit(struct_points: np.ndarray) -> int:
             # We check that the jth point is not in the convex hull;
             # this is ok if the jth point, added in the hull, becomes a vertex.
             hull_copy = copy.deepcopy(hull)
-            hull_copy.add_points(points[j : j + 1])
+            hull_copy.add_points(points[j: j + 1])
             if len(hull_copy.vertices) != num_points + 1:
                 return num_points - 1
     return k
@@ -208,8 +208,7 @@ class RandomSearchMaker(base.ConfiguredOptimizer):
         - parametrization: uses the default sample() method of the parametrization, which samples uniformly
           between bounds and a Gaussian otherwise
         - gaussian: uses a Gaussian distribution
-        - cauchy: uses a Cauchy distribution
-        use a Cauchy distribution instead of Gaussian distribution
+        - cauchy: uses a Cauchy distribution instead of Gaussian distribution
     scale: float or "random"
         scalar for multiplying the suggested point values, or string:
          - "random": uses a randomized pattern for the scale.

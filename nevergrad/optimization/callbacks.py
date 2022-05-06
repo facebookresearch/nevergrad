@@ -314,9 +314,11 @@ class EarlyStopping:
         function that takes the current optimizer as input and returns True
         if the minimization must be stopped
 
-    Note
-    ----
-    This callback can be registered on either ask or tell
+    Notes
+    -----
+    - This callback can be registered on either ask or tell.
+    - Some predefined early stopping callbacks can be created through methods of this class.
+
 
     Example
     -------
@@ -342,12 +344,15 @@ class EarlyStopping:
 
     @classmethod
     def timer(cls, max_duration: float) -> "EarlyStopping":
-        """Early stop when max_duration seconds has been reached (from the first call)"""
+        """Creates a callback that early stops when max_duration seconds has been reached
+        (from the first call)
+        """
         return cls(_DurationCriterion(max_duration))
 
     @classmethod
     def stagnation(cls, stagnation_iterations: int) -> "Stagnation":
-        """Stops if no improvement has been achieved after stagnation_iterations steps
+        """Creates a callback that early stops if no improvement has been achieved after
+        stagnation_iterations steps.
         This callback should be preferably set on the tell method.
         """
         return Stagnation(stagnation_iterations)
