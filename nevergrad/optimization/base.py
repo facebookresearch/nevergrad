@@ -653,7 +653,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 if verbosity:
                     print(f"{remaining_budget} remaining budget and {len(self._running_jobs)} running jobs")
                     if verbosity > 1:
-                        print("Current pessimistic best is: {self.current_bests['pessimistic']}")
+                        print(f"Current pessimistic best is: {self.current_bests['pessimistic']}")
             elif not first_iteration:
                 sleeper.sleep()
             # # # # # Start new jobs # # # # #
