@@ -263,7 +263,7 @@ def create_plots(
             try:
                 df.loc[:, col] = pd.to_numeric(df.loc[:, col])
             except:
-                print(f"{col} can not be numeric")    
+                pass
     if "num_objectives" in df.columns:
         df = df[df.num_objectives != 0]  # the optimization did not even start
     # If we have a descriptor "instrum_str",
