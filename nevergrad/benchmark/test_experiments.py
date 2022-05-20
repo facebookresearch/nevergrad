@@ -132,7 +132,11 @@ def check_experiment(maker: tp.Any, short: bool = False, skip_seed: bool = False
         func = simplified[0].function.copy()
         v = func.parametrization.sample().value
         values = [func(v) for _ in range(3)]
-        assert (min(values) == max(values)) == func.parametrization.function.deterministic, f"min={min(values)}, max={max(values)}, det={func.parametrization.function.deterministic}"
+        assert (
+            min(values) == max(values)
+        ) == func.parametrization.function.deterministic, (
+            f"min={min(values)}, max={max(values)}, det={func.parametrization.function.deterministic}"
+        )
         return
         # compute in any order
         np.random.shuffle(simplified)  # type: ignore
