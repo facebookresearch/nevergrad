@@ -615,7 +615,7 @@ class GymMulti(ExperimentFunction):
             parametrization=parametrization,
         )
         self.greedy_coefficient = 0.0
-        self.parametrization.function.deterministic = not self.uses_compiler_gym
+        self.parametrization.function.deterministic = False  #not self.uses_compiler_gym
         self.archive: tp.List[tp.Any] = []
         self.mean_loss = 0.0
         self.num_losses = 0
