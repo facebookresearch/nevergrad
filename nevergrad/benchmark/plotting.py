@@ -362,7 +362,7 @@ def create_plots(
                 with open(str(output_folder / name) + ".cp.txt", "w") as f:
                     f.write("ranking:\n")
                     for i, algo in enumerate(data_df.columns[:58]):
-                        f.write(f"  algo {i}: {algo}\n")            
+                        f.write(f"  algo {i}: {algo}\n")
             if name == "fight_all.png":
                 fplotter.save(str(output_folder / "fight_all_pure.png"), dpi=_DPI)
             else:
