@@ -20,6 +20,18 @@ def testcorefuncs_function(name: str, func: tp.Callable[..., tp.Any]) -> None:
 
 
 @testing.parametrized(
+    index1=(1,),
+    index2=(2,),
+    index3=(3,),
+    index4=(4,),
+)
+def test_bonnans(index: int) -> None:
+    b = corefuncs.BonnansFunction(index)
+    assert b(np.zeros(100)) < 10.0  # unlikely (though not impossible)
+    assert b(np.random.rand(100)) > 0.0
+
+
+@testing.parametrized(
     expe1=([6, 4, 2, 1, 9], 4, 5, 3),
     expe2=([6, 6, 7, 1, 9], 4, 5, 3),
     expe3=([1, 1, 7, 1, 9], 3, 5, 2),
