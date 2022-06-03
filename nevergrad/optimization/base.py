@@ -318,7 +318,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         will use this suggestion.
         """
         # Check loss type
-        if isinstance(loss, (Real, float)) or (isinstance(loss, np.ndarray) and len(loss.shape) == 0):
+        if isinstance(loss, (Real, float)) or (isinstance(loss, np.ndarray) and not loss.shape):
             # using "float" along "Real" because mypy does not understand "Real" for now Issue #3186
             loss = float(loss)
             # Non-sense values including NaNs should not be accepted.
