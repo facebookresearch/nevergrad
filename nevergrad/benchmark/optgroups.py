@@ -193,6 +193,7 @@ def all_bo() -> tp.Sequence[Optim]:
     return sorted(x for x in ng.optimizers.registry if "BO" in x)
 
 
+@registry.register
 def all_nlopts() -> tp.Sequence[Optim]:
     list_nlopt_options = [
         "LN_SBPLX",
