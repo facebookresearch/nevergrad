@@ -14,6 +14,7 @@
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -88,7 +89,7 @@
            <div itemprop="articleBody">
              
   <section id="parametrizing-your-optimization">
-<span id="parametrizing"></span><h1>Parametrizing your optimization<a class="headerlink" href="#parametrizing-your-optimization" title="Permalink to this headline"></a></h1>
+<span id="parametrizing"></span><h1>Parametrizing your optimization<a class="headerlink" href="#parametrizing-your-optimization" title="Permalink to this heading"></a></h1>
 <p><strong>Please note that parametrization is still a work in progress and changes are on their way (including for this documentation)! We are trying to update it to make it simpler and simpler to use (all feedbacks are welcome ;) ), with the side effect that there will be breaking changes.</strong></p>
 <p>The aim of parametrization is to specify what are the parameters that the optimization should be performed upon.
 The parametrization subpackage will help you do thanks to:</p>
@@ -97,7 +98,7 @@ The parametrization subpackage will help you do thanks to:</p>
 <li><p>the <code class="code docutils literal notranslate"><span class="pre">FolderFunction</span></code> which helps transform any code into a Python function in a few lines. This can be especially helpful to optimize parameters in non-Python 3.6+ code (C++, Octave, etc…) or parameters in scripts.</p></li>
 </ul>
 <section id="preliminary-examples">
-<h2>Preliminary examples<a class="headerlink" href="#preliminary-examples" title="Permalink to this headline"></a></h2>
+<h2>Preliminary examples<a class="headerlink" href="#preliminary-examples" title="Permalink to this heading"></a></h2>
 <p>The code below defines a parametrization that creates a <code class="code docutils literal notranslate"><span class="pre">dict</span></code> with 3 elements:</p>
 <ul class="simple">
 <li><p>a log-distributed scalar.</p></li>
@@ -168,7 +169,7 @@ You can easily check how parameters mutate, and mutation of <code class="code do
 </div>
 </section>
 <section id="parameters">
-<h2>Parameters<a class="headerlink" href="#parameters" title="Permalink to this headline"></a></h2>
+<h2>Parameters<a class="headerlink" href="#parameters" title="Permalink to this heading"></a></h2>
 <p>7 types of parameters are currently provided:</p>
 <ul class="simple">
 <li><p><code class="code docutils literal notranslate"><span class="pre">Choice(items)</span></code>: describes a parameter which can take values within the provided list of (usually unordered categorical) items, and for which transitions are global (from one item to any other item). The returned element will be sampled as the softmax of the values on these dimensions. Be cautious: this process is non-deterministic and makes the function evaluation noisy.</p></li>
@@ -215,7 +216,7 @@ This serves to parametrize functions taking multiple arguments, since you can th
 </table>
 </section>
 <section id="parametrization">
-<h2>Parametrization<a class="headerlink" href="#parametrization" title="Permalink to this headline"></a></h2>
+<h2>Parametrization<a class="headerlink" href="#parametrization" title="Permalink to this heading"></a></h2>
 <p>Parametrization helps you define the parameters you want to optimize upon.
 Currently most algorithms make use of it to help convert the parameters into the “standardized data” space (a vector space spanning all the real values),
 where it is easier to define operations.</p>
@@ -262,7 +263,7 @@ where it is easier to define operations.</p>
 </ul>
 </section>
 <section id="parametrizing-external-code">
-<h2>Parametrizing external code<a class="headerlink" href="#parametrizing-external-code" title="Permalink to this headline"></a></h2>
+<h2>Parametrizing external code<a class="headerlink" href="#parametrizing-external-code" title="Permalink to this heading"></a></h2>
 <p>Sometimes it is completely impractical or impossible to have a simple Python3.6+ function to optimize. This may happen when the code you want to optimize is a script. Even more so if the code you want to optimize is not Python3.6+.</p>
 <p>We provide tooling for this situation but this is hacky, so if you can avoid it, <strong>do avoid it</strong>. Otherwise, go through these steps to instrument your code:</p>
 <blockquote>
@@ -302,7 +303,7 @@ where it is easier to define operations.</p>
 <li><p><strong>parametrize</strong> the function (see Parametrization section just above).</p></li>
 </ul>
 <section id="tips-and-caveats">
-<h3>Tips and caveats<a class="headerlink" href="#tips-and-caveats" title="Permalink to this headline"></a></h3>
+<h3>Tips and caveats<a class="headerlink" href="#tips-and-caveats" title="Permalink to this heading"></a></h3>
 <blockquote>
 <div><ul class="simple">
 <li><p>using <code class="code docutils literal notranslate"><span class="pre">FolderFunction</span></code> argument <code class="code docutils literal notranslate"><span class="pre">clean_copy=True</span></code> will copy your folder so that tempering with it during optimization will run different versions of your code.</p></li>

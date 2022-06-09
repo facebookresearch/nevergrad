@@ -14,6 +14,7 @@
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -85,9 +86,9 @@
            <div itemprop="articleBody">
              
   <section id="getting-started">
-<span id="id1"></span><h1>Getting started<a class="headerlink" href="#getting-started" title="Permalink to this headline"></a></h1>
+<span id="id1"></span><h1>Getting started<a class="headerlink" href="#getting-started" title="Permalink to this heading"></a></h1>
 <section id="installing">
-<h2>Installing<a class="headerlink" href="#installing" title="Permalink to this headline"></a></h2>
+<h2>Installing<a class="headerlink" href="#installing" title="Permalink to this heading"></a></h2>
 <p>Nevergrad is a Python 3.6+ library. It can be installed with:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install nevergrad
 </pre></div>
@@ -111,11 +112,11 @@ the <code class="code docutils literal notranslate"><span class="pre">[all]</spa
 </ul>
 </section>
 <section id="installing-on-windows">
-<h2>Installing on Windows<a class="headerlink" href="#installing-on-windows" title="Permalink to this headline"></a></h2>
+<h2>Installing on Windows<a class="headerlink" href="#installing-on-windows" title="Permalink to this heading"></a></h2>
 <p>For Windows installation, please refer to the <a class="reference external" href="windows.html">Windows documention</a>.</p>
 </section>
 <section id="basic-optimization-example">
-<h2>Basic optimization example<a class="headerlink" href="#basic-optimization-example" title="Permalink to this headline"></a></h2>
+<h2>Basic optimization example<a class="headerlink" href="#basic-optimization-example" title="Permalink to this heading"></a></h2>
 <p><strong>By default all optimizers assume a centered and reduced prior at the beginning of the optimization (i.e. 0 mean and unitary standard deviation).</strong></p>
 <p>Optimizing (minimizing!) a function using an optimizer (here <code class="code docutils literal notranslate"><span class="pre">NGOpt</span></code>, our adaptative optimization algorithm) can be easily run with:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nevergrad</span> <span class="k">as</span> <span class="nn">ng</span>
@@ -145,7 +146,7 @@ take full control of the optimization through the <code class="code docutils lit
 as well as pieces of advice on how to choose the proper optimizer for your problem.</p>
 </section>
 <section id="structure-of-the-package">
-<h2>Structure of the package<a class="headerlink" href="#structure-of-the-package" title="Permalink to this headline"></a></h2>
+<h2>Structure of the package<a class="headerlink" href="#structure-of-the-package" title="Permalink to this heading"></a></h2>
 <p>The goals of this package are to provide:</p>
 <ul class="simple">
 <li><p><strong>gradient/derivative-free optimization algorithms</strong>, including algorithms able to handle noise.</p></li>

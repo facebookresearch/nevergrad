@@ -14,6 +14,7 @@
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -85,11 +86,11 @@
            <div itemprop="articleBody">
              
   <section id="running-algorithm-benchmarks">
-<span id="benchmarking"></span><h1>Running algorithm benchmarks<a class="headerlink" href="#running-algorithm-benchmarks" title="Permalink to this headline"></a></h1>
+<span id="benchmarking"></span><h1>Running algorithm benchmarks<a class="headerlink" href="#running-algorithm-benchmarks" title="Permalink to this heading"></a></h1>
 <p>The benchmark tools aim at providing derivative-free optimization researchers with a way to evaluate optimizers on a large range of settings. They provide ways to run the optimizers on all settings and record the results, as well as ways to plot the results of the experiments.</p>
 <p>By default, <code class="code docutils literal notranslate"><span class="pre">nevergrad</span></code> does not come with all the requirements for the benchmarks to run. Make sure you have installed/updated it with either the <code class="code docutils literal notranslate"><span class="pre">benchmark</span></code> or the <code class="code docutils literal notranslate"><span class="pre">all</span></code> flag (example: <code class="code docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">'nevergrad[benchmark]'</span></code>) or you will miss some packages.</p>
 <section id="creating-data-from-experiments">
-<h2>Creating data from experiments<a class="headerlink" href="#creating-data-from-experiments" title="Permalink to this headline"></a></h2>
+<h2>Creating data from experiments<a class="headerlink" href="#creating-data-from-experiments" title="Permalink to this heading"></a></h2>
 <p>Experiment plans are described in <code class="code docutils literal notranslate"><span class="pre">nevergrad.benchmark.experiments</span></code>. Each experiment plan is a generator yielding different <code class="code docutils literal notranslate"><span class="pre">Experiment</span></code> instances (defining function and optimizer settings).
 To run an experiment plan, use:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python -m nevergrad.benchmark &lt;experiment_name&gt;
@@ -101,7 +102,7 @@ for some experiments, you may provide a seed for reproducibility.</p>
 <p>This benchmark command creates a file <code class="code docutils literal notranslate"><span class="pre">&lt;experiment_name&gt;.csv</span></code> holding all information. The output file can be changed with the <code class="code docutils literal notranslate"><span class="pre">--output</span></code> parameter. Each line of the csv file corresponds to one experiment from the experiment plan. The columns correspond to the function and optimizer settings for this experiment as well as its result (loss/regret value, elapsed time…).</p>
 </section>
 <section id="plotting-results">
-<h2>Plotting results<a class="headerlink" href="#plotting-results" title="Permalink to this headline"></a></h2>
+<h2>Plotting results<a class="headerlink" href="#plotting-results" title="Permalink to this heading"></a></h2>
 <p>In order to plot the data in the csv file, just run:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python -m nevergrad.benchmark.plotting &lt;csv_file&gt;
 </pre></div>
@@ -114,12 +115,12 @@ for some experiments, you may provide a seed for reproducibility.</p>
 </ul>
 </section>
 <section id="full-pipeline">
-<h2>Full pipeline<a class="headerlink" href="#full-pipeline" title="Permalink to this headline"></a></h2>
+<h2>Full pipeline<a class="headerlink" href="#full-pipeline" title="Permalink to this heading"></a></h2>
 <p>For simplicity’s sake, you can directly plot from the <code class="code docutils literal notranslate"><span class="pre">nevergrad.benchmark</span></code> command by adding a <code class="code docutils literal notranslate"><span class="pre">--plot</span></code> argument. If a path is specified
 afterwards, it will be used to save all figures, otherwise it will be saved a folder <code class="code docutils literal notranslate"><span class="pre">&lt;csvfilename&gt;_plots</span></code> alongside the experiment csv file.</p>
 </section>
 <section id="adding-your-own-experiments-and-or-optimizers-and-or-test-functions">
-<h2>Adding your own experiments and/or optimizers and/or test functions<a class="headerlink" href="#adding-your-own-experiments-and-or-optimizers-and-or-test-functions" title="Permalink to this headline"></a></h2>
+<h2>Adding your own experiments and/or optimizers and/or test functions<a class="headerlink" href="#adding-your-own-experiments-and-or-optimizers-and-or-test-functions" title="Permalink to this heading"></a></h2>
 <p>The <code class="code docutils literal notranslate"><span class="pre">nevergrad.benchmark</span></code> command has an “import” system which can import additional modules where you defined your own experiments, possibly with your own functions and/or optimizers.
 This system however does not work on Windows (yet? feel free to help us!)</p>
 <p>Example (please note that <code class="code docutils literal notranslate"><span class="pre">nevergrad</span></code> needs to be cloned in your working directory for this example to work):</p>

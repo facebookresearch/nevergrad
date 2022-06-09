@@ -14,6 +14,7 @@
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -93,10 +94,10 @@
            <div itemprop="articleBody">
              
   <section id="how-to-perform-optimization">
-<h1>How to perform optimization<a class="headerlink" href="#how-to-perform-optimization" title="Permalink to this headline"></a></h1>
+<h1>How to perform optimization<a class="headerlink" href="#how-to-perform-optimization" title="Permalink to this heading"></a></h1>
 <p><strong>By default, all optimizers assume a centered and reduced prior at the beginning of the optimization (i.e. 0 mean and unitary standard deviation). They are however able to find solutions far from this initial prior.</strong></p>
 <section id="basic-example">
-<h2>Basic example<a class="headerlink" href="#basic-example" title="Permalink to this headline"></a></h2>
+<h2>Basic example<a class="headerlink" href="#basic-example" title="Permalink to this heading"></a></h2>
 <p>Minimizing a function using an optimizer (here <code class="code docutils literal notranslate"><span class="pre">NGOpt</span></code>, our adaptative optimization algorithm) can be easily run with:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nevergrad</span> <span class="k">as</span> <span class="nn">ng</span>
 
@@ -148,7 +149,7 @@ and <a class="reference internal" href="parametrization_ref.html#parametrization
 </div>
 </section>
 <section id="using-several-workers">
-<h2>Using several workers<a class="headerlink" href="#using-several-workers" title="Permalink to this headline"></a></h2>
+<h2>Using several workers<a class="headerlink" href="#using-several-workers" title="Permalink to this heading"></a></h2>
 <p>Running the function evaluation in parallel with several workers is as easy as providing an executor:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">concurrent</span> <span class="kn">import</span> <span class="n">futures</span>
 
@@ -163,7 +164,7 @@ and <a class="reference internal" href="parametrization_ref.html#parametrization
 <p>With <code class="code docutils literal notranslate"><span class="pre">batch_mode=True</span></code> it will ask the optimizer for <code class="code docutils literal notranslate"><span class="pre">num_workers</span></code> points to evaluate, run the evaluations, then update the optimizer with the <code class="code docutils literal notranslate"><span class="pre">num_workers</span></code> function outputs, and repeat until the budget is all spent. Since no executor is provided, the evaluations will be sequential. <code class="code docutils literal notranslate"><span class="pre">num_workers</span> <span class="pre">&gt;</span> <span class="pre">1</span></code> with no executor is therefore suboptimal but nonetheless useful for evaluation purpose (i.e. we simulate parallelism but have no actual parallelism). <code class="code docutils literal notranslate"><span class="pre">batch_mode=False</span></code> (steady state mode) will ask for a new evaluation whenever a worker is ready.</p>
 </section>
 <section id="ask-and-tell-interface">
-<h2>Ask and tell interface<a class="headerlink" href="#ask-and-tell-interface" title="Permalink to this headline"></a></h2>
+<h2>Ask and tell interface<a class="headerlink" href="#ask-and-tell-interface" title="Permalink to this heading"></a></h2>
 <p>An <em>ask and tell</em> interface is also available. The 3 key methods for this interface are respectively:</p>
 <ul class="simple">
 <li><p><code class="code docutils literal notranslate"><span class="pre">ask</span></code>: suggest a candidate on which to evaluate the function to optimize.</p></li>
@@ -193,7 +194,7 @@ and <a class="reference internal" href="parametrization_ref.html#parametrization
 <p>Please make sure that your function returns a float, and that you indeed want to perform minimization and not maximization ;)</p>
 </section>
 <section id="choosing-an-optimizer">
-<h2>Choosing an optimizer<a class="headerlink" href="#choosing-an-optimizer" title="Permalink to this headline"></a></h2>
+<h2>Choosing an optimizer<a class="headerlink" href="#choosing-an-optimizer" title="Permalink to this heading"></a></h2>
 <p><code class="code docutils literal notranslate"><span class="pre">ng.optimizers.registry</span></code> is a <code class="code docutils literal notranslate"><span class="pre">dict</span></code> of all optimizers, so you <code class="code docutils literal notranslate"><span class="pre">ng.optimizers.NGOpt</span></code> is equivalent to <code class="code docutils literal notranslate"><span class="pre">ng.optimizers.registry[&quot;NGOpt&quot;]</span></code>.
 Also, <strong>you can print the full list of optimizers</strong> with:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nevergrad</span> <span class="k">as</span> <span class="nn">ng</span>
@@ -215,7 +216,7 @@ Also, <strong>you can print the full list of optimizers</strong> with:</p>
 </ul>
 </section>
 <section id="telling-non-asked-points-or-suggesting-points">
-<h2>Telling non-asked points, or suggesting points<a class="headerlink" href="#telling-non-asked-points-or-suggesting-points" title="Permalink to this headline"></a></h2>
+<h2>Telling non-asked points, or suggesting points<a class="headerlink" href="#telling-non-asked-points-or-suggesting-points" title="Permalink to this heading"></a></h2>
 <p>There are two ways to inoculate information you already have about some points:</p>
 <ul class="simple">
 <li><p><code class="code docutils literal notranslate"><span class="pre">optimizer.sugggest(*args,</span> <span class="pre">**kwargs)</span></code>: after suggesting a point, the next <code class="code docutils literal notranslate"><span class="pre">ask</span></code> will be a point with the provided inputs. Make sure you call <code class="code docutils literal notranslate"><span class="pre">optimizer.suggest</span></code> the same way (= with the same arguments) that you would call your function to optimize.</p></li>
@@ -250,7 +251,7 @@ Also, <strong>you can print the full list of optimizers</strong> with:</p>
 <p><strong>Note:</strong> some optimizers do not support such inoculation. Those will raise a <code class="code docutils literal notranslate"><span class="pre">TellNotAskedNotSupportedError</span></code>.</p>
 </section>
 <section id="adding-callbacks">
-<h2>Adding callbacks<a class="headerlink" href="#adding-callbacks" title="Permalink to this headline"></a></h2>
+<h2>Adding callbacks<a class="headerlink" href="#adding-callbacks" title="Permalink to this heading"></a></h2>
 <p>You can add callbacks to the <code class="code docutils literal notranslate"><span class="pre">ask</span></code> and <code class="code docutils literal notranslate"><span class="pre">tell</span></code> methods through the <code class="code docutils literal notranslate"><span class="pre">register_callback</span></code> method.
 The functions/callbacks registered on <code class="code docutils literal notranslate"><span class="pre">ask</span></code> must have signature <code class="code docutils literal notranslate"><span class="pre">callback</span> <span class="pre">(optimizer)</span></code> and functions registered on <code class="code docutils literal notranslate"><span class="pre">tell</span></code> must have signature <code class="code docutils literal notranslate"><span class="pre">function(optimizer,</span> <span class="pre">candidate,</span> <span class="pre">value)</span></code>.</p>
 <p>The example below shows a callback which prints <code class="code docutils literal notranslate"><span class="pre">candidate</span></code> and <code class="code docutils literal notranslate"><span class="pre">value</span></code> on <code class="code docutils literal notranslate"><span class="pre">tell</span></code>:</p>
@@ -270,7 +271,7 @@ The functions/callbacks registered on <code class="code docutils literal notrans
 <p>Two callbacks are available through <code class="code docutils literal notranslate"><span class="pre">ng.callbacks</span></code>, see the <a class="reference internal" href="optimizers_ref.html#callbacks"><span class="std std-ref">callbacks module documentation</span></a>.</p>
 </section>
 <section id="optimization-with-constraints">
-<h2>Optimization with constraints<a class="headerlink" href="#optimization-with-constraints" title="Permalink to this headline"></a></h2>
+<h2>Optimization with constraints<a class="headerlink" href="#optimization-with-constraints" title="Permalink to this heading"></a></h2>
 <p>Nevergrad has a mechanism for cheap constraints.
 “Cheap” means that we do not try to reduce the number of calls to such constraints.
 We basically repeat mutations until we get a satisfiable point.</p>
@@ -306,7 +307,7 @@ We basically repeat mutations until we get a satisfiable point.</p>
 </div>
 </section>
 <section id="optimizing-machine-learning-hyperparameters">
-<h2>Optimizing machine learning hyperparameters<a class="headerlink" href="#optimizing-machine-learning-hyperparameters" title="Permalink to this headline"></a></h2>
+<h2>Optimizing machine learning hyperparameters<a class="headerlink" href="#optimizing-machine-learning-hyperparameters" title="Permalink to this heading"></a></h2>
 <p>When optimizing hyperparameters as e.g. in machine learning. If you don’t know what variables (see <a class="reference internal" href="parametrization.html#parametrizing"><span class="std std-ref">Parametrization</span></a> to use:</p>
 <ul class="simple">
 <li><p>use <code class="code docutils literal notranslate"><span class="pre">Choice</span></code> for discrete variables</p></li>
@@ -319,14 +320,14 @@ We basically repeat mutations until we get a satisfiable point.</p>
 </ul>
 </section>
 <section id="example-with-permutation">
-<h2>Example with permutation<a class="headerlink" href="#example-with-permutation" title="Permalink to this headline"></a></h2>
+<h2>Example with permutation<a class="headerlink" href="#example-with-permutation" title="Permalink to this heading"></a></h2>
 <p>SimpleTSP and ComplexTSP are two cases of optimization on a domain of permutations:
 <a class="reference external" href="https://docs.google.com/document/d/1B5yVOx1H1nnjY3EOf14487hAr8CzwJ9zEkDwQnZ5nbE/edit?usp=sharing">example here.</a>
 This is relevant when you optimize a single big permutation.
 Also includes cases with many small permutations.</p>
 </section>
 <section id="example-of-chaining-or-inoculation-or-initialization-of-an-evolutionary-algorithm">
-<h2>Example of chaining, or inoculation, or initialization of an evolutionary algorithm<a class="headerlink" href="#example-of-chaining-or-inoculation-or-initialization-of-an-evolutionary-algorithm" title="Permalink to this headline"></a></h2>
+<h2>Example of chaining, or inoculation, or initialization of an evolutionary algorithm<a class="headerlink" href="#example-of-chaining-or-inoculation-or-initialization-of-an-evolutionary-algorithm" title="Permalink to this heading"></a></h2>
 <p>Chaining consists in running several algorithms in turn, information being forwarded from the first to the second and so on.
 More precisely, the budget is distributed over several algorithms, and when an objective function value is computed, all algorithms are informed.</p>
 <p>Here is how to create such optimizers:</p>
@@ -357,7 +358,7 @@ More precisely, the budget is distributed over several algorithms, and when an o
 </div>
 </section>
 <section id="multiobjective-minimization-with-nevergrad">
-<h2>Multiobjective minimization with Nevergrad<a class="headerlink" href="#multiobjective-minimization-with-nevergrad" title="Permalink to this headline"></a></h2>
+<h2>Multiobjective minimization with Nevergrad<a class="headerlink" href="#multiobjective-minimization-with-nevergrad" title="Permalink to this heading"></a></h2>
 <p>Multiobjective minimization is a <strong>work in progress</strong> in <code class="code docutils literal notranslate"><span class="pre">nevergrad</span></code>. It is:</p>
 <blockquote>
 <div><ul class="simple">
@@ -413,7 +414,7 @@ More precisely, the budget is distributed over several algorithms, and when an o
 delegate to DE in the case of multi-objective functions).</p>
 </section>
 <section id="reproducibility">
-<h2>Reproducibility<a class="headerlink" href="#reproducibility" title="Permalink to this headline"></a></h2>
+<h2>Reproducibility<a class="headerlink" href="#reproducibility" title="Permalink to this heading"></a></h2>
 <p>Each parametrization has its own <code class="code docutils literal notranslate"><span class="pre">random_state</span></code> for generating random numbers. All optimizers pull from it when they require stochastic behaviors.
 For reproducibility, this random state can be seeded in two ways:</p>
 <ul class="simple">
