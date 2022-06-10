@@ -481,7 +481,9 @@ class GymMulti(ExperimentFunction):
         # Infer the action space.
         self.arities = []
         if isinstance(env.action_space, gym.spaces.Tuple):
-            assert all(isinstance(p, gym.spaces.MultiDiscrete) for p in env.action_space)
+            assert all(
+                isinstance(p, gym.spaces.MultiDiscrete) for p in env.action_space
+            ), f"{name} is not tackled properly."
             self.arities = [p.nvec for p in env.action_space]
             if control == "conformant":
                 output_dim = sum(len(a) for a in self.arities)
@@ -613,7 +615,9 @@ class GymMulti(ExperimentFunction):
             parametrization=parametrization,
         )
         self.greedy_coefficient = 0.0
-        self.parametrization.function.deterministic = not self.uses_compiler_gym
+        self.parametrization.function.deterministic = (
+            randomized or self.stochastic_problem or not self.uses_compiler_gym
+        )
         self.archive: tp.List[tp.Any] = []
         self.mean_loss = 0.0
         self.num_losses = 0
