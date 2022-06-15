@@ -732,7 +732,12 @@ def yabbob(
         budgets = [10, 20, 40]
     if bounded:
         budgets = [10, 20, 40, 100, 300]
-    for optim in optims:
+    if bounded or box:
+        optims += ["AX"]
+        optims += get_optimizers("all_nlopts", seed=next(seedg))
+        optims += ["DiscreteLenglerOnePlusOne", "discretememetic", "GeneticDE", "NGOpt", "OnePlusOne", "DiagonalCMA", "CMandAS2"]
+
+    for optim in [np.random.choice(optims)]:
         for function in functions:
             for budget in budgets:
                 xp = Experiment(

@@ -85,6 +85,11 @@ registry.register(DelayedSphere())
 
 
 @registry.register
+def booth(x: np.ndarray) -> float:
+    assert len(x) >= 2
+    return (x[0] + 2*x[1] - 7)**2 + (2*x[0] + x[1] - 5)**2
+
+@registry.register
 def sphere(x: np.ndarray) -> float:
     """The most classical continuous optimization testbed.
 

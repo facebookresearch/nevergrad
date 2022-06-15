@@ -41,6 +41,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 "COBYLA",
                 "SLSQP",
                 "Powell",
+                "AX",
             ]
             or "NLOPT" in method
         ), f"Unknown method '{method}'"
@@ -48,8 +49,10 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
         self.random_restart = random_restart
         # The following line rescales to [0, 1] if fully bounded.
 
-        if method == "CmaFmin2" or "NLOPT" in method:
+        if method == "CmaFmin2" or method == "AX" or "NLOPT" in method:
             normalizer = p.helpers.Normalizer(self.parametrization)
+            #if method == "AX":
+            #    assert normalizer.fully_bounded, "This AX wants bounded variable."
             if normalizer.fully_bounded:
                 self._normalizer = normalizer
 
@@ -75,7 +78,25 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
         while remaining > 0:  # try to restart if budget is not elapsed
             options: tp.Dict[str, tp.Any] = {} if weakself.budget is None else {"maxiter": remaining}
             # options: tp.Dict[str, tp.Any] = {} if self.budget is None else {"maxiter": remaining}
-            if weakself.method[:5] == "NLOPT":
+            if weakself.method[:2] == "AX":
+                try:  # We do not want the dependency "ax-platform" in requirements.
+                    from ax import optimize as ax_optimize
+                except ImportError:
+                    from unittest import SkipTest
+                    SkipTest("ax-platform not in the dependencies")
+                    raise ImportError("Please pip install ax-platform")
+                def ax_obj_function(dict):
+                    data = np.asarray([dict["x" + str(i)] for i in range(weakself.dimension)])
+                    if weakself._normalizer is not None:
+                        data = weakself._normalizer.backward(np.asarray(data, dtype=np.float32))
+                    return objective_function(data)
+                parameters = [{"name": "x" + str(i), "type": "range", "bounds": [0., 1.],} for i in range(weakself.dimension)]
+                best_x, _, _, _ = ax_optimize(parameters, evaluation_function=ax_obj_function, minimize=True)
+                best_x = np.asarray([best_x["x" + str(i)] for i in range(weakself.dimension)])
+                if weakself._normalizer is not None:
+                    best_x = weakself._normalizer.backward(np.asarray(best_x, dtype=np.float32))
+
+            elif weakself.method[:5] == "NLOPT":
                 # This is NLOPT, used as in the PCSE simulator notebook.
                 # ( https://github.com/ajwdewit/pcse_notebooks ).
                 import nlopt
@@ -176,6 +197,7 @@ class NonObjectOptimizer(base.ConfiguredOptimizer):
         - SQP (or SLSQP): very powerful e.g. in continuous noisy optimization. It is based on
           approximating the objective function by quadratic models.
         - Powell
+        - AX
         - NLOPT* (https://nlopt.readthedocs.io/en/latest/; by default, uses Sbplx, based on Subplex);
             can be NLOPT,
                 NLOPT_LN_SBPLX,
@@ -210,6 +232,7 @@ class NonObjectOptimizer(base.ConfiguredOptimizer):
 NelderMead = NonObjectOptimizer(method="Nelder-Mead").set_name("NelderMead", register=True)
 CmaFmin2 = NonObjectOptimizer(method="CmaFmin2").set_name("CmaFmin2", register=True)
 NLOPT = NonObjectOptimizer(method="NLOPT").set_name("NLOPT", register=True)
+AX = NonObjectOptimizer(method="AX").set_name("AX", register=True)
 Powell = NonObjectOptimizer(method="Powell").set_name("Powell", register=True)
 RPowell = NonObjectOptimizer(method="Powell", random_restart=True).set_name("RPowell", register=True)
 Cobyla = NonObjectOptimizer(method="COBYLA").set_name("Cobyla", register=True)
