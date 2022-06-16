@@ -89,7 +89,7 @@ def ng_full_gym(
             "BipedalWalker-v3",
             "BipedalWalkerHardcore-v3",
             "HopperBulletEnv-v0",
-            "InvertedDoublePendulumBulletEnv-v0",
+            # "InvertedDoublePendulumBulletEnv-v0",
             "LunarLanderContinuous-v2",
         ]
 
