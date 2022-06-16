@@ -26,7 +26,9 @@ from . import experiments
 from . import optgroups
 
 
-@testing.parametrized(**{name: (name, maker) for name, maker in experiments.registry.items()})
+@testing.parametrized(
+    **{name: (name, maker) for name, maker in experiments.registry.items() if "conformant" not in name}
+)
 def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> None:
     # "mav" is not availablefor now.
     if name == "conformant_planning" or name == "neuro_planning":
