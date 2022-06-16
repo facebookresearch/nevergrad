@@ -38,3 +38,4 @@ nlopt
 pybullet>=3.2.2
 box2d-py>=2.3.5
 glfw
+mujoco
