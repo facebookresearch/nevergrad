@@ -315,7 +315,8 @@ class GymMulti(ExperimentFunction):
         for e in gym.envs.registry.all():
             try:
                 assert not any(
-                    x in str(e.id) for x in "Kelly Copy llvm BulletEnv Minitaur Kuka InvertedPendulumSwingupBulletEnv".split()
+                    x in str(e.id)
+                    for x in "Kelly Copy llvm BulletEnv Minitaur Kuka InvertedPendulumSwingupBulletEnv".split()
                 )  # We should have another check than that.
                 assert (
                     "RacecarZedBulletEnv-v0" != e.id
