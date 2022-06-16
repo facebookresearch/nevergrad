@@ -341,4 +341,4 @@ RotationInvariantDE = DifferentialEvolution(crossover=1.0, popsize="dimension").
 )
 
 # Excellent for hyperparameter tuning.
-DiscreteDE = DifferentialEvolution(crossover="dimension").set_name("DiscreteDE")
+DiscreteDE = DifferentialEvolution(crossover="dimension").set_name("DiscreteDE", register=True)
