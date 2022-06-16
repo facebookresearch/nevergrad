@@ -444,7 +444,11 @@ class _CMA(base.Optimizer):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._config = ParametrizedCMA() if config is None else config
         pop = self._config.popsize
-        self._popsize = max(num_workers, 4 + int(3 * np.log(self.dimension))) if pop is None else pop
+        self._popsize = (
+            max(num_workers, 4 + int(self._config.popsize_factor * np.log(self.dimension)))
+            if pop is None
+            else pop
+        )
         # internal attributes
         self._to_be_asked: tp.Deque[np.ndarray] = deque()
         self._to_be_told: tp.List[p.Parameter] = []
@@ -557,6 +561,8 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
     popsize: Optional[int] = None
         population size, should be n * self.num_workers for int n >= 1.
         default is max(self.num_workers, 4 + int(3 * np.log(self.dimension)))
+    popsize_factor: float = 3.
+        factor in the formula for computing the population size
     diagonal: bool
         use the diagonal version of CMA (advised in big dimension)
     high_speed: bool
@@ -579,6 +585,7 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         scale: float = 1.0,
         elitist: bool = False,
         popsize: tp.Optional[int] = None,
+        popsize_factor: float = 3.0,
         diagonal: bool = False,
         high_speed: bool = False,
         fcmaes: bool = False,
@@ -592,6 +599,7 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         self.scale = scale
         self.elitist = elitist
         self.popsize = popsize
+        self.popsize_factor = popsize_factor
         self.diagonal = diagonal
         self.fcmaes = fcmaes
         self.high_speed = high_speed
@@ -637,9 +645,9 @@ class ChoiceBase(base.Optimizer):
     @property
     def optim(self) -> base.Optimizer:
         if self._optim is None:
-            #try:
+            # try:
             self._optim = self._select_optimizer_cls()(self.parametrization, self.budget, self.num_workers)
-            #except:
+            # except:
             #    self._optim = NGOpt39._select_optimizer_cls(self)(self.parametrization, self.budget, self.num_workers)
             self._optim = self._optim if not isinstance(self._optim, NGOptBase) else self._optim.optim
             logger.debug("%s selected %s optimizer.", *(x.name for x in (self, self._optim)))
@@ -668,6 +676,7 @@ class ChoiceBase(base.Optimizer):
     def enable_pickling(self) -> None:
         self.optim.enable_pickling()
 
+
 OldCMA = ParametrizedCMA().set_name("OldCMA", register=True)
 CMAbounded = ParametrizedCMA(
     scale=1.5884, popsize_factor=1, elitist=True, diagonal=True, fcmaes=False
@@ -684,6 +693,7 @@ CMApara = ParametrizedCMA(scale=0.8905, popsize_factor=8, elitist=True, diagonal
 CMAtuning = ParametrizedCMA(
     scale=0.4847, popsize_factor=1, elitist=True, diagonal=False, fcmaes=False
 ).set_name("CMAtuning", register=True)
+
 
 @registry.register
 class CMA(ChoiceBase):  # Adds Risto's CMA to CMA.
@@ -2224,7 +2234,9 @@ class Chaining(base.ConfiguredOptimizer):
 GeneticDE = Chaining([RotatedTwoPointsDE, TwoPointsDE], [200]).set_name(
     "GeneticDE", register=True
 )  # Also known as CGDE
-discretememetic = Chaining([RandomSearch, DiscreteLenglerOnePlusOne, DiscreteOnePlusOne], ["third", "third"]).set_name("discretememetic", register=True)
+discretememetic = Chaining(
+    [RandomSearch, DiscreteLenglerOnePlusOne, DiscreteOnePlusOne], ["third", "third"]
+).set_name("discretememetic", register=True)
 ChainCMAPowell = Chaining([CMA, Powell], ["half"]).set_name("ChainCMAPowell", register=True)
 ChainCMAPowell.no_parallelization = True  # TODO make this automatic
 ChainMetaModelSQP = Chaining([MetaModel, SQP], ["half"]).set_name("ChainMetaModelSQP", register=True)
