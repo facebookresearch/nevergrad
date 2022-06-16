@@ -35,7 +35,7 @@ class TupleActionSpace(gym.Env):
     def reward(
         self,
     ) -> float:
-        return self._reward
+        return float(self._reward)
 
     def _take_action(self, action):
         assert len(action) == 2
