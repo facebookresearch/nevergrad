@@ -413,7 +413,7 @@ class GymMulti(ExperimentFunction):
             try:
                 env.reset()
             except:
-                assert False, f"Maybe chewck if {self.shortname} has a problem in reset / observation."
+                assert False, f"Maybe check if {self.short_name} has a problem in reset / observation."
         return env
 
     def __init__(
