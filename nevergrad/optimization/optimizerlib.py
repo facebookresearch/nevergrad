@@ -444,8 +444,11 @@ class _CMA(base.Optimizer):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._config = ParametrizedCMA() if config is None else config
         pop = self._config.popsize
-        self._popsize = max(num_workers, 4 + int(3 * np.log(self.dimension))) if pop is None else pop
-        # internal attributes
+        self._popsize = (
+            max(num_workers, 4 + int(self._config.popsize_factor * np.log(self.dimension)))
+            if pop is None
+            else pop
+        )  # internal attributes
         self._to_be_asked: tp.Deque[np.ndarray] = deque()
         self._to_be_told: tp.List[p.Parameter] = []
         self._num_spawners = self._popsize // 2  # experimental, for visualization
@@ -557,6 +560,8 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
     popsize: Optional[int] = None
         population size, should be n * self.num_workers for int n >= 1.
         default is max(self.num_workers, 4 + int(3 * np.log(self.dimension)))
+    popsize_factor: float = 3.
+        factor in the formula for computing the population size
     diagonal: bool
         use the diagonal version of CMA (advised in big dimension)
     high_speed: bool
@@ -579,6 +584,7 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         scale: float = 1.0,
         elitist: bool = False,
         popsize: tp.Optional[int] = None,
+        popsize_factor: float = 3.0,
         diagonal: bool = False,
         high_speed: bool = False,
         fcmaes: bool = False,
@@ -592,6 +598,7 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         self.scale = scale
         self.elitist = elitist
         self.popsize = popsize
+        self.popsize_factor = popsize_factor
         self.diagonal = diagonal
         self.fcmaes = fcmaes
         self.high_speed = high_speed
