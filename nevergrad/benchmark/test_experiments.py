@@ -29,9 +29,6 @@ from . import optgroups
 @testing.parametrized(**{name: (name, maker) for name, maker in experiments.registry.items()})
 def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> None:
     # "mav" is not availablefor now.
-    for u in ["Copy"]:
-        if u in name:
-            return
     if name == "conformant_planning" or name == "neuro_planning":
         raise SkipTest("This is user parametric and can not be tested.")
 

@@ -411,7 +411,7 @@ class GymMulti(ExperimentFunction):
             env = gym.make(self.short_name if "LANM" not in self.short_name else "ANM6Easy-v0")
             try:
                 env.reset()
-            except AssertionError:
+            except:
                 assert False, f"Maybe chewck if {self.shortname} has a problem in reset / observation."
         return env
 
