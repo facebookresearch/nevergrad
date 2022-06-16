@@ -30,7 +30,7 @@ class TupleActionSpace(gym.Env):
 
     def _next_observation(self):
 
-        return np.asarray((0.5, 0.5, 0.5))
+        return np.asarray((0.5, 0.5, 0.5), dtype="float16")
 
     def reward(
         self,
