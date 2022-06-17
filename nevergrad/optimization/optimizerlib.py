@@ -2759,7 +2759,6 @@ class NGOpt10(NGOpt8):
         return base.Optimizer.recommend(self)
 
 
-@registry.register
 class NGOpt12(NGOpt10):
     def _select_optimizer_cls(self) -> base.OptCls:
         cma_vars = max(1, 4 + int(3 * np.log(self.dimension)))
@@ -2788,7 +2787,6 @@ class NGOpt12(NGOpt10):
             return super()._select_optimizer_cls()
 
 
-@registry.register
 class NGOpt13(NGOpt12):  # Also known as NGOpt12H
     def _select_optimizer_cls(self) -> base.OptCls:
         if (
@@ -2803,7 +2801,6 @@ class NGOpt13(NGOpt12):  # Also known as NGOpt12H
             return super()._select_optimizer_cls()
 
 
-@registry.register
 class NGOpt14(NGOpt12):  # Also known as NGOpt12H_nohyperopt
     def _select_optimizer_cls(self) -> base.OptCls:
         if self.budget is not None and self.budget < 600:
@@ -2847,7 +2844,6 @@ class NGOpt16(NGOpt15):
             return super()._select_optimizer_cls()
 
 
-@registry.register
 class NGOpt21(NGOpt16):
     def _select_optimizer_cls(self) -> base.OptCls:
         cma_vars = max(1, 4 + int(3 * np.log(self.dimension)))
@@ -2889,7 +2885,6 @@ class NGOpt36(NGOpt16):
             return super()._select_optimizer_cls()
 
 
-@registry.register
 class NGOpt38(NGOpt16):
     def _select_optimizer_cls(self) -> base.OptCls:
         # Special cases in the bounded case
