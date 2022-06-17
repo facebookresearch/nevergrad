@@ -89,6 +89,7 @@ class _OnePlusOne(base.Optimizer):
         mutation: str = "gaussian",
         crossover: bool = False,
         rotation: bool = False,
+        annealing: str = "none",
         use_pareto: bool = False,
         sparse: tp.Union[bool, int] = False,
         smoother: bool = False,
@@ -99,6 +100,8 @@ class _OnePlusOne(base.Optimizer):
         self._previous_best_loss = float("inf")
         self.use_pareto = use_pareto
         self.smoother = smoother
+        self.annealing = annealing
+        self._annealing_base: tp.Optional[tp.ArrayLike] = None
         self.sparse = int(sparse)  # True --> 1
         all_params = p.helpers.flatten(self.parametrization)
         arities = [len(param.choices) for _, param in all_params if isinstance(param, p.TransitionChoice)]
@@ -204,6 +207,9 @@ class _OnePlusOne(base.Optimizer):
         # mutating
 
         mutation = self.mutation
+        if self._annealing_base is not None:  # We assume that we should start from this one (even if not the best).
+            assert self.annealing != "none"
+            pessimistic.set_standardized_data(self._annealing_base, reference=ref)
         if mutation in ("gaussian", "cauchy"):  # standard case
             step = (
                 self._rng.normal(0, 1, self.dimension)
@@ -287,6 +293,16 @@ class _OnePlusOne(base.Optimizer):
             return pessimistic.set_standardized_data(data, reference=ref)
 
     def _internal_tell(self, x: tp.ArrayLike, loss: tp.FloatLoss) -> None:
+        if self.annealing != "none":
+            delta = self._previous_best_loss - loss
+            if delta > 0:
+                self._annealing_base = x
+            else:
+                T = 100.0 * (0.9**self.num_ask)
+                proba = np.exp(-delta / T)  # Probability of accepting in spite of worse.
+                if self._rng.rand() < proba:
+                    self._annealing_base = x
+
         # only used for cauchy and gaussian
         if self._previous_best_loss != loss:
             self._sigma *= 2.0 if loss < self._previous_best_loss else 0.84
@@ -371,6 +387,7 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
         mutation: str = "gaussian",
         crossover: bool = False,
         rotation: bool = False,
+        annealing: str = "none",
         use_pareto: bool = False,
         sparse: bool = False,
         smoother: bool = False,
@@ -379,13 +396,20 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
 
 
 OnePlusOne = ParametrizedOnePlusOne().set_name("OnePlusOne", register=True)
+SA = ParametrizedOnePlusOne(annealing="yes").set_name("SA", register=True)
 NoisyOnePlusOne = ParametrizedOnePlusOne(noise_handling="random").set_name("NoisyOnePlusOne", register=True)
 DiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete").set_name("DiscreteOnePlusOne", register=True)
+SADiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete", annealing="yes").set_name(
+    "SADiscreteOnePlusOne", register=True
+)
 PortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="portfolio").set_name(
     "PortfolioDiscreteOnePlusOne", register=True
 )
 DiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(mutation="lengler").set_name(
     "DiscreteLenglerOnePlusOne", register=True
+)
+SADiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(mutation="lengler", annealing="yes").set_name(
+    "SADiscreteLenglerOnePlusOne", register=True
 )
 
 AdaptiveDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="adaptive").set_name(
