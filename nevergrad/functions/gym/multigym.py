@@ -315,7 +315,8 @@ class GymMulti(ExperimentFunction):
         for e in gym.envs.registry.all():
             try:
                 assert not any(
-                    x in str(e.id) for x in "Kelly llvm BulletEnv Minitaur Kuka".split()
+                    x in str(e.id)
+                    for x in "Kelly Copy llvm BulletEnv Minitaur Kuka InvertedPendulumSwingupBulletEnv".split()
                 )  # We should have another check than that.
                 assert (
                     "RacecarZedBulletEnv-v0" != e.id
@@ -409,7 +410,10 @@ class GymMulti(ExperimentFunction):
             #    self.compilergym_index is None
             # ), "compiler_gym_pb_index should not be defined if not CompilerGym."
             env = gym.make(self.short_name if "LANM" not in self.short_name else "ANM6Easy-v0")
-            env.reset()
+            try:
+                env.reset()
+            except:
+                assert False, f"Maybe check if {self.short_name} has a problem in reset / observation."
         return env
 
     def __init__(
@@ -481,7 +485,9 @@ class GymMulti(ExperimentFunction):
         # Infer the action space.
         self.arities = []
         if isinstance(env.action_space, gym.spaces.Tuple):
-            assert all(isinstance(p, gym.spaces.MultiDiscrete) for p in env.action_space)
+            assert all(
+                isinstance(p, gym.spaces.MultiDiscrete) for p in env.action_space
+            ), f"{name} has a too complicated structure."
             self.arities = [p.nvec for p in env.action_space]
             if control == "conformant":
                 output_dim = sum(len(a) for a in self.arities)
