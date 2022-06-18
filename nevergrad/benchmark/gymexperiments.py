@@ -85,11 +85,11 @@ def ng_full_gym(
             "Acrobot-v1",
             "MountainCarContinuous-v0",
             "Pendulum-v1",
-            "InvertedPendulumSwingupBulletEnv-v0",
+            # "InvertedPendulumSwingupBulletEnv-v0",
             "BipedalWalker-v3",
             "BipedalWalkerHardcore-v3",
             "HopperBulletEnv-v0",
-            "InvertedDoublePendulumBulletEnv-v0",
+            # "InvertedDoublePendulumBulletEnv-v0",
             "LunarLanderContinuous-v2",
         ]
 
