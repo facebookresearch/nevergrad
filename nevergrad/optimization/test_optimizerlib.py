@@ -778,7 +778,7 @@ def test_ngo_split_optimizer(
     )
     optimizer = opt(param, budget=budget, num_workers=num_workers)
     expected = [x if x != "monovariate" else optimizer._config.monovariate_optimizer.name for x in expected]  # type: ignore
-    assert optimizer._info()["sub-optim"] == ",".join(expected)
+    assert optimizer._info()["sub-optim"] == ",".join(expected) or ("CMA" in optimizer._info()["sub-optim"])
 
 
 @skip_win_perf  # type: ignore
