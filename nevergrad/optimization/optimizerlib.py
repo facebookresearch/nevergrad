@@ -444,7 +444,11 @@ class _CMA(base.Optimizer):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._config = ParametrizedCMA() if config is None else config
         pop = self._config.popsize
-        self._popsize = max(num_workers, 4 + int(3 * np.log(self.dimension))) if pop is None else pop
+        self._popsize = (
+            max(num_workers, 4 + int(self._config.popsize_factor * np.log(self.dimension)))
+            if pop is None
+            else pop
+        )
         # internal attributes
         self._to_be_asked: tp.Deque[np.ndarray] = deque()
         self._to_be_told: tp.List[p.Parameter] = []
@@ -557,6 +561,8 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
     popsize: Optional[int] = None
         population size, should be n * self.num_workers for int n >= 1.
         default is max(self.num_workers, 4 + int(3 * np.log(self.dimension)))
+    popsize_factor: float = 3.
+        factor in the formula for computing the population size
     diagonal: bool
         use the diagonal version of CMA (advised in big dimension)
     high_speed: bool
@@ -579,6 +585,7 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         scale: float = 1.0,
         elitist: bool = False,
         popsize: tp.Optional[int] = None,
+        popsize_factor: float = 3.0,
         diagonal: bool = False,
         high_speed: bool = False,
         fcmaes: bool = False,
@@ -592,6 +599,7 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         self.scale = scale
         self.elitist = elitist
         self.popsize = popsize
+        self.popsize_factor = popsize_factor
         self.diagonal = diagonal
         self.fcmaes = fcmaes
         self.high_speed = high_speed
@@ -599,7 +607,118 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         self.inopts = inopts
 
 
-CMA = ParametrizedCMA().set_name("CMA", register=True)
+@registry.register
+class ChoiceBase(base.Optimizer):
+    """Nevergrad optimizer by competence map."""
+
+    # pylint: disable=too-many-branches
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        analysis = p.helpers.analyze(self.parametrization)
+        funcinfo = self.parametrization.function
+        self.has_noise = not (analysis.deterministic and funcinfo.deterministic)
+        # The noise coming from discrete variables goes to 0.
+        self.noise_from_instrumentation = self.has_noise and funcinfo.deterministic
+        self.fully_continuous = analysis.continuous
+        all_params = p.helpers.flatten(self.parametrization)
+        # figure out if there is any discretization layers
+        int_layers = list(
+            itertools.chain.from_iterable([_layering.Int.filter_from(x) for _, x in all_params])
+        )
+        int_layers = [x for x in int_layers if x.arity is not None]  # only "Choice" instances for now
+        self.has_discrete_not_softmax = any(
+            not isinstance(lay, _datalayers.SoftmaxSampling) for lay in int_layers
+        )
+        self._has_discrete = bool(int_layers)
+        self._arity: int = max((lay.arity for lay in int_layers), default=-1)  # type: ignore
+        if self.fully_continuous:
+            self._arity = -1
+        self._optim: tp.Optional[base.Optimizer] = None
+        self._constraints_manager.update(
+            max_trials=1000,
+            penalty_factor=1.0,
+            penalty_exponent=1.01,
+        )
+
+    @property
+    def optim(self) -> base.Optimizer:
+        if self._optim is None:
+            # try:
+            self._optim = self._select_optimizer_cls()(self.parametrization, self.budget, self.num_workers)
+            # except:
+            #    self._optim = NGOpt39._select_optimizer_cls(self)(self.parametrization, self.budget, self.num_workers)
+            self._optim = self._optim if not isinstance(self._optim, NGOptBase) else self._optim.optim
+            logger.debug("%s selected %s optimizer.", *(x.name for x in (self, self._optim)))
+        return self._optim
+
+    def _select_optimizer_cls(self) -> base.OptCls:
+        return CMA
+
+    def _internal_ask_candidate(self) -> p.Parameter:
+        return self.optim.ask()
+
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        self.optim.tell(candidate, loss)
+
+    def recommend(self) -> p.Parameter:
+        return self.optim.recommend()
+
+    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        self.optim.tell(candidate, loss)
+
+    def _info(self) -> tp.Dict[str, tp.Any]:
+        out = {"sub-optim": self.optim.name}
+        out.update(self.optim._info())  # this will work for recursive NGOpt calls
+        return out
+
+    def enable_pickling(self) -> None:
+        self.optim.enable_pickling()
+
+
+OldCMA = ParametrizedCMA().set_name("OldCMA", register=True)
+CMAbounded = ParametrizedCMA(
+    scale=1.5884, popsize_factor=1, elitist=True, diagonal=True, fcmaes=False
+).set_name("CMAbounded", register=True)
+CMAsmall = ParametrizedCMA(
+    scale=0.3607, popsize_factor=3, elitist=False, diagonal=False, fcmaes=False
+).set_name("CMAsmall", register=True)
+CMAstd = ParametrizedCMA(
+    scale=0.4699, popsize_factor=3, elitist=False, diagonal=False, fcmaes=False
+).set_name("CMAstd", register=True)
+CMApara = ParametrizedCMA(scale=0.8905, popsize_factor=8, elitist=True, diagonal=True, fcmaes=False).set_name(
+    "CMApara", register=True
+)
+CMAtuning = ParametrizedCMA(
+    scale=0.4847, popsize_factor=1, elitist=True, diagonal=False, fcmaes=False
+).set_name("CMAtuning", register=True)
+
+
+@registry.register
+class CMA(ChoiceBase):  # Adds Risto's CMA to CMA.
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
+
+    def _select_optimizer_cls(self) -> base.OptCls:
+        if (
+            self.budget is not None
+            and self.fully_continuous
+            and not self.has_noise
+            and self.num_objectives < 2
+        ):
+            if p.helpers.Normalizer(self.parametrization).fully_bounded:
+                return CMAbounded
+            if self.budget < 50:
+                if self.dimension <= 15:
+                    return CMAtuning
+                return CMAsmall
+            if self.num_workers > 20:
+                return CMApara
+            return CMAstd
+        else:
+            return OldCMA
+
+
 DiagonalCMA = ParametrizedCMA(diagonal=True).set_name("DiagonalCMA", register=True)
 FCMA = ParametrizedCMA(fcmaes=True).set_name("FCMA", register=True)
 
@@ -2115,6 +2234,9 @@ class Chaining(base.ConfiguredOptimizer):
 GeneticDE = Chaining([RotatedTwoPointsDE, TwoPointsDE], [200]).set_name(
     "GeneticDE", register=True
 )  # Also known as CGDE
+discretememetic = Chaining(
+    [RandomSearch, DiscreteLenglerOnePlusOne, DiscreteOnePlusOne], ["third", "third"]
+).set_name("discretememetic", register=True)
 ChainCMAPowell = Chaining([CMA, Powell], ["half"]).set_name("ChainCMAPowell", register=True)
 ChainCMAPowell.no_parallelization = True  # TODO make this automatic
 ChainMetaModelSQP = Chaining([MetaModel, SQP], ["half"]).set_name("ChainMetaModelSQP", register=True)
@@ -2637,7 +2759,6 @@ class NGOpt10(NGOpt8):
         return base.Optimizer.recommend(self)
 
 
-@registry.register
 class NGOpt12(NGOpt10):
     def _select_optimizer_cls(self) -> base.OptCls:
         cma_vars = max(1, 4 + int(3 * np.log(self.dimension)))
@@ -2666,7 +2787,6 @@ class NGOpt12(NGOpt10):
             return super()._select_optimizer_cls()
 
 
-@registry.register
 class NGOpt13(NGOpt12):  # Also known as NGOpt12H
     def _select_optimizer_cls(self) -> base.OptCls:
         if (
@@ -2681,7 +2801,6 @@ class NGOpt13(NGOpt12):  # Also known as NGOpt12H
             return super()._select_optimizer_cls()
 
 
-@registry.register
 class NGOpt14(NGOpt12):  # Also known as NGOpt12H_nohyperopt
     def _select_optimizer_cls(self) -> base.OptCls:
         if self.budget is not None and self.budget < 600:
@@ -2725,7 +2844,6 @@ class NGOpt16(NGOpt15):
             return super()._select_optimizer_cls()
 
 
-@registry.register
 class NGOpt21(NGOpt16):
     def _select_optimizer_cls(self) -> base.OptCls:
         cma_vars = max(1, 4 + int(3 * np.log(self.dimension)))
@@ -2767,7 +2885,6 @@ class NGOpt36(NGOpt16):
             return super()._select_optimizer_cls()
 
 
-@registry.register
 class NGOpt38(NGOpt16):
     def _select_optimizer_cls(self) -> base.OptCls:
         # Special cases in the bounded case

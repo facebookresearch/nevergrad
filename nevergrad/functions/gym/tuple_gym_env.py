@@ -30,12 +30,12 @@ class TupleActionSpace(gym.Env):
 
     def _next_observation(self):
 
-        return (0.5, 0.5, 0.5)
+        return np.asarray((0.5, 0.5, 0.5), dtype="float16")
 
     def reward(
         self,
     ) -> float:
-        return self._reward
+        return float(self._reward)
 
     def _take_action(self, action):
         assert len(action) == 2
