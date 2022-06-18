@@ -72,6 +72,7 @@ def good_at_suggest(name: str) -> bool:
         "BSO",
         "Sparse",
         "Recombining",
+        "SA",
         "PortfolioDiscreteOne",
     ]
     return not any(k in name for k in keywords)

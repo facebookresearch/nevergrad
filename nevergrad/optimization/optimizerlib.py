@@ -102,6 +102,7 @@ class _OnePlusOne(base.Optimizer):
         self.smoother = smoother
         self.annealing = annealing
         self._annealing_base: tp.Optional[tp.ArrayLike] = None
+        self._max_loss = -float("inf")
         self.sparse = int(sparse)  # True --> 1
         all_params = p.helpers.flatten(self.parametrization)
         arities = [len(param.choices) for _, param in all_params if isinstance(param, p.TransitionChoice)]
@@ -297,10 +298,21 @@ class _OnePlusOne(base.Optimizer):
     def _internal_tell(self, x: tp.ArrayLike, loss: tp.FloatLoss) -> None:
         if self.annealing != "none":
             delta = self._previous_best_loss - loss
+            if loss > self._max_loss:
+                self._max_loss = loss
             if delta > 0:
                 self._annealing_base = x
             else:
-                T = 100.0 * (0.9**self.num_ask)
+                amplitude = max(1.0, self._max_loss - self._previous_best_loss)
+                annealing_dict = {
+                    "Exp0.9": 100.0 * (0.9**self.num_ask),
+                    "Exp0.99": 100.0 * (0.99**self.num_ask),
+                    "Lin100.0": 100.0 * (1 - self.num_ask / (self.budget + 1)),
+                    "Lin1.0": 1.0 * (1 - self.num_ask / (self.budget + 1)),
+                    "Exp0.9Auto": amplitude * (0.9**self.num_ask),
+                    "LinAuto": amplitude * (1 - self.num_ask / (self.budget + 1)),
+                }
+                T = annealing_dict[self.annealing]
                 proba = np.exp(-delta / T)  # Probability of accepting in spite of worse.
                 if self._rng.rand() < proba:
                     self._annealing_base = x
@@ -398,20 +410,44 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
 
 
 OnePlusOne = ParametrizedOnePlusOne().set_name("OnePlusOne", register=True)
-SA = ParametrizedOnePlusOne(annealing="yes").set_name("SA", register=True)
+# SA = ParametrizedOnePlusOne(annealing="Exp0.9").set_name("SA", register=True)
 NoisyOnePlusOne = ParametrizedOnePlusOne(noise_handling="random").set_name("NoisyOnePlusOne", register=True)
 DiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete").set_name("DiscreteOnePlusOne", register=True)
-SADiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete", annealing="yes").set_name(
-    "SADiscreteOnePlusOne", register=True
+SADiscreteLenglerOnePlusOneExp09 = ParametrizedOnePlusOne(mutation="lengler", annealing="Exp0.9").set_name(
+    "SADiscreteLenglerOnePlusOneExp09", register=True
+)
+SADiscreteLenglerOnePlusOneExp099 = ParametrizedOnePlusOne(mutation="lengler", annealing="Exp0.99").set_name(
+    "SADiscreteLenglerOnePlusOneExp099", register=True
+)
+SADiscreteLenglerOnePlusOneExp09Auto = ParametrizedOnePlusOne(
+    mutation="lengler", annealing="Exp0.9Auto"
+).set_name("SADiscreteLenglerOnePlusOneExp09Auto", register=True)
+SADiscreteLenglerOnePlusOneLinAuto = ParametrizedOnePlusOne(mutation="lengler", annealing="LinAuto").set_name(
+    "SADiscreteLenglerOnePlusOneLinAuto", register=True
+)
+SADiscreteLenglerOnePlusOneLin1 = ParametrizedOnePlusOne(mutation="lengler", annealing="Lin1.0").set_name(
+    "SADiscreteLenglerOnePlusOneLin1", register=True
+)
+SADiscreteLenglerOnePlusOneLin100 = ParametrizedOnePlusOne(mutation="lengler", annealing="Lin100.0").set_name(
+    "SADiscreteLenglerOnePlusOneLin100", register=True
+)
+SADiscreteOnePlusOneExp09 = ParametrizedOnePlusOne(mutation="discrete", annealing="Exp0.9").set_name(
+    "SADiscreteOnePlusOneExp09", register=True
+)
+SADiscreteOnePlusOneExp099 = ParametrizedOnePlusOne(mutation="discrete", annealing="Exp0.99").set_name(
+    "SADiscreteOnePlusOneExp099", register=True
+)
+SADiscreteOnePlusOneLin1 = ParametrizedOnePlusOne(mutation="discrete", annealing="Lin1.0").set_name(
+    "SADiscreteOnePlusOneLin1", register=True
+)
+SADiscreteOnePlusOneLin100 = ParametrizedOnePlusOne(mutation="discrete", annealing="Lin100.0").set_name(
+    "SADiscreteOnePlusOneLin100", register=True
 )
 PortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="portfolio").set_name(
     "PortfolioDiscreteOnePlusOne", register=True
 )
 DiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(mutation="lengler").set_name(
     "DiscreteLenglerOnePlusOne", register=True
-)
-SADiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(mutation="lengler", annealing="yes").set_name(
-    "SADiscreteLenglerOnePlusOne", register=True
 )
 
 AdaptiveDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="adaptive").set_name(
