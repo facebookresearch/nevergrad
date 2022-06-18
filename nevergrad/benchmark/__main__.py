@@ -21,7 +21,7 @@ def launch(
     output: tp.Optional[tp.PathLike] = None,
 ) -> Path:
     """Launch experiment with given names and selection modulo
-    max_index can be specified to provide a limited number of settings
+    cap_index can be specified to provide a limited number of settings
     """
     # create the data
     csvpath = Path(experiment + ".csv") if output is None else Path(output)
@@ -103,7 +103,7 @@ def repeated_launch(
     repetitions: int = 1,
 ) -> None:
     """Launch experiment with given names and selection module
-    max_index can be specified to provide a limited number of settings
+    cap_index can be specified to provide a limited number of settings
     This repeats the plan several times and increments the seed.
     """
     # start by importing additional content

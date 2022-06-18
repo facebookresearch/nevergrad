@@ -154,6 +154,18 @@ def test_oracle() -> None:
     np.testing.assert_array_almost_equal(y3, y4)  # should be equal
 
 
+@pytest.mark.parametrize("split", [True, False])  # type: ignore
+def test_blocks(split: bool) -> None:
+    func = functionlib.ArtificialFunction("sphere", block_dimension=5, split=split, num_blocks=2)
+    assert func.dimension == 10
+    param = func.parametrization
+    y = func(*param.args, **param.kwargs)
+    y2 = func.evaluation_function(param)  # returns a float
+    t = func.compute_pseudotime((param.args, param.kwargs), y2)
+    assert t > 0
+    np.testing.assert_array_almost_equal(y, y2)  # should be equal
+
+
 def test_function_transform() -> None:
     func = functionlib.ArtificialFunction("sphere", 2, num_blocks=1, noise_level=0.1)
     output = func._transform(np.array([0.0, 0]))

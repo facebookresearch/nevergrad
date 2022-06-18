@@ -52,6 +52,7 @@ class ArtificialVariable:
             self._dimension, self.block_dimension * self.num_blocks, replace=False
         ).tolist()
         indices.sort()  # keep the indices sorted sorted so that blocks do not overlap
+        # Caution this is also important for split, so that splitted arrays end un in the same block
         for transform_inds in tools.grouper(indices, n=self.block_dimension):
             self._transforms.append(
                 utils.Transform(
@@ -176,14 +177,14 @@ class ArtificialFunction(ExperimentFunction):
         info = corefuncs.registry.get_info(self._parameters["name"])
         only_index_transform = info.get("no_transform", False)
 
-        assert not (split and hashing)
-        assert not (split and useless_variables > 0)
         array_bounds = dict(upper=5, lower=-5) if bounded else {}
         if not split:
             parametrization: ng.p.Parameter = ng.p.Array(
                 shape=(1,) if hashing else (self._dimension,), **array_bounds  # type: ignore
             ).set_name("")
         else:
+            assert not hashing
+            assert not useless_variables
             arrays = [
                 ng.p.Array(shape=(block_dimension,), **array_bounds) for _ in range(num_blocks)  # type: ignore
             ]
@@ -218,9 +219,8 @@ class ArtificialFunction(ExperimentFunction):
 
     @property
     def dimension(self) -> int:
-        return (
-            self._dimension
-        )  # bypass the parametrization one (because of the "hashing" case)  # TODO: remove
+        # bypass the parametrization one (because of the "hashing" case)  # TODO: remove
+        return self._dimension
 
     @staticmethod
     def list_sorted_function_names() -> tp.List[str]:
@@ -248,13 +248,16 @@ class ArtificialFunction(ExperimentFunction):
         Under the hood, __call__ delegates to oracle_call + add some noise if noise_level > 0.
         """
         assert len(recommendations) == 1, "Should not be a pareto set for a singleobjective function"
-        assert len(recommendations[0].args) == 1 and not recommendations[0].kwargs
-        data = self._transform(recommendations[0].args[0])
+        assert not recommendations[0].kwargs
+        # we can concatenate since blocks are necessarily sorted
+        data = np.concatenate(recommendations[0].args, axis=0)
+        data = self._transform(data)
         return self.function_from_transform(data)
 
-    def noisy_function(self, x: tp.ArrayLike) -> float:
+    def noisy_function(self, *x: tp.ArrayLike) -> float:
+        data = np.concatenate(x, axis=0)  # we can concatenate since blocks are necessarily sorted
         return _noisy_call(
-            x=np.array(x, copy=False),
+            x=data,
             transf=self._transform,
             func=self.function_from_transform,
             noise_level=self._parameters["noise_level"],
@@ -262,13 +265,12 @@ class ArtificialFunction(ExperimentFunction):
             random_state=self._parametrization.random_state,
         )
 
-    def compute_pseudotime(self, input_parameter: tp.Any, loss: tp.Loss) -> float:
+    def compute_pseudotime(self, input_parameter: tp.ArgsKwargs, loss: tp.Loss) -> float:
         """Delay before returning results in steady state mode benchmarks (fake execution time)"""
         args, kwargs = input_parameter
         assert not kwargs
-        assert len(args) == 1
         if hasattr(self._func, "compute_pseudotime"):
-            data = self._transform(args[0])
+            data = self._transform(np.concatenate(args, axis=0))
             total = 0.0
             for block in data:
                 total += self._func.compute_pseudotime(((block,), {}), loss)  # type: ignore

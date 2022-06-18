@@ -135,11 +135,13 @@ def deterministic_sampling(parameter: core.Parameter) -> tp.Iterator[None]:
     deterministic = [lay.deterministic for lay in int_layers]
     for lay in int_layers:
         lay.deterministic = True
-    yield
-    # sample and reset the previous behavior
-    parameter.value  # pylint: disable=pointless-statement
-    for lay, det in zip(int_layers, deterministic):
-        lay.deterministic = det
+    try:
+        yield
+    finally:
+        # sample and reset the previous behavior
+        parameter.value  # pylint: disable=pointless-statement
+        for lay, det in zip(int_layers, deterministic):
+            lay.deterministic = det
 
 
 def _fully_bounded_layers(data: pdata.Data) -> tp.List[_datalayers.BoundLayer]:
