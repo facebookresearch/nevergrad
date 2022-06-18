@@ -12,6 +12,19 @@ from nevergrad.common.decorators import Registry
 registry: Registry[tp.Callable[[np.ndarray], float]] = Registry()
 
 
+class BonnansFunction:
+    def __init__(self, index: int, M: int = 100, N: int = 100) -> None:
+        self.N = N
+        self.M = M
+        self.A = np.random.RandomState(index).rand(M, N)
+        self.y = np.random.RandomState(index + 1).rand(M) * N / 2
+        # print(f"y={self.y} {sum(self.y)} {sum((self.y/self.N)**2)}")
+
+    def __call__(self, x: tp.ArrayLike) -> float:
+        assert len(x) == self.N
+        return np.sum((np.matmul(self.A, x) / self.N - self.y / self.N) ** 2)
+
+
 class DiscreteFunction:
     def __init__(self, name: str, arity: int = 2) -> None:
         """Returns a classical discrete function for test, in the domain {0,1,...,arity-1}^d.
@@ -64,7 +77,7 @@ class DiscreteFunction:
 
 def _styblinksitang(x: np.ndarray, noise: float) -> float:
     """Classical function for testing noisy optimization."""
-    x2 = x ** 2
+    x2 = x**2
     val = x2.dot(x2) + np.sum(5 * x - 16 * x2)
     # return a positive value for maximization
     return float(39.16599 * len(x) + 0.5 * val + noise * np.random.normal(size=val.shape))
@@ -72,7 +85,7 @@ def _styblinksitang(x: np.ndarray, noise: float) -> float:
 
 class DelayedSphere:
     def __call__(self, x: np.ndarray) -> float:
-        return float(np.sum(x ** 2))
+        return float(np.sum(x**2))
 
     def compute_pseudotime(  # pylint: disable=unused-argument
         self, input_parameter: tp.Any, value: float
@@ -113,13 +126,13 @@ def sphere4(x: np.ndarray) -> float:
 
 @registry.register
 def maxdeceptive(x: np.ndarray) -> float:
-    dec = 3 * x ** 2 - (2 / (3 ** (x - 2) ** 2 + 0.1))
+    dec = 3 * x**2 - (2 / (3 ** (x - 2) ** 2 + 0.1))
     return float(np.max(dec))
 
 
 @registry.register
 def sumdeceptive(x: np.ndarray) -> float:
-    dec = 3 * x ** 2 - (2 / (3 ** (x - 2) ** 2 + 0.1))
+    dec = 3 * x**2 - (2 / (3 ** (x - 2) ** 2 + 0.1))
     return float(np.sum(dec))
 
 
@@ -191,7 +204,7 @@ def stepellipsoid(x: np.ndarray) -> float:
     """
     dim = x.size
     weights = 10 ** np.linspace(0, 6, dim)
-    return float(step(weights.dot(x ** 2)))
+    return float(step(weights.dot(x**2)))
 
 
 @registry.register
@@ -202,7 +215,7 @@ def ellipsoid(x: np.ndarray) -> float:
     """
     dim = x.size
     weights = 10 ** np.linspace(0, 6, dim)
-    return float(weights.dot(x ** 2))
+    return float(weights.dot(x**2))
 
 
 @registry.register
@@ -240,7 +253,7 @@ def stepdoublelinearslope(x: np.ndarray) -> float:
 @registry.register
 def hm(x: np.ndarray) -> float:
     """New multimodal function (proposed for Nevergrad)."""
-    return float((x ** 2).dot(1.1 + np.cos(1.0 / x)))
+    return float((x**2).dot(1.1 + np.cos(1.0 / x)))
 
 
 @registry.register
@@ -322,7 +335,7 @@ def lunacek(x: np.ndarray) -> float:
     problemDimensions = len(x)
     s = 1.0 - (1.0 / (2.0 * np.sqrt(problemDimensions + 20.0) - 8.2))
     mu1 = 2.5
-    mu2 = -np.sqrt(abs((mu1 ** 2 - 1.0) / s))
+    mu2 = -np.sqrt(abs((mu1**2 - 1.0) / s))
     firstSum = 0.0
     secondSum = 0.0
     thirdSum = 0.0

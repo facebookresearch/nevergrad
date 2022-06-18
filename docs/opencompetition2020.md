@@ -55,10 +55,6 @@ Make sure to select the Open Optimization Competition 2020 as track when you sub
 **Submission deadline is Sept. 30, 2020, AoE**
 All pull requests active between December 1st 2019 and Sept 30, 2020 are eligible.
 
-## Awards:
-Up to 12 000 euros of awards, to be used for traveling to PPSN or GECCO 2020 or 2021, distributed over several winners.
-In addition, a limited number of registration fee waivers are available for PPSN 2020.
-
 ## Winners:
 The winning entries of the Open Optimization Competition 2020 are
 (ordered by pull request ID):

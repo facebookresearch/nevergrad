@@ -5,6 +5,7 @@
 
 import os
 import copy
+import scipy.stats
 import typing as tp
 import numpy as np
 import gym
@@ -313,8 +314,14 @@ class GymMulti(ExperimentFunction):
         max_displays = 10
         for e in gym.envs.registry.all():
             try:
-                assert "Kelly" not in str(e.id)  # We should have another check than that.
-                assert "llvm" not in str(e.id)  # We should have another check than that.
+                assert not any(
+                    x in str(e.id)
+                    for x in "Kelly Copy llvm BulletEnv Minitaur Kuka InvertedPendulumSwingupBulletEnv".split()
+                )  # We should have another check than that.
+                assert (
+                    "RacecarZedBulletEnv-v0" != e.id
+                ), "This specific environment causes X11 error when using pybullet_envs."
+                assert "CarRacing-v" not in str(e.id), "Pixel based task not supported yet"
                 env = gym.make(e.id)
                 env.reset()
                 env.step(env.action_space.sample())
@@ -403,7 +410,10 @@ class GymMulti(ExperimentFunction):
             #    self.compilergym_index is None
             # ), "compiler_gym_pb_index should not be defined if not CompilerGym."
             env = gym.make(self.short_name if "LANM" not in self.short_name else "ANM6Easy-v0")
-            env.reset()
+            try:
+                env.reset()
+            except:
+                assert False, f"Maybe check if {self.short_name} has a problem in reset / observation."
         return env
 
     def __init__(
@@ -473,7 +483,19 @@ class GymMulti(ExperimentFunction):
         self.neural_factor = neural_factor
 
         # Infer the action space.
-        if isinstance(env.action_space, gym.spaces.Discrete):
+        self.arities = []
+        if isinstance(env.action_space, gym.spaces.Tuple):
+            assert all(
+                isinstance(p, gym.spaces.MultiDiscrete) for p in env.action_space
+            ), f"{name} has a too complicated structure."
+            self.arities = [p.nvec for p in env.action_space]
+            if control == "conformant":
+                output_dim = sum(len(a) for a in self.arities)
+            else:
+                output_dim = sum(sum(a) for a in self.arities)
+            output_shape = (output_dim,)
+            discrete = True
+        elif isinstance(env.action_space, gym.spaces.Discrete):
             output_dim = env.action_space.n
             output_shape = (output_dim,)
             discrete = True
@@ -486,6 +508,7 @@ class GymMulti(ExperimentFunction):
             # output_shape = tuple(np.asarray(env.action_space.sample()).shape)
             discrete = False
             output_dim = np.prod(output_shape)
+
         self.discrete = discrete
 
         # Infer the observation space.
@@ -532,7 +555,7 @@ class GymMulti(ExperimentFunction):
         self.output_dim = output_dim
         self.num_neurons = neural_factor * (input_dim - self.extended_input_len)
         self.num_internal_layers = 1 if "semi" in control else 3
-        internal = self.num_internal_layers * (self.num_neurons ** 2) if "deep" in control else 0
+        internal = self.num_internal_layers * (self.num_neurons**2) if "deep" in control else 0
         unstructured_neural_size = (
             output_dim * self.num_neurons + self.num_neurons * (input_dim + 1) + internal,
         )
@@ -660,8 +683,44 @@ class GymMulti(ExperimentFunction):
             forked.histogram = env.histogram.copy()
         return forked
 
+    def softmax(self, a):
+        a = np.nan_to_num(a, copy=False, nan=-1e20, posinf=1e20, neginf=-1e20)
+        probabilities = np.exp(a - max(a))
+        probabilities = probabilities / sum(probabilities)
+        return probabilities
+
     def discretize(self, a, env):
         """Transforms a logit into an int obtained through softmax."""
+        if len(self.arities) > 0:
+            if self.control == "conformant":
+                index = 0
+                output = []
+                for arities in self.arities:
+                    local_output = []
+                    for arity in arities:
+                        local_output += [min(int(scipy.stats.norm.cdf(a[index]) * arity), arity - 1)]
+                        index += 1
+                    output += [local_output]
+                assert index == len(a)
+                return np.array(output)
+            else:
+                index = 0
+                output = []
+                for arities in self.arities:
+                    local_output = []
+                    for arity in arities:
+                        local_output += [
+                            int(
+                                list(np.random.multinomial(1, self.softmax(a[index : index + arity]))).index(
+                                    1
+                                )
+                            )
+                        ]
+                        index += arity
+                    output += [local_output]
+                assert index == len(a)
+                return np.array(output)
+
         if self.greedy_bias:
             a = np.asarray(a, dtype=np.float32)
             for i, action in enumerate(range(len(a))):
@@ -671,9 +730,7 @@ class GymMulti(ExperimentFunction):
                     tmp_env = copy.deepcopy(env)
                 _, r, _, _ = tmp_env.step(action)
                 a[i] += self.greedy_coefficient * r
-        a = np.nan_to_num(a, copy=False, nan=-1e20, posinf=1e20, neginf=-1e20)
-        probabilities = np.exp(a - max(a))
-        probabilities = probabilities / sum(probabilities)
+        probabilities = self.softmax(a)
         assert sum(probabilities) <= 1.0 + 1e-7, f"{probabilities} with greediness {self.greedy_coefficient}."
         return int(list(np.random.multinomial(1, probabilities)).index(1))
 
@@ -685,7 +742,7 @@ class GymMulti(ExperimentFunction):
             self.greedy_coefficient = x[-1:]  # We have decided that we can not have two runs in parallel.
             x = x[:-1]
         o = o.ravel()
-        my_scale = 2 ** self.optimization_scale
+        my_scale = 2**self.optimization_scale
         if "structured" not in self.name and self.optimization_scale != 0:
             x = np.asarray(my_scale * x, dtype=np.float32)
         if self.control == "linear":
@@ -718,7 +775,7 @@ class GymMulti(ExperimentFunction):
         if "deep" in self.control:
             # The deep case must be split into several layers.
             current_index = self.first_size + self.second_size
-            internal_layer_size = self.num_neurons ** 2
+            internal_layer_size = self.num_neurons**2
             s = (self.num_neurons, self.num_neurons)
             for _ in range(self.num_internal_layers):
                 output = np.tanh(output)
@@ -803,6 +860,9 @@ class GymMulti(ExperimentFunction):
 
     def action_cast(self, a, env):
         """Transforms an action into an action of type as expected by the gym step function."""
+        if self.action_type == tuple:
+            a = self.discretize(a, env)
+            return tuple(a)
         if type(a) == np.float64:
             a = np.asarray((a,))
         if self.discrete:
@@ -973,12 +1033,12 @@ class GymMulti(ExperimentFunction):
     def gym_conformant(self, x: np.ndarray, env: tp.Any):
         """Conformant: we directly optimize inputs, not parameters of a policy."""
         reward = 0.0
-        for i, a in enumerate(10.0 * x):
+        for _, a in enumerate(x):
             a = self.action_cast(a, env)
-            try:
-                _, r, done, _ = self.step(a, env)  # Outputs = observation, reward, done, info.
-            except AssertionError:  # Illegal action.
-                return 1e20 / (1.0 + i)  # We encourage late failures rather than early failures.
+            # try:
+            _, r, done, _ = self.step(a, env)  # Outputs = observation, reward, done, info.
+            # except AssertionError:  # Illegal action.
+            #    return 1e20 / (1.0 + i)  # We encourage late failures rather than early failures.
             reward *= self.gamma
             reward += r
             if done:

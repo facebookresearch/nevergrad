@@ -265,6 +265,6 @@ class ParetoFront:
                             )  # TODO verify
                         else:
                             raise ValueError(f'Unknown subset for Pareto-Set subsampling: "{subset}"')
-                    score += best_score ** 2 if subset != "EPS" else max(score, best_score)
+                    score += best_score**2 if subset != "EPS" else max(score, best_score)
                 scores += [score]
         return tentatives[scores.index(min(scores))]  # type: ignore

@@ -5,7 +5,6 @@
 
 import os
 import typing as tp
-import nevergrad as ng
 from nevergrad.functions import gym as nevergrad_gym
 from nevergrad.functions import ExperimentFunction
 from .xpbase import registry
@@ -54,6 +53,7 @@ def ng_full_gym(
     conformant: bool = False,
     gp: bool = False,
     sparse: bool = False,
+    multi_scale: bool = False,
 ) -> tp.Iterator[Experiment]:
     """Gym simulator. Maximize reward.  Many distinct problems.
 
@@ -78,36 +78,20 @@ def ng_full_gym(
     if ng_gym:
         env_names = nevergrad_gym.GymMulti.ng_gym
     if gp:
-        try:
-            import pybullet  # pylint: disable=unused-import
-            import pybullet_envs  # pylint: disable=unused-import
-            import pybulletgym  # pylint: disable=unused-import
-            import pyvirtualdisplay
+        import pybullet_envs  # pylint: disable=unused-import
 
-            # I deserve eternal damnation for this hack:
-            pyvirtualdisplay.Display(visible=0, size=(1400, 900)).start()
-            env_names = [
-                "CartPole-v1",
-                "Acrobot-v1",
-                "MountainCarContinuous-v0",
-                "Pendulum-v0",
-                "InvertedPendulumSwingupBulletEnv-v0",
-                "BipedalWalker-v3",
-                "BipedalWalkerHardcore-v3",
-                "HopperBulletEnv-v0",
-                "InvertedDoublePendulumBulletEnv-v0",
-                "LunarLanderContinuous-v2",
-            ]
-        except:
-            print("Pybullet not installed. If you need it, please do something like:")
-            print("pip install pybullet")
-            print("pip install pyvirtualdisplay")
-            print("pip install git+https://github.com/benelot/pybullet-gym")
-            if os.environ.get("CIRCLECI", False):
-                raise ng.errors.UnsupportedExperiment(
-                    "No pybullet in CircleCI because pybulletgym is not in pypi!"
-                )
-            raise ImportError("Please install pybullet, pyvirtualdisplay and pybulletgym.")
+        env_names = [
+            "CartPole-v1",
+            "Acrobot-v1",
+            "MountainCarContinuous-v0",
+            "Pendulum-v1",
+            # "InvertedPendulumSwingupBulletEnv-v0",
+            "BipedalWalker-v3",
+            "BipedalWalkerHardcore-v3",
+            "HopperBulletEnv-v0",
+            # "InvertedDoublePendulumBulletEnv-v0",
+            "LunarLanderContinuous-v2",
+        ]
 
     seedg = create_seed_generator(seed)
     optims = [
@@ -157,7 +141,10 @@ def ng_full_gym(
         assert not multi
     if conformant:
         controls = ["stochastic_conformant"]
-    budgets = [50, 200, 800, 3200, 6400, 100, 25, 400, 1600]  # Let's go with low budget.
+    optimization_scales: tp.List[int] = [0]
+    if multi_scale:
+        optimization_scales = [-6, -4, -2, 0]
+    budgets = [50, 200, 100, 25, 400]  # Let's go with low budget.
     budgets = gym_budget_modifier(budgets)
     for control in controls:
         neural_factors: tp.Any = (
@@ -171,21 +158,23 @@ def ng_full_gym(
                 if sparse:
                     sparse_limits += [10, 100, 1000]
                 for sparse_limit in sparse_limits:
-                    try:
-                        func = nevergrad_gym.GymMulti(
-                            name,
-                            control=control,
-                            neural_factor=neural_factor,
-                            randomized=randomized,
-                            sparse_limit=sparse_limit,
-                        )
-                    except MemoryError:
-                        continue
-                    for budget in budgets:
-                        for algo in optims:
-                            xp = Experiment(func, algo, budget, num_workers=1, seed=next(seedg))
-                            if not xp.is_incoherent:
-                                yield xp
+                    for optimization_scale in optimization_scales:
+                        try:
+                            func = nevergrad_gym.GymMulti(
+                                name,
+                                control=control,
+                                neural_factor=neural_factor,
+                                randomized=randomized,
+                                optimization_scale=optimization_scale,
+                                sparse_limit=sparse_limit,
+                            )
+                        except MemoryError:
+                            continue
+                        for budget in budgets:
+                            for algo in optims:
+                                xp = Experiment(func, algo, budget, num_workers=1, seed=next(seedg))
+                                if not xp.is_incoherent:
+                                    yield xp
 
 
 @registry.register
@@ -218,7 +207,7 @@ def gp(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
     Counterpart of ng_full_gym with a specific, reduced list of problems for matching
     a genetic programming benchmark."""
-    return ng_full_gym(seed, gp=True)
+    return ng_full_gym(seed, gp=True, multi_scale=True)
 
 
 @registry.register
@@ -236,7 +225,7 @@ def sparse_gp(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
     Counterpart of ng_full_gym with a specific, reduced list of problems for matching
     a genetic programming benchmark."""
-    return ng_full_gym(seed, gp=True, sparse=True)
+    return ng_full_gym(seed, gp=True, sparse=True, multi_scale=True)
 
 
 @registry.register
@@ -357,7 +346,9 @@ def gym_problem(
     ]
     if "stochastic" in specific_problem:
         optims = ["DiagonalCMA", "TBPSA"] if big_noise else ["DiagonalCMA"]
-    if specific_problem == "EnergySavingsGym-v0" and conformant:  # Do this for all conformant discrete ?
+    if "directcompilergym" in specific_problem or (
+        specific_problem == "EnergySavingsGym-v0" and conformant
+    ):  # Do this for all conformant discrete ?
         optims = [
             "DiscreteOnePlusOne",
             "PortfolioDiscreteOnePlusOne",
@@ -377,7 +368,7 @@ def gym_problem(
         ]
 
     optims = gym_optimizer_modifier(optims)
-    budgets = [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600]
+    budgets = [25, 50, 100, 200]
     budgets = gym_budget_modifier(budgets)
     for func in funcs:
         for budget in budgets:
