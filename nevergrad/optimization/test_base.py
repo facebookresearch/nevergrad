@@ -140,7 +140,7 @@ def test_compare() -> None:
         optimizer.compare(winners[:3], winners[3:])  # type: ignore
     result = optimizer.provide_recommendation()
     print(result)
-    np.testing.assert_almost_equal(result.value[0], 0.01569, decimal=2)
+    np.testing.assert_almost_equal(result.value[0], 0.48221, decimal=2)
 
 
 def test_naming() -> None:

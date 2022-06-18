@@ -619,6 +619,40 @@ def paramultimodal(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     return multimodal(seed, para=True)
 
 
+@registry.register
+def bonnans(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    seedg = create_seed_generator(seed)
+    instrum = ng.p.TransitionChoice(range(2), repetitions=100, ordered=False)
+    softmax_instrum: ng.p.Parameter = ng.p.Choice(range(2), repetitions=100)
+    optims = [
+        "RotatedTwoPointsDE",
+        "DiscreteLenglerOnePlusOne",
+        "PortfolioDiscreteOnePlusOne",
+        "FastGADiscreteOnePlusOne",
+        "DiscreteDoerrOnePlusOne",
+        "DiscreteBSOOnePlusOne",
+        "AdaptiveDiscreteOnePlusOne",
+        "GeneticDE",
+        "RotatedTwoPointsDE",
+        "DE",
+        "TwoPointsDE",
+        "DiscreteOnePlusOne",
+        "CMA",
+        "SQP",
+        "MetaModel",
+        "DiagonalCMA",
+    ]
+    for i in range(21):
+        bonnans = corefuncs.BonnansFunction(index=i)
+        for optim in optims:
+            dfunc = ExperimentFunction(
+                bonnans,
+                instrum.set_name("bitmap") if "Discrete" in optim else softmax_instrum.set_name("softmax"),
+            )
+            for budget in [20, 50, 100]:
+                yield Experiment(dfunc, optim, num_workers=1, budget=budget, seed=next(seedg))
+
+
 # pylint: disable=redefined-outer-name,too-many-arguments
 @registry.register
 def yabbob(
@@ -1380,7 +1414,6 @@ def simple_tsp(seed: tp.Optional[int] = None, complex_tsp: bool = False) -> tp.I
         "DE",
         "TwoPointsDE",
         "DiscreteOnePlusOne",
-        "NGOpt38",
         "CMA",
         "MetaModel",
         "DiagonalCMA",

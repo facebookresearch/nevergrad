@@ -12,6 +12,19 @@ from nevergrad.common.decorators import Registry
 registry: Registry[tp.Callable[[np.ndarray], float]] = Registry()
 
 
+class BonnansFunction:
+    def __init__(self, index: int, M: int = 100, N: int = 100) -> None:
+        self.N = N
+        self.M = M
+        self.A = np.random.RandomState(index).rand(M, N)
+        self.y = np.random.RandomState(index + 1).rand(M) * N / 2
+        # print(f"y={self.y} {sum(self.y)} {sum((self.y/self.N)**2)}")
+
+    def __call__(self, x: tp.ArrayLike) -> float:
+        assert len(x) == self.N
+        return np.sum((np.matmul(self.A, x) / self.N - self.y / self.N) ** 2)
+
+
 class DiscreteFunction:
     def __init__(self, name: str, arity: int = 2) -> None:
         """Returns a classical discrete function for test, in the domain {0,1,...,arity-1}^d.

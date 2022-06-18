@@ -245,6 +245,25 @@ def create_plots(
     df = remove_errors(df)
     df.loc[:, "loss"] = pd.to_numeric(df.loc[:, "loss"])
     df = df.loc[:, [x for x in df.columns if not x.startswith("info/")]]
+    # Normalization of types.
+    for col in df.columns:
+        if col in (
+            "budget",
+            "num_workers",
+            "dimension",
+            "useful_dimensions",
+            "num_blocks",
+            "block_dimension",
+            "num_objectives",
+        ):
+            df[col] = df[col].astype(float).astype(int)
+        elif col != "loss":
+            df[col] = df[col].astype(str)
+            df[col] = df[col].replace(r"\.[0]*$", "", regex=True)
+            try:
+                df.loc[:, col] = pd.to_numeric(df.loc[:, col])
+            except:
+                pass
     if "num_objectives" in df.columns:
         df = df[df.num_objectives != 0]  # the optimization did not even start
     # If we have a descriptor "instrum_str",

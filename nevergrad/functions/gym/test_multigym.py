@@ -54,7 +54,7 @@ def test_sparse_cartpole() -> None:
     assert min(results) != max(results), "CartPole should not be deterministic."
 
 
-@pytest.mark.parametrize("name", GYM_ENV_NAMES)  # type: ignore
+@pytest.mark.parametrize("name", ["LunarLander-v2"])  # type: ignore
 def test_run_multigym(name: str) -> None:
     if os.name == "nt" or np.random.randint(8) or "CubeCrash" in name:
         raise SkipTest("Skipping Windows and running only 1 out of 8")

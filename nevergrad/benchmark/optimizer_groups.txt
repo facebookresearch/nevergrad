@@ -12,7 +12,7 @@ competence_map = ['NGO', 'Shiwa']
 
 competitive = ['DiagonalCMA', 'CMA', 'NGO', 'Shiwa', 'MetaNGOpt10', 'NaiveTBPSA', 'PSO', 'DE', 'LhsDE', 'RandomSearch', 'OnePlusOne', 'TwoPointsDE']
 
-discrete = ['DiscreteOnePlusOne', 'PortfolioDiscreteOnePlusOne', 'DiscreteLenglerOnePlusOne', 'AdaptiveDiscreteOnePlusOne', 'AnisotropicAdaptiveDiscreteOnePlusOne', 'DiscreteBSOOnePlusOne', 'DiscreteDoerrOnePlusOne', 'OptimisticDiscreteOnePlusOne', 'DoubleFastGADiscreteOnePlusOne', 'SparseDoubleFastGADiscreteOnePlusOne', 'RecombiningPortfolioDiscreteOnePlusOne', 'MultiDiscrete', 'FastGADiscreteOnePlusOne', 'SparseDiscreteOnePlusOne']
+discrete = ['DiscreteOnePlusOne', 'PortfolioDiscreteOnePlusOne', 'DiscreteLenglerOnePlusOne', 'AdaptiveDiscreteOnePlusOne', 'AnisotropicAdaptiveDiscreteOnePlusOne', 'DiscreteBSOOnePlusOne', 'DiscreteDoerrOnePlusOne', 'OptimisticDiscreteOnePlusOne', 'DoubleFastGADiscreteOnePlusOne', 'SparseDoubleFastGADiscreteOnePlusOne', 'RecombiningPortfolioDiscreteOnePlusOne', 'MultiDiscrete', 'discretememetic', 'FastGADiscreteOnePlusOne', 'SparseDiscreteOnePlusOne', 'SmoothDiscreteOnePlusOne', 'SmoothPortfolioDiscreteOnePlusOne', 'SmoothDiscreteLenglerOnePlusOne', 'SmoothAdaptiveDiscreteOnePlusOne']
 
 emna_variants = ['IsoEMNA', 'NaiveIsoEMNA', 'AnisoEMNA', 'NaiveAnisoEMNA', 'CMA', 'NaiveTBPSA', 'NaiveIsoEMNATBPSA', 'IsoEMNATBPSA', 'NaiveAnisoEMNATBPSA', 'AnisoEMNATBPSA']
 
@@ -32,7 +32,7 @@ progressive = [ProgDiscAuto, ProgDisc13, ProgDiscInf, ProgAuto, Prog13, ProgInf]
 
 scipy = ['RSQP', 'RCobyla', 'RPowell', 'SQPCMA', 'SQP', 'Cobyla', 'Powell']
 
-small_discrete = ['DiscreteOnePlusOne', 'Shiwa', 'CMA', 'PSO', 'TwoPointsDE', 'DE', 'OnePlusOne', 'AdaptiveDiscreteOnePlusOne', 'CMandAS2', 'PortfolioDiscreteOnePlusOne', 'DoubleFastGADiscreteOnePlusOne', 'MultiDiscrete', 'DiscreteBSOOnePlusOne', 'AnisotropicAdaptiveDiscreteOnePlusOne', 'DiscreteLenglerOnePlusOne']
+small_discrete = ['DiscreteOnePlusOne', 'RLSOnePlusOne', 'Shiwa', 'CMA', 'PSO', 'TwoPointsDE', 'DE', 'OnePlusOne', 'AdaptiveDiscreteOnePlusOne', 'CMandAS2', 'PortfolioDiscreteOnePlusOne', 'DoubleFastGADiscreteOnePlusOne', 'MultiDiscrete', 'DiscreteBSOOnePlusOne', 'AnisotropicAdaptiveDiscreteOnePlusOne', 'DiscreteLenglerOnePlusOne']
 
 splitters = [SplitCMAAuto, SplitECMAAuto, SplitDEAuto, SplitTwoPointsDEAuto, SplitCMA3, SplitECMA3, SplitDE3, SplitTwoPointsDE3, SplitCMA5, SplitECMA5, SplitDE5, SplitTwoPointsDE5, SplitCMA9, SplitECMA9, SplitDE9, SplitTwoPointsDE9, SplitCMA13, SplitECMA13, SplitDE13, SplitTwoPointsDE13]
 
