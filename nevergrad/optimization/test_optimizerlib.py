@@ -728,17 +728,9 @@ def test_ngopt_selection(
                 # assert choice == "MetaTuneRecentering"
                 assert "MetaTuneRecentering" in optim_string
             if num_workers > 1:
-<<<<<<< HEAD
                 # assert choice not in ["SQP", "Cobyla"]
                 assert "SQP" not in optim_string and "Cobyla" not in optim_string
         assert opt._info()["sub-optim"] in optim_string
-=======
-                assert choice not in ["SQP", "Cobyla"]
-        if "CMA" not in choice:
-            assert choice == opt._info()["sub-optim"]
-        else:
-            assert choice in opt._info()["sub-optim"]
->>>>>>> 35edb978b33c666e12796682bfdb1fff26c1d3f5
 
 
 def test_bo_ordering() -> None:
