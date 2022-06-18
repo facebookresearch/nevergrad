@@ -1,5 +1,10 @@
+<<<<<<< HEAD
 black==20.8b1
 mypy>=0.9
+=======
+black==22.3.0
+mypy>=0.800
+>>>>>>> 35edb978b33c666e12796682bfdb1fff26c1d3f5
 pytest>=4.3.0
 pytest-cov>=2.6.1
 pylint>=2.4.4

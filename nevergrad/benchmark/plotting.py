@@ -30,6 +30,16 @@ _DPI = 250
 # %% Basic tools
 
 
+def compactize(name: str) -> str:
+    if len(name) < 70:
+        return name
+    hashcode = hashlib.md5(bytes(name, "utf8")).hexdigest()
+    name = re.sub(r"\([^()]*\)", "", name)
+    mid = 35
+    name = name[:mid] + hashcode + name[-mid:]
+    return name
+
+
 def _make_style_generator() -> tp.Iterator[str]:
     lines = itertools.cycle(["-", "--", ":", "-."])  # 4
     markers = itertools.cycle("ov^<>8sp*hHDd")  # 13
@@ -88,7 +98,15 @@ def aggregate_winners(
         return aggregate_winners(df, categories[1:], all_optimizers)
     iterdf, iternum = zip(
         *(
-            aggregate_winners(df.loc[df.loc[:, categories[0]] == val], categories[1:], all_optimizers)
+            aggregate_winners(
+                df.loc[
+                    df.loc[:, categories[0]] == val
+                    if categories[0] != "budget"
+                    else df.loc[:, categories[0]] <= val
+                ],
+                categories[1:],
+                all_optimizers,
+            )
             for val in subcases
         )
     )
@@ -153,7 +171,7 @@ _PARAM_MERGE_PATTERN = "{optimizer_name},{parametrization}"
 
 
 def merge_optimizer_name_pattern(
-    df: utils.Selector, pattern: str, merge_parametrization: bool = False
+    df: utils.Selector, pattern: str, merge_parametrization: bool = False, remove_suffix: bool = False
 ) -> utils.Selector:
     """Merge the optimizer name with other descriptors based on a pattern
     Nothing happens if merge_parametrization is false and pattern is empty string
@@ -182,6 +200,8 @@ def merge_optimizer_name_pattern(
             inds = sub.loc[:, okey] == optim
             if len(sub.loc[inds, :].unique(others)) > 1:
                 df.loc[inds, okey] = sub.loc[inds, elements].agg(aggregate, axis=1)
+    if remove_suffix:
+        df["optimizer_name"] = df["optimizer_name"].replace(r"[0-9\.\-]*$", "", regex=True)
     return df.drop(columns=others)  # type: ignore
 
 
@@ -225,6 +245,25 @@ def create_plots(
     df = remove_errors(df)
     df.loc[:, "loss"] = pd.to_numeric(df.loc[:, "loss"])
     df = df.loc[:, [x for x in df.columns if not x.startswith("info/")]]
+    # Normalization of types.
+    for col in df.columns:
+        if col in (
+            "budget",
+            "num_workers",
+            "dimension",
+            "useful_dimensions",
+            "num_blocks",
+            "block_dimension",
+            "num_objectives",
+        ):
+            df[col] = df[col].astype(float).astype(int)
+        elif col != "loss":
+            df[col] = df[col].astype(str)
+            df[col] = df[col].replace(r"\.[0]*$", "", regex=True)
+            try:
+                df.loc[:, col] = pd.to_numeric(df.loc[:, col])
+            except:
+                pass
     if "num_objectives" in df.columns:
         df = df[df.num_objectives != 0]  # the optimization did not even start
     # If we have a descriptor "instrum_str",
@@ -325,6 +364,7 @@ def create_plots(
             # save
             name = "fight_" + ",".join("{}{}".format(x, y) for x, y in zip(fixed, case)) + ".png"
             name = "fight_all.png" if name == "fight_.png" else name
+            name = compactize(name)
 
             if name == "fight_all.png":
                 with open(str(output_folder / name) + ".cp.txt", "w") as f:
@@ -337,13 +377,15 @@ def create_plots(
                 mid = 120
                 name = name[:mid] + hashcode + name[-mid:]
             fplotter.save(str(output_folder / name), dpi=_DPI)
-            if name == "fight_all.png":  # second version restricted to completely run algorithms.
-                data_df = FightPlotter.winrates_from_selection(
-                    casedf, fight_descriptors, num_rows=num_rows, complete_runs_only=True
-                )
-                fplotter = FightPlotter(data_df)
+            # Second version, restricted to cases with all data available.
+            data_df = FightPlotter.winrates_from_selection(
+                casedf, fight_descriptors, num_rows=num_rows, complete_runs_only=True
+            )
+            fplotter = FightPlotter(data_df)
+            if name == "fight_all.png":
                 fplotter.save(str(output_folder / "fight_all_pure.png"), dpi=_DPI)
-
+            else:
+                fplotter.save(str(output_folder / name) + "_pure.png", dpi=_DPI)
             if order == 2 and competencemaps and best_algo:  # With order 2 we can create a competence map.
                 print("\n# Competence map")
                 name = "competencemap_" + ",".join("{}".format(x) for x in fixed) + ".tex"
@@ -367,6 +409,7 @@ def create_plots(
     for case in cases:
         subdf = df.select_and_drop(**dict(zip(descriptors, case)))
         description = ",".join("{}:{}".format(x, y) for x, y in zip(descriptors, case))
+        description = compactize(description)
         if len(description) > 280:
             hash_ = hashlib.md5(bytes(description, "utf8")).hexdigest()
             description = description[:140] + hash_ + description[-140:]
@@ -449,7 +492,7 @@ class XpPlotter:
         self._ax = self._fig.add_subplot(111)
         # use log plot? yes, if no negative value
         logplot = not any(
-            x <= 0 or x > 10 ** 8 for ov in optim_vals.values() for x in ov["loss"]
+            x <= 0 or x > 10**8 for ov in optim_vals.values() for x in ov["loss"]
         )  # if x < np.inf)
         if logplot:
             self._ax.set_yscale("log")
@@ -702,7 +745,7 @@ class FightPlotter:
         )
         x_names = self.winrates.columns
         self._ax.set_xticks(list(range(len(x_names))))
-        self._ax.set_xticklabels(x_names, rotation=90, fontsize=7)  # , ha="left")
+        self._ax.set_xticklabels(x_names, rotation=45, ha="right", fontsize=7)
         y_names = self.winrates.index
         self._ax.set_yticks(list(range(len(y_names))))
         self._ax.set_yticklabels(y_names, rotation=45, fontsize=7)
@@ -899,6 +942,11 @@ def main() -> None:
         help="if present, parametrization is merge into the optimizer name",
     )
     parser.add_argument(
+        "--remove-suffix",
+        action="store_true",
+        help="if present, remove numerical suffixes in fight plots",
+    )
+    parser.add_argument(
         "--merge-pattern",
         type=str,
         default="",
@@ -907,7 +955,10 @@ def main() -> None:
     )
     args = parser.parse_args()
     exp_df = merge_optimizer_name_pattern(
-        utils.Selector.read_csv(args.filepath), args.merge_pattern, args.merge_parametrization
+        utils.Selector.read_csv(args.filepath),
+        args.merge_pattern,
+        args.merge_parametrization,
+        args.remove_suffix,
     )
     # merging names
     #
