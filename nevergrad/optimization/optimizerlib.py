@@ -207,7 +207,9 @@ class _OnePlusOne(base.Optimizer):
         # mutating
 
         mutation = self.mutation
-        if self._annealing_base is not None:  # We assume that we should start from this one (even if not the best).
+        if (
+            self._annealing_base is not None
+        ):  # We assume that we should start from this one (even if not the best).
             assert self.annealing != "none"
             pessimistic.set_standardized_data(self._annealing_base, reference=ref)
         if mutation in ("gaussian", "cauchy"):  # standard case
