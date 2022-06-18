@@ -1414,7 +1414,6 @@ def simple_tsp(seed: tp.Optional[int] = None, complex_tsp: bool = False) -> tp.I
         "DE",
         "TwoPointsDE",
         "DiscreteOnePlusOne",
-        "NGOpt38",
         "CMA",
         "MetaModel",
         "DiagonalCMA",
