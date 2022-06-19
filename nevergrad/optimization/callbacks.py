@@ -314,9 +314,11 @@ class EarlyStopping:
         function that takes the current optimizer as input and returns True
         if the minimization must be stopped
 
-    Note
-    ----
-    This callback must be register on the "ask" method only.
+    Notes
+    -----
+    - This callback can be registered on either ask or tell.
+    - Some predefined early stopping callbacks can be created through methods of this class.
+
 
     Example
     -------
@@ -333,19 +335,27 @@ class EarlyStopping:
     >>> early_stopping = ng.callbacks.EarlyStopping(lambda opt: opt.current_bests["minimum"].mean < 12)
     """
 
-    def __init__(self, stopping_criterion: tp.Callable[[base.Optimizer], bool]) -> None:
+    def __init__(self, stopping_criterion: tp.Callable[..., bool]) -> None:
         self.stopping_criterion = stopping_criterion
 
     def __call__(self, optimizer: base.Optimizer, *args: tp.Any, **kwargs: tp.Any) -> None:
-        if args or kwargs:
-            raise errors.NevergradRuntimeError("EarlyStopping must be registered on ask method")
-        if self.stopping_criterion(optimizer):
+        if self.stopping_criterion(optimizer, *args, **kwargs):
             raise errors.NevergradEarlyStopping("Early stopping criterion is reached")
 
     @classmethod
     def timer(cls, max_duration: float) -> "EarlyStopping":
-        """Early stop when max_duration seconds has been reached (from the first ask)"""
+        """Creates a callback that early stops when max_duration seconds has been reached
+        (from the first call)
+        """
         return cls(_DurationCriterion(max_duration))
+
+    @classmethod
+    def stagnation(cls, stagnation_iterations: int) -> "Stagnation":
+        """Creates a callback that early stops if no improvement has been achieved after
+        stagnation_iterations steps.
+        This callback should be preferably set on the tell method.
+        """
+        return Stagnation(stagnation_iterations)
 
 
 class _DurationCriterion:
@@ -357,3 +367,40 @@ class _DurationCriterion:
         if np.isinf(self._start):
             self._start = time.time()
         return time.time() > self._start + self._max_duration
+
+
+class Stagnation(EarlyStopping):
+    def __init__(self, stagnation_iterations: int = 10) -> None:
+        self._stagnation_iterations = stagnation_iterations
+        self._min_losses = np.array([])
+        self._sum_losses = np.array([])
+        self._last_improvement = 0
+        self._num_tell = 0
+        self._current_bests: tp.Dict[str, float] = {}
+        super().__init__(self._criterion)
+
+    @property
+    def stagnation_rate(self) -> float:
+        """Returns .3 if the last 30% of the run did not improve any "best" criterion."""
+        return float(self._num_tell - self._last_improvement) / max(1, self._num_tell)
+
+    # pylint: disable=unused-argument
+    def _criterion(self, optimizer: base.Optimizer, candidate: p.Parameter, loss: float) -> bool:
+        self._num_tell = optimizer.num_tell
+        for name, val in optimizer.current_bests.items():
+            current = val.get_estimation(name)
+            if current < self._current_bests.get(name, float("inf")):
+                self._current_bests[name] = current
+                self._last_improvement = optimizer.num_tell
+        if optimizer.num_objectives > 1:
+            if not self._min_losses.size:
+                self._min_losses = candidate.losses
+                self._sum_losses = 0 * self._min_losses
+            self._sum_losses += candidate.losses
+            mean_losses = self._sum_losses / optimizer.num_tell
+            tol = np.maximum(0, (mean_losses - self._min_losses) / 100.0)
+            significant_improvement = candidate.losses < self._min_losses - tol
+            if np.any(significant_improvement):
+                self._last_improvement = optimizer.num_tell
+                self._min_losses[significant_improvement] = candidate.losses[significant_improvement]
+        return self._last_improvement <= optimizer.num_tell - self._stagnation_iterations

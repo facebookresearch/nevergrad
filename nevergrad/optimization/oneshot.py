@@ -208,8 +208,7 @@ class RandomSearchMaker(base.ConfiguredOptimizer):
         - parametrization: uses the default sample() method of the parametrization, which samples uniformly
           between bounds and a Gaussian otherwise
         - gaussian: uses a Gaussian distribution
-        - cauchy: uses a Cauchy distribution
-        use a Cauchy distribution instead of Gaussian distribution
+        - cauchy: uses a Cauchy distribution instead of Gaussian distribution
     scale: float or "random"
         scalar for multiplying the suggested point values, or string:
          - "random": uses a randomized pattern for the scale.

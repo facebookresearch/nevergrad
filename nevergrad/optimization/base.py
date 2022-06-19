@@ -368,10 +368,6 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # call callbacks for logging etc...
         candidate.loss = loss
         assert isinstance(loss, float)
-        for callback in self._callbacks.get("tell", []):
-            # multiobjective reference is not handled :s
-            # but this allows obtaining both scalar and multiobjective loss (through losses)
-            callback(self, candidate, loss)
         if not candidate.satisfies_constraints() and self.budget is not None:
             penalty = self._constraints_manager.penalty(candidate, self.num_ask, self.budget)
             loss = loss + penalty
@@ -386,6 +382,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             self._internal_tell_not_asked(candidate, loss)
             self._num_tell_not_asked += 1
         self._num_tell += 1
+        for callback in self._callbacks.get("tell", []):
+            # multiobjective reference is not handled :s
+            # but this allows obtaining both scalar and multiobjective loss (through losses)
+            callback(self, candidate, loss)
 
     def _preprocess_multiobjective(self, candidate: p.Parameter) -> tp.FloatLoss:
         if self._hypervolume_pareto is None:
@@ -639,14 +639,21 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 while self._finished_jobs:
                     x, job = self._finished_jobs[0]
                     result = job.result()
-                    self.tell(x, result)
+                    try:
+                        self.tell(x, result)
+                    except errors.NevergradEarlyStopping:
+                        remaining_budget = 0
+                        for _, j in self._running_jobs:
+                            if hasattr(j, "cancel"):
+                                j.cancel()  # type: ignore
+                        self._running_jobs = []
                     self._finished_jobs.popleft()  # remove it after the tell to make sure it was indeed "told" (in case of interruption)
                     if verbosity:
                         print(f"Updating fitness with value {job.result()}")
                 if verbosity:
                     print(f"{remaining_budget} remaining budget and {len(self._running_jobs)} running jobs")
                     if verbosity > 1:
-                        print("Current pessimistic best is: {}".format(self.current_bests["pessimistic"]))
+                        print(f"Current pessimistic best is: {self.current_bests['pessimistic']}")
             elif not first_iteration:
                 sleeper.sleep()
             # # # # # Start new jobs # # # # #
@@ -768,7 +775,9 @@ class ConfiguredOptimizer:
         config = dict(config=self) if self._as_config else self.config()
         if isinstance(self._OptimizerClass, ConfiguredOptimizer):
             config = {}  # ignore, it's already configured
-        run = self._OptimizerClass(parametrization=parametrization, budget=budget, num_workers=num_workers, **config)  # type: ignore
+        run = self._OptimizerClass(
+            parametrization=parametrization, budget=budget, num_workers=num_workers, **config
+        )
         run.name = self.name
         # hacky but convenient to have around:
         run._configured_optimizer = self  # type: ignore
@@ -804,7 +813,7 @@ def _constraint_solver(parameter: p.Parameter, budget: int) -> p.Parameter:
         cand = opt.ask()
         # Our objective function is minimum for the point the closest to
         # the original candidate under the constraints.
-        penalty = sum(utils._float_penalty(func(cand.value)) for func in parameter._constraint_checkers)
+        penalty = sum(utils.float_penalty(func(cand.value)) for func in parameter._constraint_checkers)
 
         # TODO: this may not scale well with dimension
         distance = np.tanh(np.sum(cand.get_standardized_data(reference=parameter) ** 2))
