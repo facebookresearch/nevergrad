@@ -47,6 +47,10 @@ class Parameter(Layered):
         self._subobjects = utils.Subobjects(
             self, base=Parameter, attribute="__dict__"
         )  # registers and apply functions too all (sub-)Parameter attributes
+        self.tabu_length = 0
+        self.tabu_set = set()
+        self.tabu_list = []
+        self.tabu_index = 0
         self.parents_uids: tp.List[str] = []
         self.heritage: tp.Dict[tp.Hashable, tp.Any] = {"lineage": self.uid}  # passed through to children
         self.loss: tp.Optional[float] = None  # associated loss
@@ -245,7 +249,7 @@ class Parameter(Layered):
         raise RuntimeError("bool check is not allowed to avoid confusion")
 
     # %% Constraint management
-    def satisfies_constraints(self) -> bool:
+    def satisfies_constraints(self, ref: tp.Optional[P] = None) -> bool:
         """Whether the instance satisfies the constraints added through
         the `register_cheap_constraint` method
 
@@ -257,10 +261,29 @@ class Parameter(Layered):
         inside = self._subobjects.apply("satisfies_constraints")
         if not all(inside.values()):
             return False
-        if not self._constraint_checkers:
+        if not self._constraint_checkers and (ref is None or ref.tabu_length == 0):
             return True
         val = self.value
+        if ref is not None and ref.tabu_length > 0:
+            if val in ref.tabu_set:
+                return False
+            else:
+                ref.tabu_set.add(val)
+                if len(ref.tabu_list) > ref.tabu_index:
+                    ref.tabu_set.remove(ref.tabu_list[ref.tabu_index])
+                    ref.tabu_list[ref.tabu_index] = val
+                else:
+                    assert len(ref.tabu_list) == ref.tabu_index
+                    ref.tabu_list += [val]
+                ref.tabu_list[ref.tabu_index] = val
+                ref.tabu_index = (ref.tabu_index + 1) % ref.tabu_length
         return all(utils.float_penalty(func(val)) <= 0 for func in self._constraint_checkers)
+
+    def specify_tabu_length(
+        self,
+        tabu_length: int,
+    ) -> None:
+        self.tabu_length = tabu_length
 
     def register_cheap_constraint(
         self,
@@ -353,6 +376,7 @@ class Parameter(Layered):
         child._frozen = False
         child._subobjects = self._subobjects.new(child)
         child._meta = {}
+        child.tabu_length = self.tabu_length
         child.parents_uids = list(self.parents_uids)
         child.heritage = dict(self.heritage)
         child.loss = None

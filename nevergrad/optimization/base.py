@@ -372,7 +372,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             # multiobjective reference is not handled :s
             # but this allows obtaining both scalar and multiobjective loss (through losses)
             callback(self, candidate, loss)
-        if not candidate.satisfies_constraints() and self.budget is not None:
+        if not candidate.satisfies_constraints(self.parametrization) and self.budget is not None:
             penalty = self._constraints_manager.penalty(candidate, self.num_ask, self.budget)
             loss = loss + penalty
         if isinstance(loss, float) and (
@@ -472,18 +472,18 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                         self.parametrization._constraint_checkers
                     ), f"Error: {e}"  # This should not happen without constraint issues.
                     candidate = self.parametrization.spawn_child()
-            if candidate.satisfies_constraints():
+            if candidate.satisfies_constraints(self.parametrization):
                 break  # good to go!
             if self._penalize_cheap_violations or self.no_parallelization:
                 # Warning! This might be a tell not asked.
                 self._internal_tell_candidate(candidate, float("Inf"))  # DE requires a tell
             # updating num_ask  is necessary for some algorithms which need new num to ask another point
             self._num_ask += 1
-        satisfies = candidate.satisfies_constraints()
+        satisfies = candidate.satisfies_constraints(self.parametrization)
         if not satisfies:
             # still not solving, let's run sub-optimization
             candidate = _constraint_solver(candidate, budget=max_trials)
-        if not (satisfies or candidate.satisfies_constraints()):
+        if not (satisfies or candidate.satisfies_constraints(self.parametrization)):
             self._warn(
                 f"Could not bypass the constraint after {max_trials} tentatives, "
                 "sending candidate anyway.",
