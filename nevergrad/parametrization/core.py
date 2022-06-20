@@ -20,6 +20,10 @@ from ._layering import Level as Level
 P = tp.TypeVar("P", bound="Parameter")
 
 
+def default_congruence(x: tp.Any) -> tp.Any:
+    return x
+
+
 # pylint: disable=too-many-public-methods
 class Parameter(Layered):
     """Class providing the core functionality of a parameter, aka
@@ -44,12 +48,13 @@ class Parameter(Layered):
     def __init__(self) -> None:
         # Main features
         super().__init__()
+        self.tabu_congruence: tp.Any = default_congruence
         self._subobjects = utils.Subobjects(
             self, base=Parameter, attribute="__dict__"
         )  # registers and apply functions too all (sub-)Parameter attributes
         self.tabu_length = 0
-        self.tabu_set = set()
-        self.tabu_list = []
+        self.tabu_set: tp.Set[tp.Any] = set()
+        self.tabu_list: tp.List[tp.Any] = []
         self.tabu_index = 0
         self.parents_uids: tp.List[str] = []
         self.heritage: tp.Dict[tp.Hashable, tp.Any] = {"lineage": self.uid}  # passed through to children
@@ -265,17 +270,18 @@ class Parameter(Layered):
             return True
         val = self.value
         if ref is not None and ref.tabu_length > 0:
-            if val in ref.tabu_set:
+            tabu_val = self.tabu_congruence(val)
+            if tabu_val in ref.tabu_set:
                 return False
             else:
-                ref.tabu_set.add(val)
+                ref.tabu_set.add(tabu_val)
                 if len(ref.tabu_list) > ref.tabu_index:
                     ref.tabu_set.remove(ref.tabu_list[ref.tabu_index])
-                    ref.tabu_list[ref.tabu_index] = val
+                    ref.tabu_list[ref.tabu_index] = tabu_val
                 else:
                     assert len(ref.tabu_list) == ref.tabu_index
-                    ref.tabu_list += [val]
-                ref.tabu_list[ref.tabu_index] = val
+                    ref.tabu_list += [tabu_val]
+                ref.tabu_list[ref.tabu_index] = tabu_val
                 ref.tabu_index = (ref.tabu_index + 1) % ref.tabu_length
         return all(utils.float_penalty(func(val)) <= 0 for func in self._constraint_checkers)
 
