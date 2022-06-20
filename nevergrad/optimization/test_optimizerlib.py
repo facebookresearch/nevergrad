@@ -199,6 +199,7 @@ def test_infnan(name: str) -> None:
             or isinstance(optim, (optlib.Portfolio, optlib._CMA, optlib.recaster.SequentialRecastOptimizer))
             or "NGOpt" in name
             or "HS" in name
+            or "Adapti" in name
             or "MetaModelDiagonalCMA" in name
         )
 
