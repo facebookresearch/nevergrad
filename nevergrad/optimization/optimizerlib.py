@@ -305,15 +305,15 @@ class _OnePlusOne(base.Optimizer):
             elif self.num_ask < self.budget:
                 amplitude = max(1.0, self._max_loss - self._previous_best_loss)
                 annealing_dict = {
-                    "Exp0.9": .33* amplitude * (0.9**self.num_ask),
-                    "Exp0.99": .33* amplitude * (0.99**self.num_ask),
-                    "Exp0.9Auto": .33* amplitude * ((0.001 ** (1. / self.budget)) ** self.num_ask),
+                    "Exp0.9": 0.33 * amplitude * (0.9**self.num_ask),
+                    "Exp0.99": 0.33 * amplitude * (0.99**self.num_ask),
+                    "Exp0.9Auto": 0.33 * amplitude * ((0.001 ** (1.0 / self.budget)) ** self.num_ask),
                     "Lin100.0": 100.0 * amplitude * (1 - self.num_ask / (self.budget + 1)),
                     "Lin1.0": 1.0 * amplitude * (1 - self.num_ask / (self.budget + 1)),
                     "LinAuto": 10.0 * amplitude * (1 - self.num_ask / (self.budget + 1)),
                 }
                 T = annealing_dict[self.annealing]
-                if T > 0.:
+                if T > 0.0:
                     proba = np.exp(delta / T)
                     if self._rng.rand() < proba:
                         self._annealing_base = x
