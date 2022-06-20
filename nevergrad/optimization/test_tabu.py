@@ -9,9 +9,6 @@ import sys
 from scipy import stats
 import nevergrad as ng
 import nevergrad.common.typing as tp
-from nevergrad.common import testing
-from . import base
-from .optimizerlib import registry
 
 
 # decorators to be used when testing on Windows is unecessary
@@ -24,7 +21,7 @@ skip_win_perf = pytest.mark.skipif(
 @skip_win_perf  # type: ignore
 def test_tabu() -> None:
 
-    num_tests = 67
+    num_tests = 97
     for o in ["DiscreteOnePlusOne", "PortfolioDiscreteOnePlusOne", "DiscreteLenglerOnePlusOne"]:
         values = []
         valuesT = []
@@ -46,7 +43,7 @@ def test_tabu() -> None:
         assert pval < 0.1, f"{o} fails the Tabu search test: pval = {pval}."
 
 
-def summation(x: tp.ArrayLike) -> tp.ArrayLike:
+def summation(x: tp.ArrayLike) -> float:
     return sum(x)
 
 

@@ -480,7 +480,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             # updating num_ask  is necessary for some algorithms which need new num to ask another point
             self._num_ask += 1
         satisfies = candidate.satisfies_constraints(self.parametrization)
-        if not satisfies:
+        if not satisfies and self.parametrization.tabu_fails == 0:
             # still not solving, let's run sub-optimization
             candidate = _constraint_solver(candidate, budget=max_trials)
         if not (satisfies or candidate.satisfies_constraints(self.parametrization)):

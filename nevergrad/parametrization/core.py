@@ -49,6 +49,7 @@ class Parameter(Layered):
         # Main features
         super().__init__()
         self.tabu_congruence: tp.Any = default_congruence
+        self.tabu_fails = 0
         self._subobjects = utils.Subobjects(
             self, base=Parameter, attribute="__dict__"
         )  # registers and apply functions too all (sub-)Parameter attributes
@@ -263,6 +264,7 @@ class Parameter(Layered):
         bool
             True iff the constraint is satisfied
         """
+        self.tabu_fails = 0
         inside = self._subobjects.apply("satisfies_constraints")
         if not all(inside.values()):
             return False
@@ -271,7 +273,10 @@ class Parameter(Layered):
         val = self.value
         if ref is not None and ref.tabu_length > 0:
             tabu_val = self.tabu_congruence(val)
+            if isinstance(tabu_val, np.ndarray):
+                tabu_val = tuple(tabu_val)
             if tabu_val in ref.tabu_set:
+                self.tabu_fails += 1
                 return False
             else:
                 ref.tabu_set.add(tabu_val)
