@@ -297,6 +297,7 @@ class _OnePlusOne(base.Optimizer):
 
     def _internal_tell(self, x: tp.ArrayLike, loss: tp.FloatLoss) -> None:
         if self.annealing != "none":
+            assert isinstance(self.budget, int)
             delta = self._previous_best_loss - loss
             if loss > self._max_loss:
                 self._max_loss = loss
