@@ -456,14 +456,8 @@ SADiscreteLenglerOnePlusOneLin1 = ParametrizedOnePlusOne(mutation="lengler", ann
 SADiscreteLenglerOnePlusOneLin100 = ParametrizedOnePlusOne(mutation="lengler", annealing="Lin100.0").set_name(
     "SADiscreteLenglerOnePlusOneLin100", register=True
 )
-SADiscreteOnePlusOneExp09 = ParametrizedOnePlusOne(mutation="discrete", annealing="Exp0.9").set_name(
-    "SADiscreteOnePlusOneExp09", register=True
-)
 SADiscreteOnePlusOneExp099 = ParametrizedOnePlusOne(mutation="discrete", annealing="Exp0.99").set_name(
     "SADiscreteOnePlusOneExp099", register=True
-)
-SADiscreteOnePlusOneLin1 = ParametrizedOnePlusOne(mutation="discrete", annealing="Lin1.0").set_name(
-    "SADiscreteOnePlusOneLin1", register=True
 )
 SADiscreteOnePlusOneLin100 = ParametrizedOnePlusOne(mutation="discrete", annealing="Lin100.0").set_name(
     "SADiscreteOnePlusOneLin100", register=True
@@ -474,36 +468,8 @@ DiscreteOnePlusOneT = ParametrizedOnePlusOne(tabu_length=10000, mutation="discre
 SADiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete", annealing="yes").set_name(
     "SADiscreteOnePlusOne", register=True
 )
-SADiscreteLenglerOnePlusOneExp09 = ParametrizedOnePlusOne(mutation="lengler", annealing="Exp0.9").set_name(
-    "SADiscreteLenglerOnePlusOneExp09", register=True
-)
-SADiscreteLenglerOnePlusOneExp099 = ParametrizedOnePlusOne(mutation="lengler", annealing="Exp0.99").set_name(
-    "SADiscreteLenglerOnePlusOneExp099", register=True
-)
-SADiscreteLenglerOnePlusOneExp09Auto = ParametrizedOnePlusOne(
-    mutation="lengler", annealing="Exp0.9Auto"
-).set_name("SADiscreteLenglerOnePlusOneExp09Auto", register=True)
-SADiscreteLenglerOnePlusOneLinAuto = ParametrizedOnePlusOne(mutation="lengler", annealing="LinAuto").set_name(
-    "SADiscreteLenglerOnePlusOneLinAuto", register=True
-)
-SADiscreteLenglerOnePlusOneLin1 = ParametrizedOnePlusOne(mutation="lengler", annealing="Lin1.0").set_name(
-    "SADiscreteLenglerOnePlusOneLin1", register=True
-)
-SADiscreteLenglerOnePlusOneLin100 = ParametrizedOnePlusOne(mutation="lengler", annealing="Lin100.0").set_name(
-    "SADiscreteLenglerOnePlusOneLin100", register=True
-)
 SADiscreteOnePlusOneExp09 = ParametrizedOnePlusOne(mutation="discrete", annealing="Exp0.9").set_name(
     "SADiscreteOnePlusOneExp09", register=True
-)
-SADiscreteOnePlusOneExp099 = ParametrizedOnePlusOne(mutation="discrete", annealing="Exp0.99").set_name(
-    "SADiscreteOnePlusOneExp099", register=True
-)
-SADiscreteOnePlusOneLin1 = ParametrizedOnePlusOne(mutation="discrete", annealing="Lin1.0").set_name(
-    "SADiscreteOnePlusOneLin1", register=True
-)
-SADiscreteOnePlusOneLin100 = ParametrizedOnePlusOne(mutation="discrete", annealing="Lin100.0").set_name(
-    "SADiscreteOnePlusOneLin100", register=True
->>>>>>> 3a514a21 (fix)
 )
 PortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="portfolio").set_name(
     "PortfolioDiscreteOnePlusOne", register=True
@@ -514,15 +480,12 @@ PortfolioDiscreteOnePlusOneT = ParametrizedOnePlusOne(tabu_length=10000, mutatio
 DiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(mutation="lengler").set_name(
     "DiscreteLenglerOnePlusOne", register=True
 )
-<<<<<<< HEAD
 DiscreteLenglerOnePlusOneT = ParametrizedOnePlusOne(tabu_length=10000, mutation="lengler").set_name(
     "DiscreteLenglerOnePlusOneT", register=True
 )
 SADiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(mutation="lengler", annealing="yes").set_name(
     "SADiscreteLenglerOnePlusOne", register=True
 )
-=======
->>>>>>> 3a514a21 (fix)
 
 AdaptiveDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="adaptive").set_name(
     "AdaptiveDiscreteOnePlusOne", register=True
