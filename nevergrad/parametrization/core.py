@@ -273,7 +273,9 @@ class Parameter(Layered):
         val = self.value
         if ref is not None and ref.tabu_length > 0:
             tabu_val = self.tabu_congruence(val)
-            tabu_val = hash(tabu_val.tobytes())
+            if isinstance(tabu_val, np.ndarray):
+                tabu_val = hash(tabu_val.tobytes())
+            # type: ignore
             if tabu_val in ref.tabu_set:
                 self.tabu_fails += 1
                 return False
