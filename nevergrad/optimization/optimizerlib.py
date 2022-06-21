@@ -321,6 +321,14 @@ class _OnePlusOne(base.Optimizer):
                     proba = np.exp(delta / T)
                     if self._rng.rand() < proba:
                         self._annealing_base = x
+            delta = self._previous_best_loss - loss
+            if delta > 0:
+                self._annealing_base = x
+            else:
+                T = 100.0 * (0.9**self.num_ask)
+                proba = np.exp(-delta / T)  # Probability of accepting in spite of worse.
+                if self._rng.rand() < proba:
+                    self._annealing_base = x
 
         # only used for cauchy and gaussian
         if self._previous_best_loss != loss:
@@ -452,6 +460,9 @@ SADiscreteOnePlusOneLin100 = ParametrizedOnePlusOne(mutation="discrete", anneali
 DiscreteOnePlusOneT = ParametrizedOnePlusOne(tabu_length=10000, mutation="discrete").set_name(
     "DiscreteOnePlusOneT", register=True
 )
+SADiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete", annealing="yes").set_name(
+    "SADiscreteOnePlusOne", register=True
+)
 PortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="portfolio").set_name(
     "PortfolioDiscreteOnePlusOne", register=True
 )
@@ -463,6 +474,9 @@ DiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(mutation="lengler").set_name(
 )
 DiscreteLenglerOnePlusOneT = ParametrizedOnePlusOne(tabu_length=10000, mutation="lengler").set_name(
     "DiscreteLenglerOnePlusOneT", register=True
+)
+SADiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(mutation="lengler", annealing="yes").set_name(
+    "SADiscreteLenglerOnePlusOne", register=True
 )
 
 AdaptiveDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="adaptive").set_name(
