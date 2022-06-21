@@ -86,6 +86,7 @@ class _OnePlusOne(base.Optimizer):
         num_workers: int = 1,
         *,
         noise_handling: tp.Optional[tp.Union[str, tp.Tuple[str, float]]] = None,
+        tabu_length: int = 0,
         mutation: str = "gaussian",
         crossover: bool = False,
         rotation: bool = False,
@@ -94,6 +95,7 @@ class _OnePlusOne(base.Optimizer):
         smoother: bool = False,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        self.parametrization.tabu_length = tabu_length
         assert crossover or (not rotation), "We can not have both rotation and not crossover."
         self._sigma: float = 1
         self._previous_best_loss = float("inf")
@@ -160,6 +162,7 @@ class _OnePlusOne(base.Optimizer):
                 self._doerr_counters += [0.0]
                 i += j
                 j += 2
+        assert self.parametrization.tabu_length == tabu_length
 
     def _internal_ask_candidate(self) -> p.Parameter:
         # pylint: disable=too-many-return-statements, too-many-branches
@@ -368,6 +371,7 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
         self,
         *,
         noise_handling: tp.Optional[tp.Union[str, tp.Tuple[str, float]]] = None,
+        tabu_length: int = 0,
         mutation: str = "gaussian",
         crossover: bool = False,
         rotation: bool = False,
@@ -381,11 +385,20 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
 OnePlusOne = ParametrizedOnePlusOne().set_name("OnePlusOne", register=True)
 NoisyOnePlusOne = ParametrizedOnePlusOne(noise_handling="random").set_name("NoisyOnePlusOne", register=True)
 DiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete").set_name("DiscreteOnePlusOne", register=True)
+DiscreteOnePlusOneT = ParametrizedOnePlusOne(tabu_length=10000, mutation="discrete").set_name(
+    "DiscreteOnePlusOneT", register=True
+)
 PortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="portfolio").set_name(
     "PortfolioDiscreteOnePlusOne", register=True
 )
+PortfolioDiscreteOnePlusOneT = ParametrizedOnePlusOne(tabu_length=10000, mutation="portfolio").set_name(
+    "PortfolioDiscreteOnePlusOneT", register=True
+)
 DiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(mutation="lengler").set_name(
     "DiscreteLenglerOnePlusOne", register=True
+)
+DiscreteLenglerOnePlusOneT = ParametrizedOnePlusOne(tabu_length=10000, mutation="lengler").set_name(
+    "DiscreteLenglerOnePlusOneT", register=True
 )
 
 AdaptiveDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="adaptive").set_name(

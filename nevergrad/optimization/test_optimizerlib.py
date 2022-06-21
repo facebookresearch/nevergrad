@@ -198,6 +198,7 @@ def test_infnan(name: str) -> None:
             or isinstance(optim, (optlib.Portfolio, optlib._CMA, optlib.recaster.SequentialRecastOptimizer))
             or "NGOpt" in name
             or "HS" in name
+            or "Adapti" in name
             or "MetaModelDiagonalCMA" in name
         )
 
@@ -652,6 +653,8 @@ def test_parametrization_offset(name: str) -> None:
     parametrization = ng.p.Instrumentation(ng.p.Array(init=[1e12, 1e12]))
     with testing.suppress_nevergrad_warnings():
         optimizer = registry[name](parametrization, budget=100, num_workers=1)
+    if optimizer.parametrization.tabu_length > 0:
+        return
     for k in range(10 if "BO" not in name else 2):
         candidate = optimizer.ask()
         assert (
