@@ -462,9 +462,6 @@ SADiscreteOnePlusOneExp099 = ParametrizedOnePlusOne(mutation="discrete", anneali
 SADiscreteOnePlusOneLin100 = ParametrizedOnePlusOne(mutation="discrete", annealing="Lin100.0").set_name(
     "SADiscreteOnePlusOneLin100", register=True
 )
-DiscreteOnePlusOneT = ParametrizedOnePlusOne(tabu_length=10000, mutation="discrete").set_name(
-    "DiscreteOnePlusOneT", register=True
-)
 SADiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete", annealing="yes").set_name(
     "SADiscreteOnePlusOne", register=True
 )
