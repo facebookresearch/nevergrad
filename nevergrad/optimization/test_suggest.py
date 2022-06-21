@@ -67,6 +67,7 @@ def good_at_suggest(name: str) -> bool:
     keywords = [
         "Noisy",
         "Optimistic",
+        "DiscreteDE",
         "Multi",
         "Anisotropic",
         "BSO",
