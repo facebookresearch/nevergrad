@@ -371,7 +371,7 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
         self,
         *,
         noise_handling: tp.Optional[tp.Union[str, tp.Tuple[str, float]]] = None,
-        tabu_length: int = 250,
+        tabu_length: int = 0,
         mutation: str = "gaussian",
         crossover: bool = False,
         rotation: bool = False,

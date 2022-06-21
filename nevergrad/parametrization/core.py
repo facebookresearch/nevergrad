@@ -255,7 +255,7 @@ class Parameter(Layered):
         raise RuntimeError("bool check is not allowed to avoid confusion")
 
     # %% Constraint management
-    def satisfies_constraints(self, ref: tp.Optional[P] = None) -> bool:
+    def satisfies_constraints(self, ref: tp.Optional[P] = None, no_tabu: bool = False) -> bool:
         """Whether the instance satisfies the constraints added through
         the `register_cheap_constraint` method
 
@@ -264,23 +264,24 @@ class Parameter(Layered):
         bool
             True iff the constraint is satisfied
         """
-        self.tabu_fails = 0
         inside = self._subobjects.apply("satisfies_constraints")
         if not all(inside.values()):
             return False
-        if not self._constraint_checkers and (ref is None or ref.tabu_length == 0):
-            return True
         val = self.value
-        if ref is not None and ref.tabu_length > 0:
+        if not no_tabu and ref is not None and ref.tabu_length > 0 and self.tabu_fails < 30:
             tabu_val = self.tabu_congruence(val)
             if isinstance(tabu_val, np.ndarray):
                 tabu_val = hash(tabu_val.tobytes())
             if isinstance(tabu_val, dict):
                 keys = sorted(list(tabu_val.keys()))
                 tabu_val = str(keys) + str([tabu_val[k] for k in keys])
-            if tabu_val in ref.tabu_set:
-                self.tabu_fails += 1
-                return False
+            try:
+                if tabu_val in ref.tabu_set:
+                    self.tabu_fails += 1
+                    return False
+            except RuntimeError as e:
+                raise RuntimeError(f"{tabu_val} has type {type(tabu_val)}, and this leads to {e}.")
+
             else:
                 ref.tabu_set.add(tabu_val)
                 if len(ref.tabu_list) > ref.tabu_index:
@@ -291,6 +292,8 @@ class Parameter(Layered):
                     ref.tabu_list += [tabu_val]
                 ref.tabu_list[ref.tabu_index] = tabu_val
                 ref.tabu_index = (ref.tabu_index + 1) % ref.tabu_length
+        if not self._constraint_checkers:
+            return True
         return all(utils.float_penalty(func(val)) <= 0 for func in self._constraint_checkers)
 
     def specify_tabu_length(

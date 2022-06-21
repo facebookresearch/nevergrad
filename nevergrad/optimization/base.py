@@ -459,6 +459,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # - no memory of previous iterations.
         # - just projection to constraint satisfaction.
         # We try using the normal tool during half constraint budget, in order to reduce the impact on the normal run.
+        self.parametrization.tabu_fails = 0
         for _ in range(max_trials):
             is_suggestion = False
             if self._suggestions:  # use suggestions if available
@@ -480,10 +481,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             # updating num_ask  is necessary for some algorithms which need new num to ask another point
             self._num_ask += 1
         satisfies = candidate.satisfies_constraints(self.parametrization)
-        if not satisfies and self.parametrization.tabu_fails == 0:
+        if not satisfies and self.parametrization.tabu_length == 0:
             # still not solving, let's run sub-optimization
             candidate = _constraint_solver(candidate, budget=max_trials)
-        if not (satisfies or candidate.satisfies_constraints(self.parametrization)):
+        if not (satisfies or candidate.satisfies_constraints(self.parametrization, no_tabu=True)):
             self._warn(
                 f"Could not bypass the constraint after {max_trials} tentatives, "
                 "sending candidate anyway.",
@@ -799,6 +800,7 @@ def _constraint_solver(parameter: p.Parameter, budget: int) -> p.Parameter:
     """Runs a suboptimization to solve the parameter constraints"""
     parameter_without_constraint = parameter.copy()
     parameter_without_constraint._constraint_checkers.clear()
+    parameter_without_constraint.tabu_length = 0
     opt = registry["OnePlusOne"](parameter_without_constraint, num_workers=1, budget=budget)
     for _ in range(budget):
         cand = opt.ask()
