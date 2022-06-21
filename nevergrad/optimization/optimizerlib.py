@@ -471,6 +471,9 @@ SADiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete", annealing="ye
 SADiscreteOnePlusOneExp09 = ParametrizedOnePlusOne(mutation="discrete", annealing="Exp0.9").set_name(
     "SADiscreteOnePlusOneExp09", register=True
 )
+DiscreteOnePlusOneT = ParametrizedOnePlusOne(tabu_length=10000, mutation="discrete").set_name(
+    "DiscreteOnePlusOneT", register=True
+)
 PortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="portfolio").set_name(
     "PortfolioDiscreteOnePlusOne", register=True
 )
@@ -483,10 +486,6 @@ DiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(mutation="lengler").set_name(
 DiscreteLenglerOnePlusOneT = ParametrizedOnePlusOne(tabu_length=10000, mutation="lengler").set_name(
     "DiscreteLenglerOnePlusOneT", register=True
 )
-SADiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(mutation="lengler", annealing="yes").set_name(
-    "SADiscreteLenglerOnePlusOne", register=True
-)
-
 AdaptiveDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="adaptive").set_name(
     "AdaptiveDiscreteOnePlusOne", register=True
 )
