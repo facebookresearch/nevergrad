@@ -275,7 +275,9 @@ class Parameter(Layered):
             tabu_val = self.tabu_congruence(val)
             if isinstance(tabu_val, np.ndarray):
                 tabu_val = hash(tabu_val.tobytes())
-            # type: ignore
+            if isinstance(tabu_val, dict):
+                keys = sorted(list(tabu_val.keys()))
+                tabu_val = str(keys) + str([tabu_val[k] for k in keys])
             if tabu_val in ref.tabu_set:
                 self.tabu_fails += 1
                 return False
