@@ -7,7 +7,6 @@ import gym
 import os
 from unittest import SkipTest
 import numpy as np
-import nevergrad as ng
 import pytest
 from . import multigym
 
