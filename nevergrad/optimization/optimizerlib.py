@@ -438,33 +438,33 @@ OnePlusOne = ParametrizedOnePlusOne().set_name("OnePlusOne", register=True)
 # SA = ParametrizedOnePlusOne(annealing="Exp0.9").set_name("SA", register=True)
 NoisyOnePlusOne = ParametrizedOnePlusOne(noise_handling="random").set_name("NoisyOnePlusOne", register=True)
 DiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete").set_name("DiscreteOnePlusOne", register=True)
-SADiscreteLenglerOnePlusOneExp09 = ParametrizedOnePlusOne(mutation="lengler", annealing="Exp0.9").set_name(
-    "SADiscreteLenglerOnePlusOneExp09", register=True
-)
-SADiscreteLenglerOnePlusOneExp099 = ParametrizedOnePlusOne(mutation="lengler", annealing="Exp0.99").set_name(
-    "SADiscreteLenglerOnePlusOneExp099", register=True
-)
+SADiscreteLenglerOnePlusOneExp09 = ParametrizedOnePlusOne(
+    tabu_length=1000, mutation="lengler", annealing="Exp0.9"
+).set_name("SADiscreteLenglerOnePlusOneExp09", register=True)
+SADiscreteLenglerOnePlusOneExp099 = ParametrizedOnePlusOne(
+    tabu_length=1000, mutation="lengler", annealing="Exp0.99"
+).set_name("SADiscreteLenglerOnePlusOneExp099", register=True)
 SADiscreteLenglerOnePlusOneExp09Auto = ParametrizedOnePlusOne(
-    mutation="lengler", annealing="Exp0.9Auto"
+    tabu_length=1000, mutation="lengler", annealing="Exp0.9Auto"
 ).set_name("SADiscreteLenglerOnePlusOneExp09Auto", register=True)
-SADiscreteLenglerOnePlusOneLinAuto = ParametrizedOnePlusOne(mutation="lengler", annealing="LinAuto").set_name(
-    "SADiscreteLenglerOnePlusOneLinAuto", register=True
-)
-SADiscreteLenglerOnePlusOneLin1 = ParametrizedOnePlusOne(mutation="lengler", annealing="Lin1.0").set_name(
-    "SADiscreteLenglerOnePlusOneLin1", register=True
-)
-SADiscreteLenglerOnePlusOneLin100 = ParametrizedOnePlusOne(mutation="lengler", annealing="Lin100.0").set_name(
-    "SADiscreteLenglerOnePlusOneLin100", register=True
-)
-SADiscreteOnePlusOneExp099 = ParametrizedOnePlusOne(mutation="discrete", annealing="Exp0.99").set_name(
-    "SADiscreteOnePlusOneExp099", register=True
-)
-SADiscreteOnePlusOneLin100 = ParametrizedOnePlusOne(mutation="discrete", annealing="Lin100.0").set_name(
-    "SADiscreteOnePlusOneLin100", register=True
-)
-SADiscreteOnePlusOneExp09 = ParametrizedOnePlusOne(mutation="discrete", annealing="Exp0.9").set_name(
-    "SADiscreteOnePlusOneExp09", register=True
-)
+SADiscreteLenglerOnePlusOneLinAuto = ParametrizedOnePlusOne(
+    tabu_length=1000, mutation="lengler", annealing="LinAuto"
+).set_name("SADiscreteLenglerOnePlusOneLinAuto", register=True)
+SADiscreteLenglerOnePlusOneLin1 = ParametrizedOnePlusOne(
+    tabu_length=1000, mutation="lengler", annealing="Lin1.0"
+).set_name("SADiscreteLenglerOnePlusOneLin1", register=True)
+SADiscreteLenglerOnePlusOneLin100 = ParametrizedOnePlusOne(
+    tabu_length=1000, mutation="lengler", annealing="Lin100.0"
+).set_name("SADiscreteLenglerOnePlusOneLin100", register=True)
+SADiscreteOnePlusOneExp099 = ParametrizedOnePlusOne(
+    tabu_length=1000, mutation="discrete", annealing="Exp0.99"
+).set_name("SADiscreteOnePlusOneExp099", register=True)
+SADiscreteOnePlusOneLin100 = ParametrizedOnePlusOne(
+    tabu_length=1000, mutation="discrete", annealing="Lin100.0"
+).set_name("SADiscreteOnePlusOneLin100", register=True)
+SADiscreteOnePlusOneExp09 = ParametrizedOnePlusOne(
+    tabu_length=1000, mutation="discrete", annealing="Exp0.9"
+).set_name("SADiscreteOnePlusOneExp09", register=True)
 DiscreteOnePlusOneT = ParametrizedOnePlusOne(tabu_length=10000, mutation="discrete").set_name(
     "DiscreteOnePlusOneT", register=True
 )
@@ -2257,13 +2257,14 @@ class _Chain(base.Optimizer):
             "dimension": self.dimension,
             "half": self.budget // 2 if self.budget else self.num_workers,
             "third": self.budget // 3 if self.budget else self.num_workers,
+            "tenth": self.budget // 10 if self.budget else self.num_workers,
             "sqrt": int(np.sqrt(self.budget)) if self.budget else self.num_workers,
         }
         self.budgets = [max(1, converter[b]) if isinstance(b, str) else b for b in budgets]
         last_budget = None if self.budget is None else max(4, self.budget - sum(self.budgets))
         assert len(optimizers) == len(self.budgets) + 1
         assert all(
-            x in ("third", "half", "dimension", "num_workers", "sqrt") or x > 0 for x in self.budgets
+            x in ("third", "half", "tenth", "dimension", "num_workers", "sqrt") or x > 0 for x in self.budgets
         ), str(self.budgets)
         for opt, optbudget in zip(optimizers, self.budgets + [last_budget]):  # type: ignore
             self.optimizers.append(opt(self.parametrization, budget=optbudget, num_workers=self.num_workers))
@@ -2329,6 +2330,9 @@ GeneticDE = Chaining([RotatedTwoPointsDE, TwoPointsDE], [200]).set_name(
 discretememetic = Chaining(
     [RandomSearch, DiscreteLenglerOnePlusOne, DiscreteOnePlusOne], ["third", "third"]
 ).set_name("discretememetic", register=True)
+discretememeticT = Chaining(
+    [RandomSearch, DiscreteLenglerOnePlusOneT, DiscreteOnePlusOneT], ["tenth", "third"]
+).set_name("discretememeticT", register=True)
 ChainCMAPowell = Chaining([CMA, Powell], ["half"]).set_name("ChainCMAPowell", register=True)
 ChainCMAPowell.no_parallelization = True  # TODO make this automatic
 ChainMetaModelSQP = Chaining([MetaModel, SQP], ["half"]).set_name("ChainMetaModelSQP", register=True)
