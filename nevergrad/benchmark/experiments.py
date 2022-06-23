@@ -1986,14 +1986,12 @@ def pbo_suite(seed: tp.Optional[int] = None, reduced: bool = False) -> tp.Iterat
             for x in ng.optimizers.registry.keys()
             if "iscre" in x and "ois" not in x and "ptim" not in x and "oerr" not in x
         ]
-    print(f"list_optims = {list_optims}")
     for dim in [16, 64, 100]:
         for fid in range(1, 24):
             for iid in range(1, 5):
                 index += 1
                 if reduced and index % 13:
                     continue
-                print(f"{dim} {fid} {iid} {reduced}")
                 for instrumentation in ["Unordered"] if reduced else ["Softmax", "Ordered", "Unordered"]:
                     try:
                         func = iohprofiler.PBOFunction(fid, iid, dim, instrumentation=instrumentation)
