@@ -50,7 +50,7 @@ def summation(x: tp.ArrayLike) -> float:
 @skip_win_perf  # type: ignore
 def test_tabu_sum() -> None:
 
-    num_tests = 77
+    num_tests = 107
     for o in ["DiscreteOnePlusOne", "DiscreteLenglerOnePlusOne"]:
         values = []
         valuesT = []
