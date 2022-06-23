@@ -8,7 +8,6 @@ import numpy as np
 import sys
 from scipy import stats
 import nevergrad as ng
-import nevergrad.common.typing as tp
 
 
 # decorators to be used when testing on Windows is unecessary
@@ -21,14 +20,14 @@ skip_win_perf = pytest.mark.skipif(
 @skip_win_perf  # type: ignore
 def test_sa() -> None:
 
-    num_tests = 507
+    num_tests = 77
     for o in ["DiscreteOnePlusOne"]:
         values = []
         valuesT = []
         for _ in range(num_tests):
-            dim = 24
+            dim = 30
             arity = 3
-            budget = 7
+            budget = 57
             domain = ng.p.TransitionChoice(range(arity), ordered=False, repetitions=dim)
             optimum = np.random.randint(arity, size=dim)
 
