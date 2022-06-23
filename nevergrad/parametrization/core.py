@@ -259,6 +259,12 @@ class Parameter(Layered):
         """Whether the instance satisfies the constraints added through
         the `register_cheap_constraint` method
 
+        Parameters
+        ----------
+        ref
+            parameter of the optimization algorithm, if we want to check the tabu list.
+        no_tabu
+            if we want to ignore the Tabu system.
         Returns
         -------
         bool
@@ -279,19 +285,18 @@ class Parameter(Layered):
                 if tabu_val in ref.tabu_set:
                     self.tabu_fails += 1
                     return False
+                else:
+                    ref.tabu_set.add(tabu_val)
+                    if len(ref.tabu_list) > ref.tabu_index:
+                        ref.tabu_set.remove(ref.tabu_list[ref.tabu_index])
+                        ref.tabu_list[ref.tabu_index] = tabu_val
+                    else:
+                        assert len(ref.tabu_list) == ref.tabu_index
+                        ref.tabu_list += [tabu_val]
+                    ref.tabu_list[ref.tabu_index] = tabu_val
+                    ref.tabu_index = (ref.tabu_index + 1) % ref.tabu_length
             except RuntimeError as e:
                 raise RuntimeError(f"{tabu_val} has type {type(tabu_val)}, and this leads to {e}.")
-
-            else:
-                ref.tabu_set.add(tabu_val)
-                if len(ref.tabu_list) > ref.tabu_index:
-                    ref.tabu_set.remove(ref.tabu_list[ref.tabu_index])
-                    ref.tabu_list[ref.tabu_index] = tabu_val
-                else:
-                    assert len(ref.tabu_list) == ref.tabu_index
-                    ref.tabu_list += [tabu_val]
-                ref.tabu_list[ref.tabu_index] = tabu_val
-                ref.tabu_index = (ref.tabu_index + 1) % ref.tabu_length
         if not self._constraint_checkers:
             return True
         return all(utils.float_penalty(func(val)) <= 0 for func in self._constraint_checkers)

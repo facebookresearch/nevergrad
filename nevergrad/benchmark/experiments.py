@@ -1964,33 +1964,40 @@ def pbo_suite(seed: tp.Optional[int] = None, reduced: bool = False) -> tp.Iterat
     dde = ng.optimizers.DifferentialEvolution(crossover="dimension").set_name("DiscreteDE")
     seedg = create_seed_generator(seed)
     index = 0
+    list_optims = [
+        "DiscreteOnePlusOne",
+        "Shiwa",
+        "CMA",
+        "PSO",
+        "TwoPointsDE",
+        "DE",
+        "OnePlusOne",
+        "AdaptiveDiscreteOnePlusOne",
+        "CMandAS2",
+        "PortfolioDiscreteOnePlusOne",
+        "DoubleFastGADiscreteOnePlusOne",
+        "MultiDiscrete",
+        "cGA",
+        dde,
+    ]
+    if reduced:
+        list_optims = [
+            x
+            for x in ng.optimizers.registry.keys()
+            if "iscre" in x and "ois" not in x and "ptim" not in x and "oerr" not in x
+        ]
     for dim in [16, 64, 100]:
         for fid in range(1, 24):
             for iid in range(1, 5):
                 index += 1
                 if reduced and index % 13:
                     continue
-                for instrumentation in ["Softmax", "Ordered", "Unordered"]:
+                for instrumentation in ["Unordered"] if reduced else ["Softmax", "Ordered", "Unordered"]:
                     try:
                         func = iohprofiler.PBOFunction(fid, iid, dim, instrumentation=instrumentation)
                     except ModuleNotFoundError as e:
                         raise fbase.UnsupportedExperiment("IOHexperimenter needs to be installed") from e
-                    for optim in [
-                        "DiscreteOnePlusOne",
-                        "Shiwa",
-                        "CMA",
-                        "PSO",
-                        "TwoPointsDE",
-                        "DE",
-                        "OnePlusOne",
-                        "AdaptiveDiscreteOnePlusOne",
-                        "CMandAS2",
-                        "PortfolioDiscreteOnePlusOne",
-                        "DoubleFastGADiscreteOnePlusOne",
-                        "MultiDiscrete",
-                        "cGA",
-                        dde,
-                    ]:
+                    for optim in list_optims:
                         for nw in [1, 10]:
                             for budget in [100, 1000, 10000]:
                                 yield Experiment(func, optim, num_workers=nw, budget=budget, seed=next(seedg))  # type: ignore
