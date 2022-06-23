@@ -321,26 +321,6 @@ class _OnePlusOne(base.Optimizer):
                     proba = np.exp(delta / T)
                     if self._rng.rand() < proba:
                         self._annealing_base = x
-            delta = self._previous_best_loss - loss
-            if loss > self._max_loss:
-                self._max_loss = loss
-            if delta > 0:
-                self._annealing_base = x
-            else:
-                amplitude = max(1.0, self._max_loss - self._previous_best_loss)
-                annealing_dict = {
-                    "Exp0.9": 100.0 * (0.9**self.num_ask),
-                    "Exp0.99": 100.0 * (0.99**self.num_ask),
-                    "Lin100.0": 100.0 * (1 - self.num_ask / (self.budget + 1)),
-                    "Lin1.0": 1.0 * (1 - self.num_ask / (self.budget + 1)),
-                    "Exp0.9Auto": amplitude * (0.9**self.num_ask),
-                    "LinAuto": amplitude * (1 - self.num_ask / (self.budget + 1)),
-                }
-                T = annealing_dict[self.annealing]
-                proba = np.exp(-delta / T)  # Probability of accepting in spite of worse.
-                if self._rng.rand() < proba:
-                    self._annealing_base = x
-
         # only used for cauchy and gaussian
         if self._previous_best_loss != loss:
             self._sigma *= 2.0 if loss < self._previous_best_loss else 0.84
