@@ -207,7 +207,7 @@ def test_infnan(name: str) -> None:
 @pytest.mark.parametrize("name", registry)  # type: ignore
 def test_optimizers(name: str) -> None:
     """Checks that each optimizer is able to converge on a simple test case"""
-    if name in ["CMAbounded"]:  # Not a general purpose optimization method.
+    if name in ["CMAbounded", "NEWUOA"]:  # Not a general purpose optimization method.
         return
     optimizer_cls = registry[name]
     if isinstance(optimizer_cls, base.ConfiguredOptimizer):
