@@ -366,11 +366,6 @@ def create_plots(
             name = "fight_all.png" if name == "fight_.png" else name
             name = compactize(name)
 
-            if name == "fight_all.png":
-                with open(str(output_folder / name) + ".cp.txt", "w") as f:
-                    f.write("ranking:\n")
-                    for i, algo in enumerate(data_df.columns[:58]):
-                        f.write(f"  algo {i}: {algo}\n")
             if len(name) > 240:
                 hashcode = hashlib.md5(bytes(name, "utf8")).hexdigest()
                 name = re.sub(r"\([^()]*\)", "", name)
@@ -382,6 +377,11 @@ def create_plots(
                 casedf, fight_descriptors, num_rows=num_rows, complete_runs_only=True
             )
             fplotter = FightPlotter(data_df)
+            if name == "fight_all.png":
+                with open(str(output_folder / name) + ".cp.txt", "w") as f:
+                    f.write("ranking:\n")
+                    for i, algo in enumerate(data_df.columns[:58]):
+                        f.write(f"  algo {i}: {algo}\n")
             if name == "fight_all.png":
                 fplotter.save(str(output_folder / "fight_all_pure.png"), dpi=_DPI)
             else:
