@@ -86,19 +86,25 @@ class _OnePlusOne(base.Optimizer):
         num_workers: int = 1,
         *,
         noise_handling: tp.Optional[tp.Union[str, tp.Tuple[str, float]]] = None,
+        tabu_length: int = 0,
         mutation: str = "gaussian",
         crossover: bool = False,
         rotation: bool = False,
+        annealing: str = "none",
         use_pareto: bool = False,
         sparse: tp.Union[bool, int] = False,
         smoother: bool = False,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        self.parametrization.tabu_length = tabu_length
         assert crossover or (not rotation), "We can not have both rotation and not crossover."
         self._sigma: float = 1
         self._previous_best_loss = float("inf")
         self.use_pareto = use_pareto
         self.smoother = smoother
+        self.annealing = annealing
+        self._annealing_base: tp.Optional[tp.ArrayLike] = None
+        self._max_loss = -float("inf")
         self.sparse = int(sparse)  # True --> 1
         all_params = p.helpers.flatten(self.parametrization)
         arities = [len(param.choices) for _, param in all_params if isinstance(param, p.TransitionChoice)]
@@ -160,6 +166,7 @@ class _OnePlusOne(base.Optimizer):
                 self._doerr_counters += [0.0]
                 i += j
                 j += 2
+        assert self.parametrization.tabu_length == tabu_length
 
     def _internal_ask_candidate(self) -> p.Parameter:
         # pylint: disable=too-many-return-statements, too-many-branches
@@ -204,6 +211,11 @@ class _OnePlusOne(base.Optimizer):
         # mutating
 
         mutation = self.mutation
+        if (
+            self._annealing_base is not None
+        ):  # We assume that we should start from this one (even if not the best).
+            assert self.annealing != "none"
+            pessimistic.set_standardized_data(self._annealing_base, reference=ref)
         if mutation in ("gaussian", "cauchy"):  # standard case
             step = (
                 self._rng.normal(0, 1, self.dimension)
@@ -287,6 +299,28 @@ class _OnePlusOne(base.Optimizer):
             return pessimistic.set_standardized_data(data, reference=ref)
 
     def _internal_tell(self, x: tp.ArrayLike, loss: tp.FloatLoss) -> None:
+        if self.annealing != "none":
+            assert isinstance(self.budget, int)
+            delta = self._previous_best_loss - loss
+            if loss > self._max_loss:
+                self._max_loss = loss
+            if delta >= 0:
+                self._annealing_base = x
+            elif self.num_ask < self.budget:
+                amplitude = max(1.0, self._max_loss - self._previous_best_loss)
+                annealing_dict = {
+                    "Exp0.9": 0.33 * amplitude * (0.9**self.num_ask),
+                    "Exp0.99": 0.33 * amplitude * (0.99**self.num_ask),
+                    "Exp0.9Auto": 0.33 * amplitude * ((0.001 ** (1.0 / self.budget)) ** self.num_ask),
+                    "Lin100.0": 100.0 * amplitude * (1 - self.num_ask / (self.budget + 1)),
+                    "Lin1.0": 1.0 * amplitude * (1 - self.num_ask / (self.budget + 1)),
+                    "LinAuto": 10.0 * amplitude * (1 - self.num_ask / (self.budget + 1)),
+                }
+                T = annealing_dict[self.annealing]
+                if T > 0.0:
+                    proba = np.exp(delta / T)
+                    if self._rng.rand() < proba:
+                        self._annealing_base = x
         # only used for cauchy and gaussian
         if self._previous_best_loss != loss:
             self._sigma *= 2.0 if loss < self._previous_best_loss else 0.84
@@ -368,9 +402,11 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
         self,
         *,
         noise_handling: tp.Optional[tp.Union[str, tp.Tuple[str, float]]] = None,
+        tabu_length: int = 0,
         mutation: str = "gaussian",
         crossover: bool = False,
         rotation: bool = False,
+        annealing: str = "none",
         use_pareto: bool = False,
         sparse: bool = False,
         smoother: bool = False,
@@ -379,15 +415,51 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
 
 
 OnePlusOne = ParametrizedOnePlusOne().set_name("OnePlusOne", register=True)
+# SA = ParametrizedOnePlusOne(annealing="Exp0.9").set_name("SA", register=True)
 NoisyOnePlusOne = ParametrizedOnePlusOne(noise_handling="random").set_name("NoisyOnePlusOne", register=True)
 DiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete").set_name("DiscreteOnePlusOne", register=True)
+SADiscreteLenglerOnePlusOneExp09 = ParametrizedOnePlusOne(
+    tabu_length=1000, mutation="lengler", annealing="Exp0.9"
+).set_name("SADiscreteLenglerOnePlusOneExp09", register=True)
+SADiscreteLenglerOnePlusOneExp099 = ParametrizedOnePlusOne(
+    tabu_length=1000, mutation="lengler", annealing="Exp0.99"
+).set_name("SADiscreteLenglerOnePlusOneExp099", register=True)
+SADiscreteLenglerOnePlusOneExp09Auto = ParametrizedOnePlusOne(
+    tabu_length=1000, mutation="lengler", annealing="Exp0.9Auto"
+).set_name("SADiscreteLenglerOnePlusOneExp09Auto", register=True)
+SADiscreteLenglerOnePlusOneLinAuto = ParametrizedOnePlusOne(
+    tabu_length=1000, mutation="lengler", annealing="LinAuto"
+).set_name("SADiscreteLenglerOnePlusOneLinAuto", register=True)
+SADiscreteLenglerOnePlusOneLin1 = ParametrizedOnePlusOne(
+    tabu_length=1000, mutation="lengler", annealing="Lin1.0"
+).set_name("SADiscreteLenglerOnePlusOneLin1", register=True)
+SADiscreteLenglerOnePlusOneLin100 = ParametrizedOnePlusOne(
+    tabu_length=1000, mutation="lengler", annealing="Lin100.0"
+).set_name("SADiscreteLenglerOnePlusOneLin100", register=True)
+SADiscreteOnePlusOneExp099 = ParametrizedOnePlusOne(
+    tabu_length=1000, mutation="discrete", annealing="Exp0.99"
+).set_name("SADiscreteOnePlusOneExp099", register=True)
+SADiscreteOnePlusOneLin100 = ParametrizedOnePlusOne(
+    tabu_length=1000, mutation="discrete", annealing="Lin100.0"
+).set_name("SADiscreteOnePlusOneLin100", register=True)
+SADiscreteOnePlusOneExp09 = ParametrizedOnePlusOne(
+    tabu_length=1000, mutation="discrete", annealing="Exp0.9"
+).set_name("SADiscreteOnePlusOneExp09", register=True)
+DiscreteOnePlusOneT = ParametrizedOnePlusOne(tabu_length=10000, mutation="discrete").set_name(
+    "DiscreteOnePlusOneT", register=True
+)
 PortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="portfolio").set_name(
     "PortfolioDiscreteOnePlusOne", register=True
+)
+PortfolioDiscreteOnePlusOneT = ParametrizedOnePlusOne(tabu_length=10000, mutation="portfolio").set_name(
+    "PortfolioDiscreteOnePlusOneT", register=True
 )
 DiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(mutation="lengler").set_name(
     "DiscreteLenglerOnePlusOne", register=True
 )
-
+DiscreteLenglerOnePlusOneT = ParametrizedOnePlusOne(tabu_length=10000, mutation="lengler").set_name(
+    "DiscreteLenglerOnePlusOneT", register=True
+)
 AdaptiveDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="adaptive").set_name(
     "AdaptiveDiscreteOnePlusOne", register=True
 )
@@ -2165,13 +2237,14 @@ class _Chain(base.Optimizer):
             "dimension": self.dimension,
             "half": self.budget // 2 if self.budget else self.num_workers,
             "third": self.budget // 3 if self.budget else self.num_workers,
+            "tenth": self.budget // 10 if self.budget else self.num_workers,
             "sqrt": int(np.sqrt(self.budget)) if self.budget else self.num_workers,
         }
         self.budgets = [max(1, converter[b]) if isinstance(b, str) else b for b in budgets]
         last_budget = None if self.budget is None else max(4, self.budget - sum(self.budgets))
         assert len(optimizers) == len(self.budgets) + 1
         assert all(
-            x in ("third", "half", "dimension", "num_workers", "sqrt") or x > 0 for x in self.budgets
+            x in ("third", "half", "tenth", "dimension", "num_workers", "sqrt") or x > 0 for x in self.budgets
         ), str(self.budgets)
         for opt, optbudget in zip(optimizers, self.budgets + [last_budget]):  # type: ignore
             self.optimizers.append(opt(self.parametrization, budget=optbudget, num_workers=self.num_workers))
@@ -2237,6 +2310,9 @@ GeneticDE = Chaining([RotatedTwoPointsDE, TwoPointsDE], [200]).set_name(
 discretememetic = Chaining(
     [RandomSearch, DiscreteLenglerOnePlusOne, DiscreteOnePlusOne], ["third", "third"]
 ).set_name("discretememetic", register=True)
+# discretememeticT = Chaining(
+#     [RandomSearch, DiscreteLenglerOnePlusOneT, DiscreteOnePlusOneT], ["tenth", "third"]
+# ).set_name("discretememeticT", register=True)
 ChainCMAPowell = Chaining([CMA, Powell], ["half"]).set_name("ChainCMAPowell", register=True)
 ChainCMAPowell.no_parallelization = True  # TODO make this automatic
 ChainMetaModelSQP = Chaining([MetaModel, SQP], ["half"]).set_name("ChainMetaModelSQP", register=True)

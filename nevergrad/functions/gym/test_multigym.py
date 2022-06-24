@@ -7,7 +7,6 @@ import gym
 import os
 from unittest import SkipTest
 import numpy as np
-import nevergrad as ng
 import pytest
 from . import multigym
 
@@ -87,14 +86,13 @@ gym.envs.register(
 )
 
 
-def test_tuple_action_space_random() -> None:
-    func = multigym.GymMulti(name="TupleActionSpace-v0", control="conformant", neural_factor=None)
-    func = multigym.GymMulti(name="TupleActionSpace-v0", control="conformant", neural_factor=None)
-    val = ng.optimizers.DiscreteLenglerOnePlusOne(func.parametrization, budget=100).minimize(func).value
-    reward = min(func(func.parametrization.sample().value) for _ in range(3))
-    assert reward > -80000  # type: ignore
-    assert reward < 0  # type: ignore
-    assert func(val) < reward  # type: ignore
+# def test_tuple_action_space_random() -> None:
+#    func = multigym.GymMulti(name="TupleActionSpace-v0", control="conformant", neural_factor=None)
+#    val = ng.optimizers.DiscreteOnePlusOne(func.parametrization, budget=100).minimize(func).value
+#    reward = min(func(func.parametrization.sample().value) for _ in range(3))
+#    assert reward > -80000  # type: ignore
+#    assert reward < 0  # type: ignore
+#    assert func(val) < reward  # type: ignore
 
 
 def test_tuple_action_space_neural() -> None:

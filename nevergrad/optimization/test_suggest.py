@@ -44,11 +44,11 @@ def suggestion_testing(
     if threshold is not None:
         assert (
             objective_function(optim.recommend().value) < threshold
-        ), "{name} proposes {optim.recommend().value} instead of {optimum} (threshold={threshold})"
+        ), f"{name} proposes {optim.recommend().value} instead of {optimum} (threshold={threshold})"
         return
     assert np.all(
         optim.recommend().value == optimum
-    ), "{name} proposes {optim.recommend().value} instead of {optimum}"
+    ), f"{name} proposes {optim.recommend().value} instead of {optimum}"
 
 
 @skip_win_perf  # type: ignore
@@ -67,12 +67,15 @@ def good_at_suggest(name: str) -> bool:
     keywords = [
         "Noisy",
         "Optimistic",
+        "DiscreteDE",
         "Multi",
         "Anisotropic",
         "BSO",
         "Sparse",
         "Recombining",
+        "SA",
         "PortfolioDiscreteOne",
+        "FastGADiscreteOne",
     ]
     return not any(k in name for k in keywords)
 
