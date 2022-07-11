@@ -159,7 +159,7 @@ class _DE(base.Optimizer):
             self._uid_queue.asked.add(candidate.uid)
             return candidate
         # stop queue wrapping around to lineage waiting for a tell
-        assert self._uid_queue.told
+        assert self._uid_queue.told, "More untold asks than population size (exceeds num_workers)"
         # init is done
         lineage = self._uid_queue.ask()
         parent = self.population[lineage]
