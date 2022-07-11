@@ -13,8 +13,7 @@ class OptimizeMix(base.ExperimentFunction):
     MixSimulator is an application with an optimization model for calculating
     and simulating the least cost of an energy mix under certain constraints.
 
-    For now, it uses a default dataset (more will be added soon).
-
+    For now, it uses a default dataset (10 interconnected power generators).
     For more information, visit : https://github.com/Foloso/MixSimulator
 
     Parameters
@@ -24,12 +23,12 @@ class OptimizeMix(base.ExperimentFunction):
 
     """
 
-    def __init__(self, time: int = 8760) -> None:
+    def __init__(self, time: int = 120) -> None:
         try:
-            from mixsimulator.MixSimulator import MixSimulator  # pylint: disable=import-outside-toplevel
-            from mixsimulator.Demand import Demand
+            from mixsimulator import ElectricityMix  # pylint: disable=import-outside-toplevel
+            from mixsimulator.demand.classic.Demand import Demand
 
-            self._mix = MixSimulator()
+            self._mix = ElectricityMix().mix(method="classic", carbon_cost=10, penalisation_cost=100)
             self._mix.set_data_to("Toamasina")
             self._demand = Demand()
             self._demand.set_data_to("Toamasina", delimiter=",")
@@ -38,8 +37,11 @@ class OptimizeMix(base.ExperimentFunction):
         except (KeyError, AttributeError, ModuleNotFoundError) as e:
             # send a skip error so that this does not break the test suit
             raise base.UnsupportedExperiment("mixsimulator dependency issue") from e
-        self._mix.set_penalisation_cost(100)
-        self._mix.set_carbon_cost(10)
+
+        # penalizations setting
+        # self._mix.set_penalisation_cost(100)
+        # self._mix.set_carbon_cost(10)
+
         parameters = self._mix.get_opt_params(time)
         parameters.set_name("dims")
         super().__init__(self._mix.loss_function, parameters)
