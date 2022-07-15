@@ -633,7 +633,6 @@ def bonnans(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         "DiscreteBSOOnePlusOne",
         "AdaptiveDiscreteOnePlusOne",
         "GeneticDE",
-        "RotatedTwoPointsDE",
         "DE",
         "TwoPointsDE",
         "DiscreteOnePlusOne",
