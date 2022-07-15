@@ -101,7 +101,8 @@ class _DE(base.Optimizer):
         if isinstance(self._config.popsize, int):
             self.llambda = self._config.popsize
         else:
-            self.llambda = max(30, self.num_workers, pop_choice[self._config.popsize])
+            self.llambda = max(30, pop_choice[self._config.popsize])
+        self.llambda = max(self.llambda, self.num_workers)
         # internals
         if budget is not None and budget < 60:
             warnings.warn(
