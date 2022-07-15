@@ -278,7 +278,7 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
     F2: float
         differential weight #2
     popsize: int, "standard", "dimension", "large"
-        size of the population to use. "standard" is 30, "dimension" max(30, dimension +1) and "large" 
+        size of the population to use. "standard" is 30, "dimension" max(30, dimension +1) and "large"
         max(30, 7 * dimension). Set to be at least num_workers so that base vectors are distinct.
     multiobjective_adaptation: bool
         Automatically adapts to handle multiobjective case.  This is a very basic **experimental** version,
