@@ -1409,7 +1409,6 @@ def simple_tsp(seed: tp.Optional[int] = None, complex_tsp: bool = False) -> tp.I
         "DiscreteBSOOnePlusOne",
         "AdaptiveDiscreteOnePlusOne",
         "GeneticDE",
-        "RotatedTwoPointsDE",
         "DE",
         "TwoPointsDE",
         "DiscreteOnePlusOne",
