@@ -357,6 +357,8 @@ SmoothAdaptiveDiscreteOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutatio
 MixDeterministicRL = ConfPortfolio(optimizers=[DiagonalCMA, PSO, GeneticDE]).set_name(
     "MixDeterministicRL", register=True
 )
+MixDeterministicRL.no_parallelization = True
+
 SpecialRL = Chaining([MixDeterministicRL, TBPSA], ["half"]).set_name("SpecialRL", register=True)
 NoisyRL1 = Chaining([MixDeterministicRL, NoisyOnePlusOne], ["half"]).set_name("NoisyRL1", register=True)
 NoisyRL2 = Chaining(
