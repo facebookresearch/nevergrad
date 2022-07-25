@@ -1596,7 +1596,7 @@ class Portfolio(base.Optimizer):
         num = len(optimizers)
         self.optims: tp.List[base.Optimizer] = []
         sub_budget = None if budget is None else budget // num + (budget % num > 0)
-        sub_workers = 1
+        sub_workers = num_workers
         if distribute_workers:
             sub_workers = num_workers // num + (num_workers % num > 0)
         for opt in optimizers:
