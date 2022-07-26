@@ -1673,7 +1673,7 @@ class Portfolio(base.Optimizer):
             opt.enable_pickling()
 
 
-ParaPortfolio = ConfPortfolio(optimizers=[CMA, TwoPointsDE, PSO, SQP, ScrHammersleySearch]).set_name(
+ParaPortfolio = ConfPortfolio(optimizers=[CMA, TwoPointsDE, PSO, ScrHammersleySearch]).set_name(
     "ParaPortfolio", register=True
 )
 ASCMADEthird = ConfPortfolio(optimizers=[CMA, LhsDE], warmup_ratio=0.33).set_name(
