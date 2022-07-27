@@ -31,7 +31,9 @@ def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[expe
     # "mav" is not availablefor now.
     if name == "conformant_planning" or name == "neuro_planning" or "compiler" in name:
         raise SkipTest("This is user parametric and can not be tested.")
-
+    if "emulator" in name:
+        raise SkipTest("Emulators not included in CI.")
+    
     # Our PGAN is not well accepted by circleci.
     if "_pgan" in name and os.environ.get("CIRCLECI", False):
         raise SkipTest("Too slow in CircleCI")
