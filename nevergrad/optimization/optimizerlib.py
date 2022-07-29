@@ -3006,15 +3006,6 @@ class NGOpt38(NGOpt16):
 
 
 @registry.register
-class NGOptRW(NGOpt):
-    def _select_optimizer_cls(self) -> base.OptCls:
-        if self.fully_continuous and not self.has_noise and self.budget >= 12 * self.dimension:
-            return ConfPortfolio(optimizers=[GeneticDE, PSO, NGOpt39], warmup_ratio=0.33)
-        else:
-            return super()._select_optimizer_cls()
-            
-            
-@registry.register
 class NGOpt39(NGOpt16):
     def _select_optimizer_cls(self) -> base.OptCls:
         if self.fully_continuous and self.has_noise:  # In particular for neuro-DPS.
@@ -3092,6 +3083,15 @@ class NGOpt39(NGOpt16):
                 MetaModelFmin2.no_parallelization = True
                 return MetaModelFmin2
             return NGOpt15
+        else:
+            return super()._select_optimizer_cls()
+
+
+@registry.register
+class NGOptRW(NGOpt39):
+    def _select_optimizer_cls(self) -> base.OptCls:
+        if self.fully_continuous and not self.has_noise and self.budget >= 12 * self.dimension:
+            return ConfPortfolio(optimizers=[GeneticDE, PSO, NGOpt39], warmup_ratio=0.33)
         else:
             return super()._select_optimizer_cls()
 
