@@ -159,8 +159,6 @@ class _DE(base.Optimizer):
             self.population[candidate.uid] = candidate
             self._uid_queue.asked.add(candidate.uid)
             return candidate
-        # stop queue wrapping around to lineage waiting for a tell
-        assert self._uid_queue.told, "More untold asks than population size (exceeds num_workers)"
         # init is done
         lineage = self._uid_queue.ask()
         parent = self.population[lineage]
@@ -200,7 +198,9 @@ class _DE(base.Optimizer):
         if uid not in self.population:  # parent was removed, revert to tell_not_asked
             self._internal_tell_not_asked(candidate, loss)
             return
-        self._uid_queue.tell(uid)  # only add to queue if not a "tell_not_asked" (from a removed parent)
+        if uid in self._uid_queue.asked: 
+            # only add to queue once and if not a tell_not_asked (from a removed parent)
+            self._uid_queue.tell(uid)
         parent = self.population[uid]
         mo_adapt = self._config.multiobjective_adaptation and self.num_objectives > 1
         mo_adapt &= candidate._losses is not None  # can happen with bad constraints
