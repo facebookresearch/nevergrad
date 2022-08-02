@@ -101,7 +101,8 @@ class _DE(base.Optimizer):
         if isinstance(self._config.popsize, int):
             self.llambda = self._config.popsize
         else:
-            self.llambda = max(30, self.num_workers, pop_choice[self._config.popsize])
+            self.llambda = max(30, pop_choice[self._config.popsize])
+        self.llambda = max(self.llambda, self.num_workers)
         # internals
         if budget is not None and budget < 60:
             warnings.warn(
@@ -197,7 +198,9 @@ class _DE(base.Optimizer):
         if uid not in self.population:  # parent was removed, revert to tell_not_asked
             self._internal_tell_not_asked(candidate, loss)
             return
-        self._uid_queue.tell(uid)  # only add to queue if not a "tell_not_asked" (from a removed parent)
+        if uid in self._uid_queue.asked: 
+            # only add to queue once and if not a tell_not_asked (from a removed parent)
+            self._uid_queue.tell(uid)
         parent = self.population[uid]
         mo_adapt = self._config.multiobjective_adaptation and self.num_objectives > 1
         mo_adapt &= candidate._losses is not None  # can happen with bad constraints
@@ -275,8 +278,8 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
     F2: float
         differential weight #2
     popsize: int, "standard", "dimension", "large"
-        size of the population to use. "standard" is max(num_workers, 30), "dimension" max(num_workers, 30, dimension +1)
-        and "large" max(num_workers, 30, 7 * dimension).
+        size of the population to use. "standard" is 30, "dimension" max(30, dimension +1) and "large"
+        max(30, 7 * dimension). Set to be at least num_workers so that base vectors are distinct.
     multiobjective_adaptation: bool
         Automatically adapts to handle multiobjective case.  This is a very basic **experimental** version,
         activated by default because the non-multiobjective implementation is performing very badly.
