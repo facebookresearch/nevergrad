@@ -30,7 +30,7 @@ scikit-image==0.18.3
 tensorflow>=2.7.0
 image-quality>=1.2.7
 keras>=2.4.3
-compiler_gym>=0.1.8 ; sys_platform == "linux"
+compiler_gym==0.1.8 ; sys_platform == "linux"
 pymoo==0.5.0
 olymp==0.0.1b0 ; sys_platform == "linux"
 silence_tensorflow  # for olymp
@@ -41,4 +41,3 @@ pybullet>=3.2.2
 box2d-py>=2.3.5
 glfw
 mujoco
-protobuf=3.20.0
