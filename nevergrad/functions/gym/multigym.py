@@ -162,7 +162,6 @@ class GymMulti(ExperimentFunction):
     ) -> None:
         self.num_calls = 0
         self.optimization_scale = optimization_scale
-        self.num_training_codes = 100 if limited_compiler_gym else 5000
         self.stochastic_problem = "stoc" in name
         self.greedy_bias = greedy_bias
         self.sparse_limit = sparse_limit
@@ -350,10 +349,7 @@ class GymMulti(ExperimentFunction):
         # hence the line below:
         num = max(self.num_calls // 5, 23)
         # Pb_index >= 0 refers to the test set.
-        return (
-            np.sum([self.gym_multi_function(x, limited_fidelity=False) for _ in range(num)])
-            / num  # This is not compiler_gym but we keep this 23 constant.
-        )
+        return np.sum([self.gym_multi_function(x, limited_fidelity=False) for _ in range(num)]) / num
 
     def softmax(self, a):
         a = np.nan_to_num(a, copy=False, nan=-1e20, posinf=1e20, neginf=-1e20)
@@ -482,10 +478,6 @@ class GymMulti(ExperimentFunction):
                 whether we use a limited version for the beginning of the training.
         """
         self.num_calls += 1
-        # Deterministic conformant: do  the average of 7 simullations always with the same seed.
-        # Otherwise: apply a random seed and do a single simulation.
-        train_set = True
-
         # The deterministic case consists in considering the average of 7 fixed seeds.
         # The conformant case is using 1 randomized seed (unlesss we requested !randomized).
         num_simulations = 7 if self.control != "conformant" and not self.randomized else 1
@@ -497,7 +489,6 @@ class GymMulti(ExperimentFunction):
                 if not self.randomized
                 else self.parametrization.random_state.randint(500000),
                 limited_fidelity=limited_fidelity,
-                test_set=True,
             )
         return loss / num_simulations
 
@@ -580,7 +571,6 @@ class GymMulti(ExperimentFunction):
         self,
         x: np.ndarray,
         seed: int,
-        test_set: bool,
         limited_fidelity: bool = True,
     ):
         """Single simulation with parametrization x."""

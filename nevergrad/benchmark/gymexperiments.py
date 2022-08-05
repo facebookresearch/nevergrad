@@ -6,7 +6,6 @@
 import os
 import typing as tp
 from nevergrad.functions import gym as nevergrad_gym
-from nevergrad.functions import ExperimentFunction
 from .xpbase import registry
 from .xpbase import create_seed_generator
 from .xpbase import Experiment
