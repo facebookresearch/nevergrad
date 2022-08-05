@@ -77,230 +77,7 @@ CONTROLLERS = [
 ]
 
 
-NO_LENGTH = ["ANM", "Blackjack", "CliffWalking", "Cube", "Memorize", "ompiler", "llvm"]
-
-
-# Environment used for CompilerGym: this class proposes a small ActionSpace.
-class SmallActionSpaceLlvmEnv(gym.ActionWrapper):
-    """A wrapper for the LLVM compiler environment that exposes a tiny subset of
-    the full discrete action space (the subset was hand pruned to contain a mix
-    of "good" and "bad" actions).
-    """
-
-    action_space_subset = [
-        "-adce",
-        "-break-crit-edges",
-        "-constmerge",
-        "-correlated-propagation",
-        "-deadargelim",
-        "-dse",
-        "-early-cse-memssa",
-        "-functionattrs",
-        "-functionattrs",
-        "-globaldce",
-        "-globalopt",
-        "-gvn",
-        "-indvars",
-        "-inline",
-        "-instcombine",
-        "-ipsccp",
-        "-jump-threading",
-        "-lcssa",
-        "-licm",
-        "-loop-deletion",
-        "-loop-idiom",
-        "-loop-reduce",
-        "-loop-rotate",
-        "-loop-simplify",
-        "-loop-unroll",
-        "-loop-unswitch",
-        "-lower-expect",
-        "-loweratomic",
-        "-lowerinvoke",
-        "-lowerswitch",
-        "-mem2reg",
-        "-memcpyopt",
-        "-partial-inliner",
-        "-prune-eh",
-        "-reassociate",
-        "-sccp",
-        "-simplifycfg",
-        "-sink",
-        "-sroa",
-        "-strip",
-        "-strip-nondebug",
-        "-tailcallelim",
-    ]
-
-    def __init__(self, env) -> None:
-        """Creating a counterpart of a compiler gym environment with a reduced action space."""
-        super().__init__(env=env)
-        # Array for translating from this tiny action space to the action space of
-        # the wrapped environment.
-        self.true_action_indices = [self.action_space[f] for f in self.action_space_subset]
-
-    def action(self, action: tp.Union[int, tp.List[int]]):
-        if isinstance(action, int):
-            return self.true_action_indices[action]
-        else:
-            return [self.true_action_indices[a] for a in action]
-
-
-class AutophaseNormalizedFeatures(gym.ObservationWrapper):
-    """A wrapper for LLVM environments that use the Autophase observation space
-    to normalize and clip features to the range [0, 1].
-    """
-
-    # The index of the "TotalInsts" feature of autophase.
-    TotalInsts_index = 51
-
-    def __init__(self, env: tp.Any):
-        """Creating a counterpart of a compiler gym environement with an extended observation space."""
-        super().__init__(env=env)
-        assert env.observation_space_spec.id == "Autophase", "Requires autophase features"
-        # Adjust the bounds to reflect the normalized values.
-        self.observation_space = gym.spaces.Box(
-            low=np.full(self.observation_space.shape[0], 0, dtype=np.float32),  # type: ignore
-            high=np.full(self.observation_space.shape[0], 1, dtype=np.float32),  # type: ignore
-            dtype=np.float32,
-        )
-
-    def observation(self, observation):
-        if observation[self.TotalInsts_index] <= 0:
-            return np.zeros(observation.shape)
-        return np.clip(observation / observation[self.TotalInsts_index], 0, 1)
-
-
-class ConcatActionsHistogram(gym.ObservationWrapper):
-    """A wrapper that concatenates a histogram of previous actions to each
-    observation.
-    The actions histogram is concatenated to the end of the existing 1-D box
-    observation, expanding the space.
-    The actions histogram has bounds [0,inf]. If you specify a fixed episode
-    length `norm_to_episode_len`, each histogram update will be scaled by
-    1/norm_to_episode_len, so that `sum(observation) == 1` after episode_len
-    steps.
-    """
-
-    def __init__(self, env: tp.Any, norm_to_episode_len: int = 0) -> None:
-        """Creating a counterpart of a compiler gym environement with an extended observation space."""
-        super().__init__(env=env)
-        assert isinstance(
-            self.observation_space, gym.spaces.Box  # type: ignore
-        ), "Can only contatenate actions histogram to box shape"
-        assert isinstance(
-            self.action_space, gym.spaces.Discrete
-        ), "Can only construct histograms from discrete spaces"
-        assert len(self.observation_space.shape) == 1, "Requires 1-D observation space"  # type: ignore
-        self.increment = 1 / norm_to_episode_len if norm_to_episode_len else 1
-
-        # Reshape the observation space.
-        self.observation_space = gym.spaces.Box(
-            low=np.concatenate(
-                (
-                    self.observation_space.low,  # type: ignore
-                    np.full(self.action_space.n, 0, dtype=np.float32),
-                )
-            ),
-            high=np.concatenate(
-                (
-                    self.observation_space.high,  # type: ignore
-                    np.full(
-                        self.action_space.n,
-                        1 if norm_to_episode_len else float("inf"),
-                        dtype=np.float32,
-                    ),
-                )
-            ),
-            dtype=np.float32,
-        )
-        self.histogram = np.zeros((self.action_space.n,))
-
-    def reset(self, *args, **kwargs):
-        self.histogram = np.zeros((self.action_space.n,))
-        return super().reset(*args, **kwargs)
-
-    def step(self, action: tp.Union[int, tp.List[int]]):
-        if not isinstance(action, tp.Iterable):
-            action = [action]
-        for a in action:
-            self.histogram[a] += self.increment
-        return super().step(action)
-
-    def observation(self, observation):
-        return np.concatenate((observation, self.histogram))
-
-
-# Class for direct optimization of CompilerGym problems.
-# We have two variants: a limited (small action space) and a full version.
-class CompilerGym(ExperimentFunction):
-    def __init__(self, compiler_gym_pb_index: int, limited_compiler_gym: tp.Optional[bool] = None):
-        """Creating a compiler gym environement.
-
-        Parameters:
-            compiler_gym_pb_index: integer
-                which pb we are working on.
-            limited_compiler_gym: bool
-                whether we use a limited action space.
-        """
-        try:
-            import compiler_gym  # noqa
-        except ImportError as e:
-            raise ng.errors.UnsupportedExperiment(
-                "Please install compiler_gym for CompilerGym experiments"
-            ) from e
-        # CompilerGym sends http requests that CircleCI does not like.
-        if os.environ.get("CIRCLECI", False):
-            raise ng.errors.UnsupportedExperiment("No HTTP request in CircleCI")
-        env = gym.make("llvm-ic-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
-        action_space_size = (
-            len(SmallActionSpaceLlvmEnv.action_space_subset) if limited_compiler_gym else env.action_space.n
-        )
-        self.num_episode_steps = 45 if limited_compiler_gym else 50
-        parametrization = (
-            ng.p.Array(shape=(self.num_episode_steps,))
-            .set_bounds(0, action_space_size - 1)
-            .set_integer_casting()
-        ).set_name("direct" + str(compiler_gym_pb_index))
-        self.uris = list(env.datasets["benchmark://cbench-v1"].benchmark_uris())
-        self.compilergym_index = compiler_gym_pb_index
-        env.reset(benchmark=self.uris[self.compilergym_index])
-        self.limited_compiler_gym = limited_compiler_gym
-        super().__init__(self.eval_actions_as_list, parametrization=parametrization)
-
-    def make_env(self) -> gym.Env:
-        """Convenience function to create the environment that we'll use."""
-        # User the time-limited wrapper to fix the length of episodes.
-        if self.limited_compiler_gym:
-            import compiler_gym
-
-            env = gym.wrappers.TimeLimit(
-                env=SmallActionSpaceLlvmEnv(env=gym.make("llvm-v0", reward_space="IrInstructionCountOz")),
-                max_episode_steps=self.num_episode_steps,
-            )
-            env.unwrapped.benchmark = "cBench-v1/qsort"
-            env.action_space.n = len(SmallActionSpaceLlvmEnv.action_space_subset)
-        else:
-            env = gym.make("llvm-ic-v0", reward_space="IrInstructionCountOz")
-            assert env.action_space.n > len(SmallActionSpaceLlvmEnv.action_space_subset)
-        return env
-
-    # @lru_cache(maxsize=1024)  # function is deterministic so we can cache results
-    def eval_actions(self, actions: tp.Tuple[int, ...]) -> float:
-        """Create an environment, run the sequence of actions in order, and return the
-        negative cumulative reward. Intermediate observations/rewards are discarded.
-
-        This is the function that we want to minimize.
-        """
-        with self.make_env() as env:
-            env.reset(benchmark=self.uris[self.compilergym_index])
-            _, _, _, _ = env.step(actions)
-        return -env.episode_reward
-
-    def eval_actions_as_list(self, actions: tp.List[int]):
-        """Wrapper around eval_actions() that records the return value for later analysis."""
-        reward = self.eval_actions(tuple(actions[i] for i in range(len(actions))))
-        return reward
+NO_LENGTH = ["ANM", "Blackjack", "CliffWalking", "Cube", "Memorize", "llvm"]
 
 
 class GymMulti(ExperimentFunction):
@@ -357,63 +134,18 @@ class GymMulti(ExperimentFunction):
     ]
 
     def wrap_env(self, input_env):
-        if self.limited_compiler_gym:
-            env = gym.wrappers.TimeLimit(
-                env=SmallActionSpaceLlvmEnv(input_env),
-                max_episode_steps=self.num_episode_steps,
-            )
-            env.unwrapped.benchmark = input_env.benchmark
-            env.action_space.n = len(SmallActionSpaceLlvmEnv.action_space_subset)
-        else:
-            env = gym.wrappers.TimeLimit(
-                env=input_env,
-                max_episode_steps=self.num_episode_steps,
-            )
+        env = gym.wrappers.TimeLimit(
+            env=input_env,
+            max_episode_steps=self.num_episode_steps,
+        )
         return env
 
-    def observation_wrap(self, env):
-        env2 = AutophaseNormalizedFeatures(env)
-        env3 = ConcatActionsHistogram(env2)
-        return env3
-
     def create_env(self) -> tp.Any:
-        if self.uses_compiler_gym:  # Long special case for Compiler Gym.
-            # CompilerGym sends http requests that CircleCI does not like.
-            if os.environ.get("CIRCLECI", False):
-                raise ng.errors.UnsupportedExperiment("No HTTP request in CircleCI")
-            assert self.limited_compiler_gym is not None
-            self.num_episode_steps = 45 if self.limited_compiler_gym else 50
-            import compiler_gym
-
-            env = gym.make("llvm-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
-            env = self.observation_wrap(self.wrap_env(env))
-            self.uris = list(env.datasets["benchmark://cbench-v1"].benchmark_uris())
-            # For training, in the "stochastic" case, we use Csmith.
-            from itertools import islice
-
-            self.csmith = list(
-                islice(env.datasets["generator://csmith-v0"].benchmark_uris(), self.num_training_codes)
-            )
-
-            if self.stochastic_problem:
-                assert self.compilergym_index is None
-                # In training, we randomly draw in csmith (but we are allowed to use 100x more budget :-) ).
-                env.reset(benchmark=np.random.choice(self.csmith))
-            else:
-                assert self.compilergym_index is not None
-                env.reset(benchmark=self.uris[self.compilergym_index])
-            # env.require_dataset("cBench-v1")
-            # env.unwrapped.benchmark = "benchmark://cBench-v1/qsort"
-        else:  # Here we are not in CompilerGym anymore.
-            assert self.limited_compiler_gym is None
-            # assert (
-            #    self.compilergym_index is None
-            # ), "compiler_gym_pb_index should not be defined if not CompilerGym."
-            env = gym.make(self.short_name if "LANM" not in self.short_name else "ANM6Easy-v0")
-            try:
-                env.reset()
-            except:
-                assert False, f"Maybe check if {self.short_name} has a problem in reset / observation."
+        env = gym.make(self.short_name if "LANM" not in self.short_name else "ANM6Easy-v0")
+        try:
+            env.reset()
+        except:
+            assert False, f"Maybe check if {self.short_name} has a problem in reset / observation."
         return env
 
     def __init__(
@@ -422,22 +154,15 @@ class GymMulti(ExperimentFunction):
         control: str = "conformant",
         neural_factor: tp.Optional[int] = 1,
         randomized: bool = True,
-        compiler_gym_pb_index: tp.Optional[int] = None,
-        limited_compiler_gym: tp.Optional[bool] = None,
         optimization_scale: int = 0,
         greedy_bias: bool = False,
         sparse_limit: tp.Optional[
             int
         ] = None,  # if not None, we penalize solutions with more than sparse_limit weights !=0
     ) -> None:
-        # limited_compiler_gym: bool or None.
-        #        whether we work with the limited version
         self.num_calls = 0
-        self.limited_compiler_gym = limited_compiler_gym
-        self.compilergym_index = compiler_gym_pb_index
         self.optimization_scale = optimization_scale
         self.num_training_codes = 100 if limited_compiler_gym else 5000
-        self.uses_compiler_gym = "compiler" in name
         self.stochastic_problem = "stoc" in name
         self.greedy_bias = greedy_bias
         self.sparse_limit = sparse_limit
@@ -451,7 +176,7 @@ class GymMulti(ExperimentFunction):
         self.short_name = name  # Just the environment name.
         env = self.create_env()
         self.name = (
-            (name if not self.uses_compiler_gym else name + str(env))
+            name
             + "__"
             + control
             + "__"
@@ -469,13 +194,7 @@ class GymMulti(ExperimentFunction):
                 self.num_time_steps = env.horizon
         except AttributeError:  # Not all environements have a max number of episodes!
             assert any(x in name for x in NO_LENGTH), name
-            if (
-                self.uses_compiler_gym and not self.limited_compiler_gym
-            ):  # The unlimited Gym uses 50 time steps.
-                self.num_time_steps = 50
-            elif self.uses_compiler_gym and self.limited_compiler_gym:  # Other Compiler Gym: 45 time steps.
-                self.num_time_steps = 45
-            elif "LANM" not in name:  # Most cases: let's say 5000 time steps.
+            if "LANM" not in name:  # Most cases: let's say 5000 time steps.
                 self.num_time_steps = 200 if control == "conformant" else 5000
             else:  # LANM is a special case with 3000 time steps.
                 self.num_time_steps = 3000
@@ -513,12 +232,9 @@ class GymMulti(ExperimentFunction):
 
         # Infer the observation space.
         assert (
-            env.observation_space is not None or self.uses_compiler_gym or "llvm" in name
-        ), "An observation space should be defined."
-        if self.uses_compiler_gym:
-            input_dim = 98 if self.limited_compiler_gym else 179
-            self.discrete_input = False
-        elif env.observation_space is not None and env.observation_space.dtype == int:
+            env.observation_space is not None or "llvm" in name
+            ), "An observation space should be defined."
+        if env.observation_space is not None and env.observation_space.dtype == int:
             # Direct inference for corner cases:
             # if "int" in str(type(o)):
             input_dim = env.observation_space.n
@@ -619,7 +335,7 @@ class GymMulti(ExperimentFunction):
             parametrization=parametrization,
         )
         self.greedy_coefficient = 0.0
-        self.parametrization.function.deterministic = not self.uses_compiler_gym
+        self.parametrization.function.deterministic = False
         self.archive: tp.List[tp.Any] = []
         self.mean_loss = 0.0
         self.num_losses = 0
@@ -636,52 +352,21 @@ class GymMulti(ExperimentFunction):
             enablers = enablers.reshape(weights.shape)
             x = weights * enablers
         if not self.randomized:
-            assert not self.uses_compiler_gym
             return self.gym_multi_function(x, limited_fidelity=False)
-        if not self.uses_compiler_gym:
-            # We want to reduce noise by averaging without
-            # spending more than 20% of the whole experiment,
-            # hence the line below:
-            num = max(self.num_calls // 5, 23)
-            # Pb_index >= 0 refers to the test set.
-            return (
-                np.sum(
-                    [
-                        self.gym_multi_function(x, limited_fidelity=False)
-                        for compiler_gym_pb_index in range(num)
-                    ]
-                )
-                / num  # This is not compiler_gym but we keep this 23 constant.
+        # We want to reduce noise by averaging without
+        # spending more than 20% of the whole experiment,
+        # hence the line below:
+        num = max(self.num_calls // 5, 23)
+        # Pb_index >= 0 refers to the test set.
+        return (
+            np.sum(
+                [
+                    self.gym_multi_function(x, limited_fidelity=False)
+                    for _ in range(num)
+                ]
             )
-        assert self.uses_compiler_gym
-        rewards = [
-            np.log(
-                max(
-                    1e-5,
-                    -self.gym_multi_function(
-                        x, limited_fidelity=False, compiler_gym_pb_index=compiler_gym_pb_index
-                    ),
-                )
-            )
-            for compiler_gym_pb_index in range(23)
-        ]
-        loss = -np.exp(sum(rewards) / len(rewards))
-        return loss
-
-    def forked_env(self, env):
-        assert "compiler" in self.name
-        forked = env.unwrapped.fork()
-        forked = self.wrap_env(forked)
-        # pylint: disable=W0201
-        assert hasattr(
-            env, "_elapsed_steps"
-        ), f"{[hasattr(e, '_elapsed_steps') for e in [env, env.unwrapped, env.unwrapped.unwrapped, env.unwrapped.unwrapped.unwrapped]]}"
-        if env._elapsed_steps is not None:
-            forked._elapsed_steps = env._elapsed_steps
-        forked = self.observation_wrap(forked)
-        if hasattr(env, "histogram"):
-            forked.histogram = env.histogram.copy()
-        return forked
+            / num  # This is not compiler_gym but we keep this 23 constant.
+        )
 
     def softmax(self, a):
         a = np.nan_to_num(a, copy=False, nan=-1e20, posinf=1e20, neginf=-1e20)
@@ -724,10 +409,7 @@ class GymMulti(ExperimentFunction):
         if self.greedy_bias:
             a = np.asarray(a, dtype=np.float32)
             for i, action in enumerate(range(len(a))):
-                if "compiler" in self.name:
-                    tmp_env = self.forked_env(env)
-                else:
-                    tmp_env = copy.deepcopy(env)
+                tmp_env = copy.deepcopy(env)
                 _, r, _, _ = tmp_env.step(action)
                 a[i] += self.greedy_coefficient * r
         probabilities = self.softmax(a)
@@ -793,12 +475,11 @@ class GymMulti(ExperimentFunction):
         weights: np.ndarray,
         enablers: np.ndarray,
         limited_fidelity: bool = False,
-        compiler_gym_pb_index: tp.Optional[int] = None,
     ) -> float:
         assert all(x_ in [0, 1] for x_ in enablers)
         x = weights * enablers
         loss = self.gym_multi_function(
-            x, limited_fidelity=limited_fidelity, compiler_gym_pb_index=compiler_gym_pb_index
+            x, limited_fidelity=limited_fidelity,
         )
         sparse_penalty = 0
         if self.sparse_limit is not None:  # Then we penalize the weights above the threshold "sparse_limit".
@@ -806,46 +487,23 @@ class GymMulti(ExperimentFunction):
         return loss + sparse_penalty
 
     def gym_multi_function(
-        self, x: np.ndarray, limited_fidelity: bool = False, compiler_gym_pb_index: tp.Optional[int] = None
+        self, x: np.ndarray, limited_fidelity: bool = False
     ) -> float:
         """Do a simulation with parametrization x and return the result.
 
         Parameters:
             limited_fidelity: bool
                 whether we use a limited version for the beginning of the training.
-            compiler_gym_pb_index: int or None.
-                index of the compiler_gym pb: set only for testing
         """
         self.num_calls += 1
         # Deterministic conformant: do  the average of 7 simullations always with the same seed.
         # Otherwise: apply a random seed and do a single simulation.
-        train_set = compiler_gym_pb_index is None
-        if train_set and "stochasticcompilergym" in self.name:
-            log_rewards = [
-                np.log(
-                    max(
-                        1e-5,
-                        -self.gym_simulate(
-                            x,
-                            seed=self.parametrization.random_state.randint(500000),
-                            limited_fidelity=limited_fidelity,
-                            compiler_gym_pb_index=compiler_gym_pb_index,
-                            test_set=False,
-                        ),
-                    )
-                )
-                for compiler_gym_pb_index in np.random.choice(
-                    range(0, self.num_training_codes), size=12, replace=False
-                )
-            ]
-            return -np.exp(np.sum(log_rewards) / len(log_rewards))
+        train_set = True
 
         # The deterministic case consists in considering the average of 7 fixed seeds.
         # The conformant case is using 1 randomized seed (unlesss we requested !randomized).
         num_simulations = 7 if self.control != "conformant" and not self.randomized else 1
         loss = 0
-        if "directcompilergym" in self.name:
-            assert compiler_gym_pb_index is not None
         for simulation_index in range(num_simulations):
             loss += self.gym_simulate(
                 x,
@@ -853,7 +511,6 @@ class GymMulti(ExperimentFunction):
                 if not self.randomized
                 else self.parametrization.random_state.randint(500000),
                 limited_fidelity=limited_fidelity,
-                compiler_gym_pb_index=compiler_gym_pb_index,
                 test_set=True,
             )
         return loss / num_simulations
@@ -938,7 +595,6 @@ class GymMulti(ExperimentFunction):
         x: np.ndarray,
         seed: int,
         test_set: bool,
-        compiler_gym_pb_index: tp.Optional[int] = None,
         limited_fidelity: bool = True,
     ):
         """Single simulation with parametrization x."""
@@ -954,23 +610,7 @@ class GymMulti(ExperimentFunction):
         assert seed == 0 or self.control != "conformant" or self.randomized
         env = self.create_env()
         env.seed(seed=seed)
-        if self.uses_compiler_gym:
-            if self.stochastic_problem:
-                assert compiler_gym_pb_index is not None
-                o = env.reset(
-                    benchmark=self.csmith[compiler_gym_pb_index]
-                    if not test_set
-                    else self.uris[compiler_gym_pb_index]
-                )
-            else:
-                # Direct case: we should have an index equal to self.compilergym_index
-                assert compiler_gym_pb_index is not None
-                assert compiler_gym_pb_index == self.compilergym_index
-                assert compiler_gym_pb_index < 23
-                o = env.reset(benchmark=self.uris[compiler_gym_pb_index])
-        else:
-            assert compiler_gym_pb_index is None
-            o = env.reset()
+        o = env.reset()
         control = self.control
         if (
             "conformant" in control
@@ -995,7 +635,7 @@ class GymMulti(ExperimentFunction):
             o = np.concatenate([previous_o.ravel(), memory.ravel(), self.extended_input])
             assert len(o) == self.input_dim, (
                 f"o has shape {o.shape} whereas input_dim={self.input_dim} "
-                f"({control} / {env} {self.name} (limited={self.limited_compiler_gym}))"
+                f"({control} / {env} {self.name})"
             )
             a, memory = self.neural(x[i % len(x)] if "multi" in control else x, o)
             a = self.action_cast(a, env)
