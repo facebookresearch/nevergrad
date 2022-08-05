@@ -326,9 +326,7 @@ def gym_problem(
     ]
     if "stochastic" in specific_problem:
         optims = ["DiagonalCMA", "TBPSA"] if big_noise else ["DiagonalCMA"]
-    if (
-        specific_problem == "EnergySavingsGym-v0" and conformant
-    ):  # Do this for all conformant discrete ?
+    if specific_problem == "EnergySavingsGym-v0" and conformant:  # Do this for all conformant discrete ?
         optims = [
             "DiscreteOnePlusOne",
             "PortfolioDiscreteOnePlusOne",

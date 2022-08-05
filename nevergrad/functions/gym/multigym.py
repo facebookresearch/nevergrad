@@ -175,13 +175,7 @@ class GymMulti(ExperimentFunction):
         # Build various attributes.
         self.short_name = name  # Just the environment name.
         env = self.create_env()
-        self.name = (
-            name
-            + "__"
-            + control
-            + "__"
-            + str(neural_factor)
-        )
+        self.name = name + "__" + control + "__" + str(neural_factor)
         if sparse_limit is not None:
             self.name += f"__{sparse_limit}"
         if randomized:
@@ -231,9 +225,7 @@ class GymMulti(ExperimentFunction):
         self.discrete = discrete
 
         # Infer the observation space.
-        assert (
-            env.observation_space is not None or "llvm" in name
-            ), "An observation space should be defined."
+        assert env.observation_space is not None or "llvm" in name, "An observation space should be defined."
         if env.observation_space is not None and env.observation_space.dtype == int:
             # Direct inference for corner cases:
             # if "int" in str(type(o)):
@@ -359,12 +351,7 @@ class GymMulti(ExperimentFunction):
         num = max(self.num_calls // 5, 23)
         # Pb_index >= 0 refers to the test set.
         return (
-            np.sum(
-                [
-                    self.gym_multi_function(x, limited_fidelity=False)
-                    for _ in range(num)
-                ]
-            )
+            np.sum([self.gym_multi_function(x, limited_fidelity=False) for _ in range(num)])
             / num  # This is not compiler_gym but we keep this 23 constant.
         )
 
@@ -479,16 +466,15 @@ class GymMulti(ExperimentFunction):
         assert all(x_ in [0, 1] for x_ in enablers)
         x = weights * enablers
         loss = self.gym_multi_function(
-            x, limited_fidelity=limited_fidelity,
+            x,
+            limited_fidelity=limited_fidelity,
         )
         sparse_penalty = 0
         if self.sparse_limit is not None:  # Then we penalize the weights above the threshold "sparse_limit".
             sparse_penalty = (1 + np.abs(loss)) * max(0, np.sum(enablers) - self.sparse_limit)
         return loss + sparse_penalty
 
-    def gym_multi_function(
-        self, x: np.ndarray, limited_fidelity: bool = False
-    ) -> float:
+    def gym_multi_function(self, x: np.ndarray, limited_fidelity: bool = False) -> float:
         """Do a simulation with parametrization x and return the result.
 
         Parameters:
