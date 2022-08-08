@@ -1304,9 +1304,9 @@ def crop_simulator(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """
     funcs = [CropSimulator()]
     seedg = create_seed_generator(seed)
-    optims = get_optimizers("basics", seed=next(seedg))
+    optims = ["DE", "PSO", "CMA", "NGOpt"]
     for budget in [25, 50, 100, 200]:
-        for num_workers in [1, 10, 40]:
+        for num_workers in [1]:
             if num_workers < budget:
                 for algo in optims:
                     for fu in funcs:
