@@ -93,7 +93,6 @@ class Irrigation(ArrayExperimentFunction):
     def set_data(self, symmetry: int, k: int):
         crop_types = [crop for crop, variety in self.cropd.get_crops_varieties().items()]
         crop_types = [c for c in crop_types if "obacco" not in c]
-        #crop_types = ["rice"]
         self.cropname = np.random.RandomState(symmetry+3*k+1).choice(crop_types)
         self.cropvariety = np.random.RandomState(symmetry+3*k+2).choice(list(self.cropd.get_crops_varieties()[self.cropname])
         )
