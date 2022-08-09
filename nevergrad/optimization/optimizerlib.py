@@ -3109,6 +3109,15 @@ class NGOpt(NGOpt39):
     # Learning something automatically so that it's less unreadable would be great.
     pass
 
+@registry.register
+class NGTuned(NGOpt39):
+    # Learning something automatically so that it's less unreadable would be great.
+    pass
+
+NGOptRW = ConfPortfolio(
+    optimizers=[GeneticDE, PSO, NGOpt], warmup_ratio=0.33
+    ).set_name("NGOptRW", register=True)
+
 
 @registry.register
 class NGTuned(NGOpt39):

@@ -1572,26 +1572,43 @@ def crop_simulator(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                             yield xp
 
 
+#@registry.register
+#def irrigation(seed: tp.Optional[int] = None, benin: bool = False, variety_choice: bool = False) -> tp.Iterator[Experiment]:
+#    """Irrigation simulator. Maximize leaf area index,
+#    so that you get a lot of primary production.
+#    Sequential or 30 workers."""
+##    funcs = [Irrigation(i, benin=benin, variety_choice=variety_choice) for i in range(23)]
+#    seedg = create_seed_generator(seed)
+#    optims = get_optimizers("basics", seed=next(seedg))
+#    optims = ["DiagonalCMA", "CMA", "DE", "PSO", "TwoPointsDE", "DiscreteLenglerOnePlusOne"]
+#    optims += ["NGOptRW", "NGTuned"]
+#    for budget in [250]: #, 50, 100, 200]:
+#        for num_workers in [1]: #, 30, 60]:
+#            if num_workers < budget:
+#                for algo in optims:
+#                    for fu in funcs:
+#                        xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
+#                        skip_ci(reason="Too slow")
+#                        if not xp.is_incoherent:
+#                            yield xp
+
+
 @registry.register
-def irrigation(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Irrigation simulator. Maximize leaf area index,
-    so that you get a lot of primary production.
-    Sequential or 30 workers."""
-    funcs = [Irrigation(i) for i in range(179)]
-    seedg = create_seed_generator(seed)
-    optims = get_optimizers("basics", seed=next(seedg))
-    optims = ["DiagonalCMA"]
-    for budget in [25]: #, 50, 100, 200]:
-        for num_workers in [1]: #, 30, 60]:
-            if num_workers < budget:
-                for algo in optims:
-                    for fu in funcs:
-                        xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
-                        skip_ci(reason="Too slow")
-                        if not xp.is_incoherent:
-                            yield xp
+def variety_irrigation(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    return irrigation(seed, variety_choice=True)
 
 
+@registry.register
+def benin_irrigation(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    return irrigation(seed, benin=True)
+
+
+@registry.register
+def benin_variety_choice_irrigation(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    return irrigation(seed, benin=True, variety_choice=True)
+
+
+@registry.register
 def crop_simulator(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Crop simulator.
 

@@ -362,7 +362,7 @@ class Irrigation(ArrayExperimentFunction):
         d3 = int(1.01 + 29.98 * x[3])
         c = self.total_irrigation
         if len(x) == 10:
-            c = 0
+            c = 0.15
         a0 = c * x[4] / (x[4] + x[5] + x[6] + x[7])
         a1 = c * x[5] / (x[4] + x[5] + x[6] + x[7])
         a2 = c * x[6] / (x[4] + x[5] + x[6] + x[7])
