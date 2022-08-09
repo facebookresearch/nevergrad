@@ -229,6 +229,21 @@ class Irrigation(ArrayExperimentFunction):
                     "Kandi",
                     "Natitingou",
                 ]
+                if not benin
+                else [
+                    "Porto-Novo",
+                    "Cotonou",
+                    "Lokossa",
+                    "Allada",
+                    "Abomey",
+                    "Pobe",
+                    "Aplahoue",
+                    "Dassa-Zoume",
+                    "Parakou",
+                    "Djougou",
+                    "Kandi",
+                    "Natitingou",
+                ]
             )
             if address is not None:
                 self.address = str(address)
