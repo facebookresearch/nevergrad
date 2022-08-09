@@ -28,9 +28,12 @@ from pcse.base import ParameterProvider
 # pylint: disable=too-many-locals,too-many-statements
 
 
+WPD = {}
+
+
 class Irrigation(ArrayExperimentFunction):
     variant_choice = {}
-    def __init__(self, symmetry: int) -> None:
+    def __init__(self, symmetry:int, benin: bool, variety_choice: bool) -> None:
         data_dir = Path(__file__).with_name("data")
         try:
             self.soil = CABOFileReader(os.path.join(data_dir, "soil", "ec3.soil"))
@@ -40,7 +43,7 @@ class Irrigation(ArrayExperimentFunction):
                 str(data_dir) + "/soil/ec3.soil",
             )
             self.soil = CABOFileReader(os.path.join(data_dir, "soil", "ec3.soil"))
-        param = ng.p.Array(shape=(8,), lower=(0.0), upper=(1.0)).set_name("irrigation8")
+        param = ng.p.Array(shape=(9 if variety_choice else 8,), lower=(0.0), upper=(0.99999999)).set_name("irrigation8")
         super().__init__(self.leaf_area_index, parametrization=param, symmetry=symmetry)
         if os.environ.get("CIRCLECI", False):
             raise ng.errors.UnsupportedExperiment("No HTTP request in CircleCI")
@@ -70,18 +73,33 @@ class Irrigation(ArrayExperimentFunction):
                     "Yaounde",
                     "Porto-Novo",
                     "Kiev",
+                ] if not benin else [
+                    "Porto-Novo",
+                    "Cotonou",
+                    "Lokossa",
+                    "Allada",
+                    "Abomey",
+                    "Pobe",
+                    "Aplahoue",
+                    "Dassa-Zoume",
+                    "Parakou",
+                    "Djougou",
+                    "Kandi",
+                    "Natitingou",
                 ]
             )
-            if self.address in known_latitudes and self.address in known_longitudes:
-                self.weatherdataprovider = NASAPowerWeatherDataProvider(latitude=known_latitudes[self.address], longitude=known_longitudes[self.address])
+            #if self.address in known_latitudes and self.address in known_longitudes:
+            #    self.weatherdataprovider = NASAPowerWeatherDataProvider(latitude=known_latitudes[self.address], longitude=known_longitudes[self.address])
+            if self.address in WPD:
+                self.weatherdataprovider = WPD[self.address]
             else:           
-                assert False
                 from geopy.geocoders import Nominatim
                 geolocator = Nominatim(user_agent="NG/PCSE")
                 self.location = geolocator.geocode(self.address)
                 self.weatherdataprovider = NASAPowerWeatherDataProvider(
                     latitude=self.location.latitude, longitude=self.location.longitude
                 )
+                WPD[self.address] = self.weatherdataprovider
             self.set_data(symmetry, k)
             v = [self.leaf_area_index(np.random.rand(8)) for _ in range(5)]
             if min(v) != max(v):
@@ -94,6 +112,7 @@ class Irrigation(ArrayExperimentFunction):
         crop_types = [crop for crop, variety in self.cropd.get_crops_varieties().items()]
         crop_types = [c for c in crop_types if "obacco" not in c]
         self.cropname = np.random.RandomState(symmetry+3*k+1).choice(crop_types)
+        self.total_irrigation = np.random.RandomState(symmetry+3*k+3).choice([15.0, 1.50, 0.15, 150.])
         self.cropvariety = np.random.RandomState(symmetry+3*k+2).choice(list(self.cropd.get_crops_varieties()[self.cropname])
         )
         # We check if the problem is challenging.
@@ -107,10 +126,15 @@ class Irrigation(ArrayExperimentFunction):
         d1 = int(1.01 + 30.98 * x[1])
         d2 = int(1.01 + 30.98 * x[2])
         d3 = int(1.01 + 29.98 * x[3])
-        a0 = x[4]  #15.0 * x[4] / (x[4] + x[5] + x[6] + x[7])
-        a1 = x[5]  #15.0 * x[5] / (x[4] + x[5] + x[6] + x[7])
-        a2 = x[6]  #15.0 * x[6] / (x[4] + x[5] + x[6] + x[7])
-        a3 = x[7]  #15.0 * x[7] / (x[4] + x[5] + x[6] + x[7])
+        c = self.total_irrigation
+        a0 = c * x[4] / (x[4] + x[5] + x[6] + x[7])
+        a1 = c * x[5] / (x[4] + x[5] + x[6] + x[7])
+        a2 = c * x[6] / (x[4] + x[5] + x[6] + x[7])
+        a3 = c * x[7] / (x[4] + x[5] + x[6] + x[7])
+        if len(x) > 8:
+            assert len(x) == 9, f"my x has size {len(x)}, it is {x}"
+            varieties = list(self.cropd.get_crops_varieties()[self.cropname])
+            self.cropvariety = varieties[int(x[8] * len(varieties))]
 
         yaml_agro = f"""
         - 2006-01-01:
