@@ -72,6 +72,7 @@ def good_at_suggest(name: str) -> bool:
         "Anisotropic",
         "BSO",
         "Sparse",
+        "Adaptive",
         "Recombining",
         "SA",
         "PortfolioDiscreteOne",
