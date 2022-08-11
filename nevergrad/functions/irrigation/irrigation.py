@@ -29,11 +29,14 @@ from pcse.base import ParameterProvider
 
 
 WPD = {}
+CURRENT_BEST = {}
+CURRENT_BEST_ARGUMENT = {}
 
 
 class Irrigation(ArrayExperimentFunction):
     variant_choice = {}
-    def __init__(self, symmetry:int, benin: bool, variety_choice: bool) -> None:
+    def __init__(self, symmetry:int, benin: bool, variety_choice: bool, rice: bool) -> None:
+        self.rice = rice
         data_dir = Path(__file__).with_name("data")
         try:
             self.soil = CABOFileReader(os.path.join(data_dir, "soil", "ec3.soil"))
@@ -100,19 +103,21 @@ class Irrigation(ArrayExperimentFunction):
                     latitude=self.location.latitude, longitude=self.location.longitude
                 )
                 WPD[self.address] = self.weatherdataprovider
-            self.set_data(symmetry, k)
-            v = [self.leaf_area_index(np.random.rand(8)) for _ in range(5)]
+            self.set_data(symmetry, k, rice)
+            v = [self.leaf_area_index(np.random.rand(9 if variety_choice else 8)) for _ in range(5)]
             if min(v) != max(v):
                 break
             self.variant_choice[symmetry] = k
         print(f"we work on {self.cropname} with variety {self.cropvariety} in {self.address}.")
 
 
-    def set_data(self, symmetry: int, k: int):
+    def set_data(self, symmetry: int, k: int, rice: bool):
         crop_types = [crop for crop, variety in self.cropd.get_crops_varieties().items()]
         crop_types = [c for c in crop_types if "obacco" not in c]
+        if rice:
+            crop_types = ["rice"]
         self.cropname = np.random.RandomState(symmetry+3*k+1).choice(crop_types)
-        self.total_irrigation = np.random.RandomState(symmetry+3*k+3).choice([15.0, 1.50, 0.15, 150.])
+        self.total_irrigation = np.random.RandomState(symmetry+3*k+3).choice([15.0, 1.50, 0.15, 150.]) if not rice else 0.15
         self.cropvariety = np.random.RandomState(symmetry+3*k+2).choice(list(self.cropd.get_crops_varieties()[self.cropname])
         )
         # We check if the problem is challenging.
@@ -172,4 +177,14 @@ class Irrigation(ArrayExperimentFunction):
         df = pd.DataFrame(output).set_index("day")
         df.tail()
 
-        return -sum([float(o["LAI"]) for o in output if o["LAI"] is not None])
+        lai = sum([float(o["LAI"]) for o in output if o["LAI"] is not None])
+        specifier = self.address + "_" + str(self.cropname) + "_" + str(self.total_irrigation)
+        if not self.rice:
+            specifier += "_" + self.cropvariety
+        if specifier not in CURRENT_BEST:
+            CURRENT_BEST[specifier] = 0.
+        if lai > CURRENT_BEST[specifier]:
+            CURRENT_BEST[specifier] = lai
+            CURRENT_BEST_ARGUMENT[specifier] = self.cropvariety if self.rice else str(x)
+            print(f"for <{specifier}> we recommend {CURRENT_BEST_ARGUMENT[specifier]} and get {lai}")
+        return - lai
