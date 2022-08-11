@@ -1609,6 +1609,11 @@ def benin_variety_choice_irrigation(seed: tp.Optional[int] = None) -> tp.Iterato
 
 
 @registry.register
+def benin_rice_variety_choice_irrigation(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    return irrigation(seed, benin=True, variety_choice=True, rice=True)
+
+
+@registry.register
 def crop_simulator(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Crop simulator.
 
