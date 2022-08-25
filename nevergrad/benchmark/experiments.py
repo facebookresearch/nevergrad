@@ -1255,11 +1255,11 @@ def rocket(seed: tp.Optional[int] = None, seq: bool = False) -> tp.Iterator[Expe
                             yield xp
 
 @registry.register
-def irrigation(seed: tp.Optional[int] = None, benin: bool = False, variety_choice: bool = False, rice: bool = False) -> tp.Iterator[Experiment]:
+def irrigation(seed: tp.Optional[int] = None, benin: bool = False, variety_choice: bool = False, rice: bool = False, multi_crop: bool = False) -> tp.Iterator[Experiment]:
     """Irrigation simulator. Maximize leaf area index,
     so that you get a lot of primary production.
     Sequential or 30 workers."""
-    funcs = [Irrigation(i, benin=benin, variety_choice=variety_choice, rice=rice) for i in range(23)]
+    funcs = [Irrigation(i, benin=benin, variety_choice=variety_choice, rice=rice, multi_crop=multi_crop) for i in range(67)]
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", seed=next(seedg))
     optims = ["DiagonalCMA", "CMA", "DE", "PSO", "TwoPointsDE", "DiscreteLenglerOnePlusOne"]
@@ -1275,6 +1275,16 @@ def irrigation(seed: tp.Optional[int] = None, benin: bool = False, variety_choic
                         skip_ci(reason="Too slow")
                         if not xp.is_incoherent:
                             yield xp
+
+
+@registry.register
+def crop_and_variety_irrigation(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    return irrigation(seed, variety_choice=True, multi_crop=True)
+
+
+@registry.register
+def benin_crop_and_variety_irrigation(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    return irrigation(seed, benin=True, variety_choice=True, multi_crop=True)
 
 
 @registry.register
