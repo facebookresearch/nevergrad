@@ -1255,11 +1255,18 @@ def rocket(seed: tp.Optional[int] = None, seq: bool = False) -> tp.Iterator[Expe
                             yield xp
 
 @registry.register
-def irrigation(seed: tp.Optional[int] = None, benin: bool = False, variety_choice: bool = False, rice: bool = False, multi_crop: bool = False) -> tp.Iterator[Experiment]:
+def irrigation(seed: tp.Optional[int] = None, benin: bool = False, variety_choice: bool = False, rice: bool = False, multi_crop: bool = False, kenya: bool = False) -> tp.Iterator[Experiment]:
     """Irrigation simulator. Maximize leaf area index,
     so that you get a lot of primary production.
     Sequential or 30 workers."""
-    funcs = [Irrigation(i, benin=benin, variety_choice=variety_choice, rice=rice, multi_crop=multi_crop) for i in range(67)]
+    if kenya:
+        addresses = []
+        for lat in list(range(-4,5)):
+            for lon in list(range(34,40)):
+                addresses += [(lat, lon)]
+        funcs = [Irrigation(0, benin=benin, variety_choice=variety_choice, rice=rice, multi_crop=multi_crop, address=ad) for ad in addresses]
+    else:
+        funcs = [Irrigation(i, benin=benin, variety_choice=variety_choice, rice=rice, multi_crop=multi_crop, address=None) for i in range(67)]
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", seed=next(seedg))
     optims = ["DiagonalCMA", "CMA", "DE", "PSO", "TwoPointsDE", "DiscreteLenglerOnePlusOne"]
@@ -1285,6 +1292,11 @@ def crop_and_variety_irrigation(seed: tp.Optional[int] = None) -> tp.Iterator[Ex
 @registry.register
 def benin_crop_and_variety_irrigation(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     return irrigation(seed, benin=True, variety_choice=True, multi_crop=True)
+
+
+@registry.register
+def kenya_crop_and_variety_irrigation(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    return irrigation(seed, kenya=True, variety_choice=True, multi_crop=True)
 
 
 @registry.register
