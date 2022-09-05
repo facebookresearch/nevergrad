@@ -98,8 +98,12 @@ CURRENT_BEST_ARGUMENT = {}
 
 class Irrigation(ArrayExperimentFunction):
     variant_choice = {}
-    def __init__(self, symmetry:int, benin: bool, variety_choice: bool, rice: bool, multi_crop: bool, address=None) -> None:
+    def __init__(self, symmetry:int, benin: bool, variety_choice: bool, rice: bool, multi_crop: bool, address=None, year_min: int = 2006, year_max: int = 2006) -> None:
         self.rice = rice
+        if year_max < year_min and year_max == 2006:
+            year_max = year_min
+        self.year_min = year_min
+        self.year_max = year_max
         data_dir = Path(__file__).with_name("data")
         try:
             self.soil = CABOFileReader(os.path.join(data_dir, "soil", "ec3.soil"))
@@ -117,7 +121,7 @@ class Irrigation(ArrayExperimentFunction):
             assert not rice
 
         param = ng.p.Array(shape=(self.this_dimension,), lower=(0.0), upper=(0.99999999)).set_name("irrigation8")
-        super().__init__(self.total_yield, parametrization=param, symmetry=symmetry)
+        super().__init__(self.meta_total_yield, parametrization=param, symmetry=symmetry)
         if os.environ.get("CIRCLECI", False):
             raise ng.errors.UnsupportedExperiment("No HTTP request in CircleCI")
 #                    "Cotonou",
@@ -213,7 +217,7 @@ class Irrigation(ArrayExperimentFunction):
                 )
                 WPD[self.address] = self.weatherdataprovider
             self.set_data(symmetry, k, rice)
-            v = [self.total_yield(np.random.rand(self.this_dimension)) for _ in range(5)]
+            v = [self.meta_total_yield(np.random.rand(self.this_dimension)) for _ in range(5)]
             if min(v) != max(v):
                 break
             self.variant_choice[symmetry] = k
@@ -236,7 +240,10 @@ class Irrigation(ArrayExperimentFunction):
         self.parameterprovider = ParameterProvider(soildata=self.soil, cropdata=self.cropd, sitedata=site)
 
 
-    def total_yield(self, x: np.ndarray):
+    def meta_total_yield(self, x: np.ndarray):
+        return sum(self.total_yield(x, year) for year in range(self.year_min, self.year_max+1))
+
+    def total_yield(self, x: np.ndarray, year:int=2006):
         d0 = int(1.01 + 29.98 * x[0])
         d1 = int(1.01 + 30.98 * x[1])
         d2 = int(1.01 + 30.98 * x[2])
@@ -256,13 +263,13 @@ class Irrigation(ArrayExperimentFunction):
             self.cropvariety = varieties[int(x[8] * len(varieties))]
 
         yaml_agro = f"""
-        - 2006-01-01:
+        - {year}-01-01:
             CropCalendar:
                 crop_name: {self.cropname}
                 variety_name: {self.cropvariety}
-                crop_start_date: 2006-03-31
+                crop_start_date: {year}-03-31
                 crop_start_type: emergence
-                crop_end_date: 2006-10-20
+                crop_end_date: {year}-10-20
                 crop_end_type: harvest
                 max_duration: 300
             TimedEvents:
@@ -270,10 +277,10 @@ class Irrigation(ArrayExperimentFunction):
                 name: Irrigation application table
                 comment: All irrigation amounts in cm
                 events_table:
-                - 2006-06-{d0:02}: {{amount: {a0}, efficiency: 0.7}}
-                - 2006-07-{d1:02}: {{amount: {a1}, efficiency: 0.7}}
-                - 2006-08-{d2:02}: {{amount: {a2}, efficiency: 0.7}}
-                - 2006-09-{d3:02}: {{amount: {a3}, efficiency: 0.7}}
+                - {year}-06-{d0:02}: {{amount: {a0}, efficiency: 0.7}}
+                - {year}-07-{d1:02}: {{amount: {a1}, efficiency: 0.7}}
+                - {year}-08-{d2:02}: {{amount: {a2}, efficiency: 0.7}}
+                - {year}-09-{d3:02}: {{amount: {a3}, efficiency: 0.7}}
             StateEvents: null
         """
         try:
