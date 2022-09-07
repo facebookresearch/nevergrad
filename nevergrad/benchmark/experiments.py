@@ -1271,6 +1271,7 @@ def irrigation(seed: tp.Optional[int] = None, benin: bool = False, variety_choic
     optims = get_optimizers("basics", seed=next(seedg))
     optims = ["DiagonalCMA", "CMA", "DE", "PSO", "TwoPointsDE", "DiscreteLenglerOnePlusOne"]
     optims += ["NGOptRW", "NGTuned"]
+    optims = ["NGOptRW"]
     if rice:
         optims = optims[-2:]
     for budget in [2500]: #, 50, 100, 200]:
@@ -1306,7 +1307,7 @@ def kenya_2011_crop_and_variety_irrigation(seed: tp.Optional[int] = None) -> tp.
 
 @registry.register
 def kenya_many_crop_and_variety_irrigation(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    return irrigation(seed, kenya=True, variety_choice=True, multi_crop=True, year_min=2011, year_max=2022)
+    return irrigation(seed, kenya=True, variety_choice=True, multi_crop=True, year_min=2006, year_max=2011)
 
 
 @registry.register

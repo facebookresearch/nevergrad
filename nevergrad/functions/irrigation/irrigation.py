@@ -13,6 +13,7 @@ https://raw.githubusercontent.com/purdue-orbital/pcse-simulation/master/Simulati
 from pathlib import Path
 import urllib.request  # Necessary for people who will uncomment the part using data under EUPL license.
 import numpy as np
+import time
 import nevergrad as ng
 from ..base import ArrayExperimentFunction
 import os
@@ -114,7 +115,7 @@ class Irrigation(ArrayExperimentFunction):
             )
             self.soil = CABOFileReader(os.path.join(data_dir, "soil", "ec3.soil"))
         self.this_dimension = 8
-        if rice:
+        if rice or (variety_choice and not multi_crop):
             self.this_dimension = 9
         if multi_crop:
             self.this_dimension = 10
@@ -204,8 +205,13 @@ class Irrigation(ArrayExperimentFunction):
                      known_latitudes[self.address] = address[0]
                      known_longitudes[self.address] = address[1]
                  
-            if self.address in known_latitudes and self.address in known_longitudes:
-                WPD[self.address] = NASAPowerWeatherDataProvider(latitude=known_latitudes[self.address], longitude=known_longitudes[self.address])
+            if self.address in known_latitudes and self.address in known_longitudes and self.address not in WPD:
+                for k in range(10):
+                    try:
+                        WPD[self.address] = NASAPowerWeatherDataProvider(latitude=known_latitudes[self.address], longitude=known_longitudes[self.address])
+                        break
+                    except:
+                        time.sleep(10 * (2 **k))
             if self.address in WPD:
                 self.weatherdataprovider = WPD[self.address]
             else:           
@@ -241,7 +247,28 @@ class Irrigation(ArrayExperimentFunction):
 
 
     def meta_total_yield(self, x: np.ndarray):
-        return sum(self.total_yield(x, year) for year in range(self.year_min, self.year_max+1))
+        lai = 0.
+        for year in range(self.year_min, self.year_max+1):
+            print(f"working on {year}")
+            lai += self.total_yield(x, year)
+        specifier = self.address + "_" + str(self.total_irrigation)
+        if not self.this_dimension == 10:
+            specifier += "_" + str(self.cropname)
+        if self.dimension == 8:
+            specifier += "_" + self.cropvariety
+        if specifier not in CURRENT_BEST:
+            CURRENT_BEST[specifier] = 0.
+        if lai > CURRENT_BEST[specifier]:
+            CURRENT_BEST[specifier] = lai
+            argument = str(x)
+            if self.dimension > 9:
+                argument += "_" + self.cropname
+            if self.dimension > 8:
+                argument += "_" + self.cropvariety
+            CURRENT_BEST_ARGUMENT[specifier] = argument
+            print(f"for <{specifier}> we recommend {CURRENT_BEST_ARGUMENT[specifier]} and get {lai}")
+
+        return -lai
 
     def total_yield(self, x: np.ndarray, year:int=2006):
         d0 = int(1.01 + 29.98 * x[0])
@@ -249,6 +276,8 @@ class Irrigation(ArrayExperimentFunction):
         d2 = int(1.01 + 30.98 * x[2])
         d3 = int(1.01 + 29.98 * x[3])
         c = self.total_irrigation
+        if self.multi_crop:
+            c = 0
         a0 = c * x[4] / (x[4] + x[5] + x[6] + x[7])
         a1 = c * x[5] / (x[4] + x[5] + x[6] + x[7])
         a2 = c * x[6] / (x[4] + x[5] + x[6] + x[7])
@@ -287,8 +316,18 @@ class Irrigation(ArrayExperimentFunction):
             agromanagement = yaml.safe_load(yaml_agro)
             wofost = Wofost72_WLP_FD(self.parameterprovider, self.weatherdataprovider, agromanagement)
             wofost.run_till_terminate()
+#            for i in range(10):
+#                try:
+#                    wofost = Wofost72_WLP_FD(self.parameterprovider, self.weatherdataprovider, agromanagement)
+#                    wofost.run_till_terminate()
+#                    break
+#                except:
+#                    print(f"failure {i} for {yaml_agro}")
+#                    time.sleep(2 ** i)
+#                return -float("inf")
         except Exception as e:
-            return float("inf")
+            print(e)
+            return -float("inf")
             #assert (
             #    False
             #), f"Problem!\n Dates: {d0} {d1} {d2} {d3},\n amounts: {a0}, {a1}, {a2}, {a3}\n  ({e}).\n"
@@ -299,21 +338,5 @@ class Irrigation(ArrayExperimentFunction):
         df.tail()
 
         lai = sum([float(o["TWSO"]) for o in output if o["TWSO"] is not None])
-        specifier = self.address + "_" + str(self.total_irrigation)
-        if not self.this_dimension == 10:
-            specifier += "_" + str(self.cropname)
-        if self.dimension == 8:
-            specifier += "_" + self.cropvariety
-        if specifier not in CURRENT_BEST:
-            CURRENT_BEST[specifier] = 0.
-        if lai > CURRENT_BEST[specifier]:
-            CURRENT_BEST[specifier] = lai
-            argument = str(x)
-            if self.dimension > 9:
-                argument += "_" + self.cropname
-            if self.dimension > 8:
-                argument += "_" + self.cropvariety
-            CURRENT_BEST_ARGUMENT[specifier] = argument
-            print(f"for <{specifier}> we recommend {CURRENT_BEST_ARGUMENT[specifier]} and get {lai}")
         value = lai * get_crop_cost(self.cropname)
-        return - value
+        return value
