@@ -198,7 +198,7 @@ class _DE(base.Optimizer):
         if uid not in self.population:  # parent was removed, revert to tell_not_asked
             self._internal_tell_not_asked(candidate, loss)
             return
-        if uid in self._uid_queue.asked: # if taken from queue in multiple asks, add back only once
+        if uid in self._uid_queue.asked:  # if taken from queue in multiple asks, add back only once
             self._uid_queue.asked.discard(uid)
             self._uid_queue.tell(uid)
         parent = self.population[uid]
