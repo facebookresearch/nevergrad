@@ -276,7 +276,7 @@ class Irrigation(ArrayExperimentFunction):
         d2 = int(1.01 + 30.98 * x[2])
         d3 = int(1.01 + 29.98 * x[3])
         c = self.total_irrigation
-        if self.multi_crop:
+        if len(x) == 10:
             c = 0
         a0 = c * x[4] / (x[4] + x[5] + x[6] + x[7])
         a1 = c * x[5] / (x[4] + x[5] + x[6] + x[7])
