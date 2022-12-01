@@ -47,7 +47,7 @@ logger = logging.getLogger(__name__)
 # # # # # optimizers # # # # #
 
 
-def smooth_copy(array: p.Array, possible_radii: tp.List[int] = None) -> p.Array:
+def smooth_copy(array: p.Array, possible_radii: tp.Optional[tp.List[int]] = None) -> p.Array:
     candidate = array.spawn_child()
     if possible_radii is None:
         possible_radii = [3]
