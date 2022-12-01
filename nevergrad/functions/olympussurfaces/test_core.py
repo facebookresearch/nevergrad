@@ -30,7 +30,7 @@ def test_olympus_surface(kind: str, noise_kind: str) -> None:
 
 
 @pytest.mark.parametrize("dataset_kind", core.OlympusEmulator.DATASETS)
-@pytest.mark.parametrize("model_kind", ["NeuralNet"])  #["BayesNeuralNet", "NeuralNet"])
+@pytest.mark.parametrize("model_kind", ["NeuralNet"])  # ["BayesNeuralNet", "NeuralNet"])
 def test_olympus_emulator(dataset_kind: str, model_kind: str) -> None:
     func = core.OlympusEmulator(dataset_kind=dataset_kind, model_kind=model_kind)
     x = 2 * np.random.rand(func.dimension)
