@@ -16,6 +16,7 @@
         <script src="_static/underscore.js"></script>
         <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -60,7 +61,127 @@
 <li class="toctree-l2"><a class="reference internal" href="#comparison-based-methods-for-ill-conditioned-problems">Comparison-based methods for ill-conditioned problems</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ill-conditioned-function">Ill-conditioned function</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#discrete">Discrete</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#list-of-benchmarks">List of benchmarks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#list-of-benchmarks">List of benchmarks</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.frozenexperiments.basic"><code class="docutils literal notranslate"><span class="pre">basic()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.frozenexperiments.compabasedillcond"><code class="docutils literal notranslate"><span class="pre">compabasedillcond()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.frozenexperiments.dim10_select_one_feature"><code class="docutils literal notranslate"><span class="pre">dim10_select_one_feature()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.frozenexperiments.dim10_select_two_features"><code class="docutils literal notranslate"><span class="pre">dim10_select_two_features()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.frozenexperiments.dim10_smallbudget"><code class="docutils literal notranslate"><span class="pre">dim10_smallbudget()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.frozenexperiments.doe_dim4"><code class="docutils literal notranslate"><span class="pre">doe_dim4()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.frozenexperiments.illcond"><code class="docutils literal notranslate"><span class="pre">illcond()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.frozenexperiments.metanoise"><code class="docutils literal notranslate"><span class="pre">metanoise()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.frozenexperiments.noise"><code class="docutils literal notranslate"><span class="pre">noise()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.frozenexperiments.oneshot1"><code class="docutils literal notranslate"><span class="pre">oneshot1()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.frozenexperiments.oneshot2"><code class="docutils literal notranslate"><span class="pre">oneshot2()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.frozenexperiments.oneshot3"><code class="docutils literal notranslate"><span class="pre">oneshot3()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.frozenexperiments.oneshot4"><code class="docutils literal notranslate"><span class="pre">oneshot4()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.frozenexperiments.repeated_basic"><code class="docutils literal notranslate"><span class="pre">repeated_basic()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.adversarial_attack"><code class="docutils literal notranslate"><span class="pre">adversarial_attack()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.alldes"><code class="docutils literal notranslate"><span class="pre">alldes()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.aquacrop_fao"><code class="docutils literal notranslate"><span class="pre">aquacrop_fao()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.bonnans"><code class="docutils literal notranslate"><span class="pre">bonnans()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.causal_similarity"><code class="docutils literal notranslate"><span class="pre">causal_similarity()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.complex_tsp"><code class="docutils literal notranslate"><span class="pre">complex_tsp()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.constrained_illconditioned_parallel"><code class="docutils literal notranslate"><span class="pre">constrained_illconditioned_parallel()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.control_problem"><code class="docutils literal notranslate"><span class="pre">control_problem()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.deceptive"><code class="docutils literal notranslate"><span class="pre">deceptive()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.doe"><code class="docutils literal notranslate"><span class="pre">doe()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.double_o_seven"><code class="docutils literal notranslate"><span class="pre">double_o_seven()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.far_optimum_es"><code class="docutils literal notranslate"><span class="pre">far_optimum_es()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.fishing"><code class="docutils literal notranslate"><span class="pre">fishing()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.fiveshots"><code class="docutils literal notranslate"><span class="pre">fiveshots()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.harderparallel"><code class="docutils literal notranslate"><span class="pre">harderparallel()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.hdbo4d"><code class="docutils literal notranslate"><span class="pre">hdbo4d()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.hdmultimodal"><code class="docutils literal notranslate"><span class="pre">hdmultimodal()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.illcondi"><code class="docutils literal notranslate"><span class="pre">illcondi()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.illcondipara"><code class="docutils literal notranslate"><span class="pre">illcondipara()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.image_multi_similarity"><code class="docutils literal notranslate"><span class="pre">image_multi_similarity()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.image_multi_similarity_cv"><code class="docutils literal notranslate"><span class="pre">image_multi_similarity_cv()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.image_multi_similarity_pgan"><code class="docutils literal notranslate"><span class="pre">image_multi_similarity_pgan()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.image_multi_similarity_pgan_cv"><code class="docutils literal notranslate"><span class="pre">image_multi_similarity_pgan_cv()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.image_quality"><code class="docutils literal notranslate"><span class="pre">image_quality()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.image_quality_cv"><code class="docutils literal notranslate"><span class="pre">image_quality_cv()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.image_quality_cv_pgan"><code class="docutils literal notranslate"><span class="pre">image_quality_cv_pgan()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.image_quality_pgan"><code class="docutils literal notranslate"><span class="pre">image_quality_pgan()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.image_quality_proxy"><code class="docutils literal notranslate"><span class="pre">image_quality_proxy()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.image_quality_proxy_pgan"><code class="docutils literal notranslate"><span class="pre">image_quality_proxy_pgan()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.image_similarity"><code class="docutils literal notranslate"><span class="pre">image_similarity()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.image_similarity_and_quality"><code class="docutils literal notranslate"><span class="pre">image_similarity_and_quality()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.image_similarity_and_quality_cv"><code class="docutils literal notranslate"><span class="pre">image_similarity_and_quality_cv()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.image_similarity_and_quality_cv_pgan"><code class="docutils literal notranslate"><span class="pre">image_similarity_and_quality_cv_pgan()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.image_similarity_and_quality_pgan"><code class="docutils literal notranslate"><span class="pre">image_similarity_and_quality_pgan()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.image_similarity_pgan"><code class="docutils literal notranslate"><span class="pre">image_similarity_pgan()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.image_single_quality"><code class="docutils literal notranslate"><span class="pre">image_single_quality()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.image_single_quality_pgan"><code class="docutils literal notranslate"><span class="pre">image_single_quality_pgan()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.instrum_discrete"><code class="docutils literal notranslate"><span class="pre">instrum_discrete()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.keras_tuning"><code class="docutils literal notranslate"><span class="pre">keras_tuning()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.mixsimulator"><code class="docutils literal notranslate"><span class="pre">mixsimulator()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.mlda"><code class="docutils literal notranslate"><span class="pre">mlda()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.mldakmeans"><code class="docutils literal notranslate"><span class="pre">mldakmeans()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.mltuning"><code class="docutils literal notranslate"><span class="pre">mltuning()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.mono_rocket"><code class="docutils literal notranslate"><span class="pre">mono_rocket()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.morphing_pgan_quality"><code class="docutils literal notranslate"><span class="pre">morphing_pgan_quality()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.multimodal"><code class="docutils literal notranslate"><span class="pre">multimodal()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.multiobjective_example"><code class="docutils literal notranslate"><span class="pre">multiobjective_example()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.multiobjective_example_hd"><code class="docutils literal notranslate"><span class="pre">multiobjective_example_hd()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.multiobjective_example_many"><code class="docutils literal notranslate"><span class="pre">multiobjective_example_many()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.multiobjective_example_many_hd"><code class="docutils literal notranslate"><span class="pre">multiobjective_example_many_hd()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.naive_seq_keras_tuning"><code class="docutils literal notranslate"><span class="pre">naive_seq_keras_tuning()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.naive_seq_mltuning"><code class="docutils literal notranslate"><span class="pre">naive_seq_mltuning()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.naivemltuning"><code class="docutils literal notranslate"><span class="pre">naivemltuning()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.nano_naive_seq_mltuning"><code class="docutils literal notranslate"><span class="pre">nano_naive_seq_mltuning()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.nano_seq_mltuning"><code class="docutils literal notranslate"><span class="pre">nano_seq_mltuning()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.neuro_control_problem"><code class="docutils literal notranslate"><span class="pre">neuro_control_problem()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.newdoe"><code class="docutils literal notranslate"><span class="pre">newdoe()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.noisy"><code class="docutils literal notranslate"><span class="pre">noisy()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.olympus_emulators"><code class="docutils literal notranslate"><span class="pre">olympus_emulators()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.olympus_surfaces"><code class="docutils literal notranslate"><span class="pre">olympus_surfaces()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.oneshot"><code class="docutils literal notranslate"><span class="pre">oneshot()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.oneshot_mltuning"><code class="docutils literal notranslate"><span class="pre">oneshot_mltuning()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.paraalldes"><code class="docutils literal notranslate"><span class="pre">paraalldes()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.parahdbo4d"><code class="docutils literal notranslate"><span class="pre">parahdbo4d()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.parallel"><code class="docutils literal notranslate"><span class="pre">parallel()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.parallel_small_budget"><code class="docutils literal notranslate"><span class="pre">parallel_small_budget()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.paramultimodal"><code class="docutils literal notranslate"><span class="pre">paramultimodal()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.pbo_reduced_suite"><code class="docutils literal notranslate"><span class="pre">pbo_reduced_suite()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.pbo_suite"><code class="docutils literal notranslate"><span class="pre">pbo_suite()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.pbt"><code class="docutils literal notranslate"><span class="pre">pbt()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.photonics"><code class="docutils literal notranslate"><span class="pre">photonics()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.photonics2"><code class="docutils literal notranslate"><span class="pre">photonics2()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.powersystems"><code class="docutils literal notranslate"><span class="pre">powersystems()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.ranknoisy"><code class="docutils literal notranslate"><span class="pre">ranknoisy()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.realworld"><code class="docutils literal notranslate"><span class="pre">realworld()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.reduced_yahdlbbbob"><code class="docutils literal notranslate"><span class="pre">reduced_yahdlbbbob()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.rocket"><code class="docutils literal notranslate"><span class="pre">rocket()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.seq_keras_tuning"><code class="docutils literal notranslate"><span class="pre">seq_keras_tuning()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.seq_mltuning"><code class="docutils literal notranslate"><span class="pre">seq_mltuning()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.sequential_fastgames"><code class="docutils literal notranslate"><span class="pre">sequential_fastgames()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.sequential_instrum_discrete"><code class="docutils literal notranslate"><span class="pre">sequential_instrum_discrete()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.simple_tsp"><code class="docutils literal notranslate"><span class="pre">simple_tsp()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.skip_ci"><code class="docutils literal notranslate"><span class="pre">skip_ci()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.spsa_benchmark"><code class="docutils literal notranslate"><span class="pre">spsa_benchmark()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.team_cycling"><code class="docutils literal notranslate"><span class="pre">team_cycling()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.unit_commitment"><code class="docutils literal notranslate"><span class="pre">unit_commitment()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.yabbob"><code class="docutils literal notranslate"><span class="pre">yabbob()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.yabigbbob"><code class="docutils literal notranslate"><span class="pre">yabigbbob()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.yaboundedbbob"><code class="docutils literal notranslate"><span class="pre">yaboundedbbob()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.yaboxbbob"><code class="docutils literal notranslate"><span class="pre">yaboxbbob()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.yaconstrainedbbob"><code class="docutils literal notranslate"><span class="pre">yaconstrainedbbob()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.yahdbbob"><code class="docutils literal notranslate"><span class="pre">yahdbbob()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.yahdlbbbob"><code class="docutils literal notranslate"><span class="pre">yahdlbbbob()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.yahdnoisybbob"><code class="docutils literal notranslate"><span class="pre">yahdnoisybbob()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.yahdnoisysplitbbob"><code class="docutils literal notranslate"><span class="pre">yahdnoisysplitbbob()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.yahdsplitbbob"><code class="docutils literal notranslate"><span class="pre">yahdsplitbbob()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.yanoisybbob"><code class="docutils literal notranslate"><span class="pre">yanoisybbob()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.yanoisysplitbbob"><code class="docutils literal notranslate"><span class="pre">yanoisysplitbbob()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.yaparabbob"><code class="docutils literal notranslate"><span class="pre">yaparabbob()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.yasmallbbob"><code class="docutils literal notranslate"><span class="pre">yasmallbbob()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.yasplitbbob"><code class="docutils literal notranslate"><span class="pre">yasplitbbob()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.yatinybbob"><code class="docutils literal notranslate"><span class="pre">yatinybbob()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.yatuningbbob"><code class="docutils literal notranslate"><span class="pre">yatuningbbob()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.yawidebbob"><code class="docutils literal notranslate"><span class="pre">yawidebbob()</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="pyomo.html">Examples - Working with Pyomo model</a></li>
@@ -82,8 +203,8 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Examples of benchmarks</li>
+      <li><a href="index.html" class="icon icon-home"></a></li>
+      <li class="breadcrumb-item active">Examples of benchmarks</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/benchmarks.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -106,7 +227,7 @@ In all examples, we use independent experiments for the different x-values; so t
 </div>
 <p>Here the variance of the noise does not vanish near the optimum.
 TBPSA uses the noise management principles of <a class="reference external" href="https://homepages.fhv.at/hgb/New-Papers/PPSN16_HB16.pdf">pcCMSA-ES</a> reaching fast convergence rates. We here compare it to a sample of our algorithms; but it performed very well also compared to many other methods.</p>
-<a class="reference internal image-reference" href="_images/noise_r400s12_xpresults_namecigar,rotationTrue.png"><img alt="_images/noise_r400s12_xpresults_namecigar,rotationTrue.png" src="_images/noise_r400s12_xpresults_namecigar,rotationTrue.png" style="width: 800px;" /></a>
+<a class="reference internal image-reference" href="_images/noise_r400s12_xpresults_namecigar,rotationTrue.png"><img alt="_images/noise_r400s12_xpresults_namecigar%2CrotationTrue.png" src="_images/noise_r400s12_xpresults_namecigar%2CrotationTrue.png" style="width: 800px;" /></a>
 </section>
 <section id="one-shot-optimization">
 <h2>One-shot optimization<a class="headerlink" href="#one-shot-optimization" title="Permalink to this heading"></a></h2>
@@ -170,7 +291,7 @@ The following plot was created with command:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python -m nevergrad.benchmark compabasedillcond --seed<span class="o">=</span><span class="m">12</span> --repetitions<span class="o">=</span><span class="m">400</span> --plot
 </pre></div>
 </div>
-<img alt="_images/compabasedillcond_r400s12_xpresults_nameellipsoid,rotationTrue.png" src="_images/compabasedillcond_r400s12_xpresults_nameellipsoid,rotationTrue.png" />
+<img alt="_images/compabasedillcond_r400s12_xpresults_nameellipsoid%2CrotationTrue.png" src="_images/compabasedillcond_r400s12_xpresults_nameellipsoid%2CrotationTrue.png" />
 </section>
 <section id="ill-conditioned-function">
 <h2>Ill-conditioned function<a class="headerlink" href="#ill-conditioned-function" title="Permalink to this heading"></a></h2>
@@ -178,7 +299,7 @@ The following plot was created with command:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python -m nevergrad.benchmark illcond --seed<span class="o">=</span><span class="m">12</span> --repetitions<span class="o">=</span><span class="m">50</span> --plot
 </pre></div>
 </div>
-<img alt="_images/illcond_r50s12_xpresults_namecigar,rotationTrue.png" src="_images/illcond_r50s12_xpresults_namecigar,rotationTrue.png" />
+<img alt="_images/illcond_r50s12_xpresults_namecigar%2CrotationTrue.png" src="_images/illcond_r50s12_xpresults_namecigar%2CrotationTrue.png" />
 </section>
 <section id="discrete">
 <h2>Discrete<a class="headerlink" href="#discrete" title="Permalink to this heading"></a></h2>
@@ -187,8 +308,8 @@ The following plot was created with command:</p>
 </pre></div>
 </div>
 <p>We note that <a class="reference external" href="https://arxiv.org/abs/1703.03334">FastGA</a> performs best. DoubleFastGA corresponds to a mutation rate ranging between 1/dim and (dim-1)/dim instead of 1/dim and 1/2; this is because the original range corresponds to a binary domain whereas we consider arbitrary domains. The simple uniform mixing of mutation rates (<a class="reference external" href="https://arxiv.org/abs/1606.05551">https://arxiv.org/abs/1606.05551</a>) performs well in several cases.</p>
-<img alt="_images/small_discrete_r10s12_xpresults_dimension330,namehardleadingones5,useless_variables300.png" src="_images/small_discrete_r10s12_xpresults_dimension330,namehardleadingones5,useless_variables300.png" />
-<img alt="_images/small_discrete_r10s12_xpresults_dimension330,namehardonemax5,useless_variables300.png" src="_images/small_discrete_r10s12_xpresults_dimension330,namehardonemax5,useless_variables300.png" />
+<img alt="_images/small_discrete_r10s12_xpresults_dimension330%2Cnamehardleadingones5%2Cuseless_variables300.png" src="_images/small_discrete_r10s12_xpresults_dimension330%2Cnamehardleadingones5%2Cuseless_variables300.png" />
+<img alt="_images/small_discrete_r10s12_xpresults_dimension330%2Cnamehardonemax5%2Cuseless_variables300.png" src="_images/small_discrete_r10s12_xpresults_dimension330%2Cnamehardonemax5%2Cuseless_variables300.png" />
 </section>
 <section id="list-of-benchmarks">
 <h2>List of benchmarks<a class="headerlink" href="#list-of-benchmarks" title="Permalink to this heading"></a></h2>

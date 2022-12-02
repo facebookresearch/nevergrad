@@ -16,6 +16,7 @@
         <script src="_static/underscore.js"></script>
         <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -46,9 +47,63 @@
 <li class="toctree-l1"><a class="reference internal" href="machinelearning.html">Examples - Nevergrad for machine learning</a></li>
 <li class="toctree-l1"><a class="reference internal" href="optimizers_ref.html">Optimizers API Reference</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Parametrization API reference</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#parameters">Parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#parameter-api">Parameter API</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#operators">Operators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#parameters">Parameters</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.p.Array"><code class="docutils literal notranslate"><span class="pre">Array</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#nevergrad.p.Array.value"><code class="docutils literal notranslate"><span class="pre">Array.value</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.p.Choice"><code class="docutils literal notranslate"><span class="pre">Choice</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.p.Dict"><code class="docutils literal notranslate"><span class="pre">Dict</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#nevergrad.p.Dict.value"><code class="docutils literal notranslate"><span class="pre">Dict.value</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.p.Instrumentation"><code class="docutils literal notranslate"><span class="pre">Instrumentation</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#nevergrad.p.Instrumentation.value"><code class="docutils literal notranslate"><span class="pre">Instrumentation.value</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.p.Log"><code class="docutils literal notranslate"><span class="pre">Log</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.p.Scalar"><code class="docutils literal notranslate"><span class="pre">Scalar</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#nevergrad.p.Scalar.value"><code class="docutils literal notranslate"><span class="pre">Scalar.value</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.p.TransitionChoice"><code class="docutils literal notranslate"><span class="pre">TransitionChoice</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.p.Tuple"><code class="docutils literal notranslate"><span class="pre">Tuple</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#nevergrad.p.Tuple.value"><code class="docutils literal notranslate"><span class="pre">Tuple.value</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#parameter-api">Parameter API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.p.Parameter"><code class="docutils literal notranslate"><span class="pre">Parameter</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#nevergrad.p.Parameter.add_layer"><code class="docutils literal notranslate"><span class="pre">Parameter.add_layer()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nevergrad.p.Parameter.args"><code class="docutils literal notranslate"><span class="pre">Parameter.args</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nevergrad.p.Parameter.copy"><code class="docutils literal notranslate"><span class="pre">Parameter.copy()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nevergrad.p.Parameter.dimension"><code class="docutils literal notranslate"><span class="pre">Parameter.dimension</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nevergrad.p.Parameter.freeze"><code class="docutils literal notranslate"><span class="pre">Parameter.freeze()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nevergrad.p.Parameter.generation"><code class="docutils literal notranslate"><span class="pre">Parameter.generation</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nevergrad.p.Parameter.get_standardized_data"><code class="docutils literal notranslate"><span class="pre">Parameter.get_standardized_data()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nevergrad.p.Parameter.get_value_hash"><code class="docutils literal notranslate"><span class="pre">Parameter.get_value_hash()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nevergrad.p.Parameter.kwargs"><code class="docutils literal notranslate"><span class="pre">Parameter.kwargs</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nevergrad.p.Parameter.losses"><code class="docutils literal notranslate"><span class="pre">Parameter.losses</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nevergrad.p.Parameter.mutate"><code class="docutils literal notranslate"><span class="pre">Parameter.mutate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nevergrad.p.Parameter.name"><code class="docutils literal notranslate"><span class="pre">Parameter.name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nevergrad.p.Parameter.random_state"><code class="docutils literal notranslate"><span class="pre">Parameter.random_state</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nevergrad.p.Parameter.recombine"><code class="docutils literal notranslate"><span class="pre">Parameter.recombine()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nevergrad.p.Parameter.register_cheap_constraint"><code class="docutils literal notranslate"><span class="pre">Parameter.register_cheap_constraint()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nevergrad.p.Parameter.sample"><code class="docutils literal notranslate"><span class="pre">Parameter.sample()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nevergrad.p.Parameter.satisfies_constraints"><code class="docutils literal notranslate"><span class="pre">Parameter.satisfies_constraints()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nevergrad.p.Parameter.set_name"><code class="docutils literal notranslate"><span class="pre">Parameter.set_name()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nevergrad.p.Parameter.set_standardized_data"><code class="docutils literal notranslate"><span class="pre">Parameter.set_standardized_data()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nevergrad.p.Parameter.spawn_child"><code class="docutils literal notranslate"><span class="pre">Parameter.spawn_child()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nevergrad.p.Parameter.value"><code class="docutils literal notranslate"><span class="pre">Parameter.value</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#operators">Operators</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.ops.Int"><code class="docutils literal notranslate"><span class="pre">Int</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="benchmarking.html">Running algorithm benchmarks</a></li>
@@ -73,8 +128,8 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Parametrization API reference</li>
+      <li><a href="index.html" class="icon icon-home"></a></li>
+      <li class="breadcrumb-item active">Parametrization API reference</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/parametrization_ref.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -669,7 +724,10 @@ is from the integers.</p>
 <p class="rubric">Example</p>
 <p>0.2 is cast to 0 in deterministic mode, and either 0 (80% chance) or 1 (20% chance) in
 non-deterministic mode</p>
+<section id="usage">
+<h3>Usage<a class="headerlink" href="#usage" title="Permalink to this heading"></a></h3>
 <p><code class="code docutils literal notranslate"><span class="pre">param</span> <span class="pre">=</span> <span class="pre">ng.ops.Int(deterministic=True)(ng.p.Array(shape=(3,)))</span></code></p>
+</section>
 </dd></dl>
 
 </section>
