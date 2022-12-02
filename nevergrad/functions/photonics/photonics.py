@@ -156,8 +156,8 @@ def creneau(
 def homogene(k0: float, a0: float, pol: float, epsilon: float, n: int) -> tp.Tuple[np.ndarray, np.ndarray]:
     nmod = int(n / 2)
     valp = np.sqrt(epsilon * k0 * k0 - (a0 + 2 * np.pi * np.arange(-nmod, nmod + 1)) ** 2 + 0j)
-    valp = valp * (1 - 2 * (valp < 0)) * (pol / epsilon + (1 - pol))
-    P = np.block([[np.eye(n)], [np.diag(valp)]])
+    valp = valp * (1 - 2 * (valp < 0))
+    P = np.block([[np.eye(n)], [np.diag(valp * (pol / epsilon + (1 - pol)))]])
     return P, valp
 
 
