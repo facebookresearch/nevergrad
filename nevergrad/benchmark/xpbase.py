@@ -9,6 +9,7 @@ import random
 import numbers
 import warnings
 import traceback
+import nevergrad.common.typing as ngtp
 import typing as tp
 import numpy as np
 from nevergrad.parametrization import parameter as p
@@ -148,7 +149,7 @@ class Experiment:
         num_workers: int = 1,
         batch_mode: bool = True,
         seed: tp.Optional[int] = None,
-        constraint_violation: tp.Optional[tp.ArrayLike] = None,
+        constraint_violation: tp.Optional[ngtp.ArrayLike] = None,
     ) -> None:
         assert isinstance(function, fbase.ExperimentFunction), (
             "All experiment functions should " "derive from ng.functions.ExperimentFunction"
