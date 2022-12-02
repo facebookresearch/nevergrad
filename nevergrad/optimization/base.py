@@ -669,7 +669,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                     x, job = self._finished_jobs[0]
                     result = job.result()
                     if constraint_violation is not None:
-                        self.tell(x, result, [f(x.value) for f in constraint_violation])  # TODO: this is not parallelized, wtf!
+                        self.tell(
+                            x, result, [f(x.value) for f in constraint_violation]
+                        )  # TODO: this is not parallelized, wtf!
                     else:
                         self.tell(x, result)
                     self._finished_jobs.popleft()  # remove it after the tell to make sure it was indeed "told" (in case of interruption)
