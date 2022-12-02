@@ -413,6 +413,7 @@ class BatchRecastOptimizer(RecastOptimizer):
         executor: tp.Optional[tp.ExecutorLike] = None,
         batch_mode: bool = False,
         verbosity: int = 0,
+        constraint_violation: tp.Any = None,
     ) -> p.Parameter:
         raise NotImplementedError("This optimizer isn't supported by the way minimize works by default.")
 

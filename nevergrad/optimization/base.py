@@ -294,7 +294,13 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         self._suggestions.append(self.parametrization.spawn_child(new_value=new_value))
 
     # pylint: disable=too-many-branches
-    def tell(self, candidate: p.Parameter, loss: tp.Loss) -> None:
+    def tell(
+        self,
+        candidate: p.Parameter,
+        loss: tp.Loss,
+        constraint_violation: tp.Optional[tp.Loss] = None,
+        penalty_style: tp.Optional[tp.ArrayLike] = None,
+    ) -> None:
         """Provides the optimizer with the evaluation of a fitness value for a candidate.
 
         Parameters
@@ -303,6 +309,13 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             point where the function was evaluated
         loss: float/list/np.ndarray
             loss of the function (or multi-objective function
+        constraint_violation: float/list/np.ndarray/None
+            constraint violation (> 0 means that this is not correct)
+        penalty_style: ArrayLike/None
+            to be read as [a,b,c,d,e,f]
+            with cv the constraint violation vector (above):
+            penalty = (a + sum(|loss|)) * (f+num_tell)**e * (b * sum(cv**c)) ** d
+            default: [1e5, 1., .5, 1., .5, 1.]
 
         Note
         ----
@@ -379,6 +392,18 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             self.num_objectives == 1 or self.num_objectives > 1 and not self._no_hypervolume
         ):
             self._update_archive_and_bests(candidate, loss)
+        if constraint_violation is not None:
+            if penalty_style is not None:
+                a, b, c, d, e, f = penalty_style
+            else:
+                a, b, c, d, e, f = (1e5, 1.0, 0.5, 1.0, 0.5, 1.0)
+
+            violation = float(
+                (a + np.sum(np.maximum(loss, 0.0)))
+                * ((f + self._num_tell) ** e)
+                * (b * np.sum(np.maximum(constraint_violation, 0.0) ** c) ** d)
+            )
+            loss += violation
         if candidate.uid in self._asked:
             self._internal_tell_candidate(candidate, loss)
             self._asked.remove(candidate.uid)
@@ -581,6 +606,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         executor: tp.Optional[tp.ExecutorLike] = None,
         batch_mode: bool = False,
         verbosity: int = 0,
+        constraint_violation: tp.Any = None,
     ) -> p.Parameter:
         """Optimization (minimization) procedure
 
@@ -599,6 +625,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             another one)
         verbosity: int
             print information about the optimization (0: None, 1: fitness values, 2: fitness values and recommendation)
+        constraint_violation: list of functions or None
+            each function in the list returns >0 for a violated constraint.
 
         Returns
         -------
@@ -640,7 +668,12 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 while self._finished_jobs:
                     x, job = self._finished_jobs[0]
                     result = job.result()
-                    self.tell(x, result)
+                    if constraint_violation is not None:
+                        self.tell(
+                            x, result, [f(x.value) for f in constraint_violation]
+                        )  # TODO: this is not parallelized, wtf!
+                    else:
+                        self.tell(x, result)
                     self._finished_jobs.popleft()  # remove it after the tell to make sure it was indeed "told" (in case of interruption)
                     if verbosity:
                         print(f"Updating fitness with value {job.result()}")

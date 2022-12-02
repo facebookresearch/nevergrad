@@ -87,6 +87,18 @@ def test_tell_types(value: tp.Any, error: bool) -> None:
         np.testing.assert_raises(TypeError, optim.tell, x, value)
     else:
         optim.tell(x, value)
+    x = optim.ask()
+    if error:
+        np.testing.assert_raises(TypeError, optim.tell, x, value)
+    else:
+        optim.tell(x, value, [3.0, 5.0, -1.0])  # Standard penalty function
+    x = optim.ask()
+    if error:
+        np.testing.assert_raises(TypeError, optim.tell, x, value)
+    else:
+        optim.tell(x, value, [3.0, 5.0, -1.0], [1.0, 1.0, 1.0, 1.0, 1.0, 1.0])  # User-chosen penalty function
+
+    # def tell(self, candidate: p.Parameter, loss: tp.Loss, constraint_violation: tp.Optional[tp.Loss] = None, penalty_style: tp.Optional[str]) -> None:
 
 
 def test_base_optimizer() -> None:

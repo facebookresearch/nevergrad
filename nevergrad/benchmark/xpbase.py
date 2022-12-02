@@ -164,6 +164,8 @@ class Experiment:
         self._optimizer: tp.Optional[
             obase.Optimizer
         ] = None  # to be able to restore stopped/checkpointed optimizer
+        self.constraint_violation: tp.Optional[tp.Any] = None
+
         # make sure the random_state of the base function is created, so that spawning copy does not
         # trigger a seed for the base function, but only for the copied function
         self.function.parametrization.random_state  # pylint: disable=pointless-statement
@@ -215,6 +217,13 @@ class Experiment:
         # (pareto_front returns only the recommendation in singleobjective)
         self.result["num_objectives"] = opt.num_objectives
         self.result["loss"] = pfunc.evaluation_function(*opt.pareto_front())
+        if (
+            self.constraint_violation
+            and np.sum([f(opt.recommend().value) for f in self.constraint_violation]) > 0
+            or len(self.function.parametrization._constraint_checkers) > 0
+            and not opt.recommend().satisfies_constraints(pfunc.parametrization)
+        ):
+            self.result["loss"] += 1e9  # type: ignore
         self.result["elapsed_budget"] = num_calls
         if num_calls > self.optimsettings.budget:
             raise RuntimeError(
@@ -268,6 +277,7 @@ class Experiment:
                     pfunc,
                     batch_mode=executor.batch_mode,
                     executor=executor,
+                    constraint_violation=self.constraint_violation,
                 )
             except Exception as e:  # pylint: disable=broad-except
                 self._log_results(pfunc, t0, self._optimizer.num_ask)
