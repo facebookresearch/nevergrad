@@ -10,6 +10,8 @@ from . import core
 import pytest
 
 
+os.environ["SM_FRAMEWORK"] = "tf.keras"
+
 @pytest.mark.parametrize("kind", core.OlympusSurface.SURFACE_KINDS)
 @pytest.mark.parametrize("noise_kind", ["GaussianNoise", "UniformNoise", "GammaNoise"])
 def test_olympus_surface(kind: str, noise_kind: str) -> None:
