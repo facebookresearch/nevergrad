@@ -814,9 +814,17 @@ def yahdnoisysplitbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]
 
 @registry.register
 def yaconstrainedbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Counterpart of yabbob with higher dimensions."""
+    """Counterpart of yabbob with constraints. Constraints are cheap: we do not count calls to them."""
     cases = 8  # total number of cases (skip 0, as it's constraint-free)
     slices = [yabbob(seed, constraint_case=i) for i in range(1, cases)]
+    return itertools.chain(*slices)
+
+
+@registry.register
+def yapenbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with penalized constraints."""
+    cases = 8  # total number of cases (skip 0, as it's constraint-free)
+    slices = [yabbob(seed, constraint_case=-i) for i in range(1, cases)]
     return itertools.chain(*slices)
 
 
