@@ -133,7 +133,7 @@ class FastNonDominatedRanking:
 
     # pylint: disable=too-many-locals
     def compute_ranking(
-        self, candidates: tp.List[p.Parameter], k: int = None
+        self, candidates: tp.List[p.Parameter], k: tp.Optional[int] = None
     ) -> tp.List[tp.List[p.Parameter]]:
         """Compute ranking of candidates.
 

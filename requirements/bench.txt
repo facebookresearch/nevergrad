@@ -32,6 +32,7 @@ image-quality>=1.2.7
 keras>=2.4.3
 pymoo==0.5.0
 olymp==0.0.1b0 ; sys_platform == "linux"
+Keras-Preprocessing
 silence_tensorflow  # for olymp
 tensorflow_probability  # for olymp
 bayes-optim==0.2.5.5
