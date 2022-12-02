@@ -148,14 +148,14 @@ class Experiment:
         num_workers: int = 1,
         batch_mode: bool = True,
         seed: tp.Optional[int] = None,
-        constraint_satisfaction: tp.Optional[tp.ArrayLike] = None,
+        constraint_violation: tp.Optional[tp.ArrayLike] = None,
     ) -> None:
         assert isinstance(function, fbase.ExperimentFunction), (
             "All experiment functions should " "derive from ng.functions.ExperimentFunction"
         )
         assert function.dimension, "Nothing to optimize"
         self.function = function
-        self.constraint_satisfaction = constraint_satisfaction
+        self.constraint_violation = constraint_violation
         self.seed = (
             seed  # depending on the inner workings of the function, the experiment may not be repeatable
         )
