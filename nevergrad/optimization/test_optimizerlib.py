@@ -210,6 +210,8 @@ def test_optimizers(name: str) -> None:
     """Checks that each optimizer is able to converge on a simple test case"""
     if name in ["CMAbounded", "NEWUOA"]:  # Not a general purpose optimization method.
         return
+    if "BO" in name:  # Bayesian Optimization is rarely good, let us save up time.
+        return
     optimizer_cls = registry[name]
     if isinstance(optimizer_cls, base.ConfiguredOptimizer):
         assert any(
