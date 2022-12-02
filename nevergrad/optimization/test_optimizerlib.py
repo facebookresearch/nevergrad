@@ -21,6 +21,7 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 from bayes_opt.util import acq_max
+from bayes_opt.util import NotUniqueError
 import nevergrad as ng
 import nevergrad.common.typing as tp
 from nevergrad.common import testing
@@ -477,8 +478,11 @@ def test_bo_init() -> None:
     # The test was flaky with normalize_y=True.
     gp_param = {"alpha": 1e-5, "normalize_y": False, "n_restarts_optimizer": 1, "random_state": None}
     my_opt = ng.optimizers.ParametrizedBO(gp_parameters=gp_param, initialization=None)
-    optimizer = my_opt(parametrization=arg, budget=10)
-    optimizer.minimize(np.abs)
+    try:
+        optimizer = my_opt(parametrization=arg, budget=10)
+        optimizer.minimize(np.abs)
+    except NotUniqueError:
+        pass  # That error is ok.
 
 
 def test_chaining() -> None:
