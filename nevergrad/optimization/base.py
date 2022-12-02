@@ -398,7 +398,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             else:
                 a, b, c, d, e, f = (1e5, 1.0, 0.5, 1.0, 0.5, 1.0)
 
-            violation = (
+            violation = float(
                 (a + np.sum(np.maximum(loss, 0.0)))
                 * ((f + self._num_tell) ** e)
                 * (b * np.sum(np.maximum(constraint_violation, 0.0) ** c) ** d)
@@ -606,6 +606,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         executor: tp.Optional[tp.ExecutorLike] = None,
         batch_mode: bool = False,
         verbosity: int = 0,
+        constraint_violation: tp.Any = None,
     ) -> p.Parameter:
         """Optimization (minimization) procedure
 
@@ -624,6 +625,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             another one)
         verbosity: int
             print information about the optimization (0: None, 1: fitness values, 2: fitness values and recommendation)
+        constraint_violation: list of functions or None
+            each function in the list returns >0 for a violated constraint.
 
         Returns
         -------
@@ -665,7 +668,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 while self._finished_jobs:
                     x, job = self._finished_jobs[0]
                     result = job.result()
-                    self.tell(x, result)
+                    if constraint_violation is not None:
+                        self.tell(x, result, [f(x.value) for f in constraint_violation])  # TODO: this is not parallelized, wtf!
+                    else:
+                        self.tell(x, result)
                     self._finished_jobs.popleft()  # remove it after the tell to make sure it was indeed "told" (in case of interruption)
                     if verbosity:
                         print(f"Updating fitness with value {job.result()}")
