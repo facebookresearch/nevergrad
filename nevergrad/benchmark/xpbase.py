@@ -221,7 +221,7 @@ class Experiment:
         self.result["loss"] = pfunc.evaluation_function(*opt.pareto_front())
         if (
             self.constraint_violation
-            and np.sum([f(opt.recommend().value) for f in self.constraint_violation]) > 0
+            and np.sum([f(opt.recommend().value) for f in self.constraint_violation]) > 0  # type: ignore
             or len(self.function.parametrization._constraint_checkers) > 0
             and not opt.recommend().satisfies_constraints(pfunc.parametrization)
         ):

@@ -751,7 +751,7 @@ def yabbob(
     # We reduce the number of tests when there are constraints, as the number of cases
     # is already multiplied by the number of constraint_case.
     for func in functions[:: 13 if constraint_case > 0 else 1]:
-        func.constraint_violation = []
+        func.constraint_violation = []  # type: ignore
         # We add a window of the list of constraints. This windows finishes at "constraints" (hence, is empty if
         # constraint_case=0).
         for constraint in constraints[
@@ -760,7 +760,7 @@ def yabbob(
             if constraint_case > 0:
                 func.parametrization.register_cheap_constraint(constraint)
             elif constraint_case < 0:
-                func.constraint_violation += [
+                func.constraint_violation += [  # type: ignore
                     constraint
                 ]  # Just for storing, we will move it to the experiment soon
 
@@ -782,7 +782,7 @@ def yabbob(
                     num_workers=100 if parallel else 1,
                     budget=budget,
                     seed=next(seedg),
-                    constraint_violation=function.constraint_violation,
+                    constraint_violation=function.constraint_violation,  # type: ignore
                 )
                 if not xp.is_incoherent:
                     yield xp
