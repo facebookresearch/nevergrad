@@ -148,12 +148,14 @@ class Experiment:
         num_workers: int = 1,
         batch_mode: bool = True,
         seed: tp.Optional[int] = None,
+        constraint_satisfaction: tp.Optional[tp.ArrayLike] = None,
     ) -> None:
         assert isinstance(function, fbase.ExperimentFunction), (
             "All experiment functions should " "derive from ng.functions.ExperimentFunction"
         )
         assert function.dimension, "Nothing to optimize"
         self.function = function
+        self.constraint_satisfaction = constraint_satisfaction
         self.seed = (
             seed  # depending on the inner workings of the function, the experiment may not be repeatable
         )
@@ -164,7 +166,6 @@ class Experiment:
         self._optimizer: tp.Optional[
             obase.Optimizer
         ] = None  # to be able to restore stopped/checkpointed optimizer
-        self.constraint_violation: tp.Optional[tp.Any] = None
 
         # make sure the random_state of the base function is created, so that spawning copy does not
         # trigger a seed for the base function, but only for the copied function
