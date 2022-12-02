@@ -220,9 +220,10 @@ class Experiment:
         if (
             self.constraint_violation
             and np.sum([f(opt.recommend().value) for f in self.constraint_violation]) > 0
-            or not opt.recommend().satisfies_constraints(pfunc.parametrization)
+            or len(self.function.parametrization._constraint_checkers) > 0
+            and not opt.recommend().satisfies_constraints(pfunc.parametrization)
         ):
-            self.result["loss"] += 1e9
+            self.result["loss"] += 1e9  # type: ignore
         self.result["elapsed_budget"] = num_calls
         if num_calls > self.optimsettings.budget:
             raise RuntimeError(
