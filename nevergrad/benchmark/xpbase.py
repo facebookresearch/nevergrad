@@ -9,6 +9,7 @@ import random
 import numbers
 import warnings
 import traceback
+import nevergrad.common.typing as ngtp
 import typing as tp
 import numpy as np
 from nevergrad.parametrization import parameter as p
@@ -148,12 +149,14 @@ class Experiment:
         num_workers: int = 1,
         batch_mode: bool = True,
         seed: tp.Optional[int] = None,
+        constraint_violation: tp.Optional[ngtp.ArrayLike] = None,
     ) -> None:
         assert isinstance(function, fbase.ExperimentFunction), (
             "All experiment functions should " "derive from ng.functions.ExperimentFunction"
         )
         assert function.dimension, "Nothing to optimize"
         self.function = function
+        self.constraint_violation = constraint_violation
         self.seed = (
             seed  # depending on the inner workings of the function, the experiment may not be repeatable
         )
@@ -164,7 +167,6 @@ class Experiment:
         self._optimizer: tp.Optional[
             obase.Optimizer
         ] = None  # to be able to restore stopped/checkpointed optimizer
-        self.constraint_violation: tp.Optional[tp.Any] = None
 
         # make sure the random_state of the base function is created, so that spawning copy does not
         # trigger a seed for the base function, but only for the copied function
@@ -219,7 +221,7 @@ class Experiment:
         self.result["loss"] = pfunc.evaluation_function(*opt.pareto_front())
         if (
             self.constraint_violation
-            and np.sum([f(opt.recommend().value) for f in self.constraint_violation]) > 0
+            and np.sum([f(opt.recommend().value) for f in self.constraint_violation]) > 0  # type: ignore
             or len(self.function.parametrization._constraint_checkers) > 0
             and not opt.recommend().satisfies_constraints(pfunc.parametrization)
         ):

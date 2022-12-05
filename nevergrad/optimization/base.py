@@ -392,6 +392,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             self.num_objectives == 1 or self.num_objectives > 1 and not self._no_hypervolume
         ):
             self._update_archive_and_bests(candidate, loss)
+
         if constraint_violation is not None:
             if penalty_style is not None:
                 a, b, c, d, e, f = penalty_style
