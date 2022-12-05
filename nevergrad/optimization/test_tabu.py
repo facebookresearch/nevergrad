@@ -40,7 +40,7 @@ def test_tabu() -> None:
             values += [of(recom)]
             valuesT += [of(recomT)]
         pval = stats.mannwhitneyu(valuesT, values, alternative="less").pvalue
-        assert pval < 0.1, f"{o} fails the Tabu search test: pval = {pval}."
+        assert pval < 0.12, f"{o} fails the Tabu search test: pval = {pval}."
 
 
 def summation(x: tp.ArrayLike) -> float:
