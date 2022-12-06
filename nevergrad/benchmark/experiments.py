@@ -1472,8 +1472,6 @@ def irrigation(
     Sequential or 30 workers."""
     if kenya:
         addresses = []
-        # lat_center = float(os.environ.get("ng_latitude", "0."))
-        # lon_center = float(os.environ.get("ng_longitude", "37."))
         country = os.environ.get("ng_country", "Kenya")
         ng_latitude = centroids[country][1]
         ng_longitude = centroids[country][0]
