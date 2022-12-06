@@ -156,7 +156,8 @@ and <a class="reference internal" href="parametrization_ref.html#parametrization
 
 <span class="n">optimizer</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">NGOpt</span><span class="p">(</span><span class="n">parametrization</span><span class="o">=</span><span class="n">instrum</span><span class="p">,</span> <span class="n">budget</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">num_workers</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
 <span class="c1"># We use ThreadPoolExecutor for CircleCI but please</span>
-<span class="c1"># use the line below:</span>
+<span class="c1"># use the line just below, with ProcessPoolExecutor instead (unless your</span>
+<span class="c1"># code is I/O bound rather than CPU bound):</span>
 <span class="k">with</span> <span class="n">futures</span><span class="o">.</span><span class="n">ThreadPoolExecutor</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="n">optimizer</span><span class="o">.</span><span class="n">num_workers</span><span class="p">)</span> <span class="k">as</span> <span class="n">executor</span><span class="p">:</span>
 <span class="c1">#with futures.ProcessPoolExecutor(max_workers=optimizer.num_workers) as executor:</span>
     <span class="n">recommendation</span> <span class="o">=</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="n">square</span><span class="p">,</span> <span class="n">executor</span><span class="o">=</span><span class="n">executor</span><span class="p">,</span> <span class="n">batch_mode</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
