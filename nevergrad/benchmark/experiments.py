@@ -48,6 +48,184 @@ from . import gymexperiments  # noqa
 # pylint: disable=stop-iteration-return, too-many-nested-blocks, too-many-locals
 
 
+centroids = {}
+centroids["Fiji"] = (163.85316464458234, -17.31630942638265)
+centroids["Tanzania"] = (34.75298985475595, -6.257732428506092)
+centroids["Western Sahara"] = (-12.13783111160779, 24.291172960208623)
+centroids["Canada"] = (-98.14238137209708, 61.46907614534896)
+centroids["United States"] = (-112.5994359115045, 45.70562800215178)
+centroids["Kazakhstan"] = (67.2846109811001, 48.19166075218232)
+centroids["Uzbekistan"] = (63.20363952823182, 41.748602664652246)
+centroids["Papua New Guinea"] = (145.31757462782247, -6.451644514630347)
+centroids["Indonesia"] = (117.42340756227364, -2.221737936520542)
+centroids["Argentina"] = (-65.17536077114173, -35.4468214894951)
+centroids["Chile"] = (-71.5206439451643, -39.04701430994844)
+centroids["Democratic Republic of the Congo"] = (23.582955831479083, -2.8502757110956667)
+centroids["Somalia"] = (45.72670076723565, 4.752347756504953)
+centroids["Kenya"] = (37.791555286661385, 0.5959662521769523)
+centroids["Sudan"] = (29.862604012257922, 15.990585003116717)
+centroids["Chad"] = (18.581329525332894, 15.328867399839682)
+centroids["Haiti"] = (-72.65801330535574, 18.900700691843337)
+centroids["Dominican Republic"] = (-70.46235845697531, 18.884487087982258)
+centroids["Russian Federation"] = (96.80331818290134, 61.961663494923)
+centroids["Bahamas"] = (-77.92997080393516, 25.515491725336624)
+centroids["Falkland Islands / Malvinas"] = (-59.42097279311021, -51.71322176551185)
+centroids["Norway"] = (15.468119955206761, 69.15685630975351)
+centroids["Greenland"] = (-41.50018111492097, 74.77048769398986)
+centroids["French Southern and Antarctic Lands"] = (69.5315804704237, -49.306454911671985)
+centroids["Timor-Leste"] = (125.96630027368401, -8.767760362467003)
+centroids["South Africa"] = (25.048013879861678, -28.947033259979115)
+centroids["Lesotho"] = (28.170105295170494, -29.625290493692013)
+centroids["Mexico"] = (-102.5763495239869, 23.935371902244835)
+centroids["Uruguay"] = (-56.003278666548475, -32.780904365230825)
+centroids["Brazil"] = (-53.05434003576711, -10.806773643498916)
+centroids["Bolivia"] = (-64.64140560603113, -16.72898701530584)
+centroids["Peru"] = (-74.39180581684722, -9.191562905134553)
+centroids["Colombia"] = (-73.07773208697478, 3.927213862709704)
+centroids["Panama"] = (-80.10916483549376, 8.530019388864652)
+centroids["Costa Rica"] = (-84.17542309600948, 9.965671127464528)
+centroids["Nicaragua"] = (-85.02031850080252, 12.848190428036988)
+centroids["Honduras"] = (-86.58996383801542, 14.822947081652929)
+centroids["El Salvador"] = (-88.87290317032377, 13.726091625794197)
+centroids["Guatemala"] = (-90.36945836053154, 15.699360612026911)
+centroids["Belize"] = (-88.70342125299318, 17.197089911451545)
+centroids["Venezuela"] = (-66.16382727830238, 7.162132267639002)
+centroids["Guyana"] = (-58.97120310856251, 4.790225375174759)
+centroids["Suriname"] = (-55.91145629952073, 4.1200080317588865)
+centroids["France"] = (-2.8766966992706267, 42.46070432663372)
+centroids["Ecuador"] = (-78.38416674608374, -1.4547717055405804)
+centroids["Puerto Rico"] = (-66.47922227695507, 18.2372245709719)
+centroids["Jamaica"] = (-77.32425480164892, 18.137636127868436)
+centroids["Cuba"] = (-78.96068490970256, 21.631751541025228)
+centroids["Zimbabwe"] = (29.788548371892524, -18.906987947858802)
+centroids["Botswana"] = (23.773081465789428, -22.099711378826413)
+centroids["Namibia"] = (17.156168126194093, -22.099776931731068)
+centroids["Senegal"] = (-14.50980278585943, 14.354139988452022)
+centroids["Mali"] = (-3.543294339453343, 17.267772061700715)
+centroids["Mauritania"] = (-10.326396925234992, 20.20926720635376)
+centroids["Benin"] = (2.337377553496156, 9.647430780663699)
+centroids["Niger"] = (9.324427099857923, 17.345552814745542)
+centroids["Nigeria"] = (7.995127754089786, 9.548318418209965)
+centroids["Cameroon"] = (12.611551546501774, 5.663095287992696)
+centroids["Togo"] = (0.9964039436703582, 8.439541954669616)
+centroids["Ghana"] = (-1.2369685557063992, 7.928651813099648)
+centroids["Côte d'Ivoire"] = (-5.6120436452252225, 7.5537550070104915)
+centroids["Guinea"] = (-11.060853741185456, 10.44827287727134)
+centroids["Guinea-Bissau"] = (-15.110623751667879, 12.022704382325685)
+centroids["Liberia"] = (-9.410836154371117, 6.431619862252993)
+centroids["Sierra Leone"] = (-11.795257428559948, 8.53035372615305)
+centroids["Burkina Faso"] = (-1.77653745205594, 12.311650494136712)
+centroids["Central African Republic"] = (20.374347291243915, 6.5427787059213145)
+centroids["Republic of the Congo"] = (15.13446176741353, -0.8378010872252886)
+centroids["Gabon"] = (11.687751174902044, -0.6470481398040288)
+centroids["Equatorial Guinea"] = (10.366031325064027, 1.6458643199600753)
+centroids["Zambia"] = (27.727591918760577, -13.395067553524187)
+centroids["Malawi"] = (34.193605326922366, -13.172834992341919)
+centroids["Mozambique"] = (35.47261597864435, -17.230448975659677)
+centroids["Kingdom of eSwatini"] = (31.39525590206532, -26.48985528852001)
+centroids["Angola"] = (17.47057255231345, -12.245869036133188)
+centroids["Burundi"] = (29.91389229542573, -3.3773910753554657)
+centroids["Israel"] = (35.003851206429005, 31.4849193900197)
+centroids["Lebanon"] = (35.87098632001643, 33.91182720781994)
+centroids["Madagascar"] = (46.69117091471639, -19.356114077828778)
+centroids["Palestine"] = (35.27331962289024, 31.94113662241515)
+centroids["The Gambia"] = (-15.431872807730837, 13.47533435870166)
+centroids["Tunisia"] = (9.534716120695835, 34.172939036882376)
+centroids["Algeria"] = (2.5980477916183444, 28.185481278657537)
+centroids["Jordan"] = (36.77945490632519, 31.245490584748417)
+centroids["United Arab Emirates"] = (54.20671476159633, 23.86863365334761)
+centroids["Qatar"] = (51.1835025789133, 25.32185097420669)
+centroids["Kuwait"] = (47.600098887626416, 29.307266634033564)
+centroids["Iraq"] = (43.75691096461423, 33.03682096372491)
+centroids["Oman"] = (56.09867281997542, 20.611174374229545)
+centroids["Vanuatu"] = (167.07375126822674, -15.542677057554924)
+centroids["Cambodia"] = (104.87608532525192, 12.684728629393506)
+centroids["Thailand"] = (101.00613354626108, 15.01697499141648)
+centroids["Lao PDR"] = (103.75025989504465, 18.444978089036088)
+centroids["Myanmar"] = (96.50584094206161, 21.016999873773827)
+centroids["Vietnam"] = (106.28584079705195, 16.657937753254938)
+centroids["Dem. Rep. Korea"] = (127.16501590888976, 40.14302033650109)
+centroids["Republic of Korea"] = (127.8213171283307, 36.42759860415487)
+centroids["Mongolia"] = (102.94640620846634, 46.82368112626357)
+centroids["India"] = (79.59370376325381, 22.92500640740852)
+centroids["Bangladesh"] = (90.26792827719598, 23.83946179534406)
+centroids["Bhutan"] = (90.4724248062037, 27.427968649102027)
+centroids["Nepal"] = (84.01317367692529, 28.23944001904935)
+centroids["Pakistan"] = (69.41399806318127, 29.973460025547393)
+centroids["Afghanistan"] = (66.08669022192831, 33.85639928169076)
+centroids["Tajikistan"] = (71.03443504896113, 38.58308146421082)
+centroids["Kyrgyzstan"] = (74.62040481092558, 41.50689371318262)
+centroids["Turkmenistan"] = (59.27543026236141, 39.09124018017583)
+centroids["Iran"] = (54.285451496891426, 32.51891731762539)
+centroids["Syria"] = (38.54423941961137, 35.012614281129)
+centroids["Armenia"] = (45.00029001101479, 40.21660761230143)
+centroids["Sweden"] = (16.59626584684802, 62.811484968080336)
+centroids["Belarus"] = (27.98135261544803, 53.50634479481114)
+centroids["Ukraine"] = (31.229122070266495, 49.14882260840351)
+centroids["Poland"] = (19.31101430844868, 52.14826021933187)
+centroids["Austria"] = (14.076158884337072, 47.6139487927463)
+centroids["Hungary"] = (19.357628627745918, 47.19995117195427)
+centroids["Moldova"] = (28.41048279080328, 47.20367642606752)
+centroids["Romania"] = (24.943252494635377, 45.857101035738005)
+centroids["Lithuania"] = (23.88064027584349, 55.284319484766066)
+centroids["Latvia"] = (24.833296149803438, 56.80717513427924)
+centroids["Estonia"] = (25.824725613026608, 58.643695426630906)
+centroids["Germany"] = (10.288485092742851, 51.13372269040778)
+centroids["Bulgaria"] = (25.19511095327711, 42.7531187620217)
+centroids["Greece"] = (22.719813447095053, 39.066715899713955)
+centroids["Turkey"] = (35.116900150938406, 39.06837194061471)
+centroids["Albania"] = (20.03242643144321, 41.141353306048785)
+centroids["Croatia"] = (16.566189771645533, 45.01623399593114)
+centroids["Switzerland"] = (8.118300613385486, 46.79173768366762)
+centroids["Luxembourg"] = (5.965223432343999, 49.76570507415103)
+centroids["Belgium"] = (4.580834113854935, 50.65244095902296)
+centroids["Netherlands"] = (5.512217100965399, 52.298700374441786)
+centroids["Portugal"] = (-8.055765588295687, 39.63404977497817)
+centroids["Spain"] = (-3.6170206023873743, 40.348656106226734)
+centroids["Ireland"] = (-8.010236544877012, 53.18059120995006)
+centroids["New Caledonia"] = (165.53447460087543, -21.26135761252651)
+centroids["Solomon Islands"] = (159.9666154474296, -8.852497470848528)
+centroids["New Zealand"] = (172.70192594405574, -41.662578757158684)
+centroids["Australia"] = (134.50277547536595, -25.730654779726077)
+centroids["Sri Lanka"] = (80.66723574931648, 7.700534417248105)
+centroids["China"] = (103.88361230063249, 36.555066531858685)
+centroids["Taiwan"] = (120.97480073748623, 23.740964979784938)
+centroids["Italy"] = (12.140788372235871, 42.751183052964265)
+centroids["Denmark"] = (9.876372937675002, 56.06393446179454)
+centroids["United Kingdom"] = (-2.8531353951805545, 53.91477348053706)
+centroids["Iceland"] = (-18.761028770831768, 65.07427633529105)
+centroids["Azerbaijan"] = (47.553909558006055, 40.22069054766167)
+centroids["Georgia"] = (43.48154265409026, 42.16201501415301)
+centroids["Philippines"] = (122.90267236988682, 11.763799362297663)
+centroids["Malaysia"] = (109.6981484486297, 3.7255884257737155)
+centroids["Brunei Darussalam"] = (114.91510877393951, 4.690250542520635)
+centroids["Slovenia"] = (14.938152320795732, 46.12542205901039)
+centroids["Finland"] = (26.211764610296353, 64.50409403963651)
+centroids["Slovakia"] = (19.507657147433708, 48.7267113517275)
+centroids["Czech Republic"] = (15.334558102365815, 49.775245294369)
+centroids["Eritrea"] = (38.67818692786484, 15.427276751412931)
+centroids["Japan"] = (138.06496213270776, 37.66311081170466)
+centroids["Paraguay"] = (-58.387387833505706, -23.248041946292087)
+centroids["Yemen"] = (47.535044758543485, 15.913231950143004)
+centroids["Saudi Arabia"] = (44.51636376826477, 24.123289839105293)
+centroids["Antarctica"] = (20.571000569842635, -80.49198288284343)
+centroids["Northern Cyprus"] = (33.5582859592249, 35.273957681259716)
+centroids["Cyprus"] = (33.03955380295407, 34.90706085094344)
+centroids["Morocco"] = (-8.420479544549693, 29.885394698302058)
+centroids["Egypt"] = (29.844461513124415, 26.50661999974957)
+centroids["Libya"] = (17.974352779160352, 26.997460407020338)
+centroids["Ethiopia"] = (39.551255792937745, 8.653999188132575)
+centroids["Djibouti"] = (42.4980197360445, 11.773044395533926)
+centroids["Somaliland"] = (46.23074953490769, 9.757971805222988)
+centroids["Uganda"] = (32.35755031998686, 1.2954855035097297)
+centroids["Rwanda"] = (29.91896392224289, -2.0135144658341346)
+centroids["Bosnia and Herzegovina"] = (17.816883270390086, 44.1807677629747)
+centroids["North Macedonia"] = (21.697903375280845, 41.60592964714007)
+centroids["Serbia"] = (20.819651926382583, 44.23303653365162)
+centroids["Montenegro"] = (19.2861817215929, 42.78903960655908)
+centroids["Kosovo"] = (20.895355721342227, 42.579367131816994)
+centroids["Trinidad and Tobago"] = (-61.33036691444967, 10.428237089201879)
+centroids["South Sudan"] = (30.198617582461907, 7.292890133516845)
 def skip_ci(*, reason: str) -> None:
     """Only use this if there is a good reason for not testing the xp,
     such as very slow for instance (>1min) with no way to make it faster.
@@ -1255,25 +1433,33 @@ def rocket(seed: tp.Optional[int] = None, seq: bool = False) -> tp.Iterator[Expe
                             yield xp
 
 @registry.register
-def irrigation(seed: tp.Optional[int] = None, benin: bool = False, variety_choice: bool = False, rice: bool = False, multi_crop: bool = False, kenya: bool = False) -> tp.Iterator[Experiment]:
+def irrigation(seed: tp.Optional[int] = None, benin: bool = False, variety_choice: bool = False, rice: bool = False, multi_crop: bool = False, kenya: bool = False, year_min:int=2006, year_max:int=2006) -> tp.Iterator[Experiment]:
     """Irrigation simulator. Maximize leaf area index,
     so that you get a lot of primary production.
     Sequential or 30 workers."""
     if kenya:
         addresses = []
-        for lat in list(range(-4,5)):
-            for lon in list(range(34,40)):
+        #lat_center = float(os.environ.get("ng_latitude", "0."))
+        #lon_center = float(os.environ.get("ng_longitude", "37."))
+        country = os.environ.get("ng_country", "Kenya")
+        ng_latitude = centroids[country][1]
+        ng_longitude = centroids[country][0]
+
+
+        for lat in [ng_latitude-4.+8. * e/6. for e in range(7)]: #list(range(-4,5)):
+            for lon in [ng_longitude-3.+6. * e/6. for e in range(7)]: #list(range(34,40)):
                 addresses += [(lat, lon)]
-        funcs = [Irrigation(0, benin=benin, variety_choice=variety_choice, rice=rice, multi_crop=multi_crop, address=ad) for ad in addresses]
+        funcs = [Irrigation(0, benin=benin, variety_choice=variety_choice, rice=rice, multi_crop=multi_crop, address=ad, year_min=year_min,year_max=year_max) for ad in addresses]
     else:
-        funcs = [Irrigation(i, benin=benin, variety_choice=variety_choice, rice=rice, multi_crop=multi_crop, address=None) for i in range(67)]
+        funcs = [Irrigation(i, benin=benin, variety_choice=variety_choice, rice=rice, multi_crop=multi_crop, address=None,year_min=year_min, year_max=year_max) for i in range(67)]
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", seed=next(seedg))
     optims = ["DiagonalCMA", "CMA", "DE", "PSO", "TwoPointsDE", "DiscreteLenglerOnePlusOne"]
     optims += ["NGOptRW", "NGTuned"]
+    optims = ["NGOptRW"]
     if rice:
         optims = optims[-2:]
-    for budget in [2500]: #, 50, 100, 200]:
+    for budget in [int(os.environ.get("ng_budget", "250"))]: #, 50, 100, 200]:
         for num_workers in [1]: #, 30, 60]:
             if num_workers < budget:
                 for algo in optims:
@@ -1297,6 +1483,24 @@ def benin_crop_and_variety_irrigation(seed: tp.Optional[int] = None) -> tp.Itera
 @registry.register
 def kenya_crop_and_variety_irrigation(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     return irrigation(seed, kenya=True, variety_choice=True, multi_crop=True)
+
+
+@registry.register
+def kenya_2011_crop_and_variety_irrigation(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    return irrigation(seed, kenya=True, variety_choice=True, multi_crop=True, year_min=2011)
+
+
+@registry.register
+def kenya_many_crop_and_variety_irrigation(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    return irrigation(seed, kenya=True, variety_choice=True, multi_crop=True, year_min=2006, year_max=2011)
+
+@registry.register
+def kenya_new_many_crop_and_variety_irrigation(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    return irrigation(seed, kenya=True, variety_choice=True, multi_crop=True, year_min=2016, year_max=2021)
+
+@registry.register
+def kenya_old_many_crop_and_variety_irrigation(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    return irrigation(seed, kenya=True, variety_choice=True, multi_crop=True, year_min=1996, year_max=2001)
 
 
 @registry.register

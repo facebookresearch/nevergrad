@@ -13,6 +13,7 @@ https://raw.githubusercontent.com/purdue-orbital/pcse-simulation/master/Simulati
 from pathlib import Path
 import urllib.request  # Necessary for people who will uncomment the part using data under EUPL license.
 import numpy as np
+import time
 import nevergrad as ng
 from ..base import ArrayExperimentFunction
 import os
@@ -98,8 +99,12 @@ CURRENT_BEST_ARGUMENT = {}
 
 class Irrigation(ArrayExperimentFunction):
     variant_choice = {}
-    def __init__(self, symmetry:int, benin: bool, variety_choice: bool, rice: bool, multi_crop: bool, address=None) -> None:
+    def __init__(self, symmetry:int, benin: bool, variety_choice: bool, rice: bool, multi_crop: bool, address=None, year_min: int = 2006, year_max: int = 2006) -> None:
         self.rice = rice
+        if year_max < year_min and year_max == 2006:
+            year_max = year_min
+        self.year_min = year_min
+        self.year_max = year_max
         data_dir = Path(__file__).with_name("data")
         try:
             self.soil = CABOFileReader(os.path.join(data_dir, "soil", "ec3.soil"))
@@ -110,14 +115,14 @@ class Irrigation(ArrayExperimentFunction):
             )
             self.soil = CABOFileReader(os.path.join(data_dir, "soil", "ec3.soil"))
         self.this_dimension = 8
-        if rice:
+        if rice or (variety_choice and not multi_crop):
             self.this_dimension = 9
         if multi_crop:
             self.this_dimension = 10
             assert not rice
 
         param = ng.p.Array(shape=(self.this_dimension,), lower=(0.0), upper=(0.99999999)).set_name("irrigation8")
-        super().__init__(self.total_yield, parametrization=param, symmetry=symmetry)
+        super().__init__(self.meta_total_yield, parametrization=param, symmetry=symmetry)
         if os.environ.get("CIRCLECI", False):
             raise ng.errors.UnsupportedExperiment("No HTTP request in CircleCI")
 #                    "Cotonou",
@@ -200,8 +205,13 @@ class Irrigation(ArrayExperimentFunction):
                      known_latitudes[self.address] = address[0]
                      known_longitudes[self.address] = address[1]
                  
-            if self.address in known_latitudes and self.address in known_longitudes:
-                WPD[self.address] = NASAPowerWeatherDataProvider(latitude=known_latitudes[self.address], longitude=known_longitudes[self.address])
+            if self.address in known_latitudes and self.address in known_longitudes and self.address not in WPD:
+                for k in range(10):
+                    try:
+                        WPD[self.address] = NASAPowerWeatherDataProvider(latitude=known_latitudes[self.address], longitude=known_longitudes[self.address])
+                        break
+                    except:
+                        time.sleep(10 * (2 **k))
             if self.address in WPD:
                 self.weatherdataprovider = WPD[self.address]
             else:           
@@ -213,7 +223,7 @@ class Irrigation(ArrayExperimentFunction):
                 )
                 WPD[self.address] = self.weatherdataprovider
             self.set_data(symmetry, k, rice)
-            v = [self.total_yield(np.random.rand(self.this_dimension)) for _ in range(5)]
+            v = [self.meta_total_yield(np.random.rand(self.this_dimension)) for _ in range(5)]
             if min(v) != max(v):
                 break
             self.variant_choice[symmetry] = k
@@ -236,62 +246,11 @@ class Irrigation(ArrayExperimentFunction):
         self.parameterprovider = ParameterProvider(soildata=self.soil, cropdata=self.cropd, sitedata=site)
 
 
-    def total_yield(self, x: np.ndarray):
-        d0 = int(1.01 + 29.98 * x[0])
-        d1 = int(1.01 + 30.98 * x[1])
-        d2 = int(1.01 + 30.98 * x[2])
-        d3 = int(1.01 + 29.98 * x[3])
-        c = self.total_irrigation
-        a0 = c * x[4] / (x[4] + x[5] + x[6] + x[7])
-        a1 = c * x[5] / (x[4] + x[5] + x[6] + x[7])
-        a2 = c * x[6] / (x[4] + x[5] + x[6] + x[7])
-        a3 = c * x[7] / (x[4] + x[5] + x[6] + x[7])
-        if len(x) > 8:
-            if self.this_dimension == 10:
-                assert len(x) == 10
-                self.cropname = self.crop_types[int(x[9] * len(self.crop_types))]
-            else:
-                assert len(x) == 9, f"my x has size {len(x)}, it is {x}"
-            varieties = list(self.cropd.get_crops_varieties()[self.cropname])
-            self.cropvariety = varieties[int(x[8] * len(varieties))]
-
-        yaml_agro = f"""
-        - 2006-01-01:
-            CropCalendar:
-                crop_name: {self.cropname}
-                variety_name: {self.cropvariety}
-                crop_start_date: 2006-03-31
-                crop_start_type: emergence
-                crop_end_date: 2006-10-20
-                crop_end_type: harvest
-                max_duration: 300
-            TimedEvents:
-            -   event_signal: irrigate
-                name: Irrigation application table
-                comment: All irrigation amounts in cm
-                events_table:
-                - 2006-06-{d0:02}: {{amount: {a0}, efficiency: 0.7}}
-                - 2006-07-{d1:02}: {{amount: {a1}, efficiency: 0.7}}
-                - 2006-08-{d2:02}: {{amount: {a2}, efficiency: 0.7}}
-                - 2006-09-{d3:02}: {{amount: {a3}, efficiency: 0.7}}
-            StateEvents: null
-        """
-        try:
-            agromanagement = yaml.safe_load(yaml_agro)
-            wofost = Wofost72_WLP_FD(self.parameterprovider, self.weatherdataprovider, agromanagement)
-            wofost.run_till_terminate()
-        except Exception as e:
-            return float("inf")
-            #assert (
-            #    False
-            #), f"Problem!\n Dates: {d0} {d1} {d2} {d3},\n amounts: {a0}, {a1}, {a2}, {a3}\n  ({e}).\n"
-            #raise e
-
-        output = wofost.get_output()
-        df = pd.DataFrame(output).set_index("day")
-        df.tail()
-
-        lai = sum([float(o["TWSO"]) for o in output if o["TWSO"] is not None])
+    def meta_total_yield(self, x: np.ndarray):
+        lai = 0.
+        for year in range(self.year_min, self.year_max+1):
+            print(f"working on {year}")
+            lai += self.total_yield(x, year)
         specifier = self.address + "_" + str(self.total_irrigation)
         if not self.this_dimension == 10:
             specifier += "_" + str(self.cropname)
@@ -308,5 +267,76 @@ class Irrigation(ArrayExperimentFunction):
                 argument += "_" + self.cropvariety
             CURRENT_BEST_ARGUMENT[specifier] = argument
             print(f"for <{specifier}> we recommend {CURRENT_BEST_ARGUMENT[specifier]} and get {lai}")
+
+        return -lai
+
+    def total_yield(self, x: np.ndarray, year:int=2006):
+        d0 = int(1.01 + 29.98 * x[0])
+        d1 = int(1.01 + 30.98 * x[1])
+        d2 = int(1.01 + 30.98 * x[2])
+        d3 = int(1.01 + 29.98 * x[3])
+        c = self.total_irrigation
+        if len(x) == 10:
+            c = 0
+        a0 = c * x[4] / (x[4] + x[5] + x[6] + x[7])
+        a1 = c * x[5] / (x[4] + x[5] + x[6] + x[7])
+        a2 = c * x[6] / (x[4] + x[5] + x[6] + x[7])
+        a3 = c * x[7] / (x[4] + x[5] + x[6] + x[7])
+        if len(x) > 8:
+            if self.this_dimension == 10:
+                assert len(x) == 10
+                self.cropname = self.crop_types[int(x[9] * len(self.crop_types))]
+            else:
+                assert len(x) == 9, f"my x has size {len(x)}, it is {x}"
+            varieties = list(self.cropd.get_crops_varieties()[self.cropname])
+            self.cropvariety = varieties[int(x[8] * len(varieties))]
+
+        yaml_agro = f"""
+        - {year}-01-01:
+            CropCalendar:
+                crop_name: {self.cropname}
+                variety_name: {self.cropvariety}
+                crop_start_date: {year}-03-31
+                crop_start_type: emergence
+                crop_end_date: {year}-10-20
+                crop_end_type: harvest
+                max_duration: 300
+            TimedEvents:
+            -   event_signal: irrigate
+                name: Irrigation application table
+                comment: All irrigation amounts in cm
+                events_table:
+                - {year}-06-{d0:02}: {{amount: {a0}, efficiency: 0.7}}
+                - {year}-07-{d1:02}: {{amount: {a1}, efficiency: 0.7}}
+                - {year}-08-{d2:02}: {{amount: {a2}, efficiency: 0.7}}
+                - {year}-09-{d3:02}: {{amount: {a3}, efficiency: 0.7}}
+            StateEvents: null
+        """
+        try:
+            agromanagement = yaml.safe_load(yaml_agro)
+            wofost = Wofost72_WLP_FD(self.parameterprovider, self.weatherdataprovider, agromanagement)
+            wofost.run_till_terminate()
+#            for i in range(10):
+#                try:
+#                    wofost = Wofost72_WLP_FD(self.parameterprovider, self.weatherdataprovider, agromanagement)
+#                    wofost.run_till_terminate()
+#                    break
+#                except:
+#                    print(f"failure {i} for {yaml_agro}")
+#                    time.sleep(2 ** i)
+#                return -float("inf")
+        except Exception as e:
+            print(e)
+            return -float("inf")
+            #assert (
+            #    False
+            #), f"Problem!\n Dates: {d0} {d1} {d2} {d3},\n amounts: {a0}, {a1}, {a2}, {a3}\n  ({e}).\n"
+            #raise e
+
+        output = wofost.get_output()
+        df = pd.DataFrame(output).set_index("day")
+        df.tail()
+
+        lai = sum([float(o["TWSO"]) for o in output if o["TWSO"] is not None])
         value = lai * get_crop_cost(self.cropname)
-        return - value
+        return value
