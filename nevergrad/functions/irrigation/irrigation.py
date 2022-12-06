@@ -312,6 +312,8 @@ class Irrigation(ArrayExperimentFunction):
                 - {year}-09-{d3:02}: {{amount: {a3}, efficiency: 0.7}}
             StateEvents: null
         """
+        print(list(self.weatherdataprovider.keys()))
+        assert False
         try:
             agromanagement = yaml.safe_load(yaml_agro)
             wofost = Wofost72_WLP_FD(self.parameterprovider, self.weatherdataprovider, agromanagement)
