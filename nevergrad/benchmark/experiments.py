@@ -1593,45 +1593,6 @@ def crop_simulator(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 #                            yield xp
 
 
-@registry.register
-def variety_irrigation(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    return irrigation(seed, variety_choice=True)
-
-
-@registry.register
-def benin_irrigation(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    return irrigation(seed, benin=True)
-
-
-@registry.register
-def benin_variety_choice_irrigation(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    return irrigation(seed, benin=True, variety_choice=True)
-
-
-@registry.register
-def benin_rice_variety_choice_irrigation(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    return irrigation(seed, benin=True, variety_choice=True, rice=True)
-
-
-@registry.register
-def crop_simulator(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Crop simulator.
-
-    Low dimensional problem, only 2 vars. This is optimization for model identification: we want
-    to find parameters so that the simulation matches observations.
-    """
-    funcs = [CropSimulator()]
-    seedg = create_seed_generator(seed)
-    optims = ["DE", "PSO", "CMA", "NGOpt"]
-    for budget in [25, 50, 100, 200]:
-        for num_workers in [1]:
-            if num_workers < budget:
-                for algo in optims:
-                    for fu in funcs:
-                        xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
-                        if not xp.is_incoherent:
-                            yield xp
-
 
 @registry.register
 def mono_rocket(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
