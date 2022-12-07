@@ -130,7 +130,7 @@ def test_early_stopping() -> None:
 
 def test_improvement_criterion() -> None:
     optim = optimizerlib.OnePlusOne(2, budget=100)
-    crit = ng.callbacks.EarlyStopping.relative_improvement(min_improvement = 0.01)
+    crit = ng.callbacks._RelImprovementCriterion(min_improvement = 0.01)
     assert not crit(optim)
     assert not crit(optim)
     assert not crit(optim)
