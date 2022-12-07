@@ -347,6 +347,11 @@ class EarlyStopping:
         """Early stop when max_duration seconds has been reached (from the first ask)"""
         return cls(_DurationCriterion(max_duration))
 
+    @classmethod
+    def relative_improvement(cls, min_improvement: float) -> "EarlyStopping":
+        """Early stop when loss function does not decrease enough (from the last update)"""
+        return cls(_RelImprovementCriterion(min_improvement))
+
 
 class _DurationCriterion:
     def __init__(self, max_duration: float) -> None:
@@ -357,3 +362,12 @@ class _DurationCriterion:
         if np.isinf(self._start):
             self._start = time.time()
         return time.time() > self._start + self._max_duration
+
+class _RelImprovementCriterion:
+    def __init__(self, min_improvement) -> None:
+        self._min_improvement = min_improvement
+    
+    def __call__(self, optimizer: base.Optimizer) -> bool:
+        last_best = optimizer.previous_best_loss
+        current_best = optimizer.current_bests["minimum"].get_estimation("minimum")
+        return (last_best - current_best)/last_best < self._min_improvement

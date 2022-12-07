@@ -8,6 +8,7 @@ import warnings
 from pathlib import Path
 from numbers import Real
 from collections import deque
+from copy import deepcopy
 import numpy as np
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
@@ -114,6 +115,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             x: utils.MultiValue(self.parametrization, np.inf, reference=self.parametrization)
             for x in ["optimistic", "pessimistic", "average", "minimum"]
         }
+        self.previous_best_loss: float = float("Inf")
         # pruning function, called at each "tell"
         # this can be desactivated or modified by each implementation
         self.pruning: tp.Optional[_PruningCallable] = utils.Pruning.sensible_default(
@@ -260,7 +262,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         callback: callable
             a callable taking the same parameters as the method it is registered upon (including self)
         """
-        assert name in ["ask", "tell"], f'Only "ask" and "tell" methods can have callbacks (not {name})'
+        assert name in ["ask", "tell", "minimize"], f'Only "ask", "tell" and "minimize" methods can have callbacks (not {name})'
         self._callbacks.setdefault(name, []).append(callback)
 
     def remove_all_callbacks(self) -> None:
@@ -419,6 +421,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 auto_bound=self._MULTIOBJECTIVE_AUTO_BOUND, no_hypervolume=self._no_hypervolume
             )
         return self._hypervolume_pareto.add(candidate)
+    
+    def _save_loss_history(self) -> None:
+        self.previous_best_loss = self.current_bests["minimum"].get_estimation("minimum")
 
     def _update_archive_and_bests(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         x = candidate.get_standardized_data(reference=self.parametrization)
@@ -441,7 +446,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 mvalue.parameter = candidate  # keep best candidate
         # update current best records
         # this may have to be improved if we want to keep more kinds of best losss
-
+        if self.archive[x].get_estimation("minimum") < self.current_bests["minimum"].get_estimation("minimum"):
+            self._save_loss_history()     
         for name in self.current_bests:
             if mvalue is self.current_bests[name]:  # reboot
                 best = min(self.archive.values(), key=lambda mv, n=name: mv.get_estimation(n))  # type: ignore
@@ -662,6 +668,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             # this is the first thing to do when resuming an existing optimization run
             # process finished
             if self._finished_jobs:
+                for callback in self._callbacks.get("minimize", []):
+                    callback(self)
                 if (remaining_budget or sleeper._start is not None) and not first_iteration:
                     # ignore stop if no more suggestion is sent
                     # this is an ugly hack to avoid warnings at the end of steady mode
