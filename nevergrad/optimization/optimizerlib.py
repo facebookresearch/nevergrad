@@ -9,6 +9,7 @@ from collections import deque
 import warnings
 import numpy as np
 import scipy.ndimage as ndimage
+
 try:
     from bayes_opt import UtilityFunction
     from bayes_opt import BayesianOptimization
@@ -1925,6 +1926,7 @@ class _FakeFunction:
 
 
 try:
+
     class _BO(base.Optimizer):
         def __init__(
             self,
@@ -1971,7 +1973,7 @@ try:
                         "You should then create a new instance of optimizerlib.ParametrizedBO with appropriate parametrization.",
                         errors.InefficientSettingsWarning,
                     )
-    
+
         @property
         def bo(self) -> BayesianOptimization:
             if self._bo is None:
@@ -1999,7 +2001,7 @@ try:
                     for _ in range(init_budget):
                         self._bo.probe(self._bo._space.random_sample(), lazy=True)
             return self._bo
-    
+
         def _internal_ask_candidate(self) -> p.Parameter:
             util = UtilityFunction(kind=self.utility_kind, kappa=self.utility_kappa, xi=self.utility_xi)
             if self.bo._queue:
@@ -2011,7 +2013,7 @@ try:
             candidate = self.parametrization.spawn_child().set_standardized_data(data)
             candidate._meta["x_probe"] = x_probe
             return candidate
-    
+
         def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
             if "x_probe" in candidate._meta:
                 y = candidate._meta["x_probe"]
@@ -2024,7 +2026,7 @@ try:
             # but since it keeps a cache of the values, the registered value is not used
             # so we should clean the "fake" function
             self._fake_function._registered.clear()
-    
+
         def _internal_provide_recommendation(self) -> tp.Optional[tp.ArrayLike]:
             if not self.archive:
                 return None
@@ -2036,7 +2038,7 @@ try:
         """Bayesian optimization.
         Hyperparameter tuning method, based on statistical modeling of the objective function.
         This class is a wrapper over the `bayes_opt <https://github.com/fmfn/BayesianOptimization>`_ package.
-    
+
         Parameters
         ----------
         initialization: str
@@ -2054,9 +2056,9 @@ try:
         gp_parameters: dict
             dictionnary of parameters for the gaussian process
         """
-    
+
         no_parallelization = True
-    
+
         # pylint: disable=unused-argument
         def __init__(
             self,
@@ -2070,15 +2072,15 @@ try:
             gp_parameters: tp.Optional[tp.Dict[str, tp.Any]] = None,
         ) -> None:
             super().__init__(_BO, locals())
-    
-    
+
     BO = ParametrizedBO().set_name("BO", register=True)
     BOSplit = ConfSplitOptimizer(max_num_vars=15, progressive=False, multivariate_optimizer=BO).set_name(
         "BOSplit", register=True
     )
-    
+
 except NameError:
     pass  # bayes_opt not available
+
 
 class _BayesOptim(base.Optimizer):
     def __init__(

@@ -11,6 +11,7 @@ This module and its available classes are experimental and may change quickly in
 from .optimizerlib import ParametrizedOnePlusOne
 from .optimizerlib import ParametrizedTBPSA
 from .optimizerlib import ParametrizedMetaModel
+
 try:
     from .optimizerlib import ParametrizedBO
 except ImportError:
