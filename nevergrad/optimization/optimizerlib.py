@@ -9,8 +9,12 @@ from collections import deque
 import warnings
 import numpy as np
 import scipy.ndimage as ndimage
-from bayes_opt import UtilityFunction
-from bayes_opt import BayesianOptimization
+try:
+    from bayes_opt import UtilityFunction
+    from bayes_opt import BayesianOptimization
+except ModuleNotFoundError:
+    pass
+
 import nevergrad.common.typing as tp
 from nevergrad.common import errors
 from nevergrad.parametrization import parameter as p
@@ -1920,159 +1924,161 @@ class _FakeFunction:
         return loss
 
 
-class _BO(base.Optimizer):
-    def __init__(
-        self,
-        parametrization: IntOrParameter,
-        budget: tp.Optional[int] = None,
-        num_workers: int = 1,
-        *,
-        initialization: tp.Optional[str] = None,
-        init_budget: tp.Optional[int] = None,
-        middle_point: bool = False,
-        utility_kind: str = "ucb",  # bayes_opt default
-        utility_kappa: float = 2.576,
-        utility_xi: float = 0.0,
-        gp_parameters: tp.Optional[tp.Dict[str, tp.Any]] = None,
-    ) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        self._normalizer = p.helpers.Normalizer(self.parametrization)
-        self._bo: tp.Optional[BayesianOptimization] = None
-        self._fake_function = _FakeFunction(num_digits=len(str(self.dimension)))
-        # initialization
-        init = initialization
-        self._init_budget = init_budget
-        self._middle_point = middle_point
-        if init is None:
-            self._InitOpt: tp.Optional[base.ConfiguredOptimizer] = None
-        elif init == "random":
-            self._InitOpt = oneshot.RandomSearch
-        else:
-            self._InitOpt = oneshot.SamplingSearch(sampler=init, scrambled=init == "Hammersley")
-        # configuration
-        self.utility_kind = utility_kind
-        self.utility_kappa = utility_kappa
-        self.utility_xi = utility_xi
-        self.gp_parameters = {} if gp_parameters is None else gp_parameters
-        if isinstance(parametrization, p.Parameter) and self.gp_parameters.get("alpha", 0) == 0:
-            analysis = p.helpers.analyze(parametrization)
-            noisy = not analysis.deterministic
-            cont = analysis.continuous
-            if noisy or not cont:
-                warnings.warn(
-                    "Dis-continuous and noisy parametrization require gp_parameters['alpha'] > 0 "
-                    "(for your parametrization, continuity={cont} and noisy={noisy}).\n"
-                    "Find more information on BayesianOptimization's github.\n"
-                    "You should then create a new instance of optimizerlib.ParametrizedBO with appropriate parametrization.",
-                    errors.InefficientSettingsWarning,
-                )
-
-    @property
-    def bo(self) -> BayesianOptimization:
-        if self._bo is None:
-            bounds = {self._fake_function.key(i): (0.0, 1.0) for i in range(self.dimension)}
-            self._bo = BayesianOptimization(self._fake_function, bounds, random_state=self._rng)
-            if self._init_budget is None:
-                assert self.budget is not None
-                init_budget = int(np.sqrt(self.budget))
+try:
+    class _BO(base.Optimizer):
+        def __init__(
+            self,
+            parametrization: IntOrParameter,
+            budget: tp.Optional[int] = None,
+            num_workers: int = 1,
+            *,
+            initialization: tp.Optional[str] = None,
+            init_budget: tp.Optional[int] = None,
+            middle_point: bool = False,
+            utility_kind: str = "ucb",  # bayes_opt default
+            utility_kappa: float = 2.576,
+            utility_xi: float = 0.0,
+            gp_parameters: tp.Optional[tp.Dict[str, tp.Any]] = None,
+        ) -> None:
+            super().__init__(parametrization, budget=budget, num_workers=num_workers)
+            self._normalizer = p.helpers.Normalizer(self.parametrization)
+            self._bo: tp.Optional[BayesianOptimization] = None
+            self._fake_function = _FakeFunction(num_digits=len(str(self.dimension)))
+            # initialization
+            init = initialization
+            self._init_budget = init_budget
+            self._middle_point = middle_point
+            if init is None:
+                self._InitOpt: tp.Optional[base.ConfiguredOptimizer] = None
+            elif init == "random":
+                self._InitOpt = oneshot.RandomSearch
             else:
-                init_budget = self._init_budget
-            init_budget = max(2, init_budget)
-            if self.gp_parameters is not None:
-                self._bo.set_gp_params(**self.gp_parameters)
-            # init
-            if self._middle_point:
-                self._bo.probe([0.5] * self.dimension, lazy=True)
-                init_budget -= 1
-            if self._InitOpt is not None and init_budget > 0:
-                param = p.Array(shape=(self.dimension,)).set_bounds(lower=0, upper=1)
-                param.random_state = self._rng
-                opt = self._InitOpt(param, budget=init_budget)
-                for _ in range(init_budget):
-                    self._bo.probe(opt.ask().value, lazy=True)
-            else:  # default
-                for _ in range(init_budget):
-                    self._bo.probe(self._bo._space.random_sample(), lazy=True)
-        return self._bo
+                self._InitOpt = oneshot.SamplingSearch(sampler=init, scrambled=init == "Hammersley")
+            # configuration
+            self.utility_kind = utility_kind
+            self.utility_kappa = utility_kappa
+            self.utility_xi = utility_xi
+            self.gp_parameters = {} if gp_parameters is None else gp_parameters
+            if isinstance(parametrization, p.Parameter) and self.gp_parameters.get("alpha", 0) == 0:
+                analysis = p.helpers.analyze(parametrization)
+                noisy = not analysis.deterministic
+                cont = analysis.continuous
+                if noisy or not cont:
+                    warnings.warn(
+                        "Dis-continuous and noisy parametrization require gp_parameters['alpha'] > 0 "
+                        "(for your parametrization, continuity={cont} and noisy={noisy}).\n"
+                        "Find more information on BayesianOptimization's github.\n"
+                        "You should then create a new instance of optimizerlib.ParametrizedBO with appropriate parametrization.",
+                        errors.InefficientSettingsWarning,
+                    )
+    
+        @property
+        def bo(self) -> BayesianOptimization:
+            if self._bo is None:
+                bounds = {self._fake_function.key(i): (0.0, 1.0) for i in range(self.dimension)}
+                self._bo = BayesianOptimization(self._fake_function, bounds, random_state=self._rng)
+                if self._init_budget is None:
+                    assert self.budget is not None
+                    init_budget = int(np.sqrt(self.budget))
+                else:
+                    init_budget = self._init_budget
+                init_budget = max(2, init_budget)
+                if self.gp_parameters is not None:
+                    self._bo.set_gp_params(**self.gp_parameters)
+                # init
+                if self._middle_point:
+                    self._bo.probe([0.5] * self.dimension, lazy=True)
+                    init_budget -= 1
+                if self._InitOpt is not None and init_budget > 0:
+                    param = p.Array(shape=(self.dimension,)).set_bounds(lower=0, upper=1)
+                    param.random_state = self._rng
+                    opt = self._InitOpt(param, budget=init_budget)
+                    for _ in range(init_budget):
+                        self._bo.probe(opt.ask().value, lazy=True)
+                else:  # default
+                    for _ in range(init_budget):
+                        self._bo.probe(self._bo._space.random_sample(), lazy=True)
+            return self._bo
+    
+        def _internal_ask_candidate(self) -> p.Parameter:
+            util = UtilityFunction(kind=self.utility_kind, kappa=self.utility_kappa, xi=self.utility_xi)
+            if self.bo._queue:
+                x_probe = next(self.bo._queue)
+            else:
+                x_probe = self.bo.suggest(util)  # this is time consuming
+                x_probe = [x_probe[self._fake_function.key(i)] for i in range(len(x_probe))]
+            data = self._normalizer.backward(np.array(x_probe, copy=False))
+            candidate = self.parametrization.spawn_child().set_standardized_data(data)
+            candidate._meta["x_probe"] = x_probe
+            return candidate
+    
+        def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+            if "x_probe" in candidate._meta:
+                y = candidate._meta["x_probe"]
+            else:
+                data = candidate.get_standardized_data(reference=self.parametrization)
+                y = self._normalizer.forward(data)  # tell not asked
+            self._fake_function.register(y, -loss)  # minimizing
+            self.bo.probe(y, lazy=False)
+            # for some unknown reasons, BO wants to evaluate twice the same point,
+            # but since it keeps a cache of the values, the registered value is not used
+            # so we should clean the "fake" function
+            self._fake_function._registered.clear()
+    
+        def _internal_provide_recommendation(self) -> tp.Optional[tp.ArrayLike]:
+            if not self.archive:
+                return None
+            return self._normalizer.backward(
+                np.array([self.bo.max["params"][self._fake_function.key(i)] for i in range(self.dimension)])
+            )
 
-    def _internal_ask_candidate(self) -> p.Parameter:
-        util = UtilityFunction(kind=self.utility_kind, kappa=self.utility_kappa, xi=self.utility_xi)
-        if self.bo._queue:
-            x_probe = next(self.bo._queue)
-        else:
-            x_probe = self.bo.suggest(util)  # this is time consuming
-            x_probe = [x_probe[self._fake_function.key(i)] for i in range(len(x_probe))]
-        data = self._normalizer.backward(np.array(x_probe, copy=False))
-        candidate = self.parametrization.spawn_child().set_standardized_data(data)
-        candidate._meta["x_probe"] = x_probe
-        return candidate
-
-    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        if "x_probe" in candidate._meta:
-            y = candidate._meta["x_probe"]
-        else:
-            data = candidate.get_standardized_data(reference=self.parametrization)
-            y = self._normalizer.forward(data)  # tell not asked
-        self._fake_function.register(y, -loss)  # minimizing
-        self.bo.probe(y, lazy=False)
-        # for some unknown reasons, BO wants to evaluate twice the same point,
-        # but since it keeps a cache of the values, the registered value is not used
-        # so we should clean the "fake" function
-        self._fake_function._registered.clear()
-
-    def _internal_provide_recommendation(self) -> tp.Optional[tp.ArrayLike]:
-        if not self.archive:
-            return None
-        return self._normalizer.backward(
-            np.array([self.bo.max["params"][self._fake_function.key(i)] for i in range(self.dimension)])
-        )
-
-
-class ParametrizedBO(base.ConfiguredOptimizer):
-    """Bayesian optimization.
-    Hyperparameter tuning method, based on statistical modeling of the objective function.
-    This class is a wrapper over the `bayes_opt <https://github.com/fmfn/BayesianOptimization>`_ package.
-
-    Parameters
-    ----------
-    initialization: str
-        Initialization algorithms (None, "Hammersley", "random" or "LHS")
-    init_budget: int or None
-        Number of initialization algorithm steps
-    middle_point: bool
-        whether to sample the 0 point first
-    utility_kind: str
-        Type of utility function to use among "ucb", "ei" and "poi"
-    utility_kappa: float
-        Kappa parameter for the utility function
-    utility_xi: float
-        Xi parameter for the utility function
-    gp_parameters: dict
-        dictionnary of parameters for the gaussian process
-    """
-
-    no_parallelization = True
-
-    # pylint: disable=unused-argument
-    def __init__(
-        self,
-        *,
-        initialization: tp.Optional[str] = None,
-        init_budget: tp.Optional[int] = None,
-        middle_point: bool = False,
-        utility_kind: str = "ucb",  # bayes_opt default
-        utility_kappa: float = 2.576,
-        utility_xi: float = 0.0,
-        gp_parameters: tp.Optional[tp.Dict[str, tp.Any]] = None,
-    ) -> None:
-        super().__init__(_BO, locals())
-
-
-BO = ParametrizedBO().set_name("BO", register=True)
-BOSplit = ConfSplitOptimizer(max_num_vars=15, progressive=False, multivariate_optimizer=BO).set_name(
-    "BOSplit", register=True
-)
-
+    class ParametrizedBO(base.ConfiguredOptimizer):
+        """Bayesian optimization.
+        Hyperparameter tuning method, based on statistical modeling of the objective function.
+        This class is a wrapper over the `bayes_opt <https://github.com/fmfn/BayesianOptimization>`_ package.
+    
+        Parameters
+        ----------
+        initialization: str
+            Initialization algorithms (None, "Hammersley", "random" or "LHS")
+        init_budget: int or None
+            Number of initialization algorithm steps
+        middle_point: bool
+            whether to sample the 0 point first
+        utility_kind: str
+            Type of utility function to use among "ucb", "ei" and "poi"
+        utility_kappa: float
+            Kappa parameter for the utility function
+        utility_xi: float
+            Xi parameter for the utility function
+        gp_parameters: dict
+            dictionnary of parameters for the gaussian process
+        """
+    
+        no_parallelization = True
+    
+        # pylint: disable=unused-argument
+        def __init__(
+            self,
+            *,
+            initialization: tp.Optional[str] = None,
+            init_budget: tp.Optional[int] = None,
+            middle_point: bool = False,
+            utility_kind: str = "ucb",  # bayes_opt default
+            utility_kappa: float = 2.576,
+            utility_xi: float = 0.0,
+            gp_parameters: tp.Optional[tp.Dict[str, tp.Any]] = None,
+        ) -> None:
+            super().__init__(_BO, locals())
+    
+    
+    BO = ParametrizedBO().set_name("BO", register=True)
+    BOSplit = ConfSplitOptimizer(max_num_vars=15, progressive=False, multivariate_optimizer=BO).set_name(
+        "BOSplit", register=True
+    )
+    
+except NameError:
+    pass  # bayes_opt not available
 
 class _BayesOptim(base.Optimizer):
     def __init__(
