@@ -128,6 +128,15 @@ def test_early_stopping() -> None:
     assert optimizer.recommend().loss < 12  # type: ignore
 
 
+def test_improvement_criterion() -> None:
+    optim = optimizerlib.OnePlusOne(2, budget=100)
+    crit = ng.callbacks.EarlyStopping.relative_improvement(min_improvement = 0.01)
+    assert not crit(optim)
+    assert not crit(optim)
+    assert not crit(optim)
+    time.sleep(0.01)
+    assert crit(optim)
+
 def test_duration_criterion() -> None:
     optim = optimizerlib.OnePlusOne(2, budget=100)
     crit = ng.callbacks._DurationCriterion(0.01)
