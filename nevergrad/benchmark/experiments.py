@@ -1572,9 +1572,13 @@ def kenya_farfuture_many_crop_and_variety_irrigation(
 def kenya_future_many_crop_and_variety_irrigation(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     return irrigation(seed, kenya=True, variety_choice=True, multi_crop=True, year_min=2026, year_max=2031)
 
+
 @registry.register
-def kenya_farfuture_many_crop_and_variety_irrigation(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def kenya_farfuture_many_crop_and_variety_irrigation(
+    seed: tp.Optional[int] = None,
+) -> tp.Iterator[Experiment]:
     return irrigation(seed, kenya=True, variety_choice=True, multi_crop=True, year_min=2036, year_max=2041)
+
 
 @registry.register
 def kenya_old_many_crop_and_variety_irrigation(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
@@ -1621,8 +1625,8 @@ def crop_simulator(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                             yield xp
 
 
-#@registry.register
-#def irrigation(seed: tp.Optional[int] = None, benin: bool = False, variety_choice: bool = False) -> tp.Iterator[Experiment]:
+# @registry.register
+# def irrigation(seed: tp.Optional[int] = None, benin: bool = False, variety_choice: bool = False) -> tp.Iterator[Experiment]:
 #    """Irrigation simulator. Maximize leaf area index,
 #    so that you get a lot of primary production.
 #    Sequential or 30 workers."""
@@ -1640,7 +1644,6 @@ def crop_simulator(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 #                        skip_ci(reason="Too slow")
 #                        if not xp.is_incoherent:
 #                            yield xp
-
 
 
 @registry.register
