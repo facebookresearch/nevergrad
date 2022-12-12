@@ -1569,18 +1569,6 @@ def kenya_farfuture_many_crop_and_variety_irrigation(
 
 
 @registry.register
-def kenya_future_many_crop_and_variety_irrigation(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    return irrigation(seed, kenya=True, variety_choice=True, multi_crop=True, year_min=2026, year_max=2031)
-
-
-@registry.register
-def kenya_farfuture_many_crop_and_variety_irrigation(
-    seed: tp.Optional[int] = None,
-) -> tp.Iterator[Experiment]:
-    return irrigation(seed, kenya=True, variety_choice=True, multi_crop=True, year_min=2036, year_max=2041)
-
-
-@registry.register
 def kenya_old_many_crop_and_variety_irrigation(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     return irrigation(seed, kenya=True, variety_choice=True, multi_crop=True, year_min=1996, year_max=2001)
 
