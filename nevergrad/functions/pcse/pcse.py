@@ -18,7 +18,7 @@ from ..base import ArrayExperimentFunction
 # pylint: disable=too-many-locals,too-many-statements
 
 
-class CropSimulator(ArrayExperimentFunction):
+class Pcse(ArrayExperimentFunction):
     def __init__(self) -> None:
         try:
             # raise Exception("We do not import EUPL code by default.")
