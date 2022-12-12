@@ -273,12 +273,6 @@ class Irrigation(ArrayExperimentFunction):
     def wdp_extend(self, wdp):
 
         my_keys = copy.deepcopy(list(wdp.store.keys()))
-        # print("ooo", min([k[1] for k in my_keys]))
-        # print("ooo", max([k[1] for k in my_keys]))
-        # print("==>",wdp.store[my_keys[0]])
-        # print("==>",type(wdp.store[my_keys[0]]))
-        # print("==>",wdp.store[my_keys[0]].__slots__)
-        # print(list(wdp.store.keys()))
 
         def we_have(y, m, d):
             try:
@@ -357,10 +351,6 @@ class Irrigation(ArrayExperimentFunction):
                     assert len(ok) < 2
                     assert len(ok) >= (1 if we_have(y, m, d) else 0)
 
-        my_keys = list(wdp.store.keys())
-        for y in range(2020, 2050):
-            ok = [k for k in my_keys if k[0].year == y]
-            print(y, len(ok))
     def set_data(self, symmetry: int, k: int, rice: bool):
         crop_types = [crop for crop, variety in self.cropd.get_crops_varieties().items()]
         crop_types = [c for c in crop_types if "obacco" not in c]
