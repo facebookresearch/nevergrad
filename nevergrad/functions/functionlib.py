@@ -154,6 +154,7 @@ class ArtificialFunction(ExperimentFunction):
     ) -> None:
         # pylint: disable=too-many-locals
         self.name = name
+        self.constraint_violation: tp.ArrayLike = []
         self._parameters = {x: y for x, y in locals().items() if x not in ["__class__", "self"]}
         # basic checks
         assert noise_level >= 0, "Noise level must be greater or equal to 0"

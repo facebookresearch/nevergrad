@@ -841,7 +841,7 @@ def yabbob(
     small: bool = False,
     noise: bool = False,
     hd: bool = False,
-    constraint_case: int = 0,
+    constraint_case: int = 0,  # Positive for cheap_constraint, negative for penalized constraints
     split: bool = False,
     tuning: bool = False,
     reduction_factor: int = 1,
@@ -926,15 +926,23 @@ def yabbob(
         for name in ["sum", "diff", "second_diff", "ball"]
     ]
     assert (
-        constraint_case < len(constraints) + max_num_constraints
-    ), "constraint_case should be in 0, 1, ..., {len(constraints) + max_num_constraints - 1} (0 = no constraint)."
+        abs(constraint_case) < len(constraints) + max_num_constraints
+    ), "abs(constraint_case) should be in 0, 1, ..., {len(constraints) + max_num_constraints - 1} (0 = no constraint)."
     # We reduce the number of tests when there are constraints, as the number of cases
     # is already multiplied by the number of constraint_case.
     for func in functions[:: 13 if constraint_case > 0 else 1]:
+        func.constraint_violation = []
         # We add a window of the list of constraints. This windows finishes at "constraints" (hence, is empty if
         # constraint_case=0).
-        for constraint in constraints[max(0, constraint_case - max_num_constraints) : constraint_case]:
-            func.parametrization.register_cheap_constraint(constraint)
+        for constraint in constraints[
+            max(0, abs(constraint_case) - max_num_constraints) : abs(constraint_case)
+        ]:
+            if constraint_case > 0:
+                func.parametrization.register_cheap_constraint(constraint)
+            elif constraint_case < 0:
+                func.constraint_violation += [
+                    constraint
+                ]  # Just for storing, we will move it to the experiment soon
 
     budgets = (
         [40000, 80000, 160000, 320000]
@@ -949,7 +957,12 @@ def yabbob(
         for function in functions:
             for budget in budgets:
                 xp = Experiment(
-                    function, optim, num_workers=100 if parallel else 1, budget=budget, seed=next(seedg)
+                    function,
+                    optim,
+                    num_workers=100 if parallel else 1,
+                    budget=budget,
+                    seed=next(seedg),
+                    constraint_violation=function.constraint_violation,
                 )
                 if not xp.is_incoherent:
                     yield xp
@@ -981,9 +994,17 @@ def yahdnoisysplitbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]
 
 @registry.register
 def yaconstrainedbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Counterpart of yabbob with higher dimensions."""
+    """Counterpart of yabbob with constraints. Constraints are cheap: we do not count calls to them."""
     cases = 8  # total number of cases (skip 0, as it's constraint-free)
     slices = [yabbob(seed, constraint_case=i) for i in range(1, cases)]
+    return itertools.chain(*slices)
+
+
+@registry.register
+def yapenbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with penalized constraints."""
+    cases = 8  # total number of cases (skip 0, as it's constraint-free)
+    slices = [yabbob(seed, constraint_case=-i) for i in range(1, cases)]
     return itertools.chain(*slices)
 
 
@@ -1496,11 +1517,13 @@ def kenya_many_crop_and_variety_irrigation(seed: tp.Optional[int] = None) -> tp.
 
 @registry.register
 def kenya_new_many_crop_and_variety_irrigation(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    return irrigation(seed, kenya=True, variety_choice=True, multi_crop=True, year_min=2015, year_max=2020)
+    return irrigation(seed, kenya=True, variety_choice=True, multi_crop=True, year_min=2016, year_max=2021)
+
 
 @registry.register
 def kenya_old_many_crop_and_variety_irrigation(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     return irrigation(seed, kenya=True, variety_choice=True, multi_crop=True, year_min=1996, year_max=2001)
+
 
 @registry.register
 def kenya_mat_many_crop_and_variety_irrigation(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:

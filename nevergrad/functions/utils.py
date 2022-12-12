@@ -17,7 +17,7 @@ class Transform:
         indices: tp.List[int],
         translation_factor: float = 1,
         rotation: bool = False,
-        random_state: np.random.RandomState = None,
+        random_state: tp.Optional[np.random.RandomState] = None,
     ) -> None:
         dim = len(indices)
         assert dim

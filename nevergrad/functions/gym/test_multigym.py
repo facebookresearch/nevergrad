@@ -25,13 +25,6 @@ def test_multigym() -> None:
     assert len(GYM_ENV_NAMES) >= 10 or os.name == "nt"
 
 
-def test_compiler_gym() -> None:
-    func = multigym.CompilerGym(17)
-    candidate = func.parametrization.sample()
-    results = [func.evaluation_function(candidate) for _ in range(4)]
-    assert min(results) == max(results), "CompilerGym should be deterministic."
-
-
 def test_cartpole() -> None:
     func = multigym.GymMulti(name="CartPole-v0", control="neural", neural_factor=1, randomized=True)
     results = [func(np.zeros(func.dimension)) for _ in range(40)]
@@ -67,11 +60,6 @@ def test_run_multigym(name: str) -> None:
     value = func(x)
     np.testing.assert_almost_equal(value, 178.2, decimal=2)
 
-
-@pytest.mark.parametrize("name", GYM_ENV_NAMES)  # type: ignore
-def test_run_multigym(name: str) -> None:
-    if os.name == "nt" or np.random.randint(8) or "CubeCrash" in name:
-        raise SkipTest("Skipping Windows and running only 1 out of 8")
     i = GYM_ENV_NAMES.index(name)
     control = multigym.CONTROLLERS[i % len(multigym.CONTROLLERS)]
     print(f"Working with {control} on {name}.")

@@ -32,6 +32,7 @@ from pcse.base import ParameterProvider
 # dollars per kilogram
 crop_value_dollars_per_kg = {}
 crop_value_dollars_per_kg["barley"]= 0.1  # Kenya
+#crop_value_dollars_per_kg["barley"]= 9.6  # Kenya
 crop_value_dollars_per_kg["cassava"]= 2    # Kenya
 crop_value_dollars_per_kg["chick_pea"]= 0.395   # Kenya
 crop_value_dollars_per_kg["cotton"]= 1.83  # Kenya
@@ -277,6 +278,8 @@ class Irrigation(ArrayExperimentFunction):
         d3 = int(1.01 + 29.98 * x[3])
         all_dates = [f"{y:04}-{m:02}-{d:02}" for y in [year, year+1] for m in list(range(1,13)) for d in list(range(1, 29))]
         c = self.total_irrigation
+        if len(x) == 10:
+            c = 0
         a0 = c * x[4] / (x[4] + x[5] + x[6] + x[7])
         a1 = c * x[5] / (x[4] + x[5] + x[6] + x[7])
         a2 = c * x[6] / (x[4] + x[5] + x[6] + x[7])
