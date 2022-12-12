@@ -285,8 +285,7 @@ class Irrigation(ArrayExperimentFunction):
                 date(y, m, d)
             except ValueError:
                 return False
-            if (date(y, m, d), 0) in my_keys:
-                return True
+            return (date(y, m, d), 0) in my_keys
 
         def get_val(y, m, d, slot):
             my_vals = [
@@ -307,9 +306,7 @@ class Irrigation(ArrayExperimentFunction):
             last_y = None
             container = None
             for y_ in range(y - 40, y + 1):
-                try:
-                    we_have(y_, m, d)
-                except ValueError:
+                if not we_have(y_, m, d):
                     continue
                 if we_have(y_, m, d):
                     last_y = y_
