@@ -1560,6 +1560,11 @@ def kenya_old_many_crop_and_variety_irrigation(seed: tp.Optional[int] = None) ->
 
 
 @registry.register
+def kenya_mat_many_crop_and_variety_irrigation(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    return irrigation(seed, kenya=True, variety_choice=True, multi_crop=True, year_min=1990, year_max=1995)
+
+
+@registry.register
 def variety_irrigation(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     return irrigation(seed, variety_choice=True)
 

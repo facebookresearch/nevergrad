@@ -32,7 +32,7 @@ from pcse.base import ParameterProvider
 
 # dollars per kilogram
 crop_value_dollars_per_kg = {}
-crop_value_dollars_per_kg["barley"] = 9.6  # Kenya
+crop_value_dollars_per_kg["barley"] = 0.1  # Kenya
 crop_value_dollars_per_kg["cassava"] = 2  # Kenya
 crop_value_dollars_per_kg["chick_pea"] = 0.395  # Kenya
 crop_value_dollars_per_kg["cotton"] = 1.83  # Kenya
@@ -331,6 +331,12 @@ class Irrigation(ArrayExperimentFunction):
         d1 = int(1.01 + 30.98 * x[1])
         d2 = int(1.01 + 30.98 * x[2])
         d3 = int(1.01 + 29.98 * x[3])
+        all_dates = [
+            f"{y:04}-{m:02}-{d:02}"
+            for y in [year, year + 1]
+            for m in list(range(1, 13))
+            for d in list(range(1, 29))
+        ]
         c = self.total_irrigation
         if len(x) == 10:
             c = 0
@@ -338,6 +344,54 @@ class Irrigation(ArrayExperimentFunction):
         a1 = c * x[5] / (x[4] + x[5] + x[6] + x[7])
         a2 = c * x[6] / (x[4] + x[5] + x[6] + x[7])
         a3 = c * x[7] / (x[4] + x[5] + x[6] + x[7])
+        id1 = f"{year}-06-{d0:02}"
+        id2 = f"{year}-06-{d1:02}"
+        id3 = f"{year}-06-{d2:02}"
+        id4 = f"{year}-06-{d3:02}"
+        crop_start = f"{year}-03-31"
+        crop_end = f"{year}-10-20"
+        assert len(x) == 10, " I don't want to work on anything else than len(x) == 10 anymore"
+        if len(x) == 10:
+            c = 20
+
+            def to01(x):
+                return (1.0 + x / np.sqrt(x**2 + 1)) / 2.0
+
+            def proj(x):
+                idx = int(len(all_dates) * x)
+                if idx < 1:
+                    idx = 1
+                if idx > len(all_dates) - 1:
+                    idx = len(all_dates) - 1
+                return idx
+
+            for i in range(4):
+                x[i] = to01(x[i])
+            crop_start = proj(x[0] / 2.0)  # 0 to 0.5
+            crop_end = proj(x[0] / 2.0 + x[1] / 2.0)  # 0 to 1., > start
+            crop_end = min(len(all_dates) - 1, max(crop_end, crop_start + 14))
+            crop_start = max(0, min(crop_start, crop_end - 14))
+            start_irrig = int(crop_start + min(x[2], x[3]) * (crop_end - crop_start))  # between start and end
+            end_irrig = int(crop_start + max(x[3], x[2]) * (crop_end - crop_start))  # between start and end
+            end_irrig = min(crop_end - 1, max(start_irrig + 6, end_irrig))
+            start_irrig = max(crop_start + 1, min(start_irrig, end_irrig - 6))
+            assert crop_start < start_irrig < end_irrig < crop_end, str(
+                [crop_start, start_irrig, end_irrig, crop_end]
+            )
+            id1 = int(start_irrig)
+            id2 = int(start_irrig + 0.3333 * (end_irrig - start_irrig))
+            id3 = int(start_irrig + 0.6666 * (end_irrig - start_irrig))
+            id4 = int(end_irrig)
+            assert crop_start < id1 < id2 < id3 < id4 < crop_end, str(
+                [crop_start, id1, id2, id3, id4, crop_end, start_irrig, end_irrig]
+            )
+            crop_start = all_dates[crop_start]
+            crop_end = all_dates[crop_end]
+            id1 = all_dates[id1]
+            id2 = all_dates[id2]
+            id3 = all_dates[id3]
+            id4 = all_dates[id4]
+
         if len(x) > 8:
             if self.this_dimension == 10:
                 assert len(x) == 10
@@ -352,9 +406,9 @@ class Irrigation(ArrayExperimentFunction):
             CropCalendar:
                 crop_name: {self.cropname}
                 variety_name: {self.cropvariety}
-                crop_start_date: {year}-03-31
+                crop_start_date: {crop_start}
                 crop_start_type: emergence
-                crop_end_date: {year}-10-20
+                crop_end_date: {crop_end}
                 crop_end_type: harvest
                 max_duration: 300
             TimedEvents:
@@ -362,10 +416,10 @@ class Irrigation(ArrayExperimentFunction):
                 name: Irrigation application table
                 comment: All irrigation amounts in cm
                 events_table:
-                - {year}-06-{d0:02}: {{amount: {a0}, efficiency: 0.7}}
-                - {year}-07-{d1:02}: {{amount: {a1}, efficiency: 0.7}}
-                - {year}-08-{d2:02}: {{amount: {a2}, efficiency: 0.7}}
-                - {year}-09-{d3:02}: {{amount: {a3}, efficiency: 0.7}}
+                - {id1}: {{amount: {a0}, efficiency: 0.7}}
+                - {id2}: {{amount: {a1}, efficiency: 0.7}}
+                - {id3}: {{amount: {a2}, efficiency: 0.7}}
+                - {id4}: {{amount: {a3}, efficiency: 0.7}}
             StateEvents: null
         """
         try:
@@ -382,7 +436,11 @@ class Irrigation(ArrayExperimentFunction):
         #                    time.sleep(2 ** i)
         #                return -float("inf")
         except Exception as e:
+            print("WTF")
+            print(yaml_agro)
             print(e)
+            if "more" in str(e):
+                assert False, "more than 1"
             return -float("inf")
             # assert (
             #    False
