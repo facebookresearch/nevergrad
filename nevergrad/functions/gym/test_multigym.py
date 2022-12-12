@@ -25,13 +25,6 @@ def test_multigym() -> None:
     assert len(GYM_ENV_NAMES) >= 10 or os.name == "nt"
 
 
-# def test_compiler_gym() -> None:
-#    func = multigym.CompilerGym(17)
-#    candidate = func.parametrization.sample()
-#    results = [func.evaluation_function(candidate) for _ in range(4)]
-#    assert min(results) == max(results), "CompilerGym should be deterministic."
-
-
 def test_cartpole() -> None:
     func = multigym.GymMulti(name="CartPole-v0", control="neural", neural_factor=1, randomized=True)
     results = [func(np.zeros(func.dimension)) for _ in range(40)]
@@ -54,10 +47,9 @@ def test_sparse_cartpole() -> None:
     results = [func.evaluation_function(candidate) for _ in range(40)]
     assert min(results) != max(results), "CartPole should not be deterministic."
 
-
-def test_default_run_multigym() -> None:
-    if os.name == "nt":
-        # if os.name == "nt" or np.random.randint(8) or "CubeCrash" in name:
+@pytest.mark.parametrize("name", ["LunarLander-v2"])  # type: ignore
+def test_run_multigym(name: str) -> None:
+    if os.name == "nt" or np.random.randint(8) or "CubeCrash" in name:
         raise SkipTest("Skipping Windows and running only 1 out of 8")
     if "ANM" in name:
         raise SkipTest("We skip ANM6Easy and related problems.")
