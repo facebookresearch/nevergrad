@@ -13,13 +13,14 @@ import pandas as pd
 import yaml
 import numpy as np
 import nevergrad as ng
+
 from ..base import ArrayExperimentFunction
 
 # pylint: disable=too-many-locals,too-many-statements
 
 
 class Pcse(ArrayExperimentFunction):
-    def __init__(self) -> None:
+    def __init__(self, symmetry: int = 0) -> None:
         try:
             # raise Exception("We do not import EUPL code by default.")
             import pcse  # pylint: disable=unused-import
@@ -27,6 +28,11 @@ class Pcse(ArrayExperimentFunction):
             raise ng.errors.UnsupportedExperiment(
                 "You need to install PCSE. Check that the EUPL license is ok for you."
             )
+        import sys
+        import matplotlib
+        import matplotlib.pyplot as plt
+        import yaml
+        import pandas as pd
         from pcse.models import Wofost72_PP
         from pcse.base import ParameterProvider
         from pcse.db import NASAPowerWeatherDataProvider
@@ -61,7 +67,6 @@ class Pcse(ArrayExperimentFunction):
             StateEvents: null
         """
         agro = yaml.safe_load(agro_yaml)
-
         wofost = Wofost72_PP(params, wdp, agro)
         wofost.run_till_terminate()
         df = pd.DataFrame(wofost.get_output())
@@ -145,4 +150,9 @@ class Pcse(ArrayExperimentFunction):
         param = ng.p.Array(
             shape=(2,), lower=(TDWI_range[0], SPAN_range[0]), upper=(TDWI_range[1], SPAN_range[1])
         ).set_name("2hp")
-        super().__init__(objfunc_calculator, parametrization=param)
+        # super().__init__(objfunc_calculator, parametrization=param)
+        # param = ng.p.Array(shape=(2,), lower=(TDWI_range[0], SPAN_range[0]), upper=(TDWI_range[1], SPAN_range[1]))
+        super().__init__(objfunc_calculator, parametrization=param, symmetry=symmetry)
+        param = ng.p.Array(
+            shape=(2,), lower=(TDWI_range[0], SPAN_range[0]), upper=(TDWI_range[1], SPAN_range[1])
+        )

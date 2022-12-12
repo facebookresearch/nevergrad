@@ -1472,8 +1472,6 @@ def irrigation(
     Sequential or 30 workers."""
     if kenya:
         addresses = []
-        # lat_center = float(os.environ.get("ng_latitude", "0."))
-        # lon_center = float(os.environ.get("ng_longitude", "37."))
         country = os.environ.get("ng_country", "Kenya")
         ng_latitude = centroids[country][1]
         ng_longitude = centroids[country][0]
@@ -1574,6 +1572,11 @@ def kenya_old_many_crop_and_variety_irrigation(seed: tp.Optional[int] = None) ->
 
 
 @registry.register
+def kenya_mat_many_crop_and_variety_irrigation(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    return irrigation(seed, kenya=True, variety_choice=True, multi_crop=True, year_min=1990, year_max=1995)
+
+
+@registry.register
 def variety_irrigation(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     return irrigation(seed, variety_choice=True)
 
@@ -1632,6 +1635,26 @@ def crop_simulator(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 #                        skip_ci(reason="Too slow")
 #                        if not xp.is_incoherent:
 #                            yield xp
+
+
+@registry.register
+def pcse(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Crop simulator.
+
+    Low dimensional problem, only 2 vars. This is optimization for model identification: we want
+    to find parameters so that the simulation matches observations.
+    """
+    funcs = [CropSimulator()]
+    seedg = create_seed_generator(seed)
+    optims = get_optimizers("basics", seed=next(seedg))
+    for budget in [25, 50, 100, 200]:
+        for num_workers in [1]:
+            if num_workers < budget:
+                for algo in optims:
+                    for fu in funcs:
+                        xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        if not xp.is_incoherent:
+                            yield xp
 
 
 @registry.register
