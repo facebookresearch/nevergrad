@@ -309,9 +309,7 @@ class Irrigation(ArrayExperimentFunction):
         for y in range(2020, 2050):
             ok = [k for k in my_keys if k[0].year == y]
             print(y, len(ok))
-        assert False
         
-
     def set_data(self, symmetry: int, k: int, rice: bool):
         crop_types = [crop for crop, variety in self.cropd.get_crops_varieties().items()]
         crop_types = [c for c in crop_types if "obacco" not in c]
