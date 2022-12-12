@@ -250,11 +250,11 @@ class Irrigation(ArrayExperimentFunction):
                 date(y, m, d)
             except ValueError:
                 return False
-            if date(y, m, d) in [k[0] for k in my_keys]:
+            if (date(y, m, d), 0) in my_keys:
                 return True
 
         def get_val(y, m, d, slot):
-            my_vals = [getattr(wdp.store[(date(y_, m, d), 0)], slot) for y_ in range(y-3, y+4) if we_have(y_, m, d)]
+            my_vals = [getattr(wdp.store[(date(y_, m, d), 0)], slot) for y_ in range(y-4, y+5) if we_have(y_, m, d)]
             assert len(my_vals) >= 3, f"big issue with data {y} {m} {d}!"
             return sum(my_vals) / len(my_vals)
 
