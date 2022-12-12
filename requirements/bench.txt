@@ -44,3 +44,5 @@ box2d-py>=2.3.5
 glfw
 mujoco
 pcse>=5.5.0
+#yaml>=5.3.1
+#yaml

@@ -24,12 +24,6 @@ def test_multigym() -> None:
         assert env_name in GYM_ENV_NAMES, f"{env_name} should be guaranteed!"
     assert len(GYM_ENV_NAMES) >= 10 or os.name == "nt"
 
-#def test_compiler_gym() -> None:
-#    func = multigym.CompilerGym(17)
-#    candidate = func.parametrization.sample()
-#    results = [func.evaluation_function(candidate) for _ in range(4)]
-#    assert min(results) == max(results), "CompilerGym should be deterministic."
-
 
 def test_cartpole() -> None:
     func = multigym.GymMulti(name="CartPole-v0", control="neural", neural_factor=1, randomized=True)
@@ -52,7 +46,6 @@ def test_sparse_cartpole() -> None:
     candidate = func.parametrization.sample()
     results = [func.evaluation_function(candidate) for _ in range(40)]
     assert min(results) != max(results), "CartPole should not be deterministic."
-
 
 @pytest.mark.parametrize("name", ["LunarLander-v2"])  # type: ignore
 def test_run_multigym(name: str) -> None:

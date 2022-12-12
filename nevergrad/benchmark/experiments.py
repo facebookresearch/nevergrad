@@ -26,7 +26,7 @@ from nevergrad.functions.ac import NgAquacrop
 from nevergrad.functions.stsp import STSP
 from nevergrad.functions.rocket import Rocket
 from nevergrad.functions.irrigation import Irrigation
-from nevergrad.functions.pcse import CropSimulator
+from nevergrad.functions.pcse import Pcse
 from nevergrad.functions.mixsimulator import OptimizeMix
 from nevergrad.functions.unitcommitment import UnitCommitmentProblem
 from nevergrad.functions import control
@@ -226,6 +226,8 @@ centroids["Montenegro"] = (19.2861817215929, 42.78903960655908)
 centroids["Kosovo"] = (20.895355721342227, 42.579367131816994)
 centroids["Trinidad and Tobago"] = (-61.33036691444967, 10.428237089201879)
 centroids["South Sudan"] = (30.198617582461907, 7.292890133516845)
+
+
 def skip_ci(*, reason: str) -> None:
     """Only use this if there is a good reason for not testing the xp,
     such as very slow for instance (>1min) with no way to make it faster.
@@ -1453,26 +1455,59 @@ def rocket(seed: tp.Optional[int] = None, seq: bool = False) -> tp.Iterator[Expe
                         if not xp.is_incoherent:
                             yield xp
 
+
 @registry.register
-def irrigation(seed: tp.Optional[int] = None, benin: bool = False, variety_choice: bool = False, rice: bool = False, multi_crop: bool = False, kenya: bool = False, year_min:int=2006, year_max:int=2006) -> tp.Iterator[Experiment]:
+def irrigation(
+    seed: tp.Optional[int] = None,
+    benin: bool = False,
+    variety_choice: bool = False,
+    rice: bool = False,
+    multi_crop: bool = False,
+    kenya: bool = False,
+    year_min: int = 2006,
+    year_max: int = 2006,
+) -> tp.Iterator[Experiment]:
     """Irrigation simulator. Maximize leaf area index,
     so that you get a lot of primary production.
     Sequential or 30 workers."""
     if kenya:
         addresses = []
-        #lat_center = float(os.environ.get("ng_latitude", "0."))
-        #lon_center = float(os.environ.get("ng_longitude", "37."))
+        # lat_center = float(os.environ.get("ng_latitude", "0."))
+        # lon_center = float(os.environ.get("ng_longitude", "37."))
         country = os.environ.get("ng_country", "Kenya")
         ng_latitude = centroids[country][1]
         ng_longitude = centroids[country][0]
 
-
-        for lat in [ng_latitude-4.+8. * e/6. for e in range(7)]: #list(range(-4,5)):
-            for lon in [ng_longitude-3.+6. * e/6. for e in range(7)]: #list(range(34,40)):
+        for lat in [ng_latitude - 4.0 + 8.0 * e / 6.0 for e in range(7)]:  # list(range(-4,5)):
+            for lon in [ng_longitude - 3.0 + 6.0 * e / 6.0 for e in range(7)]:  # list(range(34,40)):
                 addresses += [(lat, lon)]
-        funcs = [Irrigation(0, benin=benin, variety_choice=variety_choice, rice=rice, multi_crop=multi_crop, address=ad, year_min=year_min,year_max=year_max) for ad in addresses]
+        funcs = [
+            Irrigation(
+                0,
+                benin=benin,
+                variety_choice=variety_choice,
+                rice=rice,
+                multi_crop=multi_crop,
+                address=ad,
+                year_min=year_min,
+                year_max=year_max,
+            )
+            for ad in addresses
+        ]
     else:
-        funcs = [Irrigation(i, benin=benin, variety_choice=variety_choice, rice=rice, multi_crop=multi_crop, address=None,year_min=year_min, year_max=year_max) for i in range(67)]
+        funcs = [
+            Irrigation(
+                i,
+                benin=benin,
+                variety_choice=variety_choice,
+                rice=rice,
+                multi_crop=multi_crop,
+                address=None,
+                year_min=year_min,
+                year_max=year_max,
+            )
+            for i in range(67)
+        ]
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", seed=next(seedg))
     optims = ["DiagonalCMA", "CMA", "DE", "PSO", "TwoPointsDE", "DiscreteLenglerOnePlusOne"]
@@ -1480,8 +1515,8 @@ def irrigation(seed: tp.Optional[int] = None, benin: bool = False, variety_choic
     optims = ["NGOptRW"]
     if rice:
         optims = optims[-2:]
-    for budget in [int(os.environ.get("ng_budget", "250"))]: #, 50, 100, 200]:
-        for num_workers in [1]: #, 30, 60]:
+    for budget in [int(os.environ.get("ng_budget", "250"))]:  # , 50, 100, 200]:
+        for num_workers in [1]:  # , 30, 60]:
             if num_workers < budget:
                 for algo in optims:
                     for fu in funcs:
@@ -1515,9 +1550,23 @@ def kenya_2011_crop_and_variety_irrigation(seed: tp.Optional[int] = None) -> tp.
 def kenya_many_crop_and_variety_irrigation(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     return irrigation(seed, kenya=True, variety_choice=True, multi_crop=True, year_min=2006, year_max=2011)
 
+
 @registry.register
 def kenya_new_many_crop_and_variety_irrigation(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     return irrigation(seed, kenya=True, variety_choice=True, multi_crop=True, year_min=2016, year_max=2021)
+
+
+@registry.register
+def kenya_future_many_crop_and_variety_irrigation(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    return irrigation(seed, kenya=True, variety_choice=True, multi_crop=True, year_min=2026, year_max=2031)
+
+
+@registry.register
+def kenya_farfuture_many_crop_and_variety_irrigation(
+    seed: tp.Optional[int] = None,
+) -> tp.Iterator[Experiment]:
+    return irrigation(seed, kenya=True, variety_choice=True, multi_crop=True, year_min=2036, year_max=2041)
+
 
 @registry.register
 def kenya_old_many_crop_and_variety_irrigation(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
@@ -1551,7 +1600,7 @@ def crop_simulator(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     Low dimensional problem, only 2 vars. This is optimization for model identification: we want
     to find parameters so that the simulation matches observations.
     """
-    funcs = [CropSimulator()]
+    funcs = [Pcse()]
     seedg = create_seed_generator(seed)
     optims = ["DE", "PSO", "CMA", "NGOpt"]
     for budget in [25, 50, 100, 200]:
