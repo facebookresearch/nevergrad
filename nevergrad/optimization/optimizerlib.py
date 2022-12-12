@@ -3116,6 +3116,12 @@ class NGTuned(NGOpt39):
     pass
 
 
+@registry.register
+class NGTuned(NGOpt39):
+    # Learning something automatically so that it's less unreadable would be great.
+    pass
+
+
 class _MSR(Portfolio):
     """This code applies multiple copies of NGOpt with random weights for the different objective functions.
 
