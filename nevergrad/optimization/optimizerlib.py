@@ -3116,11 +3116,6 @@ class NGTuned(NGOpt39):
     pass
 
 
-NGOptRW = ConfPortfolio(optimizers=[GeneticDE, PSO, NGOpt], warmup_ratio=0.33).set_name(
-    "NGOptRW", register=True
-)
-
-
 class _MSR(Portfolio):
     """This code applies multiple copies of NGOpt with random weights for the different objective functions.
 
