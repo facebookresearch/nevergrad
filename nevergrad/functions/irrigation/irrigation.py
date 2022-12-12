@@ -31,7 +31,7 @@ from pcse.base import ParameterProvider
 
 # dollars per kilogram
 crop_value_dollars_per_kg = {}
-crop_value_dollars_per_kg["barley"]= 9.6  # Kenya
+crop_value_dollars_per_kg["barley"]= 0.1  # Kenya
 crop_value_dollars_per_kg["cassava"]= 2    # Kenya
 crop_value_dollars_per_kg["chick_pea"]= 0.395   # Kenya
 crop_value_dollars_per_kg["cotton"]= 1.83  # Kenya
