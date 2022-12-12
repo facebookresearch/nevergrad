@@ -13,7 +13,7 @@ https://raw.githubusercontent.com/purdue-orbital/pcse-simulation/master/Simulati
 import copy
 from datetime import date
 from pathlib import Path
-import urllib.request  
+import urllib.request
 import numpy as np
 import time
 import warnings
@@ -34,53 +34,46 @@ from pcse.base import ParameterProvider
 
 # dollars per kilogram
 crop_value_dollars_per_kg = {}
-crop_value_dollars_per_kg["barley"]= 9.6  # Kenya
-crop_value_dollars_per_kg["cassava"]= 2    # Kenya
-crop_value_dollars_per_kg["chick_pea"]= 0.395   # Kenya
-crop_value_dollars_per_kg["cotton"]= 1.83  # Kenya
-crop_value_dollars_per_kg["cow_pea"]= 0.185  # Kenya
-crop_value_dollars_per_kg["faba_bean"]= 0.1825  # no idea where
-crop_value_dollars_per_kg["ground_nut"]= 0.66  # Kenya
-crop_value_dollars_per_kg["maize"]= 0.37  # Kenya
-crop_value_dollars_per_kg["millet"]= 0.485  # Kenya
-crop_value_dollars_per_kg["mung_bean"]= 0.33  # no idea where, unclear#
-crop_value_dollars_per_kg["pigeon_pea"]= 0.679  # not clear, kenya
-crop_value_dollars_per_kg["potato"]= 0.55  # kenya, difficult
-crop_value_dollars_per_kg["rape_seed"]=7.1   # kenya (waow ?)
-crop_value_dollars_per_kg["rice"]=0.325  # kenya
-crop_value_dollars_per_kg["sorghum"]= 0.25  # kenya
-crop_value_dollars_per_kg["soy_bean"]=(0.68+0.93)/2.  # kenya
-crop_value_dollars_per_kg["sugar_beet"]=(0.75+0.69)/2.  # kenya
-crop_value_dollars_per_kg["sugar_cane"]=0.34   # kenya, roughly
-crop_value_dollars_per_kg["sunflower"]= 1.69  # kenya
-crop_value_dollars_per_kg["sweet_potato"]= 1.15  # kenya
-crop_value_dollars_per_kg["wheat"]=(0.19+0.42)/2.  # roughly, kenya
+crop_value_dollars_per_kg["barley"] = 9.6  # Kenya
+crop_value_dollars_per_kg["cassava"] = 2  # Kenya
+crop_value_dollars_per_kg["chick_pea"] = 0.395  # Kenya
+crop_value_dollars_per_kg["cotton"] = 1.83  # Kenya
+crop_value_dollars_per_kg["cow_pea"] = 0.185  # Kenya
+crop_value_dollars_per_kg["faba_bean"] = 0.1825  # no idea where
+crop_value_dollars_per_kg["ground_nut"] = 0.66  # Kenya
+crop_value_dollars_per_kg["maize"] = 0.37  # Kenya
+crop_value_dollars_per_kg["millet"] = 0.485  # Kenya
+crop_value_dollars_per_kg["mung_bean"] = 0.33  # no idea where, unclear#
+crop_value_dollars_per_kg["pigeon_pea"] = 0.679  # not clear, kenya
+crop_value_dollars_per_kg["potato"] = 0.55  # kenya, difficult
+crop_value_dollars_per_kg["rape_seed"] = 7.1  # kenya (waow ?)
+crop_value_dollars_per_kg["rice"] = 0.325  # kenya
+crop_value_dollars_per_kg["sorghum"] = 0.25  # kenya
+crop_value_dollars_per_kg["soy_bean"] = (0.68 + 0.93) / 2.0  # kenya
+crop_value_dollars_per_kg["sugar_beet"] = (0.75 + 0.69) / 2.0  # kenya
+crop_value_dollars_per_kg["sugar_cane"] = 0.34  # kenya, roughly
+crop_value_dollars_per_kg["sunflower"] = 1.69  # kenya
+crop_value_dollars_per_kg["sweet_potato"] = 1.15  # kenya
+crop_value_dollars_per_kg["wheat"] = (0.19 + 0.42) / 2.0  # roughly, kenya
 
 
 def lev(seq1, seq2):
     size_x = len(seq1) + 1
     size_y = len(seq2) + 1
-    matrix = np.zeros ((size_x, size_y))
+    matrix = np.zeros((size_x, size_y))
     for x in range(size_x):
-        matrix [x, 0] = x
+        matrix[x, 0] = x
     for y in range(size_y):
-        matrix [0, y] = y
+        matrix[0, y] = y
 
     for x in range(1, size_x):
         for y in range(1, size_y):
-            if seq1[x-1] == seq2[y-1]:
-                matrix [x,y] = min(
-                    matrix[x-1, y] + 1,
-                    matrix[x-1, y-1],
-                    matrix[x, y-1] + 1
-                )
+            if seq1[x - 1] == seq2[y - 1]:
+                matrix[x, y] = min(matrix[x - 1, y] + 1, matrix[x - 1, y - 1], matrix[x, y - 1] + 1)
             else:
-                matrix [x,y] = min(
-                    matrix[x-1,y] + 1,
-                    matrix[x-1,y-1] + 1,
-                    matrix[x,y-1] + 1
-                )
-    return (matrix[size_x - 1, size_y - 1])
+                matrix[x, y] = min(matrix[x - 1, y] + 1, matrix[x - 1, y - 1] + 1, matrix[x, y - 1] + 1)
+    return matrix[size_x - 1, size_y - 1]
+
 
 def get_crop_cost(cropname: str):
     min_lev = 100000000
@@ -95,6 +88,7 @@ def get_crop_cost(cropname: str):
     crop_value_dollars_per_kg[cropname] = crop_value_dollars_per_kg[best_crop]
     return crop_value_dollars_per_kg[cropname]
 
+
 WPD = {}
 CURRENT_BEST = {}
 CURRENT_BEST_ARGUMENT = {}
@@ -102,7 +96,18 @@ CURRENT_BEST_ARGUMENT = {}
 
 class Irrigation(ArrayExperimentFunction):
     variant_choice = {}
-    def __init__(self, symmetry:int, benin: bool, variety_choice: bool, rice: bool, multi_crop: bool, address=None, year_min: int = 2006, year_max: int = 2006) -> None:
+
+    def __init__(
+        self,
+        symmetry: int,
+        benin: bool,
+        variety_choice: bool,
+        rice: bool,
+        multi_crop: bool,
+        address=None,
+        year_min: int = 2006,
+        year_max: int = 2006,
+    ) -> None:
         self.rice = rice
         if year_max < year_min and year_max == 2006:
             year_max = year_min
@@ -124,55 +129,78 @@ class Irrigation(ArrayExperimentFunction):
             self.this_dimension = 10
             assert not rice
 
-        param = ng.p.Array(shape=(self.this_dimension,), lower=(0.0), upper=(0.99999999)).set_name("irrigation8")
+        param = ng.p.Array(shape=(self.this_dimension,), lower=(0.0), upper=(0.99999999)).set_name(
+            "irrigation8"
+        )
         super().__init__(self.meta_total_yield, parametrization=param, symmetry=symmetry)
         if os.environ.get("CIRCLECI", False):
             raise ng.errors.UnsupportedExperiment("No HTTP request in CircleCI")
-#                    "Cotonou",
-#                    "Lokossa",
-#                    "Allada",
-#                    "Abomey",
-#                    "Pobe",
-#                    "Aplahoue",
-#                    "Dassa-Zoume",
-#                    "Parakou",
-#                    "Djougou",
-#                    "Kandi",
-#                    "Natitingou",
-        known_longitudes = {'Saint-Leger-Bridereix': 1.5887348, 'Dun-Le-Palestel': 1.6641173, 'Kolkata':
-        88.35769124388872, 'Antananarivo': 47.5255809, 'Santiago': -70.6504502, 'Lome': 1.215829, 'Cairo': 31.2357257,
-        'Ouagadougou': -1.5270944, 'Yamoussoukro': -5.273263, 'Yaounde': 11.5213344, 'Kiev': 30.5241361, 'Porto-Novo':
-        2.6289}
-        known_latitudes = {'Saint-Leger-Bridereix': 46.2861759, 'Dun-Le-Palestel': 46.3052049, 'Kolkata': 22.5414185,
-        'Antananarivo': -18.9100122, 'Santiago': -33.4377756, 'Lome': 6.130419, 'Cairo': 30.0443879, 'Ouagadougou':
-        12.3681873, 'Yamoussoukro': 6.809107, 'Yaounde': 3.8689867, 'Kiev': 50.4500336, 'Porto-Novo': 6.4969}
-        known_longitudes['Cotonou'] = 2.4252507
-        known_latitudes['Cotonou'] = 6.3676953
-        known_longitudes['Lokossa'] = 1.7171404
-        known_latitudes['Lokossa'] = 6.6458524
-        known_longitudes['Allada'] = 2.1511876
-        known_latitudes['Allada'] = 6.6658411
-        known_longitudes['Abomey'] = 1.9828803672675925
-        known_latitudes['Abomey'] = 7.165446
-        known_longitudes['Pobe'] = -1.751602
-        known_latitudes['Pobe'] = 13.882217
-        known_longitudes['Aplahoue'] = 1.7041012
-        known_latitudes['Aplahoue'] = 6.9489244
-        known_longitudes['Dassa-Zoume'] = 2.183606
-        known_latitudes['Dassa-Zoume'] = 7.7815402
-        known_longitudes['Parakou'] = 2.6278258
-        known_latitudes['Parakou'] = 9.3400159
-        known_longitudes['Djougou'] = 1.6651614
-        known_latitudes['Djougou'] = 9.7106683
-        known_longitudes['Kandi'] = 88.11640162351831
-        known_latitudes['Kandi'] = 24.00952125
-        known_longitudes['Natitingou'] = 1.383540986380074
-        known_latitudes['Natitingou'] = 10.251408300000001
+        #                    "Cotonou",
+        #                    "Lokossa",
+        #                    "Allada",
+        #                    "Abomey",
+        #                    "Pobe",
+        #                    "Aplahoue",
+        #                    "Dassa-Zoume",
+        #                    "Parakou",
+        #                    "Djougou",
+        #                    "Kandi",
+        #                    "Natitingou",
+        known_longitudes = {
+            "Saint-Leger-Bridereix": 1.5887348,
+            "Dun-Le-Palestel": 1.6641173,
+            "Kolkata": 88.35769124388872,
+            "Antananarivo": 47.5255809,
+            "Santiago": -70.6504502,
+            "Lome": 1.215829,
+            "Cairo": 31.2357257,
+            "Ouagadougou": -1.5270944,
+            "Yamoussoukro": -5.273263,
+            "Yaounde": 11.5213344,
+            "Kiev": 30.5241361,
+            "Porto-Novo": 2.6289,
+        }
+        known_latitudes = {
+            "Saint-Leger-Bridereix": 46.2861759,
+            "Dun-Le-Palestel": 46.3052049,
+            "Kolkata": 22.5414185,
+            "Antananarivo": -18.9100122,
+            "Santiago": -33.4377756,
+            "Lome": 6.130419,
+            "Cairo": 30.0443879,
+            "Ouagadougou": 12.3681873,
+            "Yamoussoukro": 6.809107,
+            "Yaounde": 3.8689867,
+            "Kiev": 50.4500336,
+            "Porto-Novo": 6.4969,
+        }
+        known_longitudes["Cotonou"] = 2.4252507
+        known_latitudes["Cotonou"] = 6.3676953
+        known_longitudes["Lokossa"] = 1.7171404
+        known_latitudes["Lokossa"] = 6.6458524
+        known_longitudes["Allada"] = 2.1511876
+        known_latitudes["Allada"] = 6.6658411
+        known_longitudes["Abomey"] = 1.9828803672675925
+        known_latitudes["Abomey"] = 7.165446
+        known_longitudes["Pobe"] = -1.751602
+        known_latitudes["Pobe"] = 13.882217
+        known_longitudes["Aplahoue"] = 1.7041012
+        known_latitudes["Aplahoue"] = 6.9489244
+        known_longitudes["Dassa-Zoume"] = 2.183606
+        known_latitudes["Dassa-Zoume"] = 7.7815402
+        known_longitudes["Parakou"] = 2.6278258
+        known_latitudes["Parakou"] = 9.3400159
+        known_longitudes["Djougou"] = 1.6651614
+        known_latitudes["Djougou"] = 9.7106683
+        known_longitudes["Kandi"] = 88.11640162351831
+        known_latitudes["Kandi"] = 24.00952125
+        known_longitudes["Natitingou"] = 1.383540986380074
+        known_latitudes["Natitingou"] = 10.251408300000001
         self.cropd = YAMLCropDataProvider()
         for k in range(1000):
             if symmetry in self.variant_choice and k < self.variant_choice[symmetry]:
                 continue
-            self.address = np.random.RandomState(symmetry+3*k).choice(
+            self.address = np.random.RandomState(symmetry + 3 * k).choice(
                 [
                     "Saint-Leger-Bridereix",
                     "Dun-Le-Palestel",
@@ -187,7 +215,9 @@ class Irrigation(ArrayExperimentFunction):
                     "Yaounde",
                     "Porto-Novo",
                     "Kiev",
-                ] if not benin else [
+                ]
+                if not benin
+                else [
                     "Porto-Novo",
                     "Cotonou",
                     "Lokossa",
@@ -203,22 +233,29 @@ class Irrigation(ArrayExperimentFunction):
                 ]
             )
             if address is not None:
-                 self.address = str(address)
-                 if len(address) == 2:
-                     known_latitudes[self.address] = address[0]
-                     known_longitudes[self.address] = address[1]
-                 
-            if self.address in known_latitudes and self.address in known_longitudes and self.address not in WPD:
+                self.address = str(address)
+                if len(address) == 2:
+                    known_latitudes[self.address] = address[0]
+                    known_longitudes[self.address] = address[1]
+
+            if (
+                self.address in known_latitudes
+                and self.address in known_longitudes
+                and self.address not in WPD
+            ):
                 for k in range(10):
                     try:
-                        WPD[self.address] = NASAPowerWeatherDataProvider(latitude=known_latitudes[self.address], longitude=known_longitudes[self.address])
+                        WPD[self.address] = NASAPowerWeatherDataProvider(
+                            latitude=known_latitudes[self.address], longitude=known_longitudes[self.address]
+                        )
                         break
                     except:
-                        time.sleep(10 * (2 **k))
+                        time.sleep(10 * (2**k))
             if self.address in WPD:
                 self.weatherdataprovider = WPD[self.address]
-            else:           
+            else:
                 from geopy.geocoders import Nominatim
+
                 geolocator = Nominatim(user_agent="NG/PCSE")
                 self.location = geolocator.geocode(self.address)
                 self.weatherdataprovider = NASAPowerWeatherDataProvider(
@@ -228,8 +265,8 @@ class Irrigation(ArrayExperimentFunction):
             self.wdp_extend(self.weatherdataprovider)
             self.set_data(symmetry, k, rice)
             v = [self.meta_total_yield(np.random.rand(self.this_dimension)) for _ in range(5)]
-            #self.set_data(symmetry, k)
-            #v = [self.leaf_area_index(np.random.rand(8)) for _ in range(5)]
+            # self.set_data(symmetry, k)
+            # v = [self.leaf_area_index(np.random.rand(8)) for _ in range(5)]
             if min(v) != max(v):
                 break
             self.variant_choice[symmetry] = k
@@ -238,12 +275,12 @@ class Irrigation(ArrayExperimentFunction):
     def wdp_extend(self, wdp):
 
         my_keys = copy.deepcopy(list(wdp.store.keys()))
-        #print("ooo", min([k[1] for k in my_keys]))
-        #print("ooo", max([k[1] for k in my_keys]))
-        #print("==>",wdp.store[my_keys[0]])
-        #print("==>",type(wdp.store[my_keys[0]]))
-        #print("==>",wdp.store[my_keys[0]].__slots__)
-        #print(list(wdp.store.keys()))
+        # print("ooo", min([k[1] for k in my_keys]))
+        # print("ooo", max([k[1] for k in my_keys]))
+        # print("==>",wdp.store[my_keys[0]])
+        # print("==>",type(wdp.store[my_keys[0]]))
+        # print("==>",wdp.store[my_keys[0]].__slots__)
+        # print(list(wdp.store.keys()))
 
         def we_have(y, m, d):
             try:
@@ -254,7 +291,11 @@ class Irrigation(ArrayExperimentFunction):
                 return True
 
         def get_val(y, m, d, slot):
-            my_vals = [getattr(wdp.store[(date(y_, m, d), 0)], slot) for y_ in range(y-4, y+5) if we_have(y_, m, d)]
+            my_vals = [
+                getattr(wdp.store[(date(y_, m, d), 0)], slot)
+                for y_ in range(y - 4, y + 5)
+                if we_have(y_, m, d)
+            ]
             assert len(my_vals) >= 3, f"big issue with data {y} {m} {d}!"
             return sum(my_vals) / len(my_vals)
 
@@ -267,19 +308,32 @@ class Irrigation(ArrayExperimentFunction):
             first_y = None
             last_y = None
             container = None
-            for y_ in range(y-40, y+1):
-                 try:
-                     we_have(y_, m, d)
-                 except ValueError:
-                     continue
-                 if we_have(y_, m, d):
+            for y_ in range(y - 40, y + 1):
+                try:
+                    we_have(y_, m, d)
+                except ValueError:
+                    continue
+                if we_have(y_, m, d):
                     last_y = y_
                     if first_y is None:
                         first_y = y_
             container = copy.deepcopy(wdp.store[(date(last_y, m, d), 0)])
             assert container is not None, "No data found even in 40 years !"
             for slot in container.__slots__:
-                if slot not in ["IRRAD", "TMIN", "TMAX", "VAP", "RAIN", "E0", "ES0", "ET0", "WIND", "SNOWDEPTH", "TEMP", "TMINRA"]:
+                if slot not in [
+                    "IRRAD",
+                    "TMIN",
+                    "TMAX",
+                    "VAP",
+                    "RAIN",
+                    "E0",
+                    "ES0",
+                    "ET0",
+                    "WIND",
+                    "SNOWDEPTH",
+                    "TEMP",
+                    "TMINRA",
+                ]:
                     continue
                 try:
                     value = get_val(last_y, m, d, slot)
@@ -294,11 +348,11 @@ class Irrigation(ArrayExperimentFunction):
                     value = vmax
                 setattr(container, slot, value)
             wdp.store[(date(y, m, od), 0)] = container
-                
+
         # Extension for the future
         for y in range(2020, 2050):
             for m in range(1, 13):
-                for d in range(1,32):
+                for d in range(1, 32):
                     try:
                         date(y, m, d)
                     except ValueError:
@@ -313,7 +367,6 @@ class Irrigation(ArrayExperimentFunction):
             ok = [k for k in my_keys if k[0].year == y]
             print(y, len(ok))
         assert False
-        
 
     def set_data(self, symmetry: int, k: int, rice: bool):
         crop_types = [crop for crop, variety in self.cropd.get_crops_varieties().items()]
@@ -321,19 +374,23 @@ class Irrigation(ArrayExperimentFunction):
         if rice:
             crop_types = ["rice"]
         self.crop_types = crop_types
-        self.cropname = np.random.RandomState(symmetry+3*k+1).choice(crop_types)
-        self.total_irrigation = np.random.RandomState(symmetry+3*k+3).choice([15.0, 1.50, 0.15, 150.]) if not rice else 0.15
-        self.cropvariety = np.random.RandomState(symmetry+3*k+2).choice(list(self.cropd.get_crops_varieties()[self.cropname])
+        self.cropname = np.random.RandomState(symmetry + 3 * k + 1).choice(crop_types)
+        self.total_irrigation = (
+            np.random.RandomState(symmetry + 3 * k + 3).choice([15.0, 1.50, 0.15, 150.0])
+            if not rice
+            else 0.15
+        )
+        self.cropvariety = np.random.RandomState(symmetry + 3 * k + 2).choice(
+            list(self.cropd.get_crops_varieties()[self.cropname])
         )
         # We check if the problem is challenging.
-        #print(f"testing {symmetry}: {k} {self.address} {self.cropvariety}")
+        # print(f"testing {symmetry}: {k} {self.address} {self.cropvariety}")
         site = WOFOST72SiteDataProvider(WAV=100, CO2=360)
         self.parameterprovider = ParameterProvider(soildata=self.soil, cropdata=self.cropd, sitedata=site)
 
-
     def meta_total_yield(self, x: np.ndarray):
-        lai = 0.
-        for year in range(self.year_min, self.year_max+1):
+        lai = 0.0
+        for year in range(self.year_min, self.year_max + 1):
             print(f"working on {year}")
             lai += self.total_yield(x, year)
         specifier = self.address + "_" + str(self.total_irrigation)
@@ -342,7 +399,7 @@ class Irrigation(ArrayExperimentFunction):
         if self.dimension == 8:
             specifier += "_" + self.cropvariety
         if specifier not in CURRENT_BEST:
-            CURRENT_BEST[specifier] = 0.
+            CURRENT_BEST[specifier] = 0.0
         if lai > CURRENT_BEST[specifier]:
             CURRENT_BEST[specifier] = lai
             argument = str(x)
@@ -355,7 +412,7 @@ class Irrigation(ArrayExperimentFunction):
 
         return -lai
 
-    def total_yield(self, x: np.ndarray, year:int=2006):
+    def total_yield(self, x: np.ndarray, year: int = 2006):
         d0 = int(1.01 + 29.98 * x[0])
         d1 = int(1.01 + 30.98 * x[1])
         d2 = int(1.01 + 30.98 * x[2])
@@ -401,22 +458,22 @@ class Irrigation(ArrayExperimentFunction):
             agromanagement = yaml.safe_load(yaml_agro)
             wofost = Wofost72_WLP_FD(self.parameterprovider, self.weatherdataprovider, agromanagement)
             wofost.run_till_terminate()
-#            for i in range(10):
-#                try:
-#                    wofost = Wofost72_WLP_FD(self.parameterprovider, self.weatherdataprovider, agromanagement)
-#                    wofost.run_till_terminate()
-#                    break
-#                except:
-#                    print(f"failure {i} for {yaml_agro}")
-#                    time.sleep(2 ** i)
-#                return -float("inf")
+        #            for i in range(10):
+        #                try:
+        #                    wofost = Wofost72_WLP_FD(self.parameterprovider, self.weatherdataprovider, agromanagement)
+        #                    wofost.run_till_terminate()
+        #                    break
+        #                except:
+        #                    print(f"failure {i} for {yaml_agro}")
+        #                    time.sleep(2 ** i)
+        #                return -float("inf")
         except Exception as e:
             print(e)
             return -float("inf")
-            #assert (
+            # assert (
             #    False
-            #), f"Problem!\n Dates: {d0} {d1} {d2} {d3},\n amounts: {a0}, {a1}, {a2}, {a3}\n  ({e}).\n"
-            #raise e
+            # ), f"Problem!\n Dates: {d0} {d1} {d2} {d3},\n amounts: {a0}, {a1}, {a2}, {a3}\n  ({e}).\n"
+            # raise e
 
         output = wofost.get_output()
         df = pd.DataFrame(output).set_index("day")

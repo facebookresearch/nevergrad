@@ -21,7 +21,7 @@ from ..base import ArrayExperimentFunction
 class CropSimulator(ArrayExperimentFunction):
     def __init__(self) -> None:
         try:
-            #raise Exception("We do not import EUPL code by default.")
+            # raise Exception("We do not import EUPL code by default.")
             import pcse  # pylint: disable=unused-import
         except:
             raise ng.errors.UnsupportedExperiment(
@@ -60,7 +60,7 @@ class CropSimulator(ArrayExperimentFunction):
             TimedEvents: null
             StateEvents: null
         """
-        #agro = yaml.safe_load(agro_yaml)
+        # agro = yaml.safe_load(agro_yaml)
         agro = yaml.load(agro_yaml)
 
         wofost = Wofost72_PP(params, wdp, agro)
@@ -70,19 +70,18 @@ class CropSimulator(ArrayExperimentFunction):
         df.tail()
 
         ## get daily observations for those
-        #ix = (df.index.dayofweek == 0) & (df.LAI.notnull())
-        #df_pseudo_obs = df.loc[ix]
-#
-#        class ModelRerunner(object):
-#            """Reruns a given model with different values of parameters TWDI and SPAN.
-#
-#            Returns a pandas DataFrame with simulation results of the model with given
-#            parameter values.
-#            """
-#
-#            parameters = ["TDWI", "SPAN"]
+        # ix = (df.index.dayofweek == 0) & (df.LAI.notnull())
+        # df_pseudo_obs = df.loc[ix]
+        #
+        #        class ModelRerunner(object):
+        #            """Reruns a given model with different values of parameters TWDI and SPAN.
+        #
+        #            Returns a pandas DataFrame with simulation results of the model with given
+        #            parameter values.
+        #            """
+        #
+        #            parameters = ["TDWI", "SPAN"]
 
-        
         # get daily observations for those
         ix = (df.index.dayofweek == 0) & (df.LAI.notnull())
         df_pseudo_obs = df.loc[ix]
@@ -147,7 +146,7 @@ class CropSimulator(ArrayExperimentFunction):
                 # Note that the dataframes automatically join on the index (dates) and column names
                 df_differences = df_simulations - self.df_observations
                 # Compute the RMSE on the LAI column
-                obj_func = np.sqrt(np.mean(df_differences.LAI ** 2))
+                obj_func = np.sqrt(np.mean(df_differences.LAI**2))
                 return obj_func
 
         objfunc_calculator = ObjectiveFunctionCalculator(params, wdp, agro, df_pseudo_obs)
@@ -156,12 +155,12 @@ class CropSimulator(ArrayExperimentFunction):
         # print("Objective function value with default parameters (%s): %s" % (defaults, error))
         TDWI_range = [0.1, 0.6]
         SPAN_range = [30, 40]
-        #param = ng.p.Array(
+        # param = ng.p.Array(
         #    shape=(2,), lower=(TDWI_range[0], SPAN_range[0]), upper=(TDWI_range[1], SPAN_range[1])
-        #).set_name("2hp")
-        #super().__init__(objfunc_calculator, parametrization=param)
-    
-        #param = ng.p.Array(shape=(2,), lower=(TDWI_range[0], SPAN_range[0]), upper=(TDWI_range[1], SPAN_range[1]))
+        # ).set_name("2hp")
+        # super().__init__(objfunc_calculator, parametrization=param)
+
+        # param = ng.p.Array(shape=(2,), lower=(TDWI_range[0], SPAN_range[0]), upper=(TDWI_range[1], SPAN_range[1]))
         import nevergrad as ng
 
         param = ng.p.Array(
