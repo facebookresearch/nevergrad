@@ -146,6 +146,7 @@ class Pcse(ArrayExperimentFunction):
         # print("Objective function value with default parameters (%s): %s" % (defaults, error))
         TDWI_range = [0.1, 0.6]
         SPAN_range = [30, 40]
+
         param = ng.p.Array(
             shape=(2,), lower=(TDWI_range[0], SPAN_range[0]), upper=(TDWI_range[1], SPAN_range[1])
         ).set_name("2hp")

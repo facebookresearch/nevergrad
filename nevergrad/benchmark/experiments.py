@@ -1555,6 +1555,18 @@ def kenya_new_many_crop_and_variety_irrigation(seed: tp.Optional[int] = None) ->
 
 
 @registry.register
+def kenya_future_many_crop_and_variety_irrigation(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    return irrigation(seed, kenya=True, variety_choice=True, multi_crop=True, year_min=2026, year_max=2031)
+
+
+@registry.register
+def kenya_farfuture_many_crop_and_variety_irrigation(
+    seed: tp.Optional[int] = None,
+) -> tp.Iterator[Experiment]:
+    return irrigation(seed, kenya=True, variety_choice=True, multi_crop=True, year_min=2036, year_max=2041)
+
+
+@registry.register
 def kenya_old_many_crop_and_variety_irrigation(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     return irrigation(seed, kenya=True, variety_choice=True, multi_crop=True, year_min=1996, year_max=2001)
 
@@ -1591,7 +1603,7 @@ def crop_simulator(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     Low dimensional problem, only 2 vars. This is optimization for model identification: we want
     to find parameters so that the simulation matches observations.
     """
-    funcs = [CropSimulator()]
+    funcs = [Pcse()]
     seedg = create_seed_generator(seed)
     optims = ["DE", "PSO", "CMA", "NGOpt"]
     for budget in [25, 50, 100, 200]:
@@ -1604,6 +1616,27 @@ def crop_simulator(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                             yield xp
 
 
+# @registry.register
+# def irrigation(seed: tp.Optional[int] = None, benin: bool = False, variety_choice: bool = False) -> tp.Iterator[Experiment]:
+#    """Irrigation simulator. Maximize leaf area index,
+#    so that you get a lot of primary production.
+#    Sequential or 30 workers."""
+##    funcs = [Irrigation(i, benin=benin, variety_choice=variety_choice) for i in range(23)]
+#    seedg = create_seed_generator(seed)
+#    optims = get_optimizers("basics", seed=next(seedg))
+#    optims = ["DiagonalCMA", "CMA", "DE", "PSO", "TwoPointsDE", "DiscreteLenglerOnePlusOne"]
+#    optims += ["NGOptRW", "NGTuned"]
+#    for budget in [250]: #, 50, 100, 200]:
+#        for num_workers in [1]: #, 30, 60]:
+#            if num_workers < budget:
+#                for algo in optims:
+#                    for fu in funcs:
+#                        xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
+#                        skip_ci(reason="Too slow")
+#                        if not xp.is_incoherent:
+#                            yield xp
+
+
 @registry.register
 def pcse(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Crop simulator.
@@ -1611,7 +1644,7 @@ def pcse(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     Low dimensional problem, only 2 vars. This is optimization for model identification: we want
     to find parameters so that the simulation matches observations.
     """
-    funcs = [CropSimulator()]
+    funcs = [Pcse()]
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", seed=next(seedg))
     for budget in [25, 50, 100, 200]:

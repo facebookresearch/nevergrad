@@ -10,6 +10,8 @@ https://raw.githubusercontent.com/purdue-orbital/pcse-simulation/master/Simulati
 """
 
 
+import copy
+from datetime import date
 from pathlib import Path
 import urllib.request
 import numpy as np
@@ -260,12 +262,95 @@ class Irrigation(ArrayExperimentFunction):
                     latitude=self.location.latitude, longitude=self.location.longitude
                 )
                 WPD[self.address] = self.weatherdataprovider
+            self.wdp_extend(self.weatherdataprovider)
             self.set_data(symmetry, k, rice)
             v = [self.meta_total_yield(np.random.rand(self.this_dimension)) for _ in range(5)]
             if min(v) != max(v):
                 break
             self.variant_choice[symmetry] = k
         print(f"we work on {self.cropname} with variety {self.cropvariety} in {self.address}.")
+
+    def wdp_extend(self, wdp):
+
+        my_keys = copy.deepcopy(list(wdp.store.keys()))
+
+        def we_have(y, m, d):
+            try:
+                date(y, m, d)
+            except ValueError:
+                return False
+            return (date(y, m, d), 0) in my_keys
+
+        def get_val(y, m, d, slot):
+            my_vals = [
+                getattr(wdp.store[(date(y_, m, d), 0)], slot)
+                for y_ in range(y - 4, y + 5)
+                if we_have(y_, m, d)
+            ]
+            assert len(my_vals) >= 3, f"big issue with data {y} {m} {d}!"
+            return sum(my_vals) / len(my_vals)
+
+        def extrapolate(wdp, y, m, od):
+            d = od
+            if m == 2 and d == 29:
+                d = 28
+            if we_have(y, m, d):
+                return
+            first_y = None
+            last_y = None
+            container = None
+            for y_ in range(y - 40, y + 1):
+                if not we_have(y_, m, d):
+                    continue
+                if we_have(y_, m, d):
+                    last_y = y_
+                    if first_y is None:
+                        first_y = y_
+            container = copy.deepcopy(wdp.store[(date(last_y, m, d), 0)])
+            assert container is not None, "No data found even in 40 years !"
+            for slot in container.__slots__:
+                if slot not in [
+                    "IRRAD",
+                    "TMIN",
+                    "TMAX",
+                    "VAP",
+                    "RAIN",
+                    "E0",
+                    "ES0",
+                    "ET0",
+                    "WIND",
+                    "SNOWDEPTH",
+                    "TEMP",
+                    "TMINRA",
+                ]:
+                    continue
+                try:
+                    value = get_val(last_y, m, d, slot)
+                except AttributeError:
+                    continue
+                delta = (get_val(last_y, m, d, slot) - get_val(first_y, m, d, slot)) / (last_y - first_y)
+                value += delta * (y - last_y)
+                vmin, vmax = container.ranges[slot]
+                if value < vmin:
+                    value = vmin
+                if value > vmax:
+                    value = vmax
+                setattr(container, slot, value)
+            wdp.store[(date(y, m, od), 0)] = container
+
+        # Extension for the future
+        for y in range(2020, 2050):
+            for m in range(1, 13):
+                for d in range(1, 32):
+                    try:
+                        date(y, m, d)
+                    except ValueError:
+                        continue
+                    extrapolate(self.weatherdataprovider, y, m, d)
+                    ok = [k for k in my_keys if k[0].year == y and k[0].month == m and k[0].day == d]
+                    assert len(ok) < 2
+                    assert len(ok) >= (1 if we_have(y, m, d) else 0)
+
 
     def set_data(self, symmetry: int, k: int, rice: bool):
         crop_types = [crop for crop, variety in self.cropd.get_crops_varieties().items()]
@@ -324,7 +409,7 @@ class Irrigation(ArrayExperimentFunction):
         ]
         c = self.total_irrigation
         if len(x) == 10:
-            c = 0
+            c = 0.0
         a0 = c * x[4] / (x[4] + x[5] + x[6] + x[7])
         a1 = c * x[5] / (x[4] + x[5] + x[6] + x[7])
         a2 = c * x[6] / (x[4] + x[5] + x[6] + x[7])
