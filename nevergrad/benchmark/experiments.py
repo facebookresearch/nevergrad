@@ -750,7 +750,7 @@ def yabbob(
     ), "abs(constraint_case) should be in 0, 1, ..., {len(constraints) + max_num_constraints - 1} (0 = no constraint)."
     # We reduce the number of tests when there are constraints, as the number of cases
     # is already multiplied by the number of constraint_case.
-    for func in functions[:: 13 if constraint_case > 0 else 1]:
+    for func in functions[:: 13 if abs(constraint_case) > 0 else 1]:
         func.constraint_violation = []
         # We add a window of the list of constraints. This windows finishes at "constraints" (hence, is empty if
         # constraint_case=0).
@@ -825,6 +825,46 @@ def yapenbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with penalized constraints."""
     cases = 8  # total number of cases (skip 0, as it's constraint-free)
     slices = [yabbob(seed, constraint_case=-i) for i in range(1, cases)]
+    return itertools.chain(*slices)
+
+
+@registry.register
+def yapensmallbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yasmallbbob with penalized constraints."""
+    cases = 8  # total number of cases (skip 0, as it's constraint-free)
+    slices = [yabbob(seed, constraint_case=-i, small=True) for i in range(1, cases)]
+    return itertools.chain(*slices)
+
+
+@registry.register
+def yapenboundedbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabooundedbbob with penalized constraints."""
+    cases = 8  # total number of cases (skip 0, as it's constraint-free)
+    slices = [yabbob(seed, constraint_case=-i, bounded=True) for i in range(1, cases)]
+    return itertools.chain(*slices)
+
+
+@registry.register
+def yapennoisybbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yanoisybbob with penalized constraints."""
+    cases = 8  # total number of cases (skip 0, as it's constraint-free)
+    slices = [yabbob(seed, constraint_case=-i, noisy=True) for i in range(1, cases)]
+    return itertools.chain(*slices)
+
+
+@registry.register
+def yapenparabbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yaparabbob with penalized constraints."""
+    cases = 8  # total number of cases (skip 0, as it's constraint-free)
+    slices = [yabbob(seed, constraint_case=-i, para=True) for i in range(1, cases)]
+    return itertools.chain(*slices)
+
+
+@registry.register
+def yapenboxbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yaboxbbob with penalized constraints."""
+    cases = 8  # total number of cases (skip 0, as it's constraint-free)
+    slices = [yabbob(seed, constraint_case=-i, box=True) for i in range(1, cases)]
     return itertools.chain(*slices)
 
 
