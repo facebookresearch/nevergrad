@@ -92,7 +92,7 @@ def mocked_data() -> tp.Iterator[tp.Any]:
 def make_perceptron_data(name: str) -> np.ndarray:
     """Creates the data (see https://drive.google.com/file/d/1fc1sVwoLJ0LsQ5fzi4jo3rDJHQ6VGQ1h/view)"""
     funcs: tp.Dict[str, tp.Callable[[np.ndarray], np.ndarray]] = {
-        "quadratic": lambda x: x ** 2,  # type: ignore
+        "quadratic": lambda x: x**2,  # type: ignore
         "sine": np.sin,
         "abs": np.abs,
         "heaviside": lambda x: x > 0,  # type: ignore

@@ -150,7 +150,10 @@ class RecastOptimizer(base.Optimizer):
     recast = True
 
     def __init__(
-        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1,
+        self,
+        parametrization: IntOrParameter,
+        budget: tp.Optional[int] = None,
+        num_workers: int = 1,
     ) -> None:
         super().__init__(parametrization, budget, num_workers=num_workers)
         self._messaging_thread: tp.Optional[MessagingThread] = None  # instantiate at runtime
@@ -237,7 +240,10 @@ class SequentialRecastOptimizer(RecastOptimizer):
     no_parallelization = True
 
     def __init__(
-        self, parametrization: IntOrParameter, budget: tp.Optional[int], num_workers: int = 1,
+        self,
+        parametrization: IntOrParameter,
+        budget: tp.Optional[int],
+        num_workers: int = 1,
     ) -> None:
         super().__init__(parametrization=parametrization, budget=budget, num_workers=num_workers)
         self._enable_pickling = False

@@ -55,17 +55,17 @@ def rocket(thrust_bias: np.ndarray):
 
     def grav_force(Ex, Ey, Ez, m):
         # lat = rad(lat)
-        G = -6.67408 * (1 / (10 ** 11))  # Gravitational Constant (m^3 kg^-1 s^-2)
-        M = 5.972 * (10 ** 24)  # Earth Mass (kg)
+        G = -6.67408 * (1 / (10**11))  # Gravitational Constant (m^3 kg^-1 s^-2)
+        M = 5.972 * (10**24)  # Earth Mass (kg)
         # a = 6398137  # equatoral radius
         # b = 6356752  # polar radius
         # R = math.sqrt((math.pow(math.pow(a, 2) * math.cos(lat), 2) + (math.pow(math.pow(b, 2) * math.sin(lat), 2))) / (
         #            math.pow(a * math.cos(lat), 2) + (math.pow(b * math.sin(lat), 2))))  # Radius of earth (m)
-        r = (Ex ** 2 + Ey ** 2 + Ez ** 2) ** 0.5
-        F = (G * M * m) / (r ** 2)  # Force of gravity (N)
+        r = (Ex**2 + Ey**2 + Ez**2) ** 0.5
+        F = (G * M * m) / (r**2)  # Force of gravity (N)
         F_z = F * Ez / r
-        F_x = F * (Ex / ((Ex ** 2 + Ey ** 2) ** 0.5))
-        F_y = F * (Ey / ((Ex ** 2 + Ey ** 2) ** 0.5))
+        F_x = F * (Ex / ((Ex**2 + Ey**2) ** 0.5))
+        F_y = F * (Ey / ((Ex**2 + Ey**2) ** 0.5))
         return F_x, F_y, F_z  # in the -r direction
 
     def drag_force(Ex, Ey, Ez, Evx, Evy, Evz):
@@ -73,7 +73,7 @@ def rocket(thrust_bias: np.ndarray):
         a = 0.00487  # cross sectional area m^2
         p = air_density(alt(Ex, Ey, Ez))  # air density with respect to alt
         # drag = (1/2)*p*v_sqrd*cd*a*(vy/(math.sqrt(v)))
-        v_sqrd = (Evx ** 2) + (Evy ** 2) + (Evz ** 2)
+        v_sqrd = (Evx**2) + (Evy**2) + (Evz**2)
         if Evx == 0:
             Ex_drag = 0
         else:
@@ -81,11 +81,11 @@ def rocket(thrust_bias: np.ndarray):
         if Evy == 0:
             Ey_drag = 0
         else:
-            Ey_drag = (1 / 2) * p * v_sqrd * cd * a * (-Evy / (math.sqrt(Evx ** 2 + Evy ** 2)))
+            Ey_drag = (1 / 2) * p * v_sqrd * cd * a * (-Evy / (math.sqrt(Evx**2 + Evy**2)))
         if Evz == 0:
             Ez_drag = 0
         else:
-            Ez_drag = (1 / 2) * p * v_sqrd * cd * a * (-Evz / (math.sqrt(Evx ** 2 + Evy ** 2)))
+            Ez_drag = (1 / 2) * p * v_sqrd * cd * a * (-Evz / (math.sqrt(Evx**2 + Evy**2)))
         return Ex_drag, Ey_drag, Ez_drag
 
     # Net Force
@@ -152,7 +152,7 @@ def rocket(thrust_bias: np.ndarray):
     transformer = pyproj.Transformer.from_proj(lla, ecef)
     Ex, Ey, Ez = transformer.transform(longitude, latitude, altitude, radians=True)
     Evx, Evy, Evz = 0, 0, 0
-    r_initial = (Ex ** 2 + Ey ** 2 + Ez ** 2) ** 0.5
+    r_initial = (Ex**2 + Ey**2 + Ez**2) ** 0.5
     # print(Ex, Ey, Ez, r_initial, sep="\t")
 
     # Rocket specs
@@ -240,7 +240,7 @@ def rocket(thrust_bias: np.ndarray):
     Ex_list, Ey_list, Ez_list = np.asarray([Ex]), np.asarray([Ey]), np.asarray([Ez])
     Evx_list, Evy_list, Evz_list = np.asarray([Evx]), np.asarray([Evy]), np.asarray([Evz])
     time_list = np.asarray([0])
-    r_list = np.asarray([(Ex ** 2 + Ey ** 2 + Ez ** 2) ** 0.5])
+    r_list = np.asarray([(Ex**2 + Ey**2 + Ez**2) ** 0.5])
 
     # Initializing variables
     time = 0.0  # time in seconds
@@ -248,7 +248,7 @@ def rocket(thrust_bias: np.ndarray):
     # while thrust is greater than zero
     # this is while the rocket engine is firing
     for i in range(len(thrust) - 2):
-        r = (Ex ** 2 + Ey ** 2 + Ez ** 2) ** 0.5
+        r = (Ex**2 + Ey**2 + Ez**2) ** 0.5
         dt = thrust[i][1]
         Efx, Efy, Efz = net_force(Ex, Ey, Ez, Evx, Evy, Evz, mass_list[i])
         Ex += Evx * dt
@@ -273,7 +273,7 @@ def rocket(thrust_bias: np.ndarray):
     time_step = 0.05  # time time_step in seconds
     dt = time_step
     while r > r_initial:
-        r = (Ex ** 2 + Ey ** 2 + Ez ** 2) ** 0.5
+        r = (Ex**2 + Ey**2 + Ez**2) ** 0.5
         Efx, Efy, Efz = net_force(Ex, Ey, Ez, Evx, Evy, Evz, final_roc_mass)
         Ex += Evx * dt
         Ey += Evy * dt

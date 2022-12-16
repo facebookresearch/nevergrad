@@ -301,7 +301,10 @@ class Parameter(Layered):
             return True
         return all(utils.float_penalty(func(val)) <= 0 for func in self._constraint_checkers)
 
-    def specify_tabu_length(self, tabu_length: int,) -> None:
+    def specify_tabu_length(
+        self,
+        tabu_length: int,
+    ) -> None:
         self.tabu_length = tabu_length
 
     def register_cheap_constraint(
@@ -349,7 +352,7 @@ class Parameter(Layered):
         """
         if self._random_state is None:
             # use the setter, to make sure the random state is propagated to the variables
-            seed = np.random.randint(2 ** 32, dtype=np.uint32)  # better way?
+            seed = np.random.randint(2**32, dtype=np.uint32)  # better way?
             self._set_random_state(np.random.RandomState(seed))
         assert self._random_state is not None
         return self._random_state

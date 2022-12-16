@@ -246,7 +246,9 @@ class _OnePlusOne(base.Optimizer):
                 if intensity < 1:
                     intensity = 1
                 data = mutator.portfolio_discrete_mutation(
-                    pessimistic_data, intensity=intensity, arity=self.arity_for_discrete_mutation,
+                    pessimistic_data,
+                    intensity=intensity,
+                    arity=self.arity_for_discrete_mutation,
                 )
             elif mutation == "coordinatewise_adaptive":
                 self._modified_variables = np.array([True] * self.dimension)
@@ -260,7 +262,9 @@ class _OnePlusOne(base.Optimizer):
                 alpha = 1.54468
                 intensity = int(max(1, self.dimension * (alpha * np.log(self.num_ask) / self.num_ask)))
                 data = mutator.portfolio_discrete_mutation(
-                    pessimistic_data, intensity=intensity, arity=self.arity_for_discrete_mutation,
+                    pessimistic_data,
+                    intensity=intensity,
+                    arity=self.arity_for_discrete_mutation,
                 )
             elif mutation == "doerr":
                 # Selection, either random, or greedy, or a mutation rate.
@@ -273,7 +277,9 @@ class _OnePlusOne(base.Optimizer):
                     self._doerr_index = -1
                 intensity = self._doerr_mutation_rates[index]
                 data = mutator.portfolio_discrete_mutation(
-                    pessimistic_data, intensity=intensity, arity=self.arity_for_discrete_mutation,
+                    pessimistic_data,
+                    intensity=intensity,
+                    arity=self.arity_for_discrete_mutation,
                 )
             else:
                 func: tp.Any = {  # type: ignore
@@ -303,8 +309,8 @@ class _OnePlusOne(base.Optimizer):
             elif self.num_ask < self.budget:
                 amplitude = max(1.0, self._max_loss - self._previous_best_loss)
                 annealing_dict = {
-                    "Exp0.9": 0.33 * amplitude * (0.9 ** self.num_ask),
-                    "Exp0.99": 0.33 * amplitude * (0.99 ** self.num_ask),
+                    "Exp0.9": 0.33 * amplitude * (0.9**self.num_ask),
+                    "Exp0.99": 0.33 * amplitude * (0.99**self.num_ask),
                     "Exp0.9Auto": 0.33 * amplitude * ((0.001 ** (1.0 / self.budget)) ** self.num_ask),
                     "Lin100.0": 100.0 * amplitude * (1 - self.num_ask / (self.budget + 1)),
                     "Lin1.0": 1.0 * amplitude * (1 - self.num_ask / (self.budget + 1)),
@@ -489,7 +495,8 @@ RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
     crossover=True, mutation="portfolio", noise_handling="optimistic"
 ).set_name("RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne", register=True)
 RecombiningPortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(
-    crossover=True, mutation="portfolio",
+    crossover=True,
+    mutation="portfolio",
 ).set_name("RecombiningPortfolioDiscreteOnePlusOne", register=True)
 
 
@@ -702,7 +709,9 @@ class ChoiceBase(base.Optimizer):
             self._arity = -1
         self._optim: tp.Optional[base.Optimizer] = None
         self._constraints_manager.update(
-            max_trials=1000, penalty_factor=1.0, penalty_exponent=1.01,
+            max_trials=1000,
+            penalty_factor=1.0,
+            penalty_exponent=1.01,
         )
 
     @property
@@ -1012,7 +1021,12 @@ class ParametrizedTBPSA(base.ConfiguredOptimizer):
     """
 
     # pylint: disable=unused-argument
-    def __init__(self, *, naive: bool = True, initial_popsize: tp.Optional[int] = None,) -> None:
+    def __init__(
+        self,
+        *,
+        naive: bool = True,
+        initial_popsize: tp.Optional[int] = None,
+    ) -> None:
         super().__init__(_TBPSA, locals())
 
 
@@ -1317,7 +1331,12 @@ class Rescaled(base.ConfiguredOptimizer):
     """
 
     # pylint: disable=unused-argument
-    def __init__(self, *, base_optimizer: base.OptCls = CMA, scale: tp.Optional[float] = None,) -> None:
+    def __init__(
+        self,
+        *,
+        base_optimizer: base.OptCls = CMA,
+        scale: tp.Optional[float] = None,
+    ) -> None:
         super().__init__(_Rescaled, locals())
 
 
@@ -1505,7 +1524,12 @@ class NoisySplit(base.ConfiguredOptimizer):
     """
 
     # pylint: disable=unused-argument
-    def __init__(self, *, num_optims: tp.Optional[float] = None, discrete: bool = False,) -> None:
+    def __init__(
+        self,
+        *,
+        num_optims: tp.Optional[float] = None,
+        discrete: bool = False,
+    ) -> None:
         kwargs = locals()
         opt = OptimisticDiscreteOnePlusOne if discrete else OptimisticNoisyOnePlusOne
         mono_opt: base.OptCls = NoisyBandit if discrete else opt
@@ -1730,7 +1754,10 @@ class ParametrizedMetaModel(base.ConfiguredOptimizer):
 
     # pylint: disable=unused-argument
     def __init__(
-        self, *, multivariate_optimizer: tp.Optional[base.OptCls] = None, frequency_ratio: float = 0.9,
+        self,
+        *,
+        multivariate_optimizer: tp.Optional[base.OptCls] = None,
+        frequency_ratio: float = 0.9,
     ) -> None:
         super().__init__(_MetaModel, locals())
         assert 0 <= frequency_ratio <= 1.0
@@ -2569,7 +2596,9 @@ class NGOptBase(base.Optimizer):
             self._arity = -1
         self._optim: tp.Optional[base.Optimizer] = None
         self._constraints_manager.update(
-            max_trials=1000, penalty_factor=1.0, penalty_exponent=1.01,
+            max_trials=1000,
+            penalty_factor=1.0,
+            penalty_exponent=1.01,
         )
 
     @property
@@ -2736,12 +2765,12 @@ class NGOpt4(NGOptBase):
                                             if (
                                                 self.dimension > 40
                                                 and num_workers > self.dimension
-                                                and budget < 7 * self.dimension ** 2
+                                                and budget < 7 * self.dimension**2
                                             ):
                                                 optimClass = DiagonalCMA
                                             elif (
-                                                3 * num_workers > self.dimension ** 2
-                                                and budget > self.dimension ** 2
+                                                3 * num_workers > self.dimension**2
+                                                and budget > self.dimension**2
                                             ):
                                                 optimClass = MetaModel
                                             else:
@@ -2862,7 +2891,7 @@ class NGOpt15(NGOpt12):
         if (
             self.budget is not None
             and self.fully_continuous
-            and self.budget < self.dimension ** 2 * 2
+            and self.budget < self.dimension**2 * 2
             and self.num_workers == 1
             and not self.has_noise
             and self.num_objectives < 2
@@ -2902,7 +2931,7 @@ class NGOpt21(NGOpt16):
             and self.num_workers <= num * cma_vars
         ):  # Discrete case ?
             return ConfPortfolio(
-                optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3 ** i) for i in range(num)],
+                optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3**i) for i in range(num)],
                 warmup_ratio=0.5,
             )
         else:
@@ -2925,7 +2954,7 @@ class NGOpt36(NGOpt16):
             and self.num_workers <= num * cma_vars
         ):  # Discrete case ?
             return ConfPortfolio(
-                optimizers=[Rescaled(base_optimizer=NGOpt14, scale=0.9 ** i) for i in range(num)],
+                optimizers=[Rescaled(base_optimizer=NGOpt14, scale=0.9**i) for i in range(num)],
                 warmup_ratio=0.5,
             )
         else:
@@ -2956,7 +2985,7 @@ class NGOpt38(NGOpt16):
             if self.dimension < 20:  # Nobody knows why this seems to be so good.
                 num = self.budget // (500 * self.dimension)
                 return ConfPortfolio(
-                    optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3 ** i) for i in range(num)],
+                    optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3**i) for i in range(num)],
                     warmup_ratio=0.5,
                 )
             # We need a special case for dim < 30 ---> let's see later.
@@ -3030,7 +3059,7 @@ class NGOpt39(NGOpt16):
             if self.dimension < 20:  # Nobody knows why this seems to be so good.
                 num = self.budget // (500 * self.dimension)
                 return ConfPortfolio(
-                    optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3 ** i) for i in range(num)],
+                    optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3**i) for i in range(num)],
                     warmup_ratio=0.5,
                 )
             if self.num_workers == 1:
@@ -3114,5 +3143,10 @@ class MultipleSingleRuns(base.ConfiguredOptimizer):
     """
 
     # pylint: disable=unused-argument
-    def __init__(self, *, num_single_runs: int = 9, base_optimizer: base.OptCls = NGOpt,) -> None:
+    def __init__(
+        self,
+        *,
+        num_single_runs: int = 9,
+        base_optimizer: base.OptCls = NGOpt,
+    ) -> None:
         super().__init__(_MSR, locals())

@@ -35,7 +35,12 @@ def test_array_basics() -> None:
 
 
 @pytest.mark.parametrize(  # type: ignore
-    "param", [par.Dict(truc=12), par.Tuple(), par.Instrumentation(12),],
+    "param",
+    [
+        par.Dict(truc=12),
+        par.Tuple(),
+        par.Instrumentation(12),
+    ],
 )
 def test_empty_parameters(param: par.Dict) -> None:
     assert not param.dimension
@@ -73,7 +78,7 @@ def test_parameters_basic_features(param: par.Parameter) -> None:
 
 # pylint: disable=too-many-statements
 def check_parameter_features(param: par.Parameter) -> None:
-    seed = np.random.randint(2 ** 32, dtype=np.uint32)
+    seed = np.random.randint(2**32, dtype=np.uint32)
     print(f"Seeding with {seed} from reproducibility.")
     np.random.seed(seed)
     assert isinstance(param.name, str)
@@ -204,7 +209,12 @@ def test_parameter_names(param: par.Parameter, name: str) -> None:
         (par.Choice([True, False]), True, False, False),
         (par.Choice([True, False], deterministic=True), False, True, False),
         (par.Choice([True, par.Scalar().set_integer_casting()]), False, False, False),
-        (par.Dict(constant=12, data=par.Scalar().set_integer_casting()), False, True, True,),
+        (
+            par.Dict(constant=12, data=par.Scalar().set_integer_casting()),
+            False,
+            True,
+            True,
+        ),
     ],
 )
 def test_parameter_analysis(

@@ -53,7 +53,9 @@ def test_experiment_function() -> None:
 def test_array_experiment_function() -> None:
     iarrayfuncs = [
         base.ArrayExperimentFunction(
-            sum, ng.p.Array(shape=(10,)).set_bounds(-0.5, 6.0).set_name(""), symmetry=s,
+            sum,
+            ng.p.Array(shape=(10,)).set_bounds(-0.5, 6.0).set_name(""),
+            symmetry=s,
         )
         for s in [247, 111, 111]
     ]
@@ -89,7 +91,7 @@ class _Callable:
 
 
 def test_callable_parametrization() -> None:
-    ifunc = base.ExperimentFunction(lambda x: x ** 2, ng.p.Scalar(2).set_mutation(2).set_name(""))  # type: ignore
+    ifunc = base.ExperimentFunction(lambda x: x**2, ng.p.Scalar(2).set_mutation(2).set_name(""))  # type: ignore
     np.testing.assert_equal(ifunc.descriptors["name"], "<lambda>")
     ifunc = base.ExperimentFunction(_Callable(), ng.p.Scalar(2).set_mutation(sigma=2).set_name(""))
     np.testing.assert_equal(ifunc.descriptors["name"], "_Callable")

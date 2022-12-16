@@ -118,7 +118,7 @@ class WModelFunction(base.ExperimentFunction):
 
         assert epistasis <= dim, "Epistasis has to be less or equal to than dimension"
         assert neutrality <= dim, "Neutrality has to be less than or equal to dimension"
-        assert ruggedness <= dim ** 2, "Ruggedness has to be less than or equal to dimension squared"
+        assert ruggedness <= dim**2, "Ruggedness has to be less than or equal to dimension squared"
         assert 0 <= dummy <= 1, "Dummy variable fraction has to be in [0,1]"
         self.f_internal = W_model_function(
             base_function=base_function,

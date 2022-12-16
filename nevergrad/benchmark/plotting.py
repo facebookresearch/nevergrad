@@ -492,7 +492,7 @@ class XpPlotter:
         self._ax = self._fig.add_subplot(111)
         # use log plot? yes, if no negative value
         logplot = not any(
-            x <= 0 or x > 10 ** 8 for ov in optim_vals.values() for x in ov["loss"]
+            x <= 0 or x > 10**8 for ov in optim_vals.values() for x in ov["loss"]
         )  # if x < np.inf)
         if logplot:
             self._ax.set_yscale("log")
@@ -546,7 +546,9 @@ class XpPlotter:
             for conf in self._get_confidence_arrays(vals, log=logplot):
                 plt.plot(vals[xaxis], conf, name_style[optim_name], label=optim_name, alpha=0.1)
             text = "{} ({:.3g} <{:.3g}>)".format(
-                optim_name, vals["loss"][-1], vals["loss"][-2] if len(vals["loss"]) > 2 else float("nan"),
+                optim_name,
+                vals["loss"][-1],
+                vals["loss"][-2] if len(vals["loss"]) > 2 else float("nan"),
             )
             if vals[xaxis].size:
                 legend_infos.append(LegendInfo(vals[xaxis][-1], vals["loss"][-1], line, text))
@@ -940,7 +942,9 @@ def main() -> None:
         help="if present, parametrization is merge into the optimizer name",
     )
     parser.add_argument(
-        "--remove-suffix", action="store_true", help="if present, remove numerical suffixes in fight plots",
+        "--remove-suffix",
+        action="store_true",
+        help="if present, remove numerical suffixes in fight plots",
     )
     parser.add_argument(
         "--merge-pattern",

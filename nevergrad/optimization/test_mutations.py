@@ -58,7 +58,8 @@ def test_run_with_array(name: str) -> None:
 
 
 @testing.parametrized(
-    only_2=(2, 1.5), all_4=(4, 0.5),
+    only_2=(2, 1.5),
+    all_4=(4, 0.5),
 )
 def test_get_roulette(num: int, expected: str) -> None:
     param = ng.p.Scalar(init=12.0)

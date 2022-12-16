@@ -134,7 +134,10 @@ class GymMulti(ExperimentFunction):
     ]
 
     def wrap_env(self, input_env):
-        env = gym.wrappers.TimeLimit(env=input_env, max_episode_steps=self.num_episode_steps,)
+        env = gym.wrappers.TimeLimit(
+            env=input_env,
+            max_episode_steps=self.num_episode_steps,
+        )
         return env
 
     def create_env(self) -> tp.Any:
@@ -259,7 +262,7 @@ class GymMulti(ExperimentFunction):
         self.output_dim = output_dim
         self.num_neurons = neural_factor * (input_dim - self.extended_input_len)
         self.num_internal_layers = 1 if "semi" in control else 3
-        internal = self.num_internal_layers * (self.num_neurons ** 2) if "deep" in control else 0
+        internal = self.num_internal_layers * (self.num_neurons**2) if "deep" in control else 0
         unstructured_neural_size = (
             output_dim * self.num_neurons + self.num_neurons * (input_dim + 1) + internal,
         )
@@ -292,7 +295,8 @@ class GymMulti(ExperimentFunction):
             assert isinstance(repetitions, int), f"{repetitions}"
             parametrization2 = ng.p.Choice([0, 1], repetitions=repetitions)  # type: ignore
             parametrization = ng.p.Instrumentation(  # type: ignore
-                weights=parametrization1, enablers=parametrization2,
+                weights=parametrization1,
+                enablers=parametrization2,
             )
             parametrization.set_name("ng_sparse" + str(sparse_limit))
             assert "conformant" not in control and "structured" not in control
@@ -403,7 +407,7 @@ class GymMulti(ExperimentFunction):
             self.greedy_coefficient = x[-1:]  # We have decided that we can not have two runs in parallel.
             x = x[:-1]
         o = o.ravel()
-        my_scale = 2 ** self.optimization_scale
+        my_scale = 2**self.optimization_scale
         if "structured" not in self.name and self.optimization_scale != 0:
             x = np.asarray(my_scale * x, dtype=np.float32)
         if self.control == "linear":
@@ -436,7 +440,7 @@ class GymMulti(ExperimentFunction):
         if "deep" in self.control:
             # The deep case must be split into several layers.
             current_index = self.first_size + self.second_size
-            internal_layer_size = self.num_neurons ** 2
+            internal_layer_size = self.num_neurons**2
             s = (self.num_neurons, self.num_neurons)
             for _ in range(self.num_internal_layers):
                 output = np.tanh(output)
@@ -450,11 +454,17 @@ class GymMulti(ExperimentFunction):
         return output[self.memory_len :].reshape(self.output_shape), output[: self.memory_len]
 
     def sparse_gym_multi_function(
-        self, weights: np.ndarray, enablers: np.ndarray, limited_fidelity: bool = False,
+        self,
+        weights: np.ndarray,
+        enablers: np.ndarray,
+        limited_fidelity: bool = False,
     ) -> float:
         assert all(x_ in [0, 1] for x_ in enablers)
         x = weights * enablers
-        loss = self.gym_multi_function(x, limited_fidelity=limited_fidelity,)
+        loss = self.gym_multi_function(
+            x,
+            limited_fidelity=limited_fidelity,
+        )
         sparse_penalty = 0
         if self.sparse_limit is not None:  # Then we penalize the weights above the threshold "sparse_limit".
             sparse_penalty = (1 + np.abs(loss)) * max(0, np.sum(enablers) - self.sparse_limit)
@@ -558,7 +568,10 @@ class GymMulti(ExperimentFunction):
         return None
 
     def gym_simulate(
-        self, x: np.ndarray, seed: int, limited_fidelity: bool = True,
+        self,
+        x: np.ndarray,
+        seed: int,
+        limited_fidelity: bool = True,
     ):
         """Single simulation with parametrization x."""
         current_time_index = 0
@@ -661,7 +674,8 @@ class GymMulti(ExperimentFunction):
         for trace in self.archive:
             to, _, _ = trace
             if np.array_equal(
-                np.asarray(current_observations, dtype=np.float32), np.asarray(to, dtype=np.float32),
+                np.asarray(current_observations, dtype=np.float32),
+                np.asarray(to, dtype=np.float32),
             ):
                 found = True
                 break

@@ -373,7 +373,7 @@ class Data(core.Parameter):
         return self.__mul__(1.0 / value)
 
     def __rtruediv__(self: D, value: tp.Any) -> D:
-        return value * (self ** -1)  # type: ignore
+        return value * (self**-1)  # type: ignore
 
     def __pow__(self: D, power: float) -> D:
         return self._new_with_data_layer("Power", power)

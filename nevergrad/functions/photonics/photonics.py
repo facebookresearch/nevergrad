@@ -74,14 +74,18 @@ def cascade(T: np.ndarray, U: np.ndarray) -> np.ndarray:
         [
             [
                 T[0:n, 0:n]
-                + np.matmul(np.matmul(np.matmul(T[0:n, n : 2 * n], J), U[0:n, 0:n]), T[n : 2 * n, 0:n],),
+                + np.matmul(
+                    np.matmul(np.matmul(T[0:n, n : 2 * n], J), U[0:n, 0:n]),
+                    T[n : 2 * n, 0:n],
+                ),
                 np.matmul(np.matmul(T[0:n, n : 2 * n], J), U[0:n, n : 2 * n]),
             ],
             [
                 np.matmul(np.matmul(U[n : 2 * n, 0:n], K), T[n : 2 * n, 0:n]),
                 U[n : 2 * n, n : 2 * n]
                 + np.matmul(
-                    np.matmul(np.matmul(U[n : 2 * n, 0:n], K), T[n : 2 * n, n : 2 * n]), U[0:n, n : 2 * n],
+                    np.matmul(np.matmul(U[n : 2 * n, 0:n], K), T[n : 2 * n, n : 2 * n]),
+                    U[0:n, n : 2 * n],
                 ),
             ],
         ]
@@ -95,7 +99,10 @@ def c_bas(A: np.ndarray, V: np.ndarray, h: float) -> np.ndarray:
     S = np.block(
         [
             [A[0:n, 0:n], np.matmul(A[0:n, n : 2 * n], D)],
-            [np.matmul(D, A[n : 2 * n, 0:n]), np.matmul(np.matmul(D, A[n : 2 * n, n : 2 * n]), D),],
+            [
+                np.matmul(D, A[n : 2 * n, 0:n]),
+                np.matmul(np.matmul(D, A[n : 2 * n, n : 2 * n]), D),
+            ],
         ]
     )
     return S  # type: ignore
@@ -133,7 +140,10 @@ def creneau(
         U = marche(1 / e1, 1 / e2, a, n, x0)
         T = np.linalg.inv(U)
         M = (
-            np.matmul(np.matmul(np.matmul(T, alpha), np.linalg.inv(marche(e1, e2, a, n, x0))), alpha,)
+            np.matmul(
+                np.matmul(np.matmul(T, alpha), np.linalg.inv(marche(e1, e2, a, n, x0))),
+                alpha,
+            )
             - k0 * k0 * T
         )
         L, E = np.linalg.eig(M)
@@ -196,7 +206,12 @@ def morpho(X: np.ndarray) -> float:
     for lo in lams:
         k0 = 2 * np.pi / lo
         P, V = homogene(k0, 0, pol, 1, n)
-        S = np.block([[np.zeros([n, n], dtype=np.complex_), np.eye(n)], [np.eye(n), np.zeros([n, n])],])
+        S = np.block(
+            [
+                [np.zeros([n, n], dtype=np.complex_), np.eye(n)],
+                [np.eye(n), np.zeros([n, n])],
+            ]
+        )
         for j in range(0, n_motifs):
             Pc, Vc = creneau(k0, 0, pol, e2, 1, a[j], n, x0[j])
             S = cascade(S, interface(P, Pc))
@@ -259,7 +274,7 @@ def absorption(
     k0 = 2 * np.pi / lam
     g = type_.size
     alpha = np.sqrt(epsilon[type_[0]] * mu[type_[0]]) * k0 * np.sin(theta)
-    gamma = np.sqrt(epsilon[type_] * mu[type_] * k0 ** 2 - np.ones(g) * alpha ** 2)
+    gamma = np.sqrt(epsilon[type_] * mu[type_] * k0**2 - np.ones(g) * alpha**2)
     if np.real(epsilon[type_[0]]) < 0 and np.real(mu[type_[0]]) < 0:
         gamma[0] = -gamma[0]
     if g > 2:
@@ -267,11 +282,11 @@ def absorption(
     if (
         np.real(epsilon[type_[g - 1]]) < 0
         and np.real(mu[type_[g - 1]]) < 0
-        and np.real(np.sqrt(epsilon[type_[g - 1]] * mu[type_[g - 1]] * k0 ** 2 - alpha ** 2)) != 0
+        and np.real(np.sqrt(epsilon[type_[g - 1]] * mu[type_[g - 1]] * k0**2 - alpha**2)) != 0
     ):
-        gamma[g - 1] = -np.sqrt(epsilon[type_[g - 1]] * mu[type_[g - 1]] * k0 ** 2 - alpha ** 2)
+        gamma[g - 1] = -np.sqrt(epsilon[type_[g - 1]] * mu[type_[g - 1]] * k0**2 - alpha**2)
     else:
-        gamma[g - 1] = np.sqrt(epsilon[type_[g - 1]] * mu[type_[g - 1]] * k0 ** 2 - alpha ** 2)
+        gamma[g - 1] = np.sqrt(epsilon[type_[g - 1]] * mu[type_[g - 1]] * k0**2 - alpha**2)
     T = np.zeros(((2 * g, 2, 2)), dtype=complex)
     T[0] = [[0, 1], [1, 0]]
     for k2 in range(g - 1):
