@@ -20,10 +20,7 @@ def testcorefuncs_function(name: str, func: tp.Callable[..., tp.Any]) -> None:
 
 
 @testing.parametrized(
-    index1=(1,),
-    index2=(2,),
-    index3=(3,),
-    index4=(4,),
+    index1=(1,), index2=(2,), index3=(3,), index4=(4,),
 )
 def test_bonnans(index: int) -> None:
     b = corefuncs.BonnansFunction(index)

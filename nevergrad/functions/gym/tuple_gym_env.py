@@ -22,19 +22,13 @@ class TupleActionSpace(gym.Env):
         self.horizon = 168
         self._reward = 0.0
 
-        self.observation_space = Box(
-            low=np.array([0, 0, 0]),
-            high=np.array([1, 1, 1]),
-            dtype=np.float16,
-        )
+        self.observation_space = Box(low=np.array([0, 0, 0]), high=np.array([1, 1, 1]), dtype=np.float16,)
 
     def _next_observation(self):
 
         return np.asarray((0.5, 0.5, 0.5), dtype="float16")
 
-    def reward(
-        self,
-    ) -> float:
+    def reward(self,) -> float:
         return float(self._reward)
 
     def _take_action(self, action):

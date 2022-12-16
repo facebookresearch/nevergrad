@@ -107,10 +107,7 @@ def keras_tuning(
 
 
 def mltuning(
-    seed: tp.Optional[int] = None,
-    overfitter: bool = False,
-    seq: bool = False,
-    nano: bool = False,
+    seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool = False, nano: bool = False,
 ) -> tp.Iterator[Experiment]:
     """Machine learning hyperparameter tuning experiment. Based on scikit models."""
     seedg = create_seed_generator(seed)
@@ -667,7 +664,7 @@ def yabbob(
     reduction_factor: int = 1,
     bounded: bool = False,
     box: bool = False,
-    max_num_constraints: int  = 4,
+    max_num_constraints: int = 4,
 ) -> tp.Iterator[Experiment]:
     """Yet Another Black-Box Optimization Benchmark.
     Related to, but without special effort for exactly sticking to, the BBOB/COCO dataset.
@@ -1464,7 +1461,7 @@ def olympus_surfaces(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         for k in range(2, 5):
             for noise in ["GaussianNoise", "UniformNoise", "GammaNoise"]:
                 for noise_scale in [0.5, 1]:
-                    funcs.append(OlympusSurface(kind, 10**k, noise, noise_scale))
+                    funcs.append(OlympusSurface(kind, 10 ** k, noise, noise_scale))
 
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", "noisy", seed=next(seedg))
@@ -1509,7 +1506,7 @@ def simple_tsp(seed: tp.Optional[int] = None, complex_tsp: bool = False) -> tp.I
     Budgets doubling from 25, 50, 100, 200, ... up  to 25600
 
     """
-    funcs = [STSP(10**k, complex_tsp) for k in range(2, 6)]
+    funcs = [STSP(10 ** k, complex_tsp) for k in range(2, 6)]
     seedg = create_seed_generator(seed)
     optims = [
         "RotatedTwoPointsDE",
@@ -1637,7 +1634,7 @@ def image_similarity(
         for loss in imagesxp.imagelosses.registry.values()
         if loss.REQUIRES_REFERENCE == similarity
     ]
-    for budget in [100 * 5**k for k in range(3)]:
+    for budget in [100 * 5 ** k for k in range(3)]:
         for func in funcs:
             for algo in optims:
                 xp = Experiment(func, algo, budget, num_workers=1, seed=next(seedg))
@@ -1684,7 +1681,7 @@ def image_multi_similarity(
         )
     else:
         mofuncs = [fbase.MultiExperiment(funcs, upper_bounds=base_values)]
-    for budget in [100 * 5**k for k in range(3)]:
+    for budget in [100 * 5 ** k for k in range(3)]:
         for num_workers in [1]:
             for algo in optims:
                 for mofunc in mofuncs:
@@ -1720,7 +1717,7 @@ def image_quality_proxy(seed: tp.Optional[int] = None, with_pgan: bool = False) 
         for loss in (imagesxp.imagelosses.Koncept512, imagesxp.imagelosses.Blur, imagesxp.imagelosses.Brisque)
     ]
     # TODO: add the proxy info in the parametrization.
-    for budget in [100 * 5**k for k in range(3)]:
+    for budget in [100 * 5 ** k for k in range(3)]:
         for algo in optims:
             for func in [blur, brisque]:
                 # We optimize on blur or brisque and check performance on iqa.
@@ -1767,7 +1764,7 @@ def image_quality(
     else:
         upper_bounds = [func(func.parametrization.value) for func in funcs]
         mofuncs = [fbase.MultiExperiment(funcs, upper_bounds=upper_bounds)]  # type: ignore
-    for budget in [100 * 5**k for k in range(3)]:
+    for budget in [100 * 5 ** k for k in range(3)]:
         for num_workers in [1]:
             for algo in optims:
                 for func in mofuncs:
@@ -1829,7 +1826,7 @@ def image_similarity_and_quality(
                     [func, func_blur, func_iqa], upper_bounds=[base_value, base_blur_value, 100.0]
                 )
             ]
-        for budget in [100 * 5**k for k in range(3)]:
+        for budget in [100 * 5 ** k for k in range(3)]:
             for algo in optims:
                 for mofunc in mofuncs:
                     xp = Experiment(mofunc, algo, budget, num_workers=1, seed=next(seedg))
@@ -1884,11 +1881,7 @@ def double_o_seven(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                         )
                         opt_budget = env_budget // num_repetitions
                         yield Experiment(
-                            func,
-                            optim,
-                            budget=opt_budget,
-                            num_workers=num_workers,
-                            seed=next(seedg),
+                            func, optim, budget=opt_budget, num_workers=num_workers, seed=next(seedg),
                         )
 
 
@@ -2123,7 +2116,7 @@ def causal_similarity(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     optims = ["CMA", "NGOpt8", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
     func = CausalDiscovery()
-    for budget in [100 * 5**k for k in range(3)]:
+    for budget in [100 * 5 ** k for k in range(3)]:
         for num_workers in [1]:
             for algo in optims:
                 xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
@@ -2138,7 +2131,7 @@ def unit_commitment(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     for num_timepoint in [5, 10, 20]:
         for num_generator in [3, 8]:
             func = UnitCommitmentProblem(num_timepoints=num_timepoint, num_generators=num_generator)
-            for budget in [100 * 5**k for k in range(3)]:
+            for budget in [100 * 5 ** k for k in range(3)]:
                 for algo in optims:
                     xp = Experiment(func, algo, budget, num_workers=1, seed=next(seedg))
                     if not xp.is_incoherent:

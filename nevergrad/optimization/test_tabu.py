@@ -28,7 +28,7 @@ def test_tabu() -> None:
         for _ in range(num_tests):
             dim = 4
             arity = 7
-            budget = (arity**dim) // 50
+            budget = (arity ** dim) // 50
             domain = ng.p.TransitionChoice(range(arity), ordered=False, repetitions=dim)
             optimum = np.random.randint(arity, size=dim)
 

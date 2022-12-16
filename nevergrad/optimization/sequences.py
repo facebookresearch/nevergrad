@@ -38,7 +38,7 @@ class Sampler:
         self, dimension: int, budget: tp.Optional[int] = None, random_state: tp.Optional[RandomState] = None
     ) -> None:
         if random_state is None:
-            random_state = np.random.RandomState(np.random.randint(2**32, dtype=np.uint32))
+            random_state = np.random.RandomState(np.random.randint(2 ** 32, dtype=np.uint32))
         self.random_state = random_state
         self.dimension = dimension
         self.budget = budget
@@ -100,7 +100,7 @@ class LHSSampler(Sampler):
         self.permutations = np.zeros((dimension, budget), dtype=int)
         for k in range(dimension):
             self.permutations[k] = self.random_state.permutation(budget)
-        self.seed = self.random_state.randint(2**32, dtype=np.uint32)
+        self.seed = self.random_state.randint(2 ** 32, dtype=np.uint32)
         self.randg = np.random.RandomState(self.seed)
 
     def reinitialize(self) -> None:
@@ -139,11 +139,11 @@ class HaltonPermutationGenerator:
         self, dimension: int, scrambling: bool = False, random_state: tp.Optional[RandomState] = None
     ) -> None:
         if random_state is None:
-            random_state = np.random.RandomState(np.random.randint(2**32, dtype=np.uint32))
+            random_state = np.random.RandomState(np.random.randint(2 ** 32, dtype=np.uint32))
         self.dimension = dimension
         self.scrambling = scrambling
         self.primes = _get_first_primes(dimension).tolist()
-        self.seed = random_state.randint(2**32, dtype=np.uint32)
+        self.seed = random_state.randint(2 ** 32, dtype=np.uint32)
         self.fulllist = np.arange(self.primes[-1]) if self.primes else []
 
     def get_permutations_generator(self) -> tp.Iterator[tp.ArrayLike]:

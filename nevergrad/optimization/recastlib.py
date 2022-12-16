@@ -34,15 +34,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
         self.initial_guess: tp.Optional[tp.ArrayLike] = None
         # configuration
         assert (
-            method
-            in [
-                "CmaFmin2",
-                "Nelder-Mead",
-                "COBYLA",
-                "SLSQP",
-                "Powell",
-            ]
-            or "NLOPT" in method
+            method in ["CmaFmin2", "Nelder-Mead", "COBYLA", "SLSQP", "Powell",] or "NLOPT" in method
         ), f"Unknown method '{method}'"
         self.method = method
         self.random_restart = random_restart
@@ -129,13 +121,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                     if weakself._normalizer is not None:
                         # Tell CMA to work in [0, 1].
                         options["bounds"] = [0.0, 1.0]
-                    res = cma.fmin(
-                        cma_objective_function,
-                        x0=x0,
-                        sigma0=0.2,
-                        options=options,
-                        restarts=9,
-                    )
+                    res = cma.fmin(cma_objective_function, x0=x0, sigma0=0.2, options=options, restarts=9,)
                     x0 = 0.5 + np.random.uniform() * np.random.uniform(
                         low=-0.5, high=0.5, size=weakself.dimension
                     )
@@ -238,7 +224,7 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
 
     def get_optimization_function(self) -> tp.Callable[[tp.Callable[..., tp.Any]], tp.Optional[tp.ArrayLike]]:
         if self._initial_seed == -1:
-            self._initial_seed = self._rng.randint(2**30)
+            self._initial_seed = self._rng.randint(2 ** 30)
         return functools.partial(self._optimization_function, weakref.proxy(self))
         # pylint:disable=useless-return
 
@@ -366,7 +352,7 @@ class _PymooBatchMinimizeBase(recaster.BatchRecastOptimizer):
 
     def get_optimization_function(self) -> tp.Callable[[tp.Callable[..., tp.Any]], tp.Optional[tp.ArrayLike]]:
         if self._initial_seed == -1:
-            self._initial_seed = self._rng.randint(2**30)
+            self._initial_seed = self._rng.randint(2 ** 30)
         return functools.partial(self._optimization_function, weakref.proxy(self))
         # pylint:disable=useless-return
 

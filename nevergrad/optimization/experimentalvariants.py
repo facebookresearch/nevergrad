@@ -65,10 +65,9 @@ FastGADiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="fastga").set_name(
 DoubleFastGAOptimisticNoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
     noise_handling="optimistic", mutation="doublefastga"
 ).set_name("DoubleFastGAOptimisticNoisyDiscreteOnePlusOne", register=True)
-RecombiningGA = ParametrizedOnePlusOne(
-    mutation="doublefastga",
-    crossover=True,
-).set_name("RecombiningGA", register=True)
+RecombiningGA = ParametrizedOnePlusOne(mutation="doublefastga", crossover=True,).set_name(
+    "RecombiningGA", register=True
+)
 RotatedRecombiningGA = ParametrizedOnePlusOne(
     mutation="doublefastga", crossover=True, rotation=True
 ).set_name("RotatedRecombiningGA", register=True)

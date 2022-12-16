@@ -143,9 +143,7 @@ class Choice(BaseChoice):
         indices = Array(shape=(rep, len(lchoices)), mutable_sigma=False)
         indices.add_layer(_datalayers.SoftmaxSampling(len(lchoices), deterministic=deterministic))
         super().__init__(
-            choices=lchoices,
-            repetitions=repetitions,
-            indices=indices,
+            choices=lchoices, repetitions=repetitions, indices=indices,
         )
         self._indices: tp.Optional[np.ndarray] = None
 

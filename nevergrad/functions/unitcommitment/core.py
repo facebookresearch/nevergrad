@@ -55,8 +55,7 @@ class UnitCommitmentProblem(ExperimentFunction):
         # param_operational_states = ng.p.Array(shape=(self.num_generators, self.num_timepoints)).set_bounds(0, 1).set_integer_casting() #
         param_operational_states = ng.p.Choice([0, 1], repetitions=self.num_timepoints * self.num_generators)
         instru = ng.p.Instrumentation(
-            operational_output=param_operational_output,
-            operational_states=param_operational_states,
+            operational_output=param_operational_output, operational_states=param_operational_states,
         ).set_name("")
         super().__init__(self.unit_commitment_obj_with_penalization, instru)
 
@@ -67,12 +66,10 @@ class UnitCommitmentProblem(ExperimentFunction):
         demand_penalty = np.sum(np.abs(np.sum(operational_output, axis=0) - self.demands))
         # From semi_continuous_constraints
         lb_penalty = np.sum(
-            np.clip(self.p_min * operational_states - operational_output, 0, a_max=None),
-            axis=None,
+            np.clip(self.p_min * operational_states - operational_output, 0, a_max=None), axis=None,
         )
         ub_penalty = np.sum(
-            np.clip(operational_output - self.p_max * operational_states, 0, a_max=None),
-            axis=None,
+            np.clip(operational_output - self.p_max * operational_states, 0, a_max=None), axis=None,
         )
         # Running cost
         running_cost = np.sum(

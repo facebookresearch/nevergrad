@@ -285,13 +285,7 @@ def gym_problem(
         do we use greedy reward estimates for biasing the decisions.
     """
     if conformant:
-        funcs = [
-            nevergrad_gym.GymMulti(
-                specific_problem,
-                control="conformant",
-                neural_factor=None,
-            )
-        ]
+        funcs = [nevergrad_gym.GymMulti(specific_problem, control="conformant", neural_factor=None,)]
     else:
         funcs = [
             nevergrad_gym.GymMulti(
@@ -363,10 +357,7 @@ def conformant_planning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment
     specific_problem = "EnergySavingsGym-v0"
 
     return gym_problem(
-        seed,
-        specific_problem=gym_problem_modifier(specific_problem),
-        conformant=True,
-        big_noise=False,
+        seed, specific_problem=gym_problem_modifier(specific_problem), conformant=True, big_noise=False,
     )
 
 
@@ -375,8 +366,5 @@ def neuro_planning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # You might modify this problem by specifying an environment variable.
     specific_problem = "EnergySavingsGym-v0"
     return gym_problem(
-        seed,
-        specific_problem=gym_problem_modifier(specific_problem),
-        conformant=False,
-        big_noise=False,
+        seed, specific_problem=gym_problem_modifier(specific_problem), conformant=False, big_noise=False,
     )

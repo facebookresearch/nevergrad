@@ -145,7 +145,7 @@ class SammonMapping(ExperimentFunction):
 
     def __init__(self, proximity_array: np.ndarray) -> None:
         self._proximity = proximity_array
-        self._proximity_2 = self._proximity**2
+        self._proximity_2 = self._proximity ** 2
         self._proximity_2[
             self._proximity_2 == 0
         ] = 1  # avoid ZeroDivision (for diagonal terms, or identical points)

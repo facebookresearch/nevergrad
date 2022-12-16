@@ -394,7 +394,7 @@ class _Game:
             seed = policy[a * 26 * 13 + b * 13 + c]  # type: ignore
         if seed == 0.0:
             return cards
-        state = np.random.RandomState(hash(seed) % (2**32))
+        state = np.random.RandomState(hash(seed) % (2 ** 32))
         state.shuffle(cards)
         return list(cards)
 
