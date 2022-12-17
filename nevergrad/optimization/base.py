@@ -261,7 +261,11 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         callback: callable
             a callable taking the same parameters as the method it is registered upon (including self)
         """
-        assert name in ["ask", "tell", "minimize"], f'Only "ask", "tell" and "minimize" methods can have callbacks (not {name})'
+        assert name in [
+            "ask",
+            "tell",
+            "minimize",
+        ], f'Only "ask", "tell" and "minimize" methods can have callbacks (not {name})'
         self._callbacks.setdefault(name, []).append(callback)
 
     def remove_all_callbacks(self) -> None:
@@ -420,7 +424,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 auto_bound=self._MULTIOBJECTIVE_AUTO_BOUND, no_hypervolume=self._no_hypervolume
             )
         return self._hypervolume_pareto.add(candidate)
-    
+
     def _save_loss_history(self) -> None:
         self.previous_best_loss = self.current_bests["minimum"].get_estimation("minimum")
 
@@ -445,8 +449,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 mvalue.parameter = candidate  # keep best candidate
         # update current best records
         # this may have to be improved if we want to keep more kinds of best losss
-        if self.archive[x].get_estimation("minimum") < self.current_bests["minimum"].get_estimation("minimum"):
-            self._save_loss_history()     
+        if self.archive[x].get_estimation("minimum") < self.current_bests["minimum"].get_estimation(
+            "minimum"
+        ):
+            self._save_loss_history()
         for name in self.current_bests:
             if mvalue is self.current_bests[name]:  # reboot
                 best = min(self.archive.values(), key=lambda mv, n=name: mv.get_estimation(n))  # type: ignore

@@ -363,11 +363,12 @@ class _DurationCriterion:
             self._start = time.time()
         return time.time() > self._start + self._max_duration
 
+
 class _RelImprovementCriterion:
     def __init__(self, min_improvement) -> None:
         self._min_improvement = min_improvement
-    
+
     def __call__(self, optimizer: base.Optimizer) -> bool:
         last_best = optimizer.previous_best_loss
         current_best = optimizer.current_bests["minimum"].get_estimation("minimum")
-        return (last_best - current_best)/last_best < self._min_improvement
+        return (last_best - current_best) / last_best < self._min_improvement
