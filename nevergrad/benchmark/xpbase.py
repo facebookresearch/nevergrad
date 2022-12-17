@@ -15,7 +15,11 @@ import numpy as np
 from nevergrad.parametrization import parameter as p
 from nevergrad.common import decorators
 from nevergrad.common import errors
-from ..functions.rl.agents import torch  # import includes pytorch fix
+
+try:
+    from ..functions.rl.agents import torch  # import includes pytorch fix
+except ModuleNotFoundError:
+    pass
 from ..functions import base as fbase
 from ..optimization import base as obase
 from ..optimization.optimizerlib import (
