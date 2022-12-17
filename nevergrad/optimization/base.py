@@ -8,7 +8,6 @@ import warnings
 from pathlib import Path
 from numbers import Real
 from collections import deque
-from copy import deepcopy
 import numpy as np
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
