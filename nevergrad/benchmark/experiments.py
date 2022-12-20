@@ -848,7 +848,7 @@ def yapenboundedbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 def yapennoisybbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yanoisybbob with penalized constraints."""
     cases = 8  # total number of cases (skip 0, as it's constraint-free)
-    slices = [yabbob(seed, constraint_case=-i, noisy=True) for i in range(1, cases)]
+    slices = [yabbob(seed, constraint_case=-i, noise=True) for i in range(1, cases)]
     return itertools.chain(*slices)
 
 
@@ -896,7 +896,7 @@ def yaonepenboundedbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment
 def yaonepennoisybbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yanoisybbob with penalized constraints."""
     cases = 8  # total number of cases (skip 0, as it's constraint-free)
-    slices = [yabbob(seed, max_num_constraints=1, constraint_case=-i, noisy=True) for i in range(1, cases)]
+    slices = [yabbob(seed, max_num_constraints=1, constraint_case=-i, noise=True) for i in range(1, cases)]
     return itertools.chain(*slices)
 
 
