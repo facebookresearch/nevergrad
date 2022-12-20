@@ -178,6 +178,9 @@ def competence_map() -> tp.Sequence[Optim]:
 def competitive() -> tp.Sequence[Optim]:
     return get_optimizers("cma", "competence_map") + [
         "MetaNGOpt10",
+        "NGOpt",
+        "NGOptRW",
+        "GeneticDE",
         "NaiveTBPSA",
         "PSO",
         "DE",
