@@ -668,6 +668,7 @@ def yabbob(
     bounded: bool = False,
     box: bool = False,
     max_num_constraints: int = 4,
+    mega_smooth_penalization: int = 0,
 ) -> tp.Iterator[Experiment]:
     """Yet Another Black-Box Optimization Benchmark.
     Related to, but without special effort for exactly sticking to, the BBOB/COCO dataset.
@@ -745,6 +746,30 @@ def yabbob(
         for as_bool in [False, True]
         for name in ["sum", "diff", "second_diff", "ball"]
     ]
+    if mega_smooth_penalization > 0:
+        seed = next(seedg)
+        constraints: tp.List[tp.Any] = []
+        dim = block_dimension * num_blocks
+        max_num_constraints = mega_smooth_penalization
+        constraint_case = -abs(constraint_case)
+        # We organize constraints so that xs satisfied all of them
+        xs = np.random.rand(dim)
+
+        def make_ctr(i):
+            xfail = np.random.RandomState(i).rand(dim)
+
+            def f(x):
+                normal = np.exp(np.randomRandomState(i + 31721).randn() - 1.0) * np.linalg.norm(
+                    (x - xs) * np.random.RandomState(i + 741).randn(dim)
+                )
+                return normal - (xs - xfail) * (x - (xs + xfail) / 2.0)
+
+            return f
+
+        for i in range(mega_smooth_penalization):
+            f = make_ctr(seed + i)
+            assert f(xs) <= 0.0
+            constraints += [f]
     assert (
         abs(constraint_case) < len(constraints) + max_num_constraints
     ), "abs(constraint_case) should be in 0, 1, ..., {len(constraints) + max_num_constraints - 1} (0 = no constraint)."
@@ -825,6 +850,24 @@ def yapenbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with penalized constraints."""
     cases = 8  # total number of cases (skip 0, as it's constraint-free)
     slices = [yabbob(seed, constraint_case=-i) for i in range(1, cases)]
+    return itertools.chain(*slices)
+
+
+@registry.register
+def yamegapenbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with penalized constraints."""
+    cases = 1  # only 1 is meaningful for mega-constrained problems.
+    slices = [yabbob(seed, constraint_case=-1, mega_smooth_penalization=1000) for i in range(1, 7)]
+    return itertools.chain(*slices)
+
+
+@registry.register
+def yamegapenboundedbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with penalized constraints."""
+    cases = 1  # only 1 is meaningful for mega-constrained problems.
+    slices = [
+        yabbob(seed, bounded=True, constraint_case=-1, mega_smooth_penalization=1000) for i in range(1, 7)
+    ]
     return itertools.chain(*slices)
 
 
