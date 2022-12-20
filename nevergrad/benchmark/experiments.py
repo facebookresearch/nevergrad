@@ -749,7 +749,7 @@ def yabbob(
     if mega_smooth_penalization > 0:
         seed = next(seedg)
         constraints: tp.List[tp.Any] = []
-        dim = block_dimension * num_blocks
+        dim = 1000
         max_num_constraints = mega_smooth_penalization
         constraint_case = -abs(constraint_case)
         # We organize constraints so that xs satisfied all of them
@@ -759,10 +759,14 @@ def yabbob(
             xfail = np.random.RandomState(i).rand(dim)
 
             def f(x):
+                local_dim = min(dim, len(x))
+                x = x[:local_dim]
                 normal = np.exp(np.randomRandomState(i + 31721).randn() - 1.0) * np.linalg.norm(
-                    (x - xs) * np.random.RandomState(i + 741).randn(dim)
+                    (x - xs[:local_dim]) * np.random.RandomState(i + 741).randn(local_dim)
                 )
-                return normal - (xs - xfail) * (x - (xs + xfail) / 2.0)
+                return normal - (xs[:local_dim] - xfail[:local_dim]) * (
+                    x - (xs[:local_dim] + xfail[:local_dim]) / 2.0
+                )
 
             return f
 
