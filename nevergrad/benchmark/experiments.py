@@ -747,8 +747,7 @@ def yabbob(
         for name in ["sum", "diff", "second_diff", "ball"]
     ]
     if mega_smooth_penalization > 0:
-        seed = next(seedg)
-        constraints: tp.List[tp.Any] = []
+        constraints = []
         dim = 1000
         max_num_constraints = mega_smooth_penalization
         constraint_case = -abs(constraint_case)
@@ -771,7 +770,7 @@ def yabbob(
             return f
 
         for i in range(mega_smooth_penalization):
-            f = make_ctr(seed + i)
+            f = make_ctr(i)
             assert f(xs) <= 0.0
             constraints += [f]
     assert (
