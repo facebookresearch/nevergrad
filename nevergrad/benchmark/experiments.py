@@ -856,7 +856,6 @@ def yapenbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 @registry.register
 def yamegapenbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with penalized constraints."""
-    cases = 1  # only 1 is meaningful for mega-constrained problems.
     slices = [yabbob(seed, constraint_case=-1, mega_smooth_penalization=1000) for i in range(1, 7)]
     return itertools.chain(*slices)
 
@@ -864,7 +863,6 @@ def yamegapenbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 @registry.register
 def yamegapenboundedbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with penalized constraints."""
-    cases = 1  # only 1 is meaningful for mega-constrained problems.
     slices = [
         yabbob(seed, bounded=True, constraint_case=-1, mega_smooth_penalization=1000) for i in range(1, 7)
     ]
