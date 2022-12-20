@@ -763,8 +763,8 @@ def yabbob(
                 normal = np.exp(np.random.RandomState(i + 31721).randn() - 1.0) * np.linalg.norm(
                     (x - xs[:local_dim]) * np.random.RandomState(i + 741).randn(local_dim)
                 )
-                return normal - (xs[:local_dim] - xfail[:local_dim]) * (
-                    x - (xs[:local_dim] + xfail[:local_dim]) / 2.0
+                return normal - np.sum(
+                    (xs[:local_dim] - xfail[:local_dim]) * (x - (xs[:local_dim] + xfail[:local_dim]) / 2.0)
                 )
 
             return f
