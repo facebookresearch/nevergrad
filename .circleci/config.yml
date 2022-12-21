@@ -118,6 +118,7 @@ jobs:
             mv dist nevergrad-build/
             #
             python -c "from pathlib import Path;files = Path('nevergrad.egg-info/SOURCES.txt').read_text().split(); assert 'LICENSE' in files"
+            rm -rf venv && python3 -m venv
             python3 -m venv test_wheel
             . test_wheel/bin/activate
             pip install -U pip
