@@ -4,10 +4,8 @@
 #
 version: 2.1
 
-
 orbs:
   win: circleci/windows@2.2.0
-
 
 # the set up in which the ubuntu jobs will run:
 executors:
@@ -16,20 +14,21 @@ executors:
       - image: cimg/python:3.7
     working_directory: ~/repo
 
-
 commands:
 
   ubuntu_restore_all:
-    description: "Restores virtual env with full install from cache, and update dependencies if need be."
+    description: "Restores virtual env with full install from cache, and update
+      dependencies if need be."
     steps:
       - checkout
 
       - restore_cache:
           name: "[all] Restore cache"
           keys:
-          - v2-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
-          # fallback to installing main requirements
-          - v2-dependencies-main-{{ checksum "requirements/main.txt"}}
+            - v2-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum
+              "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+            # fallback to installing main requirements
+            - v2-dependencies-main-{{ checksum "requirements/main.txt"}}
 
       - run:
           name: "[all] Install dependencies"
@@ -52,8 +51,8 @@ jobs:
       - restore_cache:
           name: "[no-extra] Restore cache"
           keys:
-          - v2-dependencies-main-{{ checksum "requirements/main.txt"}}
-          # fallback to using the latest cache if no exact match is found
+            - v2-dependencies-main-{{ checksum "requirements/main.txt"}}
+            # fallback to using the latest cache if no exact match is found
 
       - run:
           name: "[no-extra] Install dependencies"
@@ -94,7 +93,8 @@ jobs:
           name: "[all] Save cache"
           paths:
             - ./venv
-          key: v2-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          key: v2-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum
+            "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
 
       - run:
           name: "[all] Print installation"
@@ -141,6 +141,8 @@ jobs:
       - persist_to_workspace:
           root: docs/_build
           paths: html
+    # The resource_class feature allows configuring CPU and RAM resources for each job. Different resource classes are available for different executors. https://circleci.com/docs/2.0/configuration-reference/#resourceclass
+    resource_class: large
 
   docs-links:
     executor: ubuntu-python37
@@ -188,7 +190,6 @@ jobs:
             black --version
             black nevergrad --check --diff
 
-
   pytests:
     executor: ubuntu-python37
 
@@ -202,7 +203,6 @@ jobs:
           command: |
             . venv/bin/activate
             pytest nevergrad -v --exitfirst --durations=20 --cov=nevergrad
-
 
   docs-deploy:
     docker:
@@ -233,7 +233,6 @@ jobs:
               gh-pages --dotfiles --message "[skip ci] Updates" --dist docs/_build/html
             fi
 
-
   windows-pytests:
     executor:
       name: win/default
@@ -246,7 +245,9 @@ jobs:
       - restore_cache:
           name: "[all] Restore cache"
           keys:
-          - v2-win-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+            - v2-win-dependencies-{{ checksum "requirements/dev.txt" }}-{{
+              checksum "requirements/main.txt"}}-{{ checksum
+              "requirements/bench.txt"}}
 
       - run:
           name: Setup nevergrad in virtualenv
@@ -261,7 +262,8 @@ jobs:
           name: "[all] Save cache"
           paths:
             - ./venv
-          key: v2-win-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          key: v2-win-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum
+            "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
 
       - run:
           name: "[all] Print installation"
@@ -275,7 +277,6 @@ jobs:
           command: |
             . ./venv/Scripts/activate
             pytest nevergrad -v --exitfirst --durations=20
-
 
   pypi-deploy:
 
@@ -312,7 +313,6 @@ jobs:
               twine upload nevergrad-build/dist/nevergrad-* --verbose
             fi
 
-
 workflows:
   version: 2
   all_ci:
@@ -329,7 +329,7 @@ workflows:
           filters:
             tags:
               only: /(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/
-#      - windows-pytests
+      #      - windows-pytests
       - docs-deploy:
           requires:
             - install
@@ -338,7 +338,7 @@ workflows:
               only: main
             tags:
               only: /(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/
-      - docs-links:  # a bit noisy, so only running on main, and does not stop deployments
+      - docs-links: # a bit noisy, so only running on main, and does not stop deployments
           requires:
             - install
           filters:
