@@ -39,7 +39,11 @@ from typing import Hashable as Hashable
 from typing import Match as Match
 from typing import cast as cast
 from pathlib import Path as Path
-from typing_extensions import Protocol
+
+try:
+    from typing import Protocol
+except:
+    from typing_extensions import Protocol  # type: ignore
 
 #
 import numpy as _np
