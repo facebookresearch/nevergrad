@@ -714,10 +714,10 @@ def yabbob(
     if hd and small:
         optims = ["BO", "CMA", "PSO", "DE"]
 
-    if bounded:
-        optims = ["BO", "PCABO", "BayesOptimBO", "CMA", "PSO", "DE"]
-    if box:
-        optims = ["DiagonalCMA", "Cobyla", "NGOpt16", "NGOpt15", "CMandAS2", "OnePlusOne"]
+    # if bounded:
+    #    optims = ["BO", "PCABO", "BayesOptimBO", "CMA", "PSO", "DE"]
+    # if box:
+    #    optims = ["DiagonalCMA", "Cobyla", "NGOpt16", "NGOpt15", "CMandAS2", "OnePlusOne"]
     # List of objective functions.
     functions = [
         ArtificialFunction(
@@ -853,6 +853,34 @@ def yapenbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with penalized constraints."""
     cases = 8  # total number of cases (skip 0, as it's constraint-free)
     slices = [yabbob(seed, constraint_case=-i) for i in range(1, cases)]
+    return itertools.chain(*slices)
+
+
+@registry.register
+def yamegapenhdbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with penalized constraints."""
+    slices = [yabbob(seed, hd=True, constraint_case=-1, mega_smooth_penalization=1000) for i in range(1, 7)]
+    return itertools.chain(*slices)
+
+
+@registry.register
+def yaonepenbigbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with penalized constraints."""
+    slices = [yabbob(seed, big=True, constraint_case=-i, max_num_constraints=1) for i in range(1, 7)]
+    return itertools.chain(*slices)
+
+
+@registry.register
+def yamegapenbigbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with penalized constraints."""
+    slices = [yabbob(seed, big=True, constraint_case=-1, mega_smooth_penalization=1000) for i in range(1, 7)]
+    return itertools.chain(*slices)
+
+
+@registry.register
+def yamegapenboxbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with penalized constraints."""
+    slices = [yabbob(seed, box=True, constraint_case=-1, mega_smooth_penalization=1000) for i in range(1, 7)]
     return itertools.chain(*slices)
 
 
