@@ -714,9 +714,9 @@ def yabbob(
     if hd and small:
         optims = ["BO", "CMA", "PSO", "DE"]
 
-    #if bounded:
+    # if bounded:
     #    optims = ["BO", "PCABO", "BayesOptimBO", "CMA", "PSO", "DE"]
-    #if box:
+    # if box:
     #    optims = ["DiagonalCMA", "Cobyla", "NGOpt16", "NGOpt15", "CMandAS2", "OnePlusOne"]
     # List of objective functions.
     functions = [

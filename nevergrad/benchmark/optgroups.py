@@ -177,7 +177,7 @@ def competence_map() -> tp.Sequence[Optim]:
 @registry.register
 def competitive() -> tp.Sequence[Optim]:
     return get_optimizers("cma", "competence_map") + [
-#        "MetaNGOpt10",
+        #        "MetaNGOpt10",
         "NGOpt",
         "NGOptRW",
         "GeneticDE",
