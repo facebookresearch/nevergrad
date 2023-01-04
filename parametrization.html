@@ -273,7 +273,7 @@ where it is easier to define operations.</p>
 <li><p><strong>add placeholders</strong> to your code. Placeholders are just tokens of the form <code class="code docutils literal notranslate"><span class="pre">NG_ARG{name|comment}</span></code> where you can modify the name and comment. The name you set will be the one you will need to use as your function argument. In order to avoid breaking your code, the line containing the placeholders can be commented. To notify that the line should be uncommented for parametrization, you’ll need to add “&#64;nevergrad&#64;” at the start of the comment. Here is an example in C which will notify that we want to obtain a function with a <code class="code docutils literal notranslate"><span class="pre">step</span></code> argument which will inject values into the <code class="code docutils literal notranslate"><span class="pre">step_size</span></code> variable of the code:</p></li>
 </ul>
 </div></blockquote>
-<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span><span class="w"> </span><span class="n">step_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.1</span><span class="w"></span>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span><span class="w"> </span><span class="n">step_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.1</span>
 <span class="c1">// @nevergrad@ step_size = NG_ARG{step|any comment}</span>
 </pre></div>
 </div>

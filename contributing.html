@@ -121,11 +121,11 @@
 or <code class="code docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-e</span> <span class="pre">'.[all]'</span></code> if you use <code class="code docutils literal notranslate"><span class="pre">zsh</span></code>. If the install fails because of <code class="code docutils literal notranslate"><span class="pre">torch</span></code>, you can preinstall it with the instructions <a class="reference external" href="https://pytorch.org/get-started/locally/">on Pytorch website</a>
 and rerun <code class="code docutils literal notranslate"><span class="pre">nevergrad</span></code>’s installation.</p>
 <p>Most of the code is covered by unit tests. You can run them with:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pytest nevergrad --cov<span class="o">=</span>nevergrad
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pytest<span class="w"> </span>nevergrad<span class="w"> </span>--cov<span class="o">=</span>nevergrad
 </pre></div>
 </div>
 <p>You can then run <code class="code docutils literal notranslate"><span class="pre">mypy</span></code> on <code class="code docutils literal notranslate"><span class="pre">nevergrad</span></code> with:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mypy --implicit-reexport nevergrad
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mypy<span class="w"> </span>--implicit-reexport<span class="w"> </span>nevergrad
 </pre></div>
 </div>
 <p>If you are not familiar with type checking, we do not want it to be an annoyance and you can can ignore errors by adding <code class="code docutils literal notranslate"><span class="pre">#</span> <span class="pre">type:</span> <span class="pre">ignore</span></code> at the end of lines flagged as incorrect.
@@ -135,7 +135,7 @@ If you are however familiar with type hints, you can check with the strict mode:
 <p>Finally, we use pre-commit hooks to make sure the code follows the same coding style. We currently use  <cite>black</cite> and <code class="code docutils literal notranslate"><span class="pre">pylint</span></code>. To install them, just run <code class="code docutils literal notranslate"><span class="pre">pre-commit</span> <span class="pre">install</span></code> once, and they will be activated for all your commits on this repository.</p>
 <p><code class="code docutils literal notranslate"><span class="pre">black</span></code> compliance is automatically checked on all PRs. If you do not use precommit hooks, you
 can install <code class="code docutils literal notranslate"><span class="pre">black</span></code> with <code class="code docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">black</span></code> make your code compliant by running:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>black nevergrad
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>black<span class="w"> </span>nevergrad
 </pre></div>
 </div>
 </section>
@@ -271,7 +271,7 @@ However, <strong>we do not want typing to be an annoyance</strong> for contribut
 <li><p>that running the algorithms twice after setting a seed lead to the exact same recommendation. This is useful to make sure we will get repeatability in the benchmarks.</p></li>
 </ul>
 <p>To run these tests, you can use:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pytest nevergrad/optimization/test_optimizerlib.py
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pytest<span class="w"> </span>nevergrad/optimization/test_optimizerlib.py
 </pre></div>
 </div>
 <p>The repeatability test will however crash the first time you run it, since no value for the recommendation of your algorithm exists. This is automatically added when running the tests, and if everything goes well the second time you run them, it means everything is fine. You will see in you diff that an additional line was added to a file containing all expected recommendations.</p>

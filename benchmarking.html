@@ -94,7 +94,7 @@
 <h2>Creating data from experiments<a class="headerlink" href="#creating-data-from-experiments" title="Permalink to this heading"></a></h2>
 <p>Experiment plans are described in <code class="code docutils literal notranslate"><span class="pre">nevergrad.benchmark.experiments</span></code>. Each experiment plan is a generator yielding different <code class="code docutils literal notranslate"><span class="pre">Experiment</span></code> instances (defining function and optimizer settings).
 To run an experiment plan, use:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python -m nevergrad.benchmark &lt;experiment_name&gt;
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>nevergrad.benchmark<span class="w"> </span>&lt;experiment_name&gt;
 </pre></div>
 </div>
 <p>You may try with the experiment name <code class="code docutils literal notranslate"><span class="pre">repeated_basic</span></code> for instance.
@@ -105,7 +105,7 @@ for some experiments, you may provide a seed for reproducibility.</p>
 <section id="plotting-results">
 <h2>Plotting results<a class="headerlink" href="#plotting-results" title="Permalink to this heading"></a></h2>
 <p>In order to plot the data in the csv file, just run:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python -m nevergrad.benchmark.plotting &lt;csv_file&gt;
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>nevergrad.benchmark.plotting<span class="w"> </span>&lt;csv_file&gt;
 </pre></div>
 </div>
 <p>Check out <code class="code docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">nevergrad.benchmark.plotting</span> <span class="pre">-h</span></code> for more options.</p>
@@ -125,7 +125,7 @@ afterwards, it will be used to save all figures, otherwise it will be saved a fo
 <p>The <code class="code docutils literal notranslate"><span class="pre">nevergrad.benchmark</span></code> command has an “import” system which can import additional modules where you defined your own experiments, possibly with your own functions and/or optimizers.
 This system however does not work on Windows (yet? feel free to help us!)</p>
 <p>Example (please note that <code class="code docutils literal notranslate"><span class="pre">nevergrad</span></code> needs to be cloned in your working directory for this example to work):</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python -m nevergrad.benchmark additional_experiment --imports<span class="o">=</span>nevergrad/benchmark/additional/example.py
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>nevergrad.benchmark<span class="w"> </span>additional_experiment<span class="w"> </span>--imports<span class="o">=</span>nevergrad/benchmark/additional/example.py
 </pre></div>
 </div>
 <p>See the <a class="reference external" href="https://github.com/facebookresearch/nevergrad/blob/main/nevergrad/benchmark/additional/example.py">example file</a> to understand more precisely how functions/optimizers/experiments are specified. You can also submit a pull request to add your code directly in <code class="code docutils literal notranslate"><span class="pre">nevergrad</span></code>.

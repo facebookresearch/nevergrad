@@ -85,14 +85,14 @@
 <div class="highlight-R notranslate"><div class="highlight"><pre><span></span><span class="c1"># Library and environment for Reticulate/Nevergrad.</span>
 <span class="nf">library</span><span class="p">(</span><span class="s">&quot;reticulate&quot;</span><span class="p">)</span>
 <span class="nf">conda_create</span><span class="p">(</span><span class="s">&quot;r-reticulate&quot;</span><span class="p">)</span>
-<span class="nf">conda_install</span><span class="p">(</span><span class="s">&quot;r-reticulate&quot;</span><span class="p">,</span> <span class="s">&quot;nevergrad&quot;</span><span class="p">,</span> <span class="n">pip</span><span class="o">=</span><span class="kc">TRUE</span><span class="p">)</span>
+<span class="nf">conda_install</span><span class="p">(</span><span class="s">&quot;r-reticulate&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;nevergrad&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">pip</span><span class="o">=</span><span class="kc">TRUE</span><span class="p">)</span>
 <span class="nf">use_condaenv</span><span class="p">(</span><span class="s">&quot;r-reticulate&quot;</span><span class="p">)</span>
 
 <span class="c1"># Only if you use parallelism.</span>
 <span class="nf">library</span><span class="p">(</span><span class="n">doParallel</span><span class="p">)</span>
 
 <span class="c1"># Choose your optimization method below.</span>
-<span class="n">optimizer_name</span> <span class="o">&lt;-</span> <span class="s">&quot;NGOpt&quot;</span>
+<span class="n">optimizer_name</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s">&quot;NGOpt&quot;</span>
 <span class="c1"># optimizer_name &lt;- &quot;DoubleFastGADiscreteOnePlusOne&quot;</span>
 <span class="c1"># optimizer_name &lt;- &quot;OnePlusOne&quot;</span>
 <span class="c1"># optimizer_name &lt;- &quot;DE&quot;</span>
@@ -110,41 +110,41 @@
 <span class="c1"># Now we can play with Nevergrad as usual.</span>
 <span class="c1"># We assume here that we have 17 continuous hyperparameters with values in [0, 1].</span>
 <span class="c1"># We can do other instrumentations, as discussed below.</span>
-<span class="n">my_tuple</span> <span class="o">&lt;-</span> <span class="nf">tuple</span><span class="p">(</span><span class="m">17</span><span class="p">)</span>
-<span class="n">instrumentation</span> <span class="o">&lt;-</span> <span class="n">ng</span><span class="o">$</span><span class="n">p</span><span class="o">$</span><span class="nf">Array</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="n">my_tuple</span><span class="p">)</span>
-<span class="n">instrumentation</span><span class="o">$</span><span class="nf">set_bounds</span><span class="p">(</span><span class="m">0</span><span class="n">.</span><span class="p">,</span> <span class="m">1</span><span class="n">.</span><span class="p">)</span>
-<span class="n">num_workers</span> <span class="o">&lt;-</span> <span class="m">3</span>  <span class="c1"># We want to be able to evaluate 3 hyperparametrizations simultaneously.</span>
-<span class="n">num_iterations</span> <span class="o">&lt;-</span> <span class="m">100</span> <span class="o">*</span> <span class="n">num_workers</span>  <span class="c1"># Let us say we have a budget of 100xnum_workers hyperparameters to evaluate.</span>
+<span class="n">my_tuple</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">tuple</span><span class="p">(</span><span class="m">17</span><span class="p">)</span>
+<span class="n">instrumentation</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">ng</span><span class="o">$</span><span class="n">p</span><span class="o">$</span><span class="nf">Array</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="n">my_tuple</span><span class="p">)</span>
+<span class="n">instrumentation</span><span class="o">$</span><span class="nf">set_bounds</span><span class="p">(</span><span class="m">0</span><span class="n">.</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="n">.</span><span class="p">)</span>
+<span class="n">num_workers</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">3</span><span class="w">  </span><span class="c1"># We want to be able to evaluate 3 hyperparametrizations simultaneously.</span>
+<span class="n">num_iterations</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">100</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">num_workers</span><span class="w">  </span><span class="c1"># Let us say we have a budget of 100xnum_workers hyperparameters to evaluate.</span>
 
 <span class="c1"># Let us create a Nevergrad optimization method.</span>
-<span class="n">optimizer</span> <span class="o">&lt;-</span>  <span class="n">ng</span><span class="o">$</span><span class="n">optimizers</span><span class="o">$</span><span class="n">registry</span><span class="p">[</span><span class="n">optimizer_name</span><span class="p">](</span><span class="n">instrumentation</span><span class="p">,</span> <span class="n">budget</span><span class="o">=</span><span class="n">num_iterations</span><span class="p">,</span> <span class="n">num_workers</span><span class="o">=</span><span class="n">num_workers</span><span class="p">)</span>
+<span class="n">optimizer</span><span class="w"> </span><span class="o">&lt;-</span><span class="w">  </span><span class="n">ng</span><span class="o">$</span><span class="n">optimizers</span><span class="o">$</span><span class="n">registry</span><span class="p">[</span><span class="n">optimizer_name</span><span class="p">](</span><span class="n">instrumentation</span><span class="p">,</span><span class="w"> </span><span class="n">budget</span><span class="o">=</span><span class="n">num_iterations</span><span class="p">,</span><span class="w"> </span><span class="n">num_workers</span><span class="o">=</span><span class="n">num_workers</span><span class="p">)</span>
 
 <span class="c1"># Dummy initializations.</span>
-<span class="n">nevergrad_hp</span> <span class="o">&lt;-</span> <span class="m">0</span>
-<span class="n">nevergrad_hp_val</span> <span class="o">&lt;-</span> <span class="m">0</span>
-<span class="n">score</span> <span class="o">&lt;-</span> <span class="m">0</span>
+<span class="n">nevergrad_hp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">0</span>
+<span class="n">nevergrad_hp_val</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">0</span>
+<span class="n">score</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">0</span>
 
-<span class="nf">for </span><span class="p">(</span><span class="n">i</span> <span class="n">in</span> <span class="m">1</span><span class="o">:</span><span class="n">num_iterations</span><span class="p">)</span> <span class="p">{</span>
-    <span class="nf">for </span><span class="p">(</span><span class="n">j</span> <span class="n">in</span> <span class="m">1</span><span class="o">:</span><span class="n">num_workers</span><span class="p">)</span> <span class="p">{</span>
-       <span class="n">nevergrad_hp</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">&lt;-</span> <span class="n">optimizer</span><span class="o">$</span><span class="nf">ask</span><span class="p">()</span>
-       <span class="n">nevergrad_hp_val</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">&lt;-</span> <span class="n">nevergrad_hp</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">$</span><span class="n">value</span>
-    <span class="p">}</span>
+<span class="nf">for </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="n">in</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">num_iterations</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nf">for </span><span class="p">(</span><span class="n">j</span><span class="w"> </span><span class="n">in</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">num_workers</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">       </span><span class="n">nevergrad_hp</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">optimizer</span><span class="o">$</span><span class="nf">ask</span><span class="p">()</span>
+<span class="w">       </span><span class="n">nevergrad_hp_val</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">nevergrad_hp</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">$</span><span class="n">value</span>
+<span class="w">    </span><span class="p">}</span>
 
-    <span class="c1"># Sequential version.</span>
-    <span class="c1"># for (j in 1:num_workers) {  # In a perfect world this would be parallel.</span>
-    <span class="c1">#    score[j] &lt;- norm(nevergrad_hp_val[j]</span>
-    <span class="c1"># }</span>
+<span class="w">    </span><span class="c1"># Sequential version.</span>
+<span class="w">    </span><span class="c1"># for (j in 1:num_workers) {  # In a perfect world this would be parallel.</span>
+<span class="w">    </span><span class="c1">#    score[j] &lt;- norm(nevergrad_hp_val[j]</span>
+<span class="w">    </span><span class="c1"># }</span>
 
-    <span class="c1"># Parallel version.</span>
-    <span class="c1"># Actually this could be asynchronous, Nevergrad is ok for that, you do not have to</span>
-    <span class="c1"># do the tell&#39;s in the same order as the ask&#39;s.</span>
-    <span class="nf">registerDoParallel</span><span class="p">(</span><span class="n">cores</span><span class="o">=</span><span class="n">num_workers</span><span class="p">)</span>
-    <span class="nf">getDoParWorkers</span><span class="p">()</span>
-    <span class="nf">foreach</span><span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="m">1</span><span class="o">:</span><span class="n">num_workers</span><span class="p">)</span> <span class="o">%dopar%</span> <span class="n">score</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">&lt;-</span> <span class="nf">norm</span><span class="p">(</span><span class="n">nevergrad_hp_val</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+<span class="w">    </span><span class="c1"># Parallel version.</span>
+<span class="w">    </span><span class="c1"># Actually this could be asynchronous, Nevergrad is ok for that, you do not have to</span>
+<span class="w">    </span><span class="c1"># do the tell&#39;s in the same order as the ask&#39;s.</span>
+<span class="w">    </span><span class="nf">registerDoParallel</span><span class="p">(</span><span class="n">cores</span><span class="o">=</span><span class="n">num_workers</span><span class="p">)</span>
+<span class="w">    </span><span class="nf">getDoParWorkers</span><span class="p">()</span>
+<span class="w">    </span><span class="nf">foreach</span><span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="m">1</span><span class="o">:</span><span class="n">num_workers</span><span class="p">)</span><span class="w"> </span><span class="o">%dopar%</span><span class="w"> </span><span class="n">score</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">norm</span><span class="p">(</span><span class="n">nevergrad_hp_val</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
 
-    <span class="nf">for </span><span class="p">(</span><span class="n">j</span> <span class="n">in</span> <span class="m">1</span><span class="o">:</span><span class="n">num_workers</span><span class="p">)</span> <span class="p">{</span>
-       <span class="n">optimizer</span><span class="o">$</span><span class="nf">tell</span><span class="p">(</span><span class="n">nevergrad_hp</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">score</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
-    <span class="p">}</span>
+<span class="w">    </span><span class="nf">for </span><span class="p">(</span><span class="n">j</span><span class="w"> </span><span class="n">in</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">num_workers</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">       </span><span class="n">optimizer</span><span class="o">$</span><span class="nf">tell</span><span class="p">(</span><span class="n">nevergrad_hp</span><span class="p">[</span><span class="n">j</span><span class="p">],</span><span class="w"> </span><span class="n">score</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+<span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
 <span class="nf">print</span><span class="p">(</span><span class="n">optimizer</span><span class="o">$</span><span class="nf">recommend</span><span class="p">()</span><span class="o">$</span><span class="n">value</span><span class="p">)</span>
 </pre></div>
