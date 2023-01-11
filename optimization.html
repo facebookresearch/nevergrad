@@ -274,7 +274,29 @@ The functions/callbacks registered on <code class="code docutils literal notrans
 </section>
 <section id="optimization-with-constraints">
 <h2>Optimization with constraints<a class="headerlink" href="#optimization-with-constraints" title="Permalink to this heading"></a></h2>
-<p>Nevergrad has a mechanism for cheap constraints.
+<p>Sometimes you want the best candidate, given some constraints.</p>
+<p>Then, if you want to work with the ask/tell form, instead of
+.. code-block:: python</p>
+<blockquote>
+<div><p>optimizer.tell(candidate, value)</p>
+</div></blockquote>
+<p>you can do
+.. code-block:: python</p>
+<blockquote>
+<div><p>optimizer.tell(candidate, value, [constraint_violation1, constraint_violation2, constraint_violation3])</p>
+</div></blockquote>
+<p>Or, if you work with minimize, you can also replace
+.. code-block:: python</p>
+<blockquote>
+<div><p>optimizer.minimize(loss_function)</p>
+</div></blockquote>
+<p>by
+.. code-block:: python</p>
+<blockquote>
+<div><p>optimizer.minimize(loss_function, constraint_violations)</p>
+</div></blockquote>
+<p>where constraint_violations maps a candidate to a vector of constraint violations.</p>
+<p>Nevergrad has, also, a mechanism for cheap constraints.
 “Cheap” means that we do not try to reduce the number of calls to such constraints.
 We basically repeat mutations until we get a satisfiable point.</p>
 <p>Let us say that we want to minimize <code class="code docutils literal notranslate"><span class="pre">(x[0]-.5)**2</span> <span class="pre">+</span> <span class="pre">(x[1]-.5)**2</span></code> under the constraint <code class="code docutils literal notranslate"><span class="pre">x[0]</span> <span class="pre">&gt;=</span> <span class="pre">1</span></code>.</p>
