@@ -151,8 +151,25 @@ Two callbacks are available through :code:`ng.callbacks`, see the :ref:`callback
 
 Optimization with constraints
 -----------------------------
+Sometimes you want the best candidate, given some constraints.
 
-Nevergrad has a mechanism for cheap constraints.
+Then, if you want to work with the ask/tell form, instead of 
+.. code-block:: python
+    optimizer.tell(candidate, value)
+you can do
+.. code-block:: python
+    optimizer.tell(candidate, value, [constraint_violation1, constraint_violation2, constraint_violation3])
+
+Or, if you work with minimize, you can also replace
+.. code-block:: python
+    optimizer.minimize(loss_function)
+by
+.. code-block:: python
+    optimizer.minimize(loss_function, constraint_violations)
+where constraint_violations maps a candidate to a vector of constraint violations.
+
+
+Nevergrad has, also, a mechanism for cheap constraints.
 "Cheap" means that we do not try to reduce the number of calls to such constraints.
 We basically repeat mutations until we get a satisfiable point.
 
@@ -171,6 +188,8 @@ Note that we can provide a richer information by using float-valued constraints 
     :dedent: 8
     :start-after: DOC_CONSTRAINED_2
     :end-before: DOC_CONSTRAINED_3
+    
+
 Optimizing machine learning hyperparameters
 -------------------------------------------
 
