@@ -10,6 +10,14 @@ current_best = None
 current_best_val = float("inf")
 
 def bragg(X):
+    # La première moitié du vecteur X concerne les permittivités (epsilon)
+    # des différentes coucches.
+    # La deuxième concerne les épaisseurs (en nm) des différentes couches
+    # Attention, au delà de 150 couches, ça peut devenir moins précis
+    # numériquement
+    # Remarques :
+    # On peut faire de la structuration avec Bragg.
+    # On peut regarder l'influence de la remise au bords pour DE.
     #print(X)
     lam=600
     assert False
@@ -211,4 +219,41 @@ def morpho(X):
         S=cascade(S,interface(P,Pc))
         bar+=abs(S[nmod,nmod])**2*np.real(V[nmod])/k0
     cost+=bar/lam.size
+    return cost
+
+def neomorpho(X):
+    # Nouvelle version de Morpho ::
+    # Moins d'évaluation de la fonction de coût
+    # Toujours juste le TM (discutable, ça)
+    # Suffit normalement pour faire apparaître l'interdigitation
+
+    lam=449.5897
+    pol=0.
+    d=600.521475
+    nmod=25
+    #nmod=1
+    e2=2.4336
+    n=2*nmod+1
+    n_motifs=int(X.size/4)
+    X=X/d
+    h=X[0:n_motifs]
+    x0=X[n_motifs:2*n_motifs]
+    a=X[2*n_motifs:3*n_motifs]
+    spacers=X[3*n_motifs:4*n_motifs]
+    l=lam/d
+    k0=2*np.pi/l
+    P,V=homogene(k0,0,pol,1,n)
+    S=np.block([[np.zeros([n,n]),np.eye(n,dtype=np.complex)],[np.eye(n),np.zeros([n,n])]])
+    for j in range(0,n_motifs):
+        Pc,Vc=creneau(k0,0,pol,e2,1,a[j],n,x0[j])
+        S=cascade(S,interface(P,Pc))
+        S=c_bas(S,Vc,h[j])
+        S=cascade(S,interface(Pc,P))
+        S=c_bas(S,V,spacers[j])
+    Pc,Vc=homogene(k0,0,pol,e2,n)
+    S=cascade(S,interface(P,Pc))
+    R=np.zeros(3,dtype=np.float)
+    for j in range(-1,2):
+        R[j]=(abs(S[j+nmod,nmod])**2*np.real(V[j+nmod])/k0)
+    cost=1-(R[-1]+R[1])/2+R[0]/2
     return cost
