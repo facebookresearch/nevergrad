@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -22,6 +22,7 @@ def test_get_first_primes() -> None:
     for value in [np.random.choice(output), output[-1]]:
         for k in range(3, 1 + int(np.sqrt(value)), 2):
             assert value % k, f"Value {value} obtained with num={num} can be divided by {k}"
+
 
 @testing.parametrized(**{name: (sampler,) for name, sampler in samplers.items()})
 def test_samplers(sampler_cls: tp.Type[sequences.Sampler]) -> None:
@@ -81,7 +82,9 @@ def test_rescaler_on_hammersley() -> None:
     sampler.reinitialize()
     samples2 = list(sampler)
     sampler.reinitialize()
-    np.testing.assert_array_equal(samples, samples2, "Not repeatable")  # test repeatability of hammersley first
+    np.testing.assert_array_equal(
+        samples, samples2, "Not repeatable"
+    )  # test repeatability of hammersley first
     rescaler = sequences.Rescaler(sampler)
     sampler.reinitialize()
     rescaled_samples = [rescaler.apply(x) for x in sampler]

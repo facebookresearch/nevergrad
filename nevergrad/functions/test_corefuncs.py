@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -20,6 +20,18 @@ def testcorefuncs_function(name: str, func: tp.Callable[..., tp.Any]) -> None:
 
 
 @testing.parametrized(
+    index1=(1,),
+    index2=(2,),
+    index3=(3,),
+    index4=(4,),
+)
+def test_bonnans(index: int) -> None:
+    b = corefuncs.BonnansFunction(index)
+    assert b(np.zeros(100)) < 10.0  # unlikely (though not impossible)
+    assert b(np.random.rand(100)) > 0.0
+
+
+@testing.parametrized(
     expe1=([6, 4, 2, 1, 9], 4, 5, 3),
     expe2=([6, 6, 7, 1, 9], 4, 5, 3),
     expe3=([1, 1, 7, 1, 9], 3, 5, 2),
@@ -29,8 +41,14 @@ def testcorefuncs_function(name: str, func: tp.Callable[..., tp.Any]) -> None:
     expe7=([1, 0, 0, 0], 3, 4, 2),
     expe_0lead=([0, 1, 0, 1], 0, 0, -1),
 )  # jump was assumed correct (verify?)
-def test_base_functions(x: tp.List[float], onemax_expected: float, leadingones_expected: float, jump_expected: float) -> None:
-    for name, expected in [("onemax", onemax_expected), ("leadingones", leadingones_expected), ("jump", jump_expected)]:
+def test_base_functions(
+    x: tp.List[float], onemax_expected: float, leadingones_expected: float, jump_expected: float
+) -> None:
+    for name, expected in [
+        ("onemax", onemax_expected),
+        ("leadingones", leadingones_expected),
+        ("jump", jump_expected),
+    ]:
         func = corefuncs.DiscreteFunction(name)
         np.testing.assert_equal(func(x), expected, err_msg=f"Wrong output for {name}")
 
@@ -64,8 +82,9 @@ def test_genzcornerpeak_inf() -> None:
     minusgenzgaussianpeakintegral=(corefuncs.minusgenzgaussianpeakintegral, -0.10427, None),
     linear=(corefuncs.linear, 0.57969, None),
 )
-def test_core_function_values(func: tp.Callable[[np.ndarray], float], expected: float, data:
-                              tp.Optional[tp.List[float]]) -> None:
+def test_core_function_values(
+    func: tp.Callable[[np.ndarray], float], expected: float, data: tp.Optional[tp.List[float]]
+) -> None:
     if data is None:
         data = [0.662, -0.217, -0.968, 1.867, 0.101, 0.575, 0.199, 1.576, 1.006, 0.182, -0.092, 0.466]
     value = func(np.array(data))

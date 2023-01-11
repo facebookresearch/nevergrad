@@ -3,6 +3,10 @@ Nevergrad - A gradient-free optimization platform
 
 .. image:: ./resources/Nevergrad-LogoMark.png
 
+.. image:: https://img.shields.io/badge/Support-Ukraine-FFD500?style=flat&labelColor=005BBB
+   :alt: Support Ukraine - Help Provide Humanitarian Aid to Ukraine.
+   :target: https://opensource.fb.com/support-ukraine
+
 This documentation is a work in progress, feel free to help us update/improve/restucture it!
 
 Quick start
@@ -18,7 +22,7 @@ You can find other installation options (including for Windows users) in the :re
 
 Feel free to join `Nevergrad users Facebook group <https://www.facebook.com/groups/nevergradusers/>`_.
 
-Minimizing a function using an optimizer (here :code:`OnePlusOne`) can be easily run with:
+Minimizing a function using an optimizer (here :code:`NGOpt`, our adaptative optimization algorithm) can be easily run with:
 
 .. literalinclude:: ../nevergrad/optimization/test_doc.py
     :language: python
@@ -55,6 +59,7 @@ Learn more about parametrization in the :ref:`Parametrization section <parametri
    optimizers_ref.rst
    parametrization_ref.rst
    benchmarking.rst
+   r.rst
    benchmarks.rst
    pyomo.rst
    windows.md
@@ -80,7 +85,8 @@ Citing
 License
 -------
 
-:code:`nevergrad` is released under the MIT license. See `LICENSE <https://github.com/facebookresearch/nevergrad/blob/master/LICENSE>`_ for additional details about it, as well as our `Terms of Use <https://opensource.facebook.com/legal/terms>`_ and `Privacy Policy <https://opensource.facebook.com/legal/privacy>`_.
+:code:`nevergrad` is released under the MIT license. See `LICENSE <https://github.com/facebookresearch/nevergrad/blob/main/LICENSE>`_ for additional details about it, as well as our `Terms of Use <https://opensource.facebook.com/legal/terms>`_ and `Privacy Policy <https://opensource.facebook.com/legal/privacy>`_.
+Copyright © Meta Platforms, Inc.
 
 Indices and tables
 ------------------

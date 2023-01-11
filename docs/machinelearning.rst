@@ -81,7 +81,7 @@ Ask and tell version
 .. code-block:: python
 
     for name in names:
-        optim = ng.optimizers.registry[name](parametrization=parametrization, budget=budget)
+        optim = ng.optimizers.registry[name](parametrization=parametrization, budget=budget, num_workers=3)
         for u in range(budget // 3):
             x1 = optim.ask()
             # Ask and tell can be asynchronous.
@@ -111,12 +111,12 @@ Asynchronous version with concurrent.futures
     from concurrent import futures
 
     for name in names:
-        optim = ng.optimizers.registry[name](parametrization=parametrization, budget=budget)
+        optim = ng.optimizers.registry[name](parametrization=instru, budget=budget)
 
         with futures.ThreadPoolExecutor(max_workers=optim.num_workers) as executor:  # the executor will evaluate the function in multiple threads
             recommendation = optim.minimize(train_and_return_test_error, executor=executor)
         print("* ", name, " provides a vector of parameters with test error ",
-              train_and_return_test_error(recommendation))
+              train_and_return_test_error(*recommendation.args, **recommendation.kwargs))
 
 
 Optimization of mixed (continuous and discrete) hyperparameters
@@ -184,7 +184,7 @@ Then you can run the optimization as usual. :code:`PortfolioDiscreteOnePlusOne` 
     import nevergrad as ng
     budget = 1200  # How many episode we will do before concluding.
     for name in ["RandomSearch", "ScrHammersleySearch", "TwoPointsDE", "PortfolioDiscreteOnePlusOne", "CMA", "PSO"]:
-        optim = ng.optimizers.registry[name](parametrization=parametrization, budget=budget)
+        optim = ng.optimizers.registry[name](parametrization=instru, budget=budget)
         for u in range(budget // 3):
             x1 = optim.ask()
             # Ask and tell can be asynchronous.
@@ -250,6 +250,7 @@ Optimization of parameters for reinforcement learning
 We do not average evaluations over multiple episodes - the algorithm is in charge of averaging, if need be.
 :code:`TBPSA`, based on population-control mechanisms, performs quite well in this case.
 
+If you want to run Open AI Gym, see `One-line for learning state-of-the-art OpenAI Gym controllers with Nevergrad <https://docs.google.com/document/d/1noubQ_ZTZ4PZeQ1St7Asi1Af02q7k0nRoX_Pipu9ZKs/edit?usp=sharing/>`_
 
 .. code-block:: python
 

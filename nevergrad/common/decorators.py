@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -13,8 +13,7 @@ X = tp.TypeVar("X")
 # pylint does not understand Dict[str, X],
 # so we reimplement the MutableMapping interface
 class Registry(tp.MutableMapping[str, X]):
-    """Registers function or classes as a dict.
-    """
+    """Registers function or classes as a dict."""
 
     def __init__(self) -> None:
         super().__init__()
@@ -30,9 +29,10 @@ class Registry(tp.MutableMapping[str, X]):
         self.register_name(name, obj, info)
         return obj
 
-    def register_name(self, name: str, obj: X, info: tp.Optional[tp.Dict[tp.Hashable, tp.Any]] = None) -> None:
-        """Register an object with a provided name
-        """
+    def register_name(
+        self, name: str, obj: X, info: tp.Optional[tp.Dict[tp.Hashable, tp.Any]] = None
+    ) -> None:
+        """Register an object with a provided name"""
         if name in self:
             raise RuntimeError(f'Encountered a name collision "{name}"')
         self[name] = obj
@@ -48,8 +48,7 @@ class Registry(tp.MutableMapping[str, X]):
             del self[name]
 
     def register_with_info(self, **info: tp.Any) -> tp.Callable[[X], X]:
-        """Decorator for registering a function and information about it
-        """
+        """Decorator for registering a function and information about it"""
         return functools.partial(self.register, info=info)
 
     def get_info(self, name: str) -> tp.Dict[tp.Hashable, tp.Any]:

@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -8,12 +8,16 @@ import time
 import warnings
 import inspect
 import datetime
+import logging
 from pathlib import Path
 import numpy as np
 import nevergrad.common.typing as tp
+from nevergrad.common import errors
 from nevergrad.parametrization import parameter as p
 from nevergrad.parametrization import helpers
 from . import base
+
+global_logger = logging.getLogger(__name__)
 
 
 class OptimizationPrinter:
@@ -42,6 +46,56 @@ class OptimizationPrinter:
             self._next_tell = optimizer.num_tell + self._print_interval_tells
             x = optimizer.provide_recommendation()
             print(f"After {optimizer.num_tell}, recommendation is {x}")  # TODO fetch value
+
+
+class OptimizationLogger:
+    """Logger to register as callback in an optimizer, for Logging
+    best point regularly.
+
+    Parameters
+    ----------
+    logger:
+        given logger that callback will use to log
+    log_level:
+        log level that logger will write to
+    log_interval_tells: int
+        max number of evaluation before performing another log
+    log_interval_seconds:
+        max number of seconds before performing another log
+    """
+
+    def __init__(
+        self,
+        *,
+        logger: logging.Logger = global_logger,
+        log_level: int = logging.INFO,
+        log_interval_tells: int = 1,
+        log_interval_seconds: float = 60.0,
+    ) -> None:
+        assert log_interval_tells > 0
+        assert log_interval_seconds > 0
+        self._logger = logger
+        self._log_level = log_level
+        self._log_interval_tells = int(log_interval_tells)
+        self._log_interval_seconds = log_interval_seconds
+        self._next_tell = self._log_interval_tells
+        self._next_time = time.time() + log_interval_seconds
+
+    def __call__(self, optimizer: base.Optimizer, *args: tp.Any, **kwargs: tp.Any) -> None:
+        if time.time() >= self._next_time or self._next_tell >= optimizer.num_tell:
+            self._next_time = time.time() + self._log_interval_seconds
+            self._next_tell = optimizer.num_tell + self._log_interval_tells
+            if optimizer.num_objectives == 1:
+                x = optimizer.provide_recommendation()
+                self._logger.log(self._log_level, "After %s, recommendation is %s", optimizer.num_tell, x)
+            else:
+                losses = optimizer._hypervolume_pareto.get_min_losses()  # type: ignore
+                self._logger.log(
+                    self._log_level,
+                    "After %s, the respective minimum loss for each objective in the pareto front is %s",
+                    optimizer.num_tell,
+                    losses,
+                )
 
 
 class ParametersLogger:
@@ -81,36 +135,42 @@ class ParametersLogger:
         self._filepath.parent.mkdir(exist_ok=True, parents=True)
 
     def __call__(self, optimizer: base.Optimizer, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        data = {"#parametrization": optimizer.parametrization.name,
-                "#optimizer": optimizer.name,
-                "#session": self._session,
-                "#num-ask": optimizer.num_ask,
-                "#num-tell": optimizer.num_tell,
-                "#num-tell-not-asked": optimizer.num_tell_not_asked,
-                "#uid": candidate.uid,
-                "#lineage": candidate.heritage["lineage"],
-                "#generation": candidate.generation,
-                "#parents_uids": [],
-                "#loss": loss}
+        data = {
+            "#parametrization": optimizer.parametrization.name,
+            "#optimizer": optimizer.name,
+            "#session": self._session,
+            "#num-ask": optimizer.num_ask,
+            "#num-tell": optimizer.num_tell,
+            "#num-tell-not-asked": optimizer.num_tell_not_asked,
+            "#uid": candidate.uid,
+            "#lineage": candidate.heritage["lineage"],
+            "#generation": candidate.generation,
+            "#parents_uids": [],
+            "#loss": loss,
+        }
         if optimizer.num_objectives > 1:  # multiobjective losses
             data.update({f"#losses#{k}": val for k, val in enumerate(candidate.losses)})
             data["#pareto-length"] = len(optimizer.pareto_front())
         if hasattr(optimizer, "_configured_optimizer"):
             configopt = optimizer._configured_optimizer  # type: ignore
             if isinstance(configopt, base.ConfiguredOptimizer):
-                data.update({"#optimizer#" + x: y for x, y in configopt.config().items()})
+                data.update({"#optimizer#" + x: str(y) for x, y in configopt.config().items()})
         if isinstance(candidate._meta.get("sigma"), float):
             data["#meta-sigma"] = candidate._meta["sigma"]  # for TBPSA-like algorithms
         if candidate.generation > 1:
             data["#parents_uids"] = candidate.parents_uids
-        for name, param in helpers.flatten_parameter(candidate, with_containers=False, order=1).items():
+        for name, param in helpers.flatten(candidate, with_containers=False, order=1):
             val = param.value
+            if isinstance(val, (np.float_, np.int_, np.bool_)):
+                val = val.item()
             if inspect.ismethod(val):
                 val = repr(val.__self__)  # show mutation class
             data[name if name else "0"] = val.tolist() if isinstance(val, np.ndarray) else val
-            if isinstance(param, p.Array):
+            if isinstance(param, p.Data):
                 val = param.sigma.value
-                data[(name if name else "0") + "#sigma"] = val.tolist() if isinstance(val, np.ndarray) else val
+                data[(name if name else "0") + "#sigma"] = (
+                    val.tolist() if isinstance(val, np.ndarray) else val
+                )
         try:  # avoid bugging as much as possible
             with self._filepath.open("a") as f:
                 f.write(json.dumps(data) + "\n")
@@ -118,8 +178,7 @@ class ParametersLogger:
             warnings.warn(f"Failing to json data: {e}")
 
     def load(self) -> tp.List[tp.Dict[str, tp.Any]]:
-        """Loads data from the log file
-        """
+        """Loads data from the log file"""
         data: tp.List[tp.Dict[str, tp.Any]] = []
         if self._filepath.exists():
             with self._filepath.open("r") as f:
@@ -148,7 +207,9 @@ class ParametersLogger:
                     flat_data[-1][key + "#" + "_".join(str(i) for i in indices)] = value
         return flat_data
 
-    def to_hiplot_experiment(self, max_list_elements: int = 24) -> tp.Any:  # no typing here since Hiplot is not a hard requirement
+    def to_hiplot_experiment(
+        self, max_list_elements: int = 24
+    ) -> tp.Any:  # no typing here since Hiplot is not a hard requirement
         """Converts the logs into an hiplot experiment for display.
 
         Parameters
@@ -177,19 +238,23 @@ class ParametersLogger:
         try:
             import hiplot as hip
         except ImportError as e:
-            raise ImportError(f"{self.__class__.__name__} requires hiplot which is not installed by default "
-                              "(pip install hiplot)") from e
+            raise ImportError(
+                f"{self.__class__.__name__} requires hiplot which is not installed by default "
+                "(pip install hiplot)"
+            ) from e
         exp = hip.Experiment()
         for xp in self.load_flattened(max_list_elements=max_list_elements):
             dp = hip.Datapoint(
                 from_uid=xp.get("#parents_uids#0"),
                 uid=xp["#uid"],
-                values={x: y for x, y in xp.items() if not (x.startswith("#") and ("uid" in x or "ask" in x))}
+                values={
+                    x: y for x, y in xp.items() if not (x.startswith("#") and ("uid" in x or "ask" in x))
+                },
             )
             exp.datapoints.append(dp)
-        exp.display_data(hip.Displays.XY).update({'axis_x': '#num-tell', 'axis_y': '#loss'})
+        exp.display_data(hip.Displays.XY).update({"axis_x": "#num-tell", "axis_y": "#loss"})
         # for the record, some more options:
-        exp.display_data(hip.Displays.XY).update({'lines_thickness': 1.0, 'lines_opacity': 1.0})
+        exp.display_data(hip.Displays.XY).update({"lines_thickness": 1.0, "lines_opacity": 1.0})
         return exp
 
 
@@ -210,8 +275,7 @@ class OptimizerDump:
 
 
 class ProgressBar:
-    """Progress bar to register as callback in an optimizer
-    """
+    """Progress bar to register as callback in an optimizer"""
 
     def __init__(self) -> None:
         self._progress_bar: tp.Any = None
@@ -223,8 +287,10 @@ class ProgressBar:
             try:
                 from tqdm import tqdm  # Inline import to avoid additional dependency
             except ImportError as e:
-                raise ImportError(f"{self.__class__.__name__} requires tqdm which is not installed by default "
-                                  "(pip install tqdm)") from e
+                raise ImportError(
+                    f"{self.__class__.__name__} requires tqdm which is not installed by default "
+                    "(pip install tqdm)"
+                ) from e
             self._progress_bar = tqdm()
             self._progress_bar.total = optimizer.budget
             self._progress_bar.update(self._current)
@@ -232,8 +298,62 @@ class ProgressBar:
         self._current += 1
 
     def __getstate__(self) -> tp.Dict[str, tp.Any]:
-        """Used for pickling (tqdm is not picklable)
-        """
+        """Used for pickling (tqdm is not picklable)"""
         state = dict(self.__dict__)
         state["_progress_bar"] = None
         return state
+
+
+class EarlyStopping:
+    """Callback for stopping the :code:`minimize` method before the budget is
+    fully used.
+
+    Parameters
+    ----------
+    stopping_criterion: func(optimizer) -> bool
+        function that takes the current optimizer as input and returns True
+        if the minimization must be stopped
+
+    Note
+    ----
+    This callback must be register on the "ask" method only.
+
+    Example
+    -------
+    In the following code, the :code:`minimize` method will be stopped at the 4th "ask"
+
+    >>> early_stopping = ng.callbacks.EarlyStopping(lambda opt: opt.num_ask > 3)
+    >>> optimizer.register_callback("ask", early_stopping)
+    >>> optimizer.minimize(_func, verbosity=2)
+
+    A couple other options (equivalent in case of non-noisy optimization) for stopping
+    if the loss is below 12:
+
+    >>> early_stopping = ng.callbacks.EarlyStopping(lambda opt: opt.recommend().loss < 12)
+    >>> early_stopping = ng.callbacks.EarlyStopping(lambda opt: opt.current_bests["minimum"].mean < 12)
+    """
+
+    def __init__(self, stopping_criterion: tp.Callable[[base.Optimizer], bool]) -> None:
+        self.stopping_criterion = stopping_criterion
+
+    def __call__(self, optimizer: base.Optimizer, *args: tp.Any, **kwargs: tp.Any) -> None:
+        if args or kwargs:
+            raise errors.NevergradRuntimeError("EarlyStopping must be registered on ask method")
+        if self.stopping_criterion(optimizer):
+            raise errors.NevergradEarlyStopping("Early stopping criterion is reached")
+
+    @classmethod
+    def timer(cls, max_duration: float) -> "EarlyStopping":
+        """Early stop when max_duration seconds has been reached (from the first ask)"""
+        return cls(_DurationCriterion(max_duration))
+
+
+class _DurationCriterion:
+    def __init__(self, max_duration: float) -> None:
+        self._start = float("inf")
+        self._max_duration = max_duration
+
+    def __call__(self, optimizer: base.Optimizer) -> bool:
+        if np.isinf(self._start):
+            self._start = time.time()
+        return time.time() > self._start + self._max_duration

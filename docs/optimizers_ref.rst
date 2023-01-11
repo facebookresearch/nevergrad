@@ -20,7 +20,7 @@ Callbacks can be registered through the :code:`optimizer.register_callback` for
 `ng.callbacks` namespace.
 
 .. automodule:: nevergrad.callbacks
-    :members: OptimizerDump, ParametersLogger, ProgressBar
+    :members: OptimizerDump, ParametersLogger, ProgressBar, EarlyStopping
 
 Configurable optimizers
 -----------------------

@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -8,7 +8,6 @@ import pytest
 import numpy as np
 import nevergrad as ng
 from nevergrad.common import testing
-from nevergrad.parametrization import parameter as p
 from .test_base import CounterFunction
 from . import experimentalvariants as xpvariants
 from . import utils
@@ -25,6 +24,7 @@ def test_value_and_point() -> None:
     np.testing.assert_almost_equal(v.variance, 0.3536, decimal=4)
     assert v.optimistic_confidence_bound < v.pessimistic_confidence_bound
     assert v.get_estimation("optimistic") < v.get_estimation("pessimistic")
+    assert v.get_estimation("minimum") == 3
     np.testing.assert_raises(NotImplementedError, v.get_estimation, "blublu")
     repr(v)
     assert v.parameter.value == 12
@@ -50,7 +50,7 @@ def test_get_nash() -> None:
     for k in range(4):
         array = (float(k),)
         zeroptim.archive[array] = utils.MultiValue(param, k, reference=param)
-        zeroptim.archive[array].count += (4 - k)
+        zeroptim.archive[array].count += 4 - k
     nash = utils._get_nash(zeroptim)
     testing.printed_assert_equal(nash, [((2,), 3), ((1,), 4), ((0,), 5)])
     np.random.seed(12)
@@ -64,7 +64,7 @@ def test_archive() -> None:
     archive[np.array(data)] = 12
     np.testing.assert_equal(archive[np.array(data)], 12)
     np.testing.assert_equal(archive.get(data), 12)
-    np.testing.assert_equal(archive.get([0, 12.]), None)
+    np.testing.assert_equal(archive.get([0, 12.0]), None)
     y = np.frombuffer(next(iter(archive.bytesdict.keys())))
     assert data in archive
     np.testing.assert_equal(y, data)
@@ -78,9 +78,9 @@ def test_archive() -> None:
 
 def test_archive_errors() -> None:
     archive: utils.Archive[float] = utils.Archive()
-    archive[[12, 0.]] = 12.
+    archive[[12, 0.0]] = 12.0
     np.testing.assert_raises(AssertionError, archive.__getitem__, [12, 0])  # int instead of float
-    np.testing.assert_raises(AssertionError, archive.__getitem__, [[12], [0.]])  # int instead of float
+    np.testing.assert_raises(AssertionError, archive.__getitem__, [[12], [0.0]])  # int instead of float
     np.testing.assert_raises(RuntimeError, archive.keys)
     np.testing.assert_raises(RuntimeError, archive.items)
 
@@ -91,9 +91,9 @@ def test_pruning() -> None:
     for k in range(3):
         value = utils.MultiValue(param, float(k), reference=param)
         archive[(float(k),)] = value
-    value = utils.MultiValue(param, 1., reference=param)
-    value.add_evaluation(1.)
-    archive[(3.,)] = value
+    value = utils.MultiValue(param, 1.0, reference=param)
+    value.add_evaluation(1.0)
+    archive[(3.0,)] = value
     # pruning
     pruning = utils.Pruning(min_len=1, max_len=3)
     # 0 is best optimistic and average, and 3 is best pessimistic (variance=0)
@@ -105,12 +105,15 @@ def test_pruning() -> None:
     testing.assert_set_equal([x[0] for x in archive2.keys_as_arrays()], [0, 3], err_msg=f"Repetition #{k+1}")
 
 
-@pytest.mark.parametrize("nw,dimension,expected_min,expected_max", [  # type: ignore
-    (12, 8, 100, 1000),
-    (24, 8, 168, 1680),
-    (24, 100000, 168, 671),
-    (24, 1000000, 168, 504),
-])
+@pytest.mark.parametrize(  # type: ignore
+    "nw,dimension,expected_min,expected_max",
+    [
+        (12, 8, 100, 1000),
+        (24, 8, 168, 1680),
+        (24, 100000, 168, 671),
+        (24, 1000000, 168, 504),
+    ],
+)
 def test_pruning_sensible_default(nw: int, dimension: int, expected_min: int, expected_max: int) -> None:
     pruning = utils.Pruning.sensible_default(num_workers=nw, dimension=dimension)
     assert pruning.min_len == expected_min
@@ -141,31 +144,3 @@ def test_uid_queue() -> None:
     uidq.clear()
     with pytest.raises(RuntimeError):
         uidq.ask()
-
-
-def test_bound_scaler() -> None:
-    ref = p.Instrumentation(
-        p.Array(shape=(1, 2)).set_bounds(-12, 12, method="arctan"),
-        p.Array(shape=(2,)).set_bounds(-12, 12, full_range_sampling=False),
-        lr=p.Log(lower=0.001, upper=1000),
-        stuff=p.Scalar(lower=-1, upper=2),
-        unbounded=p.Scalar(lower=-1, init=0.0),
-        value=p.Scalar(),
-        letter=p.Choice("abc"),
-    )
-    param = ref.spawn_child()
-    scaler = utils.BoundScaler(param)
-    output = scaler.transform([1.0] * param.dimension, lambda x: x)
-    param.set_standardized_data(output)
-    (array1, array2), values = param.value
-    np.testing.assert_array_almost_equal(array1, [[12, 12]])
-    np.testing.assert_array_almost_equal(array2, [1, 1])
-    assert values["stuff"] == 2
-    assert values["unbounded"] == 1
-    assert values["value"] == 1
-    np.testing.assert_almost_equal(values["lr"], 1000)
-    # again, on the middle point
-    output = scaler.transform([0] * param.dimension, lambda x: x)
-    param.set_standardized_data(output)
-    np.testing.assert_almost_equal(param.value[1]["lr"], 1.0)
-    np.testing.assert_almost_equal(param.value[1]["stuff"], 0.5)

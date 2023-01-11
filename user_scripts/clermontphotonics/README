@@ -1,0 +1,6 @@
+
+
+cd user_scripts/clermontphotonics
+ln -s ../../nevergrad ./nevergrad
+export BROAD=250  # if we want to work on wavelength 400-650
+python -u comp_fixed.py | stdbuf -e 0 -i 0 -o 0 tee logs_`date | sed 's/ /_/g'`.log

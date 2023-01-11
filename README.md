@@ -1,4 +1,4 @@
-[![CircleCI](https://circleci.com/gh/facebookresearch/nevergrad/tree/master.svg?style=svg)](https://circleci.com/gh/facebookresearch/nevergrad/tree/master)
+[![Support Ukraine](https://img.shields.io/badge/Support-Ukraine-FFD500?style=flat&labelColor=005BBB)](https://opensource.fb.com/support-ukraine) [![CircleCI](https://circleci.com/gh/facebookresearch/nevergrad/tree/main.svg?style=svg)](https://circleci.com/gh/facebookresearch/nevergrad/tree/main)
 
 # Nevergrad - A gradient-free optimization platform
 

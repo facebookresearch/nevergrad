@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -10,7 +10,6 @@ from . import decorators
 
 
 class DecoratorTests(TestCase):
-
     def test_registry(self) -> None:
         functions: decorators.Registry[tp.Callable[[], int]] = decorators.Registry()
         other: decorators.Registry[tp.Callable[[], int]] = decorators.Registry()

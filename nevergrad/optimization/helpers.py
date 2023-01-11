@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -9,6 +9,7 @@ import nevergrad as ng
 from nevergrad.common.tools import pytorch_import_fix
 from . import base
 from . import optimizerlib
+
 pytorch_import_fix()
 
 # pylint: disable=wrong-import-position,wrong-import-order
@@ -64,7 +65,7 @@ class TorchOptimizer:
             if not (inspect.isclass(cls) and issubclass(cls, base.Optimizer)):
                 raise TypeError('"cls" must be a str, a ConfiguredOptimizer instance, or an Optimizer class')
         args = (
-            ng.p.Array(init=np.array(p.data, dtype=np.float)).set_bounds(-bound, bound, method="clipping")
+            ng.p.Array(init=np.array(p.data, dtype=np.float_)).set_bounds(-bound, bound, method="clipping")
             for p in self.parameters
         )  # bounded to avoid overflows
         self.optimizer = cls(ng.p.Tuple(*args), budget=None, num_workers=1)

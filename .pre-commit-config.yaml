@@ -5,22 +5,20 @@ repos:
     - id: trailing-whitespace
     - id: end-of-file-fixer
     - id: check-added-large-files
--   repo: https://github.com/pre-commit/mirrors-autopep8
-    rev: v1.4.4  # Use the sha / tag you want to point at
+# -   repo: https://github.com/pre-commit/mirrors-autopep8
+#     rev: v1.4.4  # Use the sha / tag you want to point at
+#     hooks:
+#     - id: autopep8
+#       exclude: ^scripts/
+#       args: ['-i', '--max-line-length=140']
+-   repo: https://github.com/python/black
+    rev: 20.8b1
     hooks:
-    - id: autopep8
-      exclude: ^scripts/
-      args: ['-i', '--max-line-length=140']
+    - id: black
+      language_version: python3
 -   repo: https://github.com/pre-commit/mirrors-pylint
     rev: v2.4.4
     hooks:
     - id: pylint
       exclude: ^scripts/
       args: ['--disable=bad-continuation']  # coz incompatible with black
-# -   repo: https://github.com/python/black
-#     rev: stable
-#     hooks:
-#     - id: black
-#       language_version: python3.6
-#       args: ['--line-length=140']
-#       exclude: ^scripts/
