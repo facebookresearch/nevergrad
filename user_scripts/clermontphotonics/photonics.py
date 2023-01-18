@@ -98,6 +98,22 @@ def bragg_fixed(X, num=1, rando=False, check_count=True):
 
     return val
 
+def bragg_origin(X):
+    #print(X)
+    lam=600
+    bar=len(X)
+    n=np.array([1]+[1.7320508075688772,1.4142135623730951]*int(bar/2)+[1.7320508075688772])
+    Type=np.arange(0,bar+2)
+    hauteur=np.concatenate(([0],X,[0]))
+    tmp=np.tan(2*np.pi*n[Type]*hauteur/lam)
+    #Specific to this substrate.
+    Z=n[-1]
+    for k in range(np.size(Type)-1,0,-1):
+        Z=(Z-1j*n[Type[k]]*tmp[k])/(1-1j*tmp[k]*Z/n[Type[k]])
+    #Specific to air.
+    r=(1-Z)/(1+Z)
+    c=np.real(1-r*np.conj(r))
+    return c
 
 def chirped(X):
     lam=np.linspace(500,800,50)

@@ -4,7 +4,7 @@ import scipy.io as scio
 from scipy.optimize import minimize
 import importlib
 #from ax import optimize as axoptimize
-import nevergrad as ng
+#import nevergrad as ng
 
 
 def descente(f_cout,pas,start,npas,*args):
@@ -334,7 +334,7 @@ def DEvol_struct_bragg(f_cout,budget,X_min,X_max,population):
             # and the thickness of a given layer are transmitted or not
             # but never separated
             tmp = (np.random.random_sample(n//2)<cr)
-            crossover= np.array((tmp,tmp))
+            crossover= np.concatenate((tmp,tmp))
             X=(omega[k]+f1*(omega[np.random.randint(population)]-omega[np.random.randint(population)])+f2*(best-omega[k]))*(1-crossover)+crossover*omega[k]
             if np.prod((X>X_min)*(X<X_max)):
                 tmp=f_cout(X)
@@ -392,7 +392,7 @@ def DEvol_struct_morpho(f_cout,budget,X_min,X_max,population):
             # and the thickness of a given layer are transmitted or not
             # but never separated
             tmp = (np.random.random_sample(n//4)<cr)
-            crossover= np.array((tmp,tmp,tmp,tmp))
+            crossover= np.concatenate((tmp,tmp,tmp,tmp))
             X=(omega[k]+f1*(omega[np.random.randint(population)]-omega[np.random.randint(population)])+f2*(best-omega[k]))*(1-crossover)+crossover*omega[k]
             if np.prod((X>X_min)*(X<X_max)):
                 tmp=f_cout(X)
