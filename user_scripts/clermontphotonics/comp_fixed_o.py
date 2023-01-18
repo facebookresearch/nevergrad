@@ -1,3 +1,6 @@
+# Olivier's script, used as a reference, probably not fully operational
+# under this form and on this repo.
+
 import numpy as np
 import scipy.io as scio
 import scipy.optimize as optim

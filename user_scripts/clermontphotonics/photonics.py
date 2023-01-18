@@ -98,6 +98,7 @@ def bragg_fixed(X, num=1, rando=False, check_count=True):
 
     return val
 
+# Bragg with fixed refractive index.
 def bragg_origin(X):
     #print(X)
     lam=600
