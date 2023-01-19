@@ -95,7 +95,7 @@ def descente2(f_cout,pas,start,npas,*args):
             bestx= np.array(x)
             bestv=v
         return vals[-1]
-        
+
     res = minimize(f_cout2, start, method='L-BFGS-B', jac=jac, tol=1e-99,
              options={'disp': False, 'maxiter': npas}, bounds=[(xmin[i], xmax[i]) for i in range(len(xmin))])
     x = res.x

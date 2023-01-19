@@ -11,7 +11,7 @@ def launch_optim(n_couches):
     runner = "A"
     algo = "BFGS"
     function = "bragg"
-    budget = 20000
+    budget = 60000
     nb_runs = 50
 
     X_min=np.concatenate((np.hstack(2.*np.ones(n_couches)),np.hstack(20.*np.ones(n_couches))))

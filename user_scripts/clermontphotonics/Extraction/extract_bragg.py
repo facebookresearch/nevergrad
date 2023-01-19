@@ -1,11 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import PyMoosh as pm
 
-n_couches = "20"
+n_couches = "60"
 runner = "A"
 algo = "DE"
 function = "bragg"
-budget = 10000
+budget = 60000
 
 file_name = f"../Res1/out_{function}_{algo}_{n_couches}_{budget}_{runner}.npy"
 results = np.load(file_name,allow_pickle = True)
@@ -39,12 +40,22 @@ plt.title("Convergences")
 # Visualiser
 fig3 = plt.figure(3)
 
+# We select a solution to fully analyze.
+
 X = sorted_bests[0]
 nc = int(n_couches)
-permittivity = X[0:nc]
-thickness = X[nc:2*nc]
-starts = np.concatenate((np.array([0]),np.cumsum(thickness[0:nc-1])))
-plt.barh(starts,permittivity-2.,thickness,align = 'edge',color = 'green')
+permittivities = X[0:nc]
+thicknesses = X[nc:2*nc]
+starts = np.concatenate((np.array([0]),np.cumsum(thicknesses[0:nc-1])))
+plt.barh(starts,permittivities-2.,thicknesses,align = 'edge',color = 'green')
 #plt.ylim(sum(thickness),0)
 plt.gca().invert_yaxis()
+
+materials = permittivities
+stack = np.arange(0,len(permittivities))
+crystal = pm.Structure(materials,stack,thicknesses,verbose = False)
+[wl,r,t,R,T] = pm.Spectrum(crystal, 0., 0., 350, 800, 200)
+
+fig4 = plt.figure(4)
+plt.plot(wl,R,label = "Reflectance")
 plt.show()
