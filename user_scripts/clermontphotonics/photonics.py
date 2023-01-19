@@ -20,7 +20,7 @@ def bragg(X):
     # On peut regarder l'influence de la remise au bords pour DE.
     #print(X)
     lam=600
-    assert False
+#    assert False
     bar=int(np.size(X)/2)
     n=np.concatenate(([1],np.sqrt(X[0:bar]),[1.7320508075688772]))
     Type=np.arange(0,bar+2)

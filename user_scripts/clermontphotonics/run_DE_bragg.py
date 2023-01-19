@@ -9,9 +9,11 @@ from joblib import Parallel, delayed
 def launch_optim(n_couches):
     # A pour Antoine.
     runner = "A"
+#    algo = "DE"
+#    algo = "DEstruct"
     algo = "DE"
     function = "bragg"
-    budget = 10000
+    budget = 20000
     nb_runs = 50
     X_min=np.concatenate((np.hstack(2.*np.ones(n_couches)),np.hstack(20.*np.ones(n_couches))))
     X_max=np.concatenate((np.hstack(3.*np.ones(n_couches)),np.hstack(180.*np.ones(n_couches))))
@@ -30,4 +32,5 @@ def launch_optim(n_couches):
 
 # Relire les données
 
+#launch_optim(30)
 Parallel(n_jobs = 7)(delayed(launch_optim)(n_couches) for n_couches in [20,40,60,80,100,120,140])

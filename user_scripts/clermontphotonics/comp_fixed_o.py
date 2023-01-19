@@ -15,8 +15,8 @@ from joblib import Parallel, delayed
 def do_stuff(depop, n_couches):
   X_min=np.hstack(20*np.ones(n_couches))
   X_max=np.hstack(180*np.ones(n_couches))
-  pas=np.hstack(10*np.ones(n_couches))
-  for budget in [15001]:
+  pas=np.hstack(1*np.ones(n_couches))
+  for budget in [10001]:
    de_results = []
    descent_results = []
    bfgs_results = []
@@ -73,7 +73,7 @@ def do_stuff(depop, n_couches):
 #for depop in [10, 20, 30, 40]:
 # for n_couches in [10, 20, 40, 80]:
 #  do_stuff(depop, n_couches)
-Parallel(n_jobs=60)(delayed(do_stuff)(depop, n_couches) for n_couches in [140] for depop in [30])
+Parallel(n_jobs=60)(delayed(do_stuff)(depop, n_couches) for n_couches in [20,40,60,80,100,120,140] for depop in [30])
 
 
 reference = np.array([3.,2.]*10 + [600/(4*np.sqrt(3)),600/(4*np.sqrt(2))]*10)

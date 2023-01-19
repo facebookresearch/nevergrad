@@ -11,12 +11,12 @@ def launch_optim(n_couches):
     runner = "A"
     algo = "BFGS"
     function = "BraggO"
-    budget = 10000
+    budget = 20000
     nb_runs = 50
 
     X_min=np.hstack(20*np.ones(n_couches))
     X_max=np.hstack(180*np.ones(n_couches))
-    pas=np.hstack(1*np.ones(n_couches))
+    pas=np.hstack(10*np.ones(n_couches))
 
     results = []
 
