@@ -6,7 +6,7 @@ n_couches = "40"
 runner = "A"
 algo = "BFGS"
 function = "BraggO"
-budget = 40000
+budget = 20000
 
 file_name = f"../Res1/out_{function}_{algo}_{n_couches}_{budget}_{runner}.npy"
 results = np.load(file_name,allow_pickle = True)
@@ -44,15 +44,19 @@ fig3 = plt.figure(3)
 
 X = sorted_bests[0]
 nc = int(n_couches)
-permittivities = X[0:nc]
-thicknesses = X[nc:2*nc]
+permittivities = np.array([3.,2.]*int(nc//2))
+thicknesses = X
 starts = np.concatenate((np.array([0]),np.cumsum(thicknesses[0:nc-1])))
 plt.barh(starts,permittivities-2.,thicknesses,align = 'edge',color = 'green')
 #plt.ylim(sum(thickness),0)
 plt.gca().invert_yaxis()
 
 materials = [1.]+permittivities.tolist()+[3.]
+thicknesses = [0.] + thicknesses.tolist() + [0.]
 stack = np.arange(0,len(permittivities)+2)
+print(stack)
+print(len(materials))
+
 crystal = pm.Structure(materials,stack,thicknesses,verbose = False)
 [wl,r,t,R,T] = pm.Spectrum(crystal, 0., 0., 350, 800, 200)
 

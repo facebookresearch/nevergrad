@@ -51,8 +51,9 @@ plt.barh(starts,permittivities-2.,thicknesses,align = 'edge',color = 'green')
 #plt.ylim(sum(thickness),0)
 plt.gca().invert_yaxis()
 
-materials = permittivities
-stack = np.arange(0,len(permittivities))
+materials = [1.]+permittivities.tolist()+[3.]
+thicknesses = [0.] + thicknesses.tolist() + [0.]
+stack = np.arange(0,len(materials))
 crystal = pm.Structure(materials,stack,thicknesses,verbose = False)
 [wl,r,t,R,T] = pm.Spectrum(crystal, 0., 0., 350, 800, 200)
 
