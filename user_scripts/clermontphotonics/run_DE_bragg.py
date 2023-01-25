@@ -7,10 +7,8 @@ import matplotlib.pyplot as plt
 from joblib import Parallel, delayed
 
 def launch_optim(n_couches):
-    # A pour Antoine.
-    runner = "A"
-#    algo = "DE"
-    algo = "DEstruct"
+    algo = "DE"
+#    algo = "DEscol"
 #    algo = "DEbord"
     function = "bragg"
     budget = 60000
@@ -22,7 +20,7 @@ def launch_optim(n_couches):
 
     for k in range(nb_runs):
         depop = 30
-        [best,convergence,recom] = algos.DEvol_struct_bragg(photonics.bragg,budget,X_min,X_max,depop)
+        [best,convergence,recom] = algos.DEvol(photonics.bragg,budget,X_min,X_max,depop)
         results.append([best,convergence])
         print(f"Run {k} with {algo} on {function} with {n_couches} layers")
 
@@ -33,4 +31,4 @@ def launch_optim(n_couches):
 # Relire les données
 
 #launch_optim(30)
-Parallel(n_jobs = 7)(delayed(launch_optim)(n_couches) for n_couches in [20,40,60,80,100,120,140])
+Parallel(n_jobs = 18)(delayed(launch_optim)(n_couches) for n_couches in [20,40,60,80,100,120,140])

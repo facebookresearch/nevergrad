@@ -208,7 +208,7 @@ def DEvol(f_cout,budget,X_min,X_max,population):
     cost=np.zeros(population)
     # Tirage aléatoire dans le domaine défini par X_min et X_max.
     for k in range(0,population):
-        omega[k]=X_min+(X_max-X_min)*np.random.random_sample(n)
+        omega[k]=X_min+(X_max-X_min)*np.random.random(n)
         cost[k]=f_cout(omega[k])
 
     # Who's the best ?
@@ -223,9 +223,9 @@ def DEvol(f_cout,budget,X_min,X_max,population):
     # Boucle DE
     while evaluation<budget-population:
         for k in range(0,population):
-            crossover=(np.random.random_sample(n)<cr)
+            crossover=(np.random.random(n)<cr)
             X=(omega[k]+f1*(omega[np.random.randint(population)]-omega[np.random.randint(population)])+f2*(best-omega[k]))*(1-crossover)+crossover*omega[k]
-            if np.prod((X>X_min)*(X<X_max)):
+            if np.prod((X>=X_min)*(X<=X_max)):
                 tmp=f_cout(X)
                 evaluation=evaluation+1
                 if (tmp<cost[k]) :
@@ -246,10 +246,6 @@ def DEvol(f_cout,budget,X_min,X_max,population):
 
 def DEvol_bord(f_cout,budget,X_min,X_max,population):
 
-# Ce DE est un current to best
-# Hypertuné sur le problème chirped
-# Elimination brutale des individus ne respectant pas les bornes
-# Avec remise aux bords !!
 # Paramètres de DE - paramètres potentiels de la fonction
     cr=0.5; # Chances de passer les paramètres du parent à son rejeton.
     f1=0.9;
@@ -261,7 +257,7 @@ def DEvol_bord(f_cout,budget,X_min,X_max,population):
     cost=np.zeros(population)
     # Tirage aléatoire dans le domaine défini par X_min et X_max.
     for k in range(0,population):
-        omega[k]=X_min+(X_max-X_min)*np.random.random_sample(n)
+        omega[k]=X_min+(X_max-X_min)*np.random.random(n)
         cost[k]=f_cout(omega[k])
 
     # Who's the best ?
@@ -276,19 +272,16 @@ def DEvol_bord(f_cout,budget,X_min,X_max,population):
     # Boucle DE
     while evaluation<budget-population:
         for k in range(0,population):
-            crossover=(np.random.random_sample(n)<cr)
+            crossover=(np.random.random(n)<cr)
             X=(omega[k]+f1*(omega[np.random.randint(population)]-omega[np.random.randint(population)])+f2*(best-omega[k]))*(1-crossover)+crossover*omega[k]
-            # Remise aux bords, c'est là que ça se fait !
-            X = np.maximum(X,X_min)
             X = np.minimum(X,X_max)
+            X = np.maximum(X,X_min)
             tmp=f_cout(X)
             evaluation=evaluation+1
             if (tmp<cost[k]) :
                 cost[k]=tmp
                 omega[k]=X
         generation=generation+1
-        #print('generation:',generation,'evaluations:',evaluation)
-        #
         who=np.argmin(cost)
         best=omega[who]
         convergence.append(cost[who])
@@ -296,6 +289,7 @@ def DEvol_bord(f_cout,budget,X_min,X_max,population):
     convergence=convergence[0:generation+1]
 
     return [best,convergence,best]
+
 
 def DEvol_struct_bragg(f_cout,budget,X_min,X_max,population):
 
@@ -316,7 +310,7 @@ def DEvol_struct_bragg(f_cout,budget,X_min,X_max,population):
     cost=np.zeros(population)
     # Tirage aléatoire dans le domaine défini par X_min et X_max.
     for k in range(0,population):
-        omega[k]=X_min+(X_max-X_min)*np.random.random_sample(n)
+        omega[k]=X_min+(X_max-X_min)*np.random.random(n)
         cost[k]=f_cout(omega[k])
 
     # Who's the best ?
@@ -334,7 +328,7 @@ def DEvol_struct_bragg(f_cout,budget,X_min,X_max,population):
             # For Bragg: the crossover is duplicated so that the permittivity
             # and the thickness of a given layer are transmitted or not
             # but never separated
-            tmp = (np.random.random_sample(n//2)<cr)
+            tmp = (np.random.random(n//2)<cr)
             crossover= np.concatenate((tmp,tmp))
             X=(omega[k]+f1*(omega[np.random.randint(population)]-omega[np.random.randint(population)])+f2*(best-omega[k]))*(1-crossover)+crossover*omega[k]
             if np.prod((X>X_min)*(X<X_max)):
@@ -374,7 +368,7 @@ def DEvol_struct_morpho(f_cout,budget,X_min,X_max,population):
     cost=np.zeros(population)
     # Tirage aléatoire dans le domaine défini par X_min et X_max.
     for k in range(0,population):
-        omega[k]=X_min+(X_max-X_min)*np.random.random_sample(n)
+        omega[k]=X_min+(X_max-X_min)*np.random.random(n)
         cost[k]=f_cout(omega[k])
 
     # Who's the best ?
@@ -392,7 +386,7 @@ def DEvol_struct_morpho(f_cout,budget,X_min,X_max,population):
             # For Bragg: the crossover is duplicated so that the permittivity
             # and the thickness of a given layer are transmitted or not
             # but never separated
-            tmp = (np.random.random_sample(n//4)<cr)
+            tmp = (np.random.random(n//4)<cr)
             crossover= np.concatenate((tmp,tmp,tmp,tmp))
             X=(omega[k]+f1*(omega[np.random.randint(population)]-omega[np.random.randint(population)])+f2*(best-omega[k]))*(1-crossover)+crossover*omega[k]
             if np.prod((X>X_min)*(X<X_max)):
@@ -410,5 +404,56 @@ def DEvol_struct_morpho(f_cout,budget,X_min,X_max,population):
         convergence.append(cost[who])
 
     convergence=convergence[0:generation+1]
+
+    return [best,convergence,best]
+
+def DE_scolaire(f_cout,budget,X_min,X_max,pop) :
+    cr = 0.5
+    f1 = 0.9
+    f2 = 0.8
+    n = X_min.size
+    population = np.zeros((pop,n))
+    f = np.zeros((pop))
+    # Tirage aléatoire de la population
+    for k in range(pop):
+        population[k] = X_min + (X_max - X_min) * np.random.rand(n)
+        f[k] = f_cout(population[k])
+    k_best = np.argmin(f)
+    best = population[k_best]
+    f_best = f[k_best]
+    nbeval = pop
+    generation = 0
+    new = np.zeros(n)
+    convergence = [f_best]
+    while (nbeval < budget):
+        for k in range(pop):
+            parent = population[k]
+            # Choosing two parents
+            l = np.random.randint(pop)
+            m = np.random.randint(pop)
+            # Mutation
+            mutant = parent + f1 * (population[l]-population[m])\
+                + f2 * (best - parent)
+            # cross-over
+            for compteur in range(n):
+                if (np.random.rand()<cr):
+                    new[compteur] = mutant[compteur]
+                else:
+                    new[compteur] = parent[compteur]
+            # Conditions aux bord
+            if all(new >= X_min) and all(new <= X_max):
+                f_new = f_cout(new)
+                nbeval = nbeval + 1
+                if (f_new < f[k]):
+                    population[k] = new
+                    f[k] = f_new
+                    if (f_new < f_best):
+                        k_best = k
+                        f_best = f_new
+                        best = new
+        generation = generation + 1
+        convergence.append(f_best)
+
+    convergence = np.array(convergence)
 
     return [best,convergence,best]

@@ -7,7 +7,7 @@ algo = "BFGS"
 function = "BraggO"
 budget = 20000
 
-file_name = f"ResA/{function}_{algo}_{n_couches}_{budget}.npy"
+file_name = f"../ResA/{function}_{algo}_{n_couches}_{budget}.npy"
 results = np.load(file_name,allow_pickle = True)
 
 

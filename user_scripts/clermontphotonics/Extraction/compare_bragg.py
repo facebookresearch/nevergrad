@@ -8,9 +8,9 @@ budget = 60000
 plt.clf()
 fig1 = plt.figure(1)
 
-for algo in ["BFGS","DE"]:
+for algo in ["DE","DEscol"]:
 
-    file_name = f"ResA/{function}_{algo}_{n_couches}_{budget}.npy"
+    file_name = f"../ResA/{function}_{algo}_{n_couches}_{budget}.npy"
     results = np.load(file_name,allow_pickle = True)
     values= []
     for k in range(len(results)):

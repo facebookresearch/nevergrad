@@ -11,7 +11,7 @@ fig1 = plt.figure(1)
 
 for algo in ["BFGS","DE"]:
 
-    file_name = f"ResA/{function}_{algo}_{n_couches}_{budget}.npy"
+    file_name = f"../ResA/{function}_{algo}_{n_couches}_{budget}.npy"
     results = np.load(file_name,allow_pickle = True)
     values= []
     for k in range(len(results)):
