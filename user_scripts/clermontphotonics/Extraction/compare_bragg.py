@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 n_couches = "100"
-runner = "A"
 function = "bragg"
 budget = 60000
 
@@ -11,7 +10,7 @@ fig1 = plt.figure(1)
 
 for algo in ["BFGS","DE"]:
 
-    file_name = f"../Res1/out_{function}_{algo}_{n_couches}_{budget}_{runner}.npy"
+    file_name = f"ResA/{function}_{algo}_{n_couches}_{budget}.npy"
     results = np.load(file_name,allow_pickle = True)
     values= []
     for k in range(len(results)):

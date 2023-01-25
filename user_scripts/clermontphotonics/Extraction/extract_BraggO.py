@@ -3,12 +3,11 @@ import matplotlib.pyplot as plt
 import PyMoosh as pm
 
 n_couches = "40"
-runner = "A"
 algo = "BFGS"
 function = "BraggO"
 budget = 20000
 
-file_name = f"../Res1/out_{function}_{algo}_{n_couches}_{budget}_{runner}.npy"
+file_name = f"ResA/{function}_{algo}_{n_couches}_{budget}.npy"
 results = np.load(file_name,allow_pickle = True)
 
 

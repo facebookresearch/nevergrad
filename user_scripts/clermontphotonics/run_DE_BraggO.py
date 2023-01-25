@@ -25,7 +25,7 @@ def launch_optim(n_couches):
         results.append([best,convergence])
         print(f"Run {k} with {algo} on {function} with {n_couches} layers")
 
-    file_name = f"Res1/out_{function}_{algo}_{n_couches}_{budget}_{runner}.npy"
+    file_name = f"ResA/{function}_{algo}_{n_couches}_{budget}.npy"
     results = np.asarray(results,dtype = object)
     np.save(file_name,results)
 
