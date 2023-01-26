@@ -9,8 +9,8 @@ from joblib import Parallel, delayed
 def launch_optim(n_couches):
 #    algo = "DE"
 #    algo = "DEscol"
-#    algo = "DEbord"
-    algo = "DEstruct"
+    algo = "DEclip"
+#    algo = "DEstruct"
     function = "bragg"
     budget = 60000
     nb_runs = 50

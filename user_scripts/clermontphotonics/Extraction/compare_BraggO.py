@@ -2,14 +2,27 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 n_couches = "120"
-runner = "A"
 function = "BraggO"
-budget = 20000
 
 plt.clf()
 fig1 = plt.figure(1)
 
-for algo in ["BFGS","DE"]:
+budget = 20000
+
+# Pour pouvoir choisir un budget différent pour BGFS. Avec 20 000 il a convergé.
+for algo in ["BFGS"]:
+
+    file_name = f"../ResA/{function}_{algo}_{n_couches}_{budget}.npy"
+    results = np.load(file_name,allow_pickle = True)
+    values= []
+    for k in range(len(results)):
+        values.append(results[k][1][-1])
+    sorted = np.sort(values)
+    plt.plot(sorted,label=algo)
+
+budget = 20000
+
+for algo in ["DE"]:
 
     file_name = f"../ResA/{function}_{algo}_{n_couches}_{budget}.npy"
     results = np.load(file_name,allow_pickle = True)

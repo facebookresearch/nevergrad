@@ -274,8 +274,9 @@ def DEvol_bord(f_cout,budget,X_min,X_max,population):
         for k in range(0,population):
             crossover=(np.random.random(n)<cr)
             X=(omega[k]+f1*(omega[np.random.randint(population)]-omega[np.random.randint(population)])+f2*(best-omega[k]))*crossover+(1-crossover)*omega[k]
-            X = np.minimum(X,X_max)
-            X = np.maximum(X,X_min)
+            X = np.clip(X,X_min,X_max)
+            #X = np.minimum(X,X_max)
+            #X = np.maximum(X,X_min)
             tmp=f_cout(X)
             evaluation=evaluation+1
             if (tmp<cost[k]) :

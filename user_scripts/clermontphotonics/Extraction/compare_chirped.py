@@ -1,15 +1,15 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-n_couches = "100"
-function = "bragg"
+n_couches = "80"
+function = "chirped"
 
 plt.clf()
 fig1 = plt.figure(1)
 
-
 budget = 20000
 
+# Pour pouvoir choisir un budget différent pour BGFS. Avec 20 000 il a convergé.
 for algo in ["BFGS"]:
 
     file_name = f"../ResA/{function}_{algo}_{n_couches}_{budget}.npy"
@@ -22,7 +22,7 @@ for algo in ["BFGS"]:
 
 budget = 60000
 
-for algo in ["DE","DEscol"]:
+for algo in ["DE"]:
 
     file_name = f"../ResA/{function}_{algo}_{n_couches}_{budget}.npy"
     results = np.load(file_name,allow_pickle = True)
@@ -38,5 +38,5 @@ plt.legend()
 fig2 = plt.figure(2)
 for k in range(len(results)):
     plt.plot(results[k][1])
-plt.title(f"Convergence de {algo}")
+plt.title("Convergences")
 plt.show()
