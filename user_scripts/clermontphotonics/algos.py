@@ -298,8 +298,8 @@ def DEvol_struct_bragg(f_cout,budget,X_min,X_max,population):
 
 # Paramètres de DE - paramètres potentiels de la fonction
     cr=0.5; # Chances de passer les paramètres du parent à son rejeton.
-    f1=0.9;
-    f2=0.8;
+    f1=0.5;
+    f2=0.5;
     n=X_min.size
 
     # Initialisation de la population

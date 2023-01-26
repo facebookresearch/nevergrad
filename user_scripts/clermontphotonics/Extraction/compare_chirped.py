@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-n_couches = "80"
+n_couches = "60"
 function = "chirped"
 
 plt.clf()
@@ -20,7 +20,7 @@ for algo in ["BFGS"]:
     sorted = np.sort(values)
     plt.plot(sorted,label=algo)
 
-budget = 60000
+budget = 100000
 
 for algo in ["DE"]:
 

@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-n_couches = "120"
+n_couches = "40"
 function = "BraggO"
 
 plt.clf()
@@ -35,8 +35,8 @@ for algo in ["DE"]:
 # Représenter les courbes de convergence
 plt.legend()
 
-fig2 = plt.figure(2)
-for k in range(len(results)):
-    plt.plot(results[k][1])
-plt.title("Convergences")
+#fig2 = plt.figure(2)
+#for k in range(len(results)):
+#    plt.plot(results[k][1])
+#plt.title("Convergences")
 plt.show()

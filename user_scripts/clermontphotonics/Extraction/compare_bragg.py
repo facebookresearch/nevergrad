@@ -22,7 +22,7 @@ for algo in ["BFGS"]:
 
 budget = 60000
 
-for algo in ["DE","DEscol"]:
+for algo in ["DE","DEstruct[0.7,0.6]","DEstruct[0.5,0.5]"]:
 
     file_name = f"../ResA/{function}_{algo}_{n_couches}_{budget}.npy"
     results = np.load(file_name,allow_pickle = True)

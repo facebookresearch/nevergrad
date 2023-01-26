@@ -31,4 +31,4 @@ def launch_optim(n_couches):
 
 # Relire les données
 
-Parallel(n_jobs = 24)(delayed(launch_optim)(n_couches) for n_couches in [20,40,60,80,100,120,140])
+Parallel(n_jobs = 24)(delayed(launch_optim)(n_couches) for n_couches in [20,30,40,50,60,70,80,90,100])
