@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-n_couches = "100"
+n_couches = "20"
 function = "bragg"
 
 plt.clf()
@@ -22,7 +22,7 @@ for algo in ["BFGS"]:
 
 budget = 60000
 
-for algo in ["DE","DEstruct[0.7,0.6]","DEstruct[0.5,0.5]"]:
+for algo in ["DE"]:
 
     file_name = f"../ResA/{function}_{algo}_{n_couches}_{budget}.npy"
     results = np.load(file_name,allow_pickle = True)

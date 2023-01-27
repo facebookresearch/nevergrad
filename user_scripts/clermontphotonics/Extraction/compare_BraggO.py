@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-n_couches = "40"
+n_couches = "20"
 function = "BraggO"
 
 plt.clf()
