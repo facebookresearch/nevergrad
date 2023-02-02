@@ -10,8 +10,8 @@ def launch_optim(n_couches):
 #    algo = "DE"
 #    algo = "DEscol"
 #    algo = "DEclip"
-    algo = "DEstruct[0.5,0.5]"
-    function = "bragg"
+    algo = "DE"
+    function = "morpho"
     budget = 60000
     nb_runs = 50
     X_min = np.array([0.,30.,0,0]*n_couches)
