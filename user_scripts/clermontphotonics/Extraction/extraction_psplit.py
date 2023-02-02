@@ -221,6 +221,49 @@ def visualization(X,d):
     plt.axis('equal')
     plt.show()
 
-X = np.array([100,200,200,100,200,100,150,200,0])
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+n_couches = "20"
+algo = "DE"
+function = "psplit"
+budget = 20000
+
+file_name = f"../ResA/{function}_{algo}_{n_couches}_{budget}.npy"
+results = np.load(file_name,allow_pickle = True)
+
+
+#Graphique pour comparaisons
+values = []
+bests = []
+fig1 = plt.figure(1)
+
+for k in range(len(results)):
+    values.append(results[k][1][-1])
+    bests.append(results[k][0])
+sorted = np.sort(values)
+agrum = np.argsort(values)
+# Let's sort bests too !
+sorted_bests = []
+for k in range(len(results)):
+    sorted_bests.append(bests[agrum[k]])
+
+plt.plot(sorted)
+plt.title(f'Function {function} with {algo}')
+
+# Représenter les courbes de convergence
+
+fig2 = plt.figure(2)
+for k in range(len(results)):
+    plt.plot(results[k][1])
+plt.title("Convergences")
+
+# Visualiser
+
+fig3 = plt.figure(3)
+X = sorted_bests[0]
 spectre(X)
 visualization(X,848.53)
