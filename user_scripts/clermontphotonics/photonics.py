@@ -274,3 +274,155 @@ def neomorpho(X):
         R[j]=(abs(S[j+nmod,nmod])**2*np.real(V[j+nmod])/k0)
     cost=1-(R[-1]+R[1])/2+R[0]/2
     return cost
+
+def Nmorpho(X):
+    ''' Diffraction par un réseau en réflexion dans les ordres -1 et 1,
+    minimisation de l'ordre 0 @450 nm, e polarisation TE.
+    '''
+
+    # Structure du vecteur X :
+    # 3xN où N est le nombre de blocs, à 1 bloc par couche
+    # Hauteur, Largeur, Position :: pour chaque bloc
+    # On commence par la période fixe.
+
+    n_layers = len(X)//4
+    #print(n_layers)
+    X=X.reshape((n_layers,4))
+    # On vérifie que c'est constructible...
+    for k in range(n_layers-1):
+        if min(X[k+1,1]+X[k+1,2],X[k,1]+X[k,2])<max(X[k+1,1],X[k,1]):
+            return 100
+    lam=449.5897
+    d=600.521475
+    e1=1
+    e2=2.4336
+
+    x=X/d
+    l=lam/d
+    k0=2*np.pi/l
+    nmod=25
+    n=2*nmod+1
+
+    # Angle d'incidence en degrés
+    theta = 0.
+    alpha0 = k0 * np.sin(theta*np.pi/180.)
+
+    pol=0
+    S=np.block([[np.zeros([n,n]),np.eye(n,dtype=np.complex)],[np.eye(n),np.zeros([n,n])]])
+    P,V=homogene(k0,alpha0,pol,e1,n)
+    for k in range(0,n_layers):
+        bloc = np.array([x[k,1:3]])
+        Pc,Vc=reseau(k0,alpha0,pol,e1,e2,n,bloc)
+        S=cascade(S,interface(P,Pc))
+        S=c_bas(S,Vc,x[k,0])
+        S=cascade(S,interface(Pc,P))
+        S = c_bas(S,V,x[k,3])
+    Pc,Vc=homogene(k0,alpha0,pol,e2,n)
+    S=cascade(S,interface(P,Pc))
+    TE1 = np.abs(S[1+nmod,nmod])**2*np.real(V[nmod+1]/(k0))
+    Rte = np.abs(S[nmod,nmod])**2*np.real(V[nmod]/(k0))
+    TEm1 = np.abs(S[nmod-1,nmod])**2*np.real(V[nmod-1]/(k0))
+
+#    print(TE01,Vc[nmod+1])
+
+    cost=1-(TE1+TEm1-Rte)/2
+
+    return cost
+
+def reseau(k0,a0,pol,e1,e2,n,blocs):
+    '''Warning: blocs is a vector with N lines and 2 columns. Each
+    line refers to a block of material e2 inside a matrix of material e1,
+    giving its size relatively to the period (first column) and its starting
+    position.
+    Warning : There is nothing checking that the blocks don't overlapp.
+    '''
+    n_blocs=blocs.shape[0];
+    nmod=int(n/2)
+    M1=marche(e2,e1,blocs[0,0],n,blocs[0,1])
+    M2=marche(1/e2,1/e1,blocs[0,0],n,blocs[0,1])
+    if n_blocs>1:
+        for k in range(1,n_blocs):
+            M1=M1+marche(e2-e1,0,blocs[k,0],n,blocs[k,1])
+            M2=M2+marche(1/e2-1/e1,0,blocs[k,0],n,blocs[k,1])
+    alpha=np.diag(a0+2*np.pi*np.arange(-nmod,nmod+1))+0j
+    if (pol==0):
+        M=alpha*alpha-k0*k0*M1
+        L,E=np.linalg.eig(M)
+        L=np.sqrt(-L+0j)
+        L=(1-2*(np.imag(L)<-1e-15))*L
+        P=np.block([[E],[np.matmul(E,np.diag(L))]])
+    else:
+        T=np.linalg.inv(M2)
+        M=np.matmul(np.matmul(np.matmul(T,alpha),np.linalg.inv(M1)),alpha)-k0*k0*T
+        L,E=np.linalg.eig(M)
+        L=np.sqrt(-L+0j)
+        L=(1-2*(np.imag(L)<-1e-15))*L
+        P=np.block([[E],[np.matmul(np.matmul(M2,E),np.diag(L))]])
+    return P,L
+
+
+def psplit(X):
+    ''' Envoi de la lumière parvenant par le substrat dans les ordres 1 et -1
+    pour les polarisations TE et TM respectivement.
+    '''
+
+    # Structure du vecteur X :
+    # 3xN où N est le nombre de blocs, à 1 bloc par couche
+    # Hauteur, Largeur, Position :: pour chaque bloc
+    # On commence par la période fixe.
+
+    n_layers = len(X)//3
+    X=X.reshape((n_layers,3))
+    # On vérifie que c'est constructible...
+    for k in range(n_layers-1):
+        if min(X[k+1,1]+X[k+1,2],X[k,1]+X[k,2])<max(X[k+1,1],X[k,1]):
+            return 100
+    lam=600.
+    d=848.53
+    e1=1
+    e2=1.5**2
+
+    x=X/d
+    l=lam/d
+    k0=2*np.pi/l
+    nmod=25
+    n=2*nmod+1
+
+    # Angle d'incidence en degrés
+    theta = 0.
+    alpha0 = k0 * np.sin(theta*np.pi/180.)
+
+    pol=0
+    S=np.block([[np.zeros([n,n]),np.eye(n,dtype=np.complex)],[np.eye(n),np.zeros([n,n])]])
+    P,V=homogene(k0,alpha0,pol,e1,n)
+    V_air = V
+    for k in range(0,n_layers):
+        bloc = np.array([x[k,1:3]])
+        Pc,Vc=reseau(k0,alpha0,pol,e1,e2,n,bloc)
+        S=cascade(S,interface(P,Pc))
+        S=c_bas(S,Vc,x[k,0])
+        P=Pc
+        V=Vc
+    Pc,Vc=homogene(k0,alpha0,pol,e2,n)
+    S=cascade(S,interface(P,Pc))
+    TE01 = np.abs(S[1+nmod,n+nmod])**2*np.real(V_air[nmod+1]/(k0))
+#    print(TE01,Vc[nmod+1])
+
+    pol=1.
+    S=np.block([[np.zeros([n,n]),np.eye(n,dtype=np.complex)],[np.eye(n),np.zeros([n,n])]])
+    P,V=homogene(k0,alpha0,pol,1,n)
+    V_air = V
+    for k in range(0,n_layers):
+        bloc = np.array([x[k,1:3]])
+        Pc,Vc=reseau(k0,alpha0,pol,e1,e2,n,bloc)
+        S=cascade(S,interface(P,Pc))
+        S=c_bas(S,Vc,x[k,0])
+        P=Pc
+        V=Vc
+    Pc,Vc=homogene(k0,alpha0,pol,e2,n)
+    S=cascade(S,interface(P,Pc))
+    TM0m1 = np.abs(S[nmod-1,n+nmod])**2*np.real(V_air[nmod-1]/k0)*e2/e1
+
+    cost=1-(TE01+TM0m1)/2
+
+    return cost
