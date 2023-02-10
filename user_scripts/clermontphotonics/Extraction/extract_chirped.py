@@ -2,10 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import PyMoosh as pm
 
-n_couches = "40"
+n_couches = "80"
 algo = "DE"
 function = "chirped"
-budget = 20000
+budget = 100000
 
 file_name = f"../ResA/{function}_{algo}_{n_couches}_{budget}.npy"
 results = np.load(file_name,allow_pickle = True)

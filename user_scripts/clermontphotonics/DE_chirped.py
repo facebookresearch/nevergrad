@@ -9,8 +9,8 @@ from joblib import Parallel, delayed
 def launch_optim(n_couches):
     # A pour Antoine.
     algo = "DE"
-    function = "chirped"
-    budget = 60000
+    function = "chirped[400-1200.50]"
+    budget = 200000
     nb_runs = 50
 
     X_min=np.hstack(20*np.ones(n_couches))

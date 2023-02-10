@@ -20,7 +20,7 @@ for algo in ["BFGS"]:
     sorted = np.sort(values)
     plt.plot(sorted,label=algo)
 
-budget = 100000
+budget = 200000
 
 for algo in ["DE"]:
 
