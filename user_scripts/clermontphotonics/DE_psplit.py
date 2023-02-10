@@ -12,8 +12,8 @@ def launch_optim(n_couches):
 #    algo = "DEclip"
     algo = "DE"
     function = "psplit"
-    budget = 60000
-    nb_runs = 50
+    budget = 10000
+    nb_runs = 10
     X_min = np.array([0.,30.,0]*n_couches)
     X_max = np.array([200,848,848]*n_couches)
 
@@ -25,11 +25,11 @@ def launch_optim(n_couches):
         results.append([best,convergence])
         print(f"Run {k} with {algo} on {function} with {n_couches} layers")
 
-    file_name = f"ResA/{function}_{algo}_{n_couches}_{budget}.npy"
-    results = np.asarray(results,dtype = object)
-    np.save(file_name,results)
+        file_name = f"ResA/{function}_{algo}_{n_couches}_{budget}.npy"
+        to_write = np.asarray(results,dtype = object)
+        np.save(file_name,to_write)
 
 # Relire les données
 
 #launch_optim(30)
-Parallel(n_jobs = 18)(delayed(launch_optim)(n_couches) for n_couches in [20,40,60,80,100,120,140])
+Parallel(n_jobs = 18)(delayed(launch_optim)(n_couches) for n_couches in [4,5,6,7,8,9,10])

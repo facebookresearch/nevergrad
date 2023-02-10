@@ -227,10 +227,10 @@ def visualization(X,d):
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-n_couches = "20"
+n_couches = "4"
 algo = "DE"
 function = "psplit"
-budget = 20000
+budget = 10000
 
 file_name = f"../ResA/{function}_{algo}_{n_couches}_{budget}.npy"
 results = np.load(file_name,allow_pickle = True)
@@ -261,9 +261,8 @@ for k in range(len(results)):
     plt.plot(results[k][1])
 plt.title("Convergences")
 
-# Visualiser
 
 fig3 = plt.figure(3)
 X = sorted_bests[0]
-spectre(X)
+#spectre(X)
 visualization(X,848.53)
