@@ -1104,7 +1104,7 @@ def pbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         ArtificialFunction(name, block_dimension=d, rotation=rotation, expo=expo)
         for name in ["cigar", "sphere", "rastrigin", "hm", "deceptivemultimodal"]
         for rotation in [True]
-        for expo in [1.0,  3.0, 5.0, 7.0, 9.0]
+        for expo in [1.0, 3.0, 5.0, 7.0, 9.0]
         for d in dims
     ]
     for optim in optims:
