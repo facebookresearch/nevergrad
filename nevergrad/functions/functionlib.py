@@ -30,6 +30,7 @@ class ArtificialVariable:
         hashing: bool,
         only_index_transform: bool,
         random_state: np.random.RandomState,
+        expo: float,
     ) -> None:
         self._dimension = dimension
         self._transforms: tp.List[utils.Transform] = []
@@ -41,6 +42,7 @@ class ArtificialVariable:
         self.hashing = hashing
         self.dimension = self._dimension
         self.random_state = random_state
+        self.expo = expo
 
     def _initialize(self) -> None:
         """Delayed initialization of the transforms to avoid slowing down the instance creation
@@ -60,6 +62,7 @@ class ArtificialVariable:
                     translation_factor=self.translation_factor,
                     rotation=self.rotation,
                     random_state=self.random_state,
+                    expo=self.expo,
                 )
             )
 
@@ -151,9 +154,11 @@ class ArtificialFunction(ExperimentFunction):
         aggregator: str = "max",
         split: bool = False,
         bounded: bool = False,
+        expo: float = 1.0,
     ) -> None:
         # pylint: disable=too-many-locals
         self.name = name
+        self.expo = expo
         self.constraint_violation: tp.ArrayLike = []
         self._parameters = {x: y for x, y in locals().items() if x not in ["__class__", "self"]}
         # basic checks
@@ -205,6 +210,7 @@ class ArtificialFunction(ExperimentFunction):
             hashing=hashing,
             only_index_transform=only_index_transform,
             random_state=self._parametrization.random_state,
+            expo=self.expo,
         )
         self._aggregator: tp.Callable[[tp.ArrayLike], float] = {  # type: ignore
             "max": np.max,
