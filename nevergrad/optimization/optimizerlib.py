@@ -755,6 +755,7 @@ class ChoiceBase(base.Optimizer):
 
 
 OldCMA = ParametrizedCMA().set_name("OldCMA", register=True)
+CMA = ParametrizedCMA().set_name("CMA", register=True)
 CMAbounded = ParametrizedCMA(
     scale=1.5884, popsize_factor=1, elitist=True, diagonal=True, fcmaes=False
 ).set_name("CMAbounded", register=True)
@@ -773,7 +774,7 @@ CMAtuning = ParametrizedCMA(
 
 
 @registry.register
-class CMA(ChoiceBase):  # Adds Risto's CMA to CMA.
+class MetaCMA(ChoiceBase):  # Adds Risto's CMA to CMA.
     """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
 
     def _select_optimizer_cls(self) -> base.OptCls:
@@ -1289,7 +1290,7 @@ class _Rescaled(base.Optimizer):
         parametrization: IntOrParameter,
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
-        base_optimizer: base.OptCls = CMA,
+        base_optimizer: base.OptCls = MetaCMA,
         scale: tp.Optional[float] = None,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
@@ -1339,7 +1340,7 @@ class Rescaled(base.ConfiguredOptimizer):
     def __init__(
         self,
         *,
-        base_optimizer: base.OptCls = CMA,
+        base_optimizer: base.OptCls = MetaCMA,
         scale: tp.Optional[float] = None,
     ) -> None:
         super().__init__(_Rescaled, locals())
@@ -1500,7 +1501,7 @@ class ConfSplitOptimizer(base.ConfiguredOptimizer):
         num_optims: tp.Optional[float] = None,
         num_vars: tp.Optional[tp.List[int]] = None,
         max_num_vars: tp.Optional[int] = None,
-        multivariate_optimizer: base.OptCls = CMA,
+        multivariate_optimizer: base.OptCls = MetaCMA,
         monovariate_optimizer: base.OptCls = oneshot.RandomSearch,
         progressive: bool = False,
         non_deterministic_descriptor: bool = True,
@@ -1595,7 +1596,7 @@ class Portfolio(base.Optimizer):
         if not optimizers:  # default
             optimizers = []
             if budget is None or budget >= 12 * num_workers:
-                optimizers = [CMA, "TwoPointsDE"]
+                optimizers = [MetaCMA, "TwoPointsDE"]
             if budget is not None:  # needs a budget
                 optimizers.append("ScrHammersleySearch")
         num = len(optimizers)
@@ -1678,10 +1679,10 @@ class Portfolio(base.Optimizer):
             opt.enable_pickling()
 
 
-ParaPortfolio = ConfPortfolio(optimizers=[CMA, TwoPointsDE, PSO, SQP, ScrHammersleySearch]).set_name(
+ParaPortfolio = ConfPortfolio(optimizers=[MetaCMA, TwoPointsDE, PSO, SQP, ScrHammersleySearch]).set_name(
     "ParaPortfolio", register=True
 )
-ASCMADEthird = ConfPortfolio(optimizers=[CMA, LhsDE], warmup_ratio=0.33).set_name(
+ASCMADEthird = ConfPortfolio(optimizers=[MetaCMA, LhsDE], warmup_ratio=0.33).set_name(
     "ASCMADEthird", register=True
 )
 MultiCMA = ConfPortfolio(
@@ -1776,14 +1777,14 @@ MetaModelOnePlusOne = ParametrizedMetaModel(multivariate_optimizer=OnePlusOne).s
 
 @registry.register
 class SQPCMA(Portfolio):
-    """Passive portfolio of CMA and many SQP."""
+    """Passive portfolio of MetaCMA and many SQP."""
 
     def __init__(
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         cma_workers = num_workers // 2
-        optims: tp.List[base.Optimizer] = [CMA(self.parametrization, budget=budget, num_workers=cma_workers)]
+        optims: tp.List[base.Optimizer] = [MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)]
         optims += [SQP(self.parametrization, num_workers=1) for _ in range(num_workers - cma_workers)]
         for opt in optims[2:]:  # make sure initializations differ
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
@@ -1859,7 +1860,7 @@ class CMandAS3(Portfolio):
             if num_workers == 1:
                 optims = [ChainCMAPowell for _ in range(3)]
             else:
-                optims = [CMA for _ in range(3)]
+                optims = [MetaCMA for _ in range(3)]
             warmup_ratio = 0.1
         super().__init__(
             parametrization,
@@ -1886,7 +1887,7 @@ class CM(Portfolio):
         if budget < 201:
             optims = [OnePlusOne]
         if budget > 50 * dim:
-            optims = [CMA]
+            optims = [MetaCMA]
         super().__init__(
             parametrization,
             budget=budget,
@@ -2321,7 +2322,7 @@ discretememetic = Chaining(
 # discretememeticT = Chaining(
 #     [RandomSearch, DiscreteLenglerOnePlusOneT, DiscreteOnePlusOneT], ["tenth", "third"]
 # ).set_name("discretememeticT", register=True)
-ChainCMAPowell = Chaining([CMA, Powell], ["half"]).set_name("ChainCMAPowell", register=True)
+ChainCMAPowell = Chaining([MetaCMA, Powell], ["half"]).set_name("ChainCMAPowell", register=True)
 ChainCMAPowell.no_parallelization = True  # TODO make this automatic
 ChainMetaModelSQP = Chaining([MetaModel, SQP], ["half"]).set_name("ChainMetaModelSQP", register=True)
 ChainMetaModelSQP.no_parallelization = True
@@ -2335,7 +2336,7 @@ ChainNaiveTBPSAPowell = Chaining([NaiveTBPSA, Powell], ["half"]).set_name(
     "ChainNaiveTBPSAPowell", register=True
 )
 ChainNaiveTBPSAPowell.no_parallelization = True
-ChainNaiveTBPSACMAPowell = Chaining([NaiveTBPSA, CMA, Powell], ["third", "third"]).set_name(
+ChainNaiveTBPSACMAPowell = Chaining([NaiveTBPSA, MetaCMA, Powell], ["third", "third"]).set_name(
     "ChainNaiveTBPSACMAPowell", register=True
 )
 ChainNaiveTBPSACMAPowell.no_parallelization = True
@@ -2653,7 +2654,7 @@ class NGOptBase(base.Optimizer):
                             else:
                                 # DE is great in such a case (?).
                                 cls = (
-                                    DE if self.dimension > 2000 else CMA if self.dimension > 1 else OnePlusOne
+                                    DE if self.dimension > 2000 else MetaCMA if self.dimension > 1 else OnePlusOne
                                 )
         return cls
 
