@@ -243,7 +243,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # This problem is intended as a stable basis forever.
     # The list of optimizers should contain only the basic for comparison and "baselines".
     optims: tp.List[str] = ["NGOpt10"] + get_optimizers("baselines", seed=next(seedg))  # type: ignore
-    optims = ["NGOptRW", "NGOpt", "CMandAS2", "Shiwa", "CMA", "DE", "DiscreteLenglerOnsPlusOne"]
+    optims = ["NGOptRW", "NGOpt", "CMandAS2", "Shiwa", "CMA", "DE", "DiscreteLenglerOnePlusOne"]
     np.random.shuffle(optims)
     optims = optims[:2]
     index = 0
