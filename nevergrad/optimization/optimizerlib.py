@@ -1784,7 +1784,9 @@ class SQPCMA(Portfolio):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         cma_workers = num_workers // 2
-        optims: tp.List[base.Optimizer] = [MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)]
+        optims: tp.List[base.Optimizer] = [
+            MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
+        ]
         optims += [SQP(self.parametrization, num_workers=1) for _ in range(num_workers - cma_workers)]
         for opt in optims[2:]:  # make sure initializations differ
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
@@ -2654,7 +2656,11 @@ class NGOptBase(base.Optimizer):
                             else:
                                 # DE is great in such a case (?).
                                 cls = (
-                                    DE if self.dimension > 2000 else MetaCMA if self.dimension > 1 else OnePlusOne
+                                    DE
+                                    if self.dimension > 2000
+                                    else MetaCMA
+                                    if self.dimension > 1
+                                    else OnePlusOne
                                 )
         return cls
 

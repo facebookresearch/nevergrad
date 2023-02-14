@@ -664,7 +664,9 @@ class XpPlotter:
         return optim_vals
 
     @staticmethod
-    def save_txt(output_filepath: tp.PathLike, optim_vals: tp.Dict[str, tp.Dict[str, np.ndarray]], addendum: str="") -> None:
+    def save_txt(
+        output_filepath: tp.PathLike, optim_vals: tp.Dict[str, tp.Dict[str, np.ndarray]], addendum: str = ""
+    ) -> None:
         """Saves a list of best performances.
 
         output_filepath: Path or str
