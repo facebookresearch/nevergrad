@@ -484,8 +484,7 @@ def test_bo_init() -> None:
         optimizer.minimize(np.abs)
     #    except NotUniqueError:
     except Exception as e:
-        print(f"Problem {e} in Bayesian optimization.")
-        pass  # That error is ok.
+        print(f"Problem {e} in Bayesian optimization.")  # Anyway Bayesian Optimization is basically weak.
 
 
 def test_chaining() -> None:
