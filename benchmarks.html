@@ -29,11 +29,15 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="index.html" class="icon icon-home"> nevergrad
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            nevergrad
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -143,6 +147,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.parallel"><code class="docutils literal notranslate"><span class="pre">parallel()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.parallel_small_budget"><code class="docutils literal notranslate"><span class="pre">parallel_small_budget()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.paramultimodal"><code class="docutils literal notranslate"><span class="pre">paramultimodal()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.pbbob"><code class="docutils literal notranslate"><span class="pre">pbbob()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.pbo_reduced_suite"><code class="docutils literal notranslate"><span class="pre">pbo_reduced_suite()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.pbo_suite"><code class="docutils literal notranslate"><span class="pre">pbo_suite()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.pbt"><code class="docutils literal notranslate"><span class="pre">pbt()</span></code></a></li>
@@ -221,7 +226,7 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home"></a></li>
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
       <li class="breadcrumb-item active">Examples of benchmarks</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/benchmarks.rst.txt" rel="nofollow"> View page source</a>
@@ -861,6 +866,16 @@ Testing both no useless variables and 5/6 of useless variables.</p>
 <dt class="sig sig-object py" id="nevergrad.benchmark.experiments.paramultimodal">
 <span class="sig-prename descclassname"><span class="pre">nevergrad.benchmark.experiments.</span></span><span class="sig-name descname"><span class="pre">paramultimodal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterator</span><span class="p"><span class="pre">[</span></span><span class="pre">Experiment</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#nevergrad.benchmark.experiments.paramultimodal" title="Permalink to this definition"></a></dt>
 <dd><p>Parallel counterpart of the multimodal experiment: 1000 workers.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="nevergrad.benchmark.experiments.pbbob">
+<span class="sig-prename descclassname"><span class="pre">nevergrad.benchmark.experiments.</span></span><span class="sig-name descname"><span class="pre">pbbob</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterator</span><span class="p"><span class="pre">[</span></span><span class="pre">Experiment</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#nevergrad.benchmark.experiments.pbbob" title="Permalink to this definition"></a></dt>
+<dd><p>Testing optimizers on exponentiated problems.
+Cigar, Ellipsoid.
+Both rotated and unrotated.
+Budget 100, 1000, 10000.
+Dimension 50.</p>
 </dd></dl>
 
 <dl class="py function">
