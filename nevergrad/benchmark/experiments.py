@@ -243,6 +243,9 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # This problem is intended as a stable basis forever.
     # The list of optimizers should contain only the basic for comparison and "baselines".
     optims: tp.List[str] = ["NGOpt10"] + get_optimizers("baselines", seed=next(seedg))  # type: ignore
+    optims = ["NGOptRW", "NGOpt", "CMandAS2", "Shiwa", "CMA", "DE", "DiscreteLenglerOnePlusOne"]
+    np.random.shuffle(optims)
+    optims = optims[:2]
     index = 0
     for function in functions:
         for budget in [50, 1500, 25000]:
@@ -1062,6 +1065,53 @@ def yaboundedbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 def yaboxbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with bounded domain, (-5,5)**n by default."""
     return yabbob(seed, box=True)
+
+
+@registry.register
+def pbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Testing optimizers on exponentiated problems.
+    Cigar, Ellipsoid.
+    Both rotated and unrotated.
+    Budget 100, 1000, 10000.
+    Dimension 50.
+    """
+    seedg = create_seed_generator(seed)
+    optims = [
+        "OldCMA",
+        "CMAbounded",
+        "CMAsmall",
+        "CMAstd",
+        "CMApara",
+        "CMAtuning",
+        "DiagonalCMA",
+        "FCMA",
+        "RescaledCMA",
+        "ASCMADEthird",
+        "MultiCMA",
+        "TripleCMA",
+        "PolyCMA",
+        "MultiScaleCMA",
+        "DE",
+        "OnePointDE",
+        "GeneticDE",
+        "TwoPointsDE",
+        "PSO",
+        "NGOptRW",
+        "NGOpt",
+    ]
+    dims = [40, 20]
+    functions = [
+        ArtificialFunction(name, block_dimension=d, rotation=rotation, expo=expo)
+        for name in ["cigar", "sphere", "rastrigin", "hm", "deceptivemultimodal"]
+        for rotation in [True]
+        for expo in [1.0, 3.0, 5.0, 7.0, 9.0]
+        for d in dims
+    ]
+    for optim in optims:
+        for function in functions:
+            for budget in [100, 200, 300, 400, 500, 600, 700, 800]:
+                for nw in [1, 10, 50]:
+                    yield Experiment(function, optim, budget=budget, num_workers=nw, seed=next(seedg))
 
 
 @registry.register

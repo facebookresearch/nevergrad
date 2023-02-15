@@ -25,6 +25,7 @@ DESCRIPTION_KEYS = {
     "dimension",
     "discrete",
     "aggregator",
+    "expo",
     "hashing",
     "parametrization",
     "noise_dissymmetry",

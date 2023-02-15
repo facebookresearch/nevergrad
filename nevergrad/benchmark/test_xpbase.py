@@ -29,6 +29,7 @@ DESCRIPTION_KEYS = {
     "budget",
     "error",
     "batch_mode",
+    "expo",
 } | ARTIFICIAL_KEYS
 
 
