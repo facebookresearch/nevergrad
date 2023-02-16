@@ -163,7 +163,7 @@ def psplit(X,lam):
     Te = np.zeros(3)
     Tm = np.zeros(3)
     for k in range(-1,2):
-        Te[k+1] = np.abs(S[k+nmod,n+nmod])**2*np.real(V_air[nmod+k]/(k0))
+        Te[k+1] = np.abs(S[k+nmod,n+nmod])**2*np.real(V_air[nmod+k]/Vc[nmod])
 #    print(TE01,Vc[nmod+1])
 
     pol=1.
@@ -180,7 +180,7 @@ def psplit(X,lam):
     S=cascade(S,interface(P,Pc))
 #    P,V=homogene(k0,0,pol,1,n)
     for k in range(-1,2):
-        Tm[k+1] =  np.abs(S[nmod+k,n+nmod])**2*np.real(V_air[nmod+k]/k0)*e2/e1
+        Tm[k+1] =  np.abs(S[nmod+k,n+nmod])**2*np.real(V_air[nmod+k]/Vc[nmod])*e2
 
     cost=1-(Te[2]+Tm[0])/2
 
