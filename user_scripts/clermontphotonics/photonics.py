@@ -117,7 +117,7 @@ def bragg_origin(X):
     return c
 
 def chirped(X):
-    lam=np.linspace(400,1200,50)
+    lam=np.linspace(400,800,100)
     n=np.array([1,1.4142135623730951,1.7320508075688772])
     Type=np.concatenate(([0],np.tile([2,1],int(np.size(X)/2)),[2]))
     hauteur=np.concatenate(([0],X,[0]))
@@ -372,6 +372,7 @@ def psplit(X):
     # On commence par la période fixe.
 
     n_layers = len(X)//3
+    print(n_layers)
     X=X.reshape((n_layers,3))
     # On vérifie que c'est constructible...
     for k in range(n_layers-1):
@@ -405,7 +406,7 @@ def psplit(X):
         V=Vc
     Pc,Vc=homogene(k0,alpha0,pol,e2,n)
     S=cascade(S,interface(P,Pc))
-    TE01 = np.abs(S[1+nmod,n+nmod])**2*np.real(V_air[nmod+1]/(k0))
+    TE01 = np.abs(S[1+nmod,n+nmod])**2*np.real(V_air[nmod+1]/Vc[nmod])
 #    print(TE01,Vc[nmod+1])
 
     pol=1.
@@ -421,7 +422,7 @@ def psplit(X):
         V=Vc
     Pc,Vc=homogene(k0,alpha0,pol,e2,n)
     S=cascade(S,interface(P,Pc))
-    TM0m1 = np.abs(S[nmod-1,n+nmod])**2*np.real(V_air[nmod-1]/k0)*e2/e1
+    TM0m1 = np.abs(S[nmod-1,n+nmod])**2*np.real(V_air[nmod-1]/Vc[nmod]*e2)
 
     cost=1-(TE01+TM0m1)/2
 
