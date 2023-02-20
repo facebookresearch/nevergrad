@@ -303,9 +303,9 @@ If you want to run Open AI Gym, see `One-line for learning state-of-the-art Open
 Examples from our external users
 --------------------------------
 
-Nevergrad is integrated in `Ray/Tune <https://docs.ray.io/en/master/_modules/ray/tune/suggest/nevergrad.html>`_, Berkeley AI Research library for parameter tuning .
+Nevergrad is integrated in `Ray/Tune <https://docs.ray.io/en/latest/tune/api_docs/suggestion.html#nevergrad-tune-search-nevergrad-nevergradsearch>`_, Berkeley AI Research library for parameter tuning .
 
-Nevergrad is a plugin in `Hydra <https://hydra.cc/docs/next/plugins/nevergrad_sweeper/>`_ Facebook's parameter sweeping library.
+Nevergrad is a plugin in `Hydra <https://hydra.cc/docs/plugins/nevergrad_sweeper/>`_ Facebook's parameter sweeping library.
 
 Nevergrad is interfaced in `IOH Profiler <https://iohprofiler.liacs.nl/>`_, a tool from Univ. Leiden, CNRS, Sorbonne univ and Tel Hai college for profiling optimization algorithms.
 
