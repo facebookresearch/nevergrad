@@ -2,6 +2,8 @@
 
 ## main
 
+## v6.0 (2022-02-22)
+
 ### Breaking changes
 
 - Removed `descriptor` field of parameters which had been deprecated in previous versions. Use `function` field instead to specify if the function 
@@ -11,8 +13,19 @@
 
 - `TransitionChoice` behavior has been changed to use bins instead of a full float representation. This may lead to slight
   changes during optimizations. It can also be set as unordered for use with discrete 1+1 optimizers (experimental)
+- Adding NGOptRW, presumably better than NGOpt for real-world problems.
+- Making some dependencies optional because running was becoming too complicated.
+- Adding the NLOPT library.
+- Adding smoothness operators for discrete optimization.
 
 ### Other changes
+- Adding YAPBBOB, with a parameter regulating YABBOB-like problems so that the distribution of the optimum is less rotationally invariant.
+- Adding constrained counterparts of YABBOB: yapenbbob (a few constraints), yaonepenbbob (single constraint), yamegapenbbob (many constraints).
+- Improvements in the photonics benchmarks.
+- Externalizing CompilerGym.
+- Making some tests less flaky.
+- Adding Simulated annealing and Tabu search.
+- Making the code more robust to Gym environments.
 
 ## 0.5.0 (2022-03-08)
 
