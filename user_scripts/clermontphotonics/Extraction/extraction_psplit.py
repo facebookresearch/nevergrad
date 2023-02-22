@@ -38,8 +38,8 @@ def marche(a,b,p,n,x):
     matrix generated using the Fourier series.
     '''
     from scipy.linalg import toeplitz
-    l=np.zeros(n,dtype=np.complex)
-    m=np.zeros(n,dtype=np.complex)
+    l=np.zeros(n,dtype=complex)
+    m=np.zeros(n,dtype=complex)
     tmp=1/(2*np.pi*np.arange(1,n))*(np.exp(-2*1j*np.pi*p*np.arange(1,n))-1)*np.exp(-2*1j*np.pi*np.arange(1,n)*x)
     l[1:n]=1j*(a-b)*tmp
     l[0]=p*a+(1-p)*b
@@ -47,28 +47,6 @@ def marche(a,b,p,n,x):
     m[1:n]=1j*(b-a)*np.conj(tmp)
     T=toeplitz(l,m)
     return T
-
-def creneau(k0,a0,pol,e1,e2,a,n,x0):
-    '''Attention : a refers to the proportion of e1 in the period, and x0
-    to the starting position of this inclusion in a material of
-    permittivity e2'''
-    nmod=int(n/2)
-    alpha=np.diag(a0+2*np.pi*np.arange(-nmod,nmod+1))
-    if (pol==0):
-        M=alpha*alpha-k0*k0*marche(e1,e2,a,n,x0)
-        L,E=np.linalg.eig(M)
-        L=np.sqrt(-L+0j)
-        L=(1-2*(np.imag(L)<-1e-15))*L
-        P=np.block([[E],[np.matmul(E,np.diag(L))]])
-    else:
-        U=marche(1/e1,1/e2,a,n,x0)
-        T=np.linalg.inv(U)
-        M=np.matmul(np.matmul(np.matmul(T,alpha),np.linalg.inv(marche(e1,e2,a,n,x0))),alpha)-k0*k0*T
-        L,E=np.linalg.eig(M)
-        L=np.sqrt(-L+0j)
-        L=(1-2*(np.imag(L)<-1e-15))*L
-        P=np.block([[E],[np.matmul(np.matmul(U,E),np.diag(L))]])
-    return P,L
 
 def reseau(k0,a0,pol,e1,e2,n,blocs):
     '''Warning: blocs is a vector with N lines and 2 columns. Each
@@ -147,7 +125,7 @@ def psplit(X,lam):
     n=2*nmod+1
 
     pol=0.
-    S=np.block([[np.zeros([n,n]),np.eye(n,dtype=np.complex)],[np.eye(n),np.zeros([n,n])]])
+    S=np.block([[np.zeros([n,n]),np.eye(n,dtype=complex)],[np.eye(n),np.zeros([n,n])]])
     P,V=homogene(k0,0,pol,e1,n)
     V_air = V
     for k in range(0,n_layers):
@@ -167,7 +145,7 @@ def psplit(X,lam):
 #    print(TE01,Vc[nmod+1])
 
     pol=1.
-    S=np.block([[np.zeros([n,n]),np.eye(n,dtype=np.complex)],[np.eye(n),np.zeros([n,n])]])
+    S=np.block([[np.zeros([n,n]),np.eye(n,dtype=complex)],[np.eye(n),np.zeros([n,n])]])
     P,V=homogene(k0,0,pol,e1,n)
     for k in range(0,n_layers):
         bloc = np.array([x[k,1:3]])
@@ -226,6 +204,13 @@ def visualization(X,d):
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+# Test !!
+
+X = np.array([197.05157506,130.573991,438.58378097,198.13352592,182.00928495,404.30774016,197.07298643,438.67673798,439.24084,183.50574675,471.79668657,423.84240967,134.45283345,396.05154296,456.83964773,164.41256075,199.74163191,720.37907953,7.58007023,216.47351128,698.50555475,195.6595432,158.14623895,720.25941239,134.42340206,194.14090455,730.95039449,107.02506713,382.56592437,767.66182584])
+cost,_,_ = psplit(X,600.)
+print(cost)
+
+
 
 n_couches = "4"
 algo = "DE"
@@ -234,7 +219,6 @@ budget = 10000
 
 file_name = f"../ResA/{function}_{algo}_{n_couches}_{budget}.npy"
 results = np.load(file_name,allow_pickle = True)
-
 
 #Graphique pour comparaisons
 values = []
