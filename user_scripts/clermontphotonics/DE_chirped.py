@@ -9,19 +9,19 @@ from joblib import Parallel, delayed
 def launch_optim(n_couches):
     # A pour Antoine.
     algo = "DE"
-    function = "chirped[400-1200.50]"
-    budget = 200000
-    nb_runs = 50
+    function = "chirped[400-650.50]"
+    budget = 1000000
+    nb_runs = 40
 
     X_min=np.hstack(20*np.ones(n_couches))
-    X_max=np.hstack(180*np.ones(n_couches))
+    X_max=np.hstack(250*np.ones(n_couches))
 
     results = []
 
     for k in range(nb_runs):
         depop = 30
         [best,convergence,recom] = algos.DEvol(photonics.chirped,budget,X_min,X_max,depop)
-        results.append([best,convergence])
+        results.append([best,convergence[::100]]+convergence[-1])
         print(f"Run {k} with {algo} on {function} with {n_couches} layers")
 
     file_name = f"ResA/{function}_{algo}_{n_couches}_{budget}.npy"

@@ -117,7 +117,7 @@ def bragg_origin(X):
     return c
 
 def chirped(X):
-    lam=np.linspace(400,800,100)
+    lam=np.linspace(400,650,50)
     n=np.array([1,1.4142135623730951,1.7320508075688772])
     Type=np.concatenate(([0],np.tile([2,1],int(np.size(X)/2)),[2]))
     hauteur=np.concatenate(([0],X,[0]))
