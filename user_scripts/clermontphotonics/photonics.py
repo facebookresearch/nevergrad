@@ -378,7 +378,6 @@ def psplit(X):
     # On commence par la période fixe.
 
     n_layers = len(X)//3
-    print(n_layers)
     X=X.reshape((n_layers,3))
     # On vérifie que c'est constructible...
     for k in range(n_layers-1):
