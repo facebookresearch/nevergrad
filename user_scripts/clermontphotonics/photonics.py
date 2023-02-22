@@ -177,18 +177,6 @@ def creneau(k0,a0,pol,e1,e2,a,n,x0):
         P=np.block([[E],[np.matmul(np.matmul(U,E),np.diag(L))]])
     return P,L
 
-def homogene(k0,a0,pol,epsilon,n):
-    nmod=int(n/2)
-    valp=np.sqrt(epsilon*k0*k0-(a0+2*np.pi*np.arange(-nmod,nmod+1))**2+0j)
-    valp=valp*(1-2*(valp<0))*(pol/epsilon+(1-pol))
-    P=np.block([[np.eye(n)],[np.diag(valp)]])
-    return P,valp
-
-def interface(P,Q):
-    n=int(P.shape[1])
-    S=np.matmul(np.linalg.inv(np.block([[P[0:n,0:n],-Q[0:n,0:n]],[P[n:2*n,0:n],Q[n:2*n,0:n]]])),np.block([[-P[0:n,0:n],Q[0:n,0:n]],[P[n:2*n,0:n],Q[n:2*n,0:n]]]))
-    return S
-
 def morpho(X):
     lam=449.5897
     pol=1.
@@ -360,6 +348,24 @@ def reseau(k0,a0,pol,e1,e2,n,blocs):
         P=np.block([[E],[np.matmul(np.matmul(M2,E),np.diag(L))]])
     return P,L
 
+def homogene(k0,a0,pol,epsilon,n):
+    '''Generates the P matrix and the wavevectors exactly as for a
+    periodic layer, just for an homogeneous layer. The results are
+    analytic in that case.
+    '''
+    nmod=int(n/2)
+    valp=np.sqrt(epsilon*k0*k0-(a0+2*np.pi*np.arange(-nmod,nmod+1))**2+0j)
+    valp=valp*(1-2*(valp<0))
+    P=np.block([[np.eye(n)],[np.diag(valp*(pol/epsilon+(1.-pol)))]])
+    return P,valp
+
+def interface(P,Q):
+    '''Computation of the scattering matrix of an interface, P and Q being the
+    matrices given for each layer by homogene, reseau or creneau.
+    '''
+    n=int(P.shape[1])
+    S=np.matmul(np.linalg.inv(np.block([[P[0:n,0:n],-Q[0:n,0:n]],[P[n:2*n,0:n],Q[n:2*n,0:n]]])),np.block([[-P[0:n,0:n],Q[0:n,0:n]],[P[n:2*n,0:n],Q[n:2*n,0:n]]]))
+    return S
 
 def psplit(X):
     ''' Envoi de la lumière parvenant par le substrat dans les ordres 1 et -1
