@@ -58,23 +58,23 @@ for N in [5, 10, 20, 40, 80]:
                         )
                         / num_noise
                     )
-                print(f"Algorithm {optim_name} got {loss_value}")
+                # print(f"Algorithm {optim_name} got {loss_value}")
             except Exception as e:
                 loss_value = float(1e10)
-                print(f"Algorithm {optim_name} crashed: {e}!")
+                # print(f"Algorithm {optim_name} crashed: {e}!")
             signal.alarm(0)
             if not loss_value == loss_value:
                 loss_value = float(1e10)
             return loss_value
 
-        for idx in range(560):
+        for idx in range(50):
             # Let us test several algorithms.
             optim_names = sorted(list(ng.optimizers.registry.keys()), key=lambda o: ucb_score(score[o], idx))[
                 :50
             ]
             results = Parallel(n_jobs=len(optim_names))(delayed(get_score)(o) for o in optim_names)
         assert len(results) == len(optim_names)
-        for optim_name, loss_values in zip(optim_names, results):
+        for optim_name, loss_value in zip(optim_names, results):
             score[optim_name] += [loss_value]
 
         print(f"List of best for N={N} and budget={b} and name={name}:")
