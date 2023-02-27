@@ -73,9 +73,9 @@ for N in [5, 10, 20, 40, 80]:
                 :50
             ]
             results = Parallel(n_jobs=len(optim_names))(delayed(get_score)(o) for o in optim_names)
-        assert len(results) == len(optim_names)
-        for optim_name, loss_value in zip(optim_names, results):
-            score[optim_name] += [loss_value]
+            assert len(results) == len(optim_names)
+            for optim_name, loss_value in zip(optim_names, results):
+                score[optim_name] += [loss_value]
 
         print(f"List of best for N={N} and budget={b} and name={name}:")
         for i, u in enumerate(sorted(score, key=lambda x: lcb_score(score[x]))):
