@@ -212,41 +212,42 @@ print(cost)
 
 
 
-n_couches = "4"
-algo = "DE"
-function = "psplit"
-budget = 10000
-
-file_name = f"../ResA/{function}_{algo}_{n_couches}_{budget}.npy"
-results = np.load(file_name,allow_pickle = True)
-
-#Graphique pour comparaisons
-values = []
-bests = []
-fig1 = plt.figure(1)
-
-for k in range(len(results)):
-    values.append(results[k][1][-1])
-    bests.append(results[k][0])
-sorted = np.sort(values)
-agrum = np.argsort(values)
-# Let's sort bests too !
-sorted_bests = []
-for k in range(len(results)):
-    sorted_bests.append(bests[agrum[k]])
-
-plt.plot(sorted)
-plt.title(f'Function {function} with {algo}')
-
-# Représenter les courbes de convergence
-
-fig2 = plt.figure(2)
-for k in range(len(results)):
-    plt.plot(results[k][1])
-plt.title("Convergences")
-
+# n_couches = "4"
+# algo = "DE"
+# function = "psplit"
+# budget = 10000
+#
+# file_name = f"../ResA/{function}_{algo}_{n_couches}_{budget}.npy"
+# results = np.load(file_name,allow_pickle = True)
+#
+# #Graphique pour comparaisons
+# values = []
+# bests = []
+# fig1 = plt.figure(1)
+#
+# for k in range(len(results)):
+#     values.append(results[k][1][-1])
+#     bests.append(results[k][0])
+# sorted = np.sort(values)
+# agrum = np.argsort(values)
+# # Let's sort bests too !
+# sorted_bests = []
+# for k in range(len(results)):
+#     sorted_bests.append(bests[agrum[k]])
+#
+# plt.plot(sorted)
+# plt.title(f'Function {function} with {algo}')
+#
+# # Représenter les courbes de convergence
+#
+# fig2 = plt.figure(2)
+# for k in range(len(results)):
+#     plt.plot(results[k][1])
+# plt.title("Convergences")
+#
 
 fig3 = plt.figure(3)
-X = sorted_bests[0]
-#spectre(X)
+#X = sorted_bests[0]
+X =np.array([276.61331324,430.69009549,513.9175106,238.58387979,348.25552738,634.71675396,110.25136349,476.13800979,419.16710191,112.95287832,82.86174404,520.21464437,170.44535329,387.73029686,584.61735398,28.99078503,484.66816864,838.36490711,197.95825217,395.85615953,111.18589952,274.2059322,390.39619794,499.24657159,239.37673602,411.25519713,474.11313201,246.0961629,447.05126015,432.13946757,299.93461665,415.25231748,470.25479573,224.91263014,678.24013279,183.73164738,194.33056342,687.70176416,632.79914172,215.19104529,276.11612712,728.88153511,149.81947218,352.62158077,642.62887502])
+spectre(X)
 visualization(X,848.53)

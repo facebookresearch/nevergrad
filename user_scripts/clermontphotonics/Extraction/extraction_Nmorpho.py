@@ -245,43 +245,40 @@ def visualization(X,d):
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-n_couches = "20"
-algo = "DE"
-function = "morpho"
-budget = 20000
 
-file_name = f"../ResA/{function}_{algo}_{n_couches}_{budget}.npy"
-results = np.load(file_name,allow_pickle = True)
-
+X = [111.23422498,224.74553262,787.21664817,35.16761709,81.69889485,797.41246685,360.14139145,38.35291426,93.83425182,490.5010145,423.33275385,1.95924059,109.15298956,747.96084125,531.96787781,1.53962681,134.54403258,493.46428911,311.03465041,19.72184737,81.06958457,388.9622904,750.00739018,17.28918208,2.27629171,206.85673626,511.18272242,8.01710002,88.91691128,183.63869588,846.20527102,44.87634432,199.9896604,50.50248802,452.65815538,49.95714499,199.91978126,227.60060127,671.60597981,48.39779414]
 
 #Graphique pour comparaisons
-values = []
-bests = []
-fig1 = plt.figure(1)
-
-for k in range(len(results)):
-    values.append(results[k][1][-1])
-    bests.append(results[k][0])
-sorted = np.sort(values)
-agrum = np.argsort(values)
-# Let's sort bests too !
-sorted_bests = []
-for k in range(len(results)):
-    sorted_bests.append(bests[agrum[k]])
-
-plt.plot(sorted)
-plt.title(f'Function {function} with {algo}')
-
-# Représenter les courbes de convergence
-
-fig2 = plt.figure(2)
-for k in range(len(results)):
-    plt.plot(results[k][1])
-plt.title("Convergences")
+# values = []
+# bests = []
+# fig1 = plt.figure(1)
+#
+# for k in range(len(results)):
+#     values.append(results[k][1][-1])
+#     bests.append(results[k][0])
+# sorted = np.sort(values)
+# agrum = np.argsort(values)
+# # Let's sort bests too !
+# sorted_bests = []
+# for k in range(len(results)):
+#     sorted_bests.append(bests[agrum[k]])
+#
+# plt.plot(sorted)
+# plt.title(f'Function {function} with {algo}')
+#
+# # Représenter les courbes de convergence
+#
+# fig2 = plt.figure(2)
+# for k in range(len(results)):
+#     plt.plot(results[k][1])
+# plt.title("Convergences")
 
 # Visualiser
 
+
 fig3 = plt.figure(3)
-X = sorted_bests[0]
+#X = sorted_bests[0]
+X =np.array([111.23422498,224.74553262,787.21664817,35.16761709,81.69889485,797.41246685,360.14139145,38.35291426,93.83425182,490.5010145,423.33275385,1.95924059,109.15298956,747.96084125,531.96787781,1.53962681,134.54403258,493.46428911,311.03465041,19.72184737,81.06958457,388.9622904,750.00739018,17.28918208,2.27629171,206.85673626,511.18272242,8.01710002,88.91691128,183.63869588,846.20527102,44.87634432,199.9896604,50.50248802,452.65815538,49.95714499,199.91978126,227.60060127,671.60597981,48.39779414])
+
 spectre(X)
-visualization(X,848.53)
+visualization(X,600)

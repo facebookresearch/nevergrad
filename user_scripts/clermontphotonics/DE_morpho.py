@@ -12,7 +12,7 @@ def launch_optim(n_couches):
 #    algo = "DEclip"
     algo = "DE"
     function = "morpho"
-    budget = 30000
+    budget = 100000
     nb_runs = 15
     X_min = np.array([0.,30.,0.,0.]*n_couches)
     X_max = np.array([300.,570.,600.,100.]*n_couches)

@@ -22,7 +22,7 @@ def bragg(X):
     lam=600
 #    assert False
     bar=int(np.size(X)/2)
-    n=np.concatenate(([1],np.sqrt(X[0:bar]),[1.7320508075688772]))
+    n=np.concatenate(([1],np.sqrt(X[0:bar]),[1.46]))
     Type=np.arange(0,bar+2)
     hauteur=np.concatenate(([0],X[bar:2*bar],[0]))
     tmp=np.tan(2*np.pi*n[Type]*hauteur/lam)
@@ -76,7 +76,7 @@ def bragg_fixed(X, num=1, rando=False, check_count=True):
         counter += 1
         if counter > budget and check_count:
             return float("inf")
-        n=np.array([1]+[1.7320508075688772,1.4142135623730951]*int(bar/2)+[1.7320508075688772])
+        n=np.array([1]+[2.6,1.46]*int(bar/2)+[1.46])
         Type=np.arange(0,bar+2)
         hauteur=np.concatenate(([0],X,[0]))
         tmp=np.tan(2*np.pi*n[Type]*hauteur/lam)
@@ -103,7 +103,7 @@ def bragg_origin(X):
     #print(X)
     lam=600
     bar=len(X)
-    n=np.array([1]+[1.7320508075688772,1.4142135623730951]*int(bar/2)+[1.7320508075688772])
+    n=np.array([1]+[2.6,1.46]*int(bar/2)+[1.46])
     Type=np.arange(0,bar+2)
     hauteur=np.concatenate(([0],X,[0]))
     tmp=np.tan(2*np.pi*n[Type]*hauteur/lam)
@@ -118,14 +118,14 @@ def bragg_origin(X):
 
 def chirped(X):
     lam=np.linspace(400,650,50)
-    n=np.array([1,1.4142135623730951,1.7320508075688772])
-    Type=np.concatenate(([0],np.tile([2,1],int(np.size(X)/2)),[2]))
+    n=np.array([1,1.45,2.6])
+    Type=np.concatenate(([0],np.tile([2,1],int(np.size(X)/2)),[1]))
     hauteur=np.concatenate(([0],X,[0]))
     r=np.zeros(np.size(lam))
     for m in range(0,np.size(lam)):
         #Specific to this substrate.
         tmp=np.tan(2*np.pi*n[Type]*hauteur/lam[m])
-        Z=1.7320508075688772
+        Z=2.6
         for k in range(np.size(Type)-1,0,-1):
             Z=(Z-1j*n[Type[k]]*tmp[k])/(1-1j*tmp[k]*Z/n[Type[k]])
         #Specific to air.
@@ -229,7 +229,7 @@ def morpho(X):
 def neomorpho(X):
     # Nouvelle version de Morpho ::
     # Moins d'évaluation de la fonction de coût
-    # Toujours juste le TM (discutable, ça)
+    # Toujours juste le TE (discutable, ça)
     # Suffit normalement pour faire apparaître l'interdigitation
 
     lam=449.5897
