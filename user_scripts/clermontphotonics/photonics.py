@@ -265,7 +265,7 @@ def neomorpho(X):
 
 def Nmorpho(X):
     ''' Diffraction par un réseau en réflexion dans les ordres -1 et 1,
-    minimisation de l'ordre 0 @450 nm, e polarisation TE.
+    minimisation de l'ordre 0 @450 nm, en polarisation TM.
     '''
 
     # Structure du vecteur X :
@@ -295,7 +295,7 @@ def Nmorpho(X):
     theta = 0.
     alpha0 = k0 * np.sin(theta*np.pi/180.)
 
-    pol=0
+    pol=1
     S=np.block([[np.zeros([n,n]),np.eye(n,dtype=np.complex)],[np.eye(n),np.zeros([n,n])]])
     P,V=homogene(k0,alpha0,pol,e1,n)
     for k in range(0,n_layers):
