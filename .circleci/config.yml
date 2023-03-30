@@ -191,6 +191,7 @@ jobs:
 
   pytests:
     executor: ubuntu-python37
+    parallelism: 8
 
     steps:
 
@@ -198,10 +199,12 @@ jobs:
 
       - run:
           name: "[all] Run pytest"
+          parallel: true
           when: always
           command: |
             . venv/bin/activate
-            pytest nevergrad -v --exitfirst --durations=20 --cov=nevergrad
+            TESTFILES=$(circleci tests glob tests/**/test*.py | circleci tests split --split-by=timings)
+            pytest $TESTFILES -v --exitfirst --durations=20 --cov=nevergrad
 
 
   docs-deploy:
