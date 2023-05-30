@@ -52,6 +52,11 @@ def learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int, algorithm:
         model = SVR()
         model.fit(X2, y)
         model_outputs = model.predict(X2)
+    elif algorithm == "rf":
+        from sklearn.ensemble import RandomForestRegressor
+        model = RandomForestRegressor()
+        model.fit(X2, y)
+        model_outputs = model.predict(X2)
     else:
         assert algorithm == "quad"
         # We need SKLearn.

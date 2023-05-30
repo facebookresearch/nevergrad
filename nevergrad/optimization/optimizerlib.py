@@ -1774,7 +1774,8 @@ class ParametrizedMetaModel(base.ConfiguredOptimizer):
 
 MetaModel = ParametrizedMetaModel().set_name("MetaModel", register=True)
 NeuralMetaModel = ParametrizedMetaModel(algorithm="neural").set_name("NeuralMetaModel", register=True)
-SVMMetaModel = ParametrizedMetaModel(algorithm="SVR").set_name("SVMMetaModel", register=True)
+SVMMetaModel = ParametrizedMetaModel(algorithm="svr").set_name("SVMMetaModel", register=True)
+RFMetaModel = ParametrizedMetaModel(algorithm="rf").set_name("RFMetaModel", register=True)
 MetaModelOnePlusOne = ParametrizedMetaModel(multivariate_optimizer=OnePlusOne).set_name(
     "MetaModelOnePlusOne", register=True
 )
