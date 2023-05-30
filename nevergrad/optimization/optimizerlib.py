@@ -610,7 +610,7 @@ class _CMA(base.Optimizer):
         sample_size = int(d * d / 2 + d / 2 + 3)
         if self._config.high_speed and n >= sample_size:
             try:
-                data = learn_on_k_best(self.archive, sample_size)
+                data = learn_on_k_best(self.archive, sample_size, algorithm)
                 return data  # type: ignore
             except MetaModelFailure:  # Failures in the metamodeling can happen.
                 pass
@@ -1709,9 +1709,11 @@ class _MetaModel(base.Optimizer):
         *,
         multivariate_optimizer: tp.Optional[base.OptCls] = None,
         frequency_ratio: float = 0.9,
+        algorithm: str = "quad",  # Quad or NN
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.frequency_ratio = frequency_ratio
+        self.algorithm = algorithm
         if multivariate_optimizer is None:
             multivariate_optimizer = (
                 ParametrizedCMA(elitist=(self.dimension < 3)) if self.dimension > 1 else OnePlusOne
@@ -1726,7 +1728,7 @@ class _MetaModel(base.Optimizer):
         freq = max(13, self.num_workers, self.dimension, int(self.frequency_ratio * sample_size))
         if len(self.archive) >= sample_size and not self._num_ask % freq:
             try:
-                data = learn_on_k_best(self.archive, sample_size)
+                data = learn_on_k_best(self.archive, sample_size, self.algorithm)
                 candidate = self.parametrization.spawn_child().set_standardized_data(data)
             except MetaModelFailure:  # The optimum is at infinity. Shit happens.
                 candidate = self._optim.ask()
@@ -1770,6 +1772,8 @@ class ParametrizedMetaModel(base.ConfiguredOptimizer):
 
 
 MetaModel = ParametrizedMetaModel().set_name("MetaModel", register=True)
+NeuralMetaModel = ParametrizedMetaModel().set_name("NeuralMetaModel", register=True, algorithm="neural")
+SVMMetaModel = ParametrizedMetaModel().set_name("SVMMetaModel", register=True, algorithm="svm")
 MetaModelOnePlusOne = ParametrizedMetaModel(multivariate_optimizer=OnePlusOne).set_name(
     "MetaModelOnePlusOne", register=True
 )
