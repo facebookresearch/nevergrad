@@ -1709,7 +1709,7 @@ class _MetaModel(base.Optimizer):
         *,
         multivariate_optimizer: tp.Optional[base.OptCls] = None,
         frequency_ratio: float = 0.9,
-        algorithm: str = "quad",  # Quad or NN
+        algorithm: str,  # Quad or NN or SVR
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.frequency_ratio = frequency_ratio
@@ -1766,14 +1766,15 @@ class ParametrizedMetaModel(base.ConfiguredOptimizer):
         *,
         multivariate_optimizer: tp.Optional[base.OptCls] = None,
         frequency_ratio: float = 0.9,
+        algorithm: str = "quad",
     ) -> None:
         super().__init__(_MetaModel, locals())
         assert 0 <= frequency_ratio <= 1.0
 
 
 MetaModel = ParametrizedMetaModel().set_name("MetaModel", register=True)
-NeuralMetaModel = ParametrizedMetaModel().set_name("NeuralMetaModel", register=True, algorithm="neural")
-SVMMetaModel = ParametrizedMetaModel().set_name("SVMMetaModel", register=True, algorithm="svm")
+NeuralMetaModel = ParametrizedMetaModel(algorithm="neural").set_name("NeuralMetaModel", register=True)
+SVMMetaModel = ParametrizedMetaModel(algorithm="SVR").set_name("SVMMetaModel", register=True)
 MetaModelOnePlusOne = ParametrizedMetaModel(multivariate_optimizer=OnePlusOne).set_name(
     "MetaModelOnePlusOne", register=True
 )

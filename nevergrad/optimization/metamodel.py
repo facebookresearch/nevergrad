@@ -53,7 +53,7 @@ def learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int, algorithm:
         model.fit(X2, y)
         model_outputs = model.predict(X2)
     else:
-        assert algorithm == "quad":
+        assert algorithm == "quad"
         # We need SKLearn.
         from sklearn.linear_model import LinearRegression
     
