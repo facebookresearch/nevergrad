@@ -610,7 +610,7 @@ class _CMA(base.Optimizer):
         sample_size = int(d * d / 2 + d / 2 + 3)
         if self._config.high_speed and n >= sample_size:
             try:
-                data = learn_on_k_best(self.archive, sample_size, algorithm)
+                data = learn_on_k_best(self.archive, sample_size, self.algorithm)
                 return data  # type: ignore
             except MetaModelFailure:  # Failures in the metamodeling can happen.
                 pass
