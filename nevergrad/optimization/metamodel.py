@@ -14,7 +14,9 @@ class MetaModelFailure(ValueError):
     """Sometimes the optimum of the metamodel is at infinity."""
 
 
-def learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.ArrayLike:
+def learn_on_k_best(
+    archive: utils.Archive[utils.MultiValue], k: int, algorithm: str = "quad"
+) -> tp.ArrayLike:
     """Approximate optimum learnt from the k best.
 
     Parameters
@@ -34,21 +36,34 @@ def learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.Arra
     y = np.asarray([archive[c[0]].get_estimation("pessimistic") for c in first_k_individuals])
     X = np.asarray([(c[0] - middle) / normalization for c in first_k_individuals])
 
-    # We need SKLearn.
-    from sklearn.linear_model import LinearRegression
     from sklearn.preprocessing import PolynomialFeatures
 
     polynomial_features = PolynomialFeatures(degree=2)
     X2 = polynomial_features.fit_transform(X)
-
-    # Fit a linear model.
     if not max(y) - min(y) > 1e-20:  # better use "not" for dealing with nans
         raise MetaModelFailure
-
     y = (y - min(y)) / (max(y) - min(y))
-    model = LinearRegression()
-    model.fit(X2, y)
+    if algorithm == "neural":
+        from sklearn.neural_network import MLPRegressor
 
+        model = MLPRegressor(hidden_layer_sizes=(16, 16), solver="lbfgs")
+    elif algorithm in ["svm", "svr"]:
+        from sklearn.svm import SVR
+
+        model = SVR()
+    elif algorithm == "rf":
+        from sklearn.ensemble import RandomForestRegressor
+
+        model = RandomForestRegressor()
+    else:
+        assert algorithm == "quad", f"Metamodelling algorithm {algorithm} not recognized."
+        # We need SKLearn.
+        from sklearn.linear_model import LinearRegression
+
+        # Fit a linear model.
+        model = LinearRegression()
+
+    model.fit(X2, y)
     # Check model quality.
     model_outputs = model.predict(X2)
     indices = np.argsort(y)
