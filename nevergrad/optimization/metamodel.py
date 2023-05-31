@@ -43,14 +43,16 @@ def learn_on_k_best(
     if not max(y) - min(y) > 1e-20:  # better use "not" for dealing with nans
         raise MetaModelFailure
     y = (y - min(y)) / (max(y) - min(y))
-
     if algorithm == "neural":
-        from sklearn.neural_network import MLPClassifier
+        from sklearn.neural_network import MLPRegressor
 
-        model = MLPClassifier(hidden_layer_sizes=(16, 16), solver="lbfgs")
-        model.fit(X2, y)
+        model = MLPRegressor(hidden_layer_sizes=(16, 16), solver="lbfgs")
+        try:
+            model.fit(X2, y)
+        except Exception as e:
+            assert False, f"Fitting failed with X2={X2}, y={y}: {e}"
         model_outputs = model.predict(X2)
-    elif algorithm == "svm":
+    elif algorithm in ["svm", "svr"]:
         from sklearn.svm import SVR
 
         model = SVR()
@@ -63,7 +65,7 @@ def learn_on_k_best(
         model.fit(X2, y)
         model_outputs = model.predict(X2)
     else:
-        assert algorithm == "quad"
+        assert algorithm == "quad", f"Metamodelling algorithm {algorithm} not recognized."
         # We need SKLearn.
         from sklearn.linear_model import LinearRegression
 
