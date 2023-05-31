@@ -44,7 +44,7 @@ def learn_on_k_best(
         raise MetaModelFailure
     y = (y - min(y)) / (max(y) - min(y))
 
-    if algorithm == "nn":
+    if algorithm == "neural":
         from sklearn.neural_network import MLPClassifier
 
         model = MLPClassifier(hidden_layer_sizes=(16, 16), solver="lbfgs")

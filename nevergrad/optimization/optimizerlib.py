@@ -517,8 +517,10 @@ class _CMA(base.Optimizer):
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
         config: tp.Optional["ParametrizedCMA"] = None,
+        algorithm: str = "quad",
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        self.algorithm = algorithm
         self._config = ParametrizedCMA() if config is None else config
         pop = self._config.popsize
         self._popsize = (
@@ -668,6 +670,7 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         fcmaes: bool = False,
         random_init: bool = False,
         inopts: tp.Optional[tp.Dict[str, tp.Any]] = None,
+        algorithm: str = "quad",
     ) -> None:
         super().__init__(_CMA, locals(), as_config=True)
         if fcmaes:
