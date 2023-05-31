@@ -15,6 +15,7 @@ executors:
     docker:
       - image: cimg/python:3.7
     working_directory: ~/repo
+    parallelism: 6
 
 
 commands:
