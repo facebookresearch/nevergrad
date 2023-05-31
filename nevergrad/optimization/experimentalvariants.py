@@ -55,7 +55,11 @@ MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2).set_name
     "MetaModelFmin2", register=True
 )
 MetaModelFmin2.no_parallelization = True
+LSCMA = ParametrizedCMA(high_speed=False).set_name("LSCMA", register=True)
 HSCMA = ParametrizedCMA(high_speed=True).set_name("HSCMA", register=True)
+HSNeuralCMA = ParametrizedCMA(high_speed=True, algorithm="neural").set_name("HSNeuralCMA", register=True)
+HSSVMCMA = ParametrizedCMA(high_speed=True, algorithm="svm").set_name("HSSVMCMA", register=True)
+HSRFCMA = ParametrizedCMA(high_speed=True, algorithm="rf").set_name("HSRFCMA", register=True)
 HSMetaModel = ParametrizedMetaModel(multivariate_optimizer=HSCMA).set_name("HSMetaModel", register=True)
 
 # OnePlusOne
