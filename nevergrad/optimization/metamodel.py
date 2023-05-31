@@ -47,23 +47,14 @@ def learn_on_k_best(
         from sklearn.neural_network import MLPRegressor
 
         model = MLPRegressor(hidden_layer_sizes=(16, 16), solver="lbfgs")
-        try:
-            model.fit(X2, y)
-        except Exception as e:
-            assert False, f"Fitting failed with X2={X2}, y={y}: {e}"
-        model_outputs = model.predict(X2)
     elif algorithm in ["svm", "svr"]:
         from sklearn.svm import SVR
 
         model = SVR()
-        model.fit(X2, y)
-        model_outputs = model.predict(X2)
     elif algorithm == "rf":
         from sklearn.ensemble import RandomForestRegressor
 
         model = RandomForestRegressor()
-        model.fit(X2, y)
-        model_outputs = model.predict(X2)
     else:
         assert algorithm == "quad", f"Metamodelling algorithm {algorithm} not recognized."
         # We need SKLearn.
@@ -71,10 +62,10 @@ def learn_on_k_best(
 
         # Fit a linear model.
         model = LinearRegression()
-        model.fit(X2, y)
 
-        # Check model quality.
-        model_outputs = model.predict(X2)
+    model.fit(X2, y)
+    # Check model quality.
+    model_outputs = model.predict(X2)
     indices = np.argsort(y)
     ordered_model_outputs = [model_outputs[i] for i in indices]
     if not np.all(np.diff(ordered_model_outputs) > 0):
