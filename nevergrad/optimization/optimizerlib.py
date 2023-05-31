@@ -831,6 +831,409 @@ class _PopulationSizeController:
             self._loss_record = []
 
 
+# The PPO code below comes from https://pytorch.org/rl/tutorials/coding_ppo.html.
+# pylint: disable=too-many-instance-attributes
+@registry.register
+class PPO(base.Optimizer):
+    no_parallelization = True
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        import sys
+        import random
+        from collections import deque
+        from typing import Deque, Dict, List, Tuple
+        
+        #import gym
+        import matplotlib.pyplot as plt
+        import numpy as np
+        import torch
+        import torch.nn as nn
+        import torch.nn.functional as F
+        import torch.optim as optim
+        from IPython.display import clear_output
+        from torch.distributions import Normal
+
+
+        class Actor(nn.Module):
+            def __init__(
+                self, 
+                in_dim: int, 
+                out_dim: int, 
+                log_std_min: int = -20,
+                log_std_max: int = 0,
+            ):
+                """Initialize."""
+                super(Actor, self).__init__()
+        
+                self.log_std_min = log_std_min
+                self.log_std_max = log_std_max
+                self.hidden = nn.Linear(in_dim, 32)
+        
+                self.mu_layer = nn.Linear(32, out_dim)
+                self.mu_layer = init_layer_uniform(self.mu_layer)
+        
+                self.log_std_layer = nn.Linear(32, out_dim)
+                self.log_std_layer = init_layer_uniform(self.log_std_layer)
+        
+            def forward(self, state: torch.Tensor) -> torch.Tensor:
+                """Forward method implementation."""
+                x = F.relu(self.hidden(state))
+                
+                mu = torch.tanh(self.mu_layer(x))
+                log_std = torch.tanh(self.log_std_layer(x))
+                log_std = self.log_std_min + 0.5 * (
+                    self.log_std_max - self.log_std_min
+                ) * (log_std + 1)
+                std = torch.exp(log_std)
+        
+                dist = Normal(mu, std)
+                action = dist.sample()
+        
+                return action, dist
+        
+        
+        class Critic(nn.Module):
+            def __init__(self, in_dim: int):
+                """Initialize."""
+                super(Critic, self).__init__()
+        
+                self.hidden = nn.Linear(in_dim, 64)
+                self.out = nn.Linear(64, 1)
+                self.out = init_layer_uniform(self.out)
+        
+            def forward(self, state: torch.Tensor) -> torch.Tensor:
+                """Forward method implementation."""
+                x = F.relu(self.hidden(state))
+                value = self.out(x)
+        
+                return value
+
+    def compute_gae(
+        next_value: list, 
+        rewards: list, 
+        masks: list, 
+        values: list, 
+        gamma: float, 
+        tau: float
+    ) -> List:
+        """Compute gae."""
+        values = values + [next_value]
+        gae = 0
+        returns: Deque[float] = deque()
+    
+        for step in reversed(range(len(rewards))):
+            delta = (
+                rewards[step]
+                + gamma * values[step + 1] * masks[step]
+                - values[step]
+            )
+            gae = delta + gamma * tau * masks[step] * gae
+            returns.appendleft(gae + values[step])
+    
+        return list(returns)
+        def ppo_iter(
+            epoch: int,
+            mini_batch_size: int,
+            states: torch.Tensor,
+            actions: torch.Tensor,
+            values: torch.Tensor,
+            log_probs: torch.Tensor,
+            returns: torch.Tensor,
+            advantages: torch.Tensor,
+        ):
+            """Yield mini-batches."""
+            batch_size = states.size(0)
+            for _ in range(epoch):
+                print("...epoch...", batch_size, mini_batch_size)
+                for _ in range(batch_size // mini_batch_size):
+                    print("... batch...")
+                    rand_ids = np.random.choice(batch_size, mini_batch_size)
+                    yield states[rand_ids, :], actions[rand_ids], values[
+                        rand_ids
+                    ], log_probs[rand_ids], returns[rand_ids], advantages[rand_ids]        
+
+        class PPOAgent:
+            """PPO Agent.
+            Attributes:
+                env (gym.Env): Gym env for training
+                gamma (float): discount factor
+                tau (float): lambda of generalized advantage estimation (GAE)
+                batch_size (int): batch size for sampling
+                epsilon (float): amount of clipping surrogate objective
+                epoch (int): the number of update
+                rollout_len (int): the number of rollout
+                entropy_weight (float): rate of weighting entropy into the loss function
+                actor (nn.Module): target actor model to select actions
+                critic (nn.Module): critic model to predict state values
+                transition (list): temporory storage for the recent transition
+                device (torch.device): cpu / gpu
+                total_step (int): total step numbers
+                is_test (bool): flag to show the current mode (train / test)        
+            """
+        
+            def __init__(
+                self,
+                dim: int,
+                batch_size: int,
+                gamma: float,
+                tau: float,
+                epsilon: float,
+                epoch: int,
+                rollout_len: int,
+                entropy_weight: float,
+            ):
+                """Initialize."""
+          #      self.env = env
+                # Black-box optimization setting.
+                self.f = f
+                self.dim = dim
+                self.obs_dim = 1
+        
+                self.actor_losses = []
+                self.critic_losses = []
+        
+                self.gamma = gamma
+                self.tau = tau
+                self.batch_size = batch_size
+                self.epsilon = epsilon
+                self.epoch = epoch
+                self.rollout_len = rollout_len
+                self.entropy_weight = entropy_weight
+        
+                # device: cpu / gpu
+                self.device = torch.device(
+                    "cuda" if torch.cuda.is_available() else "cpu"
+                )
+                print(self.device)
+        
+                # networks
+                obs_dim = self.obs_dim  # env.observation_space.shape[0]
+                action_dim = dim  # env.action_space.shape[0]
+                print("Creating the policy")
+                self.actor = Actor(obs_dim, action_dim).to(self.device)
+                print("Policy created. Creating the critic")
+                self.critic = Critic(obs_dim).to(self.device)
+                print("Critic created.")
+                # optimizer
+                self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=0.001)
+                self.critic_optimizer = optim.Adam(self.critic.parameters(), lr=0.005)
+        
+                # memory for training
+                self.states: List[torch.Tensor] = []
+                self.actions: List[torch.Tensor] = []
+                self.rewards: List[torch.Tensor] = []
+                self.values: List[torch.Tensor] = []
+                self.masks: List[torch.Tensor] = []
+                self.log_probs: List[torch.Tensor] = []
+        
+                # total steps count
+                self.total_step = 1
+        
+                # mode: train / test
+                self.is_test = False
+        
+            def select_action(self, state: np.ndarray) -> np.ndarray:
+                """Select an action from the input state."""
+                print("Working on state ", state)
+                state = torch.FloatTensor(state).to(self.device)
+                print("Calling the actor")
+                action, dist = self.actor(state)
+                print("Actor done")
+                selected_action = dist.mean if self.is_test else action
+        
+                if not self.is_test:
+                    print("appending states")
+                    value = self.critic(state)
+                    self.states.append(state)
+                    print("Self.states is now ", self.states)
+                    self.actions.append(selected_action)
+                    self.values.append(value)
+                    self.log_probs.append(dist.log_prob(selected_action))
+        
+                return selected_action.cpu().detach().numpy()
+        
+            def step(self, action: np.ndarray) -> Tuple[np.ndarray, np.float64, bool]:
+                """Take an action and return the response of the env."""
+                # next_state, reward, done, _ = self.env.step(action)
+                # next_state = np.reshape(next_state, (1, -1)).astype(np.float64)
+                # reward = np.reshape(reward, (1, -1)).astype(np.float64)
+                # done = np.reshape(done, (1, -1))
+                #reward = (((-self.f(action)),),)
+                assert False, "This does not make sense here."
+                done = np.array([[1]])
+                next_state = np.array([[0]])
+                if not self.is_test:
+                    self.rewards.append(torch.FloatTensor(reward).to(self.device))
+                    self.masks.append(torch.FloatTensor(1 - done).to(self.device))
+        
+                return next_state, reward, done
+        
+            def update_model(
+                self, next_state: np.ndarray
+            ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+                """Update the model by gradient descent."""
+                device = self.device  # for shortening the following lines
+        
+                next_state = torch.FloatTensor(next_state).to(device)
+                next_value = self.critic(next_state)
+        
+                returns = compute_gae(
+                    next_value,
+                    self.rewards,
+                    self.masks,
+                    self.values,
+                    self.gamma,
+                    self.tau,
+                )
+        
+                states = torch.cat(self.states).view(-1, self.obs_dim)
+                actions = torch.cat(self.actions)
+                returns = torch.cat(returns).detach()
+                values = torch.cat(self.values).detach()
+                log_probs = torch.cat(self.log_probs).detach()
+                advantages = returns - values
+        
+                actor_losses, critic_losses = [], []
+        
+                print("Working on states: ", states)
+                print("Working on actions: ", actions)
+                for state, action, old_value, old_log_prob, return_, adv in ppo_iter(
+                    epoch=self.epoch,
+                    mini_batch_size=self.batch_size,
+                    states=states,
+                    actions=actions,
+                    values=values,
+                    log_probs=log_probs,
+                    returns=returns,
+                    advantages=advantages,
+                ):
+                    print("Inside PPO iter")
+                    # calculate ratios
+                    _, dist = self.actor(state)
+                    log_prob = dist.log_prob(action)
+                    ratio = (log_prob - old_log_prob).exp()
+        
+                    # actor_loss
+                    surr_loss = ratio * adv
+                    clipped_surr_loss = (
+                        torch.clamp(ratio, 1.0 - self.epsilon, 1.0 + self.epsilon) * adv
+                    )
+        
+                    # entropy
+                    entropy = dist.entropy().mean()
+        
+                    actor_loss = (
+                        -torch.min(surr_loss, clipped_surr_loss).mean()
+                        - entropy * self.entropy_weight
+                    )
+        
+                    # critic_loss
+                    value = self.critic(state)
+                    #clipped_value = old_value + (value - old_value).clamp(-0.5, 0.5)
+                    critic_loss = (return_ - value).pow(2).mean()
+                
+                    # train critic
+                    self.critic_optimizer.zero_grad()
+                    critic_loss.backward(retain_graph=True)
+                    self.critic_optimizer.step()
+        
+                    # train actor
+                    self.actor_optimizer.zero_grad()
+                    actor_loss.backward()
+                    self.actor_optimizer.step()
+        
+                    actor_losses.append(actor_loss.item())
+                    critic_losses.append(critic_loss.item())
+        
+                self.states, self.actions, self.rewards = [], [], []
+                self.values, self.masks, self.log_probs = [], [], []
+        
+                actor_loss = sum(actor_losses) / len(actor_losses)
+                critic_loss = sum(critic_losses) / len(critic_losses)
+        
+                return actor_loss, critic_loss
+        
+            def minitrain(self, data, reward):
+                # This simulates "step".
+                done = np.array([[1]])
+                next_state = np.array([[0]])
+                self.rewards.append(torch.FloatTensor(reward).to(self.device))
+                self.masks.append(torch.FloatTensor(1 - done).to(self.device))
+                actor_loss, critic_loss = self.update_model(next_state)
+                self.actor_losses.append(actor_loss)
+                self.critic_losses.append(critic_loss)
+
+            def train(self, num_frames: int, plotting_interval: int = 200):
+                """Train the agent."""
+                assert False, "No offline training here."
+                print("Starting the training.")
+                self.is_test = False
+                print("Creating fake state.")
+                state = np.array([[0]]) #self.env.reset()
+                #state = np.expand_dims(state, axis=0)
+        
+                actor_losses, critic_losses = [], []
+                scores = []
+                score = 0
+                print("We start training with ", self.total_step, " / ", num_frames+1)
+                while self.total_step <= num_frames + 1:
+                    print("self.total_step = ", self.total_step)
+                    print("Starting a rollout at ", state)
+                    for _ in range(self.rollout_len):
+                        self.total_step += 1
+                        print("Selecting an action at state", state)
+                        action = self.select_action(state)
+                        print("Doing a step.")
+                        next_state, reward, done = self.step(action)
+        
+                        state = next_state
+                        score += reward[0][0]
+        
+                        # if episode ends
+                        if done[0][0]:
+                            #state = env.reset()
+                            #state = np.expand_dims(state, axis=0)
+                            scores.append(-score)
+                            score = 0
+        
+                            self._plot(
+                                self.total_step, scores, actor_losses, critic_losses
+                            )
+        
+                    actor_loss, critic_loss = self.update_model(next_state)
+                    actor_losses.append(actor_loss)
+                    critic_losses.append(critic_loss)
+        
+                # termination
+                #self.env.close()
+
+        self.agent = PPOAgent(
+            self.dimension,
+            gamma = 0.9,
+            tau = 0.8,
+            batch_size = 1,
+            epsilon = 0.2,
+            epoch = 64,
+            rollout_len = 1,
+            entropy_weight = 0.005
+        )
+
+    def _internal_ask_candidate(self) -> p.Parameter:
+        candidate = self.parametrization.sample()
+        data = np.array(self.agent.select_action(state)).view(1, -1)
+        candidate = parent.spawn_child().set_standardized_data(data, reference=self.parametrization)
+        return candidate
+
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        self.agent.minitrain(candidate.get_standardized_data(reference=self.parametrization), -loss)
+
+    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        self._internal_tell_candidate(candidate, loss)
+
+
 # pylint: disable=too-many-instance-attributes
 @registry.register
 class EDA(base.Optimizer):
@@ -841,7 +1244,7 @@ class EDA(base.Optimizer):
 
     Caution
     -------
-    This optimizer is probably wrong.
+    This optimizer is not much tested.
     """
 
     _POPSIZE_ADAPTATION = False
