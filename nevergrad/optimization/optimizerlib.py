@@ -517,8 +517,10 @@ class _CMA(base.Optimizer):
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
         config: tp.Optional["ParametrizedCMA"] = None,
+        algorithm: str = "quad",
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        self.algorithm = algorithm
         self._config = ParametrizedCMA() if config is None else config
         pop = self._config.popsize
         self._popsize = (
@@ -610,7 +612,7 @@ class _CMA(base.Optimizer):
         sample_size = int(d * d / 2 + d / 2 + 3)
         if self._config.high_speed and n >= sample_size:
             try:
-                data = learn_on_k_best(self.archive, sample_size)
+                data = learn_on_k_best(self.archive, sample_size, self.algorithm)
                 return data  # type: ignore
             except MetaModelFailure:  # Failures in the metamodeling can happen.
                 pass
@@ -668,6 +670,7 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         fcmaes: bool = False,
         random_init: bool = False,
         inopts: tp.Optional[tp.Dict[str, tp.Any]] = None,
+        algorithm: str = "quad",
     ) -> None:
         super().__init__(_CMA, locals(), as_config=True)
         if fcmaes:
@@ -2112,9 +2115,11 @@ class _MetaModel(base.Optimizer):
         *,
         multivariate_optimizer: tp.Optional[base.OptCls] = None,
         frequency_ratio: float = 0.9,
+        algorithm: str,  # Quad or NN or SVR
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.frequency_ratio = frequency_ratio
+        self.algorithm = algorithm
         if multivariate_optimizer is None:
             multivariate_optimizer = (
                 ParametrizedCMA(elitist=(self.dimension < 3)) if self.dimension > 1 else OnePlusOne
@@ -2129,7 +2134,7 @@ class _MetaModel(base.Optimizer):
         freq = max(13, self.num_workers, self.dimension, int(self.frequency_ratio * sample_size))
         if len(self.archive) >= sample_size and not self._num_ask % freq:
             try:
-                data = learn_on_k_best(self.archive, sample_size)
+                data = learn_on_k_best(self.archive, sample_size, self.algorithm)
                 candidate = self.parametrization.spawn_child().set_standardized_data(data)
             except MetaModelFailure:  # The optimum is at infinity. Shit happens.
                 candidate = self._optim.ask()
@@ -2167,12 +2172,16 @@ class ParametrizedMetaModel(base.ConfiguredOptimizer):
         *,
         multivariate_optimizer: tp.Optional[base.OptCls] = None,
         frequency_ratio: float = 0.9,
+        algorithm: str = "quad",
     ) -> None:
         super().__init__(_MetaModel, locals())
         assert 0 <= frequency_ratio <= 1.0
 
 
 MetaModel = ParametrizedMetaModel().set_name("MetaModel", register=True)
+NeuralMetaModel = ParametrizedMetaModel(algorithm="neural").set_name("NeuralMetaModel", register=True)
+SVMMetaModel = ParametrizedMetaModel(algorithm="svr").set_name("SVMMetaModel", register=True)
+RFMetaModel = ParametrizedMetaModel(algorithm="rf").set_name("RFMetaModel", register=True)
 MetaModelOnePlusOne = ParametrizedMetaModel(multivariate_optimizer=OnePlusOne).set_name(
     "MetaModelOnePlusOne", register=True
 )
