@@ -1065,7 +1065,9 @@ class PPO(base.Optimizer):
             #
             #                return next_state, reward, done
 
-            def update_model(self, next_state: np.ndarray) -> Tuple[torch.Tensor, torch.Tensor]:  #, torch.Tensor]
+            def update_model(
+                self, next_state: np.ndarray
+            ) -> Tuple[torch.Tensor, torch.Tensor]:  # , torch.Tensor]
                 """Update the model by gradient descent."""
                 device = self.device  # for shortening the following lines
 
