@@ -841,6 +841,7 @@ class _PopulationSizeController:
 # (MIT License)
 # pylint: disable=too-many-instance-attributes
 @registry.register
+@typing.no_type_check
 class PPO(base.Optimizer):
     no_parallelization = True
 
