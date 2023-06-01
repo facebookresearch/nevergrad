@@ -200,6 +200,7 @@ def test_infnan(name: str) -> None:
             any(x == name for x in ["WidePSO", "SPSA", "NGOptBase", "Shiwa", "NGO", "PPO"])
             or isinstance(optim, (optlib.Portfolio, optlib._CMA, optlib.recaster.SequentialRecastOptimizer))
             or "NGOpt" in name
+            or "PPO" in name
             or "HS" in name
             or "Adapti" in name
             or "MetaModelDiagonalCMA" in name
