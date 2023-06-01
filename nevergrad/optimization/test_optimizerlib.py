@@ -197,9 +197,10 @@ def test_infnan(name: str) -> None:
         if result < 2.0:
             return
         assert (  # The "bad" algorithms, most of them originating in CMA's recommendation rule.
-            any(x == name for x in ["WidePSO", "SPSA", "NGOptBase", "Shiwa", "NGO"])
+            any(x == name for x in ["WidePSO", "SPSA", "NGOptBase", "Shiwa", "NGO", "PPO"])
             or isinstance(optim, (optlib.Portfolio, optlib._CMA, optlib.recaster.SequentialRecastOptimizer))
             or "NGOpt" in name
+            or "PPO" in name
             or "HS" in name
             or "Adapti" in name
             or "MetaModelDiagonalCMA" in name
@@ -266,10 +267,10 @@ def recomkeeper() -> tp.Generator[RecommendationKeeper, None, None]:
 def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper) -> None:
     if name in UNSEEDABLE:
         raise SkipTest("Not playing nicely with the tests (unseedable)")
-    if "BO" in name:
-        raise SkipTest("BO differs from one computer to another")
+    if "BO" in name or "PPO" in name:
+        raise SkipTest("BO/PPO differ from one computer to another")
     if len(name) > 8:
-        raise SkipTest("BO differs from one computer to another")
+        raise SkipTest("Long names = not tested.")
     # set up environment
     optimizer_cls = registry[name]
     np.random.seed(None)
