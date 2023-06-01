@@ -838,6 +838,7 @@ class _PopulationSizeController:
 
 # The PPO code below comes from
 # https://colab.research.google.com/github/MrSyee/pg-is-all-you-need/blob/master/02.PPO.ipynb
+# (MIT License)
 # pylint: disable=too-many-instance-attributes
 @registry.register
 class PPO(base.Optimizer):
@@ -1063,21 +1064,20 @@ class PPO(base.Optimizer):
 
                 return selected_action.cpu().detach().numpy()
 
-            def step(self, action: np.ndarray) -> Tuple[np.ndarray, np.float64, bool]:
-                """Take an action and return the response of the env."""
-                # next_state, reward, done, _ = self.env.step(action)
-                # next_state = np.reshape(next_state, (1, -1)).astype(np.float64)
-                # reward = np.reshape(reward, (1, -1)).astype(np.float64)
-                # done = np.reshape(done, (1, -1))
-                # reward = (((-self.f(action)),),)
-                assert False, "This does not make sense here."
-                done = np.array([[1]])
-                next_state = np.array([[0]])
-                if not self.is_test:
-                    self.rewards.append(torch.FloatTensor(reward).to(self.device))
-                    self.masks.append(torch.FloatTensor(1 - done).to(self.device))
-
-                return next_state, reward, done
+            #            def step(self, action: np.ndarray) -> Tuple[np.ndarray, np.float64, bool]:
+            #                """Take an action and return the response of the env."""
+            #                # next_state, reward, done, _ = self.env.step(action)
+            #                # next_state = np.reshape(next_state, (1, -1)).astype(np.float64)
+            #                # reward = np.reshape(reward, (1, -1)).astype(np.float64)
+            #                # done = np.reshape(done, (1, -1))
+            #                # reward = (((-self.f(action)),),)
+            #                done = np.array([[1]])
+            #                next_state = np.array([[0]])
+            #                if not self.is_test:
+            #                    self.rewards.append(torch.FloatTensor(reward).to(self.device))
+            #                    self.masks.append(torch.FloatTensor(1 - done).to(self.device))
+            #
+            #                return next_state, reward, done
 
             def update_model(self, next_state: np.ndarray) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
                 """Update the model by gradient descent."""
@@ -1104,8 +1104,7 @@ class PPO(base.Optimizer):
 
                 actor_losses, critic_losses = [], []
 
-                print("Working on states: ", states)
-                print("Working on actions: ", actions)
+                something_done = False
                 for state, action, old_value, old_log_prob, return_, adv in ppo_iter(
                     epoch=self.epoch,
                     mini_batch_size=self.batch_size,
@@ -1116,7 +1115,7 @@ class PPO(base.Optimizer):
                     returns=returns,
                     advantages=advantages,
                 ):
-                    print("Inside PPO iter")
+                    something_done = True
                     # calculate ratios
                     _, dist = self.actor(state)
                     log_prob = dist.log_prob(action)
@@ -1151,6 +1150,7 @@ class PPO(base.Optimizer):
                     actor_losses.append(actor_loss.item())
                     critic_losses.append(critic_loss.item())
 
+                assert something_done, "No iteration in PPO!"
                 self.states, self.actions, self.rewards = [], [], []
                 self.values, self.masks, self.log_probs = [], [], []
 
@@ -1169,47 +1169,47 @@ class PPO(base.Optimizer):
                 self.actor_losses.append(actor_loss)
                 self.critic_losses.append(critic_loss)
 
-            def train(self, num_frames: int, plotting_interval: int = 200):
-                """Train the agent."""
-                assert False, "No offline training here."
-                print("Starting the training.")
-                self.is_test = False
-                print("Creating fake state.")
-                state = np.array([[0]])  # self.env.reset()
-                # state = np.expand_dims(state, axis=0)
-
-                actor_losses, critic_losses = [], []
-                scores = []
-                score = 0
-                print("We start training with ", self.total_step, " / ", num_frames + 1)
-                while self.total_step <= num_frames + 1:
-                    print("self.total_step = ", self.total_step)
-                    print("Starting a rollout at ", state)
-                    for _ in range(self.rollout_len):
-                        self.total_step += 1
-                        print("Selecting an action at state", state)
-                        action = self.select_action(state)
-                        print("Doing a step.")
-                        next_state, reward, done = self.step(action)
-
-                        state = next_state
-                        score += reward[0][0]
-
-                        # if episode ends
-                        if done[0][0]:
-                            # state = env.reset()
-                            # state = np.expand_dims(state, axis=0)
-                            scores.append(-score)
-                            score = 0
-
-                            self._plot(self.total_step, scores, actor_losses, critic_losses)
-
-                    actor_loss, critic_loss = self.update_model(next_state)
-                    actor_losses.append(actor_loss)
-                    critic_losses.append(critic_loss)
-
-                # termination
-                # self.env.close()
+        #            def train(self, num_frames: int, plotting_interval: int = 200):
+        #                """Train the agent."""
+        #                assert False, "No offline training here."
+        #                print("Starting the training.")
+        #                self.is_test = False
+        #                print("Creating fake state.")
+        #                state = np.array([[0]])  # self.env.reset()
+        #                # state = np.expand_dims(state, axis=0)
+        #
+        #                actor_losses, critic_losses = [], []
+        #                scores = []
+        #                score = 0
+        #                print("We start training with ", self.total_step, " / ", num_frames + 1)
+        #                while self.total_step <= num_frames + 1:
+        #                    print("self.total_step = ", self.total_step)
+        #                    print("Starting a rollout at ", state)
+        #                    for _ in range(self.rollout_len):
+        #                        self.total_step += 1
+        #                        print("Selecting an action at state", state)
+        #                        action = self.select_action(state)
+        #                        print("Doing a step.")
+        #                        next_state, reward, done = self.step(action)
+        #
+        #                        state = next_state
+        #                        score += reward[0][0]
+        #
+        #                        # if episode ends
+        #                        if done[0][0]:
+        #                            # state = env.reset()
+        #                            # state = np.expand_dims(state, axis=0)
+        #                            scores.append(-score)
+        #                            score = 0
+        #
+        #                            self._plot(self.total_step, scores, actor_losses, critic_losses)
+        #
+        #                    actor_loss, critic_loss = self.update_model(next_state)
+        #                    actor_losses.append(actor_loss)
+        #                    critic_losses.append(critic_loss)
+        #
+        #                # termination
+        #                # self.env.close()
 
         self.agent = PPOAgent(
             self.dimension,
@@ -1235,7 +1235,8 @@ class PPO(base.Optimizer):
         self.agent.minitrain(candidate.get_standardized_data(reference=self.parametrization), -loss)
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        self._internal_tell_candidate(candidate, loss)
+        raise errors.TellNotAskedNotSupportedError
+        # self._internal_tell_candidate(candidate, loss)
 
 
 # pylint: disable=too-many-instance-attributes
