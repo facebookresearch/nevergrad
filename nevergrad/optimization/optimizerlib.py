@@ -848,30 +848,16 @@ class PPO(base.Optimizer):
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        import sys
-        import random
         from collections import deque
-        from typing import Deque, Dict, List, Tuple
+        from typing import Deque, List, Tuple
         import random
         from collections import deque
 
-        import gym
-        import matplotlib.pyplot as plt
         import numpy as np
         import torch
         import torch.nn as nn
         import torch.nn.functional as F
         import torch.optim as optim
-        from IPython.display import clear_output
-        from torch.distributions import Normal
-
-        # import gym
-        import matplotlib.pyplot as plt
-        import torch
-        import torch.nn as nn
-        import torch.nn.functional as F
-        import torch.optim as optim
-        from IPython.display import clear_output
         from torch.distributions import Normal
 
         def init_layer_uniform(layer: nn.Linear, init_w: float = 3e-3) -> nn.Linear:
@@ -959,9 +945,7 @@ class PPO(base.Optimizer):
             """Yield mini-batches."""
             batch_size = states.size(0)
             for _ in range(epoch):
-                print("...epoch...", batch_size, mini_batch_size)
                 for _ in range(batch_size // mini_batch_size):
-                    print("... batch...")
                     rand_ids = np.random.choice(batch_size, mini_batch_size)
                     yield states[rand_ids, :], actions[rand_ids], values[rand_ids], log_probs[
                         rand_ids
@@ -1016,16 +1000,16 @@ class PPO(base.Optimizer):
 
                 # device: cpu / gpu
                 self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-                print(self.device)
+                # print(self.device)
 
                 # networks
                 obs_dim = self.obs_dim  # env.observation_space.shape[0]
                 action_dim = dim  # env.action_space.shape[0]
-                print("Creating the policy")
+                # print("Creating the policy")
                 self.actor = Actor(obs_dim, action_dim).to(self.device)
-                print("Policy created. Creating the critic")
+                # print("Policy created. Creating the critic")
                 self.critic = Critic(obs_dim).to(self.device)
-                print("Critic created.")
+                # print("Critic created.")
                 # optimizer
                 self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=0.001)
                 self.critic_optimizer = optim.Adam(self.critic.parameters(), lr=0.005)
@@ -1046,18 +1030,18 @@ class PPO(base.Optimizer):
 
             def select_action(self, state: np.ndarray) -> np.ndarray:
                 """Select an action from the input state."""
-                print("Working on state ", state)
+                # print("Working on state ", state)
                 state = torch.FloatTensor(state).to(self.device)
-                print("Calling the actor")
+                # print("Calling the actor")
                 action, dist = self.actor(state)
-                print("Actor done")
+                # print("Actor done")
                 selected_action = dist.mean if self.is_test else action
 
                 if not self.is_test:
-                    print("appending states")
+                    # print("appending states")
                     value = self.critic(state)
                     self.states.append(state)
-                    print("Self.states is now ", self.states)
+                    # print("Self.states is now ", self.states)
                     self.actions.append(selected_action)
                     self.values.append(value)
                     self.log_probs.append(dist.log_prob(selected_action))
@@ -1105,7 +1089,7 @@ class PPO(base.Optimizer):
                 actor_losses, critic_losses = [], []
 
                 something_done = False
-                for state, action, old_value, old_log_prob, return_, adv in ppo_iter(
+                for state, action, _old_value, old_log_prob, return_, adv in ppo_iter(
                     epoch=self.epoch,
                     mini_batch_size=self.batch_size,
                     states=states,
@@ -1159,7 +1143,7 @@ class PPO(base.Optimizer):
 
                 return actor_loss, critic_loss
 
-            def minitrain(self, data, reward):
+            def minitrain(self, _data, reward):
                 # This simulates "step".
                 done = np.array([[1]])
                 next_state = np.array([[0]])
