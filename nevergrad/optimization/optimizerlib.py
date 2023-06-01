@@ -10,7 +10,6 @@ import warnings
 import numpy as np
 import scipy.ndimage as ndimage
 import typing
-from typing import Deque, Dict, List, Tuple
 
 try:
     from bayes_opt import UtilityFunction
@@ -851,7 +850,6 @@ class PPO(base.Optimizer):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         from collections import deque
         from typing import Deque, List, Tuple
-        import random
         from collections import deque
 
         import numpy as np
@@ -867,6 +865,7 @@ class PPO(base.Optimizer):
             layer.bias.data.uniform_(-init_w, init_w)
             return layer
 
+        @typing.no_type_check
         class Actor(nn.Module):
             def __init__(
                 self,
@@ -902,6 +901,7 @@ class PPO(base.Optimizer):
 
                 return action, dist
 
+        @typing.no_type_check
         class Critic(nn.Module):
             def __init__(self, in_dim: int):
                 """Initialize."""
@@ -952,6 +952,7 @@ class PPO(base.Optimizer):
                         rand_ids
                     ], returns[rand_ids], advantages[rand_ids]
 
+        @typing.no_type_check
         class PPOAgent:
             """PPO Agent.
             Attributes:
@@ -988,8 +989,8 @@ class PPO(base.Optimizer):
                 self.dim = dim
                 self.obs_dim = 1
 
-                self.actor_losses = []
-                self.critic_losses = []
+                self.actor_losses = []  # type: ignore
+                self.critic_losses = []  # type: ignore
 
                 self.gamma = gamma
                 self.tau = tau
