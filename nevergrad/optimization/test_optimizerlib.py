@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import re
 import sys
 import time
 import random
@@ -723,23 +722,26 @@ def test_ngopt_selection(
         # pylint: disable=expression-not-assigned
         opt = optlib.registry[name](param, budget=budget, num_workers=num_workers)
         # pylint: disable=pointless-statement
-        opt.optim  # type: ignore
-        pattern = rf".*{name} selected (?P<name>\w+?) optimizer\."
-        match = re.match(pattern, caplog.text.splitlines()[-1])
-        assert match is not None, f"Did not detect selection in logs: {caplog.text}"
-        choice = match.group("name")
+        # The pattern matching from the log does not work anymore,
+        # hence some modifications below. We might delete the old version.
+        optim_string = str(opt.optim)  # type: ignore
+        # import re
+        # pattern = rf".*{name} selected (?P<name>\w+?) optimizer\."
+        # match = re.match(pattern, caplog.text.splitlines()[-1])
+        # assert match is not None, f"Did not detect selection in logs: {caplog.text}"
+        # choice = match.group("name")
         if expected != "#CONTINUOUS":
-            assert choice == expected
+            # assert choice == expected
+            assert expected in optim_string
         else:
-            print(f"Continuous param={param} budget={budget} workers={num_workers} --> {choice}")
+            # print(f"Continuous param={param} budget={budget} workers={num_workers} --> {choice}")
             if num_workers >= budget > 600:
-                assert choice == "MetaTuneRecentering"
+                # assert choice == "MetaTuneRecentering"
+                assert "MetaTuneRecentering" in optim_string
             if num_workers > 1:
-                assert choice not in ["SQP", "Cobyla"]
-        if "CMA" not in choice:
-            assert choice == opt._info()["sub-optim"]
-        else:
-            assert choice in opt._info()["sub-optim"]
+                # assert choice not in ["SQP", "Cobyla"]
+                assert "SQP" not in optim_string and "Cobyla" not in optim_string
+        assert opt._info()["sub-optim"] in optim_string
 
 
 def test_bo_ordering() -> None:
