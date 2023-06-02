@@ -36,8 +36,16 @@ Keras-Preprocessing
 silence_tensorflow  # for olymp
 tensorflow_probability  # for olymp
 bayes-optim==0.2.5.5
+# pcse>=5.5.0  # removed due to PCSE license issues.
+pygame>=2.0.2
+pyyaml>=5.3.1
 nlopt
+<<<<<<< HEAD
+geopy>=2.2.0
+pcse
+=======
 pybullet>=3.2.2
 box2d-py>=2.3.5
 glfw
 mujoco
+>>>>>>> 35edb978b33c666e12796682bfdb1fff26c1d3f5
