@@ -307,17 +307,6 @@ MetaNGOpt10 = opts.ConfSplitOptimizer(
     multivariate_optimizer=NGOpt10, monovariate_optimizer=NGOpt10, non_deterministic_descriptor=False
 ).set_name("MetaNGOpt10", register=True)
 
-# Multiple single runs for multi-objective optimization.
-NGOptSingle9 = opts.MultipleSingleRuns(num_single_runs=9, base_optimizer=NGOpt12).set_name(
-    "NGOptSingle9", register=True
-)
-NGOptSingle16 = opts.MultipleSingleRuns(num_single_runs=16, base_optimizer=NGOpt12).set_name(
-    "NGOptSingle16", register=True
-)
-NGOptSingle25 = opts.MultipleSingleRuns(num_single_runs=25, base_optimizer=NGOpt12).set_name(
-    "NGOptSingle25", register=True
-)
-
 # noisy splitters
 Noisy13Splits = opts.NoisySplit(num_optims=13, discrete=False).set_name("Noisy13Splits", register=True)
 NoisyInfSplits = opts.NoisySplit(num_optims=float("inf"), discrete=False).set_name(
