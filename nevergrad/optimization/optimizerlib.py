@@ -3175,3 +3175,15 @@ class MultipleSingleRuns(base.ConfiguredOptimizer):
         base_optimizer: base.OptCls = NGOpt,
     ) -> None:
         super().__init__(_MSR, locals())
+
+ 
+# Multiple single runs for multi-objective optimization.
+NGOptSingle9 = opts.MultipleSingleRuns(num_single_runs=9, base_optimizer=NGOpt12).set_name(
+    "NGOptSingle9", register=True
+)
+NGOptSingle16 = opts.MultipleSingleRuns(num_single_runs=16, base_optimizer=NGOpt12).set_name(
+    "NGOptSingle16", register=True
+)
+NGOptSingle25 = opts.MultipleSingleRuns(num_single_runs=25, base_optimizer=NGOpt12).set_name(
+    "NGOptSingle25", register=True
+)
