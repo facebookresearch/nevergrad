@@ -1783,6 +1783,30 @@ MetaModelOnePlusOne = ParametrizedMetaModel(multivariate_optimizer=OnePlusOne).s
     "MetaModelOnePlusOne", register=True
 )
 
+MetaModelDE = ParametrizedMetaModel(multivariate_optimizer=DE).set_name("MetaModelDE", register=True)
+NeuralMetaModelDE = ParametrizedMetaModel(algorithm="neural", multivariate_optimizer=DE).set_name(
+    "NeuralMetaModelDE", register=True
+)
+SVMMetaModelDE = ParametrizedMetaModel(algorithm="svr", multivariate_optimizer=DE).set_name(
+    "SVMMetaModelDE", register=True
+)
+RFMetaModelDE = ParametrizedMetaModel(algorithm="rf", multivariate_optimizer=DE).set_name(
+    "RFMetaModelDE", register=True
+)
+
+MetaModelTwoPointsDE = ParametrizedMetaModel(multivariate_optimizer=TwoPointsDE).set_name(
+    "MetaModelTwoPointsDE", register=True
+)
+NeuralMetaModelTwoPointsDE = ParametrizedMetaModel(
+    algorithm="neural", multivariate_optimizer=TwoPointsDE
+).set_name("NeuralMetaModelTwoPointsDE", register=True)
+SVMMetaModelTwoPointsDE = ParametrizedMetaModel(algorithm="svr", multivariate_optimizer=TwoPointsDE).set_name(
+    "SVMMetaModelTwoPointsDE", register=True
+)
+RFMetaModelTwoPointsDE = ParametrizedMetaModel(algorithm="rf", multivariate_optimizer=TwoPointsDE).set_name(
+    "RFMetaModelTwoPointsDE", register=True
+)
+
 
 @registry.register
 class SQPCMA(Portfolio):
