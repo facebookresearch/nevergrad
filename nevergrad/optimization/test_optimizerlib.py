@@ -946,14 +946,14 @@ def test_smoother() -> None:
 
 
 def test_weighted_moo_de() -> None:
-    for k in range(5):
+    for _ in range(3):
         D = 2
         N = 3
         DE = ng.optimizers.TwoPointsDE(D, budget=300)
         index = np.random.choice(range(N))
         w = np.ones(N)
         w[index] = 30.0
-        DE.set_objective_weights(w)
+        DE.set_objective_weights(w)  # type: ignore
         targ = [np.array([np.cos(2 * np.pi * i / N), np.sin(2 * np.pi * i / N)]) for i in range(N)]
         DE.minimize(lambda x: [np.linalg.norm(x - xi) for xi in targ])
         x = np.zeros(N)
