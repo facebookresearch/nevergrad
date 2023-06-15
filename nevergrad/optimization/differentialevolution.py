@@ -214,7 +214,8 @@ class _DE(base.Optimizer):
         if not mo_adapt and loss <= base._loss(parent):
             self.population[uid] = candidate
         elif mo_adapt and (
-            parent._losses is None or np.average(candidate.losses < parent.losses, weights=self.objective_weights) > self._rng.rand()
+            parent._losses is None
+            or np.average(candidate.losses < parent.losses, weights=self.objective_weights) > self._rng.rand()
         ):
             # multiobjective case, with adaptation,
             # randomly replaces the parent depending on the number of better losses
