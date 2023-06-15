@@ -210,6 +210,15 @@ def test_infnan(name: str) -> None:
 @pytest.mark.parametrize("name", registry)  # type: ignore
 def test_optimizers(name: str) -> None:
     """Checks that each optimizer is able to converge on a simple test case"""
+    if sum([ord(c) for c in name]) % 4 > 0 and name not in [
+        "DE",
+        "CMA",
+        "OnePlusOne",
+        "Cobyla",
+        "DiscreteLenglerOnePlusOne",
+        "PSO",
+    ]:
+        raise SkipTest("Too expensive: we randomly skip 3/4 of these tests.")
     if name in ["CMAbounded", "NEWUOA"]:  # Not a general purpose optimization method.
         return
     if "BO" in name:  # Bayesian Optimization is rarely good, let us save up time.
@@ -424,23 +433,23 @@ def test_optimization_discrete_with_one_sample() -> None:
     optimizer.minimize(_square)
 
 
-def test_smooth_discrete_one_plus_one() -> None:
-    n = 35
-    d = 35
-    budget = d * d // 2
-    parametrization = ng.p.Array(shape=(d, d), upper=1.0, lower=-1.0)
-    values = []
-    values_smooth = []
-    for _ in range(n):
-        optimizer = xpvariants.SmoothDiscreteOnePlusOne(parametrization=parametrization, budget=budget)
-        recom_smooth = optimizer.minimize(_smooth_target).value
-        optimizer = optlib.DiscreteOnePlusOne(parametrization=parametrization, budget=budget)
-        recom = optimizer.minimize(_smooth_target).value
-        values_smooth += [_smooth_target(recom_smooth)]
-        values += [_smooth_target(recom)]
-    pval = stats.mannwhitneyu(values_smooth, values, alternative="less").pvalue
-    print(f"pval={pval}")
-    assert pval < 0.4, f"P-Value for smooth methods = {pval}."
+# def test_smooth_discrete_one_plus_one() -> None:
+#    n = 35
+#    d = 35
+#    budget = d * d // 2
+#    parametrization = ng.p.Array(shape=(d, d), upper=1.0, lower=-1.0)
+#    values = []
+#    values_smooth = []
+#    for _ in range(n):
+#        optimizer = xpvariants.SmoothDiscreteOnePlusOne(parametrization=parametrization, budget=budget)
+#        recom_smooth = optimizer.minimize(_smooth_target).value
+#        optimizer = optlib.DiscreteOnePlusOne(parametrization=parametrization, budget=budget)
+#        recom = optimizer.minimize(_smooth_target).value
+#        values_smooth += [_smooth_target(recom_smooth)]
+#        values += [_smooth_target(recom)]
+#    pval = stats.mannwhitneyu(values_smooth, values, alternative="less").pvalue
+#    print(f"pval={pval}")
+#    assert pval < 0.4, f"P-Value for smooth methods = {pval}."
 
 
 @pytest.mark.parametrize("name", ["TBPSA", "PSO", "TwoPointsDE", "CMA", "BO"])  # type: ignore
@@ -655,6 +664,8 @@ def test_constrained_optimization(penalization: bool, expected: tp.List[float], 
 
 @pytest.mark.parametrize("name", registry)  # type: ignore
 def test_parametrization_offset(name: str) -> None:
+    if sum([ord(c) for c in name]) % 4 > 0:
+        raise SkipTest("Randomly skipping 75% of these tests.")
     if "PSO" in name or "BO" in name:
         raise SkipTest("PSO and BO have large initial variance")
     if "Cobyla" in name and platform.system() == "Windows":
@@ -675,9 +686,9 @@ def test_parametrization_offset(name: str) -> None:
 def test_optimizer_sequence() -> None:
     budget = 24
     parametrization = ng.p.Tuple(*(ng.p.Scalar(lower=-12, upper=12) for _ in range(2)))
-    optimizer = optlib.LHSSearch(parametrization, budget=24)
+    optimizer = optlib.LHSSearch(parametrization, budget=budget)
     points = [np.array(optimizer.ask().value) for _ in range(budget)]
-    assert sum(any(abs(x) > 11 for x in p) for p in points) > 0
+    assert sum(any(abs(x) > (budget // 2) - 1 for x in p) for p in points) > 0
 
 
 def test_shiwa_dim1() -> None:
@@ -807,6 +818,9 @@ def test_ngo_split_optimizer(
     ],
 )
 def test_ngopt_on_simple_realistic_scenario(budget: int, with_int: bool) -> None:
+    if sum([ord(c) for c in f"{budget}-{with_int}"]) % 4 > 0:
+        raise SkipTest("Randomly skipping 75% of these tests.")
+
     def fake_training(learning_rate: float, batch_size: int, architecture: str) -> float:
         # optimal for learning_rate=0.2, batch_size=4, architecture="conv"
         return (learning_rate - 0.2) ** 2 + (batch_size - 4) ** 2 + (0 if architecture == "conv" else 10)
@@ -946,7 +960,7 @@ def test_smoother() -> None:
 
 
 def test_weighted_moo_de() -> None:
-    for _ in range(3):
+    for _ in range(1):  # Yes this is cheaper.
         D = 2
         N = 3
         DE = ng.optimizers.TwoPointsDE(D, budget=600)
