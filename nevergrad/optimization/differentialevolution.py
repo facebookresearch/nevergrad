@@ -116,7 +116,7 @@ class _DE(base.Optimizer):
         self.sampler: tp.Optional[base.Optimizer] = None
         self._no_hypervolume = self._config.multiobjective_adaptation
 
-    def set_objective_weights(weights: tp.Any) -> None:
+    def set_objective_weights(self, weights: tp.Any) -> None:
         self.objective_weights = weights
 
     def recommend(self) -> p.Parameter:  # This is NOT the naive version. We deal with noise.
