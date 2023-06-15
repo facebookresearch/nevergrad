@@ -88,9 +88,11 @@ class _DE(base.Optimizer):
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
         config: tp.Optional["DifferentialEvolution"] = None,
+        weights: tp.Any = None,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         # config
+        self.objective_weights = weights
         self._config = DifferentialEvolution() if config is None else config
         self.scale = (
             float(1.0 / np.sqrt(self.dimension))
@@ -113,6 +115,9 @@ class _DE(base.Optimizer):
         self.population: tp.Dict[str, p.Parameter] = {}
         self.sampler: tp.Optional[base.Optimizer] = None
         self._no_hypervolume = self._config.multiobjective_adaptation
+
+    def set_objective_weights(self, weights: tp.Any) -> None:
+        self.objective_weights = weights
 
     def recommend(self) -> p.Parameter:  # This is NOT the naive version. We deal with noise.
         sample_size = int((self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1)
@@ -200,11 +205,17 @@ class _DE(base.Optimizer):
         self._uid_queue.tell(uid)  # only add to queue if not a "tell_not_asked" (from a removed parent)
         parent = self.population[uid]
         mo_adapt = self._config.multiobjective_adaptation and self.num_objectives > 1
+        if mo_adapt:
+            if self.objective_weights is None:
+                self.objective_weights = np.ones(self.num_objectives)
+            else:
+                assert len(self.objective_weights) == self.num_objectives
         mo_adapt &= candidate._losses is not None  # can happen with bad constraints
         if not mo_adapt and loss <= base._loss(parent):
             self.population[uid] = candidate
         elif mo_adapt and (
-            parent._losses is None or np.mean(candidate.losses < parent.losses) > self._rng.rand()
+            parent._losses is None
+            or np.average(candidate.losses < parent.losses, weights=self.objective_weights) > self._rng.rand()
         ):
             # multiobjective case, with adaptation,
             # randomly replaces the parent depending on the number of better losses
