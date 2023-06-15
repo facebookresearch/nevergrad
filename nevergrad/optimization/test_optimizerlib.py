@@ -943,3 +943,20 @@ def test_smoother() -> None:
         optlib.smooth_copy(x).get_standardized_data(reference=x).shape
         == x.get_standardized_data(reference=x).shape
     )
+
+
+def test_weighted_moo_de() -> None:
+    for k in range(5):
+        D = 2
+        N = 3
+        DE = ng.optimizers.TwoPointsDE(D, budget=300)
+        index = np.random.choice(range(N))
+        w = np.ones(N)
+        w[index] = 30.0
+        DE.set_objective_weights(w)
+        targ = [np.array([np.cos(2 * np.pi * i / N), np.sin(2 * np.pi * i / N)]) for i in range(N)]
+        DE.minimize(lambda x: [np.linalg.norm(x - xi) for xi in targ])
+        x = np.zeros(N)
+        for u in DE.pareto_front():
+            x = x + u.losses
+        assert index == list(x).index(min(x))
