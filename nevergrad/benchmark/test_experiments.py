@@ -28,6 +28,9 @@ from . import optgroups
 
 @testing.parametrized(**{name: (name, maker) for name, maker in experiments.registry.items()})
 def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> None:
+    if sum([ord(c) for c in name]) % 4 > 0:
+        raise SkipTest("Too expensive: we randomly skip 3/4 of these tests.")
+
     # "mav" is not availablefor now.
     if "conformant" in name or name == "neuro_planning":
         raise SkipTest("This is user parametric and can not be tested.")

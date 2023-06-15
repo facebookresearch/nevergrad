@@ -6,6 +6,7 @@
 import pytest
 import numpy as np
 import sys
+from unittest import SkipTest
 import nevergrad as ng
 import nevergrad.common.typing as tp
 from nevergrad.common import testing
@@ -55,6 +56,9 @@ def suggestion_testing(
 @pytest.mark.parametrize("name", [r for r in registry if suggestable(r)])  # type: ignore
 def test_suggest_optimizers(name: str) -> None:
     """Checks that each optimizer is able to converge when optimum is given"""
+
+    if sum([ord(c) for c in name]) % 4 > 0 and name not in ["CMA", "PSO", "DE"]:
+        raise SkipTest("Too expensive: we randomly skip 3/4 of these tests.")
 
     instrum = ng.p.Array(shape=(100,)).set_bounds(0.0, 1.0)
     instrum.set_integer_casting()

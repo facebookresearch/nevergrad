@@ -303,7 +303,7 @@ If you want to run Open AI Gym, see `One-line for learning state-of-the-art Open
 Examples from our external users
 --------------------------------
 
-Nevergrad is integrated in `Ray/Tune <https://docs.ray.io/en/latest/tune/api_docs/suggestion.html#nevergrad-tune-search-nevergrad-nevergradsearch>`_, Berkeley AI Research library for parameter tuning .
+Nevergrad is integrated in `Ray/Tune <https://docs.ray.io/en/latest/tune/api/doc/ray.tune.search.nevergrad.NevergradSearch.html>`_, Berkeley AI Research library for parameter tuning .
 
 Nevergrad is a plugin in `Hydra <https://hydra.cc/docs/plugins/nevergrad_sweeper/>`_ Facebook's parameter sweeping library.
 
