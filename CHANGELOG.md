@@ -2,7 +2,12 @@
 
 ## main
 
-## v6.0 (2022-02-22)
+## v0.7.0 (2023-06-16)
+- Fix links
+- Add metamodels
+- Update for weighted multiobjective optimization with differential evolution
+
+## v0.6.0 (2022-02-22)
 
 ### Breaking changes
 
