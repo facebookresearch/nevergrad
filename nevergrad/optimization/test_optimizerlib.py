@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import os
 import re
 import sys
 import time
@@ -960,29 +961,53 @@ def test_smoother() -> None:
     )
 
 
-def test_voronoide() -> None:
-    array = ng.p.Array(shape=(10, 10), lower=-1.0, upper=1.0)
-    xs = [i + j < 10 for i in range(10) for j in range(10)]
-    xs = np.array(xs).reshape(10, 10)
-    xs = 0.5 * (xs - 0.5)
+@pytest.mark.parametrize("n", [5, 10, 15, 20, 25])  # type: ignore
+@pytest.mark.parametrize("b_per_dim", [5, 10, 20])  # type: ignore
+def test_voronoide(n, b_per_dim) -> None:
+    list_optims = ["CMA", "DE", "DiagonalCMA", "PSO", "RandomSearch", "TwoPointsDE", "OnePlusOne"]
+    if os.environ.get("CIRCLECI", False) and (n > 10 or n * b_per_dim > 100):
+        raise SkipTest("Topology optimization too slow in CircleCI")
+    if os.environ.get("CIRCLECI", False) or (n < 10 or b_per_dim < 20):
+        list_optims = ["CMA", "DiagonalCMA", "PSO", "OnePlusOne"]
+    array = ng.p.Array(shape=(n, n), lower=-1.0, upper=1.0)
+    xs = [float(i + j < 1.6 * n) for i in range(n) for j in range(n)]
+    xs = np.array(xs).reshape(n, n)
+    xs = 1.5 * (xs - 0.5)
     wins = 0
-    fails = 0
-    b = 200
-    for _ in range(50):
-        DE = ng.optimizers.DE(array, budget=b)
-        VoronoiDE = ng.optimizers.VoronoiDE(array, budget=b)
+    fails = {}
+    for o in list_optims:
+        fails[o] = 0
+    size = n * n
+    sqrtsize = n
+    b = b_per_dim * size  # budget
+    nw = 20  # parallel workers
 
-        def f(x):
-            return np.linalg.norm(x - xs) + np.linalg.norm(x - gaussian_filter(x, sigma=1))
+    def f(x):
+        # return np.linalg.norm(x - xs) + np.linalg.norm(x - gaussian_filter(x, sigma=1))
+        return (
+            5.0 * np.sum(np.abs(x - xs) > 0.3) / size
+            + np.linalg.norm(x - gaussian_filter(x, sigma=3)) / sqrtsize
+            + np.sum(x) / size
+        )
 
-        vde = VoronoiDE.minimize(f).value
-        de = DE.minimize(f).value
-        if f(de) < f(vde):
-            fails += 1
-        else:
-            wins += 1
-    assert wins > 2 * fails
-    print(wins, fails)
+    num_tests = 20
+    for _ in range(num_tests):
+        VoronoiDE = ng.optimizers.VoronoiDE(array, budget=b, num_workers=nw)
+        vde = f(VoronoiDE.minimize(f).value)
+        for o in list_optims:
+            other = ng.optimizers.registry[o](array, budget=b, num_workers=nw)
+            val = f(other.minimize(f).value)
+            # print(o, val / vde)
+            if val < vde:
+                fails[o] += 1
+    ratio = min([(num_tests - fails[o]) / (0.001 + fails[o]) for o in list_optims])
+    print(f"VoronoiDE for DO: {ratio}", num_tests, fails, f"({n}-{b_per_dim})")
+
+    for o in list_optims:
+        ratio = 1.2 if "DE" not in "o" else 1.1
+        assert (
+            num_tests - fails[o] > ratio * fails[o]
+        ), f"Failure {o}: {fails[o]} / {num_tests}    ({n}-{b_per_dim})"
 
 
 def test_weighted_moo_de() -> None:

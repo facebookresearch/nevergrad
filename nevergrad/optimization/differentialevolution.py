@@ -17,7 +17,7 @@ class Crossover:
         self,
         random_state: np.random.RandomState,
         crossover: tp.Union[str, float],
-        parameter: tp.Optional = None,
+        parameter: tp.Optional[p.Parameter] = None,
     ):
         self.CR = 0.5
         self.crossover = crossover
@@ -28,7 +28,7 @@ class Crossover:
             self.CR = self.random_state.uniform(0.0, 1.0)
         elif crossover not in ["twopoints", "onepoint", "rotated_twopoints", "voronoi"]:
             raise ValueError(f'Unknown crossover "{crossover}"')
-        self.parameter = parameter
+        self.shape = parameter._value.shape if parameter is not None else None
 
     def apply(self, donor: np.ndarray, individual: np.ndarray) -> None:
         dim = donor.size
@@ -39,10 +39,7 @@ class Crossover:
         elif self.crossover == "onepoint" and dim >= 3:
             return self.onepoint(donor, individual)
         elif self.crossover == "voronoi":
-            if not hasattr(self.parameter, "shape"):
-                warnings.warn("VoronoiDE work only when there is a clear shape!")
-                return self.twopoints(donor, individual)
-            return self.voronoi(donor, individual, self.parameter.shape)
+            return self.voronoi(donor, individual)
         else:
             return self.variablewise(donor, individual)
 
@@ -80,17 +77,23 @@ class Crossover:
         assert bounds[1] < donor.size + 1
         donor[bounds[0] : bounds[1]] = individual[bounds2[0] : bounds2[1]]
 
-    def voronoi(self, donor: np.ndarray, individual: np.ndarray, shape: tp.ArrayLike) -> None:
-        assert prod(shape) == len(donor)
-        x1 = tuple([np.random.randint(shape[i]) for i in range(len(shape))])
-        x2 = tuple([np.random.randint(shape[i]) for i in range(len(shape))])
-        it = np.nditer(a, flags=["f_index"])
+    def voronoi(self, donor: np.ndarray, individual: np.ndarray) -> None:
+        shape = self.shape
+        if shape is None or len(shape) < 2:
+            warnings.warn("Voronoi DE needs a shape.")
+            self.twopoints(donor, individual)
+        donor = donor.reshape(shape)
+        individual = individual.reshape(shape)
+        x1 = np.array([np.random.randint(shape[i]) for i in range(len(shape))])
+        x2 = np.array([np.random.randint(shape[i]) for i in range(len(shape))])
+        it = np.nditer(donor, flags=["multi_index"])
         for _ in it:
-            index = it.index
-            d1 = np.linalg.norm(index - x1)
-            d2 = np.linalg.norm(index - x2)
+            d1 = np.linalg.norm(np.array(it.multi_index) - x1)
+            d2 = np.linalg.norm(np.array(it.multi_index) - x2)
             if d1 > d2:
-                donor[index] = individual[iter]
+                donor[it.multi_index] = individual[it.multi_index]
+        donor = donor.flatten()
+        individual = individual.flatten()
 
 
 class _DE(base.Optimizer):
@@ -179,6 +182,13 @@ class _DE(base.Optimizer):
                 candidate = self.parametrization.sample()
             elif self.sampler is not None:
                 candidate = self.sampler.ask()
+            elif self.crossover == "voronoi":
+                new_guy = (
+                    self.scale * self._rng.normal(0, 1, self.dimension)
+                    if len(self.population) > self.llambda / 6
+                    else self.scale * self._rng.normal() * np.ones(self.dimension)
+                )
+                candidate = self.parametrization.spawn_child().set_standardized_data(new_guy)
             else:
                 new_guy = self.scale * self._rng.normal(0, 1, self.dimension)
                 candidate = self.parametrization.spawn_child().set_standardized_data(new_guy)
