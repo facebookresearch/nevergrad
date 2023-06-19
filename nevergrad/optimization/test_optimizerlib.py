@@ -20,6 +20,7 @@ import pytest
 import numpy as np
 import pandas as pd
 from scipy import stats
+from scipy.ndimage import gaussian_filter
 from bayes_opt.util import acq_max
 
 # from bayes_opt.util import NotUniqueError
@@ -959,10 +960,29 @@ def test_smoother() -> None:
     )
 
 
-def test_voronoi() -> None:
+def test_voronoide() -> None:
     array = ng.p.Array(shape=(10, 10), lower=-1.0, upper=1.0)
-    VoronoiDE = ng.optimizers.TwoPointsDE(array, budget=100)
-    VoronoiDE.minimize(lambda x: np.linalg.norm(x))
+    xs = [i + j < 10 for i in range(10) for j in range(10)]
+    xs = np.array(xs).reshape(10, 10)
+    xs = 0.5 * (xs - 0.5)
+    wins = 0
+    fails = 0
+    b = 200
+    for _ in range(50):
+        DE = ng.optimizers.DE(array, budget=b)
+        VoronoiDE = ng.optimizers.VoronoiDE(array, budget=b)
+
+        def f(x):
+            return np.linalg.norm(x - xs) + np.linalg.norm(x - gaussian_filter(x, sigma=1))
+
+        vde = VoronoiDE.minimize(f).value
+        de = DE.minimize(f).value
+        if f(de) < f(vde):
+            fails += 1
+        else:
+            wins += 1
+    assert wins > 2 * fails
+    print(wins, fails)
 
 
 def test_weighted_moo_de() -> None:

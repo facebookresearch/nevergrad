@@ -39,6 +39,9 @@ class Crossover:
         elif self.crossover == "onepoint" and dim >= 3:
             return self.onepoint(donor, individual)
         elif self.crossover == "voronoi":
+            if not hasattr(self.parameter, "shape"):
+                warnings.warn("VoronoiDE work only when there is a clear shape!")
+                return self.twopoints(donor, individual)
             return self.voronoi(donor, individual, self.parameter.shape)
         else:
             return self.variablewise(donor, individual)
@@ -212,7 +215,9 @@ class _DE(base.Optimizer):
         if co == "parametrization":
             candidate.recombine(self.parametrization.spawn_child().set_standardized_data(donor))
         else:
-            crossovers = Crossover(self._rng, 1.0 / self.dimension if co == "dimension" else co)
+            crossovers = Crossover(
+                self._rng, 1.0 / self.dimension if co == "dimension" else co, self.parametrization
+            )
             crossovers.apply(donor, data)
             candidate.set_standardized_data(donor, reference=self.parametrization)
         return candidate
@@ -342,6 +347,7 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
             "dimension",
             "random",
             "parametrization",
+            "voronoi",
         ]
         self.initialization = initialization
         self.scale = scale
