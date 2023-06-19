@@ -13,7 +13,12 @@ from . import oneshot
 
 
 class Crossover:
-    def __init__(self, random_state: np.random.RandomState, crossover: tp.Union[str, float]):
+    def __init__(
+        self,
+        random_state: np.random.RandomState,
+        crossover: tp.Union[str, float],
+        parameter: tp.Optional = None,
+    ):
         self.CR = 0.5
         self.crossover = crossover
         self.random_state = random_state
@@ -21,8 +26,9 @@ class Crossover:
             self.CR = crossover
         elif crossover == "random":
             self.CR = self.random_state.uniform(0.0, 1.0)
-        elif crossover not in ["twopoints", "onepoint", "rotated_twopoints"]:
+        elif crossover not in ["twopoints", "onepoint", "rotated_twopoints", "voronoi"]:
             raise ValueError(f'Unknown crossover "{crossover}"')
+        self.parameter = parameter
 
     def apply(self, donor: np.ndarray, individual: np.ndarray) -> None:
         dim = donor.size
@@ -32,6 +38,8 @@ class Crossover:
             return self.rotated_twopoints(donor, individual)
         elif self.crossover == "onepoint" and dim >= 3:
             return self.onepoint(donor, individual)
+        elif self.crossover == "voronoi":
+            return self.voronoi(donor, individual, self.parameter.shape)
         else:
             return self.variablewise(donor, individual)
 
@@ -68,6 +76,18 @@ class Crossover:
         bounds2.append(bounds2[0] + bounds[1] - bounds[0])
         assert bounds[1] < donor.size + 1
         donor[bounds[0] : bounds[1]] = individual[bounds2[0] : bounds2[1]]
+
+    def voronoi(self, donor: np.ndarray, individual: np.ndarray, shape: tp.ArrayLike) -> None:
+        assert prod(shape) == len(donor)
+        x1 = tuple([np.random.randint(shape[i]) for i in range(len(shape))])
+        x2 = tuple([np.random.randint(shape[i]) for i in range(len(shape))])
+        it = np.nditer(a, flags=["f_index"])
+        for _ in it:
+            index = it.index
+            d1 = np.linalg.norm(index - x1)
+            d2 = np.linalg.norm(index - x2)
+            if d1 > d2:
+                donor[index] = individual[iter]
 
 
 class _DE(base.Optimizer):
@@ -337,6 +357,7 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
 
 DE = DifferentialEvolution().set_name("DE", register=True)
 TwoPointsDE = DifferentialEvolution(crossover="twopoints").set_name("TwoPointsDE", register=True)
+VoronoiDE = DifferentialEvolution(crossover="voronoi").set_name("VoronoiDE", register=True)
 RotatedTwoPointsDE = DifferentialEvolution(crossover="rotated_twopoints").set_name(
     "RotatedTwoPointsDE", register=True
 )

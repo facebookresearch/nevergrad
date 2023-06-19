@@ -959,6 +959,12 @@ def test_smoother() -> None:
     )
 
 
+def test_voronoi() -> None:
+    array = ng.p.Array(shape=(10, 10), lower=-1.0, upper=1.0)
+    VoronoiDE = ng.optimizers.TwoPointsDE(array, budget=100)
+    VoronoiDE.minimize(lambda x: np.linalg.norm(x))
+
+
 def test_weighted_moo_de() -> None:
     for _ in range(1):  # Yes this is cheaper.
         D = 2
