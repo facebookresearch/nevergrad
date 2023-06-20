@@ -28,7 +28,7 @@ class Crossover:
             self.CR = self.random_state.uniform(0.0, 1.0)
         elif crossover not in ["twopoints", "onepoint", "rotated_twopoints", "voronoi"]:
             raise ValueError(f'Unknown crossover "{crossover}"')
-        self.shape = parameter.value.shape if parameter is not None else None
+        self.shape = np.array(parameter.value).shape if parameter is not None else None
 
     def apply(self, donor: np.ndarray, individual: np.ndarray) -> None:
         dim = donor.size
