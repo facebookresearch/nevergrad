@@ -83,18 +83,22 @@ class Crossover:
             warnings.warn("Voronoi DE needs a shape.")
             self.twopoints(donor, individual)
             return
-        donor = donor.reshape(shape)
-        individual = individual.reshape(shape)
+        local_donor = donor.reshape(shape)
+        local_individual = individual.reshape(shape)
         x1 = np.array([np.random.randint(shape[i]) for i in range(len(shape))])
         x2 = np.array([np.random.randint(shape[i]) for i in range(len(shape))])
-        it = np.nditer(donor, flags=["multi_index"])
+        x3 = np.array([np.random.randint(shape[i]) for i in range(len(shape))])
+        x4 = np.array([np.random.randint(shape[i]) for i in range(len(shape))])
+        it = np.nditer(local_donor, flags=["multi_index"])
         for _ in it:
             d1 = np.linalg.norm(np.array(it.multi_index) - x1)
             d2 = np.linalg.norm(np.array(it.multi_index) - x2)
-            if d1 > d2:
-                donor[it.multi_index] = individual[it.multi_index]
-        donor = donor.flatten()
-        individual = individual.flatten()
+            d3 = np.linalg.norm(np.array(it.multi_index) - x3)
+            d4 = np.linalg.norm(np.array(it.multi_index) - x4)
+            if min([d1, d2, d3]) > d4:
+                local_donor[it.multi_index] = local_individual[it.multi_index]
+        donor[:] = local_donor.flatten()[:]
+        individual[:] = local_individual.flatten()[:]
 
 
 class _DE(base.Optimizer):

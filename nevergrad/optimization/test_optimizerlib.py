@@ -961,10 +961,10 @@ def test_smoother() -> None:
     )
 
 
-@pytest.mark.parametrize("n", [5, 10, 15, 20, 25])  # type: ignore
-@pytest.mark.parametrize("b_per_dim", [5, 10, 20])  # type: ignore
+@pytest.mark.parametrize("n", [5, 10, 15, 25, 40])  # type: ignore
+@pytest.mark.parametrize("b_per_dim", [1, 10, 20])  # type: ignore
 def test_voronoide(n, b_per_dim) -> None:
-    if n < 20 or b_per_dim < 20 and not os.environ.get("CIRCLECI", False):  # Outside CircleCI, only the big.
+    if n < 25 or b_per_dim < 1 and not os.environ.get("CIRCLECI", False):  # Outside CircleCI, only the big.
         raise SkipTest("Only big things outside CircleCI.")
 
     list_optims = ["CMA", "DE", "PSO", "RandomSearch", "TwoPointsDE", "OnePlusOne"]
@@ -972,8 +972,8 @@ def test_voronoide(n, b_per_dim) -> None:
         raise SkipTest("Topology optimization too slow in CircleCI")
     if os.environ.get("CIRCLECI", False) or (n < 10 or b_per_dim < 20):
         list_optims = ["CMA", "PSO", "OnePlusOne"]
-    array = ng.p.Array(shape=(n, n), lower=-1.0, upper=1.0)
-    xs = 1.5 * (np.array([float(i + j < 1.6 * n) for i in range(n) for j in range(n)]).reshape(n, n) - 0.5)
+    if n > 20:
+        list_optims = ["DE", "TwoPointsDE"]
     fails = {}
     for o in list_optims:
         fails[o] = 0
@@ -982,16 +982,27 @@ def test_voronoide(n, b_per_dim) -> None:
     b = b_per_dim * size  # budget
     nw = 20  # parallel workers
 
-    def f(x):
-        # return np.linalg.norm(x - xs) + np.linalg.norm(x - gaussian_filter(x, sigma=1))
-        return (
-            5.0 * np.sum(np.abs(x - xs) > 0.3) / size
-            + np.linalg.norm(x - gaussian_filter(x, sigma=3)) / sqrtsize
-            + np.sum(x) / size
-        )
-
     num_tests = 20
-    for _ in range(num_tests):
+    array = ng.p.Array(shape=(n, n), lower=-1.0, upper=1.0)
+    for idx in range(num_tests):
+        xa = idx % 3
+        xb = 2 - xa
+        xs = 1.5 * (
+            np.array([float(np.cos(xa * i + xb * j) < 0.0) for i in range(n) for j in range(n)]).reshape(n, n)
+            - 0.5
+        )
+        if (idx // 3) % 2 > 0:
+            xs = np.transpose(xs)
+        if (idx // 6) % 2 > 0:
+            xs = -xs
+
+        def f(x):
+            # return np.linalg.norm(x - xs) + np.linalg.norm(x - gaussian_filter(x, sigma=1))
+            return (
+                5.0 * np.sum(np.abs(x - xs) > 0.3) / size
+                + 13.0 * np.linalg.norm(x - gaussian_filter(x, sigma=3)) / sqrtsize
+            )
+
         VoronoiDE = ng.optimizers.VoronoiDE(array, budget=b, num_workers=nw)
         vde = f(VoronoiDE.minimize(f).value)
         for o in list_optims:
@@ -1005,13 +1016,13 @@ def test_voronoide(n, b_per_dim) -> None:
             if val < vde:
                 fails[o] += 1
         # Remove both lines below. TODO
-        ratio = min([(num_tests - fails[o]) / (0.001 + fails[o]) for o in list_optims])
-        print(f"temporary: {ratio}", num_tests, fails, f"({n}-{b_per_dim})")
+        # ratio = min([(idx + 1 - fails[o]) / (0.001 + fails[o]) for o in list_optims])
+        # print(f"temporary: {ratio}", idx + 1, fails, f"({n}-{b_per_dim})")
     ratio = min([(num_tests - fails[o]) / (0.001 + fails[o]) for o in list_optims])
     print(f"VoronoiDE for DO: {ratio}", num_tests, fails, f"({n}-{b_per_dim})")
 
     for o in list_optims:
-        ratio = 1.2 if "DE" not in "o" else 1.1
+        ratio = 3.0 if "DE" not in "o" else 2.0
         assert (
             num_tests - fails[o] > ratio * fails[o]
         ), f"Failure {o}: {fails[o]} / {num_tests}    ({n}-{b_per_dim})"
