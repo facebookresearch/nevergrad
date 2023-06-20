@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import os
 import re
 import sys
 import time
@@ -20,6 +21,7 @@ import pytest
 import numpy as np
 import pandas as pd
 from scipy import stats
+from scipy.ndimage import gaussian_filter
 from bayes_opt.util import acq_max
 
 # from bayes_opt.util import NotUniqueError
@@ -957,6 +959,73 @@ def test_smoother() -> None:
         optlib.smooth_copy(x).get_standardized_data(reference=x).shape
         == x.get_standardized_data(reference=x).shape
     )
+
+
+@pytest.mark.parametrize("n", [5, 10, 15, 25, 40])  # type: ignore
+@pytest.mark.parametrize("b_per_dim", [1, 10, 20])  # type: ignore
+def test_voronoide(n, b_per_dim) -> None:
+    if n < 25 or b_per_dim < 1 and not os.environ.get("CIRCLECI", False):  # Outside CircleCI, only the big.
+        raise SkipTest("Only big things outside CircleCI.")
+
+    list_optims = ["CMA", "DE", "PSO", "RandomSearch", "TwoPointsDE", "OnePlusOne"]
+    if os.environ.get("CIRCLECI", False) and (n > 10 or n * b_per_dim > 100):  # In CircleCI, only the small.
+        raise SkipTest("Topology optimization too slow in CircleCI")
+    if os.environ.get("CIRCLECI", False) or (n < 10 or b_per_dim < 20):
+        list_optims = ["CMA", "PSO", "OnePlusOne"]
+    if n > 20:
+        list_optims = ["DE", "TwoPointsDE"]
+    fails = {}
+    for o in list_optims:
+        fails[o] = 0
+    size = n * n
+    sqrtsize = n
+    b = b_per_dim * size  # budget
+    nw = 20  # parallel workers
+
+    num_tests = 20
+    array = ng.p.Array(shape=(n, n), lower=-1.0, upper=1.0)
+    for idx in range(num_tests):
+        xa = idx % 3
+        xb = 2 - xa
+        xs = 1.5 * (
+            np.array([float(np.cos(xa * i + xb * j) < 0.0) for i in range(n) for j in range(n)]).reshape(n, n)
+            - 0.5
+        )
+        if (idx // 3) % 2 > 0:
+            xs = np.transpose(xs)
+        if (idx // 6) % 2 > 0:
+            xs = -xs
+
+        def f(x):
+            # return np.linalg.norm(x - xs) + np.linalg.norm(x - gaussian_filter(x, sigma=1))
+            return (
+                5.0 * np.sum(np.abs(x - xs) > 0.3) / size
+                + 13.0 * np.linalg.norm(x - gaussian_filter(x, sigma=3)) / sqrtsize
+            )
+
+        VoronoiDE = ng.optimizers.VoronoiDE(array, budget=b, num_workers=nw)
+        vde = f(VoronoiDE.minimize(f).value)
+        for o in list_optims:
+            try:
+                other = ng.optimizers.registry[o](array, budget=b, num_workers=nw)
+                val = f(other.minimize(f).value)
+            except:
+                print(f"crash in {o}")
+                val = float(1.0e7)
+            # print(o, val / vde)
+            if val < vde:
+                fails[o] += 1
+        # Remove both lines below. TODO
+        # ratio = min([(idx + 1 - fails[o]) / (0.001 + fails[o]) for o in list_optims])
+        # print(f"temporary: {ratio}", idx + 1, fails, f"({n}-{b_per_dim})")
+    ratio = min([(num_tests - fails[o]) / (0.001 + fails[o]) for o in list_optims])
+    print(f"VoronoiDE for DO: {ratio}", num_tests, fails, f"({n}-{b_per_dim})")
+
+    for o in list_optims:
+        ratio = 3.0 if "DE" not in "o" else 2.0
+        assert (
+            num_tests - fails[o] > ratio * fails[o]
+        ), f"Failure {o}: {fails[o]} / {num_tests}    ({n}-{b_per_dim})"
 
 
 def test_weighted_moo_de() -> None:
