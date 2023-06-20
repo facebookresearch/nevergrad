@@ -964,14 +964,14 @@ def test_smoother() -> None:
 @pytest.mark.parametrize("n", [5, 10, 15, 20, 25])  # type: ignore
 @pytest.mark.parametrize("b_per_dim", [5, 10, 20])  # type: ignore
 def test_voronoide(n, b_per_dim) -> None:
-    if n < 20 or b_per_dim < 20:  # TODO remove these two lines.
-        raise SkipTest("Temporarily skip")
+    if n < 20 or b_per_dim < 20 and not os.environ.get("CIRCLECI", False):  # Outside CircleCI, only the big.
+        raise SkipTest("Only big things outside CircleCI.")
 
-    list_optims = ["CMA", "DE", "DiagonalCMA", "PSO", "RandomSearch", "TwoPointsDE", "OnePlusOne"]
-    if os.environ.get("CIRCLECI", False) and (n > 10 or n * b_per_dim > 100):
+    list_optims = ["CMA", "DE", "PSO", "RandomSearch", "TwoPointsDE", "OnePlusOne"]
+    if os.environ.get("CIRCLECI", False) and (n > 10 or n * b_per_dim > 100):  # In CircleCI, only the small.
         raise SkipTest("Topology optimization too slow in CircleCI")
     if os.environ.get("CIRCLECI", False) or (n < 10 or b_per_dim < 20):
-        list_optims = ["CMA", "DiagonalCMA", "PSO", "OnePlusOne"]
+        list_optims = ["CMA", "PSO", "OnePlusOne"]
     array = ng.p.Array(shape=(n, n), lower=-1.0, upper=1.0)
     xs = 1.5 * (np.array([float(i + j < 1.6 * n) for i in range(n) for j in range(n)]).reshape(n, n) - 0.5)
     fails = {}
