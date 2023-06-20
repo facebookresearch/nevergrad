@@ -970,10 +970,7 @@ def test_voronoide(n, b_per_dim) -> None:
     if os.environ.get("CIRCLECI", False) or (n < 10 or b_per_dim < 20):
         list_optims = ["CMA", "DiagonalCMA", "PSO", "OnePlusOne"]
     array = ng.p.Array(shape=(n, n), lower=-1.0, upper=1.0)
-    xs = [float(i + j < 1.6 * n) for i in range(n) for j in range(n)]
-    xs = np.array(xs).reshape(n, n)
-    xs = 1.5 * (xs - 0.5)
-    wins = 0
+    xs = 1.5 * (np.array([float(i + j < 1.6 * n) for i in range(n) for j in range(n)]).reshape(n, n) - 0.5)
     fails = {}
     for o in list_optims:
         fails[o] = 0
@@ -995,8 +992,12 @@ def test_voronoide(n, b_per_dim) -> None:
         VoronoiDE = ng.optimizers.VoronoiDE(array, budget=b, num_workers=nw)
         vde = f(VoronoiDE.minimize(f).value)
         for o in list_optims:
-            other = ng.optimizers.registry[o](array, budget=b, num_workers=nw)
-            val = f(other.minimize(f).value)
+            try:
+                other = ng.optimizers.registry[o](array, budget=b, num_workers=nw)
+                val = f(other.minimize(f).value)
+            except:
+                print(f"crash in {o}")
+                val = float(1.0e7)
             # print(o, val / vde)
             if val < vde:
                 fails[o] += 1

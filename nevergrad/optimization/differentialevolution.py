@@ -28,7 +28,7 @@ class Crossover:
             self.CR = self.random_state.uniform(0.0, 1.0)
         elif crossover not in ["twopoints", "onepoint", "rotated_twopoints", "voronoi"]:
             raise ValueError(f'Unknown crossover "{crossover}"')
-        self.shape = parameter._value.shape if parameter is not None else None
+        self.shape = parameter.value.shape if parameter is not None else None
 
     def apply(self, donor: np.ndarray, individual: np.ndarray) -> None:
         dim = donor.size
@@ -182,7 +182,7 @@ class _DE(base.Optimizer):
                 candidate = self.parametrization.sample()
             elif self.sampler is not None:
                 candidate = self.sampler.ask()
-            elif self.crossover == "voronoi":
+            elif self._config.crossover == "voronoi":
                 new_guy = (
                     self.scale * self._rng.normal(0, 1, self.dimension)
                     if len(self.population) > self.llambda / 6
