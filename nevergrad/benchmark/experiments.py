@@ -24,6 +24,7 @@ from nevergrad.functions import images as imagesxp
 from nevergrad.functions.powersystems import PowerSystem
 from nevergrad.functions.ac import NgAquacrop
 from nevergrad.functions.stsp import STSP
+from nevergrad.functions.topology_optimization import TO
 from nevergrad.functions.rocket import Rocket
 from nevergrad.functions.mixsimulator import OptimizeMix
 from nevergrad.functions.unitcommitment import UnitCommitmentProblem
@@ -1620,6 +1621,17 @@ def olympus_emulators(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                         xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
                         if not xp.is_incoherent:
                             yield xp
+
+
+@registry.register
+def topology_optimzation(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    funcs = [TO(i) for i in [10, 20, 30, 40]]
+    optims = ["CMA", "GeneticDE", "TWoPointsDE", "VoronoiDE"]
+    for budget in [10, 20, 40, 80, 160]:
+        for optim in optims:
+            for f in funcs:
+                for nw in [1, 30]:
+                    xp = Experiment(f, o, num_workers=nw, seed=next(seedg))
 
 
 @registry.register
