@@ -4,12 +4,11 @@
 # LICENSE file in the root directory of this source tree.
 
 import numpy as np
-import pytest
 from . import core
 
 
 def test_to() -> None:
-    func = core.TO(100)
+    func = core.TO(10)
     x = 7 * np.random.rand(func.dimension).reshape(10, 10)
     value = func(x)  # should not touch boundaries, so value should be < np.inf
     assert isinstance(value, float)

@@ -9,7 +9,6 @@
 # - Guenter Rudolph
 # - Jialin Liu
 
-import matplotlib.pyplot as plt
 import numpy as np
 from nevergrad.parametrization import parameter as p
 from ..base import ExperimentFunction
