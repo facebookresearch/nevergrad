@@ -13,7 +13,12 @@ from . import oneshot
 
 
 class Crossover:
-    def __init__(self, random_state: np.random.RandomState, crossover: tp.Union[str, float]):
+    def __init__(
+        self,
+        random_state: np.random.RandomState,
+        crossover: tp.Union[str, float],
+        parameter: tp.Optional[p.Parameter] = None,
+    ):
         self.CR = 0.5
         self.crossover = crossover
         self.random_state = random_state
@@ -21,8 +26,9 @@ class Crossover:
             self.CR = crossover
         elif crossover == "random":
             self.CR = self.random_state.uniform(0.0, 1.0)
-        elif crossover not in ["twopoints", "onepoint", "rotated_twopoints"]:
+        elif crossover not in ["twopoints", "onepoint", "rotated_twopoints", "voronoi"]:
             raise ValueError(f'Unknown crossover "{crossover}"')
+        self.shape = np.array(parameter.value).shape if parameter is not None else None
 
     def apply(self, donor: np.ndarray, individual: np.ndarray) -> None:
         dim = donor.size
@@ -32,6 +38,8 @@ class Crossover:
             return self.rotated_twopoints(donor, individual)
         elif self.crossover == "onepoint" and dim >= 3:
             return self.onepoint(donor, individual)
+        elif self.crossover == "voronoi":
+            return self.voronoi(donor, individual)
         else:
             return self.variablewise(donor, individual)
 
@@ -68,6 +76,29 @@ class Crossover:
         bounds2.append(bounds2[0] + bounds[1] - bounds[0])
         assert bounds[1] < donor.size + 1
         donor[bounds[0] : bounds[1]] = individual[bounds2[0] : bounds2[1]]
+
+    def voronoi(self, donor: np.ndarray, individual: np.ndarray) -> None:
+        shape = self.shape
+        if shape is None or len(shape) < 2:
+            warnings.warn("Voronoi DE needs a shape.")
+            self.twopoints(donor, individual)
+            return
+        local_donor = donor.reshape(shape)
+        local_individual = individual.reshape(shape)
+        x1 = np.array([np.random.randint(shape[i]) for i in range(len(shape))])
+        x2 = np.array([np.random.randint(shape[i]) for i in range(len(shape))])
+        x3 = np.array([np.random.randint(shape[i]) for i in range(len(shape))])
+        x4 = np.array([np.random.randint(shape[i]) for i in range(len(shape))])
+        it = np.nditer(local_donor, flags=["multi_index"])
+        for _ in it:
+            d1 = np.linalg.norm(np.array(it.multi_index) - x1)
+            d2 = np.linalg.norm(np.array(it.multi_index) - x2)
+            d3 = np.linalg.norm(np.array(it.multi_index) - x3)
+            d4 = np.linalg.norm(np.array(it.multi_index) - x4)
+            if min([d1, d2, d3]) > d4:
+                local_donor[it.multi_index] = local_individual[it.multi_index]
+        donor[:] = local_donor.flatten()[:]
+        individual[:] = local_individual.flatten()[:]
 
 
 class _DE(base.Optimizer):
@@ -156,6 +187,13 @@ class _DE(base.Optimizer):
                 candidate = self.parametrization.sample()
             elif self.sampler is not None:
                 candidate = self.sampler.ask()
+            elif self._config.crossover == "voronoi":
+                new_guy = (
+                    self.scale * self._rng.normal(0, 1, self.dimension)
+                    if len(self.population) > self.llambda / 6
+                    else self.scale * self._rng.normal() * np.ones(self.dimension)
+                )
+                candidate = self.parametrization.spawn_child().set_standardized_data(new_guy)
             else:
                 new_guy = self.scale * self._rng.normal(0, 1, self.dimension)
                 candidate = self.parametrization.spawn_child().set_standardized_data(new_guy)
@@ -192,7 +230,9 @@ class _DE(base.Optimizer):
         if co == "parametrization":
             candidate.recombine(self.parametrization.spawn_child().set_standardized_data(donor))
         else:
-            crossovers = Crossover(self._rng, 1.0 / self.dimension if co == "dimension" else co)
+            crossovers = Crossover(
+                self._rng, 1.0 / self.dimension if co == "dimension" else co, self.parametrization
+            )
             crossovers.apply(donor, data)
             candidate.set_standardized_data(donor, reference=self.parametrization)
         return candidate
@@ -322,6 +362,7 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
             "dimension",
             "random",
             "parametrization",
+            "voronoi",
         ]
         self.initialization = initialization
         self.scale = scale
@@ -337,6 +378,7 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
 
 DE = DifferentialEvolution().set_name("DE", register=True)
 TwoPointsDE = DifferentialEvolution(crossover="twopoints").set_name("TwoPointsDE", register=True)
+VoronoiDE = DifferentialEvolution(crossover="voronoi").set_name("VoronoiDE", register=True)
 RotatedTwoPointsDE = DifferentialEvolution(crossover="rotated_twopoints").set_name(
     "RotatedTwoPointsDE", register=True
 )

@@ -526,8 +526,10 @@ class _CMA(base.Optimizer):
         self._popsize = (
             max(num_workers, 4 + int(self._config.popsize_factor * np.log(self.dimension)))
             if pop is None
-            else pop
+            else max(pop, num_workers)
         )
+        if self._config.elitist:
+            self._popsize = max(self._popsize, self.num_workers + 1)
         # internal attributes
         self._to_be_asked: tp.Deque[np.ndarray] = deque()
         self._to_be_told: tp.List[p.Parameter] = []
@@ -1717,10 +1719,9 @@ class _MetaModel(base.Optimizer):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.frequency_ratio = frequency_ratio
         self.algorithm = algorithm
+        elitist = self.dimension < 3
         if multivariate_optimizer is None:
-            multivariate_optimizer = (
-                ParametrizedCMA(elitist=(self.dimension < 3)) if self.dimension > 1 else OnePlusOne
-            )
+            multivariate_optimizer = ParametrizedCMA(elitist=elitist) if self.dimension > 1 else OnePlusOne
         self._optim = multivariate_optimizer(
             self.parametrization, budget, num_workers
         )  # share parametrization and its rng

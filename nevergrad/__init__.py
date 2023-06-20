@@ -15,4 +15,4 @@ from . import ops as ops
 __all__ = ["optimizers", "families", "callbacks", "p", "typing", "errors", "ops"]
 
 
-__version__ = "0.6.0"
+__version__ = "0.7.0"
