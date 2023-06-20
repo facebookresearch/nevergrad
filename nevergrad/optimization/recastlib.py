@@ -266,8 +266,26 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
         #     ref_dirs = get_reference_directions("das-dennis", self.num_objectives, n_partitions=12)
         #     algorithm = get_pymoo_algorithm(self.algorithm, ref_dirs)
         # else:
-        algorithm = get_pymoo_algorithm(weakself.algorithm)
         problem = _create_pymoo_problem(weakself, objective_function)
+        if weakself.algorithm == "CMAES":
+            from pymoo.algorithms.soo.nonconvex.cmaes import CMAES
+
+            algorithm = CMAES(x0=np.random.random(problem.n_var), maxfevals=weakself.budget)
+        elif weakself.algorithm == "BIPOP":
+            from pymoo.algorithms.soo.nonconvex.cmaes import CMAES
+
+            algorithm = CMAES(
+                x0=np.random.random(problem.n_var),
+                sigma=0.5,
+                restarts=2,
+                maxfevals=weakself.budget,
+                tolfun=1e-6,
+                tolx=1e-6,
+                restart_from_best=True,
+                bipop=True,
+            )
+        else:
+            algorithm = get_pymoo_algorithm(weakself.algorithm)
         pymoooptimize.minimize(problem, algorithm, seed=weakself._initial_seed)
         return None
 
@@ -504,5 +522,7 @@ def _create_pymoo_problem(
     return _PymooProblem(optimizer, objective_function)
 
 
+PymooCMAES = Pymoo(algorithm="CMAES").set_name("PymooCMAES", register=True)
+PymooBIPOP = Pymoo(algorithm="BIPOP").set_name("PymooBIPOP", register=True)
 PymooNSGA2 = Pymoo(algorithm="nsga2").set_name("PymooNSGA2", register=True)
 PymooBatchNSGA2 = PymooBatch(algorithm="nsga2").set_name("PymooBatchNSGA2", register=False)
