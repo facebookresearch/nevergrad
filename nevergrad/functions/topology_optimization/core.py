@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from nevergrad.parametrization import parameter as p
 from ..base import ExperimentFunction
+from scipy.ndimage import gaussian_filter
 
 
 class TO(ExperimentFunction):
@@ -24,7 +25,10 @@ class TO(ExperimentFunction):
     def _simulate_to(self, x: np.ndarray) -> float:
         x = x.reshape(self.n, self.n)
         idx = self.idx
+        n = self.n
         xa = idx % 3
+        size = n * n
+        sqrtsize = n
         xb = 2 - xa
         xs = 1.5 * (
             np.array(

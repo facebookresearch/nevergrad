@@ -1624,14 +1624,15 @@ def olympus_emulators(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def topology_optimzation(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def topology_optimization(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    seedg = create_seed_generator(seed)
     funcs = [TO(i) for i in [10, 20, 30, 40]]
-    optims = ["CMA", "GeneticDE", "TWoPointsDE", "VoronoiDE"]
+    optims = ["CMA", "GeneticDE", "TwoPointsDE", "VoronoiDE"]
     for budget in [10, 20, 40, 80, 160]:
         for optim in optims:
             for f in funcs:
                 for nw in [1, 30]:
-                    xp = Experiment(f, o, num_workers=nw, seed=next(seedg))
+                    yield Experiment(f, optim, budget, num_workers=nw, seed=next(seedg))
 
 
 @registry.register
