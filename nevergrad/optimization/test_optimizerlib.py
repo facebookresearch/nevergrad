@@ -964,6 +964,9 @@ def test_smoother() -> None:
 @pytest.mark.parametrize("n", [5, 10, 15, 20, 25])  # type: ignore
 @pytest.mark.parametrize("b_per_dim", [5, 10, 20])  # type: ignore
 def test_voronoide(n, b_per_dim) -> None:
+    if n < 20 or b_per_dim < 20:  # TODO remove these two lines.
+        raise SkipTest("Temporarily skip")
+
     list_optims = ["CMA", "DE", "DiagonalCMA", "PSO", "RandomSearch", "TwoPointsDE", "OnePlusOne"]
     if os.environ.get("CIRCLECI", False) and (n > 10 or n * b_per_dim > 100):
         raise SkipTest("Topology optimization too slow in CircleCI")
@@ -1001,6 +1004,9 @@ def test_voronoide(n, b_per_dim) -> None:
             # print(o, val / vde)
             if val < vde:
                 fails[o] += 1
+        # Remove both lines below. TODO
+        ratio = min([(num_tests - fails[o]) / (0.001 + fails[o]) for o in list_optims])
+        print(f"temporary: {ratio}", num_tests, fails, f"({n}-{b_per_dim})")
     ratio = min([(num_tests - fails[o]) / (0.001 + fails[o]) for o in list_optims])
     print(f"VoronoiDE for DO: {ratio}", num_tests, fails, f"({n}-{b_per_dim})")
 

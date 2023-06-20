@@ -82,6 +82,7 @@ class Crossover:
         if shape is None or len(shape) < 2:
             warnings.warn("Voronoi DE needs a shape.")
             self.twopoints(donor, individual)
+            return
         donor = donor.reshape(shape)
         individual = individual.reshape(shape)
         x1 = np.array([np.random.randint(shape[i]) for i in range(len(shape))])
