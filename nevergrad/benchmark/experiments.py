@@ -6,7 +6,6 @@
 import os
 import warnings
 import typing as tp
-import nevergrad.common.typing as ntp
 import itertools
 import numpy as np
 import random
@@ -48,8 +47,8 @@ from . import gymexperiments  # noqa
 # pylint: disable=stop-iteration-return, too-many-nested-blocks, too-many-locals
 
 
-def pick_subset(x: ntp.ArrayLike):
-    subset = float(environ.get("SUBSET", "inf"))
+def pick_subset(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
+    subset = float(os.environ.get("SUBSET", "inf"))
     subset = 2
     if subset < float("inf"):
         subset = max(2, int(subset))
