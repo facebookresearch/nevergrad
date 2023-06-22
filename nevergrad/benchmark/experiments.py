@@ -48,8 +48,10 @@ from . import gymexperiments  # noqa
 
 
 def pick_subset(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
-    subset = float(os.environ.get("SUBSET", "inf"))
-    subset = 2
+    try:
+        subset = float(os.environ.get("SUBSET", "inf"))
+    except:  # type: ignore
+        return x
     if subset < float("inf"):
         subset = max(2, int(subset))
         subset = min(subset, len(x))
@@ -1093,7 +1095,6 @@ def pbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         "PSO",
         "CMA",
         "OnePlusOne",
-        "Cobyla",
         "RandomSearch",
         "MetaModel",
     ]
