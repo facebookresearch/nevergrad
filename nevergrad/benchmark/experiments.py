@@ -6,8 +6,10 @@
 import os
 import warnings
 import typing as tp
+import nevergrad.common.typing as ntp
 import itertools
 import numpy as np
+import random
 import nevergrad as ng
 import nevergrad.functions.corefuncs as corefuncs
 from nevergrad.functions import base as fbase
@@ -44,6 +46,17 @@ from . import frozenexperiments  # noqa
 from . import gymexperiments  # noqa
 
 # pylint: disable=stop-iteration-return, too-many-nested-blocks, too-many-locals
+
+
+def pick_subset(x: ntp.ArrayLike):
+    subset = float(environ.get("SUBSET", "inf"))
+    subset = 2
+    if subset < float("inf"):
+        subset = max(2, int(subset))
+        subset = min(subset, len(x))
+        return random.sample(x, subset)
+    else:
+        return x
 
 
 def skip_ci(*, reason: str) -> None:
@@ -1077,39 +1090,61 @@ def pbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """
     seedg = create_seed_generator(seed)
     optims = [
-        "OldCMA",
-        "CMAbounded",
-        "CMAsmall",
-        "CMAstd",
-        "CMApara",
-        "CMAtuning",
-        "DiagonalCMA",
-        "FCMA",
-        "RescaledCMA",
-        "ASCMADEthird",
-        "MultiCMA",
-        "TripleCMA",
-        "PolyCMA",
-        "MultiScaleCMA",
         "DE",
-        "OnePointDE",
-        "GeneticDE",
-        "TwoPointsDE",
         "PSO",
-        "NGOptRW",
-        "NGOpt",
+        "CMA",
+        "OnePlusOne",
+        "Cobyla",
+        "RandomSearch",
+        "MetaModel",
     ]
-    dims = [40, 20]
+    optims = pick_subset(optims)
+    dims = pick_subset([2, 5, 10, 40, 20])
     functions = [
-        ArtificialFunction(name, block_dimension=d, rotation=rotation, expo=expo)
-        for name in ["cigar", "sphere", "rastrigin", "hm", "deceptivemultimodal"]
+        ArtificialFunction(name, block_dimension=d, rotation=rotation, expo=expo, translation_factor=tf)
+        for name in pick_subset(["cigar", "sphere", "rastrigin", "hm", "deceptivemultimodal"])
         for rotation in [True]
-        for expo in [1.0, 3.0, 5.0, 7.0, 9.0]
+        for expo in pick_subset([0.1, 0.3, 1.0, 3.0, 5.0, 7.0, 9.0])
+        for tf in pick_subset([0.01, 0.31, 0.1, 1.0, 10.0])
         for d in dims
     ]
     for optim in optims:
         for function in functions:
-            for budget in [100, 200, 300, 400, 500, 600, 700, 800]:
+            for budget in [100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600]:
+                for nw in [1, 10, 50]:
+                    yield Experiment(function, optim, budget=budget, num_workers=nw, seed=next(seedg))
+
+
+@registry.register
+def boundedpbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Testing optimizers on exponentiated problems.
+    Cigar, Ellipsoid.
+    Both rotated and unrotated.
+    Budget 100, 1000, 10000.
+    Dimension 50.
+    """
+    seedg = create_seed_generator(seed)
+    optims = [
+        "DE",
+        "PSO",
+        "CMA",
+        "OnePlusOne",
+        "Cobyla",
+        "RandomSearch",
+        "MetaModel",
+    ]
+    optims = pick_subset(optims)
+    dims = pick_subset([2, 5, 10, 40, 20])
+    functions = [
+        ArtificialFunction(name, block_dimension=d, rotation=rotation, expo=expo, bounded=True)
+        for name in pick_subset(["cigar", "sphere", "rastrigin", "hm", "deceptivemultimodal"])
+        for rotation in [True]
+        for expo in pick_subset([0.1, 0.3, 1.0, 3.0, 5.0])
+        for d in dims
+    ]
+    for optim in optims:
+        for function in functions:
+            for budget in [100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600]:
                 for nw in [1, 10, 50]:
                     yield Experiment(function, optim, budget=budget, num_workers=nw, seed=next(seedg))
 

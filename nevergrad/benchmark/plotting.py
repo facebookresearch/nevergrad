@@ -256,7 +256,14 @@ def create_plots(
             "block_dimension",
             "num_objectives",
         ):
-            df[col] = df[col].astype(float).astype(int)
+            try:
+                df[col] = df[col].astype(float).astype(int)
+            except Exception as e1:
+                try:
+                    for i in range(len(df[col])):
+                        float(df[col][i])
+                except Exception as e2:
+                    assert False, f"Fails at row {i+2}, Exceptions: {e1}, {e2}"
         elif col != "loss":
             df[col] = df[col].astype(str)
             df[col] = df[col].replace(r"\.[0]*$", "", regex=True)
