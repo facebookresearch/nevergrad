@@ -1104,14 +1104,14 @@ def pbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         ArtificialFunction(name, block_dimension=d, rotation=rotation, expo=expo, translation_factor=tf)
         for name in pick_subset(["cigar", "sphere", "rastrigin", "hm", "deceptivemultimodal"])
         for rotation in [True]
-        for expo in pick_subset([0.1, 0.3, 1.0, 3.0, 5.0, 7.0, 9.0])
-        for tf in pick_subset([0.01, 0.31, 0.1, 1.0, 10.0])
+        for expo in pick_subset([0.1, 1.0, 3.0, 5.0, 7.0, 9.0])
+        for tf in pick_subset([0.01, 0.3, 0.31, 1.0, 10.0])
         for d in dims
     ]
     for optim in optims:
         for function in functions:
-            for budget in [100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600]:
-                for nw in [1, 10, 50]:
+            for budget in [100, 200, 400, 800, 1600, 3200, 6400, 12800]:
+                for nw in [1, 30]:
                     yield Experiment(function, optim, budget=budget, num_workers=nw, seed=next(seedg))
 
 
@@ -1128,10 +1128,10 @@ def boundedpbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         "DE",
         "PSO",
         "CMA",
+        "MetaModel",
         "OnePlusOne",
         "Cobyla",
         "RandomSearch",
-        "MetaModel",
     ]
     optims = pick_subset(optims)
     dims = pick_subset([2, 5, 10, 40, 20])
@@ -1139,13 +1139,13 @@ def boundedpbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         ArtificialFunction(name, block_dimension=d, rotation=rotation, expo=expo, bounded=True)
         for name in pick_subset(["cigar", "sphere", "rastrigin", "hm", "deceptivemultimodal"])
         for rotation in [True]
-        for expo in pick_subset([0.1, 0.3, 1.0, 3.0, 5.0])
+        for expo in pick_subset([0.1, 0.3, 0.31, 1.0, 3.0, 5.0])
         for d in dims
     ]
     for optim in optims:
         for function in functions:
-            for budget in [100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600]:
-                for nw in [1, 10, 50]:
+            for budget in [100, 200, 400, 800, 1600, 3200, 6400, 12800]:
+                for nw in [1, 30]:
                     yield Experiment(function, optim, budget=budget, num_workers=nw, seed=next(seedg))
 
 
