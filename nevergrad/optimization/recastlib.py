@@ -78,8 +78,9 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
         remaining: float = budget - weakself._num_ask
 
         def ax_obj(p):
-            data = [p["x" + str(i)] for i in range(self.dimension)]  # type: ignore
-            data = self._normalizer.backward(np.asarray(data, dtype=np.float_))
+            data = [p["x" + str(i)] for i in range(weakself.dimension)]  # type: ignore
+            if weakself._normalizer:
+                data = weakself._normalizer.backward(np.asarray(data, dtype=np.float_))
             return objective_function(data)
 
         while remaining > 0:  # try to restart if budget is not elapsed

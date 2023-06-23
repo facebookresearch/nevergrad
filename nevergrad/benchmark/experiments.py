@@ -460,6 +460,23 @@ def parallel(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
+def lowbudget(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    seedg = create_seed_generator(seed)
+    names = ["sphere", "rastrigin", "cigar"]
+    optims: tp.List[str] = ["AX", "BOBYQA", "Cobyla", "RandomSearch", "CMA", "NGOpt", "DE", "PSO"]
+    functions = [
+        ArtificialFunction(name, block_dimension=bd, bounded=b)
+        for name in names
+        for bd in [7]
+        for b in [True, False]
+    ]
+    for func in functions:
+        for optim in optims:
+            for budget in [10, 20, 30]:
+                yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
+
+
+@registry.register
 def harderparallel(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Parallel optimization on 4 classical objective functions. More distinct settings than << parallel >>."""
     seedg = create_seed_generator(seed)
