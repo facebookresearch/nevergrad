@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -92,8 +92,9 @@ class BaseFunction(base.ExperimentFunction):
             noise_level=self.noise_level,
             deterministic_sim=deterministic_sim,
         )
-        if self.noise_level > 0.0 or not deterministic_sim:
-            self.parametrization.function.deterministic = False
+        # This was interesting, but the noise level in mujoco is not sufficient for making this flag useful:
+        # if self.noise_level > 0.0 or not deterministic_sim:
+        #    self.parametrization.function.deterministic = False
         self._descriptors.pop("random_state", None)  # remove it from automatically added descriptors
 
     def _simulate(self, x: tp.Tuple) -> float:
@@ -109,7 +110,9 @@ class BaseFunction(base.ExperimentFunction):
                 random_state=self.parametrization.random_state,
             )
         except gym.error.DependencyNotInstalled as e:
-            raise base.UnsupportedExperiment("Missing mujoco_py") from e
+            raise base.UnsupportedExperiment(
+                "MuJoCo not installed (Linux/OSX support only). If you need it, please follow this installation guide: https://github.com/openai/mujoco-py#install-mujoco"
+            ) from e
         env.env.seed(
             self.random_state if self.deterministic_sim else self.parametrization.random_state.randint(10000)
         )

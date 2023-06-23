@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -94,7 +94,7 @@ def test_doc_multiobjective() -> None:
     import numpy as np
 
     def multiobjective(x):
-        return [np.sum(x ** 2), np.sum((x - 1) ** 2)]
+        return [np.sum(x**2), np.sum((x - 1) ** 2)]
 
     print("Example: ", multiobjective(np.array([1.0, 2.0, 0])))
     # >>> Example: [5.0, 2.0]

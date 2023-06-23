@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -234,7 +234,7 @@ def _submit_jobs(
     seed: int
         a seed for the experiment plan (if seedable)
     executor: Executor-like object
-        an object such as concurrent.futures.ThreadPoolExecutor for running experiments in parallel
+        an object such as concurrent.futures.ProcessPoolExecutor for running experiments in parallel
     print_function: tp.Callable
         a function to print at the end of each experiment (for custom logging)
     cap_index: int
@@ -281,7 +281,7 @@ def compute(
     seed: int
         a seed for the experiment plan (if seedable)
     executor: Executor-like object
-        an object such as concurrent.futures.ThreadPoolExecutor for running experiments in parallel
+        an object such as concurrent.futures.ProcessPoolExecutor for running experiments in parallel
     print_function: tp.Callable
         a function to print at the end of each experiment (for custom logging)
     cap_index: int

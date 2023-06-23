@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -50,11 +50,14 @@ class PBOFunction(base.ExperimentFunction):
         assert instrumentation in [
             "Softmax",
             "Ordered",
+            "Unordered",
         ], "The only valid options for 'instrumentation' are 'Softmax' and 'Ordered'"
         if instrumentation == "Softmax":
             parameterization: ng.p.Parameter = ng.p.Choice([0, 1], repetitions=dim)
         else:
-            parameterization = ng.p.TransitionChoice([0, 1], repetitions=dim)
+            parameterization = ng.p.TransitionChoice(
+                [0, 1], repetitions=dim, ordered=instrumentation == "Ordered"
+            )
         super().__init__(self._evaluation_internal, parameterization.set_name(instrumentation))
 
     def _evaluation_internal(self, x: np.ndarray) -> float:
@@ -115,7 +118,7 @@ class WModelFunction(base.ExperimentFunction):
 
         assert epistasis <= dim, "Epistasis has to be less or equal to than dimension"
         assert neutrality <= dim, "Neutrality has to be less than or equal to dimension"
-        assert ruggedness <= dim ** 2, "Ruggedness has to be less than or equal to dimension squared"
+        assert ruggedness <= dim**2, "Ruggedness has to be less than or equal to dimension squared"
         assert 0 <= dummy <= 1, "Dummy variable fraction has to be in [0,1]"
         self.f_internal = W_model_function(
             base_function=base_function,

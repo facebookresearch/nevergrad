@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.(an
+# Copyright (c) Meta Platforms, Inc. and affiliates.(an
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -78,7 +78,7 @@ class Data(core.Parameter):
         else:
             assert isinstance(shape, (list, tuple)) and all(
                 isinstance(n, int) for n in shape
-            ), f"Incorrect shape: {shape}."
+            ), f"Incorrect shape: {shape} (type: {type(shape)})."
             init = np.zeros(shape, dtype=float)
             if lower is not None and upper is not None:
                 init += (lower + upper) / 2.0
@@ -373,7 +373,7 @@ class Data(core.Parameter):
         return self.__mul__(1.0 / value)
 
     def __rtruediv__(self: D, value: tp.Any) -> D:
-        return value * (self ** -1)  # type: ignore
+        return value * (self**-1)  # type: ignore
 
     def __pow__(self: D, power: float) -> D:
         return self._new_with_data_layer("Power", power)

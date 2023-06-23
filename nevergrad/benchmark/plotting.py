@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -28,6 +28,16 @@ from .exporttable import export_table
 _DPI = 250
 
 # %% Basic tools
+
+
+def compactize(name: str) -> str:
+    if len(name) < 70:
+        return name
+    hashcode = hashlib.md5(bytes(name, "utf8")).hexdigest()
+    name = re.sub(r"\([^()]*\)", "", name)
+    mid = 35
+    name = name[:mid] + hashcode + name[-mid:]
+    return name
 
 
 def _make_style_generator() -> tp.Iterator[str]:
@@ -88,7 +98,15 @@ def aggregate_winners(
         return aggregate_winners(df, categories[1:], all_optimizers)
     iterdf, iternum = zip(
         *(
-            aggregate_winners(df.loc[df.loc[:, categories[0]] == val], categories[1:], all_optimizers)
+            aggregate_winners(
+                df.loc[
+                    df.loc[:, categories[0]] == val
+                    if categories[0] != "budget"
+                    else df.loc[:, categories[0]] <= val
+                ],
+                categories[1:],
+                all_optimizers,
+            )
             for val in subcases
         )
     )
@@ -153,7 +171,7 @@ _PARAM_MERGE_PATTERN = "{optimizer_name},{parametrization}"
 
 
 def merge_optimizer_name_pattern(
-    df: utils.Selector, pattern: str, merge_parametrization: bool = False
+    df: utils.Selector, pattern: str, merge_parametrization: bool = False, remove_suffix: bool = False
 ) -> utils.Selector:
     """Merge the optimizer name with other descriptors based on a pattern
     Nothing happens if merge_parametrization is false and pattern is empty string
@@ -182,6 +200,8 @@ def merge_optimizer_name_pattern(
             inds = sub.loc[:, okey] == optim
             if len(sub.loc[inds, :].unique(others)) > 1:
                 df.loc[inds, okey] = sub.loc[inds, elements].agg(aggregate, axis=1)
+    if remove_suffix:
+        df["optimizer_name"] = df["optimizer_name"].replace(r"[0-9\.\-]*$", "", regex=True)
     return df.drop(columns=others)  # type: ignore
 
 
@@ -225,6 +245,25 @@ def create_plots(
     df = remove_errors(df)
     df.loc[:, "loss"] = pd.to_numeric(df.loc[:, "loss"])
     df = df.loc[:, [x for x in df.columns if not x.startswith("info/")]]
+    # Normalization of types.
+    for col in df.columns:
+        if col in (
+            "budget",
+            "num_workers",
+            "dimension",
+            "useful_dimensions",
+            "num_blocks",
+            "block_dimension",
+            "num_objectives",
+        ):
+            df[col] = df[col].astype(float).astype(int)
+        elif col != "loss":
+            df[col] = df[col].astype(str)
+            df[col] = df[col].replace(r"\.[0]*$", "", regex=True)
+            try:
+                df.loc[:, col] = pd.to_numeric(df.loc[:, col])
+            except:
+                pass
     if "num_objectives" in df.columns:
         df = df[df.num_objectives != 0]  # the optimization did not even start
     # If we have a descriptor "instrum_str",
@@ -325,25 +364,30 @@ def create_plots(
             # save
             name = "fight_" + ",".join("{}{}".format(x, y) for x, y in zip(fixed, case)) + ".png"
             name = "fight_all.png" if name == "fight_.png" else name
+            name = compactize(name)
+            fullname = name
 
-            if name == "fight_all.png":
-                with open(str(output_folder / name) + ".cp.txt", "w") as f:
-                    f.write("ranking:\n")
-                    for i, algo in enumerate(data_df.columns[:58]):
-                        f.write(f"  algo {i}: {algo}\n")
             if len(name) > 240:
                 hashcode = hashlib.md5(bytes(name, "utf8")).hexdigest()
                 name = re.sub(r"\([^()]*\)", "", name)
                 mid = 120
                 name = name[:mid] + hashcode + name[-mid:]
             fplotter.save(str(output_folder / name), dpi=_DPI)
-            if name == "fight_all.png":  # second version restricted to completely run algorithms.
-                data_df = FightPlotter.winrates_from_selection(
-                    casedf, fight_descriptors, num_rows=num_rows, complete_runs_only=True
-                )
-                fplotter = FightPlotter(data_df)
+            # Second version, restricted to cases with all data available.
+            data_df = FightPlotter.winrates_from_selection(
+                casedf, fight_descriptors, num_rows=num_rows, complete_runs_only=True
+            )
+            fplotter = FightPlotter(data_df)
+            if name == "fight_all.png":
+                with open(str(output_folder / name) + ".cp.txt", "w") as f:
+                    f.write(fullname)
+                    f.write("ranking:\n")
+                    for i, algo in enumerate(data_df.columns[:58]):
+                        f.write(f"  algo {i}: {algo}\n")
+            if name == "fight_all.png":
                 fplotter.save(str(output_folder / "fight_all_pure.png"), dpi=_DPI)
-
+            else:
+                fplotter.save(str(output_folder / name) + "_pure.png", dpi=_DPI)
             if order == 2 and competencemaps and best_algo:  # With order 2 we can create a competence map.
                 print("\n# Competence map")
                 name = "competencemap_" + ",".join("{}".format(x) for x in fixed) + ".tex"
@@ -367,6 +411,8 @@ def create_plots(
     for case in cases:
         subdf = df.select_and_drop(**dict(zip(descriptors, case)))
         description = ",".join("{}:{}".format(x, y) for x, y in zip(descriptors, case))
+        full_description = description
+        description = compactize(description)
         if len(description) > 280:
             hash_ = hashlib.md5(bytes(description, "utf8")).hexdigest()
             description = description[:140] + hash_ + description[-140:]
@@ -383,8 +429,23 @@ def create_plots(
             warnings.warn(f"Bypassing error in xpplotter:\n{e}", RuntimeWarning)
         else:
             xpplotter.save(out_filepath)
-            xpplotter.save_txt(txt_out_filepath, data)
+            xpplotter.save_txt(txt_out_filepath, data, full_description)
     plt.close("all")
+
+
+def gp_sota() -> tp.Dict[str, tp.Tuple[float, float]]:
+    gp = {}
+    gp["CartPole-v1"] = (-500.0, 100000.0)
+    gp["Acrobot-v1"] = (83.17, 200000.0)
+    gp["MountainCarContinuous-v0"] = (-99.31, 900000.0)
+    gp["Pendulum-v0"] = (154.36, 1100000.0)
+    gp["InvertedPendulumSwingupBulletEnv-v0"] = (-893.35, 400000.0)
+    gp["BipedalWalker-v3"] = (-268.85, 1100000.0)
+    gp["BipedalWalkerHardcore-v3"] = (-9.25, 1100000.0)
+    gp["HopperBulletEnv-v0"] = (-999.19, 1000000.0)
+    gp["InvertedDoublePendulumBulletEnv-v0"] = (-9092.17, 300000.0)
+    gp["LunarLanderContinuous-v2"] = (-287.58, 1000000.0)
+    return gp
 
 
 class LegendInfo(tp.NamedTuple):
@@ -434,7 +495,7 @@ class XpPlotter:
         self._ax = self._fig.add_subplot(111)
         # use log plot? yes, if no negative value
         logplot = not any(
-            x <= 0 or x > 10 ** 8 for ov in optim_vals.values() for x in ov["loss"]
+            x <= 0 or x > 10**8 for ov in optim_vals.values() for x in ov["loss"]
         )  # if x < np.inf)
         if logplot:
             self._ax.set_yscale("log")
@@ -449,18 +510,49 @@ class XpPlotter:
         self._ax.grid(True, which="both")
         self._overlays: tp.List[tp.Any] = []
         legend_infos: tp.List[LegendInfo] = []
+        title_addendum = ""
         for optim_name in (
             sorted_optimizers[:1] + sorted_optimizers[-12:]
             if len(sorted_optimizers) > 13
             else sorted_optimizers
         ):
             vals = optim_vals[optim_name]
+            indices = np.where(vals["num_eval"] > 0)
             lowerbound = min(lowerbound, np.min(vals["loss"]))
+            # We here add some state of the art results.
+            # This adds a cross on figures, x-axis = budget and y-axis = loss.
+            for sota_name, sota in [("GP", gp_sota())]:
+                for k in sota.keys():
+                    if k in title:
+                        th = sota[k][0]  # loss of proposed solution.
+                        cost = sota[k][1]  # Computational cost for the proposed result.
+                        title_addendum = f"({sota_name}:{th})"
+                        lowerbound = min(lowerbound, th, 0.9 * th, 1.1 * th)
+                        plt.plot(  # Horizontal line at the obtained GP cost.
+                            vals[xaxis][indices],
+                            th + 0 * vals["loss"][indices],
+                            name_style[optim_name],
+                            label="gp",
+                        )
+                        plt.plot(  # Vertical line, showing the budget of the GP solution.
+                            [cost] * 3,
+                            [
+                                min(vals["loss"][indices]),
+                                sum(vals["loss"][indices]) / len(indices),
+                                max(vals["loss"][indices]),
+                            ],
+                            name_style[optim_name],
+                            label="gp",
+                        )
             line = plt.plot(vals[xaxis], vals["loss"], name_style[optim_name], label=optim_name)
             # confidence lines
             for conf in self._get_confidence_arrays(vals, log=logplot):
                 plt.plot(vals[xaxis], conf, name_style[optim_name], label=optim_name, alpha=0.1)
-            text = "{} ({:.3g})".format(optim_name, vals["loss"][-1])
+            text = "{} ({:.3g} <{:.3g}>)".format(
+                optim_name,
+                vals["loss"][-1],
+                vals["loss"][-2] if len(vals["loss"]) > 2 else float("nan"),
+            )
             if vals[xaxis].size:
                 legend_infos.append(LegendInfo(vals[xaxis][-1], vals["loss"][-1], line, text))
         if not (np.isnan(upperbound) or np.isinf(upperbound)):
@@ -478,7 +570,7 @@ class XpPlotter:
         self.add_legends(legend_infos)
         # global info
         if "tmp" not in title:
-            self._ax.set_title(split_long_title(title))
+            self._ax.set_title(split_long_title(title + title_addendum))
         self._ax.tick_params(axis="both", which="both")
         # self._fig.tight_layout()
 
@@ -572,7 +664,9 @@ class XpPlotter:
         return optim_vals
 
     @staticmethod
-    def save_txt(output_filepath: tp.PathLike, optim_vals: tp.Dict[str, tp.Dict[str, np.ndarray]]) -> None:
+    def save_txt(
+        output_filepath: tp.PathLike, optim_vals: tp.Dict[str, tp.Dict[str, np.ndarray]], addendum: str = ""
+    ) -> None:
         """Saves a list of best performances.
 
         output_filepath: Path or str
@@ -587,6 +681,7 @@ class XpPlotter:
                     best_performance[i] = (l, optim)
 
         with open(output_filepath, "w") as f:
+            f.write(addendum)
             f.write("Best performance:\n")
             for i in best_performance.keys():
                 f.write(
@@ -656,7 +751,7 @@ class FightPlotter:
         )
         x_names = self.winrates.columns
         self._ax.set_xticks(list(range(len(x_names))))
-        self._ax.set_xticklabels(x_names, rotation=90, fontsize=7)  # , ha="left")
+        self._ax.set_xticklabels(x_names, rotation=45, ha="right", fontsize=7)
         y_names = self.winrates.index
         self._ax.set_yticks(list(range(len(y_names))))
         self._ax.set_yticklabels(y_names, rotation=45, fontsize=7)
@@ -853,6 +948,11 @@ def main() -> None:
         help="if present, parametrization is merge into the optimizer name",
     )
     parser.add_argument(
+        "--remove-suffix",
+        action="store_true",
+        help="if present, remove numerical suffixes in fight plots",
+    )
+    parser.add_argument(
         "--merge-pattern",
         type=str,
         default="",
@@ -861,7 +961,10 @@ def main() -> None:
     )
     args = parser.parse_args()
     exp_df = merge_optimizer_name_pattern(
-        utils.Selector.read_csv(args.filepath), args.merge_pattern, args.merge_parametrization
+        utils.Selector.read_csv(args.filepath),
+        args.merge_pattern,
+        args.merge_parametrization,
+        args.remove_suffix,
     )
     # merging names
     #

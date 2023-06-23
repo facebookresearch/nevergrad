@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -54,8 +54,11 @@ def test_base_example() -> None:
     from concurrent import futures
 
     optimizer = ng.optimizers.NGOpt(parametrization=instrum, budget=10, num_workers=2)
-
+    # We use ThreadPoolExecutor for CircleCI but please
+    # use the line just below, with ProcessPoolExecutor instead (unless your
+    # code is I/O bound rather than CPU bound):
     with futures.ThreadPoolExecutor(max_workers=optimizer.num_workers) as executor:
+    #with futures.ProcessPoolExecutor(max_workers=optimizer.num_workers) as executor:
         recommendation = optimizer.minimize(square, executor=executor, batch_mode=False)
     # DOC_BASE_3
     import nevergrad as ng
@@ -150,7 +153,28 @@ def test_doc_constrained_optimization() -> None:
         # DOC_CONSTRAINED_1
     np.testing.assert_array_almost_equal(recommendation.value, [1, 0.5], decimal=1)
 
+    
+def test_doc_constrained_optimization() -> None:
+    np.random.seed(12)  # avoid flakiness
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=UserWarning)
+        # DOC_CONSTRAINED_2
+        import nevergrad as ng
 
+        def square(x):
+            return sum((x - 0.5) ** 2)
+
+        optimizer = ng.optimizers.NGOpt(parametrization=2, budget=100)
+        # define a constraint on first variable of x:
+        optimizer.parametrization.register_cheap_constraint(lambda x: x[0] - 1)
+
+        recommendation = optimizer.minimize(square, verbosity=2)
+        print(recommendation.value)
+        # >>> [1.00037625, 0.50683314]
+        # DOC_CONSTRAINED_3
+    np.testing.assert_array_almost_equal(recommendation.value, [1, 0.5], decimal=1)
+
+    
 def test_callback_doc() -> None:
     # DOC_CALLBACK_0
     import nevergrad as ng

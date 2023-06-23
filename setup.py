@@ -26,17 +26,26 @@ for extra in ["dev", "bench", "main"]:
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
+# find version
+
+init_str = Path("nevergrad/__init__.py").read_text()
+match = re.search(r"^__version__ = \"(?P<version>[\w\.]+?)\"$", init_str, re.MULTILINE)
+assert match is not None, "Could not find version in nevergrad/__init__.py"
+version = match.group("version")
+
 
 def _replace_relative_links(regex: tp.Match[str]) -> str:
-    """Converts relative links into links to master"""
+    """Converts relative links into links to version
+    so that links on Pypi long description are correct
+    """
     string = regex.group()
     link = regex.group("link")
     name = regex.group("name")
     if not link.startswith("http") and Path(link).exists():
         githuburl = (
-            "github.com/facebookresearch/nevergrad/blob/master"
+            f"github.com/facebookresearch/nevergrad/blob/{version}"
             if not link.endswith((".png", ".gif"))
-            else "raw.githubusercontent.com/facebookresearch/nevergrad/master"
+            else f"raw.githubusercontent.com/facebookresearch/nevergrad/{version}"
         )
         string = f"[{name}](https://{githuburl}/{link})"
     return string
@@ -44,14 +53,6 @@ def _replace_relative_links(regex: tp.Match[str]) -> str:
 
 pattern = re.compile(r"\[(?P<name>.+?)\]\((?P<link>\S+?)\)")
 long_description = re.sub(pattern, _replace_relative_links, long_description)
-
-
-# find version
-
-init_str = Path("nevergrad/__init__.py").read_text()
-match = re.search(r"^__version__ = \"(?P<version>[\w\.]+?)\"$", init_str, re.MULTILINE)
-assert match is not None, "Could not find version in nevergrad/__init__.py"
-version = match.group("version")
 
 
 class VerifyCircleCiVersionCommand(install):  # type: ignore

@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -18,6 +18,10 @@ from ._layering import Level as Level
 
 
 P = tp.TypeVar("P", bound="Parameter")
+
+
+def default_congruence(x: tp.Any) -> tp.Any:
+    return x
 
 
 # pylint: disable=too-many-public-methods
@@ -44,9 +48,15 @@ class Parameter(Layered):
     def __init__(self) -> None:
         # Main features
         super().__init__()
+        self.tabu_congruence: tp.Any = default_congruence
+        self.tabu_fails = 0
         self._subobjects = utils.Subobjects(
             self, base=Parameter, attribute="__dict__"
         )  # registers and apply functions too all (sub-)Parameter attributes
+        self.tabu_length = 0
+        self.tabu_set: tp.Set[tp.Any] = set()
+        self.tabu_list: tp.List[tp.Any] = []
+        self.tabu_index = 0
         self.parents_uids: tp.List[str] = []
         self.heritage: tp.Dict[tp.Hashable, tp.Any] = {"lineage": self.uid}  # passed through to children
         self.loss: tp.Optional[float] = None  # associated loss
@@ -60,10 +70,6 @@ class Parameter(Layered):
         self._frozen = False
         self._meta: tp.Dict[tp.Hashable, tp.Any] = {}  # for anything algorithm related
         self.function = utils.FunctionInfo()
-
-    @property
-    def descriptors(self) -> utils.DeprecatedDescriptors:  # TODO remove
-        return utils.DeprecatedDescriptors(self)
 
     @property
     def losses(self) -> np.ndarray:
@@ -245,11 +251,20 @@ class Parameter(Layered):
             strings.append(str(self.value))
         return ":".join(strings)
 
+    def __bool__(self) -> bool:
+        raise RuntimeError("bool check is not allowed to avoid confusion")
+
     # %% Constraint management
-    def satisfies_constraints(self) -> bool:
+    def satisfies_constraints(self, ref: tp.Optional[P] = None, no_tabu: bool = False) -> bool:
         """Whether the instance satisfies the constraints added through
         the `register_cheap_constraint` method
 
+        Parameters
+        ----------
+        ref
+            parameter of the optimization algorithm, if we want to check the tabu list.
+        no_tabu
+            if we want to ignore the Tabu system.
         Returns
         -------
         bool
@@ -258,10 +273,39 @@ class Parameter(Layered):
         inside = self._subobjects.apply("satisfies_constraints")
         if not all(inside.values()):
             return False
+        val = self.value
+        if not no_tabu and ref is not None and ref.tabu_length > 0 and self.tabu_fails < 30:
+            tabu_val = self.tabu_congruence(val)
+            if isinstance(tabu_val, np.ndarray):
+                tabu_val = hash(tabu_val.tobytes())
+            if isinstance(tabu_val, dict):
+                keys = sorted(list(tabu_val.keys()))
+                tabu_val = str(keys) + str([tabu_val[k] for k in keys])
+            try:
+                if tabu_val in ref.tabu_set:
+                    self.tabu_fails += 1
+                    return False
+                else:
+                    ref.tabu_set.add(tabu_val)
+                    if len(ref.tabu_list) > ref.tabu_index:
+                        ref.tabu_set.remove(ref.tabu_list[ref.tabu_index])
+                        ref.tabu_list[ref.tabu_index] = tabu_val
+                    else:
+                        assert len(ref.tabu_list) == ref.tabu_index
+                        ref.tabu_list += [tabu_val]
+                    ref.tabu_list[ref.tabu_index] = tabu_val
+                    ref.tabu_index = (ref.tabu_index + 1) % ref.tabu_length
+            except RuntimeError as e:
+                raise RuntimeError(f"{tabu_val} has type {type(tabu_val)}, and this leads to {e}.")
         if not self._constraint_checkers:
             return True
-        val = self.value
         return all(utils.float_penalty(func(val)) <= 0 for func in self._constraint_checkers)
+
+    def specify_tabu_length(
+        self,
+        tabu_length: int,
+    ) -> None:
+        self.tabu_length = tabu_length
 
     def register_cheap_constraint(
         self,
@@ -308,7 +352,7 @@ class Parameter(Layered):
         """
         if self._random_state is None:
             # use the setter, to make sure the random state is propagated to the variables
-            seed = np.random.randint(2 ** 32, dtype=np.uint32)  # better way?
+            seed = np.random.randint(2**32, dtype=np.uint32)  # better way?
             self._set_random_state(np.random.RandomState(seed))
         assert self._random_state is not None
         return self._random_state
@@ -354,6 +398,7 @@ class Parameter(Layered):
         child._frozen = False
         child._subobjects = self._subobjects.new(child)
         child._meta = {}
+        child.tabu_length = self.tabu_length
         child.parents_uids = list(self.parents_uids)
         child.heritage = dict(self.heritage)
         child.loss = None
@@ -402,9 +447,7 @@ class Parameter(Layered):
         self._subobjects.apply("_check_frozen")
 
 
-# Basic types and helpers #
-
-
+# Basic types #
 class Constant(Parameter):
     """Parameter-like object for simplifying management of constant parameters:
     mutation/recombination do nothing, value cannot be changed, standardize data is an empty array,

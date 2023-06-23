@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -25,6 +25,7 @@ DESCRIPTION_KEYS = {
     "dimension",
     "discrete",
     "aggregator",
+    "expo",
     "hashing",
     "parametrization",
     "noise_dissymmetry",
@@ -152,6 +153,18 @@ def test_oracle() -> None:
     # returns the same float (no noise for oracles + sphere function is deterministic)
     y4 = func.evaluation_function(reco)
     np.testing.assert_array_almost_equal(y3, y4)  # should be equal
+
+
+@pytest.mark.parametrize("split", [True, False])  # type: ignore
+def test_blocks(split: bool) -> None:
+    func = functionlib.ArtificialFunction("sphere", block_dimension=5, split=split, num_blocks=2)
+    assert func.dimension == 10
+    param = func.parametrization
+    y = func(*param.args, **param.kwargs)
+    y2 = func.evaluation_function(param)  # returns a float
+    t = func.compute_pseudotime((param.args, param.kwargs), y2)
+    assert t > 0
+    np.testing.assert_array_almost_equal(y, y2)  # should be equal
 
 
 def test_function_transform() -> None:

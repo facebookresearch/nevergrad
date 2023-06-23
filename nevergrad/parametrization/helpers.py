@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -135,11 +135,22 @@ def deterministic_sampling(parameter: core.Parameter) -> tp.Iterator[None]:
     deterministic = [lay.deterministic for lay in int_layers]
     for lay in int_layers:
         lay.deterministic = True
-    yield
-    # sample and reset the previous behavior
-    parameter.value  # pylint: disable=pointless-statement
-    for lay, det in zip(int_layers, deterministic):
-        lay.deterministic = det
+    try:
+        yield
+    finally:
+        # sample and reset the previous behavior
+        parameter.value  # pylint: disable=pointless-statement
+        for lay, det in zip(int_layers, deterministic):
+            lay.deterministic = det
+
+
+def _fully_bounded_layers(data: pdata.Data) -> tp.List[_datalayers.BoundLayer]:
+    """Extract fully bounded layers of a Data parameter"""
+    layers = _datalayers.BoundLayer.filter_from(data)  # find bound layers
+    layers = [  # keep only fully bounded layers
+        lay for lay in layers if not any(b is None for b in lay.bounds)
+    ]
+    return layers
 
 
 class Normalizer:
@@ -177,6 +188,7 @@ class Normalizer:
         self.unbounded_transform = (
             trans.ArctanBound(0, 1) if unbounded_transform is None else unbounded_transform
         )
+        self.fully_bounded = all(bool(_fully_bounded_layers(data)) for data in self._ref_arrays)
 
     def _warn(self) -> None:
         warnings.warn(
@@ -210,10 +222,7 @@ class Normalizer:
         utrans = self.unbounded_transform.forward if forward else self.unbounded_transform.backward
         for ref in self._ref_arrays:
             end = start + ref.dimension
-            layers = _datalayers.BoundLayer.filter_from(ref)  # find bound layers
-            layers = [
-                lay for lay in layers if not any(b is None for b in lay.bounds)
-            ]  # keep only fully bounded layers
+            layers = _fully_bounded_layers(ref)
             if self._only_sampling:  # for samplers
                 layers = [lay for lay in layers if lay.uniform_sampling]
             if not layers:

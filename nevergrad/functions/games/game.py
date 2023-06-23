@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -394,7 +394,7 @@ class _Game:
             seed = policy[a * 26 * 13 + b * 13 + c]  # type: ignore
         if seed == 0.0:
             return cards
-        state = np.random.RandomState(hash(seed) % (2 ** 32))
+        state = np.random.RandomState(hash(seed) % (2**32))
         state.shuffle(cards)
         return list(cards)
 

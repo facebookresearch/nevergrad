@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -7,13 +7,22 @@ from .oneshot import SamplingSearch
 from .differentialevolution import DifferentialEvolution
 from .optimizerlib import RandomSearchMaker, SQP, LHSSearch, DE, RandomSearch, MetaRecentering, MetaTuneRecentering  # type: ignore
 from .optimizerlib import (
+    ParametrizedMetaModel,
     ParametrizedOnePlusOne,
     ParametrizedCMA,
     ParametrizedBO,
     EMNA,
+    CmaFmin2,
     NGOpt10,
     NGOpt12,
     BayesOptim,
+    ConfPortfolio,
+    DiagonalCMA,
+    GeneticDE,
+    TBPSA,
+    NoisyOnePlusOne,
+    RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne,
+    OptimisticNoisyOnePlusOne,
 )
 from . import optimizerlib as opts
 from .optimizerlib import CMA, Chaining, PSO, BO
@@ -39,6 +48,19 @@ MicroCMA = ParametrizedCMA(scale=1e-6).set_name("MicroCMA", register=True)
 FCMAs03 = ParametrizedCMA(fcmaes=True, scale=0.3).set_name("FCMAs03", register=True)
 FCMAp13 = ParametrizedCMA(fcmaes=True, scale=0.1, popsize=13).set_name("FCMAp13", register=True)
 ECMA = ParametrizedCMA(elitist=True).set_name("ECMA", register=True)
+MetaModelDiagonalCMA = ParametrizedMetaModel(multivariate_optimizer=ParametrizedCMA(diagonal=True)).set_name(
+    "MetaModelDiagonalCMA", register=True
+)
+MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2).set_name(
+    "MetaModelFmin2", register=True
+)
+MetaModelFmin2.no_parallelization = True
+LSCMA = ParametrizedCMA(high_speed=False).set_name("LSCMA", register=True)
+HSCMA = ParametrizedCMA(high_speed=True).set_name("HSCMA", register=True)
+HSNeuralCMA = ParametrizedCMA(high_speed=True, algorithm="neural").set_name("HSNeuralCMA", register=True)
+HSSVMCMA = ParametrizedCMA(high_speed=True, algorithm="svm").set_name("HSSVMCMA", register=True)
+HSRFCMA = ParametrizedCMA(high_speed=True, algorithm="rf").set_name("HSRFCMA", register=True)
+HSMetaModel = ParametrizedMetaModel(multivariate_optimizer=HSCMA).set_name("HSMetaModel", register=True)
 
 # OnePlusOne
 FastGADiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="fastga").set_name(
@@ -316,3 +338,38 @@ PCABO80 = BayesOptim(pca=True, n_components=0.80).set_name("PCABO80", register=T
 PCABO95DoE20 = BayesOptim(pca=True, n_components=0.95, prop_doe_factor=0.20).set_name(
     "PCABO95DoE20", register=True
 )
+SparseDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete", sparse=True).set_name(
+    "SparseDiscreteOnePlusOne", register=True
+)
+
+# Smooth variants of evolutionary algorithms.
+SmoothDiscreteOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="discrete").set_name(
+    "SmoothDiscreteOnePlusOne", register=True
+)
+SmoothPortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="portfolio").set_name(
+    "SmoothPortfolioDiscreteOnePlusOne", register=True
+)
+SmoothDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="lengler").set_name(
+    "SmoothDiscreteLenglerOnePlusOne", register=True
+)
+
+SmoothAdaptiveDiscreteOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="adaptive").set_name(
+    "SmoothAdaptiveDiscreteOnePlusOne", register=True
+)
+
+# Specifically for RL.
+MixDeterministicRL = ConfPortfolio(optimizers=[DiagonalCMA, PSO, GeneticDE]).set_name(
+    "MixDeterministicRL", register=True
+)
+SpecialRL = Chaining([MixDeterministicRL, TBPSA], ["half"]).set_name("SpecialRL", register=True)
+NoisyRL1 = Chaining([MixDeterministicRL, NoisyOnePlusOne], ["half"]).set_name("NoisyRL1", register=True)
+NoisyRL2 = Chaining(
+    [MixDeterministicRL, RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne], ["half"]
+).set_name("NoisyRL2", register=True)
+NoisyRL3 = Chaining([MixDeterministicRL, OptimisticNoisyOnePlusOne], ["half"]).set_name(
+    "NoisyRL3", register=True
+)
+
+# High-Speed variants
+HSDE = DifferentialEvolution(high_speed=True).set_name("HSDE", register=True)
+LhsHSDE = DifferentialEvolution(initialization="LHS", high_speed=True).set_name("LhsHSDE", register=True)
