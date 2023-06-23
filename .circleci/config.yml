@@ -123,7 +123,7 @@ jobs:
             pip install -U pip
             cd ..  # don't use nevergrad locally
             echo "Installing wheel"
-            pip install --progress-bar off --use-deprecated=legacy-resolver repo/nevergrad-build/dist/nevergrad-*any.whl
+            exec pip install --progress-bar off --use-deprecated=legacy-resolver repo/nevergrad-build/dist/nevergrad-*any.whl
             echo "Installed wheel"
             python -c "from nevergrad import functions;f = functions.ArtificialFunction(name='sphere', block_dimension=2);f([2, 3])"
 
