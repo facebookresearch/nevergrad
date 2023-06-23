@@ -10,7 +10,7 @@ import warnings
 import weakref
 import numpy as np
 from scipy import optimize as scipyoptimize
-import pybobyqa
+import pybobyqa  # type: ignore
 from ax import optimize as axoptimize
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
@@ -76,10 +76,12 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
         if weakself.initial_guess is not None:
             best_x = np.array(weakself.initial_guess, copy=True)  # copy, just to make sure it is not modified
         remaining: float = budget - weakself._num_ask
+
         def ax_obj(p):
-            data = [p["x" + str(i)] for i in range(self.dimension)]
-            data = self._normalizer.backward(np.asarray(data, dtype=np.float))
+            data = [p["x" + str(i)] for i in range(self.dimension)]  # type: ignore
+            data = self._normalizer.backward(np.asarray(data, dtype=np.float_))
             return objective_function(data)
+
         while remaining > 0:  # try to restart if budget is not elapsed
             options: tp.Dict[str, tp.Any] = {} if weakself.budget is None else {"maxiter": remaining}
             if weakself.method == "BOBYQA":
@@ -88,12 +90,13 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                     best_res = res.f
                     best_x = res.x
             elif weakself.method == "AX":
-                parameters = [{"name": "x"+str(i), "type":"range", "bounds":[0., 1.]} for i in range(weakself.dimension)]
-                best_parameters, best_values, experiment, model = axoptimize(
-                    parameters,
-                    evaluation_function = ax_obj,
-                    minimize=True,
-                    total_trials = budget)
+                parameters = [
+                    {"name": "x" + str(i), "type": "range", "bounds": [0.0, 1.0]}
+                    for i in range(weakself.dimension)
+                ]
+                _best_parameters, _best_values, _experiment, _model = axoptimize(
+                    parameters, evaluation_function=ax_obj, minimize=True, total_trials=budget
+                )
                 best_x = [p["x" + str(i)] for i in range(weakself.dimension)]
                 best_x = weakself._normalizer.backward(np.asarray(best_x, dtype=np.float))
             # options: tp.Dict[str, tp.Any] = {} if weakself.budget is None else {"maxiter": remaining}
