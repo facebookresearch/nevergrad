@@ -9,7 +9,7 @@ matplotlib>=2.2.3
 gym==0.24.1
 gym-anm>=1.0.1
 pygame>=2.1.2
-torch==2.0.1
+torch
 hiplot
 fcmaes>=1.2.7
 pandas>=0.23.4
