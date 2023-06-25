@@ -87,7 +87,8 @@ def keras_tuning(
     # Continuous case,
 
     # First, a few functions with constraints.
-    optims: tp.List[str] = ["PSO", "OnePlusOne"] + get_optimizers("basics", seed=next(seedg))  # type: ignore
+    #optims: tp.List[str] = ["PSO", "OnePlusOne"] + get_optimizers("basics", seed=next(seedg))  # type: ignore
+    optims = ["OnePlusOne", "BO", "RandomSearch", "CMA", "DE", "TwoPointsDE"]
     datasets = ["kerasBoston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
     for dimension in [None]:
         for dataset in datasets:
@@ -115,9 +116,10 @@ def mltuning(
 ) -> tp.Iterator[Experiment]:
     """Machine learning hyperparameter tuning experiment. Based on scikit models."""
     seedg = create_seed_generator(seed)
-    optims: tp.List[str] = get_optimizers("basics", seed=next(seedg))  # type: ignore
-    if not seq:
-        optims = get_optimizers("oneshot", seed=next(seedg))  # type: ignore
+    #optims: tp.List[str] = get_optimizers("basics", seed=next(seedg))  # type: ignore
+    #if not seq:
+    #    optims = get_optimizers("oneshot", seed=next(seedg))  # type: ignore
+    optims = ["OnePlusOne", "BO", "RandomSearch", "CMA", "DE", "TwoPointsDE"]
     for dimension in [None, 1, 2, 3]:
         if dimension is None:
             datasets = ["boston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
@@ -243,10 +245,9 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     assert len(functions) == 21, f"{len(functions)} problems instead of 21. Yawidebbob should be standard."
     # This problem is intended as a stable basis forever.
     # The list of optimizers should contain only the basic for comparison and "baselines".
-    optims: tp.List[str] = ["NGOpt10"] + get_optimizers("baselines", seed=next(seedg))  # type: ignore
-    optims = ["NGOptRW", "NGOpt", "CMandAS2", "Shiwa", "CMA", "DE", "DiscreteLenglerOnePlusOne"]
-    np.random.shuffle(optims)
-    optims = optims[:2]
+    #optims: tp.List[str] = ["NGOpt10"] + get_optimizers("baselines", seed=next(seedg))  # type: ignore
+    optims = ["NGOptRW", "NGOpt", "RandomSearch", "CMA", "DE", "DiscreteLenglerOnePlusOne"]
+    #optims = optims[:2]
     index = 0
     for function in functions:
         for budget in [50, 1500, 25000]:
@@ -330,7 +331,8 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 def parallel_small_budget(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Parallel optimization with small budgets"""
     seedg = create_seed_generator(seed)
-    optims: tp.List[str] = get_optimizers("basics", seed=next(seedg))  # type: ignore
+    #optims: tp.List[str] = get_optimizers("basics", seed=next(seedg))  # type: ignore
+    optims = ["DE", "TwoPointsDE", "CMA", "NGOpt", "PSO", "OnePlusOne", "RandomSearch"]
     names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "multipeak"]
     names += ["sphere", "cigar", "ellipsoid", "altellipsoid"]
     names += ["deceptiveillcond", "deceptivemultimodal", "deceptivepath"]
@@ -367,7 +369,8 @@ def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # Discrete, unordered.
 
     seedg = create_seed_generator(seed)
-    optims = get_optimizers("small_discrete", seed=next(seedg))
+    #optims = get_optimizers("small_discrete", seed=next(seedg))
+    optims = ["DiscreteOnePlusOne", "NGOpt", "CMA", "TwoPointsDE", "DiscreteLenglerOnePlusOne"]
     for nv in [10, 50, 200, 1000, 5000]:
         for arity in [2, 3, 7, 30]:
             for instrum_str in ["Unordered", "Softmax", "Ordered"]:
@@ -397,7 +400,8 @@ def sequential_instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Ex
 
     seedg = create_seed_generator(seed)
     # Discrete, unordered.
-    optims = get_optimizers("discrete", seed=next(seedg))
+    #optims = get_optimizers("discrete", seed=next(seedg))
+    optims = ["DiscreteOnePlusOne", "NGOpt", "CMA", "TwoPointsDE", "DiscreteLenglerOnePlusOne"]
     for nv in [10, 50, 200, 1000, 5000]:
         for arity in [2, 3, 7, 30]:
             for instrum_str in ["Unordered", "Softmax", "Ordered"]:
@@ -425,6 +429,7 @@ def deceptive(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     names = ["deceptivemultimodal", "deceptiveillcond", "deceptivepath"]
     optims = get_optimizers("basics", seed=next(seedg))
+    optims = ["CMA", "DE", "TwoPointsDE", "PSO", "OnePlusOne", "RandomSearch", "NGOptRW"]
     functions = [
         ArtificialFunction(
             name, block_dimension=2, num_blocks=n_blocks, rotation=rotation, aggregator=aggregator
@@ -708,7 +713,8 @@ def yabbob(
         noise_level = 0
 
     # Choosing the list of optimizers.
-    optims: tp.List[str] = get_optimizers("competitive", seed=next(seedg))  # type: ignore
+    #optims: tp.List[str] = get_optimizers("competitive", seed=next(seedg))  # type: ignore
+    optims = ["CMA", "DE", "PSO", "TwoPointsDE", "RandomSearch"]
     if noise:
         optims += ["TBPSA", "SQP", "NoisyDiscreteOnePlusOne"]
     if hd:
