@@ -47,19 +47,6 @@ from . import gymexperiments  # noqa
 # pylint: disable=stop-iteration-return, too-many-nested-blocks, too-many-locals
 
 
-def pick_subset(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
-    try:
-        subset = float(os.environ.get("SUBSET", "inf"))
-    except:  # type: ignore
-        return x
-    if subset < float("inf"):
-        subset = max(2, int(subset))
-        subset = min(subset, len(x))
-        return random.sample(x, subset)
-    else:
-        return x
-
-
 def skip_ci(*, reason: str) -> None:
     """Only use this if there is a good reason for not testing the xp,
     such as very slow for instance (>1min) with no way to make it faster.
@@ -1098,14 +1085,14 @@ def pbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         "RandomSearch",
         "MetaModel",
     ]
-    optims = pick_subset(optims)
-    dims = pick_subset([2, 5, 10, 40, 20])
+    optims = optims
+    dims = [2, 5, 10, 40, 20]
     functions = [
         ArtificialFunction(name, block_dimension=d, rotation=rotation, expo=expo, translation_factor=tf)
-        for name in pick_subset(["cigar", "sphere", "rastrigin", "hm", "deceptivemultimodal"])
+        for name in ["cigar", "sphere", "rastrigin", "hm", "deceptivemultimodal"]
         for rotation in [True]
-        for expo in pick_subset([0.1, 1.0, 3.0, 5.0, 7.0, 9.0])
-        for tf in pick_subset([0.01, 0.3, 0.31, 1.0, 10.0])
+        for expo in [0.1, 1.0, 3.0, 5.0, 7.0, 9.0]
+        for tf in [0.01, 0.3, 0.31, 1.0, 10.0]
         for d in dims
     ]
     for optim in optims:
@@ -1133,13 +1120,12 @@ def boundedpbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         "Cobyla",
         "RandomSearch",
     ]
-    optims = pick_subset(optims)
-    dims = pick_subset([2, 5, 10, 40, 20])
+    dims = [2, 5, 10, 40, 20]
     functions = [
         ArtificialFunction(name, block_dimension=d, rotation=rotation, expo=expo, bounded=True)
-        for name in pick_subset(["cigar", "sphere", "rastrigin", "hm", "deceptivemultimodal"])
+        for name in ["cigar", "sphere", "rastrigin", "hm", "deceptivemultimodal"]
         for rotation in [True]
-        for expo in pick_subset([0.1, 0.3, 0.31, 1.0, 3.0, 5.0])
+        for expo in [0.1, 0.3, 0.31, 1.0, 3.0, 5.0]
         for d in dims
     ]
     for optim in optims:
