@@ -1628,7 +1628,7 @@ def topology_optimization(seed: tp.Optional[int] = None) -> tp.Iterator[Experime
     seedg = create_seed_generator(seed)
     funcs = [TO(i) for i in [10, 20, 30, 40]]
     optims = ["CMA", "GeneticDE", "TwoPointsDE", "VoronoiDE", "DE", "PSO", "RandomSearch", "OnePlusOne"]
-    for budget in [10, 20, 40, 80, 160]:
+    for budget in [10, 20, 40, 80, 160, 320, 640, 1280, 2560, 5120, 10240, 20480, 40960]:
         for optim in optims:
             for f in funcs:
                 for nw in [1, 30]:
@@ -1640,7 +1640,7 @@ def sequential_topology_optimization(seed: tp.Optional[int] = None) -> tp.Iterat
     seedg = create_seed_generator(seed)
     funcs = [TO(i) for i in [10, 20, 30, 40]]
     optims = ["CMA", "GeneticDE", "TwoPointsDE", "VoronoiDE", "DE", "PSO", "RandomSearch", "OnePlusOne"]
-    for budget in [10, 20, 40, 80, 160]:
+    for budget in [10, 20, 40, 80, 160, 320, 640, 1280, 2560, 5120, 10240, 20480, 40960]:
         for optim in optims:
             for f in funcs:
                 for nw in [1, 30]:
