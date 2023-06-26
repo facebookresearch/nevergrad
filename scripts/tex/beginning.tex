@@ -62,6 +62,8 @@ The columns show the methods with the number of settings they were able to tackl
 \end{itemize}
 Note that the ranking of the rows or columns in the heatmap, and the ranking of the curves, do not have to match. As detailed above, runs for different budgets are independent, and we take all budget values in the statistics used for the heatmaps: therefore the ranking in the heatmap takes into account the low budget as much as the high budgets of the experiments. Also, the heatmap is about frequencies of a method outperforming another method: so, the gap does not matter. So robustness is taken into account differently: the impact of this difference can be big.
 
+The appendix contains many competence maps. Competence maps show, for a given pair of variables/values, which algorithms performs best on average. This is quite good for interpretability, but big.
+
 Whereas most platforms do runs for a single budget, and then plot curves up to that budget, we do run the algorithms separately e.g. for budget 100, 200, 400 and 800. This implies that curves are less smooth. The reason for this is that smooth curves obtained by truncation can give a false sense of smoothness and falsify tests if users assume independance between results obtained for different values.
 
 For noisy optimization, we assume unbiased noise in the artificial benchmarks. However, the real world ones are biased in the same sense as tuning in hyperparameter tuning: overfitting and underfitting can happen.
