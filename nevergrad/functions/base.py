@@ -65,6 +65,11 @@ class ExperimentFunction:
         inst._descriptors = {
             x: y for x, y in callargs.items() if isinstance(y, (str, tuple, int, float, bool))
         }
+        #if "bonnans" in str(cls.__name__) or "discrete" in str(cls.__name__) or "pbo" in str(cls.__name__):
+        #    inst._descriptors = {
+        #        x: y for x, y in callargs.items() if isinstance(y, (str, tuple, int, float, bool)) and "dimension" not
+        #        in x and "paramet" not in x
+        #    }
         inst._descriptors["function_class"] = cls.__name__
         return inst  # type: ignore
 
@@ -124,6 +129,8 @@ class ExperimentFunction:
         noise_level, transform and dimension
         """
         desc = dict(self._descriptors)  # Avoid external modification
+        clsname = str(self._descriptors["function_class"])
+        #if "bonnans" not in clsname and "discrete" not in clsname and "pbo" not in clsname:
         desc.update(parametrization=self.parametrization.name, dimension=self.dimension)
         return desc
 

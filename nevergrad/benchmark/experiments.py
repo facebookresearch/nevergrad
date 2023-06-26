@@ -386,6 +386,8 @@ def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                         corefuncs.DiscreteFunction(name, arity), instrum.set_name(instrum_str)
                     )
                     dfunc.add_descriptors(arity=arity)
+                    dfunc.add_descriptors(nv=nv)
+                    dfunc.add_descriptors(instrum_str=instrum_str)
                     for optim in optims:
                         for nw in [1, 10]:
                             for budget in [50, 500, 5000]:
@@ -416,6 +418,8 @@ def sequential_instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Ex
                         corefuncs.DiscreteFunction(name, arity), instrum.set_name(instrum_str)
                     )
                     dfunc.add_descriptors(arity=arity)
+                    dfunc.add_descriptors(nv=nv)
+                    dfunc.add_descriptors(instrum_str=instrum_str)
                     for optim in optims:
                         for budget in [50, 500, 5000, 50000]:
                             yield Experiment(dfunc, optim, budget=budget, seed=next(seedg))
@@ -636,10 +640,15 @@ def bonnans(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     optims = [
         "RotatedTwoPointsDE",
         "DiscreteLenglerOnePlusOne",
+        "DiscreteLengler2OnePlusOne",
+        "DiscreteLengler3OnePlusOne",
+        "DiscreteLenglerHalfOnePlusOne",
+        "DiscreteLenglerFourthOnePlusOne",
         "PortfolioDiscreteOnePlusOne",
         "FastGADiscreteOnePlusOne",
         "DiscreteDoerrOnePlusOne",
         "DiscreteBSOOnePlusOne",
+        "DiscreteOnePlusOne",
         "AdaptiveDiscreteOnePlusOne",
         "GeneticDE",
         "DE",
@@ -653,11 +662,15 @@ def bonnans(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     for i in range(21):
         bonnans = corefuncs.BonnansFunction(index=i)
         for optim in optims:
+            instrum_str = "TransitionChoice" if "Discrete" in optim else "Softmax"
             dfunc = ExperimentFunction(
                 bonnans,
-                instrum.set_name("bitmap") if "Discrete" in optim else softmax_instrum.set_name("softmax"),
+                instrum.set_name("") if instrum_str == "TransitionChoice" else softmax_instrum.set_name(""),
             )
-            for budget in [20, 50, 100]:
+            dfunc.add_descriptors(index=i)
+            dfunc.add_descriptors(instrum_str=instrum_str)
+            #dfunc._descriptors = {'index': i}
+            for budget in [20, 30, 40, 50, 60, 70, 80, 90, 100]:
                 yield Experiment(dfunc, optim, num_workers=1, budget=budget, seed=next(seedg))
 
 
@@ -2274,6 +2287,7 @@ def pbo_suite(seed: tp.Optional[int] = None, reduced: bool = False) -> tp.Iterat
                 for instrumentation in ["Unordered"] if reduced else ["Softmax", "Ordered", "Unordered"]:
                     try:
                         func = iohprofiler.PBOFunction(fid, iid, dim, instrumentation=instrumentation)
+                        func.add_descriptors(instrum_str=instrum_str)
                     except ModuleNotFoundError as e:
                         raise fbase.UnsupportedExperiment("IOHexperimenter needs to be installed") from e
                     for optim in list_optims:
