@@ -2290,7 +2290,7 @@ def pbo_suite(seed: tp.Optional[int] = None, reduced: bool = False) -> tp.Iterat
                 for instrumentation in ["Unordered"] if reduced else ["Softmax", "Ordered", "Unordered"]:
                     try:
                         func = iohprofiler.PBOFunction(fid, iid, dim, instrumentation=instrumentation)
-                        func.add_descriptors(instrum_str=instrum_str)
+                        func.add_descriptors(instrum_str=instrumentation)
                     except ModuleNotFoundError as e:
                         raise fbase.UnsupportedExperiment("IOHexperimenter needs to be installed") from e
                     for optim in list_optims:
