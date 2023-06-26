@@ -27,4 +27,5 @@ wait
 
 fi # End of "there is something to do".
 
-tar -zcvf ~/dag.tgz *_plots
+# tar -zcvf ~/dag.tgz *_plots
+scripts/latexize.sh
