@@ -61,9 +61,14 @@ Note that the ranking of the rows or columns in the heatmap, and the ranking of 
 
 Whereas most platforms do runs for a single budget, and then plot curves up to that budget, we do run the algorithms separately e.g. for budget 100, 200, 400 and 800. This implies that curves are less smooth. The reason for this is that smooth curves obtained by truncation can give a false sense of smoothness and falsify tests if users assume independance between results obtained for different values.
 
-For noisy optimization, we assume unbiased noise.
+For noisy optimization, we assume unbiased noise in the artificial benchmarks. However, the real world ones are biased in the same sense as tuning in hyperparameter tuning: overfitting and underfitting can happen.
 We differentiate ask, tell and recommend: this is critical. Some platforms do a simple ask and tell only and assume that algorithms can, for free, guess which of their visited points is best. This is incorrect and misleading, as pointed out in the noisy BBOB benchmark long ago~\citepaddition{bbobissue1,bbobissue2,bbobissue3,bbobissue4}: instead of being based on a recommendation, the reported result is based on the minimum \ot{ {\em{expected}} fitness} over all visited points, as if it was possible to know (at cost zero) which of the visited points is the best.
 More formally, noisy optimization algorithms typically have iterations defined by $(x_{n+1},\hat x_{n+1})=Algorithm((x_1,\dots,x_n),(y_1,\dots,y_n))$. The $x_n$ are the iterates at which the noisy objective function is evaluated, the $y_n$ are the noisy loss values, and the $\hat x_n$ are the recommendations, i.e. approximations of the optimum as provided by the algorithm. In ask/tell format, $x_n$ is provided by ``ask'', the algorithm is informed of $(x_n,y_n)$ by ``tell'' - and we need a method ``recommend'' for providing the recommendations. Ask and recommend are distinct because $x_n$ and $\hat x_n$ are distinct. The regret is evaluated at $\hat x_n$, and it is known~\citepaddition{fabian,decocknoise} that, with a significant noise level, fast rates~\citepaddition{fabian,chen1988} for the simple regret can only be obtained using $x_n$ far from the optimum (i.e. $x_n\neq \hat x_n$) for acquiring knowledge. Plotting results using $\E\inf_{i\leq n}(\E f)(x_i)$ (or any other criterion based on the $x_i$ rather than the $\hat x_n$) instead of $\E f(\hat x_n)$ is convenient for reusing noise-free software, but wrong: the best algorithms for such criteria are those which randomly explore around $\hat x_n$ rather than those which do clever explorations further from the optimum. We underline that, in spite of this bug for the noisy case, BBOB has been extremely useful for making benchmarking more rigorous in BBO.
+
+``(RW)'' means that the benchmark is real world.
+
+As pointed out during the seminar, ordered discrete is different from unordered discrete. Some of benchmarks include ordered discrete and some include unordered discrete: Nevergrad can use typed variables (as documented in \url{https://facebookresearch.github.io/nevergrad/optimization.html}) and we use this.
+
 \section{Experiments}
 
 
