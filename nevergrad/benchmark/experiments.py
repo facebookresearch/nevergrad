@@ -669,7 +669,7 @@ def bonnans(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
             )
             dfunc.add_descriptors(index=i)
             dfunc.add_descriptors(instrum_str=instrum_str)
-            #dfunc._descriptors = {'index': i}
+            # dfunc._descriptors = {'index': i}
             for budget in [20, 30, 40, 50, 60, 70, 80, 90, 100]:
                 yield Experiment(dfunc, optim, num_workers=1, budget=budget, seed=next(seedg))
 
@@ -736,6 +736,9 @@ def yabbob(
         "TwoPointsDE",
         "RandomSearch",
         "ChainMetaModelSQP",
+        "NeuralMetaModel",
+        "MetaModelDE",
+        "MetaModelOnePlusOne",
     ]
     if noise:
         optims += ["TBPSA", "SQP", "NoisyDiscreteOnePlusOne"]
