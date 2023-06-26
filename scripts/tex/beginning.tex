@@ -13,30 +13,29 @@
 
 \maketitle
 
-\tableofcontents
 
 \begin{abstract}
-At the Dagstuhl seminar 23251 (June 2023), many principles of benchmarking were discussed.
-We keep in mind the following guidelines:
-We want everything to be easy to rerun entirely from scratch. This might need a significant computational power.
-However, it is possible to run manually and separately some benchmarks. One can easily edit the main script and reduce the number of benchmarks, possibly to a single benchmark at a time.
-
-
+At the Dagstuhl seminar 23251 (June 2023), many principles of benchmarking were discussed: reproducibility, open sourcing, cases with budget $>$ 100 times the dimension being the exception rather than the rule, cases with 10 $\times$ budget $<$ dimension exist, real-world benchmarking is critical for validating artificial benchmarks. Also, bugs in existing implementations have been discussed.
+We want everything to be easy to rerun entirely from scratch. This might need a significant computational power; see below.
+However, it is possible to run manually and separately some benchmarks: one can easily edit the main script and reduce the number of benchmarks, possibly to a single benchmark at a time, and also we rerun periodically all the benchmarks and accept pull requests so that a limited computational power should not be an obstacle to reproducibility.
 \end{abstract}
+\tableofcontents
 
 \section{Introduction}
 
-In artificial benchmarks, some talks pointed out the importance of the distribution of optima. Therefore, we take into account the parameters of the distribution of optima.
+In artificial benchmarking platforms, some talks pointed out the importance of the distribution of optima. Therefore, we propose parameters of the distribution of optima, in the PBBOB (parametric BBOB) benchmark.
 We compare implementations, not abstract algorithms. The detailed implementations are freely available in Nevergrad and anyone can propose a modification.
 A large part of the benchmarks are based on real-world data or reasonably close to this.
 Benchmarking is not a joke. Recent news show that poorly reproducible benchmarking is detrimental to science.
 
 Naming: “oid” means “similar to”. The benchmark is called Dagstuhloid because it is inspired by Dagstuhl talks. The responsibility is entirely ours, though.
 
+\subsection{URL}
 The main place for discussing the Dagstuhloid benchmark is \url{https://www.facebook.com/groups/nevergradusers/}. 
 
 The code is https://github.com/facebookresearch/nevergrad
 
+\subsection{Reproducing results}
 How to reproduce these results:
 \begin{itemize}
 \item Install Nevergrad by “git clone” (see details at the URL above).
@@ -48,9 +47,10 @@ How to reproduce these results:
 \item For plotting results, run “dagstuhloid\_plot.sh”. Of course, some data might be missing if not enough runs are complete. Note that in case of latex unavailable or incompatible, all figures are nonetheless available.
 \end{itemize}
 
-\section{Comparison with other benchmarks}
+\subsection{What if your computational power is not sufficient ?}
+Please note that creating a pull request and pinging us at \urlhttps://www.facebook.com/groups/nevergradusers/} is a simple solution to get heavy computations done, we are more than happy to run what you need if the computational cost is reasonable. 
 
-\section{Experimental results}
+\section{Comparison with other benchmarks}
 
 For each benchmark, the detailed setup is documented at \url{https://github.com/facebookresearch/nevergrad/blob/main/nevergrad/benchmark/experiments.py}.
 Ctrl-F with the name of the benchmark should provide all details.
@@ -82,7 +82,9 @@ known~\cite{fabian,decocknoise} that, with a significant noise level, fast rates
 
 As pointed out during the seminar, ordered discrete is different from unordered discrete. Some of benchmarks include ordered discrete and some include unordered discrete: Nevergrad can use typed variables (as documented in \url{https://facebookresearch.github.io/nevergrad/optimization.html}) and we use this.
 
-\section{Experiments}
+The vast family of benchmarks in Nevergrad is used for tuning an algorithm selector, termed NGOpt. A variant termed NGOptRW is adapted for real-world contexts. However, we do not recommend running it blindly: in spite of the efforts for designing these algorithms, there are many cases in which another algorithm will perform vastly better.
+
+\section{Experimental results}
 
 
 
