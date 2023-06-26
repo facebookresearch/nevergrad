@@ -6,7 +6,7 @@ On benchmarks close to the good old BBOB, CMA and variants do perform well. The 
 variants equipped with the the MetaModel and the final local search are even better.
 
 On many real-world benchmarks, the budget is lower than in the traditional context of BBOB with budget $=$ dimension $\times$ 1000. There
-are cases with a ratio budget/dimension $<1$, of the order of a few units or a few dozens. DE performs well in many cases.
+are cases with a ratio budget/dimension $<1$, of the order of a few units or a few dozens. DE performs well in many cases. This is consistent with many publications considering real-world problems. Our real-world benchmarks include TODO
 
 SQP is excellent in noisy optimization. 
 
@@ -14,7 +14,8 @@ We include benchmarks with one or several or many constraints (prefix onepen, pe
 
 MetaModel perform well on BBOB-style optimization, but were also excellent for several low budget things.
 
-Regarding discrete contexts, TODO
+Regarding discrete contexts, we note the great performance of the so-called ``DiscreteLenglerOnePlusOne'' \cite{lengler}. We tested variants with a different constant and it turns out that the proved constant, in spite of the simple context in which it was derived, is good.
+Still in the discrete case, we note the good performance of methods with ``Recombining'' in the name: while it was less investigated theoretically than variants of the discrete $(1+1)$ method, methods with crossover might deserve more work.
 
 Regarding the principles of benchmarking, we note that the two different views in Nevergrad (the heatmap and the average normalized loss) present completely different views. This emphasizes how much how we look at data has a big impact on the interpretation.
 
@@ -24,4 +25,7 @@ Regarding PBBOB, TODO
 
 Consistently with some real world experiments in \cite{micropredictions1,micropredictions2}, we note the the $(1+1)$ evolution strategy with one-fifth rule from \cite{rechenberg73} is still quite good. In artificial benchmarks with a lot of evaluations, high conditionning and artificially rotated contexts, it can become weak: for many realistic contexts, in particular a realistic ratio budget/dimension, it is quite good.
 
+\subsection{Caveats, further work}
 Some benchmarks were implemented but not included in the release due to legal issues in the license. 
+We did not include the important case in which a multi-objective run is performed on surrogate models only: (1) randomly sample, (2) approximate the objective functions by surrogate models, (3) perform a multi-objective optimization on the surrogate only. This is useful for including the user in the loop. This is not tested in the current benchmarks.
+
