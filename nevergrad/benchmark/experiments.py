@@ -714,7 +714,16 @@ def yabbob(
 
     # Choosing the list of optimizers.
     # optims: tp.List[str] = get_optimizers("competitive", seed=next(seedg))  # type: ignore
-    optims = ["OnePlusOne", "MetaModel", "CMA", "DE", "PSO", "TwoPointsDE", "RandomSearch", "ChainMetaModelSQP"]
+    optims = [
+        "OnePlusOne",
+        "MetaModel",
+        "CMA",
+        "DE",
+        "PSO",
+        "TwoPointsDE",
+        "RandomSearch",
+        "ChainMetaModelSQP",
+    ]
     if noise:
         optims += ["TBPSA", "SQP", "NoisyDiscreteOnePlusOne"]
     if hd:
@@ -2024,7 +2033,15 @@ def double_o_seven(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     }
     env = base_env.with_agent(player_0=random_agent).as_single_agent()
     dde = ng.optimizers.DifferentialEvolution(crossover="dimension").set_name("DiscreteDE")
-    optimizers: tp.List[tp.Any] = ["PSO", dde, "MetaTuneRecentering", "DiagonalCMA", "TBPSA", "SPSA", "RecombiningOptimisticNoisyDiscreteOnePlusOne"]
+    optimizers: tp.List[tp.Any] = [
+        "PSO",
+        dde,
+        "MetaTuneRecentering",
+        "DiagonalCMA",
+        "TBPSA",
+        "SPSA",
+        "RecombiningOptimisticNoisyDiscreteOnePlusOne",
+    ]
     for num_repetitions in [1, 10, 100]:
         for archi in ["mono", "multi"]:
             for optim in optimizers:
