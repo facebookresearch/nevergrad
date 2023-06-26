@@ -1395,6 +1395,7 @@ def spsa_benchmark(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """
     seedg = create_seed_generator(seed)
     optims: tp.List[str] = get_optimizers("spsa", seed=next(seedg))  # type: ignore
+    optims += ["CMA", "OnePlusOne", "DE", "PSO"]
     for budget in [500, 1000, 2000, 4000, 8000, 16000, 32000, 64000, 128000]:
         for optim in optims:
             for rotation in [True, False]:
