@@ -88,7 +88,7 @@ def keras_tuning(
 
     # First, a few functions with constraints.
     # optims: tp.List[str] = ["PSO", "OnePlusOne"] + get_optimizers("basics", seed=next(seedg))  # type: ignore
-    optims = ["OnePlusOne", "BO", "RandomSearch", "CMA", "DE", "TwoPointsDE"]
+    optims = ["OnePlusOne", "BO", "RandomSearch", "CMA", "DE", "TwoPointsDE", "HyperOpt", "PCABO", "Cobyla"]
     datasets = ["kerasBoston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
     for dimension in [None]:
         for dataset in datasets:
@@ -119,7 +119,7 @@ def mltuning(
     # optims: tp.List[str] = get_optimizers("basics", seed=next(seedg))  # type: ignore
     # if not seq:
     #    optims = get_optimizers("oneshot", seed=next(seedg))  # type: ignore
-    optims = ["OnePlusOne", "BO", "RandomSearch", "CMA", "DE", "TwoPointsDE"]
+    optims = ["OnePlusOne", "BO", "RandomSearch", "CMA", "DE", "TwoPointsDE", "PCABO", "HyperOpt", "Cobyla"]
     for dimension in [None, 1, 2, 3]:
         if dimension is None:
             datasets = ["boston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
@@ -747,7 +747,9 @@ def yabbob(
         optims += get_optimizers("splitters", seed=next(seedg))  # type: ignore
 
     if hd and small:
-        optims = ["BO", "CMA", "PSO", "DE"]
+        optims = ["BO", "PCABO", "CMA", "PSO", "DE"]
+    if small and not hd:
+        optims += ["PCABO", "BO", "Cobyla"]
 
     # if bounded:
     #    optims = ["BO", "PCABO", "BayesOptimBO", "CMA", "PSO", "DE"]

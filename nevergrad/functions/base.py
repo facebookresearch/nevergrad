@@ -129,8 +129,6 @@ class ExperimentFunction:
         noise_level, transform and dimension
         """
         desc = dict(self._descriptors)  # Avoid external modification
-        clsname = str(self._descriptors["function_class"])
-        # if "bonnans" not in clsname and "discrete" not in clsname and "pbo" not in clsname:
         desc.update(parametrization=self.parametrization.name, dimension=self.dimension)
         return desc
 
