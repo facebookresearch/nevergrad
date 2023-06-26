@@ -1,0 +1,15 @@
+MetaModel means CMA equipped with a MetaModel, which is automatically enabled when the learning performs well.
+ChainMetaModelSQP is a memetic algorithm: it combines MetaModel (hence, CMA plus a MetaModel) and a final run using a local method, namely SQP (sequential quadratic programming).
+Usually, a meta-model and a fast local search a the end do improve evolutionary methods.
+
+On benchmarks close to the good old BBOB, CMA and variants do perform well. The variants equipped with a MetaModel perform better, and
+variants equipped with the the MetaModel and the final local search are even better.
+
+On many real-world benchmarks, the budget is lower than in the traditional context of BBOB with budget $=$ dimension $\times$ 1000. There
+are cases with a ratio budget/dimension $<1$, of the order of a few units or a few dozens. DE performs well in many cases.
+
+SQP is excellent in noisy optimization. 
+
+We include benchmarks with one or several or many constraints (prefix onepen, pen and megapen), tackled with dynamic penalization: results were not fundamentally different from the non-penalized case. 
+
+MetaModel perform well on BBOB-style optimization, but were also excellent for several low budget things.

@@ -1,0 +1,65 @@
+\documentclass{article}
+
+
+\usepackage{graphicx}
+\usepackage{url}
+
+\begin{document}
+
+\title{Dagsthloid benchmarking}
+
+\maketitle
+
+\tableofcontents
+
+\begin{abstract}
+At the Dagstuhl seminar 23251 (June 2023), many principles of benchmarking were discussed.
+We keep in mind the following guidelines:
+We want everything to be easy to rerun entirely from scratch. This might need a significant computational power.
+However, it is possible to run manually and separately some benchmarks. One can easily edit the main script and reduce the number of benchmarks, possibly to a single benchmark at a time.
+
+
+\end{abstract}
+
+\section{Introduction}
+
+In artificial benchmarks, some talks pointed out the importance of the distribution of optima. Therefore, we take into account the parameters of the distribution of optima.
+We compare implementations, not abstract algorithms. The detailed implementations are freely available in Nevergrad and anyone can propose a modification.
+A large part of the benchmarks are based on real-world data or reasonably close to this.
+Benchmarking is not a joke. Recent news show that poorly reproducible benchmarking is detrimental to science.
+
+Naming: “oid” means “similar to”. The benchmark is called Dagstuhloid because it is inspired by Dagstuhl talks. The responsibility is entirely ours, though.
+
+The main place for discussing the Dagstuhloid benchmark is \url{https://www.facebook.com/groups/nevergradusers/}. 
+
+The code is https://github.com/facebookresearch/nevergrad
+
+How to reproduce these results:
+\begin{itemize}
+\item Install Nevergrad by “git clone” (see details at the URL above).
+\item Run the script “dagstuhloid.sh” for launching experiments. It is written assuming slurm: it should be feasible to adapt it to other benchmarks. This script is randomized: you might have to run it several times for getting enough results.
+\item For plotting results, run “dagstuhloid\_plot.sh”. Of course, some data might be missing if not enough runs are complete. Note that in case of latex unavailable or incompatible, all figures are nonetheless available.
+\end{itemize}
+
+\section{Comparison with other benchmarks}
+
+\section{Experimental results}
+
+For each benchmark, the detailed setup is documented at \url{https://github.com/facebookresearch/nevergrad/blob/main/nevergrad/benchmark/experiments.py}.
+Ctrl-F with the name of the benchmark should provide all details.
+For each benchmark we provide both:
+\begin{itemize}
+\item A heatmap, showing the frequency at which a method (row) outperforms on average another method (col). Methods are ordered by average such frequency, over all other methods.
+The columns show the methods with the number of settings they were able to tackle (for example, some methods have no parallel version and therefore do not fill all settings).
+\item A convergence curve, with the budget on the x-axis and the average (over all budgets) normalized (linearly, to 0-1) loss. Note that some benchmarks do not have the same functions for the different values of the budget. Therefore we might have a rugged curve, not monotonous at all. 
+\end{itemize}
+
+Whereas most platforms do runs for a single budget, and then plot curves up to that budget, we do run the algorithms separately e.g. for budget 100, 200, 400 and 800. This implies that curves are less smooth. The reason for this is that smooth curves obtained by truncation can give a false sense of smoothness and falsify tests if users assume independance between results obtained for different values.
+
+For noisy optimization, we assume unbiased noise.
+We differentiate ask, tell and recommend: this is critical. Some platforms do a simple ask and tell only and assume that algorithms can, for free, guess which of their visited points is best. This is incorrect and misleading.
+
+\section{Experiments}
+
+
+
