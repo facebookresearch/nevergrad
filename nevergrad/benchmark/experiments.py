@@ -87,7 +87,7 @@ def keras_tuning(
     # Continuous case,
 
     # First, a few functions with constraints.
-    #optims: tp.List[str] = ["PSO", "OnePlusOne"] + get_optimizers("basics", seed=next(seedg))  # type: ignore
+    # optims: tp.List[str] = ["PSO", "OnePlusOne"] + get_optimizers("basics", seed=next(seedg))  # type: ignore
     optims = ["OnePlusOne", "BO", "RandomSearch", "CMA", "DE", "TwoPointsDE"]
     datasets = ["kerasBoston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
     for dimension in [None]:
@@ -116,8 +116,8 @@ def mltuning(
 ) -> tp.Iterator[Experiment]:
     """Machine learning hyperparameter tuning experiment. Based on scikit models."""
     seedg = create_seed_generator(seed)
-    #optims: tp.List[str] = get_optimizers("basics", seed=next(seedg))  # type: ignore
-    #if not seq:
+    # optims: tp.List[str] = get_optimizers("basics", seed=next(seedg))  # type: ignore
+    # if not seq:
     #    optims = get_optimizers("oneshot", seed=next(seedg))  # type: ignore
     optims = ["OnePlusOne", "BO", "RandomSearch", "CMA", "DE", "TwoPointsDE"]
     for dimension in [None, 1, 2, 3]:
@@ -245,9 +245,9 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     assert len(functions) == 21, f"{len(functions)} problems instead of 21. Yawidebbob should be standard."
     # This problem is intended as a stable basis forever.
     # The list of optimizers should contain only the basic for comparison and "baselines".
-    #optims: tp.List[str] = ["NGOpt10"] + get_optimizers("baselines", seed=next(seedg))  # type: ignore
+    # optims: tp.List[str] = ["NGOpt10"] + get_optimizers("baselines", seed=next(seedg))  # type: ignore
     optims = ["NGOptRW", "NGOpt", "RandomSearch", "CMA", "DE", "DiscreteLenglerOnePlusOne"]
-    #optims = optims[:2]
+    # optims = optims[:2]
     index = 0
     for function in functions:
         for budget in [50, 1500, 25000]:
@@ -331,7 +331,7 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 def parallel_small_budget(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Parallel optimization with small budgets"""
     seedg = create_seed_generator(seed)
-    #optims: tp.List[str] = get_optimizers("basics", seed=next(seedg))  # type: ignore
+    # optims: tp.List[str] = get_optimizers("basics", seed=next(seedg))  # type: ignore
     optims = ["DE", "TwoPointsDE", "CMA", "NGOpt", "PSO", "OnePlusOne", "RandomSearch"]
     names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "multipeak"]
     names += ["sphere", "cigar", "ellipsoid", "altellipsoid"]
@@ -369,7 +369,7 @@ def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # Discrete, unordered.
 
     seedg = create_seed_generator(seed)
-    #optims = get_optimizers("small_discrete", seed=next(seedg))
+    # optims = get_optimizers("small_discrete", seed=next(seedg))
     optims = ["DiscreteOnePlusOne", "NGOpt", "CMA", "TwoPointsDE", "DiscreteLenglerOnePlusOne"]
     for nv in [10, 50, 200, 1000, 5000]:
         for arity in [2, 3, 7, 30]:
@@ -400,7 +400,7 @@ def sequential_instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Ex
 
     seedg = create_seed_generator(seed)
     # Discrete, unordered.
-    #optims = get_optimizers("discrete", seed=next(seedg))
+    # optims = get_optimizers("discrete", seed=next(seedg))
     optims = ["DiscreteOnePlusOne", "NGOpt", "CMA", "TwoPointsDE", "DiscreteLenglerOnePlusOne"]
     for nv in [10, 50, 200, 1000, 5000]:
         for arity in [2, 3, 7, 30]:
@@ -713,8 +713,8 @@ def yabbob(
         noise_level = 0
 
     # Choosing the list of optimizers.
-    #optims: tp.List[str] = get_optimizers("competitive", seed=next(seedg))  # type: ignore
-    optims = ["CMA", "DE", "PSO", "TwoPointsDE", "RandomSearch"]
+    # optims: tp.List[str] = get_optimizers("competitive", seed=next(seedg))  # type: ignore
+    optims = ["OnePlusOne", "MetaModel", "CMA", "DE", "PSO", "TwoPointsDE", "RandomSearch", "ChainMetaModelSQP"]
     if noise:
         optims += ["TBPSA", "SQP", "NoisyDiscreteOnePlusOne"]
     if hd:
@@ -1464,6 +1464,7 @@ def fishing(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     funcs = [OptimizeFish(i) for i in [17, 35, 52, 70, 88, 105]]
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", seed=next(seedg))
+    optims += ["NGOpt", "NGOptRW", "ChainMetaModelSQP"]
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
         for algo in optims:
             for fu in funcs:
@@ -1768,6 +1769,7 @@ def mldakmeans(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     ]
     seedg = create_seed_generator(seed)
     optims = get_optimizers("splitters", "progressive", seed=next(seedg))
+    optims += ["DE", "CMA", "PSO", "TwoPointsDE", "RandomSearch"]
     for budget in [1000, 10000]:
         for num_workers in [1, 10, 100]:
             if num_workers < budget:
@@ -2022,7 +2024,7 @@ def double_o_seven(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     }
     env = base_env.with_agent(player_0=random_agent).as_single_agent()
     dde = ng.optimizers.DifferentialEvolution(crossover="dimension").set_name("DiscreteDE")
-    optimizers: tp.List[tp.Any] = ["PSO", dde, "MetaTuneRecentering", "DiagonalCMA"]
+    optimizers: tp.List[tp.Any] = ["PSO", dde, "MetaTuneRecentering", "DiagonalCMA", "TBPSA", "SPSA", "RecombiningOptimisticNoisyDiscreteOnePlusOne"]
     for num_repetitions in [1, 10, 100]:
         for archi in ["mono", "multi"]:
             for optim in optimizers:
