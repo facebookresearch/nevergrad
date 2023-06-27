@@ -29,3 +29,5 @@ fi # End of "there is something to do".
 
 # tar -zcvf ~/dag.tgz *_plots
 scripts/latexize.sh
+
+tar -zcvf dagstuhloid.tgz dagstuhloid.pdf *.csv
