@@ -105,6 +105,8 @@ def keras_tuning(
     ]
     optims = ["OnePlusOne", "RandomSearch", "Cobyla"]
     optims = ["DE", "TwoPointsDE", "HyperOpt", "MetaModelOnePlusOne"]
+    optims = ["OnePlusOne", "RandomSearch", "CMA", "DE", "TwoPointsDE", "HyperOpt", "Cobyla", "MetaModel", "MetaModelOnePlusOne", "RFMetaModel", "RFMetaModelOnePlusOne"]
+    optims = ["BOBYQA", "AX", "pysot"]
     datasets = ["kerasBoston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
     for dimension in [None]:
         for dataset in datasets:
@@ -152,6 +154,8 @@ def mltuning(
     ]
     optims = ["OnePlusOne", "RandomSearch", "Cobyla"]
     optims = ["DE", "TwoPointsDE", "HyperOpt", "MetaModelOnePlusOne"]
+    optims = ["OnePlusOne", "RandomSearch", "CMA", "DE", "TwoPointsDE", "HyperOpt", "Cobyla", "MetaModel", "MetaModelOnePlusOne", "RFMetaModel", "RFMetaModelOnePlusOne"]
+    optims = ["BOBYQA", "AX", "pysot"]
     for dimension in [None, 1, 2, 3]:
         if dimension is None:
             datasets = ["boston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
@@ -808,6 +812,8 @@ def yabbob(
         "RFMetaModel",
         "RFMetaModelDE",
     ]
+
+    optims = ["BOBYQA", "AX"]
     # if bounded:
     #    optims = ["BO", "PCABO", "BayesOptimBO", "CMA", "PSO", "DE"]
     # if box:
@@ -1191,6 +1197,7 @@ def pbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         "NGOpt",
     ]
     optims = ["ChainMetaModelSQP", "MetaModelOnePlusOne", "MetaModelDE"]
+    optims = ["BOBYQA", "AX"]
     dims = [40, 20]
     functions = [
         ArtificialFunction(name, block_dimension=d, rotation=rotation, expo=expo)
@@ -1216,6 +1223,7 @@ def illcondi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", seed=next(seedg))
+    optims = ["BOBYQA", "AX"]
     functions = [
         ArtificialFunction(name, block_dimension=50, rotation=rotation)
         for name in ["cigar", "ellipsoid"]
@@ -1239,6 +1247,7 @@ def illcondipara(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         for rotation in [True, False]
     ]
     optims = get_optimizers("competitive", seed=next(seedg))
+    optims = ["BOBYQA", "AX"]
     for function in functions:
         for budget in [100, 1000, 10000]:
             for optim in optims:
@@ -1534,6 +1543,7 @@ def aquacrop_fao(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     funcs = [NgAquacrop(i, 300.0 + 150.0 * np.cos(i)) for i in range(3, 7)]
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", seed=next(seedg))
+    optims = ["BOBYQA", "AX"]
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
         for num_workers in [1, 30]:
             if num_workers < budget:
@@ -1551,6 +1561,7 @@ def fishing(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", seed=next(seedg))
     optims += ["NGOpt", "NGOptRW", "ChainMetaModelSQP"]
+    optims = ["BOBYQA", "AX"]
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
         for algo in optims:
             for fu in funcs:
@@ -1568,6 +1579,7 @@ def rocket(seed: tp.Optional[int] = None, seq: bool = False) -> tp.Iterator[Expe
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", seed=next(seedg))
     optims += ["NGOpt", "NGOptRW", "ChainMetaModelSQP"]
+    optims = ["BOBYQA", "AX"]
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
         for num_workers in [1] if seq else [1, 30]:
             if num_workers < budget:
@@ -1685,6 +1697,7 @@ def olympus_surfaces(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", "noisy", seed=next(seedg))
+    optims = ["BOBYQA", "AX"]
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600]:
         for num_workers in [1]:  # , 10, 100]:
             if num_workers < budget:
@@ -1707,6 +1720,7 @@ def olympus_emulators(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", "noisy", seed=next(seedg))
+    optims = ["BOBYQA", "AX"]
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600]:
         for num_workers in [1]:  # , 10, 100]:
             if num_workers < budget:
@@ -1766,6 +1780,7 @@ def simple_tsp(seed: tp.Optional[int] = None, complex_tsp: bool = False) -> tp.I
         "MetaModel",
         "DiagonalCMA",
     ]
+    optims = ["BOBYQA", "AX"]
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600]:
         for num_workers in [1]:  # , 10, 100]:
             if num_workers < budget:
@@ -1790,6 +1805,7 @@ def sequential_fastgames(seed: tp.Optional[int] = None) -> tp.Iterator[Experimen
     funcs = [game.Game(name) for name in ["war", "batawaf", "flip", "guesswho", "bigguesswho"]]
     seedg = create_seed_generator(seed)
     optims = get_optimizers("noisy", "splitters", "progressive", seed=next(seedg))
+    optims = ["BOBYQA", "AX"]
     for budget in [12800, 25600, 51200, 102400]:
         for num_workers in [1]:
             if num_workers < budget:
@@ -1808,6 +1824,7 @@ def powersystems(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         funcs += [PowerSystem(dams, depth=2, width=3)]
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", "noisy", "splitters", "progressive", seed=next(seedg))
+    optims = ["BOBYQA", "AX"]
     budgets = [3200, 6400, 12800]
     for budget in budgets:
         for num_workers in [1, 10, 100]:
@@ -1836,6 +1853,7 @@ def mlda(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     funcs += [_mlda.Landscape(transform) for transform in [None, "square", "gaussian"]]
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", seed=next(seedg))
+    optims = ["BOBYQA", "AX"]
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]:
         for num_workers in [1, 10, 100]:
             if num_workers < budget:
@@ -1857,6 +1875,7 @@ def mldakmeans(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     optims = get_optimizers("splitters", "progressive", seed=next(seedg))
     optims += ["DE", "CMA", "PSO", "TwoPointsDE", "RandomSearch"]
+    optims = ["BOBYQA", "AX"]
     for budget in [1000, 10000]:
         for num_workers in [1, 10, 100]:
             if num_workers < budget:
@@ -2159,6 +2178,7 @@ def multiobjective_example(
         ),
     ]
     optims += ["DiscreteOnePlusOne", "DiscreteLenglerOnePlusOne"]
+    optims = ["BOBYQA", "AX"]
     popsizes = [20, 40, 80]
     optims += [
         ng.families.EvolutionStrategy(
@@ -2394,6 +2414,7 @@ def causal_similarity(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
     seedg = create_seed_generator(seed)
     optims = ["CMA", "NGOpt8", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
+    optims = ["BOBYQA", "AX"]
     func = CausalDiscovery()
     for budget in [100 * 5**k for k in range(3)]:
         for num_workers in [1]:
@@ -2407,6 +2428,7 @@ def unit_commitment(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Unit commitment problem."""
     seedg = create_seed_generator(seed)
     optims = ["CMA", "NGOpt8", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
+    optims = ["BOBYQA", "AX"]
     for num_timepoint in [5, 10, 20]:
         for num_generator in [3, 8]:
             func = UnitCommitmentProblem(num_timepoints=num_timepoint, num_generators=num_generator)
@@ -2421,6 +2443,7 @@ def team_cycling(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Experiment to optimise team pursuit track cycling problem."""
     seedg = create_seed_generator(seed)
     optims = ["NGOpt10", "CMA", "DE"]
+    optims = ["BOBYQA", "AX"]
     funcs = [Cycling(num) for num in [30, 31, 61, 22, 23, 45]]
     for function in funcs:
         for budget in [3000]:
