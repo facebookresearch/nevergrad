@@ -10,6 +10,7 @@
 \begin{document}
 
 \title{Dagsthloid benchmarking}
+%\author{OT, Photonics guys, Keras/mltuning guys, D. people, INFRA people}
 
 \maketitle
 
@@ -82,7 +83,7 @@ known~\cite{fabian,decocknoise} that, with a significant noise level, fast rates
 
 Also in terms of noise, we do not plot the best result so far but the value of the current recommendation. An approach based on best value (with noise) so far implies biased results.
 
-``(RW)'' means that the benchmark is real world.
+``(RW)'' means that the benchmark is real world. Note that the definition of ``real world'' is not so simple: we are entirely in silico, and in some cases the model has been simplified. This just means that we consider this as sufficiently real-world for being tagged that way.
 
 As pointed out during the seminar, ordered discrete is different from unordered discrete. Some of benchmarks include ordered discrete and some include unordered discrete: Nevergrad can use typed variables (as documented in \url{https://facebookresearch.github.io/nevergrad/optimization.html}) and we use this.
 
