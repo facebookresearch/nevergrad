@@ -2226,7 +2226,7 @@ def photonics(seed: tp.Optional[int] = None, as_tuple: bool = False) -> tp.Itera
     for method in ["clipping", "tanh"]:  # , "arctan"]:
         for name in ["bragg", "chirped", "morpho", "cf_photosic_realistic", "cf_photosic_reference"]:
             func = Photonics(name, 60 if name == "morpho" else 80, bounding_method=method, as_tuple=as_tuple)
-            for budget in [1e3, 1e4, 1e5, 1e6]:
+            for budget in [1e2, 1e3]:
                 for algo in optims:
                     xp = Experiment(func, algo, int(budget), num_workers=1, seed=next(seedg))
                     if not xp.is_incoherent:
