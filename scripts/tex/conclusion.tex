@@ -8,7 +8,8 @@ variants equipped with the the MetaModel and the final local search are even bet
 On many real-world benchmarks, the budget is lower than in the traditional context of BBOB with budget $=$ dimension $\times$ 1000. There
 are cases with a ratio budget/dimension $<1$, of the order of a few units or a few dozens. DE performs well in many cases. This is consistent with many publications considering real-world problems. Our real-world benchmarks include TODO
 
-SQP is excellent in noisy optimization. 
+SQP is excellent in noisy optimization. In the large-scale context, TBPSA (combining population-control\cite{mlis} and other tools as in \cite{vasilfoga}) also performs well.
+Methods designed in the noisy case might diverge.
 
 We include benchmarks with one or several or many constraints (prefix onepen, pen and megapen), tackled with dynamic penalization: results were not fundamentally different from the non-penalized case. However, MetaModels are effective in a very stable and visible manner: this is consistent with the state of the art TODO
 
@@ -22,6 +23,12 @@ Regarding the principles of benchmarking, we note that the two different views i
 Regarding BBOB variants, TODO
 
 Regarding PBBOB, TODO
+
+Regarding Holland and Voronoi crossovers, TODO
+
+Algorithms taking into account the difference between ordered and unordered discrete variables TODO
+
+In the low budget case, Cobyla and BOBYQA are frequently excellent in moderate dimension. The high-dimensional case sees great successes of DE variants.
 
 Consistently with some real world experiments in \cite{micropredictions1,micropredictions2}, we note the the $(1+1)$ evolution strategy with one-fifth rule from \cite{rechenberg73} is still quite good. In artificial benchmarks with a lot of evaluations, high conditionning and artificially rotated contexts, it can become weak: for many realistic contexts, in particular a realistic ratio budget/dimension, it is quite good.
 
