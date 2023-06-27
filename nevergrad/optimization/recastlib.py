@@ -10,6 +10,8 @@ import warnings
 import weakref
 import numpy as np
 from scipy import optimize as scipyoptimize
+import pybobyqa  # type: ignore
+from ax import optimize as axoptimize
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
 from nevergrad.common import errors
@@ -41,6 +43,8 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 "COBYLA",
                 "SLSQP",
                 "Powell",
+                "BOBYQA",
+                "AX",
             ]
             or "NLOPT" in method
         ), f"Unknown method '{method}'"
@@ -48,7 +52,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
         self.random_restart = random_restart
         # The following line rescales to [0, 1] if fully bounded.
 
-        if method == "CmaFmin2" or "NLOPT" in method:
+        if method == "CmaFmin2" or "NLOPT" in method or "AX" in method or "BOBYQA" in method:
             normalizer = p.helpers.Normalizer(self.parametrization)
             if normalizer.fully_bounded:
                 self._normalizer = normalizer
@@ -72,10 +76,32 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
         if weakself.initial_guess is not None:
             best_x = np.array(weakself.initial_guess, copy=True)  # copy, just to make sure it is not modified
         remaining: float = budget - weakself._num_ask
+
+        def ax_obj(p):
+            data = [p["x" + str(i)] for i in range(weakself.dimension)]  # type: ignore
+            if weakself._normalizer:
+                data = weakself._normalizer.backward(np.asarray(data, dtype=np.float_))
+            return objective_function(data)
+
         while remaining > 0:  # try to restart if budget is not elapsed
             options: tp.Dict[str, tp.Any] = {} if weakself.budget is None else {"maxiter": remaining}
-            # options: tp.Dict[str, tp.Any] = {} if self.budget is None else {"maxiter": remaining}
-            if weakself.method[:5] == "NLOPT":
+            if weakself.method == "BOBYQA":
+                res = pybobyqa.solve(objective_function, best_x, maxfun=budget, do_logging=False)
+                if res.f < best_res:
+                    best_res = res.f
+                    best_x = res.x
+            elif weakself.method == "AX":
+                parameters = [
+                    {"name": "x" + str(i), "type": "range", "bounds": [0.0, 1.0]}
+                    for i in range(weakself.dimension)
+                ]
+                _best_parameters, _best_values, _experiment, _model = axoptimize(
+                    parameters, evaluation_function=ax_obj, minimize=True, total_trials=budget
+                )
+                best_x = [p["x" + str(i)] for i in range(weakself.dimension)]
+                best_x = weakself._normalizer.backward(np.asarray(best_x, dtype=np.float))
+            # options: tp.Dict[str, tp.Any] = {} if weakself.budget is None else {"maxiter": remaining}
+            elif weakself.method[:5] == "NLOPT":
                 # This is NLOPT, used as in the PCSE simulator notebook.
                 # ( https://github.com/ajwdewit/pcse_notebooks ).
                 import nlopt
@@ -207,6 +233,8 @@ class NonObjectOptimizer(base.ConfiguredOptimizer):
         super().__init__(_NonObjectMinimizeBase, locals())
 
 
+AX = NonObjectOptimizer(method="AX").set_name("AX", register=True)
+BOBYQA = NonObjectOptimizer(method="BOBYQA").set_name("BOBYQA", register=True)
 NelderMead = NonObjectOptimizer(method="Nelder-Mead").set_name("NelderMead", register=True)
 CmaFmin2 = NonObjectOptimizer(method="CmaFmin2").set_name("CmaFmin2", register=True)
 NLOPT = NonObjectOptimizer(method="NLOPT").set_name("NLOPT", register=True)
