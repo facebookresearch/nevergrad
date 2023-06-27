@@ -750,7 +750,14 @@ def yabbob(
         optims += ["BO", "PCABO", "CMA", "PSO", "DE"]
     if small and not hd:
         optims += ["PCABO", "BO", "Cobyla"]
-    optims = ["MetaModelDE", "MetaModelOnePlusOne", "OnePlusOne", "ChainMetaModelSQP", "RFMetaModel", "RFMetaModelDE"]
+    optims = [
+        "MetaModelDE",
+        "MetaModelOnePlusOne",
+        "OnePlusOne",
+        "ChainMetaModelSQP",
+        "RFMetaModel",
+        "RFMetaModelDE",
+    ]
     # if bounded:
     #    optims = ["BO", "PCABO", "BayesOptimBO", "CMA", "PSO", "DE"]
     # if box:
