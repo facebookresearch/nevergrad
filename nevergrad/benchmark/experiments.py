@@ -79,6 +79,7 @@ class _Constraint:
         return value > 0 if self.as_bool else value
 
 
+@registry.register
 def keras_tuning(
     seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool = False
 ) -> tp.Iterator[Experiment]:
@@ -89,6 +90,7 @@ def keras_tuning(
     # First, a few functions with constraints.
     # optims: tp.List[str] = ["PSO", "OnePlusOne"] + get_optimizers("basics", seed=next(seedg))  # type: ignore
     optims = ["OnePlusOne", "BO", "RandomSearch", "CMA", "DE", "TwoPointsDE", "HyperOpt", "PCABO", "Cobyla"]
+    optims = ["OnePlusOne", "RandomSearch", "CMA", "DE", "TwoPointsDE", "HyperOpt", "Cobyla", "MetaModel", "MetaModelOnePlusOne", "RFMetaModel", "RFMetaModelOnePlusOne"]
     datasets = ["kerasBoston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
     for dimension in [None]:
         for dataset in datasets:
@@ -108,6 +110,7 @@ def keras_tuning(
                             yield xp
 
 
+@registry.register
 def mltuning(
     seed: tp.Optional[int] = None,
     overfitter: bool = False,
@@ -120,6 +123,7 @@ def mltuning(
     # if not seq:
     #    optims = get_optimizers("oneshot", seed=next(seedg))  # type: ignore
     optims = ["OnePlusOne", "BO", "RandomSearch", "CMA", "DE", "TwoPointsDE", "PCABO", "HyperOpt", "Cobyla"]
+    optims = ["OnePlusOne", "RandomSearch", "CMA", "DE", "TwoPointsDE", "HyperOpt", "Cobyla", "MetaModel", "MetaModelOnePlusOne", "RFMetaModel", "RFMetaModelOnePlusOne"]
     for dimension in [None, 1, 2, 3]:
         if dimension is None:
             datasets = ["boston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
@@ -144,6 +148,7 @@ def mltuning(
                                 yield xp
 
 
+@registry.register
 def naivemltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of mltuning with overfitting of valid loss, i.e. train/valid/valid instead of train/valid/test."""
     return mltuning(seed, overfitter=True)

@@ -1832,6 +1832,7 @@ RFMetaModel = ParametrizedMetaModel(algorithm="rf").set_name("RFMetaModel", regi
 MetaModelOnePlusOne = ParametrizedMetaModel(multivariate_optimizer=OnePlusOne).set_name(
     "MetaModelOnePlusOne", register=True
 )
+RFMetaModelOnePlusOne = ParametrizedMetaModel(multivariate_optimizer=OnePlusOne, algorithm="rf").set_name("RFMetaModelOnePlusOne", register=True)
 
 MetaModelDE = ParametrizedMetaModel(multivariate_optimizer=DE).set_name("MetaModelDE", register=True)
 NeuralMetaModelDE = ParametrizedMetaModel(algorithm="neural", multivariate_optimizer=DE).set_name(
