@@ -16,7 +16,8 @@
 
 \begin{abstract}
 At the Dagstuhl seminar 23251 (June 2023), many principles of benchmarking were discussed: reproducibility, open sourcing, cases with budget $>$ 100 times the dimension being the exception rather than the rule, cases with 10 $\times$ budget $<$ dimension exist, real-world benchmarking is critical for validating artificial benchmarks. Also, bugs in existing implementations have been discussed.
-We want everything to be easy to rerun entirely from scratch. This might need a significant computational power; see below.
+
+We want everything to be easy to rerun entirely from scratch. This might need a significant computational power.
 However, it is possible to run manually and separately some benchmarks: one can easily edit the main script and reduce the number of benchmarks, possibly to a single benchmark at a time, and also we rerun periodically all the benchmarks and accept pull requests so that a limited computational power should not be an obstacle to reproducibility.
 \end{abstract}
 \tableofcontents
@@ -26,7 +27,7 @@ However, it is possible to run manually and separately some benchmarks: one can 
 In artificial benchmarking platforms, some talks pointed out the importance of the distribution of optima. Therefore, we propose parameters of the distribution of optima, in the PBBOB (parametric BBOB) benchmark.
 We compare implementations, not abstract algorithms. The detailed implementations are freely available in Nevergrad and anyone can propose a modification.
 A large part of the benchmarks are based on real-world data or reasonably close to this.
-Benchmarking is not a joke. Recent news show that poorly reproducible benchmarking is detrimental to science.
+Benchmarking is a serious matter. Recent news show that poorly reproducible benchmarking is detrimental to science.
 
 Naming: “oid” means “similar to”. The benchmark is called Dagstuhloid because it is inspired by Dagstuhl talks. The responsibility is entirely ours, though.
 
@@ -51,9 +52,10 @@ How to reproduce these results:
 Please note that creating a pull request and pinging us at \urlhttps://www.facebook.com/groups/nevergradusers/} is a simple solution to get heavy computations done, we are more than happy to run what you need if the computational cost is reasonable. 
 
 \section{Comparison with other benchmarks}
-
+We need correctly tuned algorithms. We can not guarantee that algorithms are all correctly parametrized: however, everything is free and anyone can implement her own favorite algorithm and/or propose a new tuning. For example, compared to \cite{lamcts}, our artificial benchmarks are not with optimum in zero (which leads to a strong advantage for algorithms initialized 100 times closer to 0 than others) and for our real-world benchmarks we do not have completely different scalings for different methods unless the scaling of the initialization is on purpose as for some methods scaling the initialization specifically as a function of dimension/budget: of course, such cases deserve specific discussions.
 For each benchmark, the detailed setup is documented at \url{https://github.com/facebookresearch/nevergrad/blob/main/nevergrad/benchmark/experiments.py}.
 Ctrl-F with the name of the benchmark should provide all details.
+The algorithms are all readable in  \url{https://github.com/facebookresearch/nevergrad/blob/main/nevergrad/optimization/}.
 For each benchmark we provide both:
 \begin{itemize}
 \item A heatmap, showing the frequency at which a method (row) outperforms on average another method (col). Methods are ordered by average such frequency, over all other methods.
@@ -77,6 +79,8 @@ the optimum as provided by the algorithm. In ask/tell format, $x_n$ is provided 
 $(x_n,y_n)$ by ``tell'' - and we need a method ``recommend'' for providing the recommendations. Ask and recommend are
 distinct because $x_n$ and $\hat x_n$ are distinct. The regret is evaluated at $\hat x_n$, and it is
 known~\cite{fabian,decocknoise} that, with a significant noise level, fast rates~\cite{fabian,chen1988} for the simple regret can only be obtained using $x_n$ far from the optimum (i.e. $x_n\neq \hat x_n$) for acquiring knowledge. Plotting results using $\E\inf_{i\leq n}(\E f)(x_i)$ (or any other criterion based on the $x_i$ rather than the $\hat x_n$) instead of $\E f(\hat x_n)$ is convenient for reusing noise-free software, but wrong: the best algorithms for such criteria are those which randomly explore around $\hat x_n$ rather than those which do clever explorations further from the optimum. We underline that, in spite of this bug for the noisy case, BBOB has been extremely useful for making benchmarking more rigorous in BBO.
+
+Also in terms of noise, we do not plot the best result so far but the value of the current recommendation. An approach based on best value (with noise) so far implies biased results.
 
 ``(RW)'' means that the benchmark is real world.
 
