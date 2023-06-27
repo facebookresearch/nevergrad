@@ -747,10 +747,10 @@ def yabbob(
         optims += get_optimizers("splitters", seed=next(seedg))  # type: ignore
 
     if hd and small:
-        optims = ["BO", "PCABO", "CMA", "PSO", "DE"]
+        optims += ["BO", "PCABO", "CMA", "PSO", "DE"]
     if small and not hd:
         optims += ["PCABO", "BO", "Cobyla"]
-
+    optims = ["MetaModelDE", "MetaModelOnePlusOne", "OnePlusOne", "ChainMetaModelSQP", "RFMetaModel", "RFMetaModelDE"]
     # if bounded:
     #    optims = ["BO", "PCABO", "BayesOptimBO", "CMA", "PSO", "DE"]
     # if box:
@@ -1133,6 +1133,7 @@ def pbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         "NGOptRW",
         "NGOpt",
     ]
+    optims = ["ChainMetaModelSQP", "MetaModelOnePlusOne", "MetaModelDE"]
     dims = [40, 20]
     functions = [
         ArtificialFunction(name, block_dimension=d, rotation=rotation, expo=expo)
@@ -1509,6 +1510,7 @@ def rocket(seed: tp.Optional[int] = None, seq: bool = False) -> tp.Iterator[Expe
     funcs = [Rocket(i) for i in range(17)]
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", seed=next(seedg))
+    optims += ["NGOpt", "NGOptRW", "ChainMetaModelSQP"]
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
         for num_workers in [1] if seq else [1, 30]:
             if num_workers < budget:
@@ -2290,7 +2292,7 @@ def pbo_suite(seed: tp.Optional[int] = None, reduced: bool = False) -> tp.Iterat
                 index += 1
                 if reduced and index % 13:
                     continue
-                for instrumentation in ["Unordered"] if reduced else ["Softmax", "Ordered", "Unordered"]:
+                for instrumentation in ["Softmax", "Ordered", "Unordered"]:
                     try:
                         func = iohprofiler.PBOFunction(fid, iid, dim, instrumentation=instrumentation)
                         func.add_descriptors(instrum_str=instrumentation)
