@@ -90,9 +90,21 @@ def keras_tuning(
     # First, a few functions with constraints.
     # optims: tp.List[str] = ["PSO", "OnePlusOne"] + get_optimizers("basics", seed=next(seedg))  # type: ignore
     optims = ["OnePlusOne", "BO", "RandomSearch", "CMA", "DE", "TwoPointsDE", "HyperOpt", "PCABO", "Cobyla"]
-    optims = ["OnePlusOne", "RandomSearch", "CMA", "DE", "TwoPointsDE", "HyperOpt", "Cobyla", "MetaModel", "MetaModelOnePlusOne", "RFMetaModel", "RFMetaModelOnePlusOne"]
+    optims = [
+        "OnePlusOne",
+        "RandomSearch",
+        "CMA",
+        "DE",
+        "TwoPointsDE",
+        "HyperOpt",
+        "Cobyla",
+        "MetaModel",
+        "MetaModelOnePlusOne",
+        "RFMetaModel",
+        "RFMetaModelOnePlusOne",
+    ]
     optims = ["OnePlusOne", "RandomSearch", "Cobyla"]
-    optims = ["DE","TwoPointsDE", "HyperOpt", "MetaModelOnePlusOne"]
+    optims = ["DE", "TwoPointsDE", "HyperOpt", "MetaModelOnePlusOne"]
     datasets = ["kerasBoston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
     for dimension in [None]:
         for dataset in datasets:
@@ -125,9 +137,21 @@ def mltuning(
     # if not seq:
     #    optims = get_optimizers("oneshot", seed=next(seedg))  # type: ignore
     optims = ["OnePlusOne", "BO", "RandomSearch", "CMA", "DE", "TwoPointsDE", "PCABO", "HyperOpt", "Cobyla"]
-    optims = ["OnePlusOne", "RandomSearch", "CMA", "DE", "TwoPointsDE", "HyperOpt", "Cobyla", "MetaModel", "MetaModelOnePlusOne", "RFMetaModel", "RFMetaModelOnePlusOne"]
+    optims = [
+        "OnePlusOne",
+        "RandomSearch",
+        "CMA",
+        "DE",
+        "TwoPointsDE",
+        "HyperOpt",
+        "Cobyla",
+        "MetaModel",
+        "MetaModelOnePlusOne",
+        "RFMetaModel",
+        "RFMetaModelOnePlusOne",
+    ]
     optims = ["OnePlusOne", "RandomSearch", "Cobyla"]
-    optims = ["DE","TwoPointsDE", "HyperOpt", "MetaModelOnePlusOne"]
+    optims = ["DE", "TwoPointsDE", "HyperOpt", "MetaModelOnePlusOne"]
     for dimension in [None, 1, 2, 3]:
         if dimension is None:
             datasets = ["boston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
@@ -2228,14 +2252,23 @@ def far_optimum_es(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def photonics(seed: tp.Optional[int] = None, as_tuple: bool = False) -> tp.Iterator[Experiment]:
+def photonics(
+    seed: tp.Optional[int] = None, as_tuple: bool = False, small: bool = False
+) -> tp.Iterator[Experiment]:
     """Too small for being interesting: Bragg mirror + Chirped + Morpho butterfly."""
     seedg = create_seed_generator(seed)
+    divider = 2 if small else 1
     optims = get_optimizers("es", "basics", "splitters", seed=next(seedg))  # type: ignore
+    optims = ["PSO", "DE", "CMA", "OnePlusOne", "TwoPointsDE", "GeneticDE"]
     for method in ["clipping", "tanh"]:  # , "arctan"]:
         for name in ["bragg", "chirped", "morpho", "cf_photosic_realistic", "cf_photosic_reference"]:
-            func = Photonics(name, 60 if name == "morpho" else 80, bounding_method=method, as_tuple=as_tuple)
-            for budget in [1e2, 1e3]:
+            func = Photonics(
+                name,
+                60 / divider if name == "morpho" else 80 / divider,
+                bounding_method=method,
+                as_tuple=as_tuple,
+            )
+            for budget in [1e1, 1e2, 1e3]:
                 for algo in optims:
                     xp = Experiment(func, algo, int(budget), num_workers=1, seed=next(seedg))
                     if not xp.is_incoherent:
@@ -2246,6 +2279,24 @@ def photonics(seed: tp.Optional[int] = None, as_tuple: bool = False) -> tp.Itera
 def photonics2(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with higher dimensions."""
     return photonics(seed, as_tuple=True)
+
+
+@registry.register
+def small_photonics(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with higher dimensions."""
+    return photonics(seed, as_tuple=False, small=True)
+
+
+@registry.register
+def small_photonics2(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with higher dimensions."""
+    return photonics(seed, as_tuple=True, small=True)
+
+
+@registry.register
+def small_photonics2(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with higher dimensions."""
+    return photonics(seed, as_tuple=True, small=True)
 
 
 @registry.register

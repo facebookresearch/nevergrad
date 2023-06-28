@@ -4,9 +4,10 @@ allplots=""
 allplots="$allplots `ls -d *_plots/ | grep bbob | grep yabbob `"
 allplots="$allplots `ls -d *_plots/ | grep bbob | grep -v yabbob | grep -v pen`"
 allplots="$allplots `ls -d *_plots/ | grep bbob | grep  pen`"
-allplots="$allplots `ls -d *_plots/ | grep -v bbob | grep tuning`"
-allplots="$allplots `ls -d *_plots/ | grep -v bbob | grep -v tuning | egrep 'pbo|discr|bonn'`"
-allplots="$allplots `ls -d *_plots/ | grep -v bbob | grep -v tuning | egrep -v 'pbo|discr|bonn'`"
+allplots="$allplots `ls -d *_plots/ | grep -v bbob | grep photonics `"
+allplots="$allplots `ls -d *_plots/ | grep -v bbob | grep -v photonics | grep tuning`"
+allplots="$allplots `ls -d *_plots/ | grep -v bbob | grep -v photonics | grep -v tuning | egrep 'pbo|discr|bonn'`"
+allplots="$allplots `ls -d *_plots/ | grep -v bbob | grep -v photonics | grep -v tuning | egrep -v 'pbo|discr|bonn'`"
 echo $allplots
 
 (
