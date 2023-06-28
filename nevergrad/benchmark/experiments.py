@@ -91,6 +91,8 @@ def keras_tuning(
     # optims: tp.List[str] = ["PSO", "OnePlusOne"] + get_optimizers("basics", seed=next(seedg))  # type: ignore
     optims = ["OnePlusOne", "BO", "RandomSearch", "CMA", "DE", "TwoPointsDE", "HyperOpt", "PCABO", "Cobyla"]
     optims = ["OnePlusOne", "RandomSearch", "CMA", "DE", "TwoPointsDE", "HyperOpt", "Cobyla", "MetaModel", "MetaModelOnePlusOne", "RFMetaModel", "RFMetaModelOnePlusOne"]
+    optims = ["OnePlusOne", "RandomSearch", "Cobyla"]
+    optims = ["DE","TwoPointsDE", "HyperOpt", "MetaModelOnePlusOne"]
     datasets = ["kerasBoston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
     for dimension in [None]:
         for dataset in datasets:
@@ -124,6 +126,8 @@ def mltuning(
     #    optims = get_optimizers("oneshot", seed=next(seedg))  # type: ignore
     optims = ["OnePlusOne", "BO", "RandomSearch", "CMA", "DE", "TwoPointsDE", "PCABO", "HyperOpt", "Cobyla"]
     optims = ["OnePlusOne", "RandomSearch", "CMA", "DE", "TwoPointsDE", "HyperOpt", "Cobyla", "MetaModel", "MetaModelOnePlusOne", "RFMetaModel", "RFMetaModelOnePlusOne"]
+    optims = ["OnePlusOne", "RandomSearch", "Cobyla"]
+    optims = ["DE","TwoPointsDE", "HyperOpt", "MetaModelOnePlusOne"]
     for dimension in [None, 1, 2, 3]:
         if dimension is None:
             datasets = ["boston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
