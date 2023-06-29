@@ -796,6 +796,18 @@ def yabbob(
     # if box:
     #    optims = ["DiagonalCMA", "Cobyla", "NGOpt16", "NGOpt15", "CMandAS2", "OnePlusOne"]
     # List of objective functions.
+    optims = [
+        "MetaModelDE",
+        "NeuralMetaModelDE",
+        "SVMMetaModelDE",
+        "RFMetaModelDE",
+        "MetaModelTwoPointsDE",
+        "NeuralMetaModelTwoPointsDE",
+        "SVMMetaModelTwoPointsDE",
+        "RFMetaModelTwoPointsDE",
+        "GeneticDE",
+    ]
+    optims = ["LargeCMA", "SmallCMA", "OldCMA"]
     functions = [
         ArtificialFunction(
             name,
@@ -1174,6 +1186,7 @@ def pbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         "NGOpt",
     ]
     optims = ["ChainMetaModelSQP", "MetaModelOnePlusOne", "MetaModelDE"]
+    optims = ["LargeCMA", "SmallCMA", "OldCMA"]
     dims = [40, 20]
     functions = [
         ArtificialFunction(name, block_dimension=d, rotation=rotation, expo=expo)

@@ -809,6 +809,8 @@ class ChoiceBase(base.Optimizer):
 
 
 OldCMA = ParametrizedCMA().set_name("OldCMA", register=True)
+LargeCMA = ParametrizedCMA(scale=3.0).set_name("LargeCMA", register=True)
+SmallCMA = ParametrizedCMA(scale=3.0).set_name("SmallCMA", register=True)
 CMA = ParametrizedCMA().set_name("CMA", register=True)
 CMAbounded = ParametrizedCMA(
     scale=1.5884, popsize_factor=1, elitist=True, diagonal=True, fcmaes=False
