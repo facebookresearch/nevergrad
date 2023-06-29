@@ -28,9 +28,20 @@ Regarding Holland and Voronoi crossovers, TODO
 
 Algorithms taking into account the difference between ordered and unordered discrete variables TODO
 
-In the low budget case, Cobyla and BOBYQA are frequently excellent in moderate dimension. The high-dimensional case sees great successes of DE variants.
+In the continuous low budget case, Cobyla and BOBYQA are frequently excellent in moderate dimension. The high-dimensional case sees great successes of DE variants.
 
 Consistently with some real world experiments in \cite{micropredictions1,micropredictions2}, we note the the $(1+1)$ evolution strategy with one-fifth rule from \cite{rechenberg73} is still quite good. In artificial benchmarks with a lot of evaluations, high conditionning and artificially rotated contexts, it can become weak: for many realistic contexts, in particular a realistic ratio budget/dimension, it is quite good.
+
+The simple $(1+1)$ evolution strategy with one-fifth rule, when equipped with a meta-model, turned out to be powerful.
+New memetic TODO
+
+In real-world benchmark tunings, results varied vastly from one benchmark to the next.  It looks like we can conclude
+anything we want by selecting a benchmark or by tuning algorithms for a specific case.
+
+The multi-objective setting is quite difficult to analyze. The DE adapted to the multi-objective case available in
+Nevergrad performs well in classical settings, but high dimensional and many objective cases lead to surprisingly good
+results  by e.g. discrete methods running in the continuous case (which means they are handled that variables with
+infinitely many possibles values).
 
 \subsection{Caveats, further work}
 Some benchmarks were implemented but not included in the release due to legal issues in the license. 

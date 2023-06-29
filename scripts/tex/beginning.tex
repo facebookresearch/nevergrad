@@ -64,7 +64,14 @@ For each benchmark we provide both:
 The columns show the methods with the number of settings they were able to tackle (for example, some methods have no parallel version and therefore do not fill all settings).
 \item A convergence curve, with the budget on the x-axis and the average (over all budgets) normalized (linearly, to 0-1) loss. Note that some benchmarks do not have the same functions for the different values of the budget. Therefore we might have a rugged curve, not monotonous at all. 
 \end{itemize}
-Note that the ranking of the rows or columns in the heatmap, and the ranking of the curves, do not have to match. As detailed above, runs for different budgets are independent, and we take all budget values in the statistics used for the heatmaps: therefore the ranking in the heatmap takes into account the low budget as much as the high budgets of the experiments. Also, the heatmap is about frequencies of a method outperforming another method: so, the gap does not matter. So robustness is taken into account differently: the impact of this difference can be big.
+Note that the ranking of the rows or columns in the heatmap, and the ranking of the curves, do not have to match. As
+detailed above, runs for different budgets are independent, and we take all budget values in the statistics used for the
+heatmaps: therefore the ranking in the heatmap takes into account the low budget as much as the high budgets of the
+experiments. Also, the heatmap is about frequencies of a method outperforming another method: so, the gap does not
+matter. So robustness is taken into account differently: the impact of this difference can be big.
+The heatmap presented here is the so-called ``pure'' one, i.e. only algorithms which tackled all problems are presented.
+On the other hand, the convergence curves contain all methods: just keep in minds that those not in the heatmap might be
+averaged on a smaller set of functions, hence the comparison might be unfair.
 
 The appendix contains many competence maps. Competence maps show, for a given pair of variables/values, which algorithms performs best on average. This is quite good for interpretability, but big.
 
