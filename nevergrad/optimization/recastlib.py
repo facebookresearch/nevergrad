@@ -124,21 +124,21 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                         val = objective_function(data)
                         if not hasattr(self, "best_val") or val < self.best_val:  # type: ignore
                             self.best_val = val
-                            self.best_x = x
+                            self.best_x = data
                         return val
 
-                gomea_f = gomea_function(weakself._dimension)
+                gomea_f = gomea_function(weakself.dimension)
                 lm = {
                     "gomea": gomea.linkage.Univariate(),
-                    "gomeablock": gomea.linkage.BlockMarginalProduct(),
-                    "gomeatree": gomea.linkage.LinkageTree(),
+                    "gomeablock": gomea.linkage.BlockMarginalProduct(2),
+                    "gomeatree": gomea.linkage.LinkageTree("NMI".encode(), True, 0),
                 }[weakself.method]
                 rvgom = gomea.RealValuedGOMEA(
                     fitness=gomea_f,
                     linkage_model=lm,
                     lower_init_range=0.0,
                     upper_init_range=1.0,
-                    max_number_of_evaluations=max_evals,
+                    max_number_of_evaluations=budget,
                 )
                 rvgom.run()
                 best_x = gomea_f.best_x
