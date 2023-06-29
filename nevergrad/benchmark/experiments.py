@@ -118,7 +118,7 @@ def keras_tuning(
     ]
     optims = ["OnePlusOne", "RandomSearch", "CMA", "DE", "TwoPointsDE", "HyperOpt", "Cobyla", "MetaModel", "MetaModelOnePlusOne", "RFMetaModel", "RFMetaModelOnePlusOne"]
     optims = ["BOBYQA", "AX", "pysot"]
-    optims = ["NGOpt", "NGOptRW", "QRDE", "QODE", "MetaModelDE", "RFMetaModelDE"]
+    optims = ["OnePlusOne", "BOBYQA", "AX", "RandomSearch", "MetaModel", "CMA", "DE", "TwoPointsDE", "PSO"]
     datasets = ["kerasBoston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
     for dimension in [None]:
         for dataset in datasets:
@@ -179,7 +179,7 @@ def mltuning(
     ]
     optims = ["OnePlusOne", "RandomSearch", "CMA", "DE", "TwoPointsDE", "HyperOpt", "Cobyla", "MetaModel", "MetaModelOnePlusOne", "RFMetaModel", "RFMetaModelOnePlusOne"]
     optims = ["BOBYQA", "AX", "pysot"]
-    optims = ["NGOpt", "NGOptRW", "QRDE", "QODE", "MetaModelDE", "RFMetaModelDE"]
+    optims = ["OnePlusOne", "BOBYQA", "AX", "RandomSearch", "MetaModel", "CMA", "DE", "TwoPointsDE", "PSO"]
     for dimension in [None, 1, 2, 3]:
         if dimension is None:
             datasets = ["boston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
@@ -912,6 +912,7 @@ def yabbob(
 
     optims = ["BOBYQA"]  #, "pysot"]  #, "AX"]
     optims = ["pysot"]
+    optims = ["BOBYQA", "AX", "RandomSearch", "MetaModel", "CMA", "DE", "TwoPointsDE", "PSO"]
     # if bounded:
     #    optims = ["BO", "PCABO", "BayesOptimBO", "CMA", "PSO", "DE"]
     # if box:
@@ -1336,6 +1337,7 @@ def pbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     optims = ["LargeCMA", "TinyCMA", "OldCMA", "MicroCMA"]
     optims = ["BFGS", "LBFGSB", "MemeticDE"]
     optims = ["BOBYQA", "AX", "pysot"]
+    optims = ["BOBYQA", "AX"]
     dims = [40, 20]
     functions = [
         ArtificialFunction(name, block_dimension=d, rotation=rotation, expo=expo)
@@ -2604,7 +2606,7 @@ def unit_commitment(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Unit commitment problem."""
     seedg = create_seed_generator(seed)
     optims = ["CMA", "NGOpt8", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
-    optims = ["BOBYQA", "AX", "pysot"]
+    optims = ["BOBYQA", "AX"]
     for num_timepoint in [5, 10, 20]:
         for num_generator in [3, 8]:
             func = UnitCommitmentProblem(num_timepoints=num_timepoint, num_generators=num_generator)
@@ -2620,6 +2622,7 @@ def team_cycling(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     optims = ["NGOpt10", "CMA", "DE"]
     optims = ["BOBYQA", "AX", "pysot"]
+    optims = ["BOBYQA", "AX"]
     funcs = [Cycling(num) for num in [30, 31, 61, 22, 23, 45]]
     for function in funcs:
         for budget in [3000]:
