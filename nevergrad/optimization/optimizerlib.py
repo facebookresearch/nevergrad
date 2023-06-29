@@ -2335,6 +2335,7 @@ class _Chain(base.Optimizer):
             "dimension": self.dimension,
             "half": self.budget // 2 if self.budget else self.num_workers,
             "third": self.budget // 3 if self.budget else self.num_workers,
+            "fourth": self.budget // 4 if self.budget else self.num_workers,
             "tenth": self.budget // 10 if self.budget else self.num_workers,
             "sqrt": int(np.sqrt(self.budget)) if self.budget else self.num_workers,
         }
@@ -2342,7 +2343,8 @@ class _Chain(base.Optimizer):
         last_budget = None if self.budget is None else max(4, self.budget - sum(self.budgets))
         assert len(optimizers) == len(self.budgets) + 1
         assert all(
-            x in ("third", "half", "tenth", "dimension", "num_workers", "sqrt") or x > 0 for x in self.budgets
+            x in ("fourth", "third", "half", "tenth", "dimension", "num_workers", "sqrt") or x > 0
+            for x in self.budgets
         ), str(self.budgets)
         for opt, optbudget in zip(optimizers, self.budgets + [last_budget]):  # type: ignore
             self.optimizers.append(opt(self.parametrization, budget=optbudget, num_workers=self.num_workers))
@@ -2404,6 +2406,9 @@ class Chaining(base.ConfiguredOptimizer):
 # new names
 GeneticDE = Chaining([RotatedTwoPointsDE, TwoPointsDE], [200]).set_name(
     "GeneticDE", register=True
+)  # Also known as CGDE
+MemeticDE = Chaining([RotatedTwoPointsDE, TwoPointsDE, DE, SQP], ["fourth", "fourth", "fourth"]).set_name(
+    "MemeticDE", register=True
 )  # Also known as CGDE
 discretememetic = Chaining(
     [RandomSearch, DiscreteLenglerOnePlusOne, DiscreteOnePlusOne], ["third", "third"]

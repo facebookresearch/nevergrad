@@ -2281,7 +2281,7 @@ def photonics(
         for name in ["bragg", "chirped", "morpho", "cf_photosic_realistic", "cf_photosic_reference"]:
             func = Photonics(
                 name,
-                60 / divider if name == "morpho" else 80 / divider,
+                4 * ((60 // divider) // 4) if name == "morpho" else 80 // divider,
                 bounding_method=method,
                 as_tuple=as_tuple,
             )
@@ -2302,12 +2302,6 @@ def photonics2(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 def small_photonics(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with higher dimensions."""
     return photonics(seed, as_tuple=False, small=True)
-
-
-@registry.register
-def small_photonics2(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Counterpart of yabbob with higher dimensions."""
-    return photonics(seed, as_tuple=True, small=True)
 
 
 @registry.register
