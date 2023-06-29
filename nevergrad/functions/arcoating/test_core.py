@@ -50,4 +50,4 @@ def test_arcoating_transform_and_call() -> None:
     np.testing.assert_almost_equal(func(param.value), 16.5538936)
     np.testing.assert_almost_equal(
         func.evaluation_function(param), 16.5538936
-    )  # no idea what is going on here.
+    )
