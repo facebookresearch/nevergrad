@@ -510,7 +510,7 @@ def parallel(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 def lowbudget(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     names = ["sphere", "rastrigin", "cigar"]
-    optims: tp.List[str] = ["AX", "BOBYQA", "Cobyla", "RandomSearch", "CMA", "NGOpt", "DE", "PSO"]
+    optims: tp.List[str] = ["AX", "BOBYQA", "Cobyla", "RandomSearch", "CMA", "NGOpt", "DE", "PSO", "pysot", "negpysot"]
     functions = [
         ArtificialFunction(name, block_dimension=bd, bounded=b)
         for name in names
