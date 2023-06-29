@@ -16,6 +16,7 @@ from nevergrad.common import errors
 from . import base
 from .base import IntOrParameter
 from . import recaster
+import gomea
 
 
 class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
@@ -44,12 +45,13 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
             ]
             or "NLOPT" in method
             or "BFGS" in method
+            or "gomea" in method
         ), f"Unknown method '{method}'"
         self.method = method
         self.random_restart = random_restart
         # The following line rescales to [0, 1] if fully bounded.
 
-        if method == "CmaFmin2" or "NLOPT" in method:
+        if method == "CmaFmin2" or "NLOPT" in method or "gomea" in method:
             normalizer = p.helpers.Normalizer(self.parametrization)
             if normalizer.fully_bounded:
                 self._normalizer = normalizer
@@ -112,6 +114,34 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 # print("With %i function calls" % objfunc_calculator.n_calls)
                 if weakself._normalizer is not None:
                     best_x = weakself._normalizer.backward(np.asarray(best_x, dtype=np.float32))
+
+            elif "gomea" in weakself.method:
+
+                class gomea_function(gomea.fitness.BBOFitnessFunctionRealValued):
+                    def objective_function(self, objective_index, data):  # type: ignore
+                        if weakself._normalizer is not None:
+                            data = weakself._normalizer.backward(np.asarray(data, dtype=np.float32))
+                        val = objective_function(data)
+                        if not hasattr(self, "best_val") or val < self.best_val:  # type: ignore
+                            self.best_val = val
+                            self.best_x = x
+                        return val
+
+                gomea_f = gomea_function(weakself._dimension)
+                lm = {
+                    "gomea": gomea.linkage.Univariate(),
+                    "gomeablock": gomea.linkage.BlockMarginalProduct(),
+                    "gomeatree": gomea.linkage.LinkageTree(),
+                }[weakself.method]
+                rvgom = gomea.RealValuedGOMEA(
+                    fitness=gomea_f,
+                    linkage_model=lm,
+                    lower_init_range=0.0,
+                    upper_init_range=1.0,
+                    max_number_of_evaluations=max_evals,
+                )
+                rvgom.run()
+                best_x = gomea_f.best_x
 
             elif weakself.method == "CmaFmin2":
                 import cma  # import inline in order to avoid matplotlib initialization warning
@@ -210,6 +240,9 @@ class NonObjectOptimizer(base.ConfiguredOptimizer):
 
 NelderMead = NonObjectOptimizer(method="Nelder-Mead").set_name("NelderMead", register=True)
 CmaFmin2 = NonObjectOptimizer(method="CmaFmin2").set_name("CmaFmin2", register=True)
+GOMEA = NonObjectOptimizer(method="gomea").set_name("GOMEA", register=True)
+GOMEABlock = NonObjectOptimizer(method="gomeablock").set_name("GOMEABlock", register=True)
+GOMEATree = NonObjectOptimizer(method="gomeatree").set_name("GOMEATree", register=True)
 NLOPT = NonObjectOptimizer(method="NLOPT").set_name("NLOPT", register=True)
 Powell = NonObjectOptimizer(method="Powell").set_name("Powell", register=True)
 RPowell = NonObjectOptimizer(method="Powell", random_restart=True).set_name("RPowell", register=True)
