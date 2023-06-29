@@ -45,6 +45,8 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 "Powell",
                 "BOBYQA",
                 "AX",
+                "pysot",
+                "negpysot",
             ]
             or "NLOPT" in method
             or "BFGS" in method
@@ -53,7 +55,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
         self.random_restart = random_restart
         # The following line rescales to [0, 1] if fully bounded.
 
-        if method == "CmaFmin2" or "NLOPT" in method or "AX" in method or "BOBYQA" in method:
+        if method == "CmaFmin2" or "NLOPT" in method or "AX" in method or "BOBYQA" in method or "pysot" in method:
             normalizer = p.helpers.Normalizer(self.parametrization)
             if normalizer.fully_bounded:
                 self._normalizer = normalizer
@@ -138,6 +140,52 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 # print("With %i function calls" % objfunc_calculator.n_calls)
                 if weakself._normalizer is not None:
                     best_x = weakself._normalizer.backward(np.asarray(best_x, dtype=np.float32))
+            elif "pysot" in weakself.method:
+                from poap.controller import BasicWorkerThread, ThreadController
+
+                from pySOT.experimental_design import SymmetricLatinHypercube
+                from pySOT.optimization_problems import OptimizationProblem
+                from pySOT.strategy import SRBFStrategy
+                from pySOT.strategy import DYCORSStrategy
+                from pySOT.surrogate import CubicKernel, LinearTail, RBFInterpolant
+
+                class LocalOptimizationProblem(OptimizationProblem):
+                    def eval(self, data):
+                        if weakself._normalizer is not None:
+                            data = weakself._normalizer.backward(np.asarray(data, dtype=np.float32))
+                        val = float(objective_function(data)) if "negpysot" not in weakself.method else -float(objective_function(data))
+                        return val
+
+                dim = weakself.dimension
+                opt_prob = LocalOptimizationProblem()
+                opt_prob.dim = dim
+                opt_prob.lb = np.array([0.0] * dim)
+                opt_prob.ub = np.array([1.0] * dim)
+                opt_prob.int_var = []
+                opt_prob.cont_var = np.array(range(dim))
+
+                rbf = RBFInterpolant(
+                    dim=opt_prob.dim,
+                    lb=opt_prob.lb,
+                    ub=opt_prob.ub,
+                    kernel=CubicKernel(),
+                    tail=LinearTail(opt_prob.dim),
+                )
+                slhd = SymmetricLatinHypercube(dim=opt_prob.dim, num_pts=2 * (opt_prob.dim + 1))
+                controller = ThreadController()
+                # controller.strategy = SRBFStrategy(
+                #    max_evals=budget, opt_prob=opt_prob, exp_design=slhd, surrogate=rbf, asynchronous=True
+                # )
+                controller.strategy = DYCORSStrategy(
+                    opt_prob=opt_prob, exp_design=slhd, surrogate=rbf, max_evals=budget, asynchronous=True
+                )
+                worker = BasicWorkerThread(controller, opt_prob.eval)
+                controller.launch_worker(worker)
+
+                result = controller.run()
+
+                best_res = result.value
+                best_x = result.params[0]
 
             elif weakself.method == "CmaFmin2":
                 import cma  # import inline in order to avoid matplotlib initialization warning
@@ -557,3 +605,5 @@ PymooCMAES = Pymoo(algorithm="CMAES").set_name("PymooCMAES", register=True)
 PymooBIPOP = Pymoo(algorithm="BIPOP").set_name("PymooBIPOP", register=True)
 PymooNSGA2 = Pymoo(algorithm="nsga2").set_name("PymooNSGA2", register=True)
 PymooBatchNSGA2 = PymooBatch(algorithm="nsga2").set_name("PymooBatchNSGA2", register=False)
+pysot = NonObjectOptimizer(method="pysot").set_name("pysot", register=True)
+negpysot = NonObjectOptimizer(method="negpysot").set_name("negpysot", register=True)
