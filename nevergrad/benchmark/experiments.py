@@ -81,7 +81,10 @@ class _Constraint:
 
 @registry.register
 def keras_tuning(
-    seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool = False
+    seed: tp.Optional[int] = None,
+    overfitter: bool = False,
+    seq: bool = False,
+    total_seq: bool = False,
 ) -> tp.Iterator[Experiment]:
     """Machine learning hyperparameter tuning experiment. Based on Keras models."""
     seedg = create_seed_generator(seed)
@@ -115,6 +118,8 @@ def keras_tuning(
                 for num_workers in (
                     [1, budget // 4] if seq else [budget]
                 ):  # Seq for sequential optimization experiments.
+                    if total_seq and num_workers > 1:
+                        continue
                     for optim in optims:
                         xp = Experiment(
                             function, optim, num_workers=num_workers, budget=budget, seed=next(seedg)
@@ -129,6 +134,7 @@ def mltuning(
     seed: tp.Optional[int] = None,
     overfitter: bool = False,
     seq: bool = False,
+    total_seq: bool = False,
     nano: bool = False,
 ) -> tp.Iterator[Experiment]:
     """Machine learning hyperparameter tuning experiment. Based on scikit models."""
@@ -166,6 +172,8 @@ def mltuning(
                     # Seq for sequential optimization experiments.
                     parallelization = [1, budget // 4] if seq else [budget]
                     for num_workers in parallelization:
+                        if total_seq and num_workers > 1:
+                            continue
 
                         for optim in optims:
                             xp = Experiment(
@@ -182,18 +190,28 @@ def naivemltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     return mltuning(seed, overfitter=True)
 
 
-# We register only the sequential counterparts for the moment.
+@registry.register
+def veryseq_keras_tuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Iterative counterpart of keras tuning."""
+    return keras_tuning(seed, overfitter=False, seq=True, veryseq=True)
+
+
 @registry.register
 def seq_keras_tuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Iterative counterpart of keras tuning."""
     return keras_tuning(seed, overfitter=False, seq=True)
 
 
-# We register only the sequential counterparts for the moment.
 @registry.register
 def naive_seq_keras_tuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Naive counterpart (no overfitting, see naivemltuning)of seq_keras_tuning."""
     return keras_tuning(seed, overfitter=True, seq=True)
+
+
+@registry.register
+def naive_veryseq_keras_tuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Naive counterpart (no overfitting, see naivemltuning)of seq_keras_tuning."""
+    return keras_tuning(seed, overfitter=True, seq=True, veryseq=True)
 
 
 @registry.register
@@ -213,6 +231,19 @@ def seq_mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 def nano_seq_mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Iterative counterpart of seq_mltuning with smaller budget."""
     return mltuning(seed, overfitter=False, seq=True, nano=True)
+
+
+@registry.register
+def nano_veryseq_mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Iterative counterpart of seq_mltuning with smaller budget."""
+    return mltuning(seed, overfitter=False, seq=True, nano=True, veryseq=True)
+
+
+@registry.register
+def nano_naive_veryseq_mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Iterative counterpart of mltuning with overfitting of valid loss, i.e. train/valid/valid instead of train/valid/test,
+    and with lower budget."""
+    return mltuning(seed, overfitter=True, seq=True, nano=True, veryseq=True)
 
 
 @registry.register
@@ -807,7 +838,7 @@ def yabbob(
         "RFMetaModelTwoPointsDE",
         "GeneticDE",
     ]
-    optims = ["LargeCMA", "SmallCMA", "OldCMA"]
+    optims = ["LargeCMA", "TinyCMA", "OldCMA", "MicroCMA"]
     functions = [
         ArtificialFunction(
             name,
@@ -1186,7 +1217,7 @@ def pbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         "NGOpt",
     ]
     optims = ["ChainMetaModelSQP", "MetaModelOnePlusOne", "MetaModelDE"]
-    optims = ["LargeCMA", "SmallCMA", "OldCMA"]
+    optims = ["LargeCMA", "TinyCMA", "OldCMA", "MicroCMA"]
     dims = [40, 20]
     functions = [
         ArtificialFunction(name, block_dimension=d, rotation=rotation, expo=expo)
