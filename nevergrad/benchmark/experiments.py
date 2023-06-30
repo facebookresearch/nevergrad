@@ -910,7 +910,8 @@ def yabbob(
         "RFMetaModelDE",
     ]
 
-    optims = ["BOBYQA", "AX"]
+    optims = ["BOBYQA"]  #, "pysot"]  #, "AX"]
+    optims = ["pysot"]
     # if bounded:
     #    optims = ["BO", "PCABO", "BayesOptimBO", "CMA", "PSO", "DE"]
     # if box:
@@ -1334,6 +1335,7 @@ def pbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     optims = ["ChainMetaModelSQP", "MetaModelOnePlusOne", "MetaModelDE"]
     optims = ["LargeCMA", "TinyCMA", "OldCMA", "MicroCMA"]
     optims = ["BFGS", "LBFGSB", "MemeticDE"]
+    optims = ["BOBYQA", "AX", "pysot"]
     dims = [40, 20]
     functions = [
         ArtificialFunction(name, block_dimension=d, rotation=rotation, expo=expo)
@@ -1359,7 +1361,7 @@ def illcondi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", seed=next(seedg))
-    optims = ["BOBYQA", "AX"]
+    optims = ["BOBYQA", "AX", "pysot"]
     functions = [
         ArtificialFunction(name, block_dimension=50, rotation=rotation)
         for name in ["cigar", "ellipsoid"]
@@ -2602,7 +2604,7 @@ def unit_commitment(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Unit commitment problem."""
     seedg = create_seed_generator(seed)
     optims = ["CMA", "NGOpt8", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
-    optims = ["BOBYQA", "AX"]
+    optims = ["BOBYQA", "AX", "pysot"]
     for num_timepoint in [5, 10, 20]:
         for num_generator in [3, 8]:
             func = UnitCommitmentProblem(num_timepoints=num_timepoint, num_generators=num_generator)
@@ -2617,7 +2619,7 @@ def team_cycling(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Experiment to optimise team pursuit track cycling problem."""
     seedg = create_seed_generator(seed)
     optims = ["NGOpt10", "CMA", "DE"]
-    optims = ["BOBYQA", "AX"]
+    optims = ["BOBYQA", "AX", "pysot"]
     funcs = [Cycling(num) for num in [30, 31, 61, 22, 23, 45]]
     for function in funcs:
         for budget in [3000]:
