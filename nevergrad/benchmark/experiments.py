@@ -84,7 +84,7 @@ def keras_tuning(
     seed: tp.Optional[int] = None,
     overfitter: bool = False,
     seq: bool = False,
-    total_seq: bool = False,
+    veryseq: bool = False,
 ) -> tp.Iterator[Experiment]:
     """Machine learning hyperparameter tuning experiment. Based on Keras models."""
     seedg = create_seed_generator(seed)
@@ -118,7 +118,7 @@ def keras_tuning(
                 for num_workers in (
                     [1, budget // 4] if seq else [budget]
                 ):  # Seq for sequential optimization experiments.
-                    if total_seq and num_workers > 1:
+                    if veryseq and num_workers > 1:
                         continue
                     for optim in optims:
                         xp = Experiment(
@@ -134,7 +134,7 @@ def mltuning(
     seed: tp.Optional[int] = None,
     overfitter: bool = False,
     seq: bool = False,
-    total_seq: bool = False,
+    veryseq: bool = False,
     nano: bool = False,
 ) -> tp.Iterator[Experiment]:
     """Machine learning hyperparameter tuning experiment. Based on scikit models."""
@@ -172,7 +172,7 @@ def mltuning(
                     # Seq for sequential optimization experiments.
                     parallelization = [1, budget // 4] if seq else [budget]
                     for num_workers in parallelization:
-                        if total_seq and num_workers > 1:
+                        if veryseq and num_workers > 1:
                             continue
 
                         for optim in optims:
@@ -2297,11 +2297,16 @@ def far_optimum_es(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 @registry.register
 def photonics(
-    seed: tp.Optional[int] = None, as_tuple: bool = False, small: bool = False
+    seed: tp.Optional[int] = None,
+    as_tuple: bool = False,
+    small: bool = False,
+    ultrasmall: bool = False,
 ) -> tp.Iterator[Experiment]:
     """Too small for being interesting: Bragg mirror + Chirped + Morpho butterfly."""
     seedg = create_seed_generator(seed)
     divider = 2 if small else 1
+    if ultrasmall:
+        divider = 4
     optims = get_optimizers("es", "basics", "splitters", seed=next(seedg))  # type: ignore
     optims = ["PSO", "DE", "CMA", "OnePlusOne", "TwoPointsDE", "GeneticDE"]
     for method in ["clipping", "tanh"]:  # , "arctan"]:
@@ -2323,6 +2328,18 @@ def photonics(
 def photonics2(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with higher dimensions."""
     return photonics(seed, as_tuple=True)
+
+
+@registry.register
+def ultrasmall_photonics(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with higher dimensions."""
+    return photonics(seed, as_tuple=False, small=True, ultrasmall=True)
+
+
+@registry.register
+def ultrasmall_photonics2(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with higher dimensions."""
+    return photonics(seed, as_tuple=True, small=True, ultrasmall=True)
 
 
 @registry.register
