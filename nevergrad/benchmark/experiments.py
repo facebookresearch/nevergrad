@@ -2308,9 +2308,13 @@ def photonics(
     if ultrasmall:
         divider = 4
     optims = get_optimizers("es", "basics", "splitters", seed=next(seedg))  # type: ignore
-    optims = ["PSO", "DE", "CMA", "OnePlusOne", "TwoPointsDE", "GeneticDE"]
+    optims = ["MemeticDE", "PSO", "DE", "CMA", "OnePlusOne", "TwoPointsDE", "GeneticDE"]
     for method in ["clipping", "tanh"]:  # , "arctan"]:
-        for name in ["bragg", "chirped", "morpho", "cf_photosic_realistic", "cf_photosic_reference"]:
+        for name in (
+            ["bragg"]
+            if ultrasmall
+            else ["bragg", "chirped", "morpho", "cf_photosic_realistic", "cf_photosic_reference"]
+        ):
             func = Photonics(
                 name,
                 4 * ((60 // divider) // 4) if name == "morpho" else 80 // divider,
