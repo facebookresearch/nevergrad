@@ -2308,7 +2308,7 @@ def photonics(
     if ultrasmall:
         divider = 4
     optims = get_optimizers("es", "basics", "splitters", seed=next(seedg))  # type: ignore
-    optims = ["MemeticDE", "PSO", "DE", "CMA", "OnePlusOne", "TwoPointsDE", "GeneticDE"]
+    optims = ["MemeticDE", "PSO", "DE", "CMA", "OnePlusOne", "TwoPointsDE", "GeneticDE",  "ChainMetaModelSQP", "MetaModelDE", "SVMMetaModelDE", "RFMetaModelDE"]
     for method in ["clipping", "tanh"]:  # , "arctan"]:
         for name in (
             ["bragg"]

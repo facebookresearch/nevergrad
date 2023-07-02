@@ -16,3 +16,4 @@ task=${tasks[SLURM_ARRAY_TASK_ID]}
 
 echo task attribution $SLURM_ARRAY_TASK_ID $task
 python -m nevergrad.benchmark $task --num_workers=67
+echo task over $SLURM_ARRAY_TASK_ID $task
