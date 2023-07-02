@@ -43,6 +43,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 "Powell",
             ]
             or "NLOPT" in method
+            or "BFGS" in method
         ), f"Unknown method '{method}'"
         self.method = method
         self.random_restart = random_restart
@@ -212,6 +213,8 @@ CmaFmin2 = NonObjectOptimizer(method="CmaFmin2").set_name("CmaFmin2", register=T
 NLOPT = NonObjectOptimizer(method="NLOPT").set_name("NLOPT", register=True)
 Powell = NonObjectOptimizer(method="Powell").set_name("Powell", register=True)
 RPowell = NonObjectOptimizer(method="Powell", random_restart=True).set_name("RPowell", register=True)
+BFGS = NonObjectOptimizer(method="BFGS", random_restart=True).set_name("BFGS", register=True)
+LBFGSB = NonObjectOptimizer(method="L-BFGS-B", random_restart=True).set_name("LBFGSB", register=True)
 Cobyla = NonObjectOptimizer(method="COBYLA").set_name("Cobyla", register=True)
 RCobyla = NonObjectOptimizer(method="COBYLA", random_restart=True).set_name("RCobyla", register=True)
 SQP = NonObjectOptimizer(method="SLSQP").set_name("SQP", register=True)
