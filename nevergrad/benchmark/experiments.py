@@ -839,6 +839,7 @@ def yabbob(
         "GeneticDE",
     ]
     optims = ["LargeCMA", "TinyCMA", "OldCMA", "MicroCMA"]
+    optims = ["BFGS", "LBFGSB"]
     functions = [
         ArtificialFunction(
             name,
@@ -1218,6 +1219,7 @@ def pbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     ]
     optims = ["ChainMetaModelSQP", "MetaModelOnePlusOne", "MetaModelDE"]
     optims = ["LargeCMA", "TinyCMA", "OldCMA", "MicroCMA"]
+    optims = ["BFGS", "LBFGSB", "MemeticDE"]
     dims = [40, 20]
     functions = [
         ArtificialFunction(name, block_dimension=d, rotation=rotation, expo=expo)
@@ -1561,6 +1563,7 @@ def aquacrop_fao(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     funcs = [NgAquacrop(i, 300.0 + 150.0 * np.cos(i)) for i in range(3, 7)]
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", seed=next(seedg))
+    optims = ["BFGS", "LBFGSB", "MemeticDE"]
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
         for num_workers in [1, 30]:
             if num_workers < budget:
@@ -1595,6 +1598,7 @@ def rocket(seed: tp.Optional[int] = None, seq: bool = False) -> tp.Iterator[Expe
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", seed=next(seedg))
     optims += ["NGOpt", "NGOptRW", "ChainMetaModelSQP"]
+    optims = ["BFGS", "LBFGSB", "MemeticDE"]
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
         for num_workers in [1] if seq else [1, 30]:
             if num_workers < budget:
@@ -2309,6 +2313,7 @@ def photonics(
         divider = 4
     optims = get_optimizers("es", "basics", "splitters", seed=next(seedg))  # type: ignore
     optims = ["MemeticDE", "PSO", "DE", "CMA", "OnePlusOne", "TwoPointsDE", "GeneticDE",  "ChainMetaModelSQP", "MetaModelDE", "SVMMetaModelDE", "RFMetaModelDE"]
+    optims = ["BFGS", "LBFGSB"]
     for method in ["clipping", "tanh"]:  # , "arctan"]:
         for name in (
             ["bragg"]
