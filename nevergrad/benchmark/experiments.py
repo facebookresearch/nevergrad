@@ -118,7 +118,13 @@ def keras_tuning(
     ]
     optims = ["OnePlusOne", "RandomSearch", "CMA", "DE", "TwoPointsDE", "HyperOpt", "Cobyla", "MetaModel", "MetaModelOnePlusOne", "RFMetaModel", "RFMetaModelOnePlusOne"]
     optims = ["BOBYQA", "AX", "pysot"]
-    optims = ["OnePlusOne", "BOBYQA", "AX", "RandomSearch", "MetaModel", "CMA", "DE", "TwoPointsDE", "PSO"]
+    optims = ["OnePlusOne", "BOBYQA", "RandomSearch", "MetaModel", "CMA", "DE", "TwoPointsDE", "PSO"]
+    optims = ["BO"]
+    optims = ["OnePlusOne", "BOBYQA", "RandomSearch", "MetaModel", "CMA", "DE", "TwoPointsDE", "PSO"]
+    optims = ["BOBYQA"]
+    optims = ["pysot"]
+    optims = ["OnePlusOne", "BOBYQA", "RandomSearch", "MetaModel", "CMA", "DE", "TwoPointsDE", "PSO"]
+    optims = ["OnePlusOne", "BOBYQA", "RandomSearch", "MetaModel", "CMA", "DE", "TwoPointsDE", "PSO", "pysot", "AX"]
     datasets = ["kerasBoston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
     for dimension in [None]:
         for dataset in datasets:
@@ -180,6 +186,12 @@ def mltuning(
     optims = ["OnePlusOne", "RandomSearch", "CMA", "DE", "TwoPointsDE", "HyperOpt", "Cobyla", "MetaModel", "MetaModelOnePlusOne", "RFMetaModel", "RFMetaModelOnePlusOne"]
     optims = ["BOBYQA", "AX", "pysot"]
     optims = ["OnePlusOne", "BOBYQA", "AX", "RandomSearch", "MetaModel", "CMA", "DE", "TwoPointsDE", "PSO"]
+    optims = ["OnePlusOne", "BOBYQA", "RandomSearch", "MetaModel", "CMA", "DE", "TwoPointsDE", "PSO"]
+    optims = ["BO"]
+    optims = ["BOBYQA"]
+    optims = ["OnePlusOne", "BOBYQA", "RandomSearch", "MetaModel", "CMA", "DE", "TwoPointsDE", "PSO"]
+    optims = ["pysot"]
+    optims = ["OnePlusOne", "BOBYQA", "RandomSearch", "MetaModel", "CMA", "DE", "TwoPointsDE", "PSO", "pysot", "AX"]
     for dimension in [None, 1, 2, 3]:
         if dimension is None:
             datasets = ["boston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
@@ -912,7 +924,7 @@ def yabbob(
 
     optims = ["BOBYQA"]  #, "pysot"]  #, "AX"]
     optims = ["pysot"]
-    optims = ["OnePlusOne", "BOBYQA", "AX", "RandomSearch", "MetaModel", "CMA", "DE", "TwoPointsDE", "PSO"]
+    optims = ["OnePlusOne", "BOBYQA", "AX", "RandomSearch", "MetaModel", "CMA", "DE", "TwoPointsDE", "PSO", "MetaTuneRecentering", "MetaRecentering"]
     # if bounded:
     #    optims = ["BO", "PCABO", "BayesOptimBO", "CMA", "PSO", "DE"]
     # if box:
@@ -956,6 +968,8 @@ def yabbob(
     ]
     optims = ["QRDE", "QODE", "LhsDE"]
     optims = ["NGOpt", "NGOptRW"]
+    optims = ["pysot", "BOBYQA"]
+    #optims = get_optimizers("oneshot", seed=next(seedg))  # type: ignore
     functions = [
         ArtificialFunction(
             name,
