@@ -541,7 +541,7 @@ def deceptive(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     ]
     for func in functions:
         for optim in optims:
-            for budget in [25, 37, 50, 75, 87] + list(range(100, 20001, 500)):
+            for budget in [25, 37, 50, 75, 87, 100, 200, 400, 800, 1600]:  # + list(range(100, 20001, 500)):
                 yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
@@ -927,6 +927,8 @@ def yabbob(
         "RFMetaModel",
         "DE",
     ]
+    optims = ["QRDE", "QODE", "LhsDE"]
+    optims = ["NGOpt", "NGOptRW"]
     functions = [
         ArtificialFunction(
             name,

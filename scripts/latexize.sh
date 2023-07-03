@@ -35,13 +35,14 @@ ls `ls $v | sed 's/\.tex/\.pdf/g'` | sed 's/.*/\\includegraphics[width=.8\\textw
 done
 done
 cat scripts/tex/end.tex ) > dagstuhloid.tex
-sed -i 's/\\subsubsection{yabbob}/\\section{BBOB variants}&/g' dagstuhloid.tex
-sed -i 's/\\subsubsection{yamegapenbbob}/\\section{Constrained BBOB variants}&/g' dagstuhloid.tex
-sed -i 's/\\subsubsection{(RW)mltuning}/\\section{Real world machine learning tuning}&/g' dagstuhloid.tex
-sed -i 's/\\subsubsection{bonnans}/\\section{Discrete optimization}&/g' dagstuhloid.tex
-sed -i 's/\\subsubsection{(RW) aquacrop fao}/\\section{Real world, other than machine learning}&/g' dagstuhloid.tex
-sed -i 's/.*neuro.control.*//g' dagstuhloid.tex
-sed -i 's/\\subsubsection{multiobjective example hd}/\\section{Multiobjective problemes}&/g' dagstuhloid.tex
+sed -i 's/\\subsubsection{yabbob}/\\subsection{BBOB variants}&/g' dagstuhloid.tex
+sed -i 's/\\subsubsection{yamegapenbbob}/\\subsection{Constrained BBOB variants}&/g' dagstuhloid.tex
+sed -i 's/\\subsubsection{(RW)mltuning}/\\subsection{Real world machine learning tuning}&/g' dagstuhloid.tex
+sed -i 's/\\subsubsection{bonnans}/\\subsection{Discrete optimization}&/g' dagstuhloid.tex
+sed -i 's/\\subsubsection{(RW) aquacrop fao}/\\subsection{Real world, other than machine learning}&/g' dagstuhloid.tex
+sed -i 's/.*control.*//g' dagstuhloid.tex
+sed -i 's/\\subsubsection{multiobjective example hd}/\\subsection{Multiobjective problemes}&/g' dagstuhloid.tex
+sed -i 's/\\subsubsection{spsa benchmark}/\\subsection{Noisy optimization}&/g' dagstuhloid.tex
 cp scripts/tex/biblio.bib .
 pdflatex dagstuhloid.tex
 bibtex dagstuhloid.aux
