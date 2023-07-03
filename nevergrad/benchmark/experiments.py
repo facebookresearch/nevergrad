@@ -108,6 +108,14 @@ def keras_tuning(
     ]
     optims = ["OnePlusOne", "RandomSearch", "Cobyla"]
     optims = ["DE", "TwoPointsDE", "HyperOpt", "MetaModelOnePlusOne"]
+    optims = get_optimizers("oneshot", seed=next(seedg))  # type: ignore
+    optims = [
+        "MetaTuneRecentering",
+        "MetaRecentering",
+        "HullCenterHullAvgCauchyScrHammersleySearch",
+        "LHSSearch",
+        "LHSCauchySearch",
+    ]
     datasets = ["kerasBoston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
     for dimension in [None]:
         for dataset in datasets:
@@ -158,6 +166,14 @@ def mltuning(
     ]
     optims = ["OnePlusOne", "RandomSearch", "Cobyla"]
     optims = ["DE", "TwoPointsDE", "HyperOpt", "MetaModelOnePlusOne"]
+    optims = get_optimizers("oneshot", seed=next(seedg))  # type: ignore
+    optims = [
+        "MetaTuneRecentering",
+        "MetaRecentering",
+        "HullCenterHullAvgCauchyScrHammersleySearch",
+        "LHSSearch",
+        "LHSCauchySearch",
+    ]
     for dimension in [None, 1, 2, 3]:
         if dimension is None:
             datasets = ["boston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
@@ -498,6 +514,22 @@ def deceptive(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     names = ["deceptivemultimodal", "deceptiveillcond", "deceptivepath"]
     optims = get_optimizers("basics", seed=next(seedg))
     optims = ["CMA", "DE", "TwoPointsDE", "PSO", "OnePlusOne", "RandomSearch", "NGOptRW"]
+    optims = [
+        "BFGS",
+        "LBFGSB",
+        "DE",
+        "TwoPointsDE",
+        "RandomSearch",
+        "OnePlusOne",
+        "PSO",
+        "CMA",
+        "ChainMetaModelSQP",
+        "MemeticDE",
+        "MetaModel",
+        "RFMetaModel",
+        "MetaModelDE",
+        "RFMetaModelDE",
+    ]
     functions = [
         ArtificialFunction(
             name, block_dimension=2, num_blocks=n_blocks, rotation=rotation, aggregator=aggregator
@@ -651,6 +683,22 @@ def multimodal(seed: tp.Optional[int] = None, para: bool = False) -> tp.Iterator
     optims = get_optimizers("basics", seed=next(seedg))
     if not para:
         optims += get_optimizers("scipy", seed=next(seedg))
+    optims = [
+        "BFGS",
+        "LBFGSB",
+        "DE",
+        "TwoPointsDE",
+        "RandomSearch",
+        "OnePlusOne",
+        "PSO",
+        "CMA",
+        "ChainMetaModelSQP",
+        "MemeticDE",
+        "MetaModel",
+        "RFMetaModel",
+        "MetaModelDE",
+        "RFMetaModelDE",
+    ]
     # + list(sorted(x for x, y in ng.optimizers.registry.items() if "Chain" in x or "BO" in x))
     functions = [
         ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
@@ -674,6 +722,22 @@ def hdmultimodal(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # Keep in mind that Rosenbrock is multimodal in high dimension http://ieeexplore.ieee.org/document/6792472/.
 
     optims = get_optimizers("basics", "multimodal", seed=next(seedg))
+    optims = [
+        "BFGS",
+        "LBFGSB",
+        "DE",
+        "TwoPointsDE",
+        "RandomSearch",
+        "OnePlusOne",
+        "PSO",
+        "CMA",
+        "ChainMetaModelSQP",
+        "MemeticDE",
+        "MetaModel",
+        "RFMetaModel",
+        "MetaModelDE",
+        "RFMetaModelDE",
+    ]
     functions = [
         ArtificialFunction(name, block_dimension=bd)
         for name in names
@@ -840,6 +904,29 @@ def yabbob(
     ]
     optims = ["LargeCMA", "TinyCMA", "OldCMA", "MicroCMA"]
     optims = ["BFGS", "LBFGSB"]
+    optims = get_optimizers("oneshot", seed=next(seedg))  # type: ignore
+    optims = [
+        "MetaTuneRecentering",
+        "MetaRecentering",
+        "HullCenterHullAvgCauchyScrHammersleySearch",
+        "LHSSearch",
+        "LHSCauchySearch",
+    ]
+    optims = [
+        "BFGS",
+        "LBFGSB",
+        "MicroCMA",
+        "RandomSearch",
+        "NoisyDiscreteOnePlusOne",
+        "TBPSA",
+        "TinyCMA",
+        "CMA",
+        "ChainMetaModelSQP",
+        "OnePlusOne",
+        "MetaModel",
+        "RFMetaModel",
+        "DE",
+    ]
     functions = [
         ArtificialFunction(
             name,
@@ -916,7 +1003,7 @@ def yabbob(
     budgets = (
         [40000, 80000, 160000, 320000]
         if (big and not noise)
-        else ([50, 200, 800, 3200, 12800] if not noise else [3200, 12800])
+        else ([50, 200, 800, 3200, 12800] if not noise else [3200, 12800, 51200])
     )
     if small and not noise:
         budgets = [10, 20, 40]
@@ -1485,6 +1572,7 @@ def spsa_benchmark(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     optims: tp.List[str] = get_optimizers("spsa", seed=next(seedg))  # type: ignore
     optims += ["CMA", "OnePlusOne", "DE", "PSO"]
+    optims = ["SQP", "NoisyDiscreteOnePlusOne", "NoisyBandit"]
     for budget in [500, 1000, 2000, 4000, 8000, 16000, 32000, 64000, 128000]:
         for optim in optims:
             for rotation in [True, False]:
@@ -2312,8 +2400,21 @@ def photonics(
     if ultrasmall:
         divider = 4
     optims = get_optimizers("es", "basics", "splitters", seed=next(seedg))  # type: ignore
-    optims = ["MemeticDE", "PSO", "DE", "CMA", "OnePlusOne", "TwoPointsDE", "GeneticDE",  "ChainMetaModelSQP", "MetaModelDE", "SVMMetaModelDE", "RFMetaModelDE"]
-    optims = ["BFGS", "LBFGSB"]
+    optims = [
+        "MemeticDE",
+        "PSO",
+        "DE",
+        "CMA",
+        "OnePlusOne",
+        "TwoPointsDE",
+        "GeneticDE",
+        "ChainMetaModelSQP",
+        "MetaModelDE",
+        "SVMMetaModelDE",
+        "RFMetaModelDE",
+        "BFGS",
+        "LBFGSB",
+    ]
     for method in ["clipping", "tanh"]:  # , "arctan"]:
         for name in (
             ["bragg"]

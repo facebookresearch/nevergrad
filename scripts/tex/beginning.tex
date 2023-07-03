@@ -44,10 +44,10 @@ How to reproduce these results:
 \item Install Nevergrad by “git clone” (see details at the URL above).
 \item  Running:
 \begin{itemize}
-\item Without cluster: "python -m nevergrad.benchmark yabbob --num\_workers=67" if you want to run YABBOB on 67 cores. Other benchmarks include TODO
-\item With cluster: Run “sbatch dagstuhloid.sh” for launching experiments with Slurm. With other cluster management tools, you might have to adapt the script. It is written assuming slurm: it should be feasible to adapt it to other benchmarks. This script is randomized: you might have to run it several times for getting enough results.
+\item Without cluster: "python -m nevergrad.benchmark yabbob --num\_workers=67" if you want to run YABBOB on 67 cores. 
+\item With cluster: Run “sbatch scripts/dagstuhloid.sh” for launching experiments with Slurm. With other cluster management tools, you might have to adapt the script. It is written assuming slurm: it should be feasible to adapt it to other benchmarks. This script is randomized: you might have to run it several times for getting enough results.
 \end{itemize}
-\item For plotting results, run “dagstuhloid\_plot.sh”. Of course, some data might be missing if not enough runs are complete. Note that in case of latex unavailable or incompatible, all figures are nonetheless available.
+\item For plotting results, run “scripts/dagstuhloid\_plot.sh”. Of course, some data might be missing if not enough runs are complete. Note that in case of latex unavailable or incompatible, all figures are nonetheless available.
 \end{itemize}
 
 \subsection{What if your computational power is not sufficient ?}
@@ -62,7 +62,11 @@ For each benchmark we provide both:
 \begin{itemize}
 \item A heatmap, showing the frequency at which a method (row) outperforms on average another method (col). Methods are ordered by average such frequency, over all other methods.
 The columns show the methods with the number of settings they were able to tackle (for example, some methods have no parallel version and therefore do not fill all settings).
-\item A convergence curve, with the budget on the x-axis and the average (over all budgets) normalized (linearly, to 0-1) loss. Note that some benchmarks do not have the same functions for the different values of the budget. Therefore we might have a rugged curve, not monotonous at all. 
+\item A convergence curve, with the budget on the x-axis and the average (over all budgets) normalized (linearly, to
+0-1) loss. Note that some benchmarks do not have the same functions for the different values of the budget. Therefore we
+might have a rugged curve, not monotonous at all. This is even more the case for wizards such as NGOpt or NGOptRW which
+make decisions based on the budget: they might do a bad choice for some values of the budget, leading to irregular
+curves.
 \end{itemize}
 Note that the ranking of the rows or columns in the heatmap, and the ranking of the curves, do not have to match. As
 detailed above, runs for different budgets are independent, and we take all budget values in the statistics used for the
