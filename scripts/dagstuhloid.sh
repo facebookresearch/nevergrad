@@ -14,5 +14,11 @@ tasks=(aquacrop_fao bonnans double_o_seven fishing keras_tuning mldakmeans mltun
 task=${tasks[SLURM_ARRAY_TASK_ID]}
 
 echo task attribution $SLURM_ARRAY_TASK_ID $task
-python -m nevergrad.benchmark $task --num_workers=67
+echo Starting at
+date
+# num_workers is the number of processes. Maybe use a bit more than the number of cores at the line "cpus-per-task"
+# above.
+python -m nevergrad.benchmark $task --num_workers=71
 echo task over $SLURM_ARRAY_TASK_ID $task
+echo Finishing at
+date

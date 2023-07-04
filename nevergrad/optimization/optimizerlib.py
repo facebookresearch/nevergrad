@@ -2411,7 +2411,10 @@ GeneticDE = Chaining([RotatedTwoPointsDE, TwoPointsDE], [200]).set_name(
 )  # Also known as CGDE
 MemeticDE = Chaining([RotatedTwoPointsDE, TwoPointsDE, DE, SQP], ["fourth", "fourth", "fourth"]).set_name(
     "MemeticDE", register=True
-)  # Also known as CGDE
+)
+QNDE = Chaining([QODE, BFGS], ["half"]).set_name("QNDE", register=True)
+QNDE.no_parallelization = True
+MemeticDE.no_parallelization = True
 discretememetic = Chaining(
     [RandomSearch, DiscreteLenglerOnePlusOne, DiscreteOnePlusOne], ["third", "third"]
 ).set_name("discretememetic", register=True)

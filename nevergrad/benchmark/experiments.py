@@ -116,6 +116,7 @@ def keras_tuning(
         "LHSSearch",
         "LHSCauchySearch",
     ]
+    optims = ["NGOpt", "NGOptRW", "QODE"]
     datasets = ["kerasBoston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
     for dimension in [None]:
         for dataset in datasets:
@@ -174,6 +175,7 @@ def mltuning(
         "LHSSearch",
         "LHSCauchySearch",
     ]
+    optims = ["NGOpt", "NGOptRW", "QODE"]
     for dimension in [None, 1, 2, 3]:
         if dimension is None:
             datasets = ["boston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
@@ -451,6 +453,10 @@ def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     # optims = get_optimizers("small_discrete", seed=next(seedg))
     optims = ["DiscreteOnePlusOne", "NGOpt", "CMA", "TwoPointsDE", "DiscreteLenglerOnePlusOne"]
+    optims = ["RFMetaModelOnePlusOne"]
+    optims = ["FastGADiscreteOnePlusOne"]
+    optims = ["DoubleFastGADiscreteOnePlusOne"]
+    optims = ["DiscreteOnePlusOne"]
     for nv in [10, 50, 200, 1000, 5000]:
         for arity in [2, 3, 7, 30]:
             for instrum_str in ["Unordered", "Softmax", "Ordered"]:
@@ -484,6 +490,7 @@ def sequential_instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Ex
     # Discrete, unordered.
     # optims = get_optimizers("discrete", seed=next(seedg))
     optims = ["DiscreteOnePlusOne", "NGOpt", "CMA", "TwoPointsDE", "DiscreteLenglerOnePlusOne"]
+    optims = ["DiscreteLenglerOnePlusOne"]
     for nv in [10, 50, 200, 1000, 5000]:
         for arity in [2, 3, 7, 30]:
             for instrum_str in ["Unordered", "Softmax", "Ordered"]:
@@ -541,7 +548,21 @@ def deceptive(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     ]
     for func in functions:
         for optim in optims:
-            for budget in [25, 37, 50, 75, 87, 100, 200, 400, 800, 1600]:  # + list(range(100, 20001, 500)):
+            for budget in [
+                25,
+                37,
+                50,
+                75,
+                87,
+                100,
+                200,
+                400,
+                800,
+                1600,
+                3200,
+                6400,
+                12800,
+            ]:  # + list(range(100, 20001, 500)):
                 yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
@@ -787,6 +808,8 @@ def bonnans(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         "MetaModel",
         "DiagonalCMA",
     ]
+    optims = ["RFMetaModelOnePlusOne"]
+    optims = ["MemeticDE", "cGA", "DoubleFastGADiscreteOnePlusOne", "FastGADiscreteOnePlusOne"]
     for i in range(21):
         bonnans = corefuncs.BonnansFunction(index=i)
         for optim in optims:
@@ -927,8 +950,9 @@ def yabbob(
         "RFMetaModel",
         "DE",
     ]
-    optims = ["QRDE", "QODE", "LhsDE"]
     optims = ["NGOpt", "NGOptRW"]
+    optims = ["QrDE", "QODE", "LhsDE"]
+    optims = ["NGOptRW"]
     functions = [
         ArtificialFunction(
             name,
@@ -1309,6 +1333,7 @@ def pbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     optims = ["ChainMetaModelSQP", "MetaModelOnePlusOne", "MetaModelDE"]
     optims = ["LargeCMA", "TinyCMA", "OldCMA", "MicroCMA"]
     optims = ["BFGS", "LBFGSB", "MemeticDE"]
+    optims = ["QrDE", "QODE", "LhsDE", "NGOpt", "NGOptRW"]
     dims = [40, 20]
     functions = [
         ArtificialFunction(name, block_dimension=d, rotation=rotation, expo=expo)
@@ -2417,6 +2442,7 @@ def photonics(
         "BFGS",
         "LBFGSB",
     ]
+    optims = ["QrDE", "QODE", "RFMetaModelDE"]
     for method in ["clipping", "tanh"]:  # , "arctan"]:
         for name in (
             ["bragg"]
