@@ -1,0 +1,7 @@
+Ultrasmall optimization of photonics. Shape optimization, nanometric scale.
+
+budget10
+budget100
+budget1000
+methodclipping
+methodtanh

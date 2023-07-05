@@ -1,0 +1,21 @@
+Completely sequential (veryseq) hyperparameter of scikit learn models. Low budget (hence the name nano).
+
+budget160
+budget80
+datasetartificial
+datasetartificialcos
+datasetartificialsquare
+datasetauto-mpg
+datasetboston
+datasetdiabetes
+datasetred-wine
+datasetwhite-wine
+depth
+dimension1
+dimension11
+dimension2
+dimension3
+dimension5
+dimensionnan
+regressormlp
+tree

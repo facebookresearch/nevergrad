@@ -1,0 +1,26 @@
+Optimization of crop management.
+
+
+
+budget100
+budget1600
+budget200
+budget25
+budget400
+budget50
+budget800
+dimension3
+dimension4
+dimension5
+dimension6
+seasonal151.5011255099332
+seasonal201.9534568704581
+seasonal201.95345687045815
+seasonal342.54932781948395
+seasonal444.02554299755485
+smts3
+smts4
+smts5
+smts6
+workers1
+workers30
