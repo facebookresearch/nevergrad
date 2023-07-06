@@ -13,7 +13,7 @@ orbs:
 executors:
   ubuntu-python37:
     docker:
-      - image: cimg/python:3.7
+      - image: cimg/python:3.8
     working_directory: ~/repo
 
 
