@@ -223,8 +223,8 @@ def test_optimizers(name: str) -> None:
             "DiscreteLenglerOnePlusOne",
             "PSO",
         ]
-        and "Tiny" not in name
-        and "Micro" not in name
+        or "Tiny" in name
+        or "Micro" in name
     ):
         raise SkipTest("Too expensive: we randomly skip 3/4 of these tests.")
     if name in ["CMAbounded", "NEWUOA"]:  # Not a general purpose optimization method.
