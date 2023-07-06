@@ -736,7 +736,9 @@ def multimodal(seed: tp.Optional[int] = None, para: bool = False) -> tp.Iterator
         for optim in optims:
             for budget in [3000, 10000, 30000, 100000]:
                 for nw in [1000] if para else [1]:
-                    yield Experiment(func, optim, budget=budget, num_workers=nw, seed=next(seedg))
+                    xp = Experiment(func, optim, budget=budget, num_workers=nw, seed=next(seedg))
+                    if not xp.is_incoherent:
+                        yield xp
 
 
 @registry.register
