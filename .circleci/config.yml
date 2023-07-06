@@ -60,7 +60,7 @@ jobs:
           command: |
             python3 -m venv venv
             . venv/bin/activate
-            pip install --progress-bar off pip==21.0.1
+            pip install --progress-bar off pip==23.1.2
             pip install --progress-bar off -e .
 
       - run:
