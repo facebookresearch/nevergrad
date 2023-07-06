@@ -175,6 +175,10 @@ class _DE(base.Optimizer):
     def _internal_ask_candidate(self) -> p.Parameter:
         if len(self.population) < self.llambda:  # initialization phase
             init = self._config.initialization
+            if self.sampler is None and init == "QO":
+                self.sampler = oneshot.SamplingSearch(
+                    sampler="Hammersley", scrambled=True, opposition_mode="quasi"
+                )(self.parametrization, budget=self.llambda)
             if self.sampler is None and init not in ["gaussian", "parametrization"]:
                 assert init in ["LHS", "QR"]
                 self.sampler = oneshot.SamplingSearch(
@@ -306,7 +310,7 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
 
     Parameters
     ----------
-    initialization: "parametrization", "LHS" or "QR"
+    initialization: "parametrization", "LHS" or "QR" or "QO"
         algorithm/distribution used for the initialization phase. If "parametrization", this uses the
         sample method of the parametrization.
     scale: float or str
@@ -351,7 +355,7 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
     ) -> None:
         super().__init__(_DE, locals(), as_config=True)
         assert recommendation in ["optimistic", "pessimistic", "noisy", "mean"]
-        assert initialization in ["gaussian", "LHS", "QR", "parametrization"]
+        assert initialization in ["gaussian", "LHS", "QO", "QR", "parametrization"]
         assert isinstance(scale, float) or scale == "mini"
         if not isinstance(popsize, int):
             assert popsize in ["large", "dimension", "standard"]
@@ -385,6 +389,7 @@ RotatedTwoPointsDE = DifferentialEvolution(crossover="rotated_twopoints").set_na
 
 LhsDE = DifferentialEvolution(initialization="LHS").set_name("LhsDE", register=True)
 QrDE = DifferentialEvolution(initialization="QR").set_name("QrDE", register=True)
+QODE = DifferentialEvolution(initialization="QO").set_name("QODE", register=True)
 NoisyDE = DifferentialEvolution(recommendation="noisy").set_name("NoisyDE", register=True)
 AlmostRotationInvariantDE = DifferentialEvolution(crossover=0.9).set_name(
     "AlmostRotationInvariantDE", register=True

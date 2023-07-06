@@ -45,9 +45,6 @@ def get_optimizers(*names: str, seed: tp.Optional[int] = None) -> tp.List[Optim]
 @registry.register
 def large() -> tp.Sequence[Optim]:
     return [
-        "NGO",
-        "Shiwa",
-        "DiagonalCMA",
         "CMA",
         "PSO",
         "DE",
