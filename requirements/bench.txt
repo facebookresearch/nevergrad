@@ -38,6 +38,5 @@ tensorflow_probability  # for olymp
 bayes-optim==0.3.0
 nlopt
 pybullet>=3.2.2
-box2d-py>=2.3.5
 glfw
 mujoco
