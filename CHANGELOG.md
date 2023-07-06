@@ -2,7 +2,7 @@
 
 ## main
 
-## v0.8.0 (3034-07-03)
+## v0.8.0 (2023-07-03)
 - Add the Dagstuhloid benchmark
 - Add yet another group of metamodels
 
