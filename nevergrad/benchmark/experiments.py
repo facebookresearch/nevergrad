@@ -79,15 +79,45 @@ class _Constraint:
         return value > 0 if self.as_bool else value
 
 
+@registry.register
 def keras_tuning(
-    seed: tp.Optional[int] = None, overfitter: bool = False, seq: bool = False
+    seed: tp.Optional[int] = None,
+    overfitter: bool = False,
+    seq: bool = False,
+    veryseq: bool = False,
 ) -> tp.Iterator[Experiment]:
     """Machine learning hyperparameter tuning experiment. Based on Keras models."""
     seedg = create_seed_generator(seed)
     # Continuous case,
 
     # First, a few functions with constraints.
-    optims: tp.List[str] = ["PSO", "OnePlusOne"] + get_optimizers("basics", seed=next(seedg))  # type: ignore
+    # optims: tp.List[str] = ["PSO", "OnePlusOne"] + get_optimizers("basics", seed=next(seedg))  # type: ignore
+    optims = ["OnePlusOne", "BO", "RandomSearch", "CMA", "DE", "TwoPointsDE", "HyperOpt", "PCABO", "Cobyla"]
+    optims = [
+        "OnePlusOne",
+        "RandomSearch",
+        "CMA",
+        "DE",
+        "TwoPointsDE",
+        "HyperOpt",
+        "Cobyla",
+        "MetaModel",
+        "MetaModelOnePlusOne",
+        "RFMetaModel",
+        "RFMetaModelOnePlusOne",
+    ]
+    optims = ["OnePlusOne", "RandomSearch", "Cobyla"]
+    optims = ["DE", "TwoPointsDE", "HyperOpt", "MetaModelOnePlusOne"]
+    optims = get_optimizers("oneshot", seed=next(seedg))  # type: ignore
+    optims = [
+        "MetaTuneRecentering",
+        "MetaRecentering",
+        "HullCenterHullAvgCauchyScrHammersleySearch",
+        "LHSSearch",
+        "LHSCauchySearch",
+    ]
+    optims = ["NGOpt", "NGOptRW", "QODE"]
+    optims = ["NGOpt"]
     datasets = ["kerasBoston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
     for dimension in [None]:
         for dataset in datasets:
@@ -98,6 +128,8 @@ def keras_tuning(
                 for num_workers in (
                     [1, budget // 4] if seq else [budget]
                 ):  # Seq for sequential optimization experiments.
+                    if veryseq and num_workers > 1:
+                        continue
                     for optim in optims:
                         xp = Experiment(
                             function, optim, num_workers=num_workers, budget=budget, seed=next(seedg)
@@ -107,17 +139,45 @@ def keras_tuning(
                             yield xp
 
 
+@registry.register
 def mltuning(
     seed: tp.Optional[int] = None,
     overfitter: bool = False,
     seq: bool = False,
+    veryseq: bool = False,
     nano: bool = False,
 ) -> tp.Iterator[Experiment]:
     """Machine learning hyperparameter tuning experiment. Based on scikit models."""
     seedg = create_seed_generator(seed)
-    optims: tp.List[str] = get_optimizers("basics", seed=next(seedg))  # type: ignore
-    if not seq:
-        optims = get_optimizers("oneshot", seed=next(seedg))  # type: ignore
+    # optims: tp.List[str] = get_optimizers("basics", seed=next(seedg))  # type: ignore
+    # if not seq:
+    #    optims = get_optimizers("oneshot", seed=next(seedg))  # type: ignore
+    optims = ["OnePlusOne", "BO", "RandomSearch", "CMA", "DE", "TwoPointsDE", "PCABO", "HyperOpt", "Cobyla"]
+    optims = [
+        "OnePlusOne",
+        "RandomSearch",
+        "CMA",
+        "DE",
+        "TwoPointsDE",
+        "HyperOpt",
+        "Cobyla",
+        "MetaModel",
+        "MetaModelOnePlusOne",
+        "RFMetaModel",
+        "RFMetaModelOnePlusOne",
+    ]
+    optims = ["OnePlusOne", "RandomSearch", "Cobyla"]
+    optims = ["DE", "TwoPointsDE", "HyperOpt", "MetaModelOnePlusOne"]
+    optims = get_optimizers("oneshot", seed=next(seedg))  # type: ignore
+    optims = [
+        "MetaTuneRecentering",
+        "MetaRecentering",
+        "HullCenterHullAvgCauchyScrHammersleySearch",
+        "LHSSearch",
+        "LHSCauchySearch",
+    ]
+    optims = ["NGOpt", "NGOptRW", "QODE"]
+    optims = ["NGOpt"]
     for dimension in [None, 1, 2, 3]:
         if dimension is None:
             datasets = ["boston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
@@ -132,6 +192,8 @@ def mltuning(
                     # Seq for sequential optimization experiments.
                     parallelization = [1, budget // 4] if seq else [budget]
                     for num_workers in parallelization:
+                        if veryseq and num_workers > 1:
+                            continue
 
                         for optim in optims:
                             xp = Experiment(
@@ -142,23 +204,34 @@ def mltuning(
                                 yield xp
 
 
+@registry.register
 def naivemltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of mltuning with overfitting of valid loss, i.e. train/valid/valid instead of train/valid/test."""
     return mltuning(seed, overfitter=True)
 
 
-# We register only the sequential counterparts for the moment.
+@registry.register
+def veryseq_keras_tuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Iterative counterpart of keras tuning."""
+    return keras_tuning(seed, overfitter=False, seq=True, veryseq=True)
+
+
 @registry.register
 def seq_keras_tuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Iterative counterpart of keras tuning."""
     return keras_tuning(seed, overfitter=False, seq=True)
 
 
-# We register only the sequential counterparts for the moment.
 @registry.register
 def naive_seq_keras_tuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Naive counterpart (no overfitting, see naivemltuning)of seq_keras_tuning."""
     return keras_tuning(seed, overfitter=True, seq=True)
+
+
+@registry.register
+def naive_veryseq_keras_tuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Naive counterpart (no overfitting, see naivemltuning)of seq_keras_tuning."""
+    return keras_tuning(seed, overfitter=True, seq=True, veryseq=True)
 
 
 @registry.register
@@ -178,6 +251,19 @@ def seq_mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 def nano_seq_mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Iterative counterpart of seq_mltuning with smaller budget."""
     return mltuning(seed, overfitter=False, seq=True, nano=True)
+
+
+@registry.register
+def nano_veryseq_mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Iterative counterpart of seq_mltuning with smaller budget."""
+    return mltuning(seed, overfitter=False, seq=True, nano=True, veryseq=True)
+
+
+@registry.register
+def nano_naive_veryseq_mltuning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Iterative counterpart of mltuning with overfitting of valid loss, i.e. train/valid/valid instead of train/valid/test,
+    and with lower budget."""
+    return mltuning(seed, overfitter=True, seq=True, nano=True, veryseq=True)
 
 
 @registry.register
@@ -243,10 +329,9 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     assert len(functions) == 21, f"{len(functions)} problems instead of 21. Yawidebbob should be standard."
     # This problem is intended as a stable basis forever.
     # The list of optimizers should contain only the basic for comparison and "baselines".
-    optims: tp.List[str] = ["NGOpt10"] + get_optimizers("baselines", seed=next(seedg))  # type: ignore
-    optims = ["NGOptRW", "NGOpt", "CMandAS2", "Shiwa", "CMA", "DE", "DiscreteLenglerOnePlusOne"]
-    np.random.shuffle(optims)
-    optims = optims[:2]
+    # optims: tp.List[str] = ["NGOpt10"] + get_optimizers("baselines", seed=next(seedg))  # type: ignore
+    optims = ["NGOptRW", "NGOpt", "RandomSearch", "CMA", "DE", "DiscreteLenglerOnePlusOne"]
+    # optims = optims[:2]
     index = 0
     for function in functions:
         for budget in [50, 1500, 25000]:
@@ -330,7 +415,8 @@ def yawidebbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 def parallel_small_budget(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Parallel optimization with small budgets"""
     seedg = create_seed_generator(seed)
-    optims: tp.List[str] = get_optimizers("basics", seed=next(seedg))  # type: ignore
+    # optims: tp.List[str] = get_optimizers("basics", seed=next(seedg))  # type: ignore
+    optims = ["DE", "TwoPointsDE", "CMA", "NGOpt", "PSO", "OnePlusOne", "RandomSearch"]
     names = ["hm", "rastrigin", "griewank", "rosenbrock", "ackley", "multipeak"]
     names += ["sphere", "cigar", "ellipsoid", "altellipsoid"]
     names += ["deceptiveillcond", "deceptivemultimodal", "deceptivepath"]
@@ -367,7 +453,14 @@ def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # Discrete, unordered.
 
     seedg = create_seed_generator(seed)
-    optims = get_optimizers("small_discrete", seed=next(seedg))
+    # optims = get_optimizers("small_discrete", seed=next(seedg))
+    optims = ["DiscreteOnePlusOne", "NGOpt", "CMA", "TwoPointsDE", "DiscreteLenglerOnePlusOne"]
+    optims = ["RFMetaModelOnePlusOne"]
+    optims = ["FastGADiscreteOnePlusOne"]
+    optims = ["DoubleFastGADiscreteOnePlusOne"]
+    optims = ["DiscreteOnePlusOne"]
+    optims = ["OnePlusOne"]
+    optims = ["DiscreteLenglerOnePlusOne"]
     for nv in [10, 50, 200, 1000, 5000]:
         for arity in [2, 3, 7, 30]:
             for instrum_str in ["Unordered", "Softmax", "Ordered"]:
@@ -383,6 +476,8 @@ def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                         corefuncs.DiscreteFunction(name, arity), instrum.set_name(instrum_str)
                     )
                     dfunc.add_descriptors(arity=arity)
+                    dfunc.add_descriptors(nv=nv)
+                    dfunc.add_descriptors(instrum_str=instrum_str)
                     for optim in optims:
                         for nw in [1, 10]:
                             for budget in [50, 500, 5000]:
@@ -397,7 +492,10 @@ def sequential_instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Ex
 
     seedg = create_seed_generator(seed)
     # Discrete, unordered.
-    optims = get_optimizers("discrete", seed=next(seedg))
+    # optims = get_optimizers("discrete", seed=next(seedg))
+    optims = ["DiscreteOnePlusOne", "NGOpt", "CMA", "TwoPointsDE", "DiscreteLenglerOnePlusOne"]
+    optims = ["OnePlusOne"]
+    optims = ["DiscreteLenglerOnePlusOne"]
     for nv in [10, 50, 200, 1000, 5000]:
         for arity in [2, 3, 7, 30]:
             for instrum_str in ["Unordered", "Softmax", "Ordered"]:
@@ -412,6 +510,8 @@ def sequential_instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Ex
                         corefuncs.DiscreteFunction(name, arity), instrum.set_name(instrum_str)
                     )
                     dfunc.add_descriptors(arity=arity)
+                    dfunc.add_descriptors(nv=nv)
+                    dfunc.add_descriptors(instrum_str=instrum_str)
                     for optim in optims:
                         for budget in [50, 500, 5000, 50000]:
                             yield Experiment(dfunc, optim, budget=budget, seed=next(seedg))
@@ -425,6 +525,23 @@ def deceptive(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     names = ["deceptivemultimodal", "deceptiveillcond", "deceptivepath"]
     optims = get_optimizers("basics", seed=next(seedg))
+    optims = ["CMA", "DE", "TwoPointsDE", "PSO", "OnePlusOne", "RandomSearch", "NGOptRW"]
+    optims = [
+        "BFGS",
+        "LBFGSB",
+        "DE",
+        "TwoPointsDE",
+        "RandomSearch",
+        "OnePlusOne",
+        "PSO",
+        "CMA",
+        "ChainMetaModelSQP",
+        "MemeticDE",
+        "MetaModel",
+        "RFMetaModel",
+        "MetaModelDE",
+        "RFMetaModelDE",
+    ]
     functions = [
         ArtificialFunction(
             name, block_dimension=2, num_blocks=n_blocks, rotation=rotation, aggregator=aggregator
@@ -436,7 +553,21 @@ def deceptive(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     ]
     for func in functions:
         for optim in optims:
-            for budget in [25, 37, 50, 75, 87] + list(range(100, 20001, 500)):
+            for budget in [
+                25,
+                37,
+                50,
+                75,
+                87,
+                100,
+                200,
+                400,
+                800,
+                1600,
+                3200,
+                6400,
+                12800,
+            ]:  # + list(range(100, 20001, 500)):
                 yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
@@ -578,6 +709,22 @@ def multimodal(seed: tp.Optional[int] = None, para: bool = False) -> tp.Iterator
     optims = get_optimizers("basics", seed=next(seedg))
     if not para:
         optims += get_optimizers("scipy", seed=next(seedg))
+    optims = [
+        "BFGS",
+        "LBFGSB",
+        "DE",
+        "TwoPointsDE",
+        "RandomSearch",
+        "OnePlusOne",
+        "PSO",
+        "CMA",
+        "ChainMetaModelSQP",
+        "MemeticDE",
+        "MetaModel",
+        "RFMetaModel",
+        "MetaModelDE",
+        "RFMetaModelDE",
+    ]
     # + list(sorted(x for x, y in ng.optimizers.registry.items() if "Chain" in x or "BO" in x))
     functions = [
         ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
@@ -589,7 +736,9 @@ def multimodal(seed: tp.Optional[int] = None, para: bool = False) -> tp.Iterator
         for optim in optims:
             for budget in [3000, 10000, 30000, 100000]:
                 for nw in [1000] if para else [1]:
-                    yield Experiment(func, optim, budget=budget, num_workers=nw, seed=next(seedg))
+                    xp = Experiment(func, optim, budget=budget, num_workers=nw, seed=next(seedg))
+                    if not xp.is_incoherent:
+                        yield xp
 
 
 @registry.register
@@ -601,6 +750,22 @@ def hdmultimodal(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     # Keep in mind that Rosenbrock is multimodal in high dimension http://ieeexplore.ieee.org/document/6792472/.
 
     optims = get_optimizers("basics", "multimodal", seed=next(seedg))
+    optims = [
+        "BFGS",
+        "LBFGSB",
+        "DE",
+        "TwoPointsDE",
+        "RandomSearch",
+        "OnePlusOne",
+        "PSO",
+        "CMA",
+        "ChainMetaModelSQP",
+        "MemeticDE",
+        "MetaModel",
+        "RFMetaModel",
+        "MetaModelDE",
+        "RFMetaModelDE",
+    ]
     functions = [
         ArtificialFunction(name, block_dimension=bd)
         for name in names
@@ -631,10 +796,15 @@ def bonnans(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     optims = [
         "RotatedTwoPointsDE",
         "DiscreteLenglerOnePlusOne",
+        "DiscreteLengler2OnePlusOne",
+        "DiscreteLengler3OnePlusOne",
+        "DiscreteLenglerHalfOnePlusOne",
+        "DiscreteLenglerFourthOnePlusOne",
         "PortfolioDiscreteOnePlusOne",
         "FastGADiscreteOnePlusOne",
         "DiscreteDoerrOnePlusOne",
         "DiscreteBSOOnePlusOne",
+        "DiscreteOnePlusOne",
         "AdaptiveDiscreteOnePlusOne",
         "GeneticDE",
         "DE",
@@ -645,14 +815,20 @@ def bonnans(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         "MetaModel",
         "DiagonalCMA",
     ]
+    optims = ["RFMetaModelOnePlusOne"]
+    optims = ["MemeticDE", "cGA", "DoubleFastGADiscreteOnePlusOne", "FastGADiscreteOnePlusOne"]
     for i in range(21):
         bonnans = corefuncs.BonnansFunction(index=i)
         for optim in optims:
+            instrum_str = "TransitionChoice" if "Discrete" in optim else "Softmax"
             dfunc = ExperimentFunction(
                 bonnans,
-                instrum.set_name("bitmap") if "Discrete" in optim else softmax_instrum.set_name("softmax"),
+                instrum.set_name("") if instrum_str == "TransitionChoice" else softmax_instrum.set_name(""),
             )
-            for budget in [20, 50, 100]:
+            dfunc.add_descriptors(index=i)
+            dfunc.add_descriptors(instrum_str=instrum_str)
+            # dfunc._descriptors = {'index': i}
+            for budget in [20, 30, 40, 50, 60, 70, 80, 90, 100]:
                 yield Experiment(dfunc, optim, num_workers=1, budget=budget, seed=next(seedg))
 
 
@@ -708,7 +884,20 @@ def yabbob(
         noise_level = 0
 
     # Choosing the list of optimizers.
-    optims: tp.List[str] = get_optimizers("competitive", seed=next(seedg))  # type: ignore
+    # optims: tp.List[str] = get_optimizers("competitive", seed=next(seedg))  # type: ignore
+    optims = [
+        "OnePlusOne",
+        "MetaModel",
+        "CMA",
+        "DE",
+        "PSO",
+        "TwoPointsDE",
+        "RandomSearch",
+        "ChainMetaModelSQP",
+        "NeuralMetaModel",
+        "MetaModelDE",
+        "MetaModelOnePlusOne",
+    ]
     if noise:
         optims += ["TBPSA", "SQP", "NoisyDiscreteOnePlusOne"]
     if hd:
@@ -716,13 +905,88 @@ def yabbob(
         optims += get_optimizers("splitters", seed=next(seedg))  # type: ignore
 
     if hd and small:
-        optims = ["BO", "CMA", "PSO", "DE"]
-
+        optims += ["BO", "PCABO", "CMA", "PSO", "DE"]
+    if small and not hd:
+        optims += ["PCABO", "BO", "Cobyla"]
+    optims = [
+        "MetaModelDE",
+        "MetaModelOnePlusOne",
+        "OnePlusOne",
+        "ChainMetaModelSQP",
+        "RFMetaModel",
+        "RFMetaModelDE",
+    ]
     # if bounded:
     #    optims = ["BO", "PCABO", "BayesOptimBO", "CMA", "PSO", "DE"]
     # if box:
     #    optims = ["DiagonalCMA", "Cobyla", "NGOpt16", "NGOpt15", "CMandAS2", "OnePlusOne"]
     # List of objective functions.
+    optims = [
+        "MetaModelDE",
+        "NeuralMetaModelDE",
+        "SVMMetaModelDE",
+        "RFMetaModelDE",
+        "MetaModelTwoPointsDE",
+        "NeuralMetaModelTwoPointsDE",
+        "SVMMetaModelTwoPointsDE",
+        "RFMetaModelTwoPointsDE",
+        "GeneticDE",
+    ]
+    optims = ["LargeCMA", "TinyCMA", "OldCMA", "MicroCMA"]
+    optims = ["BFGS", "LBFGSB"]
+    optims = get_optimizers("oneshot", seed=next(seedg))  # type: ignore
+    optims = [
+        "MetaTuneRecentering",
+        "MetaRecentering",
+        "HullCenterHullAvgCauchyScrHammersleySearch",
+        "LHSSearch",
+        "LHSCauchySearch",
+    ]
+    optims = [
+        "BFGS",
+        "LBFGSB",
+        "MicroCMA",
+        "RandomSearch",
+        "NoisyDiscreteOnePlusOne",
+        "TBPSA",
+        "TinyCMA",
+        "CMA",
+        "ChainMetaModelSQP",
+        "OnePlusOne",
+        "MetaModel",
+        "RFMetaModel",
+        "DE",
+    ]
+    optims = ["NGOpt", "NGOptRW"]
+    optims = ["QrDE", "QODE", "LhsDE"]
+    optims = ["NGOptRW"]
+    if noise:
+        optims = [
+            #        "MicroCMA",
+            #        "TinyCMA",
+            #            "SQP",
+            #            "NoisyDiscreteOnePlusOne",
+            #            "TBPSA",
+            #        "RecombiningOptimisticNoisyDiscreteOnePlusOne",
+            #
+            #            "CMA",
+            #            "TinyCMA",
+            # "LPCMA",
+            # "VLPCMA",
+            # "MetaTuneRecentering",
+            # "MetaRecentering",
+            # "SPSA",
+            # "TinySQP",
+            # "MicroSQP",
+            # "TinySPSA",
+            # "MetaModel",
+            # "RFMetaModel",
+            # "RFMetaModelOnePlusOne",
+            "NoisyOnePlusOne",
+            # "MicroSPSA",
+        ]
+    else:
+        optims = ["MetaModelPSO", "RFMetaModelPSO", "SVMMetaModelPSO"]
     functions = [
         ArtificialFunction(
             name,
@@ -737,7 +1001,13 @@ def yabbob(
         for rotation in [True, False]
         for num_blocks in ([1] if not split else [7, 12])
         for d in (
-            [100, 1000, 3000] if hd else ([2, 5, 10, 15] if tuning else ([40] if bounded else [2, 10, 50]))
+            [100, 1000, 3000]
+            if hd
+            else (
+                [2, 5, 10, 15]
+                if tuning
+                else ([40] if bounded else ([2, 3, 5, 10, 15, 20, 50] if noise else [2, 10, 50]))
+            )
         )
     ]
 
@@ -799,7 +1069,7 @@ def yabbob(
     budgets = (
         [40000, 80000, 160000, 320000]
         if (big and not noise)
-        else ([50, 200, 800, 3200, 12800] if not noise else [3200, 12800])
+        else ([50, 200, 800, 3200, 12800] if not noise else [3200, 12800, 51200, 102400])
     )
     if small and not noise:
         budgets = [10, 20, 40]
@@ -1100,6 +1370,11 @@ def pbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         "NGOptRW",
         "NGOpt",
     ]
+    optims = ["ChainMetaModelSQP", "MetaModelOnePlusOne", "MetaModelDE"]
+    optims = ["LargeCMA", "TinyCMA", "OldCMA", "MicroCMA"]
+    optims = ["BFGS", "LBFGSB", "MemeticDE"]
+    optims = ["QrDE", "QODE", "LhsDE", "NGOpt", "NGOptRW"]
+    optims = ["TinyCMA", "QODE", "MetaModelOnePlusOne", "LhsDE", "TinyLhsDE", "TinyQODE"]
     dims = [40, 20]
     functions = [
         ArtificialFunction(name, block_dimension=d, rotation=rotation, expo=expo)
@@ -1364,6 +1639,8 @@ def spsa_benchmark(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """
     seedg = create_seed_generator(seed)
     optims: tp.List[str] = get_optimizers("spsa", seed=next(seedg))  # type: ignore
+    optims += ["CMA", "OnePlusOne", "DE", "PSO"]
+    optims = ["SQP", "NoisyDiscreteOnePlusOne", "NoisyBandit"]
     for budget in [500, 1000, 2000, 4000, 8000, 16000, 32000, 64000, 128000]:
         for optim in optims:
             for rotation in [True, False]:
@@ -1442,6 +1719,7 @@ def aquacrop_fao(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     funcs = [NgAquacrop(i, 300.0 + 150.0 * np.cos(i)) for i in range(3, 7)]
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", seed=next(seedg))
+    optims = ["BFGS", "LBFGSB", "MemeticDE"]
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
         for num_workers in [1, 30]:
             if num_workers < budget:
@@ -1458,6 +1736,7 @@ def fishing(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     funcs = [OptimizeFish(i) for i in [17, 35, 52, 70, 88, 105]]
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", seed=next(seedg))
+    optims += ["NGOpt", "NGOptRW", "ChainMetaModelSQP"]
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
         for algo in optims:
             for fu in funcs:
@@ -1474,6 +1753,11 @@ def rocket(seed: tp.Optional[int] = None, seq: bool = False) -> tp.Iterator[Expe
     funcs = [Rocket(i) for i in range(17)]
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", seed=next(seedg))
+    optims += ["NGOpt", "NGOptRW", "ChainMetaModelSQP"]
+    optims = ["BFGS", "LBFGSB", "MemeticDE"]
+    optims = ["CMA", "PSO", "QODE", "QRDE", "MetaModelPSO"]
+    if seq:
+        optims += ["BFGS", "LBFGSB", "MemeticDE"]
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
         for num_workers in [1] if seq else [1, 30]:
             if num_workers < budget:
@@ -1541,7 +1825,7 @@ def control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         f.parametrization.freeze()
         funcs2.append(f)
     optims = get_optimizers("basics")
-
+    optims = ["NGOpt", "PSO", "CMA"]
     for budget in [50, 75, 100, 150, 200, 250, 300, 400, 500, 1000, 3000, 5000, 8000, 16000, 32000, 64000]:
         for algo in optims:
             for fu in funcs2:
@@ -1568,7 +1852,7 @@ def neuro_control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experime
     ]
 
     optims = ["CMA", "NGOpt4", "DiagonalCMA", "NGOpt8", "MetaModel", "ChainCMAPowell"]
-
+    optims = ["NGOpt", "CMA", "PSO"]
     for budget in [50, 500, 5000, 10000, 20000, 35000, 50000, 100000, 200000]:
         for algo in optims:
             for fu in funcs:
@@ -1591,6 +1875,7 @@ def olympus_surfaces(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", "noisy", seed=next(seedg))
+    optims = ["NGOpt", "CMA"]
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600]:
         for num_workers in [1]:  # , 10, 100]:
             if num_workers < budget:
@@ -1613,6 +1898,7 @@ def olympus_emulators(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", "noisy", seed=next(seedg))
+    optims = ["NGOpt", "CMA"]
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600]:
         for num_workers in [1]:  # , 10, 100]:
             if num_workers < budget:
@@ -1762,6 +2048,8 @@ def mldakmeans(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     ]
     seedg = create_seed_generator(seed)
     optims = get_optimizers("splitters", "progressive", seed=next(seedg))
+    optims += ["DE", "CMA", "PSO", "TwoPointsDE", "RandomSearch"]
+    optims = ["QODE", "QRDE"]
     for budget in [1000, 10000]:
         for num_workers in [1, 10, 100]:
             if num_workers < budget:
@@ -2016,7 +2304,16 @@ def double_o_seven(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     }
     env = base_env.with_agent(player_0=random_agent).as_single_agent()
     dde = ng.optimizers.DifferentialEvolution(crossover="dimension").set_name("DiscreteDE")
-    optimizers: tp.List[tp.Any] = ["PSO", dde, "MetaTuneRecentering", "DiagonalCMA"]
+    optimizers: tp.List[tp.Any] = [
+        "PSO",
+        dde,
+        "MetaTuneRecentering",
+        "DiagonalCMA",
+        "TBPSA",
+        "SPSA",
+        "RecombiningOptimisticNoisyDiscreteOnePlusOne",
+        "MetaModelPSO",
+    ]
     for num_repetitions in [1, 10, 100]:
         for archi in ["mono", "multi"]:
             for optim in optimizers:
@@ -2056,6 +2353,8 @@ def multiobjective_example(
         ),
     ]
     optims += ["DiscreteOnePlusOne", "DiscreteLenglerOnePlusOne"]
+    optims = ["PymooNSGA2", "PymooBatchNSGA2", "LPCMA", "VLPCMA", "CMA"]
+    optims = ["LPCMA", "VLPCMA", "CMA"]
     popsizes = [20, 40, 80]
     optims += [
         ng.families.EvolutionStrategy(
@@ -2166,14 +2465,47 @@ def far_optimum_es(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def photonics(seed: tp.Optional[int] = None, as_tuple: bool = False) -> tp.Iterator[Experiment]:
+def photonics(
+    seed: tp.Optional[int] = None,
+    as_tuple: bool = False,
+    small: bool = False,
+    ultrasmall: bool = False,
+) -> tp.Iterator[Experiment]:
     """Too small for being interesting: Bragg mirror + Chirped + Morpho butterfly."""
     seedg = create_seed_generator(seed)
+    divider = 2 if small else 1
+    if ultrasmall:
+        divider = 4
     optims = get_optimizers("es", "basics", "splitters", seed=next(seedg))  # type: ignore
+    optims = [
+        "MemeticDE",
+        "PSO",
+        "DE",
+        "CMA",
+        "OnePlusOne",
+        "TwoPointsDE",
+        "GeneticDE",
+        "ChainMetaModelSQP",
+        "MetaModelDE",
+        "SVMMetaModelDE",
+        "RFMetaModelDE",
+        "BFGS",
+        "LBFGSB",
+    ]
+    optims = ["QrDE", "QODE", "RFMetaModelDE"]
     for method in ["clipping", "tanh"]:  # , "arctan"]:
-        for name in ["bragg", "chirped", "morpho", "cf_photosic_realistic", "cf_photosic_reference"]:
-            func = Photonics(name, 60 if name == "morpho" else 80, bounding_method=method, as_tuple=as_tuple)
-            for budget in [1e3, 1e4, 1e5, 1e6]:
+        for name in (
+            ["bragg"]
+            if ultrasmall
+            else ["bragg", "chirped", "morpho", "cf_photosic_realistic", "cf_photosic_reference"]
+        ):
+            func = Photonics(
+                name,
+                4 * ((60 // divider) // 4) if name == "morpho" else 80 // divider,
+                bounding_method=method,
+                as_tuple=as_tuple,
+            )
+            for budget in [1e1, 1e2, 1e3]:
                 for algo in optims:
                     xp = Experiment(func, algo, int(budget), num_workers=1, seed=next(seedg))
                     if not xp.is_incoherent:
@@ -2184,6 +2516,30 @@ def photonics(seed: tp.Optional[int] = None, as_tuple: bool = False) -> tp.Itera
 def photonics2(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with higher dimensions."""
     return photonics(seed, as_tuple=True)
+
+
+@registry.register
+def ultrasmall_photonics(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with higher dimensions."""
+    return photonics(seed, as_tuple=False, small=True, ultrasmall=True)
+
+
+@registry.register
+def ultrasmall_photonics2(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with higher dimensions."""
+    return photonics(seed, as_tuple=True, small=True, ultrasmall=True)
+
+
+@registry.register
+def small_photonics(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with higher dimensions."""
+    return photonics(seed, as_tuple=False, small=True)
+
+
+@registry.register
+def small_photonics2(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with higher dimensions."""
+    return photonics(seed, as_tuple=True, small=True)
 
 
 @registry.register
@@ -2246,9 +2602,10 @@ def pbo_suite(seed: tp.Optional[int] = None, reduced: bool = False) -> tp.Iterat
                 index += 1
                 if reduced and index % 13:
                     continue
-                for instrumentation in ["Unordered"] if reduced else ["Softmax", "Ordered", "Unordered"]:
+                for instrumentation in ["Softmax", "Ordered", "Unordered"]:
                     try:
                         func = iohprofiler.PBOFunction(fid, iid, dim, instrumentation=instrumentation)
+                        func.add_descriptors(instrum_str=instrumentation)
                     except ModuleNotFoundError as e:
                         raise fbase.UnsupportedExperiment("IOHexperimenter needs to be installed") from e
                     for optim in list_optims:

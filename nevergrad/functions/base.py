@@ -65,6 +65,11 @@ class ExperimentFunction:
         inst._descriptors = {
             x: y for x, y in callargs.items() if isinstance(y, (str, tuple, int, float, bool))
         }
+        # if "bonnans" in str(cls.__name__) or "discrete" in str(cls.__name__) or "pbo" in str(cls.__name__):
+        #    inst._descriptors = {
+        #        x: y for x, y in callargs.items() if isinstance(y, (str, tuple, int, float, bool)) and "dimension" not
+        #        in x and "paramet" not in x
+        #    }
         inst._descriptors["function_class"] = cls.__name__
         return inst  # type: ignore
 

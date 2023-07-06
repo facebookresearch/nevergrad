@@ -1,0 +1,16 @@
+Noisy optimization benchmark originally used for testing SPSA.
+
+budget1000
+budget128000
+budget16000
+budget2000
+budget32000
+budget4000
+budget500
+budget64000
+budget8000
+namecigar
+namesphere
+namesphere4
+rotationFalse
+rotationTrue

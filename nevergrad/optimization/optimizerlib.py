@@ -143,6 +143,10 @@ class _OnePlusOne(base.Optimizer):
             "portfolio",
             "discreteBSO",
             "lengler",
+            "lengler2",
+            "lengler3",
+            "lenglerhalf",
+            "lenglerfourth",
             "doerr",
         ], f"Unkwnown mutation: '{mutation}'"
         if mutation == "adaptive":
@@ -271,6 +275,38 @@ class _OnePlusOne(base.Optimizer):
                     intensity=intensity,
                     arity=self.arity_for_discrete_mutation,
                 )
+            elif mutation == "lengler2":
+                alpha = 3.0
+                intensity = int(max(1, self.dimension * (alpha * np.log(self.num_ask) / self.num_ask)))
+                data = mutator.portfolio_discrete_mutation(
+                    pessimistic_data,
+                    intensity=intensity,
+                    arity=self.arity_for_discrete_mutation,
+                )
+            elif mutation == "lengler3":
+                alpha = 9.0
+                intensity = int(max(1, self.dimension * (alpha * np.log(self.num_ask) / self.num_ask)))
+                data = mutator.portfolio_discrete_mutation(
+                    pessimistic_data,
+                    intensity=intensity,
+                    arity=self.arity_for_discrete_mutation,
+                )
+            elif mutation == "lenglerfourth":
+                alpha = 0.4
+                intensity = int(max(1, self.dimension * (alpha * np.log(self.num_ask) / self.num_ask)))
+                data = mutator.portfolio_discrete_mutation(
+                    pessimistic_data,
+                    intensity=intensity,
+                    arity=self.arity_for_discrete_mutation,
+                )
+            elif mutation == "lenglerhalf":
+                alpha = 0.8
+                intensity = int(max(1, self.dimension * (alpha * np.log(self.num_ask) / self.num_ask)))
+                data = mutator.portfolio_discrete_mutation(
+                    pessimistic_data,
+                    intensity=intensity,
+                    arity=self.arity_for_discrete_mutation,
+                )
             elif mutation == "doerr":
                 # Selection, either random, or greedy, or a mutation rate.
                 assert self._doerr_index == -1, "We should have used this index in tell."
@@ -384,6 +420,7 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
         - `"portfolio"`: Random number of mutated bits (called niform mixing in
           Dang & Lehre "Self-adaptation of Mutation Rates in Non-elitist Population", 2016)
         - `"lengler"`: specific mutation rate chosen as a function of the dimension and iteration index.
+        - `"lengler{2|3|half|fourth}"`: variant of Lengler
     crossover: bool
         whether to add a genetic crossover step every other iteration.
     use_pareto: bool
@@ -461,6 +498,18 @@ PortfolioDiscreteOnePlusOneT = ParametrizedOnePlusOne(tabu_length=10000, mutatio
 )
 DiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(mutation="lengler").set_name(
     "DiscreteLenglerOnePlusOne", register=True
+)
+DiscreteLengler2OnePlusOne = ParametrizedOnePlusOne(mutation="lengler2").set_name(
+    "DiscreteLengler2OnePlusOne", register=True
+)
+DiscreteLengler3OnePlusOne = ParametrizedOnePlusOne(mutation="lengler3").set_name(
+    "DiscreteLengler3OnePlusOne", register=True
+)
+DiscreteLenglerHalfOnePlusOne = ParametrizedOnePlusOne(mutation="lenglerhalf").set_name(
+    "DiscreteLenglerHalfOnePlusOne", register=True
+)
+DiscreteLenglerFourthOnePlusOne = ParametrizedOnePlusOne(mutation="lenglerfourth").set_name(
+    "DiscreteLenglerFourthOnePlusOne", register=True
 )
 DiscreteLenglerOnePlusOneT = ParametrizedOnePlusOne(tabu_length=10000, mutation="lengler").set_name(
     "DiscreteLenglerOnePlusOneT", register=True
@@ -760,6 +809,8 @@ class ChoiceBase(base.Optimizer):
 
 
 OldCMA = ParametrizedCMA().set_name("OldCMA", register=True)
+LargeCMA = ParametrizedCMA(scale=3.0).set_name("LargeCMA", register=True)
+TinyCMA = ParametrizedCMA(scale=0.33).set_name("TinyCMA", register=True)
 CMA = ParametrizedCMA().set_name("CMA", register=True)
 CMAbounded = ParametrizedCMA(
     scale=1.5884, popsize_factor=1, elitist=True, diagonal=True, fcmaes=False
@@ -1352,6 +1403,16 @@ class Rescaled(base.ConfiguredOptimizer):
 
 
 RescaledCMA = Rescaled().set_name("RescaledCMA", register=True)
+TinyLhsDE = Rescaled(base_optimizer=LhsDE, scale=1e-3).set_name("TinyLhsDE", register=True)
+TinyQODE = Rescaled(base_optimizer=QODE, scale=1e-3).set_name("TinyQODE", register=True)
+TinySQP = Rescaled(base_optimizer=SQP, scale=1e-3).set_name("TinySQP", register=True)
+MicroSQP = Rescaled(base_optimizer=SQP, scale=1e-6).set_name("MicroSQP", register=True)
+TinySQP.no_parallelization = True
+MicroSQP.no_parallelization = True
+TinySPSA = Rescaled(base_optimizer=SPSA, scale=1e-3).set_name("TinySPSA", register=True)
+MicroSPSA = Rescaled(base_optimizer=SPSA, scale=1e-6).set_name("MicroSPSA", register=True)
+TinySPSA.no_parallelization = True
+MicroSPSA.no_parallelization = True
 
 
 class SplitOptimizer(base.Optimizer):
@@ -1703,6 +1764,8 @@ MultiScaleCMA = ConfPortfolio(
     optimizers=[ParametrizedCMA(random_init=True, scale=scale) for scale in [1.0, 1e-3, 1e-6]],
     warmup_ratio=0.33,
 ).set_name("MultiScaleCMA", register=True)
+LPCMA = ParametrizedCMA(popsize_factor=10.0).set_name("LPCMA", register=True)
+VLPCMA = ParametrizedCMA(popsize_factor=100.0).set_name("VLPCMA", register=True)
 
 
 class _MetaModel(base.Optimizer):
@@ -1782,6 +1845,16 @@ SVMMetaModel = ParametrizedMetaModel(algorithm="svr").set_name("SVMMetaModel", r
 RFMetaModel = ParametrizedMetaModel(algorithm="rf").set_name("RFMetaModel", register=True)
 MetaModelOnePlusOne = ParametrizedMetaModel(multivariate_optimizer=OnePlusOne).set_name(
     "MetaModelOnePlusOne", register=True
+)
+RFMetaModelOnePlusOne = ParametrizedMetaModel(multivariate_optimizer=OnePlusOne, algorithm="rf").set_name(
+    "RFMetaModelOnePlusOne", register=True
+)
+MetaModelPSO = ParametrizedMetaModel(multivariate_optimizer=PSO).set_name("MetaModelPSO", register=True)
+RFMetaModelPSO = ParametrizedMetaModel(multivariate_optimizer=PSO, algorithm="rf").set_name(
+    "RFMetaModelPSO", register=True
+)
+SVMMetaModelPSO = ParametrizedMetaModel(multivariate_optimizer=PSO, algorithm="svr").set_name(
+    "SVMMetaModelPSO", register=True
 )
 
 MetaModelDE = ParametrizedMetaModel(multivariate_optimizer=DE).set_name("MetaModelDE", register=True)
@@ -2283,6 +2356,7 @@ class _Chain(base.Optimizer):
             "dimension": self.dimension,
             "half": self.budget // 2 if self.budget else self.num_workers,
             "third": self.budget // 3 if self.budget else self.num_workers,
+            "fourth": self.budget // 4 if self.budget else self.num_workers,
             "tenth": self.budget // 10 if self.budget else self.num_workers,
             "sqrt": int(np.sqrt(self.budget)) if self.budget else self.num_workers,
         }
@@ -2290,7 +2364,8 @@ class _Chain(base.Optimizer):
         last_budget = None if self.budget is None else max(4, self.budget - sum(self.budgets))
         assert len(optimizers) == len(self.budgets) + 1
         assert all(
-            x in ("third", "half", "tenth", "dimension", "num_workers", "sqrt") or x > 0 for x in self.budgets
+            x in ("fourth", "third", "half", "tenth", "dimension", "num_workers", "sqrt") or x > 0
+            for x in self.budgets
         ), str(self.budgets)
         for opt, optbudget in zip(optimizers, self.budgets + [last_budget]):  # type: ignore
             self.optimizers.append(opt(self.parametrization, budget=optbudget, num_workers=self.num_workers))
@@ -2353,6 +2428,12 @@ class Chaining(base.ConfiguredOptimizer):
 GeneticDE = Chaining([RotatedTwoPointsDE, TwoPointsDE], [200]).set_name(
     "GeneticDE", register=True
 )  # Also known as CGDE
+MemeticDE = Chaining([RotatedTwoPointsDE, TwoPointsDE, DE, SQP], ["fourth", "fourth", "fourth"]).set_name(
+    "MemeticDE", register=True
+)
+QNDE = Chaining([QODE, BFGS], ["half"]).set_name("QNDE", register=True)
+QNDE.no_parallelization = True
+MemeticDE.no_parallelization = True
 discretememetic = Chaining(
     [RandomSearch, DiscreteLenglerOnePlusOne, DiscreteOnePlusOne], ["third", "third"]
 ).set_name("discretememetic", register=True)

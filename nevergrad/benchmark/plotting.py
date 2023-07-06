@@ -26,6 +26,7 @@ from .exporttable import export_table
 
 
 _DPI = 250
+pure_algorithms = []
 
 # %% Basic tools
 
@@ -256,7 +257,14 @@ def create_plots(
             "block_dimension",
             "num_objectives",
         ):
-            df[col] = df[col].astype(float).astype(int)
+            try:
+                df[col] = df[col].astype(float).astype(int)
+            except Exception as e1:
+                try:
+                    for i in range(len(df[col])):
+                        float(df[col][i])
+                except Exception as e2:
+                    assert False, f"Fails at row {i+2}, Exceptions: {e1}, {e2}"
         elif col != "loss":
             df[col] = df[col].astype(str)
             df[col] = df[col].replace(r"\.[0]*$", "", regex=True)
@@ -382,6 +390,8 @@ def create_plots(
                 with open(str(output_folder / name) + ".cp.txt", "w") as f:
                     f.write(fullname)
                     f.write("ranking:\n")
+                    global pure_algorithms
+                    pure_algorithms = list(data_df.columns[:])
                     for i, algo in enumerate(data_df.columns[:58]):
                         f.write(f"  algo {i}: {algo}\n")
             if name == "fight_all.png":
@@ -405,7 +415,9 @@ def create_plots(
     # Average normalized plot with everything.
     out_filepath = output_folder / "xpresults_all.png"
     data = XpPlotter.make_data(df, normalized_loss=True)
-    xpplotter = XpPlotter(data, title=os.path.basename(output_folder), name_style=name_style, xaxis=xpaxis)
+    xpplotter = XpPlotter(
+        data, title=os.path.basename(output_folder), name_style=name_style, xaxis=xpaxis, pure_only=True
+    )
     xpplotter.save(out_filepath)
     # Now one xp plot per case.
     for case in cases:
@@ -479,6 +491,7 @@ class XpPlotter:
         title: str,
         name_style: tp.Optional[tp.Dict[str, tp.Any]] = None,
         xaxis: str = "budget",
+        pure_only: bool = False,
     ) -> None:
         # Very dirty hack, find better.
         threshold = float("NaN")
@@ -505,6 +518,13 @@ class XpPlotter:
         # plot from best to worst
         lowerbound = np.inf
         sorted_optimizers = sorted(optim_vals, key=lambda x: optim_vals[x]["loss"][-1], reverse=True)
+        if pure_only:
+            assert len(pure_algorithms) > 0
+            # print(sorted_optimizers, " merged with ", pure_algorithms)
+            sorted_optimizers = [
+                o for o in sorted_optimizers if o + " " in [p[: (len(o) + 1)] for p in pure_algorithms]
+            ]
+            # print("Leads to ", sorted_optimizers)
         self._fig = plt.figure()
         self._ax = self._fig.add_subplot(111)
         # use log plot? yes, if no negative value
