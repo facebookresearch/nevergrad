@@ -17,7 +17,7 @@ allplots="$allplots `ls -d *_plots/ | grep -v 'noisy|spsa' | grep -v bbob | egre
 allplots="$allplots `ls -d *_plots/ | grep -v 'noisy|spsa' | grep -v bbob | egrep -v 'multimodal|deceptive' | grep -v photonics | grep -v topology | grep -v rock | grep -v tuning | egrep 'pbo|discr|bonn'`"
 
 # rest of RW, besides photonics, topology, rockets
-allplots="$allplots `ls -d *_plots/ | grep -v 'noisy|spsa' | grep -v bbob | egrep -v 'multimodal|deceptive' | grep -v photonics | grep -v topology | grep -v rock | grep -v tuning | egrep -v 'pbo|discr|bonn' | grep -v multiobj ` "
+allplots="$allplots `ls -d *_plots/ | grep -v 'noisy|spsa' | grep -v bbob | egrep -v 'multimodal|deceptive' | grep -v photonics | grep -v topology | grep -v rock | grep -v tuning | egrep -v 'pbo|discr|bonn' | grep -v multiobj | grep -v spsa ` "
 # RW
 allplots="$allplots `ls -d *_plots/ | grep -v 'noisy|spsa' | grep -v bbob | grep photonics `"
 allplots="$allplots `ls -d *_plots/ | grep -v 'noisy|spsa' | grep -v bbob | grep topology`"
@@ -36,7 +36,8 @@ cat scripts/tex/beginning.tex
 for u in $allplots
 do
 echo "\\subsubsection{`echo $u | sed 's/_plots.$//g'`}" | sed 's/_/ /g'| sed 's/aquacrop/(RW) &/g' | sed 's/rocket/(RW)&/g' | sed 's/fishing/(RW)&/g' | sed 's/MLDA/(RW)&/g' | sed 's/keras/(RW)&/g' | sed 's/mltuning/(RW)&/g' | sed 's/powersystems/(RW)&/g' | sed 's/mixsimulator/(RW)&/g' | sed 's/olympus/(RW)&/g' | sed 's/double.o.seven/(RW)&/g'
-echo '\begin{enumerate}' ; cat $u/fig*.txt | grep -v pngranking | sed 's/[_=]/ /g' | sed 's/  algo.[0-9]*:/\\item/g' ; echo '\item End' ; echo '\end{enumerate}'
+cat scripts/txt/`echo $u | sed 's/_plots/.txt/g'`
+echo '\begin{enumerate}' ; cat $u/fig*.txt | grep -v pngranking | sed 's/[_=]/ /g' | sed 's/  algo.[0-9]*:/\\item/g' ; echo '\item[] ~\ ~' ; echo '\end{enumerate}'
 ls ${u}/*all_pure.png ${u}/xpresults_all.png | sed 's/.*/\\includegraphics[width=.8\\textwidth]{{&}}\\\\/g' 
 done
 echo '\section{Conclusion}'

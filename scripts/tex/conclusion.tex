@@ -3,7 +3,7 @@ Neural, RF and SVM as prefixes for MetaModel mean that we use Neural nets, Rando
 surrogate models. The quadratic and random forest meta-models look best overall. DE or OnePlusOne as a suffix mean that
 we use differential evolution or the $(1+1)$ evolution strategy as an underlying optimization model, instead of CMA.
 ChainMetaModelSQP is a memetic algorithm: it combines MetaModel (hence, CMA plus a MetaModel) and a final run using a local method, namely SQP (sequential quadratic programming).
-Usually, a meta-model and a fast local search a the end do improve evolutionary methods.
+Usually, a meta-model and a fast local search a the end do improve evolutionary methods in continuous domains. 
 
 On benchmarks close to the good old BBOB, CMA and variants do perform well. The variants equipped with a MetaModel perform better, and
 variants equipped with the the MetaModel and the final local search (namely ChainMetaModelSQP) are even better on YABBOB. It
@@ -28,12 +28,9 @@ but rarely perform well, though they are comparable to other methods in low budg
 Optimization methods perform differently from each other, which is consistent with their highly parametric nature.
 
 %MetaModel perform well on BBOB-style optimization, but were also excellent for several low budget things.
-Methods based on the gradient estimated by finite differences can be good in conjunction with a random restart, when the
-budget is large enough TODO
 
 TODO ordered
 
-TODO QODE
 
 
 Regarding discrete contexts, we note the great performance of the so-called ``DiscreteLenglerOnePlusOne''
@@ -74,7 +71,14 @@ BOBYQA, HyperOpt, RandomSearch perform well.
 The multi-objective setting is quite difficult to analyze. The DE adapted to the multi-objective case available in
 Nevergrad\cite{pde,mode} performs well in classical settings, but high dimensional and many objective cases lead to surprisingly good
 results  by e.g. discrete methods running in the continuous case (which means they are handled that variables with
-infinitely many possibles values).
+infinitely many possibles values). This deserves additional investigation, as using discrete algorithms such as
+DiscreteOnePlusOne in continuous difficult problems is rather new and ignores the topology of each variable as if the
+real numbers were not ordered: this means randomly redrawing some variables.
+
+BFGS can be used in a black-box setting, using finite differences. This is, however, rarely a good option.
+
+Some benchmarks such as photonics or topology optimization have variables organized in arrays of dimension 1 or 2. Not
+all algorithms are able to use this.
 
 \subsection{Caveats, further work}
 Some benchmarks were implemented but not included in the release due to legal issues in the license. 

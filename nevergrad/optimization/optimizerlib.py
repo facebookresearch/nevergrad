@@ -1403,6 +1403,16 @@ class Rescaled(base.ConfiguredOptimizer):
 
 
 RescaledCMA = Rescaled().set_name("RescaledCMA", register=True)
+TinyLhsDE = Rescaled(base_optimizer=LhsDE, scale=1e-3).set_name("TinyLhsDE", register=True)
+TinyQODE = Rescaled(base_optimizer=QODE, scale=1e-3).set_name("TinyQODE", register=True)
+TinySQP = Rescaled(base_optimizer=SQP, scale=1e-3).set_name("TinySQP", register=True)
+MicroSQP = Rescaled(base_optimizer=SQP, scale=1e-6).set_name("MicroSQP", register=True)
+TinySQP.no_parallelization = True
+MicroSQP.no_parallelization = True
+TinySPSA = Rescaled(base_optimizer=SPSA, scale=1e-3).set_name("TinySPSA", register=True)
+MicroSPSA = Rescaled(base_optimizer=SPSA, scale=1e-6).set_name("MicroSPSA", register=True)
+TinySPSA.no_parallelization = True
+MicroSPSA.no_parallelization = True
 
 
 class SplitOptimizer(base.Optimizer):
@@ -1754,6 +1764,8 @@ MultiScaleCMA = ConfPortfolio(
     optimizers=[ParametrizedCMA(random_init=True, scale=scale) for scale in [1.0, 1e-3, 1e-6]],
     warmup_ratio=0.33,
 ).set_name("MultiScaleCMA", register=True)
+LPCMA = ParametrizedCMA(popsize_factor=10.0).set_name("LPCMA", register=True)
+VLPCMA = ParametrizedCMA(popsize_factor=100.0).set_name("VLPCMA", register=True)
 
 
 class _MetaModel(base.Optimizer):
@@ -1836,6 +1848,13 @@ MetaModelOnePlusOne = ParametrizedMetaModel(multivariate_optimizer=OnePlusOne).s
 )
 RFMetaModelOnePlusOne = ParametrizedMetaModel(multivariate_optimizer=OnePlusOne, algorithm="rf").set_name(
     "RFMetaModelOnePlusOne", register=True
+)
+MetaModelPSO = ParametrizedMetaModel(multivariate_optimizer=PSO).set_name("MetaModelPSO", register=True)
+RFMetaModelPSO = ParametrizedMetaModel(multivariate_optimizer=PSO, algorithm="rf").set_name(
+    "RFMetaModelPSO", register=True
+)
+SVMMetaModelPSO = ParametrizedMetaModel(multivariate_optimizer=PSO, algorithm="svr").set_name(
+    "SVMMetaModelPSO", register=True
 )
 
 MetaModelDE = ParametrizedMetaModel(multivariate_optimizer=DE).set_name("MetaModelDE", register=True)
