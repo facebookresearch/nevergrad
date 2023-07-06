@@ -960,24 +960,24 @@ def yabbob(
     optims = ["NGOptRW"]
     if noise:
         optims = [
-    #        "MicroCMA",
-    #        "TinyCMA",
-#            "SQP",
-#            "NoisyDiscreteOnePlusOne",
-#            "TBPSA",
-    #        "RecombiningOptimisticNoisyDiscreteOnePlusOne",
-    #
-#            "CMA",
-#            "TinyCMA",
-            #"LPCMA",
-            #"VLPCMA",
-            #"MetaTuneRecentering",
-            #"MetaRecentering",
-            #"SPSA",
-            #"TinySQP",
-            #"MicroSQP",
+            #        "MicroCMA",
+            #        "TinyCMA",
+            #            "SQP",
+            #            "NoisyDiscreteOnePlusOne",
+            #            "TBPSA",
+            #        "RecombiningOptimisticNoisyDiscreteOnePlusOne",
+            #
+            #            "CMA",
+            #            "TinyCMA",
+            # "LPCMA",
+            # "VLPCMA",
+            # "MetaTuneRecentering",
+            # "MetaRecentering",
+            # "SPSA",
+            # "TinySQP",
+            # "MicroSQP",
             "TinySPSA",
-            #"MicroSPSA",
+            # "MicroSPSA",
         ]
     else:
         optims = ["MetaModelPSO", "RFMetaModelPSO", "SVMMetaModelPSO"]
