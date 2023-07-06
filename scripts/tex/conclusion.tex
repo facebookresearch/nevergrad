@@ -17,7 +17,10 @@ However for the minimum ratio budget/dimension the simple $(1+1)$ evolution stra
 excellent.
 We note interesting performances of QODE (quasi-opposite DE) in many cases.
 
-SQP is excellent in noisy optimization. In the large-scale context, TBPSA (combining population-control\cite{mlis} and other tools as in \cite{vasilfoga}) also performs well.
+SQP is excellent in noisy optimization, but methods with ad hoc scale can compete: the scale is critical in noisy
+optimization, unless the budget is large. In some cases, TBPSA (combining population-control\cite{mlis} and other tools
+as in \cite{vasilfoga}) also performs well, as well as combinations between bandits and evolutionary algorithms
+(NoisyDiscreteOnePlusOne)..
 Methods designed in the noisy case might diverge.
 
 We include benchmarks with one or several or many constraints (prefix onepen, pen and megapen), tackled with dynamic

@@ -978,7 +978,11 @@ def yabbob(
             # "SPSA",
             # "TinySQP",
             # "MicroSQP",
-            "TinySPSA",
+            # "TinySPSA",
+            # "MetaModel",
+            # "RFMetaModel",
+            # "RFMetaModelOnePlusOne",
+            "NoisyOnePlusOne",
             # "MicroSPSA",
         ]
     else:

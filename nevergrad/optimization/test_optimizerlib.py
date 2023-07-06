@@ -212,14 +212,20 @@ def test_infnan(name: str) -> None:
 @pytest.mark.parametrize("name", registry)  # type: ignore
 def test_optimizers(name: str) -> None:
     """Checks that each optimizer is able to converge on a simple test case"""
-    if sum([ord(c) for c in name]) % 4 > 0 and name not in [
-        "DE",
-        "CMA",
-        "OnePlusOne",
-        "Cobyla",
-        "DiscreteLenglerOnePlusOne",
-        "PSO",
-    ]:
+    if (
+        sum([ord(c) for c in name]) % 4 > 0
+        and name
+        not in [
+            "DE",
+            "CMA",
+            "OnePlusOne",
+            "Cobyla",
+            "DiscreteLenglerOnePlusOne",
+            "PSO",
+        ]
+        and "Tiny" not in name
+        and "Micro" not in name
+    ):
         raise SkipTest("Too expensive: we randomly skip 3/4 of these tests.")
     if name in ["CMAbounded", "NEWUOA"]:  # Not a general purpose optimization method.
         return
