@@ -83,7 +83,7 @@ class Selector(pd.DataFrame):  # type: ignore
 
     @classmethod
     def read_csv(cls, path: tp.PathLike) -> "Selector":
-        return cls(pd.read_csv(str(path)))
+        return cls(pd.read_csv(str(path), on_bad_lines="skip"))
 
     def assert_equivalent(self, other: pd.DataFrame, err_msg: str = "") -> None:
         """Asserts that two selectors are equal, up to row and column permutations
