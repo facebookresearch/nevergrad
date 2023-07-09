@@ -102,5 +102,20 @@ The vast family of benchmarks in Nevergrad is used for tuning an algorithm selec
 
 \section{Experimental results}
 
+\subsection{Multi-scale black-box optimization benchmarks}
+
+A key issue, explaining many buggy results, is the tendency of tuning an algorithm and not its baselines. And the most
+important tuning is the scale: sometimes the optimum is close to the center, sometimes it is far. The principle of the
+multi-scale BBOB benchmark is that it contains four different scales, and the algorithms are not informed of which
+setting corresponds to the next benchmark.
+Results show much better results from mathematical programming techniques (which are more robust to unknown scales) and
+of the simple $(1+1)$ evolution strategy. This is an artificial benchmark, but it is inspired by results in
+\cite{micropredictions1,micropredictions2}, which emphasize a great success of the simple $(1+1)$-evolution strategy.
+
+\includegraphics[width=.7\textwidth]{{ms_bbob_plots/fight_translation_factor0.01.png_pure.png}}\\
+\includegraphics[width=.7\textwidth]{{ms_bbob_plots/fight_translation_factor0.1.png_pure.png}}\\
+\includegraphics[width=.7\textwidth]{{ms_bbob_plots/fight_translation_factor1.0.png_pure.png}}\\
+\includegraphics[width=.7\textwidth]{{ms_bbob_plots/fight_translation_factor10.0.png_pure.png}}\\
+
 
 
