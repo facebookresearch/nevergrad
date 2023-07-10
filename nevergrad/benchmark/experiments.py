@@ -118,6 +118,7 @@ def keras_tuning(
     ]
     optims = ["NGOpt", "NGOptRW", "QODE"]
     optims = ["NGOpt"]
+    optims = ["PCABO"]
     datasets = ["kerasBoston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
     for dimension in [None]:
         for dataset in datasets:
@@ -178,6 +179,7 @@ def mltuning(
     ]
     optims = ["NGOpt", "NGOptRW", "QODE"]
     optims = ["NGOpt"]
+    optims = ["PCABO"]
     for dimension in [None, 1, 2, 3]:
         if dimension is None:
             datasets = ["boston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
@@ -987,6 +989,7 @@ def yabbob(
         ]
     else:
         optims = ["MetaModelPSO", "RFMetaModelPSO", "SVMMetaModelPSO"]
+    optims = ["PCABO"]
     functions = [
         ArtificialFunction(
             name,
@@ -1760,6 +1763,7 @@ def aquacrop_fao(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", seed=next(seedg))
     optims = ["BFGS", "LBFGSB", "MemeticDE"]
+    optims = ["PCABO"]
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
         for num_workers in [1, 30]:
             if num_workers < budget:
@@ -1778,6 +1782,7 @@ def fishing(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     optims = get_optimizers("basics", seed=next(seedg))
     optims += ["NGOpt", "NGOptRW", "ChainMetaModelSQP"]
     optims = ["NGOpt"]
+    optims = ["PCABO"]
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
         for algo in optims:
             for fu in funcs:
@@ -1800,6 +1805,7 @@ def rocket(seed: tp.Optional[int] = None, seq: bool = False) -> tp.Iterator[Expe
     if seq:
         optims += ["BFGS", "LBFGSB", "MemeticDE"]
     optims = ["NGOpt"]
+    optims = ["PCABO"]
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
         for num_workers in [1] if seq else [1, 30]:
             if num_workers < budget:
@@ -2537,6 +2543,7 @@ def photonics(
         "LBFGSB",
     ]
     optims = ["QrDE", "QODE", "RFMetaModelDE"]
+    optims = ["PCABO"]
     for method in ["clipping", "tanh"]:  # , "arctan"]:
         for name in (
             ["bragg"]
