@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -143,7 +143,7 @@ def test_bounded_int_casting() -> None:
 
 def test_rand_int_casting() -> None:
     param = _datalayers.Bound(0, 1)(ng.p.Array(shape=(100, 10)) + 0.2)
-    param.add_layer(_datalayers.Int(deterministic=False))
+    param = _datalayers.Int(deterministic=False)(param)
     total = param.value.ravel().sum()
     assert 50 < total < 500
 

@@ -1,13 +1,11 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
 import os
 import typing as tp
-import nevergrad as ng
 from nevergrad.functions import gym as nevergrad_gym
-from nevergrad.functions import ExperimentFunction
 from .xpbase import registry
 from .xpbase import create_seed_generator
 from .xpbase import Experiment
@@ -53,6 +51,8 @@ def ng_full_gym(
     ng_gym: bool = False,  # pylint: disable=redefined-outer-name
     conformant: bool = False,
     gp: bool = False,
+    sparse: bool = False,
+    multi_scale: bool = False,
 ) -> tp.Iterator[Experiment]:
     """Gym simulator. Maximize reward.  Many distinct problems.
 
@@ -78,36 +78,20 @@ def ng_full_gym(
     if ng_gym:
         env_names = nevergrad_gym.GymMulti.ng_gym
     if gp:
-        try:
-            import pybullet  # pylint: disable=unused-import
-            import pybullet_envs  # pylint: disable=unused-import
-            import pybulletgym  # pylint: disable=unused-import
-            import pyvirtualdisplay
+        import pybullet_envs  # pylint: disable=unused-import
 
-            # I deserve eternal damnation for this hack:
-            pyvirtualdisplay.Display(visible=0, size=(1400, 900)).start()
-            env_names = [
-                "CartPole-v1",
-                "Acrobot-v1",
-                "MountainCarContinuous-v0",
-                "Pendulum-v0",
-                "InvertedPendulumSwingupBulletEnv-v0",
-                "BipedalWalker-v3",
-                "BipedalWalkerHardcore-v3",
-                "HopperBulletEnv-v0",
-                "InvertedDoublePendulumBulletEnv-v0",
-                "LunarLanderContinuous-v2",
-            ]
-        except:
-            print("Pybullet not installed. If you need it, please do something like:")
-            print("pip install pybullet")
-            print("pip install pyvirtualdisplay")
-            print("pip install git+https://github.com/benelot/pybullet-gym")
-            if os.environ.get("CIRCLECI", False):
-                raise ng.errors.UnsupportedExperiment(
-                    "No pybullet in CircleCI because pybulletgym is not in pypi!"
-                )
-            raise ImportError("Please install pybullet, pyvirtualdisplay and pybulletgym.")
+        env_names = [
+            "CartPole-v1",
+            "Acrobot-v1",
+            "MountainCarContinuous-v0",
+            "Pendulum-v1",
+            # "InvertedPendulumSwingupBulletEnv-v0",
+            "BipedalWalker-v3",
+            "BipedalWalkerHardcore-v3",
+            "HopperBulletEnv-v0",
+            # "InvertedDoublePendulumBulletEnv-v0",
+            "LunarLanderContinuous-v2",
+        ]
 
     seedg = create_seed_generator(seed)
     optims = ["DiagonalCMA", "OnePlusOne", "PSO", "DiscreteOnePlusOne", "DE", "CMandAS2"]
@@ -125,8 +109,7 @@ def ng_full_gym(
     optims = ["Zero", "SDiagonalCMA", "MultiScaleCMA", "QORandomSearch", "MetaRecentering"]
     optims = ["AX"]
     #optims = ["MixDeterministicRL", "SpecialRL", "SMAC", "Lamcts", "Zero", "RotatedTwoPointsDE", "DE", "GeneticDE", "MetaTuneRecentering", "PSO", "SMAC2", "AX", "BO", "Cobyla", "CMA", "DiagonalCMA", "OnePlusOne", "MetaModel", "HyperOpt"]#, "NoisyRL1", "NoisyRL2", "NoisyRL3"]
-    optims2unused = [
-        "CMA",
+    optims = [
         "DiagonalCMA",
         "GeneticDE",
         "NoisyRL1",
@@ -142,6 +125,10 @@ def ng_full_gym(
     else:
         controls = (
             [
+                "noisy_semideep_neural",
+                "noisy_scrambled_semideep_neural",  # Scrambling: why not perturbating the order of variables ?
+                "noisy_deep_neural",
+                "noisy_scrambled_deep_neural",
                 "neural",
                 # "structured_neural",
                 # "memory_neural",
@@ -152,9 +139,12 @@ def ng_full_gym(
                 # "noisy_scrambled_neural",
                 # "scrambled_neural",
                 # "linear",
+                "resid_neural",
+                "resid_semideep_neural",
+                "resid_deep_neural",
             ]
             if not big
-            else ["neural"]
+            else ["resid_neural"]
         )
     if memory:
         controls = ["stackingmemory_neural", "deep_stackingmemory_neural", "semideep_stackingmemory_neural"]
@@ -167,13 +157,11 @@ def ng_full_gym(
         assert not multi
     if conformant:
         controls = ["stochastic_conformant"]
-    budgets = [50, 200, 800, 3200, 100, 25, 400, 1600]
-    budgets = [800]
-    #budgets = [1600, 3200]
-    #budgets = [25, 50, 100, 200, 400, 800]
-    #budgets = [1600, 3200, 6400]
-    #budgets = [204800, 12800, 25600, 51200, 50, 200, 800, 3200, 6400, 100, 25, 400, 1600, 102400]
-    #budgets = gym_budget_modifier(budgets)
+    optimization_scales: tp.List[int] = [0]
+    if multi_scale:
+        optimization_scales = [-6, -4, -2, 0]
+    budgets = [50, 200, 100, 25, 400]  # Let's go with low budget.
+    budgets = gym_budget_modifier(budgets)
     for control in controls:
         neural_factors: tp.Any = (
             [None]
@@ -182,17 +170,27 @@ def ng_full_gym(
         )
         for neural_factor in neural_factors:
             for name in env_names:
-                try:
-                    func = nevergrad_gym.GymMulti(
-                        name, control=control, neural_factor=neural_factor, randomized=randomized
-                    )
-                except MemoryError:
-                    continue
-                for budget in budgets:
-                    for algo in optims:
-                        xp = Experiment(func, algo, budget, num_workers=1, seed=next(seedg))
-                        if not xp.is_incoherent:
-                            yield xp
+                sparse_limits: tp.List[tp.Optional[int]] = [None]
+                if sparse:
+                    sparse_limits += [10, 100, 1000]
+                for sparse_limit in sparse_limits:
+                    for optimization_scale in optimization_scales:
+                        try:
+                            func = nevergrad_gym.GymMulti(
+                                name,
+                                control=control,
+                                neural_factor=neural_factor,
+                                randomized=randomized,
+                                optimization_scale=optimization_scale,
+                                sparse_limit=sparse_limit,
+                            )
+                        except MemoryError:
+                            continue
+                        for budget in budgets:
+                            for algo in optims:
+                                xp = Experiment(func, algo, budget, num_workers=1, seed=next(seedg))
+                                if not xp.is_incoherent:
+                                    yield xp
 
 
 @registry.register
@@ -234,7 +232,25 @@ def gp(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
     Counterpart of ng_full_gym with a specific, reduced list of problems for matching
     a genetic programming benchmark."""
-    return ng_full_gym(seed, gp=True)
+    return ng_full_gym(seed, gp=True, multi_scale=True)
+
+
+@registry.register
+def conformant_gp(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """GP benchmark.
+
+    Counterpart of ng_full_gym with a specific, reduced list of problems for matching
+    a genetic programming benchmark."""
+    return ng_full_gym(seed, conformant=True, gp=True)
+
+
+@registry.register
+def sparse_gp(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """GP benchmark.
+
+    Counterpart of ng_full_gym with a specific, reduced list of problems for matching
+    a genetic programming benchmark."""
+    return ng_full_gym(seed, gp=True, sparse=True, multi_scale=True)
 
 
 @registry.register
@@ -275,8 +291,6 @@ def gym_problem(
     seed: tp.Optional[int] = None,
     specific_problem: str = "LANM",
     conformant: bool = False,
-    compiler_gym_pb_index: tp.Optional[int] = None,
-    limited_compiler_gym: tp.Optional[bool] = None,
     big_noise: bool = False,
     multi_scale: bool = False,
     greedy_bias: bool = False,
@@ -289,10 +303,6 @@ def gym_problem(
         name of the problem we are working on
     conformant: bool
         do we focus on conformant planning
-    compiler_gym_pb_index: integer
-        index of Uris problem we work on.
-    limited_compiler_gym: boolean
-        for compiler-gyn, whether we use a restricted action space
     big_noise: bool
         do we switch to specific optimizers, dedicated to noise
     multi_scale: boolean
@@ -300,42 +310,28 @@ def gym_problem(
     greedy_bias: boolean
         do we use greedy reward estimates for biasing the decisions.
     """
-    if "directcompilergym" in specific_problem:
-        assert compiler_gym_pb_index is not None
-        assert limited_compiler_gym is not None
-        assert compiler_gym_pb_index >= 0
-        assert greedy_bias is False
-        funcs: tp.List[ExperimentFunction] = [
-            nevergrad_gym.CompilerGym(
-                compiler_gym_pb_index=compiler_gym_pb_index, limited_compiler_gym=limited_compiler_gym
+    if conformant:
+        funcs = [
+            nevergrad_gym.GymMulti(
+                specific_problem,
+                control="conformant",
+                neural_factor=None,
             )
         ]
     else:
-        if conformant:
-            funcs = [
-                nevergrad_gym.GymMulti(
-                    specific_problem,
-                    control="conformant",
-                    limited_compiler_gym=limited_compiler_gym,
-                    compiler_gym_pb_index=compiler_gym_pb_index,
-                    neural_factor=None,
-                )
-            ]
-        else:
-            funcs = [
-                nevergrad_gym.GymMulti(
-                    specific_problem,
-                    control=control,
-                    neural_factor=1 if control != "linear" else None,
-                    limited_compiler_gym=limited_compiler_gym,
-                    optimization_scale=scale,
-                    greedy_bias=greedy_bias,
-                )
-                for scale in ([-6, -4, -2, 0] if multi_scale else [0])
-                for control in (
-                    ["deep_neural", "semideep_neural", "neural", "linear"] if not greedy_bias else ["neural"]
-                )
-            ]
+        funcs = [
+            nevergrad_gym.GymMulti(
+                specific_problem,
+                control=control,
+                neural_factor=1 if control != "linear" else None,
+                optimization_scale=scale,
+                greedy_bias=greedy_bias,
+            )
+            for scale in ([-6, -4, -2, 0] if multi_scale else [0])
+            for control in (
+                ["deep_neural", "semideep_neural", "neural", "linear"] if not greedy_bias else ["neural"]
+            )
+        ]
     seedg = create_seed_generator(seed)
     optims = [
         "TwoPointsDE",
@@ -376,7 +372,7 @@ def gym_problem(
         ]
 
     optims = gym_optimizer_modifier(optims)
-    budgets = [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600]
+    budgets = [25, 50, 100, 200]
     budgets = gym_budget_modifier(budgets)
     for func in funcs:
         for budget in budgets:
@@ -386,28 +382,6 @@ def gym_problem(
                         xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
                         if not xp.is_incoherent:
                             yield xp
-
-
-@registry.register
-def limited_stochastic_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Working on CompilerGym. Stochastic problem: we are optimizing a net for driving compilation."""
-    return gym_problem(seed, specific_problem="stochasticcompilergym", limited_compiler_gym=True)
-
-
-@registry.register
-def multiscale_limited_stochastic_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Working on CompilerGym. Stochastic problem: we are optimizing a net for driving compilation."""
-    return gym_problem(
-        seed, specific_problem="stochasticcompilergym", limited_compiler_gym=True, multi_scale=True
-    )
-
-
-@registry.register
-def unlimited_hardcore_stochastic_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Working on CompilerGym. Stochastic problem: we are optimizing a net for driving compilation."""
-    return gym_problem(
-        seed, specific_problem="stochasticcompilergym", limited_compiler_gym=False, big_noise=True
-    )
 
 
 @registry.register
@@ -433,53 +407,3 @@ def neuro_planning(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         conformant=False,
         big_noise=False,
     )
-
-
-@registry.register
-def limited_hardcore_stochastic_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Working on CompilerGym. Stochastic problem: we are optimizing a net for driving compilation."""
-    return gym_problem(
-        seed, specific_problem="stochasticcompilergym", limited_compiler_gym=True, big_noise=True
-    )
-
-
-@registry.register
-def greedy_limited_stochastic_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Working on CompilerGym. Stochastic problem: we are optimizing a net for driving compilation."""
-    return gym_problem(
-        seed, specific_problem="stochasticcompilergym", limited_compiler_gym=True, greedy_bias=True
-    )
-
-
-@registry.register
-def unlimited_stochastic_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Working on CompilerGym. Stochastic problem: we are optimizing a net for driving compilation."""
-    return gym_problem(seed, specific_problem="stochasticcompilergym", limited_compiler_gym=False)
-
-
-@registry.register
-def unlimited_direct_problems23_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Working on CompilerGym. All 23 problems."""
-    for compiler_gym_pb_index in range(23):
-        pb = gym_problem(
-            seed,
-            specific_problem="directcompilergym" + str(compiler_gym_pb_index),
-            compiler_gym_pb_index=compiler_gym_pb_index,
-            limited_compiler_gym=False,
-        )
-        for xp in pb:
-            yield xp
-
-
-@registry.register
-def limited_direct_problems23_compiler_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Working on CompilerGym. All 23 problems."""
-    for compiler_gym_pb_index in range(23):
-        pb = gym_problem(
-            seed,
-            specific_problem="directcompilergym" + str(compiler_gym_pb_index),
-            compiler_gym_pb_index=compiler_gym_pb_index,
-            limited_compiler_gym=True,
-        )
-        for xp in pb:
-            yield xp

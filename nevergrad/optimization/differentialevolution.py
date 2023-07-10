@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -7,12 +7,18 @@ import warnings
 import numpy as np
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
+from . import metamodel
 from . import base
 from . import oneshot
 
 
 class Crossover:
-    def __init__(self, random_state: np.random.RandomState, crossover: tp.Union[str, float]):
+    def __init__(
+        self,
+        random_state: np.random.RandomState,
+        crossover: tp.Union[str, float],
+        parameter: tp.Optional[p.Parameter] = None,
+    ):
         self.CR = 0.5
         self.crossover = crossover
         self.random_state = random_state
@@ -20,8 +26,9 @@ class Crossover:
             self.CR = crossover
         elif crossover == "random":
             self.CR = self.random_state.uniform(0.0, 1.0)
-        elif crossover not in ["twopoints", "onepoint", "rotated_twopoints"]:
+        elif crossover not in ["twopoints", "onepoint", "rotated_twopoints", "voronoi"]:
             raise ValueError(f'Unknown crossover "{crossover}"')
+        self.shape = np.array(parameter.value).shape if parameter is not None else None
 
     def apply(self, donor: np.ndarray, individual: np.ndarray) -> None:
         dim = donor.size
@@ -31,6 +38,8 @@ class Crossover:
             return self.rotated_twopoints(donor, individual)
         elif self.crossover == "onepoint" and dim >= 3:
             return self.onepoint(donor, individual)
+        elif self.crossover == "voronoi":
+            return self.voronoi(donor, individual)
         else:
             return self.variablewise(donor, individual)
 
@@ -68,6 +77,29 @@ class Crossover:
         assert bounds[1] < donor.size + 1
         donor[bounds[0] : bounds[1]] = individual[bounds2[0] : bounds2[1]]
 
+    def voronoi(self, donor: np.ndarray, individual: np.ndarray) -> None:
+        shape = self.shape
+        if shape is None or len(shape) < 2:
+            warnings.warn("Voronoi DE needs a shape.")
+            self.twopoints(donor, individual)
+            return
+        local_donor = donor.reshape(shape)
+        local_individual = individual.reshape(shape)
+        x1 = np.array([np.random.randint(shape[i]) for i in range(len(shape))])
+        x2 = np.array([np.random.randint(shape[i]) for i in range(len(shape))])
+        x3 = np.array([np.random.randint(shape[i]) for i in range(len(shape))])
+        x4 = np.array([np.random.randint(shape[i]) for i in range(len(shape))])
+        it = np.nditer(local_donor, flags=["multi_index"])
+        for _ in it:
+            d1 = np.linalg.norm(np.array(it.multi_index) - x1)
+            d2 = np.linalg.norm(np.array(it.multi_index) - x2)
+            d3 = np.linalg.norm(np.array(it.multi_index) - x3)
+            d4 = np.linalg.norm(np.array(it.multi_index) - x4)
+            if min([d1, d2, d3]) > d4:
+                local_donor[it.multi_index] = local_individual[it.multi_index]
+        donor[:] = local_donor.flatten()[:]
+        individual[:] = local_individual.flatten()[:]
+
 
 class _DE(base.Optimizer):
     """Differential evolution.
@@ -87,9 +119,11 @@ class _DE(base.Optimizer):
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
         config: tp.Optional["DifferentialEvolution"] = None,
+        weights: tp.Any = None,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         # config
+        self.objective_weights = weights
         self._config = DifferentialEvolution() if config is None else config
         self.scale = (
             float(1.0 / np.sqrt(self.dimension))
@@ -113,7 +147,17 @@ class _DE(base.Optimizer):
         self.sampler: tp.Optional[base.Optimizer] = None
         self._no_hypervolume = self._config.multiobjective_adaptation
 
+    def set_objective_weights(self, weights: tp.Any) -> None:
+        self.objective_weights = weights
+
     def recommend(self) -> p.Parameter:  # This is NOT the naive version. We deal with noise.
+        sample_size = int((self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1)
+        if self._config.high_speed and len(self.archive) >= sample_size:
+            try:
+                meta_data = metamodel.learn_on_k_best(self.archive, sample_size)
+                return self.parametrization.spawn_child().set_standardized_data(meta_data)
+            except metamodel.MetaModelFailure:  # The optimum is at infinity. Shit happens.
+                pass  # MetaModel failures are something which happens, no worries.
         if self._config.recommendation != "noisy":
             return self.current_bests[self._config.recommendation].parameter
         med_fitness = np.median([p.loss for p in self.population.values() if p.loss is not None])
@@ -131,6 +175,10 @@ class _DE(base.Optimizer):
     def _internal_ask_candidate(self) -> p.Parameter:
         if len(self.population) < self.llambda:  # initialization phase
             init = self._config.initialization
+            if self.sampler is None and init == "QO":
+                self.sampler = oneshot.SamplingSearch(
+                    sampler="Hammersley", scrambled=True, opposition_mode="quasi"
+                )(self.parametrization, budget=self.llambda)
             if self.sampler is None and init not in ["gaussian", "parametrization"]:
                 assert init in ["LHS", "QR"]
                 self.sampler = oneshot.SamplingSearch(
@@ -143,6 +191,13 @@ class _DE(base.Optimizer):
                 candidate = self.parametrization.sample()
             elif self.sampler is not None:
                 candidate = self.sampler.ask()
+            elif self._config.crossover == "voronoi":
+                new_guy = (
+                    self.scale * self._rng.normal(0, 1, self.dimension)
+                    if len(self.population) > self.llambda / 6
+                    else self.scale * self._rng.normal() * np.ones(self.dimension)
+                )
+                candidate = self.parametrization.spawn_child().set_standardized_data(new_guy)
             else:
                 new_guy = self.scale * self._rng.normal(0, 1, self.dimension)
                 candidate = self.parametrization.spawn_child().set_standardized_data(new_guy)
@@ -179,7 +234,9 @@ class _DE(base.Optimizer):
         if co == "parametrization":
             candidate.recombine(self.parametrization.spawn_child().set_standardized_data(donor))
         else:
-            crossovers = Crossover(self._rng, 1.0 / self.dimension if co == "dimension" else co)
+            crossovers = Crossover(
+                self._rng, 1.0 / self.dimension if co == "dimension" else co, self.parametrization
+            )
             crossovers.apply(donor, data)
             candidate.set_standardized_data(donor, reference=self.parametrization)
         return candidate
@@ -192,11 +249,17 @@ class _DE(base.Optimizer):
         self._uid_queue.tell(uid)  # only add to queue if not a "tell_not_asked" (from a removed parent)
         parent = self.population[uid]
         mo_adapt = self._config.multiobjective_adaptation and self.num_objectives > 1
+        if mo_adapt:
+            if self.objective_weights is None:
+                self.objective_weights = np.ones(self.num_objectives)
+            else:
+                assert len(self.objective_weights) == self.num_objectives
         mo_adapt &= candidate._losses is not None  # can happen with bad constraints
         if not mo_adapt and loss <= base._loss(parent):
             self.population[uid] = candidate
         elif mo_adapt and (
-            parent._losses is None or np.mean(candidate.losses < parent.losses) > self._rng.rand()
+            parent._losses is None
+            or np.average(candidate.losses < parent.losses, weights=self.objective_weights) > self._rng.rand()
         ):
             # multiobjective case, with adaptation,
             # randomly replaces the parent depending on the number of better losses
@@ -247,7 +310,7 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
 
     Parameters
     ----------
-    initialization: "parametrization", "LHS" or "QR"
+    initialization: "parametrization", "LHS" or "QR" or "QO"
         algorithm/distribution used for the initialization phase. If "parametrization", this uses the
         sample method of the parametrization.
     scale: float or str
@@ -272,6 +335,8 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
     multiobjective_adaptation: bool
         Automatically adapts to handle multiobjective case.  This is a very basic **experimental** version,
         activated by default because the non-multiobjective implementation is performing very badly.
+    high_speed: bool
+        Trying to make the optimization faster by a metamodel for the recommendation step.
     """
 
     def __init__(
@@ -286,10 +351,11 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
         popsize: tp.Union[str, int] = "standard",
         propagate_heritage: bool = False,  # experimental
         multiobjective_adaptation: bool = True,
+        high_speed: bool = False,
     ) -> None:
         super().__init__(_DE, locals(), as_config=True)
         assert recommendation in ["optimistic", "pessimistic", "noisy", "mean"]
-        assert initialization in ["gaussian", "LHS", "QR", "parametrization"]
+        assert initialization in ["gaussian", "LHS", "QO", "QR", "parametrization"]
         assert isinstance(scale, float) or scale == "mini"
         if not isinstance(popsize, int):
             assert popsize in ["large", "dimension", "standard"]
@@ -300,9 +366,11 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
             "dimension",
             "random",
             "parametrization",
+            "voronoi",
         ]
         self.initialization = initialization
         self.scale = scale
+        self.high_speed = high_speed
         self.recommendation = recommendation
         self.propagate_heritage = propagate_heritage
         self.F1 = F1
@@ -314,12 +382,14 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
 
 DE = DifferentialEvolution().set_name("DE", register=True)
 TwoPointsDE = DifferentialEvolution(crossover="twopoints").set_name("TwoPointsDE", register=True)
+VoronoiDE = DifferentialEvolution(crossover="voronoi").set_name("VoronoiDE", register=True)
 RotatedTwoPointsDE = DifferentialEvolution(crossover="rotated_twopoints").set_name(
     "RotatedTwoPointsDE", register=True
 )
 
 LhsDE = DifferentialEvolution(initialization="LHS").set_name("LhsDE", register=True)
 QrDE = DifferentialEvolution(initialization="QR").set_name("QrDE", register=True)
+QODE = DifferentialEvolution(initialization="QO").set_name("QODE", register=True)
 NoisyDE = DifferentialEvolution(recommendation="noisy").set_name("NoisyDE", register=True)
 AlmostRotationInvariantDE = DifferentialEvolution(crossover=0.9).set_name(
     "AlmostRotationInvariantDE", register=True
@@ -327,3 +397,6 @@ AlmostRotationInvariantDE = DifferentialEvolution(crossover=0.9).set_name(
 RotationInvariantDE = DifferentialEvolution(crossover=1.0, popsize="dimension").set_name(
     "RotationInvariantDE", register=True
 )
+
+# Excellent for hyperparameter tuning.
+DiscreteDE = DifferentialEvolution(crossover="dimension").set_name("DiscreteDE", register=True)

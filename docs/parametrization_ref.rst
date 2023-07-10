@@ -9,6 +9,7 @@ The aim of parametrization is to specify what are the parameters that the optimi
 The parametrization subpackage will help you do thanks to:
 
 - the `parameter` modules (accessed by the shortcut `nevergrad.p`) providing classes that should be used to specify each parameter.
+- the `ops` module (accessed through `ng.ops`) providing experimental objects for modifying a parameter behavior (eg: casting to int, adding complex constraints).
 - the `FolderFunction` which helps transform any code into a Python function in a few lines. This can be especially helpful to optimize parameters in non-Python 3.6+ code (C++, Octave, etc...) or parameters in scripts.
 
 
@@ -39,3 +40,13 @@ Parameter API
 .. autoclass:: nevergrad.p.Parameter
     :members:
     :inherited-members:
+
+Operators
+---------
+These experimental operators are designed to be instantiated and called with a parameter as input, creating a new parameter with the required behavior.
+
+.. automodule:: nevergrad.ops
+    :members: Int
+
+
+

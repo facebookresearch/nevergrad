@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -65,6 +65,11 @@ class ExperimentFunction:
         inst._descriptors = {
             x: y for x, y in callargs.items() if isinstance(y, (str, tuple, int, float, bool))
         }
+        # if "bonnans" in str(cls.__name__) or "discrete" in str(cls.__name__) or "pbo" in str(cls.__name__):
+        #    inst._descriptors = {
+        #        x: y for x, y in callargs.items() if isinstance(y, (str, tuple, int, float, bool)) and "dimension" not
+        #        in x and "paramet" not in x
+        #    }
         inst._descriptors["function_class"] = cls.__name__
         return inst  # type: ignore
 
@@ -192,7 +197,7 @@ class ExperimentFunction:
         return output
 
     def compute_pseudotime(  # pylint: disable=unused-argument
-        self, input_parameter: tp.Any, loss: tp.Loss
+        self, input_parameter: tp.ArgsKwargs, loss: tp.Loss
     ) -> float:
         """Computes a pseudotime used during benchmarks for mocking parallelization in a reproducible way.
         By default, each call takes 1 unit of pseudotime, but this can be modified by overriding this
@@ -232,7 +237,7 @@ class ExperimentFunction:
             assert isinstance(
                 output, numbers.Number
             ), f"evaluation_function can only be called on singleobjective experiments (output={output}) function={self.function}."
-            return output
+            return output  # type: ignore
         # multiobjective case
         hypervolume = mobj.HypervolumePareto(
             upper_bounds=self.multiobjective_upper_bounds, seed=self.parametrization.random_state
@@ -315,9 +320,9 @@ class ArrayExperimentFunction(ExperimentFunction):
         assert (parametrization.bounds[0] is None) == (parametrization.bounds[1] is None)
         assert len(parametrization._constraint_checkers) == 0
         assert symmetry >= 0
-        assert symmetry < 2 ** self.dimension
+        assert symmetry < 2**self.dimension
         # The number 11111111111111111111111 is prime (using a prime is an overkill but ok).
-        symmetry = (symmetry * 11111111111111111111111) % (2 ** self.dimension)
+        symmetry = (symmetry * 11111111111111111111111) % (2**self.dimension)
         if symmetry != 0:
             self._function = self.symmetrized_function
             self.threshold_coefficients = np.zeros(self.dimension)

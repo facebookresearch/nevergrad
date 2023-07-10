@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -17,6 +17,18 @@ def testcorefuncs_function(name: str, func: tp.Callable[..., tp.Any]) -> None:
         np.random.seed(12)
         outputs.append(func(x))
     np.testing.assert_equal(outputs[0], outputs[1], f"Function {name} is not deterministic")
+
+
+@testing.parametrized(
+    index1=(1,),
+    index2=(2,),
+    index3=(3,),
+    index4=(4,),
+)
+def test_bonnans(index: int) -> None:
+    b = corefuncs.BonnansFunction(index)
+    assert b(np.zeros(100)) < 10.0  # unlikely (though not impossible)
+    assert b(np.random.rand(100)) > 0.0
 
 
 @testing.parametrized(

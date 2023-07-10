@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -189,7 +189,7 @@ class Exponent(ForwardableOperation):
         self._name = f"exp={base:.2f}"
 
     def forward(self, value: tp.Any) -> tp.Any:
-        return self._base ** value
+        return self._base**value
 
     def backward(self, value: tp.Any) -> tp.Any:
         return np.log(value) / np.log(self._base)
@@ -203,7 +203,7 @@ class Power(ForwardableOperation):
         self._power = power
 
     def forward(self, value: tp.Any) -> tp.Any:
-        return value ** self._power
+        return value**self._power
 
     def backward(self, value: tp.Any) -> tp.Any:
         return value ** (1.0 / self._power)

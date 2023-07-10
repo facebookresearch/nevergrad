@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -39,7 +39,11 @@ from typing import Hashable as Hashable
 from typing import Match as Match
 from typing import cast as cast
 from pathlib import Path as Path
-from typing_extensions import Protocol
+
+try:
+    from typing import Protocol
+except:
+    from typing_extensions import Protocol  # type: ignore
 
 #
 import numpy as _np

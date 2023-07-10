@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -8,8 +8,14 @@ import itertools
 from collections import deque
 import warnings
 import numpy as np
-from bayes_opt import UtilityFunction
-from bayes_opt import BayesianOptimization
+import scipy.ndimage as ndimage
+
+try:
+    from bayes_opt import UtilityFunction
+    from bayes_opt import BayesianOptimization
+except ModuleNotFoundError:
+    pass
+
 import nevergrad.common.typing as tp
 from nevergrad.common import errors
 from nevergrad.parametrization import parameter as p
@@ -17,11 +23,11 @@ from nevergrad.parametrization import transforms
 from nevergrad.parametrization import discretization
 from nevergrad.parametrization import _layering
 from nevergrad.parametrization import _datalayers
-from . import callbacks
 from . import oneshot
 from . import base
 from . import mutations
-from . import utils
+from .metamodel import MetaModelFailure as MetaModelFailure
+from .metamodel import learn_on_k_best as learn_on_k_best
 from .base import registry as registry
 from .base import addCompare  # pylint: disable=unused-import
 from .base import IntOrParameter
@@ -29,7 +35,7 @@ from .base import IntOrParameter
 # families of optimizers
 # pylint: disable=unused-wildcard-import,wildcard-import,too-many-lines,too-many-arguments,too-many-branches
 # pylint: disable=import-outside-toplevel,too-many-nested-blocks,too-many-instance-attributes,
-# pylint: disable=too-many-boolean-expressions,too-many-ancestors,too-many-statements
+# pylint: disable=too-many-boolean-expressions,too-many-ancestors,too-many-statements,too-many-return-statements
 from .differentialevolution import *  # type: ignore  # noqa: F403
 from .es import *  # type: ignore  # noqa: F403
 from .oneshot import *  # noqa: F403
@@ -53,6 +59,20 @@ logger = logging.getLogger(__name__)
 # # # # # optimizers # # # # #
 
 
+def smooth_copy(array: p.Array, possible_radii: tp.Optional[tp.List[int]] = None) -> p.Array:
+    candidate = array.spawn_child()
+    if possible_radii is None:
+        possible_radii = [3]
+    value = candidate._value
+    radii = [array.random_state.choice(possible_radii) for _ in value.shape]
+    value2 = ndimage.convolve(value, np.ones(radii) / np.prod(radii))
+    # DE style operator.
+    indices = array.random_state.randint(4, size=value.shape) == 0
+    value[indices] = value2[indices]
+    candidate._value = value
+    return candidate
+
+
 class _OnePlusOne(base.Optimizer):
     """Simple but sometimes powerful optimization algorithm.
 
@@ -62,8 +82,9 @@ class _OnePlusOne(base.Optimizer):
     performs quite well in such a context - this is naturally close to 1+lambda.
 
     Posssible mutations include gaussian and cauchy for the continuous case, and in the discrete case:
-    discrete, fastga, doublefastga, adaptive, portfolio, discreteBSO, doerr.
+    discrete, fastga, rls, doublefastga, adaptive, portfolio, discreteBSO, doerr.
     - discrete is the most classical discrete mutation operator,
+    - rls is the Randomized Local Search,
     - doubleFastGA is an adaptation of FastGA to arity > 2, Portfolio corresponds to random mutation rates,
     - discreteBSO corresponds to a decreasing schedule of mutation rate.
     - adaptive and doerr correspond to various self-adaptive mutation rates.
@@ -77,22 +98,29 @@ class _OnePlusOne(base.Optimizer):
         num_workers: int = 1,
         *,
         noise_handling: tp.Optional[tp.Union[str, tp.Tuple[str, float]]] = None,
+        tabu_length: int = 0,
         mutation: str = "gaussian",
         crossover: bool = False,
         rotation: bool = False,
+        annealing: str = "none",
         use_pareto: bool = False,
         sparse: tp.Union[bool, int] = False,
+        smoother: bool = False,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        self.parametrization.tabu_length = tabu_length
         assert crossover or (not rotation), "We can not have both rotation and not crossover."
         self._sigma: float = 1
         self._previous_best_loss = float("inf")
         self.use_pareto = use_pareto
+        self.smoother = smoother
+        self.annealing = annealing
+        self._annealing_base: tp.Optional[tp.ArrayLike] = None
+        self._max_loss = -float("inf")
         self.sparse = int(sparse)  # True --> 1
         all_params = p.helpers.flatten(self.parametrization)
-        arity = max(
-            len(param.choices) if isinstance(param, p.TransitionChoice) else 500 for _, param in all_params
-        )
+        arities = [len(param.choices) for _, param in all_params if isinstance(param, p.TransitionChoice)]
+        arity = max(arities, default=500)
         self.arity_for_discrete_mutation = arity
         # configuration
         if noise_handling is not None:
@@ -115,12 +143,17 @@ class _OnePlusOne(base.Optimizer):
             "cauchy",
             "discrete",
             "fastga",
+            "rls",
             "doublefastga",
             "adaptive",
             "coordinatewise_adaptive",
             "portfolio",
             "discreteBSO",
             "lengler",
+            "lengler2",
+            "lengler3",
+            "lenglerhalf",
+            "lenglerfourth",
             "doerr",
         ], f"Unkwnown mutation: '{mutation}'"
         if mutation == "adaptive":
@@ -149,6 +182,7 @@ class _OnePlusOne(base.Optimizer):
                 self._doerr_counters += [0.0]
                 i += j
                 j += 2
+        assert self.parametrization.tabu_length == tabu_length
 
     def _internal_ask_candidate(self) -> p.Parameter:
         # pylint: disable=too-many-return-statements, too-many-branches
@@ -170,6 +204,12 @@ class _OnePlusOne(base.Optimizer):
         # crossover
         mutator = mutations.Mutator(self._rng)
         pessimistic = self.current_bests["pessimistic"].parameter.spawn_child()
+        if (
+            self.smoother
+            and self._num_ask % max(self.num_workers + 1, 55) == 0
+            and isinstance(self.parametrization, p.Array)
+        ):
+            self.suggest(smooth_copy(pessimistic).value)  # type: ignore
         if self.num_objectives > 1 and self.use_pareto:  # multiobjective
             # revert to using a sample of the pareto front (not "pessimistic" though)
             pareto = (
@@ -187,6 +227,11 @@ class _OnePlusOne(base.Optimizer):
         # mutating
 
         mutation = self.mutation
+        if (
+            self._annealing_base is not None
+        ):  # We assume that we should start from this one (even if not the best).
+            assert self.annealing != "none"
+            pessimistic.set_standardized_data(self._annealing_base, reference=ref)
         if mutation in ("gaussian", "cauchy"):  # standard case
             step = (
                 self._rng.normal(0, 1, self.dimension)
@@ -237,6 +282,38 @@ class _OnePlusOne(base.Optimizer):
                     intensity=intensity,
                     arity=self.arity_for_discrete_mutation,
                 )
+            elif mutation == "lengler2":
+                alpha = 3.0
+                intensity = int(max(1, self.dimension * (alpha * np.log(self.num_ask) / self.num_ask)))
+                data = mutator.portfolio_discrete_mutation(
+                    pessimistic_data,
+                    intensity=intensity,
+                    arity=self.arity_for_discrete_mutation,
+                )
+            elif mutation == "lengler3":
+                alpha = 9.0
+                intensity = int(max(1, self.dimension * (alpha * np.log(self.num_ask) / self.num_ask)))
+                data = mutator.portfolio_discrete_mutation(
+                    pessimistic_data,
+                    intensity=intensity,
+                    arity=self.arity_for_discrete_mutation,
+                )
+            elif mutation == "lenglerfourth":
+                alpha = 0.4
+                intensity = int(max(1, self.dimension * (alpha * np.log(self.num_ask) / self.num_ask)))
+                data = mutator.portfolio_discrete_mutation(
+                    pessimistic_data,
+                    intensity=intensity,
+                    arity=self.arity_for_discrete_mutation,
+                )
+            elif mutation == "lenglerhalf":
+                alpha = 0.8
+                intensity = int(max(1, self.dimension * (alpha * np.log(self.num_ask) / self.num_ask)))
+                data = mutator.portfolio_discrete_mutation(
+                    pessimistic_data,
+                    intensity=intensity,
+                    arity=self.arity_for_discrete_mutation,
+                )
             elif mutation == "doerr":
                 # Selection, either random, or greedy, or a mutation rate.
                 assert self._doerr_index == -1, "We should have used this index in tell."
@@ -257,6 +334,7 @@ class _OnePlusOne(base.Optimizer):
                     "discrete": mutator.discrete_mutation,
                     "fastga": mutator.doerr_discrete_mutation,
                     "doublefastga": mutator.doubledoerr_discrete_mutation,
+                    "rls": mutator.rls_mutation,
                     "portfolio": mutator.portfolio_discrete_mutation,
                 }[mutation]
                 data = func(pessimistic_data, arity=self.arity_for_discrete_mutation)
@@ -269,6 +347,28 @@ class _OnePlusOne(base.Optimizer):
             return pessimistic.set_standardized_data(data, reference=ref)
 
     def _internal_tell(self, x: tp.ArrayLike, loss: tp.FloatLoss) -> None:
+        if self.annealing != "none":
+            assert isinstance(self.budget, int)
+            delta = self._previous_best_loss - loss
+            if loss > self._max_loss:
+                self._max_loss = loss
+            if delta >= 0:
+                self._annealing_base = x
+            elif self.num_ask < self.budget:
+                amplitude = max(1.0, self._max_loss - self._previous_best_loss)
+                annealing_dict = {
+                    "Exp0.9": 0.33 * amplitude * (0.9**self.num_ask),
+                    "Exp0.99": 0.33 * amplitude * (0.99**self.num_ask),
+                    "Exp0.9Auto": 0.33 * amplitude * ((0.001 ** (1.0 / self.budget)) ** self.num_ask),
+                    "Lin100.0": 100.0 * amplitude * (1 - self.num_ask / (self.budget + 1)),
+                    "Lin1.0": 1.0 * amplitude * (1 - self.num_ask / (self.budget + 1)),
+                    "LinAuto": 10.0 * amplitude * (1 - self.num_ask / (self.budget + 1)),
+                }
+                T = annealing_dict[self.annealing]
+                if T > 0.0:
+                    proba = np.exp(delta / T)
+                    if self._rng.rand() < proba:
+                        self._annealing_base = x
         # only used for cauchy and gaussian
         if self._previous_best_loss != loss:
             self._sigma *= 2.0 if loss < self._previous_best_loss else 0.84
@@ -323,15 +423,19 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
         - `"discreteBSO"`: as in brainstorm optimization, we slowly decrease the mutation rate from 1 to 1/d.
         - `"fastga"`: FastGA mutations from the current best
         - `"doublefastga"`: double-FastGA mutations from the current best (Doerr et al, Fast Genetic Algorithms, 2017)
+        - `"rls"`: Randomized Local Search (randomly mutate one and only one variable).
         - `"portfolio"`: Random number of mutated bits (called niform mixing in
           Dang & Lehre "Self-adaptation of Mutation Rates in Non-elitist Population", 2016)
         - `"lengler"`: specific mutation rate chosen as a function of the dimension and iteration index.
+        - `"lengler{2|3|half|fourth}"`: variant of Lengler
     crossover: bool
         whether to add a genetic crossover step every other iteration.
     use_pareto: bool
         whether to restart from a random pareto element in multiobjective mode, instead of the last one added
-    sparsse: bool
+    sparse: bool
         whether we have random mutations setting variables to 0.
+    smoother: bool
+        whether we suggest smooth mutations.
 
     Notes
     -----
@@ -347,25 +451,76 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
         self,
         *,
         noise_handling: tp.Optional[tp.Union[str, tp.Tuple[str, float]]] = None,
+        tabu_length: int = 0,
         mutation: str = "gaussian",
         crossover: bool = False,
         rotation: bool = False,
+        annealing: str = "none",
         use_pareto: bool = False,
         sparse: bool = False,
+        smoother: bool = False,
     ) -> None:
         super().__init__(_OnePlusOne, locals())
 
 
 OnePlusOne = ParametrizedOnePlusOne().set_name("OnePlusOne", register=True)
+# SA = ParametrizedOnePlusOne(annealing="Exp0.9").set_name("SA", register=True)
 NoisyOnePlusOne = ParametrizedOnePlusOne(noise_handling="random").set_name("NoisyOnePlusOne", register=True)
 DiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete").set_name("DiscreteOnePlusOne", register=True)
+SADiscreteLenglerOnePlusOneExp09 = ParametrizedOnePlusOne(
+    tabu_length=1000, mutation="lengler", annealing="Exp0.9"
+).set_name("SADiscreteLenglerOnePlusOneExp09", register=True)
+SADiscreteLenglerOnePlusOneExp099 = ParametrizedOnePlusOne(
+    tabu_length=1000, mutation="lengler", annealing="Exp0.99"
+).set_name("SADiscreteLenglerOnePlusOneExp099", register=True)
+SADiscreteLenglerOnePlusOneExp09Auto = ParametrizedOnePlusOne(
+    tabu_length=1000, mutation="lengler", annealing="Exp0.9Auto"
+).set_name("SADiscreteLenglerOnePlusOneExp09Auto", register=True)
+SADiscreteLenglerOnePlusOneLinAuto = ParametrizedOnePlusOne(
+    tabu_length=1000, mutation="lengler", annealing="LinAuto"
+).set_name("SADiscreteLenglerOnePlusOneLinAuto", register=True)
+SADiscreteLenglerOnePlusOneLin1 = ParametrizedOnePlusOne(
+    tabu_length=1000, mutation="lengler", annealing="Lin1.0"
+).set_name("SADiscreteLenglerOnePlusOneLin1", register=True)
+SADiscreteLenglerOnePlusOneLin100 = ParametrizedOnePlusOne(
+    tabu_length=1000, mutation="lengler", annealing="Lin100.0"
+).set_name("SADiscreteLenglerOnePlusOneLin100", register=True)
+SADiscreteOnePlusOneExp099 = ParametrizedOnePlusOne(
+    tabu_length=1000, mutation="discrete", annealing="Exp0.99"
+).set_name("SADiscreteOnePlusOneExp099", register=True)
+SADiscreteOnePlusOneLin100 = ParametrizedOnePlusOne(
+    tabu_length=1000, mutation="discrete", annealing="Lin100.0"
+).set_name("SADiscreteOnePlusOneLin100", register=True)
+SADiscreteOnePlusOneExp09 = ParametrizedOnePlusOne(
+    tabu_length=1000, mutation="discrete", annealing="Exp0.9"
+).set_name("SADiscreteOnePlusOneExp09", register=True)
+DiscreteOnePlusOneT = ParametrizedOnePlusOne(tabu_length=10000, mutation="discrete").set_name(
+    "DiscreteOnePlusOneT", register=True
+)
 PortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="portfolio").set_name(
     "PortfolioDiscreteOnePlusOne", register=True
+)
+PortfolioDiscreteOnePlusOneT = ParametrizedOnePlusOne(tabu_length=10000, mutation="portfolio").set_name(
+    "PortfolioDiscreteOnePlusOneT", register=True
 )
 DiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(mutation="lengler").set_name(
     "DiscreteLenglerOnePlusOne", register=True
 )
-
+DiscreteLengler2OnePlusOne = ParametrizedOnePlusOne(mutation="lengler2").set_name(
+    "DiscreteLengler2OnePlusOne", register=True
+)
+DiscreteLengler3OnePlusOne = ParametrizedOnePlusOne(mutation="lengler3").set_name(
+    "DiscreteLengler3OnePlusOne", register=True
+)
+DiscreteLenglerHalfOnePlusOne = ParametrizedOnePlusOne(mutation="lenglerhalf").set_name(
+    "DiscreteLenglerHalfOnePlusOne", register=True
+)
+DiscreteLenglerFourthOnePlusOne = ParametrizedOnePlusOne(mutation="lenglerfourth").set_name(
+    "DiscreteLenglerFourthOnePlusOne", register=True
+)
+DiscreteLenglerOnePlusOneT = ParametrizedOnePlusOne(tabu_length=10000, mutation="lengler").set_name(
+    "DiscreteLenglerOnePlusOneT", register=True
+)
 AdaptiveDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="adaptive").set_name(
     "AdaptiveDiscreteOnePlusOne", register=True
 )
@@ -393,6 +548,7 @@ NoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
 DoubleFastGADiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="doublefastga").set_name(
     "DoubleFastGADiscreteOnePlusOne", register=True
 )
+RLSOnePlusOne = ParametrizedOnePlusOne(mutation="rls").set_name("RLSOnePlusOne", register=True)
 SparseDoubleFastGADiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="doublefastga", sparse=True).set_name(
     "SparseDoubleFastGADiscreteOnePlusOne", register=True
 )
@@ -409,17 +565,27 @@ RecombiningPortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(
 
 
 class _CMA(base.Optimizer):
+    _CACHE_KEY = "#CMA#datacache"
+
     def __init__(
         self,
         parametrization: IntOrParameter,
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
         config: tp.Optional["ParametrizedCMA"] = None,
+        algorithm: str = "quad",
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        self.algorithm = algorithm
         self._config = ParametrizedCMA() if config is None else config
         pop = self._config.popsize
-        self._popsize = max(num_workers, 4 + int(3 * np.log(self.dimension))) if pop is None else pop
+        self._popsize = (
+            max(num_workers, 4 + int(self._config.popsize_factor * np.log(self.dimension)))
+            if pop is None
+            else max(pop, num_workers)
+        )
+        if self._config.elitist:
+            self._popsize = max(self._popsize, self.num_workers + 1)
         # internal attributes
         self._to_be_asked: tp.Deque[np.ndarray] = deque()
         self._to_be_told: tp.List[p.Parameter] = []
@@ -433,7 +599,7 @@ class _CMA(base.Optimizer):
         scale_multiplier = 1.0
         if p.helpers.Normalizer(self.parametrization).fully_bounded:
             scale_multiplier = 0.3 if self.dimension < 18 else 0.15
-        if self._es is None:
+        if self._es is None or (not self._config.fcmaes and self._es.stop()):
             if not self._config.fcmaes:
                 import cma  # import inline in order to avoid matplotlib initialization warning
 
@@ -478,23 +644,36 @@ class _CMA(base.Optimizer):
         return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        if self._CACHE_KEY not in candidate._meta:
+            # since we try several times to tell to es, to avoid duplicated work let's keep
+            # the data in a cache. This can be useful for other CMA as well
+            candidate._meta[self._CACHE_KEY] = candidate.get_standardized_data(reference=self.parametrization)
         self._to_be_told.append(candidate)
         if len(self._to_be_told) >= self.es.popsize:
-            listx = [c.get_standardized_data(reference=self.parametrization) for c in self._to_be_told]
+            listx = [c._meta[self._CACHE_KEY] for c in self._to_be_told]
             listy = [c.loss for c in self._to_be_told]
             args = (listy, listx) if self._config.fcmaes else (listx, listy)
             try:
                 self.es.tell(*args)
-            except RuntimeError:
+            except (RuntimeError, AssertionError):
                 pass
             else:
                 self._parents = sorted(self._to_be_told, key=base._loss)[: self._num_spawners]
-                self._to_be_told = []
+            self._to_be_told = []
 
     def _internal_provide_recommendation(self) -> np.ndarray:
         pessimistic = self.current_bests["pessimistic"].parameter.get_standardized_data(
             reference=self.parametrization
         )
+        d = self.dimension
+        n = self.num_ask
+        sample_size = int(d * d / 2 + d / 2 + 3)
+        if self._config.high_speed and n >= sample_size:
+            try:
+                data = learn_on_k_best(self.archive, sample_size, self.algorithm)
+                return data  # type: ignore
+            except MetaModelFailure:  # Failures in the metamodeling can happen.
+                pass
         if self._es is None:
             return pessimistic
         cma_best: tp.Optional[np.ndarray] = self.es.best_x if self._config.fcmaes else self.es.result.xbest
@@ -519,8 +698,12 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
     popsize: Optional[int] = None
         population size, should be n * self.num_workers for int n >= 1.
         default is max(self.num_workers, 4 + int(3 * np.log(self.dimension)))
+    popsize_factor: float = 3.
+        factor in the formula for computing the population size
     diagonal: bool
         use the diagonal version of CMA (advised in big dimension)
+    high_speed: bool
+        use metamodel for recommendation
     fcmaes: bool
         use fast implementation, doesn't support diagonal=True.
         produces equivalent results, preferable for high dimensions or
@@ -539,11 +722,14 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         scale: float = 1.0,
         elitist: bool = False,
         popsize: tp.Optional[int] = None,
+        popsize_factor: float = 3.0,
         diagonal: bool = False,
         zero: bool = False,
+        high_speed: bool = False,
         fcmaes: bool = False,
         random_init: bool = False,
         inopts: tp.Optional[tp.Dict[str, tp.Any]] = None,
+        algorithm: str = "quad",
     ) -> None:
         super().__init__(_CMA, locals(), as_config=True)
         if zero:
@@ -555,13 +741,129 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         self.elitist = elitist
         self.zero = zero
         self.popsize = popsize
+        self.popsize_factor = popsize_factor
         self.diagonal = diagonal
         self.fcmaes = fcmaes
+        self.high_speed = high_speed
         self.random_init = random_init
         self.inopts = inopts
 
 
+@registry.register
+class ChoiceBase(base.Optimizer):
+    """Nevergrad optimizer by competence map."""
+
+    # pylint: disable=too-many-branches
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        analysis = p.helpers.analyze(self.parametrization)
+        funcinfo = self.parametrization.function
+        self.has_noise = not (analysis.deterministic and funcinfo.deterministic)
+        # The noise coming from discrete variables goes to 0.
+        self.noise_from_instrumentation = self.has_noise and funcinfo.deterministic
+        self.fully_continuous = analysis.continuous
+        all_params = p.helpers.flatten(self.parametrization)
+        # figure out if there is any discretization layers
+        int_layers = list(
+            itertools.chain.from_iterable([_layering.Int.filter_from(x) for _, x in all_params])
+        )
+        int_layers = [x for x in int_layers if x.arity is not None]  # only "Choice" instances for now
+        self.has_discrete_not_softmax = any(
+            not isinstance(lay, _datalayers.SoftmaxSampling) for lay in int_layers
+        )
+        self._has_discrete = bool(int_layers)
+        self._arity: int = max((lay.arity for lay in int_layers), default=-1)  # type: ignore
+        if self.fully_continuous:
+            self._arity = -1
+        self._optim: tp.Optional[base.Optimizer] = None
+        self._constraints_manager.update(
+            max_trials=1000,
+            penalty_factor=1.0,
+            penalty_exponent=1.01,
+        )
+
+    @property
+    def optim(self) -> base.Optimizer:
+        if self._optim is None:
+            # try:
+            self._optim = self._select_optimizer_cls()(self.parametrization, self.budget, self.num_workers)
+            # except:
+            #    self._optim = NGOpt39._select_optimizer_cls(self)(self.parametrization, self.budget, self.num_workers)
+            self._optim = self._optim if not isinstance(self._optim, NGOptBase) else self._optim.optim
+            logger.debug("%s selected %s optimizer.", *(x.name for x in (self, self._optim)))
+        return self._optim
+
+    def _select_optimizer_cls(self) -> base.OptCls:
+        return CMA
+
+    def _internal_ask_candidate(self) -> p.Parameter:
+        return self.optim.ask()
+
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        self.optim.tell(candidate, loss)
+
+    def recommend(self) -> p.Parameter:
+        return self.optim.recommend()
+
+    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        self.optim.tell(candidate, loss)
+
+    def _info(self) -> tp.Dict[str, tp.Any]:
+        out = {"sub-optim": self.optim.name}
+        out.update(self.optim._info())  # this will work for recursive NGOpt calls
+        return out
+
+    def enable_pickling(self) -> None:
+        self.optim.enable_pickling()
+
+
+OldCMA = ParametrizedCMA().set_name("OldCMA", register=True)
+LargeCMA = ParametrizedCMA(scale=3.0).set_name("LargeCMA", register=True)
+TinyCMA = ParametrizedCMA(scale=0.33).set_name("TinyCMA", register=True)
 CMA = ParametrizedCMA().set_name("CMA", register=True)
+CMAbounded = ParametrizedCMA(
+    scale=1.5884, popsize_factor=1, elitist=True, diagonal=True, fcmaes=False
+).set_name("CMAbounded", register=True)
+CMAsmall = ParametrizedCMA(
+    scale=0.3607, popsize_factor=3, elitist=False, diagonal=False, fcmaes=False
+).set_name("CMAsmall", register=True)
+CMAstd = ParametrizedCMA(
+    scale=0.4699, popsize_factor=3, elitist=False, diagonal=False, fcmaes=False
+).set_name("CMAstd", register=True)
+CMApara = ParametrizedCMA(scale=0.8905, popsize_factor=8, elitist=True, diagonal=True, fcmaes=False).set_name(
+    "CMApara", register=True
+)
+CMAtuning = ParametrizedCMA(
+    scale=0.4847, popsize_factor=1, elitist=True, diagonal=False, fcmaes=False
+).set_name("CMAtuning", register=True)
+
+
+@registry.register
+class MetaCMA(ChoiceBase):  # Adds Risto's CMA to CMA.
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
+
+    def _select_optimizer_cls(self) -> base.OptCls:
+        if (
+            self.budget is not None
+            and self.fully_continuous
+            and not self.has_noise
+            and self.num_objectives < 2
+        ):
+            if p.helpers.Normalizer(self.parametrization).fully_bounded:
+                return CMAbounded
+            if self.budget < 50:
+                if self.dimension <= 15:
+                    return CMAtuning
+                return CMAsmall
+            if self.num_workers > 20:
+                return CMApara
+            return CMAstd
+        else:
+            return OldCMA
+
+
 DiagonalCMA = ParametrizedCMA(diagonal=True).set_name("DiagonalCMA", register=True)
 SDiagonalCMA = ParametrizedCMA(diagonal=True, zero=True).set_name("SDiagonalCMA", register=True)
 FCMA = ParametrizedCMA(fcmaes=True).set_name("FCMA", register=True)
@@ -1056,7 +1358,7 @@ class _Rescaled(base.Optimizer):
         parametrization: IntOrParameter,
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
-        base_optimizer: base.OptCls = CMA,
+        base_optimizer: base.OptCls = MetaCMA,
         scale: tp.Optional[float] = None,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
@@ -1087,6 +1389,9 @@ class _Rescaled(base.Optimizer):
         candidate = self.rescale_candidate(candidate, inverse=True)
         self._optimizer.tell(candidate, loss)
 
+    def enable_pickling(self) -> None:
+        self._optimizer.enable_pickling()
+
 
 class Rescaled(base.ConfiguredOptimizer):
     """Configured optimizer for creating rescaled optimization algorithms.
@@ -1103,13 +1408,23 @@ class Rescaled(base.ConfiguredOptimizer):
     def __init__(
         self,
         *,
-        base_optimizer: base.OptCls = CMA,
+        base_optimizer: base.OptCls = MetaCMA,
         scale: tp.Optional[float] = None,
     ) -> None:
         super().__init__(_Rescaled, locals())
 
 
 RescaledCMA = Rescaled().set_name("RescaledCMA", register=True)
+TinyLhsDE = Rescaled(base_optimizer=LhsDE, scale=1e-3).set_name("TinyLhsDE", register=True)
+TinyQODE = Rescaled(base_optimizer=QODE, scale=1e-3).set_name("TinyQODE", register=True)
+TinySQP = Rescaled(base_optimizer=SQP, scale=1e-3).set_name("TinySQP", register=True)
+MicroSQP = Rescaled(base_optimizer=SQP, scale=1e-6).set_name("MicroSQP", register=True)
+TinySQP.no_parallelization = True
+MicroSQP.no_parallelization = True
+TinySPSA = Rescaled(base_optimizer=SPSA, scale=1e-3).set_name("TinySPSA", register=True)
+MicroSPSA = Rescaled(base_optimizer=SPSA, scale=1e-6).set_name("MicroSPSA", register=True)
+TinySPSA.no_parallelization = True
+MicroSPSA.no_parallelization = True
 
 
 class SplitOptimizer(base.Optimizer):
@@ -1264,7 +1579,7 @@ class ConfSplitOptimizer(base.ConfiguredOptimizer):
         num_optims: tp.Optional[float] = None,
         num_vars: tp.Optional[tp.List[int]] = None,
         max_num_vars: tp.Optional[int] = None,
-        multivariate_optimizer: base.OptCls = CMA,
+        multivariate_optimizer: base.OptCls = MetaCMA,
         monovariate_optimizer: base.OptCls = oneshot.RandomSearch,
         progressive: bool = False,
         non_deterministic_descriptor: bool = True,
@@ -1359,7 +1674,7 @@ class Portfolio(base.Optimizer):
         if not optimizers:  # default
             optimizers = []
             if budget is None or budget >= 12 * num_workers:
-                optimizers = [CMA, "TwoPointsDE"]
+                optimizers = [MetaCMA, "TwoPointsDE"]
             if budget is not None:  # needs a budget
                 optimizers.append("ScrHammersleySearch")
         num = len(optimizers)
@@ -1387,7 +1702,6 @@ class Portfolio(base.Optimizer):
                 )
             )
         # current optimizer choice
-        self._selected_ind: tp.Optional[int] = None
         self._current = -1
         self._warmup_budget: tp.Optional[int] = None
         if cfg.warmup_ratio is not None and budget is None:
@@ -1398,26 +1712,29 @@ class Portfolio(base.Optimizer):
     def _internal_ask_candidate(self) -> p.Parameter:
         # optimizer selection if budget is over
         if self._warmup_budget is not None:
-            if self._selected_ind is None and self._warmup_budget < self.num_tell:
+            if len(self.optims) > 1 and self._warmup_budget < self.num_tell:
                 ind = self.current_bests["pessimistic"].parameter._meta.get("optim_index", -1)
                 if ind >= 0:  # not a tell not asked
                     if self.num_workers == 1 or self.optims[ind].num_workers > 1:
-                        self._selected_ind = ind  # don't select non-parallelizable in parallel settings
-        optim_index = self._selected_ind
-        if optim_index is None:
-            num = len(self.optims)
-            for k in range(2 * num):
-                self._current += 1
-                optim_index = self._current % len(self.optims)
-                opt = self.optims[optim_index]
-                if opt.num_workers > opt.num_ask - (opt.num_tell - opt.num_tell_not_asked):
-                    break  # if there are workers left, use this optimizer
-                if k > num:
-                    if not opt.no_parallelization:
-                        break  # if no worker is available, try the first parallelizable optimizer
+                        self.optims = [self.optims[ind]]  # throw away everything else
+        num = len(self.optims)
+        for k in range(2 * num):
+            self._current += 1
+            optim_index = self._current % len(self.optims)
+            opt = self.optims[optim_index]
+
+            if opt.num_workers > opt.num_ask - (opt.num_tell - opt.num_tell_not_asked):
+                break  # if there are workers left, use this optimizer
+            if k > num:
+                if not opt.no_parallelization:
+                    break  # if no worker is available, try the first parallelizable optimizer
         if optim_index is None:
             raise RuntimeError("Something went wrong in optimizer selection")
         opt = self.optims[optim_index]
+        if optim_index > 1 and not opt.num_ask and not opt._suggestions and not opt.num_tell:
+            # most algorithms start at 0, lets avoid that for all but the first if they have no information
+            opt._suggestions.append(self.parametrization.sample())
+            # (hacky suggestion to avoid calling args and kwargs)
         candidate = opt.ask()
         candidate._meta["optim_index"] = optim_index
         return candidate
@@ -1435,11 +1752,15 @@ class Portfolio(base.Optimizer):
         if not accepted:
             raise errors.TellNotAskedNotSupportedError("No sub-optimizer accepted the tell-not-asked")
 
+    def enable_pickling(self) -> None:
+        for opt in self.optims:
+            opt.enable_pickling()
 
-ParaPortfolio = ConfPortfolio(optimizers=[CMA, TwoPointsDE, PSO, SQP, ScrHammersleySearch]).set_name(
+
+ParaPortfolio = ConfPortfolio(optimizers=[MetaCMA, TwoPointsDE, PSO, SQP, ScrHammersleySearch]).set_name(
     "ParaPortfolio", register=True
 )
-ASCMADEthird = ConfPortfolio(optimizers=[CMA, LhsDE], warmup_ratio=0.33).set_name(
+ASCMADEthird = ConfPortfolio(optimizers=[MetaCMA, LhsDE], warmup_ratio=0.33).set_name(
     "ASCMADEthird", register=True
 )
 MultiCMA = ConfPortfolio(
@@ -1455,73 +1776,8 @@ MultiScaleCMA = ConfPortfolio(
     optimizers=[ParametrizedCMA(random_init=True, scale=scale) for scale in [1.0, 1e-3, 1e-6]],
     warmup_ratio=0.33,
 ).set_name("MultiScaleCMA", register=True)
-
-
-class MetaModelFailure(ValueError):
-    """Sometimes the optimum of the metamodel is at infinity."""
-
-
-def _learn_on_k_best(archive: utils.Archive[utils.MultiValue], k: int) -> tp.ArrayLike:
-    """Approximate optimum learnt from the k best.
-
-    Parameters
-    ----------
-    archive: utils.Archive[utils.Value]
-    """
-    items = list(archive.items_as_arrays())
-    dimension = len(items[0][0])
-
-    # Select the k best.
-    first_k_individuals = sorted(items, key=lambda indiv: archive[indiv[0]].get_estimation("pessimistic"))[:k]
-    assert len(first_k_individuals) == k
-
-    # Recenter the best.
-    middle = np.array(sum(p[0] for p in first_k_individuals) / k)
-    normalization = 1e-15 + np.sqrt(np.sum((first_k_individuals[-1][0] - first_k_individuals[0][0]) ** 2))
-    y = np.asarray([archive[c[0]].get_estimation("pessimistic") for c in first_k_individuals])
-    X = np.asarray([(c[0] - middle) / normalization for c in first_k_individuals])
-
-    # We need SKLearn.
-    from sklearn.linear_model import LinearRegression
-    from sklearn.preprocessing import PolynomialFeatures
-
-    polynomial_features = PolynomialFeatures(degree=2)
-    X2 = polynomial_features.fit_transform(X)
-
-    # Fit a linear model.
-    if not max(y) - min(y) > 1e-20:  # better use "not" for dealing with nans
-        raise MetaModelFailure
-
-    y = (y - min(y)) / (max(y) - min(y))
-    model = LinearRegression()
-    model.fit(X2, y)
-
-    # Check model quality.
-    model_outputs = model.predict(X2)
-    indices = np.argsort(y)
-    ordered_model_outputs = [model_outputs[i] for i in indices]
-    if not np.all(np.diff(ordered_model_outputs) > 0):
-        raise MetaModelFailure("Unlearnable objective function.")
-
-    try:
-        for cls in (Powell, DE):  # Powell excellent here, DE as a backup for thread safety.
-            optimizer = cls(parametrization=dimension, budget=45 * dimension + 30)
-            # limit to 20s at most
-            optimizer.register_callback("ask", callbacks.EarlyStopping.timer(20))
-            try:
-                minimum = optimizer.minimize(
-                    lambda x: float(model.predict(polynomial_features.fit_transform(x[None, :])))
-                ).value
-            except RuntimeError:
-                assert cls == Powell, "Only Powell is allowed to crash here."
-            else:
-                break
-    except ValueError:
-        raise MetaModelFailure("Infinite meta-model optimum in learn_on_k_best.")
-
-    if np.sum(minimum ** 2) > 1.0:
-        raise MetaModelFailure("huge meta-model optimum in learn_on_k_best.")
-    return middle + normalization * minimum
+LPCMA = ParametrizedCMA(popsize_factor=10.0).set_name("LPCMA", register=True)
+VLPCMA = ParametrizedCMA(popsize_factor=100.0).set_name("VLPCMA", register=True)
 
 
 class _MetaModel(base.Optimizer):
@@ -1533,13 +1789,14 @@ class _MetaModel(base.Optimizer):
         *,
         multivariate_optimizer: tp.Optional[base.OptCls] = None,
         frequency_ratio: float = 0.9,
+        algorithm: str,  # Quad or NN or SVR
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.frequency_ratio = frequency_ratio
+        self.algorithm = algorithm
+        elitist = self.dimension < 3
         if multivariate_optimizer is None:
-            multivariate_optimizer = (
-                ParametrizedCMA(elitist=(self.dimension < 3)) if self.dimension > 1 else OnePlusOne
-            )
+            multivariate_optimizer = ParametrizedCMA(elitist=elitist) if self.dimension > 1 else OnePlusOne
         self._optim = multivariate_optimizer(
             self.parametrization, budget, num_workers
         )  # share parametrization and its rng
@@ -1550,7 +1807,7 @@ class _MetaModel(base.Optimizer):
         freq = max(13, self.num_workers, self.dimension, int(self.frequency_ratio * sample_size))
         if len(self.archive) >= sample_size and not self._num_ask % freq:
             try:
-                data = _learn_on_k_best(self.archive, sample_size)
+                data = learn_on_k_best(self.archive, sample_size, self.algorithm)
                 candidate = self.parametrization.spawn_child().set_standardized_data(data)
             except MetaModelFailure:  # The optimum is at infinity. Shit happens.
                 candidate = self._optim.ask()
@@ -1560,6 +1817,13 @@ class _MetaModel(base.Optimizer):
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         self._optim.tell(candidate, loss)
+
+    def _internal_provide_recommendation(self) -> tp.Optional[tp.ArrayLike]:
+        return self._optim._internal_provide_recommendation()
+
+    def enable_pickling(self):
+        super().enable_pickling()
+        self._optim.enable_pickling()
 
 
 class ParametrizedMetaModel(base.ConfiguredOptimizer):
@@ -1581,27 +1845,67 @@ class ParametrizedMetaModel(base.ConfiguredOptimizer):
         *,
         multivariate_optimizer: tp.Optional[base.OptCls] = None,
         frequency_ratio: float = 0.9,
+        algorithm: str = "quad",
     ) -> None:
         super().__init__(_MetaModel, locals())
         assert 0 <= frequency_ratio <= 1.0
 
 
 MetaModel = ParametrizedMetaModel().set_name("MetaModel", register=True)
+NeuralMetaModel = ParametrizedMetaModel(algorithm="neural").set_name("NeuralMetaModel", register=True)
+SVMMetaModel = ParametrizedMetaModel(algorithm="svr").set_name("SVMMetaModel", register=True)
+RFMetaModel = ParametrizedMetaModel(algorithm="rf").set_name("RFMetaModel", register=True)
 MetaModelOnePlusOne = ParametrizedMetaModel(multivariate_optimizer=OnePlusOne).set_name(
     "MetaModelOnePlusOne", register=True
+)
+RFMetaModelOnePlusOne = ParametrizedMetaModel(multivariate_optimizer=OnePlusOne, algorithm="rf").set_name(
+    "RFMetaModelOnePlusOne", register=True
+)
+MetaModelPSO = ParametrizedMetaModel(multivariate_optimizer=PSO).set_name("MetaModelPSO", register=True)
+RFMetaModelPSO = ParametrizedMetaModel(multivariate_optimizer=PSO, algorithm="rf").set_name(
+    "RFMetaModelPSO", register=True
+)
+SVMMetaModelPSO = ParametrizedMetaModel(multivariate_optimizer=PSO, algorithm="svr").set_name(
+    "SVMMetaModelPSO", register=True
+)
+
+MetaModelDE = ParametrizedMetaModel(multivariate_optimizer=DE).set_name("MetaModelDE", register=True)
+NeuralMetaModelDE = ParametrizedMetaModel(algorithm="neural", multivariate_optimizer=DE).set_name(
+    "NeuralMetaModelDE", register=True
+)
+SVMMetaModelDE = ParametrizedMetaModel(algorithm="svr", multivariate_optimizer=DE).set_name(
+    "SVMMetaModelDE", register=True
+)
+RFMetaModelDE = ParametrizedMetaModel(algorithm="rf", multivariate_optimizer=DE).set_name(
+    "RFMetaModelDE", register=True
+)
+
+MetaModelTwoPointsDE = ParametrizedMetaModel(multivariate_optimizer=TwoPointsDE).set_name(
+    "MetaModelTwoPointsDE", register=True
+)
+NeuralMetaModelTwoPointsDE = ParametrizedMetaModel(
+    algorithm="neural", multivariate_optimizer=TwoPointsDE
+).set_name("NeuralMetaModelTwoPointsDE", register=True)
+SVMMetaModelTwoPointsDE = ParametrizedMetaModel(algorithm="svr", multivariate_optimizer=TwoPointsDE).set_name(
+    "SVMMetaModelTwoPointsDE", register=True
+)
+RFMetaModelTwoPointsDE = ParametrizedMetaModel(algorithm="rf", multivariate_optimizer=TwoPointsDE).set_name(
+    "RFMetaModelTwoPointsDE", register=True
 )
 
 
 @registry.register
 class SQPCMA(Portfolio):
-    """Passive portfolio of CMA and many SQP."""
+    """Passive portfolio of MetaCMA and many SQP."""
 
     def __init__(
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         cma_workers = num_workers // 2
-        optims: tp.List[base.Optimizer] = [CMA(self.parametrization, budget=budget, num_workers=cma_workers)]
+        optims: tp.List[base.Optimizer] = [
+            MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
+        ]
         optims += [SQP(self.parametrization, num_workers=1) for _ in range(num_workers - cma_workers)]
         for opt in optims[2:]:  # make sure initializations differ
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
@@ -1677,7 +1981,7 @@ class CMandAS3(Portfolio):
             if num_workers == 1:
                 optims = [ChainCMAPowell for _ in range(3)]
             else:
-                optims = [CMA for _ in range(3)]
+                optims = [MetaCMA for _ in range(3)]
             warmup_ratio = 0.1
         super().__init__(
             parametrization,
@@ -1704,7 +2008,7 @@ class CM(Portfolio):
         if budget < 201:
             optims = [OnePlusOne]
         if budget > 50 * dim:
-            optims = [CMA]
+            optims = [MetaCMA]
         super().__init__(
             parametrization,
             budget=budget,
@@ -1743,158 +2047,161 @@ class _FakeFunction:
         return loss
 
 
-class _BO(base.Optimizer):
-    def __init__(
-        self,
-        parametrization: IntOrParameter,
-        budget: tp.Optional[int] = None,
-        num_workers: int = 1,
-        *,
-        initialization: tp.Optional[str] = None,
-        init_budget: tp.Optional[int] = None,
-        middle_point: bool = False,
-        utility_kind: str = "ucb",  # bayes_opt default
-        utility_kappa: float = 2.576,
-        utility_xi: float = 0.0,
-        gp_parameters: tp.Optional[tp.Dict[str, tp.Any]] = None,
-    ) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        self._normalizer = p.helpers.Normalizer(self.parametrization)
-        self._bo: tp.Optional[BayesianOptimization] = None
-        self._fake_function = _FakeFunction(num_digits=len(str(self.dimension)))
-        # initialization
-        init = initialization
-        self._init_budget = init_budget
-        self._middle_point = middle_point
-        if init is None:
-            self._InitOpt: tp.Optional[base.ConfiguredOptimizer] = None
-        elif init == "random":
-            self._InitOpt = oneshot.RandomSearch
-        else:
-            self._InitOpt = oneshot.SamplingSearch(sampler=init, scrambled=init == "Hammersley")
-        # configuration
-        self.utility_kind = utility_kind
-        self.utility_kappa = utility_kappa
-        self.utility_xi = utility_xi
-        self.gp_parameters = {} if gp_parameters is None else gp_parameters
-        if isinstance(parametrization, p.Parameter) and self.gp_parameters.get("alpha", 0) == 0:
-            analysis = p.helpers.analyze(parametrization)
-            noisy = not analysis.deterministic
-            cont = analysis.continuous
-            if noisy or not cont:
-                warnings.warn(
-                    "Dis-continuous and noisy parametrization require gp_parameters['alpha'] > 0 "
-                    "(for your parametrization, continuity={cont} and noisy={noisy}).\n"
-                    "Find more information on BayesianOptimization's github.\n"
-                    "You should then create a new instance of optimizerlib.ParametrizedBO with appropriate parametrization.",
-                    errors.InefficientSettingsWarning,
-                )
+try:
 
-    @property
-    def bo(self) -> BayesianOptimization:
-        if self._bo is None:
-            bounds = {self._fake_function.key(i): (0.0, 1.0) for i in range(self.dimension)}
-            self._bo = BayesianOptimization(self._fake_function, bounds, random_state=self._rng)
-            if self._init_budget is None:
-                assert self.budget is not None
-                init_budget = int(np.sqrt(self.budget))
+    class _BO(base.Optimizer):
+        def __init__(
+            self,
+            parametrization: IntOrParameter,
+            budget: tp.Optional[int] = None,
+            num_workers: int = 1,
+            *,
+            initialization: tp.Optional[str] = None,
+            init_budget: tp.Optional[int] = None,
+            middle_point: bool = False,
+            utility_kind: str = "ucb",  # bayes_opt default
+            utility_kappa: float = 2.576,
+            utility_xi: float = 0.0,
+            gp_parameters: tp.Optional[tp.Dict[str, tp.Any]] = None,
+        ) -> None:
+            super().__init__(parametrization, budget=budget, num_workers=num_workers)
+            self._normalizer = p.helpers.Normalizer(self.parametrization)
+            self._bo: tp.Optional[BayesianOptimization] = None
+            self._fake_function = _FakeFunction(num_digits=len(str(self.dimension)))
+            # initialization
+            init = initialization
+            self._init_budget = init_budget
+            self._middle_point = middle_point
+            if init is None:
+                self._InitOpt: tp.Optional[base.ConfiguredOptimizer] = None
+            elif init == "random":
+                self._InitOpt = oneshot.RandomSearch
             else:
-                init_budget = self._init_budget
-            init_budget = max(2, init_budget)
-            if self.gp_parameters is not None:
-                self._bo.set_gp_params(**self.gp_parameters)
-            # init
-            if self._middle_point:
-                self._bo.probe([0.5] * self.dimension, lazy=True)
-                init_budget -= 1
-            if self._InitOpt is not None and init_budget > 0:
-                param = p.Array(shape=(self.dimension,)).set_bounds(lower=0, upper=1)
-                param.random_state = self._rng
-                opt = self._InitOpt(param, budget=init_budget)
-                for _ in range(init_budget):
-                    self._bo.probe(opt.ask().value, lazy=True)
-            else:  # default
-                for _ in range(init_budget):
-                    self._bo.probe(self._bo._space.random_sample(), lazy=True)
-        return self._bo
+                self._InitOpt = oneshot.SamplingSearch(sampler=init, scrambled=init == "Hammersley")
+            # configuration
+            self.utility_kind = utility_kind
+            self.utility_kappa = utility_kappa
+            self.utility_xi = utility_xi
+            self.gp_parameters = {} if gp_parameters is None else gp_parameters
+            if isinstance(parametrization, p.Parameter) and self.gp_parameters.get("alpha", 0) == 0:
+                analysis = p.helpers.analyze(parametrization)
+                noisy = not analysis.deterministic
+                cont = analysis.continuous
+                if noisy or not cont:
+                    warnings.warn(
+                        "Dis-continuous and noisy parametrization require gp_parameters['alpha'] > 0 "
+                        "(for your parametrization, continuity={cont} and noisy={noisy}).\n"
+                        "Find more information on BayesianOptimization's github.\n"
+                        "You should then create a new instance of optimizerlib.ParametrizedBO with appropriate parametrization.",
+                        errors.InefficientSettingsWarning,
+                    )
 
-    def _internal_ask_candidate(self) -> p.Parameter:
-        util = UtilityFunction(kind=self.utility_kind, kappa=self.utility_kappa, xi=self.utility_xi)
-        if self.bo._queue:
-            x_probe = next(self.bo._queue)
-        else:
-            x_probe = self.bo.suggest(util)  # this is time consuming
-            x_probe = [x_probe[self._fake_function.key(i)] for i in range(len(x_probe))]
-        data = self._normalizer.backward(np.array(x_probe, copy=False))
-        candidate = self.parametrization.spawn_child().set_standardized_data(data)
-        candidate._meta["x_probe"] = x_probe
-        return candidate
+        @property
+        def bo(self) -> BayesianOptimization:
+            if self._bo is None:
+                bounds = {self._fake_function.key(i): (0.0, 1.0) for i in range(self.dimension)}
+                self._bo = BayesianOptimization(self._fake_function, bounds, random_state=self._rng)
+                if self._init_budget is None:
+                    assert self.budget is not None
+                    init_budget = int(np.sqrt(self.budget))
+                else:
+                    init_budget = self._init_budget
+                init_budget = max(2, init_budget)
+                if self.gp_parameters is not None:
+                    self._bo.set_gp_params(**self.gp_parameters)
+                # init
+                if self._middle_point:
+                    self._bo.probe([0.5] * self.dimension, lazy=True)
+                    init_budget -= 1
+                if self._InitOpt is not None and init_budget > 0:
+                    param = p.Array(shape=(self.dimension,)).set_bounds(lower=0, upper=1)
+                    param.random_state = self._rng
+                    opt = self._InitOpt(param, budget=init_budget)
+                    for _ in range(init_budget):
+                        self._bo.probe(opt.ask().value, lazy=True)
+                else:  # default
+                    for _ in range(init_budget):
+                        self._bo.probe(self._bo._space.random_sample(), lazy=True)
+            return self._bo
 
-    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
-        if "x_probe" in candidate._meta:
-            y = candidate._meta["x_probe"]
-        else:
-            data = candidate.get_standardized_data(reference=self.parametrization)
-            y = self._normalizer.forward(data)  # tell not asked
-        self._fake_function.register(y, -loss)  # minimizing
-        self.bo.probe(y, lazy=False)
-        # for some unknown reasons, BO wants to evaluate twice the same point,
-        # but since it keeps a cache of the values, the registered value is not used
-        # so we should clean the "fake" function
-        self._fake_function._registered.clear()
+        def _internal_ask_candidate(self) -> p.Parameter:
+            util = UtilityFunction(kind=self.utility_kind, kappa=self.utility_kappa, xi=self.utility_xi)
+            if self.bo._queue:
+                x_probe = next(self.bo._queue)
+            else:
+                x_probe = self.bo.suggest(util)  # this is time consuming
+                x_probe = [x_probe[self._fake_function.key(i)] for i in range(len(x_probe))]
+            data = self._normalizer.backward(np.array(x_probe, copy=False))
+            candidate = self.parametrization.spawn_child().set_standardized_data(data)
+            candidate._meta["x_probe"] = x_probe
+            return candidate
 
-    def _internal_provide_recommendation(self) -> tp.Optional[tp.ArrayLike]:
-        if not self.archive:
-            return None
-        return self._normalizer.backward(
-            np.array([self.bo.max["params"][self._fake_function.key(i)] for i in range(self.dimension)])
-        )
+        def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+            if "x_probe" in candidate._meta:
+                y = candidate._meta["x_probe"]
+            else:
+                data = candidate.get_standardized_data(reference=self.parametrization)
+                y = self._normalizer.forward(data)  # tell not asked
+            self._fake_function.register(y, -loss)  # minimizing
+            self.bo.probe(y, lazy=False)
+            # for some unknown reasons, BO wants to evaluate twice the same point,
+            # but since it keeps a cache of the values, the registered value is not used
+            # so we should clean the "fake" function
+            self._fake_function._registered.clear()
 
+        def _internal_provide_recommendation(self) -> tp.Optional[tp.ArrayLike]:
+            if not self.archive:
+                return None
+            return self._normalizer.backward(
+                np.array([self.bo.max["params"][self._fake_function.key(i)] for i in range(self.dimension)])
+            )
 
-class ParametrizedBO(base.ConfiguredOptimizer):
-    """Bayesian optimization.
-    Hyperparameter tuning method, based on statistical modeling of the objective function.
-    This class is a wrapper over the `bayes_opt <https://github.com/fmfn/BayesianOptimization>`_ package.
+    class ParametrizedBO(base.ConfiguredOptimizer):
+        """Bayesian optimization.
+        Hyperparameter tuning method, based on statistical modeling of the objective function.
+        This class is a wrapper over the `bayes_opt <https://github.com/fmfn/BayesianOptimization>`_ package.
 
-    Parameters
-    ----------
-    initialization: str
-        Initialization algorithms (None, "Hammersley", "random" or "LHS")
-    init_budget: int or None
-        Number of initialization algorithm steps
-    middle_point: bool
-        whether to sample the 0 point first
-    utility_kind: str
-        Type of utility function to use among "ucb", "ei" and "poi"
-    utility_kappa: float
-        Kappa parameter for the utility function
-    utility_xi: float
-        Xi parameter for the utility function
-    gp_parameters: dict
-        dictionnary of parameters for the gaussian process
-    """
+        Parameters
+        ----------
+        initialization: str
+            Initialization algorithms (None, "Hammersley", "random" or "LHS")
+        init_budget: int or None
+            Number of initialization algorithm steps
+        middle_point: bool
+            whether to sample the 0 point first
+        utility_kind: str
+            Type of utility function to use among "ucb", "ei" and "poi"
+        utility_kappa: float
+            Kappa parameter for the utility function
+        utility_xi: float
+            Xi parameter for the utility function
+        gp_parameters: dict
+            dictionnary of parameters for the gaussian process
+        """
 
-    no_parallelization = True
+        no_parallelization = True
 
-    # pylint: disable=unused-argument
-    def __init__(
-        self,
-        *,
-        initialization: tp.Optional[str] = None,
-        init_budget: tp.Optional[int] = None,
-        middle_point: bool = False,
-        utility_kind: str = "ucb",  # bayes_opt default
-        utility_kappa: float = 2.576,
-        utility_xi: float = 0.0,
-        gp_parameters: tp.Optional[tp.Dict[str, tp.Any]] = None,
-    ) -> None:
-        super().__init__(_BO, locals())
+        # pylint: disable=unused-argument
+        def __init__(
+            self,
+            *,
+            initialization: tp.Optional[str] = None,
+            init_budget: tp.Optional[int] = None,
+            middle_point: bool = False,
+            utility_kind: str = "ucb",  # bayes_opt default
+            utility_kappa: float = 2.576,
+            utility_xi: float = 0.0,
+            gp_parameters: tp.Optional[tp.Dict[str, tp.Any]] = None,
+        ) -> None:
+            super().__init__(_BO, locals())
 
+    BO = ParametrizedBO().set_name("BO", register=True)
+    BOSplit = ConfSplitOptimizer(max_num_vars=15, progressive=False, multivariate_optimizer=BO).set_name(
+        "BOSplit", register=True
+    )
 
-BO = ParametrizedBO().set_name("BO", register=True)
-BOSplit = ConfSplitOptimizer(max_num_vars=15, progressive=False, multivariate_optimizer=BO).set_name(
-    "BOSplit", register=True
-)
+except NameError:
+    pass  # bayes_opt not available
 
 
 class _BayesOptim(base.Optimizer):
@@ -2045,12 +2352,13 @@ class _Chain(base.Optimizer):
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
         *,
-        optimizers: tp.Sequence[tp.Union[base.ConfiguredOptimizer, tp.Type[base.Optimizer]]] = [
-            LHSSearch,
-            DE,
-        ],
+        optimizers: tp.Optional[
+            tp.Sequence[tp.Union[base.ConfiguredOptimizer, tp.Type[base.Optimizer]]]
+        ] = None,
         budgets: tp.Sequence[tp.Union[str, int]] = (10,),
     ) -> None:
+        if optimizers is None:
+            optimizers = [LHSSearch, DE]
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         # delayed initialization
         # Either we have the budget for each algorithm, or the last algorithm uses the rest of the budget, so:
@@ -2060,13 +2368,16 @@ class _Chain(base.Optimizer):
             "dimension": self.dimension,
             "half": self.budget // 2 if self.budget else self.num_workers,
             "third": self.budget // 3 if self.budget else self.num_workers,
+            "fourth": self.budget // 4 if self.budget else self.num_workers,
+            "tenth": self.budget // 10 if self.budget else self.num_workers,
             "sqrt": int(np.sqrt(self.budget)) if self.budget else self.num_workers,
         }
         self.budgets = [max(1, converter[b]) if isinstance(b, str) else b for b in budgets]
         last_budget = None if self.budget is None else max(4, self.budget - sum(self.budgets))
         assert len(optimizers) == len(self.budgets) + 1
         assert all(
-            x in ("third", "half", "dimension", "num_workers", "sqrt") or x > 0 for x in self.budgets
+            x in ("fourth", "third", "half", "tenth", "dimension", "num_workers", "sqrt") or x > 0
+            for x in self.budgets
         ), str(self.budgets)
         for opt, optbudget in zip(optimizers, self.budgets + [last_budget]):  # type: ignore
             self.optimizers.append(opt(self.parametrization, budget=optbudget, num_workers=self.num_workers))
@@ -2097,6 +2408,10 @@ class _Chain(base.Optimizer):
             if self.num_tell < sum_budget:
                 opt.tell(candidate, loss)
 
+    def enable_pickling(self):
+        for opt in self.optimizers:
+            opt.enable_pickling()
+
 
 class Chaining(base.ConfiguredOptimizer):
     """
@@ -2125,7 +2440,19 @@ class Chaining(base.ConfiguredOptimizer):
 GeneticDE = Chaining([RotatedTwoPointsDE, TwoPointsDE], [200]).set_name(
     "GeneticDE", register=True
 )  # Also known as CGDE
-ChainCMAPowell = Chaining([CMA, Powell], ["half"]).set_name("ChainCMAPowell", register=True)
+MemeticDE = Chaining([RotatedTwoPointsDE, TwoPointsDE, DE, SQP], ["fourth", "fourth", "fourth"]).set_name(
+    "MemeticDE", register=True
+)
+QNDE = Chaining([QODE, BFGS], ["half"]).set_name("QNDE", register=True)
+QNDE.no_parallelization = True
+MemeticDE.no_parallelization = True
+discretememetic = Chaining(
+    [RandomSearch, DiscreteLenglerOnePlusOne, DiscreteOnePlusOne], ["third", "third"]
+).set_name("discretememetic", register=True)
+# discretememeticT = Chaining(
+#     [RandomSearch, DiscreteLenglerOnePlusOneT, DiscreteOnePlusOneT], ["tenth", "third"]
+# ).set_name("discretememeticT", register=True)
+ChainCMAPowell = Chaining([MetaCMA, Powell], ["half"]).set_name("ChainCMAPowell", register=True)
 ChainCMAPowell.no_parallelization = True  # TODO make this automatic
 ChainMetaModelSQP = Chaining([MetaModel, SQP], ["half"]).set_name("ChainMetaModelSQP", register=True)
 ChainMetaModelSQP.no_parallelization = True
@@ -2139,7 +2466,7 @@ ChainNaiveTBPSAPowell = Chaining([NaiveTBPSA, Powell], ["half"]).set_name(
     "ChainNaiveTBPSAPowell", register=True
 )
 ChainNaiveTBPSAPowell.no_parallelization = True
-ChainNaiveTBPSACMAPowell = Chaining([NaiveTBPSA, CMA, Powell], ["third", "third"]).set_name(
+ChainNaiveTBPSACMAPowell = Chaining([NaiveTBPSA, MetaCMA, Powell], ["third", "third"]).set_name(
     "ChainNaiveTBPSACMAPowell", register=True
 )
 ChainNaiveTBPSACMAPowell.no_parallelization = True
@@ -2417,8 +2744,8 @@ class NGOptBase(base.Optimizer):
     def optim(self) -> base.Optimizer:
         if self._optim is None:
             self._optim = self._select_optimizer_cls()(self.parametrization, self.budget, self.num_workers)
-            optim = self._optim if not isinstance(self._optim, NGOptBase) else self._optim.optim
-            logger.debug("%s selected %s optimizer.", *(x.name for x in (self, optim)))
+            self._optim = self._optim if not isinstance(self._optim, NGOptBase) else self._optim.optim
+            logger.debug("%s selected %s optimizer.", *(x.name for x in (self, self._optim)))
         return self._optim
 
     def _select_optimizer_cls(self) -> base.OptCls:
@@ -2457,7 +2784,11 @@ class NGOptBase(base.Optimizer):
                             else:
                                 # DE is great in such a case (?).
                                 cls = (
-                                    DE if self.dimension > 2000 else CMA if self.dimension > 1 else OnePlusOne
+                                    DE
+                                    if self.dimension > 2000
+                                    else MetaCMA
+                                    if self.dimension > 1
+                                    else OnePlusOne
                                 )
         return cls
 
@@ -2477,6 +2808,9 @@ class NGOptBase(base.Optimizer):
         out = {"sub-optim": self.optim.name}
         out.update(self.optim._info())  # this will work for recursive NGOpt calls
         return out
+
+    def enable_pickling(self) -> None:
+        self.optim.enable_pickling()
 
 
 @registry.register
@@ -2574,12 +2908,12 @@ class NGOpt4(NGOptBase):
                                             if (
                                                 self.dimension > 40
                                                 and num_workers > self.dimension
-                                                and budget < 7 * self.dimension ** 2
+                                                and budget < 7 * self.dimension**2
                                             ):
                                                 optimClass = DiagonalCMA
                                             elif (
-                                                3 * num_workers > self.dimension ** 2
-                                                and budget > self.dimension ** 2
+                                                3 * num_workers > self.dimension**2
+                                                and budget > self.dimension**2
                                             ):
                                                 optimClass = MetaModel
                                             else:
@@ -2644,7 +2978,6 @@ class NGOpt10(NGOpt8):
         return base.Optimizer.recommend(self)
 
 
-@registry.register
 class NGOpt12(NGOpt10):
     def _select_optimizer_cls(self) -> base.OptCls:
         cma_vars = max(1, 4 + int(3 * np.log(self.dimension)))
@@ -2673,7 +3006,6 @@ class NGOpt12(NGOpt10):
             return super()._select_optimizer_cls()
 
 
-@registry.register
 class NGOpt13(NGOpt12):  # Also known as NGOpt12H
     def _select_optimizer_cls(self) -> base.OptCls:
         if (
@@ -2688,7 +3020,6 @@ class NGOpt13(NGOpt12):  # Also known as NGOpt12H
             return super()._select_optimizer_cls()
 
 
-@registry.register
 class NGOpt14(NGOpt12):  # Also known as NGOpt12H_nohyperopt
     def _select_optimizer_cls(self) -> base.OptCls:
         if self.budget is not None and self.budget < 600:
@@ -2703,7 +3034,7 @@ class NGOpt15(NGOpt12):
         if (
             self.budget is not None
             and self.fully_continuous
-            and self.budget < self.dimension ** 2 * 2
+            and self.budget < self.dimension**2 * 2
             and self.num_workers == 1
             and not self.has_noise
             and self.num_objectives < 2
@@ -2732,7 +3063,6 @@ class NGOpt16(NGOpt15):
             return super()._select_optimizer_cls()
 
 
-@registry.register
 class NGOpt21(NGOpt16):
     def _select_optimizer_cls(self) -> base.OptCls:
         cma_vars = max(1, 4 + int(3 * np.log(self.dimension)))
@@ -2744,7 +3074,7 @@ class NGOpt21(NGOpt16):
             and self.num_workers <= num * cma_vars
         ):  # Discrete case ?
             return ConfPortfolio(
-                optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3 ** i) for i in range(num)],
+                optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3**i) for i in range(num)],
                 warmup_ratio=0.5,
             )
         else:
@@ -2767,14 +3097,13 @@ class NGOpt36(NGOpt16):
             and self.num_workers <= num * cma_vars
         ):  # Discrete case ?
             return ConfPortfolio(
-                optimizers=[Rescaled(base_optimizer=NGOpt14, scale=0.9 ** i) for i in range(num)],
+                optimizers=[Rescaled(base_optimizer=NGOpt14, scale=0.9**i) for i in range(num)],
                 warmup_ratio=0.5,
             )
         else:
             return super()._select_optimizer_cls()
 
 
-@registry.register
 class NGOpt38(NGOpt16):
     def _select_optimizer_cls(self) -> base.OptCls:
         # Special cases in the bounded case
@@ -2799,7 +3128,7 @@ class NGOpt38(NGOpt16):
             if self.dimension < 20:  # Nobody knows why this seems to be so good.
                 num = self.budget // (500 * self.dimension)
                 return ConfPortfolio(
-                    optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3 ** i) for i in range(num)],
+                    optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3**i) for i in range(num)],
                     warmup_ratio=0.5,
                 )
             # We need a special case for dim < 30 ---> let's see later.
@@ -2859,6 +3188,8 @@ class NGOpt39(NGOpt16):
             and self.num_workers <= para
             and p.helpers.Normalizer(self.parametrization).fully_bounded
         ):
+            if self.dimension == 1:
+                return NGOpt16
             if (
                 self.budget > 5000 * self.dimension
             ):  # Asymptotically let us trust NGOpt36 and its subtle restart.
@@ -2871,7 +3202,7 @@ class NGOpt39(NGOpt16):
             if self.dimension < 20:  # Nobody knows why this seems to be so good.
                 num = self.budget // (500 * self.dimension)
                 return ConfPortfolio(
-                    optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3 ** i) for i in range(num)],
+                    optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3**i) for i in range(num)],
                     warmup_ratio=0.5,
                 )
             if self.num_workers == 1:
@@ -2895,6 +3226,15 @@ class NGOpt39(NGOpt16):
                 MetaModelFmin2.no_parallelization = True
                 return MetaModelFmin2
             return NGOpt15
+        else:
+            return super()._select_optimizer_cls()
+
+
+@registry.register
+class NGOptRW(NGOpt39):
+    def _select_optimizer_cls(self) -> base.OptCls:
+        if self.fully_continuous and not self.has_noise and self.budget >= 12 * self.dimension:  # type: ignore
+            return ConfPortfolio(optimizers=[GeneticDE, PSO, NGOpt39], warmup_ratio=0.33)
         else:
             return super()._select_optimizer_cls()
 

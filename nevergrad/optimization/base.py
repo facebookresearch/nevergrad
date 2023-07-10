@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -294,7 +294,13 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         self._suggestions.append(self.parametrization.spawn_child(new_value=new_value))
 
     # pylint: disable=too-many-branches
-    def tell(self, candidate: p.Parameter, loss: tp.Loss) -> None:
+    def tell(
+        self,
+        candidate: p.Parameter,
+        loss: tp.Loss,
+        constraint_violation: tp.Optional[tp.Loss] = None,
+        penalty_style: tp.Optional[tp.ArrayLike] = None,
+    ) -> None:
         """Provides the optimizer with the evaluation of a fitness value for a candidate.
 
         Parameters
@@ -303,6 +309,13 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             point where the function was evaluated
         loss: float/list/np.ndarray
             loss of the function (or multi-objective function
+        constraint_violation: float/list/np.ndarray/None
+            constraint violation (> 0 means that this is not correct)
+        penalty_style: ArrayLike/None
+            to be read as [a,b,c,d,e,f]
+            with cv the constraint violation vector (above):
+            penalty = (a + sum(|loss|)) * (f+num_tell)**e * (b * sum(cv**c)) ** d
+            default: [1e5, 1., .5, 1., .5, 1.]
 
         Note
         ----
@@ -318,7 +331,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         will use this suggestion.
         """
         # Check loss type
-        if isinstance(loss, (Real, float)):
+        if isinstance(loss, (Real, float)) or (isinstance(loss, np.ndarray) and not loss.shape):
             # using "float" along "Real" because mypy does not understand "Real" for now Issue #3186
             loss = float(loss)
             # Non-sense values including NaNs should not be accepted.
@@ -372,13 +385,26 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             # multiobjective reference is not handled :s
             # but this allows obtaining both scalar and multiobjective loss (through losses)
             callback(self, candidate, loss)
-        if not candidate.satisfies_constraints() and self.budget is not None:
+        if not candidate.satisfies_constraints(self.parametrization) and self.budget is not None:
             penalty = self._constraints_manager.penalty(candidate, self.num_ask, self.budget)
             loss = loss + penalty
         if isinstance(loss, float) and (
             self.num_objectives == 1 or self.num_objectives > 1 and not self._no_hypervolume
         ):
             self._update_archive_and_bests(candidate, loss)
+
+        if constraint_violation is not None:
+            if penalty_style is not None:
+                a, b, c, d, e, f = penalty_style
+            else:
+                a, b, c, d, e, f = (1e5, 1.0, 0.5, 1.0, 0.5, 1.0)
+
+            violation = float(
+                (a + np.sum(np.maximum(loss, 0.0)))
+                * ((f + self._num_tell) ** e)
+                * (b * np.sum(np.maximum(constraint_violation, 0.0) ** c) ** d)
+            )
+            loss += violation
         if candidate.uid in self._asked:
             self._internal_tell_candidate(candidate, loss)
             self._asked.remove(candidate.uid)
@@ -459,6 +485,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # - no memory of previous iterations.
         # - just projection to constraint satisfaction.
         # We try using the normal tool during half constraint budget, in order to reduce the impact on the normal run.
+        self.parametrization.tabu_fails = 0
         for _ in range(max_trials):
             is_suggestion = False
             if self._suggestions:  # use suggestions if available
@@ -472,18 +499,18 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                         self.parametrization._constraint_checkers
                     ), f"Error: {e}"  # This should not happen without constraint issues.
                     candidate = self.parametrization.spawn_child()
-            if candidate.satisfies_constraints():
+            if candidate.satisfies_constraints(self.parametrization):
                 break  # good to go!
             if self._penalize_cheap_violations or self.no_parallelization:
                 # Warning! This might be a tell not asked.
                 self._internal_tell_candidate(candidate, float("Inf"))  # DE requires a tell
             # updating num_ask  is necessary for some algorithms which need new num to ask another point
             self._num_ask += 1
-        satisfies = candidate.satisfies_constraints()
-        if not satisfies:
+        satisfies = candidate.satisfies_constraints(self.parametrization)
+        if not satisfies and self.parametrization.tabu_length == 0:
             # still not solving, let's run sub-optimization
             candidate = _constraint_solver(candidate, budget=max_trials)
-        if not (satisfies or candidate.satisfies_constraints()):
+        if not (satisfies or candidate.satisfies_constraints(self.parametrization, no_tabu=True)):
             self._warn(
                 f"Could not bypass the constraint after {max_trials} tentatives, "
                 "sending candidate anyway.",
@@ -563,12 +590,24 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         """Override to provide a recommendation in standardized space"""
         return None
 
+    def enable_pickling(self) -> None:
+        """
+        Some optimizers are only optionally picklable, because picklability
+        requires saving the whole history which would be a waste of memory
+        in general. To tell an optimizer to be picklable, call this function
+        before any asks.
+
+        In this base class, the function is a no-op, but it is overridden
+        in some optimizers.
+        """
+
     def minimize(
         self,
         objective_function: tp.Callable[..., tp.Loss],
         executor: tp.Optional[tp.ExecutorLike] = None,
         batch_mode: bool = False,
         verbosity: int = 0,
+        constraint_violation: tp.Any = None,
     ) -> p.Parameter:
         """Optimization (minimization) procedure
 
@@ -580,13 +619,15 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             An executor object, with method :code:`submit(callable, *args, **kwargs)` and returning a Future-like object
             with methods :code:`done() -> bool` and :code:`result() -> float`. The executor role is to dispatch the execution of
             the jobs locally/on a cluster/with multithreading depending on the implementation.
-            Eg: :code:`concurrent.futures.ThreadPoolExecutor`
+            Eg: :code:`concurrent.futures.ProcessPoolExecutor`
         batch_mode: bool
             when :code:`num_workers = n > 1`, whether jobs are executed by batch (:code:`n` function evaluations are launched,
             we wait for all results and relaunch n evals) or not (whenever an evaluation is finished, we launch
             another one)
         verbosity: int
             print information about the optimization (0: None, 1: fitness values, 2: fitness values and recommendation)
+        constraint_violation: list of functions or None
+            each function in the list returns >0 for a violated constraint.
 
         Returns
         -------
@@ -628,7 +669,12 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 while self._finished_jobs:
                     x, job = self._finished_jobs[0]
                     result = job.result()
-                    self.tell(x, result)
+                    if constraint_violation is not None:
+                        self.tell(
+                            x, result, [f(x.value) for f in constraint_violation]
+                        )  # TODO: this is not parallelized, wtf!
+                    else:
+                        self.tell(x, result)
                     self._finished_jobs.popleft()  # remove it after the tell to make sure it was indeed "told" (in case of interruption)
                     if verbosity:
                         print(f"Updating fitness with value {job.result()}")
@@ -788,6 +834,7 @@ def _constraint_solver(parameter: p.Parameter, budget: int) -> p.Parameter:
     """Runs a suboptimization to solve the parameter constraints"""
     parameter_without_constraint = parameter.copy()
     parameter_without_constraint._constraint_checkers.clear()
+    parameter_without_constraint.tabu_length = 0
     opt = registry["OnePlusOne"](parameter_without_constraint, num_workers=1, budget=budget)
     for _ in range(budget):
         cand = opt.ask()

@@ -1,0 +1,24 @@
+Small budget, not very parallel, hyperparameter of scikit learn models without overfitting.
+
+budget160
+budget80
+datasetartificial
+datasetartificialcos
+datasetartificialsquare
+datasetauto-mpg
+datasetboston
+datasetdiabetes
+datasetred-wine
+datasetwhite-wine
+depth
+dimension1
+dimension11
+dimension2
+dimension3
+dimension5
+dimensionnan
+regressormlp
+tree
+workers1
+workers20
+workers40

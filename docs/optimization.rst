@@ -151,8 +151,25 @@ Two callbacks are available through :code:`ng.callbacks`, see the :ref:`callback
 
 Optimization with constraints
 -----------------------------
+Sometimes you want the best candidate, given some constraints.
 
-Nevergrad has a mechanism for cheap constraints.
+Then, if you want to work with the ask/tell form, instead of 
+.. code-block:: python
+    optimizer.tell(candidate, value)
+you can do
+.. code-block:: python
+    optimizer.tell(candidate, value, [constraint_violation1, constraint_violation2, constraint_violation3])
+
+Or, if you work with minimize, you can also replace
+.. code-block:: python
+    optimizer.minimize(loss_function)
+by
+.. code-block:: python
+    optimizer.minimize(loss_function, constraint_violations)
+where constraint_violations maps a candidate to a vector of constraint violations.
+
+
+Nevergrad has, also, a mechanism for cheap constraints.
 "Cheap" means that we do not try to reduce the number of calls to such constraints.
 We basically repeat mutations until we get a satisfiable point.
 
@@ -171,6 +188,8 @@ Note that we can provide a richer information by using float-valued constraints 
     :dedent: 8
     :start-after: DOC_CONSTRAINED_2
     :end-before: DOC_CONSTRAINED_3
+    
+
 Optimizing machine learning hyperparameters
 -------------------------------------------
 
@@ -184,6 +203,14 @@ Or if you want something more aimed at robustly outperforming random search in h
 - use :code:`TransitionChoice` for discrete variables, taking care that the default value is in the middle.
 - Use :code:`ScrHammersleySearchPlusMiddlePoint` (:code:`PlusMiddlePoint` only if you have continuous parameters or good default values for discrete parameters).
 
+
+Example with permutation
+------------------------
+
+SimpleTSP and ComplexTSP are two cases of optimization on a domain of permutations:
+`example here. <https://docs.google.com/document/d/1B5yVOx1H1nnjY3EOf14487hAr8CzwJ9zEkDwQnZ5nbE/edit?usp=sharing>`_
+This is relevant when you optimize a single big permutation.
+Also includes cases with many small permutations.
 
 Example of chaining, or inoculation, or initialization of an evolutionary algorithm
 -----------------------------------------------------------------------------------

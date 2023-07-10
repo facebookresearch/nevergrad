@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -75,7 +75,7 @@ def _make_parametrization(
     ), f"Cannot work with dimension {dimension} for {name}: not divisible by {shape[0]}."
     b_array = np.array(bounds)
     assert b_array.shape[0] == shape[0]  # pylint: disable=unsubscriptable-object
-    ones = np.ones((1, shape[1]))
+    ones = np.ones((1, int(shape[1])))
     init = np.sum(b_array, axis=1, keepdims=True).dot(ones) / 2  # type: ignore
     if as_tuple:
         instrum = ng.p.Instrumentation(

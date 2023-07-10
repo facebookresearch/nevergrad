@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -46,7 +46,8 @@ def export_table(filename: str, rows: t.List[t.Any], cols: t.List[t.Any], data: 
         f.write("\\lccode`7=`7\n")
         f.write("\\lccode`8=`8\n")
         f.write("\\lccode`9=`9\n")
-        f.write(r"\\newcolumntype{P}[1]{>{\hspace{0pt}}p{#1}}\n")
+        f.write(r"\newcolumntype{P}[1]{>{\hspace{0pt}}p{#1}}")
+        f.write("\n")
         f.write("\\begin{document}\n")
         f.write("\\scriptsize\n")
         f.write("\\renewcommand{\\arraystretch}{1.5}\n")

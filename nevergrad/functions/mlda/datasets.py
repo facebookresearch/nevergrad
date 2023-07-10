@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -92,7 +92,7 @@ def mocked_data() -> tp.Iterator[tp.Any]:
 def make_perceptron_data(name: str) -> np.ndarray:
     """Creates the data (see https://drive.google.com/file/d/1fc1sVwoLJ0LsQ5fzi4jo3rDJHQ6VGQ1h/view)"""
     funcs: tp.Dict[str, tp.Callable[[np.ndarray], np.ndarray]] = {
-        "quadratic": lambda x: x ** 2,  # type: ignore
+        "quadratic": lambda x: x**2,  # type: ignore
         "sine": np.sin,
         "abs": np.abs,
         "heaviside": lambda x: x > 0,  # type: ignore

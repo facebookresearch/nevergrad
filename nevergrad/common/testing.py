@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -148,7 +148,7 @@ def skip_error_on_systems(error_type: tp.Type[Exception], systems: tp.Iterable[s
     except error_type as e:
         system = platform.system()
         if system in systems:
-            raise unittest.SkipTest
+            raise unittest.SkipTest(f"Skipping on system {system}")
         if systems:  # only print if the context is actually active for some system
             print(f'This is system "{system}" (should it be skipped for the test?)')
         raise e

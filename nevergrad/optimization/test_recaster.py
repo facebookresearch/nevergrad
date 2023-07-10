@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -115,14 +115,14 @@ def test_recast_optimizer_error() -> None:
 
 
 def _simple_multiobjective(x):
-    return [np.sum(x ** 2), np.sum((x - 1) ** 2)]
+    return [np.sum(x**2), np.sum((x - 1) ** 2)]
 
 
 @pytest.mark.parametrize("after_ask", [False, True])  # type: ignore
 def test_recast_pickle(after_ask: bool) -> None:
     # Do 10 ask/tells and optionally another ask.
     optimizer = ng.optimizers.PymooNSGA2(parametrization=2, budget=300)
-    tp.cast(recaster.SequentialRecastOptimizer, optimizer).enable_pickling()
+    optimizer.enable_pickling()
     optimizer.parametrization.random_state.seed(12)
     for _ in range(10):
         x = optimizer.ask()

@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -133,7 +133,7 @@ class FastNonDominatedRanking:
 
     # pylint: disable=too-many-locals
     def compute_ranking(
-        self, candidates: tp.List[p.Parameter], k: int = None
+        self, candidates: tp.List[p.Parameter], k: tp.Optional[int] = None
     ) -> tp.List[tp.List[p.Parameter]]:
         """Compute ranking of candidates.
 

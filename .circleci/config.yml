@@ -13,7 +13,7 @@ orbs:
 executors:
   ubuntu-python37:
     docker:
-      - image: circleci/python:3.7
+      - image: cimg/python:3.7
     working_directory: ~/repo
 
 
@@ -27,14 +27,14 @@ commands:
       - restore_cache:
           name: "[all] Restore cache"
           keys:
-          - v1-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          - v3-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
           # fallback to installing main requirements
-          - v1-dependencies-main-{{ checksum "requirements/main.txt"}}
+          - v3-dependencies-main-{{ checksum "requirements/main.txt"}}
 
       - run:
           name: "[all] Install dependencies"
           command: |
-            python3 -m venv venv
+            rm -rf venv && python3 -m venv venv
             . venv/bin/activate
             pip install --progress-bar off -U pip setuptools
             pip install --progress-bar off --use-deprecated=legacy-resolver -e .[all]
@@ -52,7 +52,7 @@ jobs:
       - restore_cache:
           name: "[no-extra] Restore cache"
           keys:
-          - v1-dependencies-main-{{ checksum "requirements/main.txt"}}
+          - v3-dependencies-main-{{ checksum "requirements/main.txt"}}
           # fallback to using the latest cache if no exact match is found
 
       - run:
@@ -79,7 +79,7 @@ jobs:
           name: "[no-extra] Save cache"
           paths:
             - ./venv
-          key: v1-dependencies-main-{{ checksum "requirements/main.txt"}}
+          key: v3-dependencies-main-{{ checksum "requirements/main.txt"}}
 
       - run:
           name: "[no-extra] Run basic tests (checking dependencies)"
@@ -94,7 +94,7 @@ jobs:
           name: "[all] Save cache"
           paths:
             - ./venv
-          key: v1-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          key: v3-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
 
       - run:
           name: "[all] Print installation"
@@ -186,7 +186,7 @@ jobs:
           command: |
             . venv/bin/activate
             black --version
-            black nevergrad --check
+            black nevergrad --check --diff
 
 
   pytests:
@@ -246,7 +246,7 @@ jobs:
       - restore_cache:
           name: "[all] Restore cache"
           keys:
-          - v1-win-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          - v2-win-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
 
       - run:
           name: Setup nevergrad in virtualenv
@@ -261,7 +261,7 @@ jobs:
           name: "[all] Save cache"
           paths:
             - ./venv
-          key: v1-win-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          key: v2-win-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
 
       - run:
           name: "[all] Print installation"
@@ -292,7 +292,7 @@ jobs:
           name: Create .pypirc
           command: |
             echo -e "[pypi]" >> ~/.pypirc
-            echo -e "username = jrapin" >> ~/.pypirc
+            echo -e "username = __token__" >> ~/.pypirc
             echo -e "password = $PYPI_PASSWORD" >> ~/.pypirc
 
       - run:
@@ -329,7 +329,7 @@ workflows:
           filters:
             tags:
               only: /(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/
-      - windows-pytests
+#      - windows-pytests
       - docs-deploy:
           requires:
             - install

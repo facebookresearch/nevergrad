@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -83,7 +83,7 @@ class Selector(pd.DataFrame):  # type: ignore
 
     @classmethod
     def read_csv(cls, path: tp.PathLike) -> "Selector":
-        return cls(pd.read_csv(str(path)))
+        return cls(pd.read_csv(str(path), on_bad_lines="skip"))
 
     def assert_equivalent(self, other: pd.DataFrame, err_msg: str = "") -> None:
         """Asserts that two selectors are equal, up to row and column permutations

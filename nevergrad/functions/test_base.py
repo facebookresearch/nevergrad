@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -91,7 +91,7 @@ class _Callable:
 
 
 def test_callable_parametrization() -> None:
-    ifunc = base.ExperimentFunction(lambda x: x ** 2, ng.p.Scalar(2).set_mutation(2).set_name(""))  # type: ignore
+    ifunc = base.ExperimentFunction(lambda x: x**2, ng.p.Scalar(2).set_mutation(2).set_name(""))  # type: ignore
     np.testing.assert_equal(ifunc.descriptors["name"], "<lambda>")
     ifunc = base.ExperimentFunction(_Callable(), ng.p.Scalar(2).set_mutation(sigma=2).set_name(""))
     np.testing.assert_equal(ifunc.descriptors["name"], "_Callable")

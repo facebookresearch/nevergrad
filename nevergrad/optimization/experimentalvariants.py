@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -55,6 +55,12 @@ MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2).set_name
     "MetaModelFmin2", register=True
 )
 MetaModelFmin2.no_parallelization = True
+LSCMA = ParametrizedCMA(high_speed=False).set_name("LSCMA", register=True)
+HSCMA = ParametrizedCMA(high_speed=True).set_name("HSCMA", register=True)
+HSNeuralCMA = ParametrizedCMA(high_speed=True, algorithm="neural").set_name("HSNeuralCMA", register=True)
+HSSVMCMA = ParametrizedCMA(high_speed=True, algorithm="svm").set_name("HSSVMCMA", register=True)
+HSRFCMA = ParametrizedCMA(high_speed=True, algorithm="rf").set_name("HSRFCMA", register=True)
+HSMetaModel = ParametrizedMetaModel(multivariate_optimizer=HSCMA).set_name("HSMetaModel", register=True)
 
 # OnePlusOne
 FastGADiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="fastga").set_name(
@@ -336,6 +342,21 @@ SparseDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete", sparse=Tr
     "SparseDiscreteOnePlusOne", register=True
 )
 
+# Smooth variants of evolutionary algorithms.
+SmoothDiscreteOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="discrete").set_name(
+    "SmoothDiscreteOnePlusOne", register=True
+)
+SmoothPortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="portfolio").set_name(
+    "SmoothPortfolioDiscreteOnePlusOne", register=True
+)
+SmoothDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="lengler").set_name(
+    "SmoothDiscreteLenglerOnePlusOne", register=True
+)
+
+SmoothAdaptiveDiscreteOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="adaptive").set_name(
+    "SmoothAdaptiveDiscreteOnePlusOne", register=True
+)
+
 # Specifically for RL.
 MixDeterministicRL = ConfPortfolio(optimizers=[DiagonalCMA, PSO, GeneticDE]).set_name(
     "MixDeterministicRL", register=True
@@ -348,3 +369,7 @@ NoisyRL2 = Chaining(
 NoisyRL3 = Chaining([MixDeterministicRL, OptimisticNoisyOnePlusOne], ["half"]).set_name(
     "NoisyRL3", register=True
 )
+
+# High-Speed variants
+HSDE = DifferentialEvolution(high_speed=True).set_name("HSDE", register=True)
+LhsHSDE = DifferentialEvolution(initialization="LHS", high_speed=True).set_name("LhsHSDE", register=True)

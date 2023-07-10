@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -13,6 +13,7 @@ from nevergrad.optimization import base as obase
 from nevergrad.optimization.optimizerlib import ConfSplitOptimizer
 from nevergrad.optimization.optimizerlib import registry as optimizerlib_registry
 from nevergrad.optimization.optimizerlib import ParametrizedOnePlusOne
+from nevergrad.optimization.optimizerlib import NonObjectOptimizer
 
 Optim = tp.Union[obase.ConfiguredOptimizer, str]
 registry: Registry[tp.Callable[[], tp.Iterable[Optim]]] = Registry()
@@ -44,9 +45,6 @@ def get_optimizers(*names: str, seed: tp.Optional[int] = None) -> tp.List[Optim]
 @registry.register
 def large() -> tp.Sequence[Optim]:
     return [
-        "NGO",
-        "Shiwa",
-        "DiagonalCMA",
         "CMA",
         "PSO",
         "DE",
@@ -123,6 +121,30 @@ def progressive() -> tp.Sequence[Optim]:
 
 
 @registry.register
+def anisotropic_progressive() -> tp.Sequence[Optim]:
+    optims: tp.List[Optim] = []
+    for num_optims in [None, 3, 5, 9, 13]:
+        for str_optim in [
+            "CMA",
+            "ECMA",
+            "DE",
+            "TwoPointsDE",
+            "PSO",
+            "NoisyRL2",
+            "NoisyRL3",
+            "NoisyRL1",
+            "MixDeterministicRL",
+        ]:
+            optim = optimizerlib_registry[str_optim]
+            name = "Prog" + str_optim + ("Auto" if num_optims is None else str(num_optims))
+            opt = ConfSplitOptimizer(
+                multivariate_optimizer=optim, num_optims=num_optims, progressive=True
+            ).set_name(name)
+            optims.append(opt)
+    return optims
+
+
+@registry.register
 def basics() -> tp.Sequence[Optim]:
     return ["NGOpt10", "CMandAS2", "CMA", "DE", "MetaModel"]
 
@@ -152,7 +174,10 @@ def competence_map() -> tp.Sequence[Optim]:
 @registry.register
 def competitive() -> tp.Sequence[Optim]:
     return get_optimizers("cma", "competence_map") + [
-        "MetaNGOpt10",
+        #        "MetaNGOpt10",
+        "NGOpt",
+        "NGOptRW",
+        "GeneticDE",
         "NaiveTBPSA",
         "PSO",
         "DE",
@@ -166,6 +191,25 @@ def competitive() -> tp.Sequence[Optim]:
 @registry.register
 def all_bo() -> tp.Sequence[Optim]:
     return sorted(x for x in ng.optimizers.registry if "BO" in x)
+
+
+@registry.register
+def all_nlopts() -> tp.Sequence[Optim]:
+    list_nlopt_options = [
+        "LN_SBPLX",
+        "LN_PRAXIS",
+        "GN_DIRECT",
+        "GN_DIRECT_L",
+        "GN_CRS2_LM",
+        "GN_AGS",
+        "GN_ISRES",
+        "GN_ESCH",
+        "LN_COBYLA",
+        "LN_BOBYQA",
+        "LN_NEWUOA_BOUND",
+        "LN_NELDERMEAD",
+    ]
+    return [NonObjectOptimizer(method="NLOPT_" + x).set_name("NLOPT_" + x) for x in list_nlopt_options]
 
 
 @registry.register
@@ -187,6 +231,7 @@ def structure() -> tp.Sequence[Optim]:
 def small_discrete() -> tp.Sequence[Optim]:
     return [
         "DiscreteOnePlusOne",
+        "RLSOnePlusOne",
         "Shiwa",
         "CMA",
         "PSO",

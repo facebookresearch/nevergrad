@@ -2,6 +2,42 @@
 
 ## main
 
+## v0.8.0 (2023-07-03)
+- Add the Dagstuhloid benchmark
+- Add yet another group of metamodels
+
+## v0.7.0 (2023-06-16)
+- Fix links
+- Add metamodels
+- Update for weighted multiobjective optimization with differential evolution
+
+## v0.6.0 (2022-02-22)
+
+### Breaking changes
+
+- Removed `descriptor` field of parameters which had been deprecated in previous versions. Use `function` field instead to specify if the function 
+  is deterministic or not [#X](https://github.com/facebookresearch/nevergrad/pull/X).
+
+### Important changes
+
+- `TransitionChoice` behavior has been changed to use bins instead of a full float representation. This may lead to slight
+  changes during optimizations. It can also be set as unordered for use with discrete 1+1 optimizers (experimental)
+- Adding NGOptRW, presumably better than NGOpt for real-world problems.
+- Making some dependencies optional because running was becoming too complicated.
+- Adding the NLOPT library.
+- Adding smoothness operators for discrete optimization.
+
+### Other changes
+- Adding YAPBBOB, with a parameter regulating YABBOB-like problems so that the distribution of the optimum is less rotationally invariant.
+- Adding constrained counterparts of YABBOB: yapenbbob (a few constraints), yaonepenbbob (single constraint), yamegapenbbob (many constraints).
+- Improvements in the photonics benchmarks.
+- Externalizing CompilerGym.
+- Making some tests less flaky.
+- Adding Simulated annealing and Tabu search.
+- Making the code more robust to Gym environments.
+
+## 0.5.0 (2022-03-08)
+
 ### Breaking changes
 
 - `copy()` method of a `Parameter` does not change the parameters's random state anymore (it used to reset it to `None` [#1048](https://github.com/facebookresearch/nevergrad/pull/1048)
@@ -70,6 +106,11 @@
   [#1197](https://github.com/facebookresearch/nevergrad/pull/1197).
 - An interface with [BayesOptim](https://github.com/wangronin/Bayesian-Optimization) optimizers has been added
   [#1179](https://github.com/facebookresearch/nevergrad/pull/1179).
+- Fix for abnormally slow iterations for large budgets using CMA in a portfolio
+  [#1350](https://github.com/facebookresearch/nevergrad/pull/1350).
+- A new `enable_pickling` option was added to optimizers. This is only necessary for some of them (among which `scipy`-based optimizer), and comes at the cost of additional memory usage
+  [#1356](https://github.com/facebookresearch/nevergrad/pull/1356)
+  [#1358](https://github.com/facebookresearch/nevergrad/pull/1358).
 
 ## 0.4.3 (2021-01-28)
 

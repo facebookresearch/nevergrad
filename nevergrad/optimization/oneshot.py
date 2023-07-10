@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -73,14 +73,14 @@ def avg_of_k_best(archive: utils.Archive[utils.MultiValue], method: str = "dimfo
     if method == "dimfourth":
         k = min(len(archive) // 4, dimension)  # fteytaud heuristic.
     elif method == "exp":
-        k = max(1, int(len(archive) // (1.1 ** dimension)))
+        k = max(1, int(len(archive) // (1.1**dimension)))
     elif method == "hull":
         k = convex_limit(
             np.concatenate(
                 sorted(items, key=lambda indiv: archive[indiv[0]].get_estimation("pessimistic")), axis=0
             )
         )
-        k = min(len(archive) // 4, min(k, int(len(archive) / (1.1 ** dimension))))
+        k = min(len(archive) // 4, min(k, int(len(archive) / (1.1**dimension))))
         # We might investigate the possibility to return the middle of the convex hull instead of averaging:
         # return hull_center(np.concatenate(sorted(items, key=lambda indiv: archive[indiv[0]].get_estimation("pessimistic")), axis=0), k)
     else:
@@ -175,7 +175,7 @@ class _RandomSearch(OneShotOptimizer):
             point = self.parametrization.sample().get_standardized_data(reference=self.parametrization)
         else:
             raise ValueError("Unkwnown sampler {self.sampler}")
-        self._opposable_data = scale * point
+        self._opposable_data = scale * point  # type: ignore
         return self._opposable_data  # type: ignore
 
     def _internal_provide_recommendation(self) -> tp.Optional[tp.ArrayLike]:

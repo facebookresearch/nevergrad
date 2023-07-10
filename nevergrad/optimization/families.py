@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -11,7 +11,11 @@ This module and its available classes are experimental and may change quickly in
 from .optimizerlib import ParametrizedOnePlusOne
 from .optimizerlib import ParametrizedTBPSA
 from .optimizerlib import ParametrizedMetaModel
-from .optimizerlib import ParametrizedBO
+
+try:
+    from .optimizerlib import ParametrizedBO
+except ImportError:
+    pass  # bayes_opt not available
 from .optimizerlib import ParametrizedCMA
 from .optimizerlib import EMNA
 from .optimizerlib import Chaining
