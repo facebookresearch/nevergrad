@@ -38,8 +38,22 @@ do
 echo "\\subsubsection{`echo $u | sed 's/_plots.$//g'`}" | sed 's/_/ /g'| sed 's/aquacrop/(RW) &/g' | sed 's/rocket/(RW)&/g' | sed 's/fishing/(RW)&/g' | sed 's/MLDA/(RW)&/g' | sed 's/keras/(RW)&/g' | sed 's/mltuning/(RW)&/g' | sed 's/powersystems/(RW)&/g' | sed 's/mixsimulator/(RW)&/g' | sed 's/olympus/(RW)&/g' | sed 's/double.o.seven/(RW)&/g'
 cat scripts/txt/`echo $u | sed 's/_plots/.txt/g'`
 echo '\begin{enumerate}' ; cat $u/fig*.txt | grep -v pngranking | sed 's/[_=]/ /g' | sed 's/  algo.[0-9]*:/\\item/g' ; echo '\item[] ~\ ~' ; echo '\end{enumerate}'
+convert ${u}/fight_all_pure.png -trim +repage  ${u}/fight_all_pure.png.pdf
+convert ${u}/xpresults_all.png -trim +repage  ${u}/xpresults_all.png.pdf
 ls ${u}/*all_pure.png ${u}/xpresults_all.png | sed 's/.*/\\includegraphics[width=.8\\textwidth]{{&}}\\\\/g' 
 done
+) > dagstuhloid.tex
+(
+echo "\\section{Statistics over all benchmarks}"
+echo "We point out that NGOpt and variants are wizards (automatic algorithm selectors and combinators) created by the same authors as Nevergrad, and their (good) results might therefore be biased: we do not cheat, but we recognize that common authorship for benchmarks and algorithms imply a bias."
+for n in 1 2 3
+do
+echo "\\subsection{Number of times each algorithm was ranked among the $n first}"
+echo "\\begin{itemize}"
+grep -A$n begin.enumerate dagstuhloid.tex | grep '(' | grep ')' | grep '^\\item' | sed 's/ (.*//g' | sed 's/^.item //g' | sort | uniq -c | sort -n -r | head -n 4 | sed 's/^/\\item/g'
+echo "\\end{itemize}"
+done ) >> dagstuhloid.tex
+(
 echo '\section{Conclusion}'
 cat scripts/tex/conclusion.tex
 echo '\appendix'
@@ -54,7 +68,7 @@ echo "\\subsubsection*{$v}" | sed 's/[_=]/ /g' | sed 's/\.tex//g'
 ls `ls $v | sed 's/\.tex/\.pdf/g'` | sed 's/.*/\\includegraphics[width=.8\\textwidth]{{&}}\\\\/g' 
 done
 done
-cat scripts/tex/end.tex ) > dagstuhloid.tex
+cat scripts/tex/end.tex ) >> dagstuhloid.tex
 sed -i 's/\\subsubsection{yabbob}/\\subsection{Artificial noise-free single objective}&/g' dagstuhloid.tex
 sed -i 's/\\subsubsection{yamegapenbbob}/\\subsection{Constrained BBOB variants}&/g' dagstuhloid.tex
 sed -i 's/\\subsubsection{(RW)keras tuning}/\\subsection{Real world machine learning tuning}&/g' dagstuhloid.tex
@@ -63,8 +77,21 @@ sed -i 's/\\subsubsection{(RW) aquacrop fao}/\\subsection{Real world, other than
 sed -i 's/.*control.*//g' dagstuhloid.tex
 sed -i 's/\\subsubsection{multiobjective example hd}/\\subsection{Multiobjective problemes}&/g' dagstuhloid.tex
 sed -i 's/\\subsubsection{spsa benchmark}/\\subsection{Noisy optimization}&/g' dagstuhloid.tex
+
 cp scripts/tex/biblio.bib .
 pdflatex dagstuhloid.tex
 bibtex dagstuhloid.aux
 pdflatex dagstuhloid.tex
 pdflatex dagstuhloid.tex
+
+(
+echo '<html>'
+echo '<body>'
+ls *.csv | sed 's/.*/<a href="&">&<\/a>/g'
+echo '</body>'
+echo '</html>'
+) >  dagstuhloid.html
+
+
+
+tar -zcvf texdag.tgz dagstuhloid.tex biblio.bib *plots/*all_pure.png *plots/xpresults_all.png ms_bbob_plots/fight_tran*.png *_plots/*.pdf dagstuhloid.html
