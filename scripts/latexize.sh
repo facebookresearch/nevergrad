@@ -40,7 +40,7 @@ cat scripts/txt/`echo $u | sed 's/_plots/.txt/g'`
 echo '\begin{enumerate}' ; cat $u/fig*.txt | grep -v pngranking | sed 's/[_=]/ /g' | sed 's/  algo.[0-9]*:/\\item/g' ; echo '\item[] ~\ ~' ; echo '\end{enumerate}'
 convert ${u}/fight_all_pure.png -trim +repage  ${u}/fight_all_pure.png.pdf
 convert ${u}/xpresults_all.png -trim +repage  ${u}/xpresults_all.png.pdf
-ls ${u}/*all_pure.png.pdf ${u}/xpresults_all.png.pdf | sed 's/.*/\\includegraphics[width=.8\\textwidth]{{&}}\\\\/g' 
+ls ${u}/*all_pure.png ${u}/xpresults_all.png | sed 's/.*/\\includegraphics[width=.8\\textwidth]{{&}}\\\\/g' 
 done
 echo '\section{Conclusion}'
 cat scripts/tex/conclusion.tex
@@ -70,4 +70,4 @@ pdflatex dagstuhloid.tex
 bibtex dagstuhloid.aux
 pdflatex dagstuhloid.tex
 pdflatex dagstuhloid.tex
-tar -zcvf texdag.tgz dagstuhloid.tex biblio.bib *plots/*all_pure.png *plots/xpresults_all.png
+tar -zcvf texdag.tgz dagstuhloid.tex biblio.bib *plots/*all_pure.png *plots/xpresults_all.png ms_bbob_plots/fight_tran*.png *_plots/*.pdf
