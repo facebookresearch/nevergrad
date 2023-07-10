@@ -83,4 +83,15 @@ pdflatex dagstuhloid.tex
 bibtex dagstuhloid.aux
 pdflatex dagstuhloid.tex
 pdflatex dagstuhloid.tex
-tar -zcvf texdag.tgz dagstuhloid.tex biblio.bib *plots/*all_pure.png *plots/xpresults_all.png ms_bbob_plots/fight_tran*.png *_plots/*.pdf
+
+(
+echo '<html>'
+echo '<body>'
+ls *.csv | sed 's/.*/<a href="&">&<\/a>/g'
+echo '</body>'
+echo '</html>'
+) >  dagstuhloid.html
+
+
+
+tar -zcvf texdag.tgz dagstuhloid.tex biblio.bib *plots/*all_pure.png *plots/xpresults_all.png ms_bbob_plots/fight_tran*.png *_plots/*.pdf dagstuhloid.html
