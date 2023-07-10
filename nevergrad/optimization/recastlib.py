@@ -49,6 +49,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
             "Lamcts",
             "Nelder-Mead",
             "COBYLA",
+            "BOBYQA",
             "SLSQP",
             "Powell",
         ], f"Unknown method '{method}'"
@@ -76,17 +77,17 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
         # pylint:disable=unused-argument
         budget = np.inf if weakself.budget is None else weakself.budget
         best_res = np.inf
-        best_x: np.ndarray = self.current_bests["average"].x
-        if self.initial_guess is not None:
+        best_x: np.ndarray = weakself.current_bests["average"].x
+        if weakself.initial_guess is not None:
             best_x = np.array(weakself.initial_guess, copy=True)  # copy, just to make sure it is not modified
-        remaining = budget - self._num_ask
+        remaining = budget - weakself._num_ask
         def ax_obj(p):
-            data = [p["x" + str(i)] for i in range(self.dimension)]
-            data = self._normalizer.backward(np.asarray(data, dtype=np.float))
+            data = [p["x" + str(i)] for i in range(weakself.dimension)]
+            data = weakself._normalizer.backward(np.asarray(data, dtype=np.float))
             return objective_function(data)
         while remaining > 0:  # try to restart if budget is not elapsed
             print(f"Iteration with remaining={remaining}")
-            options: tp.Dict[str, tp.Any] = {} if self.budget is None else {"maxiter": remaining}
+            options: tp.Dict[str, tp.Any] = {} if weakself.budget is None else {"maxiter": remaining}
             if weakself.method == "BOBYQA":
                 res = pybobyqa.solve(objective_function, best_x, maxfun=budget, do_logging=False)
                 if res.f < best_res:
@@ -121,7 +122,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 fed = "/tmp/smac_fed" + the_date + ".txt"
                 def dummy_function():
                     for u in range(remaining):
-                        print(f"side thread waiting for request... ({u}/{self.budget})")
+                        print(f"side thread waiting for request... ({u}/{weakself.budget})")
                         while (not Path(feed).is_file()) or os.stat(feed).st_size == 0:
                             time.sleep(0.1)
                         time.sleep(0.1)
@@ -139,12 +140,12 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 thread.start()
 
 
-                print(f"start SMAC2 optimization with budget {budget} in dimension {self.dimension}")
+                print(f"start SMAC2 optimization with budget {budget} in dimension {weakself.dimension}")
                 cs = ConfigurationSpace()
                 cs.add_hyperparameters(
                     [
                         UniformFloatHyperparameter(f"x{i}", 0.0, 1.0, default_value=0.0)
-                        for i in range(self.dimension)
+                        for i in range(weakself.dimension)
                     ]
                 )
                 scenario = Scenario(
@@ -171,7 +172,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                     f.close()
                     print(f"SMAC2 will receive {res}")
                     return res
-                smac = SMAC4HPO(scenario=scenario, rng=self._rng.randint(5000), tae_runner=smac2_obj)
+                smac = SMAC4HPO(scenario=scenario, rng=weakself._rng.randint(5000), tae_runner=smac2_obj)
                 res = smac.optimize()
                 best_x = [res[f"x{k}"] for k in range(len(res.keys()))]
                 best_x = weakself._normalizer.backward(np.asarray(best_x, dtype=np.float))
@@ -193,7 +194,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 fed = "/tmp/smac_fed" + the_date + ".txt"
                 def dummy_function():
                     for u in range(remaining):
-                        print(f"side thread waiting for request... ({u}/{self.budget})")
+                        print(f"side thread waiting for request... ({u}/{weakself.budget})")
                         while (not Path(feed).is_file()) or os.stat(feed).st_size == 0:
                             time.sleep(0.1)
                         time.sleep(0.1)
@@ -345,6 +346,11 @@ SQP = NonObjectOptimizer(method="SLSQP").set_name("SQP", register=True)
 SLSQP = SQP  # Just so that people who are familiar with SLSQP naming are not lost.
 RSQP = NonObjectOptimizer(method="SLSQP", random_restart=True).set_name("RSQP", register=True)
 RSLSQP = RSQP  # Just so that people who are familiar with SLSQP naming are not lost.
+AX = NonObjectOptimizer(method="AX").set_name("AX", register=True)
+BOBYQA = NonObjectOptimizer(method="BOBYQA").set_name("BOBYQA", register=True)
+SMAC = NonObjectOptimizer(method="SMAC").set_name("SMAC", register=True)
+SMAC2 = NonObjectOptimizer(method="SMAC2").set_name("SMAC2", register=True)
+
 
 
 class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
@@ -678,8 +684,8 @@ class _LamctsMinimizeBase(recaster.SequentialRecastOptimizer):
         # pylint:disable=unused-argument
         budget = np.inf if self.budget is None else self.budget
         best_res = np.inf
-        best_x: np.ndarray = weakself.current_bests["average"].x  # np.zeros(self.dimension)
-        if weakself.initial_guess is not None:
+        best_x: np.ndarray = self.current_bests["average"].x  # np.zeros(self.dimension)
+        if self.initial_guess is not None:
             best_x = np.array(self.initial_guess, copy=True)  # copy, just to make sure it is not modified
         remaining = budget - self._num_ask
         while remaining > 0:  # try to restart if budget is not elapsed

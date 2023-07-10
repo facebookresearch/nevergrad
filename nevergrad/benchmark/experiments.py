@@ -85,6 +85,12 @@ def keras_tuning(
 
     # First, a few functions with constraints.
     optims: tp.List[str] = ["PSO", "OnePlusOne"] + get_optimizers("basics", seed=next(seedg))  # type: ignore
+    optims = ["DE", "Lamcts", "BO", "AX", "HyperOpt", "CMA"]
+    optims = ["DE", "Lamcts", "AX", "HyperOpt", "CMA", "RandomSearch", "SMAC", "SMAC2", "BO"]
+    optims = ["AX", "BO", "Lamcts"]
+    optims = ["AX", "BO", "Lamcts", "SMAC", "SMAC2", "NGOptRW", "NGOpt"]
+    np.random.shuffle(optims)
+    optims = optims[:1]
     datasets = ["kerasBoston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
     for dimension in [None]:
         for dataset in datasets:
@@ -115,6 +121,13 @@ def mltuning(
     optims: tp.List[str] = get_optimizers("basics", seed=next(seedg))  # type: ignore
     if not seq:
         optims = get_optimizers("oneshot", seed=next(seedg))  # type: ignore
+    optims = ["DE", "Lamcts", "AX", "HyperOpt", "CMA"]
+    optims = ["DE", "Lamcts", "AX", "HyperOpt", "CMA", "RandomSearch"]
+    optims = ["DE", "Lamcts", "AX", "HyperOpt", "CMA", "RandomSearch", "SMAC", "SMAC2", "BO"]
+    optims = ["AX", "BO", "Lamcts"]
+    optims = ["AX", "BO", "Lamcts", "SMAC", "SMAC2", "NGOptRW", "NGOpt"]
+    np.random.shuffle(optims)
+    optims = optims[:1]
     for dimension in [None, 1, 2, 3]:
         if dimension is None:
             datasets = ["boston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
@@ -672,6 +685,11 @@ def yabbob(
         optims = ["BO", "PCABO", "BayesOptimBO", "CMA", "PSO", "DE"]
     if box:
         optims = ["DiagonalCMA", "Cobyla", "NGOpt16", "NGOpt15", "CMandAS2", "OnePlusOne"]
+    optims = ["DE", "Lamcts", "AX", "HyperOpt", "CMA", "RandomSearch"]
+    optims = ["DE", "Lamcts", "AX", "HyperOpt", "CMA", "RandomSearch", "SMAC", "SMAC2", "BO"]
+    optims = ["AX", "BO", "Lamcts", "SMAC", "SMAC2", "NGOptRW"]
+    np.random.shuffle(optims)
+    optims = optims[:1]
     # List of objective functions.
     functions = [
         ArtificialFunction(

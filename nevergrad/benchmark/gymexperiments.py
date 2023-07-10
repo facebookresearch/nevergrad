@@ -73,6 +73,7 @@ def ng_full_gym(
            do we restrict to conformant planning, i.e. deterministic controls.
     """
     env_names = nevergrad_gym.GymMulti.get_env_names()
+    #env_names = [e for e in env_names if ("Hotter" in e or "Guessing" in e or "NChain" in e)]
     assert int(ng_gym) + int(gp) <= 1, "At most one specific list of environments."
     if ng_gym:
         env_names = nevergrad_gym.GymMulti.ng_gym
@@ -118,24 +119,24 @@ def ng_full_gym(
     optims += ["Lamcts", "Zero"]
     optims = ["RotatedTwoPointsDE", "QORandomSearch", "SQP"]
     optims = ["NGOpt38", "MixDeterministicRL", "SpecialRL", "NGOpt21", "NGOpt22"]
-    optims = ["MixDeterministicRL", "SpecialRL", "SMAC", "Lamcts", "Zero", "RotatedTwoPointsDE", "DE", "GeneticDE", "MetaTuneRecentering", "PSO", "SMAC2", "AX", "BO", "Cobyla", "BOBYQA", "CMA", "DiagonalCMA", "OnePlusOne", "MetaModel"]
-    optims2 = [
+    optims = ["MixDeterministicRL", "SpecialRL", "SMAC", "Lamcts", "Zero", "RotatedTwoPointsDE", "DE", "GeneticDE", "MetaTuneRecentering", "PSO", "SMAC2", "AX", "BO", "Cobyla", "CMA", "DiagonalCMA", "OnePlusOne", "MetaModel", "NoisyRL1", "NoisyRL2", "NoisyRL3"]
+    optims = ["MixDeterministicRL", "SpecialRL", "Zero", "RotatedTwoPointsDE", "DE", "GeneticDE", "MetaTuneRecentering", "PSO", "Cobyla", "CMA", "DiagonalCMA", "OnePlusOne", "MetaModel", "NoisyRL1", "NoisyRL2", "NoisyRL3"]
+    optims = ["Lamcts"]
+    optims = ["Zero", "SDiagonalCMA", "MultiScaleCMA", "QORandomSearch", "MetaRecentering"]
+    optims = ["AX"]
+    #optims = ["MixDeterministicRL", "SpecialRL", "SMAC", "Lamcts", "Zero", "RotatedTwoPointsDE", "DE", "GeneticDE", "MetaTuneRecentering", "PSO", "SMAC2", "AX", "BO", "Cobyla", "CMA", "DiagonalCMA", "OnePlusOne", "MetaModel", "HyperOpt"]#, "NoisyRL1", "NoisyRL2", "NoisyRL3"]
+    optims2unused = [
         "CMA",
         "DiagonalCMA",
-        "OnePlusOne",
+        "GeneticDE",
+        "NoisyRL1",
+        "NoisyRL2",
+        "NoisyRL3",
+        "MixDeterministicRL",
+        "SpecialRL",
         "PSO",
-        "DiscreteOnePlusOne",
-        "DE",
-        "CMandAS2",
-        "NelderMead",
-        "DoubleFastGADiscreteOnePlusOne",
-        "DiscreteLenglerOnePlusOne",
-        "AnisotropicAdaptiveDiscreteOnePlusOne",
-        "TBPSA",
-        "SPSA",
-        "SQP",
-        "MetaModel",
     ]
+    #optims = ["Cobyla"]
     if multi:
         controls = ["multi_neural"]
     else:
@@ -167,6 +168,7 @@ def ng_full_gym(
     if conformant:
         controls = ["stochastic_conformant"]
     budgets = [50, 200, 800, 3200, 100, 25, 400, 1600]
+    budgets = [800]
     #budgets = [1600, 3200]
     #budgets = [25, 50, 100, 200, 400, 800]
     #budgets = [1600, 3200, 6400]
@@ -176,7 +178,7 @@ def ng_full_gym(
         neural_factors: tp.Any = (
             [None]
             if (conformant or control == "linear")
-            else ([1] if "memory" in control else ([3] if big else [1, 2, 3]))
+            else ([1] if "memory" in control else ([3] if big else [1]))
         )
         for neural_factor in neural_factors:
             for name in env_names:
@@ -350,7 +352,8 @@ def gym_problem(
         "NGOpt39",
         "CMA",
         "DE",
-    ]
+    ] + ["AnisotropicAdaptiveDiscreteOnePlusOne", "DiscreteBSOOnePlusOne", "AdaptiveDiscreteOnePlusOne",
+    "DiscreteOnePlusOne", "RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne", "OptimisticDiscreteOnePlusOne"]
     if "stochastic" in specific_problem:
         optims = ["DiagonalCMA", "TBPSA"] if big_noise else ["DiagonalCMA"]
     if specific_problem == "EnergySavingsGym-v0" and conformant:  # Do this for all conformant discrete ?

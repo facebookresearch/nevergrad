@@ -445,7 +445,7 @@ class XpPlotter:
                 if ov["loss"].size:
                     ov["loss"] = np.maximum(1e-30, ov["loss"])
         # other setups
-        self._ax.autoscale(enable=False)
+        #self._ax.autoscale(enable=False)
         self._ax.set_xscale("log")
         self._ax.set_xlabel(xaxis)
         self._ax.set_ylabel("loss")
@@ -463,19 +463,22 @@ class XpPlotter:
             # confidence lines
             for conf in self._get_confidence_arrays(vals, log=logplot):
                 plt.plot(vals[xaxis], conf, name_style[optim_name], label=optim_name, alpha=0.1)
-            text = "{} ({:.3g} <{:.3g}>)".format(optim_name, vals["loss"][-1], vals["loss"][-2])
+            try:
+               text = "{} ({:.3g} <{:.3g}>)".format(optim_name, vals["loss"][-1], vals["loss"][-2])
+            except:
+               text = "{}".format(optim_name)
             if vals[xaxis].size:
                 legend_infos.append(LegendInfo(vals[xaxis][-1], vals["loss"][-1], line, text))
         if not (np.isnan(upperbound) or np.isinf(upperbound)):
             upperbound_up = upperbound
             if not (np.isnan(lowerbound) or np.isinf(lowerbound)):
-                self._ax.set_ylim(bottom=lowerbound)
+                #self._ax.set_ylim(bottom=lowerbound)
                 upperbound_up += 0.02 * (upperbound - lowerbound)
                 if logplot:
                     upperbound_up = 10 ** (
                         np.log10(upperbound) + 0.02 * (np.log10(upperbound) - np.log10(lowerbound))
                     )
-            self._ax.set_ylim(top=upperbound_up)
+            #self._ax.set_ylim(top=upperbound_up)
         all_x = [v for vals in optim_vals.values() for v in vals[xaxis]]
         self._ax.set_xlim([min(all_x), max(all_x)])
         self.add_legends(legend_infos)
@@ -483,7 +486,7 @@ class XpPlotter:
         if "tmp" not in title:
             self._ax.set_title(split_long_title(title))
         self._ax.tick_params(axis="both", which="both")
-        # self._fig.tight_layout()
+        self._fig.tight_layout()
 
     @staticmethod
     def _get_confidence_arrays(
@@ -728,7 +731,7 @@ class FightPlotter:
 
     def save(self, *args: tp.Any, **kwargs: tp.Any) -> None:
         """Shortcut to the figure savefig method"""
-        self._fig.savefig(*args, **kwargs)
+        self._fig.savefig(*args, **kwargs, bbox_inches="tight")
 
     def __del__(self) -> None:
         plt.close(self._fig)

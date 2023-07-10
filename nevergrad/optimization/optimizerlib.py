@@ -37,10 +37,13 @@ from .recastlib import *  # noqa: F403
 
 try:
     from .externalbo import HyperOpt  # pylint: disable=unused-import
-except ModuleNotFoundError:
+    #HyperOpt = ParametrizedHyperOpt().set_name("HyperOpt", register=True)
+except: # ModuleNotFoundError:
     pass
 
+#from .externalbo import ParametrizedHyperOpt
 Lamcts = LamctsOptimizer(random_restart=True, device='cpu').set_name("Lamcts", register=True)
+Lamcts2 = LamctsOptimizer(random_restart=True, device='cpu').set_name("Lamcts2", register=True)
 
 # run with LOGLEVEL=DEBUG for more debug information
 #logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
@@ -537,16 +540,20 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         elitist: bool = False,
         popsize: tp.Optional[int] = None,
         diagonal: bool = False,
+        zero: bool = False,
         fcmaes: bool = False,
         random_init: bool = False,
         inopts: tp.Optional[tp.Dict[str, tp.Any]] = None,
     ) -> None:
         super().__init__(_CMA, locals(), as_config=True)
+        if zero:
+            scale = scale / 1000.
         if fcmaes:
             if diagonal:
                 raise RuntimeError("fcmaes doesn't support diagonal=True, use fcmaes=False")
         self.scale = scale
         self.elitist = elitist
+        self.zero = zero
         self.popsize = popsize
         self.diagonal = diagonal
         self.fcmaes = fcmaes
@@ -556,6 +563,7 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
 
 CMA = ParametrizedCMA().set_name("CMA", register=True)
 DiagonalCMA = ParametrizedCMA(diagonal=True).set_name("DiagonalCMA", register=True)
+SDiagonalCMA = ParametrizedCMA(diagonal=True, zero=True).set_name("SDiagonalCMA", register=True)
 FCMA = ParametrizedCMA(fcmaes=True).set_name("FCMA", register=True)
 
 
