@@ -392,7 +392,7 @@ def create_plots(
                     f.write("ranking:\n")
                     global pure_algorithms
                     pure_algorithms = list(data_df.columns[:])
-                    for i, algo in enumerate(data_df.columns[:58]):
+                    for i, algo in enumerate(data_df.columns[:158]):
                         f.write(f"  algo {i}: {algo}\n")
             if name == "fight_all.png":
                 fplotter.save(str(output_folder / "fight_all_pure.png"), dpi=_DPI)

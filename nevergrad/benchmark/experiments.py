@@ -118,6 +118,7 @@ def keras_tuning(
     ]
     optims = ["NGOpt", "NGOptRW", "QODE"]
     optims = ["NGOpt"]
+    optims = ["PCABO", "NGOpt", "QODE"]
     datasets = ["kerasBoston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
     for dimension in [None]:
         for dataset in datasets:
@@ -178,6 +179,8 @@ def mltuning(
     ]
     optims = ["NGOpt", "NGOptRW", "QODE"]
     optims = ["NGOpt"]
+    optims = ["PCABO"]
+    optims = ["PCABO", "NGOpt", "QODE"]
     for dimension in [None, 1, 2, 3]:
         if dimension is None:
             datasets = ["boston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
@@ -987,6 +990,8 @@ def yabbob(
         ]
     else:
         optims = ["MetaModelPSO", "RFMetaModelPSO", "SVMMetaModelPSO"]
+    optims = ["PCABO"]
+    optims = ["PCABO", "NGOpt", "QODE"]
     functions = [
         ArtificialFunction(
             name,
@@ -1336,6 +1341,46 @@ def yaboundedbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 def yaboxbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with bounded domain, (-5,5)**n by default."""
     return yabbob(seed, box=True)
+
+
+@registry.register
+def ms_bbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Testing optimizers on exponentiated problems.
+    Cigar, Ellipsoid.
+    Both rotated and unrotated.
+    Budget 100, 1000, 10000.
+    Dimension 50.
+    """
+    import random
+
+    seedg = create_seed_generator(seed)
+    optims = [
+        "TinyCMA",
+        "QODE",
+        "MetaModelOnePlusOne",
+        "LhsDE",
+        "TinyLhsDE",
+        "TinyQODE",
+        "ChainMetaModelSQP",
+        "MicroCMA",
+        "MultiScaleCMA",
+    ]
+    optims = ["QODE"]
+    optims = ["CMA", "LargeCMA", "OldCMA", "DE", "PSO", "Powell", "Cobyla", "SQP"]
+    dims = [2, 3, 5, 10, 20]
+    functions = [
+        ArtificialFunction(name, block_dimension=d, rotation=rotation, expo=expo, translation_factor=tf)
+        for name in ["cigar", "sphere", "rastrigin"]
+        for rotation in [True]
+        for expo in [1.0, 5.0]
+        for tf in [0.01, 0.1, 1.0, 10.0]
+        for d in dims
+    ]
+    for optim in optims:
+        for function in functions:
+            for budget in [100, 200, 400, 800, 1600, 3200]:
+                for nw in [1]:
+                    yield Experiment(function, optim, budget=budget, num_workers=nw, seed=next(seedg))
 
 
 @registry.register
@@ -1720,6 +1765,8 @@ def aquacrop_fao(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", seed=next(seedg))
     optims = ["BFGS", "LBFGSB", "MemeticDE"]
+    optims = ["PCABO"]
+    optims = ["PCABO", "NGOpt", "QODE"]
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
         for num_workers in [1, 30]:
             if num_workers < budget:
@@ -1737,6 +1784,9 @@ def fishing(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", seed=next(seedg))
     optims += ["NGOpt", "NGOptRW", "ChainMetaModelSQP"]
+    optims = ["NGOpt"]
+    optims = ["PCABO"]
+    optims = ["PCABO", "NGOpt", "QODE"]
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
         for algo in optims:
             for fu in funcs:
@@ -1758,6 +1808,9 @@ def rocket(seed: tp.Optional[int] = None, seq: bool = False) -> tp.Iterator[Expe
     optims = ["CMA", "PSO", "QODE", "QRDE", "MetaModelPSO"]
     if seq:
         optims += ["BFGS", "LBFGSB", "MemeticDE"]
+    optims = ["NGOpt"]
+    optims = ["PCABO"]
+    optims = ["PCABO", "NGOpt", "QODE"]
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
         for num_workers in [1] if seq else [1, 30]:
             if num_workers < budget:
@@ -1914,6 +1967,7 @@ def topology_optimization(seed: tp.Optional[int] = None) -> tp.Iterator[Experime
     seedg = create_seed_generator(seed)
     funcs = [TO(i) for i in [10, 20, 30, 40]]
     optims = ["CMA", "GeneticDE", "TwoPointsDE", "VoronoiDE", "DE", "PSO", "RandomSearch", "OnePlusOne"]
+    optims = ["NGOpt"]
     for budget in [10, 20, 40, 80, 160, 320, 640, 1280, 2560, 5120, 10240, 20480, 40960]:
         for optim in optims:
             for f in funcs:
@@ -1926,6 +1980,7 @@ def sequential_topology_optimization(seed: tp.Optional[int] = None) -> tp.Iterat
     seedg = create_seed_generator(seed)
     funcs = [TO(i) for i in [10, 20, 30, 40]]
     optims = ["CMA", "GeneticDE", "TwoPointsDE", "VoronoiDE", "DE", "PSO", "RandomSearch", "OnePlusOne"]
+    optims = ["NGOpt"]
     for budget in [10, 20, 40, 80, 160, 320, 640, 1280, 2560, 5120, 10240, 20480, 40960]:
         for optim in optims:
             for f in funcs:
@@ -2493,6 +2548,8 @@ def photonics(
         "LBFGSB",
     ]
     optims = ["QrDE", "QODE", "RFMetaModelDE"]
+    optims = ["PCABO"]
+    optims = ["PCABO", "NGOpt", "QODE"]
     for method in ["clipping", "tanh"]:  # , "arctan"]:
         for name in (
             ["bragg"]
