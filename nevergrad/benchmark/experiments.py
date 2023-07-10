@@ -1362,7 +1362,6 @@ def ms_bbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     ]
     optims = ["QODE"]
     optims = ["CMA", "LargeCMA", "OldCMA", "DE", "PSO", "Powell", "Cobyla", "SQP"]
-    optims = list(random.sample(optims, 4))
     dims = [2, 3, 5, 10, 20]
     functions = [
         ArtificialFunction(name, block_dimension=d, rotation=rotation, expo=expo, translation_factor=tf)
