@@ -118,7 +118,7 @@ def keras_tuning(
     ]
     optims = ["NGOpt", "NGOptRW", "QODE"]
     optims = ["NGOpt"]
-    optims = ["PCABO"]
+    optims = ["PCABO", "NGOpt", "QODE"]
     datasets = ["kerasBoston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
     for dimension in [None]:
         for dataset in datasets:
@@ -180,6 +180,7 @@ def mltuning(
     optims = ["NGOpt", "NGOptRW", "QODE"]
     optims = ["NGOpt"]
     optims = ["PCABO"]
+    optims = ["PCABO", "NGOpt", "QODE"]
     for dimension in [None, 1, 2, 3]:
         if dimension is None:
             datasets = ["boston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
@@ -990,6 +991,7 @@ def yabbob(
     else:
         optims = ["MetaModelPSO", "RFMetaModelPSO", "SVMMetaModelPSO"]
     optims = ["PCABO"]
+    optims = ["PCABO", "NGOpt", "QODE"]
     functions = [
         ArtificialFunction(
             name,
@@ -1764,6 +1766,7 @@ def aquacrop_fao(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     optims = get_optimizers("basics", seed=next(seedg))
     optims = ["BFGS", "LBFGSB", "MemeticDE"]
     optims = ["PCABO"]
+    optims = ["PCABO", "NGOpt", "QODE"]
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
         for num_workers in [1, 30]:
             if num_workers < budget:
@@ -1783,6 +1786,7 @@ def fishing(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     optims += ["NGOpt", "NGOptRW", "ChainMetaModelSQP"]
     optims = ["NGOpt"]
     optims = ["PCABO"]
+    optims = ["PCABO", "NGOpt", "QODE"]
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
         for algo in optims:
             for fu in funcs:
@@ -1806,6 +1810,7 @@ def rocket(seed: tp.Optional[int] = None, seq: bool = False) -> tp.Iterator[Expe
         optims += ["BFGS", "LBFGSB", "MemeticDE"]
     optims = ["NGOpt"]
     optims = ["PCABO"]
+    optims = ["PCABO", "NGOpt", "QODE"]
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
         for num_workers in [1] if seq else [1, 30]:
             if num_workers < budget:
@@ -2544,6 +2549,7 @@ def photonics(
     ]
     optims = ["QrDE", "QODE", "RFMetaModelDE"]
     optims = ["PCABO"]
+    optims = ["PCABO", "NGOpt", "QODE"]
     for method in ["clipping", "tanh"]:  # , "arctan"]:
         for name in (
             ["bragg"]
