@@ -125,6 +125,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.mltuning"><code class="docutils literal notranslate"><span class="pre">mltuning()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.mono_rocket"><code class="docutils literal notranslate"><span class="pre">mono_rocket()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.morphing_pgan_quality"><code class="docutils literal notranslate"><span class="pre">morphing_pgan_quality()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.ms_bbob"><code class="docutils literal notranslate"><span class="pre">ms_bbob()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.multimodal"><code class="docutils literal notranslate"><span class="pre">multimodal()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.multiobjective_example"><code class="docutils literal notranslate"><span class="pre">multiobjective_example()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#nevergrad.benchmark.experiments.multiobjective_example_hd"><code class="docutils literal notranslate"><span class="pre">multiobjective_example_hd()</span></code></a></li>
@@ -718,6 +719,16 @@ Sequential or 30 workers.</p>
 <dt class="sig sig-object py" id="nevergrad.benchmark.experiments.morphing_pgan_quality">
 <span class="sig-prename descclassname"><span class="pre">nevergrad.benchmark.experiments.</span></span><span class="sig-name descname"><span class="pre">morphing_pgan_quality</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterator</span><span class="p"><span class="pre">[</span></span><span class="pre">Experiment</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#nevergrad.benchmark.experiments.morphing_pgan_quality" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="nevergrad.benchmark.experiments.ms_bbob">
+<span class="sig-prename descclassname"><span class="pre">nevergrad.benchmark.experiments.</span></span><span class="sig-name descname"><span class="pre">ms_bbob</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterator</span><span class="p"><span class="pre">[</span></span><span class="pre">Experiment</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#nevergrad.benchmark.experiments.ms_bbob" title="Permalink to this definition"></a></dt>
+<dd><p>Testing optimizers on exponentiated problems.
+Cigar, Ellipsoid.
+Both rotated and unrotated.
+Budget 100, 1000, 10000.
+Dimension 50.</p>
+</dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="nevergrad.benchmark.experiments.multimodal">
