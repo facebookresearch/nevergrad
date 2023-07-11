@@ -1141,11 +1141,19 @@ class _PSO(base.Optimizer):
         self._uid_queue = base.utils.UidQueue()
         self.population: tp.Dict[str, p.Parameter] = {}
         self._best = self.parametrization.spawn_child()
+        self.previous_candidate: tp.Optional[tp.Any] = None
 
     def _internal_ask_candidate(self) -> p.Parameter:
         # population is increased only if queue is empty (otherwise tell_not_asked does not work well at the beginning)
         if len(self.population) < self.llambda:
             candidate = self.parametrization.sample()
+            if self._config.qo:
+                if self.previous_candidate is not None:
+                    data = self.previous_candidate.get_standardized_data(reference=self.parametrization)
+                    candidate.set_standardized_data(-data, reference=self.parametrization)
+                    self.previous_candidate = None
+                else:
+                    self.previous_candidate = candidate
             self.population[candidate.uid] = candidate
             dim = self.parametrization.dimension
             candidate.heritage["speed"] = (
@@ -1234,6 +1242,8 @@ class ConfPSO(base.ConfiguredOptimizer):
         particle swarm optimization parameter
     phig: float
         particle swarm optimization parameter
+    qo: bool
+        whether we use quasi-opposite initialization
 
     Note
     ----
@@ -1254,6 +1264,7 @@ class ConfPSO(base.ConfiguredOptimizer):
         omega: float = 0.5 / math.log(2.0),
         phip: float = 0.5 + math.log(2.0),
         phig: float = 0.5 + math.log(2.0),
+        qo: bool = False,
     ) -> None:
         super().__init__(_PSO, locals(), as_config=True)
         assert transform in ["arctan", "gaussian", "identity"]
@@ -1262,11 +1273,14 @@ class ConfPSO(base.ConfiguredOptimizer):
         self.omega = omega
         self.phip = phip
         self.phig = phig
+        self.qo = qo
 
 
 ConfiguredPSO = ConfPSO  # backward compatibility (to be removed)
 RealSpacePSO = ConfPSO().set_name("RealSpacePSO", register=True)
 PSO = ConfPSO(transform="arctan").set_name("PSO", register=True)
+QOPSO = ConfPSO(transform="arctan", qo=True).set_name("QOPSO", register=True)
+QORealSpacePSO = ConfPSO(qo=True).set_name("QORealSpacePSO", register=True)
 
 
 @registry.register

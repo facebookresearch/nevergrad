@@ -119,6 +119,7 @@ def keras_tuning(
     optims = ["NGOpt", "NGOptRW", "QODE"]
     optims = ["NGOpt"]
     optims = ["PCABO", "NGOpt", "QODE"]
+    optims = ["QOPSO"] #, "QORealSpacePSO", "RealSpacePSO"]
     datasets = ["kerasBoston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
     for dimension in [None]:
         for dataset in datasets:
@@ -181,6 +182,7 @@ def mltuning(
     optims = ["NGOpt"]
     optims = ["PCABO"]
     optims = ["PCABO", "NGOpt", "QODE"]
+    optims = ["QOPSO"] #, "QORealSpacePSO", "RealSpacePSO"]
     for dimension in [None, 1, 2, 3]:
         if dimension is None:
             datasets = ["boston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
@@ -992,6 +994,7 @@ def yabbob(
         optims = ["MetaModelPSO", "RFMetaModelPSO", "SVMMetaModelPSO"]
     optims = ["PCABO"]
     optims = ["PCABO", "NGOpt", "QODE"]
+    optims = ["QOPSO"] #, "QORealSpacePSO", "RealSpacePSO"]
     functions = [
         ArtificialFunction(
             name,
@@ -1767,6 +1770,7 @@ def aquacrop_fao(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     optims = ["BFGS", "LBFGSB", "MemeticDE"]
     optims = ["PCABO"]
     optims = ["PCABO", "NGOpt", "QODE"]
+    optims = ["QOPSO"] #, "QORealSpacePSO", "RealSpacePSO"]
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
         for num_workers in [1, 30]:
             if num_workers < budget:
@@ -1787,6 +1791,7 @@ def fishing(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     optims = ["NGOpt"]
     optims = ["PCABO"]
     optims = ["PCABO", "NGOpt", "QODE"]
+    optims = ["QOPSO"] #, "QORealSpacePSO", "RealSpacePSO"]
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
         for algo in optims:
             for fu in funcs:
@@ -1811,6 +1816,7 @@ def rocket(seed: tp.Optional[int] = None, seq: bool = False) -> tp.Iterator[Expe
     optims = ["NGOpt"]
     optims = ["PCABO"]
     optims = ["PCABO", "NGOpt", "QODE"]
+    optims = ["QOPSO"] #, "QORealSpacePSO", "RealSpacePSO"]
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
         for num_workers in [1] if seq else [1, 30]:
             if num_workers < budget:
@@ -2550,6 +2556,9 @@ def photonics(
     optims = ["QrDE", "QODE", "RFMetaModelDE"]
     optims = ["PCABO"]
     optims = ["PCABO", "NGOpt", "QODE"]
+    optims = ["QOPSO"] #, "QORealSpacePSO", "RealSpacePSO"]
+    optims = ["MicroCMA", "MiniCMA", "QODE", "TinyDE", "MicroDE", "NGOpt"]
+    optims = list(random.sample(optims, 2))
     for method in ["clipping", "tanh"]:  # , "arctan"]:
         for name in (
             ["bragg"]
