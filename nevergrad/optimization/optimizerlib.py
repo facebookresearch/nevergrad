@@ -1147,12 +1147,16 @@ class _PSO(base.Optimizer):
     def _internal_ask_candidate(self) -> p.Parameter:
         # population is increased only if queue is empty (otherwise tell_not_asked does not work well at the beginning)
         if len(self.population) < self.llambda:
-            r = self._rng.rand() if self._config.sqo else 1.
+            r = (
+                np.exp(-5.0 * self._rng.rand())
+                if self._config.so
+                else (self._rng.rand() if self._config.sqo else 1.0)
+            )
             candidate = self.parametrization.sample()
             if self._config.qo:
                 if self.previous_candidate is not None:
                     data = self.previous_candidate.get_standardized_data(reference=self.parametrization)
-                    candidate.set_standardized_data(- r * data, reference=self.parametrization)
+                    candidate.set_standardized_data(-r * data, reference=self.parametrization)
                     self.previous_candidate = None
                 else:
                     self.previous_candidate = candidate
@@ -1164,7 +1168,7 @@ class _PSO(base.Optimizer):
             if self._config.sqo:
                 assert self._config.qo, "SQO only when QO!"
                 if self.previous_speed is not None:
-                    candidate.heritage["speed"] = - r * self.previous_speed
+                    candidate.heritage["speed"] = -r * self.previous_speed
                     self.previous_speed = None
                 else:
                     self.previous_speed = candidate.heritage["speed"]
@@ -1256,6 +1260,8 @@ class ConfPSO(base.ConfiguredOptimizer):
         whether we use quasi-opposite initialization
     sqo: bool
         whether we use quasi-opposite initialization for speed
+    so: bool
+        whether we use the special quasi-opposite initialization for speed
 
     Note
     ----
@@ -1278,6 +1284,7 @@ class ConfPSO(base.ConfiguredOptimizer):
         phig: float = 0.5 + math.log(2.0),
         qo: bool = False,
         sqo: bool = False,
+        so: bool = False,
     ) -> None:
         super().__init__(_PSO, locals(), as_config=True)
         assert transform in ["arctan", "gaussian", "identity"]
@@ -1288,6 +1295,7 @@ class ConfPSO(base.ConfiguredOptimizer):
         self.phig = phig
         self.qo = qo
         self.sqo = sqo
+        self.so = so
 
 
 ConfiguredPSO = ConfPSO  # backward compatibility (to be removed)
@@ -1296,6 +1304,7 @@ PSO = ConfPSO(transform="arctan").set_name("PSO", register=True)
 QOPSO = ConfPSO(transform="arctan", qo=True).set_name("QOPSO", register=True)
 QORealSpacePSO = ConfPSO(qo=True).set_name("QORealSpacePSO", register=True)
 SQOPSO = ConfPSO(transform="arctan", qo=True, sqo=True).set_name("SQOPSO", register=True)
+SOPSO = ConfPSO(transform="arctan", qo=True, sqo=True, so=True).set_name("SOPSO", register=True)
 SQORealSpacePSO = ConfPSO(qo=True, sqo=True).set_name("SQORealSpacePSO", register=True)
 
 

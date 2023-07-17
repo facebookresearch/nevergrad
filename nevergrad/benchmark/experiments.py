@@ -47,14 +47,34 @@ from . import gymexperiments  # noqa
 
 # pylint: disable=stop-iteration-return, too-many-nested-blocks, too-many-locals
 
+
 def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
-    #return ["MetaRecentering"]  # if you want to run only this algorithm
-    #return random.sample(x, 2)
-    #return x
-    #return ["CMandAS2", "Shiwa"]
-    #return ["RandomSearch", "NaiveTBPSA"]
-    #return ["SQOPSO", "QODE"]
-    return ["QNDE", "MetaModelQODE"]
+    # return ["NLOPT_LN_BOBYQA"]
+    return [
+        "NLOPT_LN_SBPLX",
+        "NLOPT_LN_PRAXIS",
+        "NLOPT_GN_DIRECT",
+        "NLOPT_GN_DIRECT_L",
+        "NLOPT_GN_CRS2_LM",
+        "NLOPT_GN_AGS",
+        "NLOPT_GN_ISRES",
+        "NLOPT_GN_ESCH",
+        "NLOPT_LN_COBYLA",
+        "NLOPT_LN_BOBYQA",
+        "NLOPT_LN_NEWUOA_BOUND",
+        "NLOPT_LN_NELDERMEAD",
+    ]
+    return ["LBFGSB"]  # return ["PymooBIPOP"]
+    # return ["SQPCMA"]
+    # return ["MetaRecentering"]  # if you want to run only this algorithm
+    # return random.sample(x, 1)
+    # return x
+    # return ["CMandAS2", "Shiwa"]
+    # return ["RandomSearch", "NaiveTBPSA"]
+    # return ["SQOPSO", "QODE"]
+    # return ["QNDE", "MetaModelQODE"]
+    # return ["SOPSO"]
+    # return ["QORandomSearch"]
 
 
 def skip_ci(*, reason: str) -> None:
@@ -129,9 +149,9 @@ def keras_tuning(
     optims = ["NGOpt", "NGOptRW", "QODE"]
     optims = ["NGOpt"]
     optims = ["PCABO", "NGOpt", "QODE"]
-    optims = ["QOPSO"] #, "QORealSpacePSO", "RealSpacePSO"]
-    optims = ["SQOPSO"] #, "QORealSpacePSO", "RealSpacePSO"]
-    optims = ["SQOPSO"] #, "QORealSpacePSO", "RealSpacePSO"]
+    optims = ["QOPSO"]  # , "QORealSpacePSO", "RealSpacePSO"]
+    optims = ["SQOPSO"]  # , "QORealSpacePSO", "RealSpacePSO"]
+    optims = ["SQOPSO"]  # , "QORealSpacePSO", "RealSpacePSO"]
     optims = refactor_optims(optims)
     datasets = ["kerasBoston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
     optims = refactor_optims(optims)
@@ -196,8 +216,8 @@ def mltuning(
     optims = ["NGOpt"]
     optims = ["PCABO"]
     optims = ["PCABO", "NGOpt", "QODE"]
-    optims = ["QOPSO"] #, "QORealSpacePSO", "RealSpacePSO"]
-    optims = ["SQOPSO"] #, "QORealSpacePSO", "RealSpacePSO"]
+    optims = ["QOPSO"]  # , "QORealSpacePSO", "RealSpacePSO"]
+    optims = ["SQOPSO"]  # , "QORealSpacePSO", "RealSpacePSO"]
     optims = refactor_optims(optims)
     for dimension in [None, 1, 2, 3]:
         if dimension is None:
@@ -1026,9 +1046,9 @@ def yabbob(
         optims = ["MetaModelPSO", "RFMetaModelPSO", "SVMMetaModelPSO"]
     optims = ["PCABO"]
     optims = ["PCABO", "NGOpt", "QODE"]
-    optims = ["QOPSO"] #, "QORealSpacePSO", "RealSpacePSO"]
+    optims = ["QOPSO"]  # , "QORealSpacePSO", "RealSpacePSO"]
     optims = ["NGOpt"]
-    optims = ["SQOPSO"] #, "QORealSpacePSO", "RealSpacePSO"]
+    optims = ["SQOPSO"]  # , "QORealSpacePSO", "RealSpacePSO"]
     functions = [
         ArtificialFunction(
             name,
@@ -1405,7 +1425,7 @@ def ms_bbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     optims = ["QODE"]
     optims = ["CMA", "LargeCMA", "OldCMA", "DE", "PSO", "Powell", "Cobyla", "SQP"]
     optims = ["QOPSO", "QORealSpacePSO"]
-    optims = ["SQOPSO"] #, "QORealSpacePSO", "RealSpacePSO"]
+    optims = ["SQOPSO"]  # , "QORealSpacePSO", "RealSpacePSO"]
     dims = [2, 3, 5, 10, 20]
     functions = [
         ArtificialFunction(name, block_dimension=d, rotation=rotation, expo=expo, translation_factor=tf)
@@ -1415,6 +1435,51 @@ def ms_bbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         for tf in [0.01, 0.1, 1.0, 10.0]
         for d in dims
     ]
+    optims = refactor_optims(optims)
+    for optim in optims:
+        for function in functions:
+            for budget in [100, 200, 400, 800, 1600, 3200]:
+                for nw in [1]:
+                    yield Experiment(function, optim, budget=budget, num_workers=nw, seed=next(seedg))
+
+
+@registry.register
+def zp_ms_bbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Testing optimizers on exponentiated problems.
+    Cigar, Ellipsoid.
+    Both rotated and unrotated.
+    Budget 100, 1000, 10000.
+    Dimension 50.
+    """
+
+    seedg = create_seed_generator(seed)
+    optims = [
+        "TinyCMA",
+        "QODE",
+        "MetaModelOnePlusOne",
+        "LhsDE",
+        "TinyLhsDE",
+        "TinyQODE",
+        "ChainMetaModelSQP",
+        "MicroCMA",
+        "MultiScaleCMA",
+    ]
+    optims = ["QODE"]
+    optims = ["CMA", "LargeCMA", "OldCMA", "DE", "PSO", "Powell", "Cobyla", "SQP"]
+    optims = ["QOPSO", "QORealSpacePSO"]
+    optims = ["SQOPSO"]  # , "QORealSpacePSO", "RealSpacePSO"]
+    dims = [2, 3, 5, 10, 20]
+    functions = [
+        ArtificialFunction(
+            name, block_dimension=d, rotation=rotation, expo=expo, translation_factor=tf, zero_pen=True
+        )
+        for name in ["cigar", "sphere", "rastrigin"]
+        for rotation in [True]
+        for expo in [1.0, 5.0]
+        for tf in [0.01, 0.1, 1.0, 10.0]
+        for d in dims
+    ]
+    optims = ["QODE", "PSO", "SQOPSO", "DE", "CMA"]
     optims = refactor_optims(optims)
     for optim in optims:
         for function in functions:
@@ -1461,7 +1526,7 @@ def pbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     optims = ["QrDE", "QODE", "LhsDE", "NGOpt", "NGOptRW"]
     optims = ["TinyCMA", "QODE", "MetaModelOnePlusOne", "LhsDE", "TinyLhsDE", "TinyQODE"]
     optims = ["QOPSO", "QORealSpacePSO"]
-    optims = ["SQOPSO"] #, "QORealSpacePSO", "RealSpacePSO"]
+    optims = ["SQOPSO"]  # , "QORealSpacePSO", "RealSpacePSO"]
     dims = [40, 20]
     functions = [
         ArtificialFunction(name, block_dimension=d, rotation=rotation, expo=expo)
@@ -1470,6 +1535,62 @@ def pbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         for expo in [1.0, 3.0, 5.0, 7.0, 9.0]
         for d in dims
     ]
+    optims = refactor_optims(optims)
+    for optim in optims:
+        for function in functions:
+            for budget in [100, 200, 300, 400, 500, 600, 700, 800]:
+                for nw in [1, 10, 50]:
+                    yield Experiment(function, optim, budget=budget, num_workers=nw, seed=next(seedg))
+
+
+@registry.register
+def zp_pbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Testing optimizers on exponentiated problems.
+    Cigar, Ellipsoid.
+    Both rotated and unrotated.
+    Budget 100, 1000, 10000.
+    Dimension 50.
+    """
+    seedg = create_seed_generator(seed)
+    optims = [
+        "OldCMA",
+        "CMAbounded",
+        "CMAsmall",
+        "CMAstd",
+        "CMApara",
+        "CMAtuning",
+        "DiagonalCMA",
+        "FCMA",
+        "RescaledCMA",
+        "ASCMADEthird",
+        "MultiCMA",
+        "TripleCMA",
+        "PolyCMA",
+        "MultiScaleCMA",
+        "DE",
+        "OnePointDE",
+        "GeneticDE",
+        "TwoPointsDE",
+        "PSO",
+        "NGOptRW",
+        "NGOpt",
+    ]
+    optims = ["ChainMetaModelSQP", "MetaModelOnePlusOne", "MetaModelDE"]
+    optims = ["LargeCMA", "TinyCMA", "OldCMA", "MicroCMA"]
+    optims = ["BFGS", "LBFGSB", "MemeticDE"]
+    optims = ["QrDE", "QODE", "LhsDE", "NGOpt", "NGOptRW"]
+    optims = ["TinyCMA", "QODE", "MetaModelOnePlusOne", "LhsDE", "TinyLhsDE", "TinyQODE"]
+    optims = ["QOPSO", "QORealSpacePSO"]
+    optims = ["SQOPSO"]  # , "QORealSpacePSO", "RealSpacePSO"]
+    dims = [40, 20]
+    functions = [
+        ArtificialFunction(name, block_dimension=d, rotation=rotation, expo=expo, zero_pen=True)
+        for name in ["cigar", "sphere", "rastrigin", "hm", "deceptivemultimodal"]
+        for rotation in [True]
+        for expo in [1.0, 3.0, 5.0, 7.0, 9.0]
+        for d in dims
+    ]
+    optims = ["QODE", "PSO", "SQOPSO", "DE", "CMA"]
     optims = refactor_optims(optims)
     for optim in optims:
         for function in functions:
@@ -1656,7 +1777,9 @@ def parahdbo4d(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """
     seedg = create_seed_generator(seed)
     for budget in [25, 31, 37, 43, 50, 60]:
-        for optim in refactor_optims(sorted(x for x, y in ng.optimizers.registry.items() if "BO" in x and "Tune" in x)):
+        for optim in refactor_optims(
+            sorted(x for x, y in ng.optimizers.registry.items() if "BO" in x and "Tune" in x)
+        ):
             for rotation in [False]:
                 for d in [20, 2000]:
                     for name in ["sphere", "cigar", "hm", "ellipsoid"]:
@@ -1686,7 +1809,9 @@ def alldes(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """
     seedg = create_seed_generator(seed)
     for budget in [10, 100, 1000, 10000, 100000]:
-        for optim in refactor_optims(sorted(x for x, y in ng.optimizers.registry.items() if "DE" in x or "Shiwa" in x)):
+        for optim in refactor_optims(
+            sorted(x for x, y in ng.optimizers.registry.items() if "DE" in x or "Shiwa" in x)
+        ):
             for rotation in [False]:
                 for d in [5, 20, 100]:
                     for name in ["sphere", "cigar", "hm", "ellipsoid"]:
@@ -1820,9 +1945,9 @@ def aquacrop_fao(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     optims = ["BFGS", "LBFGSB", "MemeticDE"]
     optims = ["PCABO"]
     optims = ["PCABO", "NGOpt", "QODE"]
-    optims = ["QOPSO"] #, "QORealSpacePSO", "RealSpacePSO"]
+    optims = ["QOPSO"]  # , "QORealSpacePSO", "RealSpacePSO"]
     optims = ["NGOpt"]
-    optims = ["SQOPSO"] #, "QORealSpacePSO", "RealSpacePSO"]
+    optims = ["SQOPSO"]  # , "QORealSpacePSO", "RealSpacePSO"]
     optims = refactor_optims(optims)
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
         for num_workers in [1, 30]:
@@ -1844,8 +1969,8 @@ def fishing(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     optims = ["NGOpt"]
     optims = ["PCABO"]
     optims = ["PCABO", "NGOpt", "QODE"]
-    optims = ["QOPSO"] #, "QORealSpacePSO", "RealSpacePSO"]
-    optims = ["SQOPSO"] #, "QORealSpacePSO", "RealSpacePSO"]
+    optims = ["QOPSO"]  # , "QORealSpacePSO", "RealSpacePSO"]
+    optims = ["SQOPSO"]  # , "QORealSpacePSO", "RealSpacePSO"]
     optims = refactor_optims(optims)
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
         for algo in optims:
@@ -1871,8 +1996,19 @@ def rocket(seed: tp.Optional[int] = None, seq: bool = False) -> tp.Iterator[Expe
     optims = ["NGOpt"]
     optims = ["PCABO"]
     optims = ["PCABO", "NGOpt", "QODE"]
-    optims = ["QOPSO"] #, "QORealSpacePSO", "RealSpacePSO"]
-    optims = ["SQOPSO"] #, "QORealSpacePSO", "RealSpacePSO"]
+    optims = ["QOPSO"]  # , "QORealSpacePSO", "RealSpacePSO"]
+    optims = ["SQOPSO"]  # , "QORealSpacePSO", "RealSpacePSO"]
+    optims = [
+        "NGOpt",
+        "QOPSO",
+        "SOPSO",
+        "QODE",
+        "SODE",
+        "CMA",
+        "DiagonalCMA",
+        "MetaModelOnePlusOne",
+        "MetaModelDE",
+    ]
     optims = refactor_optims(optims)
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
         for num_workers in [1] if seq else [1, 30]:
@@ -2126,8 +2262,8 @@ def powersystems(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     for dams in [3, 5, 9, 13]:
         funcs += [PowerSystem(dams, depth=2, width=3)]
     seedg = create_seed_generator(seed)
-    optims = get_optimizers("basics", "noisy", "splitters", "progressive", seed=next(seedg))
     budgets = [3200, 6400, 12800]
+    optims = get_optimizers("basics", "noisy", "splitters", "progressive", seed=next(seedg))
     optims = refactor_optims(optims)
     for budget in budgets:
         for num_workers in [1, 10, 100]:
@@ -2450,7 +2586,7 @@ def double_o_seven(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         "RecombiningOptimisticNoisyDiscreteOnePlusOne",
         "MetaModelPSO",
     ]
-    optimizers= ["NGOpt", "NGOptRW"]
+    optimizers = ["NGOpt", "NGOptRW"]
     optimizerss = refactor_optims(optimizerss)
     for num_repetitions in [1, 10, 100]:
         for archi in ["mono", "multi"]:
@@ -2611,11 +2747,12 @@ def photonics(
     as_tuple: bool = False,
     small: bool = False,
     ultrasmall: bool = False,
+    verysmall: bool = False,
 ) -> tp.Iterator[Experiment]:
     """Too small for being interesting: Bragg mirror + Chirped + Morpho butterfly."""
     seedg = create_seed_generator(seed)
     divider = 2 if small else 1
-    if ultrasmall:
+    if ultrasmall or verysmall:
         divider = 4
     optims = get_optimizers("es", "basics", "splitters", seed=next(seedg))  # type: ignore
     optims = [
@@ -2636,7 +2773,7 @@ def photonics(
     optims = ["QrDE", "QODE", "RFMetaModelDE"]
     optims = ["PCABO"]
     optims = ["PCABO", "NGOpt", "QODE"]
-    optims = ["QOPSO"] #, "QORealSpacePSO", "RealSpacePSO"]
+    optims = ["QOPSO"]  # , "QORealSpacePSO", "RealSpacePSO"]
     optims = ["MicroCMA", "MiniCMA", "QODE", "TinyDE", "MicroDE", "NGOpt"]
     optims = ["NGOpt"]
     optims = ["SQOPSO"]
@@ -2645,7 +2782,11 @@ def photonics(
         for name in (
             ["bragg"]
             if ultrasmall
-            else ["bragg", "chirped", "morpho", "cf_photosic_realistic", "cf_photosic_reference"]
+            else (
+                ["cf_photosic_reference", "cf_photosic_realistic"]
+                if verysmall
+                else ["bragg", "chirped", "morpho", "cf_photosic_realistic", "cf_photosic_reference"]
+            )
         ):
             func = Photonics(
                 name,
@@ -2676,6 +2817,18 @@ def ultrasmall_photonics(seed: tp.Optional[int] = None) -> tp.Iterator[Experimen
 def ultrasmall_photonics2(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with higher dimensions."""
     return photonics(seed, as_tuple=True, small=True, ultrasmall=True)
+
+
+@registry.register
+def verysmall_photonics(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with higher dimensions."""
+    return photonics(seed, as_tuple=False, small=True, verysmall=True)
+
+
+@registry.register
+def verysmall_photonics2(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of yabbob with higher dimensions."""
+    return photonics(seed, as_tuple=True, small=True, verysmall=True)
 
 
 @registry.register

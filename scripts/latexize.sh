@@ -3,28 +3,28 @@
 allplots=""
 
 # artificial noise-free single objective unconstrained or box-constrained
-allplots="$allplots `ls -d *_plots/ | grep -v 'noisy|spsa' | grep bbob | grep yabbob `"
+allplots="$allplots `ls -d *_plots/ | egrep -v 'noisy|spsa' | grep bbob | grep yabbob `"
 allplots="$allplots `ls -d *_plots/ | egrep 'multimodal|deceptive'`"
-allplots="$allplots `ls -d *_plots/ | grep -v 'noisy|spsa' | grep bbob | grep -v yabbob | grep -v pen`"
+allplots="$allplots `ls -d *_plots/ | egrep -v 'noisy|spsa' | grep bbob | grep -v yabbob | grep -v pen`"
 
 # penalized
-allplots="$allplots `ls -d *_plots/ | grep -v 'noisy|spsa' | grep bbob | grep  pen`"
+allplots="$allplots `ls -d *_plots/ | egrep -v 'noisy|spsa' | grep bbob | grep  pen`"
 
 # tuning
-allplots="$allplots `ls -d *_plots/ | grep -v 'noisy|spsa' | grep -v bbob | egrep -v 'multimodal|deceptive' | grep -v photonics | grep -v topology | grep -v rock | grep tuning  `"
+allplots="$allplots `ls -d *_plots/ | egrep -v 'noisy|spsa' | grep -v bbob | egrep -v 'multimodal|deceptive' | grep -v photonics | grep -v topology | grep -v rock | grep tuning  `"
 
 # discrete
-allplots="$allplots `ls -d *_plots/ | grep -v 'noisy|spsa' | grep -v bbob | egrep -v 'multimodal|deceptive' | grep -v photonics | grep -v topology | grep -v rock | grep -v tuning | egrep 'pbo|discr|bonn'`"
+allplots="$allplots `ls -d *_plots/ | egrep -v 'noisy|spsa' | grep -v bbob | egrep -v 'multimodal|deceptive' | grep -v photonics | grep -v topology | grep -v rock | grep -v tuning | egrep 'pbo|discr|bonn'`"
 
 # rest of RW, besides photonics, topology, rockets
-allplots="$allplots `ls -d *_plots/ | grep -v 'noisy|spsa' | grep -v bbob | egrep -v 'multimodal|deceptive' | grep -v photonics | grep -v topology | grep -v rock | grep -v tuning | egrep -v 'pbo|discr|bonn' | grep -v multiobj | grep -v spsa ` "
+allplots="$allplots `ls -d *_plots/ | egrep -v 'noisy|spsa' | grep -v bbob | egrep -v 'multimodal|deceptive' | grep -v photonics | grep -v topology | grep -v rock | grep -v tuning | egrep -v 'pbo|discr|bonn' | grep -v multiobj | grep -v spsa ` "
 # RW
-allplots="$allplots `ls -d *_plots/ | grep -v 'noisy|spsa' | grep -v bbob | grep photonics `"
-allplots="$allplots `ls -d *_plots/ | grep -v 'noisy|spsa' | grep -v bbob | grep topology`"
-allplots="$allplots `ls -d *_plots/ | grep -v 'noisy|spsa' | grep -v bbob | grep rocket `"
+allplots="$allplots `ls -d *_plots/ | egrep -v 'noisy|spsa' | grep -v bbob | grep photonics `"
+allplots="$allplots `ls -d *_plots/ | egrep -v 'noisy|spsa' | grep -v bbob | grep topology`"
+allplots="$allplots `ls -d *_plots/ | egrep -v 'noisy|spsa' | grep -v bbob | grep rocket `"
 
 # multiobj 
-allplots="$allplots `ls -d *_plots/ | grep -v 'noisy|spsa' | grep -v bbob | grep multiobj`"
+allplots="$allplots `ls -d *_plots/ | egrep -v 'noisy|spsa' | grep -v bbob | grep multiobj`"
 
 # Noisy optimization
 allplots="$allplots `ls -d *_plots/ | egrep -i 'noisy|spsa'`"
@@ -50,7 +50,7 @@ for n in 1 2 3
 do
 echo "\\subsection{Number of times each algorithm was ranked among the $n first}"
 echo "\\begin{itemize}"
-grep -A$n begin.enumerate dagstuhloid.tex | grep '(' | grep ')' | grep '^\\item' | sed 's/ (.*//g' | sed 's/^.item //g' | sort | uniq -c | sort -n -r | head -n 4 | sed 's/^/\\item/g'
+grep -A$n begin.enumerate dagstuhloid.tex | grep '(' | grep ')' | grep '^\\item' | sed 's/ (.*//g' | sed 's/^.item //g' | sort | uniq -c | sort -n -r | head -n 8 | sed 's/^/\\item/g'
 echo "\\end{itemize}"
 done ) >> dagstuhloid.tex
 (
@@ -76,7 +76,7 @@ sed -i 's/\\subsubsection{bonnans}/\\subsection{Discrete optimization}&/g' dagst
 sed -i 's/\\subsubsection{(RW) aquacrop fao}/\\subsection{Real world, other than machine learning}&/g' dagstuhloid.tex
 sed -i 's/.*control.*//g' dagstuhloid.tex
 sed -i 's/\\subsubsection{multiobjective example hd}/\\subsection{Multiobjective problemes}&/g' dagstuhloid.tex
-sed -i 's/\\subsubsection{spsa benchmark}/\\subsection{Noisy optimization}&/g' dagstuhloid.tex
+sed -i 's/\\subsubsection{ranknoisy}/\\subsection{Noisy optimization}&/g' dagstuhloid.tex
 
 cp scripts/tex/biblio.bib .
 pdflatex dagstuhloid.tex
