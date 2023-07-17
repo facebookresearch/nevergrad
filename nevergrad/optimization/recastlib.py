@@ -57,7 +57,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
 
         if method == "CmaFmin2" or "NLOPT" in method or "AX" in method or "BOBYQA" in method or "pysot" in method:
             normalizer = p.helpers.Normalizer(self.parametrization)
-            if normalizer.fully_bounded:
+            if normalizer.fully_bounded or method == "AX" or "pysot" == method:
                 self._normalizer = normalizer
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.Loss) -> None:
