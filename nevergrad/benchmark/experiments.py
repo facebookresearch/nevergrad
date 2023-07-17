@@ -50,6 +50,7 @@ from . import gymexperiments  # noqa
 
 def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
     # return ["NLOPT_LN_BOBYQA"]
+    return ["Lamcts"]
     return [
         "NLOPT_LN_SBPLX",
         "NLOPT_LN_PRAXIS",
@@ -121,6 +122,13 @@ def keras_tuning(
     # Continuous case,
 
     # First, a few functions with constraints.
+    optims: tp.List[str] = ["PSO", "OnePlusOne"] + get_optimizers("basics", seed=next(seedg))  # type: ignore
+    optims = ["DE", "Lamcts", "BO", "AX", "HyperOpt", "CMA"]
+    optims = ["DE", "Lamcts", "AX", "HyperOpt", "CMA", "RandomSearch", "SMAC", "SMAC2", "BO"]
+    optims = ["AX", "BO", "Lamcts"]
+    optims = ["AX", "BO", "Lamcts", "SMAC", "SMAC2", "NGOptRW", "NGOpt"]
+    np.random.shuffle(optims)
+    optims = optims[:1]
     # optims: tp.List[str] = ["PSO", "OnePlusOne"] + get_optimizers("basics", seed=next(seedg))  # type: ignore
     optims = ["OnePlusOne", "BO", "RandomSearch", "CMA", "DE", "TwoPointsDE", "HyperOpt", "PCABO", "Cobyla"]
     optims = [
@@ -153,6 +161,7 @@ def keras_tuning(
     optims = ["SQOPSO"]  # , "QORealSpacePSO", "RealSpacePSO"]
     optims = ["SQOPSO"]  # , "QORealSpacePSO", "RealSpacePSO"]
     optims = refactor_optims(optims)
+    optims = ["Lamcts"]
     datasets = ["kerasBoston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
     optims = refactor_optims(optims)
     for dimension in [None]:
@@ -185,6 +194,16 @@ def mltuning(
 ) -> tp.Iterator[Experiment]:
     """Machine learning hyperparameter tuning experiment. Based on scikit models."""
     seedg = create_seed_generator(seed)
+    optims: tp.List[str] = get_optimizers("basics", seed=next(seedg))  # type: ignore
+    if not seq:
+        optims = get_optimizers("oneshot", seed=next(seedg))  # type: ignore
+    optims = ["DE", "Lamcts", "AX", "HyperOpt", "CMA"]
+    optims = ["DE", "Lamcts", "AX", "HyperOpt", "CMA", "RandomSearch"]
+    optims = ["DE", "Lamcts", "AX", "HyperOpt", "CMA", "RandomSearch", "SMAC", "SMAC2", "BO"]
+    optims = ["AX", "BO", "Lamcts"]
+    optims = ["AX", "BO", "Lamcts", "SMAC", "SMAC2", "NGOptRW", "NGOpt"]
+    np.random.shuffle(optims)
+    optims = optims[:1]
     # optims: tp.List[str] = get_optimizers("basics", seed=next(seedg))  # type: ignore
     # if not seq:
     #    optims = get_optimizers("oneshot", seed=next(seedg))  # type: ignore
@@ -962,7 +981,16 @@ def yabbob(
         optims += get_optimizers("splitters", seed=next(seedg))  # type: ignore
 
     if hd and small:
-        optims += ["BO", "PCABO", "CMA", "PSO", "DE"]
+        optims = ["BO", "CMA", "PSO", "DE"]
+
+    if bounded:
+        optims = ["BO", "PCABO", "BayesOptimBO", "CMA", "PSO", "DE"]
+    if box:
+        optims = ["DiagonalCMA", "Cobyla", "NGOpt16", "NGOpt15", "CMandAS2", "OnePlusOne"]
+    optims = ["DE", "Lamcts", "AX", "HyperOpt", "CMA", "RandomSearch"]
+    optims = ["DE", "Lamcts", "AX", "HyperOpt", "CMA", "RandomSearch", "SMAC", "SMAC2", "BO"]
+    optims = ["AX", "BO", "Lamcts", "SMAC", "SMAC2", "NGOptRW"]
+    np.random.shuffle(optims)
     if small and not hd:
         optims += ["PCABO", "BO", "Cobyla"]
     optims = [
@@ -1017,6 +1045,7 @@ def yabbob(
     optims = ["NGOpt", "NGOptRW"]
     optims = ["QrDE", "QODE", "LhsDE"]
     optims = ["NGOptRW"]
+    optims = ["Lamcts"]
     if noise:
         optims = [
             #        "MicroCMA",
@@ -1049,6 +1078,7 @@ def yabbob(
     optims = ["QOPSO"]  # , "QORealSpacePSO", "RealSpacePSO"]
     optims = ["NGOpt"]
     optims = ["SQOPSO"]  # , "QORealSpacePSO", "RealSpacePSO"]
+    optims = ["Lamcts"]
     functions = [
         ArtificialFunction(
             name,

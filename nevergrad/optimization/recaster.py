@@ -171,6 +171,37 @@ class RecastOptimizer(base.Optimizer):
             " reference to this instance in the returned object"
         )
 
+    def _internal_ask_candidate(self) -> p.Parameter:
+        """Reads messages from the thread in which the underlying optimization function is running
+        New messages are sent as "ask".
+        """
+        if self._messaging_thread is None:
+            self._messaging_thread = MessagingThread(self.get_optimization_function())
+        # wait for a message
+        messages: tp.List[Message] = []
+        t0 = time.time()
+        while not messages and self._messaging_thread.is_alive():
+            messages = [m for m in self._messaging_thread.messages if not m.meta.get("asked", False)]
+            if not messages:  # avoid waiting if messages at the first iteration
+                time.sleep(self._last_optimizer_duration / 10.0)
+            if time.time() - t0 > 250:  # SMAC needs a lot of time.
+                raise RuntimeError("No message with thread for 250s, something went wrong")
+        self._last_optimizer_duration = float(np.clip(time.time() - t0, 0.0001, 1.0))
+        # case when the thread is dead (send random points)
+        if not self._messaging_thread.is_alive():  # In case the algorithm stops before the budget is elapsed.
+            warnings.warn(
+                "Underlying optimizer has already converged, returning random points",
+                base.errors.FinishedUnderlyingOptimizerWarning,
+            )
+            self._check_error()
+            data = self._rng.normal(0, 1, self.dimension)
+            return self.parametrization.spawn_child().set_standardized_data(data)
+        message = messages[0]  # take oldest message
+        message.meta["asked"] = True  # notify that it has been asked so that it is not selected again
+        candidate = self.parametrization.spawn_child().set_standardized_data(message.args[0])
+        message.meta["uid"] = candidate.uid
+        return candidate
+
     def _check_error(self) -> None:
         if self._messaging_thread is not None:
             if self._messaging_thread.error is not None:

@@ -187,6 +187,7 @@ def test_infnan(name: str) -> None:
                 "Fmin2",
                 "NLOPT",
                 "TBPSA",
+                "SMAC",
                 "BO",
                 "Noisy",
                 "Chain",
@@ -285,6 +286,8 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
         raise SkipTest("Not playing nicely with the tests (unseedable)")
     if "BO" in name:
         raise SkipTest("BO differs from one computer to another")
+    if "SMAC" in name:
+        raise SkipTest("SMAC is too slow for the 20s limit")
     if len(name) > 8:
         raise SkipTest("BO differs from one computer to another")
     # set up environment
