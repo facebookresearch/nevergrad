@@ -987,6 +987,7 @@ def yabbob(
         ]
     else:
         optims = ["MetaModelPSO", "RFMetaModelPSO", "SVMMetaModelPSO"]
+    optims = ["GOMEA", "GOMEABlock", "GOMEATree"]
     functions = [
         ArtificialFunction(
             name,
@@ -1720,6 +1721,7 @@ def aquacrop_fao(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", seed=next(seedg))
     optims = ["BFGS", "LBFGSB", "MemeticDE"]
+    optims = ["GOMEA", "GOMEABlock", "GOMEATree"]
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
         for num_workers in [1, 30]:
             if num_workers < budget:
@@ -1758,6 +1760,7 @@ def rocket(seed: tp.Optional[int] = None, seq: bool = False) -> tp.Iterator[Expe
     optims = ["CMA", "PSO", "QODE", "QRDE", "MetaModelPSO"]
     if seq:
         optims += ["BFGS", "LBFGSB", "MemeticDE"]
+    optims = ["GOMEA", "GOMEABlock", "GOMEATree"]
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
         for num_workers in [1] if seq else [1, 30]:
             if num_workers < budget:
@@ -2493,6 +2496,7 @@ def photonics(
         "LBFGSB",
     ]
     optims = ["QrDE", "QODE", "RFMetaModelDE"]
+    optims = ["GOMEA", "GOMEABlock", "GOMEATree"]
     for method in ["clipping", "tanh"]:  # , "arctan"]:
         for name in (
             ["bragg"]
