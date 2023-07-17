@@ -2,8 +2,7 @@ numpy>=1.21.1
 cma>=2.6.0
 bayesian-optimization>=1.2.0
 typing_extensions>=3.6.6
-<<<<<<< HEAD
 Py-BOBYQA>=1.2
-=======
 pandas
->>>>>>> 8e5f8be2352b634acdf044a6f058c9cd85a317e6
+Py-BOBYQA>=1.2
+ax-platform
