@@ -179,7 +179,7 @@ class PowerSystem(ExperimentFunction):
                 self.consumption_noise,
             ]
 
-            x = np.concatenate((base_x, self.thermal_power_capacity, self.thermal_power_prices, stocks))
+            x = np.concatenate((base_x, self.thermal_power_capacity, self.thermal_power_prices, stocks))  # type: ignore
 
             # Prices as a decomposition tool!
             price: np.ndarray = np.asarray([a.get_output(x)[0] for a in dam_agents])

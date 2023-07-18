@@ -22,6 +22,7 @@ DESCRIPTION_KEYS = {
     "elapsed_time",
     "elapsed_budget",
     "loss",
+    "zero_pen",
     "optimizer_name",
     "pseudotime",
     "num_workers",

@@ -390,7 +390,7 @@ def test_differential_evolution_popsize(name: str, dimension: int, num_workers: 
 def test_portfolio_budget() -> None:
     for k in range(3, 13):
         optimizer = optlib.Portfolio(parametrization=2, budget=k)
-        np.testing.assert_equal(optimizer.budget, sum(o.budget for o in optimizer.optims))
+        np.testing.assert_equal(optimizer.budget, sum(o.budget for o in optimizer.optims))  # type: ignore
 
 
 def test_optimizer_families_repr() -> None:
@@ -1086,7 +1086,7 @@ def test_weighted_moo_de() -> None:
         w[index] = 30.0
         DE.set_objective_weights(w)  # type: ignore
         targ = [np.array([np.cos(2 * np.pi * i / N), np.sin(2 * np.pi * i / N)]) for i in range(N)]
-        DE.minimize(lambda x: [np.linalg.norm(x - xi) for xi in targ])
+        DE.minimize(lambda x: [np.linalg.norm(x - xi) for xi in targ])  # type: ignore
         x = np.zeros(N)
         for u in DE.pareto_front():
             x = x + u.losses

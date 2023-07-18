@@ -51,7 +51,7 @@ class ArtificialVariable:
         """
         # use random indices for blocks
         indices = self.random_state.choice(
-            self._dimension, self.block_dimension * self.num_blocks, replace=False
+            self._dimension, self.block_dimension * self.num_blocks, replace=False  # type: ignore
         ).tolist()
         indices.sort()  # keep the indices sorted sorted so that blocks do not overlap
         # Caution this is also important for split, so that splitted arrays end un in the same block

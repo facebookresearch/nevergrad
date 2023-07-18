@@ -48,7 +48,7 @@ from . import gymexperiments  # noqa
 
 
 def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
-    return ["LargeCMA", "OldCMA", "MultiCMA"]
+    # return ["LargeCMA", "OldCMA", "MultiCMA"]
     # return ["NLOPT_LN_BOBYQA"]
     # return ["SQPCMA"]
     return x
@@ -1661,6 +1661,7 @@ def constrained_illconditioned_parallel(seed: tp.Optional[int] = None) -> tp.Ite
     ]
     for func in functions:
         func.parametrization.register_cheap_constraint(_Constraint("sum", as_bool=False))
+    optims = ["DE", "CMA", "NGOpt"]
     optims = refactor_optims(optims)  # type: ignore
     for function in functions:
         for budget in [400, 4000, 40000]:

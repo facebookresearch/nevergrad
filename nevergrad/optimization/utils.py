@@ -267,7 +267,7 @@ class Pruning:
         threshold = float(self.min_len + 1) / len(archive)
         names = ["optimistic", "pessimistic", "average"]
         for name in names:
-            quantiles[name] = np.quantile(
+            quantiles[name] = np.quantile(  # type: ignore
                 [v.get_estimation(name) for v in archive.values()], threshold, interpolation="lower"
             )
         new_archive: Archive[MultiValue] = Archive()
