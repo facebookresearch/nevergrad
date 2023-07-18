@@ -2,6 +2,11 @@
 
 ## main
 
+## v0.9.0 (2023-07-18)
+- Add many quasi-opposite variants
+- Improve the Dagsduhloid benchmark
+- Get rid of legacy pypi solver in CircleCI
+
 ## v0.8.0 (2023-07-03)
 - Add the Dagstuhloid benchmark
 - Add yet another group of metamodels
