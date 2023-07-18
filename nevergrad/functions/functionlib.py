@@ -251,7 +251,7 @@ class ArtificialFunction(ExperimentFunction):
         try:
             val = float(self._aggregator(results))
             if self.zero_pen:
-                val += 1e3 * max(
+                val += 1e3 * max(  # type: ignore
                     self.translation_factor / (1e-7 + self.translation_factor + np.linalg.norm(x.flatten()))
                     - 0.75,
                     0.0,

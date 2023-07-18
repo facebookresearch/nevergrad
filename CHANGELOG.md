@@ -6,6 +6,8 @@
 - Add many quasi-opposite variants
 - Improve the Dagsduhloid benchmark
 - Get rid of legacy pypi solver in CircleCI
+- Update Pypi in CircleCI
+- Switch to Python 3.8
 
 ## v0.8.0 (2023-07-03)
 - Add the Dagstuhloid benchmark
