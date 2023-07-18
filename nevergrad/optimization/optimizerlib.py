@@ -1923,6 +1923,54 @@ RFMetaModelTwoPointsDE = ParametrizedMetaModel(algorithm="rf", multivariate_opti
 
 
 @registry.register
+class MultiBFGS(Portfolio):
+    """Passive portfolio of MetaCMA and many SQP."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        optims: tp.List[base.Optimizer] = []
+        optims += [BFGS(self.parametrization, num_workers=1) for _ in range(num_workers)]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+        self.optims.clear()
+        self.optims.extend(optims)
+
+
+@registry.register
+class MultiCobyla(Portfolio):
+    """Passive portfolio of MetaCMA and many SQP."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        optims: tp.List[base.Optimizer] = []
+        optims += [Cobyla(self.parametrization, num_workers=1) for _ in range(num_workers)]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+        self.optims.clear()
+        self.optims.extend(optims)
+
+
+@registry.register
+class MultiSQP(Portfolio):
+    """Passive portfolio of MetaCMA and many SQP."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        optims: tp.List[base.Optimizer] = []
+        optims += [SQP(self.parametrization, num_workers=1) for _ in range(num_workers)]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+        self.optims.clear()
+        self.optims.extend(optims)
+
+
+@registry.register
 class SQPCMA(Portfolio):
     """Passive portfolio of MetaCMA and many SQP."""
 

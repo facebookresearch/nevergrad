@@ -51,7 +51,9 @@ from . import gymexperiments  # noqa
 def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
     # return ["NLOPT_LN_BOBYQA"]
     # return ["SQPCMA"]
-    return ["HyperOpt"]
+    return ["MultiSQP", "MultiCobyla", "MultiBFGS"]
+    return ["NGOpt"]
+    return ["QODE", "QOPSO", "SQOPSO", "QNDE"]
     return ["MetaTuneRecentering", "MetaRecentering"]
     return [
         "NLOPT_LN_SBPLX",

@@ -46,6 +46,7 @@ done
 (
 echo "\\section{Statistics over all benchmarks}"
 echo "We point out that NGOpt and variants are wizards (automatic algorithm selectors and combinators) created by the same authors as Nevergrad, and their (good) results might therefore be biased: we do not cheat, but we recognize that common authorship for benchmarks and algorithms imply a bias."
+echo 'Of course, statistics here are a risky thing: when two codes are very close to each other, they are both penalized: we must be careful with interpretations.'
 
 echo '\subsection{NGOpt and Base algorithms}'
 echo 'Here base algorithms have no metamodel and no complex combinations. NGOpt is the only sophisticated combination: this is an analysis of NGOpt.'
@@ -57,17 +58,17 @@ egrep -v 'NGOpt[0-9A-Z]|BIPOP|Shiwa|Meta|Micro|Tiny|SQPCMA|CMandAS2|Chain' dagst
 echo "\\end{itemize}"
 done 
 
-echo '\subsection{Wizards and combinations excluded}'
-echo 'All strong methods are wizards, except tools based on quasi-opposite samplings.'
+echo '\subsection{Wizards, multilevels, specific standard deviations, and combinations excluded}'
 for n in 1 2 3
 do
 echo "\\subsubsection{Number of times each algorithm was ranked among the $n first: no wizard, no combination}"
 echo "\\begin{itemize}"
-egrep -v 'NGOpt|Shiwa|CMASQP|BIPOP|CMandAS2|Chain' dagstuhloid.tex  |grep -A$n begin.enumerate  | grep '(' | grep ')' | grep '^\\item' | sed 's/ (.*//g' | sed 's/^.item //g' | sort | uniq -c | sort -n -r | head -n 8 | sed 's/^/\\item/g'
+egrep -v 'NGOpt|BIPOP|Shiwa|Meta|SQPCMA|Micro|Tiny|CMASQP|BIPOP|CMandAS2|Chain' dagstuhloid.tex  |grep -A$n begin.enumerate  | grep '(' | grep ')' | grep '^\\item' | sed 's/ (.*//g' | sed 's/^.item //g' | sort | uniq -c | sort -n -r | head -n 8 | sed 's/^/\\item/g'
 echo "\\end{itemize}"
 done 
 
 echo '\subsection{Everything included}'
+echo 'All strong methods are wizards, except tools based on quasi-opposite samplings.'
 for n in 1 2 3
 do
 echo "\\subsubsection{Number of times each algorithm was ranked among the $n first: everything included}"
