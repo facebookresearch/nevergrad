@@ -35,7 +35,7 @@ def bragg(X: np.ndarray) -> float:
     bar = int(np.size(X) / 2)
     n = np.concatenate(([1], np.sqrt(X[0:bar]), [1.7320508075688772]))
     type_ = np.arange(0, bar + 2)
-    hauteur = np.concatenate(([0], X[bar : 2 * bar], [0]))
+    hauteur = np.concatenate(([0], X[bar : 2 * bar], [0]))  # type: ignore
     tmp = np.tan(2 * np.pi * n[type_] * hauteur / lam)
     # Specific to this substrate.
     Z = n[-1]
@@ -50,8 +50,8 @@ def bragg(X: np.ndarray) -> float:
 def chirped(X: np.ndarray) -> float:
     lam = np.linspace(500, 800, 50)
     n = np.array([1, 1.4142135623730951, 1.7320508075688772])
-    type_ = np.concatenate(([0], np.tile([2, 1], int(np.size(X) / 2)), [2]))
-    hauteur = np.concatenate(([0], X, [0]))
+    type_ = np.concatenate(([0], np.tile([2, 1], int(np.size(X) / 2)), [2]))  # type: ignore
+    hauteur = np.concatenate(([0], X, [0]))  # type: ignore
     r = np.zeros(np.size(lam)) + 0j
     for m in range(0, np.size(lam)):
         # Specific to this substrate.

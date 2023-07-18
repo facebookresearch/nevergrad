@@ -107,7 +107,7 @@ class Mutator:
         while not any(boolean_vector):
             boolean_vector = self.random_state.rand(dimension) < (1.0 / dimension)
         discrete_data = discretization.threshold_discretization(parent, arity=arity)
-        discrete_data = np.where(
+        discrete_data = np.where(  # type: ignore
             boolean_vector,
             discrete_data + self.random_state.choice([-1.0, 1.0], size=dimension) * velocity,
             discrete_data,

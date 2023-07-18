@@ -104,7 +104,7 @@ def _get_nash(optimizer: tp.Any) -> tp.List[tp.Tuple[tp.Tuple[float, ...], int]]
         return [(optimizer.provide_recommendation(), 1)]
     # make deterministic at the price of sort complexity
     return sorted(
-        ((np.frombuffer(k), p.count) for k, p in optimizer.archive.bytesdict.items() if p.count >= threshold),
+        ((np.frombuffer(k), p.count) for k, p in optimizer.archive.bytesdict.items() if p.count >= threshold),  # type: ignore
         key=operator.itemgetter(1),
     )
 

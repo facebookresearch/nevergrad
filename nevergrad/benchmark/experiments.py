@@ -4,7 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 import os
-import random
 import warnings
 import typing as tp
 import itertools
@@ -51,35 +50,38 @@ from . import gymexperiments  # noqa
 def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
     # return ["NLOPT_LN_BOBYQA"]
     # return ["SQPCMA"]
-    return ["MultiSQP", "MultiCobyla", "MultiBFGS"]
-    return ["NGOpt"]
-    return ["QODE", "QOPSO", "SQOPSO", "QNDE"]
-    return ["MetaTuneRecentering", "MetaRecentering"]
-    return [
-        "NLOPT_LN_SBPLX",
-        "NLOPT_LN_PRAXIS",
-        "NLOPT_GN_DIRECT",
-        "NLOPT_GN_DIRECT_L",
-        "NLOPT_GN_CRS2_LM",
-        "NLOPT_GN_AGS",
-        "NLOPT_GN_ISRES",
-        "NLOPT_GN_ESCH",
-        "NLOPT_LN_COBYLA",
-        "NLOPT_LN_BOBYQA",
-        "NLOPT_LN_NEWUOA_BOUND",
-        "NLOPT_LN_NELDERMEAD",
-    ]
-    return ["LBFGSB"]  # return ["PymooBIPOP"]
-    # return ["SQPCMA"]
-    # return ["MetaRecentering"]  # if you want to run only this algorithm
-    # return random.sample(x, 1)
-    # return x
-    # return ["CMandAS2", "Shiwa"]
-    # return ["RandomSearch", "NaiveTBPSA"]
-    # return ["SQOPSO", "QODE"]
-    # return ["QNDE", "MetaModelQODE"]
-    # return ["SOPSO"]
-    # return ["QORandomSearch"]
+    return x
+
+
+#    return ["MultiSQP", "MultiCobyla", "MultiBFGS"]
+#    return ["NGOpt"]
+#    return ["QODE", "QOPSO", "SQOPSO", "QNDE"]
+#    return ["MetaTuneRecentering", "MetaRecentering"]
+#    return [
+#        "NLOPT_LN_SBPLX",
+#        "NLOPT_LN_PRAXIS",
+#        "NLOPT_GN_DIRECT",
+#        "NLOPT_GN_DIRECT_L",
+#        "NLOPT_GN_CRS2_LM",
+#        "NLOPT_GN_AGS",
+#        "NLOPT_GN_ISRES",
+#        "NLOPT_GN_ESCH",
+#        "NLOPT_LN_COBYLA",
+#        "NLOPT_LN_BOBYQA",
+#        "NLOPT_LN_NEWUOA_BOUND",
+#        "NLOPT_LN_NELDERMEAD",
+#    ]
+#    return ["LBFGSB"]  # return ["PymooBIPOP"]
+# return ["SQPCMA"]
+# return ["MetaRecentering"]  # if you want to run only this algorithm
+# return random.sample(x, 1)
+# return x
+# return ["CMandAS2", "Shiwa"]
+# return ["RandomSearch", "NaiveTBPSA"]
+# return ["SQOPSO", "QODE"]
+# return ["QNDE", "MetaModelQODE"]
+# return ["SOPSO"]
+# return ["QORandomSearch"]
 
 
 def skip_ci(*, reason: str) -> None:
@@ -1658,7 +1660,7 @@ def constrained_illconditioned_parallel(seed: tp.Optional[int] = None) -> tp.Ite
     ]
     for func in functions:
         func.parametrization.register_cheap_constraint(_Constraint("sum", as_bool=False))
-    optims = refactor_optims(optims)
+    optims = refactor_optims(optims)  # type: ignore
     for function in functions:
         for budget in [400, 4000, 40000]:
             optims: tp.List[str] = get_optimizers("large", seed=next(seedg))  # type: ignore
@@ -1687,7 +1689,7 @@ def ranknoisy(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     #    x for x, y in ng.optimizers.registry.items() if ("SPSA" in x or "TBPSA" in x or "ois" in x or "epea" in x or "Random" in x)
     # )
     optims = ["SPSA", "TinySPSA", "TBPSA", "NoisyOnePlusOne", "NoisyDiscreteOnePlusOne"]
-    optims = get_optimizers("basics", "noisy", "splitters", "progressive", seed=next(seedg))
+    optims = get_optimizers("basics", "noisy", "splitters", "progressive", seed=next(seedg))  # type: ignore
     optims = refactor_optims(optims)
     for budget in [25000, 50000, 100000]:
         for optim in optims:
@@ -2592,7 +2594,7 @@ def double_o_seven(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         "MetaModelPSO",
     ]
     optimizers = ["NGOpt", "NGOptRW"]
-    optimizerss = refactor_optims(optimizerss)
+    optimizers = refactor_optims(optimizers)  # type: ignore
     for num_repetitions in [1, 10, 100]:
         for archi in ["mono", "multi"]:
             for optim in optimizers:
@@ -2727,7 +2729,7 @@ def pbt(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         "RecombiningOptimisticNoisyDiscreteOnePlusOne",
         "PortfolioNoisyDiscreteOnePlusOne",
     ]  # type: ignore
-    optimizerss = refactor_optims(optimizers)
+    optimizers = refactor_optims(optimizers)
     for func in PBT.itercases():
         for optim in optimizers:
             for budget in [100, 400, 1000, 4000, 10000]:
