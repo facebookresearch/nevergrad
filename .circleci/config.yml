@@ -44,7 +44,7 @@ commands:
 
 jobs:
   install:
-    executor: ubuntu-python37
+    executor: ubuntu-python38
 
     steps:
       - checkout
@@ -144,7 +144,7 @@ jobs:
           paths: html
 
   docs-links:
-    executor: ubuntu-python37
+    executor: ubuntu-python38
 
     steps:
 
@@ -159,7 +159,7 @@ jobs:
             make linkcheck
 
   static:
-    executor: ubuntu-python37
+    executor: ubuntu-python38
 
     steps:
 
@@ -191,7 +191,7 @@ jobs:
 
 
   pytests:
-    executor: ubuntu-python37
+    executor: ubuntu-python38
 
     steps:
 
@@ -280,7 +280,7 @@ jobs:
 
   pypi-deploy:
 
-    executor: ubuntu-python37
+    executor: ubuntu-python38
 
     steps:
 
