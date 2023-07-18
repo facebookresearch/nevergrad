@@ -54,16 +54,17 @@ for n in 1 2 3
 do
 echo "\\subsubsection{Number of times each algorithm was ranked among the $n first: NGOpt and base algorithms}"
 echo "\\begin{itemize}"
-egrep -v 'NGOpt[0-9A-Z]|BIPOP|Shiwa|Meta|Micro|Tiny|SQPCMA|CMandAS2|Chain' dagstuhloid.tex  |grep -A$n begin.enumerate  | grep '(' | grep ')' | grep '^\\item' | sed 's/ (.*//g' | sed 's/^.item //g' | sort | uniq -c | sort -n -r | head -n 8 | sed 's/^/\\item/g'
+egrep -v 'Multi|NGOpt[0-9A-Z]|BIPOP|Shiwa|Meta|Micro|Tiny|SQPCMA|CMandAS2|Chain' dagstuhloid.tex  |grep -A$n begin.enumerate  | grep '(' | grep ')' | grep '^\\item' | sed 's/ (.*//g' | sed 's/^.item //g' | sort | uniq -c | sort -n -r | head -n 8 | sed 's/^/\\item/g'
 echo "\\end{itemize}"
 done 
 
 echo '\subsection{Wizards, multilevels, specific standard deviations, and combinations excluded}'
+echo 'The success of quasi-opposite methods is obvious here.'
 for n in 1 2 3
 do
 echo "\\subsubsection{Number of times each algorithm was ranked among the $n first: no wizard, no combination}"
 echo "\\begin{itemize}"
-egrep -v 'NGOpt|BIPOP|Shiwa|Meta|SQPCMA|Micro|Tiny|CMASQP|BIPOP|CMandAS2|Chain' dagstuhloid.tex  |grep -A$n begin.enumerate  | grep '(' | grep ')' | grep '^\\item' | sed 's/ (.*//g' | sed 's/^.item //g' | sort | uniq -c | sort -n -r | head -n 8 | sed 's/^/\\item/g'
+egrep -v 'NGOpt|Multi|BIPOP|Shiwa|Meta|SQPCMA|Micro|Tiny|CMASQP|BIPOP|CMandAS2|Chain' dagstuhloid.tex  |grep -A$n begin.enumerate  | grep '(' | grep ')' | grep '^\\item' | sed 's/ (.*//g' | sed 's/^.item //g' | sort | uniq -c | sort -n -r | head -n 8 | sed 's/^/\\item/g'
 echo "\\end{itemize}"
 done 
 
@@ -80,21 +81,44 @@ done
 
 
 ) >> dagstuhloid.tex
+
+listalgos=$( grep '^\\item [A-Za-z0-9]* (' dagstuhloid.tex | grep '(' | sed 's/ (.*//g' | sed 's/\\item //g' | sort | uniq )
+
+(
+echo '\section{Pairwise comparisons}'
+for a in $listalgos
+do
+        for b in $listalgos
+        do
+            awins=$( egrep "\\item $a \(|\\item $b \(|\\begin{enumerate}|\\end{enumerate}" dagstuhloid.tex| egrep -A1 "\\item $a \(" | egrep "\\item $b \(" | wc -l )
+            bwins=$( egrep "\\item $a \(|\\item $b \(|\\begin{enumerate}|\\end{enumerate}" dagstuhloid.tex| egrep -A1 "\\item $b \(" | egrep "\\item $a \(" | wc -l )
+            total=$( echo "$awins + $bwins" | bc -l )
+            if (( $total > 15 )); then
+                freq=$( echo  " (100 * $awins) / ( $awins + $bwins )" | bc -l | sed 's/\..*//g' )
+                if (( $freq > 60 )); then
+                    echo  "$a wins vs $b with frequency  $freq per cent.\\\\"
+                fi
+            fi
+        done
+done ) > tmp.tex.tmp
+
 (
 echo '\section{Conclusion}'
 cat scripts/tex/conclusion.tex
-echo '\appendix'
-echo '\section{Competence maps}'
-for u in $allplots
-do
-echo "\\subsection{`echo $u | sed 's/_plots.$//g'`}" | sed 's/_/ /g'| sed 's/aquacrop/(RW) &/g' | sed 's/rocket/(RW)&/g' | sed 's/fishing/(RW)&/g' | sed 's/MLDA/(RW)&/g' | sed 's/keras/(RW)&/g' | sed 's/mltuning/(RW)&/g' | sed 's/powersystems/(RW)&/g' | sed 's/mixsimulator/(RW)&/g' | sed 's/olympus/(RW)&/g' | sed 's/double.o.seven/(RW)&/g'
-
-for v in `grep -c none ${u}/comp*.tex | grep ':0' | sed 's/:.*//g'`
-do
-echo "\\subsubsection*{$v}" | sed 's/[_=]/ /g' | sed 's/\.tex//g'
-ls `ls $v | sed 's/\.tex/\.pdf/g'` | sed 's/.*/\\includegraphics[width=.99\\textwidth]{{&}}\\\\/g' 
-done
-done
+cat tmp.tex.tmp
+rm tmp.tex.tmp
+#echo '\appendix'
+#echo '\section{Competence maps}'
+#for u in $allplots
+#do
+#echo "\\subsection{`echo $u | sed 's/_plots.$//g'`}" | sed 's/_/ /g'| sed 's/aquacrop/(RW) &/g' | sed 's/rocket/(RW)&/g' | sed 's/fishing/(RW)&/g' | sed 's/MLDA/(RW)&/g' | sed 's/keras/(RW)&/g' | sed 's/mltuning/(RW)&/g' | sed 's/powersystems/(RW)&/g' | sed 's/mixsimulator/(RW)&/g' | sed 's/olympus/(RW)&/g' | sed 's/double.o.seven/(RW)&/g'
+#
+#for v in `grep -c none ${u}/comp*.tex | grep ':0' | sed 's/:.*//g'`
+#do
+#echo "\\subsubsection*{$v}" | sed 's/[_=]/ /g' | sed 's/\.tex//g'
+#ls `ls $v | sed 's/\.tex/\.pdf/g'` | sed 's/.*/\\includegraphics[width=.99\\textwidth]{{&}}\\\\/g' 
+#done
+#done
 cat scripts/tex/end.tex ) >> dagstuhloid.tex
 sed -i 's/\\subsubsection{yabbob}/\\subsection{Artificial noise-free single objective}&/g' dagstuhloid.tex
 sed -i 's/\\subsubsection{yamegapenbbob}/\\subsection{Constrained BBOB variants}&/g' dagstuhloid.tex

@@ -48,6 +48,7 @@ from . import gymexperiments  # noqa
 
 
 def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
+    return ["LargeCMA", "OldCMA", "MultiCMA"]
     # return ["NLOPT_LN_BOBYQA"]
     # return ["SQPCMA"]
     return x
