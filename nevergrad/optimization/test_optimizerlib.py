@@ -253,6 +253,48 @@ def test_optimizers(name: str) -> None:
     patched = partial(acq_max, n_warmup=10000, n_iter=2)
     with patch("bayes_opt.bayesian_optimization.acq_max", patched):
         check_optimizer(optimizer_cls, budget=budget, verify_value=verify)
+    if optimizer_cls.one_shot or name in ["CM", "NLOPT_LN_PRAXIS", "ES", "RecMixES"]:
+        return
+    if any(
+        x in str(optimizer_cls)
+        for x in [
+            "BO",
+            "Meta",
+            "CMA",
+            "Chain",
+            "NGO",
+            "Discrete",
+            "MixDet",
+            "Rotated",
+            "Iso",
+            "Bandit",
+            "TBPSA",
+        ]
+    ):
+        return
+
+    def f(x):
+        return sum((x - 1.1) ** 2)
+
+    def mf(x):
+        return sum((x + 1.1) ** 2)
+
+    def f1(x):
+        return (x - 1.1) ** 2
+
+    def f2(x):
+        return (x + 1.1) ** 2
+
+    val = optimizer_cls(1, 100).minimize(f).value
+    assert 1.05 < val < 1.15, f"pb with {optimizer_cls} for 1.1: {val}"
+    val = optimizer_cls(1, 100).minimize(mf).value
+    assert -1.15 < val < -1.05, f"pb with {optimizer_cls} for -1.1.: {val}1"
+    v = ng.p.Scalar(upper=1.0, lower=0.0)
+    val = optimizer_cls(v, 100).minimize(f1).value
+    assert 0.95 < val < 1.05, f"pb with {optimizer_cls} for 1.: {val}0"
+    v = ng.p.Scalar(upper=0.3, lower=-0.3)
+    val = optimizer_cls(v, 100).minimize(f2).value
+    assert -0.35 < val < -0.25, f"pb with {optimizer_cls} for -0.: {val}3"
 
 
 class RecommendationKeeper:

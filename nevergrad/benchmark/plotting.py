@@ -365,7 +365,7 @@ def create_plots(
             print("\n# new case #", fixed, case)
             casedf = df.select(**dict(zip(fixed, case)))
             data_df = FightPlotter.winrates_from_selection(
-                casedf, fight_descriptors, num_rows=num_rows, num_cols=30
+                casedf, fight_descriptors, num_rows=num_rows, num_cols=50
             )
             fplotter = FightPlotter(data_df)
             # Competence maps: we find out the best algorithm for each attribute1=valuei/attribute2=valuej.
@@ -791,7 +791,7 @@ class FightPlotter:
         df: utils.Selector,
         categories: tp.List[str],
         num_rows: int = 5,
-        num_cols: int = 30,
+        num_cols: int = 50,
         complete_runs_only: bool = False,
     ) -> pd.DataFrame:
         """Creates a fight plot win rate data out of the given run dataframe,
