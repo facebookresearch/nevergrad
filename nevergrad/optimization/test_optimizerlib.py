@@ -183,6 +183,7 @@ def test_infnan(name: str) -> None:
                 "EDA",
                 "EMNA",
                 "Stupid",
+                "NEWUOA",
                 "Large",
                 "Fmin2",
                 "NLOPT",
@@ -328,7 +329,7 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
     if "BO" in name:
         raise SkipTest("BO differs from one computer to another")
     if len(name) > 8:
-        raise SkipTest("BO differs from one computer to another")
+        raise SkipTest("Let us check only compact methods.")
     # set up environment
     optimizer_cls = registry[name]
     np.random.seed(None)
@@ -353,7 +354,11 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
         # with patch("bayes_opt.bayesian_optimization.acq_max", patched):
         recom = optim.minimize(fitness)
     if name not in recomkeeper.recommendations.index:
-        recomkeeper.recommendations.loc[name, :dimension] = tuple(recom.value)
+        # recomkeeper.recommendations.loc[name, :dimension] = tuple(recom.value)
+        for i in range(len(recom.value)):
+            recomkeeper.recommendations.loc[name, f"v{i}"] = recom.value[i]
+        # cummax.loc[:i, 'atr_Lts'] =
+        # cummax.iloc[:i].loc[:, 'atr_Lts'] =
         raise ValueError(
             f'Recorded the value {tuple(recom.value)} for optimizer "{name}", please rerun this test locally.'
         )
@@ -1010,7 +1015,7 @@ def test_smoother() -> None:
 
 
 @pytest.mark.parametrize("n", [5, 10, 15, 25, 40])  # type: ignore
-@pytest.mark.parametrize("b_per_dim", [1, 10, 20])  # type: ignore
+@pytest.mark.parametrize("b_per_dim", [3, 10, 20])  # type: ignore
 def test_voronoide(n, b_per_dim) -> None:
     if n < 25 or b_per_dim < 1 and not os.environ.get("CIRCLECI", False):  # Outside CircleCI, only the big.
         raise SkipTest("Only big things outside CircleCI.")

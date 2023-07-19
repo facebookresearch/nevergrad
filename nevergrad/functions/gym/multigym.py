@@ -85,7 +85,7 @@ class GymMulti(ExperimentFunction):
 
     @staticmethod
     def get_env_names() -> tp.List[str]:
-        import gym_anm  # noqa
+        # import gym_anm  # noqa
 
         gym_env_names = []
         max_displays = 10

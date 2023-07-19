@@ -82,7 +82,10 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 import nlopt
 
                 def nlopt_objective_function(*args):
-                    data = np.asarray([arg for arg in args])[0]
+                    try:
+                        data = np.asarray([arg for arg in args if len(arg) > 0])[0]
+                    except Exception as e:
+                        raise ValueError(f"{e}:\n{args}\n {[arg for arg in args]}")
                     assert len(data) == weakself.dimension, (
                         str(data) + " does not have length " + str(weakself.dimension)
                     )
@@ -221,7 +224,7 @@ SQP = NonObjectOptimizer(method="SLSQP").set_name("SQP", register=True)
 SLSQP = SQP  # Just so that people who are familiar with SLSQP naming are not lost.
 RSQP = NonObjectOptimizer(method="SLSQP", random_restart=True).set_name("RSQP", register=True)
 RSLSQP = RSQP  # Just so that people who are familiar with SLSQP naming are not lost.
-NEWUOA = NonObjectOptimizer(method="NLOPT_LN_NEWUOA_BOUND").set_name("NEWUOA", register=True)
+# NEWUOA = NonObjectOptimizer(method="NLOPT_LN_NEWUOA_BOUND").set_name("NEWUOA", register=True)
 NLOPT_LN_SBPLX = NonObjectOptimizer(method="NLOPT_LN_SBPLX").set_name("NLOPT_LN_SBPLX", register=True)
 NLOPT_LN_PRAXIS = NonObjectOptimizer(method="NLOPT_LN_PRAXIS").set_name("NLOPT_LN_PRAXIS", register=True)
 NLOPT_GN_DIRECT = NonObjectOptimizer(method="NLOPT_GN_DIRECT").set_name("NLOPT_GN_DIRECT", register=True)
