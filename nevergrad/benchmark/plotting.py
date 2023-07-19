@@ -228,6 +228,7 @@ def create_plots(
     max_combsize: int = 1,
     xpaxis: str = "budget",
     competencemaps: bool = False,
+    nomanyxp: bool = False,
 ) -> None:
     """Saves all representing plots to the provided folder
 
@@ -285,6 +286,8 @@ def create_plots(
         df = df.drop(columns="dimension")
         if "parametrization" in set(df.columns):
             df = df.drop(columns="parametrization")
+        if "instrumentation" in set(df.columns):
+            df = df.drop(columns="instrumentation")
     df = utils.Selector(df.fillna("N-A"))  # remove NaN in non score values
     assert not any("Unnamed: " in x for x in df.columns), f"Remove the unnamed index column:  {df.columns}"
     assert "error " not in df.columns, f"Remove error rows before plotting"
@@ -362,7 +365,7 @@ def create_plots(
             print("\n# new case #", fixed, case)
             casedf = df.select(**dict(zip(fixed, case)))
             data_df = FightPlotter.winrates_from_selection(
-                casedf, fight_descriptors, num_rows=num_rows, num_cols=30
+                casedf, fight_descriptors, num_rows=num_rows, num_cols=50
             )
             fplotter = FightPlotter(data_df)
             # Competence maps: we find out the best algorithm for each attribute1=valuei/attribute2=valuej.
@@ -421,6 +424,8 @@ def create_plots(
     xpplotter.save(out_filepath)
     # Now one xp plot per case.
     for case in cases:
+        if nomanyxp:
+            continue
         subdf = df.select_and_drop(**dict(zip(descriptors, case)))
         description = ",".join("{}:{}".format(x, y) for x, y in zip(descriptors, case))
         full_description = description
@@ -786,7 +791,7 @@ class FightPlotter:
         df: utils.Selector,
         categories: tp.List[str],
         num_rows: int = 5,
-        num_cols: int = 30,
+        num_cols: int = 50,
         complete_runs_only: bool = False,
     ) -> pd.DataFrame:
         """Creates a fight plot win rate data out of the given run dataframe,
@@ -963,6 +968,12 @@ def main() -> None:
         "--competencemaps", type=bool, default=False, help="whether we should export only competence maps"
     )
     parser.add_argument(
+        "--nomanyxp",
+        type=bool,
+        default=False,
+        help="whether we should remove the export of detailed convergence curves",
+    )
+    parser.add_argument(
         "--merge-parametrization",
         action="store_true",
         help="if present, parametrization is merge into the optimizer name",
@@ -997,6 +1008,7 @@ def main() -> None:
         max_combsize=args.max_combsize if not args.competencemaps else 2,
         xpaxis="pseudotime" if args.pseudotime else "budget",
         competencemaps=args.competencemaps,
+        nomanyxp=args.nomanyxp,
     )
 
 

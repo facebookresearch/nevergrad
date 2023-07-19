@@ -5,7 +5,7 @@
 ![Nevergrad](docs/resources/Nevergrad-LogoMark.png)
 
 
-`nevergrad` is a Python 3.6+ library. It can be installed with:
+`nevergrad` is a Python 3.8+ library. It can be installed with:
 
 ```
 pip install nevergrad

@@ -51,7 +51,7 @@ def test_recast_optimizer() -> None:
 
 def test_recast_optimizer_with_error() -> None:
     optimizer = FakeOptimizer(parametrization=2, budget=100)
-    np.testing.assert_raises(TypeError, optimizer.minimize)  # did hang in some versions
+    np.testing.assert_raises(TypeError, optimizer.minimize)  # type: ignore
 
 
 def test_recast_optimizer_and_stop() -> None:

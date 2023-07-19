@@ -1141,16 +1141,38 @@ class _PSO(base.Optimizer):
         self._uid_queue = base.utils.UidQueue()
         self.population: tp.Dict[str, p.Parameter] = {}
         self._best = self.parametrization.spawn_child()
+        self.previous_candidate: tp.Optional[tp.Any] = None
+        self.previous_speed: tp.Optional[tp.Any] = None
 
     def _internal_ask_candidate(self) -> p.Parameter:
         # population is increased only if queue is empty (otherwise tell_not_asked does not work well at the beginning)
         if len(self.population) < self.llambda:
+            r = (
+                np.exp(-5.0 * self._rng.rand())
+                if self._config.so
+                else (self._rng.rand() if self._config.sqo else 1.0)
+            )
             candidate = self.parametrization.sample()
+            if self._config.qo:
+                if self.previous_candidate is not None:
+                    data = self.previous_candidate.get_standardized_data(reference=self.parametrization)
+                    candidate.set_standardized_data(-r * data, reference=self.parametrization)
+                    self.previous_candidate = None
+                else:
+                    self.previous_candidate = candidate
             self.population[candidate.uid] = candidate
             dim = self.parametrization.dimension
             candidate.heritage["speed"] = (
                 self._rng.normal(size=dim) if self._eps is None else self._rng.uniform(-1, 1, dim)
             )
+            if self._config.sqo:
+                assert self._config.qo, "SQO only when QO!"
+                if self.previous_speed is not None:
+                    candidate.heritage["speed"] = -r * self.previous_speed
+                    self.previous_speed = None
+                else:
+                    self.previous_speed = candidate.heritage["speed"]
+
             self._uid_queue.asked.add(candidate.uid)
             return candidate
         uid = self._uid_queue.ask()
@@ -1234,6 +1256,12 @@ class ConfPSO(base.ConfiguredOptimizer):
         particle swarm optimization parameter
     phig: float
         particle swarm optimization parameter
+    qo: bool
+        whether we use quasi-opposite initialization
+    sqo: bool
+        whether we use quasi-opposite initialization for speed
+    so: bool
+        whether we use the special quasi-opposite initialization for speed
 
     Note
     ----
@@ -1254,6 +1282,9 @@ class ConfPSO(base.ConfiguredOptimizer):
         omega: float = 0.5 / math.log(2.0),
         phip: float = 0.5 + math.log(2.0),
         phig: float = 0.5 + math.log(2.0),
+        qo: bool = False,
+        sqo: bool = False,
+        so: bool = False,
     ) -> None:
         super().__init__(_PSO, locals(), as_config=True)
         assert transform in ["arctan", "gaussian", "identity"]
@@ -1262,11 +1293,19 @@ class ConfPSO(base.ConfiguredOptimizer):
         self.omega = omega
         self.phip = phip
         self.phig = phig
+        self.qo = qo
+        self.sqo = sqo
+        self.so = so
 
 
 ConfiguredPSO = ConfPSO  # backward compatibility (to be removed)
 RealSpacePSO = ConfPSO().set_name("RealSpacePSO", register=True)
 PSO = ConfPSO(transform="arctan").set_name("PSO", register=True)
+QOPSO = ConfPSO(transform="arctan", qo=True).set_name("QOPSO", register=True)
+QORealSpacePSO = ConfPSO(qo=True).set_name("QORealSpacePSO", register=True)
+SQOPSO = ConfPSO(transform="arctan", qo=True, sqo=True).set_name("SQOPSO", register=True)
+SOPSO = ConfPSO(transform="arctan", qo=True, sqo=True, so=True).set_name("SOPSO", register=True)
+SQORealSpacePSO = ConfPSO(qo=True, sqo=True).set_name("SQORealSpacePSO", register=True)
 
 
 @registry.register
@@ -1858,6 +1897,7 @@ SVMMetaModelPSO = ParametrizedMetaModel(multivariate_optimizer=PSO, algorithm="s
 )
 
 MetaModelDE = ParametrizedMetaModel(multivariate_optimizer=DE).set_name("MetaModelDE", register=True)
+MetaModelQODE = ParametrizedMetaModel(multivariate_optimizer=QODE).set_name("MetaModelQODE", register=True)
 NeuralMetaModelDE = ParametrizedMetaModel(algorithm="neural", multivariate_optimizer=DE).set_name(
     "NeuralMetaModelDE", register=True
 )
@@ -1880,6 +1920,54 @@ SVMMetaModelTwoPointsDE = ParametrizedMetaModel(algorithm="svr", multivariate_op
 RFMetaModelTwoPointsDE = ParametrizedMetaModel(algorithm="rf", multivariate_optimizer=TwoPointsDE).set_name(
     "RFMetaModelTwoPointsDE", register=True
 )
+
+
+@registry.register
+class MultiBFGS(Portfolio):
+    """Passive portfolio of MetaCMA and many SQP."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        optims: tp.List[base.Optimizer] = []
+        optims += [BFGS(self.parametrization, num_workers=1) for _ in range(num_workers)]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+        self.optims.clear()
+        self.optims.extend(optims)
+
+
+@registry.register
+class MultiCobyla(Portfolio):
+    """Passive portfolio of MetaCMA and many SQP."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        optims: tp.List[base.Optimizer] = []
+        optims += [Cobyla(self.parametrization, num_workers=1) for _ in range(num_workers)]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+        self.optims.clear()
+        self.optims.extend(optims)
+
+
+@registry.register
+class MultiSQP(Portfolio):
+    """Passive portfolio of MetaCMA and many SQP."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        optims: tp.List[base.Optimizer] = []
+        optims += [SQP(self.parametrization, num_workers=1) for _ in range(num_workers)]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+        self.optims.clear()
+        self.optims.extend(optims)
 
 
 @registry.register

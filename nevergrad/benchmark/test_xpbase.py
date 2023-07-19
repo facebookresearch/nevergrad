@@ -22,6 +22,7 @@ DESCRIPTION_KEYS = {
     "elapsed_time",
     "elapsed_budget",
     "loss",
+    "zero_pen",
     "optimizer_name",
     "pseudotime",
     "num_workers",
@@ -110,7 +111,7 @@ def test_seed_generator(seed: tp.Optional[int], randsize: int, expected: tp.List
             np.random.normal(0, 1, size=randsize)
         value = next(generator)
         output.append(value if value is None else value % 1000)
-    np.testing.assert_array_equal(output, expected)
+    np.testing.assert_array_equal(output, expected)  # type: ignore
 
 
 @testing.parametrized(

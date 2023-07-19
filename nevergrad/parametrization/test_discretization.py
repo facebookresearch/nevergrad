@@ -26,7 +26,7 @@ def test_thresholding_discretization(arity: int, data: tp.List[float], expected:
 def test_inverse_threshold_discretization() -> None:
     arity = 4
     indexes = np.arange(arity)  # Test all possible indexes
-    data = discretization.inverse_threshold_discretization(indexes, arity)
+    data = discretization.inverse_threshold_discretization(indexes, arity)  # type: ignore
     np.testing.assert_array_equal(discretization.threshold_discretization(data, arity), indexes)
 
 
@@ -52,7 +52,7 @@ def test_encoder_probabilities() -> None:
         [0.5, 0.5, 0],
         [0.5, 0, 0.5],
     ]
-    np.testing.assert_array_almost_equal(proba, expected, decimal=3)
+    np.testing.assert_array_almost_equal(proba, expected, decimal=3)  # type: ignore
 
 
 def test_encoder() -> None:
