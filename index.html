@@ -237,7 +237,10 @@ To do this, one can specify the input space:</p>
 <li class="toctree-l3"><a class="reference internal" href="optimizers_ref.html#nevergrad.optimization.optimizerlib.MEDA"><code class="docutils literal notranslate"><span class="pre">MEDA</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="optimizers_ref.html#nevergrad.optimization.optimizerlib.MPCEDA"><code class="docutils literal notranslate"><span class="pre">MPCEDA</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="optimizers_ref.html#nevergrad.optimization.optimizerlib.MetaCMA"><code class="docutils literal notranslate"><span class="pre">MetaCMA</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="optimizers_ref.html#nevergrad.optimization.optimizerlib.MultiBFGS"><code class="docutils literal notranslate"><span class="pre">MultiBFGS</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="optimizers_ref.html#nevergrad.optimization.optimizerlib.MultiCobyla"><code class="docutils literal notranslate"><span class="pre">MultiCobyla</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="optimizers_ref.html#nevergrad.optimization.optimizerlib.MultiDiscrete"><code class="docutils literal notranslate"><span class="pre">MultiDiscrete</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="optimizers_ref.html#nevergrad.optimization.optimizerlib.MultiSQP"><code class="docutils literal notranslate"><span class="pre">MultiSQP</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="optimizers_ref.html#nevergrad.optimization.optimizerlib.MultipleSingleRuns"><code class="docutils literal notranslate"><span class="pre">MultipleSingleRuns</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="optimizers_ref.html#nevergrad.optimization.optimizerlib.NGO"><code class="docutils literal notranslate"><span class="pre">NGO</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="optimizers_ref.html#nevergrad.optimization.optimizerlib.NGOpt"><code class="docutils literal notranslate"><span class="pre">NGOpt</span></code></a></li>
@@ -413,6 +416,7 @@ To do this, one can specify the input space:</p>
 <li class="toctree-l3"><a class="reference internal" href="benchmarks.html#nevergrad.benchmark.experiments.ranknoisy"><code class="docutils literal notranslate"><span class="pre">ranknoisy()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="benchmarks.html#nevergrad.benchmark.experiments.realworld"><code class="docutils literal notranslate"><span class="pre">realworld()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="benchmarks.html#nevergrad.benchmark.experiments.reduced_yahdlbbbob"><code class="docutils literal notranslate"><span class="pre">reduced_yahdlbbbob()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="benchmarks.html#nevergrad.benchmark.experiments.refactor_optims"><code class="docutils literal notranslate"><span class="pre">refactor_optims()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="benchmarks.html#nevergrad.benchmark.experiments.rocket"><code class="docutils literal notranslate"><span class="pre">rocket()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="benchmarks.html#nevergrad.benchmark.experiments.seq_keras_tuning"><code class="docutils literal notranslate"><span class="pre">seq_keras_tuning()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="benchmarks.html#nevergrad.benchmark.experiments.seq_mltuning"><code class="docutils literal notranslate"><span class="pre">seq_mltuning()</span></code></a></li>
@@ -430,6 +434,8 @@ To do this, one can specify the input space:</p>
 <li class="toctree-l3"><a class="reference internal" href="benchmarks.html#nevergrad.benchmark.experiments.ultrasmall_photonics2"><code class="docutils literal notranslate"><span class="pre">ultrasmall_photonics2()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="benchmarks.html#nevergrad.benchmark.experiments.unit_commitment"><code class="docutils literal notranslate"><span class="pre">unit_commitment()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="benchmarks.html#nevergrad.benchmark.experiments.veryseq_keras_tuning"><code class="docutils literal notranslate"><span class="pre">veryseq_keras_tuning()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="benchmarks.html#nevergrad.benchmark.experiments.verysmall_photonics"><code class="docutils literal notranslate"><span class="pre">verysmall_photonics()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="benchmarks.html#nevergrad.benchmark.experiments.verysmall_photonics2"><code class="docutils literal notranslate"><span class="pre">verysmall_photonics2()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="benchmarks.html#nevergrad.benchmark.experiments.yabbob"><code class="docutils literal notranslate"><span class="pre">yabbob()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="benchmarks.html#nevergrad.benchmark.experiments.yabigbbob"><code class="docutils literal notranslate"><span class="pre">yabigbbob()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="benchmarks.html#nevergrad.benchmark.experiments.yaboundedbbob"><code class="docutils literal notranslate"><span class="pre">yaboundedbbob()</span></code></a></li>
@@ -466,6 +472,8 @@ To do this, one can specify the input space:</p>
 <li class="toctree-l3"><a class="reference internal" href="benchmarks.html#nevergrad.benchmark.experiments.yatinybbob"><code class="docutils literal notranslate"><span class="pre">yatinybbob()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="benchmarks.html#nevergrad.benchmark.experiments.yatuningbbob"><code class="docutils literal notranslate"><span class="pre">yatuningbbob()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="benchmarks.html#nevergrad.benchmark.experiments.yawidebbob"><code class="docutils literal notranslate"><span class="pre">yawidebbob()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="benchmarks.html#nevergrad.benchmark.experiments.zp_ms_bbob"><code class="docutils literal notranslate"><span class="pre">zp_ms_bbob()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="benchmarks.html#nevergrad.benchmark.experiments.zp_pbbob"><code class="docutils literal notranslate"><span class="pre">zp_pbbob()</span></code></a></li>
 </ul>
 </li>
 </ul>
