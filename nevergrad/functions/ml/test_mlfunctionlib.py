@@ -33,7 +33,7 @@ from . import mlfunctionlib
             alpha=0.01,
             learning_rate="constant",
             depth=3,
-            criterion="mse",
+            criterion="friedman_mse",
             min_samples_split=0.001,
             regressor="decision_tree",
         ),

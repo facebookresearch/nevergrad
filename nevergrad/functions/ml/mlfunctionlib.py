@@ -143,7 +143,7 @@ class MLTuning(ExperimentFunction):
             # We optimize only the depth, so we fix all other parameters than the depth
             params = dict(
                 noise_free=False,
-                criterion="mse",
+                criterion="friedman_mse",
                 min_samples_split=0.00001,
                 regressor="decision_tree",
                 alpha=1.0,
@@ -191,7 +191,7 @@ class MLTuning(ExperimentFunction):
                 activation="no",
                 solver="no",
             )
-            evalparams = dict(params, criterion="mse", min_samples_split=0.00001)
+            evalparams = dict(params, criterion="friedman_mse", min_samples_split=0.00001)
         elif regressor == "mlp":
             # Let us define the parameters of the neural network.
             parametrization = p.Instrumentation(
