@@ -241,7 +241,7 @@ class MLTuning(ExperimentFunction):
         # Filling datasets.
         rng = self.parametrization.random_state
         if not dataset.startswith("artificial"):
-            assert dataset in ["boston", "diabetes", "kerasBoston", "auto-mpg", "red-wine", "white-wine"]
+            assert dataset in ["diabetes", "kerasBoston", "auto-mpg", "red-wine", "white-wine"]
             assert data_dimension is None
             sets_url = {
                 "auto-mpg": "http://www-lisic.univ-littoral.fr/~teytaud/files/Cours/Apprentissage/data/auto-mpg.data",
@@ -261,7 +261,8 @@ class MLTuning(ExperimentFunction):
             elif dataset in sets_tag:
                 data = pd.read_csv(sets_url[dataset])
             else:
-                data = {"boston": sklearn.datasets.load_boston, "diabetes": sklearn.datasets.load_diabetes,}[
+                data = {"diabetes": sklearn.datasets.load_diabetes,}[
+                    # data = {"boston": sklearn.datasets.load_boston, "diabetes": sklearn.datasets.load_diabetes,}[
                     dataset
                 ](return_X_y=True)
 
