@@ -17,7 +17,7 @@ from . import mlfunctionlib
     ),
     decision_tree_artificial=(
         dict(regressor="decision_tree", data_dimension=12, dataset="artificial"),
-        dict(depth=3, criterion="mse", min_samples_split=0.001),
+        dict(depth=3, criterion="friedman_mse", min_samples_split=0.001),
         0.19138713337,
     ),
     mlp_artificial=(
@@ -55,22 +55,22 @@ from . import mlfunctionlib
     ),
     decision_tree_boston=(
         dict(regressor="decision_tree", data_dimension=None, dataset="boston"),
-        dict(depth=5, criterion="mse", min_samples_split=0.001),
+        dict(depth=5, criterion="friedman_mse", min_samples_split=0.001),
         24.985272503,
     ),
     decision_tree_diabetes=(
         dict(regressor="decision_tree", data_dimension=None, dataset="diabetes"),
-        dict(depth=5, criterion="mse", min_samples_split=0.001),
+        dict(depth=5, criterion="friedman_mse", min_samples_split=0.001),
         5057.790249631,
     ),
     decision_tree_cos=(
         dict(regressor="decision_tree", data_dimension=3, dataset="artificialcos"),
-        dict(depth=5, criterion="mse", min_samples_split=0.001),
+        dict(depth=5, criterion="friedman_mse", min_samples_split=0.001),
         0.00040148525,
     ),
     decision_tree_square=(
         dict(regressor="decision_tree", data_dimension=3, dataset="artificialsquare"),
-        dict(depth=5, criterion="mse", min_samples_split=0.001),
+        dict(depth=5, criterion="friedman_mse", min_samples_split=0.001),
         0.0019345073,
     ),
 )

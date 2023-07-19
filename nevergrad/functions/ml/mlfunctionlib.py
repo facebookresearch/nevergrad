@@ -158,7 +158,8 @@ class MLTuning(ExperimentFunction):
                     lower=1, upper=1200
                 ).set_integer_casting(),  # Depth, in case we use a decision tree.
                 criterion=p.Choice(
-                    ["mse", "friedman_mse", "mae"]
+                    ["friedman_mse", "poisson", "absolute_error", "squared_error"],
+                    # ["mse", "friedman_mse", "mae"]
                 ),  # Criterion for building the decision tree.
                 min_samples_split=p.Log(
                     lower=0.0000001, upper=1
@@ -177,7 +178,8 @@ class MLTuning(ExperimentFunction):
             # We specify below the list of hyperparameters for the decision trees.
             parametrization = p.Instrumentation(
                 depth=p.Scalar(lower=1, upper=1200).set_integer_casting(),
-                criterion=p.Choice(["mse", "friedman_mse", "mae"]),
+                criterion=p.Choice(["friedman_mse", "poisson", "absolute_error", "squared_error"]),
+                # criterion=p.Choice(["mse", "friedman_mse", "mae"]),
                 min_samples_split=p.Log(lower=0.0000001, upper=1),
                 regressor="decision_tree",
             )
