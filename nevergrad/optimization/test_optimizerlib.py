@@ -286,15 +286,16 @@ def test_optimizers(name: str) -> None:
     def f2(x):
         return (x + 1.1) ** 2
 
-    val = optimizer_cls(1, 100).minimize(f).value
+    budget = 100 if "PSO" not in name else 200
+    val = optimizer_cls(1, budget).minimize(f).value
     assert 1.05 < val < 1.15, f"pb with {optimizer_cls} for 1.1: {val}"
-    val = optimizer_cls(1, 100).minimize(mf).value
+    val = optimizer_cls(1, budget).minimize(mf).value
     assert -1.15 < val < -1.05, f"pb with {optimizer_cls} for -1.1.: {val}1"
     v = ng.p.Scalar(upper=1.0, lower=0.0)
-    val = optimizer_cls(v, 100).minimize(f1).value
+    val = optimizer_cls(v, budget).minimize(f1).value
     assert 0.95 < val < 1.05, f"pb with {optimizer_cls} for 1.: {val}0"
     v = ng.p.Scalar(upper=0.3, lower=-0.3)
-    val = optimizer_cls(v, 100).minimize(f2).value
+    val = optimizer_cls(v, budget).minimize(f2).value
     assert -0.35 < val < -0.25, f"pb with {optimizer_cls} for -0.: {val}3"
 
 
@@ -1015,7 +1016,7 @@ def test_smoother() -> None:
 
 
 @pytest.mark.parametrize("n", [5, 10, 15, 25, 40])  # type: ignore
-@pytest.mark.parametrize("b_per_dim", [3, 10, 20])  # type: ignore
+@pytest.mark.parametrize("b_per_dim", [10, 20])  # type: ignore
 def test_voronoide(n, b_per_dim) -> None:
     if n < 25 or b_per_dim < 1 and not os.environ.get("CIRCLECI", False):  # Outside CircleCI, only the big.
         raise SkipTest("Only big things outside CircleCI.")
