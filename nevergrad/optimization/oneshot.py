@@ -134,7 +134,7 @@ class _RandomSearch(OneShotOptimizer):
         recommendation_rule: str = "pessimistic",
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        assert opposition_mode is None or opposition_mode in ["quasi", "opposite"]
+        assert opposition_mode is None or opposition_mode in ["quasi", "opposite", "special"]
         assert isinstance(scale, (int, float)) or scale in ["auto", "random", "autotune"]
         self.middle_point = middle_point
         self.opposition_mode = opposition_mode
@@ -150,7 +150,11 @@ class _RandomSearch(OneShotOptimizer):
         mode = self.opposition_mode
         if self._opposable_data is not None and mode is not None:
             data = self._opposable_data
-            data *= -(self._rng.uniform(0.0, 1.0) if mode == "quasi" else 1.0)
+            data *= -(
+                self._rng.uniform(0.0, 1.0)
+                if mode == "quasi"
+                else (np.exp(-self._rng.uniform(0.0, 5.0)) if mode == "special" else 1.0)
+            )
             self._opposable_data = None
             return data
         if self.middle_point and not self._num_ask:
@@ -289,7 +293,9 @@ class _SamplingSearch(OneShotOptimizer):
                 "Random": sequences.RandomSampler,
             }
             internal_budget = (
-                (budget + 1) // 2 if budget and (self.opposition_mode in ["quasi", "opposite"]) else budget
+                (budget + 1) // 2
+                if budget and (self.opposition_mode in ["quasi", "special", "opposite"])
+                else budget
             )
             self._sampler_instance = samplers[self._sampler](
                 self.dimension, internal_budget, scrambling=self.scrambled, random_state=self._rng
@@ -308,7 +314,12 @@ class _SamplingSearch(OneShotOptimizer):
         if self._opposable_data is not None and mode is not None:
             # weird mypy error, revealed as array, but not accepting substraction
             data = self._opposable_data
-            data *= -(self._rng.uniform(0.0, 1.0) if mode == "quasi" else 1.0)
+            # data *= -(self._rng.uniform(0.0, 1.0) if mode == "quasi" else 1.0)
+            data *= -(
+                self._rng.uniform(0.0, 1.0)
+                if mode == "quasi"
+                else (np.exp(-self._rng.uniform(0.0, 5.0)) if mode == "special" else 1.0)
+            )
             self._opposable_data = None
             return data
         sample = self.sampler()

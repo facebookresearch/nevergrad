@@ -150,11 +150,11 @@ class HaltonPermutationGenerator:
         if self.scrambling:
             randgen = np.random.RandomState(seed=self.seed)
             return (
-                np.concatenate(([0], randgen.choice(self.fulllist[1:p], p - 1, replace=False)), axis=0)
+                np.concatenate(([0], randgen.choice(self.fulllist[1:p], p - 1, replace=False)), axis=0)  # type: ignore
                 for p in self.primes
             )
         else:
-            return (self.fulllist[:p] for p in self.primes)
+            return (self.fulllist[:p] for p in self.primes)  # type: ignore
 
 
 @samplers.register

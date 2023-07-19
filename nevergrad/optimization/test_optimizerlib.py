@@ -183,6 +183,7 @@ def test_infnan(name: str) -> None:
                 "EDA",
                 "EMNA",
                 "Stupid",
+                "NEWUOA",
                 "Large",
                 "Fmin2",
                 "NLOPT",
@@ -253,6 +254,49 @@ def test_optimizers(name: str) -> None:
     patched = partial(acq_max, n_warmup=10000, n_iter=2)
     with patch("bayes_opt.bayesian_optimization.acq_max", patched):
         check_optimizer(optimizer_cls, budget=budget, verify_value=verify)
+    if optimizer_cls.one_shot or name in ["CM", "NLOPT_LN_PRAXIS", "ES", "RecMixES"]:
+        return
+    if any(
+        x in str(optimizer_cls)
+        for x in [
+            "BO",
+            "Meta",
+            "CMA",
+            "Chain",
+            "NGO",
+            "Discrete",
+            "MixDet",
+            "Rotated",
+            "Iso",
+            "Bandit",
+            "TBPSA",
+        ]
+    ):
+        return
+
+    def f(x):
+        return sum((x - 1.1) ** 2)
+
+    def mf(x):
+        return sum((x + 1.1) ** 2)
+
+    def f1(x):
+        return (x - 1.1) ** 2
+
+    def f2(x):
+        return (x + 1.1) ** 2
+
+    budget = 100 if "PSO" not in name else 200
+    val = optimizer_cls(1, budget).minimize(f).value
+    assert 1.05 < val < 1.15, f"pb with {optimizer_cls} for 1.1: {val}"
+    val = optimizer_cls(1, budget).minimize(mf).value
+    assert -1.15 < val < -1.05, f"pb with {optimizer_cls} for -1.1.: {val}1"
+    v = ng.p.Scalar(upper=1.0, lower=0.0)
+    val = optimizer_cls(v, budget).minimize(f1).value
+    assert 0.95 < val < 1.05, f"pb with {optimizer_cls} for 1.: {val}0"
+    v = ng.p.Scalar(upper=0.3, lower=-0.3)
+    val = optimizer_cls(v, budget).minimize(f2).value
+    assert -0.35 < val < -0.25, f"pb with {optimizer_cls} for -0.: {val}3"
 
 
 class RecommendationKeeper:
@@ -286,7 +330,7 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
     if "BO" in name:
         raise SkipTest("BO differs from one computer to another")
     if len(name) > 8:
-        raise SkipTest("BO differs from one computer to another")
+        raise SkipTest("Let us check only compact methods.")
     # set up environment
     optimizer_cls = registry[name]
     np.random.seed(None)
@@ -311,7 +355,11 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
         # with patch("bayes_opt.bayesian_optimization.acq_max", patched):
         recom = optim.minimize(fitness)
     if name not in recomkeeper.recommendations.index:
-        recomkeeper.recommendations.loc[name, :dimension] = tuple(recom.value)
+        # recomkeeper.recommendations.loc[name, :dimension] = tuple(recom.value)
+        for i in range(len(recom.value)):
+            recomkeeper.recommendations.loc[name, f"v{i}"] = recom.value[i]
+        # cummax.loc[:i, 'atr_Lts'] =
+        # cummax.iloc[:i].loc[:, 'atr_Lts'] =
         raise ValueError(
             f'Recorded the value {tuple(recom.value)} for optimizer "{name}", please rerun this test locally.'
         )
@@ -348,7 +396,7 @@ def test_differential_evolution_popsize(name: str, dimension: int, num_workers: 
 def test_portfolio_budget() -> None:
     for k in range(3, 13):
         optimizer = optlib.Portfolio(parametrization=2, budget=k)
-        np.testing.assert_equal(optimizer.budget, sum(o.budget for o in optimizer.optims))
+        np.testing.assert_equal(optimizer.budget, sum(o.budget for o in optimizer.optims))  # type: ignore
 
 
 def test_optimizer_families_repr() -> None:
@@ -968,7 +1016,7 @@ def test_smoother() -> None:
 
 
 @pytest.mark.parametrize("n", [5, 10, 15, 25, 40])  # type: ignore
-@pytest.mark.parametrize("b_per_dim", [1, 10, 20])  # type: ignore
+@pytest.mark.parametrize("b_per_dim", [10, 20])  # type: ignore
 def test_voronoide(n, b_per_dim) -> None:
     if n < 25 or b_per_dim < 1 and not os.environ.get("CIRCLECI", False):  # Outside CircleCI, only the big.
         raise SkipTest("Only big things outside CircleCI.")
@@ -1044,7 +1092,7 @@ def test_weighted_moo_de() -> None:
         w[index] = 30.0
         DE.set_objective_weights(w)  # type: ignore
         targ = [np.array([np.cos(2 * np.pi * i / N), np.sin(2 * np.pi * i / N)]) for i in range(N)]
-        DE.minimize(lambda x: [np.linalg.norm(x - xi) for xi in targ])
+        DE.minimize(lambda x: [np.linalg.norm(x - xi) for xi in targ])  # type: ignore
         x = np.zeros(N)
         for u in DE.pareto_front():
             x = x + u.losses

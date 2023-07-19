@@ -14,7 +14,8 @@ hiplot
 fcmaes>=1.2.7
 pandas>=0.23.4
 openpyxl>=3.0.0  # mlda data (for pandas)
-pyproj>=2.6.1
+#pyproj>=2.6.1
+pyproj
 Pillow>=8.4.0
 tqdm
 torchvision>=0.11.1
@@ -38,6 +39,6 @@ tensorflow_probability  # for olymp
 bayes-optim==0.3.0
 nlopt
 pybullet>=3.2.2
-box2d-py>=2.3.5
+#box2d-py>=2.3.5
 glfw
 mujoco

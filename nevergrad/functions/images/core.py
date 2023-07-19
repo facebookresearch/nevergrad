@@ -54,7 +54,7 @@ class Image(base.ExperimentFunction):
         assert index == 0  # For the moment only 1 target.
         # path = os.path.dirname(__file__) + "/headrgb_olivier.png"
         path = Path(__file__).with_name("headrgb_olivier.png")
-        image = PIL.Image.open(path).resize((self.domain_shape[0], self.domain_shape[1]), PIL.Image.ANTIALIAS)
+        image = PIL.Image.open(path).resize((self.domain_shape[0], self.domain_shape[1]), PIL.Image.BICUBIC)
         self.data = np.asarray(image)[:, :, :3]  # 4th Channel is pointless here, only 255.
         # parametrization
         if not with_pgan:

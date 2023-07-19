@@ -51,7 +51,7 @@ class ArtificialVariable:
         """
         # use random indices for blocks
         indices = self.random_state.choice(
-            self._dimension, self.block_dimension * self.num_blocks, replace=False
+            self._dimension, self.block_dimension * self.num_blocks, replace=False  # type: ignore
         ).tolist()
         indices.sort()  # keep the indices sorted sorted so that blocks do not overlap
         # Caution this is also important for split, so that splitted arrays end un in the same block
@@ -155,10 +155,13 @@ class ArtificialFunction(ExperimentFunction):
         split: bool = False,
         bounded: bool = False,
         expo: float = 1.0,
+        zero_pen: bool = False,
     ) -> None:
         # pylint: disable=too-many-locals
         self.name = name
         self.expo = expo
+        self.translation_factor = translation_factor
+        self.zero_pen = zero_pen
         self.constraint_violation: tp.ArrayLike = []
         self._parameters = {x: y for x, y in locals().items() if x not in ["__class__", "self"]}
         # basic checks
@@ -246,7 +249,14 @@ class ArtificialFunction(ExperimentFunction):
         for block in x:
             results.append(self._func(block))
         try:
-            return float(self._aggregator(results))
+            val = float(self._aggregator(results))
+            if self.zero_pen:
+                val += 1e3 * max(  # type: ignore
+                    self.translation_factor / (1e-7 + self.translation_factor + np.linalg.norm(x.flatten()))
+                    - 0.75,
+                    0.0,
+                )
+            return val
         except OverflowError:
             return float("inf")
 

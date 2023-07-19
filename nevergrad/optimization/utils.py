@@ -104,7 +104,7 @@ def _get_nash(optimizer: tp.Any) -> tp.List[tp.Tuple[tp.Tuple[float, ...], int]]
         return [(optimizer.provide_recommendation(), 1)]
     # make deterministic at the price of sort complexity
     return sorted(
-        ((np.frombuffer(k), p.count) for k, p in optimizer.archive.bytesdict.items() if p.count >= threshold),
+        ((np.frombuffer(k), p.count) for k, p in optimizer.archive.bytesdict.items() if p.count >= threshold),  # type: ignore
         key=operator.itemgetter(1),
     )
 
@@ -267,7 +267,7 @@ class Pruning:
         threshold = float(self.min_len + 1) / len(archive)
         names = ["optimistic", "pessimistic", "average"]
         for name in names:
-            quantiles[name] = np.quantile(
+            quantiles[name] = np.quantile(  # type: ignore
                 [v.get_estimation(name) for v in archive.values()], threshold, interpolation="lower"
             )
         new_archive: Archive[MultiValue] = Archive()

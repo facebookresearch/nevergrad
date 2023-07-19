@@ -86,5 +86,5 @@ gym.envs.register(
 def test_tuple_action_space_neural() -> None:
     func = multigym.GymMulti(name="TupleActionSpace-v0", control="neural", neural_factor=1)
     results_neural = [func(np.random.normal(size=func.dimension)) for _ in range(10)]
-    assert min(results_neural) != max(results_neural)
+    assert min(results_neural) != max(results_neural)  # type: ignore
     assert all(int(r) == r for r in results_neural)  # type: ignore
