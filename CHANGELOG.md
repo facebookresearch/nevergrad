@@ -2,6 +2,9 @@
 
 ## main
 
+## v0.10.0 (2023-07-20)
+- fix the issue with the Boston dataset
+
 ## v0.9.0 (2023-07-18)
 - Add many quasi-opposite variants
 - Improve the Dagsduhloid benchmark
