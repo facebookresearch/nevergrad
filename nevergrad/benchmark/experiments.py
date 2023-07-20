@@ -229,7 +229,7 @@ def mltuning(
     optims = refactor_optims(optims)
     for dimension in [None, 1, 2, 3]:
         if dimension is None:
-            datasets = ["boston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
+            datasets = ["diabetes", "auto-mpg", "red-wine", "white-wine"]
         else:
             datasets = ["artificialcos", "artificial", "artificialsquare"]
         for regressor in ["mlp", "decision_tree", "decision_tree_depth"]:
