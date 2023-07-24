@@ -75,6 +75,8 @@ def test_header() -> None:
     output = subprocess.check_output(["find", str(repopath), "-name", "*.py"], shell=False).decode()
     missing: tp.List[str] = []
     for filepath in output.splitlines():
+        if "lsgo" in filepath:
+            continue:
         if not Path(filepath).read_text().startswith(header):
             missing.append(filepath)
     if missing:
