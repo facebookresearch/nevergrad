@@ -3354,6 +3354,7 @@ def lsgo() -> tp.Iterator[Experiment]:
         "OnePlusOne",
         "BFGS",
     ]
+    optims = refactor_optims(optims)
     for i in range(1, 16):
         for optim in optims:
             for budget in [120000, 600000, 3000000]:

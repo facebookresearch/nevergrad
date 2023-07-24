@@ -79,11 +79,11 @@ def test_functions_zeros(number: int, dimension: int, expected: float) -> None:
     f10=(10, 13, 9.78947871248564124107e07),
     f11=(11, 15, 1.01442464039521104000e17),
     f12=(12, 15, 1.71217696529957031250e12),
-    f13=(13, 14, 9.69220815693190400000e16),
+    f13=(13, 15, 9.69220815693190400000e16),
     f14=(14, 14, 4.37551256977279180800e18),
     f15=(15, 15, 2.75152052424948050000e15),
 )
 def test_functions_ones(number: int, significant: int, expected: float) -> None:
     func = _funcs.make_function(number)
     value = func(np.array([1] * func.dimension))
-    np.testing.assert_approx_equal(value, expected, significant=significant)
+    np.testing.assert_approx_equal(value, expected, significant=min(14, significant))
