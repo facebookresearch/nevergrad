@@ -76,7 +76,7 @@ def test_header() -> None:
     missing: tp.List[str] = []
     for filepath in output.splitlines():
         if "lsgo" in filepath:
-            continue:
+            continue
         if not Path(filepath).read_text().startswith(header):
             missing.append(filepath)
     if missing:
