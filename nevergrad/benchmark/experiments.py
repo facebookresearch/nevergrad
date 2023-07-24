@@ -6,6 +6,7 @@
 import os
 import warnings
 import typing as tp
+import inspect
 import itertools
 import numpy as np
 import nevergrad as ng
