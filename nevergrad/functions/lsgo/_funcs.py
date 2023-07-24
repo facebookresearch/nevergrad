@@ -41,7 +41,9 @@ class FunctionChunk:
     This can be left multiplied by a scalar to add a weight.
     """
 
-    def __init__(self, transforms: List[Callable[[np.ndarray], np.ndarray]], loss: Callable[[np.ndarray], float]) -> None:
+    def __init__(
+        self, transforms: List[Callable[[np.ndarray], np.ndarray]], loss: Callable[[np.ndarray], float]
+    ) -> None:
         self.loss = loss
         self.transforms = transforms
         self._scalar = 1.0
@@ -87,8 +89,7 @@ class LsgoFunction:
 
     @property
     def dimension(self) -> int:
-        """Dimension of the function space
-        """
+        """Dimension of the function space"""
         return self.xopt.size
 
     def instrumented(self, transform: str = "bouncing") -> ExperimentFunction:
@@ -101,7 +102,9 @@ class LsgoFunction:
         transform: str
             "bouncing", "arctan", "tanh" or "clipping"
         """
-        param = ng.p.Array(shape=(self.dimension,)).set_bounds(self.bounds[0], self.bounds[1], method=transform)
+        param = ng.p.Array(shape=(self.dimension,)).set_bounds(
+            self.bounds[0], self.bounds[1], method=transform
+        )
         return ExperimentFunction(self, param.set_name(transform))
 
 
@@ -127,7 +130,11 @@ class ShiftedRastrigin(LsgoFunction):
     tags = ["multimodal", "separable", "shifted", "irregular"]
 
     def __init__(self, xopt: np.ndarray) -> None:
-        transforms: List[Callable[[np.ndarray], np.ndarray]] = [_core.irregularity, _core.Asymmetry(0.2), _core.Illconditionning(10.0)]
+        transforms: List[Callable[[np.ndarray], np.ndarray]] = [
+            _core.irregularity,
+            _core.Asymmetry(0.2),
+            _core.Illconditionning(10.0),
+        ]
         super().__init__(xopt, [FunctionChunk(transforms, _core.rastrigin)])
 
 
@@ -140,7 +147,11 @@ class ShiftedAckley(LsgoFunction):
     tags = ["multimodal", "separable", "shifted", "irregular"]
 
     def __init__(self, xopt: np.ndarray) -> None:
-        transforms: List[Callable[[np.ndarray], np.ndarray]] = [_core.irregularity, _core.Asymmetry(0.2), _core.Illconditionning(10.0)]
+        transforms: List[Callable[[np.ndarray], np.ndarray]] = [
+            _core.irregularity,
+            _core.Asymmetry(0.2),
+            _core.Illconditionning(10.0),
+        ]
         super().__init__(xopt, [FunctionChunk(transforms, _core.ackley)])
 
 
@@ -148,8 +159,7 @@ class ShiftedAckley(LsgoFunction):
 
 
 class _MultiPartFunction(LsgoFunction):
-    """Base class for most multi-part function, overlapping or not.
-    """
+    """Base class for most multi-part function, overlapping or not."""
 
     number = -1
     bounds = (-100, 100)
@@ -164,19 +174,30 @@ class _MultiPartFunction(LsgoFunction):
         raise NotImplementedError
 
     def __init__(  # pylint: disable=too-many-arguments,too-many-locals
-        self, xopt: np.ndarray, p: np.ndarray, s: np.ndarray, w: np.ndarray, R25: np.ndarray, R50: np.ndarray, R100: np.ndarray
+        self,
+        xopt: np.ndarray,
+        p: np.ndarray,
+        s: np.ndarray,
+        w: np.ndarray,
+        R25: np.ndarray,
+        R50: np.ndarray,
+        R100: np.ndarray,
     ) -> None:
         remaining = 1000 - np.sum(s)
         assert remaining in [0, 700]
         assert xopt.size == p.size
-        indexings = _core.Indexing.from_split(p, s.tolist() + ([remaining] if remaining else []), overlap=self.overlap)
+        indexings = _core.Indexing.from_split(
+            p, s.tolist() + ([remaining] if remaining else []), overlap=self.overlap
+        )
         rotations = {num: _core.Rotation(rot) for num, rot in [(25, R25), (50, R50), (100, R100)]}
         assert w.size == len(indexings) - (remaining == 700)
         functions: List[FunctionChunk] = []
         transforms: List[Callable[[np.ndarray], np.ndarray]] = []
         for coeff, indexing in zip(w.tolist(), indexings):
             transforms = [indexing, rotations[indexing.outdim]] + self._make_transforms(side_loss=False)  # type: ignore
-            functions.append(coeff * FunctionChunk(transforms, self._make_loss(indexing.outdim, side_loss=False)))
+            functions.append(
+                coeff * FunctionChunk(transforms, self._make_loss(indexing.outdim, side_loss=False))
+            )
         if remaining:
             transforms = self._make_transforms(side_loss=True)
             loss = self._make_loss(indexings[-1].outdim, side_loss=True)
@@ -241,7 +262,9 @@ class PartiallySeparableSchwefel(_MultiPartFunction):
         return _core.sphere if side_loss else _core.schwefel_1_2
 
     def _make_transforms(self, side_loss: bool) -> List[Callable[[np.ndarray], np.ndarray]]:
-        return [] if side_loss else [_core.irregularity, _core.Asymmetry(0.2)]  # this reproduces implementations, not paper
+        return (
+            [] if side_loss else [_core.irregularity, _core.Asymmetry(0.2)]
+        )  # this reproduces implementations, not paper
 
 
 # %% PARTIALLY SEPARABLE 2 %% #
@@ -317,7 +340,14 @@ class ConflictingSchwefel(LsgoFunction):
     conditionning = -1.0  # not provided
 
     def __init__(  # pylint: disable=too-many-arguments,too-many-locals
-        self, xopt: np.ndarray, p: np.ndarray, s: np.ndarray, w: np.ndarray, R25: np.ndarray, R50: np.ndarray, R100: np.ndarray
+        self,
+        xopt: np.ndarray,
+        p: np.ndarray,
+        s: np.ndarray,
+        w: np.ndarray,
+        R25: np.ndarray,
+        R50: np.ndarray,
+        R100: np.ndarray,
     ) -> None:
         assert xopt.size == 1000
         assert p.size == 905

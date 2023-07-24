@@ -23,7 +23,7 @@ class Elliptic:
         self.weights = 10 ** np.linspace(0, 6, dimension)  # precompute for speed
 
     def __call__(self, x: np.ndarray) -> float:
-        return float(self.weights.dot(x ** 2))
+        return float(self.weights.dot(x**2))
 
 
 def elliptic(x: np.ndarray) -> float:
@@ -79,7 +79,7 @@ class Asymmetry:  # Tasy
 
     def __call__(self, x: np.ndarray) -> np.ndarray:
         exponents = 1 + self._get_weights(x.size) * np.sqrt(np.maximum(0, x))
-        return x ** exponents  # type: ignore
+        return x**exponents  # type: ignore
 
 
 class Illconditionning:  # Lambda matrix
@@ -133,8 +133,8 @@ class Rotation:
     @classmethod
     def from_random(cls, dimension: int, random_state: Optional[np.random.RandomState] = None) -> "Rotation":
         if random_state is None:
-            random_state = np.random
-        return cls(np.linalg.qr(random_state.normal(0, 1, size=(dimension, dimension)))[0])
+            random_state = np.random  # type: ignore
+        return cls(np.linalg.qr(random_state.normal(0, 1, size=(dimension, dimension)))[0])  # type: ignore
 
 
 def split(permutation: np.ndarray, dimensions: List[int], overlap: int = 0) -> List[np.ndarray]:
@@ -143,7 +143,9 @@ def split(permutation: np.ndarray, dimensions: List[int], overlap: int = 0) -> L
     assert min(permutation) == 0
     assert max(permutation) == len(permutation) - 1
     if permutation.size != expected_size:
-        raise ValueError(f"Permutation should have size {expected_size} for dimensions {dimensions} with overlap {overlap}")
+        raise ValueError(
+            f"Permutation should have size {expected_size} for dimensions {dimensions} with overlap {overlap}"
+        )
     pattern: List[np.ndarray] = []
     start_ind = 0
     for length in dimensions:

@@ -26,6 +26,7 @@ from nevergrad.functions.powersystems import PowerSystem
 from nevergrad.functions.ac import NgAquacrop
 from nevergrad.functions.stsp import STSP
 from nevergrad.functions.topology_optimization import TO
+from nevergrad.functions.lsgo import make_function as lsgo_makefunction
 from nevergrad.functions.rocket import Rocket
 from nevergrad.functions.mixsimulator import OptimizeMix
 from nevergrad.functions.unitcommitment import UnitCommitmentProblem
@@ -411,7 +412,7 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
     # return ["NLOPT_LN_BOBYQA"]
     # return ["SQPCMA"]
     # return ["CMA", "PSO", "SQOPSO", "QODE", "SODE", "TinyCMA", "OnePlusOne"]
-    # return x  #["Zero"] #return x
+    return x  # ["Zero"] #return x
 
 
 #    return ["MultiSQP", "MultiCobyla", "MultiBFGS"]
@@ -3336,3 +3337,24 @@ def team_cycling(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                 xp = Experiment(function, optim, budget=budget, num_workers=10, seed=next(seedg))
                 if not xp.is_incoherent:
                     yield xp
+
+
+@registry.register
+def lsgo() -> tp.Iterator[Experiment]:
+    optims = [
+        "Shiwa",
+        "Cobyla",
+        "Powell",
+        "CMandAS2",
+        "SQP",
+        "DE",
+        "TwoPointsDE",
+        "CMA",
+        "PSO",
+        "OnePlusOne",
+        "BFGS",
+    ]
+    for i in range(1, 16):
+        for optim in optims:
+            for budget in [120000, 600000, 3000000]:
+                yield Experiment(lsgo_makefunction(i).instrumented(), optim, budget=budget)
