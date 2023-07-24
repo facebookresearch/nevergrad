@@ -3354,6 +3354,7 @@ def lsgo() -> tp.Iterator[Experiment]:
         "OnePlusOne",
         "BFGS",
     ]
+    optims = ["PSO", "RealPSO"]
     optims = refactor_optims(optims)
     for i in range(1, 16):
         for optim in optims:
