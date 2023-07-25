@@ -339,10 +339,10 @@ def test_optimizers_minimal(name: str) -> None:
         assert 1.04 < val < 1.16, f"pb with {optimizer_cls} for 1.1: {val}"
         val = optimizer_cls(1, budget).minimize(mf).value
         assert -1.16 < val < -1.04, f"pb with {optimizer_cls} for -1.1.: {val}"
-        v = ng.p.Scalar(upper=1.0, lower=0.0)
+        v = ng.p.Scalar(upper=1.0, lower=0.0)  # type: ignore
         val = optimizer_cls(v, budget).minimize(f1).value
         assert 0.94 < val < 1.06, f"pb with {optimizer_cls} for 1.: {val}"
-        v = ng.p.Scalar(upper=0.3, lower=-0.3)
+        v = ng.p.Scalar(upper=0.3, lower=-0.3)  # type: ignore
         val = optimizer_cls(v, budget).minimize(f2).value
         assert -0.36 < val < -0.24, f"pb with {optimizer_cls} for -0.3: {val}"
 
