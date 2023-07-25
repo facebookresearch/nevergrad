@@ -128,7 +128,6 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
     algos["multiobjective_example"] = [
         "CMA",
         "DE",
-        "EvolutionStrategy",
         "ParametrizationDE",
         "RecES",
         "RecMutDE",
