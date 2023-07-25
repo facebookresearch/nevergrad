@@ -457,6 +457,9 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
 
 
 OnePlusOne = ParametrizedOnePlusOne().set_name("OnePlusOne", register=True)
+OnePlusLambda = ParametrizedOnePlusOne().set_name(
+    "OnePlusLambda", register=True
+)  # Same as one-plus-one as lambda is set to num_workers
 # SA = ParametrizedOnePlusOne(annealing="Exp0.9").set_name("SA", register=True)
 NoisyOnePlusOne = ParametrizedOnePlusOne(noise_handling="random").set_name("NoisyOnePlusOne", register=True)
 DiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete").set_name("DiscreteOnePlusOne", register=True)

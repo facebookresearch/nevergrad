@@ -2,6 +2,11 @@
 
 ## main
 
+## v0.11.0 (2023-07-25)
+- additional benchmarks
+- adding tests in the CI
+- helpers for choosing algorithms for different problems
+
 ## v0.10.0 (2023-07-20)
 - fix the issue with the Boston dataset
 

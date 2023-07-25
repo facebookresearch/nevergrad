@@ -51,8 +51,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
 
         if method == "CmaFmin2" or "NLOPT" in method:
             normalizer = p.helpers.Normalizer(self.parametrization)
-            if normalizer.fully_bounded:
-                self._normalizer = normalizer
+            self._normalizer = normalizer
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         """Called whenever calling "tell" on a candidate that was not "asked".
@@ -121,16 +120,20 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
 
                 def cma_objective_function(data):
                     # Hopefully the line below does nothing if unbounded and rescales from [0, 1] if bounded.
-                    if weakself._normalizer is not None:
+                    if weakself._normalizer is not None and weakself._normalizer.fully_bounded:
                         data = weakself._normalizer.backward(np.asarray(data, dtype=np.float32))
                     return objective_function(data)
 
                 # cma.fmin2(objective_function, [0.0] * self.dimension, [1.0] * self.dimension, remaining)
-                x0 = 0.5 * np.ones(weakself.dimension)
+                x0 = (
+                    0.5 * np.ones(weakself.dimension)
+                    if weakself._normalizer is not None and weakself._normalizer.fully_bounded
+                    else np.zeros(weakself.dimension)
+                )
                 num_calls = 0
                 while budget - num_calls > 0:
                     options = {"maxfevals": budget - num_calls, "verbose": -9}
-                    if weakself._normalizer is not None:
+                    if weakself._normalizer is not None and weakself._normalizer.fully_bounded:
                         # Tell CMA to work in [0, 1].
                         options["bounds"] = [0.0, 1.0]
                     res = cma.fmin(
@@ -140,8 +143,11 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                         options=options,
                         restarts=9,
                     )
-                    x0 = 0.5 + np.random.uniform() * np.random.uniform(
-                        low=-0.5, high=0.5, size=weakself.dimension
+                    x0 = (
+                        0.5
+                        + np.random.uniform() * np.random.uniform(low=-0.5, high=0.5, size=weakself.dimension)
+                        if weakself._normalizer is not None and weakself._normalizer.fully_bounded
+                        else np.random.randn(weakself.dimension)
                     )
                     if res[1] < best_res:
                         best_res = res[1]
@@ -163,6 +169,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                     best_res = res.fun
                     best_x = res.x
             remaining = budget - weakself._num_ask
+        assert best_x is not None
         return best_x
 
 
