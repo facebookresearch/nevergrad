@@ -49,8 +49,8 @@ except:  # ModuleNotFoundError:
     pass
 
 # from .externalbo import ParametrizedHyperOpt
-Lamcts = LamctsOptimizer(random_restart=True, device="cpu").set_name("Lamcts", register=True)
-Lamcts2 = LamctsOptimizer(random_restart=True, device="cpu").set_name("Lamcts2", register=True)
+# Lamcts = LamctsOptimizer(random_restart=True, device="cpu").set_name("Lamcts", register=True)
+# Lamcts2 = LamctsOptimizer(random_restart=True, device="cpu").set_name("Lamcts2", register=True)
 
 # run with LOGLEVEL=DEBUG for more debug information
 # logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
