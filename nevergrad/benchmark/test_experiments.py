@@ -42,6 +42,9 @@ def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[expe
     if "_pgan" in name and os.environ.get("CIRCLECI", False):
         raise SkipTest("Too slow in CircleCI")
 
+    if "gymn" in name and os.environ.get("CIRCLECI", False):
+        raise SkipTest("Too slow in CircleCI")
+
     if "yawideb" in name or "_quality" in name:
         raise SkipTest("I should have a look at this test.")
 
