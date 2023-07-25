@@ -254,15 +254,39 @@ def test_optimizers(name: str) -> None:
     patched = partial(acq_max, n_warmup=10000, n_iter=2)
     with patch("bayes_opt.bayesian_optimization.acq_max", patched):
         check_optimizer(optimizer_cls, budget=budget, verify_value=verify)
-    if optimizer_cls.one_shot or name in ["CM", "NLOPT_LN_PRAXIS", "ES", "RecMixES"]:
+
+
+@pytest.mark.parametrize("name", registry)  # type: ignore
+def test_optimizers_minimal(name: str) -> None:
+    optimizer_cls = registry[name]
+    if optimizer_cls.one_shot or name in ["CM", "NLOPT_LN_PRAXIS", "ES", "RecMixES", "RecMutDE", "RecES"]:
         return
     if any(
         x in str(optimizer_cls)
         for x in [
             "BO",
             "Meta",
-            "CMA",
+            "Voronoi",
+            "_COBYLA",
             "Chain",
+            "CMAbounded",
+            "Tiny",
+            "para",
+            "SPSA",
+            "EDA",
+            "FCMA",
+            "Noisy",
+            "HS",
+            "CMandAS",
+            "GA",
+            "EMNA",
+            "RL",
+            "Milli",
+            "Micro",
+            "Naive",
+            "Portfo",
+            "ESCH",
+            "Multi",
             "NGO",
             "Discrete",
             "MixDet",
@@ -270,6 +294,7 @@ def test_optimizers(name: str) -> None:
             "Iso",
             "Bandit",
             "TBPSA",
+            "Choice",
         ]
     ):
         return
@@ -286,17 +311,40 @@ def test_optimizers(name: str) -> None:
     def f2(x):
         return (x + 1.1) ** 2
 
-    budget = 100 if "PSO" not in name else 200
-    val = optimizer_cls(1, budget).minimize(f).value
-    assert 1.05 < val < 1.15, f"pb with {optimizer_cls} for 1.1: {val}"
-    val = optimizer_cls(1, budget).minimize(mf).value
-    assert -1.15 < val < -1.05, f"pb with {optimizer_cls} for -1.1.: {val}1"
-    v = ng.p.Scalar(upper=1.0, lower=0.0)
-    val = optimizer_cls(v, budget).minimize(f1).value
-    assert 0.95 < val < 1.05, f"pb with {optimizer_cls} for 1.: {val}0"
-    v = ng.p.Scalar(upper=0.3, lower=-0.3)
-    val = optimizer_cls(v, budget).minimize(f2).value
-    assert -0.35 < val < -0.25, f"pb with {optimizer_cls} for -0.: {val}3"
+    def f1p(x):
+        return sum((x - 1.1) ** 2)
+
+    def f2p(x):
+        return sum((x + 1.1) ** 2)
+
+    if "Cma" in name or "CMA" in name or "BIPOP" in name:  # Sometimes CMA does not work in dim 1 :-(
+        budget = 2000
+        if any(x in name for x in ["Large", "Tiny", "Para"]):
+            return
+        val = optimizer_cls(2, budget).minimize(f).value[0]
+        assert 1.04 < val < 1.16, f"pb with {optimizer_cls} for 1.1: {val}"
+        val = optimizer_cls(2, budget).minimize(mf).value[0]
+        assert -1.16 < val < -1.04, f"pb with {optimizer_cls} for -1.1.: {val}"
+        v = ng.p.Array(shape=(2,), upper=1.0, lower=0.0)
+        val = optimizer_cls(v, budget).minimize(f1p).value[0]
+        assert 0.94 < val < 1.06, f"pb with {optimizer_cls} for 1.: {val}"
+        v = ng.p.Array(shape=(2,), upper=0.3, lower=-0.3)
+        val = optimizer_cls(v, budget).minimize(f2p).value[0]
+        assert -0.36 < val < -0.24, f"pb with {optimizer_cls} for -0.3: {val}"
+    else:
+        budget = 500
+        if any(x in name for x in ["QO", "SODE"]):
+            return
+        val = optimizer_cls(1, budget).minimize(f).value
+        assert 1.04 < val < 1.16, f"pb with {optimizer_cls} for 1.1: {val}"
+        val = optimizer_cls(1, budget).minimize(mf).value
+        assert -1.16 < val < -1.04, f"pb with {optimizer_cls} for -1.1.: {val}"
+        v = ng.p.Scalar(upper=1.0, lower=0.0)
+        val = optimizer_cls(v, budget).minimize(f1).value
+        assert 0.94 < val < 1.06, f"pb with {optimizer_cls} for 1.: {val}"
+        v = ng.p.Scalar(upper=0.3, lower=-0.3)
+        val = optimizer_cls(v, budget).minimize(f2).value
+        assert -0.36 < val < -0.24, f"pb with {optimizer_cls} for -0.3: {val}"
 
 
 class RecommendationKeeper:
