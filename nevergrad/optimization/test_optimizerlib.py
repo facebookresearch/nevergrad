@@ -419,7 +419,7 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
     decimal = 2 if isinstance(optimizer_cls, optlib.ParametrizedBO) or "BO" in name else 5
     np.testing.assert_array_almost_equal(
         recom.value,
-        recomkeeper.recommendations.loc[name, :][:dimension],
+        np.array(recomkeeper.recommendations.loc[name, :][:dimension], float),
         decimal=decimal,
         err_msg="Something has changed, if this is normal, delete the following "
         f"file and rerun to update the values:\n{recomkeeper.filepath}",
