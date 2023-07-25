@@ -411,7 +411,15 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
     # return ["LargeCMA", "OldCMA", "MultiCMA"]
     # return ["NLOPT_LN_BOBYQA"]
     # return ["SQPCMA"]
-    # return ["CMA", "PSO", "SQOPSO", "QODE", "SODE", "TinyCMA", "OnePlusOne"]
+    list_optims = ["CMA", "PSO", "SQOPSO", "QODE", "SODE", "TinyCMA", "OnePlusOne"]
+
+    def doint(s):  # Converting a string into an int.
+        return 7 + sum([ord(c) * i for i, c in enumerate(s)])
+
+    import socket
+
+    host = socket.gethostname()
+    return [list_optims[doint(host) % len(list_optims)]]
     return x  # ["Zero"] #return x
 
 

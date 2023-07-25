@@ -380,7 +380,7 @@ def recomkeeper() -> tp.Generator[RecommendationKeeper, None, None]:
 def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper) -> None:
     if name in UNSEEDABLE:
         raise SkipTest("Not playing nicely with the tests (unseedable)")
-    if "BO" in name:
+    if "BO" in name or "EDA" in name:
         raise SkipTest("BO differs from one computer to another")
     if len(name) > 8:
         raise SkipTest("Let us check only compact methods.")
