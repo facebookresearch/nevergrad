@@ -294,6 +294,7 @@ def test_optimizers_minimal(name: str) -> None:
             "Iso",
             "Bandit",
             "TBPSA",
+            "VLP",
             "Choice",
         ]
     ):
