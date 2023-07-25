@@ -268,6 +268,8 @@ def test_optimizers_minimal(name: str) -> None:
             "Meta",
             "Voronoi",
             "tuning",
+            "ECMA",
+            "CMAstd",
             "_COBYLA",
             "Chain",
             "CMAbounded",
