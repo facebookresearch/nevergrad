@@ -57,12 +57,10 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
             "pysot",
             "negpysot",
             "Powell",
-        ] or "NLOPT" in method
-            or "BFGS" in method
-        ), f"Unknown method '{method}'"
-        if method == "CmaFmin2" or "NLOPT" in method or "AX" in method or "BOBYQA" in method or "pysot" in method:
+        ] or "NLOPT" in method or "BFGS" in method, f"Unknown method '{method}'"
+        if method == "CmaFmin2" or "NLOPT" in method or "AX" in method or "BOBYQA" in method or "pysot" in method or "SMAC" in method:
             normalizer = p.helpers.Normalizer(self.parametrization)
-            if normalizer.fully_bounded or method == "AX" or "pysot" == method:
+            if normalizer.fully_bounded or method == "AX" or "pysot" == method or "SMAC" in method:
                 self._normalizer = normalizer
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.Loss) -> None:
@@ -194,11 +192,11 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 best_res = result.value
                 best_x = result.params[0]
 
-            elif weakself.method == "CmaFmin2":
-                import cma  # import inline in order to avoid matplotlib initialization warning
+            elif weakself.method == "SMAC2":
 
                 # Import ConfigSpace and different types of parameters
                 from smac.configspace import ConfigurationSpace  # noqa  # pylint: disable=unused-import
+                from smac.configspace import UniformFloatHyperparameter
                 from smac.facade.smac_hpo_facade import SMAC4HPO  # noqa  # pylint: disable=unused-import
 
                 # Import SMAC-utilities
@@ -474,8 +472,8 @@ NLOPT_LN_NEWUOA_BOUND = NonObjectOptimizer(method="NLOPT_LN_NEWUOA_BOUND").set_n
 NLOPT_LN_NELDERMEAD = NonObjectOptimizer(method="NLOPT_LN_NELDERMEAD").set_name(
     "NLOPT_LN_NELDERMEAD", register=True
 )
-AX = NonObjectOptimizer(method="AX").set_name("AX", register=True)
-BOBYQA = NonObjectOptimizer(method="BOBYQA").set_name("BOBYQA", register=True)
+#AX = NonObjectOptimizer(method="AX").set_name("AX", register=True)
+#BOBYQA = NonObjectOptimizer(method="BOBYQA").set_name("BOBYQA", register=True)
 SMAC = NonObjectOptimizer(method="SMAC").set_name("SMAC", register=True)
 SMAC2 = NonObjectOptimizer(method="SMAC2").set_name("SMAC2", register=True)
 

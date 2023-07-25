@@ -50,7 +50,8 @@ from . import gymexperiments  # noqa
 
 def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
     # return ["NLOPT_LN_BOBYQA"]
-    return ["Lamcts"]
+    return ["SMAC2"]
+    return ["BOBYQA", "pysot"]
     return [
         "NLOPT_LN_SBPLX",
         "NLOPT_LN_PRAXIS",

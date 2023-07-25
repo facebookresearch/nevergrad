@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=dagstuhloid
+#SBATCH --job-name=labdag
 #SBATCH --output=dagstuhloid_%A_%a.out
 #SBATCH --error=dagstuhloid_%A_%a.err
 #SBATCH --time=72:00:00
