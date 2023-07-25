@@ -6,6 +6,7 @@
 import os
 import warnings
 import typing as tp
+import inspect
 import itertools
 import numpy as np
 import nevergrad as ng
@@ -25,6 +26,7 @@ from nevergrad.functions.powersystems import PowerSystem
 from nevergrad.functions.ac import NgAquacrop
 from nevergrad.functions.stsp import STSP
 from nevergrad.functions.topology_optimization import TO
+from nevergrad.functions.lsgo import make_function as lsgo_makefunction
 from nevergrad.functions.rocket import Rocket
 from nevergrad.functions.mixsimulator import OptimizeMix
 from nevergrad.functions.unitcommitment import UnitCommitmentProblem
@@ -48,10 +50,381 @@ from . import gymexperiments  # noqa
 
 
 def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
+    algos = {}
+    algos["aquacrop_fao"] = [
+        "CMA",
+        "CMandAS2",
+        "DE",
+        "MetaModel",
+        "NGOpt10",
+    ]
+    algos["bonnans"] = [
+        "AdaptiveDiscreteOnePlusOne",
+        "DiscreteBSOOnePlusOne",
+        "DiscreteLenglerFourthOnePlusOne",
+        "DiscreteLenglerHalfOnePlusOne",
+        "DiscreteLenglerOnePlusOne",
+        "MemeticDE",
+    ]
+    algos["double_o_seven"] = [
+        "DiagonalCMA",
+        "DiscreteDE",
+        "MetaTuneRecentering",
+        "PSO",
+        "RecombiningOptimisticNoisyDiscreteOnePlusOne",
+        "TBPSA",
+    ]
+    algos["fishing"] = [
+        "CMA",
+        "CMandAS2",
+        "ChainMetaModelSQP",
+        "DE",
+        "MetaModel",
+        "NGOpt10",
+    ]
+    algos["mldakmeans"] = [
+        "DE",
+        "SplitCMA5",
+        "SplitTwoPointsDE3",
+        "SplitTwoPointsDE5",
+        "SplitTwoPointsDEAuto",
+        "TwoPointsDE",
+    ]
+    algos["mltuning"] = [
+        "OnePlusOne",
+        "RandomSearch",
+    ]
+    algos["mono_rocket"] = [
+        "CMA",
+        "CMandAS2",
+        "DE",
+        "MetaModel",
+        "NGOpt10",
+    ]
+    algos["ms_bbob"] = [
+        "ChainMetaModelSQP",
+        "MetaModelOnePlusOne",
+        "Powell",
+        "QODE",
+        "SQP",
+        "TinyCMA",
+    ]
+    algos["multiobjective_example_hd"] = [
+        "DiscreteLenglerOnePlusOne",
+        "DiscreteOnePlusOne",
+        "MetaNGOpt10",
+        "ParametrizationDE",
+        "RecES",
+        "RecMutDE",
+    ]
+    algos["multiobjective_example_many_hd"] = [
+        "DiscreteLenglerOnePlusOne",
+        "DiscreteOnePlusOne",
+        "MetaNGOpt10",
+        "ParametrizationDE",
+        "RecES",
+        "RecMutDE",
+    ]
+    algos["multiobjective_example"] = [
+        "CMA",
+        "DE",
+        "ParametrizationDE",
+        "RecES",
+        "RecMutDE",
+    ]
+    algos["naive_seq_keras_tuning"] = [
+        "CMA",
+        "DE",
+        "HyperOpt",
+        "OnePlusOne",
+        "RandomSearch",
+        "TwoPointsDE",
+    ]
+    algos["nano_naive_seq_mltuning"] = [
+        "DE",
+        "HyperOpt",
+        "OnePlusOne",
+        "RandomSearch",
+        "TwoPointsDE",
+    ]
+    algos["nano_seq_mltuning"] = [
+        "DE",
+        "HyperOpt",
+        "OnePlusOne",
+        "RandomSearch",
+        "TwoPointsDE",
+    ]
+    algos["oneshot_mltuning"] = [
+        "DE",
+        "OnePlusOne",
+        "RandomSearch",
+        "TwoPointsDE",
+    ]
+    algos["pbbob"] = [
+        "CMAbounded",
+        "DE",
+        "MetaModelDE",
+        "MetaModelOnePlusOne",
+        "QODE",
+        "QrDE",
+    ]
+    algos["pbo_reduced_suite"] = [
+        "DiscreteLenglerOnePlusOneOrdered",
+        "DiscreteLenglerOnePlusOneTOrdered",
+        "DiscreteLenglerOnePlusOneTUnordered",
+        "SADiscreteLenglerOnePlusOneExp09Ordered",
+        "SADiscreteLenglerOnePlusOneExp09Unordered",
+        "discretememetic",
+    ]
+    algos["reduced_yahdlbbbob"] = [
+        "CMA",
+        "DE",
+        "MetaModelOnePlusOne",
+        "OnePlusOne",
+        "PSO",
+        "RFMetaModelDE",
+    ]
+    algos["seq_keras_tuning"] = [
+        "CMA",
+        "DE",
+        "HyperOpt",
+        "OnePlusOne",
+        "RandomSearch",
+        "TwoPointsDE",
+    ]
+    algos["sequential_topology_optimization"] = [
+        "CMA",
+        "DE",
+        "GeneticDE",
+        "OnePlusOne",
+        "TwoPointsDE",
+        "VoronoiDE",
+    ]
+    algos["spsa_benchmark"] = [
+        "CMA",
+        "DE",
+        "NaiveTBPSA",
+        "OnePlusOne",
+        "SPSA",
+        "TBPSA",
+    ]
+    algos["topology_optimization"] = [
+        "CMA",
+        "DE",
+        "GeneticDE",
+        "OnePlusOne",
+        "TwoPointsDE",
+        "VoronoiDE",
+    ]
+    algos["yabbob"] = [
+        "CMA",
+        "ChainMetaModelSQP",
+        "MetaModel",
+        "MetaModelOnePlusOne",
+        "NeuralMetaModel",
+        "OnePlusOne",
+    ]
+    algos["yabigbbob"] = [
+        "ChainMetaModelSQP",
+        "MetaModel",
+        "MetaModelDE",
+        "NeuralMetaModel",
+        "PSO",
+        "TwoPointsDE",
+    ]
+    algos["yaboundedbbob"] = [
+        "CMA",
+        "MetaModel",
+        "MetaModelOnePlusOne",
+        "NeuralMetaModel",
+        "OnePlusOne",
+        "RFMetaModel",
+    ]
+    algos["yaboxbbob"] = [
+        "CMA",
+        "MetaModel",
+        "MetaModelOnePlusOne",
+        "NeuralMetaModel",
+        "OnePlusOne",
+        "RFMetaModel",
+    ]
+    algos["yamegapenbbob"] = [
+        "ChainMetaModelSQP",
+        "MetaModel",
+        "MetaModelOnePlusOne",
+        "NeuralMetaModel",
+        "OnePlusOne",
+        "RFMetaModel",
+    ]
+    algos["yamegapenboundedbbob"] = [
+        "CMA",
+        "ChainMetaModelSQP",
+        "MetaModel",
+        "MetaModelOnePlusOne",
+        "OnePlusOne",
+        "RFMetaModel",
+    ]
+    algos["yamegapenboxbbob"] = [
+        "ChainMetaModelSQP",
+        "MetaModel",
+        "MetaModelOnePlusOne",
+        "NeuralMetaModel",
+        "OnePlusOne",
+        "RFMetaModel",
+    ]
+    algos["yanoisybbob"] = [
+        "BFGS",
+        "MicroCMA",
+        "NoisyDiscreteOnePlusOne",
+        "RandomSearch",
+        "RecombiningOptimisticNoisyDiscreteOnePlusOne",
+        "SQP",
+    ]
+    algos["yaonepenbbob"] = [
+        "CMandAS2",
+        "ChainMetaModelSQP",
+        "MetaModel",
+        "NGOpt",
+        "NeuralMetaModel",
+        "Shiwa",
+    ]
+    algos["yaonepenboundedbbob"] = [
+        "CMA",
+        "MetaModel",
+        "MetaModelOnePlusOne",
+        "NeuralMetaModel",
+        "OnePlusOne",
+        "RFMetaModel",
+    ]
+    algos["yaonepenboxbbob"] = [
+        "CMA",
+        "MetaModel",
+        "MetaModelOnePlusOne",
+        "NeuralMetaModel",
+        "OnePlusOne",
+        "RFMetaModel",
+    ]
+    algos["yaonepennoisybbob"] = [
+        "NoisyDiscreteOnePlusOne",
+        "RandomSearch",
+        "SQP",
+        "TBPSA",
+    ]
+    algos["yaonepenparabbob"] = [
+        "CMA",
+        "MetaModel",
+        "MetaModelDE",
+        "NeuralMetaModel",
+        "RFMetaModel",
+        "RFMetaModelDE",
+    ]
+    algos["yaonepensmallbbob"] = [
+        "Cobyla",
+        "MetaModel",
+        "MetaModelOnePlusOne",
+        "NeuralMetaModel",
+        "OnePlusOne",
+        "RFMetaModel",
+    ]
+    algos["yaparabbob"] = [
+        "CMA",
+        "MetaModel",
+        "MetaModelDE",
+        "NeuralMetaModel",
+        "RFMetaModel",
+        "RFMetaModelDE",
+    ]
+    algos["yapenbbob"] = [
+        "ChainMetaModelSQP",
+        "MetaModel",
+        "MetaModelOnePlusOne",
+        "NeuralMetaModel",
+        "OnePlusOne",
+        "RFMetaModel",
+    ]
+    algos["yapenboundedbbob"] = [
+        "CMA",
+        "MetaModel",
+        "MetaModelOnePlusOne",
+        "NeuralMetaModel",
+        "OnePlusOne",
+        "RFMetaModel",
+    ]
+    algos["yapenboxbbob"] = [
+        "CMA",
+        "MetaModel",
+        "MetaModelOnePlusOne",
+        "NeuralMetaModel",
+        "OnePlusOne",
+        "RFMetaModel",
+    ]
+    algos["yapennoisybbob"] = [
+        "NoisyDiscreteOnePlusOne",
+        "RandomSearch",
+        "SQP",
+        "TBPSA",
+    ]
+    algos["yapenparabbob"] = [
+        "CMA",
+        "MetaModel",
+        "MetaModelDE",
+        "NeuralMetaModel",
+        "RFMetaModel",
+        "RFMetaModelDE",
+    ]
+    algos["yapensmallbbob"] = [
+        "Cobyla",
+        "MetaModel",
+        "MetaModelOnePlusOne",
+        "OnePlusOne",
+        "RFMetaModel",
+        "RFMetaModelDE",
+    ]
+    algos["yasmallbbob"] = [
+        "Cobyla",
+        "MetaModelDE",
+        "MetaModelOnePlusOne",
+        "OnePlusOne",
+        "PSO",
+        "RFMetaModelDE",
+    ]
+    algos["yatinybbob"] = [
+        "Cobyla",
+        "DE",
+        "MetaModel",
+        "MetaModelDE",
+        "MetaModelOnePlusOne",
+        "TwoPointsDE",
+    ]
+    algos["yatuningbbob"] = [
+        "Cobyla",
+        "MetaModelOnePlusOne",
+        "NeuralMetaModel",
+        "RFMetaModelDE",
+        "RandomSearch",
+        "TwoPointsDE",
+    ]
+
+    # Below, we use the best in the records above.
+    benchmark = str(inspect.stack()[1].function)
+    if benchmark in algos:
+        return algos[benchmark][:5]
     # return ["LargeCMA", "OldCMA", "MultiCMA"]
     # return ["NLOPT_LN_BOBYQA"]
     # return ["SQPCMA"]
-    return x
+
+    # Here, we pseudo-randomly draw one optim in the provided list,
+    # depending on the host (so that each host is using the same optim).
+    list_optims = x
+
+    def doint(s):  # Converting a string into an int.
+        return 7 + sum([ord(c) * i for i, c in enumerate(s)])
+
+    import socket
+
+    host = socket.gethostname()
+    return [list_optims[doint(host) % len(list_optims)]]
+    return x  # ["Zero"] #return x
 
 
 #    return ["MultiSQP", "MultiCobyla", "MultiBFGS"]
@@ -2976,3 +3349,27 @@ def team_cycling(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                 xp = Experiment(function, optim, budget=budget, num_workers=10, seed=next(seedg))
                 if not xp.is_incoherent:
                     yield xp
+
+
+@registry.register
+def lsgo() -> tp.Iterator[Experiment]:
+    optims = [
+        "Shiwa",
+        "Cobyla",
+        "Powell",
+        "CMandAS2",
+        "SQP",
+        "DE",
+        "TwoPointsDE",
+        "CMA",
+        "PSO",
+        "OnePlusOne",
+        "BFGS",
+    ]
+    optims = ["PSO", "RealPSO"]
+    optims = ["CMA", "PSO", "SQOPSO", "QODE", "SODE", "TinyCMA", "OnePlusOne"]
+    optims = refactor_optims(optims)
+    for i in range(1, 16):
+        for optim in optims:
+            for budget in [120000, 600000, 3000000]:
+                yield Experiment(lsgo_makefunction(i).instrumented(), optim, budget=budget)
