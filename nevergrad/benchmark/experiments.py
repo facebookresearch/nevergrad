@@ -405,13 +405,18 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
         "RandomSearch",
         "TwoPointsDE",
     ]
+
+    # Below, we use the best in the records above.
     benchmark = str(inspect.stack()[1].function)
     if benchmark in algos:
-        return algos[benchmark][:2]
+        return algos[benchmark][:5]
     # return ["LargeCMA", "OldCMA", "MultiCMA"]
     # return ["NLOPT_LN_BOBYQA"]
     # return ["SQPCMA"]
-    list_optims = ["CMA", "PSO", "SQOPSO", "QODE", "SODE", "TinyCMA", "OnePlusOne"]
+
+    # Here, we pseudo-randomly draw one optim in the provided list,
+    # depending on the host (so that each host is using the same optim).
+    list_optims = x
 
     def doint(s):  # Converting a string into an int.
         return 7 + sum([ord(c) * i for i, c in enumerate(s)])
@@ -3363,6 +3368,7 @@ def lsgo() -> tp.Iterator[Experiment]:
         "BFGS",
     ]
     optims = ["PSO", "RealPSO"]
+    optims = ["CMA", "PSO", "SQOPSO", "QODE", "SODE", "TinyCMA", "OnePlusOne"]
     optims = refactor_optims(optims)
     for i in range(1, 16):
         for optim in optims:
