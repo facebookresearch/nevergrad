@@ -1,1 +1,0 @@
-bounded_01 branch contains the code to address bounded domains by deleting the transformation in BO-based optims and using set_bounded option in the parametrization of the optims that natively work on unbouded domains (R^n)
