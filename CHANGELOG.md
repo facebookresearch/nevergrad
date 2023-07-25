@@ -2,6 +2,21 @@
 
 ## main
 
+## v0.11.0 (2023-07-25)
+- additional benchmarks
+- adding tests in the CI
+- helpers for choosing algorithms for different problems
+
+## v0.10.0 (2023-07-20)
+- fix the issue with the Boston dataset
+
+## v0.9.0 (2023-07-18)
+- Add many quasi-opposite variants
+- Improve the Dagsduhloid benchmark
+- Get rid of legacy pypi solver in CircleCI
+- Update Pypi in CircleCI
+- Switch to Python 3.8
+
 ## v0.8.0 (2023-07-03)
 - Add the Dagstuhloid benchmark
 - Add yet another group of metamodels

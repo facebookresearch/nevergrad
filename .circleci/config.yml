@@ -11,9 +11,9 @@ orbs:
 
 # the set up in which the ubuntu jobs will run:
 executors:
-  ubuntu-python37:
+  ubuntu-python38:
     docker:
-      - image: cimg/python:3.7
+      - image: cimg/python:3.8
     working_directory: ~/repo
 
 
@@ -37,13 +37,14 @@ commands:
             rm -rf venv && python3 -m venv venv
             . venv/bin/activate
             pip install --progress-bar off -U pip setuptools
-            pip install --progress-bar off --use-deprecated=legacy-resolver -e .[all]
+            pip install --progress-bar off -e .[all]
+            #pip install --progress-bar off --use-deprecated=legacy-resolver -e .[all]
             pip install --progress-bar off -U numpy>=1.20.0
             pip install keras==2.6.0  # issue on Nov 4th 2021
 
 jobs:
   install:
-    executor: ubuntu-python37
+    executor: ubuntu-python38
 
     steps:
       - checkout
@@ -60,7 +61,7 @@ jobs:
           command: |
             python3 -m venv venv
             . venv/bin/activate
-            pip install --progress-bar off pip==21.0.1
+            pip install --progress-bar off pip==23.2
             pip install --progress-bar off -e .
 
       - run:
@@ -123,7 +124,8 @@ jobs:
             pip install -U pip
             cd ..  # don't use nevergrad locally
             echo "Installing wheel"
-            pip install --progress-bar off --use-deprecated=legacy-resolver repo/nevergrad-build/dist/nevergrad-*any.whl
+            pip install --progress-bar off repo/nevergrad-build/dist/nevergrad-*any.whl
+            #pip install --progress-bar off --use-deprecated=legacy-resolver repo/nevergrad-build/dist/nevergrad-*any.whl
             echo "Installed wheel"
             python -c "from nevergrad import functions;f = functions.ArtificialFunction(name='sphere', block_dimension=2);f([2, 3])"
 
@@ -143,7 +145,7 @@ jobs:
           paths: html
 
   docs-links:
-    executor: ubuntu-python37
+    executor: ubuntu-python38
 
     steps:
 
@@ -158,7 +160,7 @@ jobs:
             make linkcheck
 
   static:
-    executor: ubuntu-python37
+    executor: ubuntu-python38
 
     steps:
 
@@ -190,7 +192,7 @@ jobs:
 
 
   pytests:
-    executor: ubuntu-python37
+    executor: ubuntu-python38
 
     steps:
 
@@ -279,7 +281,7 @@ jobs:
 
   pypi-deploy:
 
-    executor: ubuntu-python37
+    executor: ubuntu-python38
 
     steps:
 

@@ -60,8 +60,9 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
         ] or "NLOPT" in method or "BFGS" in method, f"Unknown method '{method}'"
         if method == "CmaFmin2" or "NLOPT" in method or "AX" in method or "BOBYQA" in method or "pysot" in method or "SMAC" in method:
             normalizer = p.helpers.Normalizer(self.parametrization)
-            if normalizer.fully_bounded or method == "AX" or "pysot" == method or "SMAC" in method:
-                self._normalizer = normalizer
+#            if normalizer.fully_bounded or method == "AX" or "pysot" == method or "SMAC" in method:
+#                self._normalizer = normalizer
+            self._normalizer = normalizer
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.Loss) -> None:
         """Called whenever calling "tell" on a candidate that was not "asked".
@@ -115,7 +116,10 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 import nlopt
 
                 def nlopt_objective_function(*args):
-                    data = np.asarray([arg for arg in args])[0]
+                    try:
+                        data = np.asarray([arg for arg in args if len(arg) > 0])[0]
+                    except Exception as e:
+                        raise ValueError(f"{e}:\n{args}\n {[arg for arg in args]}")
                     assert len(data) == weakself.dimension, (
                         str(data) + " does not have length " + str(weakself.dimension)
                     )
@@ -332,57 +336,51 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 if cost < best_res:
                     best_res = cost
                     best_x = weakself._normalizer.backward(np.asarray(x, dtype=np.float))
+
+                    
+            elif weakself.method == "CmaFmin2":
+                def cma_objective_function(data):
+                    # Hopefully the line below does nothing if unbounded and rescales from [0, 1] if bounded.
+                    if weakself._normalizer is not None and weakself._normalizer.fully_bounded:
+                        data = weakself._normalizer.backward(np.asarray(data, dtype=np.float32))
+                    return objective_function(data)
+
+                # cma.fmin2(objective_function, [0.0] * self.dimension, [1.0] * self.dimension, remaining)
+                x0 = (
+                    0.5 * np.ones(weakself.dimension)
+                    if weakself._normalizer is not None and weakself._normalizer.fully_bounded
+                    else np.zeros(weakself.dimension)
+                )
+                num_calls = 0
+                while budget - num_calls > 0:
+                    options = {"maxfevals": budget - num_calls, "verbose": -9}
+                    if weakself._normalizer is not None and weakself._normalizer.fully_bounded:
+                        # Tell CMA to work in [0, 1].
+                        options["bounds"] = [0.0, 1.0]
+                    res = cma.fmin(
+                        cma_objective_function,
+                        x0=x0,
+                        sigma0=0.2,
+                        options=options,
+                        restarts=9,
+                    )
+                    x0 = (
+                        0.5
+                        + np.random.uniform() * np.random.uniform(low=-0.5, high=0.5, size=weakself.dimension)
+                        if weakself._normalizer is not None and weakself._normalizer.fully_bounded
+                        else np.random.randn(weakself.dimension)
+                    )
+                    if res[1] < best_res:
+                        best_res = res[1]
+                        best_x = res[0]            
+                        if weakself._normalizer is not None:
+                            best_x = weakself._normalizer.backward(np.asarray(best_x, dtype=np.float32))
+                    num_calls += res[2]                    
             else:
                 res = scipyoptimize.minimize(
                     objective_function,
                     best_x if not weakself.random_restart else weakself._rng.normal(0.0, 1.0, weakself.dimension),
                     method=weakself.method,
-#        best_x: np.ndarray = weakself.current_bests["average"].x  # np.zeros(self.dimension)
-#        if weakself.initial_guess is not None:
-#            best_x = np.array(weakself.initial_guess, copy=True)  # copy, just to make sure it is not modified
-#        remaining: float = budget - weakself._num_ask
-#        while remaining > 0:  # try to restart if budget is not elapsed
-#            options: tp.Dict[str, tp.Any] = {} if weakself.budget is None else {"maxiter": remaining}
-#            # options: tp.Dict[str, tp.Any] = {} if self.budget is None else {"maxiter": remaining}
-#            if weakself.method == "CmaFmin2":
-#
-#                def cma_objective_function(data):
-#                    # Hopefully the line below does nothing if unbounded and rescales from [0, 1] if bounded.
-#                    if weakself._normalizer is not None:
-#                        data = weakself._normalizer.backward(np.asarray(data, dtype=np.float32))
-#                    return objective_function(data)
-#
-#                # cma.fmin2(objective_function, [0.0] * self.dimension, [1.0] * self.dimension, remaining)
-#                x0 = 0.5 * np.ones(weakself.dimension)
-#                num_calls = 0
-#                while budget - num_calls > 0:
-#                    options = {"maxfevals": budget - num_calls, "verbose": -9}
-#                    if weakself._normalizer is not None:
-#                        # Tell CMA to work in [0, 1].
-#                        options["bounds"] = [0.0, 1.0]
-#                    res = cma.fmin(
-#                        cma_objective_function,
-#                        x0=x0,
-#                        sigma0=0.2,
-#                        options=options,
-#                        restarts=9,
-#                    )
-#                    x0 = 0.5 + np.random.uniform() * np.random.uniform(
-#                        low=-0.5, high=0.5, size=weakself.dimension
-#                    )
-#                    if res[1] < best_res:
-#                        best_res = res[1]
-#                        best_x = res[0]
-#                        if weakself._normalizer is not None:
-#                            best_x = weakself._normalizer.backward(np.asarray(best_x, dtype=np.float32))
-#                    num_calls += res[2]
-#            else:
-#                res = scipyoptimize.minimize(
-#                    objective_function,
-#                    best_x
-#                    if not weakself.random_restart
-#                    else weakself._rng.normal(0.0, 1.0, weakself.dimension),
-#                    method=weakself.method,
                     options=options,
                     tol=0,
                 )
@@ -390,6 +388,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                     best_res = res.fun
                     best_x = res.x
             remaining = budget - weakself._num_ask
+        assert best_x is not None
         return best_x
 
 
@@ -453,7 +452,7 @@ SQP = NonObjectOptimizer(method="SLSQP").set_name("SQP", register=True)
 SLSQP = SQP  # Just so that people who are familiar with SLSQP naming are not lost.
 RSQP = NonObjectOptimizer(method="SLSQP", random_restart=True).set_name("RSQP", register=True)
 RSLSQP = RSQP  # Just so that people who are familiar with SLSQP naming are not lost.
-NEWUOA = NonObjectOptimizer(method="NLOPT_LN_NEWUOA_BOUND").set_name("NEWUOA", register=True)
+# NEWUOA = NonObjectOptimizer(method="NLOPT_LN_NEWUOA_BOUND").set_name("NEWUOA", register=True)
 NLOPT_LN_SBPLX = NonObjectOptimizer(method="NLOPT_LN_SBPLX").set_name("NLOPT_LN_SBPLX", register=True)
 NLOPT_LN_PRAXIS = NonObjectOptimizer(method="NLOPT_LN_PRAXIS").set_name("NLOPT_LN_PRAXIS", register=True)
 NLOPT_GN_DIRECT = NonObjectOptimizer(method="NLOPT_GN_DIRECT").set_name("NLOPT_GN_DIRECT", register=True)
@@ -476,8 +475,6 @@ NLOPT_LN_NELDERMEAD = NonObjectOptimizer(method="NLOPT_LN_NELDERMEAD").set_name(
 #BOBYQA = NonObjectOptimizer(method="BOBYQA").set_name("BOBYQA", register=True)
 SMAC = NonObjectOptimizer(method="SMAC").set_name("SMAC", register=True)
 SMAC2 = NonObjectOptimizer(method="SMAC2").set_name("SMAC2", register=True)
-
-#NEWUOA = NonObjectOptimizer(method="NLOPT_LN_NEWUOA_BOUND").set_name("NEWUOA", register=True)
 
 
 class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):

@@ -256,11 +256,11 @@ class ParetoFront:
                     best_score = float("inf") if subset != "EPS" else 0.0
                     for pa in tentative:
                         if subset == "loss-covering":  # Equivalent to IGD.
-                            best_score = min(best_score, np.linalg.norm(pa.losses - v.losses))
+                            best_score = min(best_score, np.linalg.norm(pa.losses - v.losses))  # type: ignore
                         elif subset == "EPS":  # Cone Epsilon-Dominance.
                             best_score = min(best_score, max(pa.losses - v.losses))
                         elif subset == "domain-covering":
-                            best_score = min(
+                            best_score = min(  # type: ignore
                                 best_score, np.linalg.norm(pa.get_standardized_data(reference=v))
                             )  # TODO verify
                         else:

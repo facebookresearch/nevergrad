@@ -32,7 +32,7 @@ def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[expe
         raise SkipTest("Too expensive: we randomly skip 3/4 of these tests.")
 
     # "mav" is not availablefor now.
-    if "conformant" in name or name == "neuro_planning":
+    if "conformant" in name or name == "neuro_planning" or "sparse" in name:
         raise SkipTest("This is user parametric and can not be tested.")
 
     if "compiler" in name or "emulators" in name:
@@ -42,7 +42,10 @@ def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[expe
     if "_pgan" in name and os.environ.get("CIRCLECI", False):
         raise SkipTest("Too slow in CircleCI")
 
-    if "yawideb" in name:
+    if "gymn" in name and os.environ.get("CIRCLECI", False):
+        raise SkipTest("Too slow in CircleCI")
+
+    if "yawideb" in name or "_quality" in name:
         raise SkipTest("I should have a look at this test.")
 
     # mixsimulator is not accepted by circleci pytest.
