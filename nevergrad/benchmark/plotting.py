@@ -501,10 +501,12 @@ class XpPlotter:
         if name_style is None:
             name_style = NameStyle()
         upperbound = min(
-        #upperbound = max(
-            np.max(vals["loss"]) for vals in optim_vals.values() if np.max(vals["loss"]) < np.inf
+            # upperbound = max(
+            np.max(vals["loss"])
+            for vals in optim_vals.values()
+            if np.max(vals["loss"]) < np.inf
         )
-        #upperbound = min(upperbound, )
+        # upperbound = min(upperbound, )
         for optim, vals in optim_vals.items():
             if optim.lower() in ["stupid", "idiot"] or optim in ["Zero", "StupidRandom"]:
                 upperbound = min(upperbound, np.max(vals["loss"]))
@@ -530,7 +532,7 @@ class XpPlotter:
                 if ov["loss"].size:
                     ov["loss"] = np.maximum(1e-30, ov["loss"])
         # other setups
-        #self._ax.autoscale(enable=False)
+        # self._ax.autoscale(enable=False)
         self._ax.set_xscale("log")
         self._ax.set_xlabel(xaxis)
         self._ax.set_ylabel("loss")
@@ -585,13 +587,13 @@ class XpPlotter:
         if not (np.isnan(upperbound) or np.isinf(upperbound)):
             upperbound_up = upperbound
             if not (np.isnan(lowerbound) or np.isinf(lowerbound)):
-                #self._ax.set_ylim(bottom=lowerbound)
+                # self._ax.set_ylim(bottom=lowerbound)
                 upperbound_up += 0.02 * (upperbound - lowerbound)
                 if logplot:
                     upperbound_up = 10 ** (
                         np.log10(upperbound) + 0.02 * (np.log10(upperbound) - np.log10(lowerbound))
                     )
-            #self._ax.set_ylim(top=upperbound_up)
+            # self._ax.set_ylim(top=upperbound_up)
         all_x = [v for vals in optim_vals.values() for v in vals[xaxis]]
         self._ax.set_xlim([min(all_x), max(all_x)])
         self.add_legends(legend_infos)

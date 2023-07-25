@@ -36,32 +36,44 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
         self._normalizer: tp.Any = None
         self.initial_guess: tp.Optional[tp.ArrayLike] = None
         # configuration
-        #assert method in ["Nelder-Mead", "COBYLA", "SLSQP", "Powell", "BOBYQA", "AX"], f"Unknown method '{method}'"
-        #assert method in ["SMAC2", "SMAC", "Nelder-Mead", "COBYLA", "SLSQP", "Powell"], f"Unknown method '{method}'"
+        # assert method in ["Nelder-Mead", "COBYLA", "SLSQP", "Powell", "BOBYQA", "AX"], f"Unknown method '{method}'"
+        # assert method in ["SMAC2", "SMAC", "Nelder-Mead", "COBYLA", "SLSQP", "Powell"], f"Unknown method '{method}'"
         self.method = method
         self.random_restart = random_restart
-        #self._normalizer = p.helpers.Normalizer(self.parametrization)
-        assert method in [
-            "CmaFmin2",
-            "SMAC2",
-            "BFGS",
-            "LBFGSB",
-            "L-BFGS-B",
-            "SMAC",
-            "AX",
-            "Lamcts",
-            "Nelder-Mead",
-            "COBYLA",
-            "BOBYQA",
-            "SLSQP",
-            "pysot",
-            "negpysot",
-            "Powell",
-        ] or "NLOPT" in method or "BFGS" in method, f"Unknown method '{method}'"
-        if method == "CmaFmin2" or "NLOPT" in method or "AX" in method or "BOBYQA" in method or "pysot" in method or "SMAC" in method:
+        # self._normalizer = p.helpers.Normalizer(self.parametrization)
+        assert (
+            method
+            in [
+                "CmaFmin2",
+                "SMAC2",
+                "BFGS",
+                "LBFGSB",
+                "L-BFGS-B",
+                "SMAC",
+                "AX",
+                "Lamcts",
+                "Nelder-Mead",
+                "COBYLA",
+                "BOBYQA",
+                "SLSQP",
+                "pysot",
+                "negpysot",
+                "Powell",
+            ]
+            or "NLOPT" in method
+            or "BFGS" in method
+        ), f"Unknown method '{method}'"
+        if (
+            method == "CmaFmin2"
+            or "NLOPT" in method
+            or "AX" in method
+            or "BOBYQA" in method
+            or "pysot" in method
+            or "SMAC" in method
+        ):
             normalizer = p.helpers.Normalizer(self.parametrization)
-#            if normalizer.fully_bounded or method == "AX" or "pysot" == method or "SMAC" in method:
-#                self._normalizer = normalizer
+            #            if normalizer.fully_bounded or method == "AX" or "pysot" == method or "SMAC" in method:
+            #                self._normalizer = normalizer
             self._normalizer = normalizer
 
     def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.Loss) -> None:
@@ -162,7 +174,11 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                     def eval(self, data):
                         if weakself._normalizer is not None:
                             data = weakself._normalizer.backward(np.asarray(data, dtype=np.float32))
-                        val = float(objective_function(data)) if "negpysot" not in weakself.method else -float(objective_function(data))
+                        val = (
+                            float(objective_function(data))
+                            if "negpysot" not in weakself.method
+                            else -float(objective_function(data))
+                        )
                         return val
 
                 dim = weakself.dimension
@@ -209,9 +225,11 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 import os
                 import time
                 from pathlib import Path
+
                 the_date = str(time.time())
                 feed = "/tmp/smac_feed" + the_date + ".txt"
                 fed = "/tmp/smac_fed" + the_date + ".txt"
+
                 def dummy_function():
                     for u in range(remaining):
                         print(f"side thread waiting for request... ({u}/{weakself.budget})")
@@ -228,9 +246,9 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                         f.write(str(res))
                         f.close()
                     return
+
                 thread = threading.Thread(target=dummy_function)
                 thread.start()
-
 
                 print(f"start SMAC2 optimization with budget {budget} in dimension {weakself.dimension}")
                 cs = ConfigurationSpace()
@@ -248,6 +266,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                         "deterministic": "true",
                     }
                 )
+
                 def smac2_obj(p):
                     print(f"SMAC2 proposes {p}")
                     p = [p[f"x{i}"] for i in range(len(p.keys()))]
@@ -264,6 +283,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                     f.close()
                     print(f"SMAC2 will receive {res}")
                     return res
+
                 smac = SMAC4HPO(scenario=scenario, rng=weakself._rng.randint(5000), tae_runner=smac2_obj)
                 res = smac.optimize()
                 best_x = [res[f"x{k}"] for k in range(len(res.keys()))]
@@ -281,9 +301,11 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 import os
                 import time
                 from pathlib import Path
+
                 the_date = str(time.time())
                 feed = "/tmp/smac_feed" + the_date + ".txt"
                 fed = "/tmp/smac_fed" + the_date + ".txt"
+
                 def dummy_function():
                     for u in range(remaining):
                         print(f"side thread waiting for request... ({u}/{weakself.budget})")
@@ -300,12 +322,15 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                         f.write(str(res))
                         f.close()
                     return
+
                 thread = threading.Thread(target=dummy_function)
                 thread.start()
 
                 def smac_obj(p):
                     print(f"SMAC proposes {p}")
-                    data = weakself._normalizer.backward(np.asarray([p[i] for i in range(len(p))], dtype=np.float))
+                    data = weakself._normalizer.backward(
+                        np.asarray([p[i] for i in range(len(p))], dtype=np.float)
+                    )
                     print(f"converted to {data}")
                     if Path(fed).is_file():
                         os.remove(fed)
@@ -322,10 +347,10 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 print(f"start SMAC optimization with budget {budget} in dimension {weakself.dimension}")
                 assert budget is not None
                 x, cost, _ = fmin_smac(
-                    #func=lambda x: sum([(x_ - 1.234)**2  for x_ in x]),
+                    # func=lambda x: sum([(x_ - 1.234)**2  for x_ in x]),
                     func=smac_obj,
                     x0=[0.0] * weakself.dimension,
-                    bounds=[(0., 1.)] * weakself.dimension,
+                    bounds=[(0.0, 1.0)] * weakself.dimension,
                     maxfun=remaining,
                     rng=weakself._rng.randint(5000),
                 )  # Passing a seed makes fmin_smac determistic
@@ -337,8 +362,8 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                     best_res = cost
                     best_x = weakself._normalizer.backward(np.asarray(x, dtype=np.float))
 
-                    
             elif weakself.method == "CmaFmin2":
+
                 def cma_objective_function(data):
                     # Hopefully the line below does nothing if unbounded and rescales from [0, 1] if bounded.
                     if weakself._normalizer is not None and weakself._normalizer.fully_bounded:
@@ -372,14 +397,16 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                     )
                     if res[1] < best_res:
                         best_res = res[1]
-                        best_x = res[0]            
+                        best_x = res[0]
                         if weakself._normalizer is not None:
                             best_x = weakself._normalizer.backward(np.asarray(best_x, dtype=np.float32))
-                    num_calls += res[2]                    
+                    num_calls += res[2]
             else:
                 res = scipyoptimize.minimize(
                     objective_function,
-                    best_x if not weakself.random_restart else weakself._rng.normal(0.0, 1.0, weakself.dimension),
+                    best_x
+                    if not weakself.random_restart
+                    else weakself._rng.normal(0.0, 1.0, weakself.dimension),
                     method=weakself.method,
                     options=options,
                     tol=0,
@@ -441,7 +468,7 @@ AX = NonObjectOptimizer(method="AX").set_name("AX", register=True)
 BOBYQA = NonObjectOptimizer(method="BOBYQA").set_name("BOBYQA", register=True)
 NelderMead = NonObjectOptimizer(method="Nelder-Mead").set_name("NelderMead", register=True)
 CmaFmin2 = NonObjectOptimizer(method="CmaFmin2").set_name("CmaFmin2", register=True)
-#NLOPT = NonObjectOptimizer(method="NLOPT").set_name("NLOPT", register=True)
+# NLOPT = NonObjectOptimizer(method="NLOPT").set_name("NLOPT", register=True)
 Powell = NonObjectOptimizer(method="Powell").set_name("Powell", register=True)
 RPowell = NonObjectOptimizer(method="Powell", random_restart=True).set_name("RPowell", register=True)
 BFGS = NonObjectOptimizer(method="BFGS", random_restart=True).set_name("BFGS", register=True)
@@ -471,8 +498,8 @@ NLOPT_LN_NEWUOA_BOUND = NonObjectOptimizer(method="NLOPT_LN_NEWUOA_BOUND").set_n
 NLOPT_LN_NELDERMEAD = NonObjectOptimizer(method="NLOPT_LN_NELDERMEAD").set_name(
     "NLOPT_LN_NELDERMEAD", register=True
 )
-#AX = NonObjectOptimizer(method="AX").set_name("AX", register=True)
-#BOBYQA = NonObjectOptimizer(method="BOBYQA").set_name("BOBYQA", register=True)
+# AX = NonObjectOptimizer(method="AX").set_name("AX", register=True)
+# BOBYQA = NonObjectOptimizer(method="BOBYQA").set_name("BOBYQA", register=True)
 SMAC = NonObjectOptimizer(method="SMAC").set_name("SMAC", register=True)
 SMAC2 = NonObjectOptimizer(method="SMAC2").set_name("SMAC2", register=True)
 
@@ -785,8 +812,8 @@ PymooNSGA2 = Pymoo(algorithm="nsga2").set_name("PymooNSGA2", register=True)
 
 from .lamcts.MCTS import lamcts_minimize
 
-class _LamctsMinimizeBase(recaster.SequentialRecastOptimizer):
 
+class _LamctsMinimizeBase(recaster.SequentialRecastOptimizer):
     def __init__(
         self,
         parametrization: IntOrParameter,
@@ -795,7 +822,7 @@ class _LamctsMinimizeBase(recaster.SequentialRecastOptimizer):
         *,
         method: str = "Nelder-Mead",
         random_restart: bool = False,
-        device: str = 'cpu',
+        device: str = "cpu",
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.multirun = 1  # work in progress
@@ -822,7 +849,8 @@ class _LamctsMinimizeBase(recaster.SequentialRecastOptimizer):
             budget=self.budget,
             num_workers=self.num_workers,
             method=self.method,
-            random_restart=self.random_restart)
+            random_restart=self.random_restart,
+        )
         subinstance.archive = self.archive
         subinstance.current_bests = self.current_bests
         return subinstance._optimization_function
@@ -837,67 +865,62 @@ class _LamctsMinimizeBase(recaster.SequentialRecastOptimizer):
         remaining = budget - self._num_ask
         while remaining > 0:  # try to restart if budget is not elapsed
             options: Dict[str, int] = {} if self.budget is None else {"maxiter": remaining}
+
             def lamcts_obj(data):
-                #print("transform", data)
-                data = (data + 1.) / 2.
+                # print("transform", data)
+                data = (data + 1.0) / 2.0
                 data = self._normalizer.backward(np.asarray(data, dtype=np.float))
                 return objective_function(data)
+
             res = lamcts_minimize(
-                #func=objective_function,
+                # func=objective_function,
                 func=lamcts_obj,
                 dims=self.parametrization.dimension,
                 budget=self.budget,
                 device=self.device,
-#                best_x if not self.random_restart else self._rng.normal(0.0, 1.0, self.dimension),
-#                method=self.method,
-#                options=options,
-#                tol=0,
+                #                best_x if not self.random_restart else self._rng.normal(0.0, 1.0, self.dimension),
+                #                method=self.method,
+                #                options=options,
+                #                tol=0,
             )
-#def lamcts_minimize(func, dims, budget, lb=None, ub=None):
+            # def lamcts_minimize(func, dims, budget, lb=None, ub=None):
             if res.fun < best_res:
                 best_res = res.fun
                 best_x = res.x
-                best_x = 2. * weakself._normalizer.backward(np.asarray(best_x, dtype=np.float32)) - 1.
+                best_x = 2.0 * weakself._normalizer.backward(np.asarray(best_x, dtype=np.float32)) - 1.0
             remaining = budget - self._num_ask
         return best_x
 
 
 class LamctsOptimizer(base.ConfiguredOptimizer):
     """Wrapper over Lamcts optimizer implementations, in standard ask and tell format.
-Sequential Quadratic Programming. Inside Nevergrad, this code is in https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/optimization/optimizerlib.py; this is actually an import from scipy-optimize. It is very powerful e.g. in continuous noisy optimization. It is based on approximating the objective function by quadratic models.
+    Sequential Quadratic Programming. Inside Nevergrad, this code is in https://github.com/facebookresearch/nevergrad/blob/master/nevergrad/optimization/optimizerlib.py; this is actually an import from scipy-optimize. It is very powerful e.g. in continuous noisy optimization. It is based on approximating the objective function by quadratic models.
 
-    Parameters
-    ----------
-    method: str
-        Name of the method to use among:
+        Parameters
+        ----------
+        method: str
+            Name of the method to use among:
 
-        - Nelder-Mead
-        - COBYLA
-        - SQP (or SLSQP): very powerful e.g. in continuous noisy optimization. It is based on
-          approximating the objective function by quadratic models.
-        - Powell
-    random_restart: bool
-        whether to restart at a random point if the optimizer converged but the budget is not entirely
-        spent yet (otherwise, restarts from best point)
+            - Nelder-Mead
+            - COBYLA
+            - SQP (or SLSQP): very powerful e.g. in continuous noisy optimization. It is based on
+              approximating the objective function by quadratic models.
+            - Powell
+        random_restart: bool
+            whether to restart at a random point if the optimizer converged but the budget is not entirely
+            spent yet (otherwise, restarts from best point)
 
-    Note
-    ----
-    These optimizers do not support asking several candidates in a row
+        Note
+        ----
+        These optimizers do not support asking several candidates in a row
     """
 
     recast = True
     no_parallelization = True
 
     # pylint: disable=unused-argument
-    def __init__(
-        self,
-        *,
-        random_restart: bool = False,
-        device: str = 'cpu'
-    ) -> None:
+    def __init__(self, *, random_restart: bool = False, device: str = "cpu") -> None:
         super().__init__(_LamctsMinimizeBase, locals())
-
-
 
 
 PymooBatchNSGA2 = PymooBatch(algorithm="nsga2").set_name("PymooBatchNSGA2", register=False)
