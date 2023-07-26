@@ -119,7 +119,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 best_parameters, _best_values, _experiment, _model = axoptimize(
                     parameters, evaluation_function=ax_obj, minimize=True, total_trials=budget
                 )
-                best_x = [float(best_parameters["x" + str(i)]) for i in range(weakself.dimension)]
+                best_x = np.array([float(best_parameters["x" + str(i)]) for i in range(weakself.dimension)])
                 best_x = weakself._normalizer.backward(np.asarray(best_x, dtype=float))
             # options: tp.Dict[str, tp.Any] = {} if weakself.budget is None else {"maxiter": remaining}
             elif weakself.method[:5] == "NLOPT":
@@ -287,7 +287,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
 
                 smac = SMAC4HPO(scenario=scenario, rng=weakself._rng.randint(5000), tae_runner=smac2_obj)
                 res = smac.optimize()
-                best_x = [res[f"x{k}"] for k in range(len(res.keys()))]
+                best_x = np.array([res[f"x{k}"] for k in range(len(res.keys()))])
                 best_x = weakself._normalizer.backward(np.asarray(best_x, dtype=float))
                 print("end SMAC optimization")
                 thread.join()
