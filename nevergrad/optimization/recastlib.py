@@ -233,7 +233,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 fed = "/tmp/smac_fed" + the_date + ".txt"
 
                 def dummy_function():
-                    for u in range(remaining):
+                    for _ in range(remaining):
                         # print(f"side thread waiting for request... ({u}/{weakself.budget})")
                         while (not Path(feed).is_file()) or os.stat(feed).st_size == 0:
                             time.sleep(0.1)
