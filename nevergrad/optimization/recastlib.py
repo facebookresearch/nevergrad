@@ -500,7 +500,7 @@ NLOPT_LN_NELDERMEAD = NonObjectOptimizer(method="NLOPT_LN_NELDERMEAD").set_name(
 )
 # AX = NonObjectOptimizer(method="AX").set_name("AX", register=True)
 # BOBYQA = NonObjectOptimizer(method="BOBYQA").set_name("BOBYQA", register=True)
-SMAC = NonObjectOptimizer(method="SMAC").set_name("SMAC", register=True)
+# SMAC = NonObjectOptimizer(method="SMAC").set_name("SMAC", register=True)
 SMAC2 = NonObjectOptimizer(method="SMAC2").set_name("SMAC2", register=True)
 
 

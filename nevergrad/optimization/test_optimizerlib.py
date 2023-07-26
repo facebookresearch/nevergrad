@@ -174,6 +174,10 @@ def test_ngopt(dim: int, budget_multiplier: int, num_workers: int, bounded: bool
 @pytest.mark.parametrize("name", registry)  # type: ignore
 @testing.suppress_nevergrad_warnings()  # hides bad loss
 def test_infnan(name: str) -> None:
+    if any(x in name for x in ["SMAC", "BO", "AX"]) and os.environ.get(
+        "CIRCLECI", False
+    ):  # Outside CircleCI, only the big.
+        raise SkipTest("too slow for CircleCI!")
     optim_cls = registry[name]
     optim = optim_cls(parametrization=2, budget=70)
     if not (
@@ -214,6 +218,10 @@ def test_infnan(name: str) -> None:
 @pytest.mark.parametrize("name", registry)  # type: ignore
 def test_optimizers(name: str) -> None:
     """Checks that each optimizer is able to converge on a simple test case"""
+    if any(x in name for x in ["SMAC", "BO", "AX"]) and os.environ.get(
+        "CIRCLECI", False
+    ):  # Outside CircleCI, only the big.
+        raise SkipTest("too slow for CircleCI!")
     if (
         sum([ord(c) for c in name]) % 4 > 0
         and name
@@ -260,6 +268,10 @@ def test_optimizers(name: str) -> None:
 @pytest.mark.parametrize("name", registry)  # type: ignore
 def test_optimizers_minimal(name: str) -> None:
     optimizer_cls = registry[name]
+    if any(x in name for x in ["SMAC", "BO", "AX"]) and os.environ.get(
+        "CIRCLECI", False
+    ):  # Outside CircleCI, only the big.
+        raise SkipTest("too slow for CircleCI!")
     if optimizer_cls.one_shot or name in ["CM", "NLOPT_LN_PRAXIS", "ES", "RecMixES", "RecMutDE", "RecES"]:
         return
     if any(
@@ -379,6 +391,10 @@ def recomkeeper() -> tp.Generator[RecommendationKeeper, None, None]:
 # pylint: disable=redefined-outer-name
 @pytest.mark.parametrize("name", registry)  # type: ignore
 def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper) -> None:
+    if any(x in name for x in ["SMAC", "BO", "AX"]) and os.environ.get(
+        "CIRCLECI", False
+    ):  # Outside CircleCI, only the big.
+        raise SkipTest("too slow for CircleCI!")
     if name in UNSEEDABLE:
         raise SkipTest("Not playing nicely with the tests (unseedable)")
     if "BO" in name or "EDA" in name:
@@ -776,6 +792,10 @@ def test_constrained_optimization(penalization: bool, expected: tp.List[float], 
 
 @pytest.mark.parametrize("name", registry)  # type: ignore
 def test_parametrization_offset(name: str) -> None:
+    if any(x in name for x in ["SMAC", "BO", "AX"]) and os.environ.get(
+        "CIRCLECI", False
+    ):  # Outside CircleCI, only the big.
+        raise SkipTest("too slow for CircleCI!")
     if sum([ord(c) for c in name]) % 4 > 0:
         raise SkipTest("Randomly skipping 75% of these tests.")
     if "PSO" in name or "BO" in name:
