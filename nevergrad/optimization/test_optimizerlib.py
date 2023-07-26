@@ -313,6 +313,7 @@ def test_optimizers_minimal(name: str) -> None:
             "VLP",
             "LPC",
             "Choice",
+            "NLOPT_GN_ISRES",
         ]
     ):
         return

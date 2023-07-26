@@ -49,3 +49,5 @@ glfw
 mujoco
 pySOT
 poap
+Py-BOBYQA>=1.2
+ax-platform
