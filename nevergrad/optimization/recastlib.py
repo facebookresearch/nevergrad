@@ -104,7 +104,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
             return objective_function(data)
 
         while remaining > 0:  # try to restart if budget is not elapsed
-            print(f"Iteration with remaining={remaining}")
+            # print(f"Iteration with remaining={remaining}")
             options: tp.Dict[str, tp.Any] = {} if weakself.budget is None else {"maxiter": remaining}
             if weakself.method == "BOBYQA":
                 res = pybobyqa.solve(objective_function, best_x, maxfun=budget, do_logging=False)
@@ -236,16 +236,16 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
 
                 def dummy_function():
                     for u in range(remaining):
-                        print(f"side thread waiting for request... ({u}/{weakself.budget})")
+                        # print(f"side thread waiting for request... ({u}/{weakself.budget})")
                         while (not Path(feed).is_file()) or os.stat(feed).st_size == 0:
                             time.sleep(0.1)
                         time.sleep(0.1)
-                        print("side thread happy to work on a request...")
+                        # print("side thread happy to work on a request...")
                         data = np.loadtxt(feed)
                         os.remove(feed)
-                        print("side thread happy to really work on a request...")
+                        # print("side thread happy to really work on a request...")
                         res = objective_function(data)
-                        print("side thread happy to forward the result of a request...")
+                        # print("side thread happy to forward the result of a request...")
                         f = open(fed, "w")
                         f.write(str(res))
                         f.close()
@@ -254,7 +254,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 thread = threading.Thread(target=dummy_function)
                 thread.start()
 
-                print(f"start SMAC3 optimization with budget {budget} in dimension {weakself.dimension}")
+                # print(f"start SMAC3 optimization with budget {budget} in dimension {weakself.dimension}")
                 cs = ConfigurationSpace()
                 cs.add_hyperparameters(
                     [
@@ -264,10 +264,10 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 )
 
                 def smac2_obj(p, seed: int = 0):
-                    print(f"SMAC3 proposes {p} {type(p)}")
+                    # print(f"SMAC3 proposes {p} {type(p)}")
                     pdata = [p[f"x{tag}{i}"] for i in range(len(p.keys()))]
                     data = weakself._normalizer.backward(np.asarray(pdata, dtype=float))
-                    print(f"converted to {data}")
+                    # print(f"converted to {data}")
                     if Path(fed).is_file():
                         os.remove(fed)
                     np.savetxt(feed, data)
@@ -277,7 +277,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                     f = open(fed, "r")
                     res = float(f.read())
                     f.close()
-                    print(f"SMAC3 will receive {res}")
+                    # print(f"SMAC3 will receive {res}")
                     return res
 
                 # scenario = Scenario({'cs': cs, 'run_obj': smac2_obj, 'runcount-limit': remaining, 'deterministic': True})
@@ -287,7 +287,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 res = smac.optimize()
                 best_x = np.array([res[f"x{tag}{k}"] for k in range(len(res.keys()))])
                 best_x = weakself._normalizer.backward(np.asarray(best_x, dtype=float))
-                print(f"end SMAC optimization {best_x}")
+                # print(f"end SMAC optimization {best_x}")
                 thread.join()
                 weakself._num_ask = budget
 

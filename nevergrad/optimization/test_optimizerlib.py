@@ -174,9 +174,7 @@ def test_ngopt(dim: int, budget_multiplier: int, num_workers: int, bounded: bool
 @pytest.mark.parametrize("name", registry)  # type: ignore
 @testing.suppress_nevergrad_warnings()  # hides bad loss
 def test_infnan(name: str) -> None:
-    if any(x in name for x in ["SMAC", "BO", "AX"]) and os.environ.get(
-        "CIRCLECI", False
-    ):  # Outside CircleCI, only the big.
+    if any(x in name for x in ["SMAC", "BO", "AX"]) and os.environ.get("CIRCLECI", False):
         raise SkipTest("too slow for CircleCI!")
     optim_cls = registry[name]
     optim = optim_cls(parametrization=2, budget=70)
@@ -218,9 +216,7 @@ def test_infnan(name: str) -> None:
 @pytest.mark.parametrize("name", registry)  # type: ignore
 def test_optimizers(name: str) -> None:
     """Checks that each optimizer is able to converge on a simple test case"""
-    if any(x in name for x in ["SMAC", "BO", "AX"]) and os.environ.get(
-        "CIRCLECI", False
-    ):  # Outside CircleCI, only the big.
+    if any(x in name for x in ["SMAC", "BO", "AX"]) and os.environ.get("CIRCLECI", False):
         raise SkipTest("too slow for CircleCI!")
     if (
         sum([ord(c) for c in name]) % 4 > 0
@@ -268,9 +264,7 @@ def test_optimizers(name: str) -> None:
 @pytest.mark.parametrize("name", registry)  # type: ignore
 def test_optimizers_minimal(name: str) -> None:
     optimizer_cls = registry[name]
-    if any(x in name for x in ["SMAC", "BO", "AX"]) and os.environ.get(
-        "CIRCLECI", False
-    ):  # Outside CircleCI, only the big.
+    if any(x in name for x in ["SMAC", "BO", "AX"]) and os.environ.get("CIRCLECI", False):
         raise SkipTest("too slow for CircleCI!")
     if optimizer_cls.one_shot or name in ["CM", "NLOPT_LN_PRAXIS", "ES", "RecMixES", "RecMutDE", "RecES"]:
         return
@@ -352,7 +346,7 @@ def test_optimizers_minimal(name: str) -> None:
         assert -0.36 < val < -0.24, f"pb with {optimizer_cls} for -0.3: {val}"
     else:
         budget = 100
-        if "DE" in name or "PSO" in name:
+        if "DE" in name or "PSO" in name or "Hyper" in name:
             budget = 300
         if any(x in name for x in ["QO", "SODE"]):
             return
@@ -394,9 +388,7 @@ def recomkeeper() -> tp.Generator[RecommendationKeeper, None, None]:
 # pylint: disable=redefined-outer-name
 @pytest.mark.parametrize("name", registry)  # type: ignore
 def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper) -> None:
-    if any(x in name for x in ["SMAC", "BO", "AX"]) and os.environ.get(
-        "CIRCLECI", False
-    ):  # Outside CircleCI, only the big.
+    if any(x in name for x in ["SMAC", "BO", "AX"]) and os.environ.get("CIRCLECI", False):
         raise SkipTest("too slow for CircleCI!")
     if name in UNSEEDABLE:
         raise SkipTest("Not playing nicely with the tests (unseedable)")
