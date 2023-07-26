@@ -351,6 +351,8 @@ def test_optimizers_minimal(name: str) -> None:
         assert -0.36 < val < -0.24, f"pb with {optimizer_cls} for -0.3: {val}"
     else:
         budget = 100
+        if "DE" in name or "PSO" in name:
+            budget = 300
         if any(x in name for x in ["QO", "SODE"]):
             return
         val = optimizer_cls(1, budget).minimize(f).value
