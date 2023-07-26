@@ -4,7 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 import os
-import random
 import warnings
 import typing as tp
 import inspect
@@ -1893,62 +1892,6 @@ def pbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         for expo in [1.0, 3.0, 5.0, 7.0, 9.0]
         for d in dims
     ]
-    optims = refactor_optims(optims)
-    for optim in optims:
-        for function in functions:
-            for budget in [100, 200, 300, 400, 500, 600, 700, 800]:
-                for nw in [1, 10, 50]:
-                    yield Experiment(function, optim, budget=budget, num_workers=nw, seed=next(seedg))
-
-
-@registry.register
-def zp_pbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Testing optimizers on exponentiated problems.
-    Cigar, Ellipsoid.
-    Both rotated and unrotated.
-    Budget 100, 1000, 10000.
-    Dimension 50.
-    """
-    seedg = create_seed_generator(seed)
-    optims = [
-        "OldCMA",
-        "CMAbounded",
-        "CMAsmall",
-        "CMAstd",
-        "CMApara",
-        "CMAtuning",
-        "DiagonalCMA",
-        "FCMA",
-        "RescaledCMA",
-        "ASCMADEthird",
-        "MultiCMA",
-        "TripleCMA",
-        "PolyCMA",
-        "MultiScaleCMA",
-        "DE",
-        "OnePointDE",
-        "GeneticDE",
-        "TwoPointsDE",
-        "PSO",
-        "NGOptRW",
-        "NGOpt",
-    ]
-    optims = ["ChainMetaModelSQP", "MetaModelOnePlusOne", "MetaModelDE"]
-    optims = ["LargeCMA", "TinyCMA", "OldCMA", "MicroCMA"]
-    optims = ["BFGS", "LBFGSB", "MemeticDE"]
-    optims = ["QrDE", "QODE", "LhsDE", "NGOpt", "NGOptRW"]
-    optims = ["TinyCMA", "QODE", "MetaModelOnePlusOne", "LhsDE", "TinyLhsDE", "TinyQODE"]
-    optims = ["QOPSO", "QORealSpacePSO"]
-    optims = ["SQOPSO"]  # , "QORealSpacePSO", "RealSpacePSO"]
-    dims = [40, 20]
-    functions = [
-        ArtificialFunction(name, block_dimension=d, rotation=rotation, expo=expo, zero_pen=True)
-        for name in ["cigar", "sphere", "rastrigin", "hm", "deceptivemultimodal"]
-        for rotation in [True]
-        for expo in [1.0, 3.0, 5.0, 7.0, 9.0]
-        for d in dims
-    ]
-
     optims = refactor_optims(optims)
     for optim in optims:
         for function in functions:

@@ -12,7 +12,7 @@ import numpy as np
 from scipy import optimize as scipyoptimize
 import cma
 import pybobyqa  # type: ignore
-from ax import optimize as axoptimize
+from ax import optimize as axoptimize  # type: ignore
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
 from nevergrad.common import errors
@@ -162,13 +162,14 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 if weakself._normalizer is not None:
                     best_x = weakself._normalizer.backward(np.asarray(best_x, dtype=np.float32))
             elif "pysot" in weakself.method:
-                from poap.controller import BasicWorkerThread, ThreadController
+                from poap.controller import BasicWorkerThread, ThreadController  # type: ignore
 
-                from pySOT.experimental_design import SymmetricLatinHypercube
-                from pySOT.optimization_problems import OptimizationProblem
-                from pySOT.strategy import SRBFStrategy
-                from pySOT.strategy import DYCORSStrategy
-                from pySOT.surrogate import CubicKernel, LinearTail, RBFInterpolant
+                from pySOT.experimental_design import SymmetricLatinHypercube  # type: ignore
+                from pySOT.optimization_problems import OptimizationProblem  # type: ignore
+
+                # from pySOT.strategy import SRBFStrategy
+                from pySOT.strategy import DYCORSStrategy  # type: ignore
+                from pySOT.surrogate import CubicKernel, LinearTail, RBFInterpolant  # type: ignore
 
                 class LocalOptimizationProblem(OptimizationProblem):
                     def eval(self, data):
@@ -215,9 +216,9 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
             elif weakself.method == "SMAC2":
 
                 # Import ConfigSpace and different types of parameters
-                from smac.configspace import ConfigurationSpace  # noqa  # pylint: disable=unused-import
-                from smac.configspace import UniformFloatHyperparameter
-                from smac.facade.smac_hpo_facade import SMAC4HPO  # noqa  # pylint: disable=unused-import
+                from smac.configspace import ConfigurationSpace  # type: ignore  # noqa  # pylint: disable=unused-import
+                from smac.configspace import UniformFloatHyperparameter  # type: ignore
+                from smac.facade.smac_hpo_facade import SMAC4HPO  # type: ignore  # noqa  # pylint: disable=unused-import
 
                 # Import SMAC-utilities
                 from smac.scenario.scenario import Scenario  # noqa  # pylint: disable=unused-import
@@ -292,76 +293,76 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 thread.join()
                 weakself._num_ask = budget
 
-            elif weakself.method == "SMAC":
-                import smac  # noqa  # pylint: disable=unused-import
-                import scipy.optimize  # noqa  # pylint: disable=unused-import
-                from smac.facade.func_facade import fmin_smac  # noqa  # pylint: disable=unused-import
-
-                import threading
-                import os
-                import time
-                from pathlib import Path
-
-                the_date = str(time.time())
-                feed = "/tmp/smac_feed" + the_date + ".txt"
-                fed = "/tmp/smac_fed" + the_date + ".txt"
-
-                def dummy_function():
-                    for u in range(remaining):
-                        print(f"side thread waiting for request... ({u}/{weakself.budget})")
-                        while (not Path(feed).is_file()) or os.stat(feed).st_size == 0:
-                            time.sleep(0.1)
-                        time.sleep(0.1)
-                        print("side thread happy to work on a request...")
-                        data = np.loadtxt(feed)
-                        os.remove(feed)
-                        print("side thread happy to really work on a request...")
-                        res = objective_function(data)
-                        print("side thread happy to forward the result of a request...")
-                        f = open(fed, "w")
-                        f.write(str(res))
-                        f.close()
-                    return
-
-                thread = threading.Thread(target=dummy_function)
-                thread.start()
-
-                def smac_obj(p):
-                    print(f"SMAC proposes {p}")
-                    data = weakself._normalizer.backward(
-                        np.asarray([p[i] for i in range(len(p))], dtype=np.float)
-                    )
-                    print(f"converted to {data}")
-                    if Path(fed).is_file():
-                        os.remove(fed)
-                    np.savetxt(feed, data)
-                    while (not Path(fed).is_file()) or os.stat(fed).st_size == 0:
-                        time.sleep(0.1)
-                    time.sleep(0.1)
-                    f = open(fed, "r")
-                    res = np.float(f.read())
-                    f.close()
-                    print(f"SMAC will receive {res}")
-                    return res
-
-                print(f"start SMAC optimization with budget {budget} in dimension {weakself.dimension}")
-                assert budget is not None
-                x, cost, _ = fmin_smac(
-                    # func=lambda x: sum([(x_ - 1.234)**2  for x_ in x]),
-                    func=smac_obj,
-                    x0=[0.0] * weakself.dimension,
-                    bounds=[(0.0, 1.0)] * weakself.dimension,
-                    maxfun=remaining,
-                    rng=weakself._rng.randint(5000),
-                )  # Passing a seed makes fmin_smac determistic
-                print("end SMAC optimization")
-                thread.join()
-                weakself._num_ask = budget
-
-                if cost < best_res:
-                    best_res = cost
-                    best_x = weakself._normalizer.backward(np.asarray(x, dtype=np.float))
-
+            #            elif weakself.method == "SMAC":
+            #                import smac  # noqa  # pylint: disable=unused-import
+            #                import scipy.optimize  # noqa  # pylint: disable=unused-import
+            #                from smac.facade.func_facade import fmin_smac  # noqa  # pylint: disable=unused-import
+            #
+            #                import threading
+            #                import os
+            #                import time
+            #                from pathlib import Path
+            #
+            #                the_date = str(time.time())
+            #                feed = "/tmp/smac_feed" + the_date + ".txt"
+            #                fed = "/tmp/smac_fed" + the_date + ".txt"
+            #
+            #                def dummy_function():
+            #                    for u in range(remaining):
+            #                        print(f"side thread waiting for request... ({u}/{weakself.budget})")
+            #                        while (not Path(feed).is_file()) or os.stat(feed).st_size == 0:
+            #                            time.sleep(0.1)
+            #                        time.sleep(0.1)
+            #                        print("side thread happy to work on a request...")
+            #                        data = np.loadtxt(feed)
+            #                        os.remove(feed)
+            #                        print("side thread happy to really work on a request...")
+            #                        res = objective_function(data)
+            #                        print("side thread happy to forward the result of a request...")
+            #                        f = open(fed, "w")
+            #                        f.write(str(res))
+            #                        f.close()
+            #                    return
+            #
+            #                thread = threading.Thread(target=dummy_function)
+            #                thread.start()
+            #
+            #                def smac_obj(p):
+            #                    print(f"SMAC proposes {p}")
+            #                    data = weakself._normalizer.backward(
+            #                        np.asarray([p[i] for i in range(len(p))], dtype=np.float)
+            #                    )
+            #                    print(f"converted to {data}")
+            #                    if Path(fed).is_file():
+            #                        os.remove(fed)
+            #                    np.savetxt(feed, data)
+            #                    while (not Path(fed).is_file()) or os.stat(fed).st_size == 0:
+            #                        time.sleep(0.1)
+            #                    time.sleep(0.1)
+            #                    f = open(fed, "r")
+            #                    res = np.float(f.read())
+            #                    f.close()
+            #                    print(f"SMAC will receive {res}")
+            #                    return res
+            #
+            #                print(f"start SMAC optimization with budget {budget} in dimension {weakself.dimension}")
+            #                assert budget is not None
+            #                x, cost, _ = fmin_smac(
+            #                    # func=lambda x: sum([(x_ - 1.234)**2  for x_ in x]),
+            #                    func=smac_obj,
+            #                    x0=[0.0] * weakself.dimension,
+            #                    bounds=[(0.0, 1.0)] * weakself.dimension,
+            #                    maxfun=remaining,
+            #                    rng=weakself._rng.randint(5000),
+            #                )  # Passing a seed makes fmin_smac determistic
+            #                print("end SMAC optimization")
+            #                thread.join()
+            #                weakself._num_ask = budget
+            #
+            #                if cost < best_res:
+            #                    best_res = cost
+            #                    best_x = weakself._normalizer.backward(np.asarray(x, dtype=float))
+            #
             elif weakself.method == "CmaFmin2":
 
                 def cma_objective_function(data):
