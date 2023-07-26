@@ -116,11 +116,11 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                     {"name": "x" + str(i), "type": "range", "bounds": [0.0, 1.0]}
                     for i in range(weakself.dimension)
                 ]
-                _best_parameters, _best_values, _experiment, _model = axoptimize(
+                best_parameters, _best_values, _experiment, _model = axoptimize(
                     parameters, evaluation_function=ax_obj, minimize=True, total_trials=budget
                 )
-                best_x = np.array([p["x" + str(i)] for i in range(weakself.dimension)])
-                best_x = weakself._normalizer.backward(np.asarray(best_x, dtype=np.float))
+                best_x = [float(best_parameters["x" + str(i)]) for i in range(weakself.dimension)]
+                best_x = weakself._normalizer.backward(np.asarray(best_x, dtype=float))
             # options: tp.Dict[str, tp.Any] = {} if weakself.budget is None else {"maxiter": remaining}
             elif weakself.method[:5] == "NLOPT":
                 # This is NLOPT, used as in the PCSE simulator notebook.
@@ -221,7 +221,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 from smac.facade.smac_hpo_facade import SMAC4HPO  # type: ignore  # noqa  # pylint: disable=unused-import
 
                 # Import SMAC-utilities
-                from smac.scenario.scenario import Scenario  # noqa  # pylint: disable=unused-import
+                from smac.scenario.scenario import Scenario  # type: ignore  # noqa  # pylint: disable=unused-import
                 import threading
                 import os
                 import time
@@ -288,7 +288,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 smac = SMAC4HPO(scenario=scenario, rng=weakself._rng.randint(5000), tae_runner=smac2_obj)
                 res = smac.optimize()
                 best_x = [res[f"x{k}"] for k in range(len(res.keys()))]
-                best_x = weakself._normalizer.backward(np.asarray(best_x, dtype=np.float))
+                best_x = weakself._normalizer.backward(np.asarray(best_x, dtype=float))
                 print("end SMAC optimization")
                 thread.join()
                 weakself._num_ask = budget

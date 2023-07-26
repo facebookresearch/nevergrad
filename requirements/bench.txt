@@ -48,3 +48,4 @@ pybullet>=3.2.2
 glfw
 mujoco
 pySOT
+poap
