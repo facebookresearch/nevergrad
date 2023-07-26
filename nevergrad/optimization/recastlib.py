@@ -37,7 +37,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
         self.initial_guess: tp.Optional[tp.ArrayLike] = None
         # configuration
         # assert method in ["Nelder-Mead", "COBYLA", "SLSQP", "Powell", "BOBYQA", "AX"], f"Unknown method '{method}'"
-        # assert method in ["SMAC2", "SMAC", "Nelder-Mead", "COBYLA", "SLSQP", "Powell"], f"Unknown method '{method}'"
+        # assert method in ["SMAC3", "SMAC", "Nelder-Mead", "COBYLA", "SLSQP", "Powell"], f"Unknown method '{method}'"
         self.method = method
         self.random_restart = random_restart
         # self._normalizer = p.helpers.Normalizer(self.parametrization)
@@ -45,7 +45,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
             method
             in [
                 "CmaFmin2",
-                "SMAC2",
+                "SMAC3",
                 "BFGS",
                 "LBFGSB",
                 "L-BFGS-B",
@@ -213,12 +213,13 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 best_res = result.value
                 best_x = result.params[0]
 
-            elif weakself.method == "SMAC2":
+            elif weakself.method == "SMAC3":
 
                 # Import ConfigSpace and different types of parameters
                 # from smac.configspace import ConfigurationSpace  # type: ignore  # noqa  # pylint: disable=unused-import
                 # from smac.configspace import UniformFloatHyperparameter  # type: ignore
                 # from smac.facade.smac_hpo_facade import SMAC4HPO  # type: ignore  # noqa  # pylint: disable=unused-import
+
                 from ConfigSpace import Configuration, ConfigurationSpace, UniformFloatHyperparameter
                 from smac import HyperparameterOptimizationFacade, Scenario
 
@@ -228,22 +229,23 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 import time
                 from pathlib import Path
 
-                the_date = str(time.time())
+                the_date = str(time.time()) + "_" + str(np.random.rand())
+                tag = str(np.random.rand())
                 feed = "/tmp/smac_feed" + the_date + ".txt"
                 fed = "/tmp/smac_fed" + the_date + ".txt"
 
                 def dummy_function():
-                    for _ in range(remaining):
-                        # print(f"side thread waiting for request... ({u}/{weakself.budget})")
+                    for u in range(remaining):
+                        print(f"side thread waiting for request... ({u}/{weakself.budget})")
                         while (not Path(feed).is_file()) or os.stat(feed).st_size == 0:
                             time.sleep(0.1)
-                        # time.sleep(0.01)
-                        # print("side thread happy to work on a request...")
+                        time.sleep(0.1)
+                        print("side thread happy to work on a request...")
                         data = np.loadtxt(feed)
                         os.remove(feed)
-                        # print("side thread happy to really work on a request...")
+                        print("side thread happy to really work on a request...")
                         res = objective_function(data)
-                        # print("side thread happy to forward the result of a request...")
+                        print("side thread happy to forward the result of a request...")
                         f = open(fed, "w")
                         f.write(str(res))
                         f.close()
@@ -252,21 +254,20 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 thread = threading.Thread(target=dummy_function)
                 thread.start()
 
-                # print(f"start SMAC2 optimization with budget {budget} in dimension {weakself.dimension}")
+                print(f"start SMAC3 optimization with budget {budget} in dimension {weakself.dimension}")
                 cs = ConfigurationSpace()
                 cs.add_hyperparameters(
                     [
-                        UniformFloatHyperparameter(f"x{i}", 0.0, 1.0, default_value=0.0)
+                        UniformFloatHyperparameter(f"x{tag}{i}", 0.0, 1.0, default_value=0.0)
                         for i in range(weakself.dimension)
                     ]
                 )
-                scenario = Scenario(cs, deterministic=True, n_trials=budget)
 
                 def smac2_obj(p, seed: int = 0):
-                    # print(f"SMAC2 proposes {p}")
-                    p = [p[f"x{i}"] for i in range(len(p.keys()))]
-                    data = weakself._normalizer.backward(np.asarray(p, dtype=float))
-                    # print(f"converted to {data}")
+                    print(f"SMAC3 proposes {p} {type(p)}")
+                    pdata = [p[f"x{tag}{i}"] for i in range(len(p.keys()))]
+                    data = weakself._normalizer.backward(np.asarray(pdata, dtype=float))
+                    print(f"converted to {data}")
                     if Path(fed).is_file():
                         os.remove(fed)
                     np.savetxt(feed, data)
@@ -276,14 +277,17 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                     f = open(fed, "r")
                     res = float(f.read())
                     f.close()
-                    # print(f"SMAC2 will receive {res}")
+                    print(f"SMAC3 will receive {res}")
                     return res
+
+                # scenario = Scenario({'cs': cs, 'run_obj': smac2_obj, 'runcount-limit': remaining, 'deterministic': True})
+                scenario = Scenario(cs, deterministic=True, n_trials=int(remaining))
 
                 smac = HyperparameterOptimizationFacade(scenario, smac2_obj)
                 res = smac.optimize()
-                best_x = np.array([res[f"x{k}"] for k in range(len(res.keys()))])
+                best_x = np.array([res[f"x{tag}{k}"] for k in range(len(res.keys()))])
                 best_x = weakself._normalizer.backward(np.asarray(best_x, dtype=float))
-                # print("end SMAC optimization")
+                print(f"end SMAC optimization {best_x}")
                 thread.join()
                 weakself._num_ask = budget
 
@@ -496,7 +500,7 @@ NLOPT_LN_NELDERMEAD = NonObjectOptimizer(method="NLOPT_LN_NELDERMEAD").set_name(
 # AX = NonObjectOptimizer(method="AX").set_name("AX", register=True)
 # BOBYQA = NonObjectOptimizer(method="BOBYQA").set_name("BOBYQA", register=True)
 # SMAC = NonObjectOptimizer(method="SMAC").set_name("SMAC", register=True)
-SMAC2 = NonObjectOptimizer(method="SMAC2").set_name("SMAC2", register=True)
+SMAC3 = NonObjectOptimizer(method="SMAC3").set_name("SMAC3", register=True)
 
 
 class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
