@@ -119,7 +119,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 _best_parameters, _best_values, _experiment, _model = axoptimize(
                     parameters, evaluation_function=ax_obj, minimize=True, total_trials=budget
                 )
-                best_x = [p["x" + str(i)] for i in range(weakself.dimension)]
+                best_x = np.array([p["x" + str(i)] for i in range(weakself.dimension)])
                 best_x = weakself._normalizer.backward(np.asarray(best_x, dtype=np.float))
             # options: tp.Dict[str, tp.Any] = {} if weakself.budget is None else {"maxiter": remaining}
             elif weakself.method[:5] == "NLOPT":
@@ -927,4 +927,4 @@ PymooNSGA2 = Pymoo(algorithm="nsga2").set_name("PymooNSGA2", register=True)
 
 PymooBatchNSGA2 = PymooBatch(algorithm="nsga2").set_name("PymooBatchNSGA2", register=False)
 pysot = NonObjectOptimizer(method="pysot").set_name("pysot", register=True)
-negpysot = NonObjectOptimizer(method="negpysot").set_name("negpysot", register=True)
+# negpysot = NonObjectOptimizer(method="negpysot").set_name("negpysot", register=True)

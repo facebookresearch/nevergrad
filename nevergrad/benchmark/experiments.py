@@ -50,7 +50,6 @@ from . import gymexperiments  # noqa
 
 
 def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
-
     algos = {}
     algos["aquacrop_fao"] = [
         "CMA",
@@ -428,6 +427,37 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
     return x  # ["Zero"] #return x
 
 
+#    return ["MultiSQP", "MultiCobyla", "MultiBFGS"]
+#    return ["NGOpt"]
+#    return ["QODE", "QOPSO", "SQOPSO", "QNDE"]
+#    return ["MetaTuneRecentering", "MetaRecentering"]
+#    return [
+#        "NLOPT_LN_SBPLX",
+#        "NLOPT_LN_PRAXIS",
+#        "NLOPT_GN_DIRECT",
+#        "NLOPT_GN_DIRECT_L",
+#        "NLOPT_GN_CRS2_LM",
+#        "NLOPT_GN_AGS",
+#        "NLOPT_GN_ISRES",
+#        "NLOPT_GN_ESCH",
+#        "NLOPT_LN_COBYLA",
+#        "NLOPT_LN_BOBYQA",
+#        "NLOPT_LN_NEWUOA_BOUND",
+#        "NLOPT_LN_NELDERMEAD",
+#    ]
+#    return ["LBFGSB"]  # return ["PymooBIPOP"]
+# return ["SQPCMA"]
+# return ["MetaRecentering"]  # if you want to run only this algorithm
+# return random.sample(x, 1)
+# return x
+# return ["CMandAS2", "Shiwa"]
+# return ["RandomSearch", "NaiveTBPSA"]
+# return ["SQOPSO", "QODE"]
+# return ["QNDE", "MetaModelQODE"]
+# return ["SOPSO"]
+# return ["QORandomSearch"]
+
+
 def skip_ci(*, reason: str) -> None:
     """Only use this if there is a good reason for not testing the xp,
     such as very slow for instance (>1min) with no way to make it faster.
@@ -497,6 +527,13 @@ def keras_tuning(
         "LHSSearch",
         "LHSCauchySearch",
     ]
+    optims = ["NGOpt", "NGOptRW", "QODE"]
+    optims = ["NGOpt"]
+    optims = ["PCABO", "NGOpt", "QODE"]
+    optims = ["QOPSO"]  # , "QORealSpacePSO", "RealSpacePSO"]
+    optims = ["SQOPSO"]  # , "QORealSpacePSO", "RealSpacePSO"]
+    optims = ["SQOPSO"]  # , "QORealSpacePSO", "RealSpacePSO"]
+    optims = refactor_optims(optims)
     datasets = ["kerasBoston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
     optims = refactor_optims(optims)
     for dimension in [None]:
@@ -556,11 +593,13 @@ def mltuning(
         "LHSSearch",
         "LHSCauchySearch",
     ]
+    optims = ["NGOpt", "NGOptRW", "QODE"]
+    optims = ["NGOpt"]
+    optims = ["PCABO"]
     optims = ["PCABO", "NGOpt", "QODE"]
     optims = ["QOPSO"]  # , "QORealSpacePSO", "RealSpacePSO"]
     optims = ["SQOPSO"]  # , "QORealSpacePSO", "RealSpacePSO"]
     optims = refactor_optims(optims)
-
     for dimension in [None, 1, 2, 3]:
         if dimension is None:
             datasets = ["diabetes", "auto-mpg", "red-wine", "white-wine"]
@@ -885,7 +924,6 @@ def sequential_instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Ex
     optims = ["DiscreteLenglerOnePlusOne"]
     optims = ["NGOpt", "NGOptRW"]
     optims = refactor_optims(optims)
-
     for nv in [10, 50, 200, 1000, 5000]:
         for arity in [2, 3, 7, 30]:
             for instrum_str in ["Unordered", "Softmax", "Ordered"]:
@@ -945,29 +983,22 @@ def deceptive(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     optims = refactor_optims(optims)
     for func in functions:
         for optim in optims:
-            for budget in [25, 37, 50, 75, 87, 100, 200, 400, 800, 1600]:  # + list(range(100, 20001, 500)):
+            for budget in [
+                25,
+                37,
+                50,
+                75,
+                87,
+                100,
+                200,
+                400,
+                800,
+                1600,
+                3200,
+                6400,
+                12800,
+            ]:  # + list(range(100, 20001, 500)):
                 yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
-
-
-@registry.register
-def parallel(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Parallel optimization on 3 classical objective functions: sphere, rastrigin, cigar.
-    The number of workers is 20 % of the budget.
-    Testing both no useless variables and 5/6 of useless variables."""
-    seedg = create_seed_generator(seed)
-    names = ["sphere", "rastrigin", "cigar"]
-    optims: tp.List[str] = get_optimizers("parallel_basics", seed=next(seedg))  # type: ignore
-    functions = [
-        ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
-        for name in names
-        for bd in [25]
-        for uv_factor in [0, 5]
-    ]
-    optims = refactor_optims(optims)
-    for func in functions:
-        for optim in optims:
-            for budget in [30, 100, 3000]:
-                yield Experiment(func, optim, budget=budget, num_workers=int(budget / 5), seed=next(seedg))
 
 
 @registry.register
@@ -996,6 +1027,27 @@ def lowbudget(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         for optim in optims:
             for budget in [10, 20, 30]:
                 yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
+
+
+@registry.register
+def parallel(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Parallel optimization on 3 classical objective functions: sphere, rastrigin, cigar.
+    The number of workers is 20 % of the budget.
+    Testing both no useless variables and 5/6 of useless variables."""
+    seedg = create_seed_generator(seed)
+    names = ["sphere", "rastrigin", "cigar"]
+    optims: tp.List[str] = get_optimizers("parallel_basics", seed=next(seedg))  # type: ignore
+    functions = [
+        ArtificialFunction(name, block_dimension=bd, useless_variables=bd * uv_factor)
+        for name in names
+        for bd in [25]
+        for uv_factor in [0, 5]
+    ]
+    optims = refactor_optims(optims)
+    for func in functions:
+        for optim in optims:
+            for budget in [30, 100, 3000]:
+                yield Experiment(func, optim, budget=budget, num_workers=int(budget / 5), seed=next(seedg))
 
 
 @registry.register
@@ -1330,7 +1382,6 @@ def yabbob(
         "RFMetaModel",
         "RFMetaModelDE",
     ]
-
     # if bounded:
     #    optims = ["BO", "PCABO", "BayesOptimBO", "CMA", "PSO", "DE"]
     # if box:
@@ -1375,7 +1426,6 @@ def yabbob(
     optims = ["NGOpt", "NGOptRW"]
     optims = ["QrDE", "QODE", "LhsDE"]
     optims = ["NGOptRW"]
-    optims = ["Lamcts"]
     if noise:
         optims = [
             #        "MicroCMA",
@@ -1408,7 +1458,6 @@ def yabbob(
     optims = ["QOPSO"]  # , "QORealSpacePSO", "RealSpacePSO"]
     optims = ["NGOpt"]
     optims = ["SQOPSO"]  # , "QORealSpacePSO", "RealSpacePSO"]
-
     functions = [
         ArtificialFunction(
             name,
@@ -1883,7 +1932,10 @@ def pbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     optims = ["ChainMetaModelSQP", "MetaModelOnePlusOne", "MetaModelDE"]
     optims = ["LargeCMA", "TinyCMA", "OldCMA", "MicroCMA"]
     optims = ["BFGS", "LBFGSB", "MemeticDE"]
-
+    optims = ["QrDE", "QODE", "LhsDE", "NGOpt", "NGOptRW"]
+    optims = ["TinyCMA", "QODE", "MetaModelOnePlusOne", "LhsDE", "TinyLhsDE", "TinyQODE"]
+    optims = ["QOPSO", "QORealSpacePSO"]
+    optims = ["SQOPSO"]  # , "QORealSpacePSO", "RealSpacePSO"]
     dims = [40, 20]
     functions = [
         ArtificialFunction(name, block_dimension=d, rotation=rotation, expo=expo)
@@ -1966,7 +2018,6 @@ def illcondi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", seed=next(seedg))
-    optims = ["BOBYQA", "AX", "pysot"]
     functions = [
         ArtificialFunction(name, block_dimension=50, rotation=rotation)
         for name in ["cigar", "ellipsoid"]
@@ -1992,7 +2043,6 @@ def illcondipara(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     ]
     optims = get_optimizers("competitive", seed=next(seedg))
     optims = refactor_optims(optims)
-
     for function in functions:
         for budget in [100, 1000, 10000]:
             for optim in optims:
@@ -2042,7 +2092,6 @@ def ranknoisy(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     #    x for x, y in ng.optimizers.registry.items() if ("SPSA" in x or "TBPSA" in x or "ois" in x or "epea" in x or "Random" in x)
     # )
     optims = ["SPSA", "TinySPSA", "TBPSA", "NoisyOnePlusOne", "NoisyDiscreteOnePlusOne"]
-
     optims = get_optimizers("basics", "noisy", "splitters", "progressive", seed=next(seedg))  # type: ignore
     optims = refactor_optims(optims)
     for budget in [25000, 50000, 100000]:
@@ -2224,7 +2273,6 @@ def spsa_benchmark(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     optims = ["SQP", "NoisyDiscreteOnePlusOne", "NoisyBandit"]
     optims = ["NGOpt", "NGOptRW"]
     optims = refactor_optims(optims)
-
     for budget in [500, 1000, 2000, 4000, 8000, 16000, 32000, 64000, 128000]:
         for optim in optims:
             for rotation in [True, False]:
@@ -2311,7 +2359,6 @@ def aquacrop_fao(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     optims = ["NGOpt"]
     optims = ["SQOPSO"]  # , "QORealSpacePSO", "RealSpacePSO"]
     optims = refactor_optims(optims)
-
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
         for num_workers in [1, 30]:
             if num_workers < budget:
@@ -2335,7 +2382,6 @@ def fishing(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     optims = ["QOPSO"]  # , "QORealSpacePSO", "RealSpacePSO"]
     optims = ["SQOPSO"]  # , "QORealSpacePSO", "RealSpacePSO"]
     optims = refactor_optims(optims)
-
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
         for algo in optims:
             for fu in funcs:
@@ -2374,7 +2420,6 @@ def rocket(seed: tp.Optional[int] = None, seq: bool = False) -> tp.Iterator[Expe
         "MetaModelDE",
     ]
     optims = refactor_optims(optims)
-
     for budget in [25, 50, 100, 200, 400, 800, 1600]:
         for num_workers in [1] if seq else [1, 30]:
             if num_workers < budget:
@@ -2497,7 +2542,6 @@ def olympus_surfaces(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     optims = get_optimizers("basics", "noisy", seed=next(seedg))
     optims = ["NGOpt", "CMA"]
     optims = refactor_optims(optims)
-
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600]:
         for num_workers in [1]:  # , 10, 100]:
             if num_workers < budget:
@@ -2522,7 +2566,6 @@ def olympus_emulators(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     optims = get_optimizers("basics", "noisy", seed=next(seedg))
     optims = ["NGOpt", "CMA"]
     optims = refactor_optims(optims)
-
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600]:
         for num_workers in [1]:  # , 10, 100]:
             if num_workers < budget:
@@ -2587,7 +2630,6 @@ def simple_tsp(seed: tp.Optional[int] = None, complex_tsp: bool = False) -> tp.I
         "DiagonalCMA",
     ]
     optims = refactor_optims(optims)
-
     for budget in [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600]:
         for num_workers in [1]:  # , 10, 100]:
             if num_workers < budget:
@@ -2630,7 +2672,6 @@ def powersystems(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     for dams in [3, 5, 9, 13]:
         funcs += [PowerSystem(dams, depth=2, width=3)]
     seedg = create_seed_generator(seed)
-
     budgets = [3200, 6400, 12800]
     optims = get_optimizers("basics", "noisy", "splitters", "progressive", seed=next(seedg))
     optims = refactor_optims(optims)
@@ -2686,7 +2727,6 @@ def mldakmeans(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     optims = ["QODE", "QRDE"]
     optims = ["NGOpt"]
     optims = refactor_optims(optims)
-
     for budget in [1000, 10000]:
         for num_workers in [1, 10, 100]:
             if num_workers < budget:
@@ -2997,7 +3037,8 @@ def multiobjective_example(
         ),
     ]
     optims += ["DiscreteOnePlusOne", "DiscreteLenglerOnePlusOne"]
-
+    optims = ["PymooNSGA2", "PymooBatchNSGA2", "LPCMA", "VLPCMA", "CMA"]
+    optims = ["LPCMA", "VLPCMA", "CMA"]
     popsizes = [20, 40, 80]
     optims += [
         ng.families.EvolutionStrategy(
@@ -3139,6 +3180,11 @@ def photonics(
         "BFGS",
         "LBFGSB",
     ]
+    optims = ["QrDE", "QODE", "RFMetaModelDE"]
+    optims = ["PCABO"]
+    optims = ["PCABO", "NGOpt", "QODE"]
+    optims = ["QOPSO"]  # , "QORealSpacePSO", "RealSpacePSO"]
+    optims = ["MicroCMA", "MiniCMA", "QODE", "TinyDE", "MicroDE", "NGOpt"]
     optims = ["NGOpt"]
     optims = ["SQOPSO"]
     optims = refactor_optims(optims)
@@ -3294,8 +3340,6 @@ def causal_similarity(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
     seedg = create_seed_generator(seed)
     optims = ["CMA", "NGOpt8", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
-    optims = ["BOBYQA", "AX"]
-    optims = ["BOBYQA", "AX", "pysot"]
     func = CausalDiscovery()
     optims = refactor_optims(optims)
     for budget in [100 * 5**k for k in range(3)]:
@@ -3325,9 +3369,6 @@ def team_cycling(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Experiment to optimise team pursuit track cycling problem."""
     seedg = create_seed_generator(seed)
     optims = ["NGOpt10", "CMA", "DE"]
-    optims = ["BOBYQA", "AX", "pysot"]
-    optims = ["BOBYQA", "AX"]
-    optims = ["BOBYQA", "AX", "pysot"]
     funcs = [Cycling(num) for num in [30, 31, 61, 22, 23, 45]]
     optims = refactor_optims(optims)
     for function in funcs:
