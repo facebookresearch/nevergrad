@@ -235,7 +235,7 @@ def test_optimizers(name: str) -> None:
         ]
         or "Tiny" in name
         or "Micro" in name
-    ):
+    ) and os.environ.get("CIRCLECI", False):
         raise SkipTest("Too expensive: we randomly skip 3/4 of these tests.")
     if name in ["CMAbounded", "NEWUOA"]:  # Not a general purpose optimization method.
         return
@@ -350,7 +350,7 @@ def test_optimizers_minimal(name: str) -> None:
         val = optimizer_cls(v, budget).minimize(f2p).value[0]
         assert -0.36 < val < -0.24, f"pb with {optimizer_cls} for -0.3: {val}"
     else:
-        budget = 500
+        budget = 100
         if any(x in name for x in ["QO", "SODE"]):
             return
         val = optimizer_cls(1, budget).minimize(f).value

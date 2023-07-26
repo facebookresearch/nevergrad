@@ -156,7 +156,6 @@ class GymMulti(ExperimentFunction):
         randomized: bool = True,
         optimization_scale: int = 0,
         greedy_bias: bool = False,
-        gym_seed: tp.Optional[int] = None,
         sparse_limit: tp.Optional[
             int
         ] = None,  # if not None, we penalize solutions with more than sparse_limit weights !=0
@@ -165,53 +164,12 @@ class GymMulti(ExperimentFunction):
         self.optimization_scale = optimization_scale
         self.stochastic_problem = "stoc" in name
         self.greedy_bias = greedy_bias
-        self.gym_seed = gym_seed
         self.sparse_limit = sparse_limit
         if "conformant" in control or control == "linear":
             assert neural_factor is None
         if os.name == "nt":
             raise ng.errors.UnsupportedExperiment("Windows is not supported")
-        if self.uses_compiler_gym:  # Long special case for Compiler Gym.
-            # CompilerGym sends http requests that CircleCI does not like.
-            if os.environ.get("CIRCLECI", False):
-                raise ng.errors.UnsupportedExperiment("No HTTP request in CircleCI")
-            assert limited_compiler_gym is not None
-            self.num_episode_steps = 45 if limited_compiler_gym else 50
-            import compiler_gym
-
-            env = gym.make("llvm-v0", observation_space="Autophase", reward_space="IrInstructionCountOz")
-            env = self.observation_wrap(self.wrap_env(env))
-            self.uris = list(env.datasets["benchmark://cbench-v1"].benchmark_uris())
-            # For training, in the "stochastic" case, we use Csmith.
-            from itertools import islice
-
-            self.csmith = list(
-                islice(env.datasets["generator://csmith-v0"].benchmark_uris(), self.num_training_codes)
-            )
-
-            if self.stochastic_problem:
-                assert (
-                    compiler_gym_pb_index is None
-                ), "compiler_gym_pb_index should not be defined in the stochastic case."
-                self.compilergym_index = None
-                # In training, we randomly draw in csmith (but we are allowed to use 100x more budget :-) ).
-                o = env.reset(benchmark=np.random.choice(self.csmith))
-            else:
-                assert compiler_gym_pb_index is not None
-                self.compilergym_index = compiler_gym_pb_index
-                o = env.reset(benchmark=self.uris[self.compilergym_index])
-            # env.require_dataset("cBench-v1")
-            # env.unwrapped.benchmark = "benchmark://cBench-v1/qsort"
-        else:  # Here we are not in CompilerGym anymore.
-            assert limited_compiler_gym is None
-            assert (
-                compiler_gym_pb_index is None
-            ), "compiler_gym_pb_index should not be defined if not CompilerGym."
-            env = gym.make(name if "LANM" not in name else "gym_anm:ANM6Easy-v0")
-            if self.gym_seed:
-                env.seed(self.gym_seed)
-            o = env.reset()
-        self.env = env
+        # self.env = None  # self.create_env() let us have no self.env
 
         # Build various attributes.
         self.short_name = name  # Just the environment name.
@@ -628,26 +586,7 @@ class GymMulti(ExperimentFunction):
         assert seed == 0 or self.control != "conformant" or self.randomized
         env = self.create_env()
         env.seed(seed=seed)
-        assert False
-        if self.uses_compiler_gym:
-            if self.stochastic_problem:
-                assert compiler_gym_pb_index is not None
-                o = env.reset(
-                    benchmark=self.csmith[compiler_gym_pb_index]
-                    if not test_set
-                    else self.uris[compiler_gym_pb_index]
-                )
-            else:
-                # Direct case: we should have an index equal to self.compilergym_index
-                assert compiler_gym_pb_index is not None
-                assert compiler_gym_pb_index == self.compilergym_index
-                assert compiler_gym_pb_index < 23
-                o = env.reset(benchmark=self.uris[compiler_gym_pb_index])
-        else:
-            assert compiler_gym_pb_index is None
-            if self.gym_seed:
-                env.seed(self.gym_seed)
-            o = env.reset()
+        o = env.reset()
         control = self.control
         if (
             "conformant" in control
