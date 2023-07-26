@@ -1,6 +1,6 @@
 requests>=2.21.0
 #smac[all]>=0.13.1
-smac
+smac>=2.0.1
 scipy  #=1.6  # 1.6 required for SMAC because deprecated usage of sobol_seq
 scikit-optimize
 #scikit-optimize._shgo_lib
