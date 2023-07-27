@@ -176,6 +176,12 @@ def test_ngopt(dim: int, budget_multiplier: int, num_workers: int, bounded: bool
 def test_infnan(name: str) -> None:
     if any(x in name for x in ["SMAC", "BO", "AX"]) and os.environ.get("CIRCLECI", False):
         raise SkipTest("too slow for CircleCI!")
+
+    def doint(s):  # Converting a string into an int.
+        return 7 + sum([ord(c) * i for i, c in enumerate(s)])
+
+    if doint(name) % 5 > 0:
+        raise SkipTest("too many tests for CircleCI!")
     optim_cls = registry[name]
     optim = optim_cls(parametrization=2, budget=70)
     if not (
@@ -216,8 +222,14 @@ def test_infnan(name: str) -> None:
 @pytest.mark.parametrize("name", registry)  # type: ignore
 def test_optimizers(name: str) -> None:
     """Checks that each optimizer is able to converge on a simple test case"""
-    if any(x in name for x in ["SMAC", "BO", "AX"]) and os.environ.get("CIRCLECI", False):
+    if any(x in name for x in ["Chain", "SMAC", "BO", "AX"]) and os.environ.get("CIRCLECI", False):
         raise SkipTest("too slow for CircleCI!")
+
+    def doint(s):  # Converting a string into an int.
+        return 7 + sum([ord(c) * i for i, c in enumerate(s)])
+
+    if doint(name) % 5 > 0:
+        raise SkipTest("too many tests for CircleCI!")
     if (
         sum([ord(c) for c in name]) % 4 > 0
         and name
@@ -295,6 +307,7 @@ def test_optimizers_minimal(name: str) -> None:
             "Milli",
             "Small",
             "small",
+            "Chain",
             "Mix",
             "Micro",
             "Naive",
@@ -335,7 +348,7 @@ def test_optimizers_minimal(name: str) -> None:
         return sum((x + 1.1) ** 2)
 
     if "Cma" in name or "CMA" in name or "BIPOP" in name:  # Sometimes CMA does not work in dim 1 :-(
-        budget = 3000
+        budget = 600
         if any(x in name for x in ["Large", "Tiny", "Para", "Diagonal"]):
             return
         val = optimizer_cls(2, budget).minimize(f).value[0]

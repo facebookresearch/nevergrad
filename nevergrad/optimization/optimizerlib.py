@@ -826,7 +826,6 @@ class ChoiceBase(base.Optimizer):
 OldCMA = ParametrizedCMA().set_name("OldCMA", register=True)
 LargeCMA = ParametrizedCMA(scale=3.0).set_name("LargeCMA", register=True)
 TinyCMA = ParametrizedCMA(scale=0.33).set_name("TinyCMA", register=True)
-CMA = ParametrizedCMA().set_name("CMA", register=True)
 CMAbounded = ParametrizedCMA(
     scale=1.5884, popsize_factor=1, elitist=True, diagonal=True, fcmaes=False
 ).set_name("CMAbounded", register=True)
@@ -871,6 +870,11 @@ class MetaCMA(ChoiceBase):  # Adds Risto's CMA to CMA.
 DiagonalCMA = ParametrizedCMA(diagonal=True).set_name("DiagonalCMA", register=True)
 SDiagonalCMA = ParametrizedCMA(diagonal=True, zero=True).set_name("SDiagonalCMA", register=True)
 FCMA = ParametrizedCMA(fcmaes=True).set_name("FCMA", register=True)
+
+
+@registry.register
+class CMA(MetaCMA):
+    pass
 
 
 class _PopulationSizeController:
