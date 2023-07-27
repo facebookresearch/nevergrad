@@ -34,7 +34,7 @@ commands:
       - run:
           name: "[all] Install dependencies"
           command: |
-            rm -rf venv && python3 -m venv venv
+            python3 -m venv venv
             . venv/bin/activate
             pip install --progress-bar off -U pip setuptools
             pip install --progress-bar off -e .[all]
@@ -194,6 +194,8 @@ jobs:
   pytests:
     executor: ubuntu-python38
 
+    parallelism: 10
+
     steps:
 
       - ubuntu_restore_all
@@ -203,7 +205,8 @@ jobs:
           when: always
           command: |
             . venv/bin/activate
-            pytest nevergrad -v --exitfirst --durations=20 --cov=nevergrad
+            pytest --circleci-parallelize nevergrad -v --durations=20 --cov=nevergrad
+            #pytest nevergrad -v --exitfirst --durations=20 --cov=nevergrad
 
 
   docs-deploy:

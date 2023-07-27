@@ -49,3 +49,4 @@ glfw
 mujoco
 pySOT
 poap
+pytest-circleci-parallelized
