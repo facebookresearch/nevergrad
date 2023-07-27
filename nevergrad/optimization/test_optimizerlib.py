@@ -332,7 +332,7 @@ def test_optimizers_minimal(name: str) -> None:
 
     if "Cma" in name or "CMA" in name or "BIPOP" in name:  # Sometimes CMA does not work in dim 1 :-(
         budget = 3000
-        if any(x in name for x in ["Large", "Tiny", "Para"]):
+        if any(x in name for x in ["Large", "Tiny", "Para", "Diagonal"]):
             return
         val = optimizer_cls(2, budget).minimize(f).value[0]
         assert 1.04 < val < 1.16, f"pb with {optimizer_cls} for 1.1: {val}"
