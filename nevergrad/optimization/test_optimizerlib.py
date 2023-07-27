@@ -310,7 +310,7 @@ def test_optimizers_minimal(name: str) -> None:
             "NLOPT_GN_ISRES",
         ]
     ):
-        return
+        raise SkipTest("Skipped for saving up CircleCI resources!")
 
     def f(x):
         return sum((x - 1.1) ** 2)
