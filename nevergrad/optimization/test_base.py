@@ -142,9 +142,9 @@ def test_optimize_and_dump(tmp_path: Path) -> None:
 
 
 def test_compare() -> None:
-    optimizer = optimizerlib.OnePlusOne(parametrization=2, budget=6000, num_workers=6)
+    optimizer = optimizerlib.OnePlusOne(parametrization=2, budget=600, num_workers=6)
     optimizerlib.addCompare(optimizer)
-    for _ in range(1000):  # TODO make faster test
+    for _ in range(100):  # TODO make faster test
         x: tp.List[tp.Any] = []
         for _ in range(6):
             x += [optimizer.ask()]
