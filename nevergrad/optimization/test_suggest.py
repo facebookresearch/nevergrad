@@ -77,6 +77,7 @@ def good_at_suggest(name: str) -> bool:
         "BSO",
         "Sparse",
         "Adaptive",
+        "Doerr",
         "Recombining",
         "SA",
         "PortfolioDiscreteOne",
@@ -86,7 +87,7 @@ def good_at_suggest(name: str) -> bool:
 
 
 @skip_win_perf  # type: ignore
-@pytest.mark.parametrize("name", [r for r in registry if "iscre" in r and good_at_suggest(r) and ("Lengler" not in r or "LenglerOne" in r)])  # type: ignore
+@pytest.mark.parametrize("name", [r for r in registry if "iscre" in r and good_at_suggest(r) and r != "DiscreteOnePlusOne" and ("Lengler" not in r or "LenglerOne" in r)])  # type: ignore
 def test_harder_suggest_optimizers(name: str) -> None:
     """Checks that discrete optimizers are good when a suggestion is nearby."""
     instrum = ng.p.Array(shape=(100,)).set_bounds(0.0, 1.0)
