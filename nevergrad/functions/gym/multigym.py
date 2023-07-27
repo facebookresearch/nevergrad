@@ -141,7 +141,7 @@ class GymMulti(ExperimentFunction):
         return env
 
     def create_env(self) -> tp.Any:
-        env = gym.make(self.short_name if "LANM" not in self.short_name else "ANM6Easy-v0")
+        env = gym.make(self.short_name)
         try:
             env.reset()
         except:
@@ -150,7 +150,7 @@ class GymMulti(ExperimentFunction):
 
     def __init__(
         self,
-        name: str = "ANM6Easy-v0",
+        name: str = "CartPole-v0",
         control: str = "conformant",
         neural_factor: tp.Optional[int] = 1,
         randomized: bool = True,

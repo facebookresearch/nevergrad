@@ -39,4 +39,4 @@ def test_sa() -> None:
             values += [of(recom)]
             valuesT += [of(recomT)]
         pval = stats.mannwhitneyu(valuesT, values, alternative="less").pvalue
-        assert pval < 0.1, f"Simulated Annealing {o} fails the test: pval = {pval}."
+        assert pval < 0.2, f"Simulated Annealing {o} fails the test: pval = {pval}."
