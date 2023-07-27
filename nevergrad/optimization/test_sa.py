@@ -20,7 +20,7 @@ skip_win_perf = pytest.mark.skipif(
 @skip_win_perf  # type: ignore
 def test_sa() -> None:
 
-    num_tests = 77
+    num_tests = 177
     for o in ["DiscreteOnePlusOne"]:
         values = []
         valuesT = []

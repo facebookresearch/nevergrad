@@ -279,7 +279,7 @@ jobs:
           name: pytest
           command: |
             . ./venv/Scripts/activate
-            pytest nevergrad -v --exitfirst --durations=20
+            pytest --circleci-parallelize nevergrad -v --durations=20
 
 
   pypi-deploy:
