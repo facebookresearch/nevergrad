@@ -182,6 +182,7 @@ def test_infnan(name: str) -> None:
 
     if doint(name) % 5 > 0:
         raise SkipTest("too many tests for CircleCI!")
+
     optim_cls = registry[name]
     optim = optim_cls(parametrization=2, budget=70)
     if not (
@@ -290,6 +291,7 @@ def test_optimizers_minimal(name: str) -> None:
             "ECMA",
             "CMAstd",
             "_COBYLA",
+            "HyperOpt",
             "Chain",
             "CMAbounded",
             "Tiny",
