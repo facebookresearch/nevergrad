@@ -77,6 +77,7 @@ def good_at_suggest(name: str) -> bool:
         "BSO",
         "Sparse",
         "Adaptive",
+        "Doerr",
         "Recombining",
         "SA",
         "PortfolioDiscreteOne",
