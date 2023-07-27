@@ -281,6 +281,7 @@ def test_optimizers_minimal(name: str) -> None:
             "Chain",
             "CMAbounded",
             "Tiny",
+            "iscrete",
             "para",
             "SPSA",
             "EDA",
