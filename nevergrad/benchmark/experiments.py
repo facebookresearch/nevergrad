@@ -3367,7 +3367,10 @@ def lsgo() -> tp.Iterator[Experiment]:
         "BFGS",
     ]
     optims = ["PSO", "RealPSO"]
-    optims = ["CMA", "PSO", "SQOPSO", "QODE", "SODE", "TinyCMA", "OnePlusOne"]
+    optims = ["CMA", "PSO", "SQOPSO", "TinyCMA", "Cobyla"]
+    optims = ["TwoPointsDE", "DE", "LhsDE"]
+    optims = ["DE", "TwoPointsDE", "VoronoiDE", "RotatedTwoPointsDE", "LhsDE", "QrDE", "QODE", "SODE", "NoisyDE", "AlmostRotationInvariantDE", "RotationInvariantDE", "DiscreteDE", "RecMutDE", "MutDE", "OnePointDE", "ParametrizationDE", "MiniDE", "MiniLhsDE", "MiniQrDE", "BPRotationInvariantDE", "HSDE", "LhsHSDE", "TinyLhsDE", "TinyQODE", "MetaModelDE", "MetaModelQODE", "NeuralMetaModelDE", "SVMMetaModelDE", "RFMetaModelDE", "MetaModelTwoPointsDE", "NeuralMetaModelTwoPointsDE", "SVMMetaModelTwoPointsDE", "RFMetaModelTwoPointsDE", "GeneticDE", "MemeticDE", "QNDE"]
+    optims = ["CMA", "NGOpt", "NGOptRW"]
     optims = refactor_optims(optims)
     for i in range(1, 16):
         for optim in optims:
