@@ -4,9 +4,10 @@
 if compgen -G "*.csv" > /dev/null; then
 
 # First we run all nevergrad plotting.
-for i in *.csv
+for i in `ls *.csv | grep -v yahdnoi`
 do
-    python -m nevergrad.benchmark.plotting --max_combsize=2 --competencemaps=1 $i &
+    (python -m nevergrad.benchmark.plotting --nomanyxp=1 $i ; python -m nevergrad.benchmark.plotting --max_combsize=2 --competencemaps=1 --nomanyxp=1 $i ) &
+
 done
 wait
 
