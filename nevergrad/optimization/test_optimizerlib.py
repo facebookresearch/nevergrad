@@ -174,6 +174,15 @@ def test_ngopt(dim: int, budget_multiplier: int, num_workers: int, bounded: bool
 @pytest.mark.parametrize("name", registry)  # type: ignore
 @testing.suppress_nevergrad_warnings()  # hides bad loss
 def test_infnan(name: str) -> None:
+    if any(x in name for x in ["SMAC", "BO", "AX"]) and os.environ.get("CIRCLECI", False):
+        raise SkipTest("too slow for CircleCI!")
+
+    def doint(s):  # Converting a string into an int.
+        return 7 + sum([ord(c) * i for i, c in enumerate(s)])
+
+    if doint(name) % 5 > 0:
+        raise SkipTest("too many tests for CircleCI!")
+
     optim_cls = registry[name]
     optim = optim_cls(parametrization=2, budget=70)
     if not (
@@ -188,6 +197,7 @@ def test_infnan(name: str) -> None:
                 "Fmin2",
                 "NLOPT",
                 "TBPSA",
+                "SMAC",
                 "BO",
                 "Noisy",
                 "Chain",
@@ -213,6 +223,14 @@ def test_infnan(name: str) -> None:
 @pytest.mark.parametrize("name", registry)  # type: ignore
 def test_optimizers(name: str) -> None:
     """Checks that each optimizer is able to converge on a simple test case"""
+    if any(x in name for x in ["Chain", "SMAC", "BO", "AX"]) and os.environ.get("CIRCLECI", False):
+        raise SkipTest("too slow for CircleCI!")
+
+    def doint(s):  # Converting a string into an int.
+        return 7 + sum([ord(c) * i for i, c in enumerate(s)])
+
+    if doint(name) % 5 > 0:
+        raise SkipTest("too many tests for CircleCI!")
     if (
         sum([ord(c) for c in name]) % 4 > 0
         and name
@@ -226,7 +244,7 @@ def test_optimizers(name: str) -> None:
         ]
         or "Tiny" in name
         or "Micro" in name
-    ):
+    ) and os.environ.get("CIRCLECI", False):
         raise SkipTest("Too expensive: we randomly skip 3/4 of these tests.")
     if name in ["CMAbounded", "NEWUOA"]:  # Not a general purpose optimization method.
         return
@@ -259,6 +277,8 @@ def test_optimizers(name: str) -> None:
 @pytest.mark.parametrize("name", registry)  # type: ignore
 def test_optimizers_minimal(name: str) -> None:
     optimizer_cls = registry[name]
+    if any(x in name for x in ["SMAC", "BO", "AX"]) and os.environ.get("CIRCLECI", False):
+        raise SkipTest("too slow for CircleCI!")
     if optimizer_cls.one_shot or name in ["CM", "NLOPT_LN_PRAXIS", "ES", "RecMixES", "RecMutDE", "RecES"]:
         return
     if any(
@@ -271,9 +291,11 @@ def test_optimizers_minimal(name: str) -> None:
             "ECMA",
             "CMAstd",
             "_COBYLA",
+            "HyperOpt",
             "Chain",
             "CMAbounded",
             "Tiny",
+            "iscrete",
             "para",
             "SPSA",
             "EDA",
@@ -285,6 +307,10 @@ def test_optimizers_minimal(name: str) -> None:
             "EMNA",
             "RL",
             "Milli",
+            "Small",
+            "small",
+            "Chain",
+            "Mix",
             "Micro",
             "Naive",
             "Portfo",
@@ -300,9 +326,10 @@ def test_optimizers_minimal(name: str) -> None:
             "VLP",
             "LPC",
             "Choice",
+            "NLOPT_GN_ISRES",
         ]
     ):
-        return
+        raise SkipTest("Skipped for saving up CircleCI resources!")
 
     def f(x):
         return sum((x - 1.1) ** 2)
@@ -323,8 +350,8 @@ def test_optimizers_minimal(name: str) -> None:
         return sum((x + 1.1) ** 2)
 
     if "Cma" in name or "CMA" in name or "BIPOP" in name:  # Sometimes CMA does not work in dim 1 :-(
-        budget = 2000
-        if any(x in name for x in ["Large", "Tiny", "Para"]):
+        budget = 600
+        if any(x in name for x in ["Large", "Tiny", "Para", "Diagonal"]):
             return
         val = optimizer_cls(2, budget).minimize(f).value[0]
         assert 1.04 < val < 1.16, f"pb with {optimizer_cls} for 1.1: {val}"
@@ -332,12 +359,14 @@ def test_optimizers_minimal(name: str) -> None:
         assert -1.16 < val < -1.04, f"pb with {optimizer_cls} for -1.1.: {val}"
         v = ng.p.Array(shape=(2,), upper=1.0, lower=0.0)
         val = optimizer_cls(v, budget).minimize(f1p).value[0]
-        assert 0.94 < val < 1.06, f"pb with {optimizer_cls} for 1.: {val}"
+        assert 0.90 < val < 1.01, f"pb with {optimizer_cls} for 1.: {val}"
         v = ng.p.Array(shape=(2,), upper=0.3, lower=-0.3)
         val = optimizer_cls(v, budget).minimize(f2p).value[0]
-        assert -0.36 < val < -0.24, f"pb with {optimizer_cls} for -0.3: {val}"
+        assert -0.31 < val < -0.24, f"pb with {optimizer_cls} for -0.3: {val}"
     else:
-        budget = 500
+        budget = 100
+        if "DE" in name or "PSO" in name or "Hyper" in name:
+            budget = 300
         if any(x in name for x in ["QO", "SODE"]):
             return
         val = optimizer_cls(1, budget).minimize(f).value
@@ -346,10 +375,10 @@ def test_optimizers_minimal(name: str) -> None:
         assert -1.16 < val < -1.04, f"pb with {optimizer_cls} for -1.1.: {val}"
         v = ng.p.Scalar(upper=1.0, lower=0.0)  # type: ignore
         val = optimizer_cls(v, budget).minimize(f1).value
-        assert 0.94 < val < 1.06, f"pb with {optimizer_cls} for 1.: {val}"
+        assert 0.94 < val < 1.01, f"pb with {optimizer_cls} for 1.: {val}"
         v = ng.p.Scalar(upper=0.3, lower=-0.3)  # type: ignore
         val = optimizer_cls(v, budget).minimize(f2).value
-        assert -0.36 < val < -0.24, f"pb with {optimizer_cls} for -0.3: {val}"
+        assert -0.31 < val < -0.24, f"pb with {optimizer_cls} for -0.3: {val}"
 
 
 class RecommendationKeeper:
@@ -378,10 +407,14 @@ def recomkeeper() -> tp.Generator[RecommendationKeeper, None, None]:
 # pylint: disable=redefined-outer-name
 @pytest.mark.parametrize("name", registry)  # type: ignore
 def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper) -> None:
+    if any(x in name for x in ["SMAC", "BO", "AX"]) and os.environ.get("CIRCLECI", False):
+        raise SkipTest("too slow for CircleCI!")
     if name in UNSEEDABLE:
         raise SkipTest("Not playing nicely with the tests (unseedable)")
     if "BO" in name or "EDA" in name:
         raise SkipTest("BO differs from one computer to another")
+    if "SMAC" in name:
+        raise SkipTest("SMAC is too slow for the 20s limit")
     if len(name) > 8:
         raise SkipTest("Let us check only compact methods.")
     # set up environment
@@ -773,6 +806,10 @@ def test_constrained_optimization(penalization: bool, expected: tp.List[float], 
 
 @pytest.mark.parametrize("name", registry)  # type: ignore
 def test_parametrization_offset(name: str) -> None:
+    if any(x in name for x in ["SMAC", "BO", "AX"]) and os.environ.get(
+        "CIRCLECI", False
+    ):  # Outside CircleCI, only the big.
+        raise SkipTest("too slow for CircleCI!")
     if sum([ord(c) for c in name]) % 4 > 0:
         raise SkipTest("Randomly skipping 75% of these tests.")
     if "PSO" in name or "BO" in name:

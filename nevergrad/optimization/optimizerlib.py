@@ -43,9 +43,17 @@ from .recastlib import *  # noqa: F403
 
 try:
     from .externalbo import HyperOpt  # pylint: disable=unused-import
-except ModuleNotFoundError:
+
+    # HyperOpt = ParametrizedHyperOpt().set_name("HyperOpt", register=True)
+except:  # ModuleNotFoundError:
     pass
 
+# from .externalbo import ParametrizedHyperOpt
+# Lamcts = LamctsOptimizer(random_restart=True, device="cpu").set_name("Lamcts", register=True)
+# Lamcts2 = LamctsOptimizer(random_restart=True, device="cpu").set_name("Lamcts2", register=True)
+
+# run with LOGLEVEL=DEBUG for more debug information
+# logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
 logger = logging.getLogger(__name__)
 
 
@@ -720,6 +728,7 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         popsize: tp.Optional[int] = None,
         popsize_factor: float = 3.0,
         diagonal: bool = False,
+        zero: bool = False,
         high_speed: bool = False,
         fcmaes: bool = False,
         random_init: bool = False,
@@ -727,11 +736,14 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         algorithm: str = "quad",
     ) -> None:
         super().__init__(_CMA, locals(), as_config=True)
+        if zero:
+            scale = scale / 1000.0
         if fcmaes:
             if diagonal:
                 raise RuntimeError("fcmaes doesn't support diagonal=True, use fcmaes=False")
         self.scale = scale
         self.elitist = elitist
+        self.zero = zero
         self.popsize = popsize
         self.popsize_factor = popsize_factor
         self.diagonal = diagonal
@@ -814,7 +826,6 @@ class ChoiceBase(base.Optimizer):
 OldCMA = ParametrizedCMA().set_name("OldCMA", register=True)
 LargeCMA = ParametrizedCMA(scale=3.0).set_name("LargeCMA", register=True)
 TinyCMA = ParametrizedCMA(scale=0.33).set_name("TinyCMA", register=True)
-CMA = ParametrizedCMA().set_name("CMA", register=True)
 CMAbounded = ParametrizedCMA(
     scale=1.5884, popsize_factor=1, elitist=True, diagonal=True, fcmaes=False
 ).set_name("CMAbounded", register=True)
@@ -859,7 +870,13 @@ class MetaCMA(ChoiceBase):  # Adds Risto's CMA to CMA.
 
 
 DiagonalCMA = ParametrizedCMA(diagonal=True).set_name("DiagonalCMA", register=True)
+SDiagonalCMA = ParametrizedCMA(diagonal=True, zero=True).set_name("SDiagonalCMA", register=True)
 FCMA = ParametrizedCMA(fcmaes=True).set_name("FCMA", register=True)
+
+
+@registry.register
+class CMA(MetaCMA):
+    pass
 
 
 class _PopulationSizeController:
