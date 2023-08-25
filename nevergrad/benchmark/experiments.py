@@ -50,6 +50,7 @@ from . import gymexperiments  # noqa
 
 
 def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
+    return ["RandomSearch", "OnePlusOne", "DE", "PSO"]
     algos = {}
     algos["aquacrop_fao"] = [
         "CMA",
