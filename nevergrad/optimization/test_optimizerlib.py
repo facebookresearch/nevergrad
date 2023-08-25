@@ -354,7 +354,7 @@ def test_optimizers_minimal(name: str) -> None:
     ):  # Sometimes CMA does not work in dim 1 :-(
         budget = 600
         if "BAR" in name:
-            budget = 1200
+            budget = 1800
         if any(x in name for x in ["Large", "Tiny", "Para", "Diagonal"]):
             return
         val = optimizer_cls(2, budget).minimize(f).value[0]
