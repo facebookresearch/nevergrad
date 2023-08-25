@@ -407,8 +407,9 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
 
     # Below, we use the best in the records above.
     benchmark = str(inspect.stack()[1].function)
-    if benchmark in algos:
+    if benchmark in algos and False:
         return algos[benchmark][:5]
+
     # return ["LargeCMA", "OldCMA", "MultiCMA"]
     # return ["NLOPT_LN_BOBYQA"]
     # return ["SQPCMA"]
@@ -416,7 +417,14 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
     # Here, we pseudo-randomly draw one optim in the provided list,
     # depending on the host (so that each host is using the same optim).
     list_optims = x
-
+    list_optims = ["BAR", "BAR2", "BAR3"]
+    list_optims = ["BAR", "BAR2", "BAR3", "BAR4", "NGOpt", "NGOptRW", "CMandAS2"]
+    list_optims = ["QOTPDE", "LQOTPDE", "LQODE", "BAR4", "NGOpt", "CMandAS2"]
+    list_optims = ["QOTPDE", "LQOTPDE", "LQODE"]
+    list_optims = ["SPQODE", "SQOPSO", "DiagonalCMA"]
+    list_optims = ["BAR", "BAR3", "BAR2", "BAR4", "SPQODE", "SQOPSO", "DiagonalCMA"]
+    list_optims = ["QODE", "CMA", "SQOPSO", "RandomSearch", "OnePlusOne", "DE"]
+    # list_optims = ["DiagonalCMA"]
     def doint(s):  # Converting a string into an int.
         return 7 + sum([ord(c) * i for i, c in enumerate(s)])
 
@@ -3395,7 +3403,49 @@ def lsgo() -> tp.Iterator[Experiment]:
         "BFGS",
     ]
     optims = ["PSO", "RealPSO"]
-    optims = ["CMA", "PSO", "SQOPSO", "QODE", "SODE", "TinyCMA", "OnePlusOne"]
+    optims = ["CMA", "PSO", "SQOPSO", "TinyCMA", "Cobyla"]
+    optims = ["TwoPointsDE", "DE", "LhsDE"]
+    optims = [
+        "DE",
+        "TwoPointsDE",
+        "VoronoiDE",
+        "RotatedTwoPointsDE",
+        "LhsDE",
+        "QrDE",
+        "QODE",
+        "SODE",
+        "NoisyDE",
+        "AlmostRotationInvariantDE",
+        "RotationInvariantDE",
+        "DiscreteDE",
+        "RecMutDE",
+        "MutDE",
+        "OnePointDE",
+        "ParametrizationDE",
+        "MiniDE",
+        "MiniLhsDE",
+        "MiniQrDE",
+        "BPRotationInvariantDE",
+        "HSDE",
+        "LhsHSDE",
+        "TinyLhsDE",
+        "TinyQODE",
+        "MetaModelDE",
+        "MetaModelQODE",
+        "NeuralMetaModelDE",
+        "SVMMetaModelDE",
+        "RFMetaModelDE",
+        "MetaModelTwoPointsDE",
+        "NeuralMetaModelTwoPointsDE",
+        "SVMMetaModelTwoPointsDE",
+        "RFMetaModelTwoPointsDE",
+        "GeneticDE",
+        "MemeticDE",
+        "QNDE",
+    ]
+    optims = ["CMA", "NGOpt", "NGOptRW"]
+    optims = ["DiagonalCMA", "TinyQODE", "OpoDE", "OpoTinyDE"]
+    optims = ["TinyQODE", "OpoDE", "OpoTinyDE"]
     optims = refactor_optims(optims)
     for i in range(1, 16):
         for optim in optims:

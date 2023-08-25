@@ -854,6 +854,8 @@ class MetaCMA(ChoiceBase):  # Adds Risto's CMA to CMA.
             and not self.has_noise
             and self.num_objectives < 2
         ):
+            if self.dimension == 1:
+                return OnePlusOne
             if p.helpers.Normalizer(self.parametrization).fully_bounded:
                 return CMAbounded
             if self.budget < 50:
@@ -2540,7 +2542,18 @@ MemeticDE = Chaining([RotatedTwoPointsDE, TwoPointsDE, DE, SQP], ["fourth", "fou
     "MemeticDE", register=True
 )
 QNDE = Chaining([QODE, BFGS], ["half"]).set_name("QNDE", register=True)
+OpoDE = Chaining([OnePlusOne, QODE], ["half"]).set_name("OpoDE", register=True)
+OpoTinyDE = Chaining([OnePlusOne, TinyQODE], ["half"]).set_name("OpoTinyDE", register=True)
 QNDE.no_parallelization = True
+BAR = ConfPortfolio(optimizers=[OnePlusOne, DiagonalCMA, OpoDE], warmup_ratio=0.5).set_name(
+    "BAR", register=True
+)
+BAR2 = ConfPortfolio(optimizers=[OnePlusOne, MetaCMA, OpoDE], warmup_ratio=0.5).set_name(
+    "BAR2", register=True
+)
+BAR3 = ConfPortfolio(optimizers=[RandomSearch, OnePlusOne, MetaCMA, QNDE], warmup_ratio=0.5).set_name(
+    "BAR3", register=True
+)
 MemeticDE.no_parallelization = True
 discretememetic = Chaining(
     [RandomSearch, DiscreteLenglerOnePlusOne, DiscreteOnePlusOne], ["third", "third"]
@@ -2566,6 +2579,7 @@ ChainNaiveTBPSACMAPowell = Chaining([NaiveTBPSA, MetaCMA, Powell], ["third", "th
     "ChainNaiveTBPSACMAPowell", register=True
 )
 ChainNaiveTBPSACMAPowell.no_parallelization = True
+BAR4 = ConfPortfolio(optimizers=[ChainMetaModelSQP, QNDE], warmup_ratio=0.5).set_name("BAR4", register=True)
 
 
 @registry.register
