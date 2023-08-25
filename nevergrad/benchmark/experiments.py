@@ -50,6 +50,7 @@ from . import gymexperiments  # noqa
 
 
 def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
+    return ["RandomSearch", "OnePlusOne", "DE", "PSO"]
     algos = {}
     algos["aquacrop_fao"] = [
         "CMA",
@@ -424,6 +425,7 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
     list_optims = ["SPQODE", "SQOPSO", "DiagonalCMA"]
     list_optims = ["BAR", "BAR3", "BAR2", "BAR4", "SPQODE", "SQOPSO", "DiagonalCMA"]
     list_optims = ["QODE", "CMA", "SQOPSO", "RandomSearch", "OnePlusOne", "DE"]
+    list_optims = ["AX", "SMAC3", "pysot"]
     # list_optims = ["DiagonalCMA"]
     def doint(s):  # Converting a string into an int.
         return 7 + sum([ord(c) * i for i, c in enumerate(s)])
