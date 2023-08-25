@@ -601,6 +601,8 @@ class _CMA(base.Optimizer):
     @property
     def es(self) -> tp.Any:  # typing not possible since cmaes not imported :(
         scale_multiplier = 1.0
+        if self.dimension == 1:
+            self._config.fcmaes = True
         if p.helpers.Normalizer(self.parametrization).fully_bounded:
             scale_multiplier = 0.3 if self.dimension < 18 else 0.15
         if self._es is None or (not self._config.fcmaes and self._es.stop()):
