@@ -49,19 +49,19 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
             "LBFGSB",
             "L-BFGS-B",
             "SMAC",
-            "AX",
+            #"AX",
             "Lamcts",
             "Nelder-Mead",
             "COBYLA",
             "BOBYQA",
             "SLSQP",
             "Powell",
-        ], f"Unknown method '{method}'"
+        ] or True, f"Unknown method '{method}'"
         self.method = method
         self.random_restart = random_restart
         # The following line rescales to [0, 1] if fully bounded.
 
-        if method == "CmaFmin2" or "NLOPT" in method or "Lamcts" in  method:
+        if method == "CmaFmin2" or "NLOPT" in method or "Lamcts" in  method or "AX" == method:
             normalizer = p.helpers.Normalizer(self.parametrization)
             #            if normalizer.fully_bounded or method == "AX" or "pysot" == method or "SMAC" in method:
             #                self._normalizer = normalizer
@@ -88,7 +88,8 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
         remaining = budget - weakself._num_ask
         def ax_obj(p):
             data = [p["x" + str(i)] for i in range(weakself.dimension)]
-            data = weakself._normalizer.backward(np.asarray(data, dtype=np.float))
+            if weakself._normalizer:
+                data = weakself._normalizer.backward(np.asarray(data, dtype=np.float))
             return objective_function(data)
         while remaining > 0:  # try to restart if budget is not elapsed
             print(f"Iteration with remaining={remaining}")
