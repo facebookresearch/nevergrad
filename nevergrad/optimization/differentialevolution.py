@@ -362,7 +362,6 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
         super().__init__(_DE, locals(), as_config=True)
         assert recommendation in ["optimistic", "pessimistic", "noisy", "mean"]
         assert initialization in ["gaussian", "LHS", "QO", "SO", "QR", "parametrization"]
-
         assert isinstance(scale, float) or scale == "mini"
         if not isinstance(popsize, int):
             assert popsize in ["large", "dimension", "standard"]

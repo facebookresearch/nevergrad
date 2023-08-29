@@ -73,6 +73,7 @@ def ng_full_gym(
            do we restrict to conformant planning, i.e. deterministic controls.
     """
     env_names = nevergrad_gym.GymMulti.get_env_names()
+    #env_names = [e for e in env_names if ("Hotter" in e or "Guessing" in e or "NChain" in e)]
     assert int(ng_gym) + int(gp) <= 1, "At most one specific list of environments."
     if ng_gym:
         env_names = nevergrad_gym.GymMulti.ng_gym
@@ -93,6 +94,21 @@ def ng_full_gym(
         ]
 
     seedg = create_seed_generator(seed)
+    optims = ["DiagonalCMA", "OnePlusOne", "PSO", "DiscreteOnePlusOne", "DE", "CMandAS2"]
+
+    optims = ["DiagonalCMA", "CMA", "OnePlusOne", "SMAC", "Cobyla", "RandomSearch", "QORandomSearch", "MetaTuneRecentering", "DE", "PSO"]
+    optims += ["DE", "GeneticDE", "RotatedTwoPointsDE", "TwoPointsDE"]
+    optims += ["NGOpt"]
+    optims += ["SMAC2", "BOBYQA", "Powell", "SQP", "CMandAS2", "HyperOpt", "BO"]
+    optims += ["Lamcts", "Zero"]
+    optims = ["RotatedTwoPointsDE", "QORandomSearch", "SQP"]
+    optims = ["NGOpt38", "MixDeterministicRL", "SpecialRL", "NGOpt21", "NGOpt22"]
+    optims = ["MixDeterministicRL", "SpecialRL", "SMAC", "Lamcts", "Zero", "RotatedTwoPointsDE", "DE", "GeneticDE", "MetaTuneRecentering", "PSO", "SMAC2", "AX", "BO", "Cobyla", "CMA", "DiagonalCMA", "OnePlusOne", "MetaModel", "NoisyRL1", "NoisyRL2", "NoisyRL3"]
+    optims = ["MixDeterministicRL", "SpecialRL", "Zero", "RotatedTwoPointsDE", "DE", "GeneticDE", "MetaTuneRecentering", "PSO", "Cobyla", "CMA", "DiagonalCMA", "OnePlusOne", "MetaModel", "NoisyRL1", "NoisyRL2", "NoisyRL3"]
+    optims = ["Lamcts"]
+    optims = ["Zero", "SDiagonalCMA", "MultiScaleCMA", "QORandomSearch", "MetaRecentering"]
+    optims = ["AX"]
+    #optims = ["MixDeterministicRL", "SpecialRL", "SMAC", "Lamcts", "Zero", "RotatedTwoPointsDE", "DE", "GeneticDE", "MetaTuneRecentering", "PSO", "SMAC2", "AX", "BO", "Cobyla", "CMA", "DiagonalCMA", "OnePlusOne", "MetaModel", "HyperOpt"]#, "NoisyRL1", "NoisyRL2", "NoisyRL3"]
     optims = [
         "DiagonalCMA",
         "GeneticDE",
@@ -103,6 +119,7 @@ def ng_full_gym(
         "SpecialRL",
         "PSO",
     ]
+    #optims = ["Cobyla"]
     if multi:
         controls = ["multi_neural"]
     else:
@@ -115,11 +132,11 @@ def ng_full_gym(
                 "neural",
                 # "structured_neural",
                 # "memory_neural",
-                "stackingmemory_neural",
-                "deep_neural",
-                "semideep_neural",
-                "noisy_neural",
-                "noisy_scrambled_neural",
+                # "stackingmemory_neural",
+                # "deep_neural",
+                # "semideep_neural",
+                # "noisy_neural",
+                # "noisy_scrambled_neural",
                 # "scrambled_neural",
                 # "linear",
                 "resid_neural",
@@ -149,7 +166,7 @@ def ng_full_gym(
         neural_factors: tp.Any = (
             [None]
             if (conformant or control == "linear")
-            else ([1] if "memory" in control else ([3] if big else [1, 2, 3]))
+            else ([1] if "memory" in control else ([3] if big else [1]))
         )
         for neural_factor in neural_factors:
             for name in env_names:
@@ -195,12 +212,21 @@ def conformant_ng_full_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experim
 
 
 @registry.register
-def ng_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+def tiny_ng_gym_multideterministic(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of ng_full_gym with a specific, reduced list of problems."""
     return ng_full_gym(seed, ng_gym=True)
 
 
 @registry.register
+def tiny_ng_full_gym_multideterministic(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of ng_full_gym with a specific, reduced list of problems."""
+    return ng_full_gym(seed)#, ng_gym=True)
+
+@registry.register
+def notsotiny_ng_full_gym_multideterministic(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of ng_full_gym with a specific, reduced list of problems."""
+    return ng_full_gym(seed, big=True)#, ng_gym=True)
+
 def gp(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """GP benchmark.
 
@@ -322,7 +348,8 @@ def gym_problem(
         "NGOpt39",
         "CMA",
         "DE",
-    ]
+    ] + ["AnisotropicAdaptiveDiscreteOnePlusOne", "DiscreteBSOOnePlusOne", "AdaptiveDiscreteOnePlusOne",
+    "DiscreteOnePlusOne", "RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne", "OptimisticDiscreteOnePlusOne"]
     if "stochastic" in specific_problem:
         optims = ["DiagonalCMA", "TBPSA"] if big_noise else ["DiagonalCMA"]
     if specific_problem == "EnergySavingsGym-v0" and conformant:  # Do this for all conformant discrete ?

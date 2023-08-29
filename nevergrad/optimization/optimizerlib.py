@@ -44,16 +44,16 @@ from .recastlib import *  # noqa: F403
 try:
     from .externalbo import HyperOpt  # pylint: disable=unused-import
 
-    # HyperOpt = ParametrizedHyperOpt().set_name("HyperOpt", register=True)
-except:  # ModuleNotFoundError:
+    #HyperOpt = ParametrizedHyperOpt().set_name("HyperOpt", register=True)
+except: # ModuleNotFoundError:
     pass
 
-# from .externalbo import ParametrizedHyperOpt
-# Lamcts = LamctsOptimizer(random_restart=True, device="cpu").set_name("Lamcts", register=True)
-# Lamcts2 = LamctsOptimizer(random_restart=True, device="cpu").set_name("Lamcts2", register=True)
+#from .externalbo import ParametrizedHyperOpt
+Lamcts = LamctsOptimizer(random_restart=True, device='cpu').set_name("Lamcts", register=True)
+Lamcts2 = LamctsOptimizer(random_restart=True, device='cpu').set_name("Lamcts2", register=True)
 
 # run with LOGLEVEL=DEBUG for more debug information
-# logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
+#logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
 logger = logging.getLogger(__name__)
 
 
@@ -3389,3 +3389,5 @@ class MultipleSingleRuns(base.ConfiguredOptimizer):
         base_optimizer: base.OptCls = NGOpt,
     ) -> None:
         super().__init__(_MSR, locals())
+
+

@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import os
+import random
 import warnings
 import typing as tp
 import inspect
@@ -50,6 +51,8 @@ from . import gymexperiments  # noqa
 
 
 def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
+    return ["Lamcts"]
+  
     algos = {}
     algos["aquacrop_fao"] = [
         "CMA",
@@ -457,6 +460,34 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
 # return ["SOPSO"]
 # return ["QORandomSearch"]
 
+    # return ["NLOPT_LN_BOBYQA"]
+    return ["Lamcts"]
+    return [
+        "NLOPT_LN_SBPLX",
+        "NLOPT_LN_PRAXIS",
+        "NLOPT_GN_DIRECT",
+        "NLOPT_GN_DIRECT_L",
+        "NLOPT_GN_CRS2_LM",
+        "NLOPT_GN_AGS",
+        "NLOPT_GN_ISRES",
+        "NLOPT_GN_ESCH",
+        "NLOPT_LN_COBYLA",
+        "NLOPT_LN_BOBYQA",
+        "NLOPT_LN_NEWUOA_BOUND",
+        "NLOPT_LN_NELDERMEAD",
+    ]
+    return ["LBFGSB"]  # return ["PymooBIPOP"]
+    # return ["SQPCMA"]
+    # return ["MetaRecentering"]  # if you want to run only this algorithm
+    # return random.sample(x, 1)
+    # return x
+    # return ["CMandAS2", "Shiwa"]
+    # return ["RandomSearch", "NaiveTBPSA"]
+    # return ["SQOPSO", "QODE"]
+    # return ["QNDE", "MetaModelQODE"]
+    # return ["SOPSO"]
+    # return ["QORandomSearch"]
+
 
 def skip_ci(*, reason: str) -> None:
     """Only use this if there is a good reason for not testing the xp,
@@ -502,6 +533,13 @@ def keras_tuning(
     # Continuous case,
 
     # First, a few functions with constraints.
+    optims: tp.List[str] = ["PSO", "OnePlusOne"] + get_optimizers("basics", seed=next(seedg))  # type: ignore
+    optims = ["DE", "Lamcts", "BO", "AX", "HyperOpt", "CMA"]
+    optims = ["DE", "Lamcts", "AX", "HyperOpt", "CMA", "RandomSearch", "SMAC", "SMAC2", "BO"]
+    optims = ["AX", "BO", "Lamcts"]
+    optims = ["AX", "BO", "Lamcts", "SMAC", "SMAC2", "NGOptRW", "NGOpt"]
+    np.random.shuffle(optims)
+    optims = optims[:1]
     # optims: tp.List[str] = ["PSO", "OnePlusOne"] + get_optimizers("basics", seed=next(seedg))  # type: ignore
     optims = ["OnePlusOne", "BO", "RandomSearch", "CMA", "DE", "TwoPointsDE", "HyperOpt", "PCABO", "Cobyla"]
     optims = [
@@ -534,6 +572,7 @@ def keras_tuning(
     optims = ["SQOPSO"]  # , "QORealSpacePSO", "RealSpacePSO"]
     optims = ["SQOPSO"]  # , "QORealSpacePSO", "RealSpacePSO"]
     optims = refactor_optims(optims)
+    optims = ["Lamcts"]
     datasets = ["kerasBoston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
     optims = refactor_optims(optims)
     for dimension in [None]:
@@ -566,6 +605,16 @@ def mltuning(
 ) -> tp.Iterator[Experiment]:
     """Machine learning hyperparameter tuning experiment. Based on scikit models."""
     seedg = create_seed_generator(seed)
+    optims: tp.List[str] = get_optimizers("basics", seed=next(seedg))  # type: ignore
+    if not seq:
+        optims = get_optimizers("oneshot", seed=next(seedg))  # type: ignore
+    optims = ["DE", "Lamcts", "AX", "HyperOpt", "CMA"]
+    optims = ["DE", "Lamcts", "AX", "HyperOpt", "CMA", "RandomSearch"]
+    optims = ["DE", "Lamcts", "AX", "HyperOpt", "CMA", "RandomSearch", "SMAC", "SMAC2", "BO"]
+    optims = ["AX", "BO", "Lamcts"]
+    optims = ["AX", "BO", "Lamcts", "SMAC", "SMAC2", "NGOptRW", "NGOpt"]
+    np.random.shuffle(optims)
+    optims = optims[:1]
     # optims: tp.List[str] = get_optimizers("basics", seed=next(seedg))  # type: ignore
     # if not seq:
     #    optims = get_optimizers("oneshot", seed=next(seedg))  # type: ignore
@@ -1371,7 +1420,16 @@ def yabbob(
         optims += get_optimizers("splitters", seed=next(seedg))  # type: ignore
 
     if hd and small:
-        optims += ["BO", "PCABO", "CMA", "PSO", "DE"]
+        optims = ["BO", "CMA", "PSO", "DE"]
+
+    if bounded:
+        optims = ["BO", "PCABO", "BayesOptimBO", "CMA", "PSO", "DE"]
+    if box:
+        optims = ["DiagonalCMA", "Cobyla", "NGOpt16", "NGOpt15", "CMandAS2", "OnePlusOne"]
+    optims = ["DE", "Lamcts", "AX", "HyperOpt", "CMA", "RandomSearch"]
+    optims = ["DE", "Lamcts", "AX", "HyperOpt", "CMA", "RandomSearch", "SMAC", "SMAC2", "BO"]
+    optims = ["AX", "BO", "Lamcts", "SMAC", "SMAC2", "NGOptRW"]
+    np.random.shuffle(optims)
     if small and not hd:
         optims += ["PCABO", "BO", "Cobyla"]
     optims = [
@@ -1426,6 +1484,7 @@ def yabbob(
     optims = ["NGOpt", "NGOptRW"]
     optims = ["QrDE", "QODE", "LhsDE"]
     optims = ["NGOptRW"]
+    optims = ["Lamcts"]
     if noise:
         optims = [
             #        "MicroCMA",
@@ -3133,6 +3192,7 @@ def pbt(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         "PortfolioNoisyDiscreteOnePlusOne",
     ]  # type: ignore
     optimizers = refactor_optims(optimizers)
+
     for func in PBT.itercases():
         for optim in optimizers:
             for budget in [100, 400, 1000, 4000, 10000]:
