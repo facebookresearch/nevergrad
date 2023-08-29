@@ -49,23 +49,23 @@ from . import gymexperiments  # noqa
 
 
 def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
-    # return ["NLOPT_LN_BOBYQA"]
     return ["Lamcts"]
-    return [
-        "NLOPT_LN_SBPLX",
-        "NLOPT_LN_PRAXIS",
-        "NLOPT_GN_DIRECT",
-        "NLOPT_GN_DIRECT_L",
-        "NLOPT_GN_CRS2_LM",
-        "NLOPT_GN_AGS",
-        "NLOPT_GN_ISRES",
-        "NLOPT_GN_ESCH",
-        "NLOPT_LN_COBYLA",
-        "NLOPT_LN_BOBYQA",
-        "NLOPT_LN_NEWUOA_BOUND",
-        "NLOPT_LN_NELDERMEAD",
-    ]
-    return ["LBFGSB"]  # return ["PymooBIPOP"]
+    # return ["NLOPT_LN_BOBYQA"]
+#    return [
+#        "NLOPT_LN_SBPLX",
+#        "NLOPT_LN_PRAXIS",
+#        "NLOPT_GN_DIRECT",
+#        "NLOPT_GN_DIRECT_L",
+#        "NLOPT_GN_CRS2_LM",
+#        "NLOPT_GN_AGS",
+#        "NLOPT_GN_ISRES",
+#        "NLOPT_GN_ESCH",
+#        "NLOPT_LN_COBYLA",
+#        "NLOPT_LN_BOBYQA",
+#        "NLOPT_LN_NEWUOA_BOUND",
+#        "NLOPT_LN_NELDERMEAD",
+#    ]
+#    return ["LBFGSB"]  # return ["PymooBIPOP"]
     # return ["SQPCMA"]
     # return ["MetaRecentering"]  # if you want to run only this algorithm
     # return random.sample(x, 1)
