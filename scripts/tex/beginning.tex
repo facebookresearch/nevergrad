@@ -86,7 +86,7 @@ How to reproduce these results:
 \item Install Nevergrad by “git clone” (see details at the URL above).
 \item  Running:
 \begin{itemize}
-\item Without cluster: "python -m nevergrad.benchmark yabbob --num\_workers=67" if you want to run YABBOB on 67 cores. 
+\item Without cluster: "python -m nevergrad.benchmark yabbob \-\-num\_workers=67" if you want to run YABBOB on 67 cores. 
 \item With cluster: Run “sbatch scripts/dagstuhloid.sh” for launching experiments with Slurm. With other cluster management tools, you might have to adapt the script. It is written assuming slurm: it should be feasible to adapt it to other benchmarks. This script is randomized: you might have to run it several times for getting enough results.
 \end{itemize}
 \item For plotting results, run “scripts/dagstuhloid\_plot.sh”. Of course, some data might be missing if not enough runs are complete. Note that in case of latex unavailable or incompatible, all figures are nonetheless available.

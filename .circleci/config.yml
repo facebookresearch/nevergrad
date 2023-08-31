@@ -34,7 +34,8 @@ commands:
       - run:
           name: "[all] Install dependencies"
           command: |
-            python3 -m venv venv
+            #python3 -m venv venv
+            rm -rf venv && python3 -m venv venv
             . venv/bin/activate
             pip install --progress-bar off -U pip setuptools
             pip install --progress-bar off -e .[all]
