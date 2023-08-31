@@ -3,7 +3,7 @@
 #SBATCH --output=dagstuhloid_%A_%a.out
 #SBATCH --error=dagstuhloid_%A_%a.err
 #SBATCH --time=72:00:00
-#SBATCH --partition=learnfair
+#SBATCH --partition=scavenge
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=67
 #SBATCH -a 0-70

@@ -60,7 +60,7 @@ jobs:
       - run:
           name: "[no-extra] Install dependencies"
           command: |
-            python3 -m venv venv
+            rm -rf venv && python3 -m venv venv
             . venv/bin/activate
             pip install --progress-bar off pip==23.2
             pip install --progress-bar off -e .
