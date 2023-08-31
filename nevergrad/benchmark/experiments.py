@@ -462,8 +462,8 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
 
     host = socket.gethostname()
     list_optims = ["Carola1", "Carola2", "Carola3", "NgIoh", "NgIoh", "NgIoh"]
-    if "tuning" in benchmark and False:
-        list_optims = ["HyperOpt", "RandomSearch", "PSO", "DE", "SQOPSO", "Cobyla", "AX", "LHSSearch"]
+    if "tuning" in benchmark:
+        list_optims = ["NgIoh", "HyperOpt", "RandomSearch", "PSO", "DE", "SQOPSO", "Cobyla", "AX", "LHSSearch", "QODE", "SODE"]
     return [list_optims[doint(host) % len(list_optims)]]
     return x  # ["Zero"] #return x
 

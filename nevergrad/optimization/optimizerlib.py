@@ -3414,6 +3414,7 @@ class Wiz(NGOpt16):
         if (
             self.fully_continuous
             and self.num_workers == 1
+            and self.budget is not None
             and self.budget < 1000 * self.dimension
             and not self.has_noise
             and self.dimension > 1
@@ -3422,6 +3423,7 @@ class Wiz(NGOpt16):
         if (
             self.fully_continuous
             and self.num_workers == 1
+            and self.budget is not None
             and self.budget > 10000 * self.dimension
             and not self.has_noise
             and self.dimension > 1
@@ -3511,6 +3513,7 @@ class NgIoh(NGOpt16):
         if (
             self.fully_continuous
             and self.num_workers == 1
+            and self.budget is not None
             and self.budget < 1000 * self.dimension
             and self.budget > 20 * self.dimension
             and not self.has_noise
@@ -3520,6 +3523,7 @@ class NgIoh(NGOpt16):
         if (
             self.fully_continuous
             and self.num_workers == 1
+            and self.budget is not None
             and self.budget > 10000 * self.dimension
             and not self.has_noise
             and self.dimension > 1
