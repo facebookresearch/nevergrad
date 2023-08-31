@@ -1,7 +1,7 @@
 yamegapenbigbbob
-block_dimension10
-block_dimension2
-block_dimension50
+block dimension10
+block dimension2
+block dimension50
 budget160000
 budget320000
 budget40000
@@ -32,6 +32,6 @@ namestepdoublelinearslope
 namestepellipsoid
 rotationFalse
 rotationTrue
-useful_dimensions10
-useful_dimensions2
-useful_dimensions50
+useful dimensions10
+useful dimensions2
+useful dimensions50

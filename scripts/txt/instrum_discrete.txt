@@ -1,4 +1,4 @@
-instrum_discrete
+instrum discrete
 arity2
 arity3
 arity30
@@ -6,8 +6,8 @@ arity7
 budget50
 budget500
 budget5000
-num_workers1
-num_workers10
+num workers1
+num workers10
 nv10
 nv1000
 nv200

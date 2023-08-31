@@ -1,8 +1,8 @@
-verysmall_photonics
-bounding_methodclipping
-bounding_methodtanh
+verysmall photonics
+bounding methodclipping
+bounding methodtanh
 budget10
 budget100
 budget1000
-namecf_photosic_realistic
-namecf_photosic_reference
+namecf photosic realistic
+namecf photosic reference

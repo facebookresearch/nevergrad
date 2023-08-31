@@ -170,11 +170,11 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
         "QrDE",
     ]
     algos["pbo_reduced_suite"] = [
-        "DiscreteLenglerOnePlusOneOrdered",
-        "DiscreteLenglerOnePlusOneTOrdered",
-        "DiscreteLenglerOnePlusOneTUnordered",
-        "SADiscreteLenglerOnePlusOneExp09Ordered",
-        "SADiscreteLenglerOnePlusOneExp09Unordered",
+        "DiscreteLenglerOnePlusOne",
+        "DiscreteLenglerOnePlusOneT",
+        "DiscreteLenglerOnePlusOneT",
+        "SADiscreteLenglerOnePlusOneExp09",
+        "SADiscreteLenglerOnePlusOneExp09",
         "discretememetic",
     ]
     algos["reduced_yahdlbbbob"] = [
@@ -408,12 +408,8 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
 
     # Below, we use the best in the records above.
     benchmark = str(inspect.stack()[1].function)
-    if benchmark in algos and False:
+    if benchmark in algos and "tunin" in benchmark and np.random.randint(2) > 0 and False:
         return algos[benchmark][:5]
-
-    # return ["LargeCMA", "OldCMA", "MultiCMA"]
-    # return ["NLOPT_LN_BOBYQA"]
-    # return ["SQPCMA"]
 
     # Here, we pseudo-randomly draw one optim in the provided list,
     # depending on the host (so that each host is using the same optim).
@@ -427,12 +423,47 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
     list_optims = ["QODE", "CMA", "SQOPSO", "RandomSearch", "OnePlusOne", "DE"]
     list_optims = ["AX", "SMAC3", "pysot"]
     # list_optims = ["DiagonalCMA"]
+    list_optims = ["GeneticDE"]
+    list_optims = [
+        "NGOpt",
+        "CMA",
+        "DiagonalCMA",
+        "GeneticDE",
+        "SQOPSO",
+        "QODE",
+        "RandomSearch",
+        "BFGS",
+        "PSO",
+        "DE",
+        "MetaTuneRecentering",
+        "MetaRecentering",
+        "LhsDE",
+        "HullCenterHullAvgCauchyScrHammersleySearch",
+    ]
+    list_optims = [
+        "QOPSO",
+        "OnePlusOne",
+        "NaiveTBPSA",
+        "LBFGSB",
+        "LHSSearch",
+        "DiscreteLenglerOnePlusOneT",
+        "MetaModel",
+        "MetaModelOnePlusOne",
+        "LHSCauchySearch",
+        "Cobyla",
+        "CMA",
+        "DiagonalCMA",
+    ]
+
     def doint(s):  # Converting a string into an int.
         return 7 + sum([ord(c) * i for i, c in enumerate(s)])
 
     import socket
 
     host = socket.gethostname()
+    list_optims = ["Carola1", "Carola2", "Carola3", "NgIoh", "NgIoh", "NgIoh"]
+    if "tuning" in benchmark and False:
+        list_optims = ["HyperOpt", "RandomSearch", "PSO", "DE", "SQOPSO", "Cobyla", "AX", "LHSSearch"]
     return [list_optims[doint(host) % len(list_optims)]]
     return x  # ["Zero"] #return x
 

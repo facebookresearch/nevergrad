@@ -1,6 +1,6 @@
-zp_pbbob
-block_dimension20
-block_dimension40
+zp pbbob
+block dimension20
+block dimension40
 budget100
 budget200
 budget300
@@ -21,8 +21,8 @@ namedeceptivemultimodal
 namehm
 namerastrigin
 namesphere
-num_workers1
-num_workers10
-num_workers50
-useful_dimensions20
-useful_dimensions40
+num workers1
+num workers10
+num workers50
+useful dimensions20
+useful dimensions40

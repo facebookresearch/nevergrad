@@ -1,7 +1,7 @@
 yamegapenhdbbob
-block_dimension100
-block_dimension1000
-block_dimension3000
+block dimension100
+block dimension1000
+block dimension3000
 budget12800
 budget200
 budget3200
@@ -33,6 +33,6 @@ namestepdoublelinearslope
 namestepellipsoid
 rotationFalse
 rotationTrue
-useful_dimensions100
-useful_dimensions1000
-useful_dimensions3000
+useful dimensions100
+useful dimensions1000
+useful dimensions3000

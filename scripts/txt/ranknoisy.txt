@@ -1,7 +1,7 @@
 ranknoisy
-block_dimension200
-block_dimension2000
-block_dimension20000
+block dimension200
+block dimension2000
+block dimension20000
 budget100000
 budget25000
 budget50000
@@ -12,8 +12,8 @@ namealtcigar
 namealtellipsoid
 namecigar
 nameellipsoid
-noise_dissymmetryFalse
-noise_dissymmetryTrue
-useful_dimensions200
-useful_dimensions2000
-useful_dimensions20000
+noise dissymmetryFalse
+noise dissymmetryTrue
+useful dimensions200
+useful dimensions2000
+useful dimensions20000

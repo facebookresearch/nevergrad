@@ -1,4 +1,4 @@
-sequential_instrum_discrete
+sequential instrum discrete
 arity2
 arity3
 arity30

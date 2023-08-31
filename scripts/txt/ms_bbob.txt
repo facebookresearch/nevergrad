@@ -1,9 +1,9 @@
-ms_bbob
-block_dimension10
-block_dimension2
-block_dimension20
-block_dimension3
-block_dimension5
+ms bbob
+block dimension10
+block dimension2
+block dimension20
+block dimension3
+block dimension5
 budget100
 budget1600
 budget200
@@ -20,14 +20,14 @@ expo5
 namecigar
 namerastrigin
 namesphere
-translation_factor0.01
-translation_factor0.1
-translation_factor1.0
-translation_factor10.0
-useful_dimensions10
-useful_dimensions2
-useful_dimensions20
-useful_dimensions3
-useful_dimensions5
-zero_penFalse
-zero_pennan
+translation factor0.01
+translation factor0.1
+translation factor1.0
+translation factor10.0
+useful dimensions10
+useful dimensions2
+useful dimensions20
+useful dimensions3
+useful dimensions5
+zero penFalse
+zero pennan
