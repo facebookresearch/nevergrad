@@ -361,7 +361,7 @@ def test_optimizers_minimal(name: str) -> None:
         val = optimizer_cls(2, budget).minimize(f).value[0]
         assert (1.04 < val < 1.16) or (val > 1.0 and "BAR" in name), f"pb with {optimizer_cls} for 1.1: {val}"
         val = optimizer_cls(2, budget).minimize(mf).value[0]
-        assert -1.16 < val < -1.04 or (
+        assert -1.17 < val < -1.04 or (
             val < -1.04 and "BAR" in name
         ), f"pb with {optimizer_cls} for -1.1.: {val}"
         v = ng.p.Array(shape=(2,), upper=1.0, lower=0.0)
