@@ -50,7 +50,8 @@ from . import gymexperiments  # noqa
 
 
 def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
-    return ["RandomSearch", "OnePlusOne", "DE", "PSO"]
+    # return ["RandomSearch", "OnePlusOne", "DE", "PSO"]
+    return ["NgIoh", "Shiwa", "NGOpt"]
     algos = {}
     algos["aquacrop_fao"] = [
         "CMA",
@@ -462,6 +463,7 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
 
     host = socket.gethostname()
     list_optims = ["Carola1", "Carola2", "Carola3", "NgIoh", "NgIoh", "NgIoh", "MetaModel", "Cobyla"]
+    list_optims = ["NgIoh", "NgOpt"]
     if "tuning" in benchmark:
         list_optims = [
             "NgIoh",
@@ -476,9 +478,6 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
             "RandomSearch",
             "PSO",
             "DE",
-            "Carola1",
-            "Carola2",
-            "Carola3",
             "SQOPSO",
             "Cobyla",
             # "AX",

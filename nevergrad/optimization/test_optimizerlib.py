@@ -285,6 +285,7 @@ def test_optimizers_minimal(name: str) -> None:
         x in str(optimizer_cls)
         for x in [
             "BO",
+            "BAR",
             "Meta",
             "Voronoi",
             "tuning",
