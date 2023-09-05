@@ -1,5 +1,7 @@
 #!/bin/bash
 
+pip install img2pdf
+
 allplots=""
 
 # artificial noise-free single objective unconstrained or box-constrained
@@ -31,20 +33,58 @@ allplots="$allplots `ls -d *_plots/ | egrep -i 'noisy|spsa'`"
 
 echo $allplots
 
+touch competition.tex bigstats.tex
+rm competition.tex bigstats.tex
 (
 cat scripts/tex/beginning.tex
+(
+
+for v in zp_ms_bbob_plots/fight_translation_factor0.01.png_pure.png zp_ms_bbob_plots/fight_translation_factor0.1.png_pure.png zp_ms_bbob_plots/fight_translation_factor1.0.png_pure.png zp_ms_bbob_plots/fight_translation_factor10.0.png_pure.png zp_ms_bbob_plots/fight_all_pure.png zp_ms_bbob_plots/xpresults_all.png
+do
+ convert $v -trim +repage prout.png
+ cp prout $v
+ img2pdf -o ${v}.pdf $v
+done
 for u in $allplots
 do
-echo "\\subsubsection{`echo $u | sed 's/_plots.$//g'`}" | sed 's/_/ /g'| sed 's/aquacrop/(RW) &/g' | sed 's/rocket/(RW)&/g' | sed 's/fishing/(RW)&/g' | sed 's/MLDA/(RW)&/g' | sed 's/keras/(RW)&/g' | sed 's/mltuning/(RW)&/g' | sed 's/powersystems/(RW)&/g' | sed 's/mixsimulator/(RW)&/g' | sed 's/olympus/(RW)&/g' | sed 's/double.o.seven/(RW)&/g'
-cat scripts/txt/`echo $u | sed 's/_plots/.txt/g'`
-echo '\begin{enumerate}' ; cat $u/fig*.txt | grep -v pngranking | sed 's/[_=]/ /g' | sed 's/  algo.[0-9]*:/\\item/g' ; echo '\item[] ~\ ~' ; echo '\end{enumerate}'
-convert ${u}/fight_all_pure.png -trim +repage  ${u}/fight_all_pure.png.pdf
-convert ${u}/xpresults_all.png -trim +repage  ${u}/xpresults_all.png.pdf
+bestfreq=`cat ${u}/fig*.txt | grep '^[ ]*algo.*:' | head -n 1 |sed 's/(.*//g' | sed 's/.*://g'`
+num=`cat ${u}/fig*.txt | grep '^[ ]*algo.*:' | wc -l `
+uminus=`echo $u | sed 's/_plots.*//g'`
+bestsr=`cat rnk__${uminus}_plots.cp.txt | grep '^[ ]*algo.*:' | head -n 1 |sed 's/(.*//g' | sed 's/.*://g'`
+echo "\\subsubsection{`echo $u | sed 's/_plots.$//g'` (NSR:$bestsr) (Freq:$bestfreq) (num:$num)}" | sed 's/_/ /g'| sed 's/aquacrop/(RW) &/g' | sed 's/rocket/(RW)&/g' | sed 's/fishing/(RW)&/g' | sed 's/MLDA/(RW)&/g' | sed 's/keras/(RW)&/g' | sed 's/mltuning/(RW)&/g' | sed 's/powersystems/(RW)&/g' | sed 's/mixsimulator/(RW)&/g' | sed 's/olympus/(RW)&/g' | sed 's/double.o.seven/(RW)&/g'
+timeout 10 cat scripts/txt/`echo $u | sed 's/_plots/.txt/g' | sed 's/\///g'`
+(
+convert ${u}/fight_all_pure.png -trim +repage  ${u}/fight_all_pure.pre.png
+img2pdf -o ${u}/fight_all_pure.png.pdf  ${u}/fight_all_pure.pre.png
+convert ${u}/xpresults_all.png -trim +repage  ${u}/xpresults_all.pre.png
+img2pdf -o ${u}/xpresults_all.png.pdf ${u}/xpresults_all.pre.png
+) 2>&1 | cat > logconvert${uminus}.log
+echo " "
+echo " "
 ls ${u}/*all_pure.png ${u}/xpresults_all.png | sed 's/.*/\\includegraphics[width=.99\\textwidth]{{&}}\\\\/g' 
+for o in $u/fig*.txt
+do
+echo "\\paragraph{Ranking for normalized simple regret, `echo $uminus | sed 's/_/ /g'` }"
+echo '\begin{enumerate}' ; timeout 6 cat $( echo $o | sed 's/_plots\/fight_all.png/_plots/g' | sed 's/^/rnk__/g' | grep cp.txt | sed 's/_plots.*all.png/_plots/g' ) | grep -v ranking | sed 's/[_=]/ /g' | sed 's/  algo.[0-9]*:/\\item/g' ; echo '\item[] ~\ ~' ; echo '\end{enumerate}'
+echo ' '
+echo ' '
+echo ' '
+echo ' '
+echo ' '
+echo ' '
+echo ' '
+echo ' '
+echo ' '
+echo ' '
+echo ' '
+echo "\\paragraph{Ranking for average frequency of outperforming other methods, `echo $uminus | sed 's/_/ /g'`}"
+echo '\begin{enumerate}' ; timeout 6 cat $u/fig*.txt | grep -v pngranking | sed 's/[_=]/ /g' | sed 's/  algo.[0-9]*:/\\item/g' ; echo '\item[] ~\ ~' ; echo '\end{enumerate}'
 done
+done
+) | tee competition.tex
 ) > dagstuhloid.tex
 (
-echo "\\section{Statistics over all benchmarks}"
+echo "\\section{Statistics over all benchmarks}\\label{bigstats}"
 echo "We point out that NGOpt and variants are wizards (automatic algorithm selectors and combinators) created by the same authors as Nevergrad, and their (good) results might therefore be biased: we do not cheat, but we recognize that common authorship for benchmarks and algorithms imply a bias."
 echo 'Of course, statistics here are a risky thing: when two codes are very close to each other, they are both penalized: we must be careful with interpretations.'
 
@@ -54,18 +94,18 @@ for n in 1 2 3
 do
 echo "\\subsubsection{Number of times each algorithm was ranked among the $n first: NGOpt and base algorithms}"
 echo "\\begin{itemize}"
-grep -A$n begin.enumerate dagstuhloid.tex | grep '(' | grep ')' | grep '^\\item' | sed 's/ (.*//g' | sed 's/^.item //g' | sort | uniq -c | sort -n -r | head -n 8 | sed 's/^/\\item/g'
-#egrep -v 'Multi|NGOpt[0-9A-Z]|BIPOP|Shiwa|Meta|Micro|Tiny|SQPCMA|CMandAS2|Chain' dagstuhloid.tex  |grep -A$n begin.enumerate  | grep '(' | grep ')' | grep '^\\item' | sed 's/ (.*//g' | sed 's/^.item //g' | sort | uniq -c | sort -n -r | head -n 8 | sed 's/^/\\item/g'
+#grep -A$n begin.enumerate dagstuhloid.tex | grep '(' | grep ')' | grep '^\\item' | sed 's/ (.*//g' | sed 's/^.item //g' | sort | uniq -c | sort -n -r | head -n 8 | sed 's/^/\\item/g'
+egrep -v 'Multi|Carola|BAR|NGOpt[0-9A-Z]|NgIoh|Wiz|BIPOP|Shiwa|Meta|Micro|Tiny|SQPCMA|CMandAS2|Chain' dagstuhloid.tex  |grep -A$n begin.enumerate  | grep '(' | grep ')' | grep '^\\item' | sed 's/ (.*//g' | sed 's/^.item //g' | sort | uniq -c | sort -n -r | head -n 8 | sed 's/^/\\item/g'
 echo "\\end{itemize}"
 done 
 
 echo '\subsection{Wizards, multilevels, specific standard deviations, and combinations excluded}'
-echo 'The success of quasi-opposite methods is obvious here.'
+echo 'The success (robustness) of quasi-opposite PSO is visible.'
 for n in 1 2 3
 do
 echo "\\subsubsection{Number of times each algorithm was ranked among the $n first: no wizard, no combination}"
 echo "\\begin{itemize}"
-egrep -v 'NGOpt|Multi|BIPOP|Shiwa|Meta|SQPCMA|Micro|Tiny|CMASQP|BIPOP|CMandAS2|Chain' dagstuhloid.tex  |grep -A$n begin.enumerate  | grep '(' | grep ')' | grep '^\\item' | sed 's/ (.*//g' | sed 's/^.item //g' | sort | uniq -c | sort -n -r | head -n 8 | sed 's/^/\\item/g'
+egrep -v 'NGOpt|Carola|BAR|Multi|BIPOP|NgIoh|Wiz|Shiwa|Meta|SQPCMA|Micro|Tiny|CMASQP|BIPOP|CMandAS2|Chain' dagstuhloid.tex  |grep -A$n begin.enumerate  | grep '(' | grep ')' | grep '^\\item' | sed 's/ (.*//g' | sed 's/^.item //g' | sort | uniq -c | sort -n -r | head -n 8 | sed 's/^/\\item/g'
 echo "\\end{itemize}"
 done 
 
@@ -81,7 +121,7 @@ done
 
 
 
-) >> dagstuhloid.tex
+) | tee bigstats.tex >> dagstuhloid.tex
 
 listalgos=$( grep '^\\item [A-Za-z0-9]* (' dagstuhloid.tex | grep '(' | sed 's/ (.*//g' | sed 's/\\item //g' | sort | uniq )
 
@@ -121,15 +161,36 @@ rm tmp.tex.tmp
 #done
 #done
 cat scripts/tex/end.tex ) >> dagstuhloid.tex
-sed -i 's/\\subsubsection{yabbob}/\\subsection{Artificial noise-free single objective}&/g' dagstuhloid.tex
-sed -i 's/\\subsubsection{yamegapenbbob}/\\subsection{Constrained BBOB variants}&/g' dagstuhloid.tex
-sed -i 's/\\subsubsection{(RW)keras tuning}/\\subsection{Real world machine learning tuning}&/g' dagstuhloid.tex
-sed -i 's/\\subsubsection{bonnans}/\\subsection{Discrete optimization}&/g' dagstuhloid.tex
-sed -i 's/\\subsubsection{(RW) aquacrop fao}/\\subsection{Real world, other than machine learning}&/g' dagstuhloid.tex
-sed -i 's/.*control.*//g' dagstuhloid.tex
-sed -i 's/\\subsubsection{multiobjective example hd}/\\subsection{Multiobjective problemes}&/g' dagstuhloid.tex
-sed -i 's/\\subsubsection{ranknoisy}/\\subsection{Noisy optimization}&/g' dagstuhloid.tex
+for v in competition.tex dagstuhloid.tex
+do
+sed -i 's/\\subsubsection{yabbob .*}/\\subsection{Artificial noise-free single objective}&/g' $v
+sed -i 's/\\subsubsection{yamegapenbbob .*}/\\subsection{Constrained BBOB variants}&/g' $v
+sed -i 's/\\subsubsection{(RW)keras tuning .*}/\\subsection{Real world machine learning tuning}&/g' $v
+sed -i 's/\\subsubsection{bonnans .*}/\\subsection{Discrete optimization}&/g' $v
+sed -i 's/\\subsubsection{(RW) aquacrop fao .*}/\\subsection{Real world, other than machine learning}&/g' $v
+sed -i 's/.*control.*//g' $v
+sed -i 's/\\subsubsection{multiobjective example hd .*}/\\subsection{Multiobjective problemes}&/g' $v
+sed -i 's/\\subsubsection{ranknoisy .*}/\\subsection{Noisy optimization}&/g' $v
 
+sed -i 's/(x)/ /g' $v
+done
+
+
+# ====================
+
+#for u in `grep includegraphics dagstuhloid.tex | sed 's/.*{{//g' | sed 's/}}.*//g' | grep -v pdf | grep  png`
+#do
+#echo working on $u
+#cp $u ${u}.notrim
+#convert $u -trim +repage ${u}.trim.png
+#cp ${u}.trim.png $u
+#convert $u ${u}.pdf
+#
+#
+#
+#done
+sed -i 's/.png}}/.png.pdf}}/g' dagstuhloid.tex
+# ================
 cp scripts/tex/biblio.bib .
 pdflatex dagstuhloid.tex
 bibtex dagstuhloid.aux
@@ -147,4 +208,4 @@ echo '</html>'
 
 
 tar -zcvf texdag.tgz dagstuhloid.tex biblio.bib *plots/*all_pure.png *plots/xpresults_all.png ms_bbob_plots/fight_tran*.png *_plots/*.pdf dagstuhloid.html
-
+#tar -zcvf texdag.tgz competition.tex dagstuhloid.tex biblio.bib *_plots/*.pdf dagstuhloid.html bigstats.tex

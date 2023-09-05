@@ -249,6 +249,8 @@ def create_plots(
     df = df.loc[:, [x for x in df.columns if not x.startswith("info/")]]
     # Normalization of types.
     for col in df.columns:
+        if "max_irr" in col:
+            df[col] = df[col].round(decimals=4)
         if col in (
             "budget",
             "num_workers",
@@ -401,6 +403,7 @@ def create_plots(
                 fplotter.save(str(output_folder / "fight_all_pure.png"), dpi=_DPI)
             else:
                 fplotter.save(str(output_folder / name) + "_pure.png", dpi=_DPI)
+                print(f"# {len(data_df.columns[:])}")
             if order == 2 and competencemaps and best_algo:  # With order 2 we can create a competence map.
                 print("\n# Competence map")
                 name = "competencemap_" + ",".join("{}".format(x) for x in fixed) + ".tex"
@@ -511,10 +514,15 @@ class XpPlotter:
         sorted_optimizers = sorted(optim_vals, key=lambda x: optim_vals[x]["loss"][-1], reverse=True)
         if pure_only:
             assert len(pure_algorithms) > 0
-            # print(sorted_optimizers, " merged with ", pure_algorithms)
             sorted_optimizers = [
                 o for o in sorted_optimizers if o + " " in [p[: (len(o) + 1)] for p in pure_algorithms]
             ]
+            with open("rnk__" + str(title) + ".cp.txt", "w") as f:
+                f.write(compactize(title))
+                f.write("ranking:\n")
+                for i, algo in reversed(list(enumerate(sorted_optimizers))):
+                    f.write(f"  algo {i}: {algo} (x)\n")
+            # print(sorted_optimizers, " merged with ", pure_algorithms)
             # print("Leads to ", sorted_optimizers)
         self._fig = plt.figure()
         self._ax = self._fig.add_subplot(111)
