@@ -5,6 +5,7 @@
 \usepackage{url}
 \usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage{hyperref}
 
 \def\E{\mathbb{E}}
 \begin{document}
@@ -16,28 +17,68 @@
 
 
 \begin{abstract}
-At the Dagstuhl seminar 23251 (June 2023), many principles of benchmarking were discussed: reproducibility, open sourcing, cases with budget $>$ 100 times the dimension being the exception rather than the rule, cases with 10 $\times$ budget $<$ dimension exist, real-world benchmarking is critical for validating artificial benchmarks. Also, bugs in existing implementations have been discussed.
-
-We want everything to be easy to rerun entirely from scratch. This might need a significant computational power.
-However, it is possible to run manually and separately some benchmarks: one can easily edit the main script and reduce the number of benchmarks, possibly to a single benchmark at a time, and also we rerun periodically all the benchmarks and accept pull requests so that a limited computational power should not be an obstacle to reproducibility.
+We present a massive benchmnarking effort, and check what are the unexpected outcomes.
+We get the following results:
+\begin{itemize}
+\item Quasi-opposite sampling turns out to be excellent\cite{quasiopposite}. Its adaptation to Particle Swarm
+Optimization (as opposed to in DE in the original article) also performs well.
+\item Optimization wizards, automatically selecting algorithms in a wide range of methods, do perform well.
+\item SMAC got better results than other Bayesian Optimization methods.
+\item It is easy to completely modify the results by changing the distribution of optima, in particular its scaling
+(close to zero, or close to the boundary of the domain). We therefore include a lot of different benchmarks with
+different scalings, and algorithms can not be re-parametrized for each specific benchmark.
+\item Tuning a criterion is also a simple solution for completely changing results. Therefore we consider two
+parameter-free criteria, namely normalized simple regret and frequency of outperforming.
+\end{itemize}
 % thx to Ofer Shir, Thomas B\"ack, Vanessa Volz, Mariapia Marchi, Hao Wang.
 \end{abstract}
 \tableofcontents
 
 \section{Introduction}
 
-In artificial benchmarking platforms, some talks pointed out the importance of the distribution of optima. Therefore, we propose parameters of the distribution of optima, in the PBBOB (parametric BBOB) benchmark.
-We compare implementations, not abstract algorithms. The detailed implementations are freely available in Nevergrad and anyone can propose a modification.
-A large part of the benchmarks are based on real-world data or reasonably close to this.
-Benchmarking is a serious matter: recent news on machine learning papers about black-box optimization show that poorly reproducible benchmarking is detrimental to science. 
-A discussion of poor reproducibility in deep-learning assisted optimization is available in \cite{rlgoogle}; see also \cite{ecnassurvey,repronas,pham2018efficient,real2019regularized} showing how some simple methods might, in spite of promising claims, outperform heavy GPU-based black-box optimization methods. Also, \cite{leakage} mentions various examples of results difficult to reproduce, in general, in the machine learning community.
+Benchmarking is a critical issue: recent news on machine learning papers about black-box optimization show that poorly reproducible benchmarking is detrimental to science.  A discussion of poor reproducibility in deep-learning assisted optimization is available in \cite{rlgoogle}; see also \cite{ecnassurvey,repronas,pham2018efficient,real2019regularized} showing how some simple methods might, in spite of promising claims, outperform heavy GPU-based black-box optimization methods. Also, \cite{leakage} mentions various examples of results difficult to reproduce, in general, in the machine learning community.
+
+%n artificial benchmarking platforms, some talks pointed out the importance of the distribution of optima. 
+%Therefore, we propose parameters of the distribution of optima, in the PBBOB (parametric BBOB) benchmark.
 
 Naming: “oid” means “similar to”. The benchmark is called Dagstuhloid because it is inspired by Dagstuhl talks. The responsibility is entirely ours, though.
 
 \subsection{URLs: finding this on WWW}
 The main place for discussing the Dagstuhloid benchmark is \url{https://www.facebook.com/groups/nevergradusers/}. 
 
-The code is https://github.com/facebookresearch/nevergrad
+The code is \url{https://github.com/facebookresearch/nevergrad}
+
+A complete list of experimental results is available at \url{https://tinyurl.com/dagstuhloid}
+
+\subsection{What is reproducibility ?}\label{repro}\label{div}
+At the Dagstuhl seminar 23251 (June 2023), many principles of benchmarking were discussed. 
+Reproducibility is critical, including open sourcing. 
+Reproducibility does not necessarily mean exact reproducibility:
+\begin{itemize}
+\item Maybe results can be impacted by the random seed, but results which can only be obtained with a given seed might
+not be very valuable.
+\item The version of (e.g. Pypi) packages can have an impact, but here again maybe results which are valid only for a
+specific version of some packages might not be that valuable.
+\item When a code is on various sites and has thousands of forks, then it is unlikely to disappear from internet and
+access can be considered ok.
+\end{itemize}
+
+A critical issue is diversity. We consider diversity as follows:
+\begin{itemize}
+\item In terms of choosing the benchmarks, it was discussed that cases with budget $>$ 100 times the dimension might be
+the exception rather than the rule: e.g. cases with 10 $\times$ budget $<$ dimension exist. We do have many different
+scalings of the budget.
+\item Real-world benchmarking is critical for validating artificial benchmarks. 
+\item We consider the diversity of distribution of optima. For example in artificial continuous domains, MS-BBOB
+(multi-scale black-box optimization benchmark) has
+different scales for the distribution of optima: note that, even in bounded optimization, deciding that the optimum is
+uniformly distributed is a strong choice, and not what we observe in many cases. We also consider P-BBOB
+(Parametric-BBOB) which adds an exponent: each coordinate is a standard Gaussian to the power $p$ and for $p\neq 1$ this
+implies that the distribution of optima is not invariant.
+\item We also consider penalizations for values close to zero, so that starting too close to zero does not bring
+information and we really have to take care of the scale. These benchmarks have ZP (zero-penalization) as a prefix in
+their name.
+\end{itemize}
 
 \subsection{Reproducing results}
 How to reproduce these results:
@@ -45,20 +86,29 @@ How to reproduce these results:
 \item Install Nevergrad by “git clone” (see details at the URL above).
 \item  Running:
 \begin{itemize}
-\item Without cluster: "python -m nevergrad.benchmark yabbob --num\_workers=67" if you want to run YABBOB on 67 cores. 
+\item Without cluster: "python -m nevergrad.benchmark yabbob \-\-num\_workers=67" if you want to run YABBOB on 67 cores. 
 \item With cluster: Run “sbatch scripts/dagstuhloid.sh” for launching experiments with Slurm. With other cluster management tools, you might have to adapt the script. It is written assuming slurm: it should be feasible to adapt it to other benchmarks. This script is randomized: you might have to run it several times for getting enough results.
 \end{itemize}
 \item For plotting results, run “scripts/dagstuhloid\_plot.sh”. Of course, some data might be missing if not enough runs are complete. Note that in case of latex unavailable or incompatible, all figures are nonetheless available.
 \end{itemize}
 
 \subsection{What if your computational power is not sufficient ?}
+We want everything to be easy to rerun entirely from scratch. This might need a significant computational power.  However, it is possible to run manually and separately some benchmarks: one can easily edit the main script and reduce the number of benchmarks, possibly to a single benchmark at a time, and also we rerun periodically all the benchmarks and accept pull requests so that a limited computational power should not be an obstacle to reproducibility.
 Please note that creating a pull request and pinging us at \url{https://www.facebook.com/groups/nevergradusers/} is a simple solution to get heavy computations done, we are more than happy to run what you need if the computational cost is reasonable. 
 
 \section{Comparison with other benchmarks}
-We need correctly tuned algorithms. We can not guarantee that algorithms are all correctly parametrized: however, everything is free and anyone can implement her own favorite algorithm and/or propose a new tuning. For example, compared to \cite{lamcts}, our artificial benchmarks are not with optimum in zero (which leads to a strong advantage for algorithms initialized 100 times closer to 0 than others) and for our real-world benchmarks we do not have completely different scalings for different methods unless the scaling of the initialization is on purpose as for some methods scaling the initialization specifically as a function of dimension/budget: of course, such cases deserve specific discussions.
+We have more diversity than most existing benchmarking platforms, as detailed in Section \ref{repro}.
+As several other platforms, we compare implementations, not abstract algorithms.  A key point is that the implementations are included in the platform and anyone can propose a modification.
+A large part of the benchmarks are based on real-world data or reasonably close to this.
+Also, bugs in existing implementations have been discussed and avoided.
+%We can not guarantee that algorithms are all correctly parametrized: however, everything is free and anyone can implement her own favorite algorithm and/or propose a new tuning. 
+%Compared to \cite{lamcts}, our artificial benchmarks are not with optimum in zero (which leads to a strong advantage for algorithms initialized 100 times closer to 0 than others) and for our real-world benchmarks we do not have completely different scalings for different methods unless the scaling of the initialization is on purpose as for some methods scaling the initialization specifically as a function of dimension/budget: of course, such cases deserve specific discussions.
+
 For each benchmark, the detailed setup is documented at \url{https://github.com/facebookresearch/nevergrad/blob/main/nevergrad/benchmark/experiments.py}.
 Ctrl-F with the name of the benchmark should provide all details.
 The algorithms are all readable in  \url{https://github.com/facebookresearch/nevergrad/blob/main/nevergrad/optimization/}.
+
+\section{Experimental setup}
 For each benchmark we provide both:
 \begin{itemize}
 \item A heatmap, showing the frequency at which a method (row) outperforms on average another method (col). Methods are ordered by average such frequency, over all other methods.
@@ -103,44 +153,32 @@ The vast family of benchmarks in Nevergrad is used for tuning an algorithm selec
 
 \section{Experimental results}
 
-\subsection{Multi-scale black-box optimization benchmarks}
+NSR stands for Normalized Simple Regret: in some sections it denotes the best performing method for this criterion.
+Freq denotes the best method for the average frequency of outperforming other methods over the given benchmark (see
+details above).
 
-A key issue, explaining many buggy results, is the tendency of tuning an algorithm and not its baselines. And the most
-important tuning is the scale: sometimes the optimum is close to the center, sometimes it is far. The principle of the
+\subsection{Multi-scale black-box optimization benchmarks: dealing with the scaling issues}
+
+A key issue, explaining many buggy results, is the tendency of tuning an algorithm and not its baselines, in particular
+in terms of scaling of the solution (Section \ref{scaling}). The most
+important tuning, in particular when the budget is moderate, is the scale: sometimes the optimum is close to the center, sometimes it is far. The principle of the
 multi-scale BBOB benchmark is that it contains four different scales, and the algorithms are not informed of which
-setting corresponds to the next benchmark.
+setting corresponds to the next benchmark. We also apply the zero-penalization, as discussed in Section \ref{div}.
 Results show much better results from mathematical programming techniques (which are more robust to unknown scales) and
-of the simple $(1+1)$ evolution strategy. This is an artificial benchmark, but it is inspired by results in
-\cite{micropredictions1,micropredictions2}, which emphasize a great success of the simple $(1+1)$-evolution strategy.
+of the simple $(1+1)$ evolution strategy. This is an artificial benchmark, but it is inspired with various existing
+benchmarks and by real-world benchmarks \cite{micropredictions1,micropredictions2,bobbo}.
+
 
 \subsubsection{Translation factor 0.01}
-\includegraphics[width=.7\textwidth]{{zp_ms_bbob_plots/fight_translation_factor0.01.png_pure.png}}\\
+\includegraphics[width=.98\textwidth]{{zp_ms_bbob_plots/fight_translation_factor0.01.png_pure.png}}\\
 \subsubsection{Translation factor 0.1}
-\includegraphics[width=.7\textwidth]{{zp_ms_bbob_plots/fight_translation_factor0.1.png_pure.png}}\\
+\includegraphics[width=.98\textwidth]{{zp_ms_bbob_plots/fight_translation_factor0.1.png_pure.png}}\\
 \subsubsection{Translation factor 1.0}
-\includegraphics[width=.7\textwidth]{{zp_ms_bbob_plots/fight_translation_factor1.0.png_pure.png}}\\
+\includegraphics[width=.98\textwidth]{{zp_ms_bbob_plots/fight_translation_factor1.0.png_pure.png}}\\
 \subsubsection{Translation factor 10.0}
-\includegraphics[width=.7\textwidth]{{zp_ms_bbob_plots/fight_translation_factor10.0.png_pure.png}}\\
+\includegraphics[width=.98\textwidth]{{zp_ms_bbob_plots/fight_translation_factor10.0.png_pure.png}}\\
 \subsubsection{Translation factor 0.01, 0.1, 1.0, 10.0}
-\includegraphics[width=.7\textwidth]{{zp_ms_bbob_plots/fight_all_pure.png}}\\
-
-
-
-\subsection{Parametrized  black-box optimization benchmarks}
-
-Instead of normal or uniform, we might also consider a distribution such as $G^p$ with the exponent $p$ in
-$\{1,3,5,7,9\}$. This implies that the distribution is not rotationally invariant.
-\subsubsection{Exponent 1}
-\includegraphics[width=.7\textwidth]{{pbbob_plots/fight_expo1.png_pure.png}}
-\subsubsection{Exponent 3}
-\includegraphics[width=.7\textwidth]{{pbbob_plots/fight_expo3.png_pure.png}}
-\subsubsection{Exponent 5}
-\includegraphics[width=.7\textwidth]{{pbbob_plots/fight_expo5.png_pure.png}}
-\subsubsection{Exponent 7}
-\includegraphics[width=.7\textwidth]{{pbbob_plots/fight_expo7.png_pure.png}}
-\subsubsection{Exponent 9}
-\includegraphics[width=.7\textwidth]{{pbbob_plots/fight_expo9.png_pure.png}}
-\subsubsection{Exponent 1, 3, 5, 7, 9}
-\includegraphics[width=.7\textwidth]{{pbbob_plots/fight_all_pure.png}}
-
+\includegraphics[width=.98\textwidth]{{zp_ms_bbob_plots/fight_all_pure.png}}\\
+\subsubsection{What about the normalized simple regret ?}
+\includegraphics[width=.98\textwidth]{{zp_ms_bbob_plots/xpresults_all.png}}\\
 
