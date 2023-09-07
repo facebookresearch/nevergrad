@@ -244,9 +244,9 @@ class MLTuning(ExperimentFunction):
             assert dataset in ["diabetes", "kerasBoston", "auto-mpg", "red-wine", "white-wine"]
             assert data_dimension is None
             sets_url = {
-                "auto-mpg": "http://www-lisic.univ-littoral.fr/~teytaud/files/Cours/Apprentissage/data/auto-mpg.data",
-                "red-wine": "http://www-lisic.univ-littoral.fr/~teytaud/files/Cours/Apprentissage/data/winequality-red.csv",
-                "white-wine": "http://www-lisic.univ-littoral.fr/~teytaud/files/Cours/Apprentissage/data/winequality-white.csv",
+                "auto-mpg": "https://github.com/plotly/datasets/blob/master/auto-mpg.csv",
+                "red-wine": "https://github.com/aniruddhachoudhury/Red-Wine-Quality/blob/master/winequality-red.csv",
+                "white-wine": "https://github.com/stedy/Machine-Learning-with-R-datasets/blob/master/winequality-white.csv",
             }
             sets_tag = {"auto-mpg": "mpg", "red-wine": "quality", "white-wine": "quality"}
             if dataset == "kerasBoston":
