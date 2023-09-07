@@ -273,8 +273,6 @@ class MLTuning(ExperimentFunction):
                     test_split=test_ratio, seed=42
                 )
             elif dataset in sets_url:
-                if dataset == "auto-mpg":
-                    data.drop("name", 1, inplace=True)
                 train, test = train_test_split(data, test_size=test_ratio)
                 self.y_train = train[sets_tag[dataset]].to_numpy()
                 self.y_test = test[sets_tag[dataset]].to_numpy()
