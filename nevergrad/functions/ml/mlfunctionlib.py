@@ -245,7 +245,7 @@ class MLTuning(ExperimentFunction):
             assert data_dimension is None
             sets_url = {
                 "auto-mpg": "https://github.com/plotly/datasets/blob/master/auto-mpg.csv",
-                "red-wine": "https://github.com/aniruddhachoudhury/Red-Wine-Quality/blob/master/winequality-red.csv",
+                "red-wine": "https://github.com/plotly/datasets/blob/master/winequality-red.csv",
                 "white-wine": "https://github.com/stedy/Machine-Learning-with-R-datasets/blob/master/winequality-white.csv",
             }
             sets_tag = {"auto-mpg": "mpg", "red-wine": "quality", "white-wine": "quality"}
