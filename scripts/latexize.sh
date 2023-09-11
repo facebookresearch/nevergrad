@@ -54,11 +54,13 @@ bestsr=`cat rnk__${uminus}_plots.cp.txt | grep '^[ ]*algo.*:' | head -n 1 |sed '
 echo "\\subsubsection{`echo $u | sed 's/_plots.$//g'` (NSR:$bestsr) (Freq:$bestfreq) (num:$num)}" | sed 's/_/ /g'| sed 's/aquacrop/(RW) &/g' | sed 's/rocket/(RW)&/g' | sed 's/fishing/(RW)&/g' | sed 's/MLDA/(RW)&/g' | sed 's/keras/(RW)&/g' | sed 's/mltuning/(RW)&/g' | sed 's/powersystems/(RW)&/g' | sed 's/mixsimulator/(RW)&/g' | sed 's/olympus/(RW)&/g' | sed 's/double.o.seven/(RW)&/g'
 timeout 10 cat scripts/txt/`echo $u | sed 's/_plots/.txt/g' | sed 's/\///g'`
 (
+(
 convert ${u}/fight_all_pure.png -trim +repage  ${u}/fight_all_pure.pre.png
 img2pdf -o ${u}/fight_all_pure.png.pdf  ${u}/fight_all_pure.pre.png
 convert ${u}/xpresults_all.png -trim +repage  ${u}/xpresults_all.pre.png
 img2pdf -o ${u}/xpresults_all.png.pdf ${u}/xpresults_all.pre.png
 ) 2>&1 | cat > logconvert${uminus}.log
+) &
 echo " "
 echo " "
 ls ${u}/*all_pure.png ${u}/xpresults_all.png | sed 's/.*/\\includegraphics[width=.99\\textwidth]{{&}}\\\\/g' 
@@ -83,6 +85,7 @@ done
 done
 ) | tee competition.tex
 ) > dagstuhloid.tex
+wait
 (
 echo "\\section{Statistics over all benchmarks}\\label{bigstats}"
 echo "We point out that NGOpt and variants are wizards (automatic algorithm selectors and combinators) created by the same authors as Nevergrad, and their (good) results might therefore be biased: we do not cheat, but we recognize that common authorship for benchmarks and algorithms imply a bias."
@@ -125,6 +128,11 @@ done
 
 listalgos=$( grep '^\\item [A-Za-z0-9]* (' dagstuhloid.tex | grep '(' | sed 's/ (.*//g' | sed 's/\\item //g' | sort | uniq )
 
+if [[ $(find "tmp.tex.tmp" -mtime -10000 -print) ]]; then
+echo skipping tmp.tex.tmp, because recent such file found.
+else
+touch tmp.tex.tmp
+rm tmp.tex.tmp
 (
 echo '\section{Pairwise comparisons}'
 for a in $listalgos
@@ -142,12 +150,12 @@ do
             fi
         done
 done ) > tmp.tex.tmp
+fi
 
 (
 echo '\section{Conclusion}'
 cat scripts/tex/conclusion.tex
 cat tmp.tex.tmp
-rm tmp.tex.tmp
 #echo '\appendix'
 #echo '\section{Competence maps}'
 #for u in $allplots

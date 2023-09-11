@@ -38,7 +38,10 @@ def save_or_append_to_csv(df: pd.DataFrame, path: Path) -> None:
     """Saves a dataframe to a file in append mode"""
     if path.exists():
         print("Appending to existing file")
-        predf = pd.read_csv(str(path))
+        try:
+            predf = pd.read_csv(str(path), on_bad_lines = 'warn') #, error_bad_lines=False)#, error_bad_lines=False)
+        except:  # for some versions of Panda.
+            predf = pd.read_csv(str(path)) #, error_bad_lines=False)#, error_bad_lines=False)
         df = pd.concat([predf, df], sort=False)
     df.to_csv(path, index=False)
 

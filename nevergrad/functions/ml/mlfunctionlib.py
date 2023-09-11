@@ -244,9 +244,15 @@ class MLTuning(ExperimentFunction):
             assert dataset in ["diabetes", "kerasBoston", "auto-mpg", "red-wine", "white-wine"]
             assert data_dimension is None
             sets_url = {
-                "auto-mpg": "http://www-lisic.univ-littoral.fr/~teytaud/files/Cours/Apprentissage/data/auto-mpg.data",
-                "red-wine": "http://www-lisic.univ-littoral.fr/~teytaud/files/Cours/Apprentissage/data/winequality-red.csv",
-                "white-wine": "http://www-lisic.univ-littoral.fr/~teytaud/files/Cours/Apprentissage/data/winequality-white.csv",
+                #"auto-mpg": "http://www-lisic.univ-littoral.fr/~teytaud/files/Cours/Apprentissage/data/auto-mpg.data",
+                #"red-wine": "http://www-lisic.univ-littoral.fr/~teytaud/files/Cours/Apprentissage/data/winequality-red.csv",
+                #"white-wine": "http://www-lisic.univ-littoral.fr/~teytaud/files/Cours/Apprentissage/data/winequality-white.csv",
+                #"auto-mpg": "https://github.com/plotly/datasets/blob/master/auto-mpg.csv",
+                #"red-wine": "https://github.com/plotly/datasets/blob/master/winequality-red.csv",
+                #"white-wine": "https://github.com/stedy/Machine-Learning-with-R-datasets/blob/master/winequality-white.csv",
+                "auto-mpg": "https://raw.githubusercontent.com/plotly/datasets/master/auto-mpg.csv",
+                "red-wine": "https://raw.githubusercontent.com/plotly/datasets/master/winequality-red.csv",
+                "white-wine": "https://raw.githubusercontent.com/stedy/Machine-Learning-with-R-datasets/master/winequality-white.csv"
             }
             sets_tag = {"auto-mpg": "mpg", "red-wine": "quality", "white-wine": "quality"}
             if dataset == "kerasBoston":
@@ -259,7 +265,10 @@ class MLTuning(ExperimentFunction):
 
                 data = keras.datasets.boston_housing
             elif dataset in sets_tag:
-                data = pd.read_csv(sets_url[dataset])
+                try:
+                    data = pd.read_csv(sets_url[dataset])
+                except Exception as e:
+                    assert False, f"failing with error {e} for dataset {dataset}"
             else:
                 data = {"diabetes": sklearn.datasets.load_diabetes,}[
                     # data = {"boston": sklearn.datasets.load_boston, "diabetes": sklearn.datasets.load_diabetes,}[

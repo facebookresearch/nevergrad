@@ -51,7 +51,6 @@ from . import gymexperiments  # noqa
 
 def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
     # return ["RandomSearch", "OnePlusOne", "DE", "PSO"]
-    return ["NgIoh", "Shiwa", "NGOpt"]
     algos = {}
     algos["aquacrop_fao"] = [
         "CMA",
@@ -463,7 +462,7 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
 
     host = socket.gethostname()
     list_optims = ["Carola1", "Carola2", "Carola3", "NgIoh", "NgIoh", "NgIoh", "MetaModel", "Cobyla"]
-    list_optims = ["NgIoh", "NgOpt"]
+    list_optims = ["NgIoh2", "NgOpt", "NgIoh3"]
     if "tuning" in benchmark:
         list_optims = [
             "NgIoh",
@@ -488,6 +487,9 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
     if "iscre" in benchmark:
         list_optims = ["RecombiningPortfolioDiscreteOnePlusOne"]
 
+    list_optims = ["NgIoh", "Shiwa", "NGOpt", "NgIoh", "Shiwa", "NGOptRW", "NgIoh"]
+    list_optims = ["NgIoh2", "NgIoh4", "NgIoh4", "NgIoh3", "NgIoh", "NgIoh4"]
+    list_optims = ["NgIoh6", "NgIoh5", "NgIoh5", "NgIoh6"]
     return [list_optims[doint(host) % len(list_optims)]]
     return x  # ["Zero"] #return x
 
@@ -3373,8 +3375,8 @@ def pbo_suite(seed: tp.Optional[int] = None, reduced: bool = False) -> tp.Iterat
             for x in ng.optimizers.registry.keys()
             if "iscre" in x and "ois" not in x and "ptim" not in x and "oerr" not in x
         ]
-    optims = ["NGOpt", "NGOptRW"]
-    optims = refactor_optims(optims)
+    list_optims = ["NGOpt", "NGOptRW"]
+    list_optims = refactor_optims(list_optims)
     for dim in [16, 64, 100]:
         for fid in range(1, 24):
             for iid in range(1, 5):
