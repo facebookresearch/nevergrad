@@ -215,5 +215,5 @@ echo '</html>'
 
 
 
-tar -zcvf texdag.tgz dagstuhloid.tex biblio.bib *plots/*all_pure.png *plots/xpresults_all.png ms_bbob_plots/fight_tran*.png *_plots/*.pdf dagstuhloid.html
+tar -zcvf texdag.tgz dagstuhloid.tex biblio.bib *plots/*all_pure.png *plots/xpresults_all.png ms_bbob_plots/fight_tran*.png *_plots/*.pdf dagstuhloid.html competition.tex bigstats.tex dagstuhloid.pdf
 #tar -zcvf texdag.tgz competition.tex dagstuhloid.tex biblio.bib *_plots/*.pdf dagstuhloid.html bigstats.tex

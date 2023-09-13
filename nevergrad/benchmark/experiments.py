@@ -408,7 +408,7 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
 
     # Below, we use the best in the records above.
     benchmark = str(inspect.stack()[1].function)
-    if benchmark in algos and "tunin" in benchmark and np.random.randint(2) > 0 and False:
+    if benchmark in algos and "tunin" in benchmark and np.random.randint(2) > 0:
         return algos[benchmark][:5]
 
     # Here, we pseudo-randomly draw one optim in the provided list,
@@ -459,20 +459,15 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
         return 7 + sum([ord(c) * i for i, c in enumerate(s)])
 
     import socket
-
     host = socket.gethostname()
-    list_optims = ["Carola1", "Carola2", "Carola3", "NgIoh", "NgIoh", "NgIoh", "MetaModel", "Cobyla"]
-    list_optims = ["NgIoh2", "NgOpt", "NgIoh3"]
+    list_optims = ["NgOpt", "NgIoh5", "NgIoh6", "Shiwa"]
+    #list_optims = ["NgIoh2", "NgOpt", "NgIoh3"]
+    if "lsgo" in benchmark:
+        list_optims = ["NgIoh4", "NgIoh5", "NgIoh6"]
     if "tuning" in benchmark:
         list_optims = [
-            "NgIoh",
-            "NgIoh",
-            "NgIoh",
-            "NgIoh",
             "NGOpt",
-            "NGOpt",
-            "NGOpt",
-            "NGOpt",
+            "NgIoh6",
             "HyperOpt",
             "RandomSearch",
             "PSO",
@@ -482,14 +477,12 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
             # "AX",
             "LHSSearch",
             "QODE",
+            "RecombiningPortfolioDiscreteOnePlusOne",
             "SODE",
         ]
     if "iscre" in benchmark:
         list_optims = ["RecombiningPortfolioDiscreteOnePlusOne"]
 
-    list_optims = ["NgIoh", "Shiwa", "NGOpt", "NgIoh", "Shiwa", "NGOptRW", "NgIoh"]
-    list_optims = ["NgIoh2", "NgIoh4", "NgIoh4", "NgIoh3", "NgIoh", "NgIoh4"]
-    list_optims = ["NgIoh6", "NgIoh5", "NgIoh5", "NgIoh6"]
     return [list_optims[doint(host) % len(list_optims)]]
     return x  # ["Zero"] #return x
 
