@@ -52,3 +52,4 @@ poap
 pytest-circleci-parallelized
 Py-BOBYQA>=1.2
 ax-platform
+loguru # for fcmaes
