@@ -10,9 +10,6 @@ import warnings
 import weakref
 import numpy as np
 from scipy import optimize as scipyoptimize
-import cma
-import pybobyqa  # type: ignore
-from ax import optimize as axoptimize  # type: ignore
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
 from nevergrad.common import errors
@@ -107,11 +104,15 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
             # print(f"Iteration with remaining={remaining}")
             options: tp.Dict[str, tp.Any] = {} if weakself.budget is None else {"maxiter": remaining}
             if weakself.method == "BOBYQA":
+                import pybobyqa  # type: ignore
+
                 res = pybobyqa.solve(objective_function, best_x, maxfun=budget, do_logging=False)
                 if res.f < best_res:
                     best_res = res.f
                     best_x = res.x
             elif weakself.method == "AX":
+                from ax import optimize as axoptimize  # type: ignore
+
                 parameters = [
                     {"name": "x" + str(i), "type": "range", "bounds": [0.0, 1.0]}
                     for i in range(weakself.dimension)
@@ -125,7 +126,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
             elif weakself.method[:5] == "NLOPT":
                 # This is NLOPT, used as in the PCSE simulator notebook.
                 # ( https://github.com/ajwdewit/pcse_notebooks ).
-                import nlopt
+                import nlopt  # type: ignore
 
                 def nlopt_objective_function(*args):
                     try:
@@ -362,6 +363,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
             #                    best_x = weakself._normalizer.backward(np.asarray(x, dtype=float))
             #
             elif weakself.method == "CmaFmin2":
+                import cma  # type: ignore
 
                 def cma_objective_function(data):
                     # Hopefully the line below does nothing if unbounded and rescales from [0, 1] if bounded.
