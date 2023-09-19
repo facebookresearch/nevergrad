@@ -2929,6 +2929,7 @@ class NGOptBase(base.Optimizer):
                                     if self.dimension > 1
                                     else OnePlusOne
                                 )
+        print(f"NGOptbase: budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, {cls}")
         return cls
 
     def _internal_ask_candidate(self) -> p.Parameter:
@@ -3584,6 +3585,331 @@ class NgIoh(NGOpt16):
             return NGOpt15
         else:
             return super()._select_optimizer_cls()
+
+
+@registry.register
+class NgIoh2(NGOpt16):
+    def _select_optimizer_cls(self) -> base.OptCls:
+        if self.fully_continuous and self.has_noise:  # In particular for neuro-DPS.
+            DeterministicMix = ConfPortfolio(optimizers=[DiagonalCMA, PSO, GeneticDE])
+            return Chaining([DeterministicMix, OptimisticNoisyOnePlusOne], ["half"])
+
+        cma_vars = max(1, 4 + int(3 * np.log(self.dimension)))
+        num36 = (
+            1 + int(np.sqrt(4.0 * (4 * self.budget) // (self.dimension * 1000)))
+            if self.budget is not None
+            else 1
+        )
+        num21 = 1 + (4 * self.budget) // (self.dimension * 1000) if self.budget is not None else 1
+        num_dim10 = (
+            1 + int(np.sqrt(8.0 * (8 * self.budget) // (self.dimension * 1000)))
+            if self.budget is not None
+            else 1
+        )
+        num_dim20 = self.budget // (500 * self.dimension) if self.budget is not None else 1
+        para = 1
+        if self.budget is not None and self.budget > 5000 * self.dimension:
+            para = num36 * cma_vars
+        elif self.dimension < 5:
+            para = num21 * cma_vars
+        elif self.dimension < 10:
+            para = num_dim10 * cma_vars
+        elif self.dimension < 20:
+            para = num_dim20 * cma_vars
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget < 1000 * self.dimension
+            and self.budget > 20 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 200
+        ):
+            return Carola2
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget >= 1000 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 200
+        ):
+            return Carola2
+        # Special cases in the bounded case
+        if (
+            self.budget is not None
+            and self.budget > 500 * self.dimension
+            and self.fully_continuous
+            and not self.has_noise
+            and self.num_objectives < 2
+            and self.num_workers <= para
+            and p.helpers.Normalizer(self.parametrization).fully_bounded
+        ):
+            if self.dimension == 1:
+                return NGOpt16
+            if (
+                self.budget > 5000 * self.dimension
+            ):  # Asymptotically let us trust NGOpt36 and its subtle restart.
+                return NGOpt36
+            if self.dimension < 5:  # Low dimension: let us hit the bounds.
+                return NGOpt21
+            if self.dimension < 10:  # Moderate dimension: reasonable restart + bet and run.
+                num = 1 + int(np.sqrt(8.0 * (8 * self.budget) // (self.dimension * 1000)))
+                return ConfPortfolio(optimizers=[NGOpt14] * num, warmup_ratio=0.7)
+            if self.dimension < 20:  # Nobody knows why this seems to be so good.
+                num = self.budget // (500 * self.dimension)
+                return ConfPortfolio(
+                    optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3**i) for i in range(num)],
+                    warmup_ratio=0.5,
+                )
+            if self.num_workers == 1:
+                return CmaFmin2
+            # We need a special case for dim < 30 ---> let's see later.
+            # Otherwise, let us go back to normal life: NGOpt16 which rocks in many cases, possibly Cobyla.
+            return NGOpt16
+        elif (  # This might be specific of high-precision cases.
+            self.budget is not None
+            and self.fully_continuous
+            and not self.has_noise
+            and self.num_objectives < 2
+            and self.num_workers <= cma_vars
+            and self.budget > 50 * self.dimension
+            and p.helpers.Normalizer(self.parametrization).fully_bounded
+        ):
+            if self.dimension < 3:
+                return NGOpt8
+            if self.dimension <= 20 and self.num_workers == 1:
+                MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                MetaModelFmin2.no_parallelization = True
+                return MetaModelFmin2
+            return NGOpt15
+        else:
+            return super()._select_optimizer_cls()
+
+
+@registry.register
+class NgIoh3(NGOpt16):
+    def _select_optimizer_cls(self) -> base.OptCls:
+        if self.fully_continuous and self.has_noise:  # In particular for neuro-DPS.
+            DeterministicMix = ConfPortfolio(optimizers=[DiagonalCMA, PSO, GeneticDE])
+            return Chaining([DeterministicMix, OptimisticNoisyOnePlusOne], ["half"])
+
+        cma_vars = max(1, 4 + int(3 * np.log(self.dimension)))
+        num36 = (
+            1 + int(np.sqrt(4.0 * (4 * self.budget) // (self.dimension * 1000)))
+            if self.budget is not None
+            else 1
+        )
+        num21 = 1 + (4 * self.budget) // (self.dimension * 1000) if self.budget is not None else 1
+        num_dim10 = (
+            1 + int(np.sqrt(8.0 * (8 * self.budget) // (self.dimension * 1000)))
+            if self.budget is not None
+            else 1
+        )
+        num_dim20 = self.budget // (500 * self.dimension) if self.budget is not None else 1
+        para = 1
+        if self.budget is not None and self.budget > 5000 * self.dimension:
+            para = num36 * cma_vars
+        elif self.dimension < 5:
+            para = num21 * cma_vars
+        elif self.dimension < 10:
+            para = num_dim10 * cma_vars
+        elif self.dimension < 20:
+            para = num_dim20 * cma_vars
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget < 1000 * self.dimension
+            and self.budget > 20 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 100
+        ):
+            return Carola2
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget >= 1000 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            return Carola2
+        # Special cases in the bounded case
+        if (
+            self.budget is not None
+            and self.budget > 500 * self.dimension
+            and self.fully_continuous
+            and not self.has_noise
+            and self.num_objectives < 2
+            and self.num_workers <= para
+            and p.helpers.Normalizer(self.parametrization).fully_bounded
+        ):
+            if self.dimension == 1:
+                return NGOpt16
+            if (
+                self.budget > 5000 * self.dimension
+            ):  # Asymptotically let us trust NGOpt36 and its subtle restart.
+                return NGOpt36
+            if self.dimension < 5:  # Low dimension: let us hit the bounds.
+                return NGOpt21
+            if self.dimension < 10:  # Moderate dimension: reasonable restart + bet and run.
+                num = 1 + int(np.sqrt(8.0 * (8 * self.budget) // (self.dimension * 1000)))
+                return ConfPortfolio(optimizers=[NGOpt14] * num, warmup_ratio=0.7)
+            if self.dimension < 20:  # Nobody knows why this seems to be so good.
+                num = self.budget // (500 * self.dimension)
+                return ConfPortfolio(
+                    optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3**i) for i in range(num)],
+                    warmup_ratio=0.5,
+                )
+            if self.num_workers == 1:
+                return CmaFmin2
+            # We need a special case for dim < 30 ---> let's see later.
+            # Otherwise, let us go back to normal life: NGOpt16 which rocks in many cases, possibly Cobyla.
+            return NGOpt16
+        elif (  # This might be specific of high-precision cases.
+            self.budget is not None
+            and self.fully_continuous
+            and not self.has_noise
+            and self.num_objectives < 2
+            and self.num_workers <= cma_vars
+            and self.budget > 50 * self.dimension
+            and p.helpers.Normalizer(self.parametrization).fully_bounded
+        ):
+            if self.dimension < 3:
+                return NGOpt8
+            if self.dimension <= 20 and self.num_workers == 1:
+                MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                MetaModelFmin2.no_parallelization = True
+                return MetaModelFmin2
+            return NGOpt15
+        else:
+            return super()._select_optimizer_cls()
+
+
+@registry.register
+class NgIoh4(NGOptBase):
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
+
+    def _select_optimizer_cls(self) -> base.OptCls:
+        optCls: base.OptCls = NGOptBase
+        funcinfo = self.parametrization.function
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget < 1000 * self.dimension
+            and self.budget > 20 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 100
+        ):
+            print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget >= 1000 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        # Special cases in the bounded case
+        if self.has_noise and (self.has_discrete_not_softmax or not funcinfo.metrizable):
+            optCls = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
+        elif self.dimension >= 60 and not funcinfo.metrizable:
+            optCls = CMA
+        print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, we choose {optCls}")
+        return optCls
+
+
+@registry.register
+class NgIoh5(NGOptBase):
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
+
+    def _select_optimizer_cls(self) -> base.OptCls:
+        optCls: base.OptCls = NGOptBase
+        funcinfo = self.parametrization.function
+        if not self.has_noise and self._arity > 0:
+            return DiscreteLenglerOnePlusOne
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget < 1000 * self.dimension
+            and self.budget > 20 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 100
+        ):
+            print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget >= 1000 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        # Special cases in the bounded case
+        if self.has_noise and (self.has_discrete_not_softmax or not funcinfo.metrizable):
+            optCls = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
+        elif self.dimension >= 60 and not funcinfo.metrizable:
+            optCls = CMA
+        print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, we choose {optCls}")
+        return optCls
+
+
+@registry.register
+class NgIoh6(NGOptBase):
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
+
+    def _select_optimizer_cls(self) -> base.OptCls:
+        optCls: base.OptCls = NGOptBase
+        funcinfo = self.parametrization.function
+        if not self.has_noise and self._arity > 0:
+            return RecombiningPortfolioDiscreteOnePlusOne
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget < 1000 * self.dimension
+            and self.budget > 20 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 100
+        ):
+            print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget >= 1000 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        # Special cases in the bounded case
+        if self.has_noise and (self.has_discrete_not_softmax or not funcinfo.metrizable):
+            optCls = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
+        elif self.dimension >= 60 and not funcinfo.metrizable:
+            optCls = CMA
+        print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, we choose {optCls}")
+        return optCls
 
 
 class _MSR(Portfolio):
