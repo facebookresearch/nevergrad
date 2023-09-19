@@ -68,7 +68,7 @@ Learn more on parametrization in the [**documentation**](https://facebookresearc
 ## Documentation
 
 Check out our [**documentation**](https://facebookresearch.github.io/nevergrad/)! It's still a work in progress, don't hesitate to submit issues and/or PR to update it and make it clearer!
-
+The last version of our [**data**](https://drive.google.com/file/d/1p8d1bMCDlvWrDIMXP7fT9pJa1cgjH3NM/view?usp=sharing) and the last version of our [**PDF report**](https://tinyurl.com/dagstuhloid). 
 
 ## Citing
 

@@ -55,6 +55,7 @@ echo "\\subsubsection{`echo $u | sed 's/_plots.$//g'` (NSR:$bestsr) (Freq:$bestf
 timeout 10 cat scripts/txt/`echo $u | sed 's/_plots/.txt/g' | sed 's/\///g'`
 (
 (
+
 convert ${u}/fight_all_pure.png -trim +repage  ${u}/fight_all_pure.pre.png
 img2pdf -o ${u}/fight_all_pure.png.pdf  ${u}/fight_all_pure.pre.png
 convert ${u}/xpresults_all.png -trim +repage  ${u}/xpresults_all.pre.png
@@ -183,9 +184,6 @@ sed -i 's/\\subsubsection{ranknoisy .*}/\\subsection{Noisy optimization}&/g' $v
 sed -i 's/(x)/ /g' $v
 done
 
-
-# ====================
-
 #for u in `grep includegraphics dagstuhloid.tex | sed 's/.*{{//g' | sed 's/}}.*//g' | grep -v pdf | grep  png`
 #do
 #echo working on $u
@@ -216,4 +214,3 @@ echo '</html>'
 
 
 tar -zcvf texdag.tgz dagstuhloid.tex biblio.bib *plots/*all_pure.png *plots/xpresults_all.png ms_bbob_plots/fight_tran*.png *_plots/*.pdf dagstuhloid.html competition.tex bigstats.tex dagstuhloid.pdf
-#tar -zcvf texdag.tgz competition.tex dagstuhloid.tex biblio.bib *_plots/*.pdf dagstuhloid.html bigstats.tex
