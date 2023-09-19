@@ -402,12 +402,12 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 * (b * np.sum(np.maximum(constraint_violation, 0.0) ** c) ** d)
             )
             loss += violation
-            
+
         if isinstance(loss, float) and (
             self.num_objectives == 1 or self.num_objectives > 1 and not self._no_hypervolume
         ):
             self._update_archive_and_bests(candidate, loss)
-            
+
         if candidate.uid in self._asked:
             self._internal_tell_candidate(candidate, loss)
             self._asked.remove(candidate.uid)

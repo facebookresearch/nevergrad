@@ -21,7 +21,7 @@ skip_win_perf = pytest.mark.skipif(
 def test_sa() -> None:
 
     num_tests = 77
-    for o in []:  # ["DiscreteOnePlusOne"]: dirty temporary hack.
+    for o in []:  # ["DiscreteOnePlusOne"]: dirty temporary hack.  # type: ignore
         values = []
         valuesT = []
         for _ in range(num_tests):
