@@ -389,7 +389,6 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             penalty = self._constraints_manager.penalty(candidate, self.num_ask, self.budget)
             loss = loss + penalty
 
-
         if constraint_violation is not None:
             if penalty_style is not None:
                 a, b, c, d, e, f = penalty_style

@@ -19,24 +19,26 @@ skip_win_perf = pytest.mark.skipif(
 
 @skip_win_perf  # type: ignore
 def test_sa() -> None:
+    pass
 
-    num_tests = 77
-    for o in []:  # ["DiscreteOnePlusOne"]: dirty temporary hack.  # type: ignore
-        values = []
-        valuesT = []
-        for _ in range(num_tests):
-            dim = 30
-            arity = 3
-            budget = 57
-            domain = ng.p.TransitionChoice(range(arity), ordered=False, repetitions=dim)
-            optimum = np.random.randint(arity, size=dim)
 
-            def of(x):
-                return np.abs(np.abs(sum(x) - sum(optimum)) - 7.0)
-
-            recom = ng.optimizers.registry[o](domain, budget).minimize(of).value
-            recomT = ng.optimizers.registry["SA" + o + "Exp09"](domain, budget).minimize(of).value
-            values += [of(recom)]
-            valuesT += [of(recomT)]
-        pval = stats.mannwhitneyu(valuesT, values, alternative="less").pvalue
-        assert pval < 0.2, f"Simulated Annealing {o} fails the test: pval = {pval}."
+#    num_tests = 77
+#    for o in []:  # ["DiscreteOnePlusOne"]: dirty temporary hack.  # type: ignore
+#        values = []
+#        valuesT = []
+#        for _ in range(num_tests):
+#            dim = 30
+#            arity = 3
+#            budget = 57
+#            domain = ng.p.TransitionChoice(range(arity), ordered=False, repetitions=dim)
+#            optimum = np.random.randint(arity, size=dim)
+#
+#            def of(x):
+#                return np.abs(np.abs(sum(x) - sum(optimum)) - 7.0)
+#
+#            recom = ng.optimizers.registry[o](domain, budget).minimize(of).value
+#            recomT = ng.optimizers.registry["SA" + o + "Exp09"](domain, budget).minimize(of).value
+#            values += [of(recom)]
+#            valuesT += [of(recomT)]
+#        pval = stats.mannwhitneyu(valuesT, values, alternative="less").pvalue
+#        assert pval < 0.2, f"Simulated Annealing {o} fails the test: pval = {pval}."
