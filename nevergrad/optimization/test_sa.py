@@ -4,10 +4,12 @@
 # LICENSE file in the root directory of this source tree.
 
 import pytest
-import numpy as np
+
+# import numpy as np
 import sys
-from scipy import stats
-import nevergrad as ng
+
+# from scipy import stats
+# import nevergrad as ng
 
 
 # decorators to be used when testing on Windows is unecessary
