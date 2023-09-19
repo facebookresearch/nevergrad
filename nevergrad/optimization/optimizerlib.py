@@ -3582,7 +3582,6 @@ class NgIoh(NGOpt16):
             return super()._select_optimizer_cls()
 
 
-
 @registry.register
 class NgIoh2(NGOpt16):
     def _select_optimizer_cls(self) -> base.OptCls:
@@ -3787,8 +3786,6 @@ class NgIoh3(NGOpt16):
             return super()._select_optimizer_cls()
 
 
-
-
 @registry.register
 class NgIoh4(NGOptBase):
     """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
@@ -3826,7 +3823,6 @@ class NgIoh4(NGOptBase):
             optCls = CMA
         print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, we choose {optCls}")
         return optCls
-
 
 
 @registry.register

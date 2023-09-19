@@ -781,7 +781,11 @@ class FightPlotter:
         self._ax = self._fig.add_subplot(111)
         max_cols = 25
         self._cax = self._ax.imshow(
-            100 * np.array(self.winrates)[:,:max_cols], cmap=cm.seismic, interpolation="none", vmin=0, vmax=100
+            100 * np.array(self.winrates)[:, :max_cols],
+            cmap=cm.seismic,
+            interpolation="none",
+            vmin=0,
+            vmax=100,
         )
         x_names = self.winrates.columns[:max_cols]  # we plot only the 50 best
         self._ax.set_xticks(list(range(len(x_names))))

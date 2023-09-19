@@ -459,9 +459,10 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
         return 7 + sum([ord(c) * i for i, c in enumerate(s)])
 
     import socket
+
     host = socket.gethostname()
     list_optims = ["NgOpt", "NgIoh5", "NgIoh6", "Shiwa"]
-    #list_optims = ["NgIoh2", "NgOpt", "NgIoh3"]
+    # list_optims = ["NgIoh2", "NgOpt", "NgIoh3"]
     if "lsgo" in benchmark:
         list_optims = ["NgIoh4", "NgIoh5", "NgIoh6"]
     if "tuning" in benchmark:
