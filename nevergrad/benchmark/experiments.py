@@ -51,7 +51,7 @@ from . import gymexperiments  # noqa
 
 def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
     # return ["RandomSearch", "OnePlusOne", "DE", "PSO"]
-    return ["NgIoh", "Shiwa", "NGOpt"]
+
     algos = {}
     algos["aquacrop_fao"] = [
         "CMA",
@@ -409,7 +409,7 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
 
     # Below, we use the best in the records above.
     benchmark = str(inspect.stack()[1].function)
-    if benchmark in algos and "tunin" in benchmark and np.random.randint(2) > 0 and False:
+    if benchmark in algos and "tunin" in benchmark and np.random.randint(2) > 0:
         return algos[benchmark][:5]
 
     # Here, we pseudo-randomly draw one optim in the provided list,
@@ -462,34 +462,11 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
     import socket
 
     host = socket.gethostname()
-    list_optims = ["Carola1", "Carola2", "Carola3", "NgIoh", "NgIoh", "NgIoh", "MetaModel", "Cobyla"]
-    list_optims = ["NgIoh", "NgOpt"]
-    if "tuning" in benchmark:
-        list_optims = [
-            "NgIoh",
-            "NgIoh",
-            "NgIoh",
-            "NgIoh",
-            "NGOpt",
-            "NGOpt",
-            "NGOpt",
-            "NGOpt",
-            "HyperOpt",
-            "RandomSearch",
-            "PSO",
-            "DE",
-            "SQOPSO",
-            "Cobyla",
-            # "AX",
-            "LHSSearch",
-            "QODE",
-            "SODE",
-        ]
-    if "iscre" in benchmark:
-        list_optims = ["RecombiningPortfolioDiscreteOnePlusOne"]
 
     return [list_optims[doint(host) % len(list_optims)]]
-    return x  # ["Zero"] #return x
+
+
+#    return x  # ["Zero"] #return x
 
 
 #    return ["MultiSQP", "MultiCobyla", "MultiBFGS"]
@@ -3373,8 +3350,8 @@ def pbo_suite(seed: tp.Optional[int] = None, reduced: bool = False) -> tp.Iterat
             for x in ng.optimizers.registry.keys()
             if "iscre" in x and "ois" not in x and "ptim" not in x and "oerr" not in x
         ]
-    optims = ["NGOpt", "NGOptRW"]
-    optims = refactor_optims(optims)
+    list_optims = ["NGOpt", "NGOptRW"]
+    list_optims = refactor_optims(list_optims)
     for dim in [16, 64, 100]:
         for fid in range(1, 24):
             for iid in range(1, 5):

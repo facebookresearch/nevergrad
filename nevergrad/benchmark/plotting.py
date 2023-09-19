@@ -367,7 +367,7 @@ def create_plots(
             print("\n# new case #", fixed, case)
             casedf = df.select(**dict(zip(fixed, case)))
             data_df = FightPlotter.winrates_from_selection(
-                casedf, fight_descriptors, num_rows=num_rows, num_cols=50
+                casedf, fight_descriptors, num_rows=num_rows, num_cols=350
             )
             fplotter = FightPlotter(data_df)
             # Competence maps: we find out the best algorithm for each attribute1=valuei/attribute2=valuej.
@@ -403,7 +403,7 @@ def create_plots(
                 fplotter.save(str(output_folder / "fight_all_pure.png"), dpi=_DPI)
             else:
                 fplotter.save(str(output_folder / name) + "_pure.png", dpi=_DPI)
-                print(f"# {len(data_df.columns[:])}")
+                print(f"# {len(data_df.columns[:])}  {data_df.columns[:]}")
             if order == 2 and competencemaps and best_algo:  # With order 2 we can create a competence map.
                 print("\n# Competence map")
                 name = "competencemap_" + ",".join("{}".format(x) for x in fixed) + ".tex"
@@ -795,10 +795,15 @@ class FightPlotter:
         self.winrates = winrates_df
         self._fig = plt.figure()
         self._ax = self._fig.add_subplot(111)
+        max_cols = 25
         self._cax = self._ax.imshow(
-            100 * np.array(self.winrates), cmap=cm.seismic, interpolation="none", vmin=0, vmax=100
+            100 * np.array(self.winrates)[:, :max_cols],
+            cmap=cm.seismic,
+            interpolation="none",
+            vmin=0,
+            vmax=100,
         )
-        x_names = self.winrates.columns
+        x_names = self.winrates.columns[:max_cols]  # we plot only the 50 best
         self._ax.set_xticks(list(range(len(x_names))))
         self._ax.set_xticklabels(x_names, rotation=45, ha="right", fontsize=7)
         y_names = self.winrates.index
@@ -815,7 +820,7 @@ class FightPlotter:
         df: utils.Selector,
         categories: tp.List[str],
         num_rows: int = 5,
-        num_cols: int = 50,
+        num_cols: int = 350,
         complete_runs_only: bool = False,
     ) -> pd.DataFrame:
         """Creates a fight plot win rate data out of the given run dataframe,
