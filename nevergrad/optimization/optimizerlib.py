@@ -440,8 +440,8 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
 
     Notes
     -----
-    After many papers advocared the mutation rate 1/d in the discrete (1+1) for the discrete case,
-    `it was proposed <https://arxiv.org/abs/1606.05551>`_ to use of a randomly
+    After many papers advocated the mutation rate 1/d in the discrete (1+1) for the discrete case,
+    `it was proposed <https://arxiv.org/abs/1606.05551>`_ to use a randomly
     drawn mutation rate. `Fast genetic algorithms <https://arxiv.org/abs/1703.03334>`_ are based on a similar idea
     These two simple methods perform quite well on a wide range of problems.
 
@@ -690,7 +690,7 @@ class _CMA(base.Optimizer):
 
 class ParametrizedCMA(base.ConfiguredOptimizer):
     """CMA-ES optimizer,
-    This evolution strategy uses a Gaussian sampling, iteratively modified
+    This evolution strategy uses Gaussian sampling, iteratively modified
     for searching in the best directions.
     This optimizer wraps an external implementation: https://github.com/CMA-ES/pycma
 
@@ -1446,6 +1446,8 @@ class _Rescaled(base.Optimizer):
 
 class Rescaled(base.ConfiguredOptimizer):
     """Configured optimizer for creating rescaled optimization algorithms.
+
+    By default, scales to sqrt(log(budget)/n_dimensions).
 
     Parameters
     ----------
