@@ -113,6 +113,9 @@ class _OnePlusOne(base.Optimizer):
         assert crossover or (not rotation), "We can not have both rotation and not crossover."
         self._sigma: float = 1
         self._previous_best_loss = float("inf")
+        self._best_recent_mr = 0.2
+        self.inds = np.array([True] * self.dimension)
+        self.imr = 0.2
         self.use_pareto = use_pareto
         self.smoother = smoother
         self.annealing = annealing
