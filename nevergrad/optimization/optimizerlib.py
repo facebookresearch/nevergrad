@@ -3430,7 +3430,6 @@ class NGOptRW(NGOpt39):
             return ConfPortfolio(
                 optimizers=[GeneticDE, PSO, super()._select_optimizer_cls()], warmup_ratio=0.33
             )
-            # return ConfPortfolio(optimizers=[GeneticDE, PSO, NGOpt39], warmup_ratio=0.33)
         else:
             return super()._select_optimizer_cls()
 
@@ -3881,6 +3880,17 @@ class NgIoh4(NGOptBase):
             optCls = CMA
         print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, we choose {optCls}")
         return optCls
+
+
+@registry.register
+class NgIohRW(NgIoh4):
+    def _select_optimizer_cls(self) -> base.OptCls:
+        if self.fully_continuous and not self.has_noise and self.budget >= 12 * self.dimension:  # type: ignore
+            return ConfPortfolio(
+                optimizers=[QODE, PSO, super()._select_optimizer_cls()], warmup_ratio=0.33
+            )
+        else:
+            return super()._select_optimizer_cls()
 
 
 @registry.register
