@@ -18,7 +18,7 @@ You should define how it must be instrumented, i.e. what are the arguments you w
 
     import nevergrad as ng
     # instrument learning rate and number of layers, keep arg3 to 3 and arg4 to 4
-    lr = ng.p.Log(a_min=0.0001, a_max=1)  # log distributed between 0.001 and 1
+    lr = ng.p.Log(lower=0.0001, upper=1)  # log distributed between 0.001 and 1
     num_layers = ng.p.TransitionChoice([4, 5, 6])
     parametrization = ng.p.Instrumentation(lr, num_layers, 3., arg4=4)
 
