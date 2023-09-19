@@ -80,6 +80,7 @@ def good_at_suggest(name: str) -> bool:
         "Doerr",
         "Recombining",
         "SA",
+        "Lognormal",
         "PortfolioDiscreteOne",
         "FastGADiscreteOne",
     ]

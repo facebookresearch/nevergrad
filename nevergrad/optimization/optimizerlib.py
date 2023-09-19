@@ -113,6 +113,9 @@ class _OnePlusOne(base.Optimizer):
         assert crossover or (not rotation), "We can not have both rotation and not crossover."
         self._sigma: float = 1
         self._previous_best_loss = float("inf")
+        self._best_recent_mr = 0.2
+        self.inds = np.array([True] * self.dimension)
+        self.imr = 0.2
         self.use_pareto = use_pareto
         self.smoother = smoother
         self.annealing = annealing
@@ -156,10 +159,16 @@ class _OnePlusOne(base.Optimizer):
             "lenglerhalf",
             "lenglerfourth",
             "doerr",
+            "lognormal",
         ], f"Unkwnown mutation: '{mutation}'"
         if mutation == "adaptive":
             self._adaptive_mr = 0.5
-        if mutation == "coordinatewise_adaptive":
+        elif mutation == "lognormal":
+            self._global_mr = 0.2
+            self._memory_index = 0
+            self._memory_size = 12  # Dirty random value
+            self._best_recent_loss = float("inf")
+        elif mutation == "coordinatewise_adaptive":
             self._velocity = self._rng.uniform(size=self.dimension) * arity / 4.0
             self._modified_variables = np.array([True] * self.dimension)
         self.noise_handling = noise_handling
@@ -251,6 +260,16 @@ class _OnePlusOne(base.Optimizer):
                     )
                 else:
                     data = mutator.crossover(pessimistic_data, mutator.get_roulette(self.archive, num=2))
+            elif mutation == "lognormal":
+                mutation_rate = self._global_mr
+                individual_mutation_rate = 1.0 / (
+                    1.0 + (((1.0 - mutation_rate) / mutation_rate) * np.exp(0.22 * np.random.randn()))
+                )
+                data = mutator.portfolio_discrete_mutation(
+                    pessimistic_data,
+                    intensity=individual_mutation_rate * self.dimension,
+                    arity=self.arity_for_discrete_mutation,
+                )
             elif mutation == "adaptive":
                 data = mutator.portfolio_discrete_mutation(
                     pessimistic_data,
@@ -345,7 +364,12 @@ class _OnePlusOne(base.Optimizer):
                     data.shape
                 ) < 1 + self._rng.randint(self.sparse)
                 data[zeroing] = 0.0
-            return pessimistic.set_standardized_data(data, reference=ref)
+            candidate = pessimistic.set_standardized_data(data, reference=ref)
+            if mutation == "coordinatewise_adaptive":
+                candidate._meta["modified_variables"] = (self._modified_variables,)
+            if mutation == "lognormal":
+                candidate._meta["individual_mutation_rate"] = individual_mutation_rate
+            return candidate
 
     def _internal_tell(self, x: tp.ArrayLike, loss: tp.FloatLoss) -> None:
         if self.annealing != "none":
@@ -386,16 +410,45 @@ class _OnePlusOne(base.Optimizer):
             self._doerr_index = -1
         if self.mutation == "doerr":
             self._doerr_current_best = min(self._doerr_current_best, loss)
-        if self.mutation == "adaptive":
+        elif self.mutation == "adaptive":
             factor = 1.2 if loss <= self._previous_best_loss else 0.731  # 0.731 = 1.2**(-np.exp(1)-1)
             self._adaptive_mr = min(1.0, factor * self._adaptive_mr)
-        if self.mutation == "coordinatewise_adaptive":
+        elif self.mutation == "coordinatewise_adaptive":
             factor = 1.2 if loss < self._previous_best_loss else 0.731  # 0.731 = 1.2**(-np.exp(1)-1)
-            inds = self._modified_variables
+            # inds = self._modified_variables
+            inds = self.inds
             self._velocity[inds] = np.clip(
                 self._velocity[inds] * factor, 1.0, self.arity_for_discrete_mutation / 4.0
             )
+        elif self.mutation == "lognormal":
+            # TODO: care about tell not ask, which invalidates the line above.
+            self._memory_index = (self._memory_index + 1) % self._memory_size
+            if loss < self._best_recent_loss:
+                self._best_recent_loss = loss
+                self._best_recent_mr = self.imr
+
+            if self._memory_index == 0:
+                self._global_mr = self._best_recent_mr
+                self._best_recent_loss = float("inf")
+
         self._previous_best_loss = self.current_bests["pessimistic"].mean  # could be the current one
+
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        """Called whenever calling :code:`tell` on a candidate that was "asked"."""
+        data = candidate.get_standardized_data(reference=self.parametrization)
+        if self.mutation == "coordinatewise_adaptive":
+            self.inds = (
+                candidate._meta["modified_variables"]
+                if "modified_variables" in candidate._meta
+                else np.array([True] * len(data))
+            )
+        if self.mutation == "lognormal":
+            self.imr = (
+                candidate._meta["individual_mutation_rate"]
+                if "individual_mutation_rate" in candidate._meta
+                else 0.2
+            )
+        self._internal_tell(data, loss)
 
 
 class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
@@ -527,6 +580,9 @@ DiscreteLenglerOnePlusOneT = ParametrizedOnePlusOne(tabu_length=10000, mutation=
 )
 AdaptiveDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="adaptive").set_name(
     "AdaptiveDiscreteOnePlusOne", register=True
+)
+LognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="lognormal").set_name(
+    "LognormalDiscreteOnePlusOne", register=True
 )
 AnisotropicAdaptiveDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="coordinatewise_adaptive").set_name(
     "AnisotropicAdaptiveDiscreteOnePlusOne", register=True
@@ -3377,7 +3433,6 @@ class NGOptRW(NGOpt39):
             return ConfPortfolio(
                 optimizers=[GeneticDE, PSO, super()._select_optimizer_cls()], warmup_ratio=0.33
             )
-            # return ConfPortfolio(optimizers=[GeneticDE, PSO, NGOpt39], warmup_ratio=0.33)
         else:
             return super()._select_optimizer_cls()
 
@@ -3828,6 +3883,15 @@ class NgIoh4(NGOptBase):
             optCls = CMA
         print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, we choose {optCls}")
         return optCls
+
+
+@registry.register
+class NgIohRW(NgIoh4):
+    def _select_optimizer_cls(self) -> base.OptCls:
+        if self.fully_continuous and not self.has_noise and self.budget >= 12 * self.dimension:  # type: ignore
+            return ConfPortfolio(optimizers=[QODE, PSO, super()._select_optimizer_cls()], warmup_ratio=0.33)
+        else:
+            return super()._select_optimizer_cls()
 
 
 @registry.register
