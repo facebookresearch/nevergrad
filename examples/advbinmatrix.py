@@ -11,7 +11,7 @@ nmax=50
 numxps=2
 
 list_of_pbs = ["simple", "complex", "flatparts", "combined"]
-
+print(ng.__file__)
 def doall(pb):
     def translate(mat, shift):
         mat2 = mat.copy()
@@ -20,11 +20,12 @@ def doall(pb):
         return mat2
     
     algos = list(ng.optimizers.registry.keys())
-    algos = [a for a in algos if "iscre" in a and "Noisy" not in a and "Optimi" not in a and a[-1] != "T"] + ["DiscreteDE", "cGA", "NGOpt", "NgIoh4", "NgIoh5", "NgIoh6", "NGOptRW"]
-    algos = ["DiscreteLenglerHalfOnePlusOne", "DiscreteLenglerFourthOnePlusOne", "DiscreteLenglerOnePlusOne", "RecombiningDiscreteLanglerOnePlusOne"] + [a for a in algos if "Smoot" in a]
+    #algos = [a for a in algos if "iscre" in a and "Noisy" not in a and "Optimi" not in a and a[-1] != "T"] + ["DiscreteDE", "cGA", "NGOpt", "NgIoh4", "NgIoh5", "NgIoh6", "NGOptRW"]
+    #algos = ["DiscreteLenglerHalfOnePlusOne", "DiscreteLenglerFourthOnePlusOne", "DiscreteLenglerOnePlusOne", "RecombiningDiscreteLanglerOnePlusOne"] + [a for a in algos if "Smoot" in a]
     algos = [a for a in algos if "Smooth" in a and "Portfolio" not in a] + ["DiscreteLenglerOnePlusOne"]
-    np.random.shuffle(algos)
+    #np.random.shuffle(algos)
     #algos = algos[:5]
+    print("algos=", algos)
     for n in range(5, nmax,5):
      for xpi_ in range(numxps):
       target_matrix = np.zeros((n,n))
@@ -63,7 +64,7 @@ def doall(pb):
               x = [ni for ni in score.keys()] # if k in score[ni]]
               y = [np.average(score[x_][k]) for x_ in x]
               plt.plot(x, y, label=k+f" {y[-1]:.2f}")
-              plt.text(x[-1], y[-1], k, {'rotation': -min(r * i, 60), 'rotation_mode': 'anchor'})
+              plt.text(x[-1], y[-1], k, {'rotation': -min(r * i, 60)})
            plt.legend(loc=u,fontsize=f)
            plt.grid()
            plt.title(f"Comparison between algorithms\nfor binary matrices optimization:\nthe lower the better: {pb}")
@@ -72,5 +73,6 @@ def doall(pb):
            #plt.tight_layout()
            plt.savefig(f"binmatrix{n}_loclegend{u}_fontsize{f}_problem{pb}_plotting{nbest}_labelrotation{r}.png")
     #print(recommendation.value)
-    
-Parallel(n_jobs=4)(delayed(doall)(pb) for pb in list_of_pbs)
+ 
+def go():   
+  Parallel(n_jobs=4)(delayed(doall)(pb) for pb in list_of_pbs)
