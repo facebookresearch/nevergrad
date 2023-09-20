@@ -107,9 +107,11 @@ class _OnePlusOne(base.Optimizer):
         use_pareto: bool = False,
         sparse: tp.Union[bool, int] = False,
         smoother: bool = False,
+        roulette_size: int = 2,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.parametrization.tabu_length = tabu_length
+        self.roulette_size = roulette_size
         assert crossover or (not rotation), "We can not have both rotation and not crossover."
         self._sigma: float = 1
         self._previous_best_loss = float("inf")
@@ -230,7 +232,7 @@ class _OnePlusOne(base.Optimizer):
         if self.crossover and self._num_ask % 2 == 1 and len(self.archive) > 2:
             data = mutator.crossover(
                 pessimistic.get_standardized_data(reference=ref),
-                mutator.get_roulette(self.archive, num=2),
+                mutator.get_roulette(self.archive, num=self.roulette_size),
                 rotation=self.rotation,
             )
             return pessimistic.set_standardized_data(data, reference=ref)
@@ -513,6 +515,7 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
         use_pareto: bool = False,
         sparse: bool = False,
         smoother: bool = False,
+        roulette_size: int = 2,
     ) -> None:
         super().__init__(_OnePlusOne, locals())
 
@@ -4044,3 +4047,23 @@ SmoothAdaptiveDiscreteOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutatio
     "SmoothAdaptiveDiscreteOnePlusOne", register=True
 )
 
+SmoothRecombiningPortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True,
+    crossover=True,
+    mutation="portfolio",
+).set_name("SmoothRecombiningPortfolioDiscreteOnePlusOne", register=True)
+SmoothRecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True,
+    crossover=True,
+    mutation="lengler",
+).set_name("SmoothRecombiningDiscreteLanglerOnePlusOne", register=True)
+SmoothElitistRecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True,
+    crossover=True,
+    mutation="lengler",
+    roulette_size=7,
+).set_name("SmoothElitistRecombiningDiscreteLanglerOnePlusOne", register=True)
+RecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
+    crossover=True,
+    mutation="lengler",
+).set_name("RecombiningDiscreteLanglerOnePlusOne", register=True)
