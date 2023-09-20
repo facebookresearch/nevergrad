@@ -3960,3 +3960,23 @@ class MultipleSingleRuns(base.ConfiguredOptimizer):
         base_optimizer: base.OptCls = NGOpt,
     ) -> None:
         super().__init__(_MSR, locals())
+
+
+
+# Smooth variants of evolutionary algorithms.
+SmoothDiscreteOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="discrete").set_name(
+    "SmoothDiscreteOnePlusOne", register=True
+)
+SmoothPortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="portfolio").set_name(
+    "SmoothPortfolioDiscreteOnePlusOne", register=True
+)
+SmoothDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="lengler").set_name(
+    "SmoothDiscreteLenglerOnePlusOne", register=True
+)
+SmoothLognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="Lognormal").set_name(
+    "SmoothLognormalDiscreteOnePlusOne", register=True
+)
+SmoothAdaptiveDiscreteOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="adaptive").set_name(
+    "SmoothAdaptiveDiscreteOnePlusOne", register=True
+)
+

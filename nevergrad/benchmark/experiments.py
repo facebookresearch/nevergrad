@@ -966,9 +966,19 @@ def sequential_instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Ex
     optims = ["DiscreteLenglerOnePlusOne"]
     optims = ["NGOpt", "NGOptRW"]
     optims = refactor_optims(optims)
-    for nv in [10, 50, 200, 1000, 5000]:
-        for arity in [2, 3, 7, 30]:
-            for instrum_str in ["Unordered", "Softmax", "Ordered"]:
+    optims = [
+        l
+        for l in list(ng.optimizers.registry.keys())
+        if "DiscreteOneP" in l
+        and "SA" not in l
+        and "Smooth" not in l
+        and "Noisy" not in l
+        and "Optimis" not in l
+        and "T" != l[-1]
+    ] + ["cGA", "DiscreteDE"]
+    for nv in [10, 50, 200]:  # , 50, 200, 1000, 5000]:
+        for arity in [2, 3, 7]:  # , 7, 30]:
+            for instrum_str in ["Unordered"]:  # , "Softmax", "Ordered"]:
                 if instrum_str == "Softmax":
                     instrum: ng.p.Parameter = ng.p.Choice(range(arity), repetitions=nv)
                 else:
@@ -983,7 +993,7 @@ def sequential_instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Ex
                     dfunc.add_descriptors(nv=nv)
                     dfunc.add_descriptors(instrum_str=instrum_str)
                     for optim in optims:
-                        for budget in [50, 500, 5000, 50000]:
+                        for budget in [50, 500, 5000]:  # , 50000]:
                             yield Experiment(dfunc, optim, budget=budget, seed=next(seedg))
 
 
