@@ -109,6 +109,7 @@ class _OnePlusOne(base.Optimizer):
         smoother: bool = False,
         roulette_size: int = 2,
         antismooth: int = 55,
+        ngioh: str = "none",
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.parametrization.tabu_length = tabu_length
@@ -4071,6 +4072,20 @@ UltraSmoothRecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
     mutation="lengler",
     antismooth=3,
 ).set_name("UltraSmoothRecombiningDiscreteLanglerOnePlusOne", register=True)
+UltraSmoothElitistRecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True,
+    crossover=True,
+    mutation="lengler",
+    antismooth=3,
+    roulette_size=7,
+).set_name("UltraSmoothElitistRecombiningDiscreteLanglerOnePlusOne", register=True)
+SuperSmoothElitistRecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True,
+    crossover=True,
+    mutation="lengler",
+    antismooth=9,
+    roulette_size=7,
+).set_name("SuperSmoothElitistRecombiningDiscreteLanglerOnePlusOne", register=True)
 SuperSmoothRecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
     smoother=True,
     crossover=True,
@@ -4087,3 +4102,46 @@ RecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
     crossover=True,
     mutation="lengler",
 ).set_name("RecombiningDiscreteLanglerOnePlusOne", register=True)
+
+
+@registry.register
+class NgIoh7(NGOptBase):
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
+
+    def _select_optimizer_cls(self) -> base.OptCls:
+        optCls: base.OptCls = NGOptBase
+        funcinfo = self.parametrization.function
+        if isinstance(self.parametrization, p.Array) and not self.fully_continuous and not self.has_noise:
+           return ConfPortfolio(optimizers=[SuperSmoothDiscreteLenglerOnePlusOne, SuperSmoothElitistRecombiningDiscreteLenglerOnePlusOne, DiscreteLenglerOnePlusOne], warmup_ratio=.4)           
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget < 1000 * self.dimension
+            and self.budget > 20 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 100
+        ):
+            print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget >= 1000 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        # Special cases in the bounded case
+        if self.has_noise and (self.has_discrete_not_softmax or not funcinfo.metrizable):
+            optCls = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
+        elif self.dimension >= 60 and not funcinfo.metrizable:
+            optCls = CMA
+        print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, we choose {optCls}")
+        return optCls
+
+
