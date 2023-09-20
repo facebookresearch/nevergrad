@@ -108,9 +108,11 @@ class _OnePlusOne(base.Optimizer):
         sparse: tp.Union[bool, int] = False,
         smoother: bool = False,
         roulette_size: int = 2,
+        antismooth: int = 55,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.parametrization.tabu_length = tabu_length
+        self.antismooth = antismooth
         self.roulette_size = roulette_size
         assert crossover or (not rotation), "We can not have both rotation and not crossover."
         self._sigma: float = 1
@@ -218,7 +220,7 @@ class _OnePlusOne(base.Optimizer):
         pessimistic = self.current_bests["pessimistic"].parameter.spawn_child()
         if (
             self.smoother
-            and self._num_ask % max(self.num_workers + 1, 55) == 0
+            and self._num_ask % max(self.num_workers + 1, self.antismooth) == 0
             and isinstance(self.parametrization, p.Array)
         ):
             self.suggest(smooth_copy(pessimistic).value)  # type: ignore
@@ -516,6 +518,7 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
         sparse: bool = False,
         smoother: bool = False,
         roulette_size: int = 2,
+        antismooth: int = 55,
     ) -> None:
         super().__init__(_OnePlusOne, locals())
 
@@ -1209,8 +1212,8 @@ class _PSO(base.Optimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._config = ConfPSO() if config is None else config
-        if budget is not None and budget < 60:
-            warnings.warn("PSO is inefficient with budget < 60", errors.InefficientSettingsWarning)
+        #if budget is not None and budget < 60:
+        #    warnings.warn("PSO is inefficient with budget < 60", errors.InefficientSettingsWarning)
         cases: tp.Dict[str, tp.Tuple[tp.Optional[float], transforms.Transform]] = dict(
             arctan=(0, transforms.ArctanBound(0, 1)),
             identity=(None, transforms.Affine(1, 0)),
@@ -4039,6 +4042,9 @@ SmoothPortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutati
 )
 SmoothDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="lengler").set_name(
     "SmoothDiscreteLenglerOnePlusOne", register=True
+)
+SuperSmoothDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="lengler", antismooth=9).set_name(
+    "SuperSmoothDiscreteLenglerOnePlusOne", register=True
 )
 SmoothLognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="lognormal").set_name(
     "SmoothLognormalDiscreteOnePlusOne", register=True
