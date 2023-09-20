@@ -4037,7 +4037,7 @@ SmoothPortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutati
 SmoothDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="lengler").set_name(
     "SmoothDiscreteLenglerOnePlusOne", register=True
 )
-SmoothLognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="Lognormal").set_name(
+SmoothLognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="lognormal").set_name(
     "SmoothLognormalDiscreteOnePlusOne", register=True
 )
 SmoothAdaptiveDiscreteOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="adaptive").set_name(
