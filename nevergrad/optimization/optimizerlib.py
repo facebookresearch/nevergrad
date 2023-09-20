@@ -1212,7 +1212,7 @@ class _PSO(base.Optimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._config = ConfPSO() if config is None else config
-        #if budget is not None and budget < 60:
+        # if budget is not None and budget < 60:
         #    warnings.warn("PSO is inefficient with budget < 60", errors.InefficientSettingsWarning)
         cases: tp.Dict[str, tp.Tuple[tp.Optional[float], transforms.Transform]] = dict(
             arctan=(0, transforms.ArctanBound(0, 1)),
@@ -2991,7 +2991,7 @@ class NGOptBase(base.Optimizer):
                                     if self.dimension > 1
                                     else OnePlusOne
                                 )
-        print(f"NGOptbase: budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, {cls}")
+        # print(f"NGOptbase: budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, {cls}")
         return cls
 
     def _internal_ask_candidate(self) -> p.Parameter:
@@ -4032,7 +4032,6 @@ class MultipleSingleRuns(base.ConfiguredOptimizer):
         super().__init__(_MSR, locals())
 
 
-
 # Smooth variants of evolutionary algorithms.
 SmoothDiscreteOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="discrete").set_name(
     "SmoothDiscreteOnePlusOne", register=True
@@ -4043,9 +4042,12 @@ SmoothPortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutati
 SmoothDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="lengler").set_name(
     "SmoothDiscreteLenglerOnePlusOne", register=True
 )
-SuperSmoothDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="lengler", antismooth=9).set_name(
-    "SuperSmoothDiscreteLenglerOnePlusOne", register=True
-)
+SuperSmoothDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True, mutation="lengler", antismooth=9
+).set_name("SuperSmoothDiscreteLenglerOnePlusOne", register=True)
+UltraSmoothDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True, mutation="lengler", antismooth=3
+).set_name("UltraSmoothDiscreteLenglerOnePlusOne", register=True)
 SmoothLognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="lognormal").set_name(
     "SmoothLognormalDiscreteOnePlusOne", register=True
 )
@@ -4063,6 +4065,18 @@ SmoothRecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
     crossover=True,
     mutation="lengler",
 ).set_name("SmoothRecombiningDiscreteLanglerOnePlusOne", register=True)
+UltraSmoothRecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True,
+    crossover=True,
+    mutation="lengler",
+    antismooth=3,
+).set_name("UltraSmoothRecombiningDiscreteLanglerOnePlusOne", register=True)
+SuperSmoothRecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True,
+    crossover=True,
+    mutation="lengler",
+    antismooth=9,
+).set_name("SuperSmoothRecombiningDiscreteLanglerOnePlusOne", register=True)
 SmoothElitistRecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
     smoother=True,
     crossover=True,

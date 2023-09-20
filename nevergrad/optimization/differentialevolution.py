@@ -143,7 +143,7 @@ class _DE(base.Optimizer):
         else:
             self.llambda = max(30, self.num_workers, pop_choice[self._config.popsize])
         # internals
-        #if budget is not None and budget < 60:
+        # if budget is not None and budget < 60:
         #    warnings.warn(
         #        "DE algorithms are inefficient with budget < 60", base.errors.InefficientSettingsWarning
         #    )
