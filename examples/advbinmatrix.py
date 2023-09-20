@@ -20,9 +20,9 @@ def doall(pb):
         return mat2
     
     algos = list(ng.optimizers.registry.keys())
-    #algos = [a for a in algos if "iscre" in a and "Noisy" not in a and "Optimi" not in a and a[-1] != "T"] + ["DiscreteDE", "cGA", "NGOpt", "NgIoh4", "NgIoh5", "NgIoh6", "NGOptRW"]
+    algos = [a for a in algos if "iscre" in a and "Noisy" not in a and "Optimi" not in a and a[-1] != "T"] + ["DiscreteDE", "cGA", "NGOpt", "NgIoh4", "NgIoh5", "NgIoh6", "NGOptRW"]
     #algos = ["DiscreteLenglerHalfOnePlusOne", "DiscreteLenglerFourthOnePlusOne", "DiscreteLenglerOnePlusOne", "RecombiningDiscreteLanglerOnePlusOne"] + [a for a in algos if "Smoot" in a]
-    algos = [a for a in algos if "Smooth" in a and "Portfolio" not in a] + ["DiscreteLenglerOnePlusOne"]
+    #algos = [a for a in algos if "Smooth" in a and "Portfolio" not in a] + ["DiscreteLenglerOnePlusOne"]
     #np.random.shuffle(algos)
     #algos = algos[:5]
     print("algos=", algos)
@@ -64,7 +64,7 @@ def doall(pb):
               x = [ni for ni in score.keys()] # if k in score[ni]]
               y = [np.average(score[x_][k]) for x_ in x]
               plt.plot(x, y, label=k+f" {y[-1]:.2f}")
-              plt.text(x[-1], y[-1], k, {'rotation': -min(r * i, 60)})
+              plt.text(x[-1], y[-1], k, {'rotation': -min(r * i, 60), 'rotation_mode': 'anchor', 'horizontalalignment': 'left', 'verticalalignment': 'center',})
            plt.legend(loc=u,fontsize=f)
            plt.grid()
            plt.title(f"Comparison between algorithms\nfor binary matrices optimization:\nthe lower the better: {pb}")
