@@ -3893,10 +3893,11 @@ class NgIoh4(NGOptBase):
 
 
 @registry.register
-class NgIohRW(NgIoh4):
+class NgIohRW2(NgIoh4):
     def _select_optimizer_cls(self) -> base.OptCls:
         if self.fully_continuous and not self.has_noise and self.budget >= 12 * self.dimension:  # type: ignore
-            return ConfPortfolio(optimizers=[QODE, PSO, super()._select_optimizer_cls()], warmup_ratio=0.33)
+            return ConfPortfolio(optimizers=[SQPCMA, QODE, PSO], warmup_ratio=0.33)
+            #return ConfPortfolio(optimizers=[QODE, PSO, super()._select_optimizer_cls()], warmup_ratio=0.33)
         else:
             return super()._select_optimizer_cls()
 
