@@ -10,6 +10,7 @@ score = defaultdict(lambda: defaultdict(list))
 nmax=250
 
 list_of_pbs = ["simple", "complex", "flatparts", "combined", "smooth", "bands", "shift"]
+list_of_pbs = ["simple", "complex", "combined", "minishift"]
 print(ng.__file__)
 
 def doall(pb):
@@ -77,7 +78,7 @@ def doall(pb):
            plt.clf()
            sorted_algos = sorted(score[n].keys(), key=lambda k: np.average(score[n][k]))
            if n > 10:
-               algos = [a for a in algos if a in sorted_algos[:max(7, int(.5 * len(algos)))] ]
+               algos = [a for a in algos if a in sorted_algos[:max(13, int(.5 * len(algos)))] ]
            sorted_algos = sorted_algos[:nbest][::-1]
            for i, k in enumerate(sorted_algos):
               #print(f" for size {n}, {k} gets {np.average(score[n][k])}")
