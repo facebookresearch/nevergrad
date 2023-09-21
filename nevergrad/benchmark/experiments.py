@@ -463,6 +463,26 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
 
     host = socket.gethostname()
     list_optims = ["NgIoh7", "NgIohRW", "LognormalDiscreteOnePlusOne"]
+    list_optims = ["NgIoh7", "NgIohRW2"]
+    if "iscr" in benchmark:
+        list_optims += [a for a in ['DiscreteDE', 'DiscreteOnePlusOne', 'SADiscreteLenglerOnePlusOneExp09',
+        'SADiscreteLenglerOnePlusOneExp099', 'SADiscreteLenglerOnePlusOneExp09Auto',
+        'SADiscreteLenglerOnePlusOneLinAuto', 'SADiscreteLenglerOnePlusOneLin1', 'SADiscreteLenglerOnePlusOneLin100',
+        'SADiscreteOnePlusOneExp099', 'SADiscreteOnePlusOneLin100', 'SADiscreteOnePlusOneExp09',
+        'PortfolioDiscreteOnePlusOne', 'DiscreteLenglerOnePlusOne', 'DiscreteLengler2OnePlusOne',
+        'DiscreteLengler3OnePlusOne', 'DiscreteLenglerHalfOnePlusOne', 'DiscreteLenglerFourthOnePlusOne',
+        'AdaptiveDiscreteOnePlusOne', 'LognormalDiscreteOnePlusOne', 'AnisotropicAdaptiveDiscreteOnePlusOne',
+        'DiscreteBSOOnePlusOne', 'DiscreteDoerrOnePlusOne', 'DoubleFastGADiscreteOnePlusOne',
+        'SparseDoubleFastGADiscreteOnePlusOne', 'RecombiningPortfolioDiscreteOnePlusOne', 'MultiDiscrete',
+        'discretememetic', 'SmoothDiscreteOnePlusOne', 'SmoothPortfolioDiscreteOnePlusOne',
+        'SmoothDiscreteLenglerOnePlusOne', 'SuperSmoothDiscreteLenglerOnePlusOne',
+        'UltraSmoothDiscreteLenglerOnePlusOne', 'SmoothLognormalDiscreteOnePlusOne', 'SmoothAdaptiveDiscreteOnePlusOne',
+        'SmoothRecombiningPortfolioDiscreteOnePlusOne', 'SmoothRecombiningDiscreteLanglerOnePlusOne',
+        'UltraSmoothRecombiningDiscreteLanglerOnePlusOne', 'UltraSmoothElitistRecombiningDiscreteLanglerOnePlusOne',
+        'SuperSmoothElitistRecombiningDiscreteLanglerOnePlusOne', 'SuperSmoothRecombiningDiscreteLanglerOnePlusOne',
+        'SmoothElitistRecombiningDiscreteLanglerOnePlusOne', 'RecombiningDiscreteLanglerOnePlusOne', 'DiscreteDE',
+        'cGA', 'NGOpt', 'NgIoh4', 'NgIoh5', 'NgIoh6', 'NGOptRW', 'NgIoh7'] if ("Smooth" in a or "Lognor" in a or
+        "Recomb" in a)]
     return [list_optims[doint(host) % len(list_optims)]]
 
 
