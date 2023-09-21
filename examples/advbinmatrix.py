@@ -7,11 +7,11 @@ from collections import defaultdict
 
 score = defaultdict(lambda: defaultdict(list))
 
-nmax=50
-numxps=7
+nmax=250
 
-list_of_pbs = ["simple", "complex", "flatparts", "combined", "smooth", "bands", "verysmooth"]
+list_of_pbs = ["simple", "complex", "flatparts", "combined", "smooth", "bands", "shift"]
 print(ng.__file__)
+
 def doall(pb):
     def translate(mat, shift):
         mat2 = mat.copy()
@@ -20,7 +20,7 @@ def doall(pb):
         return mat2
     
     algos = list(ng.optimizers.registry.keys())
-    algos = [a for a in algos if "iscre" in a and "Noisy" not in a and "Optimi" not in a and a[-1] != "T"] + ["DiscreteDE", "cGA", "NGOpt", "NgIoh4", "NgIoh5", "NgIoh6", "NGOptRW"]
+    algos = [a for a in algos if "iscre" in a and "Noisy" not in a and "Optimi" not in a and a[-1] != "T"] + ["DiscreteDE", "cGA", "NGOpt", "NgIoh4", "NgIoh5", "NgIoh6", "NGOptRW", "NgIoh7"]
     #algos = ["DiscreteLenglerHalfOnePlusOne", "DiscreteLenglerFourthOnePlusOne", "DiscreteLenglerOnePlusOne", "RecombiningDiscreteLanglerOnePlusOne"] + [a for a in algos if "Smoot" in a]
     #algos = [a for a in algos if "Smooth" in a and "Portfolio" not in a] + ["DiscreteLenglerOnePlusOne"]
     #np.random.shuffle(algos)
@@ -29,6 +29,7 @@ def doall(pb):
     assert "SmoothDiscreteOnePlusOne" in algos
     for n in range(5, nmax,5):
      print(f"For pb {pb} and n={n} we use {len(algos)} algorithms, namely {algos}")
+     numxps = 7 if n > 15 else 3
      for xpi_ in range(numxps):
       target_matrix = np.zeros((n,n))
       for i in range(n):
@@ -38,10 +39,14 @@ def doall(pb):
          #return np.sum(binary_matrix) - 5 * np.sum(np.diag(binary_matrix))
        if pb == "simple":
          return np.sum((binary_matrix - target_matrix)**2)
+       elif pb == "shift":
+         avg = translate(binary_matrix, n // 4)
+         return np.sum((binary_matrix - target_matrix)**2) + np.sum((binary_matrix - avg) ** 2)
+       elif pb == "minishift":
+         avg = translate(binary_matrix, 1)
+         return np.sum((binary_matrix - target_matrix)**2) + np.sum((binary_matrix - avg) ** 2)
        elif pb == "smooth":
          return np.sum((binary_matrix - np.average(binary_matrix))**2) + np.sum((binary_matrix - target_matrix)**2)
-       elif pb == "verysmooth":
-         return np.sum((binary_matrix - np.average(binary_matrix))**2)
        elif pb == "bands":
          return np.sum((np.average(1.*(binary_matrix>np.average(binary_matrix, axis=0)), axis=0)-0.5)**2)
        elif pb == "combined":
@@ -56,14 +61,15 @@ def doall(pb):
          assert False, "unknown pb"
       for k in algos:
        #try:
+        print(f"{k} works on {pb} with edge {n}")
         optimizer = ng.optimizers.registry[k](parametrization=ng.p.Array(shape=(n,n),lower=0.,upper=1.).set_integer_casting(), budget=nmax*10)
         recommendation = optimizer.minimize(testloss)
         score[n][k] += [testloss(recommendation.value)]
-        print(f"{k} gets {np.average(score[n][k])} on {pb}")
+        print(f"=====> {k} gets {np.average(score[n][k])} on {pb} with edge {n}")
        #except Exception as e:
        # print(f"{k} does not work ({e}), maybe package missing ?")
-     if n < 10:
-       continue
+     #if n < 10:
+     #  continue
      for u in range(1):
       for f in [6]: #,5,6]:
        for nbest in [7, 15]: #, 10, 20, len(score[n].keys())]:
@@ -71,7 +77,7 @@ def doall(pb):
            plt.clf()
            sorted_algos = sorted(score[n].keys(), key=lambda k: np.average(score[n][k]))
            if n > 10:
-               algos = [a for a in algos if a in sorted_algos[:max(7, int(.85 * len(algos)))] ]
+               algos = [a for a in algos if a in sorted_algos[:max(7, int(.5 * len(algos)))] ]
            sorted_algos = sorted_algos[:nbest][::-1]
            for i, k in enumerate(sorted_algos):
               #print(f" for size {n}, {k} gets {np.average(score[n][k])}")
@@ -81,7 +87,7 @@ def doall(pb):
               plt.text(x[-1], y[-1], k, {'rotation': min(r * (len(sorted_algos) - i - 1), 60), 'rotation_mode': 'anchor', 'horizontalalignment': 'left', 'verticalalignment': 'center',})
            plt.legend(loc=u,fontsize=f)
            plt.grid()
-           plt.title(f"Comparison between algorithms\nfor binary matrices optimization:\nthe lower the better: {pb}")
+           plt.title(f"Comparison between algorithms\nfor binary matrices optimization:\nlower = better, {pb}, budget=10*edge")
            plt.ylabel("average loss")
            plt.xlabel("edge size of the binary matrix")
            #plt.tight_layout()
