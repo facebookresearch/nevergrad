@@ -347,6 +347,10 @@ class EarlyStopping:
         """Early stop when max_duration seconds has been reached (from the first ask)"""
         return cls(_DurationCriterion(max_duration))
 
+    @classmethod
+    def no_improvement_stopper(cls, tolerance_window: int) -> "EarlyStopping":
+        """Early stop when no loss reduce during tolerance_window asks"""
+        return cls(_LossImporvementToleranceCriterion(tolerance_window))
 
 class _DurationCriterion:
     def __init__(self, max_duration: float) -> None:
@@ -357,3 +361,25 @@ class _DurationCriterion:
         if np.isinf(self._start):
             self._start = time.time()
         return time.time() > self._start + self._max_duration
+
+
+class _LossImporvementToleranceCriterion:
+    def __init__(self, tolerance_window: int) -> None:
+        self._tolerance_window = tolerance_window
+        self._best_value = None
+        self._tolerance_count = 0
+
+    def __call__(self, optimizer: base.Optimizer) -> bool:
+        best_param = optimizer.provide_recommendation()
+        if best_param is None or (best_param.loss is None and best_param._losses is None):
+            return False
+        best_last_losses = best_param.losses
+        if self._best_value is None:
+            self._best_value = best_last_losses
+            return False
+        if self._best_value <= best_last_losses:
+            self._tolerance_count += 1
+        else:
+            self._tolerance_count = 0
+            self._best_value = best_last_losses
+        return self._tolerance_count > self._tolerance_window
