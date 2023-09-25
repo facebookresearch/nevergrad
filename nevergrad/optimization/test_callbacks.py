@@ -135,7 +135,7 @@ def test_early_stopping() -> None:
     func = _EarlyStoppingTestee(5)
     optimizer = optimizerlib.OnePlusOne(parametrization=instrum, budget=100)
     no_imp_window=7
-    optimizer.register_callback("ask", ng.callbacks.EarlyStopping.no_improvement_stopper(no_imp_window))  # should triggered
+    optimizer.register_callback("ask", ng.callbacks.EarlyStopping.no_improvement_stopper(no_imp_window))  # should get triggered
     optimizer.minimize(func, verbosity=2)
     assert(func.num_calls == no_imp_window+2)
 
@@ -143,7 +143,7 @@ def test_early_stopping() -> None:
     func = _EarlyStoppingTestee(5, multi=True)
     optimizer = optimizerlib.OnePlusOne(parametrization=instrum, budget=100)
     no_imp_window=5
-    optimizer.register_callback("ask", ng.callbacks.EarlyStopping.no_improvement_stopper(no_imp_window))  # should triggered
+    optimizer.register_callback("ask", ng.callbacks.EarlyStopping.no_improvement_stopper(no_imp_window))  # should get triggered
     optimizer.minimize(func, verbosity=2)
     assert(func.num_calls == no_imp_window+2)
 

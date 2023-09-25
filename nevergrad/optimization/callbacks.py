@@ -349,7 +349,7 @@ class EarlyStopping:
 
     @classmethod
     def no_improvement_stopper(cls, tolerance_window: int) -> "EarlyStopping":
-        """Early stop when no loss reduce during tolerance_window asks"""
+        """Early stop when loss didn't reduce during tolerance_window asks"""
         return cls(_LossImporvementToleranceCriterion(tolerance_window))
 
 class _DurationCriterion:
