@@ -366,9 +366,9 @@ class _DurationCriterion:
 
 class _LossImprovementToleranceCriterion:
     def __init__(self, tolerance_window: int) -> None:
-        self._tolerance_window = tolerance_window
-        self._best_value = None
-        self._tolerance_count = 0
+        self._tolerance_window: int = tolerance_window
+        self._best_value: tp.Optional[np.ndarray] = None
+        self._tolerance_count: int = 0
 
     def __call__(self, optimizer: base.Optimizer) -> bool:
         best_param = optimizer.provide_recommendation()
