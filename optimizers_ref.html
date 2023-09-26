@@ -75,6 +75,7 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#callbacks">Callbacks</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#nevergrad.callbacks.EarlyStopping"><code class="docutils literal notranslate"><span class="pre">EarlyStopping</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#nevergrad.callbacks.EarlyStopping.no_improvement_stopper"><code class="docutils literal notranslate"><span class="pre">EarlyStopping.no_improvement_stopper()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#nevergrad.callbacks.EarlyStopping.timer"><code class="docutils literal notranslate"><span class="pre">EarlyStopping.timer()</span></code></a></li>
 </ul>
 </li>
@@ -564,6 +565,12 @@ if the loss is below 12:</p>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">early_stopping</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">callbacks</span><span class="o">.</span><span class="n">EarlyStopping</span><span class="p">(</span><span class="k">lambda</span> <span class="n">opt</span><span class="p">:</span> <span class="n">opt</span><span class="o">.</span><span class="n">current_bests</span><span class="p">[</span><span class="s2">&quot;minimum&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span> <span class="o">&lt;</span> <span class="mi">12</span><span class="p">)</span>
 </pre></div>
 </div>
+<dl class="py method">
+<dt class="sig sig-object py" id="nevergrad.callbacks.EarlyStopping.no_improvement_stopper">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">no_improvement_stopper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tolerance_window</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#nevergrad.callbacks.EarlyStopping" title="nevergrad.optimization.callbacks.EarlyStopping"><span class="pre">EarlyStopping</span></a></span></span><a class="headerlink" href="#nevergrad.callbacks.EarlyStopping.no_improvement_stopper" title="Permalink to this definition"></a></dt>
+<dd><p>Early stop when loss didn’t reduce during tolerance_window asks</p>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="nevergrad.callbacks.EarlyStopping.timer">
 <em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">timer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_duration</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#nevergrad.callbacks.EarlyStopping" title="nevergrad.optimization.callbacks.EarlyStopping"><span class="pre">EarlyStopping</span></a></span></span><a class="headerlink" href="#nevergrad.callbacks.EarlyStopping.timer" title="Permalink to this definition"></a></dt>
