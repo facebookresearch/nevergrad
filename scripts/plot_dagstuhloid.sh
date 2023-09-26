@@ -1,4 +1,11 @@
 #!/bin/bash 
+#SBATCH --job-name=dagplot
+#SBATCH --output=dagplot.out
+#SBATCH --error=dagplot.err
+#SBATCH --time=72:00:00
+#SBATCH --partition=devlab
+#SBATCH --nodes=1
+#SBATCH --cpus-per-task=67
 
 # Do nothing if there is no CSV.
 if compgen -G "*.csv" > /dev/null; then
