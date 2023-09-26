@@ -105,12 +105,16 @@ def test_progressbar_dump(tmp_path: Path) -> None:
 
 
 class _EarlyStoppingTestee:
-    def __init__(self) -> None:
+    def __init__(self, val=None, multi=False) -> None:
         self.num_calls = 0
+        self.val = val
+        self.multi = False
 
-    def __call__(self, *args, **kwds) -> float:
+    def __call__(self, *args, **kwds) -> tp.Union[float, tp.Tuple]:
         self.num_calls += 1
-        return np.random.rand()
+        if self.val is not None:
+            return self.val if not self.multi else (self.val, self.val)
+        return np.random.rand() if not self.multi else (np.random.rand(), np.random.rand())
 
 
 def test_early_stopping() -> None:
@@ -126,6 +130,26 @@ def test_early_stopping() -> None:
     # below functions are included in the docstring of EarlyStopping
     assert optimizer.current_bests["minimum"].mean < 12
     assert optimizer.recommend().loss < 12  # type: ignore
+
+    # test for no improvement
+    func = _EarlyStoppingTestee(5)
+    optimizer = optimizerlib.OnePlusOne(parametrization=instrum, budget=100)
+    no_imp_window = 7
+    optimizer.register_callback(
+        "ask", ng.callbacks.EarlyStopping.no_improvement_stopper(no_imp_window)
+    )  # should get triggered
+    optimizer.minimize(func, verbosity=2)
+    assert func.num_calls == no_imp_window + 2
+
+    # test for no improvement multi objective
+    func = _EarlyStoppingTestee(5, multi=True)
+    optimizer = optimizerlib.OnePlusOne(parametrization=instrum, budget=100)
+    no_imp_window = 5
+    optimizer.register_callback(
+        "ask", ng.callbacks.EarlyStopping.no_improvement_stopper(no_imp_window)
+    )  # should get triggered
+    optimizer.minimize(func, verbosity=2)
+    assert func.num_calls == no_imp_window + 2
 
 
 def test_duration_criterion() -> None:
