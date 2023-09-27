@@ -202,3 +202,27 @@ def test_pruning_calls() -> None:
     opt.minimize(constant)
     assert isinstance(opt.pruning, utils.Pruning)
     assert opt.pruning._num_prunings < 4
+
+
+def test_stagnation() -> None:
+    # Test in the single objective case.
+    optim = ng.optimizers.OnePlusOne(2, budget=400)
+    for u in range(optim.budget):  # type: ignore
+        x = optim.ask()
+        v = int(sum(10 * ((x.value - 7.0) ** 2)))
+        optim.tell(x, v)
+        assert u > 20 or optim.stagnation_rate() < 0.8, f"At iteration {u}, we get {optim.stagnation_rate()}."
+        assert (
+            u < 380 or optim.stagnation_rate() > 0.8
+        ), f"At iteration {u}, we get {optim.stagnation_rate()}."
+
+    # Test in the multi-objective case.
+    optim = ng.optimizers.DE(2, budget=800)
+    for u in range(optim.budget):  # type: ignore
+        x = optim.ask()
+        v = int(sum(10 * ((x.value - 3.0) ** 2)))
+        optim.tell(x, ((max(0, v)), max(0, 5 - v)))
+        assert u > 10 or optim.stagnation_rate() < 0.8, f"At iteration {u}, we get {optim.stagnation_rate()}."
+        assert (
+            u < 790 or optim.stagnation_rate() > 0.8
+        ), f"At iteration {u}, we get {optim.stagnation_rate()}."
