@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import pickle
+import logging
 import warnings
 from pathlib import Path
 from numbers import Real
@@ -26,7 +27,8 @@ _OptimCallBack = tp.Union[
 X = tp.TypeVar("X", bound="Optimizer")
 Y = tp.TypeVar("Y")
 IntOrParameter = tp.Union[int, p.Parameter]
-_PruningCallable = tp.Callable[[utils.Archive[utils.MultiValue]], utils.Archive[utils.MultiValue]]
+_PruningCallable = tp.Callable[[utils.Archive[utils.MultiValue]], None]
+logger = logging.getLogger(__name__)
 
 
 def _loss(param: p.Parameter) -> float:
@@ -432,18 +434,23 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             )
         if np.isnan(loss) or loss == np.inf:
             self._warn(f"Updating fitness with {loss} value", errors.BadLossWarning)
-        mvalue: tp.Optional[utils.MultiValue] = None
+        mvalue = utils.MultiValue(candidate, loss, reference=self.parametrization)
+        if not self.archive.is_delegated:
+            # print(f"Updating archive for {candidate.uid[:8]} in {self.__class__.__name__}")
+            if x not in self.archive:
+                self.archive[x] = mvalue
+            else:  # reevaluation: needs updating
+                mvalue = self.archive[x]
+                mvalue.add_evaluation(loss)
+                # both parameters should be non-None
+                if mvalue.parameter.loss > candidate.loss:  # type: ignore
+                    mvalue.parameter = candidate  # keep best candidate
+        # the following should not happen since delegating archives are used afterwards
         if x not in self.archive:
-            self.archive[x] = utils.MultiValue(candidate, loss, reference=self.parametrization)
-        else:
-            mvalue = self.archive[x]
-            mvalue.add_evaluation(loss)
-            # both parameters should be non-None
-            if mvalue.parameter.loss > candidate.loss:  # type: ignore
-                mvalue.parameter = candidate  # keep best candidate
+            logger.warning("Archive is not correctly filled, please open an issue.")
+        mvalue = self.archive.get(x, mvalue)  # type: ignore  # update with master archive
         # update current best records
         # this may have to be improved if we want to keep more kinds of best losss
-
         for name in self.current_bests:
             if mvalue is self.current_bests[name]:  # reboot
                 best = min(self.archive.values(), key=lambda mv, n=name: mv.get_estimation(n))  # type: ignore
@@ -460,8 +467,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 #                  max(v.get_estimation(name) for v in self.archive.values()))
                 #         raise RuntimeError(f"Best value should exist in the archive at num_tell={self.num_tell})\n"
                 #                            f"Best value is {bval} and archive is within range {avals} for {name}")
-        if self.pruning is not None:
-            self.archive = self.pruning(self.archive)
+        if self.pruning is not None and not self.archive.is_delegated:
+            self.pruning(self.archive)
+            self.archive[x] = mvalue  # we must make sure that the current point is available for suboptim
 
     def ask(self) -> p.Parameter:
         """Provides a point to explore.
