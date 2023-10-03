@@ -147,7 +147,7 @@ class _DE(base.Optimizer):
             warnings.warn(
                 "DE algorithms are inefficient with budget < 60", base.errors.InefficientSettingsWarning
             )
-        self._MULTIOBJECTIVE_AUTO_BOUND = max(self._MULTIOBJECTIVE_AUTO_BOUND, self.llambda)
+        self._MULTIOBJECTIVE_AUTO_BOUND = max(self._MULTIOBJECTIVE_AUTO_BOUND, self.llambda)  # type: ignore
         self._penalize_cheap_violations = True
         self._uid_queue = base.utils.UidQueue()
         self.population: tp.Dict[str, p.Parameter] = {}
