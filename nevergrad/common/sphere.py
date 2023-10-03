@@ -1,3 +1,8 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 import scipy
 import scipy.signal
 import scipy.stats
@@ -6,6 +11,7 @@ import copy
 import numpy as np
 import itertools
 from joblib import Parallel, delayed  # type: ignore
+
 # import matplotlib as mpl
 # import matplotlib.pyplot as plt
 from collections import defaultdict
@@ -306,8 +312,8 @@ def lhs(n, shape):
 #     "covering_conv",
 #     "covering",
 # ]
-# 
-# 
+#
+#
 # def show_points(x, k):
 #     plt.clf()
 #     # fig = plt.figure()
@@ -315,7 +321,7 @@ def lhs(n, shape):
 #     # ax = fig.add_subplot(projection='3d')
 #     # ax.set_aspect("equal")
 #     # ax.view_init(elev=0., azim=0.)
-# 
+#
 #     def make_ball(a, b, c, r, col="r"):
 #         # u, v = np.mgrid[0:2*np.pi:20j, 0:np.pi:10j]
 #         # x = 0.5 + 0.5 * (a+r*np.cos(u)*np.sin(v))
@@ -329,7 +335,7 @@ def lhs(n, shape):
 #         plt.plot(
 #             [0.5, 0.5 + 0.5 * a], [0.5, 0.5 + 0.5 * b], color=col, linestyle=("dashed" if c > 0 else "solid")
 #         )
-# 
+#
 #     for i in range(len(x)):
 #         if x[i][2] > 0:
 #             make_ball(x[i][0], x[i][1], x[i][2], 0.05 * (3 / (3 + x[i][2])), "g")
@@ -561,37 +567,37 @@ data = defaultdict(lambda: defaultdict(list))  # type: ignore
 #                 .replace("]", "_")
 #                 .replace("[", "_")
 #             )
-# 
-# 
+#
+#
 # def heatmap(y, x, table, name):
 #     for cn in ["viridis", "plasma", "inferno", "magma", "cividis"]:
 #         print(f"Creating a heatmap with name {name}: {table}")
 #         plt.clf()
 #         fig, ax = plt.subplots()
 #         tab = copy.deepcopy(table)
-# 
+#
 #         for j in range(len(tab[0, :])):
 #             for i in range(len(tab)):
 #                 tab[i, j] = np.average(table[:, j] < table[i, j])
 #         print(tab)
 #         im = ax.imshow(tab, aspect="auto", cmap=mpl.colormaps[cn])
-# 
+#
 #         # Show all ticks and label them with the respective list entries
 #         ax.set_xticks(np.arange(len(x)), labels=x)
 #         ax.set_yticks(np.arange(len(y)), labels=y)
-# 
+#
 #         # Rotate the tick labels and set their alignment.
 #         plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
-# 
+#
 #         # Loop over data dimensions and create text annotations.
 #         for i in range(len(y)):
 #             for j in range(len(x)):
 #                 text = ax.text(j, i, str(tab[i, j])[:4], ha="center", va="center", color="k")
-# 
+#
 #         fig.tight_layout()
 #         plt.savefig(f"TIME{default_budget}_cmap{cn}" + name)
-# 
-# 
+#
+#
 # def create_statistics(n, shape, list_of_methods, list_of_metrics, num=1):
 #     for _ in range(num):
 #         for idx, method in enumerate(list_of_methods):

@@ -15,11 +15,12 @@ import contextlib
 import collections
 import typing as tp
 import numpy as np
-from nevergrad.common import sphere 
+from nevergrad.common import sphere
 
 
 def quasi_randomize(x: tp.Iterable[tp.Any]) -> tp.Any:
     return sphere.quasi_randomize(x)
+
 
 def pytorch_import_fix() -> None:
     """Hackfix needed before pytorch import ("dlopen: cannot load any more object with static TLS")
