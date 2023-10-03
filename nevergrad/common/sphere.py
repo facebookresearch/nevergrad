@@ -5,7 +5,7 @@ import time
 import copy
 import numpy as np
 import itertools
-from joblib import Parallel, delayed
+from joblib import Parallel, delayed  # type: ignore
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from collections import defaultdict
@@ -115,32 +115,34 @@ def dispersion(n, shape, budget=default_budget, conv=None):
     return x
 
 
-def dispersion_with_conv(n, shape, budget=default_budget, conv=[8, 8]):
-    return dispersion(n, shape, budget=budget, conv=conv)
+def dispersion_with_conv(n, shape, budget=default_budget):
+    return dispersion(n, shape, budget=budget, conv=[8, 8])
 
 
-def greedy_dispersion_with_conv(n, shape, budget=default_budget, conv=[8, 8]):
-    return greedy_dispersion(n, shape, budget=budget, conv=conv)
+def greedy_dispersion_with_conv(n, shape, budget=default_budget):
+    return greedy_dispersion(n, shape, budget=budget, conv=[8, 8])
 
 
-def dispersion_with_big_conv(n, shape, budget=default_budget, conv=[24, 24]):
-    return dispersion(n, shape, budget=budget, conv=conv)
+def dispersion_with_big_conv(n, shape, budget=default_budget):
+    return dispersion(n, shape, budget=budget, conv=[24, 24])
 
 
-def greedy_dispersion_with_big_conv(n, shape, budget=default_budget, conv=[24, 24]):
-    return greedy_dispersion(n, shape, budget=budget, conv=conv)
+def greedy_dispersion_with_big_conv(n, shape, budget=default_budget):
+    return greedy_dispersion(n, shape, budget=budget, conv=[24, 24])
 
 
-def dispersion_with_mini_conv(n, shape, budget=default_budget, conv=[2, 2]):
-    return dispersion(n, shape, budget=budget, conv=conv)
+def dispersion_with_mini_conv(n, shape, budget=default_budget):
+    return dispersion(n, shape, budget=budget, conv=[2, 2])
 
 
-def greedy_dispersion_with_mini_conv(n, shape, budget=default_budget, conv=[2, 2]):
-    return greedy_dispersion(n, shape, budget=budget, conv=conv)
+def greedy_dispersion_with_mini_conv(n, shape, budget=default_budget):
+    return greedy_dispersion(n, shape, budget=budget, conv=[2, 2])
 
 
-def block_symmetry(n, shape, num_blocks=[4, 4]):
+def block_symmetry(n, shape, num_blocks=None):
     x = []
+    if num_blocks is None:
+        num_blocks = [4, 4]
     for pindex in range(n):
         # print(f"block symmetry {pindex}/{n}")
         newx = normalize([np.random.randn(*shape)])[0]
@@ -202,12 +204,12 @@ def covering(n, shape, budget=default_budget, conv=None):
     return x
 
 
-def covering_conv(n, shape, budget=default_budget, conv=[8, 8]):
-    return covering(n, shape, budget, conv)
+def covering_conv(n, shape, budget=default_budget):
+    return covering(n, shape, budget, conv=[8, 8])
 
 
-def covering_mini_conv(n, shape, budget=default_budget, conv=[2, 2]):
-    return covering(n, shape, budget, conv)
+def covering_mini_conv(n, shape, budget=default_budget):
+    return covering(n, shape, budget, conv=[2, 2])
 
 
 def get_class(x, num_blocks, just_max):
@@ -264,12 +266,12 @@ def jittered(n, shape, num_blocks=[2, 2], just_max=False):
     return x
 
 
-def reduced_jittered(n, shape, num_blocks=[2, 2]):
-    return jittered(n, shape, num_blocks, just_max=True)
+def reduced_jittered(n, shape):
+    return jittered(n, shape, [2, 2], just_max=True)
 
 
-def covering_big_conv(n, shape, budget=default_budget, conv=[24, 24]):
-    return covering(n, shape, budget, conv)
+def covering_big_conv(n, shape, budget=default_budget):
+    return covering(n, shape, budget, [24, 24])
 
 
 def lhs(n, shape):
@@ -352,8 +354,8 @@ def metric_half(x, budget=default_budget, conv=None):
     return np.average((np.array(scores) - 0.5) ** 2)
 
 
-def metric_half_conv(x, budget=default_budget, conv=[8, 8]):
-    return metric_half(x, budget, conv=conv)
+def metric_half_conv(x, budget=default_budget):
+    return metric_half(x, budget, conv=[8, 8])
 
 
 def metric_cap(x, budget=default_budget, conv=None):
@@ -369,8 +371,8 @@ def metric_cap(x, budget=default_budget, conv=None):
     return np.std(np.array(scores))
 
 
-def metric_cap_conv(x, budget=default_budget, conv=[8, 8]):
-    return metric_cap(x, budget, conv=conv)
+def metric_cap_conv(x, budget=default_budget):
+    return metric_cap(x, budget, conv=[8, 8])
 
 
 def metric_pack_avg(x, budget=default_budget, conv=None):
@@ -385,8 +387,8 @@ def metric_pack_avg(x, budget=default_budget, conv=None):
     return np.average(scores)
 
 
-def metric_pack_avg_conv(x, budget=default_budget, conv=[8, 8]):
-    return metric_pack_avg(x, budget=default_budget, conv=conv)
+def metric_pack_avg_conv(x, budget=default_budget):
+    return metric_pack_avg(x, budget=default_budget, conv=[8, 8])
 
 
 def metric_pack(x, budget=default_budget, conv=None):
@@ -401,8 +403,8 @@ def metric_pack(x, budget=default_budget, conv=None):
     return max(scores)
 
 
-def metric_pack_conv(x, budget=default_budget, conv=[8, 8]):
-    return metric_pack(x, budget=default_budget, conv=conv)
+def metric_pack_conv(x, budget=default_budget):
+    return metric_pack(x, budget=default_budget, conv=[8, 8])
 
 
 list_of_methods = [
@@ -541,7 +543,7 @@ def rs_ng_DiagonalCMA(n, shape, budget=default_budget):
     return rs_metric(n, shape, budget, k="all", ngtool="DiagonalCMA")
 
 
-data = defaultdict(lambda: defaultdict(list))
+data = defaultdict(lambda: defaultdict(list))  # type: ignore
 
 
 def do_plot(tit, values):
