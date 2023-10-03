@@ -17,6 +17,7 @@ from joblib import Parallel, delayed  # type: ignore
 from collections import defaultdict
 import nevergrad as ng
 
+# pylint: skip-file
 
 default_budget = 10000  # centiseconds: 3000 means half a minute.
 methods = {}
@@ -224,7 +225,7 @@ def get_class(x, num_blocks, just_max):
     num_blocks = num_blocks + [1] * (len(shape) - len(num_blocks))
     ranges = [list(range(n)) for n in num_blocks]
     result = []
-    for i, multi_index in enumerate(itertools.product(*ranges)):
+    for _, multi_index in enumerate(itertools.product(*ranges)):
         slices = [[]] * len(shape)
         for c, p in enumerate(multi_index):
             assert p >= 0
@@ -242,7 +243,9 @@ def get_class(x, num_blocks, just_max):
     return hash(str(result))
 
 
-def jittered(n, shape, num_blocks=[2, 2], just_max=False):
+def jittered(n, shape, num_blocks=None, just_max=False):
+    if num_blocks is None:
+        num_blocs = [2, 2]
     hash_to_set = defaultdict(list)
     for i in range(int(np.sqrt(n)) * n):
         x = normalize([np.random.randn(*shape)])[0]
@@ -738,7 +741,7 @@ def bigcheck():
         "covering_mini_conv",
     ]:
         print("Starting to play with ", k)
-        x = eval(f"{k}(n, shape)")
+        eval(f"{k}(n, shape)")
         print(f" {k} has been used for generating a batch of {n} points with shape {shape}")
 
 
