@@ -289,6 +289,8 @@ def test_optimizers_minimal(name: str) -> None:
             "Meta",
             "Voronoi",
             "tuning",
+            "QrDE",
+            "BIPOP",
             "ECMA",
             "CMAstd",
             "_COBYLA",
