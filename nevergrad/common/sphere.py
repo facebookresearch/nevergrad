@@ -772,7 +772,7 @@ def quasi_randomize(pointset, method="greedy_dispersion"):
     n = len(pointset)
     shape = [int(i) for i in list(pointset[0].shape)]
     norms = [np.linalg.norm(pointset[i]) for i in range(n)]
-    x = normalize(get_a_point_set(n, shape, method))
+    _, x = normalize(get_a_point_set(n, shape, method))
     for i in range(n):
         x[i] = norms[i] * x[i]
     return x
