@@ -19,7 +19,7 @@ import nevergrad as ng
 
 # pylint: skip-file
 
-default_budget = 10000  # centiseconds: 3000 means half a minute.
+default_budget = 3000  # centiseconds
 methods = {}
 metrics = {}
 
@@ -768,11 +768,18 @@ def get_a_point_set(n, shape, method=None):
 # k, x = get_a_point_set(50, (64, 64, 4))
 
 
-def quasi_randomize(pointset, method="greedy_dispersion"):
+def quasi_randomize(pointset, method):
     n = len(pointset)
     shape = [int(i) for i in list(pointset[0].shape)]
     norms = [np.linalg.norm(pointset[i]) for i in range(n)]
-    _, x = normalize(get_a_point_set(n, shape, method))
+    if method == "none":
+        if len(shape) > 1 and shape[0] > 5:
+            x = dispersion(n, shape, [int(s / 3) for s in list(shape)[:-1]])
+        else:
+            x = rs_metric_all(n, shape)
+    else:
+        x = get_a_point_set(n, shape, method)
+    x = normalize(x)
     for i in range(n):
         x[i] = norms[i] * x[i]
     return x
