@@ -2090,7 +2090,7 @@ class FSQPCMA(Portfolio):
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        num_workers = max(num_workers, int(np.sqrt(budget)))
+        num_workers = max(num_workers, int(np.sqrt(budget)))  # type: ignore
         cma_workers = num_workers // 2
         optims: tp.List[base.Optimizer] = [
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
@@ -2110,7 +2110,7 @@ class F2SQPCMA(Portfolio):
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        num_workers = max(num_workers, int(np.log(budget)))
+        num_workers = max(num_workers, int(np.log(budget)))  # type: ignore
         cma_workers = num_workers // 2
         optims: tp.List[base.Optimizer] = [
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
@@ -2130,12 +2130,17 @@ class F3SQPCMA(Portfolio):
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        num_workers = max(num_workers, int(np.sqrt(budget)))
+        num_workers = max(num_workers, int(np.sqrt(budget)))  # type: ignore
         cma_workers = num_workers // 2
         optims: tp.List[base.Optimizer] = [
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
-        optims += [Rescaled(base_optimizer=SQP, scale=np.exp(-1./ np.random.rand()))(self.parametrization, num_workers=1) for _ in range(num_workers - cma_workers)]
+        optims += [
+            Rescaled(base_optimizer=SQP, scale=np.exp(-1.0 / np.random.rand()))(
+                self.parametrization, num_workers=1
+            )
+            for _ in range(num_workers - cma_workers)
+        ]
         for opt in optims[2:]:  # make sure initializations differ
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
         self.optims.clear()
@@ -3511,67 +3516,68 @@ class NGOptRW(NGOpt39):
 @registry.register
 class NGOptF(NGOpt39):
     def _select_optimizer_cls(self) -> base.OptCls:
-        
-        
-        best = defaultdict(lambda: defaultdict(list))
+
+        best = defaultdict(lambda: defaultdict(list))  # type: ignore
+
         def recommend_method(d, nod):
-            best[12][833.333]+=["MemeticDE"]
-            best[12][83.3333]+=["MemeticDE"]
-            best[12][8.33333]+=["RealSpacePSO"]
-            best[12][0.833333]+=["CauchyOnePlusOne"]
-            best[12][833.333]+=["VLPCMA"]
-            best[12][83.3333]+=["NLOPT_LN_SBPLX"]
-            best[12][8.33333]+=["NLOPT_LN_SBPLX"]
-            best[12][0.833333]+=["NLOPT_LN_SBPLX"]
-            best[12][833.333]+=["VLPCMA"]
-            best[12][83.3333]+=["MemeticDE"]
-            best[12][8.33333]+=["SMAC3"]
-            best[12][0.833333]+=["Cobyla"]
-            best[24][416.667]+=["VLPCMA"]
-            best[24][41.6667]+=["Wiz"]
-            best[24][4.16667]+=["NLOPT_LN_SBPLX"]
-            best[24][0.416667]+=["Cobyla"]
-            best[24][416.667]+=["NLOPT_LN_SBPLX"]
-            best[24][41.6667]+=["Wiz"]
-            best[24][4.16667]+=["NLOPT_LN_SBPLX"]
-            best[24][0.416667]+=["NLOPT_LN_SBPLX"]
-            best[24][416.667]+=["ChainDiagonalCMAPowell"]
-            best[24][41.6667]+=["NLOPT_LN_SBPLX"]
-            best[24][4.16667]+=["QORealSpacePSO"]
-            best[24][0.416667]+=["Cobyla"]
-            best[2][5000]+=["NGOpt16"]
-            best[2][500]+=["LhsDE"]
-            best[2][50]+=["SODE"]
-            best[2][5]+=["Carola2"]
-            best[2][5000]+=["MetaModelQODE"]
-            best[2][500]+=["MetaModelQODE"]
-            best[2][50]+=["PCABO"]
-            best[2][5]+=["HammersleySearchPlusMiddlePoint"]
-            best[2][5000]+=["QORealSpacePSO"]
-            best[2][500]+=["ChainDiagonalCMAPowell"]
-            best[2][50]+=["MetaModelQODE"]
-            best[2][5]+=["Cobyla"]
-            best[5][2000]+=["MemeticDE"]
-            best[5][200]+=["MemeticDE"]
-            best[5][20]+=["LhsDE"]
-            best[5][2]+=["MultiSQP"]
-            best[5][2000]+=["MemeticDE"]
-            best[5][200]+=["LhsDE"]
-            best[5][20]+=["LhsDE"]
-            best[5][2]+=["NLOPT_LN_SBPLX"]
-            best[5][2000]+=["LhsDE"]
-            best[5][200]+=["VLPCMA"]
-            best[5][20]+=["BayesOptimBO"]
-            best[5][2]+=["NLOPT_LN_SBPLX"]
-            best[96][0.104167]+=["PCABO"]
-            bestdist = float('inf')
+            best[12][833.333] += ["MemeticDE"]
+            best[12][83.3333] += ["MemeticDE"]
+            best[12][8.33333] += ["RealSpacePSO"]
+            best[12][0.833333] += ["CauchyOnePlusOne"]
+            best[12][833.333] += ["VLPCMA"]
+            best[12][83.3333] += ["NLOPT_LN_SBPLX"]
+            best[12][8.33333] += ["NLOPT_LN_SBPLX"]
+            best[12][0.833333] += ["NLOPT_LN_SBPLX"]
+            best[12][833.333] += ["VLPCMA"]
+            best[12][83.3333] += ["MemeticDE"]
+            best[12][8.33333] += ["SMAC3"]
+            best[12][0.833333] += ["Cobyla"]
+            best[24][416.667] += ["VLPCMA"]
+            best[24][41.6667] += ["Wiz"]
+            best[24][4.16667] += ["NLOPT_LN_SBPLX"]
+            best[24][0.416667] += ["Cobyla"]
+            best[24][416.667] += ["NLOPT_LN_SBPLX"]
+            best[24][41.6667] += ["Wiz"]
+            best[24][4.16667] += ["NLOPT_LN_SBPLX"]
+            best[24][0.416667] += ["NLOPT_LN_SBPLX"]
+            best[24][416.667] += ["ChainDiagonalCMAPowell"]
+            best[24][41.6667] += ["NLOPT_LN_SBPLX"]
+            best[24][4.16667] += ["QORealSpacePSO"]
+            best[24][0.416667] += ["Cobyla"]
+            best[2][5000] += ["NGOpt16"]
+            best[2][500] += ["LhsDE"]
+            best[2][50] += ["SODE"]
+            best[2][5] += ["Carola2"]
+            best[2][5000] += ["MetaModelQODE"]
+            best[2][500] += ["MetaModelQODE"]
+            best[2][50] += ["PCABO"]
+            best[2][5] += ["HammersleySearchPlusMiddlePoint"]
+            best[2][5000] += ["QORealSpacePSO"]
+            best[2][500] += ["ChainDiagonalCMAPowell"]
+            best[2][50] += ["MetaModelQODE"]
+            best[2][5] += ["Cobyla"]
+            best[5][2000] += ["MemeticDE"]
+            best[5][200] += ["MemeticDE"]
+            best[5][20] += ["LhsDE"]
+            best[5][2] += ["MultiSQP"]
+            best[5][2000] += ["MemeticDE"]
+            best[5][200] += ["LhsDE"]
+            best[5][20] += ["LhsDE"]
+            best[5][2] += ["NLOPT_LN_SBPLX"]
+            best[5][2000] += ["LhsDE"]
+            best[5][200] += ["VLPCMA"]
+            best[5][20] += ["BayesOptimBO"]
+            best[5][2] += ["NLOPT_LN_SBPLX"]
+            best[96][0.104167] += ["PCABO"]
+            bestdist = float("inf")
             for d1 in best:
                 for nod2 in best[d1]:
-                    dist = (d-d1)**2 + (nod-nod2)**2
+                    dist = (d - d1) ** 2 + (nod - nod2) ** 2
                     if dist < bestdist:
                         bestdist = dist
                         bestalg = best[d1][nod2]
             return bestalg
+
         if self.fully_continuous and not self.has_noise:
             algs = recommend_method(self.dimension, self.budget / self.dimension)
             if self.num_workers > 1:
@@ -3579,89 +3585,90 @@ class NGOptF(NGOpt39):
                 if len(algs) == 0:
                     return SQPCMA
             return ConfPortfolio(optimizers=[registry[a] for a in algs], warmup_ratio=0.6)
-                    
+
         if self.fully_continuous and not self.has_noise and self.budget >= 12 * self.dimension:  # type: ignore
             return ConfPortfolio(optimizers=[GeneticDE, PSO, NGOpt39], warmup_ratio=0.33)
         else:
             return super()._select_optimizer_cls()
 
 
-
-
 @registry.register
 class NGOptF2(NGOpt39):
     def _select_optimizer_cls(self) -> base.OptCls:
-        
-        
-        best = defaultdict(lambda: defaultdict(list))
+
+        best = defaultdict(lambda: defaultdict(list))  # type: ignore
+
         def recommend_method(d, nod):
-            best[12][833.333]+=["MemeticDE"]
-            best[12][83.3333]+=["MemeticDE"]
-            best[12][8.33333]+=["RealSpacePSO"]
-            best[12][0.833333]+=["CauchyOnePlusOne"]
-            best[12][833.333]+=["VLPCMA"]
-            best[12][83.3333]+=["NLOPT_LN_SBPLX"]
-            best[12][8.33333]+=["NLOPT_LN_SBPLX"]
-            best[12][0.833333]+=["NLOPT_LN_SBPLX"]
-            best[12][833.333]+=["VLPCMA"]
-            best[12][83.3333]+=["MemeticDE"]
-            best[12][8.33333]+=["SMAC3"]
-            best[12][0.833333]+=["Cobyla"]
-            best[24][416.667]+=["VLPCMA"]
-            best[24][41.6667]+=["Wiz"]
-            best[24][4.16667]+=["NLOPT_LN_SBPLX"]
-            best[24][0.416667]+=["Cobyla"]
-            best[24][416.667]+=["NLOPT_LN_SBPLX"]
-            best[24][41.6667]+=["Wiz"]
-            best[24][4.16667]+=["NLOPT_LN_SBPLX"]
-            best[24][0.416667]+=["NLOPT_LN_SBPLX"]
-            best[24][416.667]+=["ChainDiagonalCMAPowell"]
-            best[24][41.6667]+=["NLOPT_LN_SBPLX"]
-            best[24][4.16667]+=["QORealSpacePSO"]
-            best[24][0.416667]+=["Cobyla"]
-            best[2][5000]+=["NGOpt16"]
-            best[2][500]+=["LhsDE"]
-            best[2][50]+=["SODE"]
-            best[2][5]+=["Carola2"]
-            best[2][5000]+=["MetaModelQODE"]
-            best[2][500]+=["MetaModelQODE"]
-            best[2][50]+=["PCABO"]
-            best[2][5]+=["HammersleySearchPlusMiddlePoint"]
-            best[2][5000]+=["QORealSpacePSO"]
-            best[2][500]+=["ChainDiagonalCMAPowell"]
-            best[2][50]+=["MetaModelQODE"]
-            best[2][5]+=["Cobyla"]
-            best[5][2000]+=["MemeticDE"]
-            best[5][200]+=["MemeticDE"]
-            best[5][20]+=["LhsDE"]
-            best[5][2]+=["MultiSQP"]
-            best[5][2000]+=["MemeticDE"]
-            best[5][200]+=["LhsDE"]
-            best[5][20]+=["LhsDE"]
-            best[5][2]+=["NLOPT_LN_SBPLX"]
-            best[5][2000]+=["LhsDE"]
-            best[5][200]+=["VLPCMA"]
-            best[5][20]+=["BayesOptimBO"]
-            best[5][2]+=["NLOPT_LN_SBPLX"]
-            best[96][0.104167]+=["PCABO"]
-            bestdist = float('inf')
+            best[12][833.333] += ["MemeticDE"]
+            best[12][83.3333] += ["MemeticDE"]
+            best[12][8.33333] += ["RealSpacePSO"]
+            best[12][0.833333] += ["CauchyOnePlusOne"]
+            best[12][833.333] += ["VLPCMA"]
+            best[12][83.3333] += ["NLOPT_LN_SBPLX"]
+            best[12][8.33333] += ["NLOPT_LN_SBPLX"]
+            best[12][0.833333] += ["NLOPT_LN_SBPLX"]
+            best[12][833.333] += ["VLPCMA"]
+            best[12][83.3333] += ["MemeticDE"]
+            best[12][8.33333] += ["SMAC3"]
+            best[12][0.833333] += ["Cobyla"]
+            best[24][416.667] += ["VLPCMA"]
+            best[24][41.6667] += ["Wiz"]
+            best[24][4.16667] += ["NLOPT_LN_SBPLX"]
+            best[24][0.416667] += ["Cobyla"]
+            best[24][416.667] += ["NLOPT_LN_SBPLX"]
+            best[24][41.6667] += ["Wiz"]
+            best[24][4.16667] += ["NLOPT_LN_SBPLX"]
+            best[24][0.416667] += ["NLOPT_LN_SBPLX"]
+            best[24][416.667] += ["ChainDiagonalCMAPowell"]
+            best[24][41.6667] += ["NLOPT_LN_SBPLX"]
+            best[24][4.16667] += ["QORealSpacePSO"]
+            best[24][0.416667] += ["Cobyla"]
+            best[2][5000] += ["NGOpt16"]
+            best[2][500] += ["LhsDE"]
+            best[2][50] += ["SODE"]
+            best[2][5] += ["Carola2"]
+            best[2][5000] += ["MetaModelQODE"]
+            best[2][500] += ["MetaModelQODE"]
+            best[2][50] += ["PCABO"]
+            best[2][5] += ["HammersleySearchPlusMiddlePoint"]
+            best[2][5000] += ["QORealSpacePSO"]
+            best[2][500] += ["ChainDiagonalCMAPowell"]
+            best[2][50] += ["MetaModelQODE"]
+            best[2][5] += ["Cobyla"]
+            best[5][2000] += ["MemeticDE"]
+            best[5][200] += ["MemeticDE"]
+            best[5][20] += ["LhsDE"]
+            best[5][2] += ["MultiSQP"]
+            best[5][2000] += ["MemeticDE"]
+            best[5][200] += ["LhsDE"]
+            best[5][20] += ["LhsDE"]
+            best[5][2] += ["NLOPT_LN_SBPLX"]
+            best[5][2000] += ["LhsDE"]
+            best[5][200] += ["VLPCMA"]
+            best[5][20] += ["BayesOptimBO"]
+            best[5][2] += ["NLOPT_LN_SBPLX"]
+            best[96][0.104167] += ["PCABO"]
+            bestdist = float("inf")
             for d1 in best:
                 for nod2 in best[d1]:
-                    dist = (d-d1)**2 + (nod-nod2)**2
+                    dist = (d - d1) ** 2 + (nod - nod2) ** 2
                     if dist < bestdist:
                         bestdist = dist
                         bestalg = best[d1][nod2]
             return bestalg
+
         if self.fully_continuous and not self.has_noise:
             algs = recommend_method(self.dimension, self.budget / self.dimension)
             if self.num_workers > 1:
                 algs = [a for a in algs if not registry[a].no_parallelization]
                 if len(algs) == 0:
                     return SQPCMA
+
             def most_frequent(List):
-                return max(set(List), key = List.count)
+                return max(set(List), key=List.count)
+
             return registry[most_frequent(algs)]
-                    
+
         if self.fully_continuous and not self.has_noise and self.budget >= 12 * self.dimension:  # type: ignore
             return ConfPortfolio(optimizers=[GeneticDE, PSO, NGOpt39], warmup_ratio=0.33)
         else:
@@ -3671,112 +3678,115 @@ class NGOptF2(NGOpt39):
 @registry.register
 class NGOptF3(NGOpt39):
     def _select_optimizer_cls(self) -> base.OptCls:
-        
-        
-        best = defaultdict(lambda: defaultdict(list))
+
+        best = defaultdict(lambda: defaultdict(list))  # type: ignore
+
         def recommend_method(d, nod):
-            best[12][833.333]+=["MemeticDE"]
-            best[12][83.3333]+=["NGOptRW"]
-            best[12][8.33333]+=["RealSpacePSO"]
-            best[12][0.833333]+=["ASCMADEthird"]
-            best[12][8333.33]+=["GeneticDE"]
-            best[12][833.333]+=["TripleCMA"]
-            best[12][83.3333]+=["NLOPT_LN_SBPLX"]
-            best[12][8.33333]+=["NLOPT_LN_SBPLX"]
-            best[12][0.833333]+=["NLOPT_LN_SBPLX"]
-            best[12][8333.33]+=["GeneticDE"]
-            best[12][833.333]+=["VLPCMA"]
-            best[12][83.3333]+=["MemeticDE"]
-            best[12][8.33333]+=["SMAC3"]
-            best[12][0.833333]+=["Cobyla"]
-            best[24][416.667]+=["VLPCMA"]
-            best[24][41.6667]+=["Wiz"]
-            best[24][4.16667]+=["NLOPT_LN_SBPLX"]
-            best[24][0.416667]+=["Cobyla"]
-            best[24][4166.67]+=["NGOptF"]
-            best[24][416.667]+=["NLOPT_LN_SBPLX"]
-            best[24][41.6667]+=["ChainNaiveTBPSAPowell"]
-            best[24][4.16667]+=["NLOPT_LN_SBPLX"]
-            best[24][0.416667]+=["NLOPT_LN_NELDERMEAD"]
-            best[24][4166.67]+=["Carola1"]
-            best[24][416.667]+=["ChainDiagonalCMAPowell"]
-            best[24][41.6667]+=["NLOPT_LN_SBPLX"]
-            best[24][4.16667]+=["NLOPT_GN_CRS2_LM"]
-            best[24][0.416667]+=["Cobyla"]
-            best[2][500000]+=["NGOptF2"]
-            best[2][50000]+=["NeuralMetaModelDE"]
-            best[2][5000]+=["ASCMADEthird"]
-            best[2][500]+=["LQODE"]
-            best[2][50]+=["SODE"]
-            best[2][5]+=["Carola2"]
-            best[2][500000]+=["NLOPT_GN_CRS2_LM"]
-            best[2][50000]+=["NGOptF2"]
-            best[2][5000]+=["MetaModelQODE"]
-            best[2][500]+=["MetaModelQODE"]
-            best[2][50]+=["PCABO"]
-            best[2][5]+=["HammersleySearchPlusMiddlePoint"]
-            best[2][500000]+=["NGOptF"]
-            best[2][50000]+=["NGOptF"]
-            best[2][5000]+=["LQODE"]
-            best[2][500]+=["ChainDiagonalCMAPowell"]
-            best[2][50]+=["NLOPT_GN_DIRECT"]
-            best[2][5]+=["Cobyla"]
-            best[48][20.8333]+=["RLSOnePlusOne"]
-            best[48][2.08333]+=["NGOptF"]
-            best[48][0.208333]+=["NGOptF2"]
-            best[48][208.333]+=["MetaModelQODE"]
-            best[48][20.8333]+=["DiscreteLengler2OnePlusOne"]
-            best[48][2.08333]+=["NGOptF"]
-            best[48][0.208333]+=["NGOptF2"]
-            best[48][2083.33]+=["NGOptF2"]
-            best[48][208.333]+=["ChainNaiveTBPSAPowell"]
-            best[48][20.8333]+=["ChainNaiveTBPSAPowell"]
-            best[48][2.08333]+=["NLOPT_LN_NELDERMEAD"]
-            best[48][0.208333]+=["BOBYQA"]
-            best[5][20000]+=["NGOptF"]
-            best[5][2000]+=["MemeticDE"]
-            best[5][200]+=["TwoPointsDE"]
-            best[5][20]+=["NGOptF2"]
-            best[5][2]+=["MultiSQP"]
-            best[5][20000]+=["CmaFmin2"]
-            best[5][2000]+=["DiscreteDE"]
-            best[5][200]+=["LhsDE"]
-            best[5][20]+=["SMAC3"]
-            best[5][2]+=["NLOPT_LN_SBPLX"]
-            best[5][200000]+=["LQODE"]
-            best[5][20000]+=["NGOptF"]
-            best[5][2000]+=["LhsDE"]
-            best[5][200]+=["FCMA"]
-            best[5][20]+=["SMAC3"]
-            best[5][2]+=["NLOPT_LN_SBPLX"]
-            best[96][10.4167]+=["Carola2"]
-            best[96][1.04167]+=["ChainDiagonalCMAPowell"]
-            best[96][0.104167]+=["MetaModelQODE"]
-            best[96][10.4167]+=["NGOpt8"]
-            best[96][1.04167]+=["ChoiceBase"]
-            best[96][0.104167]+=["Carola1"]
-            best[96][104.167]+=["NGOptF"]
-            best[96][10.4167]+=["CMandAS3"]
-            best[96][1.04167]+=["ASCMADEthird"]
-            best[96][0.104167]+=["CMAtuning"]
-            bestdist = float('inf')
+            best[12][833.333] += ["MemeticDE"]
+            best[12][83.3333] += ["NGOptRW"]
+            best[12][8.33333] += ["RealSpacePSO"]
+            best[12][0.833333] += ["ASCMADEthird"]
+            best[12][8333.33] += ["GeneticDE"]
+            best[12][833.333] += ["TripleCMA"]
+            best[12][83.3333] += ["NLOPT_LN_SBPLX"]
+            best[12][8.33333] += ["NLOPT_LN_SBPLX"]
+            best[12][0.833333] += ["NLOPT_LN_SBPLX"]
+            best[12][8333.33] += ["GeneticDE"]
+            best[12][833.333] += ["VLPCMA"]
+            best[12][83.3333] += ["MemeticDE"]
+            best[12][8.33333] += ["SMAC3"]
+            best[12][0.833333] += ["Cobyla"]
+            best[24][416.667] += ["VLPCMA"]
+            best[24][41.6667] += ["Wiz"]
+            best[24][4.16667] += ["NLOPT_LN_SBPLX"]
+            best[24][0.416667] += ["Cobyla"]
+            best[24][4166.67] += ["NGOptF"]
+            best[24][416.667] += ["NLOPT_LN_SBPLX"]
+            best[24][41.6667] += ["ChainNaiveTBPSAPowell"]
+            best[24][4.16667] += ["NLOPT_LN_SBPLX"]
+            best[24][0.416667] += ["NLOPT_LN_NELDERMEAD"]
+            best[24][4166.67] += ["Carola1"]
+            best[24][416.667] += ["ChainDiagonalCMAPowell"]
+            best[24][41.6667] += ["NLOPT_LN_SBPLX"]
+            best[24][4.16667] += ["NLOPT_GN_CRS2_LM"]
+            best[24][0.416667] += ["Cobyla"]
+            best[2][500000] += ["NGOptF2"]
+            best[2][50000] += ["NeuralMetaModelDE"]
+            best[2][5000] += ["ASCMADEthird"]
+            best[2][500] += ["LQODE"]
+            best[2][50] += ["SODE"]
+            best[2][5] += ["Carola2"]
+            best[2][500000] += ["NLOPT_GN_CRS2_LM"]
+            best[2][50000] += ["NGOptF2"]
+            best[2][5000] += ["MetaModelQODE"]
+            best[2][500] += ["MetaModelQODE"]
+            best[2][50] += ["PCABO"]
+            best[2][5] += ["HammersleySearchPlusMiddlePoint"]
+            best[2][500000] += ["NGOptF"]
+            best[2][50000] += ["NGOptF"]
+            best[2][5000] += ["LQODE"]
+            best[2][500] += ["ChainDiagonalCMAPowell"]
+            best[2][50] += ["NLOPT_GN_DIRECT"]
+            best[2][5] += ["Cobyla"]
+            best[48][20.8333] += ["RLSOnePlusOne"]
+            best[48][2.08333] += ["NGOptF"]
+            best[48][0.208333] += ["NGOptF2"]
+            best[48][208.333] += ["MetaModelQODE"]
+            best[48][20.8333] += ["DiscreteLengler2OnePlusOne"]
+            best[48][2.08333] += ["NGOptF"]
+            best[48][0.208333] += ["NGOptF2"]
+            best[48][2083.33] += ["NGOptF2"]
+            best[48][208.333] += ["ChainNaiveTBPSAPowell"]
+            best[48][20.8333] += ["ChainNaiveTBPSAPowell"]
+            best[48][2.08333] += ["NLOPT_LN_NELDERMEAD"]
+            best[48][0.208333] += ["BOBYQA"]
+            best[5][20000] += ["NGOptF"]
+            best[5][2000] += ["MemeticDE"]
+            best[5][200] += ["TwoPointsDE"]
+            best[5][20] += ["NGOptF2"]
+            best[5][2] += ["MultiSQP"]
+            best[5][20000] += ["CmaFmin2"]
+            best[5][2000] += ["DiscreteDE"]
+            best[5][200] += ["LhsDE"]
+            best[5][20] += ["SMAC3"]
+            best[5][2] += ["NLOPT_LN_SBPLX"]
+            best[5][200000] += ["LQODE"]
+            best[5][20000] += ["NGOptF"]
+            best[5][2000] += ["LhsDE"]
+            best[5][200] += ["FCMA"]
+            best[5][20] += ["SMAC3"]
+            best[5][2] += ["NLOPT_LN_SBPLX"]
+            best[96][10.4167] += ["Carola2"]
+            best[96][1.04167] += ["ChainDiagonalCMAPowell"]
+            best[96][0.104167] += ["MetaModelQODE"]
+            best[96][10.4167] += ["NGOpt8"]
+            best[96][1.04167] += ["ChoiceBase"]
+            best[96][0.104167] += ["Carola1"]
+            best[96][104.167] += ["NGOptF"]
+            best[96][10.4167] += ["CMandAS3"]
+            best[96][1.04167] += ["ASCMADEthird"]
+            best[96][0.104167] += ["CMAtuning"]
+            bestdist = float("inf")
             for d1 in best:
                 for nod2 in best[d1]:
-                    dist = (d-d1)**2 + (nod-nod2)**2
+                    dist = (d - d1) ** 2 + (nod - nod2) ** 2
                     if dist < bestdist:
                         bestdist = dist
                         bestalg = best[d1][nod2]
             return bestalg
+
         if self.fully_continuous and not self.has_noise:
             algs = recommend_method(self.dimension, self.budget / self.dimension)
             if self.num_workers > 1:
                 algs = [a for a in algs if not registry[a].no_parallelization]
                 if len(algs) == 0:
                     return SQPCMA
+
             def most_frequent(List):
-                return max(set(List), key = List.count)
+                return max(set(List), key=List.count)
+
             return registry[most_frequent(algs)]
-                    
+
         if self.fully_continuous and not self.has_noise and self.budget >= 12 * self.dimension:  # type: ignore
             return ConfPortfolio(optimizers=[GeneticDE, PSO, NGOpt39], warmup_ratio=0.33)
         else:
@@ -3786,127 +3796,130 @@ class NGOptF3(NGOpt39):
 @registry.register
 class NGOptF5(NGOpt39):
     def _select_optimizer_cls(self) -> base.OptCls:
-        
-        
-        best = defaultdict(lambda: defaultdict(list))
+
+        best = defaultdict(lambda: defaultdict(list))  # type: ignore
+
         def recommend_method(d, nod):
-            best[12][8333.33]+=["DiscreteDE"]
-            best[12][833.333]+=["DiscreteDE"]
-            best[12][83.3333]+=["MetaModelDE"]
-            best[12][8.33333]+=["NGOpt"]
-            best[12][0.833333]+=["NLOPT_GN_DIRECT_L"]
-            best[12][83333.3]+=["RPowell"]
-            best[12][8333.33]+=["DiscreteDE"]
-            best[12][833.333]+=["NLOPT_GN_ISRES"]
-            best[12][83.3333]+=["SMAC3"]
-            best[12][8.33333]+=["NGOpt"]
-            best[12][0.833333]+=["NLOPT_LN_SBPLX"]
-            best[12][83333.3]+=["NGOptBase"]
-            best[12][8333.33]+=["RPowell"]
-            best[12][833.333]+=["ChainMetaModelPowell"]
-            best[12][83.3333]+=["RotatedTwoPointsDE"]
-            best[12][8.33333]+=["NGOpt39"]
-            best[12][0.833333]+=["NLOPT_LN_NEWUOA_BOUND"]
-            best[24][4166.67]+=["CmaFmin2"]
-            best[24][416.667]+=["CmaFmin2"]
-            best[24][41.6667]+=["CmaFmin2"]
-            best[24][4.16667]+=["NLOPT_LN_SBPLX"]
-            best[24][0.416667]+=["Cobyla"]
-            best[24][41666.7]+=["MultiCMA"]
-            best[24][4166.67]+=["CmaFmin2"]
-            best[24][416.667]+=["RotatedTwoPointsDE"]
-            best[24][41.6667]+=["CmaFmin2"]
-            best[24][4.16667]+=["pysot"]
-            best[24][0.416667]+=["NLOPT_LN_NELDERMEAD"]
-            best[24][41666.7]+=["MultiCMA"]
-            best[24][4166.67]+=["Shiwa"]
-            best[24][416.667]+=["CmaFmin2"]
-            best[24][41.6667]+=["NLOPT_GN_CRS2_LM"]
-            best[24][4.16667]+=["NLOPT_GN_CRS2_LM"]
-            best[24][0.416667]+=["Cobyla"]
-            best[2][500000]+=["BAR"]
-            best[2][50000]+=["ASCMADEthird"]
-            best[2][5000]+=["ChainMetaModelPowell"]
-            best[2][500]+=["DiscreteDE"]
-            best[2][50]+=["RFMetaModelOnePlusOne"]
-            best[2][5]+=["Carola2"]
-            best[2][500000]+=["BAR3"]
-            best[2][50000]+=["ChainCMAPowell"]
-            best[2][5000]+=["ASCMADEthird"]
-            best[2][500]+=["NeuralMetaModelTwoPointsDE"]
-            best[2][50]+=["CMandAS2"]
-            best[2][5]+=["NaiveTBPSA"]
-            best[2][500000]+=["BAR"]
-            best[2][50000]+=["ASCMADEthird"]
-            best[2][5000]+=["CM"]
-            best[2][500]+=["ChainDiagonalCMAPowell"]
-            best[2][50]+=["Powell"]
-            best[2][5]+=["Cobyla"]
-            best[48][208.333]+=["DiscreteDE"]
-            best[48][20.8333]+=["pysot"]
-            best[48][2.08333]+=["MultiCobyla"]
-            best[48][0.208333]+=["NLOPT_LN_NELDERMEAD"]
-            best[48][2083.33]+=["RPowell"]
-            best[48][208.333]+=["CmaFmin2"]
-            best[48][20.8333]+=["RPowell"]
-            best[48][2.08333]+=["pysot"]
-            best[48][0.208333]+=["BOBYQA"]
-            best[48][20833.3]+=["MetaModelTwoPointsDE"]
-            best[48][2083.33]+=["RPowell"]
-            best[48][208.333]+=["DiscreteDE"]
-            best[48][20.8333]+=["ChainNaiveTBPSACMAPowell"]
-            best[48][2.08333]+=["NLOPT_LN_BOBYQA"]
-            best[48][0.208333]+=["BOBYQA"]
-            best[5][200000]+=["RescaledCMA"]
-            best[5][20000]+=["RFMetaModelDE"]
-            best[5][2000]+=["DiscreteDE"]
-            best[5][200]+=["TwoPointsDE"]
-            best[5][20]+=["NGOpt39"]
-            best[5][2]+=["OnePlusLambda"]
-            best[5][200000]+=["BAR"]
-            best[5][20000]+=["ChainNaiveTBPSACMAPowell"]
-            best[5][2000]+=["CmaFmin2"]
-            best[5][200]+=["RotatedTwoPointsDE"]
-            best[5][20]+=["pysot"]
-            best[5][2]+=["NLOPT_LN_SBPLX"]
-            best[5][200000]+=["ASCMADEthird"]
-            best[5][20000]+=["ASCMADEthird"]
-            best[5][2000]+=["QOTPDE"]
-            best[5][200]+=["NGOpt10"]
-            best[5][20]+=["LQODE"]
-            best[5][2]+=["NLOPT_LN_SBPLX"]
-            best[96][104.167]+=["NGOptF"]
-            best[96][10.4167]+=["NGOpt4"]
-            best[96][1.04167]+=["RPowell"]
-            best[96][0.104167]+=["ASCMADEthird"]
-            best[96][1041.67]+=["NLOPT_LN_NELDERMEAD"]
-            best[96][104.167]+=["RPowell"]
-            best[96][10.4167]+=["NGOpt8"]
-            best[96][1.04167]+=["RPowell"]
-            best[96][0.104167]+=["NLOPT_LN_NELDERMEAD"]
-            best[96][1041.67]+=["CMandAS3"]
-            best[96][104.167]+=["Powell"]
-            best[96][10.4167]+=["NGOptBase"]
-            best[96][1.04167]+=["Powell"]
-            best[96][0.104167]+=["NLOPT_LN_NELDERMEAD"]
-            bestdist = float('inf')
+            best[12][8333.33] += ["DiscreteDE"]
+            best[12][833.333] += ["DiscreteDE"]
+            best[12][83.3333] += ["MetaModelDE"]
+            best[12][8.33333] += ["NGOpt"]
+            best[12][0.833333] += ["NLOPT_GN_DIRECT_L"]
+            best[12][83333.3] += ["RPowell"]
+            best[12][8333.33] += ["DiscreteDE"]
+            best[12][833.333] += ["NLOPT_GN_ISRES"]
+            best[12][83.3333] += ["SMAC3"]
+            best[12][8.33333] += ["NGOpt"]
+            best[12][0.833333] += ["NLOPT_LN_SBPLX"]
+            best[12][83333.3] += ["NGOptBase"]
+            best[12][8333.33] += ["RPowell"]
+            best[12][833.333] += ["ChainMetaModelPowell"]
+            best[12][83.3333] += ["RotatedTwoPointsDE"]
+            best[12][8.33333] += ["NGOpt39"]
+            best[12][0.833333] += ["NLOPT_LN_NEWUOA_BOUND"]
+            best[24][4166.67] += ["CmaFmin2"]
+            best[24][416.667] += ["CmaFmin2"]
+            best[24][41.6667] += ["CmaFmin2"]
+            best[24][4.16667] += ["NLOPT_LN_SBPLX"]
+            best[24][0.416667] += ["Cobyla"]
+            best[24][41666.7] += ["MultiCMA"]
+            best[24][4166.67] += ["CmaFmin2"]
+            best[24][416.667] += ["RotatedTwoPointsDE"]
+            best[24][41.6667] += ["CmaFmin2"]
+            best[24][4.16667] += ["pysot"]
+            best[24][0.416667] += ["NLOPT_LN_NELDERMEAD"]
+            best[24][41666.7] += ["MultiCMA"]
+            best[24][4166.67] += ["Shiwa"]
+            best[24][416.667] += ["CmaFmin2"]
+            best[24][41.6667] += ["NLOPT_GN_CRS2_LM"]
+            best[24][4.16667] += ["NLOPT_GN_CRS2_LM"]
+            best[24][0.416667] += ["Cobyla"]
+            best[2][500000] += ["BAR"]
+            best[2][50000] += ["ASCMADEthird"]
+            best[2][5000] += ["ChainMetaModelPowell"]
+            best[2][500] += ["DiscreteDE"]
+            best[2][50] += ["RFMetaModelOnePlusOne"]
+            best[2][5] += ["Carola2"]
+            best[2][500000] += ["BAR3"]
+            best[2][50000] += ["ChainCMAPowell"]
+            best[2][5000] += ["ASCMADEthird"]
+            best[2][500] += ["NeuralMetaModelTwoPointsDE"]
+            best[2][50] += ["CMandAS2"]
+            best[2][5] += ["NaiveTBPSA"]
+            best[2][500000] += ["BAR"]
+            best[2][50000] += ["ASCMADEthird"]
+            best[2][5000] += ["CM"]
+            best[2][500] += ["ChainDiagonalCMAPowell"]
+            best[2][50] += ["Powell"]
+            best[2][5] += ["Cobyla"]
+            best[48][208.333] += ["DiscreteDE"]
+            best[48][20.8333] += ["pysot"]
+            best[48][2.08333] += ["MultiCobyla"]
+            best[48][0.208333] += ["NLOPT_LN_NELDERMEAD"]
+            best[48][2083.33] += ["RPowell"]
+            best[48][208.333] += ["CmaFmin2"]
+            best[48][20.8333] += ["RPowell"]
+            best[48][2.08333] += ["pysot"]
+            best[48][0.208333] += ["BOBYQA"]
+            best[48][20833.3] += ["MetaModelTwoPointsDE"]
+            best[48][2083.33] += ["RPowell"]
+            best[48][208.333] += ["DiscreteDE"]
+            best[48][20.8333] += ["ChainNaiveTBPSACMAPowell"]
+            best[48][2.08333] += ["NLOPT_LN_BOBYQA"]
+            best[48][0.208333] += ["BOBYQA"]
+            best[5][200000] += ["RescaledCMA"]
+            best[5][20000] += ["RFMetaModelDE"]
+            best[5][2000] += ["DiscreteDE"]
+            best[5][200] += ["TwoPointsDE"]
+            best[5][20] += ["NGOpt39"]
+            best[5][2] += ["OnePlusLambda"]
+            best[5][200000] += ["BAR"]
+            best[5][20000] += ["ChainNaiveTBPSACMAPowell"]
+            best[5][2000] += ["CmaFmin2"]
+            best[5][200] += ["RotatedTwoPointsDE"]
+            best[5][20] += ["pysot"]
+            best[5][2] += ["NLOPT_LN_SBPLX"]
+            best[5][200000] += ["ASCMADEthird"]
+            best[5][20000] += ["ASCMADEthird"]
+            best[5][2000] += ["QOTPDE"]
+            best[5][200] += ["NGOpt10"]
+            best[5][20] += ["LQODE"]
+            best[5][2] += ["NLOPT_LN_SBPLX"]
+            best[96][104.167] += ["NGOptF"]
+            best[96][10.4167] += ["NGOpt4"]
+            best[96][1.04167] += ["RPowell"]
+            best[96][0.104167] += ["ASCMADEthird"]
+            best[96][1041.67] += ["NLOPT_LN_NELDERMEAD"]
+            best[96][104.167] += ["RPowell"]
+            best[96][10.4167] += ["NGOpt8"]
+            best[96][1.04167] += ["RPowell"]
+            best[96][0.104167] += ["NLOPT_LN_NELDERMEAD"]
+            best[96][1041.67] += ["CMandAS3"]
+            best[96][104.167] += ["Powell"]
+            best[96][10.4167] += ["NGOptBase"]
+            best[96][1.04167] += ["Powell"]
+            best[96][0.104167] += ["NLOPT_LN_NELDERMEAD"]
+            bestdist = float("inf")
             for d1 in best:
                 for nod2 in best[d1]:
-                    dist = (d-d1)**2 + (nod-nod2)**2
+                    dist = (d - d1) ** 2 + (nod - nod2) ** 2
                     if dist < bestdist:
                         bestdist = dist
                         bestalg = best[d1][nod2]
             return bestalg
+
         if self.fully_continuous and not self.has_noise:
-            algs = recommend_method(self.dimension, self.budget / self.dimension)
+            algs = recommend_method(self.dimension, self.budget / self.dimension)  # type: ignore
             if self.num_workers > 1:
                 algs = [a for a in algs if not registry[a].no_parallelization]
                 if len(algs) == 0:
                     return SQPCMA
+
             def most_frequent(List):
-                return max(set(List), key = List.count)
+                return max(set(List), key=List.count)
+
             return registry[most_frequent(algs)]
-                    
+
         if self.fully_continuous and not self.has_noise and self.budget >= 12 * self.dimension:  # type: ignore
             return ConfPortfolio(optimizers=[GeneticDE, PSO, NGOpt39], warmup_ratio=0.33)
         else:

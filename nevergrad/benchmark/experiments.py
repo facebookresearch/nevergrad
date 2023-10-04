@@ -49,7 +49,7 @@ from . import gymexperiments  # noqa
 # pylint: disable=stop-iteration-return, too-many-nested-blocks, too-many-locals
 
 
-def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
+def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
     # return ["RandomSearch", "OnePlusOne", "DE", "PSO"]
 
     algos = {}
@@ -414,48 +414,49 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
 
     # Here, we pseudo-randomly draw one optim in the provided list,
     # depending on the host (so that each host is using the same optim).
-#    list_optims = x
-#    list_optims = ["BAR", "BAR2", "BAR3"]
-#    list_optims = ["BAR", "BAR2", "BAR3", "BAR4", "NGOpt", "NGOptRW", "CMandAS2"]
-#    list_optims = ["QOTPDE", "LQOTPDE", "LQODE", "BAR4", "NGOpt", "CMandAS2"]
-#    list_optims = ["QOTPDE", "LQOTPDE", "LQODE"]
-#    list_optims = ["SPQODE", "SQOPSO", "DiagonalCMA"]
-#    list_optims = ["BAR", "BAR3", "BAR2", "BAR4", "SPQODE", "SQOPSO", "DiagonalCMA"]
-#    list_optims = ["QODE", "CMA", "SQOPSO", "RandomSearch", "OnePlusOne", "DE"]
-#    list_optims = ["AX", "SMAC3", "pysot"]
-#    # list_optims = ["DiagonalCMA"]
-#    list_optims = ["GeneticDE"]
-#    list_optims = [
-#        "NGOpt",
-#        "CMA",
-#        "DiagonalCMA",
-#        "GeneticDE",
-#        "SQOPSO",
-#        "QODE",
-#        "RandomSearch",
-#        "BFGS",
-#        "PSO",
-#        "DE",
-#        "MetaTuneRecentering",
-#        "MetaRecentering",
-#        "LhsDE",
-#        "HullCenterHullAvgCauchyScrHammersleySearch",
-#    ]
-#    list_optims = [
-#        "QOPSO",
-#        "OnePlusOne",
-#        "NaiveTBPSA",
-#        "LBFGSB",
-#        "LHSSearch",
-#        "DiscreteLenglerOnePlusOneT",
-#        "MetaModel",
-#        "MetaModelOnePlusOne",
-#        "LHSCauchySearch",
-#        "Cobyla",
-#        "CMA",
-#        "DiagonalCMA",
-#    ]
+    #    list_optims = x
+    #    list_optims = ["BAR", "BAR2", "BAR3"]
+    #    list_optims = ["BAR", "BAR2", "BAR3", "BAR4", "NGOpt", "NGOptRW", "CMandAS2"]
+    #    list_optims = ["QOTPDE", "LQOTPDE", "LQODE", "BAR4", "NGOpt", "CMandAS2"]
+    #    list_optims = ["QOTPDE", "LQOTPDE", "LQODE"]
+    #    list_optims = ["SPQODE", "SQOPSO", "DiagonalCMA"]
+    #    list_optims = ["BAR", "BAR3", "BAR2", "BAR4", "SPQODE", "SQOPSO", "DiagonalCMA"]
+    #    list_optims = ["QODE", "CMA", "SQOPSO", "RandomSearch", "OnePlusOne", "DE"]
+    #    list_optims = ["AX", "SMAC3", "pysot"]
+    #    # list_optims = ["DiagonalCMA"]
+    #    list_optims = ["GeneticDE"]
+    #    list_optims = [
+    #        "NGOpt",
+    #        "CMA",
+    #        "DiagonalCMA",
+    #        "GeneticDE",
+    #        "SQOPSO",
+    #        "QODE",
+    #        "RandomSearch",
+    #        "BFGS",
+    #        "PSO",
+    #        "DE",
+    #        "MetaTuneRecentering",
+    #        "MetaRecentering",
+    #        "LhsDE",
+    #        "HullCenterHullAvgCauchyScrHammersleySearch",
+    #    ]
+    #    list_optims = [
+    #        "QOPSO",
+    #        "OnePlusOne",
+    #        "NaiveTBPSA",
+    #        "LBFGSB",
+    #        "LHSSearch",
+    #        "DiscreteLenglerOnePlusOneT",
+    #        "MetaModel",
+    #        "MetaModelOnePlusOne",
+    #        "LHSCauchySearch",
+    #        "Cobyla",
+    #        "CMA",
+    #        "DiagonalCMA",
+    #    ]
     list_optims = ["NGOpt", "NGOptF", "NGOptF1", "NGOptF2", "NGOptF3"]
+
     def doint(s):  # Converting a string into an int.
         return 7 + sum([ord(c) * i for i, c in enumerate(s)])
 
