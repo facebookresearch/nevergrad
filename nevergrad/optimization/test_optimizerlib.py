@@ -305,6 +305,7 @@ def test_optimizers_minimal(name: str) -> None:
             "FCMA",
             "Noisy",
             "HS",
+            "SQPCMA",
             "CMandAS",
             "GA",
             "EMNA",
