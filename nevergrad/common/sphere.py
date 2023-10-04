@@ -774,7 +774,7 @@ def quasi_randomize(pointset, method):
     norms = [np.linalg.norm(pointset[i]) for i in range(n)]
     if method == "none":
         if len(shape) > 1 and shape[0] > 5:
-            x = dispersion(n, shape, [int(s / 3) for s in list(shape)[:-1]])
+            x = dispersion(n, shape, conv=[int(s / 3) for s in list(shape)[:-1]])
         else:
             x = rs_metric_all(n, shape)
     else:
