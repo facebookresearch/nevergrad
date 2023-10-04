@@ -13,6 +13,11 @@ tasks=(zp_pbbob zp_ms_bbob aquacrop_fao bonnans deceptive double_o_seven fishing
 task=${tasks[SLURM_ARRAY_TASK_ID]}
 
 echo task attribution $SLURM_ARRAY_TASK_ID $task
+echo Keras/TF versions:
+pip show keras tensorflow tensorflow-estimator
+
+conda info
+
 echo Starting at
 date
 # num_workers is the number of processes. Maybe use a bit more than the number of cores at the line "cpus-per-task"

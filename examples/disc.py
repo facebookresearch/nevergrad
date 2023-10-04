@@ -11,28 +11,21 @@ def deal_with_method(method):
   n = np.random.choice([10, 100, 1000])
   b = np.random.choice([10,100,1000,10000,100000, 1000000])
   L = np.random.RandomState(d*37+n*101+b*12).rand(n,d)
-  def localdisc(x):
-         ko=0
-         kc=0
-         vol=1
-         n=len(L)
-         d=len(x)
-         for i in range (0,n):
-             to=True
-             tc=True
-             for j in range (0, d):
-                 if (L[i][j]>=x[j]):
-                     to=False
-                 if (L[i][j]>x[j]):
-                     tc=False
-             if (to):
-                 ko+=1
-             if (tc):
-                 kc+=1
-         for i in range (0,len(x)):
-             vol=vol*x[i]
-         disc=max(vol-ko/n,kc/n-vol)
-         return(1. - disc)
+
+  def fastlocaldisc(x):
+      points_in_interior=0
+      points_in=0
+      volume = 1
+      for i in range (0,n):
+          if all(L[i] < x):
+              points_in_interior += 1
+          if all(L[i] <= x):
+              points_in += 1
+      for i in range (0,len(x)):
+          volume=volume*x[i]
+      disc=max(volume-points_in_interior/n, points_in/n-volume)
+      return(1. - disc)
+    
   instrum = ng.p.Array(shape=(int(d),), lower=0., upper=1.)
   try:
       optim = ng.optimizers.registry[method](instrum, int(b*d))

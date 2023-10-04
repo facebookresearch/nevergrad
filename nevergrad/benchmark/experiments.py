@@ -51,6 +51,7 @@ from . import gymexperiments  # noqa
 
 def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
     # return ["RandomSearch", "OnePlusOne", "DE", "PSO"]
+
     algos = {}
     algos["aquacrop_fao"] = [
         "CMA",
@@ -461,34 +462,70 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
     import socket
 
     host = socket.gethostname()
-    list_optims = ["Carola1", "Carola2", "Carola3", "NgIoh", "NgIoh", "NgIoh", "MetaModel", "Cobyla"]
-    list_optims = ["NgIoh", "NgOpt"]
-    if "tuning" in benchmark:
-        list_optims = [
-            "NgIoh",
-            "NgIoh",
-            "NgIoh",
-            "NgIoh",
-            "NGOpt",
-            "NGOpt",
-            "NGOpt",
-            "NGOpt",
-            "HyperOpt",
-            "RandomSearch",
-            "PSO",
-            "DE",
-            "SQOPSO",
-            "Cobyla",
-            # "AX",
-            "LHSSearch",
-            "QODE",
-            "SODE",
+    list_optims = ["NgIoh7", "NgIohRW", "LognormalDiscreteOnePlusOne"]
+    list_optims = ["NgIoh7", "NgIohRW2"]
+    if "iscr" in benchmark or "pbo" in benchmark:
+        list_optims += [
+            a
+            for a in [
+                "DiscreteDE",
+                "DiscreteOnePlusOne",
+                "SADiscreteLenglerOnePlusOneExp09",
+                "SADiscreteLenglerOnePlusOneExp099",
+                "SADiscreteLenglerOnePlusOneExp09Auto",
+                "SADiscreteLenglerOnePlusOneLinAuto",
+                "SADiscreteLenglerOnePlusOneLin1",
+                "SADiscreteLenglerOnePlusOneLin100",
+                "SADiscreteOnePlusOneExp099",
+                "SADiscreteOnePlusOneLin100",
+                "SADiscreteOnePlusOneExp09",
+                "PortfolioDiscreteOnePlusOne",
+                "DiscreteLenglerOnePlusOne",
+                "DiscreteLengler2OnePlusOne",
+                "DiscreteLengler3OnePlusOne",
+                "DiscreteLenglerHalfOnePlusOne",
+                "DiscreteLenglerFourthOnePlusOne",
+                "AdaptiveDiscreteOnePlusOne",
+                "LognormalDiscreteOnePlusOne",
+                "AnisotropicAdaptiveDiscreteOnePlusOne",
+                "DiscreteBSOOnePlusOne",
+                "DiscreteDoerrOnePlusOne",
+                "DoubleFastGADiscreteOnePlusOne",
+                "SparseDoubleFastGADiscreteOnePlusOne",
+                "RecombiningPortfolioDiscreteOnePlusOne",
+                "MultiDiscrete",
+                "discretememetic",
+                "SmoothDiscreteOnePlusOne",
+                "SmoothPortfolioDiscreteOnePlusOne",
+                "SmoothDiscreteLenglerOnePlusOne",
+                "SuperSmoothDiscreteLenglerOnePlusOne",
+                "UltraSmoothDiscreteLenglerOnePlusOne",
+                "SmoothLognormalDiscreteOnePlusOne",
+                "SmoothAdaptiveDiscreteOnePlusOne",
+                "SmoothRecombiningPortfolioDiscreteOnePlusOne",
+                "SmoothRecombiningDiscreteLanglerOnePlusOne",
+                "UltraSmoothRecombiningDiscreteLanglerOnePlusOne",
+                "UltraSmoothElitistRecombiningDiscreteLanglerOnePlusOne",
+                "SuperSmoothElitistRecombiningDiscreteLanglerOnePlusOne",
+                "SuperSmoothRecombiningDiscreteLanglerOnePlusOne",
+                "SmoothElitistRecombiningDiscreteLanglerOnePlusOne",
+                "RecombiningDiscreteLanglerOnePlusOne",
+                "DiscreteDE",
+                "cGA",
+                "NGOpt",
+                "NgIoh4",
+                "NgIoh5",
+                "NgIoh6",
+                "NGOptRW",
+                "NgIoh7",
+            ]
+            if ("Smooth" in a or "Lognor" in a or "Recomb" in a)
         ]
-    if "iscre" in benchmark:
-        list_optims = ["RecombiningPortfolioDiscreteOnePlusOne"]
-    list_optims = ["NGOpt", "NGOptRW", "NGOptF", "NGOptF2", "NGOptF3", "NGOptF5"]
+    list_optims = ["NgIoh7", "NgIohRW2", "LognormalDiscreteOnePlusOne"]
     return [list_optims[doint(host) % len(list_optims)]]
-    return x  # ["Zero"] #return x
+
+
+#    return x  # ["Zero"] #return x
 
 
 #    return ["MultiSQP", "MultiCobyla", "MultiBFGS"]
@@ -988,6 +1025,16 @@ def sequential_instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Ex
     optims = ["DiscreteLenglerOnePlusOne"]
     optims = ["NGOpt", "NGOptRW"]
     optims = refactor_optims(optims)
+    optims = [
+        l
+        for l in list(ng.optimizers.registry.keys())
+        if "DiscreteOneP" in l
+        and "SA" not in l
+        and "Smooth" not in l
+        and "Noisy" not in l
+        and "Optimis" not in l
+        and "T" != l[-1]
+    ] + ["cGA", "DiscreteDE"]
     for nv in [10, 50, 200, 1000, 5000]:
         for arity in [2, 3, 7, 30]:
             for instrum_str in ["Unordered", "Softmax", "Ordered"]:
@@ -3372,8 +3419,8 @@ def pbo_suite(seed: tp.Optional[int] = None, reduced: bool = False) -> tp.Iterat
             for x in ng.optimizers.registry.keys()
             if "iscre" in x and "ois" not in x and "ptim" not in x and "oerr" not in x
         ]
-    optims = ["NGOpt", "NGOptRW"]
-    optims = refactor_optims(optims)
+    list_optims = ["NGOpt", "NGOptRW"]
+    list_optims = refactor_optims(list_optims)
     for dim in [16, 64, 100]:
         for fid in range(1, 24):
             for iid in range(1, 5):
