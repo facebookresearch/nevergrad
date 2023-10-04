@@ -87,6 +87,8 @@ done
 ) | tee competition.tex
 ) > dagstuhloid.tex
 wait
+echo '\\begin{enumerate}' ; grep -i 'subsubsection.*rw' competition.tex | sed 's/.*NSR//g' | sed 's/).*//g' | sort | uniq -c | sort -n -r  | sed 's/.*/\\item &/g' ; echo '\\end{enumerate}' > rwtex.tex
+
 (
 echo "\\section{Statistics over all benchmarks}\\label{bigstats}"
 echo "We point out that NGOpt and variants are wizards (automatic algorithm selectors and combinators) created by the same authors as Nevergrad, and their (good) results might therefore be biased: we do not cheat, but we recognize that common authorship for benchmarks and algorithms imply a bias."
@@ -212,5 +214,4 @@ echo '</html>'
 ) >  dagstuhloid.html
 
 
-
-tar -zcvf texdag.tgz dagstuhloid.tex biblio.bib *plots/*all_pure.png *plots/xpresults_all.png ms_bbob_plots/fight_tran*.png *_plots/*.pdf dagstuhloid.html competition.tex bigstats.tex dagstuhloid.pdf
+tar -zcvf texdag.tgz dagstuhloid.tex biblio.bib *plots/*all_pure.png *plots/xpresults_all.png ms_bbob_plots/fight_tran*.png *_plots/*.pdf dagstuhloid.html competition.tex bigstats.tex dagstuhloid.pdf rwtex.tex
