@@ -3579,7 +3579,7 @@ class NGOptF(NGOpt39):
             return bestalg
 
         if self.fully_continuous and not self.has_noise:
-            algs = recommend_method(self.dimension, self.budget / self.dimension)
+            algs = recommend_method(self.dimension, self.budget / self.dimension)  # type: ignore
             if self.num_workers > 1:
                 algs = [a for a in algs if not registry[a].no_parallelization]
                 if len(algs) == 0:
@@ -3658,7 +3658,7 @@ class NGOptF2(NGOpt39):
             return bestalg
 
         if self.fully_continuous and not self.has_noise:
-            algs = recommend_method(self.dimension, self.budget / self.dimension)
+            algs = recommend_method(self.dimension, self.budget / self.dimension)  # type: ignore
             if self.num_workers > 1:
                 algs = [a for a in algs if not registry[a].no_parallelization]
                 if len(algs) == 0:
@@ -3776,7 +3776,7 @@ class NGOptF3(NGOpt39):
             return bestalg
 
         if self.fully_continuous and not self.has_noise:
-            algs = recommend_method(self.dimension, self.budget / self.dimension)
+            algs = recommend_method(self.dimension, self.budget / self.dimension)  # type: ignore
             if self.num_workers > 1:
                 algs = [a for a in algs if not registry[a].no_parallelization]
                 if len(algs) == 0:
