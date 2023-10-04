@@ -75,3 +75,7 @@ def test_set_env() -> None:
 def test_flatten() -> None:
     out = tools.flatten(["a", {"truc": [4, 5]}])
     assert out == {"0": "a", "1.truc.0": 4, "1.truc.1": 5}
+
+
+def test_hyperballs() -> None:
+    tools.quasi_randomize(np.random.randn(8, 10, 10, 2))

@@ -15,6 +15,11 @@ import contextlib
 import collections
 import typing as tp
 import numpy as np
+from nevergrad.common import sphere
+
+
+def quasi_randomize(x: tp.Iterable[tp.Any], method: str = "none") -> tp.Any:
+    return sphere.quasi_randomize(x, method)
 
 
 def pytorch_import_fix() -> None:
