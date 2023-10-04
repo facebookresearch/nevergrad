@@ -107,9 +107,15 @@ class _OnePlusOne(base.Optimizer):
         use_pareto: bool = False,
         sparse: tp.Union[bool, int] = False,
         smoother: bool = False,
+        roulette_size: int = 2,
+        antismooth: int = 55,
+        crossover_type: str = "none",
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.parametrization.tabu_length = tabu_length
+        self.antismooth = antismooth
+        self.crossover_type = crossover_type
+        self.roulette_size = roulette_size
         assert crossover or (not rotation), "We can not have both rotation and not crossover."
         self._sigma: float = 1
         self._previous_best_loss = float("inf")
@@ -216,7 +222,7 @@ class _OnePlusOne(base.Optimizer):
         pessimistic = self.current_bests["pessimistic"].parameter.spawn_child()
         if (
             self.smoother
-            and self._num_ask % max(self.num_workers + 1, 55) == 0
+            and self._num_ask % max(self.num_workers + 1, self.antismooth) == 0
             and isinstance(self.parametrization, p.Array)
         ):
             self.suggest(smooth_copy(pessimistic).value)  # type: ignore
@@ -230,8 +236,9 @@ class _OnePlusOne(base.Optimizer):
         if self.crossover and self._num_ask % 2 == 1 and len(self.archive) > 2:
             data = mutator.crossover(
                 pessimistic.get_standardized_data(reference=ref),
-                mutator.get_roulette(self.archive, num=2),
+                mutator.get_roulette(self.archive, num=self.roulette_size),
                 rotation=self.rotation,
+                crossover_type=self.crossover_type,
             )
             return pessimistic.set_standardized_data(data, reference=ref)
         # mutating
@@ -513,6 +520,9 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
         use_pareto: bool = False,
         sparse: bool = False,
         smoother: bool = False,
+        roulette_size: int = 2,
+        antismooth: int = 55,
+        crossover_type: str = "none",
     ) -> None:
         super().__init__(_OnePlusOne, locals())
 
@@ -1206,8 +1216,8 @@ class _PSO(base.Optimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._config = ConfPSO() if config is None else config
-        if budget is not None and budget < 60:
-            warnings.warn("PSO is inefficient with budget < 60", errors.InefficientSettingsWarning)
+        # if budget is not None and budget < 60:
+        #    warnings.warn("PSO is inefficient with budget < 60", errors.InefficientSettingsWarning)
         cases: tp.Dict[str, tp.Tuple[tp.Optional[float], transforms.Transform]] = dict(
             arctan=(0, transforms.ArctanBound(0, 1)),
             identity=(None, transforms.Affine(1, 0)),
@@ -2985,7 +2995,7 @@ class NGOptBase(base.Optimizer):
                                     if self.dimension > 1
                                     else OnePlusOne
                                 )
-        print(f"NGOptbase: budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, {cls}")
+        # print(f"NGOptbase: budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, {cls}")
         return cls
 
     def _internal_ask_candidate(self) -> p.Parameter:
@@ -3886,10 +3896,11 @@ class NgIoh4(NGOptBase):
 
 
 @registry.register
-class NgIohRW(NgIoh4):
+class NgIohRW2(NgIoh4):
     def _select_optimizer_cls(self) -> base.OptCls:
         if self.fully_continuous and not self.has_noise and self.budget >= 12 * self.dimension:  # type: ignore
-            return ConfPortfolio(optimizers=[QODE, PSO, super()._select_optimizer_cls()], warmup_ratio=0.33)
+            return ConfPortfolio(optimizers=[SQPCMA, QODE, PSO], warmup_ratio=0.33)
+            # return ConfPortfolio(optimizers=[QODE, PSO, super()._select_optimizer_cls()], warmup_ratio=0.33)
         else:
             return super()._select_optimizer_cls()
 
@@ -4024,3 +4035,178 @@ class MultipleSingleRuns(base.ConfiguredOptimizer):
         base_optimizer: base.OptCls = NGOpt,
     ) -> None:
         super().__init__(_MSR, locals())
+
+
+# Smooth variants of evolutionary algorithms.
+SmoothDiscreteOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="discrete").set_name(
+    "SmoothDiscreteOnePlusOne", register=True
+)
+SmoothPortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="portfolio").set_name(
+    "SmoothPortfolioDiscreteOnePlusOne", register=True
+)
+SmoothDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="lengler").set_name(
+    "SmoothDiscreteLenglerOnePlusOne", register=True
+)
+SmoothDiscreteLognormalOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="lognormal").set_name(
+    "SmoothDiscreteLognormalOnePlusOne", register=True
+)
+SuperSmoothDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True, mutation="lengler", antismooth=9
+).set_name("SuperSmoothDiscreteLenglerOnePlusOne", register=True)
+UltraSmoothDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True, mutation="lengler", antismooth=3
+).set_name("UltraSmoothDiscreteLenglerOnePlusOne", register=True)
+SmoothLognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="lognormal").set_name(
+    "SmoothLognormalDiscreteOnePlusOne", register=True
+)
+SmoothAdaptiveDiscreteOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="adaptive").set_name(
+    "SmoothAdaptiveDiscreteOnePlusOne", register=True
+)
+
+SmoothRecombiningPortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True,
+    crossover=True,
+    mutation="portfolio",
+).set_name("SmoothRecombiningPortfolioDiscreteOnePlusOne", register=True)
+SmoothRecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True,
+    crossover=True,
+    mutation="lengler",
+).set_name("SmoothRecombiningDiscreteLanglerOnePlusOne", register=True)
+UltraSmoothRecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True,
+    crossover=True,
+    mutation="lengler",
+    antismooth=3,
+).set_name("UltraSmoothRecombiningDiscreteLanglerOnePlusOne", register=True)
+UltraSmoothElitistRecombiningDiscreteLognormalOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True,
+    crossover=True,
+    mutation="lognormal",
+    antismooth=3,
+    roulette_size=7,
+).set_name("UltraSmoothElitistRecombiningDiscreteLognormalOnePlusOne", register=True)
+UltraSmoothElitistRecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True,
+    crossover=True,
+    mutation="lengler",
+    antismooth=3,
+    roulette_size=7,
+).set_name("UltraSmoothElitistRecombiningDiscreteLanglerOnePlusOne", register=True)
+SuperSmoothElitistRecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True,
+    crossover=True,
+    mutation="lengler",
+    antismooth=9,
+    roulette_size=7,
+).set_name("SuperSmoothElitistRecombiningDiscreteLanglerOnePlusOne", register=True)
+SuperSmoothRecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True,
+    crossover=True,
+    mutation="lengler",
+    antismooth=9,
+).set_name("SuperSmoothRecombiningDiscreteLanglerOnePlusOne", register=True)
+SuperSmoothRecombiningDiscreteLognormalOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True,
+    crossover=True,
+    mutation="lognormal",
+    antismooth=9,
+).set_name("SuperSmoothRecombiningDiscreteLognormalOnePlusOne", register=True)
+SmoothElitistRecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True,
+    crossover=True,
+    mutation="lengler",
+    roulette_size=7,
+).set_name("SmoothElitistRecombiningDiscreteLanglerOnePlusOne", register=True)
+SmoothElitistRandRecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True,
+    crossover=True,
+    mutation="lengler",
+    roulette_size=7,
+    crossover_type="rand",
+).set_name("SmoothElitistRandRecombiningDiscreteLanglerOnePlusOne", register=True)
+SmoothElitistRandRecombiningDiscreteLognormalOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True,
+    crossover=True,
+    mutation="lognormal",
+    roulette_size=7,
+    crossover_type="rand",
+).set_name("SmoothElitistRandRecombiningDiscreteLognormalOnePlusOne", register=True)
+RecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
+    crossover=True,
+    mutation="lengler",
+).set_name("RecombiningDiscreteLanglerOnePlusOne", register=True)
+RecombiningDiscreteLognormalOnePlusOne = ParametrizedOnePlusOne(
+    crossover=True,
+    mutation="lognormal",
+).set_name("RecombiningDiscreteLognormalOnePlusOne", register=True)
+MaxRecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
+    crossover=True, mutation="lengler", crossover_type="max"
+).set_name("MaxRecombiningDiscreteLenglerOnePlusOne", register=True)
+MinRecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
+    crossover=True, mutation="lengler", crossover_type="min"
+).set_name("MinRecombiningDiscreteLenglerOnePlusOne", register=True)
+OnePtRecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
+    crossover=True, mutation="lengler", crossover_type="onepoint"
+).set_name("OnePtRecombiningDiscreteLenglerOnePlusOne", register=True)
+TwoPtRecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
+    crossover=True, mutation="lengler", crossover_type="twopoint"
+).set_name("TwoPtRecombiningDiscreteLenglerOnePlusOne", register=True)
+RandRecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
+    crossover=True,
+    mutation="lengler",
+    crossover_type="rand",
+).set_name("RandRecombiningDiscreteLenglerOnePlusOne", register=True)
+RandRecombiningDiscreteLognormalOnePlusOne = ParametrizedOnePlusOne(
+    crossover=True,
+    mutation="lognormal",
+    crossover_type="rand",
+).set_name("RandRecombiningDiscreteLognormalOnePlusOne", register=True)
+
+
+@registry.register
+class NgIoh7(NGOptBase):
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
+
+    def _select_optimizer_cls(self) -> base.OptCls:
+        optCls: base.OptCls = NGOptBase
+        funcinfo = self.parametrization.function
+        if isinstance(self.parametrization, p.Array) and not self.fully_continuous and not self.has_noise:
+            return ConfPortfolio(
+                optimizers=[
+                    SuperSmoothDiscreteLenglerOnePlusOne,
+                    SuperSmoothElitistRecombiningDiscreteLenglerOnePlusOne,
+                    DiscreteLenglerOnePlusOne,
+                ],
+                warmup_ratio=0.4,
+            )
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget < 1000 * self.dimension
+            and self.budget > 20 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 100
+        ):
+            print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget >= 1000 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        # Special cases in the bounded case
+        if self.has_noise and (self.has_discrete_not_softmax or not funcinfo.metrizable):
+            optCls = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
+        elif self.dimension >= 60 and not funcinfo.metrizable:
+            optCls = CMA
+        print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, we choose {optCls}")
+        return optCls

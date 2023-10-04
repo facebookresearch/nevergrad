@@ -409,7 +409,7 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
 
     # Below, we use the best in the records above.
     benchmark = str(inspect.stack()[1].function)
-    if benchmark in algos and "tunin" in benchmark and np.random.randint(2) > 0:
+    if benchmark in algos and "tunin" in benchmark and np.random.randint(2) > 0 and False:
         return algos[benchmark][:5]
 
     # Here, we pseudo-randomly draw one optim in the provided list,
@@ -462,7 +462,66 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:
     import socket
 
     host = socket.gethostname()
-
+    list_optims = ["NgIoh7", "NgIohRW", "LognormalDiscreteOnePlusOne"]
+    list_optims = ["NgIoh7", "NgIohRW2"]
+    if "iscr" in benchmark or "pbo" in benchmark:
+        list_optims += [
+            a
+            for a in [
+                "DiscreteDE",
+                "DiscreteOnePlusOne",
+                "SADiscreteLenglerOnePlusOneExp09",
+                "SADiscreteLenglerOnePlusOneExp099",
+                "SADiscreteLenglerOnePlusOneExp09Auto",
+                "SADiscreteLenglerOnePlusOneLinAuto",
+                "SADiscreteLenglerOnePlusOneLin1",
+                "SADiscreteLenglerOnePlusOneLin100",
+                "SADiscreteOnePlusOneExp099",
+                "SADiscreteOnePlusOneLin100",
+                "SADiscreteOnePlusOneExp09",
+                "PortfolioDiscreteOnePlusOne",
+                "DiscreteLenglerOnePlusOne",
+                "DiscreteLengler2OnePlusOne",
+                "DiscreteLengler3OnePlusOne",
+                "DiscreteLenglerHalfOnePlusOne",
+                "DiscreteLenglerFourthOnePlusOne",
+                "AdaptiveDiscreteOnePlusOne",
+                "LognormalDiscreteOnePlusOne",
+                "AnisotropicAdaptiveDiscreteOnePlusOne",
+                "DiscreteBSOOnePlusOne",
+                "DiscreteDoerrOnePlusOne",
+                "DoubleFastGADiscreteOnePlusOne",
+                "SparseDoubleFastGADiscreteOnePlusOne",
+                "RecombiningPortfolioDiscreteOnePlusOne",
+                "MultiDiscrete",
+                "discretememetic",
+                "SmoothDiscreteOnePlusOne",
+                "SmoothPortfolioDiscreteOnePlusOne",
+                "SmoothDiscreteLenglerOnePlusOne",
+                "SuperSmoothDiscreteLenglerOnePlusOne",
+                "UltraSmoothDiscreteLenglerOnePlusOne",
+                "SmoothLognormalDiscreteOnePlusOne",
+                "SmoothAdaptiveDiscreteOnePlusOne",
+                "SmoothRecombiningPortfolioDiscreteOnePlusOne",
+                "SmoothRecombiningDiscreteLanglerOnePlusOne",
+                "UltraSmoothRecombiningDiscreteLanglerOnePlusOne",
+                "UltraSmoothElitistRecombiningDiscreteLanglerOnePlusOne",
+                "SuperSmoothElitistRecombiningDiscreteLanglerOnePlusOne",
+                "SuperSmoothRecombiningDiscreteLanglerOnePlusOne",
+                "SmoothElitistRecombiningDiscreteLanglerOnePlusOne",
+                "RecombiningDiscreteLanglerOnePlusOne",
+                "DiscreteDE",
+                "cGA",
+                "NGOpt",
+                "NgIoh4",
+                "NgIoh5",
+                "NgIoh6",
+                "NGOptRW",
+                "NgIoh7",
+            ]
+            if ("Smooth" in a or "Lognor" in a or "Recomb" in a)
+        ]
+    list_optims = ["NgIoh7", "NgIohRW2", "LognormalDiscreteOnePlusOne"]
     return [list_optims[doint(host) % len(list_optims)]]
 
 
@@ -966,6 +1025,16 @@ def sequential_instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Ex
     optims = ["DiscreteLenglerOnePlusOne"]
     optims = ["NGOpt", "NGOptRW"]
     optims = refactor_optims(optims)
+    optims = [
+        l
+        for l in list(ng.optimizers.registry.keys())
+        if "DiscreteOneP" in l
+        and "SA" not in l
+        and "Smooth" not in l
+        and "Noisy" not in l
+        and "Optimis" not in l
+        and "T" != l[-1]
+    ] + ["cGA", "DiscreteDE"]
     for nv in [10, 50, 200, 1000, 5000]:
         for arity in [2, 3, 7, 30]:
             for instrum_str in ["Unordered", "Softmax", "Ordered"]:
