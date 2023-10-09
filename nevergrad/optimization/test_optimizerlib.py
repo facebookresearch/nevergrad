@@ -302,6 +302,7 @@ def test_optimizers_minimal(name: str) -> None:
             "CMAbounded",
             "Tiny",
             "iscrete",
+            "GOMEA",
             "para",
             "SPSA",
             "EDA",
