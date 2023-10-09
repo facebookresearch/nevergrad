@@ -373,11 +373,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                     def objective_function(self, objective_index, data):  # type: ignore
                         if weakself._normalizer is not None:
                             data = weakself._normalizer.backward(np.asarray(data, dtype=np.float32))
-                        val = objective_function(data)
-                        if not hasattr(self, "best_val") or val < self.best_val:  # type: ignore
-                            self.best_val = val  # type: ignore
-                            self.best_x = data  # type: ignore
-                        return val
+                        return objective_function(data)
 
                 gomea_f = gomea_function(weakself.dimension)
                 lm = {
