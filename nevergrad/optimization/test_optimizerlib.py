@@ -314,6 +314,7 @@ def test_optimizers_minimal(name: str) -> None:
             "Small",
             "small",
             "Chain",
+            "Tree",
             "Mix",
             "Micro",
             "Naive",

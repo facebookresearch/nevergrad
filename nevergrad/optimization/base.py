@@ -90,7 +90,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # you can also replace or reinitialize this random state
         self.num_workers = int(num_workers)
         self.budget = budget
-        self.optim_curve = []
+        self.optim_curve: tp.List[tp.Any] = []
 
         # How do we deal with cheap constraints i.e. constraints which are fast and use low resources and easy ?
         # True ==> we penalize them (infinite values for candidates which violate the constraint).
