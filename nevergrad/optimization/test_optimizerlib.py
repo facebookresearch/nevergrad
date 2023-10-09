@@ -144,6 +144,9 @@ UNSEEDABLE: tp.List[str] = [
     "NLOPT_GN_CRS2_LM",
     "NLOPT_GN_ISRES",
     "NLOPT_GN_ESCH",
+    "GOMEABlock",
+    "GOMEA",
+    "GOMEATree",
 ]
 
 
