@@ -349,7 +349,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             raise TypeError(
                 f'"tell" method only supports float values but the passed loss was: {loss} (type: {type(loss)}.'
             )
-        if isinstance(loss, float) and (len(self.optim_curve) == 0 or self.num_tell > self.optim_curve[-1][0] * 1.1):
+        if isinstance(loss, float) and (
+            len(self.optim_curve) == 0 or self.num_tell > self.optim_curve[-1][0] * 1.1
+        ):
             self.optim_curve += [(self.num_tell, loss)]
         # check Parameter
         if not isinstance(candidate, p.Parameter):
