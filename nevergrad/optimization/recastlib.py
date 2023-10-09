@@ -364,6 +364,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
             #
 
             elif "gomea" in weakself.method:
+                import gomea
 
                 class gomea_function(gomea.fitness.BBOFitnessFunctionRealValued):
                     def objective_function(self, objective_index, data):  # type: ignore
