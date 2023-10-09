@@ -43,6 +43,8 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
             in [
                 "CmaFmin2",
                 "gomea",
+                "gomeablock",
+                "gomeatree",
                 "SMAC3",
                 "BFGS",
                 "LBFGSB",
