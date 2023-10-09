@@ -90,6 +90,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # you can also replace or reinitialize this random state
         self.num_workers = int(num_workers)
         self.budget = budget
+        self.optim_curve = []
 
         # How do we deal with cheap constraints i.e. constraints which are fast and use low resources and easy ?
         # True ==> we penalize them (infinite values for candidates which violate the constraint).
@@ -348,6 +349,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             raise TypeError(
                 f'"tell" method only supports float values but the passed loss was: {loss} (type: {type(loss)}.'
             )
+        if isinstance(loss, float) and (len(self.optim_curve) == 0 or self.num_tell > self.optim_curve[-1][0] * 1.1):
+            self.optim_curve += [(self.num_tell, loss)]
         # check Parameter
         if not isinstance(candidate, p.Parameter):
             raise TypeError(
