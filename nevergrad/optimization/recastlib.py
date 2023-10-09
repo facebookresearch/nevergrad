@@ -42,6 +42,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
             method
             in [
                 "CmaFmin2",
+                "gomea",
                 "SMAC3",
                 "BFGS",
                 "LBFGSB",
