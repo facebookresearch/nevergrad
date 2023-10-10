@@ -42,6 +42,9 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
             method
             in [
                 "CmaFmin2",
+                "gomea",
+                "gomeablock",
+                "gomeatree",
                 "SMAC3",
                 "BFGS",
                 "LBFGSB",
@@ -362,6 +365,32 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
             #                    best_res = cost
             #                    best_x = weakself._normalizer.backward(np.asarray(x, dtype=float))
             #
+
+            elif "gomea" in weakself.method:
+                import gomea
+
+                class gomea_function(gomea.fitness.BBOFitnessFunctionRealValued):
+                    def objective_function(self, objective_index, data):  # type: ignore
+                        if weakself._normalizer is not None:
+                            data = weakself._normalizer.backward(np.asarray(data, dtype=np.float32))
+                        return objective_function(data)
+
+                gomea_f = gomea_function(weakself.dimension)
+                lm = {
+                    "gomea": gomea.linkage.Univariate(),
+                    "gomeablock": gomea.linkage.BlockMarginalProduct(2),
+                    "gomeatree": gomea.linkage.LinkageTree("NMI".encode(), True, 0),
+                }[weakself.method]
+                rvgom = gomea.RealValuedGOMEA(
+                    fitness=gomea_f,
+                    linkage_model=lm,
+                    lower_init_range=0.0,
+                    upper_init_range=1.0,
+                    max_number_of_evaluations=budget,
+                )
+                rvgom.run()
+                best_x = gomea_f.best_x
+
             elif weakself.method == "CmaFmin2":
                 import cma  # type: ignore
 
@@ -469,6 +498,9 @@ AX = NonObjectOptimizer(method="AX").set_name("AX", register=True)
 BOBYQA = NonObjectOptimizer(method="BOBYQA").set_name("BOBYQA", register=True)
 NelderMead = NonObjectOptimizer(method="Nelder-Mead").set_name("NelderMead", register=True)
 CmaFmin2 = NonObjectOptimizer(method="CmaFmin2").set_name("CmaFmin2", register=True)
+GOMEA = NonObjectOptimizer(method="gomea").set_name("GOMEA", register=True)
+GOMEABlock = NonObjectOptimizer(method="gomeablock").set_name("GOMEABlock", register=True)
+GOMEATree = NonObjectOptimizer(method="gomeatree").set_name("GOMEATree", register=True)
 # NLOPT = NonObjectOptimizer(method="NLOPT").set_name("NLOPT", register=True)
 Powell = NonObjectOptimizer(method="Powell").set_name("Powell", register=True)
 RPowell = NonObjectOptimizer(method="Powell", random_restart=True).set_name("RPowell", register=True)

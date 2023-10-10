@@ -23,7 +23,7 @@ skip_win_perf = pytest.mark.skipif(
 
 def suggestable(name: str) -> bool:
     # Some methods are not good with suggestions.
-    keywords = ["TBPSA", "BO", "EMNA", "EDA", "BO", "Stupid", "Pymoo"]
+    keywords = ["TBPSA", "BO", "EMNA", "EDA", "BO", "Stupid", "Pymoo", "GOMEA"]
     return not any(x in name for x in keywords)
 
 
@@ -75,6 +75,7 @@ def good_at_suggest(name: str) -> bool:
         "Multi",
         "Anisotropic",
         "BSO",
+        "GOMEA",
         "Sparse",
         "Adaptive",
         "Doerr",
