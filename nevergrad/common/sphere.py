@@ -776,7 +776,7 @@ def quasi_randomize(pointset, method):
         if len(shape) > 1 and shape[0] > 5:
             x = dispersion(n, shape, conv=[int(s / 3) for s in list(shape)[:-1]])
         else:
-            x = rs_metric_all(n, shape)
+            x = rs_ng_DiagonalCMA(n, shape)
     else:
         x = get_a_point_set(n, shape, method)
     x = normalize(x)
