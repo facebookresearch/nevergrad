@@ -389,14 +389,14 @@ def metric_pack_absavg(x, budget=default_budget, conv=None):
     xconv = np.array(normalize([convo(x_, conv).flatten() for x_ in x]))
     scores = np.matmul(xconv, xconv.transpose())
     for i in range(len(scores)):
-        assert .99 < scores[i,i] < 1.01
-        scores[i,i] = 0
+        assert 0.99 < scores[i, i] < 1.01
+        scores[i, i] = 0
     scores = scores.flatten()
     assert len(scores) == len(x) ** 2
     return np.average(np.abs(scores))
 
 
-def metric_pack_absavg_conv(x, budget=default_budget, conv=[8,8]):
+def metric_pack_absavg_conv(x, budget=default_budget, conv=[8, 8]):
     return metric_pack_absavg(x, budget=default_budget, conv=conv)
 
 
