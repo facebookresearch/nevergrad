@@ -396,6 +396,10 @@ def metric_pack_absavg(x, budget=default_budget, conv=None):
     return np.average(np.abs(scores))
 
 
+def metric_pack_absavg_conv(x, budget=default_budget):
+    return metric_pack_absavg(x, budget=default_budget, conv=[8, 8])
+
+
 def metric_riesz_avg(x, budget=default_budget, conv=None, r=1.):
     shape = x[0].shape
     xconv = np.array(normalize([convo(x_, conv).flatten() for x_ in x]))
