@@ -396,8 +396,29 @@ def metric_pack_absavg(x, budget=default_budget, conv=None):
     return np.average(np.abs(scores))
 
 
-def metric_pack_absavg_conv(x, budget=default_budget, conv=[8, 8]):
-    return metric_pack_absavg(x, budget=default_budget, conv=conv)
+def metric_riesz_avg(x, budget=default_budget, conv=None, r=1.):
+    shape = x[0].shape
+    xconv = np.array(normalize([convo(x_, conv).flatten() for x_ in x]))
+    scores = []
+    for i in range(len(xconv)):
+        for j in range(i):
+            scores += [np.linalg.norm(xconv[i] - xconv[j])**(-r)]
+    return np.average(scores)
+
+def metric_riesz_avg2(x, budget=default_budget, conv=None, r=2.):
+    return metric_riesz_avg(x, budget=budget, conv=conv, r=2.)
+
+def metric_riesz_avg05(x, budget=default_budget, conv=None, r=0.5):
+    return metric_riesz_avg(x, budget=budget, conv=conv, r=0.5)
+
+def metric_riesz_avg_conv(x, budget=default_budget, conv=[8, 8], r=1.):
+    return metric_riesz_avg(x, budget=default_budget, conv=conv, r=r)
+
+def metric_riesz_avg_conv2(x, budget=default_budget, conv=[8, 8], r=2.):
+    return metric_riesz_avg(x, budget=default_budget, conv=conv, r=r)
+
+def metric_riesz_avg_conv05(x, budget=default_budget, conv=[8, 8], r=0.5):
+    return metric_riesz_avg(x, budget=default_budget, conv=conv, r=r)
 
 
 def metric_pack_avg(x, budget=default_budget, conv=None):
@@ -479,6 +500,12 @@ list_metrics = [
     "metric_pack_absavg_conv",
     "metric_cap",
     "metric_cap_conv",
+"metric_riesz_avg",
+"metric_riesz_avg2",
+"metric_riesz_avg05",
+"metric_riesz_avg_conv",
+"metric_riesz_avg_conv2",
+"metric_riesz_avg_conv05",
 ]
 for u in list_metrics:
     metrics[u] = eval(u)
