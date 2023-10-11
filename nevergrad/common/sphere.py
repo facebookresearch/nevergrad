@@ -400,26 +400,31 @@ def metric_pack_absavg_conv(x, budget=default_budget):
     return metric_pack_absavg(x, budget=default_budget, conv=[8, 8])
 
 
-def metric_riesz_avg(x, budget=default_budget, conv=None, r=1.):
+def metric_riesz_avg(x, budget=default_budget, conv=None, r=1.0):
     shape = x[0].shape
     xconv = np.array(normalize([convo(x_, conv).flatten() for x_ in x]))
     scores = []
     for i in range(len(xconv)):
         for j in range(i):
-            scores += [np.linalg.norm(xconv[i] - xconv[j])**(-r)]
+            scores += [np.linalg.norm(xconv[i] - xconv[j]) ** (-r)]
     return np.average(scores)
 
-def metric_riesz_avg2(x, budget=default_budget, conv=None, r=2.):
-    return metric_riesz_avg(x, budget=budget, conv=conv, r=2.)
+
+def metric_riesz_avg2(x, budget=default_budget, conv=None, r=2.0):
+    return metric_riesz_avg(x, budget=budget, conv=conv, r=2.0)
+
 
 def metric_riesz_avg05(x, budget=default_budget, conv=None, r=0.5):
     return metric_riesz_avg(x, budget=budget, conv=conv, r=0.5)
 
-def metric_riesz_avg_conv(x, budget=default_budget, conv=[8, 8], r=1.):
+
+def metric_riesz_avg_conv(x, budget=default_budget, conv=[8, 8], r=1.0):
     return metric_riesz_avg(x, budget=default_budget, conv=conv, r=r)
 
-def metric_riesz_avg_conv2(x, budget=default_budget, conv=[8, 8], r=2.):
+
+def metric_riesz_avg_conv2(x, budget=default_budget, conv=[8, 8], r=2.0):
     return metric_riesz_avg(x, budget=default_budget, conv=conv, r=r)
+
 
 def metric_riesz_avg_conv05(x, budget=default_budget, conv=[8, 8], r=0.5):
     return metric_riesz_avg(x, budget=default_budget, conv=conv, r=r)
@@ -492,6 +497,12 @@ list_of_methods = [
     "rs_cap",
     "rs_cc",
     "rs_all",
+    "rs_ra",
+    "rs_ra2",
+    "rs_ra05",
+    "rs_rac",
+    "rs_rac2",
+    "rs_rac05",
 ]
 list_metrics = [
     "metric_half",
@@ -504,12 +515,12 @@ list_metrics = [
     "metric_pack_absavg_conv",
     "metric_cap",
     "metric_cap_conv",
-"metric_riesz_avg",
-"metric_riesz_avg2",
-"metric_riesz_avg05",
-"metric_riesz_avg_conv",
-"metric_riesz_avg_conv2",
-"metric_riesz_avg_conv05",
+    "metric_riesz_avg",
+    "metric_riesz_avg2",
+    "metric_riesz_avg05",
+    "metric_riesz_avg_conv",
+    "metric_riesz_avg_conv2",
+    "metric_riesz_avg_conv05",
 ]
 for u in list_metrics:
     metrics[u] = eval(u)
@@ -565,6 +576,30 @@ def rs_pack(n, shape, budget=default_budget):
     return rs(n, shape, budget, k="metric_pack")
 
 
+def rs_ra(n, shape, budget=default_budget):
+    return rs(n, shape, budget, k="metric_riesz_avg")
+
+
+def rs_ra2(n, shape, budget=default_budget):
+    return rs(n, shape, budget, k="metric_riesz_avg2")
+
+
+def rs_ra05(n, shape, budget=default_budget):
+    return rs(n, shape, budget, k="metric_riesz_avg05")
+
+
+def rs_rac(n, shape, budget=default_budget):
+    return rs(n, shape, budget, k="metric_riesz_avg_conv")
+
+
+def rs_rac2(n, shape, budget=default_budget):
+    return rs(n, shape, budget, k="metric_riesz_avg_conv2")
+
+
+def rs_rac05(n, shape, budget=default_budget):
+    return rs(n, shape, budget, k="metric_riesz_avg_conv05")
+
+
 def rs_pa(n, shape, budget=default_budget):
     return rs(n, shape, budget, k="metric_pack_avg")
 
@@ -604,51 +639,52 @@ def ng_DiagonalCMA(n, shape, budget=default_budget):
 data = defaultdict(lambda: defaultdict(list))  # type: ignore
 
 
-# def do_plot(tit, values):
-#     plt.clf()
-#     plt.title(tit.replace("_", " "))
-#     x = np.cos(np.linspace(0.0, 2 * 3.14159, 20))
-#     y = np.sin(np.linspace(0.0, 2 * 3.14159, 20))
-#     for i, v in enumerate(sorted(values.keys(), key=lambda k: np.average(values[k]))):
-#         print(f"context {tit}, {v} ==> {values[v]}")
-#         plt.plot([i + r for r in x], [np.average(values[v]) + r * np.std(values[v]) for r in y])
-#         plt.text(i, np.average(values[v]) + np.std(values[v]), f"{v}", rotation=30)
-#         if i > 0:
-#             plt.savefig(
-#                 f"comparison_{tit}_time{default_budget}.png".replace(" ", "_")
-#                 .replace("]", "_")
-#                 .replace("[", "_")
-#             )
-#
-#
-# def heatmap(y, x, table, name):
-#     for cn in ["viridis", "plasma", "inferno", "magma", "cividis"]:
-#         print(f"Creating a heatmap with name {name}: {table}")
-#         plt.clf()
-#         fig, ax = plt.subplots()
-#         tab = copy.deepcopy(table)
-#
-#         for j in range(len(tab[0, :])):
-#             for i in range(len(tab)):
-#                 tab[i, j] = np.average(table[:, j] < table[i, j])
-#         print(tab)
-#         im = ax.imshow(tab, aspect="auto", cmap=mpl.colormaps[cn])
-#
-#         # Show all ticks and label them with the respective list entries
-#         ax.set_xticks(np.arange(len(x)), labels=x)
-#         ax.set_yticks(np.arange(len(y)), labels=y)
-#
-#         # Rotate the tick labels and set their alignment.
-#         plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
-#
-#         # Loop over data dimensions and create text annotations.
-#         for i in range(len(y)):
-#             for j in range(len(x)):
-#                 text = ax.text(j, i, str(tab[i, j])[:4], ha="center", va="center", color="k")
-#
-#         fig.tight_layout()
-#         plt.savefig(f"TIME{default_budget}_cmap{cn}" + name)
-#
+def do_plot(tit, values):
+    plt.clf()
+    plt.title(tit.replace("_", " "))
+    x = np.cos(np.linspace(0.0, 2 * 3.14159, 20))
+    y = np.sin(np.linspace(0.0, 2 * 3.14159, 20))
+    for i, v in enumerate(sorted(values.keys(), key=lambda k: np.average(values[k]))):
+        print(f"context {tit}, {v} ==> {values[v]}")
+        plt.plot([i + r for r in x], [np.average(values[v]) + r * np.std(values[v]) for r in y])
+        plt.text(i, np.average(values[v]) + np.std(values[v]), f"{v}", rotation=30)
+        if i > 0:
+            plt.savefig(
+                f"comparison_{tit}_time{default_budget}.png".replace(" ", "_")
+                .replace("]", "_")
+                .replace("[", "_")
+            )
+
+
+def heatmap(y, x, table, name):
+    for cn in ["viridis", "plasma", "inferno", "magma", "cividis"]:
+        print(f"Creating a heatmap with name {name}: {table}")
+        plt.clf()
+        fig, ax = plt.subplots()
+        tab = copy.deepcopy(table)
+
+        for j in range(len(tab[0, :])):
+            for i in range(len(tab)):
+                tab[i, j] = np.average(table[:, j] < table[i, j])
+        print(tab)
+        im = ax.imshow(tab, aspect="auto", cmap=mpl.colormaps[cn])
+
+        # Show all ticks and label them with the respective list entries
+        ax.set_xticks(np.arange(len(x)), labels=x)
+        ax.set_yticks(np.arange(len(y)), labels=y)
+
+        # Rotate the tick labels and set their alignment.
+        plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+
+        # Loop over data dimensions and create text annotations.
+        for i in range(len(y)):
+            for j in range(len(x)):
+                text = ax.text(j, i, str(tab[i, j])[:4], ha="center", va="center", color="k")
+
+        fig.tight_layout()
+        plt.savefig(f"TIME{default_budget}_cmap{cn}" + name)
+
+
 #
 # def create_statistics(n, shape, list_of_methods, list_of_metrics, num=1):
 #     for _ in range(num):
