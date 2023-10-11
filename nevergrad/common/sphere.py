@@ -384,6 +384,22 @@ def metric_cap_conv(x, budget=default_budget):
     return metric_cap(x, budget, conv=[8, 8])
 
 
+def metric_pack_absavg(x, budget=default_budget, conv=None):
+    shape = x[0].shape
+    xconv = np.array(normalize([convo(x_, conv).flatten() for x_ in x]))
+    scores = np.matmul(xconv, xconv.transpose())
+    for i in range(len(scores)):
+        assert .99 < scores[i,i] < 1.01
+        scores[i,i] = 0
+    scores = scores.flatten()
+    assert len(scores) == len(x) ** 2
+    return np.average(np.abs(scores))
+
+
+def metric_pack_absavg_conv(x, budget=default_budget, conv=[8,8]):
+    return metric_pack_absavg(x, budget=default_budget, conv=conv)
+
+
 def metric_pack_avg(x, budget=default_budget, conv=None):
     shape = x[0].shape
     xconv = np.array(normalize([convo(x_, conv).flatten() for x_ in x]))
@@ -417,11 +433,11 @@ def metric_pack_conv(x, budget=default_budget):
 
 
 list_of_methods = [
-    "rs_ng_TwoPointsDE",
-    "rs_ng_DE",
-    "rs_ng_PSO",
-    "rs_ng_OnePlusOne",
-    "rs_ng_DiagonalCMA",
+    "ng_TwoPointsDE",
+    "ng_DE",
+    "ng_PSO",
+    "ng_OnePlusOne",
+    "ng_DiagonalCMA",
     "lhs",
     "reduced_jittered",
     "jittered",
@@ -442,15 +458,15 @@ list_of_methods = [
     "covering",
     "covering_conv",
     "covering_mini_conv",
-    "rs_metric",
-    "rs_metric_mhc",
-    "rs_metric_pack",
-    "rs_metric_pa",
-    "rs_metric_pc",
-    "rs_metric_pac",
-    "rs_metric_cap",
-    "rs_metric_cc",
-    "rs_metric_all",
+    "rs",
+    "rs_mhc",
+    "rs_pack",
+    "rs_pa",
+    "rs_pc",
+    "rs_pac",
+    "rs_cap",
+    "rs_cc",
+    "rs_all",
 ]
 list_metrics = [
     "metric_half",
@@ -459,6 +475,8 @@ list_metrics = [
     "metric_pack_conv",
     "metric_pack_avg",
     "metric_pack_avg_conv",
+    "metric_pack_absavg",
+    "metric_pack_absavg_conv",
     "metric_cap",
     "metric_cap_conv",
 ]
@@ -466,7 +484,7 @@ for u in list_metrics:
     metrics[u] = eval(u)
 
 
-def rs_metric(n, shape, budget=default_budget, k="metric_half", ngtool=None):
+def rs(n, shape, budget=default_budget, k="metric_half", ngtool=None):
     t0 = time.time()
     bestm = float("inf")
     if ngtool is not None:
@@ -500,56 +518,56 @@ def rs_metric(n, shape, budget=default_budget, k="metric_half", ngtool=None):
     return bestx
 
 
-def rs_metric_mhc(n, shape, budget=default_budget):
-    return rs_metric(n, shape, budget, k="metric_half_conv")
+def rs_mhc(n, shape, budget=default_budget):
+    return rs(n, shape, budget, k="metric_half_conv")
 
 
-def rs_metric_cap(n, shape, budget=default_budget):
-    return rs_metric(n, shape, budget, k="metric_cap")
+def rs_cap(n, shape, budget=default_budget):
+    return rs(n, shape, budget, k="metric_cap")
 
 
-def rs_metric_cc(n, shape, budget=default_budget):
-    return rs_metric(n, shape, budget, k="metric_cap_conv")
+def rs_cc(n, shape, budget=default_budget):
+    return rs(n, shape, budget, k="metric_cap_conv")
 
 
-def rs_metric_pack(n, shape, budget=default_budget):
-    return rs_metric(n, shape, budget, k="metric_pack")
+def rs_pack(n, shape, budget=default_budget):
+    return rs(n, shape, budget, k="metric_pack")
 
 
-def rs_metric_pa(n, shape, budget=default_budget):
-    return rs_metric(n, shape, budget, k="metric_pack_avg")
+def rs_pa(n, shape, budget=default_budget):
+    return rs(n, shape, budget, k="metric_pack_avg")
 
 
-def rs_metric_pc(n, shape, budget=default_budget):
-    return rs_metric(n, shape, budget, k="metric_pack_conv")
+def rs_pc(n, shape, budget=default_budget):
+    return rs(n, shape, budget, k="metric_pack_conv")
 
 
-def rs_metric_pac(n, shape, budget=default_budget):
-    return rs_metric(n, shape, budget, k="metric_pack_avg_conv")
+def rs_pac(n, shape, budget=default_budget):
+    return rs(n, shape, budget, k="metric_pack_avg_conv")
 
 
-def rs_metric_all(n, shape, budget=default_budget):
-    return rs_metric(n, shape, budget, k="all")
+def rs_all(n, shape, budget=default_budget):
+    return rs(n, shape, budget, k="all")
 
 
-def rs_ng_TwoPointsDE(n, shape, budget=default_budget):
-    return rs_metric(n, shape, budget, k="all", ngtool="TwoPointsDE")
+def ng_TwoPointsDE(n, shape, budget=default_budget):
+    return rs(n, shape, budget, k="all", ngtool="TwoPointsDE")
 
 
-def rs_ng_DE(n, shape, budget=default_budget):
-    return rs_metric(n, shape, budget, k="all", ngtool="DE")
+def ng_DE(n, shape, budget=default_budget):
+    return rs(n, shape, budget, k="all", ngtool="DE")
 
 
-def rs_ng_PSO(n, shape, budget=default_budget):
-    return rs_metric(n, shape, budget, k="all", ngtool="PSO")
+def ng_PSO(n, shape, budget=default_budget):
+    return rs(n, shape, budget, k="all", ngtool="PSO")
 
 
-def rs_ng_OnePlusOne(n, shape, budget=default_budget):
-    return rs_metric(n, shape, budget, k="all", ngtool="OnePlusOne")
+def ng_OnePlusOne(n, shape, budget=default_budget):
+    return rs(n, shape, budget, k="all", ngtool="OnePlusOne")
 
 
-def rs_ng_DiagonalCMA(n, shape, budget=default_budget):
-    return rs_metric(n, shape, budget, k="all", ngtool="DiagonalCMA")
+def ng_DiagonalCMA(n, shape, budget=default_budget):
+    return rs(n, shape, budget, k="all", ngtool="DiagonalCMA")
 
 
 data = defaultdict(lambda: defaultdict(list))  # type: ignore
@@ -776,7 +794,7 @@ def quasi_randomize(pointset, method):
         if len(shape) > 1 and shape[0] > 5:
             x = dispersion(n, shape, conv=[int(s / 3) for s in list(shape)[:-1]])
         else:
-            x = rs_ng_DiagonalCMA(n, shape)
+            x = ng_DiagonalCMA(n, shape)
     else:
         x = get_a_point_set(n, shape, method)
     x = normalize(x)
