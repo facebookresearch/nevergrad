@@ -384,6 +384,52 @@ def metric_cap_conv(x, budget=default_budget):
     return metric_cap(x, budget, conv=[8, 8])
 
 
+def metric_pack_absavg(x, budget=default_budget, conv=None):
+    shape = x[0].shape
+    xconv = np.array(normalize([convo(x_, conv).flatten() for x_ in x]))
+    scores = np.matmul(xconv, xconv.transpose())
+    for i in range(len(scores)):
+        assert 0.99 < scores[i, i] < 1.01
+        scores[i, i] = 0
+    scores = scores.flatten()
+    assert len(scores) == len(x) ** 2
+    return np.average(np.abs(scores))
+
+
+def metric_pack_absavg_conv(x, budget=default_budget):
+    return metric_pack_absavg(x, budget=default_budget, conv=[8, 8])
+
+
+def metric_riesz_avg(x, budget=default_budget, conv=None, r=1.0):
+    shape = x[0].shape
+    xconv = np.array(normalize([convo(x_, conv).flatten() for x_ in x]))
+    scores = []
+    for i in range(len(xconv)):
+        for j in range(i):
+            scores += [np.linalg.norm(xconv[i] - xconv[j]) ** (-r)]
+    return np.average(scores)
+
+
+def metric_riesz_avg2(x, budget=default_budget, conv=None, r=2.0):
+    return metric_riesz_avg(x, budget=budget, conv=conv, r=2.0)
+
+
+def metric_riesz_avg05(x, budget=default_budget, conv=None, r=0.5):
+    return metric_riesz_avg(x, budget=budget, conv=conv, r=0.5)
+
+
+def metric_riesz_avg_conv(x, budget=default_budget, conv=[8, 8], r=1.0):
+    return metric_riesz_avg(x, budget=default_budget, conv=conv, r=r)
+
+
+def metric_riesz_avg_conv2(x, budget=default_budget, conv=[8, 8], r=2.0):
+    return metric_riesz_avg(x, budget=default_budget, conv=conv, r=r)
+
+
+def metric_riesz_avg_conv05(x, budget=default_budget, conv=[8, 8], r=0.5):
+    return metric_riesz_avg(x, budget=default_budget, conv=conv, r=r)
+
+
 def metric_pack_avg(x, budget=default_budget, conv=None):
     shape = x[0].shape
     xconv = np.array(normalize([convo(x_, conv).flatten() for x_ in x]))
@@ -417,11 +463,11 @@ def metric_pack_conv(x, budget=default_budget):
 
 
 list_of_methods = [
-    "rs_ng_TwoPointsDE",
-    "rs_ng_DE",
-    "rs_ng_PSO",
-    "rs_ng_OnePlusOne",
-    "rs_ng_DiagonalCMA",
+    "ng_TwoPointsDE",
+    "ng_DE",
+    "ng_PSO",
+    "ng_OnePlusOne",
+    "ng_DiagonalCMA",
     "lhs",
     "reduced_jittered",
     "jittered",
@@ -442,15 +488,21 @@ list_of_methods = [
     "covering",
     "covering_conv",
     "covering_mini_conv",
-    "rs_metric",
-    "rs_metric_mhc",
-    "rs_metric_pack",
-    "rs_metric_pa",
-    "rs_metric_pc",
-    "rs_metric_pac",
-    "rs_metric_cap",
-    "rs_metric_cc",
-    "rs_metric_all",
+    "rs",
+    "rs_mhc",
+    "rs_pack",
+    "rs_pa",
+    "rs_pc",
+    "rs_pac",
+    "rs_cap",
+    "rs_cc",
+    "rs_all",
+    "rs_ra",
+    "rs_ra2",
+    "rs_ra05",
+    "rs_rac",
+    "rs_rac2",
+    "rs_rac05",
 ]
 list_metrics = [
     "metric_half",
@@ -459,14 +511,22 @@ list_metrics = [
     "metric_pack_conv",
     "metric_pack_avg",
     "metric_pack_avg_conv",
+    "metric_pack_absavg",
+    "metric_pack_absavg_conv",
     "metric_cap",
     "metric_cap_conv",
+    "metric_riesz_avg",
+    "metric_riesz_avg2",
+    "metric_riesz_avg05",
+    "metric_riesz_avg_conv",
+    "metric_riesz_avg_conv2",
+    "metric_riesz_avg_conv05",
 ]
 for u in list_metrics:
     metrics[u] = eval(u)
 
 
-def rs_metric(n, shape, budget=default_budget, k="metric_half", ngtool=None):
+def rs(n, shape, budget=default_budget, k="metric_half", ngtool=None):
     t0 = time.time()
     bestm = float("inf")
     if ngtool is not None:
@@ -500,106 +560,131 @@ def rs_metric(n, shape, budget=default_budget, k="metric_half", ngtool=None):
     return bestx
 
 
-def rs_metric_mhc(n, shape, budget=default_budget):
-    return rs_metric(n, shape, budget, k="metric_half_conv")
+def rs_mhc(n, shape, budget=default_budget):
+    return rs(n, shape, budget, k="metric_half_conv")
 
 
-def rs_metric_cap(n, shape, budget=default_budget):
-    return rs_metric(n, shape, budget, k="metric_cap")
+def rs_cap(n, shape, budget=default_budget):
+    return rs(n, shape, budget, k="metric_cap")
 
 
-def rs_metric_cc(n, shape, budget=default_budget):
-    return rs_metric(n, shape, budget, k="metric_cap_conv")
+def rs_cc(n, shape, budget=default_budget):
+    return rs(n, shape, budget, k="metric_cap_conv")
 
 
-def rs_metric_pack(n, shape, budget=default_budget):
-    return rs_metric(n, shape, budget, k="metric_pack")
+def rs_pack(n, shape, budget=default_budget):
+    return rs(n, shape, budget, k="metric_pack")
 
 
-def rs_metric_pa(n, shape, budget=default_budget):
-    return rs_metric(n, shape, budget, k="metric_pack_avg")
+def rs_ra(n, shape, budget=default_budget):
+    return rs(n, shape, budget, k="metric_riesz_avg")
 
 
-def rs_metric_pc(n, shape, budget=default_budget):
-    return rs_metric(n, shape, budget, k="metric_pack_conv")
+def rs_ra2(n, shape, budget=default_budget):
+    return rs(n, shape, budget, k="metric_riesz_avg2")
 
 
-def rs_metric_pac(n, shape, budget=default_budget):
-    return rs_metric(n, shape, budget, k="metric_pack_avg_conv")
+def rs_ra05(n, shape, budget=default_budget):
+    return rs(n, shape, budget, k="metric_riesz_avg05")
 
 
-def rs_metric_all(n, shape, budget=default_budget):
-    return rs_metric(n, shape, budget, k="all")
+def rs_rac(n, shape, budget=default_budget):
+    return rs(n, shape, budget, k="metric_riesz_avg_conv")
 
 
-def rs_ng_TwoPointsDE(n, shape, budget=default_budget):
-    return rs_metric(n, shape, budget, k="all", ngtool="TwoPointsDE")
+def rs_rac2(n, shape, budget=default_budget):
+    return rs(n, shape, budget, k="metric_riesz_avg_conv2")
 
 
-def rs_ng_DE(n, shape, budget=default_budget):
-    return rs_metric(n, shape, budget, k="all", ngtool="DE")
+def rs_rac05(n, shape, budget=default_budget):
+    return rs(n, shape, budget, k="metric_riesz_avg_conv05")
 
 
-def rs_ng_PSO(n, shape, budget=default_budget):
-    return rs_metric(n, shape, budget, k="all", ngtool="PSO")
+def rs_pa(n, shape, budget=default_budget):
+    return rs(n, shape, budget, k="metric_pack_avg")
 
 
-def rs_ng_OnePlusOne(n, shape, budget=default_budget):
-    return rs_metric(n, shape, budget, k="all", ngtool="OnePlusOne")
+def rs_pc(n, shape, budget=default_budget):
+    return rs(n, shape, budget, k="metric_pack_conv")
 
 
-def rs_ng_DiagonalCMA(n, shape, budget=default_budget):
-    return rs_metric(n, shape, budget, k="all", ngtool="DiagonalCMA")
+def rs_pac(n, shape, budget=default_budget):
+    return rs(n, shape, budget, k="metric_pack_avg_conv")
+
+
+def rs_all(n, shape, budget=default_budget):
+    return rs(n, shape, budget, k="all")
+
+
+def ng_TwoPointsDE(n, shape, budget=default_budget):
+    return rs(n, shape, budget, k="all", ngtool="TwoPointsDE")
+
+
+def ng_DE(n, shape, budget=default_budget):
+    return rs(n, shape, budget, k="all", ngtool="DE")
+
+
+def ng_PSO(n, shape, budget=default_budget):
+    return rs(n, shape, budget, k="all", ngtool="PSO")
+
+
+def ng_OnePlusOne(n, shape, budget=default_budget):
+    return rs(n, shape, budget, k="all", ngtool="OnePlusOne")
+
+
+def ng_DiagonalCMA(n, shape, budget=default_budget):
+    return rs(n, shape, budget, k="all", ngtool="DiagonalCMA")
 
 
 data = defaultdict(lambda: defaultdict(list))  # type: ignore
 
 
-# def do_plot(tit, values):
-#     plt.clf()
-#     plt.title(tit.replace("_", " "))
-#     x = np.cos(np.linspace(0.0, 2 * 3.14159, 20))
-#     y = np.sin(np.linspace(0.0, 2 * 3.14159, 20))
-#     for i, v in enumerate(sorted(values.keys(), key=lambda k: np.average(values[k]))):
-#         print(f"context {tit}, {v} ==> {values[v]}")
-#         plt.plot([i + r for r in x], [np.average(values[v]) + r * np.std(values[v]) for r in y])
-#         plt.text(i, np.average(values[v]) + np.std(values[v]), f"{v}", rotation=30)
-#         if i > 0:
-#             plt.savefig(
-#                 f"comparison_{tit}_time{default_budget}.png".replace(" ", "_")
-#                 .replace("]", "_")
-#                 .replace("[", "_")
-#             )
-#
-#
-# def heatmap(y, x, table, name):
-#     for cn in ["viridis", "plasma", "inferno", "magma", "cividis"]:
-#         print(f"Creating a heatmap with name {name}: {table}")
-#         plt.clf()
-#         fig, ax = plt.subplots()
-#         tab = copy.deepcopy(table)
-#
-#         for j in range(len(tab[0, :])):
-#             for i in range(len(tab)):
-#                 tab[i, j] = np.average(table[:, j] < table[i, j])
-#         print(tab)
-#         im = ax.imshow(tab, aspect="auto", cmap=mpl.colormaps[cn])
-#
-#         # Show all ticks and label them with the respective list entries
-#         ax.set_xticks(np.arange(len(x)), labels=x)
-#         ax.set_yticks(np.arange(len(y)), labels=y)
-#
-#         # Rotate the tick labels and set their alignment.
-#         plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
-#
-#         # Loop over data dimensions and create text annotations.
-#         for i in range(len(y)):
-#             for j in range(len(x)):
-#                 text = ax.text(j, i, str(tab[i, j])[:4], ha="center", va="center", color="k")
-#
-#         fig.tight_layout()
-#         plt.savefig(f"TIME{default_budget}_cmap{cn}" + name)
-#
+def do_plot(tit, values):
+    plt.clf()
+    plt.title(tit.replace("_", " "))
+    x = np.cos(np.linspace(0.0, 2 * 3.14159, 20))
+    y = np.sin(np.linspace(0.0, 2 * 3.14159, 20))
+    for i, v in enumerate(sorted(values.keys(), key=lambda k: np.average(values[k]))):
+        print(f"context {tit}, {v} ==> {values[v]}")
+        plt.plot([i + r for r in x], [np.average(values[v]) + r * np.std(values[v]) for r in y])
+        plt.text(i, np.average(values[v]) + np.std(values[v]), f"{v}", rotation=30)
+        if i > 0:
+            plt.savefig(
+                f"comparison_{tit}_time{default_budget}.png".replace(" ", "_")
+                .replace("]", "_")
+                .replace("[", "_")
+            )
+
+
+def heatmap(y, x, table, name):
+    for cn in ["viridis", "plasma", "inferno", "magma", "cividis"]:
+        print(f"Creating a heatmap with name {name}: {table}")
+        plt.clf()
+        fig, ax = plt.subplots()
+        tab = copy.deepcopy(table)
+
+        for j in range(len(tab[0, :])):
+            for i in range(len(tab)):
+                tab[i, j] = np.average(table[:, j] < table[i, j])
+        print(tab)
+        im = ax.imshow(tab, aspect="auto", cmap=mpl.colormaps[cn])
+
+        # Show all ticks and label them with the respective list entries
+        ax.set_xticks(np.arange(len(x)), labels=x)
+        ax.set_yticks(np.arange(len(y)), labels=y)
+
+        # Rotate the tick labels and set their alignment.
+        plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+
+        # Loop over data dimensions and create text annotations.
+        for i in range(len(y)):
+            for j in range(len(x)):
+                text = ax.text(j, i, str(tab[i, j])[:4], ha="center", va="center", color="k")
+
+        fig.tight_layout()
+        plt.savefig(f"TIME{default_budget}_cmap{cn}" + name)
+
+
 #
 # def create_statistics(n, shape, list_of_methods, list_of_metrics, num=1):
 #     for _ in range(num):
@@ -776,7 +861,7 @@ def quasi_randomize(pointset, method):
         if len(shape) > 1 and shape[0] > 5:
             x = dispersion(n, shape, conv=[int(s / 3) for s in list(shape)[:-1]])
         else:
-            x = rs_ng_DiagonalCMA(n, shape)
+            x = ng_DiagonalCMA(n, shape)
     else:
         x = get_a_point_set(n, shape, method)
     x = normalize(x)
