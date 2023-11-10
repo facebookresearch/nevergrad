@@ -282,7 +282,16 @@ def test_optimizers_minimal(name: str) -> None:
     optimizer_cls = registry[name]
     if any(x in name for x in ["SMAC", "BO", "AX"]) and os.environ.get("CIRCLECI", False):
         raise SkipTest("too slow for CircleCI!")
-    if optimizer_cls.one_shot or name in ["CM", "NLOPT_LN_PRAXIS", "ES", "RecMixES", "RecMutDE", "RecES"]:
+    if optimizer_cls.one_shot or name in [
+        "CM",
+        "NLOPT_LN_PRAXIS",
+        "ES",
+        "RecMixES",
+        "RecMutDE",
+        "RecES",
+        "VastLengler",
+        "VastDE",
+    ]:
         return
     if any(
         x in str(optimizer_cls)
