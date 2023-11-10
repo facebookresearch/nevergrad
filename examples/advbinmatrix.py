@@ -9,12 +9,11 @@ from collections import defaultdict
 cmap = plt.get_cmap('jet_r')
 score = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
 
-numxps = 17
 nmax=250
-
+numxps = 7
 list_of_pbs = ["simple", "complex", "flatparts", "combined", "smooth", "bands", "shift"]
 list_of_pbs = ["simple", "complex", "combined", "hardcore"]
-list_ratios = [1, 5, 10, 20]
+list_ratios = [0.2, 1, 5, 10, 20, 40, 80]
 
 
 # REMOVE THIS !
@@ -96,15 +95,15 @@ def doall(list_of_pbs):
            #try:
           def run_alg(k, ratio):
             print(f"{k} works on {pb} with edge {n}")
-            optimizer = ng.optimizers.registry[k](parametrization=ng.p.Array(shape=(n,n),lower=0.,upper=1.).set_integer_casting(), budget=n*ratio)# num_workers=20)
+            optimizer = ng.optimizers.registry[k](parametrization=ng.p.Array(shape=(n,n),lower=0.,upper=1.).set_integer_casting(), budget=int(n*ratio))# num_workers=20)
             #with futures.ProcessPoolExecutor(max_workers=optimizer.num_workers) as executor:
             recommendation = optimizer.minimize(testloss)#, executor=executor, batch_mode=False)
-            return testloss(recommendation.value)
-          all_res = Parallel(n_jobs=80)(delayed(run_alg)(k, ratio) for k in algos for ratio in list_ratios)
-          for i, k in enumerate(algos):
-            for ratio in list_ratios:
-              score[pb + str(ratio)][n][k] += [all_res[i]]
-            #score[n][k] += [testloss(recommendation.value)]
+            return k, ratio, testloss(recommendation.value)
+          all_res = Parallel(n_jobs=80)(delayed(run_alg)(k, ratio) for k in algos for ratio in list_ratios for _ in range(3))
+          for r in all_res:
+              k = r[0]
+              ratio = r[1]
+              score[pb + str(ratio)][n][k] += [r[2]]
               print(f"=====> {k} gets {np.average(score[pb + str(ratio)][n][k])} on {pb} with edge {n}")
            #except Exception as e:
            # print(f"{k} does not work ({e}), maybe package missing ?")
@@ -112,23 +111,30 @@ def doall(list_of_pbs):
          #  continue
      
       for f in [6]: #,5,6]:
-       for nbest in [7, 19]: #, 10, 20, len(score[n].keys())]:
+       for nbest in [7, 12, 19]: #, 10, 20, len(score[n].keys())]:
         for r in [7.]:
          for ratio in list_ratios:
           for u in range(3):
            plt.clf()
            sorted_algos = sorted(score[pb + str(ratio)][n].keys(), key=lambda k: np.average(score[pb + str(ratio)][n][k]))
-           if n > 10:
-               algos = [a for a in algos if a in sorted_algos[:max(31, int(.7 * len(algos)))] ]
+           #if n > 10:
+           #    algos = [a for a in algos if a in sorted_algos[:max(31, int(.7 * len(algos)))] ]
+           for a in range(min(nbest, len(sorted_algos))):
+               print(f"{a}/{nbest}: {sorted_algos[a]} for ratio {ratio} and pb {pb}")
            sorted_algos = sorted_algos[:nbest][::-1]
-           sorted_algos = [sorted_algos[i] for i in range(len(sorted_algos)) if i <= 18 or i >= len(sorted_algos) - 2]
+           #sorted_algos = [sorted_algos[i] for i in range(len(sorted_algos)) if i <= 18 or i >= len(sorted_algos) - 2]
            for i, k in enumerate(sorted_algos):
               #print(f" for size {n}, {k} gets {np.average(score[n][k])}")
               color = cmap(i/len(sorted_algos))
 
-              x = [ni for ni in score[pb + str(ratio)].keys()] # if k in score[ni]]
-              y = [np.average(score[pb + str(ratio)][x_][k]) + ((-1)**idx) * np.std(score[pb + str(ratio)][x_][k]) for idx, x_ in enumerate(x)]
+              x = sorted([ni for ni in score[pb + str(ratio)].keys()]) # if k in score[ni]]
+              assert max(x) == n
+              assert max(x) == x[-1]
+              y = [np.average(score[pb + str(ratio)][x_][k]) for idx, x_ in enumerate(x)]
+              #y = [np.average(score[pb + str(ratio)][x_][k]) * np.std(score[pb + str(ratio)][x_][k]) for idx, x_ in enumerate(x)]
               plt.plot(x, y, label=k+f" {y[-1]:.2f}", c=color)
+              assert y[-1] == np.average(score[pb + str(ratio)][n][k]), f" {y[-1]} vs {np.average(score[pb + str(ratio)][n][k])}"
+              y = [np.average(score[pb + str(ratio)][x_][k]) + ((-1)**idx) * np.std(score[pb + str(ratio)][x_][k]) for idx, x_ in enumerate(x)]
               plt.plot(x, y, c=color, linestyle='dashed')
               #print("plot",x,y,k)
               plt.text(x[-1], y[-1], k, {'rotation': min(r * (len(sorted_algos) - i - 1), 60), 'rotation_mode': 'anchor', 'horizontalalignment': 'left', 'verticalalignment': 'center',})

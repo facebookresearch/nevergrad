@@ -409,8 +409,8 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
 
     # Below, we use the best in the records above.
     benchmark = str(inspect.stack()[1].function)
-    if benchmark in algos and "tunin" in benchmark and np.random.randint(2) > 0:
-        list_optims = algos[benchmark][:5]
+    if benchmark in algos and "tunin" in benchmark and np.random.randint(2) > 0 and False:
+        return algos[benchmark][:5]
 
     # Here, we pseudo-randomly draw one optim in the provided list,
     # depending on the host (so that each host is using the same optim).
@@ -461,6 +461,7 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
     import socket
 
     host = socket.gethostname()
+
     if "iscr" in benchmark or "pbo" in benchmark:
         list_optims += [
             a
@@ -518,6 +519,8 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
             ]
             if ("Smooth" in a or "Lognor" in a or "Recomb" in a)
         ]
+    list_optims = ["NgIoh7", "NgIohRW2", "LognormalDiscreteOnePlusOne"]
+
     return [list_optims[doint(host) % len(list_optims)]]
 
 
