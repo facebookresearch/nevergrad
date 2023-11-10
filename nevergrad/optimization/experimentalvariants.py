@@ -16,13 +16,13 @@ from .optimizerlib import (
     NGOpt10,
     NGOpt12,
     BayesOptim,
-    ConfPortfolio,
-    DiagonalCMA,
-    GeneticDE,
-    TBPSA,
-    NoisyOnePlusOne,
-    RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne,
-    OptimisticNoisyOnePlusOne,
+    # ConfPortfolio,
+    # DiagonalCMA,
+    # GeneticDE,
+    # TBPSA,
+    # NoisyOnePlusOne,
+    # RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne,
+    # OptimisticNoisyOnePlusOne,
 )
 from . import optimizerlib as opts
 from .optimizerlib import CMA, Chaining, PSO, BO
