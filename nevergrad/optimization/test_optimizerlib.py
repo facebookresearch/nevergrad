@@ -144,6 +144,9 @@ UNSEEDABLE: tp.List[str] = [
     "NLOPT_GN_CRS2_LM",
     "NLOPT_GN_ISRES",
     "NLOPT_GN_ESCH",
+    "GOMEABlock",
+    "GOMEA",
+    "GOMEATree",
 ]
 
 
@@ -299,12 +302,14 @@ def test_optimizers_minimal(name: str) -> None:
             "CMAbounded",
             "Tiny",
             "iscrete",
+            "GOMEA",
             "para",
             "SPSA",
             "EDA",
             "FCMA",
             "Noisy",
             "HS",
+            "SQPCMA",
             "CMandAS",
             "GA",
             "EMNA",
@@ -313,6 +318,7 @@ def test_optimizers_minimal(name: str) -> None:
             "Small",
             "small",
             "Chain",
+            "Tree",
             "Mix",
             "Micro",
             "Naive",
