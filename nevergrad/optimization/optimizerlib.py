@@ -269,9 +269,11 @@ class _OnePlusOne(base.Optimizer):
                     data = mutator.crossover(pessimistic_data, mutator.get_roulette(self.archive, num=2))
             elif mutation == "lognormal":
                 mutation_rate = self._global_mr
+                assert mutation_rate > 0.
                 individual_mutation_rate = 1.0 / (
                     1.0 + (((1.0 - mutation_rate) / mutation_rate) * np.exp(0.22 * np.random.randn()))
                 )
+                # print(f"pd={pessimistic_data}_imr={individual_mutation_rate}, d={self.dimension}, arity={self.arity_for_discrete_mutation}")
                 data = mutator.portfolio_discrete_mutation(
                     pessimistic_data,
                     intensity=individual_mutation_rate * self.dimension,
@@ -893,6 +895,7 @@ class ChoiceBase(base.Optimizer):
 
 OldCMA = ParametrizedCMA().set_name("OldCMA", register=True)
 LargeCMA = ParametrizedCMA(scale=3.0).set_name("LargeCMA", register=True)
+LargeDiagCMA = ParametrizedCMA(scale=3.0, diagonal=True).set_name("LargeDiagCMA", register=True)
 TinyCMA = ParametrizedCMA(scale=0.33).set_name("TinyCMA", register=True)
 CMAbounded = ParametrizedCMA(
     scale=1.5884, popsize_factor=1, elitist=True, diagonal=True, fcmaes=False
@@ -1544,6 +1547,8 @@ TinySPSA = Rescaled(base_optimizer=SPSA, scale=1e-3).set_name("TinySPSA", regist
 MicroSPSA = Rescaled(base_optimizer=SPSA, scale=1e-6).set_name("MicroSPSA", register=True)
 TinySPSA.no_parallelization = True
 MicroSPSA.no_parallelization = True
+VastLengler = Rescaled(base_optimizer=DiscreteLenglerOnePlusOne, scale=1000).set_name("VastLengler", register=True)
+VastDE = Rescaled(base_optimizer=DE, scale=1000).set_name("VastDE", register=True)
 
 
 class SplitOptimizer(base.Optimizer):
@@ -2612,9 +2617,11 @@ MemeticDE = Chaining([RotatedTwoPointsDE, TwoPointsDE, DE, SQP], ["fourth", "fou
     "MemeticDE", register=True
 )
 QNDE = Chaining([QODE, BFGS], ["half"]).set_name("QNDE", register=True)
+ChainDE = Chaining([DE, BFGS], ["half"]).set_name("ChainDE", register=True)
 OpoDE = Chaining([OnePlusOne, QODE], ["half"]).set_name("OpoDE", register=True)
 OpoTinyDE = Chaining([OnePlusOne, TinyQODE], ["half"]).set_name("OpoTinyDE", register=True)
 QNDE.no_parallelization = True
+ChainDE.no_parallelization = True
 Carola1 = Chaining([Cobyla, MetaModel], ["half"]).set_name("Carola1", register=True)
 Carola2 = Chaining([Cobyla, MetaModel, SQP], ["third", "third"]).set_name("Carola2", register=True)
 Carola1.no_parallelization = True
@@ -3873,7 +3880,7 @@ class NgIoh4(NGOptBase):
             and self.dimension > 1
             and self.dimension < 100
         ):
-            print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
             return Carola2
         if (
             self.fully_continuous
@@ -3884,14 +3891,14 @@ class NgIoh4(NGOptBase):
             and self.dimension > 1
             and self.dimension < 50
         ):
-            print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
             return Carola2
         # Special cases in the bounded case
         if self.has_noise and (self.has_discrete_not_softmax or not funcinfo.metrizable):
             optCls = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
         elif self.dimension >= 60 and not funcinfo.metrizable:
             optCls = CMA
-        print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, we choose {optCls}")
+        # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, we choose {optCls}")
         return optCls
 
 
@@ -3924,7 +3931,7 @@ class NgIoh5(NGOptBase):
             and self.dimension > 1
             and self.dimension < 100
         ):
-            print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
             return Carola2
         if (
             self.fully_continuous
@@ -3935,14 +3942,14 @@ class NgIoh5(NGOptBase):
             and self.dimension > 1
             and self.dimension < 50
         ):
-            print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
             return Carola2
         # Special cases in the bounded case
         if self.has_noise and (self.has_discrete_not_softmax or not funcinfo.metrizable):
             optCls = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
         elif self.dimension >= 60 and not funcinfo.metrizable:
             optCls = CMA
-        print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, we choose {optCls}")
+        # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, we choose {optCls}")
         return optCls
 
 
@@ -3965,7 +3972,7 @@ class NgIoh6(NGOptBase):
             and self.dimension > 1
             and self.dimension < 100
         ):
-            print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
             return Carola2
         if (
             self.fully_continuous
@@ -3976,14 +3983,14 @@ class NgIoh6(NGOptBase):
             and self.dimension > 1
             and self.dimension < 50
         ):
-            print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
             return Carola2
         # Special cases in the bounded case
         if self.has_noise and (self.has_discrete_not_softmax or not funcinfo.metrizable):
             optCls = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
         elif self.dimension >= 60 and not funcinfo.metrizable:
             optCls = CMA
-        print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, we choose {optCls}")
+        # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, we choose {optCls}")
         return optCls
 
 
@@ -4190,7 +4197,7 @@ class NgIoh7(NGOptBase):
             and self.dimension > 1
             and self.dimension < 100
         ):
-            print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
             return Carola2
         if (
             self.fully_continuous
@@ -4201,12 +4208,25 @@ class NgIoh7(NGOptBase):
             and self.dimension > 1
             and self.dimension < 50
         ):
-            print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
             return Carola2
         # Special cases in the bounded case
         if self.has_noise and (self.has_discrete_not_softmax or not funcinfo.metrizable):
             optCls = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
         elif self.dimension >= 60 and not funcinfo.metrizable:
             optCls = CMA
-        print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, we choose {optCls}")
+        # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, we choose {optCls}")
         return optCls
+# Specifically for RL.
+MixDeterministicRL = ConfPortfolio(optimizers=[DiagonalCMA, PSO, GeneticDE]).set_name(
+    "MixDeterministicRL", register=True
+)
+SpecialRL = Chaining([MixDeterministicRL, TBPSA], ["half"]).set_name("SpecialRL", register=True)
+NoisyRL1 = Chaining([MixDeterministicRL, NoisyOnePlusOne], ["half"]).set_name("NoisyRL1", register=True)
+NoisyRL2 = Chaining(
+    [MixDeterministicRL, RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne], ["half"]
+).set_name("NoisyRL2", register=True)
+NoisyRL3 = Chaining([MixDeterministicRL, OptimisticNoisyOnePlusOne], ["half"]).set_name(
+    "NoisyRL3", register=True
+)
+

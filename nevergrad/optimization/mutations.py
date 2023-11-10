@@ -20,7 +20,10 @@ class Mutator:
         """Randomly drawn a normal value, and redraw until it's different after discretization by the quantiles
         1/arity, 2/arity, ..., (arity-1)/arity.
         """
-        w = v
+        if arity > 499:
+            return self.random_state.normal(0.0, 1.0)
+        w = self.random_state.normal(0.0, 1.0)
+        assert arity > 1
         while discretization.threshold_discretization([w], arity) == discretization.threshold_discretization(
             [v], arity
         ):
@@ -91,7 +94,8 @@ class Mutator:
         boolean_vector = np.ones(dimension, dtype=bool)
         while all(boolean_vector) and dimension != 1:
             boolean_vector = self.random_state.rand(dimension) > float(intensity) / dimension
-        return [s if b else self.significantly_mutate(s, arity) for (b, s) in zip(boolean_vector, parent)]
+        result = [s if b else self.significantly_mutate(s, arity) for (b, s) in zip(boolean_vector, parent)]
+        return result
 
     def coordinatewise_mutation(
         self,
