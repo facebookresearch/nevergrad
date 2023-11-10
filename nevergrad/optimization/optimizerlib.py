@@ -270,7 +270,7 @@ class _OnePlusOne(base.Optimizer):
                     data = mutator.crossover(pessimistic_data, mutator.get_roulette(self.archive, num=2))
             elif mutation == "lognormal":
                 mutation_rate = self._global_mr
-                assert mutation_rate > 0.
+                assert mutation_rate > 0.0
                 individual_mutation_rate = 1.0 / (
                     1.0 + (((1.0 - mutation_rate) / mutation_rate) * np.exp(0.22 * np.random.randn()))
                 )
@@ -1548,7 +1548,9 @@ TinySPSA = Rescaled(base_optimizer=SPSA, scale=1e-3).set_name("TinySPSA", regist
 MicroSPSA = Rescaled(base_optimizer=SPSA, scale=1e-6).set_name("MicroSPSA", register=True)
 TinySPSA.no_parallelization = True
 MicroSPSA.no_parallelization = True
-VastLengler = Rescaled(base_optimizer=DiscreteLenglerOnePlusOne, scale=1000).set_name("VastLengler", register=True)
+VastLengler = Rescaled(base_optimizer=DiscreteLenglerOnePlusOne, scale=1000).set_name(
+    "VastLengler", register=True
+)
 VastDE = Rescaled(base_optimizer=DE, scale=1000).set_name("VastDE", register=True)
 
 
@@ -4696,6 +4698,8 @@ class NgIoh7(NGOptBase):
             optCls = CMA
         # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, we choose {optCls}")
         return optCls
+
+
 # Specifically for RL.
 MixDeterministicRL = ConfPortfolio(optimizers=[DiagonalCMA, PSO, GeneticDE]).set_name(
     "MixDeterministicRL", register=True
