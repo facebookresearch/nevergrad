@@ -20,9 +20,9 @@ import nevergrad as ng
 # pylint: skip-file
 
 default_budget = 3000  # centiseconds
-default_steps=100 #nb of steps grad descent
-default_order=2 #Riesz energy order
-default_stepsize=10 #step size for grad descent
+default_steps = 100  # nb of steps grad descent
+default_order = 2  # Riesz energy order
+default_stepsize = 10  # step size for grad descent
 methods = {}
 metrics = {}
 
@@ -43,10 +43,13 @@ def convo(x, k):
         return x
     return scipy.ndimage.gaussian_filter(x, sigma=list(k) + [0.0] * (len(x.shape) - len(k)))
 
-def convo_mult(x,k): #Convo for an array of different points
+
+def convo_mult(x, k):  # Convo for an array of different points
     if k is None:
         return x
-    return scipy.ndimage.gaussian_filter(x, sigma=[0]+list(k) + [0.0] * (len(x.shape) - len(k)-1))
+    return scipy.ndimage.gaussian_filter(x, sigma=[0] + list(k) + [0.0] * (len(x.shape) - len(k) - 1))
+
+
 # Our well distributed point configurations.
 def pure_random(n, shape, conv=None):
     return normalize([np.random.randn(*shape) for i in range(n)])
@@ -152,120 +155,177 @@ def greedy_dispersion_with_mini_conv(n, shape, budget=default_budget):
     return greedy_dispersion(n, shape, budget=budget, conv=[2, 2])
 
 
-
-def Riesz_blurred_gradient(n, shape, budget=default_steps,order=default_order,step_size=default_stepsize, conv=None):
-    t=(n,)+shape
+def Riesz_blurred_gradient(
+    n, shape, budget=default_steps, order=default_order, step_size=default_stepsize, conv=None
+):
+    t = (n,) + shape
     x = np.random.randn(*t)
-    x=normalize(x)
+    x = normalize(x)
     for steps in range(budget):
-        Temp=np.zeros(t)
-        Blurred=convo_mult(x,conv)
+        Temp = np.zeros(t)
+        Blurred = convo_mult(x, conv)
         for i in range(n):
             for j in range(n):
-                if (j!=i):
-                    T=np.add(Blurred[i],-Blurred[j])
-                    Temp[i]=np.add(Temp[i],np.multiply(T,1/(np.sqrt(np.sum(T ** 2.0)))**(order+2)))
-            Temp[i]=np.multiply(Temp[i],step_size)
-        x=np.add(x,Temp)
-        x=normalize(x)
+                if j != i:
+                    T = np.add(Blurred[i], -Blurred[j])
+                    Temp[i] = np.add(Temp[i], np.multiply(T, 1 / (np.sqrt(np.sum(T**2.0))) ** (order + 2)))
+            Temp[i] = np.multiply(Temp[i], step_size)
+        x = np.add(x, Temp)
+        x = normalize(x)
     return x
 
 
-def Riesz_blursum_gradient(n, shape, budget=default_steps,order=default_order,step_size=default_stepsize, conv=None):
-    t=(n,)+shape
+def Riesz_blursum_gradient(
+    n, shape, budget=default_steps, order=default_order, step_size=default_stepsize, conv=None
+):
+    t = (n,) + shape
     x = np.random.randn(*t)
-    x=normalize(x)
+    x = normalize(x)
     for steps in range(budget):
-        Blurred=np.zeros(t)
+        Blurred = np.zeros(t)
         for i in range(n):
             for j in range(n):
-                if (j!=i):
-                    T=np.add(x[i],-x[j])
-                    Blurred[i]=np.add(np.multiply(T,1/(np.sqrt(np.sum(T ** 2.0)))**(order+2)),Blurred[i])
-        Blurred=convo_mult(Blurred,conv)
-        x=np.add(x,Blurred)
-        x=normalize(x)
+                if j != i:
+                    T = np.add(x[i], -x[j])
+                    Blurred[i] = np.add(
+                        np.multiply(T, 1 / (np.sqrt(np.sum(T**2.0))) ** (order + 2)), Blurred[i]
+                    )
+        Blurred = convo_mult(Blurred, conv)
+        x = np.add(x, Blurred)
+        x = normalize(x)
     return x
 
-def Riesz_noblur_gradient(n, shape, budget=default_steps,order=default_order,step_size=default_stepsize, conv=None):
-    t=(n,)+shape
+
+def Riesz_noblur_gradient(
+    n, shape, budget=default_steps, order=default_order, step_size=default_stepsize, conv=None
+):
+    t = (n,) + shape
     x = np.random.randn(*t)
-    x=normalize(x)
+    x = normalize(x)
     for steps in range(budget):
-        Temp=np.zeros(t)
+        Temp = np.zeros(t)
         for i in range(n):
             for j in range(n):
-                 if (j!=i):
-                    T=np.add(x[i],-x[j])
-                    Temp[i]=np.add(Temp[i],np.multiply(T,1/(np.sqrt(np.sum(T ** 2.0)))**(order+2)))
-        x=np.add(x,Temp)
-        x=normalize(x)
+                if j != i:
+                    T = np.add(x[i], -x[j])
+                    Temp[i] = np.add(Temp[i], np.multiply(T, 1 / (np.sqrt(np.sum(T**2.0))) ** (order + 2)))
+        x = np.add(x, Temp)
+        x = normalize(x)
     return x
-            
-def Riesz_noblur_bigconv_loworder(n,shape,budget=default_budget):
-    return Riesz_noblur_gradient(n,shape,default_steps,order=0.5,step_size=default_stepsize,conv=[24,24])
-def Riesz_noblur_bigconv_midorder(n,shape,budget=default_budget):
-    return Riesz_noblur_gradient(n,shape,default_steps,order=1,step_size=default_stepsize,conv=[24,24])
-def Riesz_noblur_bigconv_highorder(n,shape,budget=default_budget):
-    return Riesz_noblur_gradient(n,shape,default_steps,order=2,step_size=default_stepsize,conv=[24,24])
-
-def Riesz_noblur_medconv_loworder(n,shape,budget=default_budget):
-    return Riesz_noblur_gradient(n,shape,default_steps,order=0.5,step_size=default_stepsize,conv=[8,8])
-def Riesz_noblur_medconv_midorder(n,shape,budget=default_budget):
-    return Riesz_noblur_gradient(n,shape,default_steps,order=1,step_size=default_stepsize,conv=[8,8])
-def Riesz_noblur_medconv_highorder(n,shape,budget=default_budget):
-    return Riesz_noblur_gradient(n,shape,default_steps,order=2,step_size=default_stepsize,conv=[8,8])
-
-def Riesz_noblur_lowconv_loworder(n,shape,budget=default_budget):
-    return Riesz_noblur_gradient(n,shape,default_steps,order=0.5,step_size=default_stepsize,conv=[2,2])
-def Riesz_noblur_lowconv_midorder(n,shape,budget=default_budget):
-    return Riesz_noblur_gradient(n,shape,default_steps,order=1,step_size=default_stepsize,conv=[2,2])
-def Riesz_noblur_lowconv_highorder(n,shape,budget=default_budget):
-    return Riesz_noblur_gradient(n,shape,default_steps,order=2,step_size=default_stepsize,conv=[2,2])
-
-def Riesz_blursum_bigconv_loworder(n,shape,budget=default_budget):
-    return Riesz_blursum_gradient(n,shape,default_steps,order=0.5,step_size=default_stepsize,conv=[24,24])
-def Riesz_blursum_bigconv_midorder(n,shape,budget=default_budget):
-    return Riesz_blursum_gradient(n,shape,default_steps,order=1,step_size=default_stepsize,conv=[24,24])
-def Riesz_blursum_bigconv_highorder(n,shape,budget=default_budget):
-    return Riesz_blursum_gradient(n,shape,default_steps,order=2,step_size=default_stepsize,conv=[24,24])
-
-def Riesz_blursum_medconv_loworder(n,shape,budget=default_budget):
-    return Riesz_blursum_gradient(n,shape,default_steps,order=0.5,step_size=default_stepsize,conv=[8,8])
-def Riesz_blursum_medconv_midorder(n,shape,budget=default_budget):
-    return Riesz_blursum_gradient(n,shape,default_steps,order=1,step_size=default_stepsize,conv=[8,8])
-def Riesz_blursum_medconv_highorder(n,shape,budget=default_budget):
-    return Riesz_blursum_gradient(n,shape,default_steps,order=2,step_size=default_stepsize,conv=[8,8])
-
-def Riesz_blursum_lowconv_loworder(n,shape,budget=default_budget):
-    return Riesz_blursum_gradient(n,shape,default_steps,order=0.5,step_size=default_stepsize,conv=[2,2])
-def Riesz_blursum_lowconv_midorder(n,shape,budget=default_budget):
-    return Riesz_blursum_gradient(n,shape,default_steps,order=1,step_size=default_stepsize,conv=[2,2])
-def Riesz_blursum_lowconv_highorder(n,shape,budget=default_budget):
-    return Riesz_blursum_gradient(n,shape,default_steps,order=2,step_size=default_stepsize,conv=[2,2])
 
 
-def Riesz_blurred_bigconv_loworder(n,shape,budget=default_budget):
-    return Riesz_blurred_gradient(n,shape,default_steps,order=0.5,step_size=default_stepsize,conv=[24,24])
-def Riesz_blurred_bigconv_midorder(n,shape,budget=default_budget):
-    return Riesz_blurred_gradient(n,shape,default_steps,order=1,step_size=default_stepsize,conv=[24,24])
-def Riesz_blurred_bigconv_highorder(n,shape,budget=default_budget):
-    return Riesz_blurred_gradient(n,shape,default_steps,order=2,step_size=default_stepsize,conv=[24,24])
+def Riesz_noblur_bigconv_loworder(n, shape, budget=default_budget):
+    return Riesz_noblur_gradient(
+        n, shape, default_steps, order=0.5, step_size=default_stepsize, conv=[24, 24]
+    )
 
-def Riesz_blurred_medconv_loworder(n,shape,budget=default_budget):
-    return Riesz_blurred_gradient(n,shape,default_steps,order=0.5,step_size=default_stepsize,conv=[8,8])
-def Riesz_blurred_medconv_midorder(n,shape,budget=default_budget):
-    return Riesz_blurred_gradient(n,shape,default_steps,order=1,step_size=default_stepsize,conv=[8,8])
-def Riesz_blurred_medconv_highorder(n,shape,budget=default_budget):
-    return Riesz_blurred_gradient(n,shape,default_steps,order=2,step_size=default_stepsize,conv=[8,8])
 
-def Riesz_blurred_lowconv_loworder(n,shape,budget=default_budget):
-    return Riesz_blurred_gradient(n,shape,default_steps,order=0.5,step_size=default_stepsize,conv=[2,2])
-def Riesz_blurred_lowconv_midorder(n,shape,budget=default_budget):
-    return Riesz_blurred_gradient(n,shape,default_steps,order=1,step_size=default_stepsize,conv=[2,2])
-def Riesz_blurred_lowconv_highorder(n,shape,budget=default_budget):
-    return Riesz_blurred_gradient(n,shape,default_steps,order=2,step_size=default_stepsize,conv=[2,2])
+def Riesz_noblur_bigconv_midorder(n, shape, budget=default_budget):
+    return Riesz_noblur_gradient(n, shape, default_steps, order=1, step_size=default_stepsize, conv=[24, 24])
 
+
+def Riesz_noblur_bigconv_highorder(n, shape, budget=default_budget):
+    return Riesz_noblur_gradient(n, shape, default_steps, order=2, step_size=default_stepsize, conv=[24, 24])
+
+
+def Riesz_noblur_medconv_loworder(n, shape, budget=default_budget):
+    return Riesz_noblur_gradient(n, shape, default_steps, order=0.5, step_size=default_stepsize, conv=[8, 8])
+
+
+def Riesz_noblur_medconv_midorder(n, shape, budget=default_budget):
+    return Riesz_noblur_gradient(n, shape, default_steps, order=1, step_size=default_stepsize, conv=[8, 8])
+
+
+def Riesz_noblur_medconv_highorder(n, shape, budget=default_budget):
+    return Riesz_noblur_gradient(n, shape, default_steps, order=2, step_size=default_stepsize, conv=[8, 8])
+
+
+def Riesz_noblur_lowconv_loworder(n, shape, budget=default_budget):
+    return Riesz_noblur_gradient(n, shape, default_steps, order=0.5, step_size=default_stepsize, conv=[2, 2])
+
+
+def Riesz_noblur_lowconv_midorder(n, shape, budget=default_budget):
+    return Riesz_noblur_gradient(n, shape, default_steps, order=1, step_size=default_stepsize, conv=[2, 2])
+
+
+def Riesz_noblur_lowconv_highorder(n, shape, budget=default_budget):
+    return Riesz_noblur_gradient(n, shape, default_steps, order=2, step_size=default_stepsize, conv=[2, 2])
+
+
+def Riesz_blursum_bigconv_loworder(n, shape, budget=default_budget):
+    return Riesz_blursum_gradient(
+        n, shape, default_steps, order=0.5, step_size=default_stepsize, conv=[24, 24]
+    )
+
+
+def Riesz_blursum_bigconv_midorder(n, shape, budget=default_budget):
+    return Riesz_blursum_gradient(n, shape, default_steps, order=1, step_size=default_stepsize, conv=[24, 24])
+
+
+def Riesz_blursum_bigconv_highorder(n, shape, budget=default_budget):
+    return Riesz_blursum_gradient(n, shape, default_steps, order=2, step_size=default_stepsize, conv=[24, 24])
+
+
+def Riesz_blursum_medconv_loworder(n, shape, budget=default_budget):
+    return Riesz_blursum_gradient(n, shape, default_steps, order=0.5, step_size=default_stepsize, conv=[8, 8])
+
+
+def Riesz_blursum_medconv_midorder(n, shape, budget=default_budget):
+    return Riesz_blursum_gradient(n, shape, default_steps, order=1, step_size=default_stepsize, conv=[8, 8])
+
+
+def Riesz_blursum_medconv_highorder(n, shape, budget=default_budget):
+    return Riesz_blursum_gradient(n, shape, default_steps, order=2, step_size=default_stepsize, conv=[8, 8])
+
+
+def Riesz_blursum_lowconv_loworder(n, shape, budget=default_budget):
+    return Riesz_blursum_gradient(n, shape, default_steps, order=0.5, step_size=default_stepsize, conv=[2, 2])
+
+
+def Riesz_blursum_lowconv_midorder(n, shape, budget=default_budget):
+    return Riesz_blursum_gradient(n, shape, default_steps, order=1, step_size=default_stepsize, conv=[2, 2])
+
+
+def Riesz_blursum_lowconv_highorder(n, shape, budget=default_budget):
+    return Riesz_blursum_gradient(n, shape, default_steps, order=2, step_size=default_stepsize, conv=[2, 2])
+
+
+def Riesz_blurred_bigconv_loworder(n, shape, budget=default_budget):
+    return Riesz_blurred_gradient(
+        n, shape, default_steps, order=0.5, step_size=default_stepsize, conv=[24, 24]
+    )
+
+
+def Riesz_blurred_bigconv_midorder(n, shape, budget=default_budget):
+    return Riesz_blurred_gradient(n, shape, default_steps, order=1, step_size=default_stepsize, conv=[24, 24])
+
+
+def Riesz_blurred_bigconv_highorder(n, shape, budget=default_budget):
+    return Riesz_blurred_gradient(n, shape, default_steps, order=2, step_size=default_stepsize, conv=[24, 24])
+
+
+def Riesz_blurred_medconv_loworder(n, shape, budget=default_budget):
+    return Riesz_blurred_gradient(n, shape, default_steps, order=0.5, step_size=default_stepsize, conv=[8, 8])
+
+
+def Riesz_blurred_medconv_midorder(n, shape, budget=default_budget):
+    return Riesz_blurred_gradient(n, shape, default_steps, order=1, step_size=default_stepsize, conv=[8, 8])
+
+
+def Riesz_blurred_medconv_highorder(n, shape, budget=default_budget):
+    return Riesz_blurred_gradient(n, shape, default_steps, order=2, step_size=default_stepsize, conv=[8, 8])
+
+
+def Riesz_blurred_lowconv_loworder(n, shape, budget=default_budget):
+    return Riesz_blurred_gradient(n, shape, default_steps, order=0.5, step_size=default_stepsize, conv=[2, 2])
+
+
+def Riesz_blurred_lowconv_midorder(n, shape, budget=default_budget):
+    return Riesz_blurred_gradient(n, shape, default_steps, order=1, step_size=default_stepsize, conv=[2, 2])
+
+
+def Riesz_blurred_lowconv_highorder(n, shape, budget=default_budget):
+    return Riesz_blurred_gradient(n, shape, default_steps, order=2, step_size=default_stepsize, conv=[2, 2])
 
 
 def block_symmetry(n, shape, num_blocks=None):
