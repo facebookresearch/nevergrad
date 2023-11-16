@@ -2022,6 +2022,10 @@ RFMetaModelTwoPointsDE = ParametrizedMetaModel(algorithm="rf", multivariate_opti
 )
 
 
+def rescaled(n: int, o: tp.Any):
+    return Rescaled(o, 1.0 / np.exp(np.log(n) * np.random.rand()))  # type: ignore
+
+
 @registry.register
 class MultiBFGSPlus(Portfolio):
     """Passive portfolio of MetaCMA and many SQP."""
@@ -2031,10 +2035,11 @@ class MultiBFGSPlus(Portfolio):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         optims: tp.List[base.Optimizer] = []
-        optims += [BFGS(self.parametrization, num_workers=1) for _ in range(num_workers)]
+        optims += [
+            rescaled(len(optims), BFGS(self.parametrization, num_workers=1)) for _ in range(num_workers)
+        ]
         for opt in optims[2:]:  # make sure initializations differ
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
-            opt.set_mutation(1.0 / np.exp(np.log(len(optims)) * np.random.rand()))
         self.optims.clear()
         self.optims.extend(optims)
 
@@ -2050,10 +2055,11 @@ class LogMultiBFGSPlus(Portfolio):
         if budget is not None:
             num_workers = int(max(num_workers, 1 + np.log(budget)))
         optims: tp.List[base.Optimizer] = []
-        optims += [BFGS(self.parametrization, num_workers=1) for _ in range(num_workers)]
+        optims += [
+            rescaled(len(optims), BFGS(self.parametrization, num_workers=1)) for _ in range(num_workers)
+        ]
         for opt in optims[2:]:  # make sure initializations differ
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
-            opt.set_mutation(1.0 / np.exp(np.log(len(optims)) * np.random.rand()))
         self.optims.clear()
         self.optims.extend(optims)
 
@@ -2069,10 +2075,11 @@ class SqrtMultiBFGSPlus(Portfolio):
         if budget is not None:
             num_workers = int(max(num_workers, 1 + np.sqrt(budget)))
         optims: tp.List[base.Optimizer] = []
-        optims += [BFGS(self.parametrization, num_workers=1) for _ in range(num_workers)]
+        optims += [
+            rescaled(len(optims), BFGS(self.parametrization, num_workers=1)) for _ in range(num_workers)
+        ]
         for opt in optims[2:]:  # make sure initializations differ
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
-            opt.set_mutation(1.0 / np.exp(np.log(len(optims)) * np.random.rand()))
         self.optims.clear()
         self.optims.extend(optims)
 
@@ -2086,10 +2093,11 @@ class MultiCobylaPlus(Portfolio):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         optims: tp.List[base.Optimizer] = []
-        optims += [Cobyla(self.parametrization, num_workers=1) for _ in range(num_workers)]
+        optims += [
+            rescaled(len(optims), Cobyla(self.parametrization, num_workers=1)) for _ in range(num_workers)
+        ]
         for opt in optims[2:]:  # make sure initializations differ
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
-            opt.set_mutation(1.0 / np.exp(np.log(len(optims)) * np.random.rand()))
         self.optims.clear()
         self.optims.extend(optims)
 
@@ -2103,10 +2111,11 @@ class MultiSQPPlus(Portfolio):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         optims: tp.List[base.Optimizer] = []
-        optims += [SQP(self.parametrization, num_workers=1) for _ in range(num_workers)]
+        optims += [
+            rescaled(len(optims), SQP(self.parametrization, num_workers=1)) for _ in range(num_workers)
+        ]
         for opt in optims[2:]:  # make sure initializations differ
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
-            opt.set_mutation(1.0 / np.exp(np.log(len(optims)) * np.random.rand()))
         self.optims.clear()
         self.optims.extend(optims)
 
@@ -2123,10 +2132,12 @@ class BFGSCMAPlus(Portfolio):
         optims: tp.List[base.Optimizer] = [
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
-        optims += [BFGS(self.parametrization, num_workers=1) for _ in range(num_workers - cma_workers)]
+        optims += [
+            rescaled(len(optims), BFGS(self.parametrization, num_workers=1))
+            for _ in range(num_workers - cma_workers)
+        ]
         for opt in optims[2:]:  # make sure initializations differ
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
-            opt.set_mutation(1.0 / np.exp(np.log(len(optims)) * np.random.rand()))
         self.optims.clear()
         self.optims.extend(optims)
 
@@ -2145,10 +2156,12 @@ class LogBFGSCMAPlus(Portfolio):
         optims: tp.List[base.Optimizer] = [
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
-        optims += [BFGS(self.parametrization, num_workers=1) for _ in range(num_workers - cma_workers)]
+        optims += [
+            rescaled(len(optims), BFGS(self.parametrization, num_workers=1))
+            for _ in range(num_workers - cma_workers)
+        ]
         for opt in optims[2:]:  # make sure initializations differ
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
-            opt.set_mutation(1.0 / np.exp(np.log(len(optims)) * np.random.rand()))
         self.optims.clear()
         self.optims.extend(optims)
 
@@ -2167,10 +2180,12 @@ class SqrtBFGSCMAPlus(Portfolio):
         optims: tp.List[base.Optimizer] = [
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
-        optims += [BFGS(self.parametrization, num_workers=1) for _ in range(num_workers - cma_workers)]
+        optims += [
+            rescaled(len(optims), BFGS(self.parametrization, num_workers=1))
+            for _ in range(num_workers - cma_workers)
+        ]
         for opt in optims[2:]:  # make sure initializations differ
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
-            opt.set_mutation(1.0 / np.exp(np.log(len(optims)) * np.random.rand()))
         self.optims.clear()
         self.optims.extend(optims)
 
@@ -2187,10 +2202,12 @@ class SQPCMAPlus(Portfolio):
         optims: tp.List[base.Optimizer] = [
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
-        optims += [SQP(self.parametrization, num_workers=1) for _ in range(num_workers - cma_workers)]
+        optims += [
+            rescaled(len(optims), SQP(self.parametrization, num_workers=1))
+            for _ in range(num_workers - cma_workers)
+        ]
         for opt in optims[2:]:  # make sure initializations differ
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
-            opt.set_mutation(1.0 / np.exp(np.log(len(optims)) * np.random.rand()))
         self.optims.clear()
         self.optims.extend(optims)
 
@@ -2209,10 +2226,12 @@ class LogSQPCMAPlus(Portfolio):
         optims: tp.List[base.Optimizer] = [
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
-        optims += [SQP(self.parametrization, num_workers=1) for _ in range(num_workers - cma_workers)]
+        optims += [
+            rescaled(len(optims), SQP(self.parametrization, num_workers=1))
+            for _ in range(num_workers - cma_workers)
+        ]
         for opt in optims[2:]:  # make sure initializations differ
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
-            opt.set_mutation(1.0 / np.exp(np.log(len(optims)) * np.random.rand()))
         self.optims.clear()
         self.optims.extend(optims)
 
@@ -2231,10 +2250,12 @@ class SqrtSQPCMAPlus(Portfolio):
         optims: tp.List[base.Optimizer] = [
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
-        optims += [SQP(self.parametrization, num_workers=1) for _ in range(num_workers - cma_workers)]
+        optims += [
+            rescaled(len(optims), SQP(self.parametrization, num_workers=1))
+            for _ in range(num_workers - cma_workers)
+        ]
         for opt in optims[2:]:  # make sure initializations differ
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
-            opt.set_mutation(1.0 / np.exp(np.log(len(optims)) * np.random.rand()))
         self.optims.clear()
         self.optims.extend(optims)
 
