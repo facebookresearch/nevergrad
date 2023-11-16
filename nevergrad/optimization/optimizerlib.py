@@ -2023,7 +2023,7 @@ RFMetaModelTwoPointsDE = ParametrizedMetaModel(algorithm="rf", multivariate_opti
 
 
 def rescaled(n: int, o: tp.Any):
-    return Rescaled(o, 1.0 / np.exp(np.log(n) * np.random.rand()))  # type: ignore
+    return Rescaled(base_optimizer=o, scale=1.0 / np.exp(np.log(n) * np.random.rand()))  # type: ignore
 
 
 @registry.register
