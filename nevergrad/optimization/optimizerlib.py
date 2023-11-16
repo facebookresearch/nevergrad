@@ -2038,6 +2038,7 @@ class MultiBFGS(Portfolio):
         self.optims.extend(optims)
 
 
+@registry.register
 class LogMultiBFGS(Portfolio):
     """Passive portfolio of MetaCMA and many SQP."""
 
@@ -2055,6 +2056,7 @@ class LogMultiBFGS(Portfolio):
         self.optims.extend(optims)
 
 
+@registry.register
 class SqrtMultiBFGS(Portfolio):
     """Passive portfolio of MetaCMA and many SQP."""
 
@@ -2165,6 +2167,7 @@ class SqrtBFGSCMA(Portfolio):
         self.optims.extend(optims)
 
 
+@registry.register
 class SQPCMA(Portfolio):
     """Passive portfolio of MetaCMA and many SQP."""
 
