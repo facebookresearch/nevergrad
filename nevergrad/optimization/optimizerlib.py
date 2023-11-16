@@ -2034,7 +2034,7 @@ class MultiBFGSPlus(Portfolio):
         optims += [BFGS(self.parametrization, num_workers=1) for _ in range(num_workers)]
         for opt in optims[2:]:  # make sure initializations differ
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
-            opt.set_mutation(1. / np.exp(np.log(len(optims)) * np.random.rand()))
+            opt.set_mutation(1.0 / np.exp(np.log(len(optims)) * np.random.rand()))
         self.optims.clear()
         self.optims.extend(optims)
 
@@ -2053,7 +2053,7 @@ class LogMultiBFGSPlus(Portfolio):
         optims += [BFGS(self.parametrization, num_workers=1) for _ in range(num_workers)]
         for opt in optims[2:]:  # make sure initializations differ
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
-            opt.set_mutation(1. / np.exp(np.log(len(optims)) * np.random.rand()))
+            opt.set_mutation(1.0 / np.exp(np.log(len(optims)) * np.random.rand()))
         self.optims.clear()
         self.optims.extend(optims)
 
@@ -2072,7 +2072,7 @@ class SqrtMultiBFGSPlus(Portfolio):
         optims += [BFGS(self.parametrization, num_workers=1) for _ in range(num_workers)]
         for opt in optims[2:]:  # make sure initializations differ
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
-            opt.set_mutation(1. / np.exp(np.log(len(optims)) * np.random.rand()))
+            opt.set_mutation(1.0 / np.exp(np.log(len(optims)) * np.random.rand()))
         self.optims.clear()
         self.optims.extend(optims)
 
@@ -2089,7 +2089,7 @@ class MultiCobylaPlus(Portfolio):
         optims += [Cobyla(self.parametrization, num_workers=1) for _ in range(num_workers)]
         for opt in optims[2:]:  # make sure initializations differ
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
-            opt.set_mutation(1. / np.exp(np.log(len(optims)) * np.random.rand()))
+            opt.set_mutation(1.0 / np.exp(np.log(len(optims)) * np.random.rand()))
         self.optims.clear()
         self.optims.extend(optims)
 
@@ -2106,7 +2106,7 @@ class MultiSQPPlus(Portfolio):
         optims += [SQP(self.parametrization, num_workers=1) for _ in range(num_workers)]
         for opt in optims[2:]:  # make sure initializations differ
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
-            opt.set_mutation(1. / np.exp(np.log(len(optims)) * np.random.rand()))
+            opt.set_mutation(1.0 / np.exp(np.log(len(optims)) * np.random.rand()))
         self.optims.clear()
         self.optims.extend(optims)
 
@@ -2126,7 +2126,7 @@ class BFGSCMAPlus(Portfolio):
         optims += [BFGS(self.parametrization, num_workers=1) for _ in range(num_workers - cma_workers)]
         for opt in optims[2:]:  # make sure initializations differ
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
-            opt.set_mutation(1. / np.exp(np.log(len(optims)) * np.random.rand()))
+            opt.set_mutation(1.0 / np.exp(np.log(len(optims)) * np.random.rand()))
         self.optims.clear()
         self.optims.extend(optims)
 
@@ -2148,7 +2148,7 @@ class LogBFGSCMAPlus(Portfolio):
         optims += [BFGS(self.parametrization, num_workers=1) for _ in range(num_workers - cma_workers)]
         for opt in optims[2:]:  # make sure initializations differ
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
-            opt.set_mutation(1. / np.exp(np.log(len(optims)) * np.random.rand()))
+            opt.set_mutation(1.0 / np.exp(np.log(len(optims)) * np.random.rand()))
         self.optims.clear()
         self.optims.extend(optims)
 
@@ -2170,7 +2170,7 @@ class SqrtBFGSCMAPlus(Portfolio):
         optims += [BFGS(self.parametrization, num_workers=1) for _ in range(num_workers - cma_workers)]
         for opt in optims[2:]:  # make sure initializations differ
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
-            opt.set_mutation(1. / np.exp(np.log(len(optims)) * np.random.rand()))
+            opt.set_mutation(1.0 / np.exp(np.log(len(optims)) * np.random.rand()))
         self.optims.clear()
         self.optims.extend(optims)
 
@@ -2190,7 +2190,7 @@ class SQPCMAPlus(Portfolio):
         optims += [SQP(self.parametrization, num_workers=1) for _ in range(num_workers - cma_workers)]
         for opt in optims[2:]:  # make sure initializations differ
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
-            opt.set_mutation(1. / np.exp(np.log(len(optims)) * np.random.rand()))
+            opt.set_mutation(1.0 / np.exp(np.log(len(optims)) * np.random.rand()))
         self.optims.clear()
         self.optims.extend(optims)
 
@@ -2212,7 +2212,7 @@ class LogSQPCMAPlus(Portfolio):
         optims += [SQP(self.parametrization, num_workers=1) for _ in range(num_workers - cma_workers)]
         for opt in optims[2:]:  # make sure initializations differ
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
-            opt.set_mutation(1. / np.exp(np.log(len(optims)) * np.random.rand()))
+            opt.set_mutation(1.0 / np.exp(np.log(len(optims)) * np.random.rand()))
         self.optims.clear()
         self.optims.extend(optims)
 
@@ -2234,7 +2234,7 @@ class SqrtSQPCMAPlus(Portfolio):
         optims += [SQP(self.parametrization, num_workers=1) for _ in range(num_workers - cma_workers)]
         for opt in optims[2:]:  # make sure initializations differ
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
-            opt.set_mutation(1. / np.exp(np.log(len(optims)) * np.random.rand()))
+            opt.set_mutation(1.0 / np.exp(np.log(len(optims)) * np.random.rand()))
         self.optims.clear()
         self.optims.extend(optims)
 
