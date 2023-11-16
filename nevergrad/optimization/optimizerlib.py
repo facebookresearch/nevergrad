@@ -2023,6 +2023,223 @@ RFMetaModelTwoPointsDE = ParametrizedMetaModel(algorithm="rf", multivariate_opti
 
 
 @registry.register
+class MultiBFGSPlus(Portfolio):
+    """Passive portfolio of MetaCMA and many SQP."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        optims: tp.List[base.Optimizer] = []
+        optims += [BFGS(self.parametrization, num_workers=1) for _ in range(num_workers)]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+            opt.set_mutation(1. / np.exp(np.log(len(optims)) * np.random.rand()))
+        self.optims.clear()
+        self.optims.extend(optims)
+
+
+@registry.register
+class LogMultiBFGSPlus(Portfolio):
+    """Passive portfolio of MetaCMA and many SQP."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        if budget is not None:
+            num_workers = int(max(num_workers, 1 + np.log(budget)))
+        optims: tp.List[base.Optimizer] = []
+        optims += [BFGS(self.parametrization, num_workers=1) for _ in range(num_workers)]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+            opt.set_mutation(1. / np.exp(np.log(len(optims)) * np.random.rand()))
+        self.optims.clear()
+        self.optims.extend(optims)
+
+
+@registry.register
+class SqrtMultiBFGSPlus(Portfolio):
+    """Passive portfolio of MetaCMA and many SQP."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        if budget is not None:
+            num_workers = int(max(num_workers, 1 + np.sqrt(budget)))
+        optims: tp.List[base.Optimizer] = []
+        optims += [BFGS(self.parametrization, num_workers=1) for _ in range(num_workers)]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+            opt.set_mutation(1. / np.exp(np.log(len(optims)) * np.random.rand()))
+        self.optims.clear()
+        self.optims.extend(optims)
+
+
+@registry.register
+class MultiCobylaPlus(Portfolio):
+    """Passive portfolio of MetaCMA and many SQP."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        optims: tp.List[base.Optimizer] = []
+        optims += [Cobyla(self.parametrization, num_workers=1) for _ in range(num_workers)]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+            opt.set_mutation(1. / np.exp(np.log(len(optims)) * np.random.rand()))
+        self.optims.clear()
+        self.optims.extend(optims)
+
+
+@registry.register
+class MultiSQPPlus(Portfolio):
+    """Passive portfolio of MetaCMA and many SQP."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        optims: tp.List[base.Optimizer] = []
+        optims += [SQP(self.parametrization, num_workers=1) for _ in range(num_workers)]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+            opt.set_mutation(1. / np.exp(np.log(len(optims)) * np.random.rand()))
+        self.optims.clear()
+        self.optims.extend(optims)
+
+
+@registry.register
+class BFGSCMAPlus(Portfolio):
+    """Passive portfolio of MetaCMA and many BFGS."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        cma_workers = num_workers // 2
+        optims: tp.List[base.Optimizer] = [
+            MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
+        ]
+        optims += [BFGS(self.parametrization, num_workers=1) for _ in range(num_workers - cma_workers)]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+            opt.set_mutation(1. / np.exp(np.log(len(optims)) * np.random.rand()))
+        self.optims.clear()
+        self.optims.extend(optims)
+
+
+@registry.register
+class LogBFGSCMAPlus(Portfolio):
+    """Passive portfolio of MetaCMA and many BFGS."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        if budget is not None:
+            num_workers = int(max(num_workers, 1 + np.log(budget)))
+        cma_workers = num_workers // 2
+        optims: tp.List[base.Optimizer] = [
+            MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
+        ]
+        optims += [BFGS(self.parametrization, num_workers=1) for _ in range(num_workers - cma_workers)]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+            opt.set_mutation(1. / np.exp(np.log(len(optims)) * np.random.rand()))
+        self.optims.clear()
+        self.optims.extend(optims)
+
+
+@registry.register
+class SqrtBFGSCMAPlus(Portfolio):
+    """Passive portfolio of MetaCMA and many BFGS."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        if budget is not None:
+            num_workers = int(max(num_workers, 1 + np.sqrt(budget)))
+        cma_workers = num_workers // 2
+        optims: tp.List[base.Optimizer] = [
+            MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
+        ]
+        optims += [BFGS(self.parametrization, num_workers=1) for _ in range(num_workers - cma_workers)]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+            opt.set_mutation(1. / np.exp(np.log(len(optims)) * np.random.rand()))
+        self.optims.clear()
+        self.optims.extend(optims)
+
+
+@registry.register
+class SQPCMAPlus(Portfolio):
+    """Passive portfolio of MetaCMA and many SQP."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        cma_workers = num_workers // 2
+        optims: tp.List[base.Optimizer] = [
+            MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
+        ]
+        optims += [SQP(self.parametrization, num_workers=1) for _ in range(num_workers - cma_workers)]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+            opt.set_mutation(1. / np.exp(np.log(len(optims)) * np.random.rand()))
+        self.optims.clear()
+        self.optims.extend(optims)
+
+
+@registry.register
+class LogSQPCMAPlus(Portfolio):
+    """Passive portfolio of MetaCMA and many SQP."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        if budget is not None:
+            num_workers = int(max(num_workers, 1 + np.log(budget)))
+        cma_workers = num_workers // 2
+        optims: tp.List[base.Optimizer] = [
+            MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
+        ]
+        optims += [SQP(self.parametrization, num_workers=1) for _ in range(num_workers - cma_workers)]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+            opt.set_mutation(1. / np.exp(np.log(len(optims)) * np.random.rand()))
+        self.optims.clear()
+        self.optims.extend(optims)
+
+
+@registry.register
+class SqrtSQPCMAPlus(Portfolio):
+    """Passive portfolio of MetaCMA and many SQP."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        if budget is not None:
+            num_workers = int(max(num_workers, 1 + np.sqrt(budget)))
+        cma_workers = num_workers // 2
+        optims: tp.List[base.Optimizer] = [
+            MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
+        ]
+        optims += [SQP(self.parametrization, num_workers=1) for _ in range(num_workers - cma_workers)]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+            opt.set_mutation(1. / np.exp(np.log(len(optims)) * np.random.rand()))
+        self.optims.clear()
+        self.optims.extend(optims)
+
+
+@registry.register
 class MultiBFGS(Portfolio):
     """Passive portfolio of MetaCMA and many SQP."""
 
