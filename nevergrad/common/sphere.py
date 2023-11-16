@@ -216,7 +216,7 @@ def Riesz_noblur_gradient(
                 if j != i:
                     T = np.add(x[i], -x[j])
                     Temp[i] = np.add(Temp[i], np.multiply(T, 1 / (np.sqrt(np.sum(T**2.0))) ** (order + 2)))
-  
+
         x = np.add(x, Temp)
         x = normalize(x)
         if time.time() > t0 + 0.01 * budget:
