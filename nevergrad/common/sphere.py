@@ -156,11 +156,12 @@ def greedy_dispersion_with_mini_conv(n, shape, budget=default_budget):
 
 
 def Riesz_blurred_gradient(
-    n, shape, budget=default_steps, order=default_order, step_size=default_stepsize, conv=None
+    n, shape, budget=default_budget, order=default_order, step_size=default_stepsize, conv=None
 ):
     t = (n,) + shape
     x = np.random.randn(*t)
     x = normalize(x)
+    t0 = time.time()
     for steps in range(budget):
         Temp = np.zeros(t)
         Blurred = convo_mult(x, conv)
@@ -172,15 +173,18 @@ def Riesz_blurred_gradient(
             Temp[i] = np.multiply(Temp[i], step_size)
         x = np.add(x, Temp)
         x = normalize(x)
+        if time.time() > t0 + 0.01 * budget:
+            break
     return x
 
 
 def Riesz_blursum_gradient(
-    n, shape, budget=default_steps, order=default_order, step_size=default_stepsize, conv=None
+    n, shape, budget=default_budget, order=default_order, step_size=default_stepsize, conv=None
 ):
     t = (n,) + shape
     x = np.random.randn(*t)
     x = normalize(x)
+    t0 = time.time()
     for steps in range(budget):
         Blurred = np.zeros(t)
         for i in range(n):
@@ -193,24 +197,30 @@ def Riesz_blursum_gradient(
         Blurred = convo_mult(Blurred, conv)
         x = np.add(x, Blurred)
         x = normalize(x)
+        if time.time() > t0 + 0.01 * budget:
+            break
     return x
 
 
 def Riesz_noblur_gradient(
-    n, shape, budget=default_steps, order=default_order, step_size=default_stepsize, conv=None
+    n, shape, budget=default_budget, order=default_order, step_size=default_stepsize, conv=None
 ):
     t = (n,) + shape
     x = np.random.randn(*t)
     x = normalize(x)
-    for steps in range(budget):
+    t0 = time.time()
+    for steps in range(1e9 * budget):
         Temp = np.zeros(t)
         for i in range(n):
             for j in range(n):
                 if j != i:
                     T = np.add(x[i], -x[j])
                     Temp[i] = np.add(Temp[i], np.multiply(T, 1 / (np.sqrt(np.sum(T**2.0))) ** (order + 2)))
+  
         x = np.add(x, Temp)
         x = normalize(x)
+        if time.time() > t0 + 0.01 * budget:
+            break
     return x
 
 
