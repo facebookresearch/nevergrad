@@ -275,7 +275,7 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
         "RFMetaModel",
     ]
     algos["yanoisybbob"] = [
-        "BFGS",
+        "RBFGS",
         "MicroCMA",
         "NoisyDiscreteOnePlusOne",
         "RandomSearch",
@@ -1065,7 +1065,7 @@ def deceptive(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     optims = get_optimizers("basics", seed=next(seedg))
     optims = ["CMA", "DE", "TwoPointsDE", "PSO", "OnePlusOne", "RandomSearch", "NGOptRW"]
     optims = [
-        "BFGS",
+        "RBFGS",
         "LBFGSB",
         "DE",
         "TwoPointsDE",
@@ -1281,7 +1281,7 @@ def multimodal(seed: tp.Optional[int] = None, para: bool = False) -> tp.Iterator
     if not para:
         optims += get_optimizers("scipy", seed=next(seedg))
     optims = [
-        "BFGS",
+        "RBFGS",
         "LBFGSB",
         "DE",
         "TwoPointsDE",
@@ -1324,7 +1324,7 @@ def hdmultimodal(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
     optims = get_optimizers("basics", "multimodal", seed=next(seedg))
     optims = [
-        "BFGS",
+        "RBFGS",
         "LBFGSB",
         "DE",
         "TwoPointsDE",
@@ -1509,7 +1509,7 @@ def yabbob(
         "GeneticDE",
     ]
     optims = ["LargeCMA", "TinyCMA", "OldCMA", "MicroCMA"]
-    optims = ["BFGS", "LBFGSB"]
+    optims = ["RBFGS", "LBFGSB"]
     optims = get_optimizers("oneshot", seed=next(seedg))  # type: ignore
     optims = [
         "MetaTuneRecentering",
@@ -1519,7 +1519,7 @@ def yabbob(
         "LHSCauchySearch",
     ]
     optims = [
-        "BFGS",
+        "RBFGS",
         "LBFGSB",
         "MicroCMA",
         "RandomSearch",
@@ -2041,7 +2041,7 @@ def pbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     ]
     optims = ["ChainMetaModelSQP", "MetaModelOnePlusOne", "MetaModelDE"]
     optims = ["LargeCMA", "TinyCMA", "OldCMA", "MicroCMA"]
-    optims = ["BFGS", "LBFGSB", "MemeticDE"]
+    optims = ["RBFGS", "LBFGSB", "MemeticDE"]
     optims = ["QrDE", "QODE", "LhsDE", "NGOpt", "NGOptRW"]
     optims = ["TinyCMA", "QODE", "MetaModelOnePlusOne", "LhsDE", "TinyLhsDE", "TinyQODE"]
     optims = ["QOPSO", "QORealSpacePSO"]
@@ -2096,7 +2096,7 @@ def zp_pbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     ]
     optims = ["ChainMetaModelSQP", "MetaModelOnePlusOne", "MetaModelDE"]
     optims = ["LargeCMA", "TinyCMA", "OldCMA", "MicroCMA"]
-    optims = ["BFGS", "LBFGSB", "MemeticDE"]
+    optims = ["RBFGS", "LBFGSB", "MemeticDE"]
     optims = ["QrDE", "QODE", "LhsDE", "NGOpt", "NGOptRW"]
     optims = ["TinyCMA", "QODE", "MetaModelOnePlusOne", "LhsDE", "TinyLhsDE", "TinyQODE"]
     optims = ["QOPSO", "QORealSpacePSO"]
@@ -2462,7 +2462,7 @@ def aquacrop_fao(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     funcs = [NgAquacrop(i, 300.0 + 150.0 * np.cos(i)) for i in range(3, 7)]
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", seed=next(seedg))
-    optims = ["BFGS", "LBFGSB", "MemeticDE"]
+    optims = ["RBFGS", "LBFGSB", "MemeticDE"]
     optims = ["PCABO"]
     optims = ["PCABO", "NGOpt", "QODE"]
     optims = ["QOPSO"]  # , "QORealSpacePSO", "RealSpacePSO"]
@@ -2509,10 +2509,10 @@ def rocket(seed: tp.Optional[int] = None, seq: bool = False) -> tp.Iterator[Expe
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", seed=next(seedg))
     optims += ["NGOpt", "NGOptRW", "ChainMetaModelSQP"]
-    optims = ["BFGS", "LBFGSB", "MemeticDE"]
+    optims = ["RBFGS", "LBFGSB", "MemeticDE"]
     optims = ["CMA", "PSO", "QODE", "QRDE", "MetaModelPSO"]
     if seq:
-        optims += ["BFGS", "LBFGSB", "MemeticDE"]
+        optims += ["RBFGS", "LBFGSB", "MemeticDE"]
     optims = ["NGOpt"]
     optims = ["PCABO"]
     optims = ["PCABO", "NGOpt", "QODE"]
@@ -3287,7 +3287,7 @@ def photonics(
         "MetaModelDE",
         "SVMMetaModelDE",
         "RFMetaModelDE",
-        "BFGS",
+        "RBFGS",
         "LBFGSB",
     ]
     optims = ["QrDE", "QODE", "RFMetaModelDE"]
@@ -3502,7 +3502,7 @@ def lsgo() -> tp.Iterator[Experiment]:
         "CMA",
         "PSO",
         "OnePlusOne",
-        "BFGS",
+        "RBFGS",
     ]
     optims = ["PSO", "RealPSO"]
     optims = ["CMA", "PSO", "SQOPSO", "TinyCMA", "Cobyla"]

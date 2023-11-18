@@ -47,6 +47,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 "gomeatree",
                 "SMAC3",
                 "BFGS",
+                "RBFGS",
                 "LBFGSB",
                 "L-BFGS-B",
                 "SMAC",
@@ -504,7 +505,8 @@ GOMEATree = NonObjectOptimizer(method="gomeatree").set_name("GOMEATree", registe
 # NLOPT = NonObjectOptimizer(method="NLOPT").set_name("NLOPT", register=True)
 Powell = NonObjectOptimizer(method="Powell").set_name("Powell", register=True)
 RPowell = NonObjectOptimizer(method="Powell", random_restart=True).set_name("RPowell", register=True)
-BFGS = NonObjectOptimizer(method="BFGS", random_restart=True).set_name("BFGS", register=True)
+BFGS = NonObjectOptimizer(method="BFGS", random_restart=False).set_name("BFGS", register=True)
+RBFGS = NonObjectOptimizer(method="BFGS", random_restart=True).set_name("RBFGS", register=True)
 LBFGSB = NonObjectOptimizer(method="L-BFGS-B", random_restart=True).set_name("LBFGSB", register=True)
 Cobyla = NonObjectOptimizer(method="COBYLA").set_name("Cobyla", register=True)
 RCobyla = NonObjectOptimizer(method="COBYLA", random_restart=True).set_name("RCobyla", register=True)
