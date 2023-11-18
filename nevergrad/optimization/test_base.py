@@ -142,16 +142,16 @@ def test_optimize_and_dump(tmp_path: Path) -> None:
 
 
 def test_compare() -> None:
-    optimizer = optimizerlib.OnePlusOne(parametrization=2, budget=600, num_workers=6)
+    optimizer = optimizerlib.OnePlusOne(parametrization=2, budget=1200, num_workers=6)
     optimizerlib.addCompare(optimizer)
-    for _ in range(100):  # TODO make faster test
+    for _ in range(200):  # TODO make faster test
         x: tp.List[tp.Any] = []
         for _ in range(6):
             x += [optimizer.ask()]
         winners = sorted(x, key=lambda x_: np.linalg.norm(x_.value - np.array((1.0, 1.0))) ** 2)
         optimizer.compare(winners[:3], winners[3:])  # type: ignore
     result = optimizer.provide_recommendation()
-    np.testing.assert_almost_equal(result.value[0], 0.79, decimal=1)
+    np.testing.assert_almost_equal(result.value[0], 1.00, decimal=1)
 
 
 def test_naming() -> None:
