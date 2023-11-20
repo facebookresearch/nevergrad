@@ -158,7 +158,7 @@ def greedy_dispersion_with_mini_conv(n, shape, budget=default_budget):
 def Riesz_blurred_gradient(
     n, shape, budget=default_budget, order=default_order, step_size=default_stepsize, conv=None
 ):
-    t = (n,) + shape
+    t = (n,) + tuple(shape)
     x = np.random.randn(*t)
     x = normalize(x)
     t0 = time.time()
@@ -181,7 +181,7 @@ def Riesz_blurred_gradient(
 def Riesz_blursum_gradient(
     n, shape, budget=default_budget, order=default_order, step_size=default_stepsize, conv=None
 ):
-    t = (n,) + shape
+    t = (n,) + tuple(shape)
     x = np.random.randn(*t)
     x = normalize(x)
     t0 = time.time()
@@ -205,7 +205,7 @@ def Riesz_blursum_gradient(
 def Riesz_noblur_gradient(
     n, shape, budget=default_budget, order=default_order, step_size=default_stepsize, conv=None
 ):
-    t = (n,) + shape
+    t = (n,) + tuple(shape)
     x = np.random.randn(*t)
     x = normalize(x)
     t0 = time.time()
