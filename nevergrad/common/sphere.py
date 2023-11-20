@@ -162,7 +162,7 @@ def Riesz_blurred_gradient(
     x = np.random.randn(*t)
     x = normalize(x)
     t0 = time.time()
-    for steps in range(budget):
+    for steps in range(1e9 * budget):
         Temp = np.zeros(t)
         Blurred = convo_mult(x, conv)
         for i in range(n):
@@ -185,7 +185,7 @@ def Riesz_blursum_gradient(
     x = np.random.randn(*t)
     x = normalize(x)
     t0 = time.time()
-    for steps in range(budget):
+    for steps in range(1e9 * budget):
         Blurred = np.zeros(t)
         for i in range(n):
             for j in range(n):
