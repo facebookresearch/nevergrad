@@ -376,7 +376,7 @@ def big_block_symmetry(n, shape):
 
 
 def covering(n, shape, budget=default_budget, conv=None):
-    x = greedy_dispersion_with_conv(n, shape, budget / 2, conv)
+    x = greedy_dispersion(n, shape, budget / 2, conv)
     mindists = []
     c = 0.01
     previous_score = float("inf")
