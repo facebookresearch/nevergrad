@@ -746,13 +746,14 @@ for u in list_metrics:
 
 
 def rs(n, shape, budget=default_budget, k="metric_half", ngtool=None):
-    t0 = time.time()
     bestm = float("inf")
     if ngtool is not None:
         opt = ng.optimizers.registry[ngtool](
             ng.p.Array(shape=tuple([n] + list(shape))), budget=10000000000000
         )
-    while time.time() < t0 + 0.01 * budget:
+    t0 = time.time()
+    bestx = None
+    while time.time() < t0 + 0.01 * budget or bestx is None:
         if ngtool is None:
             x = pure_random(n, shape)
         else:
