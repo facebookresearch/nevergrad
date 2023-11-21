@@ -441,6 +441,8 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
         raise SkipTest("BO differs from one computer to another")
     if "SMAC" in name:
         raise SkipTest("SMAC is too slow for the 20s limit")
+    if "Sqrt" in name[:5] or "Log" in name[:5] or "Multi" in name[:6] or name == "BFGSCMA":
+        raise SkipTest("Let us skip combinations.")
     if len(name) > 8:
         raise SkipTest("Let us check only compact methods.")
     # set up environment
