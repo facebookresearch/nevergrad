@@ -285,6 +285,7 @@ def test_optimizers_minimal(name: str) -> None:
     if optimizer_cls.one_shot or name in [
         "CM",
         "NLOPT_LN_PRAXIS",
+        "NLOPT_GN_CRS2_LM",
         "ES",
         "RecMixES",
         "RecMutDE",

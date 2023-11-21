@@ -2269,7 +2269,7 @@ class MultiBFGS(Portfolio):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         optims: tp.List[base.Optimizer] = []
-        optims += [BFGS(self.parametrization, num_workers=1) for _ in range(num_workers)]
+        optims += [RBFGS(self.parametrization, num_workers=1) for _ in range(num_workers)]
         for opt in optims[2:]:  # make sure initializations differ
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
         self.optims.clear()
@@ -3061,8 +3061,8 @@ GeneticDE = Chaining([RotatedTwoPointsDE, TwoPointsDE], [200]).set_name(
 MemeticDE = Chaining([RotatedTwoPointsDE, TwoPointsDE, DE, SQP], ["fourth", "fourth", "fourth"]).set_name(
     "MemeticDE", register=True
 )
-QNDE = Chaining([QODE, BFGS], ["half"]).set_name("QNDE", register=True)
-ChainDE = Chaining([DE, BFGS], ["half"]).set_name("ChainDE", register=True)
+QNDE = Chaining([QODE, RBFGS], ["half"]).set_name("QNDE", register=True)
+ChainDE = Chaining([DE, RBFGS], ["half"]).set_name("ChainDE", register=True)
 OpoDE = Chaining([OnePlusOne, QODE], ["half"]).set_name("OpoDE", register=True)
 OpoTinyDE = Chaining([OnePlusOne, TinyQODE], ["half"]).set_name("OpoTinyDE", register=True)
 QNDE.no_parallelization = True
