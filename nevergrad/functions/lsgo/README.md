@@ -1,15 +1,13 @@
 # Large-scale global optimization
 
-## Paper
-
+## Technical report
 
 ```bibtex
-@article{lsgo2013,
-    author = {Li, Xiaodong and Tang, Ke and Omidvar, Mohammmad Nabi and Yang, Zhenyu and Qin, Kai},
-    year = {2013},
-    month = {01},
-    pages = {},
-    title = {Benchmark Functions for the CEC'2013 Special Session and Competition on Large-Scale Global Optimization}
+@techreport{lsgo2013,
+    author      = {Li, Xiaodong and Tang, Ke and Omidvar, Mohammmad Nabi and Yang, Zhenyu and Qin, Kai},
+    title       = {Benchmark Functions for the CEC'2013 Special Session and Competition on Large-Scale Global Optimization},
+    institution = {RMIT University},
+    year        = {2013}
 }
 ```
 
