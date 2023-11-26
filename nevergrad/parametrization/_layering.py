@@ -304,3 +304,84 @@ def _to_int(value: tp.Union[float, np.ndarray]) -> tp.Union[int, np.ndarray]:
         return int(np.round(value))
     else:
         return np.round(value).astype(int)
+
+
+class SignificantFigure(Int):
+    """Rounds data to a specified number of significant figures.
+
+    Parameters
+    ----------
+    sig_fig: int
+        The number of significant figures to round the data to. Default is 4.
+
+    Methods
+    -------
+    _routine_round_to_sig_fig(value, digits):
+        Rounds a given number (float, int, or np.ndarray with a single element) to the specified number of significant digits.
+
+    Usage
+    -----
+    Applied as a layer to a parametrization, it adjusts the values to adhere to the defined significant figures.
+
+    Example
+    -------
+    - With Scalar Parameter:
+      :code:`weight = ng.p.Scalar(lower=-10000.0, upper=10000.0, init=1.0).add_layer(SignificantFigure(3))`
+      Samples are rounded to 3 significant figures.
+
+    - With Integer Casting:
+      :code:`weight = ng.p.Scalar(lower=-10000.0, upper=10000.0, init=1.0).add_layer(SignificantFigure(3)).set_integer_casting()`
+      Rounds to 3 significant figures and casts to integer.
+
+    Output Samples
+    --------------
+    - Floating-Point Precision: [1140.0, -5860.0, -2530.0, ...]
+    - Integer Casting: [-546, 181, 2010, ...]
+    """
+
+    _LAYER_LEVEL = Level.OPERATION
+
+    def __init__(self, sig_fig: int = 4) -> None:
+        super().__init__()
+        self.sig_fig = sig_fig
+
+    @staticmethod
+    def _routine_round_to_sig_fig(value: tp.Union[float, int, np.ndarray], digits: int) -> tp.Union[
+        float, int, np.ndarray]:
+        """
+        Rounds the number to the specified number of significant digits.
+        :param value: A number to round off.
+        :param digits: The number of significant digits.
+        :return: Rounded number.
+        """
+        if isinstance(value, np.ndarray):
+            if value.size != 1:
+                raise ValueError(f"The number of elements in the input array must be 1, got {value.size}")
+            _value = value[0]
+        else:
+            _value = value
+
+        if _value != 0:
+            _decimals = (-np.floor(np.log10(np.abs(_value))) + (digits - 1)).astype(int)
+            _value = np.round(_value, _decimals)
+
+        if isinstance(value, np.ndarray):
+            return np.asarray([_value])
+        else:
+            return _value
+
+    def _layered_get_value(self) -> np.ndarray:
+        if self._cache is not None:
+            return self._cache
+        bounds = self._layers[0].bounds  # type: ignore
+        out = self._layers[0]._layered_get_value()  # type: ignore
+        out[0] = type(self)._routine_round_to_sig_fig(out[0], self.sig_fig)
+
+        # make sure rounding does not reach beyond the bounds
+        if bounds[0] is not None:
+            out = np.maximum(bounds[0], out)
+        if bounds[1] is not None:
+            out = np.minimum(bounds[1], out)
+        # return out
+        self._cache = out
+        return self._cache
