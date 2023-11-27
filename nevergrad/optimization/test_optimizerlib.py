@@ -288,6 +288,7 @@ def test_optimizers_minimal(name: str) -> None:
         "NLOPT_GN_CRS2_LM",
         "ES",
         "RecMixES",
+        "MiniDE",
         "RecMutDE",
         "RecES",
         "VastLengler",
