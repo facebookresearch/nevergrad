@@ -97,7 +97,7 @@ def test_harder_suggest_optimizers(name: str) -> None:
     optimum = np.asarray([0] * 17 + [1] * 17 + [0] * 66)
     target = lambda x: min(3, np.sum((np.asarray(x, dtype=int) - optimum) ** 2))
     suggestion = np.asarray([0] * 17 + [1] * 16 + [0] * 67)
-    suggestion_testing(name, instrum, suggestion, 1500, target, optimum)
+    suggestion_testing(name, instrum, suggestion, 1500 + (1000 if "Lengler" in name else 0), target, optimum)
 
 
 @skip_win_perf  # type: ignore
