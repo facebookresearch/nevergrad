@@ -2036,7 +2036,7 @@ class MultiBFGSPlus(Portfolio):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         optims: tp.List[base.Optimizer] = []
         optims += [
-            rescaled(len(optims), BFGS)(self.parametrization, num_workers=1) for _ in range(num_workers)
+            rescaled(num_workers, BFGS)(self.parametrization, num_workers=1) for _ in range(num_workers)
         ]
         for opt in optims[2:]:  # make sure initializations differ
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
@@ -2056,7 +2056,7 @@ class LogMultiBFGSPlus(Portfolio):
             num_workers = int(max(num_workers, 1 + np.log(budget)))
         optims: tp.List[base.Optimizer] = []
         optims += [
-            rescaled(len(optims), BFGS)(self.parametrization, num_workers=1) for _ in range(num_workers)
+            rescaled(num_workers, BFGS)(self.parametrization, num_workers=1) for _ in range(num_workers)
         ]
         for opt in optims[2:]:  # make sure initializations differ
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
@@ -2076,7 +2076,7 @@ class SqrtMultiBFGSPlus(Portfolio):
             num_workers = int(max(num_workers, 1 + np.sqrt(budget)))
         optims: tp.List[base.Optimizer] = []
         optims += [
-            rescaled(len(optims), BFGS)(self.parametrization, num_workers=1) for _ in range(num_workers)
+            rescaled(num_workers, BFGS)(self.parametrization, num_workers=1) for _ in range(num_workers)
         ]
         for opt in optims[2:]:  # make sure initializations differ
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
@@ -2094,7 +2094,7 @@ class MultiCobylaPlus(Portfolio):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         optims: tp.List[base.Optimizer] = []
         optims += [
-            rescaled(len(optims), Cobyla)(self.parametrization, num_workers=1) for _ in range(num_workers)
+            rescaled(num_workers, Cobyla)(self.parametrization, num_workers=1) for _ in range(num_workers)
         ]
         for opt in optims[2:]:  # make sure initializations differ
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
@@ -2112,7 +2112,7 @@ class MultiSQPPlus(Portfolio):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         optims: tp.List[base.Optimizer] = []
         optims += [
-            rescaled(len(optims), SQP)(self.parametrization, num_workers=1) for _ in range(num_workers)
+            rescaled(num_workers, SQP)(self.parametrization, num_workers=1) for _ in range(num_workers)
         ]
         for opt in optims[2:]:  # make sure initializations differ
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
@@ -2128,12 +2128,12 @@ class BFGSCMAPlus(Portfolio):
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        cma_workers = num_workers // 2
+        cma_workers = max(1, num_workers // 2)
         optims: tp.List[base.Optimizer] = [
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
         optims += [
-            rescaled(len(optims), BFGS)(self.parametrization, num_workers=1)
+            rescaled(num_workers, BFGS)(self.parametrization, num_workers=1)
             for _ in range(num_workers - cma_workers)
         ]
         for opt in optims[2:]:  # make sure initializations differ
@@ -2152,12 +2152,12 @@ class LogBFGSCMAPlus(Portfolio):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if budget is not None:
             num_workers = int(max(num_workers, 1 + np.log(budget)))
-        cma_workers = num_workers // 2
+        cma_workers = max(1, num_workers // 2)
         optims: tp.List[base.Optimizer] = [
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
         optims += [
-            rescaled(len(optims), BFGS)(self.parametrization, num_workers=1)
+            rescaled(num_workers, BFGS)(self.parametrization, num_workers=1)
             for _ in range(num_workers - cma_workers)
         ]
         for opt in optims[2:]:  # make sure initializations differ
@@ -2176,12 +2176,12 @@ class SqrtBFGSCMAPlus(Portfolio):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if budget is not None:
             num_workers = int(max(num_workers, 1 + np.sqrt(budget)))
-        cma_workers = num_workers // 2
+        cma_workers = max(1, num_workers // 2)
         optims: tp.List[base.Optimizer] = [
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
         optims += [
-            rescaled(len(optims), BFGS)(self.parametrization, num_workers=1)
+            rescaled(num_workers, BFGS)(self.parametrization, num_workers=1)
             for _ in range(num_workers - cma_workers)
         ]
         for opt in optims[2:]:  # make sure initializations differ
@@ -2198,12 +2198,12 @@ class SQPCMAPlus(Portfolio):
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        cma_workers = num_workers // 2
+        cma_workers = max(1, num_workers // 2)
         optims: tp.List[base.Optimizer] = [
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
         optims += [
-            rescaled(len(optims), SQP)(self.parametrization, num_workers=1)
+            rescaled(num_workers, SQP)(self.parametrization, num_workers=1)
             for _ in range(num_workers - cma_workers)
         ]
         for opt in optims[2:]:  # make sure initializations differ
@@ -2222,12 +2222,12 @@ class LogSQPCMAPlus(Portfolio):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if budget is not None:
             num_workers = int(max(num_workers, 1 + np.log(budget)))
-        cma_workers = num_workers // 2
+        cma_workers = max(1,num_workers // 2)
         optims: tp.List[base.Optimizer] = [
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
         optims += [
-            rescaled(len(optims), SQP)(self.parametrization, num_workers=1)
+            rescaled(num_workers, SQP)(self.parametrization, num_workers=1)
             for _ in range(num_workers - cma_workers)
         ]
         for opt in optims[2:]:  # make sure initializations differ
@@ -2246,12 +2246,12 @@ class SqrtSQPCMAPlus(Portfolio):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if budget is not None:
             num_workers = int(max(num_workers, 1 + np.sqrt(budget)))
-        cma_workers = num_workers // 2
+        cma_workers = max(1, num_workers // 2)
         optims: tp.List[base.Optimizer] = [
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
         optims += [
-            rescaled(len(optims), SQP)(self.parametrization, num_workers=1)
+            rescaled(num_workers, SQP)(self.parametrization, num_workers=1)
             for _ in range(num_workers - cma_workers)
         ]
         for opt in optims[2:]:  # make sure initializations differ
@@ -2352,7 +2352,7 @@ class BFGSCMA(Portfolio):
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        cma_workers = num_workers // 2
+        cma_workers = max(1, num_workers // 2)
         optims: tp.List[base.Optimizer] = [
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
@@ -2373,7 +2373,7 @@ class LogBFGSCMA(Portfolio):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if budget is not None:
             num_workers = int(max(num_workers, 1 + np.log(budget)))
-        cma_workers = num_workers // 2
+        cma_workers = max(num_workers // 2, 1)
         optims: tp.List[base.Optimizer] = [
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
@@ -2394,7 +2394,7 @@ class SqrtBFGSCMA(Portfolio):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if budget is not None:
             num_workers = int(max(num_workers, 1 + np.sqrt(budget)))
-        cma_workers = num_workers // 2
+        cma_workers = max(num_workers // 2, 1)
         optims: tp.List[base.Optimizer] = [
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
@@ -2413,7 +2413,7 @@ class SQPCMA(Portfolio):
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        cma_workers = num_workers // 2
+        cma_workers = max(1, num_workers // 2)
         optims: tp.List[base.Optimizer] = [
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
@@ -2434,7 +2434,7 @@ class LogSQPCMA(Portfolio):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if budget is not None:
             num_workers = int(max(num_workers, 1 + np.log(budget)))
-        cma_workers = num_workers // 2
+        cma_workers = max(1, num_workers // 2)
         optims: tp.List[base.Optimizer] = [
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
@@ -2455,7 +2455,7 @@ class SqrtSQPCMA(Portfolio):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if budget is not None:
             num_workers = int(max(num_workers, 1 + np.sqrt(budget)))
-        cma_workers = num_workers // 2
+        cma_workers = max(1, num_workers // 2)
         optims: tp.List[base.Optimizer] = [
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
@@ -2475,7 +2475,7 @@ class FSQPCMA(Portfolio):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         num_workers = max(num_workers, int(np.sqrt(budget)))  # type: ignore
-        cma_workers = num_workers // 2
+        cma_workers = max(1, num_workers // 2)
         optims: tp.List[base.Optimizer] = [
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
@@ -2495,7 +2495,7 @@ class F2SQPCMA(Portfolio):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         num_workers = max(num_workers, int(np.log(budget)))  # type: ignore
-        cma_workers = num_workers // 2
+        cma_workers = max(1, num_workers // 2)
         optims: tp.List[base.Optimizer] = [
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
@@ -2515,7 +2515,7 @@ class F3SQPCMA(Portfolio):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         num_workers = max(num_workers, int(np.sqrt(budget)))  # type: ignore
-        cma_workers = num_workers // 2
+        cma_workers = max(1, num_workers // 2)
         optims: tp.List[base.Optimizer] = [
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
@@ -3081,7 +3081,7 @@ class Carola3(Portfolio):
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        cma_workers = num_workers // 2
+        cma_workers = max(1, num_workers // 2)
         optims: tp.List[base.Optimizer] = [
             MetaModel(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
