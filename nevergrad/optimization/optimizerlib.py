@@ -2086,7 +2086,7 @@ class MultiBFGSPlus(Portfolio):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         optims: tp.List[base.Optimizer] = []
         optims += [
-            rescaled(len(optims), BFGS)(self.parametrization, num_workers=1) for _ in range(num_workers)
+            rescaled(num_workers, BFGS)(self.parametrization, num_workers=1) for _ in range(num_workers)
         ]
         for opt in optims[2:]:  # make sure initializations differ
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
@@ -2107,7 +2107,7 @@ class LogMultiBFGSPlus(Portfolio):
             num_workers = int(max(num_workers, 1 + np.log(budget)))
         optims: tp.List[base.Optimizer] = []
         optims += [
-            rescaled(len(optims), BFGS)(self.parametrization, num_workers=1) for _ in range(num_workers)
+            rescaled(num_workers, BFGS)(self.parametrization, num_workers=1) for _ in range(num_workers)
         ]
         for opt in optims[2:]:  # make sure initializations differ
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
@@ -2128,7 +2128,7 @@ class SqrtMultiBFGSPlus(Portfolio):
             num_workers = int(max(num_workers, 1 + np.sqrt(budget)))
         optims: tp.List[base.Optimizer] = []
         optims += [
-            rescaled(len(optims), BFGS)(self.parametrization, num_workers=1) for _ in range(num_workers)
+            rescaled(num_workers, BFGS)(self.parametrization, num_workers=1) for _ in range(num_workers)
         ]
         for opt in optims[2:]:  # make sure initializations differ
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
@@ -2147,7 +2147,7 @@ class MultiCobylaPlus(Portfolio):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         optims: tp.List[base.Optimizer] = []
         optims += [
-            rescaled(len(optims), Cobyla)(self.parametrization, num_workers=1) for _ in range(num_workers)
+            rescaled(num_workers, Cobyla)(self.parametrization, num_workers=1) for _ in range(num_workers)
         ]
         for opt in optims[2:]:  # make sure initializations differ
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
@@ -2166,7 +2166,7 @@ class MultiSQPPlus(Portfolio):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         optims: tp.List[base.Optimizer] = []
         optims += [
-            rescaled(len(optims), SQP)(self.parametrization, num_workers=1) for _ in range(num_workers)
+            rescaled(num_workers, SQP)(self.parametrization, num_workers=1) for _ in range(num_workers)
         ]
         for opt in optims[2:]:  # make sure initializations differ
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
@@ -2188,7 +2188,7 @@ class BFGSCMAPlus(Portfolio):
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
         optims += [
-            rescaled(len(optims), BFGS)(self.parametrization, num_workers=1)
+            rescaled(num_workers, BFGS)(self.parametrization, num_workers=1)
             for _ in range(num_workers - cma_workers)
         ]
         for opt in optims[2:]:  # make sure initializations differ
@@ -2213,7 +2213,7 @@ class LogBFGSCMAPlus(Portfolio):
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
         optims += [
-            rescaled(len(optims), BFGS)(self.parametrization, num_workers=1)
+            rescaled(num_workers, BFGS)(self.parametrization, num_workers=1)
             for _ in range(num_workers - cma_workers)
         ]
         for opt in optims[2:]:  # make sure initializations differ
@@ -2238,7 +2238,7 @@ class SqrtBFGSCMAPlus(Portfolio):
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
         optims += [
-            rescaled(len(optims), BFGS)(self.parametrization, num_workers=1)
+            rescaled(num_workers, BFGS)(self.parametrization, num_workers=1)
             for _ in range(num_workers - cma_workers)
         ]
         for opt in optims[2:]:  # make sure initializations differ
@@ -2261,7 +2261,7 @@ class SQPCMAPlus(Portfolio):
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
         optims += [
-            rescaled(len(optims), SQP)(self.parametrization, num_workers=1)
+            rescaled(num_workers, SQP)(self.parametrization, num_workers=1)
             for _ in range(num_workers - cma_workers)
         ]
         for opt in optims[2:]:  # make sure initializations differ
@@ -2286,7 +2286,7 @@ class LogSQPCMAPlus(Portfolio):
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
         optims += [
-            rescaled(len(optims), SQP)(self.parametrization, num_workers=1)
+            rescaled(num_workers, SQP)(self.parametrization, num_workers=1)
             for _ in range(num_workers - cma_workers)
         ]
         for opt in optims[2:]:  # make sure initializations differ
@@ -2311,7 +2311,7 @@ class SqrtSQPCMAPlus(Portfolio):
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
         optims += [
-            rescaled(len(optims), SQP)(self.parametrization, num_workers=1)
+            rescaled(num_workers, SQP)(self.parametrization, num_workers=1)
             for _ in range(num_workers - cma_workers)
         ]
         for opt in optims[2:]:  # make sure initializations differ
@@ -3148,22 +3148,23 @@ Carola1.no_parallelization = True
 Carola2.no_parallelization = True
 
 
-# @registry.register
-# class Carola3(Portfolio):
-#
-#    def __init__(
-#        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
-#    ) -> None:
-#        super().__init__(parametrization, budget=budget, num_workers=num_workers)
-#        cma_workers = num_workers // 2
-#        optims: tp.List[base.Optimizer] = [
-#            MetaModel(self.parametrization, budget=budget, num_workers=cma_workers)
-#        ]
-#        optims += [Carola1(self.parametrization, num_workers=1) for _ in range(num_workers - cma_workers)]
-#        for opt in optims[2:]:  # make sure initializations differ
-#            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
-#        self.optims.clear()
-#        self.optims.extend(optims)
+@registry.register
+class Carola3(Portfolio):
+    """Passive portfolio of MetaCMA and many SQP."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        cma_workers = max(1, num_workers // 2)
+        optims: tp.List[base.Optimizer] = [
+            MetaModel(self.parametrization, budget=budget, num_workers=cma_workers)
+        ]
+        optims += [Carola1(self.parametrization, num_workers=1) for _ in range(num_workers - cma_workers)]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+        self.optims.clear()
+        self.optims.extend(optims)
 
 
 BAR = ConfPortfolio(optimizers=[OnePlusOne, DiagonalCMA, OpoDE], warmup_ratio=0.5).set_name(

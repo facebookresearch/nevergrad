@@ -50,6 +50,13 @@ from . import gymexperiments  # noqa
 
 
 def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
+    return list(np.random.choice(["ChainCMASQP", "TinySQP", "MicroSQP", "MultiBFGSPlus", "LogMultiBFGSPlus",
+    "PymooBIPOP",
+    "SqrtMultiBFGSPlus", "MultiCobylaPlus", "MultiSQPPlus", "BFGSCMAPlus", "LogBFGSCMAPlus", "SqrtBFGSCMAPlus",
+    "SQPCMAPlus", "LogSQPCMAPlus", "SqrtSQPCMAPlus", "MultiBFGS", "LogMultiBFGS", "SqrtMultiBFGS", "MultiCobyla",
+    "MultiSQP", "BFGSCMA", "LogBFGSCMA", "SqrtBFGSCMA", "SQPCMA", "LogSQPCMA", "SqrtSQPCMA", "FSQPCMA", "F2SQPCMA",
+    "F3SQPCMA", "ChainMetaModelSQP", "BFGS", "RBFGS", "LBFGSB", "Cobyla", "RCobyla", "SQP", "RSQP", "NLOPT_LN_COBYLA",
+    "NgIoh4", "CMA", "NGOpt", "NGOptRW", "QNDE"], 1))
     # return ["RandomSearch", "OnePlusOne", "DE", "PSO"]
     list_optims = x
     algos = {}
