@@ -283,7 +283,9 @@ def Riesz_blursum_medconv_tinyorder(n, shape, budget=default_budget):
 
 
 def Riesz_blursum_highconv_tinyorder(n, shape, budget=default_budget):
-    return Riesz_blursum_gradient(n, shape, default_steps, order=0.3, step_size=default_stepsize, conv=[24, 24])
+    return Riesz_blursum_gradient(
+        n, shape, default_steps, order=0.3, step_size=default_stepsize, conv=[24, 24]
+    )
 
 
 def Riesz_blurred_lowconv_hugeorder(n, shape, budget=default_budget):
@@ -307,7 +309,9 @@ def Riesz_blurred_medconv_tinyorder(n, shape, budget=default_budget):
 
 
 def Riesz_blurred_highconv_tinyorder(n, shape, budget=default_budget):
-    return Riesz_blurred_gradient(n, shape, default_steps, order=0.3, step_size=default_stepsize, conv=[24, 24])
+    return Riesz_blurred_gradient(
+        n, shape, default_steps, order=0.3, step_size=default_stepsize, conv=[24, 24]
+    )
 
 
 def Riesz_blursum_bigconv_loworder(n, shape, budget=default_budget):
@@ -763,13 +767,13 @@ list_of_methods = [
     "Riesz_blurred_highconv_hugeorder",
     "Riesz_blurred_lowconv_tinyorder",
     "Riesz_blurred_medconv_tinyorder",
-    "Riesz_blurred_highconv_tinyorder",    
-#    "Riesz_noblur_bigconv_loworder",
-#    "Riesz_noblur_bigconv_midorder",
-#    "Riesz_noblur_bigconv_highorder",
-#    "Riesz_noblur_medconv_loworder",
-#    "Riesz_noblur_medconv_midorder",
-#    "Riesz_noblur_medconv_highorder",
+    "Riesz_blurred_highconv_tinyorder",
+    #    "Riesz_noblur_bigconv_loworder",
+    #    "Riesz_noblur_bigconv_midorder",
+    #    "Riesz_noblur_bigconv_highorder",
+    #    "Riesz_noblur_medconv_loworder",
+    #    "Riesz_noblur_medconv_midorder",
+    #    "Riesz_noblur_medconv_highorder",
     "Riesz_noblur_lowconv_loworder",
     "Riesz_noblur_lowconv_midorder",
     "Riesz_noblur_lowconv_highorder",
