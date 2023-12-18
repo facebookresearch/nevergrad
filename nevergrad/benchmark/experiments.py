@@ -49,14 +49,88 @@ from . import gymexperiments  # noqa
 # pylint: disable=stop-iteration-return, too-many-nested-blocks, too-many-locals
 
 
+#    list_optims = ["QOTPDE", "LQOTPDE", "LQODE", "BAR4", "NGOpt", "CMandAS2"]
+#    list_optims = ["QOTPDE", "LQOTPDE", "LQODE"]
+#    list_optims = ["SPQODE", "SQOPSO", "DiagonalCMA"]
 def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
-    return list(np.random.choice(["ChainCMASQP", "TinySQP", "MicroSQP", "MultiBFGSPlus", "LogMultiBFGSPlus",
-    "PymooBIPOP",
-    "SqrtMultiBFGSPlus", "MultiCobylaPlus", "MultiSQPPlus", "BFGSCMAPlus", "LogBFGSCMAPlus", "SqrtBFGSCMAPlus",
-    "SQPCMAPlus", "LogSQPCMAPlus", "SqrtSQPCMAPlus", "MultiBFGS", "LogMultiBFGS", "SqrtMultiBFGS", "MultiCobyla",
-    "MultiSQP", "BFGSCMA", "LogBFGSCMA", "SqrtBFGSCMA", "SQPCMA", "LogSQPCMA", "SqrtSQPCMA", "FSQPCMA", "F2SQPCMA",
-    "F3SQPCMA", "ChainMetaModelSQP", "BFGS", "RBFGS", "LBFGSB", "Cobyla", "RCobyla", "SQP", "RSQP", "NLOPT_LN_COBYLA",
-    "NgIoh4", "CMA", "NGOpt", "NGOptRW", "QNDE"], 1))
+    #    return [np.random.choice(["ChainCMASQP", "BFGSCMAPlus", "SQPCMAPlus", "ChainMetaModelSQP", "QNDE", "NGOptRW", "MultiCobyla", "LBFGSB", "NLOPT-LN-COBYLA", "MultiCobylaPlus", "RCobyla", "PymooBIPOP", "MultiSQP", "MultiBFGS", "LogBFGSCMAPlus", "RBFGS", "SQP", "LogSQPCMAPlus", "MultiSQPPlus", "RSQP", "MultiBFGSPlus", "BFGS", "LogMultiBFGS", "SqrtMultiBFGS", "F3SQPCMA", "SqrtSQPCMAPlus", "LogMultiBFGSPlus", "SqrtBFGSCMAPlus", "TinySQP", "MicroSQP", "SqrtMultiBFGSPlus" ])]
+    if np.random.randn() < 0.0:
+        return ["NgIoh8"]
+    if np.random.randn() < 0.0:
+        return list(
+            np.random.choice(
+                [
+                    "NgIoh4",
+                    "NGOpt",
+                    "NGOptRW",
+                    "ChainCMASQP",
+                    "PymooBIPOP",
+                    "NLOPT_LN_SBPLX",
+                    "QNDE",
+                    "BFGSCMAPlus",
+                    "ChainMetaModelSQP",
+                ],
+                1,
+            )
+        )
+    return list(
+        np.random.choice(
+            [
+                "CMandAS2",
+                "SQOPSO",
+                "SPQODE",
+                "DiagonalCMA",
+                "QOTPDE",
+                "LQOTPDE",
+                "LQODE",
+                "BAR4",
+                "ChainCMASQP",
+                "TinySQP",
+                "MicroSQP",
+                "MultiBFGSPlus",
+                "LogMultiBFGSPlus",
+                "PymooBIPOP",
+                "SqrtMultiBFGSPlus",
+                "MultiCobylaPlus",
+                "MultiSQPPlus",
+                "BFGSCMAPlus",
+                "LogBFGSCMAPlus",
+                "SqrtBFGSCMAPlus",
+                "SQPCMAPlus",
+                "LogSQPCMAPlus",
+                "SqrtSQPCMAPlus",
+                "MultiBFGS",
+                "LogMultiBFGS",
+                "SqrtMultiBFGS",
+                "MultiCobyla",
+                "MultiSQP",
+                "BFGSCMA",
+                "LogBFGSCMA",
+                "SqrtBFGSCMA",
+                "SQPCMA",
+                "LogSQPCMA",
+                "SqrtSQPCMA",
+                "FSQPCMA",
+                "F2SQPCMA",
+                "F3SQPCMA",
+                "ChainMetaModelSQP",
+                "BFGS",
+                "RBFGS",
+                "LBFGSB",
+                "Cobyla",
+                "RCobyla",
+                "SQP",
+                "RSQP",
+                "NLOPT_LN_COBYLA",
+                "NgIoh4",
+                "CMA",
+                "NGOpt",
+                "NGOptRW",
+                "QNDE",
+            ],
+            1,
+        )
+    )
     # return ["RandomSearch", "OnePlusOne", "DE", "PSO"]
     list_optims = x
     algos = {}
