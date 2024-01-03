@@ -1794,11 +1794,17 @@ class Portfolio(base.Optimizer):
         num_workers: int = 1,
         config: tp.Optional["ConfPortfolio"] = None,
     ) -> None:
+            
         distribute_workers = config is not None and config.warmup_ratio == 1.0
         self._config = ConfPortfolio() if config is None else config
         cfg = self._config
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        optimizers = list(cfg.optimizers) if not hasattr(self, "optims") else [o.name for o in self.optims]
+        if hasattr(self, "optims") and len(self.optims) > 0:
+            optimizers = self.optims
+            for o in optimizers:
+                o.parametrization = self.parametrization
+        else:
+            optimizers = list(cfg.optimizers)
         if not optimizers:  # default
             optimizers = []
             if budget is None or budget >= 12 * num_workers:
@@ -1838,6 +1844,9 @@ class Portfolio(base.Optimizer):
                         "the parametrization object is strictly the same"
                     )
                 self.str_info += f"append{opt}"
+                turns += [index] * (1 if opt.no_parallelization else sub_workers)
+                if not opt.no_parallelization:
+                    assert opt.num_workers == sub_workers
                 self.optims.append(opt)
                 continue
             Optim: base.OptCls = registry[opt] if isinstance(opt, str) else opt
@@ -1855,8 +1864,8 @@ class Portfolio(base.Optimizer):
             print(
                 f"Added {opt} with budget {sub_budget} with {1 if Optim.no_parallelization else sub_workers} workers"
             )
-        print("end additions...")
         self.turns = turns
+        print("end additions...", self.turns, optimizers)
         assert max(self.turns) < len(self.optims)
         # current optimizer choice
         self._current = -1
