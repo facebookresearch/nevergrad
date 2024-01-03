@@ -1809,8 +1809,8 @@ class Portfolio(base.Optimizer):
         self.optims: tp.List[base.Optimizer] = []
         num_non_para = 0
         for opt in optimizers:
-            Optim: base.OptCls = registry[opt] if isinstance(opt, str) else opt
-            if Optim.no_parallelization:
+            Optim_tmp: base.OptCls = registry[opt] if isinstance(opt, str) else opt  # type: ignore
+            if Optim_tmp.no_parallelization:
                 num_non_para += 1
         if num_workers <= num:
             num_non_para = 0  # no problem with non-parallelizable if num_workers < num
@@ -1827,13 +1827,16 @@ class Portfolio(base.Optimizer):
         )
         assert num * sub_workers >= num_workers
         turns = []
+        self.str_info = ""
         for index, opt in enumerate(optimizers):
             if isinstance(opt, base.Optimizer):
+                self.str_info += f"XX{opt}"
                 if opt.parametrization is not self.parametrization:
                     raise errors.NevergradValueError(
                         "Initialized optimizers are only accepted if "
                         "the parametrization object is strictly the same"
                     )
+                self.str_info += f"append{opt}"
                 self.optims.append(opt)
                 continue
             Optim: base.OptCls = registry[opt] if isinstance(opt, str) else opt
@@ -1846,8 +1849,9 @@ class Portfolio(base.Optimizer):
                 )
             )
             turns += [index] * (1 if Optim.no_parallelization else sub_workers)
-            # print(f"Added {opt} with budget {sub_budget} with {1 if Optim.no_parallelization else sub_workers} workers")  # DEBUG INFO
+            self.str_info += f"Added {opt} with budget {sub_budget} with {1 if Optim.no_parallelization else sub_workers} workers"  # DEBUG INFO
         self.turns = turns
+        assert max(self.turns) < len(self.optims)
         # current optimizer choice
         self._current = -1
         self._warmup_budget: tp.Optional[int] = None
@@ -1873,6 +1877,9 @@ class Portfolio(base.Optimizer):
                 self._current += 1
                 # optim_index = self._current % len(self.optims)
                 optim_index = self.turns[self._current % len(self.turns)]
+                assert optim_index < len(
+                    self.optims
+                ), f"{optim_index}, {self.turns}, {len(self.optims)} {self.num_times} {self.str_info} {self.optims}"
                 opt = self.optims[optim_index]
 
                 if opt.num_workers > opt.num_ask - (opt.num_tell):  # - opt.num_tell_not_asked):
@@ -3103,23 +3110,22 @@ Carola1.no_parallelization = True
 Carola2.no_parallelization = True
 
 
-@registry.register
-class Carola3(Portfolio):
-    """Passive portfolio of MetaCMA and many SQP."""
-
-    def __init__(
-        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
-    ) -> None:
-        super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        cma_workers = num_workers // 2
-        optims: tp.List[base.Optimizer] = [
-            MetaModel(self.parametrization, budget=budget, num_workers=cma_workers)
-        ]
-        optims += [Carola1(self.parametrization, num_workers=1) for _ in range(num_workers - cma_workers)]
-        for opt in optims[2:]:  # make sure initializations differ
-            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
-        self.optims.clear()
-        self.optims.extend(optims)
+# @registry.register
+# class Carola3(Portfolio):
+#
+#    def __init__(
+#        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+#    ) -> None:
+#        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+#        cma_workers = num_workers // 2
+#        optims: tp.List[base.Optimizer] = [
+#            MetaModel(self.parametrization, budget=budget, num_workers=cma_workers)
+#        ]
+#        optims += [Carola1(self.parametrization, num_workers=1) for _ in range(num_workers - cma_workers)]
+#        for opt in optims[2:]:  # make sure initializations differ
+#            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+#        self.optims.clear()
+#        self.optims.extend(optims)
 
 
 BAR = ConfPortfolio(optimizers=[OnePlusOne, DiagonalCMA, OpoDE], warmup_ratio=0.5).set_name(
@@ -4790,14 +4796,14 @@ class NgIoh4(NGOptBase):
         return optCls
 
 
-@registry.register
-class NgIohRW2(NgIoh4):
-    def _select_optimizer_cls(self) -> base.OptCls:
-        if self.fully_continuous and not self.has_noise and self.budget >= 12 * self.dimension:  # type: ignore
-            return ConfPortfolio(optimizers=[SQPCMA, QODE, PSO], warmup_ratio=0.33)
-            # return ConfPortfolio(optimizers=[QODE, PSO, super()._select_optimizer_cls()], warmup_ratio=0.33)
-        else:
-            return super()._select_optimizer_cls()
+# @registry.register
+# class NgIohRW2(NgIoh4):
+#    def _select_optimizer_cls(self) -> base.OptCls:
+#        if self.fully_continuous and not self.has_noise and self.budget >= 12 * self.dimension:  # type: ignore
+#            return ConfPortfolio(optimizers=[SQPCMA, QODE, PSO], warmup_ratio=0.33)
+#            # return ConfPortfolio(optimizers=[QODE, PSO, super()._select_optimizer_cls()], warmup_ratio=0.33)
+#        else:
+#            return super()._select_optimizer_cls()
 
 
 @registry.register
