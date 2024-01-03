@@ -1484,6 +1484,7 @@ class _Rescaled(base.Optimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._optimizer = base_optimizer(self.parametrization, budget=budget, num_workers=num_workers)
+        self.no_parallelization = self._optimizer.no_parallelization
         self._subcandidates: tp.Dict[str, p.Parameter] = {}
         if scale is None:
             assert self.budget is not None, "Either scale or budget must be known in _Rescaled."
@@ -1797,7 +1798,7 @@ class Portfolio(base.Optimizer):
         self._config = ConfPortfolio() if config is None else config
         cfg = self._config
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        optimizers = list(cfg.optimizers)
+        optimizers = list(cfg.optimizers) if not hasattr(self, "optims") else [o.name for o in self.optims]
         if not optimizers:  # default
             optimizers = []
             if budget is None or budget >= 12 * num_workers:
@@ -1848,8 +1849,13 @@ class Portfolio(base.Optimizer):
                     num_workers=1 if Optim.no_parallelization else sub_workers,
                 )
             )
+            assert sub_workers >= 1
             turns += [index] * (1 if Optim.no_parallelization else sub_workers)
             self.str_info += f"Added {opt} with budget {sub_budget} with {1 if Optim.no_parallelization else sub_workers} workers"  # DEBUG INFO
+            print(
+                f"Added {opt} with budget {sub_budget} with {1 if Optim.no_parallelization else sub_workers} workers"
+            )
+        print("end additions...")
         self.turns = turns
         assert max(self.turns) < len(self.optims)
         # current optimizer choice
@@ -1881,12 +1887,14 @@ class Portfolio(base.Optimizer):
                     self.optims
                 ), f"{optim_index}, {self.turns}, {len(self.optims)} {self.num_times} {self.str_info} {self.optims}"
                 opt = self.optims[optim_index]
-
+                break
                 if opt.num_workers > opt.num_ask - (opt.num_tell):  # - opt.num_tell_not_asked):
                     # if opt.num_workers > opt.num_ask - (opt.num_tell - opt.num_tell_not_asked):
                     break  # if there are workers left, use this optimizer
-                # print(optim_index, " not available", opt)  # DEBUG INFO
-                # print(f"{opt} ({optim_index}) not available, because {opt.num_workers} not > {opt.num_ask} - ({opt.num_tell} - {opt.num_tell_not_asked})")  # DEBUG INFO
+                print(optim_index, " not available", opt)  # DEBUG INFO
+                print(
+                    f"{opt} ({optim_index}) not available, because {opt.num_workers} not > {opt.num_ask} - ({opt.num_tell} - {opt.num_tell_not_asked})"
+                )  # DEBUG INFO
                 if k > len(self.turns):
                     if not opt.no_parallelization:
                         break  # if no worker is available, try the first parallelizable optimizer
@@ -1894,7 +1902,16 @@ class Portfolio(base.Optimizer):
             raise RuntimeError("Something went wrong in optimizer selection")
         opt = self.optims[optim_index]
         self.num_times[optim_index] += 1
-        # print(optim_index, " is chosen:", opt, self.num_times[optim_index])  # DEBUG INFO
+        print(
+            optim_index,
+            " is chosen:",
+            opt,
+            self.num_times[optim_index],
+            self.turns,
+            self.optims,
+            self.num_times,
+            self.num_workers,
+        )  # DEBUG INFO
         if optim_index > 1 and not opt.num_ask and not opt._suggestions and not opt.num_tell:
             # most algorithms start at 0, lets avoid that for all but the first if they have no information
             opt._suggestions.append(self.parametrization.sample())
@@ -2079,6 +2096,7 @@ class MultiBFGSPlus(Portfolio):
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
         self.optims.clear()
         self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
 
 
 @registry.register
@@ -2099,6 +2117,7 @@ class LogMultiBFGSPlus(Portfolio):
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
         self.optims.clear()
         self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
 
 
 @registry.register
@@ -2119,6 +2138,7 @@ class SqrtMultiBFGSPlus(Portfolio):
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
         self.optims.clear()
         self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
 
 
 @registry.register
@@ -2137,6 +2157,7 @@ class MultiCobylaPlus(Portfolio):
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
         self.optims.clear()
         self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
 
 
 @registry.register
@@ -2155,6 +2176,7 @@ class MultiSQPPlus(Portfolio):
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
         self.optims.clear()
         self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
 
 
 @registry.register
@@ -2165,7 +2187,7 @@ class BFGSCMAPlus(Portfolio):
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        cma_workers = num_workers // 2
+        cma_workers = max(1, num_workers // 2)
         optims: tp.List[base.Optimizer] = [
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
@@ -2177,6 +2199,7 @@ class BFGSCMAPlus(Portfolio):
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
         self.optims.clear()
         self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
 
 
 @registry.register
@@ -2189,7 +2212,7 @@ class LogBFGSCMAPlus(Portfolio):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if budget is not None:
             num_workers = int(max(num_workers, 1 + np.log(budget)))
-        cma_workers = num_workers // 2
+        cma_workers = max(1, num_workers // 2)
         optims: tp.List[base.Optimizer] = [
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
@@ -2201,6 +2224,7 @@ class LogBFGSCMAPlus(Portfolio):
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
         self.optims.clear()
         self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
 
 
 @registry.register
@@ -2213,7 +2237,7 @@ class SqrtBFGSCMAPlus(Portfolio):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if budget is not None:
             num_workers = int(max(num_workers, 1 + np.sqrt(budget)))
-        cma_workers = num_workers // 2
+        cma_workers = max(1, num_workers // 2)
         optims: tp.List[base.Optimizer] = [
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
@@ -2225,6 +2249,7 @@ class SqrtBFGSCMAPlus(Portfolio):
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
         self.optims.clear()
         self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
 
 
 @registry.register
@@ -2235,7 +2260,7 @@ class SQPCMAPlus(Portfolio):
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        cma_workers = num_workers // 2
+        cma_workers = max(1, num_workers // 2)
         optims: tp.List[base.Optimizer] = [
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
@@ -2247,6 +2272,7 @@ class SQPCMAPlus(Portfolio):
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
         self.optims.clear()
         self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
 
 
 @registry.register
@@ -2259,7 +2285,7 @@ class LogSQPCMAPlus(Portfolio):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if budget is not None:
             num_workers = int(max(num_workers, 1 + np.log(budget)))
-        cma_workers = num_workers // 2
+        cma_workers = max(1, num_workers // 2)
         optims: tp.List[base.Optimizer] = [
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
@@ -2271,6 +2297,7 @@ class LogSQPCMAPlus(Portfolio):
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
         self.optims.clear()
         self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
 
 
 @registry.register
@@ -2283,7 +2310,7 @@ class SqrtSQPCMAPlus(Portfolio):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if budget is not None:
             num_workers = int(max(num_workers, 1 + np.sqrt(budget)))
-        cma_workers = num_workers // 2
+        cma_workers = max(1, num_workers // 2)
         optims: tp.List[base.Optimizer] = [
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
@@ -2295,6 +2322,7 @@ class SqrtSQPCMAPlus(Portfolio):
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
         self.optims.clear()
         self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
 
 
 @registry.register
@@ -2311,6 +2339,7 @@ class MultiBFGS(Portfolio):
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
         self.optims.clear()
         self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
 
 
 @registry.register
@@ -2329,6 +2358,7 @@ class LogMultiBFGS(Portfolio):
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
         self.optims.clear()
         self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
 
 
 @registry.register
@@ -2347,6 +2377,7 @@ class SqrtMultiBFGS(Portfolio):
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
         self.optims.clear()
         self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
 
 
 @registry.register
@@ -2363,6 +2394,7 @@ class MultiCobyla(Portfolio):
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
         self.optims.clear()
         self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
 
 
 @registry.register
@@ -2379,6 +2411,7 @@ class MultiSQP(Portfolio):
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
         self.optims.clear()
         self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
 
 
 @registry.register
@@ -2389,7 +2422,7 @@ class BFGSCMA(Portfolio):
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        cma_workers = num_workers // 2
+        cma_workers = max(1, num_workers // 2)
         optims: tp.List[base.Optimizer] = [
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
@@ -2398,6 +2431,7 @@ class BFGSCMA(Portfolio):
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
         self.optims.clear()
         self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
 
 
 @registry.register
@@ -2410,7 +2444,7 @@ class LogBFGSCMA(Portfolio):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if budget is not None:
             num_workers = int(max(num_workers, 1 + np.log(budget)))
-        cma_workers = num_workers // 2
+        cma_workers = max(1, num_workers // 2)
         optims: tp.List[base.Optimizer] = [
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
@@ -2419,6 +2453,7 @@ class LogBFGSCMA(Portfolio):
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
         self.optims.clear()
         self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
 
 
 @registry.register
@@ -2431,7 +2466,7 @@ class SqrtBFGSCMA(Portfolio):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if budget is not None:
             num_workers = int(max(num_workers, 1 + np.sqrt(budget)))
-        cma_workers = num_workers // 2
+        cma_workers = max(1, num_workers // 2)
         optims: tp.List[base.Optimizer] = [
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
@@ -2440,6 +2475,7 @@ class SqrtBFGSCMA(Portfolio):
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
         self.optims.clear()
         self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
 
 
 @registry.register
@@ -2450,7 +2486,7 @@ class SQPCMA(Portfolio):
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        cma_workers = num_workers // 2
+        cma_workers = max(1, num_workers // 2)
         optims: tp.List[base.Optimizer] = [
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
@@ -2459,6 +2495,7 @@ class SQPCMA(Portfolio):
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
         self.optims.clear()
         self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
 
 
 @registry.register
@@ -2471,7 +2508,7 @@ class LogSQPCMA(Portfolio):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if budget is not None:
             num_workers = int(max(num_workers, 1 + np.log(budget)))
-        cma_workers = num_workers // 2
+        cma_workers = max(1, num_workers // 2)
         optims: tp.List[base.Optimizer] = [
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
@@ -2480,6 +2517,7 @@ class LogSQPCMA(Portfolio):
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
         self.optims.clear()
         self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
 
 
 @registry.register
@@ -2492,7 +2530,7 @@ class SqrtSQPCMA(Portfolio):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if budget is not None:
             num_workers = int(max(num_workers, 1 + np.sqrt(budget)))
-        cma_workers = num_workers // 2
+        cma_workers = max(1, num_workers // 2)
         optims: tp.List[base.Optimizer] = [
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
@@ -2501,6 +2539,7 @@ class SqrtSQPCMA(Portfolio):
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
         self.optims.clear()
         self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
 
 
 @registry.register
@@ -2512,7 +2551,7 @@ class FSQPCMA(Portfolio):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         num_workers = max(num_workers, int(np.sqrt(budget)))  # type: ignore
-        cma_workers = num_workers // 2
+        cma_workers = max(1, num_workers // 2)
         optims: tp.List[base.Optimizer] = [
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
@@ -2521,6 +2560,7 @@ class FSQPCMA(Portfolio):
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
         self.optims.clear()
         self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
 
 
 @registry.register
@@ -2532,7 +2572,7 @@ class F2SQPCMA(Portfolio):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         num_workers = max(num_workers, int(np.log(budget)))  # type: ignore
-        cma_workers = num_workers // 2
+        cma_workers = max(1, num_workers // 2)
         optims: tp.List[base.Optimizer] = [
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
@@ -2541,6 +2581,7 @@ class F2SQPCMA(Portfolio):
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
         self.optims.clear()
         self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
 
 
 @registry.register
@@ -2552,7 +2593,7 @@ class F3SQPCMA(Portfolio):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         num_workers = max(num_workers, int(np.sqrt(budget)))  # type: ignore
-        cma_workers = num_workers // 2
+        cma_workers = max(1, num_workers // 2)
         optims: tp.List[base.Optimizer] = [
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
@@ -2566,6 +2607,7 @@ class F3SQPCMA(Portfolio):
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
         self.optims.clear()
         self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
 
 
 @registry.register
@@ -4798,12 +4840,12 @@ class NgIoh4(NGOptBase):
 
 # @registry.register
 # class NgIohRW2(NgIoh4):
-#    def _select_optimizer_cls(self) -> base.OptCls:
-#        if self.fully_continuous and not self.has_noise and self.budget >= 12 * self.dimension:  # type: ignore
-#            return ConfPortfolio(optimizers=[SQPCMA, QODE, PSO], warmup_ratio=0.33)
-#            # return ConfPortfolio(optimizers=[QODE, PSO, super()._select_optimizer_cls()], warmup_ratio=0.33)
-#        else:
-#            return super()._select_optimizer_cls()
+#   def _select_optimizer_cls(self) -> base.OptCls:
+#       if self.fully_continuous and not self.has_noise and self.budget >= 12 * self.dimension:  # type: ignore
+#           return ConfPortfolio(optimizers=[SQPCMA, QODE, PSO], warmup_ratio=0.33)
+#           # return ConfPortfolio(optimizers=[QODE, PSO, super()._select_optimizer_cls()], warmup_ratio=0.33)
+#       else:
+#           return super()._select_optimizer_cls()
 
 
 @registry.register
