@@ -519,7 +519,6 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
             ]
             if ("Smooth" in a or "Lognor" in a or "Recomb" in a)
         ]
-    list_optims = ["NgIoh7", "NgIohRW2", "LognormalDiscreteOnePlusOne"]
 
     return [list_optims[doint(host) % len(list_optims)]]
 
