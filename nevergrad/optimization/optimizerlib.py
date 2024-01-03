@@ -1805,14 +1805,29 @@ class Portfolio(base.Optimizer):
             if budget is not None:  # needs a budget
                 optimizers.append("ScrHammersleySearch")
         num = len(optimizers)
-        # print(f"Optimizers = {optimizers}")
+        print(f"Optimizers = {optimizers}")
         self.optims: tp.List[base.Optimizer] = []
-        sub_budget = None if budget is None else budget // num + (budget % num > 0)
-        sub_workers = 1
+        num_non_para = 0
+        for opt in optimizers:
+            Optim: base.OptCls = registry[opt] if isinstance(opt, str) else opt
+            if Optim.no_parallelization:
+                num_non_para += 1
+        if num_workers <= num:
+            num_non_para = 0  # no problem with non-parallelizable if num_workers < num
+        num_para = num - num_non_para
+        sub_budget = None if budget is None else budget // num_para + (budget % num_para > 0)
+        needed_workers = num_workers - num_non_para
+        sub_workers = max(
+            1, needed_workers // (num - num_non_para) + (needed_workers % (num - num_non_para) > 0)
+        )
         if distribute_workers:
             sub_workers = num_workers // num + (num_workers % num > 0)
-        # print(f"{num_workers} workers, {num} algorithms, budget {budget}, {num} optimizers, {sub_workers} sub_workers, sub_budget={sub_budget}, distrib: {distribute_workers}")
-        for opt in optimizers:
+        print(
+            f"{num_workers} workers, {num} algorithms, budget {budget}, {num} optimizers, {sub_workers} sub_workers, sub_budget={sub_budget}, distrib: {distribute_workers}"
+        )
+        assert num * sub_workers >= num_workers
+        turns = []
+        for index, opt in enumerate(optimizers):
             if isinstance(opt, base.Optimizer):
                 if opt.parametrization is not self.parametrization:
                     raise errors.NevergradValueError(
@@ -1822,15 +1837,17 @@ class Portfolio(base.Optimizer):
                 self.optims.append(opt)
                 continue
             Optim: base.OptCls = registry[opt] if isinstance(opt, str) else opt
-            assert sub_workers == 1 or not Optim.no_parallelization
+            # assert sub_workers == 1 or not Optim.no_parallelization
             self.optims.append(
                 Optim(
                     self.parametrization,  # share parametrization and its rng
                     budget=sub_budget,
-                    num_workers=sub_workers,
+                    num_workers=1 if Optim.no_parallelization else sub_workers,
                 )
             )
-            # print(f"Added {opt} with budget {sub_budget} with {sub_workers} workers")  DEBUG INFO
+            turns += [index] * (1 if Optim.no_parallelization else sub_workers)
+            # print(f"Added {opt} with budget {sub_budget} with {1 if Optim.no_parallelization else sub_workers} workers")  # DEBUG INFO
+        self.turns = turns
         # current optimizer choice
         self._current = -1
         self._warmup_budget: tp.Optional[int] = None
@@ -1838,6 +1855,7 @@ class Portfolio(base.Optimizer):
             raise ValueError("warmup_ratio is only available if a budget is provided")
         if not any(x is None for x in (cfg.warmup_ratio, budget)):
             self._warmup_budget = int(cfg.warmup_ratio * budget)  # type: ignore
+        self.num_times = [0] * num
 
     def _internal_ask_candidate(self) -> p.Parameter:
         # optimizer selection if budget is over
@@ -1848,23 +1866,28 @@ class Portfolio(base.Optimizer):
                     if self.num_workers == 1 or self.optims[ind].num_workers > 1:
                         self.optims = [self.optims[ind]]  # throw away everything else
         num = len(self.optims)
-        for k in range(2 * num):
-            self._current += 1
-            optim_index = self._current % len(self.optims)
-            opt = self.optims[optim_index]
+        if num == 1:
+            optim_index = 0
+        else:
+            for k in range(2 * len(self.turns)):
+                self._current += 1
+                # optim_index = self._current % len(self.optims)
+                optim_index = self.turns[self._current % len(self.turns)]
+                opt = self.optims[optim_index]
 
-            if opt.num_workers > opt.num_ask - (opt.num_tell): # - opt.num_tell_not_asked):
-            #if opt.num_workers > opt.num_ask - (opt.num_tell - opt.num_tell_not_asked):
-                break  # if there are workers left, use this optimizer
-            # print(optim_index, " not available", opt)   DEBUG INFO
-            # print(f"{opt} ({optim_index}) not available, because {opt.num_workers} not > {opt.num_ask} - ({opt.num_tell} - {opt.num_tell_not_asked})")  DEBUG INFO
-            if k > num:
-                if not opt.no_parallelization:
-                    break  # if no worker is available, try the first parallelizable optimizer
-        # print(optim_index, " is chosen")  DEBUG INFO
+                if opt.num_workers > opt.num_ask - (opt.num_tell):  # - opt.num_tell_not_asked):
+                    # if opt.num_workers > opt.num_ask - (opt.num_tell - opt.num_tell_not_asked):
+                    break  # if there are workers left, use this optimizer
+                # print(optim_index, " not available", opt)  # DEBUG INFO
+                # print(f"{opt} ({optim_index}) not available, because {opt.num_workers} not > {opt.num_ask} - ({opt.num_tell} - {opt.num_tell_not_asked})")  # DEBUG INFO
+                if k > len(self.turns):
+                    if not opt.no_parallelization:
+                        break  # if no worker is available, try the first parallelizable optimizer
         if optim_index is None:
             raise RuntimeError("Something went wrong in optimizer selection")
         opt = self.optims[optim_index]
+        self.num_times[optim_index] += 1
+        # print(optim_index, " is chosen:", opt, self.num_times[optim_index])  # DEBUG INFO
         if optim_index > 1 and not opt.num_ask and not opt._suggestions and not opt.num_tell:
             # most algorithms start at 0, lets avoid that for all but the first if they have no information
             opt._suggestions.append(self.parametrization.sample())
