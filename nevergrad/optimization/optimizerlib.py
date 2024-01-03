@@ -1812,7 +1812,7 @@ class Portfolio(base.Optimizer):
             if budget is not None:  # needs a budget
                 optimizers.append("ScrHammersleySearch")
         num = len(optimizers)
-        print(f"Optimizers = {optimizers}")
+        # print(f"Optimizers = {optimizers}")
         self.optims: tp.List[base.Optimizer] = []
         num_non_para = 0
         for opt in optimizers:
@@ -1829,9 +1829,9 @@ class Portfolio(base.Optimizer):
         )
         if distribute_workers:
             sub_workers = num_workers // num + (num_workers % num > 0)
-        print(
-            f"{num_workers} workers, {num} algorithms, budget {budget}, {num} optimizers, {sub_workers} sub_workers, sub_budget={sub_budget}, distrib: {distribute_workers}"
-        )
+        # print(
+        #     f"{num_workers} workers, {num} algorithms, budget {budget}, {num} optimizers, {sub_workers} sub_workers, sub_budget={sub_budget}, distrib: {distribute_workers}"
+        # )
         assert num * sub_workers >= num_workers
         turns = []
         self.str_info = ""
@@ -1861,11 +1861,9 @@ class Portfolio(base.Optimizer):
             assert sub_workers >= 1
             turns += [index] * (1 if Optim.no_parallelization else sub_workers)
             self.str_info += f"Added {opt} with budget {sub_budget} with {1 if Optim.no_parallelization else sub_workers} workers"  # DEBUG INFO
-            print(
-                f"Added {opt} with budget {sub_budget} with {1 if Optim.no_parallelization else sub_workers} workers"
-            )
+            # print( f"Added {opt} with budget {sub_budget} with {1 if Optim.no_parallelization else sub_workers} workers")
         self.turns = turns
-        print("end additions...", self.turns, optimizers)
+        # print("end additions...", self.turns, optimizers)
         assert max(self.turns) < len(self.optims)
         # current optimizer choice
         self._current = -1
@@ -1900,10 +1898,8 @@ class Portfolio(base.Optimizer):
                 if opt.num_workers > opt.num_ask - (opt.num_tell):  # - opt.num_tell_not_asked):
                     # if opt.num_workers > opt.num_ask - (opt.num_tell - opt.num_tell_not_asked):
                     break  # if there are workers left, use this optimizer
-                print(optim_index, " not available", opt)  # DEBUG INFO
-                print(
-                    f"{opt} ({optim_index}) not available, because {opt.num_workers} not > {opt.num_ask} - ({opt.num_tell} - {opt.num_tell_not_asked})"
-                )  # DEBUG INFO
+                # print(optim_index, " not available", opt)  # DEBUG INFO
+                # print( f"{opt} ({optim_index}) not available, because {opt.num_workers} not > {opt.num_ask} - ({opt.num_tell} - {opt.num_tell_not_asked})")  # DEBUG INFO
                 if k > len(self.turns):
                     if not opt.no_parallelization:
                         break  # if no worker is available, try the first parallelizable optimizer
@@ -1911,16 +1907,7 @@ class Portfolio(base.Optimizer):
             raise RuntimeError("Something went wrong in optimizer selection")
         opt = self.optims[optim_index]
         self.num_times[optim_index] += 1
-        print(
-            optim_index,
-            " is chosen:",
-            opt,
-            self.num_times[optim_index],
-            self.turns,
-            self.optims,
-            self.num_times,
-            self.num_workers,
-        )  # DEBUG INFO
+        # print( optim_index, " is chosen:", opt, self.num_times[optim_index], self.turns, self.optims, self.num_times, self.num_workers,)  # DEBUG INFO
         if optim_index > 1 and not opt.num_ask and not opt._suggestions and not opt.num_tell:
             # most algorithms start at 0, lets avoid that for all but the first if they have no information
             opt._suggestions.append(self.parametrization.sample())
