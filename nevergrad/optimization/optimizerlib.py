@@ -1805,11 +1805,13 @@ class Portfolio(base.Optimizer):
             if budget is not None:  # needs a budget
                 optimizers.append("ScrHammersleySearch")
         num = len(optimizers)
+        # print(f"Optimizers = {optimizers}")
         self.optims: tp.List[base.Optimizer] = []
         sub_budget = None if budget is None else budget // num + (budget % num > 0)
         sub_workers = 1
         if distribute_workers:
             sub_workers = num_workers // num + (num_workers % num > 0)
+        # print(f"{num_workers} workers, {num} algorithms, budget {budget}, {num} optimizers, {sub_workers} sub_workers, sub_budget={sub_budget}, distrib: {distribute_workers}")
         for opt in optimizers:
             if isinstance(opt, base.Optimizer):
                 if opt.parametrization is not self.parametrization:
@@ -1828,6 +1830,7 @@ class Portfolio(base.Optimizer):
                     num_workers=sub_workers,
                 )
             )
+            # print(f"Added {opt} with budget {sub_budget} with {sub_workers} workers")  DEBUG INFO
         # current optimizer choice
         self._current = -1
         self._warmup_budget: tp.Optional[int] = None
@@ -1850,11 +1853,15 @@ class Portfolio(base.Optimizer):
             optim_index = self._current % len(self.optims)
             opt = self.optims[optim_index]
 
-            if opt.num_workers > opt.num_ask - (opt.num_tell - opt.num_tell_not_asked):
+            if opt.num_workers > opt.num_ask - (opt.num_tell): # - opt.num_tell_not_asked):
+            #if opt.num_workers > opt.num_ask - (opt.num_tell - opt.num_tell_not_asked):
                 break  # if there are workers left, use this optimizer
+            # print(optim_index, " not available", opt)   DEBUG INFO
+            # print(f"{opt} ({optim_index}) not available, because {opt.num_workers} not > {opt.num_ask} - ({opt.num_tell} - {opt.num_tell_not_asked})")  DEBUG INFO
             if k > num:
                 if not opt.no_parallelization:
                     break  # if no worker is available, try the first parallelizable optimizer
+        # print(optim_index, " is chosen")  DEBUG INFO
         if optim_index is None:
             raise RuntimeError("Something went wrong in optimizer selection")
         opt = self.optims[optim_index]
