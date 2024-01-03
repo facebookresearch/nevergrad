@@ -1800,7 +1800,7 @@ class Portfolio(base.Optimizer):
         cfg = self._config
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         if hasattr(self, "optims") and len(self.optims) > 0:
-            optimizers = self.optims
+            optimizers = self.optims  # type: ignore
             for o in optimizers:
                 o.parametrization = self.parametrization
         else:
