@@ -1777,10 +1777,12 @@ class ConfPortfolio(base.ConfiguredOptimizer):
         *,
         optimizers: tp.Sequence[tp.Union[base.Optimizer, base.OptCls, str]] = (),
         warmup_ratio: tp.Optional[float] = None,
+        no_crossing: bool = False,
     ) -> None:
         self.optimizers = optimizers
         self.warmup_ratio = warmup_ratio
         super().__init__(Portfolio, locals(), as_config=True)
+        self.no_crossing = no_crossing
 
 
 @registry.register
@@ -1795,6 +1797,7 @@ class Portfolio(base.Optimizer):
         config: tp.Optional["ConfPortfolio"] = None,
     ) -> None:
 
+        self.no_crossing = False
         distribute_workers = config is not None and config.warmup_ratio == 1.0
         self._config = ConfPortfolio() if config is None else config
         cfg = self._config
@@ -1920,6 +1923,9 @@ class Portfolio(base.Optimizer):
         # Telling all optimizers is presumably better than just
         # self.optims[optim_index].tell(candidate, value)
         accepted = 0
+        if self.no_crossing and len(self.optims) > candidate._meta["optim_index"]:
+            self.optims[candidate._meta["optim_index"]].tell(candidate, loss)
+            return
         for opt in self.optims:
             try:
                 opt.tell(candidate, loss)
@@ -5609,7 +5615,6 @@ class NgIoh15(NgIoh11):
         # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, we choose {optCls}")
         return optCls
 
-
 @registry.register
 class NgIoh12(NgIoh11):
     """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
@@ -5969,3 +5974,29 @@ Carola13 = Chaining([CmaFmin2, RBFGS], ["most"]).set_name("Carola13", register=T
 Carola13.no_parallelization = True
 Carola15 = Chaining([Cobyla, MetaModel, RBFGS], ["sqrt", "most"]).set_name("Carola15", register=True)
 Carola15.no_parallelization = True
+
+
+@registry.register
+class NgIoh12b(NgIoh12):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.no_crossing = True
+                
+@registry.register
+class NgIoh13b(NgIoh13):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.no_crossing = True
+                
+@registry.register
+class NgIoh14b(NgIoh14):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.no_crossing = True
+                
+@registry.register
+class NgIoh15b(NgIoh15):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.no_crossing = True
+                
