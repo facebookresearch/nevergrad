@@ -107,7 +107,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
         while remaining > 0:  # try to restart if budget is not elapsed
             # print(f"Iteration with remaining={remaining}")
             options: tp.Dict[str, tp.Any] = {} if weakself.budget is None else {"maxiter": remaining}
-            if weakself.method == "BOBYQA":
+            if weakself.method == "BOBYQA" or (weakself.method == "CmaFmin2" and weakself.dimension == 1):
                 import pybobyqa  # type: ignore
 
                 res = pybobyqa.solve(objective_function, best_x, maxfun=budget, do_logging=False)
@@ -392,7 +392,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
             #                rvgom.run()
             #                best_x = gomea_f.best_x
 
-            elif weakself.method == "CmaFmin2":
+            elif weakself.method == "CmaFmin2" and weakself.dimension > 1:
                 import cma  # type: ignore
 
                 def cma_objective_function(data):
