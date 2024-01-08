@@ -1825,7 +1825,8 @@ class Portfolio(base.Optimizer):
         if num_workers <= num:
             num_non_para = 0  # no problem with non-parallelizable if num_workers < num
         num_para = num - num_non_para
-        sub_budget = None if budget is None else budget // num_para + (budget % num_para > 0)
+        rebudget = int(np.ceil((budget / config.warmup_ratio))) if config is not None and config.warmup_ratio is not None and  budget is not None else budget
+        sub_budget = None if budget is None else rebudget // num_para + (rebudget % num_para > 0)
         needed_workers = num_workers - num_non_para
         sub_workers = max(
             1, needed_workers // (num - num_non_para) + (needed_workers % (num - num_non_para) > 0)
@@ -1882,7 +1883,7 @@ class Portfolio(base.Optimizer):
         if self._warmup_budget is not None:
             if len(self.optims) > 1 and self._warmup_budget < self.num_tell:
                 ind = self.current_bests["pessimistic"].parameter._meta.get("optim_index", -1)
-                if ind >= 0:  # not a tell not asked
+                if ind >= 0 and ind < len(self.optims):  # not a tell not asked
                     if self.num_workers == 1 or self.optims[ind].num_workers > 1:
                         self.optims = [self.optims[ind]]  # throw away everything else
         num = len(self.optims)
@@ -2615,7 +2616,7 @@ class F3SQPCMA(Portfolio):
             MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
         ]
         optims += [
-            Rescaled(base_optimizer=SQP, scale=np.exp(-1.0 / np.random.rand()))(
+            Rescaled(base_optimizer=SQP, scale=max(.01, np.exp(-1.0 / np.random.rand())))(
                 self.parametrization, num_workers=1
             )
             for _ in range(num_workers - cma_workers)
@@ -5310,7 +5311,8 @@ class NgIoh14(NgIoh11):
             num = self.budget // (1000 * self.dimension)
             if self.budget > 2000 * self.dimension and num >= self.num_workers:
                 optimizers = []
-                optimizers += [Rescaled(base_optimizer=NgIoh11, scale=np.exp(-1.0 / np.random.rand()))]
+                #optimizers += [Rescaled(base_optimizer=NgIoh11, scale=max(.01, np.exp(-1.0 / np.random.rand())))]
+                optimizers += [Rescaled(base_optimizer=NgIoh11._select_optimizer_cls(self), scale=max(.01, np.exp(-1.0 / np.random.rand())))]
                 if len(optimizers) < num:
                     optimizers += [FCarola6]
                 # if len(optimizers) < num:
@@ -5321,8 +5323,8 @@ class NgIoh14(NgIoh11):
                     MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
                     optimizers += [MetaModelFmin2]
                 while len(optimizers) < num:
-                    optimizers += [Rescaled(base_optimizer=NgIoh11, scale=np.exp(-1.0 / np.random.rand()))]
-                return ConfPortfolio(optimizers=optimizers, warmup_ratio=0.70)
+                    optimizers += [Rescaled(base_optimizer=NgIoh11._select_optimizer_cls(self), scale=max(.01, np.exp(-1.0 / np.random.rand())))]
+                return ConfPortfolio(optimizers=optimizers, warmup_ratio=0.70, no_crossing=True)
 
         if self.fully_continuous and self.num_workers == 1 and self.budget is not None and not self.has_noise:
             if 300 * self.dimension < self.budget < 3000 * self.dimension:
@@ -5422,7 +5424,7 @@ class NgIoh13(NgIoh11):
             num = self.budget // (1000 * self.dimension)
             if self.budget > 2000 * self.dimension and num >= self.num_workers:
                 optimizers = []
-                optimizers += [Rescaled(base_optimizer=NgIoh11, scale=np.exp(-1.0 / np.random.rand()))]
+                optimizers += [Rescaled(base_optimizer=NgIoh11._select_optimizer_cls(self), scale=max(.01, np.exp(-1.0 / np.random.rand())))]
                 if len(optimizers) < num:
                     optimizers += [FCarola6]
                 # if len(optimizers) < num:
@@ -5433,8 +5435,8 @@ class NgIoh13(NgIoh11):
                     MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
                     optimizers += [MetaModelFmin2]
                 while len(optimizers) < num:
-                    optimizers += [Rescaled(base_optimizer=NgIoh11, scale=np.exp(-1.0 / np.random.rand()))]
-                return ConfPortfolio(optimizers=optimizers, warmup_ratio=1.00)
+                    optimizers += [Rescaled(base_optimizer=NgIoh11._select_optimizer_cls(self), scale=max(.01, np.exp(-1.0 / np.random.rand())))]
+                return ConfPortfolio(optimizers=optimizers, warmup_ratio=1.00, no_crossing=True)
 
         if self.fully_continuous and self.num_workers == 1 and self.budget is not None and not self.has_noise:
             if 300 * self.dimension < self.budget < 3000 * self.dimension:
@@ -5535,9 +5537,9 @@ class NgIoh15(NgIoh11):
             if self.budget > 2000 * self.dimension and num >= self.num_workers:
                 optimizers = []
                 for _ in range(num):
-                    optimizers += [Rescaled(base_optimizer=NgIoh11, scale=np.exp(-1.0 / np.random.rand()))]
+                    optimizers += [Rescaled(base_optimizer=NgIoh11._select_optimizer_cls(self), scale=max(.01, np.exp(-1.0 / np.random.rand())))]
                     # optimizers += [NgIoh11]
-                return ConfPortfolio(optimizers=optimizers, warmup_ratio=0.70)
+                return ConfPortfolio(optimizers=optimizers, warmup_ratio=0.70, no_crossing=True)
         if self.fully_continuous and self.num_workers == 1 and self.budget is not None and not self.has_noise:
             if 300 * self.dimension < self.budget < 3000 * self.dimension:
                 if self.dimension == 2:
@@ -5636,9 +5638,10 @@ class NgIoh12(NgIoh11):
             if self.budget > 2000 * self.dimension and num >= self.num_workers:
                 optimizers = []
                 for _ in range(num):
-                    optimizers += [Rescaled(base_optimizer=NgIoh11, scale=np.exp(-1.0 / np.random.rand()))]
+                    optimizers += [Rescaled(base_optimizer=NgIoh11._select_optimizer_cls(self), scale=max(.01, np.exp(-1.0 / np.random.rand())))]
+                    #optimizers += [NgIoh11]
                     # optimizers += [NgIoh11]
-                return ConfPortfolio(optimizers=optimizers, warmup_ratio=1.00)
+                return ConfPortfolio(optimizers=optimizers, warmup_ratio=1.00, no_crossing=True)
         if self.fully_continuous and self.num_workers == 1 and self.budget is not None and not self.has_noise:
             if 300 * self.dimension < self.budget < 3000 * self.dimension:
                 if self.dimension == 2:
