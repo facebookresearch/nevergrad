@@ -54,9 +54,9 @@ from . import gymexperiments  # noqa
 #    list_optims = ["SPQODE", "SQOPSO", "DiagonalCMA"]
 def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
     #    return [np.random.choice(["ChainCMASQP", "BFGSCMAPlus", "SQPCMAPlus", "ChainMetaModelSQP", "QNDE", "NGOptRW", "MultiCobyla", "LBFGSB", "NLOPT-LN-COBYLA", "MultiCobylaPlus", "RCobyla", "PymooBIPOP", "MultiSQP", "MultiBFGS", "LogBFGSCMAPlus", "RBFGS", "SQP", "LogSQPCMAPlus", "MultiSQPPlus", "RSQP", "MultiBFGSPlus", "BFGS", "LogMultiBFGS", "SqrtMultiBFGS", "F3SQPCMA", "SqrtSQPCMAPlus", "LogMultiBFGSPlus", "SqrtBFGSCMAPlus", "TinySQP", "MicroSQP", "SqrtMultiBFGSPlus" ])]
-    if np.random.randn() < 0.0:
-        return ["NgIoh8"]
-    if np.random.randn() < 0.0:
+    # if np.random.randn() < 0.0:
+    #    return ["NgIoh8"]
+    if True:  # np.random.randn() < 0.0:
         return list(
             np.random.choice(
                 [
@@ -69,8 +69,14 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
                     "QNDE",
                     "BFGSCMAPlus",
                     "ChainMetaModelSQP",
+                    "BFGSCMA",
+                    "BAR4",
+                    "BFGSCMAPlus",
+                    "LBFGSB",
+                    "LQOTPDE",
+                    "LogSQPCMA",
                 ],
-                1,
+                4,
             )
         )
     return list(
