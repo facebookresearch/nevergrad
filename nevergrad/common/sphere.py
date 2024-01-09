@@ -31,7 +31,7 @@ import nevergrad as ng
 
 # pylint: skip-file
 
-default_budget = np.random.choice([3, 30, 300, 3000])  # centiseconds
+default_budget = np.random.choice([30000])  # centiseconds
 default_steps = 100  # nb of steps grad descent
 default_order = 2  # Riesz energy order
 default_stepsize = 10  # step size for grad descent
@@ -1163,7 +1163,7 @@ def bigcheck():
 def get_a_point_set(n, shape, method=None):
     k = np.random.choice(list_of_methods)
     if method is not None:
-        assert method in list_of_methods
+        assert method in list_of_methods, f"{method} is unknown."
         k = method
     print("Working with ", k)
     x = eval(f"{k}({n}, {shape})")
@@ -1184,7 +1184,7 @@ def quasi_randomize(pointset, method=None):
     n = len(pointset)
     shape = [int(i) for i in list(pointset[0].shape)]
     norms = [np.linalg.norm(pointset[i]) for i in range(n)]
-    if method is None:
+    if method is None or method == "none":
         method = "dispersion_with_big_conv" if (len(shape) > 1 and shape[0] > 1) else "covering"
     # if method == "none":
     #    if len(shape) > 1 and shape[0] > 5:
