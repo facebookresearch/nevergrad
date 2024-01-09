@@ -1199,9 +1199,9 @@ def quasi_randomize(pointset, method=None):
     return x
 
 
-print("Starting")
-x = np.random.randn(20, 32 * 32 * 4).reshape(20, 32, 32, 4)
-t0 = time.time()
-quasi_randomize(x)
-print(time.time() - t0)
-quit()
+# print("Starting")
+# x = np.random.randn(20, 32 * 32 * 4).reshape(20, 32, 32, 4)
+# t0 = time.time()
+# quasi_randomize(x)
+# print(time.time() - t0)
+# quit()
