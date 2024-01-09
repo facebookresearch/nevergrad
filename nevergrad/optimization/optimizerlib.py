@@ -1779,7 +1779,6 @@ class ConfPortfolio(base.ConfiguredOptimizer):
         warmup_ratio: tp.Optional[float] = None,
         no_crossing: bool = False,
     ) -> None:
-        self.optimizers = optimizers
         self.warmup_ratio = warmup_ratio
         super().__init__(Portfolio, locals(), as_config=True)
         self.no_crossing = no_crossing
@@ -1802,12 +1801,7 @@ class Portfolio(base.Optimizer):
         self._config = ConfPortfolio() if config is None else config
         cfg = self._config
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        if hasattr(self, "optims") and len(self.optims) > 0:
-            optimizers = self.optims  # type: ignore
-            for o in optimizers:
-                o.parametrization = self.parametrization
-        else:
-            optimizers = list(cfg.optimizers)
+        optimizers = list(cfg.optimizers)
         if not optimizers:  # default
             optimizers = []
             if budget is None or budget >= 12 * num_workers:
