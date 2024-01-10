@@ -76,13 +76,21 @@ class MultiValue:
         y: float
             the new evaluation
         """
+        if y > 1e10:
+            y = 1e10
+        elif y < -1e10:
+            y = -1e10
         self._minimum = min(self._minimum, y)
-        self.mean = (self.count * self.mean + y) / float(self.count + 1)
+        ratio = self.count / (self.count + 1)
+        self.mean = ratio * self.mean + (y / float(self.count + 1))
         self.square = (self.count * self.square + y * y) / float(self.count + 1)
-        self.square = max(self.square, self.mean**2)
         self.count += 1
-        factor = math.sqrt(float(self.count) / float(self.count - 1.0))
-        self.variance = factor * (self.square - self.mean**2)
+        try:
+            self.square = max(self.square, self.mean**2)
+            factor = math.sqrt(float(self.count) / float(self.count - 1.0))
+            self.variance = factor * (self.square - self.mean**2)
+        except OverflowError:
+            self.variance = 1e10
 
     def as_array(self, reference: p.Parameter) -> np.ndarray:
         return self.parameter.get_standardized_data(reference=reference)
