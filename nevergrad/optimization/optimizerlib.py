@@ -1892,7 +1892,7 @@ class Portfolio(base.Optimizer):
         if num == 1:
             optim_index = 0
         else:
-            for k in range(2 * len(self.turns)):
+            for _ in range(2 * len(self.turns)):
                 self._current += 1
                 # optim_index = self._current % len(self.optims)
                 optim_index = self.turns[self._current % len(self.turns)]
@@ -1901,11 +1901,19 @@ class Portfolio(base.Optimizer):
                 ), f"{optim_index}, {self.turns}, {len(self.optims)} {self.num_times} {self.str_info} {self.optims}"
                 opt = self.optims[optim_index]
                 break
+<<<<<<< HEAD
                 # if opt.num_workers > opt.num_ask - (opt.num_tell):  # - opt.num_tell_not_asked):
                 #     # if opt.num_workers > opt.num_ask - (opt.num_tell - opt.num_tell_not_asked):
                 #     break  # if there are workers left, use this optimizer
                 # # print(optim_index, " not available", opt)  # DEBUG INFO
                 # # print( f"{opt} ({optim_index}) not available, because {opt.num_workers} not > {opt.num_ask} - ({opt.num_tell} - {opt.num_tell_not_asked})")  # DEBUG INFO
+=======
+                if opt.num_workers > opt.num_ask - (opt.num_tell):  # - opt.num_tell_not_asked):
+                    # if opt.num_workers > opt.num_ask - (opt.num_tell - opt.num_tell_not_asked):
+                    break  # if there are workers left, use this optimizer
+                # print(optim_index, " not available", opt)  # DEBUG INFO
+                # print( f"{opt} ({optim_index}) not available, because {opt.num_workers} not > {opt.num_ask} - ({opt.num_tell} - {opt.num_tell_not_asked})")  # DEBUG INFO
+>>>>>>> ca4c9d18 (black_and_fix)
                 # if k > len(self.turns):
                 #     if not opt.no_parallelization:
                 #         break  # if no worker is available, try the first parallelizable optimizer
@@ -5652,7 +5660,8 @@ class NgIoh15(NgIoh11):
 class NgIoh12(NgIoh11):
     """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
 
-    def _select_optimizer_cls(self) -> base.OptCls:
+    def _select_optimizer_cls(self, budget: tp.Optional[int]=None) -> base.OptCls:
+        assert budget is None
         optCls: base.OptCls = NGOptBase
         funcinfo = self.parametrization.function
         if isinstance(self.parametrization, p.Array) and not self.fully_continuous and not self.has_noise:
