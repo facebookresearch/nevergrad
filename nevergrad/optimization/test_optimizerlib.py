@@ -179,6 +179,8 @@ def test_ngopt(dim: int, budget_multiplier: int, num_workers: int, bounded: bool
 def test_infnan(name: str) -> None:
     if any(x in name for x in ["SMAC", "BO", "AX"]) and os.environ.get("CIRCLECI", False):
         raise SkipTest("too slow for CircleCI!")
+    if "Force" in name:
+        raise SkipTest("Forced methods not tested for infnan")
 
     def doint(s):  # Converting a string into an int.
         return 7 + sum([ord(c) * i for i, c in enumerate(s)])

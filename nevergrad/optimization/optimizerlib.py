@@ -5759,7 +5759,8 @@ class NgIoh12(NgIoh11):
 class NgIoh16(NgIoh11):
     """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
 
-    def _select_optimizer_cls(self) -> base.OptCls:
+    def _select_optimizer_cls(self, budget: tp.Optional[int] = None) -> base.OptCls:
+        assert budget is None
         optCls: base.OptCls = NGOptBase
         funcinfo = self.parametrization.function
         if isinstance(self.parametrization, p.Array) and not self.fully_continuous and not self.has_noise:
@@ -5775,7 +5776,6 @@ class NgIoh16(NgIoh11):
             num = self.budget // (1000 * self.dimension)
             if self.budget > 2000 * self.dimension and num >= self.num_workers:
                 optimizers = []
-                # orig_budget = self.budget
                 # sub_budget = self.budget // num + (self.budget % num > 0)
                 for _ in range(num):
                     optimizers += [
@@ -5786,7 +5786,6 @@ class NgIoh16(NgIoh11):
                         )
                     ]
                 # print("NgIoh16 chooses ", optimizers)
-                self.budget = orig_budget
                 return ConfPortfolio(optimizers=optimizers, warmup_ratio=1.00, no_crossing=True)
         if self.fully_continuous and self.num_workers == 1 and self.budget is not None and not self.has_noise:
             if 300 * self.dimension < self.budget < 3000 * self.dimension:
@@ -5870,7 +5869,8 @@ class NgIoh16(NgIoh11):
 class NgIoh17(NgIoh11):
     """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
 
-    def _select_optimizer_cls(self) -> base.OptCls:
+    def _select_optimizer_cls(self, budget: tp.optional[int] = None) -> base.OptCls:
+        assert budget is None
         optCls: base.OptCls = NGOptBase
         funcinfo = self.parametrization.function
         if isinstance(self.parametrization, p.Array) and not self.fully_continuous and not self.has_noise:
@@ -5898,6 +5898,7 @@ class NgIoh17(NgIoh11):
                         )
                     ]
                     # optimizers += [NgIoh11]
+                self.budget = orig_budget
                 return Chaining(optimizers, [sub_budget] * (len(optimizers) - 1), no_crossing=True)
                 # optimizers += [NgIoh11]
                 # print("NgIoh16 chooses ", optimizers)
