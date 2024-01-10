@@ -3073,10 +3073,12 @@ class _Chain(base.Optimizer):
             tp.Sequence[tp.Union[base.ConfiguredOptimizer, tp.Type[base.Optimizer]]]
         ] = None,
         budgets: tp.Sequence[tp.Union[str, int]] = (10,),
+        no_crossing: tp.Optional[bool] = False,
     ) -> None:
         if optimizers is None:
             optimizers = [LHSSearch, DE]
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        self.no_crossing = no_crossing
         # delayed initialization
         # Either we have the budget for each algorithm, or the last algorithm uses the rest of the budget, so:
         self.optimizers: tp.List[base.Optimizer] = []
@@ -3099,7 +3101,7 @@ class _Chain(base.Optimizer):
         ), str(self.budgets)
         for opt, optbudget in zip(optimizers, self.budgets + [last_budget]):  # type: ignore
             self.optimizers.append(opt(self.parametrization, budget=optbudget, num_workers=self.num_workers))
-        print(f"Chaining of {self.optimizers}")
+        # print(f"Chaining of {self.optimizers}")
         if self.name.startswith("chain"):
             warnings.warn(
                 "Chain optimizers are renamed with a capital C for consistency. "
@@ -3111,12 +3113,15 @@ class _Chain(base.Optimizer):
         # Which algorithm are we playing with ?
         sum_budget = 0.0
         opt = self.optimizers[0]
-        for opt in self.optimizers:
+        for index, opt in enumerate(self.optimizers):
             sum_budget += float("inf") if opt.budget is None else opt.budget
             if self.num_ask < sum_budget:
                 break
         # if we are over budget, then use the last one...
-        return opt.ask()
+
+        candidate = opt.ask()
+        candidate._meta["optim_index"] = index
+        return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         # Let us inform all concerned algorithms
@@ -3124,7 +3129,7 @@ class _Chain(base.Optimizer):
         for k, opt in enumerate(self.optimizers):
             is_last = k == len(self.optimizers) - 1
             sum_budget += float("inf") if opt.budget is None or is_last else opt.budget
-            if self.num_tell < sum_budget:
+            if self.num_tell < sum_budget and not (self.no_crossing and k != candidate._meta["optim_index"]):
                 opt.tell(candidate, loss)
 
     def enable_pickling(self):
@@ -3151,6 +3156,7 @@ class Chaining(base.ConfiguredOptimizer):
         self,
         optimizers: tp.Sequence[tp.Union[base.ConfiguredOptimizer, tp.Type[base.Optimizer]]],
         budgets: tp.Sequence[tp.Union[str, int]],
+        no_crossing: tp.Optional[bool] = False,
     ) -> None:
         super().__init__(_Chain, locals())
 
@@ -5772,15 +5778,129 @@ class NgIoh16(NgIoh11):
                 for _ in range(num):
                     optimizers += [
                         Rescaled(
+                            base_optimizer=Carola14,
+                            # base_optimizer=NgIoh11._select_optimizer_cls(self, sub_budget),
+                            scale=max(0.01, np.exp(-1.0 / np.random.rand())),
+                        )
+                    ]
+                # print("NgIoh16 chooses ", optimizers)
+                self.budget = orig_budget
+                return ConfPortfolio(optimizers=optimizers, warmup_ratio=1.00, no_crossing=True)
+        if self.fully_continuous and self.num_workers == 1 and self.budget is not None and not self.has_noise:
+            if 300 * self.dimension < self.budget < 3000 * self.dimension:
+                if self.dimension == 2:
+                    return Carola14
+                if self.dimension < 4:
+                    return Carola4
+                if self.dimension < 8:
+                    return Carola5
+                if self.dimension < 15:
+                    return Carola9
+                if self.dimension < 30:
+                    return Carola8
+                if self.dimension < 60:
+                    return Carola9
+
+            if 300 * self.dimension < self.budget < 3000 * self.dimension and self.dimension == 2:
+                return FCarola6
+            if 300 * self.dimension < self.budget < 3000 * self.dimension:
+                return Carola6
+            if 3000 * self.dimension < self.budget:
+                MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                MetaModelFmin2.no_parallelization = True
+                return MetaModelFmin2
+            if 300 * self.dimension < self.budget < 3000 * self.dimension and self.dimension <= 3:
+                MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                MetaModelFmin2.no_parallelization = True
+                return ChainMetaModelSQP
+            if self.budget < 30 * self.dimension and self.dimension < 50 and self.dimension > 30:
+                return ChainMetaModelSQP
+            if (
+                self.budget >= 30 * self.dimension
+                and self.budget < 300 * self.dimension
+                and self.dimension == 2
+            ):
+                return NLOPT_LN_SBPLX
+            if (
+                self.budget >= 30 * self.dimension
+                and self.budget < 300 * self.dimension
+                and self.dimension < 15
+            ):
+                return ChainMetaModelSQP
+            if (
+                self.budget >= 300 * self.dimension
+                and self.budget < 3000 * self.dimension
+                and self.dimension < 30
+            ):
+                return MultiCMA
+
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget < 1000 * self.dimension
+            and self.budget > 20 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 100
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget >= 1000 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        # Special cases in the bounded case
+        if self.has_noise and (self.has_discrete_not_softmax or not funcinfo.metrizable):
+            optCls = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
+        # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, we choose {optCls}")
+        return optCls
+
+
+@registry.register
+class NgIoh17(NgIoh11):
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
+
+    def _select_optimizer_cls(self) -> base.OptCls:
+        optCls: base.OptCls = NGOptBase
+        funcinfo = self.parametrization.function
+        if isinstance(self.parametrization, p.Array) and not self.fully_continuous and not self.has_noise:
+            return ConfPortfolio(
+                optimizers=[
+                    SuperSmoothDiscreteLenglerOnePlusOne,
+                    SuperSmoothElitistRecombiningDiscreteLenglerOnePlusOne,
+                    DiscreteLenglerOnePlusOne,
+                ],
+                warmup_ratio=0.4,
+            )
+        if self.fully_continuous and self.budget is not None and not self.has_noise:
+            num = self.budget // (1000 * self.dimension)
+            if self.budget > 2000 * self.dimension and num >= self.num_workers:
+                optimizers = []
+                orig_budget = self.budget
+                sub_budget = self.budget // num + (self.budget % num > 0)
+                # sub_budget = self.budget
+                for _ in range(num):
+                    optimizers += [
+                        Rescaled(
+                            # base_optimizer=Carola2,
                             base_optimizer=NgIoh11._select_optimizer_cls(self, sub_budget),
                             scale=max(0.01, np.exp(-1.0 / np.random.rand())),
                         )
                     ]
                     # optimizers += [NgIoh11]
-                    # optimizers += [NgIoh11]
-                print("NgIoh16 chooses ", optimizers)
-                self.budget = orig_budget
-                return ConfPortfolio(optimizers=optimizers, warmup_ratio=1.00, no_crossing=True)
+                return Chaining(optimizers, [sub_budget] * (len(optimizers) - 1), no_crossing=True)
+                # optimizers += [NgIoh11]
+                # print("NgIoh16 chooses ", optimizers)
+                # self.budget = orig_budget
+                # return ConfPortfolio(optimizers=optimizers, warmup_ratio=1.00, no_crossing=True)
         if self.fully_continuous and self.num_workers == 1 and self.budget is not None and not self.has_noise:
             if 300 * self.dimension < self.budget < 3000 * self.dimension:
                 if self.dimension == 2:
