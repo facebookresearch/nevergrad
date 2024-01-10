@@ -1825,7 +1825,13 @@ class Portfolio(base.Optimizer):
             else budget
         )
         sub_budget = None if budget is None else rebudget // num_para + (rebudget % num_para > 0)  # type: ignore
-        if budget is not None and sub_budget is not None and config is not None and config.warmup_ratio is not None and config.warmup_ratio < 1.0:
+        if (
+            budget is not None
+            and sub_budget is not None
+            and config is not None
+            and config.warmup_ratio is not None
+            and config.warmup_ratio < 1.0
+        ):
             sub_budget += 1 + int(
                 budget * (1 - config.warmup_ratio)
             )  # We need additional budget for the selected optimizer
