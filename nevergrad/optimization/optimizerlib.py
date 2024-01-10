@@ -5300,7 +5300,8 @@ class NgIoh11(NGOptBase):
 class NgIoh14(NgIoh11):
     """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
 
-    def _select_optimizer_cls(self) -> base.OptCls:
+    def _select_optimizer_cls(self, budget: tp.Optional[int] = None) -> base.OptCls:
+        assert budget is None
         optCls: base.OptCls = NGOptBase
         funcinfo = self.parametrization.function
         if isinstance(self.parametrization, p.Array) and not self.fully_continuous and not self.has_noise:
@@ -5423,7 +5424,8 @@ class NgIoh14(NgIoh11):
 class NgIoh13(NgIoh11):
     """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
 
-    def _select_optimizer_cls(self) -> base.OptCls:
+    def _select_optimizer_cls(self, budget: tp.Optional[int] = None) -> base.OptCls:
+        assert budget is None
         optCls: base.OptCls = NGOptBase
         funcinfo = self.parametrization.function
         if isinstance(self.parametrization, p.Array) and not self.fully_continuous and not self.has_noise:
@@ -5545,7 +5547,8 @@ class NgIoh13(NgIoh11):
 class NgIoh15(NgIoh11):
     """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
 
-    def _select_optimizer_cls(self) -> base.OptCls:
+    def _select_optimizer_cls(self, budget: tp.Optional[int] = None) -> base.OptCls:
+        assert budget is None
         optCls: base.OptCls = NGOptBase
         funcinfo = self.parametrization.function
         if isinstance(self.parametrization, p.Array) and not self.fully_continuous and not self.has_noise:
