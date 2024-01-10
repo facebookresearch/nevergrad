@@ -1825,7 +1825,7 @@ class Portfolio(base.Optimizer):
             else budget
         )
         sub_budget = None if budget is None else rebudget // num_para + (rebudget % num_para > 0)  # type: ignore
-        if config is not None and config.warmup_ratio is not None and config.warmup_ratio < 1.0:
+        if budget is not None and sub_budget is not None and config is not None and config.warmup_ratio is not None and config.warmup_ratio < 1.0:
             sub_budget += 1 + int(
                 budget * (1 - config.warmup_ratio)
             )  # We need additional budget for the selected optimizer
@@ -2409,7 +2409,7 @@ class ForceMultiCobyla(Portfolio):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         optims: tp.List[base.Optimizer] = []
-        force_num_workers = max(num_workers, int(np.sqrt(budget)))
+        force_num_workers = max(num_workers, int(np.sqrt(budget))) if budget is not None else num_workers
         optims += [Cobyla(self.parametrization, num_workers=1) for _ in range(force_num_workers)]
         for opt in optims[2:]:  # make sure initializations differ
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
@@ -5325,14 +5325,14 @@ class NgIoh14(NgIoh11):
                     )
                 ]
                 if len(optimizers) < num:
-                    optimizers += [FCarola6]
+                    optimizers += [FCarola6]  # type: ignore
                 # if len(optimizers) < num:
                 #    optimizers += [pCarola6]
                 if len(optimizers) < num:
-                    optimizers += [ChainMetaModelSQP]
+                    optimizers += [ChainMetaModelSQP]  # type: ignore
                 if len(optimizers) < num:
                     MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
-                    optimizers += [MetaModelFmin2]
+                    optimizers += [MetaModelFmin2]  # type: ignore
                 while len(optimizers) < num:
                     optimizers += [
                         Rescaled(
