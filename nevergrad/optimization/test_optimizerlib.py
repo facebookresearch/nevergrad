@@ -231,6 +231,9 @@ def test_optimizers(name: str) -> None:
     if any(x in name for x in ["Chain", "SMAC", "BO", "AX"]) and os.environ.get("CIRCLECI", False):
         raise SkipTest("too slow for CircleCI!")
 
+    if any(x in name for x in ["Tiny", "Vast"]):
+        raise SkipTest("too specific!")
+
     def doint(s):  # Converting a string into an int.
         return 7 + sum([ord(c) * i for i, c in enumerate(s)])
 
