@@ -3113,14 +3113,16 @@ class _Chain(base.Optimizer):
         # Which algorithm are we playing with ?
         sum_budget = 0.0
         opt = self.optimizers[0]
+        chosen_index = 0
         for index, opt in enumerate(self.optimizers):
             sum_budget += float("inf") if opt.budget is None else opt.budget
             if self.num_ask < sum_budget:
+                chosen_index = index
                 break
         # if we are over budget, then use the last one...
 
         candidate = opt.ask()
-        candidate._meta["optim_index"] = index
+        candidate._meta["optim_index"] = chosen_index
         return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
@@ -5773,8 +5775,8 @@ class NgIoh16(NgIoh11):
             num = self.budget // (1000 * self.dimension)
             if self.budget > 2000 * self.dimension and num >= self.num_workers:
                 optimizers = []
-                orig_budget = self.budget
-                sub_budget = self.budget // num + (self.budget % num > 0)
+                # orig_budget = self.budget
+                # sub_budget = self.budget // num + (self.budget % num > 0)
                 for _ in range(num):
                     optimizers += [
                         Rescaled(
@@ -6222,7 +6224,9 @@ NoisyRL2 = Chaining(
 NoisyRL3 = Chaining([MixDeterministicRL, OptimisticNoisyOnePlusOne], ["half"]).set_name(
     "NoisyRL3", register=True
 )
-from . import experimentalvariants
+
+
+from . import experimentalvariants  # pylint: disable=unused-import
 
 FCarola6 = Chaining([NGOpt, NGOpt, RBFGS], ["tenth", "most"]).set_name("FCarola6", register=True)
 FCarola6.no_parallelization = True
