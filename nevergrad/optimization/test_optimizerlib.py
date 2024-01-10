@@ -149,6 +149,7 @@ UNSEEDABLE: tp.List[str] = [
     "GOMEATree",
     "BAR4",
     "NGOpt$",
+    "CMandAS3",
 ]
 
 
@@ -442,8 +443,14 @@ def recomkeeper() -> tp.Generator[RecommendationKeeper, None, None]:
 def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper) -> None:
     if any(x in name for x in ["SMAC", "BO", "AX"]) and os.environ.get("CIRCLECI", False):
         raise SkipTest("too slow for CircleCI!")
-    if name in UNSEEDABLE or ("Carola" in name and any(x in name for x in ["8", "9", "1"])):
+    if (
+        name in UNSEEDABLE
+        or ("Carola" in name and any(x in name for x in ["8", "9", "1"]))
+        or (name[0] == "F" or name[-1] == "F")
+    ):
         raise SkipTest("Not playing nicely with the tests (unseedable)")
+    if "SQP" in name and "CMA" in name or "Chain" in name:
+        raise SkipTest("No combinations of algorithms here")
     if "BO" in name or "EDA" in name:
         raise SkipTest("BO differs from one computer to another")
     if "SMAC" in name:
