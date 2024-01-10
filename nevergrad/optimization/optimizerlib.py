@@ -5204,7 +5204,7 @@ class NgIoh11(NGOptBase):
     """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
 
     def _select_optimizer_cls(self, budget: tp.Optional[int] = None) -> base.OptCls:
-        print(f"NgIoh11 with dimension {self.dimension} and budget {budget}/{self.budget}")
+        # print(f"NgIoh11 with dimension {self.dimension} and budget {budget}/{self.budget}")
         if budget is None:
             budget = self.budget
         else:
@@ -5766,6 +5766,7 @@ class NgIoh16(NgIoh11):
             num = self.budget // (1000 * self.dimension)
             if self.budget > 2000 * self.dimension and num >= self.num_workers:
                 optimizers = []
+                orig_budget = self.budget
                 sub_budget = self.budget // num + (self.budget % num > 0)
                 for _ in range(num):
                     optimizers += [
@@ -5776,7 +5777,8 @@ class NgIoh16(NgIoh11):
                     ]
                     # optimizers += [NgIoh11]
                     # optimizers += [NgIoh11]
-                print("NgIoh16 chooses ", optimizers)
+                # print("NgIoh16 chooses ", optimizers)
+                self.budget = orig_budget
                 return ConfPortfolio(optimizers=optimizers, warmup_ratio=1.00, no_crossing=True)
         if self.fully_continuous and self.num_workers == 1 and self.budget is not None and not self.has_noise:
             if 300 * self.dimension < self.budget < 3000 * self.dimension:
