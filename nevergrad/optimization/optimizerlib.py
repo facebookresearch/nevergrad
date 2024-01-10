@@ -5446,14 +5446,14 @@ class NgIoh13(NgIoh11):
                     )
                 ]
                 if len(optimizers) < num:
-                    optimizers += [FCarola6]
+                    optimizers += [FCarola6]  # type: ignore
                 # if len(optimizers) < num:
                 #    optimizers += [pCarola6]
                 if len(optimizers) < num:
-                    optimizers += [ChainMetaModelSQP]
+                    optimizers += [ChainMetaModelSQP]  # type: ignore
                 if len(optimizers) < num:
                     MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
-                    optimizers += [MetaModelFmin2]
+                    optimizers += [MetaModelFmin2]  # type: ignore
                 while len(optimizers) < num:
                     optimizers += [
                         Rescaled(
