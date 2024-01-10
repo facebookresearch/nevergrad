@@ -147,6 +147,8 @@ UNSEEDABLE: tp.List[str] = [
     "GOMEABlock",
     "GOMEA",
     "GOMEATree",
+    "BAR4",
+    "NGOpt$",
 ]
 
 
