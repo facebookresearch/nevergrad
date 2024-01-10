@@ -3099,6 +3099,7 @@ class _Chain(base.Optimizer):
         ), str(self.budgets)
         for opt, optbudget in zip(optimizers, self.budgets + [last_budget]):  # type: ignore
             self.optimizers.append(opt(self.parametrization, budget=optbudget, num_workers=self.num_workers))
+        print(f"Chaining of {self.optimizers}")
         if self.name.startswith("chain"):
             warnings.warn(
                 "Chain optimizers are renamed with a capital C for consistency. "
@@ -5777,7 +5778,7 @@ class NgIoh16(NgIoh11):
                     ]
                     # optimizers += [NgIoh11]
                     # optimizers += [NgIoh11]
-                # print("NgIoh16 chooses ", optimizers)
+                print("NgIoh16 chooses ", optimizers)
                 self.budget = orig_budget
                 return ConfPortfolio(optimizers=optimizers, warmup_ratio=1.00, no_crossing=True)
         if self.fully_continuous and self.num_workers == 1 and self.budget is not None and not self.has_noise:
