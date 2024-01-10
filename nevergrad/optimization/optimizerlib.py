@@ -2415,6 +2415,7 @@ class ForceMultiCobyla(Portfolio):
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
         self.optims.clear()
         self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
 
 
 @registry.register
