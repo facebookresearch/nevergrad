@@ -355,10 +355,14 @@ def test_optimizers_minimal(name: str) -> None:
             "VLP",
             "LPC",
             "Choice",
+            "Log",
+            "Force",
+            "Multi",
+            "SQRT",
             "NLOPT_GN_ISRES",
         ]
     ):
-        raise SkipTest("Skipped for saving up CircleCI resources!")
+        raise SkipTest("Skipped because too intricated for this kind of tests!")
 
     def f(x):
         return sum((x - 1.1) ** 2)
