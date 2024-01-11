@@ -1820,7 +1820,7 @@ class Portfolio(base.Optimizer):
             num_non_para = 0  # no problem with non-parallelizable if num_workers < num
         num_para = num - num_non_para
         rebudget = (
-            int(np.ceil((budget / config.warmup_ratio)))
+            int(np.ceil((budget * config.warmup_ratio)))
             if config is not None and config.warmup_ratio is not None and budget is not None
             else budget
         )
@@ -1898,23 +1898,23 @@ class Portfolio(base.Optimizer):
         if num == 1:
             optim_index = 0
         else:
-            for _ in range(2 * len(self.turns)):
-                self._current += 1
-                # optim_index = self._current % len(self.optims)
-                optim_index = self.turns[self._current % len(self.turns)]
-                assert optim_index < len(
-                    self.optims
-                ), f"{optim_index}, {self.turns}, {len(self.optims)} {self.num_times} {self.str_info} {self.optims}"
-                opt = self.optims[optim_index]
-                break
-                # if opt.num_workers > opt.num_ask - (opt.num_tell):  # - opt.num_tell_not_asked):
-                #     # if opt.num_workers > opt.num_ask - (opt.num_tell - opt.num_tell_not_asked):
-                #     break  # if there are workers left, use this optimizer
-                # # print(optim_index, " not available", opt)  # DEBUG INFO
-                # # print( f"{opt} ({optim_index}) not available, because {opt.num_workers} not > {opt.num_ask} - ({opt.num_tell} - {opt.num_tell_not_asked})")  # DEBUG INFO
-                # if k > len(self.turns):
-                #     if not opt.no_parallelization:
-                #         break  # if no worker is available, try the first parallelizable optimizer
+            # for _ in range(2 * len(self.turns)):
+            self._current += 1
+            # optim_index = self._current % len(self.optims)
+            optim_index = self.turns[self._current % len(self.turns)]
+            assert optim_index < len(
+                self.optims
+            ), f"{optim_index}, {self.turns}, {len(self.optims)} {self.num_times} {self.str_info} {self.optims}"
+            opt = self.optims[optim_index]
+            # break
+            # if opt.num_workers > opt.num_ask - (opt.num_tell):  # - opt.num_tell_not_asked):
+            #     # if opt.num_workers > opt.num_ask - (opt.num_tell - opt.num_tell_not_asked):
+            #     break  # if there are workers left, use this optimizer
+            # # print(optim_index, " not available", opt)  # DEBUG INFO
+            # # print( f"{opt} ({optim_index}) not available, because {opt.num_workers} not > {opt.num_ask} - ({opt.num_tell} - {opt.num_tell_not_asked})")  # DEBUG INFO
+            # if k > len(self.turns):
+            #     if not opt.no_parallelization:
+            #         break  # if no worker is available, try the first parallelizable optimizer
         if optim_index is None:
             raise RuntimeError("Something went wrong in optimizer selection")
         opt = self.optims[optim_index]
