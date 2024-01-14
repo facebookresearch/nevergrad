@@ -5999,6 +5999,319 @@ class NgIoh17(NgIoh11):
 
 
 @registry.register
+class NgIoh21(NgIoh11):
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
+
+    def _select_optimizer_cls(self, budget: tp.Optional[int] = None) -> base.OptCls:
+        assert budget is None
+        optCls: base.OptCls = NGOptBase
+        funcinfo = self.parametrization.function
+        if isinstance(self.parametrization, p.Array) and not self.fully_continuous and not self.has_noise:
+            return ConfPortfolio(
+                optimizers=[
+                    SuperSmoothDiscreteLenglerOnePlusOne,
+                    SuperSmoothElitistRecombiningDiscreteLenglerOnePlusOne,
+                    DiscreteLenglerOnePlusOne,
+                ],
+                warmup_ratio=0.4,
+            )
+        if self.fully_continuous and self.budget is not None and not self.has_noise:
+            if self.budget > 2000 * self.dimension:
+                vlpcma = ParametrizedMetaModel(multivariate_optimizer=VLPCMA)
+                return vlpcma
+                # optimizers += [NgIoh11]
+                # print("NgIoh16 chooses ", optimizers)
+                # self.budget = orig_budget
+                # return ConfPortfolio(optimizers=optimizers, warmup_ratio=1.00, no_crossing=True)
+        if self.fully_continuous and self.num_workers == 1 and self.budget is not None and not self.has_noise:
+            if 300 * self.dimension < self.budget < 3000 * self.dimension:
+                if self.dimension == 2:
+                    return Carola14
+                if self.dimension < 4:
+                    return Carola4
+                if self.dimension < 8:
+                    return Carola5
+                if self.dimension < 15:
+                    return Carola9
+                if self.dimension < 30:
+                    return Carola8
+                if self.dimension < 60:
+                    return Carola9
+
+            if 300 * self.dimension < self.budget < 3000 * self.dimension and self.dimension == 2:
+                return FCarola6
+            if 300 * self.dimension < self.budget < 3000 * self.dimension:
+                return Carola6
+            if 3000 * self.dimension < self.budget:
+                MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                MetaModelFmin2.no_parallelization = True
+                return MetaModelFmin2
+            if 300 * self.dimension < self.budget < 3000 * self.dimension and self.dimension <= 3:
+                MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                MetaModelFmin2.no_parallelization = True
+                return ChainMetaModelSQP
+            if self.budget < 30 * self.dimension and self.dimension < 50 and self.dimension > 30:
+                return ChainMetaModelSQP
+            if (
+                self.budget >= 30 * self.dimension
+                and self.budget < 300 * self.dimension
+                and self.dimension == 2
+            ):
+                return NLOPT_LN_SBPLX
+            if (
+                self.budget >= 30 * self.dimension
+                and self.budget < 300 * self.dimension
+                and self.dimension < 15
+            ):
+                return ChainMetaModelSQP
+            if (
+                self.budget >= 300 * self.dimension
+                and self.budget < 3000 * self.dimension
+                and self.dimension < 30
+            ):
+                return MultiCMA
+
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget < 1000 * self.dimension
+            and self.budget > 20 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 100
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget >= 1000 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        # Special cases in the bounded case
+        if self.has_noise and (self.has_discrete_not_softmax or not funcinfo.metrizable):
+            optCls = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
+        # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, we choose {optCls}")
+        return optCls
+
+
+@registry.register
+class NgIoh20(NgIoh11):
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
+
+    def _select_optimizer_cls(self, budget: tp.Optional[int] = None) -> base.OptCls:
+        assert budget is None
+        optCls: base.OptCls = NGOptBase
+        funcinfo = self.parametrization.function
+        if isinstance(self.parametrization, p.Array) and not self.fully_continuous and not self.has_noise:
+            return ConfPortfolio(
+                optimizers=[
+                    SuperSmoothDiscreteLenglerOnePlusOne,
+                    SuperSmoothElitistRecombiningDiscreteLenglerOnePlusOne,
+                    DiscreteLenglerOnePlusOne,
+                ],
+                warmup_ratio=0.4,
+            )
+        if self.fully_continuous and self.budget is not None and not self.has_noise:
+            if self.budget > 2000 * self.dimension:
+                vlpcma = (
+                    ParametrizedMetaModel(multivariate_optimizer=VLPCMA)
+                    if self.dimension > 4
+                    else ParametrizedMetaModel(multivariate_optimizer=LPCMA)
+                )
+                return vlpcma
+                # optimizers += [NgIoh11]
+                # print("NgIoh16 chooses ", optimizers)
+                # self.budget = orig_budget
+                # return ConfPortfolio(optimizers=optimizers, warmup_ratio=1.00, no_crossing=True)
+        if self.fully_continuous and self.num_workers == 1 and self.budget is not None and not self.has_noise:
+            if 300 * self.dimension < self.budget < 3000 * self.dimension:
+                if self.dimension == 2:
+                    return Carola14
+                if self.dimension < 4:
+                    return Carola4
+                if self.dimension < 8:
+                    return Carola5
+                if self.dimension < 15:
+                    return Carola9
+                if self.dimension < 30:
+                    return Carola8
+                if self.dimension < 60:
+                    return Carola9
+
+            if 300 * self.dimension < self.budget < 3000 * self.dimension and self.dimension == 2:
+                return FCarola6
+            if 300 * self.dimension < self.budget < 3000 * self.dimension:
+                return Carola6
+            if 3000 * self.dimension < self.budget:
+                MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                MetaModelFmin2.no_parallelization = True
+                return MetaModelFmin2
+            if 300 * self.dimension < self.budget < 3000 * self.dimension and self.dimension <= 3:
+                MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                MetaModelFmin2.no_parallelization = True
+                return ChainMetaModelSQP
+            if self.budget < 30 * self.dimension and self.dimension < 50 and self.dimension > 30:
+                return ChainMetaModelSQP
+            if (
+                self.budget >= 30 * self.dimension
+                and self.budget < 300 * self.dimension
+                and self.dimension == 2
+            ):
+                return NLOPT_LN_SBPLX
+            if (
+                self.budget >= 30 * self.dimension
+                and self.budget < 300 * self.dimension
+                and self.dimension < 15
+            ):
+                return ChainMetaModelSQP
+            if (
+                self.budget >= 300 * self.dimension
+                and self.budget < 3000 * self.dimension
+                and self.dimension < 30
+            ):
+                return MultiCMA
+
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget < 1000 * self.dimension
+            and self.budget > 20 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 100
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget >= 1000 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        # Special cases in the bounded case
+        if self.has_noise and (self.has_discrete_not_softmax or not funcinfo.metrizable):
+            optCls = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
+        # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, we choose {optCls}")
+        return optCls
+
+
+@registry.register
+class NgIoh19(NgIoh11):
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
+
+    def _select_optimizer_cls(self, budget: tp.Optional[int] = None) -> base.OptCls:
+        assert budget is None
+        optCls: base.OptCls = NGOptBase
+        funcinfo = self.parametrization.function
+        if isinstance(self.parametrization, p.Array) and not self.fully_continuous and not self.has_noise:
+            return ConfPortfolio(
+                optimizers=[
+                    SuperSmoothDiscreteLenglerOnePlusOne,
+                    SuperSmoothElitistRecombiningDiscreteLenglerOnePlusOne,
+                    DiscreteLenglerOnePlusOne,
+                ],
+                warmup_ratio=0.4,
+            )
+        if self.fully_continuous and self.budget is not None and not self.has_noise:
+            if self.budget > 2000 * self.dimension:
+                vlpcma = VLPCMA if self.dimension > 4 else LPCMA
+                return vlpcma
+                # optimizers += [NgIoh11]
+                # print("NgIoh16 chooses ", optimizers)
+                # self.budget = orig_budget
+                # return ConfPortfolio(optimizers=optimizers, warmup_ratio=1.00, no_crossing=True)
+        if self.fully_continuous and self.num_workers == 1 and self.budget is not None and not self.has_noise:
+            if 300 * self.dimension < self.budget < 3000 * self.dimension:
+                if self.dimension == 2:
+                    return Carola14
+                if self.dimension < 4:
+                    return Carola4
+                if self.dimension < 8:
+                    return Carola5
+                if self.dimension < 15:
+                    return Carola9
+                if self.dimension < 30:
+                    return Carola8
+                if self.dimension < 60:
+                    return Carola9
+
+            if 300 * self.dimension < self.budget < 3000 * self.dimension and self.dimension == 2:
+                return FCarola6
+            if 300 * self.dimension < self.budget < 3000 * self.dimension:
+                return Carola6
+            if 3000 * self.dimension < self.budget:
+                MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                MetaModelFmin2.no_parallelization = True
+                return MetaModelFmin2
+            if 300 * self.dimension < self.budget < 3000 * self.dimension and self.dimension <= 3:
+                MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                MetaModelFmin2.no_parallelization = True
+                return ChainMetaModelSQP
+            if self.budget < 30 * self.dimension and self.dimension < 50 and self.dimension > 30:
+                return ChainMetaModelSQP
+            if (
+                self.budget >= 30 * self.dimension
+                and self.budget < 300 * self.dimension
+                and self.dimension == 2
+            ):
+                return NLOPT_LN_SBPLX
+            if (
+                self.budget >= 30 * self.dimension
+                and self.budget < 300 * self.dimension
+                and self.dimension < 15
+            ):
+                return ChainMetaModelSQP
+            if (
+                self.budget >= 300 * self.dimension
+                and self.budget < 3000 * self.dimension
+                and self.dimension < 30
+            ):
+                return MultiCMA
+
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget < 1000 * self.dimension
+            and self.budget > 20 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 100
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget >= 1000 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        # Special cases in the bounded case
+        if self.has_noise and (self.has_discrete_not_softmax or not funcinfo.metrizable):
+            optCls = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
+        # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, we choose {optCls}")
+        return optCls
+
+
+@registry.register
 class NgIoh18(NgIoh11):
     """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
 
