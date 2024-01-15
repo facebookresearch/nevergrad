@@ -1539,6 +1539,8 @@ class Rescaled(base.ConfiguredOptimizer):
 
 RescaledCMA = Rescaled().set_name("RescaledCMA", register=True)
 TinyLhsDE = Rescaled(base_optimizer=LhsDE, scale=1e-3).set_name("TinyLhsDE", register=True)
+LocalBFGS = Rescaled(base_optimizer=BFGS, scale=1e-2).set_name("LocalBFGS", register=True)
+LocalBFGS.no_parallelization = True
 TinyQODE = Rescaled(base_optimizer=QODE, scale=1e-3).set_name("TinyQODE", register=True)
 TinySQP = Rescaled(base_optimizer=SQP, scale=1e-3).set_name("TinySQP", register=True)
 MicroSQP = Rescaled(base_optimizer=SQP, scale=1e-6).set_name("MicroSQP", register=True)
@@ -1552,6 +1554,7 @@ VastLengler = Rescaled(base_optimizer=DiscreteLenglerOnePlusOne, scale=1000).set
     "VastLengler", register=True
 )
 VastDE = Rescaled(base_optimizer=DE, scale=1000).set_name("VastDE", register=True)
+LSDE = Rescaled(base_optimizer=DE, scale=10).set_name("LSDE", register=True)
 
 
 class SplitOptimizer(base.Optimizer):
