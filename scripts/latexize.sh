@@ -87,7 +87,7 @@ done
 ) | tee competition.tex
 ) > dagstuhloid.tex
 wait
-echo '\\begin{enumerate}' ; grep -i 'subsubsection.*rw' competition.tex | sed 's/.*NSR//g' | sed 's/).*//g' | sort | uniq -c | sort -n -r  | sed 's/.*/\\item &/g' ; echo '\\end{enumerate}' > rwtex.tex
+( echo '\begin{enumerate}' ; grep -i 'subsubsection.*rw' competition.tex | sed 's/.*NSR//g' | sed 's/).*//g' | sort | uniq -c | sort -n -r  | sed 's/.*/\\item &/g' ; echo '\end{enumerate}' )> rwtex.tex
 
 (
 echo "\\section{Statistics over all benchmarks}\\label{bigstats}"

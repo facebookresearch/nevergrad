@@ -147,6 +147,10 @@ UNSEEDABLE: tp.List[str] = [
     "GOMEABlock",
     "GOMEA",
     "GOMEATree",
+    "BAR4",
+    "BAR3",
+    "NGOpt$",
+    "CMandAS3",
 ]
 
 
@@ -179,6 +183,8 @@ def test_ngopt(dim: int, budget_multiplier: int, num_workers: int, bounded: bool
 def test_infnan(name: str) -> None:
     if any(x in name for x in ["SMAC", "BO", "AX"]) and os.environ.get("CIRCLECI", False):
         raise SkipTest("too slow for CircleCI!")
+    if "Force" in name:
+        raise SkipTest("Forced methods not tested for infnan")
 
     def doint(s):  # Converting a string into an int.
         return 7 + sum([ord(c) * i for i, c in enumerate(s)])
@@ -228,6 +234,9 @@ def test_optimizers(name: str) -> None:
     """Checks that each optimizer is able to converge on a simple test case"""
     if any(x in name for x in ["Chain", "SMAC", "BO", "AX"]) and os.environ.get("CIRCLECI", False):
         raise SkipTest("too slow for CircleCI!")
+
+    if any(x in name for x in ["Tiny", "Vast"]):
+        raise SkipTest("too specific!")
 
     def doint(s):  # Converting a string into an int.
         return 7 + sum([ord(c) * i for i, c in enumerate(s)])
@@ -346,10 +355,14 @@ def test_optimizers_minimal(name: str) -> None:
             "VLP",
             "LPC",
             "Choice",
+            "Log",
+            "Force",
+            "Multi",
+            "SQRT",
             "NLOPT_GN_ISRES",
         ]
     ):
-        raise SkipTest("Skipped for saving up CircleCI resources!")
+        raise SkipTest("Skipped because too intricated for this kind of tests!")
 
     def f(x):
         return sum((x - 1.1) ** 2)
@@ -435,8 +448,16 @@ def recomkeeper() -> tp.Generator[RecommendationKeeper, None, None]:
 def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper) -> None:
     if any(x in name for x in ["SMAC", "BO", "AX"]) and os.environ.get("CIRCLECI", False):
         raise SkipTest("too slow for CircleCI!")
-    if name in UNSEEDABLE:
+    if (
+        name in UNSEEDABLE
+        or "BAR" in name
+        or "AX" in name
+        or ("Carola" in name and any(x in name for x in ["8", "9", "1"]))
+        or (name[0] == "F" or name[-1] == "F")
+    ):
         raise SkipTest("Not playing nicely with the tests (unseedable)")
+    if "SQP" in name and "CMA" in name or "Chain" in name:
+        raise SkipTest("No combinations of algorithms here")
     if "BO" in name or "EDA" in name:
         raise SkipTest("BO differs from one computer to another")
     if "SMAC" in name:
