@@ -3,6 +3,12 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+# import sys
+# sys.path.append(".")
+import multiprocessing
+
+num_cores = multiprocessing.cpu_count()
+
 import scipy
 import scipy.signal
 import scipy.stats
@@ -11,6 +17,12 @@ import copy
 import numpy as np
 import itertools
 from joblib import Parallel, delayed  # type: ignore
+from joblib import parallel_config
+
+
+# if np.random.rand() < 0.5:
+#     num_cores = 1
+
 
 # import matplotlib as mpl
 # import matplotlib.pyplot as plt
@@ -19,7 +31,7 @@ import nevergrad as ng
 
 # pylint: skip-file
 
-default_budget = 3000  # centiseconds
+default_budget = 300  # centiseconds
 default_steps = 100  # nb of steps grad descent
 default_order = 2  # Riesz energy order
 default_stepsize = 10  # step size for grad descent
@@ -96,16 +108,26 @@ def antithetic_order_and_sign(n, shape, axis=-1, conv=None):
 
 def greedy_dispersion(n, shape, budget=default_budget, conv=None):
     x = normalize([np.random.randn(*shape)])
-
     for i in range(n - 1):
         bigdist = -1
         t0 = time.time()
         while time.time() < t0 + 0.01 * budget / n:
-            y = normalize([np.random.randn(*shape)])[0]
-            dist = min(np.linalg.norm(convo(y, conv) - convo(x[i], conv)) for i in range(len(x)))
-            if dist > bigdist:
-                bigdist = dist
-                newy = y
+            # Sequential
+            # y = normalize([np.random.randn(*shape)])[0]
+            # dist = min(np.linalg.norm(convo(y, conv) - convo(x[i], conv)) for i in range(len(x)))
+            # if dist > bigdist:
+            #    bigdist = dist
+            #    newy = y
+            def rand_and_dist(i):
+                y = normalize([np.random.randn(*shape)])[0]
+                dist = min(np.linalg.norm(convo(y, conv) - convo(x[i], conv)) for i in range(len(x)))
+                return (y, dist)
+
+            with parallel_config(backend="threading"):
+                r = Parallel(n_jobs=-1)(delayed(rand_and_dist)(i) for i in range(num_cores))
+            dist = [r[i][1] for i in range(len(r))]
+            index = dist.index(max(dist))
+            newy = r[index][0]
         x += [newy]
     return x
 
@@ -114,20 +136,34 @@ def dispersion(n, shape, budget=default_budget, conv=None):
     x = greedy_dispersion(n, shape, budget / 2, conv=conv)
     t0 = time.time()
     num = n
+    num_iterations = 0
     while time.time() < t0 + 0.01 * budget / 2:
         num = num + 1
         for j in range(len(x)):
             bigdist = -1
-            for idx in range(2 * num):
+
+            def rand_and_dist(idx):
                 if idx > 0:
                     y = normalize([np.random.randn(*shape)])[0]
                 else:
                     y = x[j]
                 convoy = convo(y, conv)
                 dist = min(np.linalg.norm(convoy - convo(x[i], conv)) for i in range(len(x)) if i != j)
-                if dist > bigdist:
-                    x[j] = y
-                    bigdist = dist
+                return (y, dist)
+
+            with parallel_config(backend="threading"):
+                num_jobs = max(2 * num, num_cores)
+                r = Parallel(n_jobs=num_cores)(delayed(rand_and_dist)(i) for i in range(num_jobs))
+                num_iterations += num_jobs
+            dist = [r[i][1] for i in range(len(r))]
+            index = dist.index(max(dist))
+            x[j] = r[index][0]
+            if time.time() > t0 + 0.01 * budget / 2:
+                break
+        if time.time() > t0 + 0.01 * budget / 2:
+            break
+    score = metrics["metric_pack_big_conv"](x)
+    # print("RESULTS", num_iterations, budget, num_cores, score)
     return x
 
 
@@ -706,6 +742,10 @@ def metric_pack_conv(x, budget=default_budget):
     return metric_pack(x, budget=default_budget, conv=[8, 8])
 
 
+def metric_pack_big_conv(x, budget=default_budget):
+    return metric_pack(x, budget=default_budget, conv=[24, 24])
+
+
 list_of_methods = [
     "ng_TwoPointsDE",
     "ng_DE",
@@ -792,6 +832,7 @@ list_metrics = [
     "metric_half_conv",
     "metric_pack",
     "metric_pack_conv",
+    "metric_pack_big_conv",
     "metric_pack_avg",
     "metric_pack_avg_conv",
     "metric_pack_absavg",
@@ -1122,35 +1163,45 @@ def bigcheck():
 def get_a_point_set(n, shape, method=None):
     k = np.random.choice(list_of_methods)
     if method is not None:
-        assert method in list_of_methods
+        assert method in list_of_methods, f"{method} is unknown."
         k = method
     print("Working with ", k)
     x = eval(f"{k}({n}, {shape})")
     for i in range(len(x)):
         assert 0.999 < np.linalg.norm(x[i]) < 1.001, "we have norm " + str(np.linalg.norm(x[i]))
-    np.array(x).tofile(
-        f"pointset_{n}_{shape}_{method}_{default_budget}_{np.random.randint(50000)}.dat".replace(" ", "_")
-        .replace("[", " ")
-        .replace("]", " ")
-    )
+    # np.array(x).tofile(
+    #     f"pointset_{n}_{shape}_{method}_{default_budget}_{np.random.randint(50000)}.dat".replace(" ", "_")
+    #     .replace("[", " ")
+    #     .replace("]", " ")
+    # )
     return k, x
 
 
 # k, x = get_a_point_set(50, (64, 64, 4))
 
 
-def quasi_randomize(pointset, method):
+def quasi_randomize(pointset, method=None):
     n = len(pointset)
     shape = [int(i) for i in list(pointset[0].shape)]
     norms = [np.linalg.norm(pointset[i]) for i in range(n)]
-    if method == "none":
-        if len(shape) > 1 and shape[0] > 5:
-            x = dispersion(n, shape, conv=[int(s / 3) for s in list(shape)[:-1]])
-        else:
-            x = ng_DiagonalCMA(n, shape)
-    else:
-        x = get_a_point_set(n, shape, method)
+    if method is None or method == "none":
+        method = "dispersion_with_big_conv" if (len(shape) > 1 and shape[0] > 1) else "covering"
+    # if method == "none":
+    #    if len(shape) > 1 and shape[0] > 5:
+    #        x = dispersion(n, shape, conv=[int(s * 24 / 64) for s in list(shape)[:-1]])
+    #    else:
+    #        x = ng_DiagonalCMA(n, shape)
+    # else:
+    x = get_a_point_set(n, shape, method)[1]
     x = normalize(x)
     for i in range(n):
         x[i] = norms[i] * x[i]
     return x
+
+
+# print("Starting")
+# x = np.random.randn(20, 32 * 32 * 4).reshape(20, 32, 32, 4)
+# t0 = time.time()
+# quasi_randomize(x)
+# print(time.time() - t0)
+# quit()
