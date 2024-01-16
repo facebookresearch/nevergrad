@@ -31,7 +31,7 @@ import nevergrad as ng
 
 # pylint: skip-file
 
-default_budget = np.random.choice([30000])  # centiseconds
+default_budget = 300  # centiseconds
 default_steps = 100  # nb of steps grad descent
 default_order = 2  # Riesz energy order
 default_stepsize = 10  # step size for grad descent
