@@ -168,6 +168,8 @@ by
     optimizer.minimize(loss_function, constraint_violations)
 where constraint_violations maps a candidate to a vector of constraint violations.
 
+**Warning: constraint_violation is by far most frequently the best solution. However, there is also register_cheap_constraint below, which can be useful in some specific cases.
+And then, please use the float-valued version, and never the boolean one unless there is really no solution for defining the float-valued version.**
 
 Nevergrad has, also, a mechanism for cheap constraints.
 "Cheap" means that we do not try to reduce the number of calls to such constraints.
