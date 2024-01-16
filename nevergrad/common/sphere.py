@@ -20,8 +20,8 @@ from joblib import Parallel, delayed  # type: ignore
 from joblib import parallel_config
 
 
-if np.random.rand() < 0.5:
-    num_cores = 1
+# if np.random.rand() < 0.5:
+#     num_cores = 1
 
 
 # import matplotlib as mpl
