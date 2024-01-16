@@ -302,6 +302,8 @@ The functions/callbacks registered on <code class="code docutils literal notrans
 <div><p>optimizer.minimize(loss_function, constraint_violations)</p>
 </div></blockquote>
 <p>where constraint_violations maps a candidate to a vector of constraint violations.</p>
+<p><strong>Warning: constraint_violation is by far most frequently the best solution. However, there is also register_cheap_constraint below, which can be useful in some specific cases.
+And then, please use the float-valued version, and never the boolean one unless there is really no solution for defining the float-valued version.</strong></p>
 <p>Nevergrad has, also, a mechanism for cheap constraints.
 “Cheap” means that we do not try to reduce the number of calls to such constraints.
 We basically repeat mutations until we get a satisfiable point.</p>
