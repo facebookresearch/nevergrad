@@ -1,5 +1,5 @@
 #!/bin/bash 
-#SBATCH --job-name=dagplot
+#SBATCH --job-name=bfgsplot
 #SBATCH --output=dagplot.out
 #SBATCH --error=dagplot.err
 #SBATCH --time=72:00:00
@@ -38,4 +38,5 @@ fi # End of "there is something to do".
 # tar -zcvf ~/dag.tgz *_plots
 scripts/latexize.sh
 
-tar -zcvf dagstuhloid.tgz dagstuhloid.pdf *.csv
+tar -zcvf dagstuhloid.tgz dagstuhloid.pdf *.csv *plots/xpresults_all.png rnk_*.txt
+
