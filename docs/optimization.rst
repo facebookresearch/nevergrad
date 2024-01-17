@@ -155,17 +155,24 @@ Sometimes you want the best candidate, given some constraints.
 
 Then, if you want to work with the ask/tell form, instead of 
 .. code-block:: python
+
     optimizer.tell(candidate, value)
+
 you can do
 .. code-block:: python
+
     optimizer.tell(candidate, value, [constraint_violation1, constraint_violation2, constraint_violation3])
 
 Or, if you work with minimize, you can also replace
 .. code-block:: python
+
     optimizer.minimize(loss_function)
+
 by
 .. code-block:: python
+
     optimizer.minimize(loss_function, constraint_violations)
+
 where constraint_violations maps a candidate to a vector of constraint violations.
 
 **Warning: constraint_violation is by far most frequently the best solution. However, there is also register_cheap_constraint below, which can be useful in some specific cases.
