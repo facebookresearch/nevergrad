@@ -63,6 +63,7 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
     # return ["DSproba" + str(i) for i in range(2, 10)]
     # return ["DSproba", "DSsubspace", "DS3p", "DSbase"]
     # return ["DSproba"]
+    #return ["DE", "NGOpt", "NgIoh11", "RandomSearch"]
     if False:  # np.random.randn() < 0.0:
         return list(
             np.random.choice(
@@ -86,59 +87,6 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
                 4,
             )
         )
-    #    return [
-    #        "CMandAS2",
-    #        "SQOPSO",
-    #        "SPQODE",
-    #        "DiagonalCMA",
-    #        "QOTPDE",
-    #        "LQOTPDE",
-    #        "LQODE",
-    #        "BAR4",
-    #        "ChainCMASQP",
-    #        "TinySQP",
-    #        "MicroSQP",
-    #        "MultiBFGSPlus",
-    #        "LogMultiBFGSPlus",
-    #        "PymooBIPOP",
-    #        "SqrtMultiBFGSPlus",
-    #        "MultiCobylaPlus",
-    #        "MultiSQPPlus",
-    #        "BFGSCMAPlus",
-    #        "LogBFGSCMAPlus",
-    #        "SqrtBFGSCMAPlus",
-    #        "SQPCMAPlus",
-    #        "LogSQPCMAPlus",
-    #        "SqrtSQPCMAPlus",
-    #        "MultiBFGS",
-    #        "LogMultiBFGS",
-    #        "SqrtMultiBFGS",
-    #        "MultiCobyla",
-    #        "MultiSQP",
-    #        "BFGSCMA",
-    #        "LogBFGSCMA",
-    #        "SqrtBFGSCMA",
-    #        "SQPCMA",
-    #        "LogSQPCMA",
-    #        "SqrtSQPCMA",
-    #        "FSQPCMA",
-    #        "F2SQPCMA",
-    #        "F3SQPCMA",
-    #        "ChainMetaModelSQP",
-    #        "BFGS",
-    #        "RBFGS",
-    #        "LBFGSB",
-    #        "Cobyla",
-    #        "RCobyla",
-    #        "SQP",
-    #        "RSQP",
-    #        "NLOPT_LN_COBYLA",
-    #        "NgIoh4",
-    #        "CMA",
-    #        "NGOpt",
-    #        "NGOptRW",
-    #        "QNDE",
-    #    ]
     # return ["RandomSearch", "OnePlusOne", "DE", "PSO"]
     list_optims = x
     algos = {}
