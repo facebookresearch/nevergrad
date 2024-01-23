@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=dagstuhloid
-#SBATCH --output=fagstuhloid_%A_%a.out
-#SBATCH --error=fagstuhloid_%A_%a.err
+#SBATCH --output=dagstuhloid_%A_%a.out
+#SBATCH --error=dagstuhloid_%A_%a.err
 #SBATCH --time=72:00:00
 #SBATCH --partition=learnlab
 #SBATCH --nodes=1
