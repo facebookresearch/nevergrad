@@ -3540,7 +3540,6 @@ class NGOptBase(base.Optimizer):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         analysis = p.helpers.analyze(self.parametrization)
         funcinfo = self.parametrization.function
-        function = self.parametrization
         self.has_noise = not (analysis.deterministic and funcinfo.deterministic)
         self.has_real_noise = not funcinfo.deterministic
         # The noise coming from discrete variables goes to 0.
@@ -7131,8 +7130,6 @@ class CSEC(NGOpt39):
 
     def _select_optimizer_cls(self, budget: tp.Optional[int] = None) -> base.OptCls:
         assert budget is None
-        optCls: base.OptCls = NGOptBase
-        funcinfo = self.parametrization.function
 
         if (
             self.fully_continuous
@@ -7144,7 +7141,7 @@ class CSEC(NGOpt39):
             and self.dimension < 50
         ):
             # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
-            return NgIoh21._select_optimizer_cls(self, budget)
+            return NgIoh21._select_optimizer_cls(self, budget)  # type: ignore
         if (
             self.fully_continuous
             and self.num_workers == 1
@@ -7155,7 +7152,7 @@ class CSEC(NGOpt39):
             and self.dimension < 50
         ):
             # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
-            return NgIoh4._select_optimizer_cls(self, budget)
+            return NgIoh4._select_optimizer_cls(self)  # type: ignore
 
         if (
             self.fully_continuous
@@ -7167,21 +7164,19 @@ class CSEC(NGOpt39):
             and self.dimension < 50
         ):
             # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
-            return NgDS3._select_optimizer_cls(self, budget)
+            return NgDS3
 
-        return NgDS2._select_optimizer_cls(self, budget)
+        return NgDS2._select_optimizer_cls(self, budget)  # type: ignore
 
 
 @registry.register
-class CSEC3(NGOptBase):
+class CSEC4(NGOptBase):
     def _select_optimizer_cls(self, budget: tp.Optional[int] = None) -> base.OptCls:
         assert self.budget is not None
-        optCls: base.OptCls = NGOptBase
-        funcinfo = self.parametrization.function
         function = self.parametrization
         # assert False
         if function.real_world and not function.neural:
-            return NGDSRW._select_optimizer_cls(self)
+            return NGDSRW._select_optimizer_cls(self)  # type: ignore
         if function.real_world and function.neural and not function.deterministic:
             return NoisyRL2
         if function.real_world and function.neural and function.deterministic:
@@ -7196,7 +7191,7 @@ class CSEC3(NGOptBase):
             and self.dimension < 50
         ):
             # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
-            return NgIoh21._select_optimizer_cls(self, budget)
+            return NgIoh21._select_optimizer_cls(self, budget)  # type: ignore
         if (
             self.fully_continuous
             and self.num_workers == 1
@@ -7207,7 +7202,7 @@ class CSEC3(NGOptBase):
             and self.dimension < 50
         ):
             # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
-            return NgIoh4._select_optimizer_cls(self, budget)
+            return NgIoh4._select_optimizer_cls(self)  # type: ignore
 
         if (
             self.fully_continuous
@@ -7219,6 +7214,6 @@ class CSEC3(NGOptBase):
             and self.dimension < 50
         ):
             # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
-            return NgDS3._select_optimizer_cls(self, budget)
+            return NgDS3
 
-        return NgDS2._select_optimizer_cls(self, budget)
+        return NgDS2._select_optimizer_cls(self, budget)  # type: ignore

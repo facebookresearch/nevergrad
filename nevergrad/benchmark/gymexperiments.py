@@ -126,7 +126,7 @@ def ng_full_gym(
     optims = ["NGOpt", "NgDS", "NgDS2", "NGDSRW"]
     optims = ["NgIoh4", "NgDS2", "NgDS3"]
     optims = ["NgDS3", "NGDSRW"]
-    optims = ["CSEC3"]
+    optims = ["CSEC4"]
     if multi:
         controls = ["multi_neural"]
     else:
@@ -192,7 +192,7 @@ def ng_full_gym(
                                 sparse_limit=sparse_limit,
                             )
                             if not randomized:
-                                func.deterministic = True
+                                func.parametrization.function.deterministic = True
                         except MemoryError:
                             continue
                         for budget in budgets:
