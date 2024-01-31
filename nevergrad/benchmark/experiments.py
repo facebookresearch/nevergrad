@@ -53,7 +53,7 @@ from . import gymexperiments  # noqa
 #    list_optims = ["QOTPDE", "LQOTPDE", "LQODE"]
 #    list_optims = ["SPQODE", "SQOPSO", "DiagonalCMA"]
 def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
-    return ["CSEC5"]
+    return ["CSEC6"]
     # return ["NGOpt", "NgIoh4"]
     #    return [np.random.choice(["ChainCMASQP", "BFGSCMAPlus", "SQPCMAPlus", "ChainMetaModelSQP", "QNDE", "NGOptRW", "MultiCobyla", "LBFGSB", "NLOPT-LN-COBYLA", "MultiCobylaPlus", "RCobyla", "PymooBIPOP", "MultiSQP", "MultiBFGS", "LogBFGSCMAPlus", "RBFGS", "SQP", "LogSQPCMAPlus", "MultiSQPPlus", "RSQP", "MultiBFGSPlus", "BFGS", "LogMultiBFGS", "SqrtMultiBFGS", "F3SQPCMA", "SqrtSQPCMAPlus", "LogMultiBFGSPlus", "SqrtBFGSCMAPlus", "TinySQP", "MicroSQP", "SqrtMultiBFGSPlus" ])]
     # return [np.random.choice(["NGDSRW", "NGOpt", "NGDS2", "NgIoh21", "RecombiningOptimisticNoisyDiscreteOnePlusOne", "SQOPSO", "TBPSA", "NoisyRL2", "NoisyRL3", "NaiveTBPSA", "DSproba"])]
@@ -785,7 +785,7 @@ def keras_tuning(
                         )
                         skip_ci(reason="too slow")
                         xp.function.parametrization.real_world = True
-                        xp.function.parametrization.tuning = True
+                        xp.function.parametrization.hptuning = True
                         if not xp.is_incoherent:
                             yield xp
 
@@ -857,7 +857,7 @@ def mltuning(
                             )
                             skip_ci(reason="too slow")
                             xp.function.parametrization.real_world = True
-                            xp.function.parametrization.tuning = True
+                            xp.function.parametrization.hptuning = True
                             if not xp.is_incoherent:
                                 yield xp
 
@@ -1804,6 +1804,8 @@ def yabbob(
                     seed=next(seedg),
                     constraint_violation=function.constraint_violation,
                 )
+                if constraint_case != 0:
+                    xp.function.parametrization.has_constraints = True
                 if not xp.is_incoherent:
                     yield xp
 

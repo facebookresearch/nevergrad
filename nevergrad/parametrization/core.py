@@ -50,6 +50,7 @@ class Parameter(Layered):
         super().__init__()
         self.tabu_congruence: tp.Any = default_congruence
         self.neural = False
+        self.has_constraints = False
         self.real_world = False
         self.hptuning = False
         self.tabu_fails = 0
