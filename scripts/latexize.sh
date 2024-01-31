@@ -203,6 +203,9 @@ done
 sed -i 's/.png}}/.png.pdf}}/g' dagstuhloid.tex
 # ================
 cp scripts/tex/biblio.bib .
+(echo '\begin{itemize}' ; ./scripts/compare.sh NGOpt CSEC5 | sed 's/rnk__//g' | sed 's/^/\\item /g' | sed 's/(x)//g' |sed 's/_/-/g' ; echo '\item []' ; echo '\end{itemize}' ) > compa.tex
+(echo '\begin{itemize}' ; ./scripts/compare.sh NGOpt CSEC5 | sed 's/rnk__//g' | sed 's/^/\\item /g' | sed 's/(x)//g' |sed 's/_/-/g' ; echo '\item []' ; echo '\end{itemize}' ) > compa2.tex
+
 pdflatex dagstuhloid.tex
 bibtex dagstuhloid.aux
 pdflatex dagstuhloid.tex
@@ -217,4 +220,4 @@ echo '</html>'
 ) >  dagstuhloid.html
 
 
-tar -zcvf texdag.tgz dagstuhloid.tex biblio.bib *plots/*all_pure.png *plots/xpresults_all.png ms_bbob_plots/fight_tran*.png *_plots/*.pdf dagstuhloid.html competition.tex bigstats.tex dagstuhloid.pdf rwtex.tex
+tar -zcvf texdag.tgz dagstuhloid.tex biblio.bib *plots/*all_pure.png *plots/xpresults_all.png ms_bbob_plots/fight_tran*.png *_plots/*.pdf dagstuhloid.html competition.tex bigstats.tex dagstuhloid.pdf rwtex.tex compa.tex
