@@ -53,10 +53,16 @@ from . import gymexperiments  # noqa
 #    list_optims = ["QOTPDE", "LQOTPDE", "LQODE"]
 #    list_optims = ["SPQODE", "SQOPSO", "DiagonalCMA"]
 def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
+    return ["CSEC3"]
+    #return ["NGOpt", "NgIoh4"]
     #    return [np.random.choice(["ChainCMASQP", "BFGSCMAPlus", "SQPCMAPlus", "ChainMetaModelSQP", "QNDE", "NGOptRW", "MultiCobyla", "LBFGSB", "NLOPT-LN-COBYLA", "MultiCobylaPlus", "RCobyla", "PymooBIPOP", "MultiSQP", "MultiBFGS", "LogBFGSCMAPlus", "RBFGS", "SQP", "LogSQPCMAPlus", "MultiSQPPlus", "RSQP", "MultiBFGSPlus", "BFGS", "LogMultiBFGS", "SqrtMultiBFGS", "F3SQPCMA", "SqrtSQPCMAPlus", "LogMultiBFGSPlus", "SqrtBFGSCMAPlus", "TinySQP", "MicroSQP", "SqrtMultiBFGSPlus" ])]
-    # if np.random.randn() < 0.0:
+    #return [np.random.choice(["NGDSRW", "NGOpt", "NGDS2", "NgIoh21", "RecombiningOptimisticNoisyDiscreteOnePlusOne", "SQOPSO", "TBPSA", "NoisyRL2", "NoisyRL3", "NaiveTBPSA", "DSproba"])]
     #    return ["NgIoh8"]
-    #return ["DE", "NGOpt", "NgIoh11", "RandomSearch"]
+    # return ["DE", "NGOpt", "NgIoh11", "RandomSearch"]
+    # return ["DiscreteLenglerOnePlusOne", "LognormalDiscreteOnePlusOne"]
+    # return ["DSproba" + str(i) for i in range(2, 10)]
+    # return ["DSproba", "DSsubspace", "DS3p", "DSbase"]
+    # return ["DSproba"]
     if False:  # np.random.randn() < 0.0:
         return list(
             np.random.choice(
@@ -80,59 +86,59 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
                 4,
             )
         )
-#    return [
-#        "CMandAS2",
-#        "SQOPSO",
-#        "SPQODE",
-#        "DiagonalCMA",
-#        "QOTPDE",
-#        "LQOTPDE",
-#        "LQODE",
-#        "BAR4",
-#        "ChainCMASQP",
-#        "TinySQP",
-#        "MicroSQP",
-#        "MultiBFGSPlus",
-#        "LogMultiBFGSPlus",
-#        "PymooBIPOP",
-#        "SqrtMultiBFGSPlus",
-#        "MultiCobylaPlus",
-#        "MultiSQPPlus",
-#        "BFGSCMAPlus",
-#        "LogBFGSCMAPlus",
-#        "SqrtBFGSCMAPlus",
-#        "SQPCMAPlus",
-#        "LogSQPCMAPlus",
-#        "SqrtSQPCMAPlus",
-#        "MultiBFGS",
-#        "LogMultiBFGS",
-#        "SqrtMultiBFGS",
-#        "MultiCobyla",
-#        "MultiSQP",
-#        "BFGSCMA",
-#        "LogBFGSCMA",
-#        "SqrtBFGSCMA",
-#        "SQPCMA",
-#        "LogSQPCMA",
-#        "SqrtSQPCMA",
-#        "FSQPCMA",
-#        "F2SQPCMA",
-#        "F3SQPCMA",
-#        "ChainMetaModelSQP",
-#        "BFGS",
-#        "RBFGS",
-#        "LBFGSB",
-#        "Cobyla",
-#        "RCobyla",
-#        "SQP",
-#        "RSQP",
-#        "NLOPT_LN_COBYLA",
-#        "NgIoh4",
-#        "CMA",
-#        "NGOpt",
-#        "NGOptRW",
-#        "QNDE",
-#    ]
+    #    return [
+    #        "CMandAS2",
+    #        "SQOPSO",
+    #        "SPQODE",
+    #        "DiagonalCMA",
+    #        "QOTPDE",
+    #        "LQOTPDE",
+    #        "LQODE",
+    #        "BAR4",
+    #        "ChainCMASQP",
+    #        "TinySQP",
+    #        "MicroSQP",
+    #        "MultiBFGSPlus",
+    #        "LogMultiBFGSPlus",
+    #        "PymooBIPOP",
+    #        "SqrtMultiBFGSPlus",
+    #        "MultiCobylaPlus",
+    #        "MultiSQPPlus",
+    #        "BFGSCMAPlus",
+    #        "LogBFGSCMAPlus",
+    #        "SqrtBFGSCMAPlus",
+    #        "SQPCMAPlus",
+    #        "LogSQPCMAPlus",
+    #        "SqrtSQPCMAPlus",
+    #        "MultiBFGS",
+    #        "LogMultiBFGS",
+    #        "SqrtMultiBFGS",
+    #        "MultiCobyla",
+    #        "MultiSQP",
+    #        "BFGSCMA",
+    #        "LogBFGSCMA",
+    #        "SqrtBFGSCMA",
+    #        "SQPCMA",
+    #        "LogSQPCMA",
+    #        "SqrtSQPCMA",
+    #        "FSQPCMA",
+    #        "F2SQPCMA",
+    #        "F3SQPCMA",
+    #        "ChainMetaModelSQP",
+    #        "BFGS",
+    #        "RBFGS",
+    #        "LBFGSB",
+    #        "Cobyla",
+    #        "RCobyla",
+    #        "SQP",
+    #        "RSQP",
+    #        "NLOPT_LN_COBYLA",
+    #        "NgIoh4",
+    #        "CMA",
+    #        "NGOpt",
+    #        "NGOptRW",
+    #        "QNDE",
+    #    ]
     # return ["RandomSearch", "OnePlusOne", "DE", "PSO"]
     list_optims = x
     algos = {}
@@ -255,6 +261,7 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
     ]
     algos["pbo_reduced_suite"] = [
         "DiscreteLenglerOnePlusOne",
+        "LognormalDiscreteOnePlusOne",
         "DiscreteLenglerOnePlusOneT",
         "DiscreteLenglerOnePlusOneT",
         "SADiscreteLenglerOnePlusOneExp09",
@@ -492,9 +499,54 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
 
     # Below, we use the best in the records above.
     benchmark = str(inspect.stack()[1].function)
-    if benchmark in algos: # and np.random.randint(2) > 0 and False:
-        return algos[benchmark][:5] + ["NgIoh4", "NgIoh21", "NGOpt", "DSbase", "DSproba", "DSsubspace", "DS3p"]
-    return ["NgIoh4", "NgIoh21", "NGOpt", "DSbase", "DSproba", "DSsubspace", "DS3p"]
+    #if "bbob" in benchmark and np.random.choice([True, False, False, False, False]):
+    #    return ["DSproba" + str(i) for i in range(2, 10)]
+    if benchmark in algos and np.random.choice(
+        [True, False]
+    ):  # and np.random.randint(2) > 0 and False:
+        list_algos = algos[benchmark][:5] + [
+            "CMA",
+            "NgDS3",
+            "NgIoh4",
+            "NGDSRW",
+            "NGOpt",
+        ]
+        return (
+            [np.random.choice(list_algos)]
+            if (
+                "eras" in benchmark
+                or "tial_instrum" in benchmark
+                or "big" in benchmark
+                or "lsgo" in benchmark
+                or "rock" in benchmark
+            )
+            else list(np.random.choice(list_algos, 5))
+        )
+    if benchmark in algos:
+        list_algos = algos[benchmark]
+        return (
+            [np.random.choice(list_algos)]
+            if (
+                "eras" in benchmark
+                or "tial_instrum" in benchmark
+                or "big" in benchmark
+                or "lsgo" in benchmark
+                or "rock" in benchmark
+            )
+            else list(np.random.choice(list_algos, 5))
+        )
+    return list(
+        np.random.choice(
+            [
+                "NgDS3",
+                "NgIoh4",
+                "NgIoh21",
+                "NGOpt",
+                "NGDSRW",
+            ],
+            4,
+        )
+    )
     # Here, we pseudo-randomly draw one optim in the provided list,
     # depending on the host (so that each host is using the same optim).
     #    list_optims = x
@@ -734,6 +786,7 @@ def keras_tuning(
                             function, optim, num_workers=num_workers, budget=budget, seed=next(seedg)
                         )
                         skip_ci(reason="too slow")
+                        xp.function.parametrization.real_world = True
                         if not xp.is_incoherent:
                             yield xp
 
@@ -804,6 +857,7 @@ def mltuning(
                                 function, optim, num_workers=num_workers, budget=budget, seed=next(seedg)
                             )
                             skip_ci(reason="too slow")
+                            xp.function.parametrization.real_world = True
                             if not xp.is_incoherent:
                                 yield xp
 
@@ -1105,7 +1159,6 @@ def sequential_instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Ex
     optims = ["OnePlusOne"]
     optims = ["DiscreteLenglerOnePlusOne"]
     optims = ["NGOpt", "NGOptRW"]
-    optims = refactor_optims(optims)
     optims = [
         l
         for l in list(ng.optimizers.registry.keys())
@@ -1116,6 +1169,7 @@ def sequential_instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Ex
         and "Optimis" not in l
         and "T" != l[-1]
     ] + ["cGA", "DiscreteDE"]
+    optims = refactor_optims(optims)
     for nv in [10, 50, 200, 1000, 5000]:
         for arity in [2, 3, 7, 30]:
             for instrum_str in ["Unordered", "Softmax", "Ordered"]:
@@ -2714,6 +2768,8 @@ def neuro_control_problem(seed: tp.Optional[int] = None) -> tp.Iterator[Experime
         for algo in optims:
             for fu in funcs:
                 xp = Experiment(fu, algo, budget, num_workers=1, seed=next(seedg))
+                xp.function.parametrization.real_world = True
+                xp.function.parametrization.neural = True
                 if not xp.is_incoherent:
                     yield xp
 

@@ -96,30 +96,30 @@ echo 'Of course, statistics here are a risky thing: when two codes are very clos
 
 echo '\subsection{NGOpt and Base algorithms}'
 echo 'Here base algorithms have no metamodel and no complex combinations. NGOpt is the only sophisticated combination: this is an analysis of NGOpt.'
-for n in 1 2 3
+for n in 1 2 3 5000
 do
 echo "\\subsubsection{Number of times each algorithm was ranked among the $n first: NGOpt and base algorithms}"
 echo "\\begin{itemize}"
 echo '\item []'
 #grep -A$n begin.enumerate dagstuhloid.tex | grep '(' | grep ')' | grep '^\\item' | sed 's/ (.*//g' | sed 's/^.item //g' | sort | uniq -c | sort -n -r | head -n 8 | sed 's/^/\\item/g'
-egrep -v 'Multi|Carola|BAR|NGOpt[0-9A-Z]|NgIoh|Wiz|BIPOP|Shiwa|Meta|Micro|Tiny|SQPCMA|CMandAS2|Chain' dagstuhloid.tex  |grep -A$n begin.enumerate  | grep '(' | grep ')' | grep '^\\item' | sed 's/ (.*//g' | sed 's/^.item //g' | sort | uniq -c | sort -n -r | head -n 8 | sed 's/^/\\item/g'
+egrep -v 'NgDS|NGDS|Multi|Carola|BAR|NGOpt[0-9A-Z]|NgIoh|Wiz|BIPOP|Shiwa|Meta|Micro|Tiny|SQPCMA|CMandAS2|Chain' dagstuhloid.tex  |grep -A$n begin.enumerate  | grep '(' | grep ')' | grep '^\\item' | sed 's/ (.*//g' | sed 's/^.item //g' | sort | uniq -c | sort -n -r | head -n 8 | sed 's/^/\\item/g'
 echo "\\end{itemize}"
 done 
 
 echo '\subsection{Wizards, multilevels, specific standard deviations, and combinations excluded}'
 echo 'The success (robustness) of quasi-opposite PSO is visible.'
-for n in 1 2 3
+for n in 1 2 3 5000
 do
 echo "\\subsubsection{Number of times each algorithm was ranked among the $n first: no wizard, no combination}"
 echo "\\begin{itemize}"
 echo '\item []'
-egrep -v 'NGOpt|Carola|BAR|Multi|BIPOP|NgIoh|Wiz|Shiwa|Meta|SQPCMA|Micro|Tiny|CMASQP|BIPOP|CMandAS2|Chain' dagstuhloid.tex  |grep -A$n begin.enumerate  | grep '(' | grep ')' | grep '^\\item' | sed 's/ (.*//g' | sed 's/^.item //g' | sort | uniq -c | sort -n -r | head -n 8 | sed 's/^/\\item/g'
+egrep -v 'NGDS|NgDS|NGOpt|Carola|BAR|Multi|BIPOP|NgIoh|Wiz|Shiwa|Meta|SQPCMA|Micro|Tiny|CMASQP|BIPOP|CMandAS2|Chain' dagstuhloid.tex  |grep -A$n begin.enumerate  | grep '(' | grep ')' | grep '^\\item' | sed 's/ (.*//g' | sed 's/^.item //g' | sort | uniq -c | sort -n -r | head -n 8 | sed 's/^/\\item/g'
 echo "\\end{itemize}"
 done 
 
 echo '\subsection{Everything included}'
 echo 'All strong methods are wizards, except tools based on quasi-opposite samplings.'
-for n in 1 2 3
+for n in 1 2 3 5000
 do
 echo "\\subsubsection{Number of times each algorithm was ranked among the $n first: everything included}"
 echo "\\begin{itemize}"

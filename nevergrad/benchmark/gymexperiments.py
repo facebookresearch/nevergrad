@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import numpy as np
 import os
 import typing as tp
 from nevergrad.functions import gym as nevergrad_gym
@@ -53,6 +54,8 @@ def ng_full_gym(
     gp: bool = False,
     sparse: bool = False,
     multi_scale: bool = False,
+    small: bool = False,
+    tiny: bool = False,
 ) -> tp.Iterator[Experiment]:
     """Gym simulator. Maximize reward.  Many distinct problems.
 
@@ -102,7 +105,14 @@ def ng_full_gym(
         "MixDeterministicRL",
         "SpecialRL",
         "PSO",
+        "NGOpt",
+        "NgIoh21",
     ]
+    optims = [np.random.choice(["NgIoh21", "NgIoh21", "NgIoh21", "Carola4", "Carola5", "Carola6", "Carola8", "Carola9", "Carola14"])] #DiagonalCMA", "CMA","NgIoh21", "NgIoh21"])] #"PSO", "SQOPSO", "NGOpt", "NGOptRW", "NoisyRL1", "NoisyRL3", "NoisyRL2", "SpecialRL", "NGDSRW", "NgIoh21"])]
+    optims = ["NGOpt", "NgDS", "NgDS2", "NGDSRW"]
+    optims = ["NgIoh4", "NgDS2", "NgDS3"]
+    optims = ["NgDS3", "NGDSRW"]
+    optims = ["CSEC3"]
     if multi:
         controls = ["multi_neural"]
     else:
@@ -149,7 +159,7 @@ def ng_full_gym(
         neural_factors: tp.Any = (
             [None]
             if (conformant or control == "linear")
-            else ([1] if "memory" in control else ([3] if big else [1, 2, 3]))
+            else ([1] if "memory" in control else ([3] if big else ([1] if (tiny or small) else [1, 2, 3])))
         )
         for neural_factor in neural_factors:
             for name in env_names:
@@ -167,11 +177,21 @@ def ng_full_gym(
                                 optimization_scale=optimization_scale,
                                 sparse_limit=sparse_limit,
                             )
+                            if not randomized:
+                                func.deterministic = True
                         except MemoryError:
                             continue
                         for budget in budgets:
                             for algo in optims:
                                 xp = Experiment(func, algo, budget, num_workers=1, seed=next(seedg))
+                                xp.function.parametrization.real_world = True
+                                xp.function.parametrization.neural = True
+                                if xp.function.parametrization.dimension > 40 and small:
+                                    continue
+                                if xp.function.parametrization.dimension > 20 and tiny:
+                                    continue
+                                #if np.random.choice([True, False, True, True, True]):
+                                #    continue
                                 if not xp.is_incoherent:
                                     yield xp
 
@@ -243,6 +263,18 @@ def big_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 def deterministic_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of ng_full_gym with fixed seeds (so that the problem becomes deterministic)."""
     return ng_full_gym(seed, randomized=False)
+
+
+@registry.register
+def tiny_deterministic_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of ng_full_gym with fixed seeds (so that the problem becomes deterministic)."""
+    return ng_full_gym(seed, randomized=False, tiny=True)
+
+
+@registry.register
+def small_deterministic_gym_multi(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of ng_full_gym with fixed seeds (so that the problem becomes deterministic)."""
+    return ng_full_gym(seed, randomized=False, small=True)
 
 
 # Not registered because not validated.
@@ -353,6 +385,9 @@ def gym_problem(
                 if num_workers < budget:
                     for algo in optims:
                         xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        xp.function.parametrization.real_world = True
+                        xp.function.parametrization.neural = not conformant
+
                         if not xp.is_incoherent:
                             yield xp
 

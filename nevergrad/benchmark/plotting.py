@@ -599,7 +599,10 @@ class XpPlotter:
                     )
             self._ax.set_ylim(top=upperbound_up)
         all_x = [v for vals in optim_vals.values() for v in vals[xaxis]]
-        self._ax.set_xlim([min(all_x), max(all_x)])
+        try:
+             self._ax.set_xlim([min(all_x), max(all_x)])
+        except TypeError:
+             print(f"TypeError for minimum or maximum or {all_x}")
         self.add_legends(legend_infos)
         # global info
         if "tmp" not in title:

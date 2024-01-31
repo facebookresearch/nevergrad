@@ -7,6 +7,11 @@
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=67
 
+# This script works both as a standalone script or with slurm.
+# This is much slower than mini_plot_dagstuhloid, but outputs more data (in particular: competence maps and plots for
+# subcases).
+# This plots the results which are stored in the CSV files.
+
 # Do nothing if there is no CSV.
 if compgen -G "*.csv" > /dev/null; then
 

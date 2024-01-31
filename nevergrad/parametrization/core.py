@@ -49,6 +49,8 @@ class Parameter(Layered):
         # Main features
         super().__init__()
         self.tabu_congruence: tp.Any = default_congruence
+        self.neural = False
+        self.real_world = False
         self.tabu_fails = 0
         self._subobjects = utils.Subobjects(
             self, base=Parameter, attribute="__dict__"
@@ -399,6 +401,8 @@ class Parameter(Layered):
         child._subobjects = self._subobjects.new(child)
         child._meta = {}
         child.tabu_length = self.tabu_length
+        child.real_world = self.real_world
+        child.neural = self.neural
         child.parents_uids = list(self.parents_uids)
         child.heritage = dict(self.heritage)
         child.loss = None
