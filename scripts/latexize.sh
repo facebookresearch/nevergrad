@@ -181,7 +181,7 @@ sed -i 's/\\subsubsection{yabbob .*}/\\subsection{Artificial noise-free single o
 sed -i 's/\\subsubsection{yamegapenbbob .*}/\\subsection{Constrained BBOB variants}&/g' $v
 sed -i 's/\\subsubsection{(RW)keras tuning .*}/\\subsection{Real world machine learning tuning}&/g' $v
 sed -i 's/\\subsubsection{bonnans .*}/\\subsection{Discrete optimization}&/g' $v
-sed -i 's/\\subsubsection{(RW) aquacrop fao .*}/\\subsection{Real world, other than machine learning}&/g' $v
+sed -i 's/\\subsubsection{(RW) aquacrop fao .*}/\\subsection{Real world, other than machine learning HP tuning}&/g' $v
 sed -i 's/.*control.*//g' $v
 sed -i 's/\\subsubsection{multiobjective example hd .*}/\\subsection{Multiobjective problemes}&/g' $v
 sed -i 's/\\subsubsection{ranknoisy .*}/\\subsection{Noisy optimization}&/g' $v

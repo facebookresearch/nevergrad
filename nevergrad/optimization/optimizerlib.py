@@ -7227,6 +7227,26 @@ class CSEC5(NGOptBase):
         assert self.budget is not None
         function = self.parametrization
         # assert False
+        if (
+            self.num_workers == 1
+            and function.real_world
+            and not function.tuning
+            and not function.neural
+            and self.dimension > self.budget
+            and self.fully_continous
+        ):
+            return DSproba
+        if (
+            self.num_workers < np.sqrt(1 + self.dimension)
+            and function.real_world
+            and not function.tuning
+            and not function.neural
+            and 8 * self.dimension > self.budget
+            and self.fully_continous
+        ):
+            return DiscreteLenglerOnePlusOne
+        if function.real_world and not function.tuning and not function.neural and self.fully_continous:
+            return NGOpt
         if function.real_world and not function.neural:
             return NGDSRW._select_optimizer_cls(self)  # type: ignore
         if function.real_world and function.neural and not function.function.deterministic:
