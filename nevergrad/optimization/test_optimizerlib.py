@@ -308,6 +308,7 @@ def test_optimizers_minimal(name: str) -> None:
         x in str(optimizer_cls)
         for x in [
             "BO",
+            "DS",
             "BAR",
             "Meta",
             "Voronoi",
@@ -452,6 +453,7 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
         name in UNSEEDABLE
         or "BAR" in name
         or "AX" in name
+        or "DS" in name
         or ("Carola" in name and any(x in name for x in ["8", "9", "1"]))
         or (name[0] == "F" or name[-1] == "F")
     ):

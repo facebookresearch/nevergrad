@@ -3202,6 +3202,8 @@ DS4 = Chaining([Cobyla, MetaModelDSproba, SQP], ["sqrt", "half"]).set_name("DS4"
 Carola5 = Chaining([Cobyla, MetaModel, SQP], ["sqrt", "most"]).set_name("Carola5", register=True)
 DS5 = Chaining([Cobyla, MetaModelDSproba, SQP], ["sqrt", "most"]).set_name("DS5", register=True)
 Carola6 = Chaining([Cobyla, MetaModel, SQP], ["tenth", "most"]).set_name("Carola6", register=True)
+DS6 = Chaining([Cobyla, MetaModelDSproba, SQP], ["tenth", "most"]).set_name("DS6", register=True)
+DS6.no_parallelization = True
 PCarola6 = Rescaled(
     base_optimizer=Chaining([Cobyla, MetaModel, SQP], ["tenth", "most"]), scale=10.0
 ).set_name("PCarola6", register=True)
@@ -6369,8 +6371,8 @@ class NgDS2(NgDS11):
     """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
 
     def _select_optimizer_cls(self, budget: tp.Optional[int] = None) -> base.OptCls:
-        if self.dimension < self.budget:
-            return NgIoh21._select_optimizer_cls(self, budget)
+        if self.budget is not None and self.dimension < self.budget:
+            return NgIoh21._select_optimizer_cls(self, budget)  # type: ignore
         assert budget is None
         optCls: base.OptCls = NGOptBase
         funcinfo = self.parametrization.function
@@ -6475,9 +6477,9 @@ class NGDSRW(NGOpt39):
                 optimizers=[GeneticDE, PSO, super()._select_optimizer_cls()], warmup_ratio=0.33
             )
         else:
-            if self.dimension > self.budget:
-                return NgDS2._select_optimizer_cls(self)
-            return NGOpt39._select_optimizer_cls(self)
+            if self.budget is not None and self.dimension > self.budget:
+                return NgDS2._select_optimizer_cls(self)  # type: ignore
+            return NGOpt39._select_optimizer_cls(self)  # type: ignore
 
 
 @registry.register
@@ -7177,9 +7179,9 @@ class CSEC4(NGOptBase):
         # assert False
         if function.real_world and not function.neural:
             return NGDSRW._select_optimizer_cls(self)  # type: ignore
-        if function.real_world and function.neural and not function.deterministic:
+        if function.real_world and function.neural and not function.function.deterministic:
             return NoisyRL2
-        if function.real_world and function.neural and function.deterministic:
+        if function.real_world and function.neural and function.function.deterministic:
             return SQOPSO
         if (
             self.fully_continuous
