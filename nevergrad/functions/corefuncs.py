@@ -178,7 +178,7 @@ def multipeak(x: np.ndarray) -> float:
     for a in range(101):
         x_ = np.asarray([np.cos(a + np.sqrt(i)) for i in range(len(x))])
         prev = sphere(x - x_)
-        v = min(v, a / 101.0 + np.exp(min(100., prev)))
+        v = min(v, a / 101.0 + np.exp(min(100.0, prev)))
     return v
 
 

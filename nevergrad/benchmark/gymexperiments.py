@@ -108,7 +108,21 @@ def ng_full_gym(
         "NGOpt",
         "NgIoh21",
     ]
-    optims = [np.random.choice(["NgIoh21", "NgIoh21", "NgIoh21", "Carola4", "Carola5", "Carola6", "Carola8", "Carola9", "Carola14"])] #DiagonalCMA", "CMA","NgIoh21", "NgIoh21"])] #"PSO", "SQOPSO", "NGOpt", "NGOptRW", "NoisyRL1", "NoisyRL3", "NoisyRL2", "SpecialRL", "NGDSRW", "NgIoh21"])]
+    optims = [
+        np.random.choice(
+            [
+                "NgIoh21",
+                "NgIoh21",
+                "NgIoh21",
+                "Carola4",
+                "Carola5",
+                "Carola6",
+                "Carola8",
+                "Carola9",
+                "Carola14",
+            ]
+        )
+    ]  # DiagonalCMA", "CMA","NgIoh21", "NgIoh21"])] #"PSO", "SQOPSO", "NGOpt", "NGOptRW", "NoisyRL1", "NoisyRL3", "NoisyRL2", "SpecialRL", "NGDSRW", "NgIoh21"])]
     optims = ["NGOpt", "NgDS", "NgDS2", "NGDSRW"]
     optims = ["NgIoh4", "NgDS2", "NgDS3"]
     optims = ["NgDS3", "NGDSRW"]
@@ -190,7 +204,7 @@ def ng_full_gym(
                                     continue
                                 if xp.function.parametrization.dimension > 20 and tiny:
                                     continue
-                                #if np.random.choice([True, False, True, True, True]):
+                                # if np.random.choice([True, False, True, True, True]):
                                 #    continue
                                 if not xp.is_incoherent:
                                     yield xp

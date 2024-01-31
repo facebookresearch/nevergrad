@@ -6262,7 +6262,6 @@ class NgDS(NgDS11):
         return optCls
 
 
-
 @registry.register
 class NgIoh21(NgIoh11):
     """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
@@ -7121,7 +7120,8 @@ class NgIoh15b(NgIoh15):
         super().__init__(*args, **kwargs)
         self.no_crossing = True
 
-NgDS3 = Chaining([LognormalDiscreteOnePlusOne, NgDS2 ], ["tenth"]).set_name("NgDS3", register=True)
+
+NgDS3 = Chaining([LognormalDiscreteOnePlusOne, NgDS2], ["tenth"]).set_name("NgDS3", register=True)
 NgLn = Chaining([LognormalDiscreteOnePlusOne, NGOpt], ["tenth"]).set_name("NgLn", register=True)
 
 
@@ -7174,13 +7174,12 @@ class CSEC(NGOpt39):
 
 @registry.register
 class CSEC3(NGOptBase):
-
     def _select_optimizer_cls(self, budget: tp.Optional[int] = None) -> base.OptCls:
         assert self.budget is not None
         optCls: base.OptCls = NGOptBase
         funcinfo = self.parametrization.function
         function = self.parametrization
-        #assert False
+        # assert False
         if function.real_world and not function.neural:
             return NGDSRW._select_optimizer_cls(self)
         if function.real_world and function.neural and not function.deterministic:
