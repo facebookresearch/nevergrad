@@ -6264,7 +6264,6 @@ class NgDS(NgDS11):
         return optCls
 
 
-
 @registry.register
 class NgIoh21(NgIoh11):
     """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
@@ -7174,7 +7173,7 @@ class CSEC(NGOpt39):
 
 
 @registry.register
-class CSEC4(NGOptBase):
+class CSEC34(NGOptBase):
     def _select_optimizer_cls(self, budget: tp.Optional[int] = None) -> base.OptCls:
         assert self.budget is not None
         function = self.parametrization
