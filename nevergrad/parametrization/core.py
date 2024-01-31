@@ -405,7 +405,10 @@ class Parameter(Layered):
         child._meta = {}
         child.tabu_length = self.tabu_length
         child.real_world = self.real_world
+<<<<<<< HEAD
         child.enforce_determinism = self.enforce_determinism
+=======
+>>>>>>> ab600be6 (fix)
         child.hptuning = self.hptuning
         child.neural = self.neural
         child.parents_uids = list(self.parents_uids)
