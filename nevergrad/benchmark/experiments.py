@@ -785,6 +785,7 @@ def keras_tuning(
                         )
                         skip_ci(reason="too slow")
                         xp.function.parametrization.real_world = True
+                        xp.function.parametrization.tuning = True
                         if not xp.is_incoherent:
                             yield xp
 
@@ -856,6 +857,7 @@ def mltuning(
                             )
                             skip_ci(reason="too slow")
                             xp.function.parametrization.real_world = True
+                            xp.function.parametrization.tuning = True
                             if not xp.is_incoherent:
                                 yield xp
 
@@ -2609,6 +2611,7 @@ def aquacrop_fao(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                 for algo in optims:
                     for fu in funcs:
                         xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        xp.function.parametrization.real_world = True
                         if not xp.is_incoherent:
                             yield xp
 
@@ -2630,6 +2633,7 @@ def fishing(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         for algo in optims:
             for fu in funcs:
                 xp = Experiment(fu, algo, budget, seed=next(seedg))
+                xp.function.parametrization.real_world = True
                 if not xp.is_incoherent:
                     yield xp
 
@@ -2670,6 +2674,7 @@ def rocket(seed: tp.Optional[int] = None, seq: bool = False) -> tp.Iterator[Expe
                 for algo in optims:
                     for fu in funcs:
                         xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        xp.function.parametrization.real_world = True
                         skip_ci(reason="Too slow")
                         if not xp.is_incoherent:
                             yield xp

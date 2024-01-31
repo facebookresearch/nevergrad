@@ -181,6 +181,7 @@ class ExperimentFunction:
         if output.parametrization.name != self.parametrization.name:
             output.parametrization = _reset_copy(self.parametrization)
         output.parametrization.real_world = self.parametrization.real_world
+        output.parametrization.hptuning = self.parametrization.hptuning
         output.parametrization.neural = self.parametrization.neural
         assert output.parametrization.real_world == self.parametrization.real_world, "pb in copy!"
         # then if there are still differences, something went wrong
