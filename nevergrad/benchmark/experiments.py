@@ -53,17 +53,16 @@ from . import gymexperiments  # noqa
 #    list_optims = ["QOTPDE", "LQOTPDE", "LQODE"]
 #    list_optims = ["SPQODE", "SQOPSO", "DiagonalCMA"]
 def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
-    return x
-    # return ["LognormalDiscreteOnePlusOne"]
-    # return ["TBPSA", "OptimisticDiscreteOnePlusOne", "NGOpt", "CSEC10"] #CSEC10"]
-    # return ["NGOpt", "NgIoh4"]
+    return ["CSEC3"]
+    #return ["NGOpt", "NgIoh4"]
+    #    return [np.random.choice(["ChainCMASQP", "BFGSCMAPlus", "SQPCMAPlus", "ChainMetaModelSQP", "QNDE", "NGOptRW", "MultiCobyla", "LBFGSB", "NLOPT-LN-COBYLA", "MultiCobylaPlus", "RCobyla", "PymooBIPOP", "MultiSQP", "MultiBFGS", "LogBFGSCMAPlus", "RBFGS", "SQP", "LogSQPCMAPlus", "MultiSQPPlus", "RSQP", "MultiBFGSPlus", "BFGS", "LogMultiBFGS", "SqrtMultiBFGS", "F3SQPCMA", "SqrtSQPCMAPlus", "LogMultiBFGSPlus", "SqrtBFGSCMAPlus", "TinySQP", "MicroSQP", "SqrtMultiBFGSPlus" ])]
+    #return [np.random.choice(["NGDSRW", "NGOpt", "NGDS2", "NgIoh21", "RecombiningOptimisticNoisyDiscreteOnePlusOne", "SQOPSO", "TBPSA", "NoisyRL2", "NoisyRL3", "NaiveTBPSA", "DSproba"])]
     #    return ["NgIoh8"]
     # return ["DE", "NGOpt", "NgIoh11", "RandomSearch"]
     # return ["DiscreteLenglerOnePlusOne", "LognormalDiscreteOnePlusOne"]
     # return ["DSproba" + str(i) for i in range(2, 10)]
     # return ["DSproba", "DSsubspace", "DS3p", "DSbase"]
     # return ["DSproba"]
-    #return ["DE", "NGOpt", "NgIoh11", "RandomSearch"]
     if False:  # np.random.randn() < 0.0:
         return list(
             np.random.choice(
@@ -451,15 +450,17 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
 
     # Below, we use the best in the records above.
     benchmark = str(inspect.stack()[1].function)
-    # if "bbob" in benchmark and np.random.choice([True, False, False, False, False]):
+    #if "bbob" in benchmark and np.random.choice([True, False, False, False, False]):
     #    return ["DSproba" + str(i) for i in range(2, 10)]
-    if (
-        benchmark in algos and False
-    ):  # and np.random.choice([True, False]):  # and np.random.randint(2) > 0 and False:
+    if benchmark in algos and np.random.choice(
+        [True, False]
+    ):  # and np.random.randint(2) > 0 and False:
         list_algos = algos[benchmark][:5] + [
-            "CSEC10",
+            "CMA",
+            "NgDS3",
+            "NgIoh4",
+            "NGDSRW",
             "NGOpt",
-            "NLOPT_LN_SBPLX",
         ]
         return (
             [np.random.choice(list_algos)]

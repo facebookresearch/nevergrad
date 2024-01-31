@@ -206,7 +206,6 @@ def ng_full_gym(
                                     continue
                                 if xp.function.parametrization.dimension > 20 and tiny:
                                     continue
-                                # if np.random.choice([True, False, True, True, True]):
                                 #    continue
                                 if not xp.is_incoherent:
                                     yield xp

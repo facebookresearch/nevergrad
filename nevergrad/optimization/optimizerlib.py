@@ -3542,6 +3542,7 @@ class NGOptBase(base.Optimizer):
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         analysis = p.helpers.analyze(self.parametrization)
         funcinfo = self.parametrization.function
+        function = self.parametrization
         self.has_noise = not (analysis.deterministic and funcinfo.deterministic)
         self.has_real_noise = not funcinfo.deterministic
         # The noise coming from discrete variables goes to 0.
@@ -6263,6 +6264,7 @@ class NgDS(NgDS11):
         return optCls
 
 
+
 @registry.register
 class NgIoh21(NgIoh11):
     """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
@@ -7130,6 +7132,8 @@ class CSEC(NGOpt39):
 
     def _select_optimizer_cls(self, budget: tp.Optional[int] = None) -> base.OptCls:
         assert budget is None
+        optCls: base.OptCls = NGOptBase
+        funcinfo = self.parametrization.function
 
         if (
             self.fully_continuous

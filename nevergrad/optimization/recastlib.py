@@ -1002,4 +1002,3 @@ DSproba = NonObjectOptimizer(method="DSproba").set_name("DSproba", register=True
 #DSproba7 = NonObjectOptimizer(method="PDS7").set_name("DSproba7", register=True)
 #DSproba8 = NonObjectOptimizer(method="PDS8").set_name("DSproba8", register=True)
 #DSproba9 = NonObjectOptimizer(method="PDS9").set_name("DSproba9", register=True)
-# negpysot = NonObjectOptimizer(method="negpysot").set_name("negpysot", register=True)
