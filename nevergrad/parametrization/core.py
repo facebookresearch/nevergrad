@@ -51,6 +51,7 @@ class Parameter(Layered):
         self.tabu_congruence: tp.Any = default_congruence
         self.neural = False
         self.has_constraints = False
+        self.enforce_determinism = False
         self.real_world = False
         self.hptuning = False
         self.tabu_fails = 0
@@ -404,6 +405,7 @@ class Parameter(Layered):
         child._meta = {}
         child.tabu_length = self.tabu_length
         child.real_world = self.real_world
+        child.enforce_determinism = self.enforce_determinism
         child.hptuning = self.hptuning
         child.neural = self.neural
         child.parents_uids = list(self.parents_uids)

@@ -53,7 +53,8 @@ from . import gymexperiments  # noqa
 #    list_optims = ["QOTPDE", "LQOTPDE", "LQODE"]
 #    list_optims = ["SPQODE", "SQOPSO", "DiagonalCMA"]
 def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
-    return ["CSEC8"]
+    return ["LognormalDiscreteOnePlusOne"]
+    # return ["TBPSA", "OptimisticDiscreteOnePlusOne", "NGOpt", "CSEC10"] #CSEC10"]
     # return ["NGOpt", "NgIoh4"]
     #    return [np.random.choice(["ChainCMASQP", "BFGSCMAPlus", "SQPCMAPlus", "ChainMetaModelSQP", "QNDE", "NGOptRW", "MultiCobyla", "LBFGSB", "NLOPT-LN-COBYLA", "MultiCobylaPlus", "RCobyla", "PymooBIPOP", "MultiSQP", "MultiBFGS", "LogBFGSCMAPlus", "RBFGS", "SQP", "LogSQPCMAPlus", "MultiSQPPlus", "RSQP", "MultiBFGSPlus", "BFGS", "LogMultiBFGS", "SqrtMultiBFGS", "F3SQPCMA", "SqrtSQPCMAPlus", "LogMultiBFGSPlus", "SqrtBFGSCMAPlus", "TinySQP", "MicroSQP", "SqrtMultiBFGSPlus" ])]
     # return [np.random.choice(["NGDSRW", "NGOpt", "NGDS2", "NgIoh21", "RecombiningOptimisticNoisyDiscreteOnePlusOne", "SQOPSO", "TBPSA", "NoisyRL2", "NoisyRL3", "NaiveTBPSA", "DSproba"])]
@@ -2914,6 +2915,7 @@ def sequential_fastgames(seed: tp.Optional[int] = None) -> tp.Iterator[Experimen
                 for algo in optims:
                     for fu in funcs:
                         xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        xp.function.parametrization.real_world = True
                         if not xp.is_incoherent:
                             yield xp
 
@@ -2934,6 +2936,7 @@ def powersystems(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                 for algo in optims:
                     for fu in funcs:
                         xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        xp.function.parametrization.real_world = True
                         if not xp.is_incoherent:
                             yield xp
 
@@ -2962,6 +2965,7 @@ def mlda(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                 for algo in optims:
                     for func in funcs:
                         xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
+                        xp.function.parametrization.real_world = True
                         if not xp.is_incoherent:
                             yield xp
 
@@ -3264,13 +3268,15 @@ def double_o_seven(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                             agents[archi], runner, reward_postprocessing=lambda x: 1 - x
                         )
                         opt_budget = env_budget // num_repetitions
-                        yield Experiment(
+                        xp = Experiment(
                             func,
                             optim,
                             budget=opt_budget,
                             num_workers=num_workers,
                             seed=next(seedg),
                         )
+                        xp.function.parametrization.real_world = True
+                        yield xp
 
 
 @registry.register

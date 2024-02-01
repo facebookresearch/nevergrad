@@ -51,7 +51,7 @@ bestfreq=`cat ${u}/fig*.txt | grep '^[ ]*algo.*:' | head -n 1 |sed 's/(.*//g' | 
 num=`cat ${u}/fig*.txt | grep '^[ ]*algo.*:' | wc -l `
 uminus=`echo $u | sed 's/_plots.*//g'`
 bestsr=`cat rnk__${uminus}_plots.cp.txt | grep '^[ ]*algo.*:' | head -n 1 |sed 's/(.*//g' | sed 's/.*://g'`
-echo "\\subsubsection{`echo $u | sed 's/_plots.$//g'` (NSR:$bestsr) (Freq:$bestfreq) (num:$num)}" | sed 's/_/ /g'| sed 's/aquacrop/(RW) &/g' | sed 's/rocket/(RW)&/g' | sed 's/fishing/(RW)&/g' | sed 's/MLDA/(RW)&/g' | sed 's/keras/(RW)&/g' | sed 's/mltuning/(RW)&/g' | sed 's/powersystems/(RW)&/g' | sed 's/mixsimulator/(RW)&/g' | sed 's/olympus/(RW)&/g' | sed 's/double.o.seven/(RW)&/g'
+echo "\\subsubsection{`echo $u | sed 's/_plots.$//g'` (NSR:$bestsr) (Freq:$bestfreq) (num:$num)}" | sed 's/_/ /g'| sed 's/[a-z ]*gym/(RW)&/g' | sed 's/sequential.fastgames/(RW)&/g' | sed 's/aquacrop/(RW) &/g' | sed 's/rocket/(RW)&/g' | sed 's/fishing/(RW)&/g' | sed 's/MLDA/(RW)&/g' | sed 's/keras/(RW)&/g' | sed 's/mltuning/(RW)&/g' | sed 's/powersystems/(RW)&/g' | sed 's/mixsimulator/(RW)&/g' | sed 's/olympus/(RW)&/g' | sed 's/double.o.seven/(RW)&/g'
 timeout 10 cat scripts/txt/`echo $u | sed 's/_plots/.txt/g' | sed 's/\///g'`
 (
 (
@@ -203,8 +203,8 @@ done
 sed -i 's/.png}}/.png.pdf}}/g' dagstuhloid.tex
 # ================
 cp scripts/tex/biblio.bib .
-(echo '\begin{itemize}' ; ./scripts/compare.sh NGOpt CSEC8 | sed 's/rnk__//g' | sed 's/^/\\item /g' | sed 's/(x)//g' |sed 's/_/-/g' ; echo '\item []' ; echo '\end{itemize}' ) > compa.tex
-(echo '\begin{itemize}' ; ./scripts/compare.sh NGOpt CSEC8 | sed 's/rnk__//g' | sed 's/^/\\item /g' | sed 's/(x)//g' |sed 's/_/-/g' ; echo '\item []' ; echo '\end{itemize}' ) > compa2.tex
+(echo '\begin{itemize}' ; ./scripts/compare.sh NGOpt CSEC10 | sed 's/rnk__//g' | sed 's/^/\\item /g' | sed 's/(x)//g' |sed 's/_/-/g' ; echo '\item []' ; echo '\end{itemize}' ) > compa.tex
+(echo '\begin{itemize}' ; ./scripts/compare.sh NGOpt CSEC10 | sed 's/rnk__//g' | sed 's/^/\\item /g' | sed 's/(x)//g' |sed 's/_/-/g' ; echo '\item []' ; echo '\end{itemize}' ) > compa2.tex
 
 pdflatex dagstuhloid.tex
 bibtex dagstuhloid.aux
