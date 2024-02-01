@@ -7646,3 +7646,194 @@ class CSEC8(NGOptBase):
             return NgDS3
 
         return NgDS2._select_optimizer_cls(self, budget)  # type: ignore
+
+
+@registry.register
+class CSEC9(NGOptBase):
+    def _select_optimizer_cls(self, budget: tp.Optional[int] = None) -> base.OptCls:
+        assert self.budget is not None
+        function = self.parametrization
+        # assert False
+        if isinstance(self.parametrization, p.Array) and not self.fully_continuous and not self.has_noise:
+            return GeneticDE
+            # return ConfPortfolio(
+            #    optimizers=[
+            #        SuperSmoothDiscreteLenglerOnePlusOne,
+            #        SuperSmoothElitistRecombiningDiscreteLenglerOnePlusOne,
+            #        DiscreteLenglerOnePlusOne,
+            #    ],
+            #    warmup_ratio=0.4,
+            # )
+        if (
+            function.real_world
+            and not function.hptuning
+            and not function.neural
+            and not self.parametrization.function.metrizable
+        ):
+            return NgDS2._select_optimizer_cls(self, budget)  # type: ignore
+        if function.has_constraints:
+            return NgLn
+        if (
+            self.num_workers == 1
+            and function.real_world
+            and not function.hptuning
+            and not function.neural
+            and self.dimension > self.budget
+            and self.fully_continuous
+            and not self.has_noise
+        ):
+            return DSproba
+        if (
+            self.num_workers < np.sqrt(1 + self.dimension)
+            and function.real_world
+            and not function.hptuning
+            and not function.neural
+            and 8 * self.dimension > self.budget
+            and self.fully_continuous
+            and not self.has_noise
+        ):
+            return DiscreteLenglerOnePlusOne
+        if function.real_world and not function.hptuning and not function.neural and self.fully_continuous:
+            return NGOpt._select_optimizer_cls(self)
+        if function.real_world and function.neural and not function.function.deterministic:
+            return NoisyRL2
+        if function.real_world and function.neural and function.function.deterministic:
+            return SQOPSO
+        if function.real_world and not function.neural:
+            return NGDSRW._select_optimizer_cls(self)  # type: ignore
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget >= 3000 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return NgIoh21._select_optimizer_cls(self, budget)  # type: ignore
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget >= 30 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return NgIoh4._select_optimizer_cls(self)  # type: ignore
+
+        if (
+            self.fully_continuous
+            and self.budget is not None
+            and self.num_workers > np.log(3 + self.budget)
+            and self.budget >= 30 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return NgDS3
+
+        return NgDS2._select_optimizer_cls(self, budget)  # type: ignore
+
+
+@registry.register
+class CSEC10(NGOptBase):
+    def _select_optimizer_cls(self, budget: tp.Optional[int] = None) -> base.OptCls:
+        assert self.budget is not None
+        function = self.parametrization
+        # assert False
+        if isinstance(self.parametrization, p.Array) and not self.fully_continuous and not self.has_noise:
+            return GeneticDE
+            # return ConfPortfolio(
+            #    optimizers=[
+            #        SuperSmoothDiscreteLenglerOnePlusOne,
+            #        SuperSmoothElitistRecombiningDiscreteLenglerOnePlusOne,
+            #        DiscreteLenglerOnePlusOne,
+            #    ],
+            #    warmup_ratio=0.4,
+            # )
+        if (
+            function.real_world
+            and not function.hptuning
+            and not function.neural
+            and not self.parametrization.function.metrizable
+        ):
+            return NgDS2._select_optimizer_cls(self, budget)  # type: ignore
+        if function.has_constraints:
+            return NgLn
+        if (
+            self.num_workers == 1
+            and function.real_world
+            and not function.hptuning
+            and not function.neural
+            and self.dimension > self.budget
+            and self.fully_continuous
+            and not self.has_noise
+        ):
+            return DSproba
+        if (
+            self.num_workers < np.sqrt(1 + self.dimension)
+            and function.real_world
+            and not function.hptuning
+            and not function.neural
+            and 8 * self.dimension > self.budget
+            and self.fully_continuous
+            and not self.has_noise
+        ):
+            return DiscreteLenglerOnePlusOne
+        if function.real_world and not function.hptuning and not function.neural and self.fully_continuous:
+            return NGOpt._select_optimizer_cls(self)
+        if (
+            function.real_world
+            and function.neural
+            and not function.function.deterministic
+            and not function.enforce_determinism
+        ):
+            return NoisyRL2
+        if (
+            function.real_world
+            and function.neural
+            and (function.function.deterministic or function.enforce_determinism)
+        ):
+            return SQOPSO
+        if function.real_world and not function.neural:
+            return NGDSRW._select_optimizer_cls(self)  # type: ignore
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget >= 3000 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return NgIoh21._select_optimizer_cls(self, budget)  # type: ignore
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget >= 30 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return NgIoh4._select_optimizer_cls(self)  # type: ignore
+
+        if (
+            self.fully_continuous
+            and self.budget is not None
+            and self.num_workers > np.log(3 + self.budget)
+            and self.budget >= 30 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return NgDS3
+
+        return NgDS2._select_optimizer_cls(self, budget)  # type: ignore
