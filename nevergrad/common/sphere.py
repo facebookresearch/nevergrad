@@ -101,6 +101,35 @@ def antithetic_order(n, shape, axis=-1, also_sym=False, conv=None):
                             x = x + [scx]
     return x
 
+def max_pooling(n, shape, budget, pooling=(1,8,8)):
+    old_latents = []
+    m = torch.nn.AvgPool3d(pooling)
+    x = []
+    for i in range(n):
+        latents = torch.randn((1, *shape),)
+        latents_pooling = m(latents)
+        if len(old_latents) != 0:
+                dist = torch.min(torch.stack([(latents_pooling - old_latents[r_n]).pow(2).sum().sqrt() for r_n in range(len(old_latents))]))
+                max_dist = dist
+                t0 = time.time()
+                while (time.time() - t0) < 0.01 * budget / n:
+                        latents_new = torch.randn((n, *shape),)
+                        latents_pooling_new = m(latents_new)
+                        dist_new = torch.min(torch.stack(
+                                [(latents_pooling_new - old_latents[r_n]).pow(2).sum().sqrt() for r_n in range(len(old_latents))]))
+                        if dist_new > max_dist:
+                                latents = latents_new
+                                max_dist = dist_new
+                                latents_pooling = latents_pooling_new
+        x.append(latents)
+        old_latents.append(latents_pooling)
+    x = torch.cat(x, 0).numpy()
+    x = normalize(x)
+    return x
+
+
+def pooling(n, shape, budget, pooling=(1,1,1)):
+    return max_pooling(n, shape, budget, pooling)
 
 def antithetic_order_and_sign(n, shape, axis=-1, conv=None):
     return antithetic_order(n, shape, axis, also_sym=True)
@@ -826,6 +855,8 @@ list_of_methods = [
     "Riesz_blursum_lowconv_loworder",
     "Riesz_blursum_lowconv_midorder",
     "Riesz_blursum_lowconv_highorder",
+    "max_pooling",
+    "pooling"
 ]
 list_metrics = [
     "metric_half",
