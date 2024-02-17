@@ -101,7 +101,7 @@ def antithetic_order(n, shape, axis=-1, also_sym=False, conv=None):
                             x = x + [scx]
     return x
 
-def max_pooling(n, shape, budget, pooling=(1,8,8)):
+def max_pooling(n, shape, budget, conv=(1,8,8)):
     old_latents = []
     m = torch.nn.AvgPool3d(pooling)
     x = []
@@ -128,7 +128,7 @@ def max_pooling(n, shape, budget, pooling=(1,8,8)):
     return x
 
 
-def pooling(n, shape, budget, pooling=(1,1,1)):
+def pooling(n, shape, budget, conv=(1,1,1)):
     return max_pooling(n, shape, budget, pooling)
 
 def antithetic_order_and_sign(n, shape, axis=-1, conv=None):
@@ -1216,7 +1216,7 @@ def quasi_randomize(pointset, method=None):
     shape = [int(i) for i in list(pointset[0].shape)]
     norms = [np.linalg.norm(pointset[i]) for i in range(n)]
     if method is None or method == "none":
-        method = "dispersion_with_big_conv" if (len(shape) > 1 and shape[0] > 1) else "covering"
+        method = "max_pooling" if (len(shape) > 1 and shape[0] > 1) else "covering"
     # if method == "none":
     #    if len(shape) > 1 and shape[0] > 5:
     #        x = dispersion(n, shape, conv=[int(s * 24 / 64) for s in list(shape)[:-1]])
