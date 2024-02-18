@@ -53,7 +53,7 @@ from . import gymexperiments  # noqa
 #    list_optims = ["QOTPDE", "LQOTPDE", "LQODE"]
 #    list_optims = ["SPQODE", "SQOPSO", "DiagonalCMA"]
 def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
-    return ["LognormalDiscreteOnePlusOne"]
+    # return ["LognormalDiscreteOnePlusOne"]
     # return ["TBPSA", "OptimisticDiscreteOnePlusOne", "NGOpt", "CSEC10"] #CSEC10"]
     # return ["NGOpt", "NgIoh4"]
     #    return [np.random.choice(["ChainCMASQP", "BFGSCMAPlus", "SQPCMAPlus", "ChainMetaModelSQP", "QNDE", "NGOptRW", "MultiCobyla", "LBFGSB", "NLOPT-LN-COBYLA", "MultiCobylaPlus", "RCobyla", "PymooBIPOP", "MultiSQP", "MultiBFGS", "LogBFGSCMAPlus", "RBFGS", "SQP", "LogSQPCMAPlus", "MultiSQPPlus", "RSQP", "MultiBFGSPlus", "BFGS", "LogMultiBFGS", "SqrtMultiBFGS", "F3SQPCMA", "SqrtSQPCMAPlus", "LogMultiBFGSPlus", "SqrtBFGSCMAPlus", "TinySQP", "MicroSQP", "SqrtMultiBFGSPlus" ])]
@@ -455,11 +455,9 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
     #    return ["DSproba" + str(i) for i in range(2, 10)]
     if benchmark in algos and np.random.choice([True, False]):  # and np.random.randint(2) > 0 and False:
         list_algos = algos[benchmark][:5] + [
-            "CMA",
-            "NgDS3",
-            "NgIoh4",
-            "NGDSRW",
+            "CSEC10",
             "NGOpt",
+            "NLOPT_LN_SBPLX",
         ]
         return (
             [np.random.choice(list_algos)]

@@ -127,6 +127,7 @@ def ng_full_gym(
     optims = ["NgIoh4", "NgDS2", "NgDS3"]
     optims = ["NgDS3", "NGDSRW"]
     optims = ["CSEC10"]
+    optims = ["NLOPT_LN_SBPLX"]
     if multi:
         controls = ["multi_neural"]
     else:
