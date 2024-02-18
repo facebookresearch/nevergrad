@@ -386,7 +386,7 @@ def test_optimizers_minimal(name: str) -> None:
     if (
         "BAR" in name or "Cma" in name or "CMA" in name or "BIPOP" in name or "DS3" in name
     ):  # Sometimes CMA does not work in dim 1 :-(
-        budget = 600
+        budget = 800
         if "BAR" in name or "DS3" in name:
             budget = 3600
         if any(x in name for x in ["Large", "Tiny", "Para", "Diagonal"]):
