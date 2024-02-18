@@ -7551,7 +7551,7 @@ class CSEC9(NGOptBase):
         ):
             return DiscreteLenglerOnePlusOne
         if function.real_world and not function.hptuning and not function.neural and self.fully_continuous:
-            return NGOpt._select_optimizer_cls(self)
+            return NGOpt._select_optimizer_cls(self)  # type: ignore
         if function.real_world and function.neural and not function.function.deterministic:
             return NoisyRL2
         if function.real_world and function.neural and function.function.deterministic:
@@ -7642,7 +7642,7 @@ class CSEC10(NGOptBase):
         ):
             return DiscreteLenglerOnePlusOne
         if function.real_world and not function.hptuning and not function.neural and self.fully_continuous:
-            return NGOpt._select_optimizer_cls(self)
+            return NGOpt._select_optimizer_cls(self)  # type: ignore
         if (
             function.real_world
             and function.neural

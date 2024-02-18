@@ -53,11 +53,10 @@ from . import gymexperiments  # noqa
 #    list_optims = ["QOTPDE", "LQOTPDE", "LQODE"]
 #    list_optims = ["SPQODE", "SQOPSO", "DiagonalCMA"]
 def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
+    return x
     # return ["LognormalDiscreteOnePlusOne"]
     # return ["TBPSA", "OptimisticDiscreteOnePlusOne", "NGOpt", "CSEC10"] #CSEC10"]
     # return ["NGOpt", "NgIoh4"]
-    #    return [np.random.choice(["ChainCMASQP", "BFGSCMAPlus", "SQPCMAPlus", "ChainMetaModelSQP", "QNDE", "NGOptRW", "MultiCobyla", "LBFGSB", "NLOPT-LN-COBYLA", "MultiCobylaPlus", "RCobyla", "PymooBIPOP", "MultiSQP", "MultiBFGS", "LogBFGSCMAPlus", "RBFGS", "SQP", "LogSQPCMAPlus", "MultiSQPPlus", "RSQP", "MultiBFGSPlus", "BFGS", "LogMultiBFGS", "SqrtMultiBFGS", "F3SQPCMA", "SqrtSQPCMAPlus", "LogMultiBFGSPlus", "SqrtBFGSCMAPlus", "TinySQP", "MicroSQP", "SqrtMultiBFGSPlus" ])]
-    # return [np.random.choice(["NGDSRW", "NGOpt", "NGDS2", "NgIoh21", "RecombiningOptimisticNoisyDiscreteOnePlusOne", "SQOPSO", "TBPSA", "NoisyRL2", "NoisyRL3", "NaiveTBPSA", "DSproba"])]
     #    return ["NgIoh8"]
     # return ["DE", "NGOpt", "NgIoh11", "RandomSearch"]
     # return ["DiscreteLenglerOnePlusOne", "LognormalDiscreteOnePlusOne"]
@@ -506,7 +505,9 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
     benchmark = str(inspect.stack()[1].function)
     # if "bbob" in benchmark and np.random.choice([True, False, False, False, False]):
     #    return ["DSproba" + str(i) for i in range(2, 10)]
-    if benchmark in algos and np.random.choice([True, False]):  # and np.random.randint(2) > 0 and False:
+    if (
+        benchmark in algos and False
+    ):  # and np.random.choice([True, False]):  # and np.random.randint(2) > 0 and False:
         list_algos = algos[benchmark][:5] + [
             "CSEC10",
             "NGOpt",
@@ -789,7 +790,7 @@ def keras_tuning(
                         skip_ci(reason="too slow")
                         xp.function.parametrization.real_world = True
                         xp.function.parametrization.hptuning = True
-                        if not xp.is_incoherent and np.random.choice([True, False]):
+                        if not xp.is_incoherent:  # and np.random.choice([True, False]):
                             yield xp
 
 
@@ -861,7 +862,7 @@ def mltuning(
                             skip_ci(reason="too slow")
                             xp.function.parametrization.real_world = True
                             xp.function.parametrization.hptuning = True
-                            if not xp.is_incoherent and np.random.choice([True, False]):
+                            if not xp.is_incoherent:  # and np.random.choice([True, False]):
                                 yield xp
 
 
@@ -2681,7 +2682,7 @@ def rocket(seed: tp.Optional[int] = None, seq: bool = False) -> tp.Iterator[Expe
                         xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
                         xp.function.parametrization.real_world = True
                         skip_ci(reason="Too slow")
-                        if not xp.is_incoherent and np.random.choice([True, False, False]):
+                        if not xp.is_incoherent:  # and np.random.choice([True, False, False]):
                             yield xp
 
 
