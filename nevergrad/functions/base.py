@@ -180,6 +180,12 @@ class ExperimentFunction:
         # Caution: only if names differ!
         if output.parametrization.name != self.parametrization.name:
             output.parametrization = _reset_copy(self.parametrization)
+        output.parametrization.has_constraints = self.parametrization.has_constraints
+        output.parametrization.enforce_determinism = self.parametrization.enforce_determinism
+        output.parametrization.real_world = self.parametrization.real_world
+        output.parametrization.hptuning = self.parametrization.hptuning
+        output.parametrization.neural = self.parametrization.neural
+        assert output.parametrization.real_world == self.parametrization.real_world, "pb in copy!"
         # then if there are still differences, something went wrong
         if not output.equivalent_to(self):
             raise errors.ExperimentFunctionCopyError(
