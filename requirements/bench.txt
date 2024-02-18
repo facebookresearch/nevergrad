@@ -57,3 +57,4 @@ Py-BOBYQA>=1.2
 ax-platform
 loguru # for fcmaes
 #gomea
+directsearch==1.0

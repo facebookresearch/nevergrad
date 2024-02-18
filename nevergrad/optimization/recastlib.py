@@ -62,6 +62,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 "Powell",
             ]
             or "NLOPT" in method
+            or "DS" in method
             or "BFGS" in method
         ), f"Unknown method '{method}'"
         if (
@@ -114,6 +115,33 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 if res.f < best_res:
                     best_res = res.f
                     best_x = res.x
+            elif weakself.method[:2] == "DS":
+                import directsearch  # type: ignore
+
+                dict_solvers = {
+                    "base": directsearch.solve_directsearch,
+                    "proba": directsearch.solve_probabilistic_directsearch,
+                    "subspace": directsearch.solve_subspace_directsearch,
+                    "3p": directsearch.solve_stp,
+                }
+                solve = dict_solvers[weakself.method[2:]]
+                best_x = solve(objective_function, x0=best_x, maxevals=budget).x
+                if weakself._normalizer is not None:
+                    best_x = weakself._normalizer.backward(np.asarray(best_x, dtype=np.float32))
+            elif weakself.method[:3] == "PDS":
+                import directsearch  # type: ignore
+
+                solve = directsearch.solve_probabilistic_directsearch
+                DSseed = int(weakself.method[3:])
+                best_x = solve(
+                    objective_function,
+                    x0=best_x,
+                    maxevals=budget,
+                    gamma_inc=1.0 + np.random.RandomState(DSseed).rand() * 3.0,
+                    gamma_dec=np.random.RandomState(DSseed + 42).rand(),
+                ).x
+                if weakself._normalizer is not None:
+                    best_x = weakself._normalizer.backward(np.asarray(best_x, dtype=np.float32))
             elif weakself.method == "AX":
                 from ax import optimize as axoptimize  # type: ignore
 
@@ -961,4 +989,17 @@ PymooNSGA2 = Pymoo(algorithm="nsga2").set_name("PymooNSGA2", register=True)
 
 PymooBatchNSGA2 = PymooBatch(algorithm="nsga2").set_name("PymooBatchNSGA2", register=False)
 pysot = NonObjectOptimizer(method="pysot").set_name("pysot", register=True)
+
+DSbase = NonObjectOptimizer(method="DSbase").set_name("DSbase", register=True)
+DS3p = NonObjectOptimizer(method="DS3p").set_name("DS3p", register=True)
+DSsubspace = NonObjectOptimizer(method="DSsubspace").set_name("DSsubspace", register=True)
+DSproba = NonObjectOptimizer(method="DSproba").set_name("DSproba", register=True)
+DSproba2 = NonObjectOptimizer(method="PDS2").set_name("DSproba2", register=True)
+DSproba3 = NonObjectOptimizer(method="PDS3").set_name("DSproba3", register=True)
+DSproba4 = NonObjectOptimizer(method="PDS4").set_name("DSproba4", register=True)
+DSproba5 = NonObjectOptimizer(method="PDS5").set_name("DSproba5", register=True)
+DSproba6 = NonObjectOptimizer(method="PDS6").set_name("DSproba6", register=True)
+DSproba7 = NonObjectOptimizer(method="PDS7").set_name("DSproba7", register=True)
+DSproba8 = NonObjectOptimizer(method="PDS8").set_name("DSproba8", register=True)
+DSproba9 = NonObjectOptimizer(method="PDS9").set_name("DSproba9", register=True)
 # negpysot = NonObjectOptimizer(method="negpysot").set_name("negpysot", register=True)
