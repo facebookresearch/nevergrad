@@ -7082,8 +7082,6 @@ FCarola6 = Chaining([NGOpt, NGOpt, RBFGS], ["tenth", "most"]).set_name("FCarola6
 FCarola6.no_parallelization = True
 Carola11 = Chaining([MultiCMA, RBFGS], ["most"]).set_name("Carola11", register=True)
 Carola11.no_parallelization = True
-Carola12 = Chaining([NaiveTBPSA, MultiCMA, RBFGS], ["fourth", "half"]).set_name("Carola12", register=True)
-Carola12.no_parallelization = True
 Carola14 = Chaining([MultiCMA, RBFGS], ["most"]).set_name("Carola14", register=True)
 Carola14.no_parallelization = True
 DS14 = Chaining([MultiDS, RBFGS], ["most"]).set_name("DS14", register=True)
