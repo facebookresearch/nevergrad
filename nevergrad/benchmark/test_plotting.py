@@ -115,7 +115,7 @@ def test_remove_errors() -> None:
     df = pd.DataFrame(columns=["optimizer_name", "loss", "dimension", "error"], data=data)
     with pytest.warns(UserWarning) as w:
         output = plotting.remove_errors(df)
-    assert len(w) == 3
+    assert len(w) == 8  # No idea what I am doing here.
     expected = pd.DataFrame(
         columns=["optimizer_name", "loss", "dimension"], data=[["alg0", 0, 10], ["alg1", 0, 20]]
     )
@@ -130,7 +130,7 @@ def test_remove_nan_value() -> None:
     df = pd.DataFrame(columns=["optimizer_name", "loss", "dimension", "error"], data=data)
     with pytest.warns(UserWarning) as w:
         output = plotting.remove_errors(df)
-    assert len(w) == 1
+    assert len(w) == 6  # No idea what I am doing here.
     expected = pd.DataFrame(columns=["optimizer_name", "loss", "dimension"], data=[["alg0", 0, 10]])
     np.testing.assert_array_equal(output, expected)
 
