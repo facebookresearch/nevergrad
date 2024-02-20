@@ -20,6 +20,7 @@ from joblib import Parallel, delayed  # type: ignore
 from joblib import parallel_config
 
 
+# if np.random.rand() < 0.5:
 #     num_cores = 1
 
 
@@ -37,7 +38,6 @@ default_stepsize = 10  # step size for grad descent
 methods = {}
 metrics = {}
 
-
 # A few helper functions.
 def normalize(x):
     for i in range(len(x)):
@@ -53,17 +53,13 @@ def normalize(x):
 def convo(x, k):
     if k is None:
         return x
-    return scipy.ndimage.gaussian_filter(
-        x, sigma=list(k) + [0.0] * (len(x.shape) - len(k))
-    )
+    return scipy.ndimage.gaussian_filter(x, sigma=list(k) + [0.0] * (len(x.shape) - len(k)))
 
 
 def convo_mult(x, k):  # Convo for an array of different points
     if k is None:
         return x
-    return scipy.ndimage.gaussian_filter(
-        x, sigma=[0] + list(k) + [0.0] * (len(x.shape) - len(k) - 1)
-    )
+    return scipy.ndimage.gaussian_filter(x, sigma=[0] + list(k) + [0.0] * (len(x.shape) - len(k) - 1))
 
 
 # Our well distributed point configurations.
@@ -99,13 +95,16 @@ def antithetic_order(n, shape, axis=-1, also_sym=False, conv=None):
                     for ordering in order:  # Ordering is a list of bool
                         if any(ordering) and len(x) < n:
                             scx = copy.deepcopy(cx)
-                            for o in [
-                                i for i, o in enumerate(ordering) if o
-                            ]:  # we must symetrize o
+                            for o in [i for i, o in enumerate(ordering) if o]:  # we must symetrize o
                                 indices_sym[axis] = o
                                 scx[tuple(indices_sym)] = -scx[tuple(indices_sym)]
                             x = x + [scx]
     return x
+
+
+def antithetic_order_and_sign(n, shape, axis=-1, conv=None):
+    return antithetic_order(n, shape, axis, also_sym=True)
+
 
 
 # Please avoid using NumPy-to-PyTorch tensor transformations for actual image generation,
@@ -150,9 +149,7 @@ def max_pooling(n, shape, budget=default_budget, conv=None):
             while (time.time() - t0) < 0.01 * budget / n:
                 latents_new = np.random.randn(*shape)
                 latents_pooling_new = manual_avg_pool3d(latents_new, pooling)
-                dist_new = min(
-                    [np.linalg.norm(latents_pooling_new - old) for old in old_latents]
-                )
+                dist_new = min([np.linalg.norm(latents_pooling_new - old) for old in old_latents])
                 if dist_new > max_dist:
                     latents = latents_new
                     max_dist = dist_new
@@ -166,10 +163,6 @@ def max_pooling(n, shape, budget=default_budget, conv=None):
 
 def max(n, shape, budget=default_budget, conv=[1, 1]):
     return max_pooling(n, shape, budget, conv)
-
-
-def antithetic_order_and_sign(n, shape, axis=-1, conv=None):
-    return antithetic_order(n, shape, axis, also_sym=True)
 
 
 def greedy_dispersion(n, shape, budget=default_budget, conv=None):
@@ -186,16 +179,11 @@ def greedy_dispersion(n, shape, budget=default_budget, conv=None):
             #    newy = y
             def rand_and_dist(i):
                 y = normalize([np.random.randn(*shape)])[0]
-                dist = min(
-                    np.linalg.norm(convo(y, conv) - convo(x[i], conv))
-                    for i in range(len(x))
-                )
+                dist = min(np.linalg.norm(convo(y, conv) - convo(x[i], conv)) for i in range(len(x)))
                 return (y, dist)
 
             with parallel_config(backend="threading"):
-                r = Parallel(n_jobs=-1)(
-                    delayed(rand_and_dist)(i) for i in range(num_cores)
-                )
+                r = Parallel(n_jobs=-1)(delayed(rand_and_dist)(i) for i in range(num_cores))
             dist = [r[i][1] for i in range(len(r))]
             index = dist.index(max(dist))
             newy = r[index][0]
@@ -219,18 +207,12 @@ def dispersion(n, shape, budget=default_budget, conv=None):
                 else:
                     y = x[j]
                 convoy = convo(y, conv)
-                dist = min(
-                    np.linalg.norm(convoy - convo(x[i], conv))
-                    for i in range(len(x))
-                    if i != j
-                )
+                dist = min(np.linalg.norm(convoy - convo(x[i], conv)) for i in range(len(x)) if i != j)
                 return (y, dist)
 
             with parallel_config(backend="threading"):
                 num_jobs = max(2 * num, num_cores)
-                r = Parallel(n_jobs=num_cores)(
-                    delayed(rand_and_dist)(i) for i in range(num_jobs)
-                )
+                r = Parallel(n_jobs=num_cores)(delayed(rand_and_dist)(i) for i in range(num_jobs))
                 num_iterations += num_jobs
             dist = [r[i][1] for i in range(len(r))]
             index = dist.index(max(dist))
@@ -269,12 +251,7 @@ def greedy_dispersion_with_mini_conv(n, shape, budget=default_budget):
 
 
 def Riesz_blurred_gradient(
-    n,
-    shape,
-    budget=default_budget,
-    order=default_order,
-    step_size=default_stepsize,
-    conv=None,
+    n, shape, budget=default_budget, order=default_order, step_size=default_stepsize, conv=None
 ):
     t = (n,) + tuple(shape)
     x = np.random.randn(*t)
@@ -287,10 +264,7 @@ def Riesz_blurred_gradient(
             for j in range(n):
                 if j != i:
                     T = np.add(Blurred[i], -Blurred[j])
-                    Temp[i] = np.add(
-                        Temp[i],
-                        np.multiply(T, 1 / (np.sqrt(np.sum(T**2.0))) ** (order + 2)),
-                    )
+                    Temp[i] = np.add(Temp[i], np.multiply(T, 1 / (np.sqrt(np.sum(T**2.0))) ** (order + 2)))
             Temp[i] = np.multiply(Temp[i], step_size)
         x = np.add(x, Temp)
         x = normalize(x)
@@ -300,12 +274,7 @@ def Riesz_blurred_gradient(
 
 
 def Riesz_blursum_gradient(
-    n,
-    shape,
-    budget=default_budget,
-    order=default_order,
-    step_size=default_stepsize,
-    conv=None,
+    n, shape, budget=default_budget, order=default_order, step_size=default_stepsize, conv=None
 ):
     t = (n,) + tuple(shape)
     x = np.random.randn(*t)
@@ -318,8 +287,7 @@ def Riesz_blursum_gradient(
                 if j != i:
                     T = np.add(x[i], -x[j])
                     Blurred[i] = np.add(
-                        np.multiply(T, 1 / (np.sqrt(np.sum(T**2.0))) ** (order + 2)),
-                        Blurred[i],
+                        np.multiply(T, 1 / (np.sqrt(np.sum(T**2.0))) ** (order + 2)), Blurred[i]
                     )
         Blurred = convo_mult(Blurred, conv)
         x = np.add(x, Blurred)
@@ -330,12 +298,7 @@ def Riesz_blursum_gradient(
 
 
 def Riesz_noblur_gradient(
-    n,
-    shape,
-    budget=default_budget,
-    order=default_order,
-    step_size=default_stepsize,
-    conv=None,
+    n, shape, budget=default_budget, order=default_order, step_size=default_stepsize, conv=None
 ):
     t = (n,) + tuple(shape)
     x = np.random.randn(*t)
@@ -347,10 +310,7 @@ def Riesz_noblur_gradient(
             for j in range(n):
                 if j != i:
                     T = np.add(x[i], -x[j])
-                    Temp[i] = np.add(
-                        Temp[i],
-                        np.multiply(T, 1 / (np.sqrt(np.sum(T**2.0))) ** (order + 2)),
-                    )
+                    Temp[i] = np.add(Temp[i], np.multiply(T, 1 / (np.sqrt(np.sum(T**2.0))) ** (order + 2)))
 
         x = np.add(x, Temp)
         x = normalize(x)
@@ -386,51 +346,35 @@ def Riesz_noblur_gradient(
 
 
 def Riesz_noblur_lowconv_loworder(n, shape, budget=default_budget):
-    return Riesz_noblur_gradient(
-        n, shape, default_steps, order=0.5, step_size=default_stepsize, conv=[2, 2]
-    )
+    return Riesz_noblur_gradient(n, shape, default_steps, order=0.5, step_size=default_stepsize, conv=[2, 2])
 
 
 def Riesz_noblur_lowconv_midorder(n, shape, budget=default_budget):
-    return Riesz_noblur_gradient(
-        n, shape, default_steps, order=1, step_size=default_stepsize, conv=[2, 2]
-    )
+    return Riesz_noblur_gradient(n, shape, default_steps, order=1, step_size=default_stepsize, conv=[2, 2])
 
 
 def Riesz_noblur_lowconv_highorder(n, shape, budget=default_budget):
-    return Riesz_noblur_gradient(
-        n, shape, default_steps, order=2, step_size=default_stepsize, conv=[2, 2]
-    )
+    return Riesz_noblur_gradient(n, shape, default_steps, order=2, step_size=default_stepsize, conv=[2, 2])
 
 
 def Riesz_blursum_lowconv_hugeorder(n, shape, budget=default_budget):
-    return Riesz_blursum_gradient(
-        n, shape, default_steps, order=5, step_size=default_stepsize, conv=[2, 2]
-    )
+    return Riesz_blursum_gradient(n, shape, default_steps, order=5, step_size=default_stepsize, conv=[2, 2])
 
 
 def Riesz_blursum_medconv_hugeorder(n, shape, budget=default_budget):
-    return Riesz_blursum_gradient(
-        n, shape, default_steps, order=5, step_size=default_stepsize, conv=[8, 8]
-    )
+    return Riesz_blursum_gradient(n, shape, default_steps, order=5, step_size=default_stepsize, conv=[8, 8])
 
 
 def Riesz_blursum_highconv_hugeorder(n, shape, budget=default_budget):
-    return Riesz_blursum_gradient(
-        n, shape, default_steps, order=5, step_size=default_stepsize, conv=[24, 24]
-    )
+    return Riesz_blursum_gradient(n, shape, default_steps, order=5, step_size=default_stepsize, conv=[24, 24])
 
 
 def Riesz_blursum_lowconv_tinyorder(n, shape, budget=default_budget):
-    return Riesz_blursum_gradient(
-        n, shape, default_steps, order=0.3, step_size=default_stepsize, conv=[2, 2]
-    )
+    return Riesz_blursum_gradient(n, shape, default_steps, order=0.3, step_size=default_stepsize, conv=[2, 2])
 
 
 def Riesz_blursum_medconv_tinyorder(n, shape, budget=default_budget):
-    return Riesz_blursum_gradient(
-        n, shape, default_steps, order=0.3, step_size=default_stepsize, conv=[8, 8]
-    )
+    return Riesz_blursum_gradient(n, shape, default_steps, order=0.3, step_size=default_stepsize, conv=[8, 8])
 
 
 def Riesz_blursum_highconv_tinyorder(n, shape, budget=default_budget):
@@ -440,33 +384,23 @@ def Riesz_blursum_highconv_tinyorder(n, shape, budget=default_budget):
 
 
 def Riesz_blurred_lowconv_hugeorder(n, shape, budget=default_budget):
-    return Riesz_blurred_gradient(
-        n, shape, default_steps, order=5, step_size=default_stepsize, conv=[2, 2]
-    )
+    return Riesz_blurred_gradient(n, shape, default_steps, order=5, step_size=default_stepsize, conv=[2, 2])
 
 
 def Riesz_blurred_medconv_hugeorder(n, shape, budget=default_budget):
-    return Riesz_blurred_gradient(
-        n, shape, default_steps, order=5, step_size=default_stepsize, conv=[8, 8]
-    )
+    return Riesz_blurred_gradient(n, shape, default_steps, order=5, step_size=default_stepsize, conv=[8, 8])
 
 
 def Riesz_blurred_highconv_hugeorder(n, shape, budget=default_budget):
-    return Riesz_blurred_gradient(
-        n, shape, default_steps, order=5, step_size=default_stepsize, conv=[24, 24]
-    )
+    return Riesz_blurred_gradient(n, shape, default_steps, order=5, step_size=default_stepsize, conv=[24, 24])
 
 
 def Riesz_blurred_lowconv_tinyorder(n, shape, budget=default_budget):
-    return Riesz_blurred_gradient(
-        n, shape, default_steps, order=0.3, step_size=default_stepsize, conv=[2, 2]
-    )
+    return Riesz_blurred_gradient(n, shape, default_steps, order=0.3, step_size=default_stepsize, conv=[2, 2])
 
 
 def Riesz_blurred_medconv_tinyorder(n, shape, budget=default_budget):
-    return Riesz_blurred_gradient(
-        n, shape, default_steps, order=0.3, step_size=default_stepsize, conv=[8, 8]
-    )
+    return Riesz_blurred_gradient(n, shape, default_steps, order=0.3, step_size=default_stepsize, conv=[8, 8])
 
 
 def Riesz_blurred_highconv_tinyorder(n, shape, budget=default_budget):
@@ -482,51 +416,35 @@ def Riesz_blursum_bigconv_loworder(n, shape, budget=default_budget):
 
 
 def Riesz_blursum_bigconv_midorder(n, shape, budget=default_budget):
-    return Riesz_blursum_gradient(
-        n, shape, default_steps, order=1, step_size=default_stepsize, conv=[24, 24]
-    )
+    return Riesz_blursum_gradient(n, shape, default_steps, order=1, step_size=default_stepsize, conv=[24, 24])
 
 
 def Riesz_blursum_bigconv_highorder(n, shape, budget=default_budget):
-    return Riesz_blursum_gradient(
-        n, shape, default_steps, order=2, step_size=default_stepsize, conv=[24, 24]
-    )
+    return Riesz_blursum_gradient(n, shape, default_steps, order=2, step_size=default_stepsize, conv=[24, 24])
 
 
 def Riesz_blursum_medconv_loworder(n, shape, budget=default_budget):
-    return Riesz_blursum_gradient(
-        n, shape, default_steps, order=0.5, step_size=default_stepsize, conv=[8, 8]
-    )
+    return Riesz_blursum_gradient(n, shape, default_steps, order=0.5, step_size=default_stepsize, conv=[8, 8])
 
 
 def Riesz_blursum_medconv_midorder(n, shape, budget=default_budget):
-    return Riesz_blursum_gradient(
-        n, shape, default_steps, order=1, step_size=default_stepsize, conv=[8, 8]
-    )
+    return Riesz_blursum_gradient(n, shape, default_steps, order=1, step_size=default_stepsize, conv=[8, 8])
 
 
 def Riesz_blursum_medconv_highorder(n, shape, budget=default_budget):
-    return Riesz_blursum_gradient(
-        n, shape, default_steps, order=2, step_size=default_stepsize, conv=[8, 8]
-    )
+    return Riesz_blursum_gradient(n, shape, default_steps, order=2, step_size=default_stepsize, conv=[8, 8])
 
 
 def Riesz_blursum_lowconv_loworder(n, shape, budget=default_budget):
-    return Riesz_blursum_gradient(
-        n, shape, default_steps, order=0.5, step_size=default_stepsize, conv=[2, 2]
-    )
+    return Riesz_blursum_gradient(n, shape, default_steps, order=0.5, step_size=default_stepsize, conv=[2, 2])
 
 
 def Riesz_blursum_lowconv_midorder(n, shape, budget=default_budget):
-    return Riesz_blursum_gradient(
-        n, shape, default_steps, order=1, step_size=default_stepsize, conv=[2, 2]
-    )
+    return Riesz_blursum_gradient(n, shape, default_steps, order=1, step_size=default_stepsize, conv=[2, 2])
 
 
 def Riesz_blursum_lowconv_highorder(n, shape, budget=default_budget):
-    return Riesz_blursum_gradient(
-        n, shape, default_steps, order=2, step_size=default_stepsize, conv=[2, 2]
-    )
+    return Riesz_blursum_gradient(n, shape, default_steps, order=2, step_size=default_stepsize, conv=[2, 2])
 
 
 def Riesz_blurred_bigconv_loworder(n, shape, budget=default_budget):
@@ -536,51 +454,35 @@ def Riesz_blurred_bigconv_loworder(n, shape, budget=default_budget):
 
 
 def Riesz_blurred_bigconv_midorder(n, shape, budget=default_budget):
-    return Riesz_blurred_gradient(
-        n, shape, default_steps, order=1, step_size=default_stepsize, conv=[24, 24]
-    )
+    return Riesz_blurred_gradient(n, shape, default_steps, order=1, step_size=default_stepsize, conv=[24, 24])
 
 
 def Riesz_blurred_bigconv_highorder(n, shape, budget=default_budget):
-    return Riesz_blurred_gradient(
-        n, shape, default_steps, order=2, step_size=default_stepsize, conv=[24, 24]
-    )
+    return Riesz_blurred_gradient(n, shape, default_steps, order=2, step_size=default_stepsize, conv=[24, 24])
 
 
 def Riesz_blurred_medconv_loworder(n, shape, budget=default_budget):
-    return Riesz_blurred_gradient(
-        n, shape, default_steps, order=0.5, step_size=default_stepsize, conv=[8, 8]
-    )
+    return Riesz_blurred_gradient(n, shape, default_steps, order=0.5, step_size=default_stepsize, conv=[8, 8])
 
 
 def Riesz_blurred_medconv_midorder(n, shape, budget=default_budget):
-    return Riesz_blurred_gradient(
-        n, shape, default_steps, order=1, step_size=default_stepsize, conv=[8, 8]
-    )
+    return Riesz_blurred_gradient(n, shape, default_steps, order=1, step_size=default_stepsize, conv=[8, 8])
 
 
 def Riesz_blurred_medconv_highorder(n, shape, budget=default_budget):
-    return Riesz_blurred_gradient(
-        n, shape, default_steps, order=2, step_size=default_stepsize, conv=[8, 8]
-    )
+    return Riesz_blurred_gradient(n, shape, default_steps, order=2, step_size=default_stepsize, conv=[8, 8])
 
 
 def Riesz_blurred_lowconv_loworder(n, shape, budget=default_budget):
-    return Riesz_blurred_gradient(
-        n, shape, default_steps, order=0.5, step_size=default_stepsize, conv=[2, 2]
-    )
+    return Riesz_blurred_gradient(n, shape, default_steps, order=0.5, step_size=default_stepsize, conv=[2, 2])
 
 
 def Riesz_blurred_lowconv_midorder(n, shape, budget=default_budget):
-    return Riesz_blurred_gradient(
-        n, shape, default_steps, order=1, step_size=default_stepsize, conv=[2, 2]
-    )
+    return Riesz_blurred_gradient(n, shape, default_steps, order=1, step_size=default_stepsize, conv=[2, 2])
 
 
 def Riesz_blurred_lowconv_highorder(n, shape, budget=default_budget):
-    return Riesz_blurred_gradient(
-        n, shape, default_steps, order=2, step_size=default_stepsize, conv=[2, 2]
-    )
+    return Riesz_blurred_gradient(n, shape, default_steps, order=2, step_size=default_stepsize, conv=[2, 2])
 
 
 def block_symmetry(n, shape, num_blocks=None):
@@ -643,9 +545,7 @@ def covering(n, shape, budget=default_budget, conv=None):
             c *= 2 if score < previous_score else 0.5
             previous_score = score
             # print(score, c)
-        x[index] = normalize(
-            [x[index] + (c / (35 + n + np.sqrt(num))) * (t - x[index])]
-        )[0]
+        x[index] = normalize([x[index] + (c / (35 + n + np.sqrt(num))) * (t - x[index])])[0]
     # print("covering:", scipy.ndimage.gaussian_filter(mindists, budget / 3, mode='reflect')[::len(mindists) // 7])
     return x
 
@@ -675,16 +575,10 @@ def get_class(x, num_blocks, just_max):
         slices = tuple(slices)
         if just_max:
             result = result + [
-                list(
-                    np.argsort(
-                        (np.sum(x[slices], tuple(range(split_volume)))).flatten()
-                    )
-                )[-1]
+                list(np.argsort((np.sum(x[slices], tuple(range(split_volume)))).flatten()))[-1]
             ]
         else:
-            result = result + list(
-                np.argsort((np.sum(x[slices], tuple(range(split_volume)))).flatten())
-            )
+            result = result + list(np.argsort((np.sum(x[slices], tuple(range(split_volume)))).flatten()))
     return hash(str(result))
 
 
@@ -740,9 +634,7 @@ def lhs(n, shape):
     for i in range(n):
         thex += normalize([x[i].reshape(*shape)])
     assert len(thex) == n
-    assert thex[0].shape == tuple(
-        shape
-    ), f" we get {x[0].shape} instead of {tuple(shape)}"
+    assert thex[0].shape == tuple(shape), f" we get {x[0].shape} instead of {tuple(shape)}"
     return thex
 
 
@@ -1039,9 +931,7 @@ def rs(n, shape, budget=default_budget, k="metric_half", ngtool=None):
         if k == "all":
             m = np.sum(
                 [
-                    metrics[k2](
-                        x, (budget / len(list_metrics)) / max(10, np.sqrt(budget / 100))
-                    )
+                    metrics[k2](x, (budget / len(list_metrics)) / max(10, np.sqrt(budget / 100)))
                     for k2 in list_metrics
                 ]
             )
@@ -1142,10 +1032,7 @@ def do_plot(tit, values):
     y = np.sin(np.linspace(0.0, 2 * 3.14159, 20))
     for i, v in enumerate(sorted(values.keys(), key=lambda k: np.average(values[k]))):
         print(f"context {tit}, {v} ==> {values[v]}")
-        plt.plot(
-            [i + r for r in x],
-            [np.average(values[v]) + r * np.std(values[v]) for r in y],
-        )
+        plt.plot([i + r for r in x], [np.average(values[v]) + r * np.std(values[v]) for r in y])
         plt.text(i, np.average(values[v]) + np.std(values[v]), f"{v}", rotation=30)
         if i > 0:
             plt.savefig(
@@ -1178,9 +1065,7 @@ def heatmap(y, x, table, name):
         # Loop over data dimensions and create text annotations.
         for i in range(len(y)):
             for j in range(len(x)):
-                text = ax.text(
-                    j, i, str(tab[i, j])[:4], ha="center", va="center", color="k"
-                )
+                text = ax.text(j, i, str(tab[i, j])[:4], ha="center", va="center", color="k")
 
         fig.tight_layout()
         plt.savefig(f"TIME{default_budget}_cmap{cn}" + name)
@@ -1241,9 +1126,7 @@ def parallel_create_statistics(n, shape, list_of_methods, list_of_metrics, num=1
             return metrics_values
 
         # for method in list_of_methods:
-        results = Parallel(n_jobs=70)(
-            delayed(deal_with_method)(method) for method in list_of_methods
-        )
+        results = Parallel(n_jobs=70)(delayed(deal_with_method)(method) for method in list_of_methods)
         for i, method in enumerate(list_of_methods):
             for j, k in enumerate(list_of_metrics):
                 data[k][method] += [results[i][j]]
@@ -1252,24 +1135,14 @@ def parallel_create_statistics(n, shape, list_of_methods, list_of_metrics, num=1
             if len(data[k]) > 1:
                 do_plot(k + f"_number{n}_shape{shape}", data[k])
         # Now let's do a heatmap
-        tab = np.array(
-            [
-                [np.average(data[k][method]) for k in list_of_metrics]
-                for method in list_of_methods
-            ]
-        )
+        tab = np.array([[np.average(data[k][method]) for k in list_of_metrics] for method in list_of_methods])
         print("we have ", tab)
         # heatmap(list_of_methods, list_of_metrics, tab, "bigartifcompa.png")
         heatmap(
             list_of_methods,
             list_of_metrics,
             tab,
-            str(shape)
-            + "_"
-            + str(n)
-            + "_"
-            + str(np.random.randint(50000))
-            + "_bigartifcompa.png",
+            str(shape) + "_" + str(n) + "_" + str(np.random.randint(50000)) + "_bigartifcompa.png",
         )
         # heatmap(list_of_methods, list_of_metrics, tab, str(shape) + "_" + str(n) + "_bigartifcompa.png")
 
@@ -1342,9 +1215,7 @@ def bigcheck():
     ]:
         print("Starting to play with ", k)
         eval(f"{k}(n, shape)")
-        print(
-            f" {k} has been used for generating a batch of {n} points with shape {shape}"
-        )
+        print(f" {k} has been used for generating a batch of {n} points with shape {shape}")
 
 
 # bigcheck()
@@ -1358,9 +1229,7 @@ def get_a_point_set(n, shape, method=None):
     print("Working with ", k)
     x = eval(f"{k}({n}, {shape})")
     for i in range(len(x)):
-        assert 0.999 < np.linalg.norm(x[i]) < 1.001, "we have norm " + str(
-            np.linalg.norm(x[i])
-        )
+        assert 0.999 < np.linalg.norm(x[i]) < 1.001, "we have norm " + str(np.linalg.norm(x[i]))
     # np.array(x).tofile(
     #     f"pointset_{n}_{shape}_{method}_{default_budget}_{np.random.randint(50000)}.dat".replace(" ", "_")
     #     .replace("[", " ")
