@@ -20,7 +20,6 @@ from joblib import Parallel, delayed  # type: ignore
 from joblib import parallel_config
 
 
-# if np.random.rand() < 0.5:
 #     num_cores = 1
 
 
@@ -146,7 +145,7 @@ def max_pooling(n, shape, budget, conv=(1,8,8)):
     return x
 
 
-def pooling(n, shape, budget, conv=None, conv=(1,1,1)):
+def pooling(n, shape, budget, conv=(1,1,1)):
     return max_pooling(n, shape, budget, conv)
 
 
