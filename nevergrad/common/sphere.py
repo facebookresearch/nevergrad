@@ -101,6 +101,26 @@ def antithetic_order(n, shape, axis=-1, also_sym=False, conv=None):
                             x = x + [scx]
     return x
 
+# Please avoid using NumPy-to-PyTorch tensor transformations for actual image generation, 
+# as they may impact computational efficiency.
+# For instance, replace `manual_avg_pool3d` with `torch.nn.AvgPool3d()`.
+def manual_avg_pool3d(arr, kernel_size):
+    output_shape = (
+        arr.shape[0] // kernel_size[0],
+        arr.shape[1] // kernel_size[1],
+        arr.shape[2] // kernel_size[2],
+    )
+    result = np.zeros(output_shape)
+    for z in range(output_shape[0]):
+        for y in range(output_shape[1]):
+            for x in range(output_shape[2]):
+                result[z, y, x] = np.mean(arr[
+                    z*kernel_size[0]:(z+1)*kernel_size[0],
+                    y*kernel_size[1]:(y+1)*kernel_size[1],
+                    x*kernel_size[2]:(x+1)*kernel_size[2]
+                ])
+    return result
+
 def max_pooling(n, shape, budget, conv=(1,8,8)):
     old_latents = []
     x = []
