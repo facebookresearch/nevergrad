@@ -101,38 +101,33 @@ def antithetic_order(n, shape, axis=-1, also_sym=False, conv=None):
                             x = x + [scx]
     return x
 
-def max_pooling(n, shape, budget=default_budget, conv=(1, 8, 8)):
+def max_pooling(n, shape, budget, conv=(1,8,8)):
     old_latents = []
-    m = torch.nn.AvgPool3d(conv)
     x = []
     for i in range(n):
-        latents = torch.randn((1, *shape),)
-        latents_pooling = m(latents)
-        if len(old_latents) != 0:
-            dist = torch.min(
-                torch.stack(
-                    [(latents_pooling - old_latents[r_n]).pow(2).sum().sqrt() for r_n in range(len(old_latents))]
-                )
-            )
+        latents = np.random.randn(*shape)
+        latents_pooling = manual_avg_pool3d(latents, conv)
+        if old_latents:
+            dist = min([np.linalg.norm(latents_pooling - old) for old in old_latents])
             max_dist = dist
             t0 = time.time()
             while (time.time() - t0) < 0.01 * budget / n:
-                latents_new = torch.randn((n, *shape),)
-                latents_pooling_new = m(latents_new)
-                dist_new = torch.min(
-                    torch.stack(
-                        [(latents_pooling_new - old_latents[r_n]).pow(2).sum().sqrt() for r_n in range(len(old_latents))]
-                    )
-                )
+                latents_new = np.random.randn(*shape)
+                latents_pooling_new = manual_avg_pool3d(latents_new, conv)
+                dist_new = min([np.linalg.norm(latents_pooling_new - old) for old in old_latents])
                 if dist_new > max_dist:
                     latents = latents_new
                     max_dist = dist_new
                     latents_pooling = latents_pooling_new
         x.append(latents)
         old_latents.append(latents_pooling)
-    x = torch.cat(x, 0).numpy()
+    x = np.stack(x)
     x = normalize(x)
     return x
+
+
+def pooling(n, shape, budget, conv=None, conv=(1,1,1)):
+    return max_pooling(n, shape, budget, conv)
 
 
 def pooling(n, shape, budget=default_budget, conv=(1, 1, 1)):
