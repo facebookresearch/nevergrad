@@ -131,19 +131,25 @@ def manual_avg_pool3d(arr, kernel_size):
     return result
 
 
-def max_pooling(n, shape, budget=default_budget, conv=(1, 8, 8)):
+def max_pooling(n, shape, budget=default_budget, conv=None):
+    # Avg pooling standard size should be (1, s/8, s/8)
+    pooling = tuple([max(1, s // 8) for s in list(shape)])
+
+    if conv != None:
+        pooling = (1, *conv)
+
     old_latents = []
     x = []
     for i in range(n):
         latents = np.random.randn(*shape)
-        latents_pooling = manual_avg_pool3d(latents, conv)
+        latents_pooling = manual_avg_pool3d(latents, pooling)
         if old_latents:
             dist = min([np.linalg.norm(latents_pooling - old) for old in old_latents])
             max_dist = dist
             t0 = time.time()
             while (time.time() - t0) < 0.01 * budget / n:
                 latents_new = np.random.randn(*shape)
-                latents_pooling_new = manual_avg_pool3d(latents_new, conv)
+                latents_pooling_new = manual_avg_pool3d(latents_new, pooling)
                 dist_new = min(
                     [np.linalg.norm(latents_pooling_new - old) for old in old_latents]
                 )
@@ -158,9 +164,8 @@ def max_pooling(n, shape, budget=default_budget, conv=(1, 8, 8)):
     return x
 
 
-def pooling(n, shape, budget=default_budget, conv=(1, 1, 1)):
+def max(n, shape, budget=default_budget, conv=[1, 1]):
     return max_pooling(n, shape, budget, conv)
-
 
 
 def antithetic_order_and_sign(n, shape, axis=-1, conv=None):
@@ -284,7 +289,7 @@ def Riesz_blurred_gradient(
                     T = np.add(Blurred[i], -Blurred[j])
                     Temp[i] = np.add(
                         Temp[i],
-                        np.multiply(T, 1 / (np.sqrt(np.sum(T**2.0))) ** (order + 2)),
+                        np.multiply(T, 1 / (np.sqrt(np.sum(T ** 2.0))) ** (order + 2)),
                     )
             Temp[i] = np.multiply(Temp[i], step_size)
         x = np.add(x, Temp)
@@ -313,7 +318,7 @@ def Riesz_blursum_gradient(
                 if j != i:
                     T = np.add(x[i], -x[j])
                     Blurred[i] = np.add(
-                        np.multiply(T, 1 / (np.sqrt(np.sum(T**2.0))) ** (order + 2)),
+                        np.multiply(T, 1 / (np.sqrt(np.sum(T ** 2.0))) ** (order + 2)),
                         Blurred[i],
                     )
         Blurred = convo_mult(Blurred, conv)
@@ -344,7 +349,7 @@ def Riesz_noblur_gradient(
                     T = np.add(x[i], -x[j])
                     Temp[i] = np.add(
                         Temp[i],
-                        np.multiply(T, 1 / (np.sqrt(np.sum(T**2.0))) ** (order + 2)),
+                        np.multiply(T, 1 / (np.sqrt(np.sum(T ** 2.0))) ** (order + 2)),
                     )
 
         x = np.add(x, Temp)
@@ -989,7 +994,7 @@ list_of_methods = [
     "Riesz_blursum_lowconv_midorder",
     "Riesz_blursum_lowconv_highorder",
     "max_pooling",
-    "pooling",
+    "max",
 ]
 list_metrics = [
     "metric_half",
