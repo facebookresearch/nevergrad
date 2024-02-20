@@ -164,6 +164,10 @@ def max_without_pooling(n, shape, budget=default_budget, conv=[1, 1]):
     return max_pooling(n, shape, budget, conv)
 
 
+def max_small_pooling(n, shape, budget=default_budget, conv=[8, 8]):
+    return max_pooling(n, shape, budget, conv)
+
+
 def greedy_dispersion(n, shape, budget=default_budget, conv=None):
     x = normalize([np.random.randn(*shape)])
     for i in range(n - 1):
@@ -886,6 +890,7 @@ list_of_methods = [
     "Riesz_blursum_lowconv_highorder",
     "max_pooling",
     "max_without_pooling",
+    "max_small_pooling",
 ]
 list_metrics = [
     "metric_half",
@@ -1245,7 +1250,7 @@ def quasi_randomize(pointset, method=None):
     shape = [int(i) for i in list(pointset[0].shape)]
     norms = [np.linalg.norm(pointset[i]) for i in range(n)]
     if method is None or method == "none":
-        method = "max_pooling" if (len(shape) > 1 and shape[0] > 1) else "covering"
+        method = "max_small_pooling" if (len(shape) > 1 and shape[0] > 1) else "covering"
     # if method == "none":
     #    if len(shape) > 1 and shape[0] > 5:
     #        x = dispersion(n, shape, conv=[int(s * 24 / 64) for s in list(shape)[:-1]])
