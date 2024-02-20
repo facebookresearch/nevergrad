@@ -131,7 +131,7 @@ def manual_avg_pool3d(arr, kernel_size):
     return result
 
 
-def max_pooling(n, shape, budget, conv=(1, 8, 8)):
+def max_pooling(n, shape, budget=default_budget, conv=(1, 8, 8)):
     old_latents = []
     x = []
     for i in range(n):
@@ -158,12 +158,9 @@ def max_pooling(n, shape, budget, conv=(1, 8, 8)):
     return x
 
 
-def pooling(n, shape, budget, conv=(1, 1, 1)):
-    return max_pooling(n, shape, budget, conv)
-
-
 def pooling(n, shape, budget=default_budget, conv=(1, 1, 1)):
     return max_pooling(n, shape, budget, conv)
+
 
 
 def antithetic_order_and_sign(n, shape, axis=-1, conv=None):
