@@ -1161,7 +1161,7 @@ def parallel_create_statistics(n, shape, list_of_methods, list_of_metrics, num=1
 # parallel_create_statistics(numpoints, [size,size,channels], num=1, list_of_metrics=list_metrics, list_of_methods=list_of_methods)
 ##create_statistics(40, [16,16,2])
 # quit()
-## First we play in dimension two.
+## First we play in dimension two
 # n=30
 # for k in list_for_drawing:
 #    print(f"Testing {k}")
