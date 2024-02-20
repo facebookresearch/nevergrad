@@ -136,7 +136,7 @@ def max_pooling(n, shape, budget=default_budget, conv=None):
     pooling = tuple([max(1, s // 8) for s in list(shape)])
 
     if conv != None:
-        pooling = (1, *conv)
+        pooling = tuple([1] * (len(shape) - len(conv)) + conv)
 
     old_latents = []
     x = []
