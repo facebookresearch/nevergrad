@@ -131,7 +131,7 @@ def manual_avg_pool3d(arr, kernel_size):
 
 def max_pooling(n, shape, budget=default_budget, conv=None):
     # Avg pooling standard size should be (1, s/8, s/8)
-    pooling = tuple([max(1, s // 8) for s in list(shape)])
+    pooling = tuple([max(1, s // 8) for s in shape])
 
     if conv != None:
         pooling = (1, *conv)
@@ -160,7 +160,7 @@ def max_pooling(n, shape, budget=default_budget, conv=None):
     return x
 
 
-def max(n, shape, budget=default_budget, conv=[1, 1]):
+def max_without_pooling(n, shape, budget=default_budget, conv=[1, 1]):
     return max_pooling(n, shape, budget, conv)
 
 
@@ -885,7 +885,7 @@ list_of_methods = [
     "Riesz_blursum_lowconv_midorder",
     "Riesz_blursum_lowconv_highorder",
     "max_pooling",
-    "max",
+    "max_without_pooling",
 ]
 list_metrics = [
     "metric_half",
