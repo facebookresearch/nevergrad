@@ -106,7 +106,6 @@ def antithetic_order_and_sign(n, shape, axis=-1, conv=None):
     return antithetic_order(n, shape, axis, also_sym=True)
 
 
-
 # Please avoid using NumPy-to-PyTorch tensor transformations for actual image generation,
 # as they may impact computational efficiency.
 # For instance, replace `manual_avg_pool3d` with `torch.nn.AvgPool3d()`.
