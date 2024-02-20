@@ -164,7 +164,7 @@ def max_pooling(n, shape, budget=default_budget, conv=None):
     return x
 
 
-def max(n, shape, budget=default_budget, conv=[1, 1]):
+def max_without_pooling(n, shape, budget=default_budget, conv=[1, 1]):
     return max_pooling(n, shape, budget, conv)
 
 
@@ -994,7 +994,7 @@ list_of_methods = [
     "Riesz_blursum_lowconv_midorder",
     "Riesz_blursum_lowconv_highorder",
     "max_pooling",
-    "max",
+    "max_without_pooling",
 ]
 list_metrics = [
     "metric_half",
