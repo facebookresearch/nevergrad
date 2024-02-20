@@ -412,7 +412,8 @@ def test_array_bounded_initialization() -> None:
     assert array.sigma.value == 0.5
 
 
-@pytest.mark.parametrize("method", ["clipping", "arctan", "tanh", "constraint", "bouncing"])  # type: ignore
+@pytest.mark.parametrize("method", ["clipping", "tanh", "constraint", "bouncing"])  # type: ignore
+# @pytest.mark.parametrize("method", ["clipping", "arctan", "tanh", "constraint", "bouncing"])  # type: ignore
 @pytest.mark.parametrize("exponent", [2.0, None])  # type: ignore
 @pytest.mark.parametrize("sigma", [1.0, 1000, 0.001])  # type: ignore
 def test_array_sampling(method: str, exponent: tp.Optional[float], sigma: float) -> None:

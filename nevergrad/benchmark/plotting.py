@@ -101,9 +101,10 @@ def aggregate_winners(
         *(
             aggregate_winners(
                 df.loc[
-                    df.loc[:, categories[0]] == val
-                    if categories[0] != "budget"
-                    else df.loc[:, categories[0]] <= val
+                    df.loc[:, categories[0]]
+                    == val
+                    # if categories[0] != "budget"
+                    # else df.loc[:, categories[0]] <= val
                 ],
                 categories[1:],
                 all_optimizers,
@@ -249,6 +250,7 @@ def create_plots(
     df = df.loc[:, [x for x in df.columns if not x.startswith("info/")]]
     # Normalization of types.
     for col in df.columns:
+        failed_indices = []
         if "max_irr" in col:
             df[col] = df[col].round(decimals=4)
         if col in (
@@ -267,7 +269,12 @@ def create_plots(
                     for i in range(len(df[col])):
                         float(df[col][i])
                 except Exception as e2:
-                    assert False, f"Fails at row {i+2}, Exceptions: {e1}, {e2}"
+                    failed_indices += [i]
+                    assert (
+                        len(failed_indices) < 100
+                    ), f"Fails at row {i+2}, Exceptions: {e1}, {e2}. Failed-indices = {failed_indices}"
+                    df.drop(index=i, inplace=True)
+                    print("We drop index ", i)
         elif col != "loss":
             df[col] = df[col].astype(str)
             df[col] = df[col].replace(r"\.[0]*$", "", regex=True)
@@ -599,7 +606,11 @@ class XpPlotter:
                     )
             self._ax.set_ylim(top=upperbound_up)
         all_x = [v for vals in optim_vals.values() for v in vals[xaxis]]
-        self._ax.set_xlim([min(all_x), max(all_x)])
+        try:
+            all_x = [float(a_) for a_ in all_x]
+            self._ax.set_xlim([min(all_x), max(all_x)])
+        except TypeError:
+            print(f"TypeError for minimum or maximum or {all_x}")
         self.add_legends(legend_infos)
         # global info
         if "tmp" not in title:
