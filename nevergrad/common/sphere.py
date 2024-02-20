@@ -106,6 +106,64 @@ def antithetic_order_and_sign(n, shape, axis=-1, conv=None):
     return antithetic_order(n, shape, axis, also_sym=True)
 
 
+# Please avoid using NumPy-to-PyTorch tensor transformations for actual image generation,
+# as they may impact computational efficiency.
+# For instance, replace `manual_avg_pool3d` with `torch.nn.AvgPool3d()`.
+def manual_avg_pool3d(arr, kernel_size):
+    output_shape = (
+        arr.shape[0] // kernel_size[0],
+        arr.shape[1] // kernel_size[1],
+        arr.shape[2] // kernel_size[2],
+    )
+    result = np.zeros(output_shape)
+    for z in range(output_shape[0]):
+        for y in range(output_shape[1]):
+            for x in range(output_shape[2]):
+                result[z, y, x] = np.mean(
+                    arr[
+                        z * kernel_size[0] : (z + 1) * kernel_size[0],
+                        y * kernel_size[1] : (y + 1) * kernel_size[1],
+                        x * kernel_size[2] : (x + 1) * kernel_size[2],
+                    ]
+                )
+    return result
+
+
+def max_pooling(n, shape, budget=default_budget, conv=None):
+    # Avg pooling standard size should be (1, s/8, s/8)
+    pooling = tuple([max(1, s // 8) for s in shape])
+
+    if conv != None:
+        pooling = (1, *conv)
+
+    old_latents = []
+    x = []
+    for i in range(n):
+        latents = np.random.randn(*shape)
+        latents_pooling = manual_avg_pool3d(latents, pooling)
+        if old_latents:
+            dist = min([np.linalg.norm(latents_pooling - old) for old in old_latents])
+            max_dist = dist
+            t0 = time.time()
+            while (time.time() - t0) < 0.01 * budget / n:
+                latents_new = np.random.randn(*shape)
+                latents_pooling_new = manual_avg_pool3d(latents_new, pooling)
+                dist_new = min([np.linalg.norm(latents_pooling_new - old) for old in old_latents])
+                if dist_new > max_dist:
+                    latents = latents_new
+                    max_dist = dist_new
+                    latents_pooling = latents_pooling_new
+        x.append(latents)
+        old_latents.append(latents_pooling)
+    x = np.stack(x)
+    x = normalize(x)
+    return x
+
+
+def max_without_pooling(n, shape, budget=default_budget, conv=[1, 1]):
+    return max_pooling(n, shape, budget, conv)
+
+
 def greedy_dispersion(n, shape, budget=default_budget, conv=None):
     x = normalize([np.random.randn(*shape)])
     for i in range(n - 1):
@@ -826,6 +884,8 @@ list_of_methods = [
     "Riesz_blursum_lowconv_loworder",
     "Riesz_blursum_lowconv_midorder",
     "Riesz_blursum_lowconv_highorder",
+    "max_pooling",
+    "max_without_pooling",
 ]
 list_metrics = [
     "metric_half",
@@ -1185,7 +1245,7 @@ def quasi_randomize(pointset, method=None):
     shape = [int(i) for i in list(pointset[0].shape)]
     norms = [np.linalg.norm(pointset[i]) for i in range(n)]
     if method is None or method == "none":
-        method = "dispersion_with_big_conv" if (len(shape) > 1 and shape[0] > 1) else "covering"
+        method = "max_pooling" if (len(shape) > 1 and shape[0] > 1) else "covering"
     # if method == "none":
     #    if len(shape) > 1 and shape[0] > 5:
     #        x = dispersion(n, shape, conv=[int(s * 24 / 64) for s in list(shape)[:-1]])
