@@ -28,6 +28,9 @@ python -m nevergrad.benchmark $task --num_workers=71 2>&1 | tail -n 50
 python -m nevergrad.benchmark $task --num_workers=71 2>&1 | tail -n 50
 python -m nevergrad.benchmark $task --num_workers=71 2>&1 | tail -n 50
 python -m nevergrad.benchmark $task --num_workers=71 2>&1 | tail -n 50
+python -m nevergrad.benchmark $task --num_workers=71 2>&1 | tail -n 50
+python -m nevergrad.benchmark $task --num_workers=71 2>&1 | tail -n 50
+python -m nevergrad.benchmark $task --num_workers=71 2>&1 | tail -n 50
 echo task over $SLURM_ARRAY_TASK_ID $task
 echo Finishing at
 date

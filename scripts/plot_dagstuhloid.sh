@@ -1,5 +1,5 @@
 #!/bin/bash 
-#SBATCH --job-name=bfgsplot
+#SBATCH --job-name=dagplot
 #SBATCH --output=dagplot.out
 #SBATCH --error=dagplot.err
 #SBATCH --time=72:00:00

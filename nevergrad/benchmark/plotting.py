@@ -552,8 +552,8 @@ class XpPlotter:
         legend_infos: tp.List[LegendInfo] = []
         title_addendum = ""
         for optim_name in (
-            sorted_optimizers[:1] + sorted_optimizers[-12:]
-            if len(sorted_optimizers) > 13
+            sorted_optimizers[:1] + sorted_optimizers[-20:]
+            if len(sorted_optimizers) > 20
             else sorted_optimizers
         ):
             vals = optim_vals[optim_name]

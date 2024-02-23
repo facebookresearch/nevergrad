@@ -167,6 +167,8 @@ class _OnePlusOne(base.Optimizer):
             "lenglerfourth",
             "doerr",
             "lognormal",
+            "biglognormal",
+            "hugelognormal",
         ], f"Unkwnown mutation: '{mutation}'"
         if mutation == "adaptive":
             self._adaptive_mr = 0.5
@@ -174,6 +176,16 @@ class _OnePlusOne(base.Optimizer):
             self._global_mr = 0.2
             self._memory_index = 0
             self._memory_size = 12  # Dirty random value
+            self._best_recent_loss = float("inf")
+        elif mutation == "biglognormal":
+            self._global_mr = 0.2
+            self._memory_index = 0
+            self._memory_size = 120 # Dirty random value
+            self._best_recent_loss = float("inf")
+        elif mutation == "hugelognormal":
+            self._global_mr = 0.2
+            self._memory_index = 0
+            self._memory_size = 1200 # Dirty random value
             self._best_recent_loss = float("inf")
         elif mutation == "coordinatewise_adaptive":
             self._velocity = self._rng.uniform(size=self.dimension) * arity / 4.0
@@ -268,7 +280,7 @@ class _OnePlusOne(base.Optimizer):
                     )
                 else:
                     data = mutator.crossover(pessimistic_data, mutator.get_roulette(self.archive, num=2))
-            elif mutation == "lognormal":
+            elif mutation in ["lognormal", "biglognormal", "hugelognormal"]:
                 mutation_rate = self._global_mr
                 assert mutation_rate > 0.0
                 individual_mutation_rate = 1.0 / (
@@ -377,7 +389,7 @@ class _OnePlusOne(base.Optimizer):
             candidate = pessimistic.set_standardized_data(data, reference=ref)
             if mutation == "coordinatewise_adaptive":
                 candidate._meta["modified_variables"] = (self._modified_variables,)
-            if mutation == "lognormal":
+            if mutation in ["lognormal", "biglognormal", "hugelognormal"]:
                 candidate._meta["individual_mutation_rate"] = individual_mutation_rate
             return candidate
 
@@ -430,7 +442,7 @@ class _OnePlusOne(base.Optimizer):
             self._velocity[inds] = np.clip(
                 self._velocity[inds] * factor, 1.0, self.arity_for_discrete_mutation / 4.0
             )
-        elif self.mutation == "lognormal":
+        elif self.mutation in ["lognormal", "biglognormal", "hugelognormal"]:
             # TODO: care about tell not ask, which invalidates the line above.
             self._memory_index = (self._memory_index + 1) % self._memory_size
             if loss < self._best_recent_loss:
@@ -452,7 +464,7 @@ class _OnePlusOne(base.Optimizer):
                 if "modified_variables" in candidate._meta
                 else np.array([True] * len(data))
             )
-        if self.mutation == "lognormal":
+        if self.mutation in ["lognormal", "biglognormal", "hugelognormal"]:
             self.imr = (
                 candidate._meta["individual_mutation_rate"]
                 if "individual_mutation_rate" in candidate._meta
@@ -597,6 +609,12 @@ AdaptiveDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="adaptive").set_nam
 LognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="lognormal").set_name(
     "LognormalDiscreteOnePlusOne", register=True
 )
+BigLognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="biglognormal").set_name(
+    "BigLognormalDiscreteOnePlusOne", register=True
+)
+HugeLognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="hugelognormal").set_name(
+    "HugeLognormalDiscreteOnePlusOne", register=True
+)
 AnisotropicAdaptiveDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="coordinatewise_adaptive").set_name(
     "AnisotropicAdaptiveDiscreteOnePlusOne", register=True
 )
@@ -615,6 +633,9 @@ OptimisticNoisyOnePlusOne = ParametrizedOnePlusOne(noise_handling="optimistic").
 OptimisticDiscreteOnePlusOne = ParametrizedOnePlusOne(
     noise_handling="optimistic", mutation="discrete"
 ).set_name("OptimisticDiscreteOnePlusOne", register=True)
+OLNDiscreteOnePlusOne = ParametrizedOnePlusOne(
+    noise_handling="optimistic", mutation="lognormal"
+).set_name("OLNDiscreteOnePlusOne", register=True)
 NoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
     noise_handling=("random", 1.0), mutation="discrete"
 ).set_name("NoisyDiscreteOnePlusOne", register=True)
@@ -3149,7 +3170,7 @@ class _Chain(base.Optimizer):
         for k, opt in enumerate(self.optimizers):
             is_last = k == len(self.optimizers) - 1
             sum_budget += float("inf") if opt.budget is None or is_last else opt.budget
-            if self.num_tell < sum_budget and not (self.no_crossing and k != candidate._meta["optim_index"]):
+            if self.num_tell < sum_budget and not (self.no_crossing and ("optim_index" not in candidate._meta or k != candidate._meta["optim_index"])):
                 opt.tell(candidate, loss)
 
     def enable_pickling(self):
@@ -7837,3 +7858,8 @@ class CSEC10(NGOptBase):
             return NgDS3
 
         return NgDS2._select_optimizer_cls(self, budget)  # type: ignore
+
+
+ExtLognormalDiscreteOnePlusOne = Chaining([LognormalDiscreteOnePlusOne] * 10, [.1] * 9, no_crossing=True).set_name(
+    "ExtLognormalDiscreteOnePlusOne", register=True
+)

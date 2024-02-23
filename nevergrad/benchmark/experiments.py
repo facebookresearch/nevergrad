@@ -53,7 +53,8 @@ from . import gymexperiments  # noqa
 #    list_optims = ["QOTPDE", "LQOTPDE", "LQODE"]
 #    list_optims = ["SPQODE", "SQOPSO", "DiagonalCMA"]
 def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
-    return x
+    return ["LPCMA"]  #return [np.random.choice(["CSEC10", "DSproba", "NgIoh4", "DSbase", "DS3p", "DSsubspace"])]
+    #return x
     # return ["LognormalDiscreteOnePlusOne"]
     # return ["TBPSA", "OptimisticDiscreteOnePlusOne", "NGOpt", "CSEC10"] #CSEC10"]
     # return ["NGOpt", "NgIoh4"]
@@ -453,7 +454,7 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
     # if "bbob" in benchmark and np.random.choice([True, False, False, False, False]):
     #    return ["DSproba" + str(i) for i in range(2, 10)]
     if (
-        benchmark in algos and False
+        benchmark in algos and np.random.choice([True, False])
     ):  # and np.random.choice([True, False]):  # and np.random.randint(2) > 0 and False:
         list_algos = algos[benchmark][:5] + [
             "CSEC10",
