@@ -180,12 +180,12 @@ class _OnePlusOne(base.Optimizer):
         elif mutation == "biglognormal":
             self._global_mr = 0.2
             self._memory_index = 0
-            self._memory_size = 120 # Dirty random value
+            self._memory_size = 120  # Dirty random value
             self._best_recent_loss = float("inf")
         elif mutation == "hugelognormal":
             self._global_mr = 0.2
             self._memory_index = 0
-            self._memory_size = 1200 # Dirty random value
+            self._memory_size = 1200  # Dirty random value
             self._best_recent_loss = float("inf")
         elif mutation == "coordinatewise_adaptive":
             self._velocity = self._rng.uniform(size=self.dimension) * arity / 4.0
@@ -633,9 +633,9 @@ OptimisticNoisyOnePlusOne = ParametrizedOnePlusOne(noise_handling="optimistic").
 OptimisticDiscreteOnePlusOne = ParametrizedOnePlusOne(
     noise_handling="optimistic", mutation="discrete"
 ).set_name("OptimisticDiscreteOnePlusOne", register=True)
-OLNDiscreteOnePlusOne = ParametrizedOnePlusOne(
-    noise_handling="optimistic", mutation="lognormal"
-).set_name("OLNDiscreteOnePlusOne", register=True)
+OLNDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling="optimistic", mutation="lognormal").set_name(
+    "OLNDiscreteOnePlusOne", register=True
+)
 NoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
     noise_handling=("random", 1.0), mutation="discrete"
 ).set_name("NoisyDiscreteOnePlusOne", register=True)
@@ -3170,7 +3170,10 @@ class _Chain(base.Optimizer):
         for k, opt in enumerate(self.optimizers):
             is_last = k == len(self.optimizers) - 1
             sum_budget += float("inf") if opt.budget is None or is_last else opt.budget
-            if self.num_tell < sum_budget and not (self.no_crossing and ("optim_index" not in candidate._meta or k != candidate._meta["optim_index"])):
+            if self.num_tell < sum_budget and not (
+                self.no_crossing
+                and ("optim_index" not in candidate._meta or k != candidate._meta["optim_index"])
+            ):
                 opt.tell(candidate, loss)
 
     def enable_pickling(self):
@@ -7788,6 +7791,6 @@ class CSEC10(NGOptBase):
         return NgDS2._select_optimizer_cls(self, budget)  # type: ignore
 
 
-ExtLognormalDiscreteOnePlusOne = Chaining([LognormalDiscreteOnePlusOne] * 10, [.1] * 9, no_crossing=True).set_name(
-    "ExtLognormalDiscreteOnePlusOne", register=True
-)
+ExtLognormalDiscreteOnePlusOne = Chaining(
+    [LognormalDiscreteOnePlusOne] * 10, [0.1] * 9, no_crossing=True
+).set_name("ExtLognormalDiscreteOnePlusOne", register=True)
