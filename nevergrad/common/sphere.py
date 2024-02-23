@@ -1250,7 +1250,7 @@ def quasi_randomize(pointset, method=None):
     shape = [int(i) for i in list(pointset[0].shape)]
     norms = [np.linalg.norm(pointset[i]) for i in range(n)]
     if method is None or method == "none":
-        method = "max_small_pooling" if (len(shape) > 1 and shape[0] > 1) else "covering"
+        method = "dispersion_with_big_conv" if (len(shape) > 1 and shape[0] > 1) else "covering"
     # if method == "none":
     #    if len(shape) > 1 and shape[0] > 5:
     #        x = dispersion(n, shape, conv=[int(s * 24 / 64) for s in list(shape)[:-1]])
