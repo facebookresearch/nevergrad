@@ -80,7 +80,7 @@ Please make sure that your function returns a float, and that you indeed want to
 Choosing an optimizer
 ---------------------
 
-:code:`ng.optimizers.registry` is a :code:`dict` of all optimizers, so you :code:`ng.optimizers.NGOpt` is equivalent to :code:`ng.optimizers.registry["NGOpt"]`.
+:code:`ng.optimizers.registry` is a :code:`dict` of all optimizers, so :code:`ng.optimizers.NGOpt` is equivalent to :code:`ng.optimizers.registry["NGOpt"]`.
 Also, **you can print the full list of optimizers** with:
 
 
