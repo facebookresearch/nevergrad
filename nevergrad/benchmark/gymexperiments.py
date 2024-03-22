@@ -56,6 +56,7 @@ def ng_full_gym(
     multi_scale: bool = False,
     small: bool = False,
     tiny: bool = False,
+    structured: bool = False,
 ) -> tp.Iterator[Experiment]:
     """Gym simulator. Maximize reward.  Many distinct problems.
 
@@ -126,8 +127,22 @@ def ng_full_gym(
     optims = ["NGOpt", "NgDS", "NgDS2", "NGDSRW"]
     optims = ["NgIoh4", "NgDS2", "NgDS3"]
     optims = ["NgDS3", "NGDSRW"]
-    optims = ["CSEC10"]
+    optims = ["CSEC11"]
+    optims = [np.random.choice(["NGOpt", "SQOPSO", "CMA", "CSEC11", "CMA", "VLPCMA", "DE", "QODE"])]
+    optims = ["SQOPSODCMA"]
+    optims = [
+        np.random.choice(
+            ["CMA", "PSO", "CSEC11", "NgIoh4", "RandomSearch", "DiagonalCMA", "CMA", "VLPCMA", "Cobyla"]
+        )
+    ]
     # optims = [np.random.choice(["TBPSA", "NoisyRL2", "NoisyRL3", "SpecialRL", "MixDeterministicRL"])]
+    optims = [np.random.choice(["QODE", "QNDE"])]
+    optims = ["NgIoh4"]
+    optims = [np.random.choice(["CSEC11", "SQOPSODCMA", "NgIoh4", "NGOpt"])]
+    optims = ["CSEC11"]
+    if structured:
+        optims = get_optimizers("split", seed=next(seedg))
+        optims = [np.random.choice(optims)]
     if multi:
         controls = ["multi_neural"]
     else:
@@ -154,6 +169,8 @@ def ng_full_gym(
             if not big
             else ["resid_neural"]
         )
+    if structured:
+        controls = ["neural", "structured_neural"]
     if memory:
         controls = ["stackingmemory_neural", "deep_stackingmemory_neural", "semideep_stackingmemory_neural"]
         controls += ["memory_neural", "deep_memory_neural", "semideep_memory_neural"]
@@ -217,6 +234,14 @@ def multi_ng_full_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
     Each neural net is used for many problems, but only for one of the time steps."""
     return ng_full_gym(seed, multi=True)
+
+
+@registry.register
+def multi_structured_ng_full_gym(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of ng_full_gym with one neural net per time step.
+
+    Each neural net is used for many problems, but only for one of the time steps."""
+    return ng_full_gym(seed, multi=True, structured=True)
 
 
 @registry.register

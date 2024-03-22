@@ -16,7 +16,7 @@
 if compgen -G "*.csv" > /dev/null; then
 
 # First we run all nevergrad plotting.
-for i in `ls *.csv | grep -v yahdnoi`
+for i in `ls *.csv `
 do
     (python -m nevergrad.benchmark.plotting --nomanyxp=1 $i ; python -m nevergrad.benchmark.plotting --max_combsize=2 --competencemaps=1 --nomanyxp=1 $i ) &
 
@@ -43,5 +43,5 @@ fi # End of "there is something to do".
 # tar -zcvf ~/dag.tgz *_plots
 scripts/latexize.sh
 
-tar -zcvf dagstuhloid.tgz dagstuhloid.pdf *.csv *plots/xpresults_all.png rnk_*.txt
+tar -zcvf dagstuhloid.tgz dagstuhloid.pdf *.csv *plots/xpresults_all.png rnk_*.txt *plots/fight_all.png.cp.txt
 

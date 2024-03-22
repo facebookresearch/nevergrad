@@ -53,6 +53,44 @@ from . import gymexperiments  # noqa
 #    list_optims = ["QOTPDE", "LQOTPDE", "LQODE"]
 #    list_optims = ["SPQODE", "SQOPSO", "DiagonalCMA"]
 def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
+    return ["CSEC11"]
+    # return [np.random.choice(["CSEC11", "SQOPSODCMA", "NgIoh4", "NGOpt"])]
+    return [
+        np.random.choice(
+            [
+                "SQOPSO",
+                "RotatedTwoPointsDE",
+                "DiagonalCMA",
+                "CSEC11",
+                "NgIoh4",
+                "CMA",
+                "TwoPointsDE",
+                "GeneticDE",
+                "NGOpt",
+                "DE",
+                "SQOPSODCMA",
+                "NGDSRW",
+                "PSO",
+                "RandomSearch",
+                "DE",
+                "DoubleFastGADiscreteOnePlusOne",
+                "SVMMetaModelDE",
+                "RFMetaModelDE",
+                "MetaModel",
+            ]
+        )
+    ]
+    return ["NgIoh4"]  # return [np.random.choice(["DE", "QODE", "QNDE"])]
+
+    return [np.random.choice(["NGOpt", "SQOPSO", "CMA", "CSEC11", "NgIoh4", "Carola2"])]
+    return ["SQOPSODCMA"]
+    return ["BigLognormalDiscreteOnePlusOne"]
+    return [
+        "AnisotropicAdaptiveDiscreteOnePlusOne",
+        "BigLognormalDiscreteOnePlusOne",
+        "HugeLognormalDiscreteOnePlusOne",
+    ]
+    return ["CSEC11"]  # return ["CSEC11", "LognormalDiscreteOnePlusOne", "DiscreteLenglerOnePlusOne"]
     # return ["LPCMA"]  #return [np.random.choice(["CSEC10", "DSproba", "NgIoh4", "DSbase", "DS3p", "DSsubspace"])]
     # return x
     # return ["LognormalDiscreteOnePlusOne"]
@@ -1093,6 +1131,8 @@ def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                     for optim in optims:
                         for nw in [1, 10]:
                             for budget in [50, 500, 5000]:
+                                if np.random.rand() > 0.2:
+                                    continue
                                 yield Experiment(
                                     dfunc, optim, num_workers=nw, budget=budget, seed=next(seedg)
                                 )
@@ -1756,6 +1796,8 @@ def yabbob(
                 )
                 if constraint_case != 0:
                     xp.function.parametrization.has_constraints = True
+                if np.random.rand() > 0.25:
+                    continue
                 if not xp.is_incoherent:
                     yield xp
 
@@ -2548,6 +2590,7 @@ def aquacrop_fao(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """FAO Crop simulator. Maximize yield."""
 
     funcs = [NgAquacrop(i, 300.0 + 150.0 * np.cos(i)) for i in range(3, 7)]
+    # funcs = list(np.random.choice(funcs, 2))
     seedg = create_seed_generator(seed)
     optims = get_optimizers("basics", seed=next(seedg))
     optims = ["RBFGS", "LBFGSB", "MemeticDE"]
@@ -2624,7 +2667,7 @@ def rocket(seed: tp.Optional[int] = None, seq: bool = False) -> tp.Iterator[Expe
         for num_workers in [1] if seq else [1, 30]:
             if num_workers < budget:
                 for algo in optims:
-                    for fu in funcs:
+                    for fu in list(np.random.choice(funcs, 3)):
                         xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
                         xp.function.parametrization.real_world = True
                         skip_ci(reason="Too slow")
@@ -3647,7 +3690,73 @@ def lsgo() -> tp.Iterator[Experiment]:
     optims = ["DiagonalCMA", "TinyQODE", "OpoDE", "OpoTinyDE"]
     optims = ["TinyQODE", "OpoDE", "OpoTinyDE"]
     optims = refactor_optims(optims)
-    for i in range(1, 16):
+    for i in [np.random.choice(list(range(1, 16)))]:
         for optim in optims:
             for budget in [120000, 600000, 3000000]:
+                yield Experiment(lsgo_makefunction(i).instrumented(), optim, budget=budget)
+
+
+@registry.register
+def smallbudget_lsgo() -> tp.Iterator[Experiment]:
+    optims = [
+        "Shiwa",
+        "Cobyla",
+        "Powell",
+        "CMandAS2",
+        "SQP",
+        "DE",
+        "TwoPointsDE",
+        "CMA",
+        "PSO",
+        "OnePlusOne",
+        "RBFGS",
+    ]
+    optims = ["PSO", "RealPSO"]
+    optims = ["CMA", "PSO", "SQOPSO", "TinyCMA", "Cobyla"]
+    optims = ["TwoPointsDE", "DE", "LhsDE"]
+    optims = [
+        "DE",
+        "TwoPointsDE",
+        "VoronoiDE",
+        "RotatedTwoPointsDE",
+        "LhsDE",
+        "QrDE",
+        "QODE",
+        "SODE",
+        "NoisyDE",
+        "AlmostRotationInvariantDE",
+        "RotationInvariantDE",
+        "DiscreteDE",
+        "RecMutDE",
+        "MutDE",
+        "OnePointDE",
+        "ParametrizationDE",
+        "MiniDE",
+        "MiniLhsDE",
+        "MiniQrDE",
+        "BPRotationInvariantDE",
+        "HSDE",
+        "LhsHSDE",
+        "TinyLhsDE",
+        "TinyQODE",
+        "MetaModelDE",
+        "MetaModelQODE",
+        "NeuralMetaModelDE",
+        "SVMMetaModelDE",
+        "RFMetaModelDE",
+        "MetaModelTwoPointsDE",
+        "NeuralMetaModelTwoPointsDE",
+        "SVMMetaModelTwoPointsDE",
+        "RFMetaModelTwoPointsDE",
+        "GeneticDE",
+        "MemeticDE",
+        "QNDE",
+    ]
+    optims = ["CMA", "NGOpt", "NGOptRW"]
+    optims = ["DiagonalCMA", "TinyQODE", "OpoDE", "OpoTinyDE"]
+    optims = ["TinyQODE", "OpoDE", "OpoTinyDE"]
+    optims = refactor_optims(optims)
+    for i in [np.random.choice(list(range(1, 16)))]:
+        for optim in optims:
+            for budget in [1200, 6000, 30000]:
                 yield Experiment(lsgo_makefunction(i).instrumented(), optim, budget=budget)
