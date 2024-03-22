@@ -141,8 +141,8 @@ def ng_full_gym(
     optims = [np.random.choice(["CSEC11", "SQOPSODCMA", "NgIoh4", "NGOpt"])]
     optims = ["CSEC11"]
     if structured:
-        optims = get_optimizers("split", seed=next(seedg))
-        optims = [np.random.choice(optims)]
+        optims = get_optimizers("split", seed=next(seedg))  # type: ignore
+        # optims = [np.random.choice(optims)]
     if multi:
         controls = ["multi_neural"]
     else:

@@ -82,7 +82,7 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
     ]
     return ["NgIoh4"]  # return [np.random.choice(["DE", "QODE", "QNDE"])]
 
-    return [np.random.choice(["NGOpt", "SQOPSO", "CMA", "CSEC11", "NgIoh4", "Carola2"])]
+#    return [np.random.choice(["NGOpt", "SQOPSO", "CMA", "CSEC11", "NgIoh4", "Carola2"])]
     return ["SQOPSODCMA"]
     return ["BigLognormalDiscreteOnePlusOne"]
     return [
@@ -498,7 +498,7 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
             "NLOPT_LN_SBPLX",
         ]
         return (
-            [np.random.choice(list_algos)]
+            list_algos  #[np.random.choice(list_algos)]
             if (
                 "eras" in benchmark
                 or "tial_instrum" in benchmark
@@ -506,12 +506,12 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
                 or "lsgo" in benchmark
                 or "rock" in benchmark
             )
-            else list(np.random.choice(list_algos, 5))
+            else list_algos  # list(np.random.choice(list_algos, 5))
         )
     if benchmark in algos:
         list_algos = algos[benchmark]
         return (
-            [np.random.choice(list_algos)]
+            list_algos  #[np.random.choice(list_algos)]
             if (
                 "eras" in benchmark
                 or "tial_instrum" in benchmark
@@ -519,10 +519,10 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
                 or "lsgo" in benchmark
                 or "rock" in benchmark
             )
-            else list(np.random.choice(list_algos, 5))
+            else list_algos  #list(np.random.choice(list_algos, 5))
         )
     return list(
-        np.random.choice(
+        ( #np.random.choice(
             [
                 "NgDS3",
                 "NgIoh4",
@@ -2667,7 +2667,7 @@ def rocket(seed: tp.Optional[int] = None, seq: bool = False) -> tp.Iterator[Expe
         for num_workers in [1] if seq else [1, 30]:
             if num_workers < budget:
                 for algo in optims:
-                    for fu in list(np.random.choice(funcs, 3)):
+                    for fu in funcs:  #list(np.random.choice(funcs, 3)):
                         xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
                         xp.function.parametrization.real_world = True
                         skip_ci(reason="Too slow")
@@ -3690,7 +3690,7 @@ def lsgo() -> tp.Iterator[Experiment]:
     optims = ["DiagonalCMA", "TinyQODE", "OpoDE", "OpoTinyDE"]
     optims = ["TinyQODE", "OpoDE", "OpoTinyDE"]
     optims = refactor_optims(optims)
-    for i in [np.random.choice(list(range(1, 16)))]:
+    for i in range(1,16):  #[np.random.choice(list(range(1, 16)))]:
         for optim in optims:
             for budget in [120000, 600000, 3000000]:
                 yield Experiment(lsgo_makefunction(i).instrumented(), optim, budget=budget)
@@ -3756,7 +3756,7 @@ def smallbudget_lsgo() -> tp.Iterator[Experiment]:
     optims = ["DiagonalCMA", "TinyQODE", "OpoDE", "OpoTinyDE"]
     optims = ["TinyQODE", "OpoDE", "OpoTinyDE"]
     optims = refactor_optims(optims)
-    for i in [np.random.choice(list(range(1, 16)))]:
+    for i in range(1,16):  #[np.random.choice(list(range(1, 16)))]:
         for optim in optims:
             for budget in [1200, 6000, 30000]:
                 yield Experiment(lsgo_makefunction(i).instrumented(), optim, budget=budget)

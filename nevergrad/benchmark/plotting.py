@@ -944,7 +944,7 @@ def compute_best_placements(positions: tp.List[float], min_diff: float) -> tp.Li
     ----
     This function is probably not optimal, but seems a very good heuristic
     """
-    assert all(v2 >= v1 for v2, v1 in zip(positions[1:], positions[:-1])), str(zip(LegendGroup, positions))
+    assert all(v2 >= v1 for v2, v1 in zip(positions[1:], positions[:-1]))   #, str(zip(LegendGroup, positions))
     groups = [LegendGroup([k], [pos], min_diff) for k, pos in enumerate(positions)]
     new_groups: tp.List[LegendGroup] = []
     ready = False
@@ -1023,15 +1023,15 @@ def main() -> None:
         args.merge_parametrization,
         args.remove_suffix,
     )
-    exp_df.replace("CSEC11", "NgIohTuned", inplace=True)
-    # exp_df.replace("CSEC10", "NgIohAlt", inplace=True)
-    # for c in ["NgIoh4", "NgIoh21", "SQOPSO", "NGDS", "CSEC", "Carola", "NgLn", "NgDS", "Wiz"]:
-    for c in ["CSEC", "NgIohAlt", "NgDS", "NgLn", "Wiz", "DSproba", "DSsubsp"]:
-        try:
-            filter = exp_df["optimizer_name"].str.contains(c)
-            exp_df = exp_df[~filter]
-        except:
-            print("filter ", c, " failed.")
+    #    # exp_df.replace("CSEC11", "NgIohTuned", inplace=True)
+    #    # exp_df.replace("CSEC10", "NgIohAlt", inplace=True)
+    #    # for c in ["NgIoh4", "NgIoh21", "SQOPSO", "NGDS", "CSEC", "Carola", "NgLn", "NgDS", "Wiz"]:
+    #    for c in ["CSEC", "NgIohAlt", "NgDS", "NgLn", "Wiz", "DSproba", "DSsubsp"]:
+    #        try:
+    #            filter = exp_df["optimizer_name"].str.contains(c)
+    #            exp_df = exp_df[~filter]
+    #        except:
+    #            print("filter ", c, " failed.")
     # merging names
     #
     output_dir = args.output
