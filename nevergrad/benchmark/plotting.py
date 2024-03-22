@@ -944,7 +944,9 @@ def compute_best_placements(positions: tp.List[float], min_diff: float) -> tp.Li
     ----
     This function is probably not optimal, but seems a very good heuristic
     """
-    assert all(v2 >= v1 for v2, v1 in zip(positions[1:], positions[:-1]))   #, str(zip(LegendGroup, positions))
+    assert all(
+        v2 >= v1 for v2, v1 in zip(positions[1:], positions[:-1])
+    )  # , str(zip(LegendGroup, positions))
     groups = [LegendGroup([k], [pos], min_diff) for k, pos in enumerate(positions)]
     new_groups: tp.List[LegendGroup] = []
     ready = False
