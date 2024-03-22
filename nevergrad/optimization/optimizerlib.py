@@ -7399,9 +7399,9 @@ class NgIohTuned(CSEC11):
     pass
 
 
-ExtLognormalDiscreteOnePlusOne = Chaining(
-    [LognormalDiscreteOnePlusOne] * 10, [0.1] * 9, no_crossing=True
-).set_name("ExtLognormalDiscreteOnePlusOne", register=True)
+# ExtLognormalDiscreteOnePlusOne = Chaining(
+#    [LognormalDiscreteOnePlusOne] * 10, [0.1] * 9, no_crossing=True
+# ).set_name("ExtLognormalDiscreteOnePlusOne", register=True)
 
 
 SplitCSEC11 = ConfSplitOptimizer(
