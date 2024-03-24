@@ -1224,7 +1224,7 @@ def test_voronoide(n, b_per_dim) -> None:
         ), f"Failure {o}: {fails[o]} / {num_tests}    ({n}-{b_per_dim})"
 
 
-def rraaaa_test_weighted_moo_de() -> None:
+def test_weighted_moo_de() -> None:
     for _ in range(1):  # Yes this is cheaper.
         D = 2
         N = 3
