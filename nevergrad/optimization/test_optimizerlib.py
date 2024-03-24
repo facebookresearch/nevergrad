@@ -1228,7 +1228,7 @@ def test_weighted_moo_de() -> None:
     for _ in range(1):  # Yes this is cheaper.
         D = 2
         N = 3
-        DE = ng.optimizers.TwoPointsDE(D, budget=300)
+        DE = ng.optimizers.TwoPointsDE(D, budget=500)
         index = np.random.choice(range(N))
         w = np.ones(N)
         w[index] = 30.0

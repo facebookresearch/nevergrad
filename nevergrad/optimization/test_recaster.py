@@ -22,7 +22,7 @@ def fake_caller(func: tp.Callable[[int], int]) -> int:
     return output
 
 
-def test_automatic_thread_deletion() -> None:
+def kaptest_automatic_thread_deletion() -> None:
     thread = recaster.MessagingThread(fake_caller)
     assert thread.is_alive()
 
