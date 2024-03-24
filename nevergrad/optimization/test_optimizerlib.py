@@ -234,7 +234,7 @@ def test_optimizers(name: str) -> None:
     """Checks that each optimizer is able to converge on a simple test case"""
     if any(x in name for x in ["Chain", "SMAC", "BO", "AX"]) and os.environ.get("CIRCLECI", False):
         raise SkipTest("too slow for CircleCI!")
-    if "BO" in x or "Chain" in x or "Tiny" in x or "Micro" in x:  # moo issues :-(
+    if "BO" in name or "Chain" in name or "Tiny" in name or "Micro" in name:  # moo issues :-(
         return
     if any(x in name for x in ["Tiny", "Vast"]):
         raise SkipTest("too specific!")
