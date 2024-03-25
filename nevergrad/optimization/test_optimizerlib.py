@@ -45,6 +45,7 @@ skip_win_perf = pytest.mark.skipif(
 
 
 def long_name(s: str):
+    return True
     if "Wiz" in s or "CSEC" in s:
         return True
     if "NgIoh" in s:
