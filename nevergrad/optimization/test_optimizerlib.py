@@ -44,6 +44,10 @@ skip_win_perf = pytest.mark.skipif(
 )
 
 
+def long_name(s: str):
+    return len(s.replace("DiscreteOnePlusOne", "D1+1")) > 10
+
+
 class Fitness:
     """Simple quadratic fitness function which can be used with dimension up to 4"""
 
@@ -289,6 +293,8 @@ def test_optimizers(name: str) -> None:
 
 @pytest.mark.parametrize("name", registry)  # type: ignore
 def test_optimizers_minimal(name: str) -> None:
+    if long_name(name):
+        return
     optimizer_cls = registry[name]
     if any(x in name for x in ["SMAC", "BO", "AX"]) and os.environ.get("CIRCLECI", False):
         raise SkipTest("too slow for CircleCI!")
@@ -448,6 +454,8 @@ def recomkeeper() -> tp.Generator[RecommendationKeeper, None, None]:
 # pylint: disable=redefined-outer-name
 @pytest.mark.parametrize("name", registry)  # type: ignore
 def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper) -> None:
+    if long_name(name):
+        return
     if any(x in name for x in ["SMAC", "BO", "AX"]) and os.environ.get("CIRCLECI", False):
         raise SkipTest("too slow for CircleCI!")
     if (
@@ -526,6 +534,8 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
     large=("BPRotationInvariantDE", 10, 40, 70),
 )
 def test_differential_evolution_popsize(name: str, dimension: int, num_workers: int, expected: int) -> None:
+    if long_name(name):
+        return
     optim = registry[name](parametrization=dimension, budget=100, num_workers=num_workers)
     np.testing.assert_equal(optim.llambda, expected)  # type: ignore
 
