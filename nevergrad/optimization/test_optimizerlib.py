@@ -45,7 +45,7 @@ skip_win_perf = pytest.mark.skipif(
 
 
 def long_name(s: str):
-    return len(s.replace("DiscreteOnePlusOne", "D1+1")) > 10
+    return len(s.replace("DiscreteOnePlusOne", "D1+1")) > 1
 
 
 class Fitness:
