@@ -50,7 +50,7 @@ def long_name(s: str):
     )
 
 
-short_registry = [r for r in registry if long_name(r.name)]
+short_registry = [r for r in registry if not long_name(r)]
 
 
 class Fitness:
