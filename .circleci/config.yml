@@ -195,7 +195,7 @@ jobs:
   pytests:
     executor: ubuntu-python38
 
-    parallelism: 10
+    parallelism: 8
 
     steps:
 
