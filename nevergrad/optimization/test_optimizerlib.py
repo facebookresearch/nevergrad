@@ -52,7 +52,7 @@ def long_name(s: str):
     if "DS" in s or "AX" in s or "BO" in s or any(x in s for x in [str(i) for i in range(10)]):
         return True
     return (
-        len(s.replace("DiscreteOnePlusOne", "D1+1").replace("Tuned", "")) > 3
+        len(s.replace("DiscreteOnePlusOne", "D1+1").replace("Tuned", "")) > 2
         and os.environ.get("CIRCLECI", False)
         # and "NgIoh" not in s
     )
