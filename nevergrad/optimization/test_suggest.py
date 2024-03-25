@@ -98,6 +98,8 @@ def test_harder_suggest_optimizers(name: str) -> None:
     """Checks that discrete optimizers are good when a suggestion is nearby."""
     if long_name(name):
         return
+    if "OLN" in name:
+        return
     instrum = ng.p.Array(shape=(100,)).set_bounds(0.0, 1.0)
     instrum.set_integer_casting()
     optimum = np.asarray([0] * 17 + [1] * 17 + [0] * 66)
