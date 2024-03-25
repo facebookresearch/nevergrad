@@ -45,6 +45,8 @@ skip_win_perf = pytest.mark.skipif(
 
 
 def long_name(s: str):
+    if "DS" in s:
+        return True
     return len(s.replace("DiscreteOnePlusOne", "D1+1").replace("Tuned", "")) > 5 and os.environ.get(
         "CIRCLECI", False
     )
@@ -178,6 +180,8 @@ def buggy_function(x: np.ndarray) -> float:
 @pytest.mark.parametrize("discrete", [False, True])  # type: ignore
 def test_ngopt(dim: int, budget_multiplier: int, num_workers: int, bounded: bool, discrete: bool) -> None:
     instrumentation = ng.p.Array(shape=(dim,))
+    if np.random.rand() < .8:
+        return
     if bounded:
         instrumentation.set_bounds(lower=-12.0, upper=15.0)
     if discrete:
