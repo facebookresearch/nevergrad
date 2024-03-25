@@ -463,9 +463,11 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
             else:
                 res = scipyoptimize.minimize(
                     objective_function,
-                    best_x
-                    if not weakself.random_restart
-                    else weakself._rng.normal(0.0, 1.0, weakself.dimension),
+                    (
+                        best_x
+                        if not weakself.random_restart
+                        else weakself._rng.normal(0.0, 1.0, weakself.dimension)
+                    ),
                     method=weakself.method,
                     options=options,
                     tol=0,

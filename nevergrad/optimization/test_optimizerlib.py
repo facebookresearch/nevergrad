@@ -1047,9 +1047,11 @@ def test_ngopt_on_simple_realistic_scenario(budget: int, with_int: bool) -> None
         # a log-distributed scalar between 0.001 and 1.0
         learning_rate=ng.p.Log(lower=0.001, upper=1.0),
         # an integer from 1 to 12
-        batch_size=ng.p.Scalar(lower=1, upper=12).set_integer_casting()
-        if with_int
-        else ng.p.Scalar(lower=1, upper=12),
+        batch_size=(
+            ng.p.Scalar(lower=1, upper=12).set_integer_casting()
+            if with_int
+            else ng.p.Scalar(lower=1, upper=12)
+        ),
         # either "conv" or "fc"
         architecture=ng.p.Choice(["conv", "fc"]),
     )

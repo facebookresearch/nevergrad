@@ -710,9 +710,11 @@ class _CMA(base.Optimizer):
 
                 inopts.update(self._config.inopts if self._config.inopts is not None else {})
                 self._es = cma.CMAEvolutionStrategy(
-                    x0=self.parametrization.sample().get_standardized_data(reference=self.parametrization)
-                    if self._config.random_init
-                    else np.zeros(self.dimension, dtype=np.float_),
+                    x0=(
+                        self.parametrization.sample().get_standardized_data(reference=self.parametrization)
+                        if self._config.random_init
+                        else np.zeros(self.dimension, dtype=np.float_)
+                    ),
                     sigma0=self._config.scale * scale_multiplier,
                     inopts=inopts,
                 )
@@ -3637,9 +3639,7 @@ class NGOptBase(base.Optimizer):
                                 cls = (
                                     DE
                                     if self.dimension > 2000
-                                    else MetaCMA
-                                    if self.dimension > 1
-                                    else OnePlusOne
+                                    else MetaCMA if self.dimension > 1 else OnePlusOne
                                 )
         # print(f"NGOptbase: budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, {cls}")
         return cls
@@ -3707,9 +3707,7 @@ class NGOptDSBase(NGOptBase):
                                 cls = (
                                     DE
                                     if self.dimension > 2000
-                                    else MetaCMA
-                                    if self.dimension > 1
-                                    else OnePlusOne
+                                    else MetaCMA if self.dimension > 1 else OnePlusOne
                                 )
         # print(f"NGOptbase: budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, {cls}")
         return cls

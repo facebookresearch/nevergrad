@@ -168,9 +168,9 @@ class Experiment:
             optimizer=optimizer, num_workers=num_workers, budget=budget, batch_mode=batch_mode
         )
         self.result = {"loss": np.nan, "elapsed_budget": np.nan, "elapsed_time": np.nan, "error": ""}
-        self._optimizer: tp.Optional[
-            obase.Optimizer
-        ] = None  # to be able to restore stopped/checkpointed optimizer
+        self._optimizer: tp.Optional[obase.Optimizer] = (
+            None  # to be able to restore stopped/checkpointed optimizer
+        )
 
         # make sure the random_state of the base function is created, so that spawning copy does not
         # trigger a seed for the base function, but only for the copied function

@@ -36,9 +36,9 @@ class Container(core.Parameter):
         }
         self._sizes: tp.Optional[tp.Dict[str, int]] = None
         self._sanity_check(list(self._content.values()))
-        self._ignore_in_repr: tp.Dict[
-            str, str
-        ] = {}  # hacky undocumented way to bypass boring representations
+        self._ignore_in_repr: tp.Dict[str, str] = (
+            {}
+        )  # hacky undocumented way to bypass boring representations
 
     @property
     def dimension(self) -> int:

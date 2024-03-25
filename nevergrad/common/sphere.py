@@ -38,6 +38,7 @@ default_stepsize = 10  # step size for grad descent
 methods = {}
 metrics = {}
 
+
 # A few helper functions.
 def normalize(x):
     for i in range(len(x)):
