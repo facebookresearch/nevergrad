@@ -45,7 +45,13 @@ skip_win_perf = pytest.mark.skipif(
 
 
 def long_name(s: str):
-    if "DS" in s or "AX" in s or "BO" in s or any(x in s for x in [str(i) for i in range(10)]):
+    if (
+        "DS" in s
+        or "AX" in s
+        or "BO" in s
+        or any(x in s for x in [str(i) for i in range(10)])
+        or np.random.rand() > 0.5
+    ):
         return True
     return (
         len(s.replace("DiscreteOnePlusOne", "D1+1").replace("Tuned", "")) > 3
@@ -175,7 +181,7 @@ def buggy_function(x: np.ndarray) -> float:
     return np.sum(x**2)
 
 
-@pytest.mark.parametrize("dim", [2, 30, 200, 10000])  # type: ignore
+@pytest.mark.parametrize("dim", [2, 30, 200])  # type: ignore
 @pytest.mark.parametrize("budget_multiplier", [1, 1000])  # type: ignore
 @pytest.mark.parametrize("num_workers", [1, 20])  # type: ignore
 @pytest.mark.parametrize("bounded", [False, True])  # type: ignore

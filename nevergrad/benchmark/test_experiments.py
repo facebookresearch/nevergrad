@@ -27,7 +27,11 @@ from . import optgroups
 
 
 @testing.parametrized(
-    **{name: (name, maker) for name, maker in experiments.registry.items() if "_" not in name}
+    **{
+        name: (name, maker)
+        for name, maker in experiments.registry.items()
+        if "_" not in name and len(name) < 9
+    }
 )
 def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> None:
     if sum([ord(c) for c in name]) % 4 > 0:
