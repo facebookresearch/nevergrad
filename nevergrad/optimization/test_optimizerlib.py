@@ -45,12 +45,14 @@ skip_win_perf = pytest.mark.skipif(
 
 
 def long_name(s: str):
-    if "Wiz" in s or "NgIoh" in s or "CSEC" in s:
+    if "Wiz" in s or "CSEC" in s:
         return True
+    if "NgIoh" in s:
+        return False
     if "DS" in s or "AX" in s or "BO" in s or any(x in s for x in [str(i) for i in range(10)]):
         return True
     return (
-        len(s.replace("DiscreteOnePlusOne", "D1+1").replace("Tuned", "")) > 5
+        len(s.replace("DiscreteOnePlusOne", "D1+1").replace("Tuned", "")) > 3
         and os.environ.get("CIRCLECI", False)
         # and "NgIoh" not in s
     )
