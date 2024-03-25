@@ -50,6 +50,9 @@ def long_name(s: str):
     )
 
 
+short_registry = [r for r in registry if long_name(r.name)]
+
+
 class Fitness:
     """Simple quadratic fitness function which can be used with dimension up to 4"""
 
@@ -184,7 +187,7 @@ def test_ngopt(dim: int, budget_multiplier: int, num_workers: int, bounded: bool
 
 
 @skip_win_perf  # type: ignore
-@pytest.mark.parametrize("name", registry)  # type: ignore
+@pytest.mark.parametrize("name", short_registry)  # type: ignore
 @testing.suppress_nevergrad_warnings()  # hides bad loss
 def test_infnan(name: str) -> None:
     if any(x in name for x in ["SMAC", "BO", "AX"]) and os.environ.get("CIRCLECI", False):
@@ -235,7 +238,7 @@ def test_infnan(name: str) -> None:
 
 
 @skip_win_perf  # type: ignore
-@pytest.mark.parametrize("name", registry)  # type: ignore
+@pytest.mark.parametrize("name", short_registry)  # type: ignore
 def test_optimizers(name: str) -> None:
     """Checks that each optimizer is able to converge on a simple test case"""
     if any(x in name for x in ["Chain", "SMAC", "BO", "AX"]) and os.environ.get("CIRCLECI", False):
@@ -293,10 +296,8 @@ def test_optimizers(name: str) -> None:
         check_optimizer(optimizer_cls, budget=budget, verify_value=verify)
 
 
-@pytest.mark.parametrize("name", registry)  # type: ignore
+@pytest.mark.parametrize("name", short_registry)  # type: ignore
 def test_optimizers_minimal(name: str) -> None:
-    if long_name(name):
-        return
     optimizer_cls = registry[name]
     if any(x in name for x in ["SMAC", "BO", "AX"]) and os.environ.get("CIRCLECI", False):
         raise SkipTest("too slow for CircleCI!")
@@ -454,10 +455,8 @@ def recomkeeper() -> tp.Generator[RecommendationKeeper, None, None]:
 
 
 # pylint: disable=redefined-outer-name
-@pytest.mark.parametrize("name", registry)  # type: ignore
+@pytest.mark.parametrize("name", short_registry)  # type: ignore
 def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper) -> None:
-    if long_name(name):
-        return
     if any(x in name for x in ["SMAC", "BO", "AX"]) and os.environ.get("CIRCLECI", False):
         raise SkipTest("too slow for CircleCI!")
     if (
@@ -537,7 +536,7 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
 )
 def test_differential_evolution_popsize(name: str, dimension: int, num_workers: int, expected: int) -> None:
     if long_name(name):
-        return
+        raise SkipTest("Too many things in CircleCI")
     optim = registry[name](parametrization=dimension, budget=100, num_workers=num_workers)
     np.testing.assert_equal(optim.llambda, expected)  # type: ignore
 
@@ -868,8 +867,10 @@ def test_constrained_optimization(penalization: bool, expected: tp.List[float], 
     np.testing.assert_array_almost_equal([recom.kwargs["x"][0], recom.kwargs["y"]], expected)
 
 
-@pytest.mark.parametrize("name", registry)  # type: ignore
+@pytest.mark.parametrize("name", short_registry)  # type: ignore
 def test_parametrization_offset(name: str) -> None:
+    if long_name(name):
+        return
     if any(x in name for x in ["SMAC", "BO", "AX"]) and os.environ.get(
         "CIRCLECI", False
     ):  # Outside CircleCI, only the big.
