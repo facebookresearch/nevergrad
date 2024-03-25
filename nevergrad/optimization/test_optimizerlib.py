@@ -50,7 +50,7 @@ def long_name(s: str):
     return (
         len(s.replace("DiscreteOnePlusOne", "D1+1").replace("Tuned", "")) > 3
         and os.environ.get("CIRCLECI", False)
-        and "NgIoh" not in s
+        # and "NgIoh" not in s
     )
 
 
