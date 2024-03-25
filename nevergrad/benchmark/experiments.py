@@ -3306,7 +3306,9 @@ def multiobjective_example(
         for optim in optims:
             for budget in [100, 200, 400, 800, 1600, 3200]:
                 for nw in [1, 100]:
-                    yield Experiment(mofunc, optim, budget=budget, num_workers=nw, seed=next(seedg))
+                    xp = Experiment(mofunc, optim, budget=budget, num_workers=nw, seed=next(seedg))
+                    if not xp.is_incoherent:
+                        yield xp
 
 
 @registry.register
