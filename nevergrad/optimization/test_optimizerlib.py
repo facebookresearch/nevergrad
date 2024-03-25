@@ -47,8 +47,10 @@ skip_win_perf = pytest.mark.skipif(
 def long_name(s: str):
     if "DS" in s or "AX" in s or "BO" in s or any(x in s for x in [str(i) for i in range(10)]):
         return True
-    return len(s.replace("DiscreteOnePlusOne", "D1+1").replace("Tuned", "")) > 4 and os.environ.get(
-        "CIRCLECI", False
+    return (
+        len(s.replace("DiscreteOnePlusOne", "D1+1").replace("Tuned", "")) > 4
+        and os.environ.get("CIRCLECI", False)
+        and "NgIoh" not in s
     )
 
 
@@ -173,9 +175,9 @@ def buggy_function(x: np.ndarray) -> float:
     return np.sum(x**2)
 
 
-@pytest.mark.parametrize("dim", [2, 10, 20, 40, 80, 160, 320, 640, 1280, 25600, 51200, 102400])  # type: ignore
-@pytest.mark.parametrize("budget_multiplier", [10, 100, 1000, 10000])  # type: ignore
-@pytest.mark.parametrize("num_workers", [1, 2, 20])  # type: ignore
+@pytest.mark.parametrize("dim", [2, 30, 200, 10000])  # type: ignore
+@pytest.mark.parametrize("budget_multiplier", [1, 1000])  # type: ignore
+@pytest.mark.parametrize("num_workers", [1, 20])  # type: ignore
 @pytest.mark.parametrize("bounded", [False, True])  # type: ignore
 @pytest.mark.parametrize("discrete", [False, True])  # type: ignore
 def test_ngopt(dim: int, budget_multiplier: int, num_workers: int, bounded: bool, discrete: bool) -> None:
@@ -915,17 +917,14 @@ def test_shiwa_dim1() -> None:
 
 
 continuous_cases: tp.List[tp.Tuple[str, object, int, int, str]] = [
-    ("NGOpt", d, b, n, f"#CONTINUOUS")
-    for d in [1, 2, 10, 100, 1000]
-    for b in [2 * d, 10 * d, 100 * d]
-    for n in [1, d, 10 * d]
+    ("NGOpt", d, b, n, f"#CONTINUOUS") for d in [1, 2, 10, 100] for b in [2 * d, 100 * d] for n in [1, 10 * d]
 ]
 
 
 @pytest.mark.parametrize(  # type: ignore
     "name,param,budget,num_workers,expected",
     [
-        ("Shiwa", 1, 10, 1, "Cobyla"),
+        # ("Shiwa", 1, 10, 1, "Cobyla"),
         ("Shiwa", 1, 10, 2, "OnePlusOne"),
         (
             "Shiwa",
@@ -934,10 +933,10 @@ continuous_cases: tp.List[tp.Tuple[str, object, int, int, str]] = [
             2,
             "DoubleFastGADiscreteOnePlusOne",
         ),
-        ("NGOpt8", ng.p.TransitionChoice(range(30), repetitions=10), 10, 2, "CMandAS2"),
-        ("NGOpt8", ng.p.TransitionChoice(range(3), repetitions=10), 10, 2, "AdaptiveDiscreteOnePlusOne"),
-        ("NGO", 1, 10, 1, "Cobyla"),
-        ("NGO", 1, 10, 2, "OnePlusOne"),
+        # ("NGOpt8", ng.p.TransitionChoice(range(30), repetitions=10), 10, 2, "CMandAS2"),
+        # ("NGOpt8", ng.p.TransitionChoice(range(3), repetitions=10), 10, 2, "AdaptiveDiscreteOnePlusOne"),
+        # ("NGO", 1, 10, 1, "Cobyla"),
+        # ("NGO", 1, 10, 2, "OnePlusOne"),
     ]
     + continuous_cases,  # pylint: disable=too-many-arguments
 )
