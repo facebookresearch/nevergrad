@@ -485,18 +485,13 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
             )
             else list_algos  # list(np.random.choice(list_algos, 5))
         )
-    return list(
-        (  # np.random.choice(
-            [
-                "NgDS3",
-                "NgIoh4",
-                "NgIoh21",
-                "NGOpt",
-                "NGDSRW",
-            ],
-            4,
-        )
-    )
+    return [
+        "NgDS3",
+        "NgIoh4",
+        "NgIoh21",
+        "NGOpt",
+        "NGDSRW",
+    ]
     # Here, we pseudo-randomly draw one optim in the provided list,
     # depending on the host (so that each host is using the same optim).
     #    list_optims = x
