@@ -45,7 +45,8 @@ skip_win_perf = pytest.mark.skipif(
 
 
 def long_name(s: str):
-    if "Wiz" in s or "CSEC" in s:
+    return True
+    if "Wiz" in s or "CSEC" in s or "NGO" in s:
         return True
     if "NgIoh" in s:  # The most important one.
         return True
@@ -304,7 +305,7 @@ def test_optimizers(name: str) -> None:
         check_optimizer(optimizer_cls, budget=budget, verify_value=verify)
 
 
-@pytest.mark.parametrize("name", short_registry)  # type: ignore
+@pytest.mark.parametrize("name", registry)  # type: ignore
 def test_optimizers_minimal(name: str) -> None:
     optimizer_cls = registry[name]
     if any(x in name for x in ["SMAC", "BO", "AX"]) and os.environ.get("CIRCLECI", False):
