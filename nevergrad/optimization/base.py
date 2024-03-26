@@ -108,9 +108,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             raise ValueError("No variable to optimize in this parametrization.")
         self.name = self.__class__.__name__  # printed name in repr
         # keep a record of evaluations, and current bests which are updated at each new evaluation
-        self.archive: utils.Archive[
-            utils.MultiValue
-        ] = utils.Archive()  # dict like structure taking np.ndarray as keys and Value as values
+        self.archive: utils.Archive[utils.MultiValue] = (
+            utils.Archive()
+        )  # dict like structure taking np.ndarray as keys and Value as values
         self.current_bests = {
             x: utils.MultiValue(self.parametrization, np.inf, reference=self.parametrization)
             for x in ["optimistic", "pessimistic", "average", "minimum"]
