@@ -113,7 +113,8 @@ do
 echo "\\subsubsection{Number of times each algorithm was ranked among the $n first: no wizard, no combination}"
 echo "\\begin{itemize}"
 echo '\item []'
-egrep -v 'NGDS|NgDS|NGOpt|Carola|BAR|Multi|BIPOP|NgIoh|Wiz|Shiwa|Meta|SQPCMA|Micro|Tiny|CMASQP|BIPOP|CMandAS2|Chain' dagstuhloid.tex  |grep -A$n begin.enumerate  | grep '(' | grep ')' | grep '^\\item' | sed 's/ (.*//g' | sed 's/^.item //g' | sort | uniq -c | sort -n -r | head -n 8 | sed 's/^/\\item/g'
+egrep -v 'NGDS|Carola|NgDS|NGOpt|Carola|BAR|Multi|BIPOP|NgIoh|Wiz|Shiwa|Meta|SQPCMA|Micro|Tiny|CMASQP|BIPOP|CMandAS2|Chain' dagstuhloid.tex  |grep -A$n begin.enumerate  | grep '(' | grep ')' | grep '^\\item' | sed 's/ (.*//g' | sed 's/^.item //g' | sort | uniq -c | sort -n -r | head -n 8 | sed 's/^/\\item/g'
+#egrep -v 'NGOpt|Carola|BAR|Multi|BIPOP|NgIoh|Wiz|Shiwa|Meta|SQPCMA|Micro|Tiny|CMASQP|BIPOP|CMandAS2|Chain' dagstuhloid.tex  |grep -A$n begin.enumerate  | grep '(' | grep ')' | grep '^\\item' | sed 's/ (.*//g' | sed 's/^.item //g' | sort | uniq -c | sort -n -r | head -n 8 | sed 's/^/\\item/g'
 echo "\\end{itemize}"
 done 
 

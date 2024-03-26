@@ -91,6 +91,15 @@ def emna_variants() -> tp.Sequence[Optim]:
 
 
 @registry.register
+def split() -> tp.Sequence[Optim]:
+    # optims: tp.List[Optim] = []
+    optims = [o for o in optimizerlib_registry.keys() if "Split" in o[:7] and "BO" not in o] + [
+        o[5:] for o in optimizerlib_registry.keys() if "Split" in o[:7] and "BO" not in o
+    ]
+    return optims
+
+
+@registry.register
 def splitters() -> tp.Sequence[Optim]:
     optims: tp.List[Optim] = []
     for num_optims in [None, 3, 5, 9, 13]:

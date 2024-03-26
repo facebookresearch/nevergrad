@@ -485,9 +485,11 @@ class GymMulti(ExperimentFunction):
         for simulation_index in range(num_simulations):
             loss += self.gym_simulate(
                 x,
-                seed=simulation_index
-                if not self.randomized
-                else self.parametrization.random_state.randint(500000),
+                seed=(
+                    simulation_index
+                    if not self.randomized
+                    else self.parametrization.random_state.randint(500000)
+                ),
                 limited_fidelity=limited_fidelity,
             )
         return loss / num_simulations

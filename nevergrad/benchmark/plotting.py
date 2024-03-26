@@ -564,10 +564,10 @@ class XpPlotter:
         self._ax.grid(True, which="both")
         self._overlays: tp.List[tp.Any] = []
         legend_infos: tp.List[LegendInfo] = []
-        title_addendum = ""
+        title_addendum = f"({len(sorted_optimizers)} algos)"
         for optim_name in (
-            sorted_optimizers[:1] + sorted_optimizers[-12:]
-            if len(sorted_optimizers) > 13
+            sorted_optimizers[:1] + sorted_optimizers[-35:]
+            if len(sorted_optimizers) > 35
             else sorted_optimizers
         ):
             vals = optim_vals[optim_name]
@@ -639,7 +639,7 @@ class XpPlotter:
         vals: tp.Dict[str, np.ndarray], log: bool = False
     ) -> tp.Tuple[np.ndarray, np.ndarray]:
         loss = vals["loss"]
-        conf = vals["loss_std"] / np.sqrt(vals["num_eval"] - 1)
+        conf = vals["loss_std"] / np.sqrt(vals["loss_nums"] - 1)
         if not log:
             return loss - conf, loss + conf
         lloss = np.log10(loss)
@@ -710,6 +710,7 @@ class XpPlotter:
         groupeddf = df.groupby(["optimizer_name", "budget"])
         means = groupeddf.mean()
         stds = groupeddf.std()
+        nums = groupeddf.count()
         optim_vals: tp.Dict[str, tp.Dict[str, np.ndarray]] = {}
         # extract name and coordinates
         for optim in df.unique("optimizer_name"):
@@ -717,6 +718,7 @@ class XpPlotter:
             optim_vals[optim]["budget"] = np.array(means.loc[optim, :].index)
             optim_vals[optim]["loss"] = np.array(means.loc[optim, "loss"])
             optim_vals[optim]["loss_std"] = np.array(stds.loc[optim, "loss"])
+            optim_vals[optim]["loss_nums"] = np.array(nums.loc[optim, "loss"])
             num_eval = np.array(groupeddf.count().loc[optim, "loss"])
             optim_vals[optim]["num_eval"] = num_eval
             if "pseudotime" in means.columns:
@@ -958,7 +960,9 @@ def compute_best_placements(positions: tp.List[float], min_diff: float) -> tp.Li
     ----
     This function is probably not optimal, but seems a very good heuristic
     """
-    assert all(v2 >= v1 for v2, v1 in zip(positions[1:], positions[:-1]))
+    assert all(
+        v2 >= v1 for v2, v1 in zip(positions[1:], positions[:-1])
+    )  # , str(zip(LegendGroup, positions))
     groups = [LegendGroup([k], [pos], min_diff) for k, pos in enumerate(positions)]
     new_groups: tp.List[LegendGroup] = []
     ready = False
@@ -1037,6 +1041,15 @@ def main() -> None:
         args.merge_parametrization,
         args.remove_suffix,
     )
+    # exp_df.replace("CSEC11", "NgIohTuned", inplace=True)
+    #    # exp_df.replace("CSEC10", "NgIohAlt", inplace=True)
+    #    # for c in ["NgIoh4", "NgIoh21", "SQOPSO", "NGDS", "CSEC", "Carola", "NgLn", "NgDS", "Wiz"]:
+    #    for c in ["CSEC", "NgIohAlt", "NgDS", "NgLn", "Wiz", "DSproba", "DSsubsp"]:
+    #            try:
+    #                filter = exp_df["optimizer_name"].str.contains(c)
+    #                exp_df = exp_df[~filter]
+    #            except:
+    #                print("filter ", c, " failed.")
     # merging names
     #
     output_dir = args.output
