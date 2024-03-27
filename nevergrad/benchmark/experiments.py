@@ -53,6 +53,22 @@ from . import gymexperiments  # noqa
 #    list_optims = ["QOTPDE", "LQOTPDE", "LQODE"]
 #    list_optims = ["SPQODE", "SQOPSO", "DiagonalCMA"]
 def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
+    #return ["DiscreteLenglerOnePlusOne"]
+#    return ["OLNDiscreteOnePlusOne"]
+    #return [np.random.choice([
+    #    "NgLn",
+    #    "SmallLognormalDiscreteOnePlusOne",
+    #    "XLognormalDiscreteOnePlusOne",
+    #])]
+    return [np.random.choice([
+        "BigLognormalDiscreteOnePlusOne",
+        "DiscreteLenglerOnePlusOne",
+        #"NgLn",
+        "SmallLognormalDiscreteOnePlusOne",
+        "XLognormalDiscreteOnePlusOne",
+        "LognormalDiscreteOnePlusOne",
+        "HugeLognormalDiscreteOnePlusOne",
+    ])]
     # return ["CSEC11"]
     # return [np.random.choice(["CSEC11", "SQOPSODCMA", "NgIoh4", "NGOpt"])]
     # return ["LPCMA"]  #return [np.random.choice(["CSEC10", "DSproba", "NgIoh4", "DSbase", "DS3p", "DSsubspace"])]
@@ -734,7 +750,7 @@ def keras_tuning(
                         skip_ci(reason="too slow")
                         xp.function.parametrization.real_world = True
                         xp.function.parametrization.hptuning = True
-                        if not xp.is_incoherent:  # and np.random.choice([True, False]):
+                        if not xp.is_incoherent and np.random.choice([True, False]):
                             yield xp
 
 
@@ -806,7 +822,7 @@ def mltuning(
                             skip_ci(reason="too slow")
                             xp.function.parametrization.real_world = True
                             xp.function.parametrization.hptuning = True
-                            if not xp.is_incoherent:  # and np.random.choice([True, False]):
+                            if not xp.is_incoherent and np.random.choice([True, False]):
                                 yield xp
 
 
@@ -1091,8 +1107,8 @@ def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                     for optim in optims:
                         for nw in [1, 10]:
                             for budget in [50, 500, 5000]:
-                                #                                if np.random.rand() > 0.2:
-                                #                                    continue
+                                if np.random.rand() > 0.3:
+                                    continue
                                 yield Experiment(
                                     dfunc, optim, num_workers=nw, budget=budget, seed=next(seedg)
                                 )
@@ -1757,8 +1773,8 @@ def yabbob(
                 )
                 if constraint_case != 0:
                     xp.function.parametrization.has_constraints = True
-                #                if np.random.rand() > 0.25:
-                #                    continue
+                if np.random.rand() > 0.25:
+                  continue
                 if not xp.is_incoherent:
                     yield xp
 
@@ -2087,6 +2103,50 @@ def zp_ms_bbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         for rotation in [True]
         for expo in [1.0, 5.0]
         for tf in [0.01, 0.1, 1.0, 10.0]
+        for d in dims
+    ]
+    optims = ["QODE", "PSO", "SQOPSO", "DE", "CMA"]
+    optims = refactor_optims(optims)
+    for optim in optims:
+        for function in functions:
+            for budget in [100, 200, 400, 800, 1600, 3200]:
+                for nw in [1]:
+                    yield Experiment(function, optim, budget=budget, num_workers=nw, seed=next(seedg))
+
+
+def nozp_noms_bbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Testing optimizers on exponentiated problems.
+    Cigar, Ellipsoid.
+    Both rotated and unrotated.
+    Budget 100, 1000, 10000.
+    Dimension 50.
+    """
+
+    seedg = create_seed_generator(seed)
+    optims = [
+        "TinyCMA",
+        "QODE",
+        "MetaModelOnePlusOne",
+        "LhsDE",
+        "TinyLhsDE",
+        "TinyQODE",
+        "ChainMetaModelSQP",
+        "MicroCMA",
+        "MultiScaleCMA",
+    ]
+    optims = ["QODE"]
+    optims = ["CMA", "LargeCMA", "OldCMA", "DE", "PSO", "Powell", "Cobyla", "SQP"]
+    optims = ["QOPSO", "QORealSpacePSO"]
+    optims = ["SQOPSO"]  # , "QORealSpacePSO", "RealSpacePSO"]
+    dims = [2, 3, 5, 10, 20]
+    functions = [
+        ArtificialFunction(
+            name, block_dimension=d, rotation=rotation, expo=expo, translation_factor=tf, zero_pen=False
+        )
+        for name in ["cigar", "sphere", "rastrigin"]
+        for rotation in [True]
+        for expo in [1.0, 5.0]
+        for tf in [1.0]
         for d in dims
     ]
     optims = ["QODE", "PSO", "SQOPSO", "DE", "CMA"]
@@ -2632,7 +2692,7 @@ def rocket(seed: tp.Optional[int] = None, seq: bool = False) -> tp.Iterator[Expe
                         xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
                         xp.function.parametrization.real_world = True
                         skip_ci(reason="Too slow")
-                        if not xp.is_incoherent:  # and np.random.choice([True, False, False]):
+                        if not xp.is_incoherent and np.random.choice([True, False, False]):
                             yield xp
 
 
