@@ -1030,7 +1030,7 @@ def main() -> None:
     )
     exp_df.replace("CSEC11", "NGIohTuned", inplace=True)
     exp_df.replace("CSEC10", "NgIohAlt", inplace=True)
-    for c in ["NgIoh", "NgIoh21", "SQOPSO", "NGDS", "CSEC", "Carola", "NgDS", "Wiz"]:  # NgLn
+    for c in ["NgIoh", "SQOPSO", "NGDS", "CSEC", "Carola", "NgDS", "Wiz"]:  # NgLn
     #    for c in ["CSEC", "NgIohAlt", "NgDS", "NgLn", "Wiz", "DSproba", "DSsubsp"]:
                 try:
                     filter = exp_df["optimizer_name"].str.contains(c)
