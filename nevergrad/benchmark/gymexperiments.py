@@ -150,6 +150,7 @@ def ng_full_gym(
         "HugeLognormalDiscreteOnePlusOne",
     ])]
     optims = ["OLNDiscreteOnePlusOne"]
+    optims = ["NgIohLn"]
     if multi:
         controls = ["multi_neural"]
     else:

@@ -61,13 +61,18 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
     #    "XLognormalDiscreteOnePlusOne",
     #])]
     return [np.random.choice([
-        "BigLognormalDiscreteOnePlusOne",
-        "DiscreteLenglerOnePlusOne",
+        #"BigLognormalDiscreteOnePlusOne",
+        #"DiscreteLenglerOnePlusOne",
         #"NgLn",
         "SmallLognormalDiscreteOnePlusOne",
         "XLognormalDiscreteOnePlusOne",
-        "LognormalDiscreteOnePlusOne",
-        "HugeLognormalDiscreteOnePlusOne",
+        "MultiLN",
+        "NgIohLn",
+        "NgRS",
+        "NgIohRS",
+        "NgIohMLn",
+        #"LognormalDiscreteOnePlusOne",
+        #"HugeLognormalDiscreteOnePlusOne",
     ])]
     # return ["CSEC11"]
     # return [np.random.choice(["CSEC11", "SQOPSODCMA", "NgIoh4", "NGOpt"])]
