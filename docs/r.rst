@@ -16,7 +16,7 @@ Examples - Nevergrad for R
      library(doParallel)
 
      # Choose your optimization method below.
-     optimizer_name <- "NGOpt"
+     optimizer_name <- "NgIohTuned"
      # optimizer_name <- "DoubleFastGADiscreteOnePlusOne"
      # optimizer_name <- "OnePlusOne"
      # optimizer_name <- "DE"

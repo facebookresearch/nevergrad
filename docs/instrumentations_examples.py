@@ -146,7 +146,7 @@ for dim in [1, 2, 3]:
         def loss(x):
             return np.sum(np.abs(x - target))
 
-        # print(ng.optimizers.registry["NGOpt"](domain, 10 * np.prod(shape)).minimize(loss).value)
+        # print(ng.optimizers.registry["NgIohTuned"](domain, 10 * np.prod(shape)).minimize(loss).value)
         testing_domain_and_loss_and_budget(domain, loss, 5 * np.prod(shape), "c0,2d")
 
         # Case "discrete multidimensional array": I want to optimize a NxN array of bool.
@@ -168,7 +168,7 @@ for dim in [1, 2, 3]:
         def correlated_loss(x, y):
             return loss(x) + loss(np.transpose(y))
 
-        # print(ng.optimizers.registry["NGOpt"](domain, 10 * np.prod(shape)).minimize(complex_loss).value)
+        # print(ng.optimizers.registry["NgIohTuned"](domain, 10 * np.prod(shape)).minimize(complex_loss).value)
         testing_domain_and_loss_and_budget(domain, complex_loss, 5 * np.prod(shape), "c0+int, 2d")
         testing_domain_and_loss_and_budget(domain, correlated_loss, 5 * np.prod(shape), "c0+int, 2d, corr")
 

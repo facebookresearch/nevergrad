@@ -6,7 +6,7 @@ How to perform optimization
 Basic example
 -------------
 
-Minimizing a function using an optimizer (here :code:`NGOpt`, our adaptative optimization algorithm) can be easily run with:
+Minimizing a function using an optimizer (here :code:`NgIohTuned`, our adaptative optimization algorithm) can be easily run with:
 
 .. literalinclude:: ../nevergrad/optimization/test_doc.py
     :language: python
@@ -80,7 +80,7 @@ Please make sure that your function returns a float, and that you indeed want to
 Choosing an optimizer
 ---------------------
 
-:code:`ng.optimizers.registry` is a :code:`dict` of all optimizers, so you :code:`ng.optimizers.NGOpt` is equivalent to :code:`ng.optimizers.registry["NGOpt"]`.
+:code:`ng.optimizers.registry` is a :code:`dict` of all optimizers, so you :code:`ng.optimizers.NgIohTuned` is equivalent to :code:`ng.optimizers.registry["NgIohTuned"]`.
 Also, **you can print the full list of optimizers** with:
 
 
@@ -93,7 +93,7 @@ Also, **you can print the full list of optimizers** with:
 
 All algorithms have strengths and weaknesses. Questionable rules of thumb could be:
 
-- :code:`NGOpt` is "meta"-optimizer which adapts to the provided settings (budget, number of workers, parametrization) and should therefore be a good default.
+- :code:`NgIohTuned` is "meta"-optimizer which adapts to the provided settings (budget, number of workers, parametrization) and should therefore be a good default.
 - :code:`TwoPointsDE` is excellent in many cases, including very high :code:`num_workers`.
 - :code:`PortfolioDiscreteOnePlusOne` is excellent in discrete settings of mixed settings when high precision on parameters is not relevant; it's possibly a good choice for hyperparameter choice.
 - :code:`OnePlusOne` is a simple robust method for continuous parameters with :code:`num_workers` < 8.
@@ -280,7 +280,7 @@ To perform multiobjective optimization, you can just provide :code:`tell` with t
 
 Currently most optimizers only derive a volume float loss from the multiobjective loss and minimize it.
 :code:`DE` and its variants have however been updated to make use of the full multi-objective losses
-[#789](https://github.com/facebookresearch/nevergrad/pull/789), which make them good candidates for multi-objective minimization (:code:`NGOpt` will
+[#789](https://github.com/facebookresearch/nevergrad/pull/789), which make them good candidates for multi-objective minimization (:code:`NgIohTuned` will
 delegate to DE in the case of multi-objective functions).
 
 Reproducibility
