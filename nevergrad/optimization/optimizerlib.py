@@ -299,7 +299,9 @@ class _OnePlusOne(base.Optimizer):
                     )
                 else:
                     data = mutator.crossover(pessimistic_data, mutator.get_roulette(self.archive, num=2))
-            elif "lognormal" in mutation:  # in ["xlognormal", ""lognormal", "smalllognormal", "biglognormal", "hugelognormal"]:
+            elif (
+                "lognormal" in mutation
+            ):  # in ["xlognormal", ""lognormal", "smalllognormal", "biglognormal", "hugelognormal"]:
                 mutation_rate = self._global_mr
                 assert mutation_rate > 0.0
                 individual_mutation_rate = 1.0 / (
@@ -408,7 +410,9 @@ class _OnePlusOne(base.Optimizer):
             candidate = pessimistic.set_standardized_data(data, reference=ref)
             if mutation == "coordinatewise_adaptive":
                 candidate._meta["modified_variables"] = (self._modified_variables,)
-            if "lognormal" in mutation:  # in ["xlognormal", "lognormal", "smalllognormal", "biglognormal", "hugelognormal"]:
+            if (
+                "lognormal" in mutation
+            ):  # in ["xlognormal", "lognormal", "smalllognormal", "biglognormal", "hugelognormal"]:
                 candidate._meta["individual_mutation_rate"] = individual_mutation_rate
             return candidate
 
@@ -461,7 +465,9 @@ class _OnePlusOne(base.Optimizer):
             self._velocity[inds] = np.clip(
                 self._velocity[inds] * factor, 1.0, self.arity_for_discrete_mutation / 4.0
             )
-        elif "lognormal" in self.mutation:   # in ["xlognormal", "lognormal", "smalllognormal", "biglognormal", "hugelognormal"]:
+        elif (
+            "lognormal" in self.mutation
+        ):  # in ["xlognormal", "lognormal", "smalllognormal", "biglognormal", "hugelognormal"]:
             # TODO: care about tell not ask, which invalidates the line above.
             self._memory_index = (self._memory_index + 1) % self._memory_size
             if loss < self._best_recent_loss:
@@ -483,7 +489,9 @@ class _OnePlusOne(base.Optimizer):
                 if "modified_variables" in candidate._meta
                 else np.array([True] * len(data))
             )
-        if "lognormal" in self.mutation:# in ["xlognormal", "lognormal", "smalllognormal", "biglognormal", "hugelognormal"]:
+        if (
+            "lognormal" in self.mutation
+        ):  # in ["xlognormal", "lognormal", "smalllognormal", "biglognormal", "hugelognormal"]:
             self.imr = (
                 candidate._meta["individual_mutation_rate"]
                 if "individual_mutation_rate" in candidate._meta
@@ -3158,6 +3166,7 @@ class _Chain(base.Optimizer):
             "third": self.budget // 3 if self.budget else self.num_workers,
             "fourth": self.budget // 4 if self.budget else self.num_workers,
             "tenth": self.budget // 10 if self.budget else self.num_workers,
+            "equal": self.budget // (len(budgets) + 1),
             "most": (self.budget * 4) // 5 if self.budget else self.num_workers,
             "sqrt": int(np.sqrt(self.budget)) if self.budget else self.num_workers,
         }
@@ -3165,7 +3174,7 @@ class _Chain(base.Optimizer):
         last_budget = None if self.budget is None else max(4, self.budget - sum(self.budgets))
         assert len(optimizers) == len(self.budgets) + 1
         assert all(
-            x in ("fourth", "third", "half", "tenth", "dimension", "num_workers", "sqrt") or x > 0
+            x in ("equal", "fourth", "third", "half", "tenth", "dimension", "num_workers", "sqrt") or x > 0
             for x in self.budgets
         ), str(self.budgets)
         for opt, optbudget in zip(optimizers, self.budgets + [last_budget]):  # type: ignore
@@ -3667,7 +3676,9 @@ class NGOptBase(base.Optimizer):
                                 cls = (
                                     DE
                                     if self.dimension > 2000
-                                    else MetaCMA if self.dimension > 1 else OnePlusOne
+                                    else MetaCMA
+                                    if self.dimension > 1
+                                    else OnePlusOne
                                 )
         # print(f"NGOptbase: budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, {cls}")
         return cls
@@ -3735,7 +3746,9 @@ class NGOptDSBase(NGOptBase):
                                 cls = (
                                     DE
                                     if self.dimension > 2000
-                                    else MetaCMA if self.dimension > 1 else OnePlusOne
+                                    else MetaCMA
+                                    if self.dimension > 1
+                                    else OnePlusOne
                                 )
         # print(f"NGOptbase: budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, {cls}")
         return cls
@@ -7455,7 +7468,15 @@ SplitDE = ConfSplitOptimizer(
 
 
 SQOPSODCMA = Chaining([SQOPSO, DiagonalCMA], ["half"]).set_name("SQOPSODCMA", register=True)
+SQOPSODCMA20 = Chaining(optimizers=[SQOPSODCMA] * 20, budgets=["equal"] * 19, no_crossing=True).set_name(
+    "SQOPSODCMA20", register=True
+)
 NgIohLn = Chaining([LognormalDiscreteOnePlusOne, CSEC11], ["tenth"]).set_name("NgIohLn", register=True)
 NgIohRS = Chaining([oneshot.RandomSearch, CSEC11], ["tenth"]).set_name("NgIohRS", register=True)
-MultiLN = ConfPortfolio(optimizers=[Rescaled(base_optimizer=SmallLognormalDiscreteOnePlusOne, scale=2.0**(i - 5)) for i in range(6)], warmup_ratio=0.5).set_name("MultiLN", register=True)
+MultiLN = ConfPortfolio(
+    optimizers=[
+        Rescaled(base_optimizer=SmallLognormalDiscreteOnePlusOne, scale=2.0 ** (i - 5)) for i in range(6)
+    ],
+    warmup_ratio=0.5,
+).set_name("MultiLN", register=True)
 NgIohMLn = Chaining([MultiLN, CSEC11], ["tenth"]).set_name("NgIohMLn", register=True)

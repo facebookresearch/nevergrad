@@ -53,27 +53,32 @@ from . import gymexperiments  # noqa
 #    list_optims = ["QOTPDE", "LQOTPDE", "LQODE"]
 #    list_optims = ["SPQODE", "SQOPSO", "DiagonalCMA"]
 def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
-    #return ["DiscreteLenglerOnePlusOne"]
-#    return ["OLNDiscreteOnePlusOne"]
-    #return [np.random.choice([
+    # return ["DiscreteLenglerOnePlusOne"]
+    #    return ["OLNDiscreteOnePlusOne"]
+    # return [np.random.choice([
     #    "NgLn",
     #    "SmallLognormalDiscreteOnePlusOne",
     #    "XLognormalDiscreteOnePlusOne",
-    #])]
-    return [np.random.choice([
-        #"BigLognormalDiscreteOnePlusOne",
-        #"DiscreteLenglerOnePlusOne",
-        #"NgLn",
-        "SmallLognormalDiscreteOnePlusOne",
-        "XLognormalDiscreteOnePlusOne",
-        "MultiLN",
-        "NgIohLn",
-        "NgRS",
-        "NgIohRS",
-        "NgIohMLn",
-        #"LognormalDiscreteOnePlusOne",
-        #"HugeLognormalDiscreteOnePlusOne",
-    ])]
+    # ])]
+    return [
+        np.random.choice(
+            [
+                # "BigLognormalDiscreteOnePlusOne",
+                # "DiscreteLenglerOnePlusOne",
+                # "NgLn",
+                # "SmallLognormalDiscreteOnePlusOne",
+                # "XLognormalDiscreteOnePlusOne",
+                "XSmallLognormalDiscreteOnePlusOne",
+                "MultiLN",
+                "NgRS",
+                "NgIohRS",
+                "NgIohMLn",
+                "NgIohLn",
+                # "LognormalDiscreteOnePlusOne",
+                # "HugeLognormalDiscreteOnePlusOne",
+            ]
+        )
+    ]
     # return ["CSEC11"]
     # return [np.random.choice(["CSEC11", "SQOPSODCMA", "NgIoh4", "NGOpt"])]
     # return ["LPCMA"]  #return [np.random.choice(["CSEC10", "DSproba", "NgIoh4", "DSbase", "DS3p", "DSsubspace"])]
@@ -1779,7 +1784,7 @@ def yabbob(
                 if constraint_case != 0:
                     xp.function.parametrization.has_constraints = True
                 if np.random.rand() > 0.25:
-                  continue
+                    continue
                 if not xp.is_incoherent:
                     yield xp
 
