@@ -7471,6 +7471,9 @@ SQOPSODCMA = Chaining([SQOPSO, DiagonalCMA], ["half"]).set_name("SQOPSODCMA", re
 SQOPSODCMA20 = Chaining(optimizers=[SQOPSODCMA] * 20, budgets=["equal"] * 19, no_crossing=True).set_name(
     "SQOPSODCMA20", register=True
 )
+SQOPSODCMA20bar = ConfPortfolio(optimizers=[SQOPSODCMA] * 20, warmup_ratio=0.5).set_name(
+    "SQOPSODCMA20bar", register=True
+)
 NgIohLn = Chaining([LognormalDiscreteOnePlusOne, CSEC11], ["tenth"]).set_name("NgIohLn", register=True)
 NgIohRS = Chaining([oneshot.RandomSearch, CSEC11], ["tenth"]).set_name("NgIohRS", register=True)
 MultiLN = ConfPortfolio(
