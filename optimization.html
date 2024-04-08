@@ -105,7 +105,7 @@
 <p><strong>By default, all optimizers assume a centered and reduced prior at the beginning of the optimization (i.e. 0 mean and unitary standard deviation). They are however able to find solutions far from this initial prior.</strong></p>
 <section id="basic-example">
 <h2>Basic example<a class="headerlink" href="#basic-example" title="Permalink to this heading"></a></h2>
-<p>Minimizing a function using an optimizer (here <code class="code docutils literal notranslate"><span class="pre">NGOpt</span></code>, our adaptative optimization algorithm) can be easily run with:</p>
+<p>Minimizing a function using an optimizer (here <code class="code docutils literal notranslate"><span class="pre">NgIohTuned</span></code>, our adaptative optimization algorithm) can be easily run with:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nevergrad</span> <span class="k">as</span> <span class="nn">ng</span>
 
 <span class="k">def</span> <span class="nf">square</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">12</span><span class="p">):</span>
@@ -203,7 +203,7 @@ and <a class="reference internal" href="parametrization_ref.html#parametrization
 </section>
 <section id="choosing-an-optimizer">
 <h2>Choosing an optimizer<a class="headerlink" href="#choosing-an-optimizer" title="Permalink to this heading"></a></h2>
-<p><code class="code docutils literal notranslate"><span class="pre">ng.optimizers.registry</span></code> is a <code class="code docutils literal notranslate"><span class="pre">dict</span></code> of all optimizers, so you <code class="code docutils literal notranslate"><span class="pre">ng.optimizers.NGOpt</span></code> is equivalent to <code class="code docutils literal notranslate"><span class="pre">ng.optimizers.registry[&quot;NGOpt&quot;]</span></code>.
+<p><code class="code docutils literal notranslate"><span class="pre">ng.optimizers.registry</span></code> is a <code class="code docutils literal notranslate"><span class="pre">dict</span></code> of all optimizers, so you <code class="code docutils literal notranslate"><span class="pre">ng.optimizers.NgIohTuned</span></code> is equivalent to <code class="code docutils literal notranslate"><span class="pre">ng.optimizers.registry[&quot;NgIohTuned&quot;]</span></code>.
 Also, <strong>you can print the full list of optimizers</strong> with:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nevergrad</span> <span class="k">as</span> <span class="nn">ng</span>
 
@@ -212,7 +212,7 @@ Also, <strong>you can print the full list of optimizers</strong> with:</p>
 </div>
 <p>All algorithms have strengths and weaknesses. Questionable rules of thumb could be:</p>
 <ul class="simple">
-<li><p><code class="code docutils literal notranslate"><span class="pre">NGOpt</span></code> is “meta”-optimizer which adapts to the provided settings (budget, number of workers, parametrization) and should therefore be a good default.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">NgIohTuned</span></code> is “meta”-optimizer which adapts to the provided settings (budget, number of workers, parametrization) and should therefore be a good default.</p></li>
 <li><p><code class="code docutils literal notranslate"><span class="pre">TwoPointsDE</span></code> is excellent in many cases, including very high <code class="code docutils literal notranslate"><span class="pre">num_workers</span></code>.</p></li>
 <li><p><code class="code docutils literal notranslate"><span class="pre">PortfolioDiscreteOnePlusOne</span></code> is excellent in discrete settings of mixed settings when high precision on parameters is not relevant; it’s possibly a good choice for hyperparameter choice.</p></li>
 <li><p><code class="code docutils literal notranslate"><span class="pre">OnePlusOne</span></code> is a simple robust method for continuous parameters with <code class="code docutils literal notranslate"><span class="pre">num_workers</span></code> &lt; 8.</p></li>
@@ -442,7 +442,7 @@ More precisely, the budget is distributed over several algorithms, and when an o
 </div>
 <p>Currently most optimizers only derive a volume float loss from the multiobjective loss and minimize it.
 <code class="code docutils literal notranslate"><span class="pre">DE</span></code> and its variants have however been updated to make use of the full multi-objective losses
-[#789](<a class="reference external" href="https://github.com/facebookresearch/nevergrad/pull/789">https://github.com/facebookresearch/nevergrad/pull/789</a>), which make them good candidates for multi-objective minimization (<code class="code docutils literal notranslate"><span class="pre">NGOpt</span></code> will
+[#789](<a class="reference external" href="https://github.com/facebookresearch/nevergrad/pull/789">https://github.com/facebookresearch/nevergrad/pull/789</a>), which make them good candidates for multi-objective minimization (<code class="code docutils literal notranslate"><span class="pre">NgIohTuned</span></code> will
 delegate to DE in the case of multi-objective functions).</p>
 </section>
 <section id="reproducibility">
