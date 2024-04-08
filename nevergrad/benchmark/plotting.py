@@ -250,6 +250,7 @@ def create_plots(
     df = df.loc[:, [x for x in df.columns if not x.startswith("info/")]]
     # Normalization of types.
     for col in df.columns:
+        print(" Working on ", col)
         failed_indices = []
         if "max_irr" in col:
             df[col] = df[col].round(decimals=4)
@@ -264,6 +265,7 @@ def create_plots(
         ):
             try:
                 df[col] = df[col].astype(float).astype(int)
+                print(col, " is converted to int")
             except Exception as e1:
                 try:
                     for i in range(len(df[col])):
@@ -274,12 +276,13 @@ def create_plots(
                         len(failed_indices) < 100
                     ), f"Fails at row {i+2}, Exceptions: {e1}, {e2}. Failed-indices = {failed_indices}"
                     df.drop(index=i, inplace=True)
-                    print("We drop index ", i)
+                    print("We drop index ", i, " for ", col)
         elif col != "loss":
             df[col] = df[col].astype(str)
             df[col] = df[col].replace(r"\.[0]*$", "", regex=True)
             try:
                 df.loc[:, col] = pd.to_numeric(df.loc[:, col])
+                print(col, " is converted to numeric")
             except:
                 pass
     if "num_objectives" in df.columns:
@@ -1041,15 +1044,16 @@ def main() -> None:
         args.merge_parametrization,
         args.remove_suffix,
     )
-    # exp_df.replace("CSEC11", "NgIohTuned", inplace=True)
-    #    # exp_df.replace("CSEC10", "NgIohAlt", inplace=True)
-    #    # for c in ["NgIoh4", "NgIoh21", "SQOPSO", "NGDS", "CSEC", "Carola", "NgLn", "NgDS", "Wiz"]:
-    #    for c in ["CSEC", "NgIohAlt", "NgDS", "NgLn", "Wiz", "DSproba", "DSsubsp"]:
-    #            try:
-    #                filter = exp_df["optimizer_name"].str.contains(c)
-    #                exp_df = exp_df[~filter]
-    #            except:
-    #                print("filter ", c, " failed.")
+    #    exp_df.replace("CSEC11", "NGIohTuned", inplace=True)
+    #    exp_df.replace("CSEC10", "NgIohAlt", inplace=True)
+    #    for c in ["NgIoh", "SQOPSO", "NGDS", "CSEC", "Carola", "NgDS", "Wiz"]:  # NgLn
+    #        #    for c in ["CSEC", "NgIohAlt", "NgDS", "NgLn", "Wiz", "DSproba", "DSsubsp"]:
+    #        try:
+    #            filter = exp_df["optimizer_name"].str.contains(c)
+    #            exp_df = exp_df[~filter]
+    #            print("filter ", c, " succeeded.")
+    #        except:
+    #            print("filter ", c, " failed.")
     # merging names
     #
     output_dir = args.output
