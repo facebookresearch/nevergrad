@@ -1028,16 +1028,16 @@ def main() -> None:
         args.merge_parametrization,
         args.remove_suffix,
     )
-    exp_df.replace("CSEC11", "NGIohTuned", inplace=True)
-    exp_df.replace("CSEC10", "NgIohAlt", inplace=True)
-    for c in ["NgIoh", "SQOPSO", "NGDS", "CSEC", "Carola", "NgDS", "Wiz"]:  # NgLn
-        #    for c in ["CSEC", "NgIohAlt", "NgDS", "NgLn", "Wiz", "DSproba", "DSsubsp"]:
-        try:
-            filter = exp_df["optimizer_name"].str.contains(c)
-            exp_df = exp_df[~filter]
-            print("filter ", c, " succeeded.")
-        except:
-            print("filter ", c, " failed.")
+    #    exp_df.replace("CSEC11", "NGIohTuned", inplace=True)
+    #    exp_df.replace("CSEC10", "NgIohAlt", inplace=True)
+    #    for c in ["NgIoh", "SQOPSO", "NGDS", "CSEC", "Carola", "NgDS", "Wiz"]:  # NgLn
+    #        #    for c in ["CSEC", "NgIohAlt", "NgDS", "NgLn", "Wiz", "DSproba", "DSsubsp"]:
+    #        try:
+    #            filter = exp_df["optimizer_name"].str.contains(c)
+    #            exp_df = exp_df[~filter]
+    #            print("filter ", c, " succeeded.")
+    #        except:
+    #            print("filter ", c, " failed.")
     # merging names
     #
     output_dir = args.output

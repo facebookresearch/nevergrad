@@ -61,23 +61,19 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
     #    "XLognormalDiscreteOnePlusOne",
     # ])]
     return [
-        np.random.choice(
-            [
-                # "BigLognormalDiscreteOnePlusOne",
-                # "DiscreteLenglerOnePlusOne",
-                # "NgLn",
-                # "SmallLognormalDiscreteOnePlusOne",
-                # "XLognormalDiscreteOnePlusOne",
-                "XSmallLognormalDiscreteOnePlusOne",
-                "MultiLN",
-                "NgRS",
-                "NgIohRS",
-                "NgIohMLn",
-                "NgIohLn",
-                # "LognormalDiscreteOnePlusOne",
-                # "HugeLognormalDiscreteOnePlusOne",
-            ]
-        )
+        # "BigLognormalDiscreteOnePlusOne",
+        # "DiscreteLenglerOnePlusOne",
+        # "NgLn",
+        # "SmallLognormalDiscreteOnePlusOne",
+        # "XLognormalDiscreteOnePlusOne",
+        "XSmallLognormalDiscreteOnePlusOne",
+        "MultiLN",
+        "NgRS",
+        "NgIohRS",
+        "NgIohMLn",
+        "NgIohLn",
+        # "LognormalDiscreteOnePlusOne",
+        # "HugeLognormalDiscreteOnePlusOne",
     ]
     # return ["CSEC11"]
     # return [np.random.choice(["CSEC11", "SQOPSODCMA", "NgIoh4", "NGOpt"])]
@@ -760,7 +756,7 @@ def keras_tuning(
                         skip_ci(reason="too slow")
                         xp.function.parametrization.real_world = True
                         xp.function.parametrization.hptuning = True
-                        if not xp.is_incoherent and np.random.choice([True, False]):
+                        if not xp.is_incoherent:  # and np.random.choice([True, False]):
                             yield xp
 
 
@@ -832,7 +828,7 @@ def mltuning(
                             skip_ci(reason="too slow")
                             xp.function.parametrization.real_world = True
                             xp.function.parametrization.hptuning = True
-                            if not xp.is_incoherent and np.random.choice([True, False]):
+                            if not xp.is_incoherent:  # and np.random.choice([True, False]):
                                 yield xp
 
 
@@ -2702,7 +2698,7 @@ def rocket(seed: tp.Optional[int] = None, seq: bool = False) -> tp.Iterator[Expe
                         xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
                         xp.function.parametrization.real_world = True
                         skip_ci(reason="Too slow")
-                        if not xp.is_incoherent and np.random.choice([True, False, False]):
+                        if not xp.is_incoherent:  # and np.random.choice([True, False, False]):
                             yield xp
 
 

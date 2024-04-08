@@ -3166,7 +3166,7 @@ class _Chain(base.Optimizer):
             "third": self.budget // 3 if self.budget else self.num_workers,
             "fourth": self.budget // 4 if self.budget else self.num_workers,
             "tenth": self.budget // 10 if self.budget else self.num_workers,
-            "equal": self.budget // (len(budgets) + 1),
+            "equal": self.budget // (len(budgets) + 1) if self.budget else self.num_workers,
             "most": (self.budget * 4) // 5 if self.budget else self.num_workers,
             "sqrt": int(np.sqrt(self.budget)) if self.budget else self.num_workers,
         }
