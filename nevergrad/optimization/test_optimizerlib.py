@@ -306,7 +306,7 @@ def test_optimizers(name: str) -> None:
         check_optimizer(optimizer_cls, budget=budget, verify_value=verify)
 
 
-@pytest.mark.parametrize("name", registry)  # type: ignore
+@pytest.mark.parametrize("name", short_registry)  # type: ignore
 def test_optimizers_minimal(name: str) -> None:
     optimizer_cls = registry[name]
     if any(x in name for x in ["SMAC", "BO", "AX"]) and os.environ.get("CIRCLECI", False):

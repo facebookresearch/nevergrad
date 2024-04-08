@@ -282,7 +282,7 @@ def create_plots(
             df[col] = df[col].replace(r"\.[0]*$", "", regex=True)
             try:
                 df.loc[:, col] = pd.to_numeric(df.loc[:, col])
-                print(loc, " is converted to numeric")
+                print(col, " is converted to numeric")
             except:
                 pass
     if "num_objectives" in df.columns:
