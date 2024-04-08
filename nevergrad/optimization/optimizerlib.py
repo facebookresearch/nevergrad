@@ -167,6 +167,10 @@ class _OnePlusOne(base.Optimizer):
             "lenglerfourth",
             "doerr",
             "lognormal",
+            "xlognormal",
+            "xsmalllognormal",
+            "lognormal",
+            "smalllognormal",
             "biglognormal",
             "hugelognormal",
         ], f"Unkwnown mutation: '{mutation}'"
@@ -176,6 +180,21 @@ class _OnePlusOne(base.Optimizer):
             self._global_mr = 0.2
             self._memory_index = 0
             self._memory_size = 12  # Dirty random value
+            self._best_recent_loss = float("inf")
+        elif mutation == "xsmalllognormal":
+            self._global_mr = 0.8
+            self._memory_index = 0
+            self._memory_size = 4  # Dirty random value
+            self._best_recent_loss = float("inf")
+        elif mutation == "xlognormal":
+            self._global_mr = 0.8
+            self._memory_index = 0
+            self._memory_size = 12  # Dirty random value
+            self._best_recent_loss = float("inf")
+        elif mutation == "smalllognormal":
+            self._global_mr = 0.2
+            self._memory_index = 0
+            self._memory_size = 4  # Dirty random value
             self._best_recent_loss = float("inf")
         elif mutation == "biglognormal":
             self._global_mr = 0.2
@@ -280,7 +299,9 @@ class _OnePlusOne(base.Optimizer):
                     )
                 else:
                     data = mutator.crossover(pessimistic_data, mutator.get_roulette(self.archive, num=2))
-            elif mutation in ["lognormal", "biglognormal", "hugelognormal"]:
+            elif (
+                "lognormal" in mutation
+            ):  # in ["xlognormal", ""lognormal", "smalllognormal", "biglognormal", "hugelognormal"]:
                 mutation_rate = self._global_mr
                 assert mutation_rate > 0.0
                 individual_mutation_rate = 1.0 / (
@@ -389,7 +410,9 @@ class _OnePlusOne(base.Optimizer):
             candidate = pessimistic.set_standardized_data(data, reference=ref)
             if mutation == "coordinatewise_adaptive":
                 candidate._meta["modified_variables"] = (self._modified_variables,)
-            if mutation in ["lognormal", "biglognormal", "hugelognormal"]:
+            if (
+                "lognormal" in mutation
+            ):  # in ["xlognormal", "lognormal", "smalllognormal", "biglognormal", "hugelognormal"]:
                 candidate._meta["individual_mutation_rate"] = individual_mutation_rate
             return candidate
 
@@ -442,7 +465,9 @@ class _OnePlusOne(base.Optimizer):
             self._velocity[inds] = np.clip(
                 self._velocity[inds] * factor, 1.0, self.arity_for_discrete_mutation / 4.0
             )
-        elif self.mutation in ["lognormal", "biglognormal", "hugelognormal"]:
+        elif (
+            "lognormal" in self.mutation
+        ):  # in ["xlognormal", "lognormal", "smalllognormal", "biglognormal", "hugelognormal"]:
             # TODO: care about tell not ask, which invalidates the line above.
             self._memory_index = (self._memory_index + 1) % self._memory_size
             if loss < self._best_recent_loss:
@@ -464,7 +489,9 @@ class _OnePlusOne(base.Optimizer):
                 if "modified_variables" in candidate._meta
                 else np.array([True] * len(data))
             )
-        if self.mutation in ["lognormal", "biglognormal", "hugelognormal"]:
+        if (
+            "lognormal" in self.mutation
+        ):  # in ["xlognormal", "lognormal", "smalllognormal", "biglognormal", "hugelognormal"]:
             self.imr = (
                 candidate._meta["individual_mutation_rate"]
                 if "individual_mutation_rate" in candidate._meta
@@ -609,8 +636,17 @@ AdaptiveDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="adaptive").set_nam
 LognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="lognormal").set_name(
     "LognormalDiscreteOnePlusOne", register=True
 )
+XLognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="xlognormal").set_name(
+    "XLognormalDiscreteOnePlusOne", register=True
+)
+XSmallLognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="xsmalllognormal").set_name(
+    "XSmallLognormalDiscreteOnePlusOne", register=True
+)
 BigLognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="biglognormal").set_name(
     "BigLognormalDiscreteOnePlusOne", register=True
+)
+SmallLognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="smalllognormal").set_name(
+    "SmallLognormalDiscreteOnePlusOne", register=True
 )
 HugeLognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="hugelognormal").set_name(
     "HugeLognormalDiscreteOnePlusOne", register=True
@@ -3130,6 +3166,7 @@ class _Chain(base.Optimizer):
             "third": self.budget // 3 if self.budget else self.num_workers,
             "fourth": self.budget // 4 if self.budget else self.num_workers,
             "tenth": self.budget // 10 if self.budget else self.num_workers,
+            "equal": self.budget // (len(budgets) + 1) if self.budget else self.num_workers,
             "most": (self.budget * 4) // 5 if self.budget else self.num_workers,
             "sqrt": int(np.sqrt(self.budget)) if self.budget else self.num_workers,
         }
@@ -3137,7 +3174,7 @@ class _Chain(base.Optimizer):
         last_budget = None if self.budget is None else max(4, self.budget - sum(self.budgets))
         assert len(optimizers) == len(self.budgets) + 1
         assert all(
-            x in ("fourth", "third", "half", "tenth", "dimension", "num_workers", "sqrt") or x > 0
+            x in ("equal", "fourth", "third", "half", "tenth", "dimension", "num_workers", "sqrt") or x > 0
             for x in self.budgets
         ), str(self.budgets)
         for opt, optbudget in zip(optimizers, self.budgets + [last_budget]):  # type: ignore
@@ -7144,6 +7181,7 @@ class NgIoh15b(NgIoh15):
 
 NgDS3 = Chaining([LognormalDiscreteOnePlusOne, NgDS2], ["tenth"]).set_name("NgDS3", register=True)
 NgLn = Chaining([LognormalDiscreteOnePlusOne, NGOpt], ["tenth"]).set_name("NgLn", register=True)
+NgRS = Chaining([oneshot.RandomSearch, NGOpt], ["tenth"]).set_name("NgRS", register=True)
 
 
 @registry.register
@@ -7426,3 +7464,18 @@ SplitDE = ConfSplitOptimizer(
 
 
 SQOPSODCMA = Chaining([SQOPSO, DiagonalCMA], ["half"]).set_name("SQOPSODCMA", register=True)
+SQOPSODCMA20 = Chaining(optimizers=[SQOPSODCMA] * 20, budgets=["equal"] * 19, no_crossing=True).set_name(
+    "SQOPSODCMA20", register=True
+)
+SQOPSODCMA20bar = ConfPortfolio(optimizers=[SQOPSODCMA] * 20, warmup_ratio=0.5).set_name(
+    "SQOPSODCMA20bar", register=True
+)
+NgIohLn = Chaining([LognormalDiscreteOnePlusOne, CSEC11], ["tenth"]).set_name("NgIohLn", register=True)
+NgIohRS = Chaining([oneshot.RandomSearch, CSEC11], ["tenth"]).set_name("NgIohRS", register=True)
+MultiLN = ConfPortfolio(
+    optimizers=[
+        Rescaled(base_optimizer=SmallLognormalDiscreteOnePlusOne, scale=2.0 ** (i - 5)) for i in range(6)
+    ],
+    warmup_ratio=0.5,
+).set_name("MultiLN", register=True)
+NgIohMLn = Chaining([MultiLN, CSEC11], ["tenth"]).set_name("NgIohMLn", register=True)

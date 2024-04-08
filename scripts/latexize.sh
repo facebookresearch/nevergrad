@@ -222,3 +222,5 @@ echo '</html>'
 
 
 tar -zcvf texdag.tgz dagstuhloid.tex biblio.bib *plots/*all_pure.png *plots/xpresults_all.png ms_bbob_plots/fight_tran*.png *_plots/*.pdf dagstuhloid.html competition.tex bigstats.tex dagstuhloid.pdf rwtex.tex compa.tex
+
+tar -zcvf justplots.tgz *plots/*all_pure.png *plots/xpresults_all.png
