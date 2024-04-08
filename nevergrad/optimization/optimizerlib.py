@@ -3676,9 +3676,7 @@ class NGOptBase(base.Optimizer):
                                 cls = (
                                     DE
                                     if self.dimension > 2000
-                                    else MetaCMA
-                                    if self.dimension > 1
-                                    else OnePlusOne
+                                    else MetaCMA if self.dimension > 1 else OnePlusOne
                                 )
         # print(f"NGOptbase: budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, {cls}")
         return cls
@@ -3746,9 +3744,7 @@ class NGOptDSBase(NGOptBase):
                                 cls = (
                                     DE
                                     if self.dimension > 2000
-                                    else MetaCMA
-                                    if self.dimension > 1
-                                    else OnePlusOne
+                                    else MetaCMA if self.dimension > 1 else OnePlusOne
                                 )
         # print(f"NGOptbase: budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, {cls}")
         return cls
