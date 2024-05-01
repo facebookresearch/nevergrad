@@ -1,0 +1,24 @@
+name: ubuntu_restore_all
+runs:
+  using: composite
+  steps:
+  - uses: actions/checkout@v4.1.0
+  - name: restore_cache
+    uses: actions/cache@v3.3.2
+    with:
+      key: v4-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+      path: UPDATE_ME
+      restore-keys: |
+        v4-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+        v4-dependencies-main-{{ checksum "requirements/main.txt"}}
+  - name: "[all] Install dependencies"
+    run: |
+      #python3 -m venv venv
+      rm -rf venv && python3 -m venv venv
+      . venv/bin/activate
+      pip install --progress-bar off -U pip setuptools
+      pip install --progress-bar off -e .[all]
+      #pip install --progress-bar off --use-deprecated=legacy-resolver -e .[all]
+      pip install --progress-bar off -U numpy>=1.20.0
+      pip install keras==2.6.0  # issue on Nov 4th 2021
+    shell: bash

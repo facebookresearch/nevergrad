@@ -1,0 +1,222 @@
+name: facebookresearch/nevergrad/all_ci
+on:
+  push:
+    branches:
+    - main
+env:
+  PYPI_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+  CIRCLE_REPOSITORY_URL: ${{ github.CIRCLE_REPOSITORY_URL }}
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.9'
+    - uses: actions/checkout@v4.1.0
+    - name: restore_cache
+      uses: actions/cache@v3.3.2
+      with:
+        key: v4-dependencies-main-{{ checksum "requirements/main.txt"}}
+        path: "./venv"
+        restore-keys: v4-dependencies-main-{{ checksum "requirements/main.txt"}}
+    - name: "[no-extra] Install dependencies"
+      run: |
+        if [[ $GITHUB_REF =~ ^refs/tags//(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/$ ]]; then
+          rm -rf venv && python3 -m venv venv
+          . venv/bin/activate
+          pip install --progress-bar off pip==23.2
+          pip install --progress-bar off -e .
+        fi
+    - name: "[no-extra] Print installation"
+      run: |
+        if [[ $GITHUB_REF =~ ^refs/tags//(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/$ ]]; then
+          if [[ -z "$CIRCLE_REPOSITORY_URL" ]]; then
+              echo "CIRCLE_REPOSITORY_URL must be provided in environment" 1>&2
+              exit 1
+          fi
+          echo "This is on $CIRCLE_REPOSITORY_URL."
+          . venv/bin/activate
+          pip freeze
+        fi
+    - name: "[no-extra] Run basic tests (checking dependencies)"
+      run: |
+        if [[ $GITHUB_REF =~ ^refs/tags//(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/$ ]]; then
+          . venv/bin/activate
+          python -m nevergrad.optimization.requirements_check  # calls a bit of everything
+        fi
+    - uses: "./.github/actions/ubuntu_restore_all"
+    - name: save_cache
+      uses: actions/cache@v3.3.2
+      with:
+        path: "./venv"
+        key: v4-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+    - name: "[all] Print installation"
+      run: |
+        if [[ $GITHUB_REF =~ ^refs/tags//(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/$ ]]; then
+          . venv/bin/activate
+          pip freeze
+        fi
+    - name: Run wheel and check package
+      run: |
+        if [[ $GITHUB_REF =~ ^refs/tags//(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/$ ]]; then
+          . venv/bin/activate
+          pip install wheel
+          rm -rf dist  # make sure it's clean
+          echo "Creating sdist"
+          python setup.py sdist
+          echo "Created sdist, now creating wheel"
+          python setup.py bdist_wheel
+          echo "Created wheel"
+          mkdir nevergrad-build
+          mv dist nevergrad-build/
+          python -c "from pathlib import Path;files = Path('nevergrad.egg-info/SOURCES.txt').read_text().split(); assert 'LICENSE' in files"
+          python3 -m venv test_wheel
+          . test_wheel/bin/activate
+          pip install -U pip
+          cd ..  # don't use nevergrad locally
+          echo "Installing wheel"
+          pip install --progress-bar off repo/nevergrad-build/dist/nevergrad-*any.whl
+          #pip install --progress-bar off --use-deprecated=legacy-resolver repo/nevergrad-build/dist/nevergrad-*any.whl
+          echo "Installed wheel"
+          python -c "from nevergrad import functions;f = functions.ArtificialFunction(name='sphere', block_dimension=2);f([2, 3])"
+        fi
+    - uses: actions/upload-artifact@v4.0.0
+      with:
+        path: nevergrad-build/dist
+    - name: Build docs
+      run: |
+        if [[ $GITHUB_REF =~ ^refs/tags//(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/$ ]]; then
+          . venv/bin/activate
+          cd docs/
+          make html
+        fi
+    - uses: actions/upload-artifact@v4.0.0
+      with:
+        path: docs/_build/html
+  static:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.9'
+    - uses: actions/checkout@v4.1.0
+    - uses: "./.github/actions/ubuntu_restore_all"
+    - name: Run mypy
+      run: |
+        if [[ $GITHUB_REF =~ ^refs/tags//(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/$ ]]; then
+          . venv/bin/activate
+          mypy --version
+          mypy nevergrad
+        fi
+    - name: Run basic pylint
+      run: |
+        if [[ $GITHUB_REF =~ ^refs/tags//(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/$ ]]; then
+          . venv/bin/activate
+          pylint --version
+          pylint nevergrad --disable=all --enable=unused-import,unused-argument,unused-variable,undefined-loop-variable,redefined-builtin,used-before-assignment,super-init-not-called,useless-super-delegation,dangerous-default-value,unnecessary-pass,attribute-defined-outside-init
+        fi
+    - name: Run black
+      run: |
+        if [[ $GITHUB_REF =~ ^refs/tags//(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/$ ]]; then
+          . venv/bin/activate
+          pip install black
+          black --version
+          black nevergrad --check --diff
+        fi
+  pytests:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.9'
+    - uses: actions/checkout@v4.1.0
+    - uses: "./.github/actions/ubuntu_restore_all"
+    - name: "[all] Run pytest"
+      run: |
+        if [[ $GITHUB_REF =~ ^refs/tags//(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/$ ]]; then
+          . venv/bin/activate
+          pip install pytest
+          pytest --circleci-parallelize nevergrad -v --durations=20 --cov=nevergrad
+          #pytest nevergrad -v --exitfirst --durations=20 --cov=nevergrad
+        fi
+  docs-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.9'
+    - uses: actions/checkout@v4.1.0
+    # Ensure parameter if_key_exists is set correctly
+    - name: Install SSH key
+      uses: shimataro/ssh-key-action@v2.6.1
+      with:
+        key: "${{ secrets.CIRCLE_CI_SSH_KEY }}"
+        name: circle_ci_id_rsa
+        known_hosts: "${{ secrets.CIRCLE_CI_KNOWN_HOSTS }}"
+        if_key_exists: fail
+    - uses: actions/download-artifact@v4.1.0
+      with:
+        path: docs/_build
+    - name: Install and configure dependencies
+      run: |
+        if [[ $GITHUB_REF =~ ^refs/tags//(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/$ || $GITHUB_REF == 'refs/heads/main' ]]; then
+          npm install -g --silent gh-pages@2.0.1
+          git config user.email "ci-build"
+          git config user.name "ci-build"
+        fi
+    - name: Deploy docs to gh-pages branch
+      run: |
+        if [[ $GITHUB_REF =~ ^refs/tags//(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/$ || $GITHUB_REF == 'refs/heads/main'  ]]; then
+          echo "This is on $CIRCLE_REPOSITORY_URL."
+          if [[ "$CIRCLE_REPOSITORY_URL" == *":facebookresearch/"* ]]; then
+            echo "Deploying"
+            gh-pages --dotfiles --message "[skip ci] Updates" --dist docs/_build/html
+          fi
+        fi
+  docs-links:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.9'
+    - uses: actions/checkout@v4.1.0
+    - uses: "./.github/actions/ubuntu_restore_all"
+    - name: Check links
+      run: |
+        . venv/bin/activate
+        cd docs/
+        make linkcheck
+  pypi-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.9'
+    - uses: actions/checkout@v4.1.0
+    - uses: "./.github/actions/ubuntu_restore_all"
+    - uses: actions/download-artifact@v4.1.0
+      with:
+        path: nevergrad-build
+    - name: Create .pypirc
+      run: |
+        if [[ $GITHUB_REF =~ ^refs/tags//(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/$ && $GITHUB_REF != 'refs/heads//.*/' ]]; then
+          echo -e "[pypi]" >> ~/.pypirc
+          echo -e "username = __token__" >> ~/.pypirc
+          echo -e "password = $PYPI_PASSWORD" >> ~/.pypirc
+        fi
+    - name: Verify tag
+      run: python setup.py verify_circleci_version
+    - name: upload to pypi
+      run: |
+        if [[ $GITHUB_REF =~ ^refs/tags//(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\.post(0|[1-9][0-9]*))?/$ && $GITHUB_REF != 'refs/heads//.*/' ]]; then
+          echo "This is on $CIRCLE_REPOSITORY_URL."
+          if [[ "$CIRCLE_REPOSITORY_URL" == *":facebookresearch/"* ]]; then
+            echo "Deploying"
+            . venv/bin/activate
+            du -h nevergrad-build/dist/*
+            twine check nevergrad-build/dist/nevergrad-*
+            twine upload nevergrad-build/dist/nevergrad-* --verbose
+          fi
+        fi
