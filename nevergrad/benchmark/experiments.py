@@ -20,6 +20,7 @@ from nevergrad.functions.pbt import PBT
 from nevergrad.functions.ml import MLTuning
 from nevergrad.functions import mlda as _mlda
 from nevergrad.functions.photonics import Photonics
+from nevergrad.functions.photonics import ceviche as photonics_ceviche
 from nevergrad.functions.arcoating import ARCoating
 from nevergrad.functions import images as imagesxp
 from nevergrad.functions.powersystems import PowerSystem
@@ -3429,6 +3430,18 @@ def far_optimum_es(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         for optim in optims:
             for budget in [100, 400, 1000, 4000, 10000]:
                 yield Experiment(func, optim, budget=budget, seed=next(seedg))
+
+
+@registry.register
+def ceviche(
+    seed: tp.Optional[int] = None,
+) -> tp.Iterator[Experiment]:
+    seedg = create_seed_generator(seed)
+    instrum = ng.p.Array(shape=(40, 40), lower=0.0, upper=1.0).set_integer_casting()
+    func = ExperimentFunction(photonics_ceviche, instrum.set_name("transition"))
+    for budget in [100, 300, 1000]:
+        for optim in ["OnePlusOne", "LognormalDiscreteOnePlusOne", "DiscreteLenglerOnePlusOne"]:
+            yield Experiment(func, optim, budget=budget, seed=next(seedg))
 
 
 @registry.register

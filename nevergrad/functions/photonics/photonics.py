@@ -409,3 +409,48 @@ def cf_photosic_realistic(eps_and_d: np.ndarray) -> float:
     CE = j_sc / max_scc
     cost = 1 - CE
     return cost  # type: ignore
+
+
+first_time_ceviche = True
+
+
+def ceviche(x: np.ndarray) -> float:
+    global first_time_ceviche
+    print("c")
+    if first_time_ceviche:
+        import ceviche_challenges
+        import autograd
+        import autograd.numpy as npa
+
+        spec = ceviche_challenges.waveguide_bend.prefabs.waveguide_bend_2umx2um_spec()
+        params = ceviche_challenges.waveguide_bend.prefabs.waveguide_bend_sim_params()
+        model = ceviche_challenges.waveguide_bend.model.WaveguideBendModel(params, spec)
+
+    # The model class provides a convenience property, `design_variable_shape`
+    # which specifies the design shape it expects.
+    design = x > 0.5  # np.random.rand(*model.design_variable_shape)
+    assert x.shape == model.design_variable_shape, f"Expected shape: {model.design_variable_shap}"
+    # The model class has a `simulate()` method which takes the design variable as
+    # an input and returns scattering parameters and fields.
+    # s_params, fields = model.simulate(design)
+
+    # Construct a loss function, assuming the `model` and `design` from the code
+    # snippet above are instantiated.
+
+    print("d")
+
+    def loss_fn(x):
+        """A simple loss function taking mean s11 - mean s21."""
+        print("a")
+        s_params, _ = model.simulate(x)
+        print("b")
+        s11 = npa.abs(s_params[:, 0, 0])
+        s21 = npa.abs(s_params[:, 0, 1])
+        return npa.mean(s11) - npa.mean(s21)
+
+    print("e")
+
+    loss_value, loss_grad = autograd.value_and_grad(loss_fn)(design)
+    print("f")
+    first_time_ceviche = False
+    return loss_value
