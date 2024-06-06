@@ -3439,8 +3439,13 @@ def ceviche(
     seedg = create_seed_generator(seed)
     instrum = ng.p.Array(shape=(40, 40), lower=0.0, upper=1.0).set_integer_casting()
     func = ExperimentFunction(photonics_ceviche, instrum.set_name("transition"))
-    for budget in [100, 300, 1000]:
-        for optim in ["OnePlusOne", "LognormalDiscreteOnePlusOne", "DiscreteLenglerOnePlusOne"]:
+    algos = ["DiagonalCMA", "PSO" , "DE", "CMA", "OnePlusOne", "LognormalDiscreteOnePlusOne", "DiscreteLenglerOnePlusOne", "MetaModel", "MetaModelDE", "MetaModelDSproba", "MetaModelOnePlusOne", "MetaModelPSO", "MetaModelQODE", "MetaModelTwoPointsDE", "NeuralMetaModel", "NeuralMetaModelDE", "NeuralMetaModelTwoPointsDE", "RFMetaModel", "RFMetaModelDE", "RFMetaModelOnePlusOne", "RFMetaModelPSO", "RFMetaModelTwoPointsDE", "SVMMetaModel", "SVMMetaModelDE", "SVMMetaModelPSO", "SVMMetaModelTwoPointsDE","RandRecombiningDiscreteLognormalOnePlusOne", "SmoothDiscreteLognormalOnePlusOne", "SmoothLognormalDiscreteOnePlusOne", "UltraSmoothElitistRecombiningDiscreteLognormalOnePlusOne", "SuperSmoothRecombiningDiscreteLognormalOnePlusOne", "SmoothElitistRandRecombiningDiscreteLognormalOnePlusOne", "RecombiningDiscreteLognormalOnePlusOne", "RandRecombiningDiscreteLognormalOnePlusOne", "UltraSmoothDiscreteLognormalOnePlusOne", "ZetaSmoothDiscreteLognormalOnePlusOne", "SuperSmoothDiscreteLognormalOnePlusOne" ]
+    algos = [a for a in algos if a in list(ng.optimizers.registry.keys())]
+    #print(algos)
+    algo = np.random.choice(algos)
+    print(algo)
+    for optim in [algo]:
+        for budget in [20, 50, 100, 160, 240]:
             yield Experiment(func, optim, budget=budget, seed=next(seedg))
 
 
