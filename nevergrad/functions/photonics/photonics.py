@@ -414,18 +414,43 @@ def cf_photosic_realistic(eps_and_d: np.ndarray) -> float:
 first_time_ceviche = True
 model = None
 
-def ceviche(x: np.ndarray) -> float:
+
+def ceviche(x: np.ndarray, benchmark_type: int = 0) -> tp.Any:
     global first_time_ceviche
     global model
     import autograd
     import autograd.numpy as npa
     import ceviche_challenges
     import autograd
-    if first_time_ceviche:
 
-        spec = ceviche_challenges.waveguide_bend.prefabs.waveguide_bend_2umx2um_spec()
-        params = ceviche_challenges.waveguide_bend.prefabs.waveguide_bend_sim_params()
-        model = ceviche_challenges.waveguide_bend.model.WaveguideBendModel(params, spec)
+    # ceviche_challenges.beam_splitter.prefabs
+    # ceviche_challenges.mode_converter.prefabs
+    # ceviche_challenges.waveguide_bend.prefabs
+    # ceviche_challenges.wdm.prefabs
+
+    if first_time_ceviche:
+        if benchmark_type == 0:
+            spec = ceviche_challenges.waveguide_bend.prefabs.waveguide_bend_2umx2um_spec()
+            params = ceviche_challenges.waveguide_bend.prefabs.waveguide_bend_sim_params()
+            model = ceviche_challenges.waveguide_bend.model.WaveguideBendModel(params, spec)
+        elif benchmark_type == 1:
+            spec = ceviche_challenges.beam_splitter.prefabs.pico_splitter_spec()
+            params = ceviche_challenges.beam_splitter.prefabs.pico_splitter_sim_params()
+            model = ceviche_challenges.beam_splitter.model.BeamSplitterModel(params, spec)
+        elif benchmark_type == 2:
+            spec = ceviche_challenges.mode_converter.prefabs.mode_converter_spec_23()
+            params = ceviche_challenges.mode_converter.prefabs.mode_converter_sim_params()
+            model = ceviche_challenges.mode_converter.model.ModeConverterModel(params, spec)
+        elif benchmark_type == 3:
+            spec = ceviche_challenges.wdm.prefabs.wdm_spec()
+            params = ceviche_challenges.wdm.prefabs.wdm_sim_params()
+            model = ceviche_challenges.wdm.model.WdmModel(params, spec)
+
+    if isinstance(x, str) and x == "name":
+        return {0: "waveguide-bend", 1: "beam-splitter", 2: "mode-converter", 3: "wdm"}[benchmark_type]
+    elif x is None:
+        return model.design_variable_shape
+
     assert x.shape == model.design_variable_shape, f"Expected shape: {model.design_variable_shap}"
 
     # The model class provides a convenience property, `design_variable_shape`
@@ -444,7 +469,6 @@ def ceviche(x: np.ndarray) -> float:
         s11 = npa.abs(s_params[:, 0, 0])
         s21 = npa.abs(s_params[:, 0, 1])
         return npa.mean(s11) - npa.mean(s21)
-
 
     loss_value, loss_grad = autograd.value_and_grad(loss_fn)(design)
     first_time_ceviche = False

@@ -6,11 +6,13 @@
 #SBATCH --partition=scavenge
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=70
-#SBATCH -a 0-273
+#SBATCH -a 0-250
 
+eval "$(conda shell.bash hook)"
+conda activate miniceviche
 
 #task=${tasks[SLURM_ARRAY_TASK_ID]}
-task=ceviche
+task=multi_ceviche
 
 echo task attribution $SLURM_ARRAY_TASK_ID $task
 echo Keras/TF versions:
