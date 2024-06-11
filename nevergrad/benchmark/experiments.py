@@ -3490,6 +3490,7 @@ def ceviche(
 @registry.register
 def multi_ceviche(
     seed: tp.Optional[int] = None,
+    c0: bool = False,
 ) -> tp.Iterator[Experiment]:
     seedg = create_seed_generator(seed)
     algos = [
@@ -3535,11 +3536,14 @@ def multi_ceviche(
     # print(algos)
     algo = np.random.choice(algos)
     print(algo)
-    for benchmark_type in list(range(4)):
+    for benchmark_type in [np.random.randint(4)]:
         shape = tuple([int(p) for p in list(photonics_ceviche(None, benchmark_type))])
         name = photonics_ceviche("name", benchmark_type) + str(shape)
         print(f"Shape = {shape} {type(shape)} {type(shape[0])}")
-        instrum = ng.p.Array(shape=shape, lower=0.0, upper=1.0).set_integer_casting()
+        if c0:
+            instrum = ng.p.Array(shape=shape, lower=0.0, upper=1.0)
+        else:
+            instrum = ng.p.Array(shape=shape, lower=0.0, upper=1.0).set_integer_casting()
 
         def pc(x):
             return photonics_ceviche(x, benchmark_type)
@@ -3550,8 +3554,14 @@ def multi_ceviche(
         # func.parametrization.set_name(name)
         print(f"name = {name}")
         for optim in [algo]:
-            for budget in [20, 50, 100, 160, 240]:
+            for budget in [20, 50, 90]:
                 yield Experiment(func, optim, budget=budget, seed=next(seedg))
+
+
+@registry.register
+def multi_ceviche_c0(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of multi_ceviche with continuous permittivities."""
+    return multi_ceviche(seed, c0=True)
 
 
 @registry.register
@@ -3612,6 +3622,8 @@ def photonics(
                     xp = Experiment(func, algo, int(budget), num_workers=1, seed=next(seedg))
                     if not xp.is_incoherent:
                         yield xp
+
+
 
 
 @registry.register

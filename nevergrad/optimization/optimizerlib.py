@@ -111,9 +111,12 @@ class _OnePlusOne(base.Optimizer):
         roulette_size: int = 2,
         antismooth: int = 55,
         crossover_type: str = "none",
+        forced_discretization: bool = False,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.parametrization.tabu_length = tabu_length
+        if forced_discretization:
+            self.parametrization.set_integer_casting()
         self.antismooth = antismooth
         self.crossover_type = crossover_type
         self.roulette_size = roulette_size
