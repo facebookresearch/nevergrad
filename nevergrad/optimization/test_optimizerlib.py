@@ -28,7 +28,8 @@ from bayes_opt.util import acq_max
 import nevergrad as ng
 import nevergrad.common.typing as tp
 from nevergrad.common import testing
-from nevergrad.common import errors
+
+# from nevergrad.common import errors
 from . import base
 from . import optimizerlib as optlib
 from . import experimentalvariants as xpvariants

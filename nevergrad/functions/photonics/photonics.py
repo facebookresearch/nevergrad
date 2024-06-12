@@ -451,7 +451,7 @@ def ceviche(x: np.ndarray, benchmark_type: int = 0) -> tp.Any:
     elif x is None:
         return model.design_variable_shape
 
-    assert x.shape == model.design_variable_shape, f"Expected shape: {model.design_variable_shap}"
+    assert x.shape == model.design_variable_shape, f"Expected shape: {model.design_variable_shap}"  # type: ignore
 
     # The model class provides a convenience property, `design_variable_shape`
     # which specifies the design shape it expects.
@@ -470,6 +470,6 @@ def ceviche(x: np.ndarray, benchmark_type: int = 0) -> tp.Any:
         s21 = npa.abs(s_params[:, 0, 1])
         return npa.mean(s11) - npa.mean(s21)
 
-    loss_value, loss_grad = autograd.value_and_grad(loss_fn)(design)
+    loss_value, loss_grad = autograd.value_and_grad(loss_fn)(design)  # type: ignore
     first_time_ceviche = False
     return loss_value
