@@ -122,6 +122,9 @@ class _Game:
                 visible1, visible2, len(visible1) + len(cards1), len(visible2) + len(cards2), stack, policy1
             )
             we_play = False
+            next_visible1 = None
+            next_stack = None
+            next_visible2 = None
             for i in range(len(visible1)):  # pylint: disable=consider-using-enumerate
                 for location in range(2):
                     # print("testing ", visible1[i], " on ", stack[location])
