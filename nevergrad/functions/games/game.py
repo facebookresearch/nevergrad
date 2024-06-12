@@ -145,8 +145,8 @@ class _Game:
                             we_play = True
             if we_play:
                 something_moves = True
-                visible1 = sorted(next_visible1 + ([cards1[0]] if cards1 else []))
-                stack = sorted(next_stack)
+                visible1 = sorted(next_visible1 + ([cards1[0]] if cards1 else []))  # type: ignore
+                stack = sorted(next_stack)  # type: ignore
                 if cards1:
                     del cards1[0]
                 if not visible1:
@@ -178,7 +178,7 @@ class _Game:
                             we_play = True
             if we_play:
                 something_moves = True
-                visible2 = sorted(next_visible2 + ([cards2[0]] if cards2 else []))
+                visible2 = sorted(next_visible2 + ([cards2[0]] if cards2 else []))  # type: ignore
                 stack = sorted(next_stack)
                 if cards2:
                     del cards2[0]
