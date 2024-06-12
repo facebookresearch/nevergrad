@@ -3624,8 +3624,6 @@ def photonics(
                         yield xp
 
 
-
-
 @registry.register
 def photonics2(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of yabbob with higher dimensions."""
