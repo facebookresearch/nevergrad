@@ -418,10 +418,10 @@ model = None
 def ceviche(x: np.ndarray, benchmark_type: int = 0) -> tp.Any:
     global first_time_ceviche
     global model
-    import autograd
-    import autograd.numpy as npa
-    import ceviche_challenges
-    import autograd
+    import autograd  # type: ignore
+    import autograd.numpy as npa  # type: ignore
+    import ceviche_challenges  # type: ignore
+    import autograd  # type: ignore
 
     # ceviche_challenges.beam_splitter.prefabs
     # ceviche_challenges.mode_converter.prefabs
@@ -470,6 +470,7 @@ def ceviche(x: np.ndarray, benchmark_type: int = 0) -> tp.Any:
         s21 = npa.abs(s_params[:, 0, 1])
         return npa.mean(s11) - npa.mean(s21)
 
-    loss_value, loss_grad = autograd.value_and_grad(loss_fn)(design)  # type: ignore
+    loss_value, _ = autograd.value_and_grad(loss_fn)(design)  # type: ignore
+    # loss_value, loss_grad = autograd.value_and_grad(loss_fn)(design)  # type: ignore
     first_time_ceviche = False
     return loss_value
