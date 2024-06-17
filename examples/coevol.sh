@@ -8,9 +8,14 @@
 #SBATCH --cpus-per-task=80
 #SBATCH -a 0-80
 
-for a in `seq 80`
+for a in `seq 120`
 do
 (
+python examples/coevol.py
+python examples/coevol.py
+python examples/coevol.py
+python examples/coevol.py
+python examples/coevol.py
 python examples/coevol.py
 python examples/coevol.py
 python examples/coevol.py
