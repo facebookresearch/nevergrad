@@ -18,7 +18,7 @@ echo 'for a in data.keys():' >> plotter.py
 echo '   x = sorted([int(d) for d in data[a].keys()])' >> plotter.py
 echo '   print(x)'   >> plotter.py
 echo '   y = [np.average([ float(d)/rs for d in data[a][x_] ]) for x_ in x]'   >> plotter.py
-echo '   x = [int(np.exp(int(np.log(10 + x_)/np.log(3))*np.log(10))) for x_ in x]' >> plotter.py
+echo '   x = [int(np.exp(int(np.log(10 + x_)/np.log(10))*np.log(10))) for x_ in x]' >> plotter.py
 echo '   plt.loglog(x, y, label=a)'   >> plotter.py
 echo '   plt.text(x[-1], y[-1], a, rotation=30, rotation_mode="anchor")' >> plotter.py
 #echo 'plt.legend()' >> plotter.py
