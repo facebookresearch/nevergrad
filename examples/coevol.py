@@ -2,6 +2,7 @@ import sys
 sys.path.append("./")
 import numpy as np
 import nevergrad as ng
+import copy
 
 
 # Solving Nash equilibbria in the antagonist case when the number of pure policies is moderate relatively to the
@@ -21,6 +22,9 @@ A = np.random.RandomState(4*s + 1).rand(*(N,N))
 xopt = np.random.RandomState(4*s+2).rand(N) > .5
 yopt = np.random.RandomState(4*s+3).rand(N) > .5
 
+
+
+print(f"Specifications: seed{s}, dim={N}, pop={lambd}")
 b = np.matmul(A, yopt)
 
 c = np.matmul(xopt, np.transpose(A))
@@ -77,11 +81,11 @@ def exploitation(P, Q, exploitation_budget = 500, algo="DiscreteLenglerOnePlusOn
 
 ng_orig_optims = list(ng.optimizers.registry.keys())
 
-ng_optims = (["pkl"] * 8) +["RS"]
+ng_optims = (["PKL"] * 8) +["RS"]
 ng_optims += ["explo" + o for o in ng_orig_optims if "ois" in o and "iscr" in o]  # Direct optimization of exploitation
 ng_optims += ["explO" + o for o in ng_orig_optims if "ois" in o and "iscr" in o]  # Direct optimization of exploitation, with more evals per iteration
-ng_optims += ["fp___" + o for o in ng_orig_optims if ("ois" not in o) and "iscr" in o]  # Fictitious play
-ng_optims += ["fp___" + o for o in ng_orig_optims if ("ois" not in o) and "iscr" in o]  # Fictitious play
+ng_optims += ["fip__" + o for o in ng_orig_optims if ("ois" not in o) and "iscr" in o]  # Fictitious play
+ng_optims += ["fip__" + o for o in ng_orig_optims if ("ois" not in o) and "iscr" in o]  # Fictitious play
 
 #print(ng_optims)
 algo = np.random.choice(ng_optims)
@@ -106,7 +110,7 @@ elif algo == "RS":
     P = np.random.rand(lambd, N) > .5
     Q = np.random.rand(lambd, N) > .5
     
-elif algo[:5] == "fp___":
+elif algo[:5] == "fip__":
     P = np.random.rand(lambd, N) > .5
     Q = np.random.rand(lambd, N) > .5
     num = 0
@@ -116,10 +120,11 @@ elif algo[:5] == "fp___":
         iteration = iteration + 1
         num = num + 1
         l, bestx, besty = exploitation(P, Q, num, algo[5:], needargmax=True)
-        P[np.random.randint(iteration % lambd)] = bestx
-        Q[np.random.randint(iteration % lambd)] = besty
+
+        P[iteration % lambd] = bestx
+        Q[iteration % lambd] = besty
         
-elif algo == "pkl":
+elif algo == "PKL":
     def dom(x1, y1, x2, y2):
         left = f(x1, y2)
         middle = f(x1, y1)
@@ -129,6 +134,8 @@ elif algo == "pkl":
     
     P = np.random.rand(lambd, N) > .5
     Q = np.random.rand(lambd, N) > .5
+    P2 = np.random.rand(lambd, N) > .5
+    Q2 = np.random.rand(lambd, N) > .5
     
     nbiter = np.random.choice([10, 20, 40, 80, 160, 320, 640, 1280, 2560, 5120, 10240, 20480, 40960, 81920, 163840, 327680, 655360, 1320000])
     
@@ -145,13 +152,15 @@ elif algo == "pkl":
             else:
                 x = x2
                 y = y2
-            P[i] = x
-            Q[i] = y
+            P2[i] = x
+            Q2[i] = y
             for k in range(N):
                 if np.random.rand() < kappa / N:
                     P[i][k] = 1 - P[i][k]
                 if np.random.rand() < kappa / N:
                     Q[i][k] = 1 - Q[i][k]
+        P = copy.deepcopy(P2)
+        Q = copy.deepcopy(Q2)
 
 
 
