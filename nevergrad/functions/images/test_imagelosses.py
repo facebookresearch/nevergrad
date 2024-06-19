@@ -16,7 +16,7 @@ def test_reference() -> None:
     assert not imagelosses.Koncept512.REQUIRES_REFERENCE
     assert not imagelosses.Brisque.REQUIRES_REFERENCE
     assert len([loss for loss in imagelosses.registry.values() if loss.REQUIRES_REFERENCE]) == 5
-    assert len([loss for loss in imagelosses.registry.values() if not loss.REQUIRES_REFERENCE]) == 3
+    assert len([loss for loss in imagelosses.registry.values() if not loss.REQUIRES_REFERENCE]) == 2
 
 
 def test_l1_loss() -> None:

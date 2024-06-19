@@ -409,3 +409,68 @@ def cf_photosic_realistic(eps_and_d: np.ndarray) -> float:
     CE = j_sc / max_scc
     cost = 1 - CE
     return cost  # type: ignore
+
+
+first_time_ceviche = True
+model = None
+
+
+def ceviche(x: np.ndarray, benchmark_type: int = 0) -> tp.Any:
+    global first_time_ceviche
+    global model
+    import autograd  # type: ignore
+    import autograd.numpy as npa  # type: ignore
+    import ceviche_challenges  # type: ignore
+    import autograd  # type: ignore
+
+    # ceviche_challenges.beam_splitter.prefabs
+    # ceviche_challenges.mode_converter.prefabs
+    # ceviche_challenges.waveguide_bend.prefabs
+    # ceviche_challenges.wdm.prefabs
+
+    if first_time_ceviche:
+        if benchmark_type == 0:
+            spec = ceviche_challenges.waveguide_bend.prefabs.waveguide_bend_2umx2um_spec()
+            params = ceviche_challenges.waveguide_bend.prefabs.waveguide_bend_sim_params()
+            model = ceviche_challenges.waveguide_bend.model.WaveguideBendModel(params, spec)
+        elif benchmark_type == 1:
+            spec = ceviche_challenges.beam_splitter.prefabs.pico_splitter_spec()
+            params = ceviche_challenges.beam_splitter.prefabs.pico_splitter_sim_params()
+            model = ceviche_challenges.beam_splitter.model.BeamSplitterModel(params, spec)
+        elif benchmark_type == 2:
+            spec = ceviche_challenges.mode_converter.prefabs.mode_converter_spec_23()
+            params = ceviche_challenges.mode_converter.prefabs.mode_converter_sim_params()
+            model = ceviche_challenges.mode_converter.model.ModeConverterModel(params, spec)
+        elif benchmark_type == 3:
+            spec = ceviche_challenges.wdm.prefabs.wdm_spec()
+            params = ceviche_challenges.wdm.prefabs.wdm_sim_params()
+            model = ceviche_challenges.wdm.model.WdmModel(params, spec)
+
+    if isinstance(x, str) and x == "name":
+        return {0: "waveguide-bend", 1: "beam-splitter", 2: "mode-converter", 3: "wdm"}[benchmark_type]
+    elif x is None:
+        return model.design_variable_shape
+
+    assert x.shape == model.design_variable_shape, f"Expected shape: {model.design_variable_shap}"  # type: ignore
+
+    # The model class provides a convenience property, `design_variable_shape`
+    # which specifies the design shape it expects.
+    design = x > 0.5  # np.random.rand(*model.design_variable_shape)
+    # The model class has a `simulate()` method which takes the design variable as
+    # an input and returns scattering parameters and fields.
+    # s_params, fields = model.simulate(design)
+
+    # Construct a loss function, assuming the `model` and `design` from the code
+    # snippet above are instantiated.
+
+    def loss_fn(x):
+        """A simple loss function taking mean s11 - mean s21."""
+        s_params, _ = model.simulate(x)
+        s11 = npa.abs(s_params[:, 0, 0])
+        s21 = npa.abs(s_params[:, 0, 1])
+        return npa.mean(s11) - npa.mean(s21)
+
+    loss_value, _ = autograd.value_and_grad(loss_fn)(design)  # type: ignore
+    # loss_value, loss_grad = autograd.value_and_grad(loss_fn)(design)  # type: ignore
+    first_time_ceviche = False
+    return loss_value
