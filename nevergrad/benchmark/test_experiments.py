@@ -37,6 +37,9 @@ def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[expe
     if sum([ord(c) for c in name]) % 4 > 0:
         raise SkipTest("Too expensive: we randomly skip 3/4 of these tests.")
 
+    if "ceviche" in name:
+        raise SkipTest("Ceviche is unhappy with our conda env.")
+
     # "mav" is not availablefor now.
     if "conformant" in name or name == "neuro_planning" or "sparse" in name:
         raise SkipTest("This is user parametric and can not be tested.")

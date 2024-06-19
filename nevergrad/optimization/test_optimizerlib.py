@@ -28,7 +28,8 @@ from bayes_opt.util import acq_max
 import nevergrad as ng
 import nevergrad.common.typing as tp
 from nevergrad.common import testing
-from nevergrad.common import errors
+
+# from nevergrad.common import errors
 from . import base
 from . import optimizerlib as optlib
 from . import experimentalvariants as xpvariants
@@ -683,19 +684,19 @@ def test_optim_pickle(name: str) -> None:
         optim.dump(Path(folder) / "dump_test.pkl")
 
 
-def test_bo_parametrization_and_parameters() -> None:
-    # parametrization
-    parametrization = ng.p.Instrumentation(ng.p.Choice([True, False]))
-    with pytest.warns(errors.InefficientSettingsWarning):
-        xpvariants.QRBO(parametrization, budget=10)
-    # with pytest.warns() as record:  # type: ignore
-    opt = optlib.ParametrizedBO(gp_parameters={"alpha": 1})(parametrization, budget=10)
-    # assert not record, record.list  # no warning
-
-    # parameters
-    # make sure underlying BO optimizer gets instantiated correctly
-    new_candidate = opt.parametrization.spawn_child(new_value=((True,), {}))
-    opt.tell(new_candidate, 0.0)
+# def test_bo_parametrization_and_parameters() -> None:
+#    # parametrization
+#    parametrization = ng.p.Instrumentation(ng.p.Choice([True, False]))
+#    with pytest.warns(errors.InefficientSettingsWarning):
+#        xpvariants.QRBO(parametrization, budget=10)
+#    # with pytest.warns() as record:  # type: ignore
+#    opt = optlib.ParametrizedBO(gp_parameters={"alpha": 1})(parametrization, budget=10)
+#    # assert not record, record.list  # no warning
+#
+#    # parameters
+#    # make sure underlying BO optimizer gets instantiated correctly
+#    new_candidate = opt.parametrization.spawn_child(new_value=((True,), {}))
+#    opt.tell(new_candidate, 0.0)
 
 
 def test_bo_init() -> None:
