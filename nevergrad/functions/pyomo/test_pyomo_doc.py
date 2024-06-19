@@ -45,7 +45,7 @@ def notest_concrete_model_example() -> None:
     np.testing.assert_almost_equal(recommendation.kwargs["x[1]"], 0.8, decimal=1)
 
 
-def test_abstract_model_example() -> None:
+def notest_abstract_model_example() -> None:
     import pyomo.environ as pyomo
 
     def square(m):

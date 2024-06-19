@@ -5,7 +5,11 @@
 import typing as tp
 import os
 import numpy as np
-import pyomo.environ as pyomo
+
+try:
+    import pyomo.environ as pyomo
+except:
+    print("Please import pyomo")
 import nevergrad as ng
 from . import core
 
