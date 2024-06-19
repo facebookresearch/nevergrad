@@ -109,8 +109,8 @@ def c_bas(A: np.ndarray, V: np.ndarray, h: float) -> np.ndarray:
 
 
 def marche(a: float, b: float, p: float, n: int, x: float) -> np.ndarray:
-    l = np.zeros(n, dtype=np.complex_)  # noqa
-    m = np.zeros(n, dtype=np.complex_)
+    l = np.zeros(n, dtype=np.complex128)  # noqa
+    m = np.zeros(n, dtype=np.complex128)
     tmp = (
         1
         / (2 * np.pi * np.arange(1, n))
@@ -187,7 +187,7 @@ def morpho(X: np.ndarray) -> float:
     l = lam / d  # noqa
     k0 = 2 * np.pi / l
     P, V = homogene(k0, 0, pol, 1, n)
-    S = np.block([[np.zeros([n, n]), np.eye(n, dtype=np.complex_)], [np.eye(n), np.zeros([n, n])]])
+    S = np.block([[np.zeros([n, n]), np.eye(n, dtype=np.complex128)], [np.eye(n), np.zeros([n, n])]])
     for j in range(0, n_motifs):
         Pc, Vc = creneau(k0, 0, pol, e2, 1, a[j], n, x0[j])
         S = cascade(S, interface(P, Pc))
@@ -208,7 +208,7 @@ def morpho(X: np.ndarray) -> float:
         P, V = homogene(k0, 0, pol, 1, n)
         S = np.block(
             [
-                [np.zeros([n, n], dtype=np.complex_), np.eye(n)],
+                [np.zeros([n, n], dtype=np.complex128), np.eye(n)],
                 [np.eye(n), np.zeros([n, n])],
             ]
         )
