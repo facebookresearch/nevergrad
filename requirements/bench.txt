@@ -27,7 +27,8 @@ torchvision>=0.11.1
 pyomo==5.7.1
 mixsimulator>=0.3.3
 hyperopt>=0.2.5
-IOHexperimenter>=0.2.8.7
+IOHexperimenter>=0.2.9.2
+# IOHexperimenter>=0.2.8.7
 cdt>=0.5.23
 tensorflow-estimator>=2.7.0
 tensorflow>=2.7.0
