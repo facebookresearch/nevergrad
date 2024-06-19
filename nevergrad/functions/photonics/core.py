@@ -181,7 +181,7 @@ class Photonics(base.ExperimentFunction):
         assert not kwargs
         data = np.concatenate(args).T if self._as_tuple else args[0]
         assert data.size == self.dimension
-        return np.array(data, copy=False).ravel()
+        return np.asarray(data).ravel()
 
     def evaluation_function(self, *recommendations: ng.p.Parameter) -> float:
         assert len(recommendations) == 1, "Should not be a pareto set for a singleobjective function"

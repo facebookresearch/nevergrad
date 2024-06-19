@@ -59,7 +59,7 @@ class HypervolumePareto:
     ) -> None:
         self._auto_bound = 0
         self._upper_bounds = (
-            np.array([-float("inf")]) if upper_bounds is None else np.array(upper_bounds, copy=False)
+            np.asarray([-float("inf")]) if upper_bounds is None else np.array(upper_bounds)
         )
         if upper_bounds is None:
             self._auto_bound = auto_bound

@@ -206,7 +206,7 @@ class HammersleySampler(HaltonSampler):
 class Rescaler:
     def __init__(self, points: tp.Iterable[tp.ArrayLike]) -> None:
         iterp = iter(points)
-        self.sample_mins = np.array(next(iterp), copy=False)
+        self.sample_mins = np.asarray(next(iterp))
         self.sample_maxs = self.sample_mins
         for point in iterp:
             self.sample_mins = np.minimum(self.sample_mins, point)
@@ -217,6 +217,6 @@ class Rescaler:
         ), f"Non-positive epsilon={self.epsilon} from mins {self.sample_mins} and maxs {self.sample_maxs}"
 
     def apply(self, point: tp.ArrayLike) -> np.ndarray:
-        point = np.array(point, copy=False)
+        point = np.asarray(point)
         factor = (1 - 2 * self.epsilon) / (self.sample_maxs - self.sample_mins)
         return self.epsilon + factor * (point - self.sample_mins)  # type: ignore
