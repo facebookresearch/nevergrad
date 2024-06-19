@@ -749,7 +749,7 @@ class _CMA(base.Optimizer):
                     x0=(
                         self.parametrization.sample().get_standardized_data(reference=self.parametrization)
                         if self._config.random_init
-                        else np.zeros(self.dimension, dtype=np.float_)
+                        else np.zeros(self.dimension, dtype=np.float64)
                     ),
                     sigma0=self._config.scale * scale_multiplier,
                     inopts=inopts,
@@ -762,7 +762,7 @@ class _CMA(base.Optimizer):
                         "Please install fcmaes (pip install fcmaes) to use FCMA optimizers"
                     ) from e
                 self._es = cmaes.Cmaes(
-                    x0=np.zeros(self.dimension, dtype=np.float_),
+                    x0=np.zeros(self.dimension, dtype=np.float64),
                     input_sigma=self._config.scale * scale_multiplier,
                     popsize=self._popsize,
                     randn=self._rng.randn,

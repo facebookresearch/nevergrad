@@ -196,7 +196,7 @@ def morpho(X: np.ndarray) -> float:
         S = c_bas(S, V, spacers[j])
     Pc, Vc = homogene(k0, 0, pol, e2, n)
     S = cascade(S, interface(P, Pc))
-    R = np.zeros(3, dtype=np.float_)
+    R = np.zeros(3, dtype=np.float64)
     for j in range(-1, 2):
         R[j] = abs(S[j + nmod, nmod]) ** 2 * np.real(V[j + nmod]) / k0
     cost: float = 1 - (R[-1] + R[1]) / 2 + R[0] / 2
