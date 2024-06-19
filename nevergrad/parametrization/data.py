@@ -74,7 +74,7 @@ class Data(core.Parameter):
         if sum(x is None for x in [init, shape]) != 1:
             raise ValueError('Exactly one of "init" or "shape" must be provided')
         if init is not None:
-            init = np.array(init, dtype=float, copy=False)
+            init = np.asarray(init, dtype=float)  # , copy=False)
         else:
             assert isinstance(shape, (list, tuple)) and all(
                 isinstance(n, int) for n in shape
