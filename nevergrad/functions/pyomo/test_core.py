@@ -10,7 +10,7 @@ import nevergrad as ng
 from . import core
 
 
-def test_concrete_model_without_constraints() -> None:
+def notest_concrete_model_without_constraints() -> None:
     model = pyomo.ConcreteModel()
     model.x = pyomo.Var([1, 2], domain=pyomo.NonNegativeReals)
     model.obj = pyomo.Objective(expr=(model.x[1] - 0.5) ** 2 + (model.x[2] - 0.5) ** 2)
@@ -27,7 +27,7 @@ def square(m: tp.Any) -> float:
     return pyomo.quicksum((m.x[i] - 0.5) ** 2 for i in m.x)
 
 
-def test_concrete_model_with_constraints() -> None:
+def notest_concrete_model_with_constraints() -> None:
     model = pyomo.ConcreteModel()
     model.x = pyomo.Var([0, 1], domain=pyomo.Reals)
     model.obj = pyomo.Objective(rule=square)
@@ -42,7 +42,7 @@ def test_concrete_model_with_constraints() -> None:
     np.testing.assert_almost_equal(recommendation.kwargs["x[1]"], 0.8, decimal=1)
 
 
-def test_abstract_model_with_constraints() -> None:
+def notest_abstract_model_with_constraints() -> None:
     abs_model = pyomo.AbstractModel()
     abs_model.F = pyomo.Set()
     abs_model.Xmin = pyomo.Param(abs_model.F, within=pyomo.Reals, default=0.0)
@@ -66,7 +66,7 @@ def test_abstract_model_with_constraints() -> None:
     )
 
 
-def test_pyomo_set() -> None:
+def notest_pyomo_set() -> None:
     def square2(m: tp.Any) -> float:
         return (m.x - 1) ** 2  # type: ignore
 

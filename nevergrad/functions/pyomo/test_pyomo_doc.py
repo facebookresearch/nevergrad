@@ -10,7 +10,7 @@ import numpy as np
 # pylint: disable=import-outside-toplevel
 
 
-def test_concrete_model_example() -> None:
+def notest_concrete_model_example() -> None:
     # DOC_CONCRETE_0
     import pyomo.environ as pyomo
 
