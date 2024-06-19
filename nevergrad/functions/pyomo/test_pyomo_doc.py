@@ -10,7 +10,7 @@ import numpy as np
 # pylint: disable=import-outside-toplevel
 
 
-def notest_concrete_model_example() -> None:
+def test_concrete_model_example() -> None:
     # DOC_CONCRETE_0
     import pyomo.environ as pyomo
 
@@ -45,7 +45,7 @@ def notest_concrete_model_example() -> None:
     np.testing.assert_almost_equal(recommendation.kwargs["x[1]"], 0.8, decimal=1)
 
 
-def notest_abstract_model_example() -> None:
+def test_abstract_model_example() -> None:
     import pyomo.environ as pyomo
 
     def square(m):
