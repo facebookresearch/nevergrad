@@ -16,7 +16,7 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 from matplotlib.legend import Legend
-from matplotlib import cm
+# from matplotlib import cm
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import nevergrad.common.typing as tp
 from . import utils
