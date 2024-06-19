@@ -611,7 +611,7 @@ class XpPlotter:
         all_x = [v for vals in optim_vals.values() for v in vals[xaxis]]
         try:
             all_x = [float(a_) for a_ in all_x]
-            self._ax.set_xlim([min(all_x), max(all_x)])
+            self._ax.set_xlim([min(all_x), max(all_x)])  # type: ignore
         except TypeError:
             print(f"TypeError for minimum or maximum or {all_x}")
         self.add_legends(legend_infos)
@@ -798,7 +798,7 @@ class FightPlotter:
         max_cols = 25
         self._cax = self._ax.imshow(
             100 * np.array(self.winrates)[:, :max_cols],
-            cmap=cm.seismic,
+            cmap="seismic",
             interpolation="none",
             vmin=0,
             vmax=100,
