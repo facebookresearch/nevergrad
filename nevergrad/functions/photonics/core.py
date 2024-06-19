@@ -27,6 +27,9 @@ from . import photonics
 from .. import base
 
 
+ceviche = photonics.ceviche
+
+
 def _make_parametrization(
     name: str,
     dimension: int,
