@@ -19,7 +19,6 @@ import typing as tp
 from pathlib import Path
 import numpy as np
 from scipy.linalg import toeplitz
-import scipy.stats
 
 # pylint: disable=blacklisted-name,too-many-locals,too-many-arguments
 
@@ -367,8 +366,8 @@ def cf_photosic_reference(X: np.ndarray) -> float:
         absorb = absorption(lam, epsilon, mu, type_, hauteur, pol, theta)
         scc[k] = solar(lam)
         Ab[k] = absorb[len(absorb) - 1]
-    max_scc = scipy.stats.trapezoid(scc, vlam)
-    j_sc = scipy.stats.trapezoid(scc * Ab, vlam)
+    max_scc = np.trapezoid(scc, vlam)
+    j_sc = np.trapezoid(scc * Ab, vlam)
     CE = j_sc / max_scc
     cost = 1 - CE
     return cost  # type: ignore
@@ -405,8 +404,8 @@ def cf_photosic_realistic(eps_and_d: np.ndarray) -> float:
         absorb = absorption(lam, epsilon, mu, type_, hauteur, pol, theta)
         scc[k] = solar(lam)
         Ab[k] = absorb[len(absorb) - 1]
-    max_scc = scipy.stats.trapezoid(scc, vlam)
-    j_sc = scipy.stats.trapezoid(scc * Ab, vlam)
+    max_scc = np.trapezoid(scc, vlam)
+    j_sc = np.trapezoid(scc * Ab, vlam)
     CE = j_sc / max_scc
     cost = 1 - CE
     return cost  # type: ignore
