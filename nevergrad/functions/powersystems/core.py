@@ -8,6 +8,9 @@
 
 import typing as tp
 from math import pi, cos, sin
+import matplotlib
+
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 from nevergrad.parametrization import parameter as p
