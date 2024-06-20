@@ -23,6 +23,13 @@ from scipy.linalg import toeplitz
 # pylint: disable=blacklisted-name,too-many-locals,too-many-arguments
 
 
+def trapezoid(a, b):  # type: ignore
+    try:
+        return np.trapz(a, b)  # numpy < 2.0
+    except:  # type: ignore
+        return np.trapezoid(a, b)  # numpy 2.0
+
+
 def bragg(X: np.ndarray) -> float:
     """
     Cost function for the Bragg mirror problem: maximizing the reflection
@@ -366,8 +373,8 @@ def cf_photosic_reference(X: np.ndarray) -> float:
         absorb = absorption(lam, epsilon, mu, type_, hauteur, pol, theta)
         scc[k] = solar(lam)
         Ab[k] = absorb[len(absorb) - 1]
-    max_scc = np.trapezoid(scc, vlam)
-    j_sc = np.trapezoid(scc * Ab, vlam)
+    max_scc = trapezoid(scc, vlam)
+    j_sc = trapezoid(scc * Ab, vlam)
     CE = j_sc / max_scc
     cost = 1 - CE
     return cost  # type: ignore
@@ -404,8 +411,8 @@ def cf_photosic_realistic(eps_and_d: np.ndarray) -> float:
         absorb = absorption(lam, epsilon, mu, type_, hauteur, pol, theta)
         scc[k] = solar(lam)
         Ab[k] = absorb[len(absorb) - 1]
-    max_scc = np.trapezoid(scc, vlam)
-    j_sc = np.trapezoid(scc * Ab, vlam)
+    max_scc = trapezoid(scc, vlam)
+    j_sc = trapezoid(scc * Ab, vlam)
     CE = j_sc / max_scc
     cost = 1 - CE
     return cost  # type: ignore
