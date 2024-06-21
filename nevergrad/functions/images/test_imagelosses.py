@@ -27,7 +27,7 @@ def test_l1_loss() -> None:
 @pytest.mark.parametrize("loss_name", imagelosses.registry)  # type: ignore
 def test_consistency_losses_with_oteytaud(loss_name: str) -> None:
     path = Path(__file__).with_name("headrgb_olivier.png")
-    image = PIL.Image.open(path).resize((256, 256), PIL.Image.BICUBIC)
+    image = PIL.Image.open(path).resize((256, 256))  # , PIL.Image.BICUBIC)
     data = np.asarray(image)[:, :, :3]  # 4th Channel is pointless here, only 255.
 
     data_flip = np.flip(data, 0).copy()  # Copy necessary as some nets do not support negative stride.

@@ -344,7 +344,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 )
                 loss = 5.0e20  # sys.float_info.max leads to numerical problems so let us do this.
         elif isinstance(loss, (tuple, list, np.ndarray)):
-            loss = np.array(loss, copy=False, dtype=float).ravel() if len(loss) != 1 else loss[0]
+            loss = np.asarray(loss, dtype=float).ravel() if len(loss) != 1 else loss[0]
         elif not isinstance(loss, np.ndarray):
             raise TypeError(
                 f'"tell" method only supports float values but the passed loss was: {loss} (type: {type(loss)}.'

@@ -58,9 +58,7 @@ class HypervolumePareto:
         no_hypervolume: bool = False,
     ) -> None:
         self._auto_bound = 0
-        self._upper_bounds = (
-            np.array([-float("inf")]) if upper_bounds is None else np.array(upper_bounds, copy=False)
-        )
+        self._upper_bounds = np.asarray([-float("inf")]) if upper_bounds is None else np.array(upper_bounds)
         if upper_bounds is None:
             self._auto_bound = auto_bound
         # If we are yet to set the upper bounds, or yet to have an add since doing so, _best_volume is -inf.

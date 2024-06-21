@@ -272,7 +272,7 @@ def float_penalty(x: tp.Union[bool, float]) -> float:
     """
     if isinstance(x, (bool, np.bool_)):
         return float(not x)  # False ==> 1.
-    elif isinstance(x, (float, np.float_)):
+    elif isinstance(x, (float, np.float64)):
         return -min(0, x)  # Negative ==> >0
     raise TypeError(f"Only bools and floats are supported for check constaint, but got: {x} ({type(x)})")
 

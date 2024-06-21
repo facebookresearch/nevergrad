@@ -77,7 +77,7 @@ class ArtificialVariable:
                 self.random_state.seed(int(hashlib.md5(str(y).encode()).hexdigest(), 16) % 500000)
                 data2[i] = self.random_state.normal(0.0, 1.0)
             data = data2
-        data = np.array(data, copy=False)
+        data = np.asarray(data)
         output = []
         for transform in self._transforms:
             output.append(data[transform.indices] if self.only_index_transform else transform(data))
