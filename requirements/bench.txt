@@ -39,7 +39,7 @@ scikit-image>=0.18.3
 image-quality>=1.2.7
 #keras>=2.4.3
 #tensorflow>=2.7.0
-pymoo>=0.5.0
+pymoo==0.5.0
 olymp>=0.0.1b0 ; sys_platform == "linux"
 Keras-Preprocessing
 silence_tensorflow  # for olymp
