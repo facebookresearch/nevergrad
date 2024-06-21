@@ -89,7 +89,7 @@ class GymMulti(ExperimentFunction):
 
         gym_env_names = []
         max_displays = 10
-        for e in gym.envs.registry.all():
+        for e in gym.envs.registry.values():  # .all():
             try:
                 assert not any(
                     x in str(e.id)

@@ -127,7 +127,7 @@ class Perceptron(ExperimentFunction):
         np.ndarray
             transformed data
         """
-        parameters = np.array(parameters, copy=False)
+        parameters = np.asarray(parameters)
         assert parameters.shape == (10,)
         tmp = np.tanh(self._x[:, None] * parameters[None, :3] + parameters[None, 3:6])
         tmp *= parameters[None, 6:9]

@@ -23,6 +23,13 @@ from scipy.linalg import toeplitz
 # pylint: disable=blacklisted-name,too-many-locals,too-many-arguments
 
 
+def trapezoid(a, b):  # type: ignore
+    try:
+        return np.trapz(a, b)  # numpy < 2.0
+    except:  # type: ignore
+        return np.trapezoid(a, b)  # numpy 2.0
+
+
 def bragg(X: np.ndarray) -> float:
     """
     Cost function for the Bragg mirror problem: maximizing the reflection
@@ -109,8 +116,8 @@ def c_bas(A: np.ndarray, V: np.ndarray, h: float) -> np.ndarray:
 
 
 def marche(a: float, b: float, p: float, n: int, x: float) -> np.ndarray:
-    l = np.zeros(n, dtype=np.complex_)  # noqa
-    m = np.zeros(n, dtype=np.complex_)
+    l = np.zeros(n, dtype=np.complex128)  # noqa
+    m = np.zeros(n, dtype=np.complex128)
     tmp = (
         1
         / (2 * np.pi * np.arange(1, n))
@@ -187,7 +194,7 @@ def morpho(X: np.ndarray) -> float:
     l = lam / d  # noqa
     k0 = 2 * np.pi / l
     P, V = homogene(k0, 0, pol, 1, n)
-    S = np.block([[np.zeros([n, n]), np.eye(n, dtype=np.complex_)], [np.eye(n), np.zeros([n, n])]])
+    S = np.block([[np.zeros([n, n]), np.eye(n, dtype=np.complex128)], [np.eye(n), np.zeros([n, n])]])
     for j in range(0, n_motifs):
         Pc, Vc = creneau(k0, 0, pol, e2, 1, a[j], n, x0[j])
         S = cascade(S, interface(P, Pc))
@@ -196,7 +203,7 @@ def morpho(X: np.ndarray) -> float:
         S = c_bas(S, V, spacers[j])
     Pc, Vc = homogene(k0, 0, pol, e2, n)
     S = cascade(S, interface(P, Pc))
-    R = np.zeros(3, dtype=np.float_)
+    R = np.zeros(3, dtype=np.float64)
     for j in range(-1, 2):
         R[j] = abs(S[j + nmod, nmod]) ** 2 * np.real(V[j + nmod]) / k0
     cost: float = 1 - (R[-1] + R[1]) / 2 + R[0] / 2
@@ -208,7 +215,7 @@ def morpho(X: np.ndarray) -> float:
         P, V = homogene(k0, 0, pol, 1, n)
         S = np.block(
             [
-                [np.zeros([n, n], dtype=np.complex_), np.eye(n)],
+                [np.zeros([n, n], dtype=np.complex128), np.eye(n)],
                 [np.eye(n), np.zeros([n, n])],
             ]
         )
@@ -366,8 +373,8 @@ def cf_photosic_reference(X: np.ndarray) -> float:
         absorb = absorption(lam, epsilon, mu, type_, hauteur, pol, theta)
         scc[k] = solar(lam)
         Ab[k] = absorb[len(absorb) - 1]
-    max_scc = np.trapz(scc, vlam)
-    j_sc = np.trapz(scc * Ab, vlam)
+    max_scc = trapezoid(scc, vlam)
+    j_sc = trapezoid(scc * Ab, vlam)
     CE = j_sc / max_scc
     cost = 1 - CE
     return cost  # type: ignore
@@ -404,8 +411,8 @@ def cf_photosic_realistic(eps_and_d: np.ndarray) -> float:
         absorb = absorption(lam, epsilon, mu, type_, hauteur, pol, theta)
         scc[k] = solar(lam)
         Ab[k] = absorb[len(absorb) - 1]
-    max_scc = np.trapz(scc, vlam)
-    j_sc = np.trapz(scc * Ab, vlam)
+    max_scc = trapezoid(scc, vlam)
+    j_sc = trapezoid(scc * Ab, vlam)
     CE = j_sc / max_scc
     cost = 1 - CE
     return cost  # type: ignore
