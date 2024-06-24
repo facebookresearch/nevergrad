@@ -81,20 +81,53 @@ def exploitation(P, Q, exploitation_budget = 500, algo="DiscreteLenglerOnePlusOn
 
 ng_orig_optims = list(ng.optimizers.registry.keys())
 
-ng_optims = (["PKL"] * 8) +["RS"]
-ng_optims += ["explo" + o for o in ng_orig_optims if "ois" in o and "iscr" in o]  # Direct optimization of exploitation
-ng_optims += ["explO" + o for o in ng_orig_optims if "ois" in o and "iscr" in o]  # Direct optimization of exploitation, with more evals per iteration
-ng_optims += ["fip__" + o for o in ng_orig_optims if ("ois" not in o) and "iscr" in o]  # Fictitious play
-ng_optims += ["fip__" + o for o in ng_orig_optims if ("ois" not in o) and "iscr" in o]  # Fictitious play
+ng_optims = (["Pkl"] * 8) +["RS"]
 
+ng_optims += ["explo" + o for o in ng_orig_optims if "ois" in o and "iscr" in o]  # Direct optimization of exploitation
+ng_optims +=  ["explo" + o for o in ng_orig_optims if "ptimis" in o ]  # Direct optimization of exploitation
+ng_optims += ["explo" + o for o in ng_orig_optims if "XLog" in o ]  # Direct optimization of exploitation
+
+ng_optims += ["explO" + o for o in ng_orig_optims if "ois" in o and "iscr" in o]  # Direct optimization of exploitation, with more evals per iteration
+ng_optims += ["explO" + o for o in ng_orig_optims if "ptimis" in o ]  # Direct optimization of exploitation
+ng_optims += ["explO" + o for o in ng_orig_optims if "XLog" in o ]  # Direct optimization of exploitation
+
+ng_optims += ["fip__" + o for o in ng_orig_optims if ("ois" not in o) and "iscr" in o]  # Fictitious play
+ng_optims += ["fip__" + o for o in ng_orig_optims if "ptimis" in o ]  # Direct optimization of exploitation
+ng_optims += ["fip__" + o for o in ng_orig_optims if "XLog" in o ]  # Direct optimization of exploitation
+
+ng_optims += ["fipl_" + o for o in ng_orig_optims if ("ois" not in o) and "iscr" in o]  # Fictitious play
+ng_optims += ["fipl_" + o for o in ng_orig_optims if "ptimis" in o ]  # Direct optimization of exploitation
+ng_optims += ["fipl_" + o for o in ng_orig_optims if "XLog" in o ]  # Direct optimization of exploitation
+
+ng_optims += ["fpll_" + o for o in ng_orig_optims if ("ois" not in o) and "iscr" in o]  # Fictitious play
+ng_optims += ["fpll_" + o for o in ng_orig_optims if "ptimis" in o ]  # Direct optimization of exploitation
+ng_optims += ["fpll_" + o for o in ng_orig_optims if "XLog" in o ]  # Direct optimization of exploitation
+
+ng_optims += ["exlog" + o for o in ng_orig_optims if "SQP" in o  or "MetaModel" in o]  # Direct optimization of exploitation
+ng_optims += ["exlog" + o for o in ng_orig_optims if "XLog" in o ]  # Direct optimization of exploitation
+ng_optims += ["exlog" + o for o in ng_orig_optims if "ptimis" in o ]  # Direct optimization of exploitation
+ng_optims += ["exlog" + o for o in ng_orig_optims if "ois" in o and "iscr" in o]  # Direct optimization of exploitation, with more evals per iteration
+ng_optims += ["exlog" + o for o in ng_orig_optims if "ois" in o and "iscr" in o]  # Direct optimization of exploitation, with more evals per iteration
+ng_optims += ["exlog" + o for o in ng_orig_optims if "ois" in o and "iscr" in o]  # Direct optimization of exploitation, with more evals per iteration
+
+ng_optims += ["ficpl" + o for o in ng_orig_optims if "SQP" in o  or "MetaModel" in o]  # Direct optimization of exploitation
+ng_optims += ["ficpl" + o for o in ng_orig_optims if "XLog" in o ]  # Direct optimization of exploitation
+ng_optims += ["ficpl" + o for o in ng_orig_optims if "ptimis" in o ]  # Direct optimization of exploitation
+ng_optims += ["ficpl" + o for o in ng_orig_optims if "ois" in o and "iscr" in o]  # Direct optimization of exploitation, with more evals per iteration
+ng_optims += ["ficpl" + o for o in ng_orig_optims if "ois" in o and "iscr" in o]  # Direct optimization of exploitation, with more evals per iteration
+ng_optims += ["ficpl" + o for o in ng_orig_optims if "ois" in o and "iscr" in o]  # Direct optimization of exploitation, with more evals per iteration
+
+ng_optims = ["Pkl"]
 #print(ng_optims)
 algo = np.random.choice(ng_optims)
 #algo = "RS"
 #print("We work with ", algo)
 
+factor = 10
 
-if algo[:4] == "expl":
-    budget = np.random.choice([10, 20, 40, 80, 160, 320, 640, 1280, 2560, 5120, 10240])
+if algo[:4] in ["expl", "exlo"]:
+    budget = 50 * np.random.choice([10, 20, 40, 80, 160, 320, 640, 1280, 2560, 5120, 10240])
+    budget *= factor
     optim = ng.optimizers.registry[algo[5:]](ng.p.Array(shape=(2, lambd, N), lower=0., upper=1.).set_integer_casting(), budget)
     num = 0 if algo[:4] == "expl"  else 100
     def expl(r):
@@ -102,7 +135,7 @@ if algo[:4] == "expl":
         q = r[1]
         global num
         num = num + 1
-        return exploitation(p, q, num)
+        return exploitation(p, q, num) if algo != "exlog" else exploitation(p, q, 1+int(np.log(num)))
     r = optim.minimize(expl).value
     P = r[0]
     Q = r[1]
@@ -115,6 +148,7 @@ elif algo[:5] == "fip__":
     Q = np.random.rand(lambd, N) > .5
     num = 0
     budget = np.random.choice([10, 20, 40, 80, 160, 320, 640, 1280, 2560, 5120, 10240, 20480, 40960, 81920, 163840, 327680])
+    budget *= factor
     iteration = 0
     for i in range(budget):
         iteration = iteration + 1
@@ -124,7 +158,42 @@ elif algo[:5] == "fip__":
         P[iteration % lambd] = bestx
         Q[iteration % lambd] = besty
         
-elif algo == "PKL":
+elif algo[:5] == "ficpl":
+    P = np.random.rand(lambd, N) > .5
+    Q = np.random.rand(lambd, N) > .5
+    P2 = np.random.rand(lambd, N) > .5
+    Q2 = np.random.rand(lambd, N) > .5
+    num = 100
+    budget = np.random.choice([10, 20, 40, 80, 160, 320, 640, 1280, 2560, 5120, 10240, 20480, 40960, 81920, 163840, 327680])
+    budget *= factor
+    iteration = 0
+    for i in range(budget // lambd):
+      for j in range(lambd):
+        iteration = iteration + 1
+        num = num + 1
+        l, bestx, besty = exploitation(P, Q, num, needargmax=True)  # if algo[:5] == "fipl_" else (1+int(np.log(num))), algo[5:], needargmax=True)
+
+        P2[j] = bestx
+        Q2[j] = besty
+      P = copy.deepcopy(P2)
+      Q = copy.deepcopy(Q2)
+        
+elif algo[:5] in ["fipl_", "fpll_"]:
+    P = np.random.rand(lambd, N) > .5
+    Q = np.random.rand(lambd, N) > .5
+    num = 100
+    budget = np.random.choice([10, 20, 40, 80, 160, 320, 640, 1280, 2560, 5120, 10240, 20480, 40960, 81920, 163840, 327680])
+    budget *= factor
+    iteration = 0
+    for i in range(budget):
+        iteration = iteration + 1
+        num = num + 1
+        l, bestx, besty = exploitation(P, Q, num if algo[:5] == "fipl_" else (1+int(np.log(num))), algo[5:], needargmax=True)
+
+        P[iteration % lambd] = bestx
+        Q[iteration % lambd] = besty
+        
+elif algo == "Pkl":
     def dom(x1, y1, x2, y2):
         left = f(x1, y2)
         middle = f(x1, y1)
@@ -138,7 +207,7 @@ elif algo == "PKL":
     Q2 = np.random.rand(lambd, N) > .5
     
     nbiter = np.random.choice([10, 20, 40, 80, 160, 320, 640, 1280, 2560, 5120, 10240, 20480, 40960, 81920, 163840, 327680, 655360, 1320000])
-    
+    nbiter*= 10
     for t in range(nbiter):
     
         for i in range(lambd):
@@ -156,9 +225,9 @@ elif algo == "PKL":
             Q2[i] = y
             for k in range(N):
                 if np.random.rand() < kappa / N:
-                    P[i][k] = 1 - P[i][k]
+                    P2[i][k] = 1 - P2[i][k]
                 if np.random.rand() < kappa / N:
-                    Q[i][k] = 1 - Q[i][k]
+                    Q2[i][k] = 1 - Q2[i][k]
         P = copy.deepcopy(P2)
         Q = copy.deepcopy(Q2)
 
