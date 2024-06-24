@@ -1,0 +1,98 @@
+import numpy as np
+
+
+class OptimizedRefinedMemoryDualPhaseStrategyV65:
+    def __init__(
+        self,
+        budget,
+        dimension=5,
+        population_size=100,
+        F_init=0.5,
+        CR_init=0.9,
+        memory_size=10,
+        switch_ratio=0.7,
+    ):
+        self.budget = budget
+        self.dimension = dimension
+        self.pop_size = population_size
+        self.F = F_init  # Initial mutation factor
+        self.CR = CR_init  # Initial crossover rate
+        self.memory_size = memory_size
+        self.switch_ratio = switch_ratio
+        self.lower_bounds = -5.0 * np.ones(self.dimension)
+        self.upper_bounds = 5.0 * np.ones(self.dimension)
+        self.memory = []
+
+    def initialize_population(self):
+        return np.random.uniform(self.lower_bounds, self.upper_bounds, (self.pop_size, self.dimension))
+
+    def mutate(self, population, best_idx, index, phase):
+        size = len(population)
+        idxs = [idx for idx in range(size) if idx != index]
+        a, b, c = np.random.choice(idxs, 3, replace=False)
+        if phase == 1:
+            # More explorative mutation
+            mutant = population[best_idx] + self.F * (population[b] - population[c])
+        else:
+            # Use memory to guide mutation in phase 2, more exploitative
+            memory_effect = (
+                np.sum(self.memory, axis=0) / len(self.memory) if self.memory else np.zeros(self.dimension)
+            )
+            mutant = population[a] + self.F * (population[b] - population[c]) + memory_effect
+        return np.clip(mutant, self.lower_bounds, self.upper_bounds)
+
+    def crossover(self, target, mutant):
+        crossover_mask = np.random.rand(self.dimension) < self.CR
+        return np.where(crossover_mask, mutant, target)
+
+    def select(self, target, trial, func):
+        f_target = func(target)
+        f_trial = func(trial)
+        if f_trial < f_target:
+            # Save successful changes to memory
+            if len(self.memory) < self.memory_size:
+                self.memory.append(trial - target)
+            else:
+                # Remove oldest memory and add new
+                self.memory.pop(0)
+                self.memory.append(trial - target)
+            return trial, f_trial
+        else:
+            return target, f_target
+
+    def adjust_parameters(self, iteration, total_iterations):
+        # Sigmoid-based dynamic adjustment for parameters
+        scale = 1 / (1 + np.exp(-10 * ((iteration / total_iterations) - 0.5)))
+        self.F = np.clip(0.5 + 0.5 * np.sin(np.pi * scale), 0.1, 1)
+        self.CR = np.clip(0.5 + 0.5 * np.cos(np.pi * scale), 0.1, 1)
+
+    def __call__(self, func):
+        population = self.initialize_population()
+        fitnesses = np.array([func(ind) for ind in population])
+        evaluations = len(population)
+        best_idx = np.argmin(fitnesses)
+        total_iterations = self.budget // self.pop_size
+        switch_point = int(self.switch_ratio * total_iterations)
+
+        for iteration in range(total_iterations):
+            phase = 1 if iteration < switch_point else 2
+            self.adjust_parameters(iteration, total_iterations)
+
+            for i in range(self.pop_size):
+                mutant = self.mutate(population, best_idx, i, phase)
+                trial = self.crossover(population[i], mutant)
+                trial, trial_fitness = self.select(population[i], trial, func)
+                evaluations += 1
+
+                if trial_fitness < fitnesses[i]:
+                    population[i] = trial
+                    fitnesses[i] = trial_fitness
+                    if trial_fitness < fitnesses[best_idx]:
+                        best_idx = i
+
+                if evaluations >= self.budget:
+                    break
+
+        best_fitness = fitnesses[best_idx]
+        best_solution = population[best_idx]
+        return best_fitness, best_solution

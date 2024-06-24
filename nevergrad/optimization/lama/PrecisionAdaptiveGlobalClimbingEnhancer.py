@@ -1,0 +1,95 @@
+import numpy as np
+
+
+class PrecisionAdaptiveGlobalClimbingEnhancer:
+    def __init__(self, budget=10000):
+        self.budget = budget
+        self.dim = 5
+        self.lb = np.full(self.dim, -5.0)
+        self.ub = np.full(self.dim, 5.0)
+
+    def __call__(self, func):
+        population_size = 500  # Increased population size for more exploration
+        elite_size = 100  # Bigger elite size to retain more high-quality solutions
+        evaluations = 0
+
+        # Initialize population
+        population = np.random.uniform(self.lb, self.ub, (population_size, self.dim))
+        fitness = np.array([func(ind) for ind in population])
+        evaluations += population_size
+
+        best_idx = np.argmin(fitness)
+        self.f_opt = fitness[best_idx]
+        self.x_opt = population[best_idx]
+
+        # Strategy parameters
+        mutation_scale = 0.15  # Slightly increased initial mutation scale
+        adaptive_factor = 0.85  # Increased adaptiveness to fitness landscape
+        recombination_prob = 0.95  # Increased probability of recombination
+
+        # Enhancing exploration and exploitation
+        last_best_fitness = np.inf
+
+        while evaluations < self.budget:
+            success_count = 0
+            new_population = []
+            new_fitness = []
+
+            for i in range(population_size):
+                if np.random.rand() < recombination_prob:
+                    parents_indices = np.random.choice(
+                        population_size, 3, replace=False
+                    )  # Reduce number of parents
+                    parents = population[parents_indices]
+                    child = np.mean(parents, axis=0)  # Mean recombination
+                else:
+                    parent_idx = np.random.choice(population_size)
+                    child = population[parent_idx].copy()
+
+                # Adaptive mutation control
+                distance_to_best = np.linalg.norm(population[best_idx] - child)
+                individual_mutation_scale = mutation_scale * (adaptive_factor**distance_to_best)
+                mutation = np.random.normal(0, individual_mutation_scale, self.dim)
+                child += mutation
+                child = np.clip(child, self.lb, self.ub)
+
+                child_fitness = func(child)
+                evaluations += 1
+
+                if child_fitness < fitness[i]:
+                    new_population.append(child)
+                    new_fitness.append(child_fitness)
+                    success_count += 1
+                else:
+                    new_population.append(population[i])
+                    new_fitness.append(fitness[i])
+
+            population = np.array(new_population)
+            fitness = np.array(new_fitness)
+
+            current_best_idx = np.argmin(fitness)
+            if fitness[current_best_idx] < self.f_opt:
+                self.f_opt = fitness[current_best_idx]
+                self.x_opt = population[current_best_idx]
+
+                if fitness[current_best_idx] < last_best_fitness:
+                    last_best_fitness = fitness[current_best_idx]
+                    success_rate = success_count / population_size
+                    mutation_scale += 0.02 * (1 - success_rate)  # More aggressive scaling
+                    adaptive_factor = min(
+                        1.0, adaptive_factor + 0.03 * success_rate
+                    )  # More dynamic adaptivity
+
+            # Elite reinforcement with periodic global refinement
+            if evaluations % 500 == 0:
+                elite_indices = np.argsort(fitness)[:elite_size]
+                elite_individuals = population[elite_indices]
+                for idx in range(population_size):
+                    if (
+                        idx not in elite_indices and np.random.rand() < 0.15
+                    ):  # Increased chance of elite replacements
+                        population[idx] = elite_individuals[np.random.choice(elite_size)]
+                        fitness[idx] = func(population[idx])
+                        evaluations += 1
+
+        return self.f_opt, self.x_opt
