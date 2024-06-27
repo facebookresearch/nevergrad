@@ -122,7 +122,9 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 def five_objective_function(x):
                     return objective_function(10.0 * x - 5.0)
 
-                val, best_x = lama_register[method_name](budget)(five_objective_function)
+                lama = lama_register[method_name](budget)
+                lama.dim = weakself.dimension
+                val, best_x = lama(five_objective_function)
                 best_x = 10.0 * best_x - 5.0
                 if weakself._normalizer is not None:
                     best_x = weakself._normalizer.backward(np.asarray(best_x, dtype=np.float32))

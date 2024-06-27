@@ -127,10 +127,15 @@ class EliteQuantumDifferentialMemeticOptimizer:
                 else:
                     self.local_search_prob = max(0.1, self.local_search_prob - 0.1)
 
-            particles, fitness, personal_bests, personal_best_fits, global_best, global_best_fit = (
-                self.enhanced_adaptive_restart(
-                    particles, fitness, personal_bests, personal_best_fits, global_best, global_best_fit, func
-                )
+            (
+                particles,
+                fitness,
+                personal_bests,
+                personal_best_fits,
+                global_best,
+                global_best_fit,
+            ) = self.enhanced_adaptive_restart(
+                particles, fitness, personal_bests, personal_best_fits, global_best, global_best_fit, func
             )
 
             if evaluations % (self.swarm_size * 10) == 0:
