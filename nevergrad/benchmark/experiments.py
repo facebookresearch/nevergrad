@@ -61,9 +61,9 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
     #    "SmallLognormalDiscreteOnePlusOne",
     #    "XLognormalDiscreteOnePlusOne",
     # ])]
-    lama = ["NgIohTuned"] + [o for o in list(ng.optimizers.registry.keys()) if "LAMA" in o]
+    lama = ["DiagonalCMA", "PymooBIPOP", "DE", "SQOPSO"] + (["NgIohTuned"] * 5) + [o for o in list(ng.optimizers.registry.keys()) if "LAMA" in o]
     optims = [o for o in ng.optimizers.registry.keys() if "LAMA" in o]
-    lama = ["NgIohTuned"] * 10 + [o for o in optims if any([(x in o) for x in ["ADEM", "ptiveHarmonySearch", "CMAESDE","bridDEPSOWithDyn", "CMA","ERADS_Q","EnhancedDynamicPrec","hancedFirew","QPSO","QuantumDifferentialPart"]])]
+    lama = ["DiagonalCMA", "PymooBIPOP", "DE", "SQOPSO"] + (["NgIohTuned"] * 10) + [o for o in optims if any([(x in o) for x in ["ADEM", "ptiveHarmonySearch", "CMAESDE","bridDEPSOWithDyn", "CMA","ERADS_Q","EnhancedDynamicPrec","hancedFirew","QPSO","QuantumDifferentialPart"]])]
     return list(np.random.choice(lama, 55))
     # "BigLognormalDiscreteOnePlusOne",
     # "DiscreteLenglerOnePlusOne",
@@ -744,6 +744,7 @@ def keras_tuning(
     optims = refactor_optims(optims)
     datasets = ["kerasBoston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
     optims = refactor_optims(optims)
+    optims = ["NgIohTuned"]
     for dimension in [None]:
         for dataset in datasets:
             function = MLTuning(
@@ -3861,7 +3862,8 @@ def lsgo() -> tp.Iterator[Experiment]:
     optims = ["TinyQODE", "OpoDE", "OpoTinyDE"]
     optims = refactor_optims(optims)
     optims = [np.random.choice(optims)]
-    for i in range(1, 16):  # [np.random.choice(list(range(1, 16)))]:
+    optims = ["NgIohTuned"]
+    for i in [np.random.choice(list(range(1, 16)))]:  # [np.random.choice(list(range(1, 16)))]:
         for optim in optims:
             for budget in [120000, 600000, 3000000]:
                 yield Experiment(lsgo_makefunction(i).instrumented(), optim, budget=budget)

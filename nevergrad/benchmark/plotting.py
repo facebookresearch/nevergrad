@@ -167,7 +167,7 @@ def remove_errors(df: pd.DataFrame) -> utils.Selector:
     try:
        df.loc[np.isnan(df.loss), "loss"] = float("inf")
     except Exception as e:
-       print("pb with isnan(loss): {e}")
+       print(f"pb with isnan(loss): {e}")
     #
     assert (
         not output.loc[:, "loss"].isnull().values.any()
