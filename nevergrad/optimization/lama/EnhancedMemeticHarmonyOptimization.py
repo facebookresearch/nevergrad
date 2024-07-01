@@ -1,0 +1,124 @@
+import numpy as np
+
+
+class EnhancedMemeticHarmonyOptimization:
+    def __init__(
+        self,
+        budget=10000,
+        hmcr=0.7,
+        par=0.4,
+        bw=0.6,
+        memetic_iter=1000,
+        memetic_prob=0.8,
+        memetic_step=0.1,
+        explore_prob=0.1,
+        local_search_prob=0.7,
+    ):
+        self.budget = budget
+        self.dim = 5
+        self.hmcr = hmcr
+        self.par = par
+        self.bw = bw
+        self.memetic_iter = memetic_iter
+        self.memetic_prob = memetic_prob
+        self.memetic_step = memetic_step
+        self.explore_prob = explore_prob
+        self.local_search_prob = local_search_prob
+
+    def _initialize_harmony_memory(self, func):
+        harmony_memory = [np.random.uniform(-5.0, 5.0, size=self.dim) for _ in range(self.budget)]
+        harmony_memory_costs = [func(hm) for hm in harmony_memory]
+        return harmony_memory, harmony_memory_costs
+
+    def _improvise_new_harmony(self, harmony_memory):
+        new_harmony = np.empty(self.dim)
+        for i in range(self.dim):
+            if np.random.rand() < self.hmcr:
+                if np.random.rand() < self.par:
+                    new_harmony[i] = harmony_memory[np.random.randint(len(harmony_memory))][i]
+                else:
+                    new_harmony[i] = np.random.uniform(-5.0, 5.0)
+            else:
+                new_harmony[i] = np.random.uniform(-5.0, 5.0)
+
+            if np.random.rand() < self.bw:
+                new_harmony[i] += np.random.normal(0, 1)
+
+            new_harmony[i] = np.clip(new_harmony[i], -5.0, 5.0)
+
+        return new_harmony
+
+    def _memetic_local_search(self, harmony, func):
+        best_harmony = harmony.copy()
+        best_cost = func(harmony)
+
+        for _ in range(self.memetic_iter):
+            mutated_harmony = harmony + np.random.normal(0, self.memetic_step, size=self.dim)
+            mutated_harmony = np.clip(mutated_harmony, -5.0, 5.0)
+            cost = func(mutated_harmony)
+
+            if cost < best_cost:
+                best_harmony = mutated_harmony
+                best_cost = cost
+
+        return best_harmony, best_cost
+
+    def _apply_memetic_search(self, harmony_memory, harmony_memory_costs, func):
+        for idx in range(len(harmony_memory)):
+            if np.random.rand() < self.memetic_prob:
+                harmony_memory[idx], harmony_memory_costs[idx] = self._memetic_local_search(
+                    harmony_memory[idx], func
+                )
+
+        return harmony_memory, harmony_memory_costs
+
+    def _harmony_selection(self, harmony_memory, harmony_memory_costs, n_select):
+        idx = np.argsort(harmony_memory_costs)[:n_select]
+        return [harmony_memory[i] for i in idx], [harmony_memory_costs[i] for i in idx]
+
+    def _adapt_parameters(self, iteration):
+        self.hmcr = max(0.5, self.hmcr - 0.1 * iteration / self.budget)
+        self.par = min(0.7, self.par + 0.1 * iteration / self.budget)
+        self.bw = max(0.3, self.bw - 0.2 * iteration / self.budget)
+        self.memetic_prob = min(0.95, self.memetic_prob + 0.1 * iteration / self.budget)
+        self.memetic_step = max(0.01, self.memetic_step - 0.09 * iteration / self.budget)
+
+    def __call__(self, func):
+        self.f_opt = np.Inf
+        self.x_opt = None
+        harmony_memory, harmony_memory_costs = self._initialize_harmony_memory(func)
+        convergence_curve = []
+
+        for i in range(self.budget):
+            new_harmony = self._improvise_new_harmony(harmony_memory)
+
+            if np.random.rand() < self.explore_prob:
+                new_harmony = np.random.uniform(-5.0, 5.0, size=self.dim)
+
+            if np.random.rand() < self.local_search_prob:
+                new_harmony, new_cost = self._memetic_local_search(new_harmony, func)
+            else:
+                new_cost = func(new_harmony)
+
+            harmony_memory.append(new_harmony)
+            harmony_memory_costs.append(new_cost)
+
+            harmony_memory, harmony_memory_costs = self._apply_memetic_search(
+                harmony_memory, harmony_memory_costs, func
+            )
+
+            harmony_memory, harmony_memory_costs = self._harmony_selection(
+                harmony_memory, harmony_memory_costs, len(harmony_memory) - self.budget
+            )
+
+            if new_cost < self.f_opt:
+                self.f_opt = new_cost
+                self.x_opt = new_harmony
+
+            self._adapt_parameters(i)
+            convergence_curve.append(self.f_opt)
+
+        mean_aocc = np.mean(np.array(convergence_curve))
+        std_dev = np.std(np.array(convergence_curve))
+
+        return mean_aocc, std_dev

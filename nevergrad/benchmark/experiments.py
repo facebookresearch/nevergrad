@@ -61,21 +61,26 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
     #    "SmallLognormalDiscreteOnePlusOne",
     #    "XLognormalDiscreteOnePlusOne",
     # ])]
-    return [
-        # "BigLognormalDiscreteOnePlusOne",
-        # "DiscreteLenglerOnePlusOne",
-        # "NgLn",
-        # "SmallLognormalDiscreteOnePlusOne",
-        # "XLognormalDiscreteOnePlusOne",
-        "XSmallLognormalDiscreteOnePlusOne",
-        "MultiLN",
-        "NgRS",
-        "NgIohRS",
-        "NgIohMLn",
-        "NgIohLn",
-        # "LognormalDiscreteOnePlusOne",
-        # "HugeLognormalDiscreteOnePlusOne",
-    ]
+    lama = ["DiagonalCMA", "PymooBIPOP", "DE", "SQOPSO"] + (["NgIohTuned"] * 5) + [o for o in list(ng.optimizers.registry.keys()) if "LAMA" in o]
+    optims = [o for o in ng.optimizers.registry.keys() if "LAMA" in o]
+    lama = ["DiagonalCMA", "PymooBIPOP", "DE", "SQOPSO"] + (["NgIohTuned"] * 10) + [o for o in optims if any([(x in o) for x in ["ADEM", "ptiveHarmonySearch", "CMAESDE","bridDEPSOWithDyn", "CMA","ERADS_Q","EnhancedDynamicPrec","hancedFirew","QPSO","QuantumDifferentialPart"]])]
+    return list(np.random.choice(lama, 55))
+    # "BigLognormalDiscreteOnePlusOne",
+    # "DiscreteLenglerOnePlusOne",
+    # "NgLn",
+    # "SmallLognormalDiscreteOnePlusOne",
+    # "XLognormalDiscreteOnePlusOne",
+    if False:
+        return [
+            "XSmallLognormalDiscreteOnePlusOne",
+            "MultiLN",
+            "NgRS",
+            "NgIohRS",
+            "NgIohMLn",
+            "NgIohLn",
+            # "LognormalDiscreteOnePlusOne",
+            # "HugeLognormalDiscreteOnePlusOne",
+        ]
     # return ["CSEC11"]
     # return [np.random.choice(["CSEC11", "SQOPSODCMA", "NgIoh4", "NGOpt"])]
     # return ["LPCMA"]  #return [np.random.choice(["CSEC10", "DSproba", "NgIoh4", "DSbase", "DS3p", "DSsubspace"])]
@@ -739,6 +744,7 @@ def keras_tuning(
     optims = refactor_optims(optims)
     datasets = ["kerasBoston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
     optims = refactor_optims(optims)
+    optims = ["NgIohTuned"]
     for dimension in [None]:
         for dataset in datasets:
             function = MLTuning(
@@ -1691,15 +1697,15 @@ def yabbob(
         for name in names
         for rotation in [True, False]
         for num_blocks in ([1] if not split else [7, 12])
-        for d in (
+         for d in (
             [100, 1000, 3000]
             if hd
             else (
                 [2, 5, 10, 15]
                 if tuning
-                else ([40] if bounded else ([2, 3, 5, 10, 15, 20, 50] if noise else [2, 10, 50]))
+                else ([40] if bounded else ([2, 3, 5, 10, 15, 20, 50] if noise else [2, 5, 10, 50]))  # added 5 for lama stuff
             )
-        )
+         )
     ]
 
     assert reduction_factor in [1, 7, 13, 17]  # needs to be a cofactor
@@ -1767,6 +1773,8 @@ def yabbob(
     if bounded:
         budgets = [10, 20, 40, 100, 300]
     optims = refactor_optims(optims)
+    if hd or big:
+        optims = [np.random.choice(optims)]
     for optim in optims:
         for function in functions:
             for budget in budgets:
@@ -2121,6 +2129,7 @@ def zp_ms_bbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                     yield Experiment(function, optim, budget=budget, num_workers=nw, seed=next(seedg))
 
 
+@registry.register
 def nozp_noms_bbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Testing optimizers on exponentiated problems.
     Cigar, Ellipsoid.
@@ -3852,7 +3861,9 @@ def lsgo() -> tp.Iterator[Experiment]:
     optims = ["DiagonalCMA", "TinyQODE", "OpoDE", "OpoTinyDE"]
     optims = ["TinyQODE", "OpoDE", "OpoTinyDE"]
     optims = refactor_optims(optims)
-    for i in range(1, 16):  # [np.random.choice(list(range(1, 16)))]:
+    optims = [np.random.choice(optims)]
+    optims = ["NgIohTuned"]
+    for i in [np.random.choice(list(range(1, 16)))]:  # [np.random.choice(list(range(1, 16)))]:
         for optim in optims:
             for budget in [120000, 600000, 3000000]:
                 yield Experiment(lsgo_makefunction(i).instrumented(), optim, budget=budget)

@@ -18,7 +18,10 @@ if compgen -G "*.csv" > /dev/null; then
 # First we run all nevergrad plotting.
 for i in `ls *.csv `
 do
-    (python -m nevergrad.benchmark.plotting --nomanyxp=1 $i ; python -m nevergrad.benchmark.plotting --max_combsize=2 --competencemaps=1 --nomanyxp=1 $i ) &
+    #python -m nevergrad.benchmark.plotting --max_combsize=1  $i 
+    (python -m nevergrad.benchmark.plotting --nomanyxp=1 $i ; 
+     python -m nevergrad.benchmark.plotting --max_combsize=1 --competencemaps=0 --nomanyxp=1 $i ;
+     python -m nevergrad.benchmark.plotting --max_combsize=0 --competencemaps=0 --nomanyxp=0 $i ) &
 
 done
 wait
@@ -41,7 +44,8 @@ wait
 fi # End of "there is something to do".
 
 # tar -zcvf ~/dag.tgz *_plots
-scripts/latexize.sh
+#scripts/latexize.sh
 
 tar -zcvf dagstuhloid.tgz dagstuhloid.pdf *.csv *plots/xpresults_all.png rnk_*.txt *plots/fight_all.png.cp.txt
 
+tar -zcvf ~/lamamd.tgz *plots/xp*dimension5,*.png *plots/xpresults*.png  *plots/figh*dimensions5.0.*pure.png *plots/fight_all*pure.png

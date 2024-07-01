@@ -136,6 +136,17 @@ def remove_errors(df: pd.DataFrame) -> utils.Selector:
     df = utils.Selector(df)
     if "error" not in df.columns:  # backward compatibility
         return df  # type: ignore
+    dropped = []
+    non_dropped = 0
+    for index, row in df.iterrows():
+        try:
+            if np.isnan(row["loss"]):
+                pass
+            non_dropped += 1
+        except:
+            dropped += [index]
+    print(f"Dropped: {len(dropped)},   Non-dropped: {non_dropped}")
+    df.drop(dropped, inplace=True)
     # errors with no recommendation
     nandf = df.select(loss=np.isnan)
     for row in nandf.itertuples():
@@ -153,7 +164,10 @@ def remove_errors(df: pd.DataFrame) -> utils.Selector:
     err_inds = set(nandf.index)
     output = df.loc[[i for i in df.index if i not in err_inds], [c for c in df.columns if c != "error"]]
     # cast nans in loss to infinity
-    df.loc[np.isnan(df.loss), "loss"] = float("inf")
+    try:
+       df.loc[np.isnan(df.loss), "loss"] = float("inf")
+    except Exception as e:
+       print(f"pb with isnan(loss): {e}")
     #
     assert (
         not output.loc[:, "loss"].isnull().values.any()
