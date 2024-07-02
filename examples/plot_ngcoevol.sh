@@ -1,22 +1,18 @@
 #!/bin/bash
+pbs="`grep '^Game' ngco*.out | sed 's/.*://g' | sed 's/_.*//g' | sed 's/^Game//g' | sed 's/_.*//g' | sort | uniq | grep -iv pkl`"
 
-touch specifs.txt
-rm specifs.txt
-grep Specificat *.out | sed 's/.*Specifications://g' | sort | uniq  > specifs.txt
-
-for s in `seq 0 31` 
+for pb in $pbs
 #for s in `seq 0 31` ''
 do
 # echo seed${s}_
 ( 
-echo 'from collections import defaultdict ' > plotter.py
-echo -n "title = '"
-echo -n `cat specifs.txt | grep "seed${s},"`
-echo "'" ) >> plotter.py
+echo 'from collections import defaultdict ' 
+echo -n "title = ' $pb ' " 
+echo " "  ) > plotter.py
 echo 'import matplotlib.pyplot as plt' >> plotter.py
 echo 'import numpy as np' >> plotter.py
 echo 'data = defaultdict(lambda: defaultdict(list))' >> plotter.py
-grep 'Algo.*seed.*__result' coevol_*.out | grep -v pkl | grep -v 'fp__' | grep `echo seed${s}_ | sed 's/seed_/./g' ` | sed 's/.*://g' | sed 's/fpll_/fplL/g' | sed 's/fipl_/fpl/g' | sed 's/fip__/fp/g' | sed 's/_/ /g' | awk '{ print "data[\"", $1, "\"][", $2, "] += [", $3, "]" }' | sed 's/budget//g' | sed 's/ loss//g' >> plotter.py
+grep 'Algo.*seed.*__result' ngcoevol_*.out | grep "Game${pb}_" | grep -v 'fp__' |  sed 's/.*://g' | sed 's/fpll_/fplL/g' | sed 's/fipl_/fpl/g' | sed 's/fip__/fp/g' | sed 's/_/ /g' | awk '{ print "data[\"", $2, "\"][", $3, "] += [", $4, "]" }' | sed 's/budget//g' | sed 's/ loss//g' >> plotter.py
 
 echo 'a = " AlgoRS "' >> plotter.py
 echo 'x = sorted([int(d) for d in data[a].keys()])' >> plotter.py
@@ -44,14 +40,14 @@ echo '   plt.text(x[-1], y[-1], a.replace("Lognormal", "LN").replace("Recombinin
 #echo 'plt.legend()' >> plotter.py
 echo 'plt.tight_layout()' >> plotter.py
 echo 'plt.title(title)' >> plotter.py
-echo "print('seed',  $s )" >>  plotter.py
+echo "print('game  ;" $pb "')" >>  plotter.py
 #echo 'print(allalgs)' >> plotter.py
 echo 'for idx, u in enumerate(sorted(allalgs)[:50]):' >> plotter.py
 echo '    print(idx, u)' >> plotter.py
-echo 'plt.savefig("coevol' $s '.png".replace(" ",""))' >> plotter.py
-mv plotter.py plotter${s}.py
+echo 'plt.savefig("ngcoevol' $pb '.png".replace(" ",""))' >> plotter.py
+mv plotter.py plotter${pb}.py
 # echo Plotter$s
-python plotter${s}.py
+python plotter${pb}.py
 
 #ls -ctrl coevol*.png
 done

@@ -63,16 +63,20 @@ if game == "pkl":
         return np.matmul(np.matmul(x, A), y) - np.matmul(b, x) - np.matmul(c, y)
 else:
     c0 = game[:2] == "c0"
+    s = 0 
     subgame = game[2:] if c0 else game
     N, _ = ng_game(subgame)
     lambd = int(50 * np.log(N))  # Size of the Nash approximation; lambd is the number of pure policies in our mixed policies
+    print(f"Dimension = {N}, pop = {lambd}")
     lower = [0.] * N
     upper = [100.] * N
     num_calls = 0
     def f(x, y):
         global num_calls
         num_calls += 1
-        return ng_game(subgame, gaussianize(x), gaussianize(y))
+        if int(np.sqrt(np.sqrt(num_calls))) > int(np.sqrt(np.sqrt(num_calls - 1))):
+             print(num_calls)
+        return ng_game(subgame, gaussianize(x), gaussianize(y)) if not c0 else ng_game(subgame, x, y)
 
 
 bestval = 0
@@ -85,7 +89,7 @@ def exploitation(P, Q, exploitation_budget = 500, algo="DiscreteLenglerOnePlusOn
     f0 = 0
     for i in range(lambd):
         for j in range(lambd):
-            f0 += f(P[i], Q[i])
+            f0 += f(P[i], Q[j])
     f0 = f0 / (lambd * lambd)
     global bestval
     bestval = float("inf")
@@ -169,15 +173,15 @@ ng_optims += ["exLOS" + o for o in ng_orig_optims if "ois" in o and "iscr" in o]
 ng_optims += ["exLOS" + o for o in ng_orig_optims if "ois" in o and "iscr" in o]  # Direct optimization of exploitation, with more evals per iteration
 #print(ng_optims)
 
-ng_optims = (["Pkl"] * 8) +["RS"]
+
 algo = np.random.choice(ng_optims)
 #algo = "RS"
-#print("We work with ", algo)
+print("The algorithm is ", algo)
 
 factor = 10
 
 if algo[:4] in ["expl", "exlo", "exLO"]:
-    budget = 50 * np.random.choice([10, 20, 40, 80, 160, 320, 640, 1280, 2560, 5120, 10240])
+    budget = 50 * np.random.choice([10, 20, 40, 80, 160]) #, 320, 640, 1280, 2560, 5120, 10240])
     budget *= factor
     big_lower = np.asarray([[lower for _  in range(lambd)] for _ in range(2)])
     big_upper = np.asarray([[upper for _  in range(lambd)] for _ in range(2)])
@@ -204,7 +208,7 @@ elif algo[:5] == "fip__":
     P = np.random.rand(lambd, N) > .5
     Q = np.random.rand(lambd, N) > .5
     num = 0
-    budget = np.random.choice([10, 20, 40, 80, 160, 320, 640, 1280, 2560, 5120, 10240, 20480, 40960, 81920, 163840, 327680])
+    budget = np.random.choice([10, 20, 40, 80, 160]) #, 320, 640, 1280, 2560, 5120, 10240, 20480, 40960, 81920, 163840, 327680])
     budget *= factor
     iteration = 0
     for i in range(budget):
@@ -221,7 +225,7 @@ elif algo[:5] == "ficpl":
     P2 = np.random.rand(lambd, N) > .5
     Q2 = np.random.rand(lambd, N) > .5
     num = 100
-    budget = np.random.choice([10, 20, 40, 80, 160, 320, 640, 1280, 2560, 5120, 10240, 20480, 40960, 81920, 163840, 327680])
+    budget = np.random.choice([10, 20, 40, 80, 160]) #, 320, 640, 1280, 2560, 5120, 10240, 20480, 40960, 81920, 163840, 327680])
     budget *= factor
     iteration = 0
     for i in range(budget // lambd):
@@ -239,7 +243,7 @@ elif algo[:5] in ["fipl_", "fpll_"]:
     P = np.random.rand(lambd, N) > .5
     Q = np.random.rand(lambd, N) > .5
     num = 100
-    budget = np.random.choice([10, 20, 40, 80, 160, 320, 640, 1280, 2560, 5120, 10240, 20480, 40960, 81920, 163840, 327680])
+    budget = np.random.choice([10, 20, 40, 80, 160]) #, 320, 640, 1280, 2560, 5120, 10240, 20480, 40960, 81920, 163840, 327680])
     budget *= factor
     iteration = 0
     for i in range(budget):
@@ -263,7 +267,7 @@ elif algo == "Pkl":
     P2 = np.random.rand(lambd, N) > .5
     Q2 = np.random.rand(lambd, N) > .5
     
-    nbiter = np.random.choice([10, 20, 40, 80, 160, 320, 640, 1280, 2560, 5120, 10240, 20480, 40960, 81920, 163840, 327680, 655360, 1320000])
+    nbiter = np.random.choice([10, 20, 40, 80, 160]) #, 320, 640, 1280, 2560, 5120, 10240, 20480, 40960, 81920, 163840, 327680, 655360, 1320000])
     nbiter*= 10
     for t in range(nbiter):
     
@@ -297,7 +301,7 @@ my_num_calls = num_calls
 
 ex = exploitation(P,Q)
 
-print(f"Game{game}_Algo{algo}_budget{my_num_calls}_loss{ex}_seed{s}__result")
+print(f"Game{game}_Algo{algo}_budget{my_num_calls}_loss{ex}_seed{s}__result".replace('c0', 'C0'))
 #randex = [exploitation(np.random.rand(lambd, N) > .5, np.random.rand(lambd, N) > .5) for i in range(100)]
 #print(randex)
 #print("Frequency of random better than optimized:", np.average([ex > rex for rex in randex]))

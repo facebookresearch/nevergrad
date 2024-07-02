@@ -6,7 +6,7 @@
 #SBATCH --partition=scavenge
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=80
-#SBATCH -a 0-10
+#SBATCH -a 0-100
 
 for a in `seq 120`
 do
