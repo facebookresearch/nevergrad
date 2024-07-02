@@ -48,7 +48,7 @@ def exploitation(P, Q, exploitation_budget = 500, algo="DiscreteLenglerOnePlusOn
     f0 = 0
     for i in range(lambd):
         for j in range(lambd):
-            f0 += f(P[i], Q[i])
+            f0 += f(P[i], Q[j])
     f0 = f0 / (lambd * lambd)
     global bestval
     bestval = float("inf")
@@ -103,13 +103,6 @@ ng_optims += ["fpll_" + o for o in ng_orig_optims if ("ois" not in o) and "iscr"
 ng_optims += ["fpll_" + o for o in ng_orig_optims if "ptimis" in o ]  # Direct optimization of exploitation
 ng_optims += ["fpll_" + o for o in ng_orig_optims if "XLog" in o ]  # Direct optimization of exploitation
 
-ng_optims += ["exlog" + o for o in ng_orig_optims if "SQP" in o  or "MetaModel" in o]  # Direct optimization of exploitation
-ng_optims += ["exlog" + o for o in ng_orig_optims if "XLog" in o ]  # Direct optimization of exploitation
-ng_optims += ["exlog" + o for o in ng_orig_optims if "ptimis" in o ]  # Direct optimization of exploitation
-ng_optims += ["exlog" + o for o in ng_orig_optims if "ois" in o and "iscr" in o]  # Direct optimization of exploitation, with more evals per iteration
-ng_optims += ["exlog" + o for o in ng_orig_optims if "ois" in o and "iscr" in o]  # Direct optimization of exploitation, with more evals per iteration
-ng_optims += ["exlog" + o for o in ng_orig_optims if "ois" in o and "iscr" in o]  # Direct optimization of exploitation, with more evals per iteration
-
 ng_optims += ["ficpl" + o for o in ng_orig_optims if "SQP" in o  or "MetaModel" in o]  # Direct optimization of exploitation
 ng_optims += ["ficpl" + o for o in ng_orig_optims if "XLog" in o ]  # Direct optimization of exploitation
 ng_optims += ["ficpl" + o for o in ng_orig_optims if "ptimis" in o ]  # Direct optimization of exploitation
@@ -117,25 +110,51 @@ ng_optims += ["ficpl" + o for o in ng_orig_optims if "ois" in o and "iscr" in o]
 ng_optims += ["ficpl" + o for o in ng_orig_optims if "ois" in o and "iscr" in o]  # Direct optimization of exploitation, with more evals per iteration
 ng_optims += ["ficpl" + o for o in ng_orig_optims if "ois" in o and "iscr" in o]  # Direct optimization of exploitation, with more evals per iteration
 
-ng_optims = ["Pkl"]
+ng_optims += ["exlog" + o for o in ng_orig_optims if "SQP" in o  or "MetaModel" in o]  # Direct optimization of exploitation
+ng_optims += ["exlog" + o for o in ng_orig_optims if "XLog" in o ]  # Direct optimization of exploitation
+ng_optims += ["exlog" + o for o in ng_orig_optims if "ptimis" in o ]  # Direct optimization of exploitation
+ng_optims += ["exlog" + o for o in ng_orig_optims if "ois" in o and "iscr" in o]  # Direct optimization of exploitation, with more evals per iteration
+ng_optims += ["exlog" + o for o in ng_orig_optims if "ois" in o and "iscr" in o]  # Direct optimization of exploitation, with more evals per iteration
+ng_optims += ["exlog" + o for o in ng_orig_optims if "ois" in o and "iscr" in o]  # Direct optimization of exploitation, with more evals per iteration
+
+ng_optims = ["Pkl"] * 8
+
+ng_optims += ["exLOG" + o for o in ng_orig_optims if "SQP" in o  or "MetaModel" in o]  # Direct optimization of exploitation
+ng_optims += ["exLOG" + o for o in ng_orig_optims if "XLog" in o ]  # Direct optimization of exploitation
+ng_optims += ["exLOG" + o for o in ng_orig_optims if "ptimis" in o ]  # Direct optimization of exploitation
+ng_optims += ["exLOG" + o for o in ng_orig_optims if "ois" in o and "iscr" in o]  # Direct optimization of exploitation, with more evals per iteration
+ng_optims += ["exLOG" + o for o in ng_orig_optims if "ois" in o and "iscr" in o]  # Direct optimization of exploitation, with more evals per iteration
+ng_optims += ["exLOG" + o for o in ng_orig_optims if "ois" in o and "iscr" in o]  # Direct optimization of exploitation, with more evals per iteration
+
+ng_optims += ["exLOS" + o for o in ng_orig_optims if "SQP" in o  or "MetaModel" in o]  # Direct optimization of exploitation
+ng_optims += ["exLOS" + o for o in ng_orig_optims if "XLog" in o ]  # Direct optimization of exploitation
+ng_optims += ["exLOS" + o for o in ng_orig_optims if "ptimis" in o ]  # Direct optimization of exploitation
+ng_optims += ["exLOS" + o for o in ng_orig_optims if "ois" in o and "iscr" in o]  # Direct optimization of exploitation, with more evals per iteration
+ng_optims += ["exLOS" + o for o in ng_orig_optims if "ois" in o and "iscr" in o]  # Direct optimization of exploitation, with more evals per iteration
+ng_optims += ["exLOS" + o for o in ng_orig_optims if "ois" in o and "iscr" in o]  # Direct optimization of exploitation, with more evals per iteration
 #print(ng_optims)
+
 algo = np.random.choice(ng_optims)
 #algo = "RS"
 #print("We work with ", algo)
 
 factor = 10
 
-if algo[:4] in ["expl", "exlo"]:
+if algo[:4] in ["expl", "exlo", "exLO"]:
     budget = 50 * np.random.choice([10, 20, 40, 80, 160, 320, 640, 1280, 2560, 5120, 10240])
     budget *= factor
     optim = ng.optimizers.registry[algo[5:]](ng.p.Array(shape=(2, lambd, N), lower=0., upper=1.).set_integer_casting(), budget)
     num = 0 if algo[:4] == "expl"  else 100
+    if algo[:5] == "exLOS":
+        num = 0
     def expl(r):
         p = r[0]
         q = r[1]
         global num
         num = num + 1
-        return exploitation(p, q, num) if algo != "exlog" else exploitation(p, q, 1+int(np.log(num)))
+        if algo[:4] == "exLO":
+            return exploitation(p, q, 1+int(np.log(num)))
+        return exploitation(p, q, num)
     r = optim.minimize(expl).value
     P = r[0]
     Q = r[1]
