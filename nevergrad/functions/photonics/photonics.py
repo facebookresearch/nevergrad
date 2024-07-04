@@ -415,7 +415,7 @@ first_time_ceviche = True
 model = None
 
 
-def ceviche(x: np.ndarray, benchmark_type: int = 0) -> tp.Any:
+def ceviche(x: np.ndarray, benchmark_type: int = 0, discretize=False) -> tp.Any:
     global first_time_ceviche
     global model
     import autograd  # type: ignore
@@ -445,7 +445,8 @@ def ceviche(x: np.ndarray, benchmark_type: int = 0) -> tp.Any:
             spec = ceviche_challenges.wdm.prefabs.wdm_spec()
             params = ceviche_challenges.wdm.prefabs.wdm_sim_params()
             model = ceviche_challenges.wdm.model.WdmModel(params, spec)
-
+    if discretize:
+        x = np.round(x)
     if isinstance(x, str) and x == "name":
         return {0: "waveguide-bend", 1: "beam-splitter", 2: "mode-converter", 3: "wdm"}[benchmark_type]
     elif x is None:
