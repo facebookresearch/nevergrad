@@ -3540,6 +3540,7 @@ def multi_ceviche(
         name = photonics_ceviche("name", benchmark_type) + str(shape)  # type: ignore
         #print(f"Shape = {shape} {type(shape)} {type(shape[0])}")
         instrumc0 = ng.p.Array(shape=shape, lower=0.0, upper=1.0)
+        instrumc0pen = ng.p.Array(shape=shape, lower=0.0, upper=1.0)
         instrum = ng.p.Array(shape=shape, lower=0.0, upper=1.0).set_integer_casting()
         instrum2 = ng.p.Array(shape=shape, lower=0.0, upper=1.0).set_integer_casting()
 
@@ -3552,24 +3553,36 @@ def multi_ceviche(
 #                xp = Experiment(sfunc, algo, budget, num_workers=1, seed=next(seedg))
 
         instrum.set_name(name)
-        instrumc0.set_name(name + "c0")
-        instrum2.set_name(name + "c0")
+        instrumc0.set_name(name)  # + "c0")
+        instrumc0pen.set_name(name)  # + "c0p")
+        instrum2.set_name(name)  # + "c0")
 
         # Function for experiments completely in the discrete context.
         func = ExperimentFunction(pc, instrum)
         # Function for experiments in the continuous context.
         c0func = ExperimentFunction(pc, instrumc0)
+        c0penfunc = ExperimentFunction(pc, instrumc0pen)
         # Evaluation function for the continuous context, but with discretization.
         eval_func = ExperimentFunction(epc, instrum2)
 
         #print(f"name = {name}")
+        import copy
+        def cv(x):
+            return np.sum((x - np.round(x))**2)
         for optim in [algo]:  # TODO: we also need penalizations.
-            for budget in [int(np.random.choice([3, 20, 50, 90]))]: #[20, 50, 90]:
+            for budget in [3, 20, 50, 90]:  #[int(np.random.choice([3, 20, 50, 90]))]: #[20, 50, 90]:
                 if c0 and np.random.choice([True, False]):
-                    optim2 = ng.optimizers.registry[optim]
-                    optim2.name += "c0"
-                    sfunc = helpers.SpecialEvaluationExperiment(c0func, evaluation=eval_func)
-                    yield Experiment(sfunc, optim2, budget=budget, seed=next(seedg))
+                    pen = np.random.choice([False, True])
+                    if pen:
+                        optim2 = copy.deepcopy(ng.optimizers.registry[optim])
+                        optim2.name += "c0p"
+                        sfunc = helpers.SpecialEvaluationExperiment(c0penfunc, evaluation=eval_func)
+                        yield Experiment(sfunc, optim2, budget=budget, seed=next(seedg), constraint_violation=[cv])
+                    else:
+                        optim3 = copy.deepcopy(ng.optimizers.registry[optim])
+                        optim3.name += "c0"
+                        sfunc = helpers.SpecialEvaluationExperiment(c0func, evaluation=eval_func)
+                        yield Experiment(sfunc, optim3, budget=budget, seed=next(seedg))
                 else:
                     yield Experiment(func, optim, budget=budget, seed=next(seedg))  # Once in the discrete case.
 

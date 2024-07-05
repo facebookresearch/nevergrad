@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --job-name=dagstuhloid
-#SBATCH --output=dagstuhloid_%A_%a.out
-#SBATCH --error=dagstuhloid_%A_%a.err
+#SBATCH --job-name=ceviche
+#SBATCH --output=ceviche_%A_%a.out
+#SBATCH --error=ceviche_%A_%a.err
 #SBATCH --time=72:00:00
 #SBATCH --partition=scavenge
 #SBATCH --nodes=1
