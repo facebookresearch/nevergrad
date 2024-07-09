@@ -3603,7 +3603,7 @@ def multi_ceviche(
                     )
                     assert -1e-5 <= results.x.flatten() <= 1.0001
                     print(f"LOG LBFGSB with_budget {budget} returns {epc(result.x.reshape(shape))}")
-                elif c0 and np.random.choice([True, False]):
+                if c0 and np.random.choice([True, False]):
                     pen = np.random.choice([False, True])
                     if pen:
                         optim2 = copy.deepcopy(ng.optimizers.registry[optim])
