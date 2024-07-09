@@ -74,7 +74,7 @@ class Fitness:
     def __call__(self, x: tp.ArrayLike) -> float:
         assert len(self.x0) == len(x)
         self.call_times.append(time.time())
-        return float(np.sum((np.array(x, copy=False) - self.x0) ** 2))
+        return float(np.sum((np.asarray(x) - self.x0) ** 2))
 
     def get_factors(self) -> tp.Tuple[float, float]:
         logdiffs = np.log(np.maximum(1e-15, np.cumsum(np.diff(self.call_times))))

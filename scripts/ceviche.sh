@@ -16,6 +16,7 @@ fi
 
 
 task=multi_ceviche_c0
+
 echo task attribution $SLURM_ARRAY_TASK_ID $task
 echo Keras/TF versions:
 pip show keras tensorflow tensorflow-estimator

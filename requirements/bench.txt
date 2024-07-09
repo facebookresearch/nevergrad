@@ -9,25 +9,25 @@ xlrd>=1.2.0
 #lpips>=0.1.3  # removed because sometimes complicated.
 opencv-python>=4.1.2.30
 matplotlib>=2.2.3
-#gym>=0.12.1
-#gym==0.24.1
 gym==0.24.1
-gym-anm>=1.0.1
+#gym-anm>=1.0.1
 pygame>=2.1.2
 torch>=1.7.0
 hiplot
-fcmaes>=1.2.7
+fcmaes   #>=1.2.7
 pandas>=0.23.4
 openpyxl>=3.0.0  # mlda data (for pandas)
 #pyproj>=2.6.1
 pyproj
-Pillow==8.4.0
+Pillow>=10.3.0
 tqdm
 torchvision>=0.11.1
+#pyomo>=6.7.3
 pyomo==5.7.1
 mixsimulator>=0.3.3
 hyperopt>=0.2.5
-IOHexperimenter>=0.2.8.7
+IOHexperimenter>=0.2.9.2
+# IOHexperimenter>=0.2.8.7
 cdt>=0.5.23
 tensorflow-estimator>=2.7.0
 tensorflow>=2.7.0
@@ -35,16 +35,16 @@ keras>=2.4.3
 #koncept>=0.2.2  # removed because sometimes complicated
 #tensorflow-estimator>=2.7.0
 scikit-learn>=1.0.1
-scikit-image==0.18.3
+scikit-image>=0.18.3
 image-quality>=1.2.7
 #keras>=2.4.3
 #tensorflow>=2.7.0
 pymoo==0.5.0
-olymp==0.0.1b0 ; sys_platform == "linux"
+olymp>=0.0.1b0 ; sys_platform == "linux"
 Keras-Preprocessing
 silence_tensorflow  # for olymp
 tensorflow_probability  # for olymp
-bayes-optim==0.3.0
+bayes-optim   #==0.3.0
 nlopt
 pybullet>=3.2.2
 #box2d-py>=2.3.5
@@ -57,7 +57,7 @@ Py-BOBYQA>=1.2
 ax-platform
 loguru # for fcmaes
 #gomea
-directsearch==1.0
+directsearch>=1.0
 numpy>=1.16.2
 scipy>=1.2.1
 matplotlib>=3.0.3
