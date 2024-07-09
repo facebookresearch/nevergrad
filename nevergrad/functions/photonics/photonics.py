@@ -415,7 +415,7 @@ first_time_ceviche = True
 model = None
 
 
-def ceviche(x: np.ndarray, benchmark_type: int = 0, discretize=False) -> tp.Any:
+def ceviche(x: np.ndarray, benchmark_type: int = 0, discretize=False, wantgrad=False) -> tp.Any:
     global first_time_ceviche
     global model
     import autograd  # type: ignore
@@ -471,7 +471,9 @@ def ceviche(x: np.ndarray, benchmark_type: int = 0, discretize=False) -> tp.Any:
         s21 = npa.abs(s_params[:, 0, 1])
         return npa.mean(s11) - npa.mean(s21)
 
-    loss_value, _ = autograd.value_and_grad(loss_fn)(design)  # type: ignore
+    loss_value, grad = autograd.value_and_grad(loss_fn)(design)  # type: ignore
     # loss_value, loss_grad = autograd.value_and_grad(loss_fn)(design)  # type: ignore
     first_time_ceviche = False
+    if wantgrad:
+        return loss_value, grad
     return loss_value

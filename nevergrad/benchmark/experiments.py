@@ -3538,7 +3538,7 @@ def multi_ceviche(
     for benchmark_type in [np.random.randint(4)]:
         shape = tuple([int(p) for p in list(photonics_ceviche(None, benchmark_type))])  # type: ignore
         name = photonics_ceviche("name", benchmark_type) + str(shape)  # type: ignore
-        #print(f"Shape = {shape} {type(shape)} {type(shape[0])}")
+        # print(f"Shape = {shape} {type(shape)} {type(shape[0])}")
         instrumc0 = ng.p.Array(shape=shape, lower=0.0, upper=1.0)
         instrumc0pen = ng.p.Array(shape=shape, lower=0.0, upper=1.0)
         instrum = ng.p.Array(shape=shape, lower=0.0, upper=1.0).set_integer_casting()
@@ -3546,11 +3546,17 @@ def multi_ceviche(
 
         def pc(x):
             return photonics_ceviche(x, benchmark_type)
+
+        def fpc(x):
+            loss, grad = photonics_ceviche(x.reshape(shape), benchmark_type, wantgrad=True)
+            return loss, grad.flatten()
+
         def epc(x):
             return photonics_ceviche(x, benchmark_type, discretize=True)
-#                sfunc = helpers.SpecialEvaluationExperiment(func, evaluation=iqa)
-#                sfunc.add_descriptors(non_proxy_function=False)
-#                xp = Experiment(sfunc, algo, budget, num_workers=1, seed=next(seedg))
+
+        #                sfunc = helpers.SpecialEvaluationExperiment(func, evaluation=iqa)
+        #                sfunc.add_descriptors(non_proxy_function=False)
+        #                xp = Experiment(sfunc, algo, budget, num_workers=1, seed=next(seedg))
 
         instrum.set_name(name)
         instrumc0.set_name(name)  # + "c0")
@@ -3565,26 +3571,48 @@ def multi_ceviche(
         # Evaluation function for the continuous context, but with discretization.
         eval_func = ExperimentFunction(epc, instrum2)
 
-        #print(f"name = {name}")
+        # print(f"name = {name}")
         import copy
+
         def cv(x):
-            return np.sum((x - np.round(x))**2)
+            return np.sum((x - np.round(x)) ** 2)
+
         for optim in [algo]:  # TODO: we also need penalizations.
-            for budget in [3, 20, 50, 90]:  #[int(np.random.choice([3, 20, 50, 90]))]: #[20, 50, 90]:
-                if c0 and np.random.choice([True, False]):
+            for budget in list(
+                np.random.choice([3, 20, 50, 90, 150, 250], 3, replace=False)
+            ):  # [int(np.random.choice([3, 20, 50, 90]))]: #[20, 50, 90]:
+                if np.random.rand() < 0.03:
+                    from scipy import optimize as scipyoptimize
+
+                    x0 = np.random.rand(np.prod(shape))
+                    result = scipyoptimize.minimize(
+                        fpc,
+                        x0=x0,
+                        method="L-BFGS-B",
+                        jac=True,
+                        options={"maxiter": budget},
+                        bounds=[[0, 1] for _ in range(np.prod(shape))],
+                    )
+                    assert -1e-5 <= results.x.flatten() <= 1.0001
+                    print(f"LOG LBFGSB with_budget {budget} returns {epc(result.x.reshape(shape))}")
+                elif c0 and np.random.choice([True, False]):
                     pen = np.random.choice([False, True])
                     if pen:
                         optim2 = copy.deepcopy(ng.optimizers.registry[optim])
                         optim2.name += "c0p"
                         sfunc = helpers.SpecialEvaluationExperiment(c0penfunc, evaluation=eval_func)
-                        yield Experiment(sfunc, optim2, budget=budget, seed=next(seedg), constraint_violation=[cv])
+                        yield Experiment(
+                            sfunc, optim2, budget=budget, seed=next(seedg), constraint_violation=[cv]
+                        )
                     else:
                         optim3 = copy.deepcopy(ng.optimizers.registry[optim])
                         optim3.name += "c0"
                         sfunc = helpers.SpecialEvaluationExperiment(c0func, evaluation=eval_func)
                         yield Experiment(sfunc, optim3, budget=budget, seed=next(seedg))
                 else:
-                    yield Experiment(func, optim, budget=budget, seed=next(seedg))  # Once in the discrete case.
+                    yield Experiment(
+                        func, optim, budget=budget, seed=next(seedg)
+                    )  # Once in the discrete case.
 
 
 @registry.register

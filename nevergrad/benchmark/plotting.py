@@ -26,6 +26,7 @@ from .exporttable import export_table
 
 
 _DPI = 250
+no_limit = False
 pure_algorithms = []
 
 # %% Basic tools
@@ -217,7 +218,7 @@ def normalized_losses(df: pd.DataFrame, descriptors: tp.List[str]) -> utils.Sele
         subdf = df.select_and_drop(**dict(zip(descriptors, case)))
         losses = np.array(subdf.loc[:, "loss"])
         m = min(losses)
-        M = max(losses[losses < float("inf")])
+        M = max(losses[losses < (float("inf") if no_limit else float("1e6"))])
         df.loc[subdf.index, "loss"] = (df.loc[subdf.index, "loss"] - m) / (M - m) if M != m else 1
     return df  # type: ignore
 
@@ -245,8 +246,15 @@ def create_plots(
         x-axis for xp plots (either budget or pseudotime)
     """
     assert xpaxis in ["budget", "pseudotime"]
+    if "non_proxy_function" in df.columns:
+        print("removing non_proxy_function")
+        df.drop(columns=["non_proxy_function"], inplace=True)
     df = remove_errors(df)
     df.loc[:, "loss"] = pd.to_numeric(df.loc[:, "loss"])
+    if not no_limit:
+        loss = pd.to_numeric(df.loc[:, "loss"])
+        upper = np.max(loss[loss < 1e6])
+        df.loc[:, "loss"] = df.loc[:, "loss"].clip(lower=-1e6, upper=upper)
     df = df.loc[:, [x for x in df.columns if not x.startswith("info/")]]
     # Normalization of types.
     for col in df.columns:
@@ -695,7 +703,7 @@ class XpPlotter:
             ]
         )
         groupeddf = df.groupby(["optimizer_name", "budget"])
-        means = groupeddf.mean()
+        means = groupeddf.mean() if no_limit else groupeddf.median()
         stds = groupeddf.std()
         nums = groupeddf.count()
         optim_vals: tp.Dict[str, tp.Dict[str, np.ndarray]] = {}
