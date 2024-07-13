@@ -809,7 +809,7 @@ class _CMA(base.Optimizer):
             try:
                 data = learn_on_k_best(self.archive, sample_size, self.algorithm)
                 return data  # type: ignore
-            except MetaModelFailure:  # Failures in the metamodeling can happen.
+            except:  # Failures in the metamodeling can happen.
                 pass
         if self._es is None:
             return pessimistic
