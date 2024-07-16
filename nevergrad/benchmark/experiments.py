@@ -53,114 +53,11 @@ from . import gymexperiments  # noqa
 #    list_optims = ["QOTPDE", "LQOTPDE", "LQODE"]
 #    list_optims = ["SPQODE", "SQOPSO", "DiagonalCMA"]
 def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
-    # return ["Carola3"]
-    return ["NGOpt"]
-    return ["DE", "PSO", "OnePlusOne"]
-    # return ["ChainMetaModelSQP"]
-    return [
-        "Carola3",
-        "CMA",
-        "DiagonalCMA",
-        "MultiCMA",
-        "PolyCMA",
-        "OldCMA",
-        "MetaModel",
-    ]  # ["CMA", "DSproba"]
-    #   return ["NGOpt", "CSEC11", "CMA", "DE", "PSO", "SQOPSO", "QODE", "SQOPSO"]
-    # return ["DiscreteLenglerOnePlusOne"]
-    #    return ["OLNDiscreteOnePlusOne"]
-    # return ["NgIohLn"]
-    return ["NgLglr", "NgRS"]
-    return [np.random.choice(["NgIohLn", "NgLglr", "NgRS", "NgIohTuned"])]
-    return [np.random.choice(["CSEC11", "NgIohLn", "NgLn", "NgRs", "NgLglr", "NgLglr"])]
-    # return [np.random.choice(["CSEC11", "NgIohLn", "CMARS", "CMALn","CMA", "NgLn", "NgRs", "NgLglr", "NgLglr", "RandomSearch", "NGOpt"])]
-    return [
-        np.random.choice(
-            [
-                "ChainMetaModelSQP",
-                "NgIohTuned",
-                "SQP",
-                "Carola3",
-                "NGOpt",
-                "Cobyla",
-                "MetaModelOnePlusOne",
-                "NgRS",
-                "Powell",
-                "QNDE",
-                "CMARS",
-                "TinyCMA",
-                "CMA",
-                "QODE",
-                "DE",
-                "PSO",
-                "SQP",
-                "pysot",
-                #        "SQP",
-                #        "MetaModelOnePlusOne",
-                #        "NgRS",
-                #        "NgIoh4","NGOpt",
-                #        "Cobyla",
-                #        "Carola3","Powell", "QNDE","CMARS","TinyCMA",
-                # "QNDE", "QODE",
-                # "QNDE", "QODE",
-                # "QNDE", "QODE",
-                # "QNDE", "QODE",
-                # "QNDE", "QODE",
-                # "Carola3", "Carola3", "Carola3", "Carola3", "Carola3",
-                # "SQOPSO", "SQOPSO", "SQOPSO", "SQOPSO", "SQOPSO", "CMARS",
-                # "NgLn",
-                # "CMA", "NGOpt", "CSEC11", "DE", "PSO", "SQOPSO", "Carola3",
-                # "NgRS",
-                # "NGOpt", "NGOpt", "NGOpt",
-                # "ChainMetaModelSQP",
-                # "ChainMetaModelSQP",
-                # "ChainMetaModelSQP",
-                # "CMALn",
-                # "NgIoh4", "NgIoh4",
-            ]
-        )
-    ]
-    return ["NgIohLn"]
-    return [
-        np.random.choice(
-            [
-                # "BigLognormalDiscreteOnePlusOne",
-                # "DiscreteLenglerOnePlusOne",
-                # "NgLn",
-                # "SmallLognormalDiscreteOnePlusOne",
-                # "XLognormalDiscreteOnePlusOne",
-                # "XSmallLognormalDiscreteOnePlusOne",
-                # "MultiLN",
-                "NgIohLn",
-                "NgRS",
-                "NgIohRS",
-                "NGOpt",
-                "NgLn",
-                # "NgIohMLn",
-                "NgIohLn",
-                # "LognormalDiscreteOnePlusOne",
-                # "HugeLognormalDiscreteOnePlusOne",
-            ]
-        )
-    ]
-    # return ["CSEC11"]
-    # return [np.random.choice(["CSEC11", "SQOPSODCMA", "NgIoh4", "NGOpt"])]
-    # return ["LPCMA"]  #return [np.random.choice(["CSEC10", "DSproba", "NgIoh4", "DSbase", "DS3p", "DSsubspace"])]
-    # return x
-    # return ["LognormalDiscreteOnePlusOne"]
-    # return ["TBPSA", "OptimisticDiscreteOnePlusOne", "NGOpt", "CSEC10"] #CSEC10"]
-    # return ["NGOpt", "NgIoh4"]
-    #    return ["NgIoh8"]
-    # return ["DE", "NGOpt", "NgIoh11", "RandomSearch"]
-    # return ["DiscreteLenglerOnePlusOne", "LognormalDiscreteOnePlusOne"]
-    # return ["DSproba" + str(i) for i in range(2, 10)]
-    # return ["DSproba", "DSsubspace", "DS3p", "DSbase"]
-    # return ["DSproba"]
     if False:  # np.random.randn() < 0.0:
         return list(
             np.random.choice(
                 [
-                    "NgIoh4",
+                    "NgIohTuned",
                     "NGOpt",
                     "NGOptRW",
                     "ChainCMASQP",
@@ -824,7 +721,7 @@ def keras_tuning(
                         skip_ci(reason="too slow")
                         xp.function.parametrization.real_world = True
                         xp.function.parametrization.hptuning = True
-                        if not xp.is_incoherent and np.random.choice([True, False]):
+                        if not xp.is_incoherent:  # and np.random.choice([True, False]):
                             yield xp
 
 
@@ -896,7 +793,7 @@ def mltuning(
                             skip_ci(reason="too slow")
                             xp.function.parametrization.real_world = True
                             xp.function.parametrization.hptuning = True
-                            if not xp.is_incoherent and np.random.choice([True, False]):
+                            if not xp.is_incoherent:  # and np.random.choice([True, False]):
                                 yield xp
 
 
@@ -2770,7 +2667,7 @@ def rocket(seed: tp.Optional[int] = None, seq: bool = False) -> tp.Iterator[Expe
                         xp = Experiment(fu, algo, budget, num_workers=num_workers, seed=next(seedg))
                         xp.function.parametrization.real_world = True
                         skip_ci(reason="Too slow")
-                        if not xp.is_incoherent and np.random.choice([True, False, False]):
+                        if not xp.is_incoherent:  # and np.random.choice([True, False, False]):
                             yield xp
 
 
@@ -3541,7 +3438,7 @@ def photonics(
     optims = ["SQOPSO"]
     optims = refactor_optims(optims)
     optims = ["NgRS"]
-    for method in [np.random.choice(["clipping", "tanh"])]:  # , "arctan"]:
+    for method in ["clipping", "tanh"]:  # , "arctan"]:
         for name in (
             ["bragg"]
             if ultrasmall
@@ -3557,7 +3454,7 @@ def photonics(
                 bounding_method=method,
                 as_tuple=as_tuple,
             )
-            for budget in [np.random.choice([1e1, 1e2, 1e3])]:
+            for budget in [1e1, 1e2, 1e3]:
                 for algo in optims:
                     xp = Experiment(func, algo, int(budget), num_workers=1, seed=next(seedg))
                     if not xp.is_incoherent and np.random.rand() > 0.8:

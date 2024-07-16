@@ -250,7 +250,6 @@ def create_plots(
     df = df.loc[:, [x for x in df.columns if not x.startswith("info/")]]
     # Normalization of types.
     for col in df.columns:
-        print(" Working on ", col)
         failed_indices = []
         if "max_irr" in col:
             df[col] = df[col].round(decimals=4)
@@ -266,7 +265,7 @@ def create_plots(
         ):
             try:
                 df[col] = df[col].astype(float).astype(int) if col != "loss" else df[col].astype(float)
-                print(col, " is converted to int")
+                # print(col, " is converted to int")
             except Exception as e1:
                 for i in range(len(df[col])):
                     try:
@@ -1035,32 +1034,8 @@ def main() -> None:
         args.merge_parametrization,
         args.remove_suffix,
     )
-    # dagst
-    # exp_df.replace("CSEC11", "NGIohTuned", inplace=True)
-    # exp_df.replace("NgIohLn", "NGIohLn", inplace=True)
-    # exp_df.replace("NgIoh4", "NGIoh4", inplace=True)
-    # exp_df.replace("CSEC10", "NgIohAlt", inplace=True)
-    # for c in ["Ln", "DS", "Lognormal", "NgIoh", "SQOPSO", "NGDS", "CSEC",  "NgDS", "Wiz", "Noisy", "NLOPT", "TBPSA", "LP", "Discrete", "DE", "Carola", "PSO", "CMA", "Meta", "Cobyla", "MultiLN", "pysot"]:  # NgLn  Carola
     exp_df.replace("CSEC11", "NGIohTuned", inplace=True)
     exp_df.replace("NgIohLn", "NGIohLn", inplace=True)
-    # exp_df.replace("NgIoh4", "NGIoh4", inplace=True)
-    # exp_df.replace("CSEC10", "NgIohAlt", inplace=True)
-    # for c in ["DS", "NgIoh", "SQOPSO", "NGDS", "CSEC",  "NgDS", "Wiz", "Noisy", "NLOPT", "TBPSA", "LP", "DE", "Carola", "PSO", "Meta", "Cobyla", "MultiLN", "pysot", "Ng", "RS", "NGI"]:  # dag_ln/
-    for c in [
-        "MultiCMA",
-        "PolyCMA",
-    ]:  # ["DS", "NgIoh", "SQOPSO", "NGDS", "CSEC",  "NgDS", "Wiz", "Noisy", "NLOPT", "TBPSA", "LP", "Discrete", "DE", "Carola", "PSO", "Meta", "Cobyla", "MultiLN", "pysot", "CMARS", "CMA", "NGIoh", "RandomSearch", "NGOpt10", "CMand"]:  # dag/
-        # for c in ["DS", "NgIoh", "CSEC", "Wiz"]: #"SQOPSO", "NGDS", "CSEC",  "NgDS", "Wiz", "Noisy", "NLOPT", "TBPSA", "LP", "Discrete", "DE", "Carola", "PSO", "Meta", "Cobyla", "MultiLN", "pysot"]:  # dag_all/
-        #    for c in ["CSEC", "NgIohAlt", "NgDS", "NgLn", "Wiz", "DSproba", "DSsubsp"]:
-        try:
-            filter = exp_df["optimizer_name"].str.contains(c)
-            exp_df = exp_df[~filter]
-            print("filter ", c, " succeeded.")
-        except:
-            print("filter ", c, " failed.")
-    # exp_df = exp_df[exp_df["optimizer_name"].str.contains("ornorma")]
-    # merging names
-    #
     output_dir = args.output
     if output_dir is None:
         output_dir = str(Path(args.filepath).with_suffix("")) + "_plots"

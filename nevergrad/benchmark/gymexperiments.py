@@ -155,7 +155,7 @@ def ng_full_gym(
     ]
     optims = ["OLNDiscreteOnePlusOne"]
     optims = ["NgIohLn"]
-    optims = [np.random.choice(["NgIohMLn", "NgIohLn", "NgIoh"])]
+    # optims = [np.random.choice(["NgIohMLn", "NgIohLn", "NgIoh"])]
     if multi:
         controls = ["multi_neural"]
     else:
