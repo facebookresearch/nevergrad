@@ -3543,14 +3543,14 @@ def multi_ceviche(
         instrumc0pen = ng.p.Array(shape=shape, lower=0.0, upper=1.0)
         instrum = ng.p.Array(shape=shape, lower=0.0, upper=1.0).set_integer_casting()
         instrum2 = ng.p.Array(shape=shape, lower=0.0, upper=1.0).set_integer_casting()
-#     for benchmark_type in [np.random.randint(4)]:
-#         shape = tuple([int(p) for p in list(photonics_ceviche(None, benchmark_type))])  # type: ignore
-#         name = photonics_ceviche("name", benchmark_type) + str(shape)  # type: ignore
-#         print(f"Shape = {shape} {type(shape)} {type(shape[0])}")
-#         if c0:
-#             instrum = ng.p.Array(shape=shape, lower=0.0, upper=1.0)
-#         else:
-#             instrum = ng.p.Array(shape=shape, lower=0.0, upper=1.0).set_integer_casting()
+        #     for benchmark_type in [np.random.randint(4)]:
+        #         shape = tuple([int(p) for p in list(photonics_ceviche(None, benchmark_type))])  # type: ignore
+        #         name = photonics_ceviche("name", benchmark_type) + str(shape)  # type: ignore
+        #         print(f"Shape = {shape} {type(shape)} {type(shape[0])}")
+        #         if c0:
+        #             instrum = ng.p.Array(shape=shape, lower=0.0, upper=1.0)
+        #         else:
+        #             instrum = ng.p.Array(shape=shape, lower=0.0, upper=1.0).set_integer_casting()
 
         def pc(x):
             return photonics_ceviche(x, benchmark_type)
@@ -3603,7 +3603,9 @@ def multi_ceviche(
                     )
                     assert -1e-5 <= np.min(result.x.flatten())
                     assert np.max(result.x.flatten()) <= 1.0001
-                    print(f"LOGPB{benchmark_type} LBFGSB with_budget {budget} returns {epc(result.x.reshape(shape))}")
+                    print(
+                        f"LOGPB{benchmark_type} LBFGSB with_budget {budget} returns {epc(result.x.reshape(shape))}"
+                    )
                 if c0 and np.random.choice([True, False]):
                     pen = np.random.choice([False, True])
                     if pen:
@@ -3622,6 +3624,8 @@ def multi_ceviche(
                     yield Experiment(
                         func, optim, budget=budget, seed=next(seedg)
                     )  # Once in the discrete case.
+
+
 #         instrum.set_name(name)
 #         func = ExperimentFunction(pc, instrum)
 #         # func.add_descriptor(name=name)

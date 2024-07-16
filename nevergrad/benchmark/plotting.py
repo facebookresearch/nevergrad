@@ -486,6 +486,7 @@ def gp_sota() -> tp.Dict[str, tp.Tuple[float, float]]:
     gp["LunarLanderContinuous-v2"] = (-287.58, 1000000.0)
     return gp
 
+
 #    LOGPB0_150 -0.591678
 #    LOGPB0_20 -0.499837
 #    LOGPB0_250 -0.576301
@@ -515,14 +516,16 @@ def gp_sota() -> tp.Dict[str, tp.Tuple[float, float]]:
 #    LOGPB3_50 -0.657603
 #    LOGPB3_90 -0.606128
 
+
 def ceviche_sota() -> tp.Dict[str, tp.Tuple[float, float]]:
     ceviche = {}
-    #{0: "waveguide-bend", 1: "beam-splitter", 2: "mode-converter", 3: "wdm"}
-    ceviche["waveguide-bend"] = (-0.50911, 1000000)   # Budget 400
+    # {0: "waveguide-bend", 1: "beam-splitter", 2: "mode-converter", 3: "wdm"}
+    ceviche["waveguide-bend"] = (-0.50911, 1000000)  # Budget 400
     ceviche["beam-splitter"] = (-0.582446, 1000000)
     ceviche["mode-converter"] = (-0.543632, 1000000)
     ceviche["wdm"] = (-0.585512, 100000)
     return ceviche
+
 
 class LegendInfo(tp.NamedTuple):
     """Handle for information used to create a legend."""
