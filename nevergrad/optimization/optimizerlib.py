@@ -169,6 +169,7 @@ class _OnePlusOne(base.Optimizer):
             "lognormal",
             "xlognormal",
             "xsmalllognormal",
+            "tinylognormal",
             "lognormal",
             "smalllognormal",
             "biglognormal",
@@ -190,6 +191,11 @@ class _OnePlusOne(base.Optimizer):
             self._global_mr = 0.8
             self._memory_index = 0
             self._memory_size = 12  # Dirty random value
+            self._best_recent_loss = float("inf")
+        elif mutation == "tinylognormal":
+            self._global_mr = 0.01
+            self._memory_index = 0
+            self._memory_size = 2  # Dirty random value
             self._best_recent_loss = float("inf")
         elif mutation == "smalllognormal":
             self._global_mr = 0.2
@@ -647,6 +653,9 @@ BigLognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="biglognormal")
 )
 SmallLognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="smalllognormal").set_name(
     "SmallLognormalDiscreteOnePlusOne", register=True
+)
+TinyLognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="tinylognormal").set_name(
+    "TinyLognormalDiscreteOnePlusOne", register=True
 )
 HugeLognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="hugelognormal").set_name(
     "HugeLognormalDiscreteOnePlusOne", register=True
@@ -5197,6 +5206,9 @@ SmoothDiscreteLognormalOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutati
 SuperSmoothDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
     smoother=True, mutation="lengler", antismooth=9
 ).set_name("SuperSmoothDiscreteLenglerOnePlusOne", register=True)
+SuperSmoothTinyLognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="tinylognormal", antismooth=9).set_name(
+    "SuperSmoothTinyLognormalDiscreteOnePlusOne", register=True
+)
 UltraSmoothDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
     smoother=True, mutation="lengler", antismooth=3
 ).set_name("UltraSmoothDiscreteLenglerOnePlusOne", register=True)
