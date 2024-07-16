@@ -53,13 +53,74 @@ from . import gymexperiments  # noqa
 #    list_optims = ["QOTPDE", "LQOTPDE", "LQODE"]
 #    list_optims = ["SPQODE", "SQOPSO", "DiagonalCMA"]
 def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
+    # return ["Carola3"]
+    return ["NGOpt"]
+    return ["DE", "PSO", "OnePlusOne"]
+    # return ["ChainMetaModelSQP"]
+    return [
+        "Carola3",
+        "CMA",
+        "DiagonalCMA",
+        "MultiCMA",
+        "PolyCMA",
+        "OldCMA",
+        "MetaModel",
+    ]  # ["CMA", "DSproba"]
+    #   return ["NGOpt", "CSEC11", "CMA", "DE", "PSO", "SQOPSO", "QODE", "SQOPSO"]
     # return ["DiscreteLenglerOnePlusOne"]
     #    return ["OLNDiscreteOnePlusOne"]
-    # return [np.random.choice([
-    #    "NgLn",
-    #    "SmallLognormalDiscreteOnePlusOne",
-    #    "XLognormalDiscreteOnePlusOne",
-    # ])]
+    # return ["NgIohLn"]
+    return ["NgLglr", "NgRS"]
+    return [np.random.choice(["NgIohLn", "NgLglr", "NgRS", "NgIohTuned"])]
+    return [np.random.choice(["CSEC11", "NgIohLn", "NgLn", "NgRs", "NgLglr", "NgLglr"])]
+    # return [np.random.choice(["CSEC11", "NgIohLn", "CMARS", "CMALn","CMA", "NgLn", "NgRs", "NgLglr", "NgLglr", "RandomSearch", "NGOpt"])]
+    return [
+        np.random.choice(
+            [
+                "ChainMetaModelSQP",
+                "NgIohTuned",
+                "SQP",
+                "Carola3",
+                "NGOpt",
+                "Cobyla",
+                "MetaModelOnePlusOne",
+                "NgRS",
+                "Powell",
+                "QNDE",
+                "CMARS",
+                "TinyCMA",
+                "CMA",
+                "QODE",
+                "DE",
+                "PSO",
+                "SQP",
+                "pysot",
+                #        "SQP",
+                #        "MetaModelOnePlusOne",
+                #        "NgRS",
+                #        "NgIoh4","NGOpt",
+                #        "Cobyla",
+                #        "Carola3","Powell", "QNDE","CMARS","TinyCMA",
+                # "QNDE", "QODE",
+                # "QNDE", "QODE",
+                # "QNDE", "QODE",
+                # "QNDE", "QODE",
+                # "QNDE", "QODE",
+                # "Carola3", "Carola3", "Carola3", "Carola3", "Carola3",
+                # "SQOPSO", "SQOPSO", "SQOPSO", "SQOPSO", "SQOPSO", "CMARS",
+                # "NgLn",
+                # "CMA", "NGOpt", "CSEC11", "DE", "PSO", "SQOPSO", "Carola3",
+                # "NgRS",
+                # "NGOpt", "NGOpt", "NGOpt",
+                # "ChainMetaModelSQP",
+                # "ChainMetaModelSQP",
+                # "ChainMetaModelSQP",
+                # "CMALn",
+                # "NgIoh4", "NgIoh4",
+            ]
+        )
+    ]
+    return ["NgIohLn"]
     return [
         np.random.choice(
             [
@@ -68,11 +129,14 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
                 # "NgLn",
                 # "SmallLognormalDiscreteOnePlusOne",
                 # "XLognormalDiscreteOnePlusOne",
-                "XSmallLognormalDiscreteOnePlusOne",
-                "MultiLN",
+                # "XSmallLognormalDiscreteOnePlusOne",
+                # "MultiLN",
+                "NgIohLn",
                 "NgRS",
                 "NgIohRS",
-                "NgIohMLn",
+                "NGOpt",
+                "NgLn",
+                # "NgIohMLn",
                 "NgIohLn",
                 # "LognormalDiscreteOnePlusOne",
                 # "HugeLognormalDiscreteOnePlusOne",
@@ -1062,6 +1126,7 @@ def parallel_small_budget(seed: tp.Optional[int] = None) -> tp.Iterator[Experime
     ]
     budgets = [10, 50, 100, 200, 400]
     optims = refactor_optims(optims)
+    optims = ["NgLglr"]
     for optim in optims:
         for function in functions:
             for budget in budgets:
@@ -1220,7 +1285,8 @@ def deceptive(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                 6400,
                 12800,
             ]:  # + list(range(100, 20001, 500)):
-                yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
+                if np.random.rand() > 0.8:
+                    yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
 @registry.register
@@ -1417,12 +1483,13 @@ def multimodal(seed: tp.Optional[int] = None, para: bool = False) -> tp.Iterator
         for uv_factor in [0, 5]
     ]
     optims = refactor_optims(optims)
+    optims = ["NgLglr"]  # DO NOT SUBMIT
     for func in functions:
         for optim in optims:
             for budget in [3000, 10000, 30000, 100000]:
                 for nw in [1000] if para else [1]:
                     xp = Experiment(func, optim, budget=budget, num_workers=nw, seed=next(seedg))
-                    if not xp.is_incoherent:
+                    if not xp.is_incoherent and np.random.rand() > 0.8:
                         yield xp
 
 
@@ -1783,8 +1850,8 @@ def yabbob(
                 )
                 if constraint_case != 0:
                     xp.function.parametrization.has_constraints = True
-                if np.random.rand() > 0.25:
-                    continue
+                # if np.random.rand() > 0.25:
+                #    continue
                 if not xp.is_incoherent:
                     yield xp
 
@@ -2124,6 +2191,7 @@ def zp_ms_bbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                     yield Experiment(function, optim, budget=budget, num_workers=nw, seed=next(seedg))
 
 
+@registry.register
 def nozp_noms_bbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Testing optimizers on exponentiated problems.
     Cigar, Ellipsoid.
@@ -2660,7 +2728,7 @@ def fishing(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
             for fu in funcs:
                 xp = Experiment(fu, algo, budget, seed=next(seedg))
                 xp.function.parametrization.real_world = True
-                if not xp.is_incoherent:
+                if not xp.is_incoherent and np.random.rand() > 0.8:
                     yield xp
 
 
@@ -3472,7 +3540,8 @@ def photonics(
     optims = ["NGOpt"]
     optims = ["SQOPSO"]
     optims = refactor_optims(optims)
-    for method in ["clipping", "tanh"]:  # , "arctan"]:
+    optims = ["NgRS"]
+    for method in [np.random.choice(["clipping", "tanh"])]:  # , "arctan"]:
         for name in (
             ["bragg"]
             if ultrasmall
@@ -3488,10 +3557,10 @@ def photonics(
                 bounding_method=method,
                 as_tuple=as_tuple,
             )
-            for budget in [1e1, 1e2, 1e3]:
+            for budget in [np.random.choice([1e1, 1e2, 1e3])]:
                 for algo in optims:
                     xp = Experiment(func, algo, int(budget), num_workers=1, seed=next(seedg))
-                    if not xp.is_incoherent:
+                    if not xp.is_incoherent and np.random.rand() > 0.8:
                         yield xp
 
 

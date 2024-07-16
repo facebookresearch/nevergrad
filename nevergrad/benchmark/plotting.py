@@ -262,21 +262,28 @@ def create_plots(
             "num_blocks",
             "block_dimension",
             "num_objectives",
+            "loss",
         ):
             try:
-                df[col] = df[col].astype(float).astype(int)
+                df[col] = df[col].astype(float).astype(int) if col != "loss" else df[col].astype(float)
                 print(col, " is converted to int")
             except Exception as e1:
-                try:
-                    for i in range(len(df[col])):
+                for i in range(len(df[col])):
+                    try:
                         float(df[col][i])
-                except Exception as e2:
-                    failed_indices += [i]
-                    assert (
-                        len(failed_indices) < 100
-                    ), f"Fails at row {i+2}, Exceptions: {e1}, {e2}. Failed-indices = {failed_indices}"
+                    except Exception as e2:
+                        failed_indices += [i]
+                assert (
+                    len(failed_indices) < 500
+                ), f"Fails at row {i+2}, Exceptions: {e1}. Failed-indices = {failed_indices}"
+                for i0 in range(len(failed_indices)):
+                    i = failed_indices[len(failed_indices) - 1 - i0]
                     df.drop(index=i, inplace=True)
-                    print("We drop index ", i, " for ", col)
+                    print("We drop index ", i, "/", len(df), " for ", col)
+                try:
+                    df[col] = df[col].astype(float).astype(int) if col != "loss" else df[col].astype(float)
+                except:
+                    print(f"Failed for {col}")
         elif col != "loss":
             df[col] = df[col].astype(str)
             df[col] = df[col].replace(r"\.[0]*$", "", regex=True)
@@ -1028,9 +1035,22 @@ def main() -> None:
         args.merge_parametrization,
         args.remove_suffix,
     )
+    # dagst
+    # exp_df.replace("CSEC11", "NGIohTuned", inplace=True)
+    # exp_df.replace("NgIohLn", "NGIohLn", inplace=True)
+    # exp_df.replace("NgIoh4", "NGIoh4", inplace=True)
+    # exp_df.replace("CSEC10", "NgIohAlt", inplace=True)
+    # for c in ["Ln", "DS", "Lognormal", "NgIoh", "SQOPSO", "NGDS", "CSEC",  "NgDS", "Wiz", "Noisy", "NLOPT", "TBPSA", "LP", "Discrete", "DE", "Carola", "PSO", "CMA", "Meta", "Cobyla", "MultiLN", "pysot"]:  # NgLn  Carola
     exp_df.replace("CSEC11", "NGIohTuned", inplace=True)
-    exp_df.replace("CSEC10", "NgIohAlt", inplace=True)
-    for c in ["NgIoh", "SQOPSO", "NGDS", "CSEC", "Carola", "NgDS", "Wiz"]:  # NgLn
+    exp_df.replace("NgIohLn", "NGIohLn", inplace=True)
+    # exp_df.replace("NgIoh4", "NGIoh4", inplace=True)
+    # exp_df.replace("CSEC10", "NgIohAlt", inplace=True)
+    # for c in ["DS", "NgIoh", "SQOPSO", "NGDS", "CSEC",  "NgDS", "Wiz", "Noisy", "NLOPT", "TBPSA", "LP", "DE", "Carola", "PSO", "Meta", "Cobyla", "MultiLN", "pysot", "Ng", "RS", "NGI"]:  # dag_ln/
+    for c in [
+        "MultiCMA",
+        "PolyCMA",
+    ]:  # ["DS", "NgIoh", "SQOPSO", "NGDS", "CSEC",  "NgDS", "Wiz", "Noisy", "NLOPT", "TBPSA", "LP", "Discrete", "DE", "Carola", "PSO", "Meta", "Cobyla", "MultiLN", "pysot", "CMARS", "CMA", "NGIoh", "RandomSearch", "NGOpt10", "CMand"]:  # dag/
+        # for c in ["DS", "NgIoh", "CSEC", "Wiz"]: #"SQOPSO", "NGDS", "CSEC",  "NgDS", "Wiz", "Noisy", "NLOPT", "TBPSA", "LP", "Discrete", "DE", "Carola", "PSO", "Meta", "Cobyla", "MultiLN", "pysot"]:  # dag_all/
         #    for c in ["CSEC", "NgIohAlt", "NgDS", "NgLn", "Wiz", "DSproba", "DSsubsp"]:
         try:
             filter = exp_df["optimizer_name"].str.contains(c)
@@ -1038,6 +1058,7 @@ def main() -> None:
             print("filter ", c, " succeeded.")
         except:
             print("filter ", c, " failed.")
+    # exp_df = exp_df[exp_df["optimizer_name"].str.contains("ornorma")]
     # merging names
     #
     output_dir = args.output

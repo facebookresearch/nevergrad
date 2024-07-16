@@ -270,7 +270,9 @@ class MLTuning(ExperimentFunction):
                 except Exception as e:
                     assert False, f"failing with error {e} for dataset {dataset}"
             else:
-                data = {"diabetes": sklearn.datasets.load_diabetes,}[
+                data = {
+                    "diabetes": sklearn.datasets.load_diabetes,
+                }[
                     # data = {"boston": sklearn.datasets.load_boston, "diabetes": sklearn.datasets.load_diabetes,}[
                     dataset
                 ](return_X_y=True)
