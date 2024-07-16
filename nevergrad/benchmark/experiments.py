@@ -3587,7 +3587,7 @@ def multi_ceviche(
 
         for optim in [algo]:  # TODO: we also need penalizations.
             for budget in list(
-                np.random.choice([3, 20, 50, 90, 150, 250], 3, replace=False)
+                np.random.choice([3, 20, 50, 90, 150, 250, 400], 3, replace=False)
             ):  # [int(np.random.choice([3, 20, 50, 90]))]: #[20, 50, 90]:
                 if np.random.rand() < 0.03:
                     from scipy import optimize as scipyoptimize
@@ -3601,8 +3601,9 @@ def multi_ceviche(
                         options={"maxiter": budget},
                         bounds=[[0, 1] for _ in range(np.prod(shape))],
                     )
-                    assert -1e-5 <= results.x.flatten() <= 1.0001
-                    print(f"LOG LBFGSB with_budget {budget} returns {epc(result.x.reshape(shape))}")
+                    assert -1e-5 <= np.min(result.x.flatten())
+                    assert np.max(result.x.flatten()) <= 1.0001
+                    print(f"LOGPB{benchmark_type} LBFGSB with_budget {budget} returns {epc(result.x.reshape(shape))}")
                 if c0 and np.random.choice([True, False]):
                     pen = np.random.choice([False, True])
                     if pen:

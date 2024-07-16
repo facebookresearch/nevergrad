@@ -486,6 +486,43 @@ def gp_sota() -> tp.Dict[str, tp.Tuple[float, float]]:
     gp["LunarLanderContinuous-v2"] = (-287.58, 1000000.0)
     return gp
 
+#    LOGPB0_150 -0.591678
+#    LOGPB0_20 -0.499837
+#    LOGPB0_250 -0.576301
+#    LOGPB0_3 -0.424572
+#    LOGPB0_400 -0.50911
+#    LOGPB0_50 -0.576757
+#    LOGPB0_90 -0.616816
+#    LOGPB1_150 -0.577477
+#    LOGPB1_20 -0.557164
+#    LOGPB1_250 -0.577601
+#    LOGPB1_3 -0.412766
+#    LOGPB1_400 -0.582446
+#    LOGPB1_50 -0.540028
+#    LOGPB1_90 -0.565553
+#    LOGPB2_150 -0.4966
+#    LOGPB2_20 -0.496643
+#    LOGPB2_250 -0.628773
+#    LOGPB2_3 -0.380808
+#    LOGPB2_400 -0.543632
+#    LOGPB2_50 -0.585993
+#    LOGPB2_90 -0.486193
+#    LOGPB3_150 -0.68359
+#    LOGPB3_20 -0.685482
+#    LOGPB3_250 -0.577344
+#    LOGPB3_3 -0.329887
+#    LOGPB3_400 -0.585512
+#    LOGPB3_50 -0.657603
+#    LOGPB3_90 -0.606128
+
+def ceviche_sota() -> tp.Dict[str, tp.Tuple[float, float]]:
+    ceviche = {}
+    #{0: "waveguide-bend", 1: "beam-splitter", 2: "mode-converter", 3: "wdm"}
+    ceviche["waveguide-bend"] = (-0.50911, 1000000)   # Budget 400
+    ceviche["beam-splitter"] = (-0.582446, 1000000)
+    ceviche["mode-converter"] = (-0.543632, 1000000)
+    ceviche["wdm"] = (-0.585512, 100000)
+    return ceviche
 
 class LegendInfo(tp.NamedTuple):
     """Handle for information used to create a legend."""
@@ -573,7 +610,7 @@ class XpPlotter:
             lowerbound = min(lowerbound, np.min(vals["loss"]))
             # We here add some state of the art results.
             # This adds a cross on figures, x-axis = budget and y-axis = loss.
-            for sota_name, sota in [("GP", gp_sota())]:
+            for sota_name, sota in [("GP", gp_sota()), ("ceviche", ceviche_sota())]:
                 for k in sota.keys():
                     if k in title:
                         th = sota[k][0]  # loss of proposed solution.
@@ -584,7 +621,7 @@ class XpPlotter:
                             vals[xaxis][indices],
                             th + 0 * vals["loss"][indices],
                             name_style[optim_name],
-                            label="gp",
+                            label=sota_name,
                         )
                         plt.plot(  # Vertical line, showing the budget of the GP solution.
                             [cost] * 3,
@@ -594,7 +631,7 @@ class XpPlotter:
                                 max(vals["loss"][indices]),
                             ],
                             name_style[optim_name],
-                            label="gp",
+                            label=sota_name,
                         )
             line = plt.plot(vals[xaxis], vals["loss"], name_style[optim_name], label=optim_name)
             # confidence lines

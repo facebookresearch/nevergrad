@@ -435,7 +435,7 @@ def ceviche(x: np.ndarray, benchmark_type: int = 0, discretize=False, wantgrad=F
     # ceviche_challenges.waveguide_bend.prefabs
     # ceviche_challenges.wdm.prefabs
 
-    if first_time_ceviche:
+    if first_time_ceviche or x is None:
         if benchmark_type == 0:
             spec = ceviche_challenges.waveguide_bend.prefabs.waveguide_bend_2umx2um_spec()
             params = ceviche_challenges.waveguide_bend.prefabs.waveguide_bend_sim_params()
