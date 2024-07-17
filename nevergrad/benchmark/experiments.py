@@ -3535,33 +3535,111 @@ def multi_ceviche(
     algos = [a for a in algos if a in list(ng.optimizers.registry.keys())]
     # print(algos)
     algo = np.random.choice(algos)
-    print(algo)
     for benchmark_type in [np.random.randint(4)]:
         shape = tuple([int(p) for p in list(photonics_ceviche(None, benchmark_type))])  # type: ignore
         name = photonics_ceviche("name", benchmark_type) + str(shape)  # type: ignore
-        print(f"Shape = {shape} {type(shape)} {type(shape[0])}")
-        if c0:
-            instrum = ng.p.Array(shape=shape, lower=0.0, upper=1.0)
-        else:
-            instrum = ng.p.Array(shape=shape, lower=0.0, upper=1.0).set_integer_casting()
+        # print(f"Shape = {shape} {type(shape)} {type(shape[0])}")
+        instrumc0 = ng.p.Array(shape=shape, lower=0.0, upper=1.0)
+        instrumc0pen = ng.p.Array(shape=shape, lower=0.0, upper=1.0)
+        instrum = ng.p.Array(shape=shape, lower=0.0, upper=1.0).set_integer_casting()
+        instrum2 = ng.p.Array(shape=shape, lower=0.0, upper=1.0).set_integer_casting()
+        #     for benchmark_type in [np.random.randint(4)]:
+        #         shape = tuple([int(p) for p in list(photonics_ceviche(None, benchmark_type))])  # type: ignore
+        #         name = photonics_ceviche("name", benchmark_type) + str(shape)  # type: ignore
+        #         print(f"Shape = {shape} {type(shape)} {type(shape[0])}")
+        #         if c0:
+        #             instrum = ng.p.Array(shape=shape, lower=0.0, upper=1.0)
+        #         else:
+        #             instrum = ng.p.Array(shape=shape, lower=0.0, upper=1.0).set_integer_casting()
 
         def pc(x):
             return photonics_ceviche(x, benchmark_type)
 
+        def fpc(x):
+            loss, grad = photonics_ceviche(x.reshape(shape), benchmark_type, wantgrad=True)
+            return loss, grad.flatten()
+
+        def epc(x):
+            return photonics_ceviche(x, benchmark_type, discretize=True)
+
+        #                sfunc = helpers.SpecialEvaluationExperiment(func, evaluation=iqa)
+        #                sfunc.add_descriptors(non_proxy_function=False)
+        #                xp = Experiment(sfunc, algo, budget, num_workers=1, seed=next(seedg))
+
         instrum.set_name(name)
+        instrumc0.set_name(name)  # + "c0")
+        instrumc0pen.set_name(name)  # + "c0p")
+        instrum2.set_name(name)  # + "c0")
+
+        # Function for experiments completely in the discrete context.
         func = ExperimentFunction(pc, instrum)
-        # func.add_descriptor(name=name)
-        # func.parametrization.set_name(name)
-        print(f"name = {name}")
-        for optim in [algo]:
-            for budget in [20, 50, 90]:
-                yield Experiment(func, optim, budget=budget, seed=next(seedg))
+        # Function for experiments in the continuous context.
+        c0func = ExperimentFunction(pc, instrumc0)
+        c0penfunc = ExperimentFunction(pc, instrumc0pen)
+        # Evaluation function for the continuous context, but with discretization.
+        eval_func = ExperimentFunction(epc, instrum2)
+
+        # print(f"name = {name}")
+        import copy
+
+        def cv(x):
+            return np.sum((x - np.round(x)) ** 2)
+
+        for optim in [algo]:  # TODO: we also need penalizations.
+            for budget in list(
+                np.random.choice([3, 20, 50, 90, 150, 250, 400], 3, replace=False)
+            ):  # [int(np.random.choice([3, 20, 50, 90]))]: #[20, 50, 90]:
+                if np.random.rand() < 0.03:
+                    from scipy import optimize as scipyoptimize
+
+                    x0 = np.random.rand(np.prod(shape))
+                    result = scipyoptimize.minimize(
+                        fpc,
+                        x0=x0,
+                        method="L-BFGS-B",
+                        jac=True,
+                        options={"maxiter": budget},
+                        bounds=[[0, 1] for _ in range(np.prod(shape))],
+                    )
+                    assert -1e-5 <= np.min(result.x.flatten())
+                    assert np.max(result.x.flatten()) <= 1.0001
+                    print(
+                        f"LOGPB{benchmark_type} LBFGSB with_budget {budget} returns {epc(result.x.reshape(shape))}"
+                    )
+                if c0 and np.random.choice([True, False]):
+                    pen = np.random.choice([False, True])
+                    if pen:
+                        optim2 = copy.deepcopy(ng.optimizers.registry[optim])
+                        optim2.name += "c0p"
+                        sfunc = helpers.SpecialEvaluationExperiment(c0penfunc, evaluation=eval_func)
+                        yield Experiment(
+                            sfunc, optim2, budget=budget, seed=next(seedg), constraint_violation=[cv]
+                        )
+                    else:
+                        optim3 = copy.deepcopy(ng.optimizers.registry[optim])
+                        optim3.name += "c0"
+                        sfunc = helpers.SpecialEvaluationExperiment(c0func, evaluation=eval_func)
+                        yield Experiment(sfunc, optim3, budget=budget, seed=next(seedg))
+                else:
+                    yield Experiment(
+                        func, optim, budget=budget, seed=next(seedg)
+                    )  # Once in the discrete case.
+
+
+#         instrum.set_name(name)
+#         func = ExperimentFunction(pc, instrum)
+#         # func.add_descriptor(name=name)
+#         # func.parametrization.set_name(name)
+#         print(f"name = {name}")
+#         for optim in [algo]:
+#             for budget in [20, 50, 90]:
+#                 yield Experiment(func, optim, budget=budget, seed=next(seedg))
 
 
 @registry.register
 def multi_ceviche_c0(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of multi_ceviche with continuous permittivities."""
-    return multi_ceviche(seed, c0=True)
+    return multi_ceviche(seed, c0=True)  # means that we include c0 cases.
 
 
 @registry.register

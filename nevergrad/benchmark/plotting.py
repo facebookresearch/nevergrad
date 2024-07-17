@@ -27,6 +27,7 @@ from .exporttable import export_table
 
 
 _DPI = 250
+no_limit = False
 pure_algorithms = []
 
 # %% Basic tools
@@ -218,7 +219,7 @@ def normalized_losses(df: pd.DataFrame, descriptors: tp.List[str]) -> utils.Sele
         subdf = df.select_and_drop(**dict(zip(descriptors, case)))
         losses = np.array(subdf.loc[:, "loss"])
         m = min(losses)
-        M = max(losses[losses < float("inf")])
+        M = max(losses[losses < (float("inf") if no_limit else float("1e6"))])
         df.loc[subdf.index, "loss"] = (df.loc[subdf.index, "loss"] - m) / (M - m) if M != m else 1
     return df  # type: ignore
 
@@ -246,8 +247,15 @@ def create_plots(
         x-axis for xp plots (either budget or pseudotime)
     """
     assert xpaxis in ["budget", "pseudotime"]
+    if "non_proxy_function" in df.columns:
+        print("removing non_proxy_function")
+        df.drop(columns=["non_proxy_function"], inplace=True)
     df = remove_errors(df)
     df.loc[:, "loss"] = pd.to_numeric(df.loc[:, "loss"])
+    if not no_limit:
+        loss = pd.to_numeric(df.loc[:, "loss"])
+        upper = np.max(loss[loss < 1e6])
+        df.loc[:, "loss"] = df.loc[:, "loss"].clip(lower=-1e6, upper=upper)
     df = df.loc[:, [x for x in df.columns if not x.startswith("info/")]]
     # Normalization of types.
     for col in df.columns:
@@ -479,6 +487,51 @@ def gp_sota() -> tp.Dict[str, tp.Tuple[float, float]]:
     return gp
 
 
+#    LOGPB0_150 -0.591678
+#    LOGPB0_20 -0.499837
+#    LOGPB0_250 -0.576301
+#    LOGPB0_3 -0.424572
+#    LOGPB0_400 -0.50911
+#    LOGPB0_50 -0.576757
+#    LOGPB0_90 -0.616816
+#    LOGPB1_150 -0.577477
+#    LOGPB1_20 -0.557164
+#    LOGPB1_250 -0.577601
+#    LOGPB1_3 -0.412766
+#    LOGPB1_400 -0.582446
+#    LOGPB1_50 -0.540028
+#    LOGPB1_90 -0.565553
+#    LOGPB2_150 -0.4966
+#    LOGPB2_20 -0.496643
+#    LOGPB2_250 -0.628773
+#    LOGPB2_3 -0.380808
+#    LOGPB2_400 -0.543632
+#    LOGPB2_50 -0.585993
+#    LOGPB2_90 -0.486193
+#    LOGPB3_150 -0.68359
+#    LOGPB3_20 -0.685482
+#    LOGPB3_250 -0.577344
+#    LOGPB3_3 -0.329887
+#    LOGPB3_400 -0.585512
+#    LOGPB3_50 -0.657603
+#    LOGPB3_90 -0.606128
+
+
+def ceviche_sota() -> tp.Dict[str, tp.Tuple[float, float]]:
+    ceviche = {}
+    # {0: "waveguide-bend", 1: "beam-splitter", 2: "mode-converter", 3: "wdm"}
+
+    # Numbers below can be obtained by:
+    # grep LOGPB *.out | sed 's/.*://g' | sort | uniq -c | grep with_budget | awk '{ data[$2,"_",$5] += $7;  num[$2,"_",$5] += 1  } END { for (u in data) { print u, data[u]/num[u], num[u]}   } ' | sort -n  | grep '400 '
+    # Also obtained by examples/plot_ceviches.sh
+    # After log files have been created by sbatch examples/ceviche.sh
+    ceviche["waveguide-bend/400"] = (-0.50911, 1000000)  # Budget 400
+    ceviche["beam-splitter/400"] = (-0.582446, 1000000)
+    ceviche["mode-converter/400"] = (-0.504482, 1000000)
+    ceviche["wdm/400"] = (-0.585512, 100000)
+    return ceviche
+
+
 class LegendInfo(tp.NamedTuple):
     """Handle for information used to create a legend."""
 
@@ -565,7 +618,7 @@ class XpPlotter:
             lowerbound = min(lowerbound, np.min(vals["loss"]))
             # We here add some state of the art results.
             # This adds a cross on figures, x-axis = budget and y-axis = loss.
-            for sota_name, sota in [("GP", gp_sota())]:
+            for sota_name, sota in [("GP", gp_sota()), ("ceviche", ceviche_sota())]:
                 for k in sota.keys():
                     if k in title:
                         th = sota[k][0]  # loss of proposed solution.
@@ -576,7 +629,7 @@ class XpPlotter:
                             vals[xaxis][indices],
                             th + 0 * vals["loss"][indices],
                             name_style[optim_name],
-                            label="gp",
+                            label=sota_name,
                         )
                         plt.plot(  # Vertical line, showing the budget of the GP solution.
                             [cost] * 3,
@@ -586,7 +639,7 @@ class XpPlotter:
                                 max(vals["loss"][indices]),
                             ],
                             name_style[optim_name],
-                            label="gp",
+                            label=sota_name,
                         )
             line = plt.plot(vals[xaxis], vals["loss"], name_style[optim_name], label=optim_name)
             # confidence lines
@@ -696,7 +749,7 @@ class XpPlotter:
             ]
         )
         groupeddf = df.groupby(["optimizer_name", "budget"])
-        means = groupeddf.mean()
+        means = groupeddf.mean() if no_limit else groupeddf.median()
         stds = groupeddf.std()
         nums = groupeddf.count()
         optim_vals: tp.Dict[str, tp.Dict[str, np.ndarray]] = {}
