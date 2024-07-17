@@ -520,10 +520,15 @@ def gp_sota() -> tp.Dict[str, tp.Tuple[float, float]]:
 def ceviche_sota() -> tp.Dict[str, tp.Tuple[float, float]]:
     ceviche = {}
     # {0: "waveguide-bend", 1: "beam-splitter", 2: "mode-converter", 3: "wdm"}
-    ceviche["waveguide-bend"] = (-0.50911, 1000000)  # Budget 400
-    ceviche["beam-splitter"] = (-0.582446, 1000000)
-    ceviche["mode-converter"] = (-0.543632, 1000000)
-    ceviche["wdm"] = (-0.585512, 100000)
+
+    # Numbers below can be obtained by:
+    # grep LOGPB *.out | sed 's/.*://g' | sort | uniq -c | grep with_budget | awk '{ data[$2,"_",$5] += $7;  num[$2,"_",$5] += 1  } END { for (u in data) { print u, data[u]/num[u], num[u]}   } ' | sort -n  | grep '400 '
+    # Also obtained by examples/plot_ceviches.sh
+    # After log files have been created by sbatch examples/ceviche.sh
+    ceviche["waveguide-bend/400"] = (-0.50911, 1000000)  # Budget 400
+    ceviche["beam-splitter/400"] = (-0.582446, 1000000)
+    ceviche["mode-converter/400"] = (-0.504482, 1000000)
+    ceviche["wdm/400"] = (-0.585512, 100000)
     return ceviche
 
 
