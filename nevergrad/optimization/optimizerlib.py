@@ -5209,9 +5209,9 @@ SmoothDiscreteLognormalOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutati
 SuperSmoothDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
     smoother=True, mutation="lengler", antismooth=9
 ).set_name("SuperSmoothDiscreteLenglerOnePlusOne", register=True)
-SuperSmoothTinyLognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="tinylognormal", antismooth=9).set_name(
-    "SuperSmoothTinyLognormalDiscreteOnePlusOne", register=True
-)
+SuperSmoothTinyLognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True, mutation="tinylognormal", antismooth=9
+).set_name("SuperSmoothTinyLognormalDiscreteOnePlusOne", register=True)
 UltraSmoothDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
     smoother=True, mutation="lengler", antismooth=3
 ).set_name("UltraSmoothDiscreteLenglerOnePlusOne", register=True)

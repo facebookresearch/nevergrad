@@ -266,13 +266,19 @@ def create_plots(
             "loss",
         ):
             try:
-                df[col] = df[col].astype(float).astype(int) if ("num" in col or "dim" in col or "budget" in col) else df[col].astype(float)
+                df[col] = (
+                    df[col].astype(float).astype(int)
+                    if ("num" in col or "dim" in col or "budget" in col)
+                    else df[col].astype(float)
+                )
                 # print(col, " is converted to int")
             except Exception as e1:
                 for i in range(len(df[col])):
                     try:
                         float(df[col][i])
                     except Exception as e2:
+                        if len(failed_indices) < 20:
+                            print("Error ", e2)
                         failed_indices += [i]
                 assert (
                     len(failed_indices) < 500
@@ -282,7 +288,11 @@ def create_plots(
                     df.drop(index=i, inplace=True)
                     print("We drop index ", i, "/", len(df), " for ", col)
                 try:
-                    df[col] = df[col].astype(float).astype(int) if ("num" in col or "dim" in col or "budget" in col) else df[col].astype(float)
+                    df[col] = (
+                        df[col].astype(float).astype(int)
+                        if ("num" in col or "dim" in col or "budget" in col)
+                        else df[col].astype(float)
+                    )
                 except:
                     print(f"Failed for {col}")
 
