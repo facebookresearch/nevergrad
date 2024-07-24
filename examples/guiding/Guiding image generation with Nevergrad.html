@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Latent variables in image generation &mdash; nevergrad  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            nevergrad
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../optimization.html">How to perform optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../parametrization.html">Parametrizing your optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../machinelearning.html">Examples - Nevergrad for machine learning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../optimizers_ref.html">Optimizers API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../parametrization_ref.html">Parametrization API reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../benchmarking.html">Running algorithm benchmarks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../r.html">Examples - Nevergrad for R</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../benchmarks.html">Examples of benchmarks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../pyomo.html">Examples - Working with Pyomo model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../windows.html">Installation and configuration on Windows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing to Nevergrad</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../opencompetition2020.html">Open Optimization Competition 2020</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">nevergrad</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Latent variables in image generation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/examples/guiding/Guiding image generation with Nevergrad.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <p>People love image generators. However, the results is frequently not perfect.</p>
+<p>Related paper: https://dl.acm.org/doi/abs/10.1145/3583131.3590471 (nominated for best paper award at Gecco)</p>
+<p>Comments welcome here: https://www.facebook.com/groups/nevergradusers/</p>
+<section id="latent-variables-in-image-generation">
+<h1>Latent variables in image generation<a class="headerlink" href="#latent-variables-in-image-generation" title="Permalink to this heading"></a></h1>
+<p>Many latent diffusion models use random latent variables.
+They create an image, with as inputs:</p>
+<ul class="simple">
+<li><p>a randomly drawn normal latent tensor, e.g. 256x256x3</p></li>
+<li><p>a prompt, chosen by the user
+When creating a batch of 50 images, they therefore might need a tensor of shape 50x256x256x3, i.e. 50 latent variables of shape 256x256x3.</p></li>
+</ul>
+<p>Typically, the first batch is randomly drawn.</p>
+</section>
+<section id="applying-the-voronoi-crossover-for-latent-image-generation">
+<h1>Applying the Voronoi crossover for latent image generation<a class="headerlink" href="#applying-the-voronoi-crossover-for-latent-image-generation" title="Permalink to this heading"></a></h1>
+<p>When the user watches the 50 images, she might select her favorite ones, for example the images with indices 4, 16 and 48. This is a great information: we can then combine these 3 latent variables X4, X16 and X48.</p>
+<p>The Voronoi crossover turns out to be a great idea.</p>
+<ul class="simple">
+<li><p>Randomly choose v1,v2,v3,v4,v5,v6 in D=[0,255]^2 (here the number of cells is twice the number of chosen images).</p></li>
+<li><p>Then, split [0,255] in 5 Voronoi cells: the cell V1 corresponding to v1 is the part of D that is closer to v1 than to v2,v3,v4,v5 or v6, and the cells V2,V3,V4,V5,V6 corresponding to v2,v3,v4,v5,v6 are similarly defined. These cells V1-V6 (except for equality cases) are a partition of D.</p></li>
+<li><p>Then create a new latent variable by using X4 for filling the cell V1, X16 for V2, X48 for V3, X4 for V4, X16 for V5, X48 for V6.
+The Voronoi crossover (which is randomized) can be applied for creating 50 new latent variables</p></li>
+</ul>
+</section>
+<section id="enhancements">
+<h1>Enhancements<a class="headerlink" href="#enhancements" title="Permalink to this heading"></a></h1>
+<p>The paper above mentions other possible enhancements:</p>
+<ul class="simple">
+<li><p>if the user selects one single image, and specifies where in the image she is unhappy with the result, we might keep the same latent variable, except a small area close to the user click.</p></li>
+<li><p>machine learning can be applied for predicting the best latent variables; this is a surrogate model approach.</p></li>
+</ul>
+<p>Post in  https://www.facebook.com/groups/nevergradusers/ if you need code or help.</p>
+</section>
+<section id="citation">
+<h1>Citation<a class="headerlink" href="#citation" title="Permalink to this heading"></a></h1>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>@misc{guidedimagegeneration_nevergrad,
+  author = {Evergrad, N.},
+  title = {Guiding latent image generation with Nevergrad},
+  year = {2024},
+  publisher = {GitHub},
+  journal = {GitHub repository},
+  howpublished = {\url{https://github.com/facebookresearch/nevergrad/blob/main/nevergrad/common/sphere.py}},
+  commit = {01e1bc02e366783d37adfbf7af6326457977ef1f}
+}
+
+@inproceedings{10.1145/3583131.3590471,
+author = {Videau, Mathurin and Knizev, Nickolai and Leite, Alessandro and Schoenauer, Marc and Teytaud, Olivier},
+title = {Interactive Latent Diffusion Model},
+year = {2023},
+isbn = {9798400701191},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3583131.3590471},
+doi = {10.1145/3583131.3590471},
+abstract = {This paper introduces Interactive Latent Diffusion Model (IELDM), an encapsulation of a popular text-to-image diffusion model into an Evolutionary framework, allowing the users to steer the design of images toward their goals, alleviating the tedious trial-and-error process that such tools frequently require. The users can not only designate their favourite images, allowing the system to build a surrogate model based on their goals and move in the same directions, but also click on some specific parts of the images to either locally refine the image through dedicated mutation, or recombine images by choosing on each one some regions they like. Experiments validate the benefits of IELDM, especially in a situation where Latent Diffusion Model is challenged by complex input prompts.},
+booktitle = {Proceedings of the Genetic and Evolutionary Computation Conference},
+pages = {586–596},
+numpages = {11},
+location = {Lisbon, Portugal},
+series = {GECCO &#39;23}
+}
+</pre></div>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2019, Facebook AI Research.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

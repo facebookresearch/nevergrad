@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lognormal algorithm &mdash; nevergrad  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            nevergrad
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../optimization.html">How to perform optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../parametrization.html">Parametrizing your optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../machinelearning.html">Examples - Nevergrad for machine learning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../optimizers_ref.html">Optimizers API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../parametrization_ref.html">Parametrization API reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../benchmarking.html">Running algorithm benchmarks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../r.html">Examples - Nevergrad for R</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../benchmarks.html">Examples of benchmarks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../pyomo.html">Examples - Working with Pyomo model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../windows.html">Installation and configuration on Windows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing to Nevergrad</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../opencompetition2020.html">Open Optimization Competition 2020</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">nevergrad</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Lognormal algorithm</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/examples/lognormal/Lognormal mutations in Nevergrad.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <p>We present a family of black-box optimization algorithms recently added in Nevergrad. We explain how they can be used for improving fake detection algorithms.</p>
+<section id="lognormal-algorithm">
+<h1>Lognormal algorithm<a class="headerlink" href="#lognormal-algorithm" title="Permalink to this heading"></a></h1>
+<p>Lognormal mutations have been added in Nevergrad.</p>
+<p>Papers:</p>
+<ul class="simple">
+<li><p>https://dl.acm.org/doi/10.1145/1389095.1389298</p></li>
+<li><p>https://dl.acm.org/doi/abs/10.1145/2001576.2001699</p></li>
+</ul>
+</section>
+<section id="extension-to-the-discrete-setting">
+<h1>Extension to the discrete setting<a class="headerlink" href="#extension-to-the-discrete-setting" title="Permalink to this heading"></a></h1>
+<p>Nevergrad contains an automatic adaptation of continuous algorithms to discrete settings and of discrete algorithms to continuous settings. It turns out that the lognormal algorithm performs quite well in some continuous cases:</p>
+<ul class="simple">
+<li><p>when the problem is very difficult (in particular, highly multimodal);</p></li>
+<li><p>when there is a good prior (a probability distribution) on the local of the optimum.</p></li>
+</ul>
+</section>
+<section id="application-to-fake-images">
+<h1>Application to fake images<a class="headerlink" href="#application-to-fake-images" title="Permalink to this heading"></a></h1>
+<p>We observe the followings:</p>
+<ul class="simple">
+<li><p>No-box attacks are excellent for some fake detectors</p></li>
+<li><p>Square-Attacks are excellent for many fake detectors</p></li>
+</ul>
+<p>However, both attacks can be detected by a ResNet trained on a few thousands images.</p>
+<p>We observe that:</p>
+<ul class="simple">
+<li><p>Lognormal is not necessarily better than square-attacks, but it succeeds on many detectors.</p></li>
+<li><p>Lognormal attacks are not detected by detectors specialized on no-box or square-attacks</p></li>
+</ul>
+<p>Therefore they must be included in a good defense mechanism.
+We also note that using algorithms coming from generic black-box optimization algorithms creates a wide range of attacks, all of them have to be detected.</p>
+</section>
+<section id="citation">
+<h1>Citation<a class="headerlink" href="#citation" title="Permalink to this heading"></a></h1>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@misc</span><span class="p">{</span><span class="n">lognormal_nevergrad</span><span class="p">,</span>
+  <span class="n">author</span> <span class="o">=</span> <span class="p">{</span><span class="n">Evergrad</span><span class="p">,</span> <span class="n">N</span><span class="o">.</span><span class="p">},</span>
+  <span class="n">title</span> <span class="o">=</span> <span class="p">{</span><span class="n">Log</span><span class="o">-</span><span class="n">Normal</span> <span class="n">mutations</span> <span class="ow">in</span> <span class="n">Nevergrad</span><span class="p">},</span>
+  <span class="n">year</span> <span class="o">=</span> <span class="p">{</span><span class="mi">2024</span><span class="p">},</span>
+  <span class="n">publisher</span> <span class="o">=</span> <span class="p">{</span><span class="n">GitHub</span><span class="p">},</span>
+  <span class="n">journal</span> <span class="o">=</span> <span class="p">{</span><span class="n">GitHub</span> <span class="n">repository</span><span class="p">},</span>
+  <span class="n">howpublished</span> <span class="o">=</span> <span class="p">{</span>\<span class="n">url</span><span class="p">{</span><span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">facebookresearch</span><span class="o">/</span><span class="n">nevergrad</span><span class="o">/</span><span class="n">optimization</span><span class="o">/</span><span class="n">optimizerlib</span><span class="o">.</span><span class="n">py</span><span class="p">}},</span>
+  <span class="n">commit</span> <span class="o">=</span> <span class="p">{</span><span class="mi">6</span><span class="n">f952d4e7a883fa2bbf3fe0fd0e38b22bd953a1f</span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2019, Facebook AI Research.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
