@@ -16,7 +16,8 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 from matplotlib.legend import Legend
-from matplotlib import cm
+
+# from matplotlib import cm
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import nevergrad.common.typing as tp
 from . import utils
@@ -250,6 +251,7 @@ def create_plots(
     df = df.loc[:, [x for x in df.columns if not x.startswith("info/")]]
     # Normalization of types.
     for col in df.columns:
+        print(" Working on ", col)
         failed_indices = []
         if "max_irr" in col:
             df[col] = df[col].round(decimals=4)
@@ -264,7 +266,7 @@ def create_plots(
             "loss",
         ):
             try:
-                df[col] = df[col].astype(float).astype(int) if col != "loss" else df[col].astype(float)
+                df[col] = df[col].astype(float).astype(int) if ("num" in col or "dim" in col or "budget" in col) else df[col].astype(float)
                 # print(col, " is converted to int")
             except Exception as e1:
                 for i in range(len(df[col])):
@@ -280,15 +282,15 @@ def create_plots(
                     df.drop(index=i, inplace=True)
                     print("We drop index ", i, "/", len(df), " for ", col)
                 try:
-                    df[col] = df[col].astype(float).astype(int) if col != "loss" else df[col].astype(float)
+                    df[col] = df[col].astype(float).astype(int) if ("num" in col or "dim" in col or "budget" in col) else df[col].astype(float)
                 except:
                     print(f"Failed for {col}")
+
         elif col != "loss":
             df[col] = df[col].astype(str)
             df[col] = df[col].replace(r"\.[0]*$", "", regex=True)
             try:
                 df.loc[:, col] = pd.to_numeric(df.loc[:, col])
-                print(loc, " is converted to numeric")
             except:
                 pass
     if "num_objectives" in df.columns:
@@ -617,7 +619,7 @@ class XpPlotter:
         all_x = [v for vals in optim_vals.values() for v in vals[xaxis]]
         try:
             all_x = [float(a_) for a_ in all_x]
-            self._ax.set_xlim([min(all_x), max(all_x)])
+            self._ax.set_xlim([min(all_x), max(all_x)])  # type: ignore
         except TypeError:
             print(f"TypeError for minimum or maximum or {all_x}")
         self.add_legends(legend_infos)
@@ -804,7 +806,7 @@ class FightPlotter:
         max_cols = 25
         self._cax = self._ax.imshow(
             100 * np.array(self.winrates)[:, :max_cols],
-            cmap=cm.seismic,
+            cmap="seismic",
             interpolation="none",
             vmin=0,
             vmax=100,
@@ -1035,7 +1037,6 @@ def main() -> None:
         args.remove_suffix,
     )
     exp_df.replace("CSEC11", "NGIohTuned", inplace=True)
-    exp_df.replace("NgIohLn", "NGIohLn", inplace=True)
     output_dir = args.output
     if output_dir is None:
         output_dir = str(Path(args.filepath).with_suffix("")) + "_plots"

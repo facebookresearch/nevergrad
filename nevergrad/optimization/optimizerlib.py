@@ -111,9 +111,12 @@ class _OnePlusOne(base.Optimizer):
         roulette_size: int = 2,
         antismooth: int = 55,
         crossover_type: str = "none",
+        forced_discretization: bool = False,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.parametrization.tabu_length = tabu_length
+        if forced_discretization:
+            self.parametrization.set_integer_casting()  # type: ignore
         self.antismooth = antismooth
         self.crossover_type = crossover_type
         self.roulette_size = roulette_size
@@ -758,7 +761,7 @@ class _CMA(base.Optimizer):
                     x0=(
                         self.parametrization.sample().get_standardized_data(reference=self.parametrization)
                         if self._config.random_init
-                        else np.zeros(self.dimension, dtype=np.float_)
+                        else np.zeros(self.dimension, dtype=np.float64)
                     ),
                     sigma0=self._config.scale * scale_multiplier,
                     inopts=inopts,
@@ -771,7 +774,7 @@ class _CMA(base.Optimizer):
                         "Please install fcmaes (pip install fcmaes) to use FCMA optimizers"
                     ) from e
                 self._es = cmaes.Cmaes(
-                    x0=np.zeros(self.dimension, dtype=np.float_),
+                    x0=np.zeros(self.dimension, dtype=np.float64),
                     input_sigma=self._config.scale * scale_multiplier,
                     popsize=self._popsize,
                     randn=self._rng.randn,
@@ -2934,7 +2937,7 @@ try:
             else:
                 x_probe = self.bo.suggest(util)  # this is time consuming
                 x_probe = [x_probe[self._fake_function.key(i)] for i in range(len(x_probe))]
-            data = self._normalizer.backward(np.array(x_probe, copy=False))
+            data = self._normalizer.backward(np.asarray(x_probe))
             candidate = self.parametrization.spawn_child().set_standardized_data(data)
             candidate._meta["x_probe"] = x_probe
             return candidate
@@ -3073,7 +3076,7 @@ class _BayesOptim(base.Optimizer):
                 candidate = candidate.tolist()
             self._buffer = candidate
         x_probe = self._buffer.pop()
-        data = self._normalizer.backward(np.array(x_probe, copy=False))
+        data = self._normalizer.backward(np.array(x_probe))
         candidate = self.parametrization.spawn_child().set_standardized_data(data)
         candidate._meta["x_probe"] = x_probe
         return candidate
@@ -3175,7 +3178,7 @@ class _Chain(base.Optimizer):
             "third": self.budget // 3 if self.budget else self.num_workers,
             "fourth": self.budget // 4 if self.budget else self.num_workers,
             "tenth": self.budget // 10 if self.budget else self.num_workers,
-            "equal": self.budget // (len(budgets) + 1),
+            "equal": self.budget // (len(budgets) + 1) if self.budget else self.num_workers,
             "most": (self.budget * 4) // 5 if self.budget else self.num_workers,
             "sqrt": int(np.sqrt(self.budget)) if self.budget else self.num_workers,
         }

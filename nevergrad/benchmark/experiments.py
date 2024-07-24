@@ -20,6 +20,7 @@ from nevergrad.functions.pbt import PBT
 from nevergrad.functions.ml import MLTuning
 from nevergrad.functions import mlda as _mlda
 from nevergrad.functions.photonics import Photonics
+from nevergrad.functions.photonics import ceviche as photonics_ceviche
 from nevergrad.functions.arcoating import ARCoating
 from nevergrad.functions import images as imagesxp
 from nevergrad.functions.powersystems import PowerSystem
@@ -1747,8 +1748,7 @@ def yabbob(
                 )
                 if constraint_case != 0:
                     xp.function.parametrization.has_constraints = True
-                # if np.random.rand() > 0.25:
-                #    continue
+
                 if not xp.is_incoherent:
                     yield xp
 
@@ -2077,6 +2077,50 @@ def zp_ms_bbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         for rotation in [True]
         for expo in [1.0, 5.0]
         for tf in [0.01, 0.1, 1.0, 10.0]
+        for d in dims
+    ]
+    optims = ["QODE", "PSO", "SQOPSO", "DE", "CMA"]
+    optims = refactor_optims(optims)
+    for optim in optims:
+        for function in functions:
+            for budget in [100, 200, 400, 800, 1600, 3200]:
+                for nw in [1]:
+                    yield Experiment(function, optim, budget=budget, num_workers=nw, seed=next(seedg))
+
+
+def nozp_noms_bbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Testing optimizers on exponentiated problems.
+    Cigar, Ellipsoid.
+    Both rotated and unrotated.
+    Budget 100, 1000, 10000.
+    Dimension 50.
+    """
+
+    seedg = create_seed_generator(seed)
+    optims = [
+        "TinyCMA",
+        "QODE",
+        "MetaModelOnePlusOne",
+        "LhsDE",
+        "TinyLhsDE",
+        "TinyQODE",
+        "ChainMetaModelSQP",
+        "MicroCMA",
+        "MultiScaleCMA",
+    ]
+    optims = ["QODE"]
+    optims = ["CMA", "LargeCMA", "OldCMA", "DE", "PSO", "Powell", "Cobyla", "SQP"]
+    optims = ["QOPSO", "QORealSpacePSO"]
+    optims = ["SQOPSO"]  # , "QORealSpacePSO", "RealSpacePSO"]
+    dims = [2, 3, 5, 10, 20]
+    functions = [
+        ArtificialFunction(
+            name, block_dimension=d, rotation=rotation, expo=expo, translation_factor=tf, zero_pen=False
+        )
+        for name in ["cigar", "sphere", "rastrigin"]
+        for rotation in [True]
+        for expo in [1.0, 5.0]
+        for tf in [1.0]
         for d in dims
     ]
     optims = ["QODE", "PSO", "SQOPSO", "DE", "CMA"]
@@ -3398,6 +3442,138 @@ def far_optimum_es(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
         for optim in optims:
             for budget in [100, 400, 1000, 4000, 10000]:
                 yield Experiment(func, optim, budget=budget, seed=next(seedg))
+
+
+@registry.register
+def ceviche(
+    seed: tp.Optional[int] = None,
+) -> tp.Iterator[Experiment]:
+    seedg = create_seed_generator(seed)
+    instrum = ng.p.Array(shape=(40, 40), lower=0.0, upper=1.0).set_integer_casting()
+    func = ExperimentFunction(photonics_ceviche, instrum.set_name("transition"))
+    algos = [
+        "DiagonalCMA",
+        "PSO",
+        "DE",
+        "CMA",
+        "OnePlusOne",
+        "LognormalDiscreteOnePlusOne",
+        "DiscreteLenglerOnePlusOne",
+        "MetaModel",
+        "MetaModelDE",
+        "MetaModelDSproba",
+        "MetaModelOnePlusOne",
+        "MetaModelPSO",
+        "MetaModelQODE",
+        "MetaModelTwoPointsDE",
+        "NeuralMetaModel",
+        "NeuralMetaModelDE",
+        "NeuralMetaModelTwoPointsDE",
+        "RFMetaModel",
+        "RFMetaModelDE",
+        "RFMetaModelOnePlusOne",
+        "RFMetaModelPSO",
+        "RFMetaModelTwoPointsDE",
+        "SVMMetaModel",
+        "SVMMetaModelDE",
+        "SVMMetaModelPSO",
+        "SVMMetaModelTwoPointsDE",
+        "RandRecombiningDiscreteLognormalOnePlusOne",
+        "SmoothDiscreteLognormalOnePlusOne",
+        "SmoothLognormalDiscreteOnePlusOne",
+        "UltraSmoothElitistRecombiningDiscreteLognormalOnePlusOne",
+        "SuperSmoothRecombiningDiscreteLognormalOnePlusOne",
+        "SmoothElitistRandRecombiningDiscreteLognormalOnePlusOne",
+        "RecombiningDiscreteLognormalOnePlusOne",
+        "RandRecombiningDiscreteLognormalOnePlusOne",
+        "UltraSmoothDiscreteLognormalOnePlusOne",
+        "ZetaSmoothDiscreteLognormalOnePlusOne",
+        "SuperSmoothDiscreteLognormalOnePlusOne",
+    ]
+    algos = [a for a in algos if a in list(ng.optimizers.registry.keys())]
+    # print(algos)
+    algo = np.random.choice(algos)
+    print(algo)
+    for optim in [algo]:
+        for budget in [20, 50, 100, 160, 240]:
+            yield Experiment(func, optim, budget=budget, seed=next(seedg))
+
+
+@registry.register
+def multi_ceviche(
+    seed: tp.Optional[int] = None,
+    c0: bool = False,
+) -> tp.Iterator[Experiment]:
+    seedg = create_seed_generator(seed)
+    algos = [
+        "DiagonalCMA",
+        "PSO",
+        "DE",
+        "CMA",
+        "OnePlusOne",
+        "LognormalDiscreteOnePlusOne",
+        "DiscreteLenglerOnePlusOne",
+        "MetaModel",
+        "MetaModelDE",
+        "MetaModelDSproba",
+        "MetaModelOnePlusOne",
+        "MetaModelPSO",
+        "MetaModelQODE",
+        "MetaModelTwoPointsDE",
+        "NeuralMetaModel",
+        "NeuralMetaModelDE",
+        "NeuralMetaModelTwoPointsDE",
+        "RFMetaModel",
+        "RFMetaModelDE",
+        "RFMetaModelOnePlusOne",
+        "RFMetaModelPSO",
+        "RFMetaModelTwoPointsDE",
+        "SVMMetaModel",
+        "SVMMetaModelDE",
+        "SVMMetaModelPSO",
+        "SVMMetaModelTwoPointsDE",
+        "RandRecombiningDiscreteLognormalOnePlusOne",
+        "SmoothDiscreteLognormalOnePlusOne",
+        "SmoothLognormalDiscreteOnePlusOne",
+        "UltraSmoothElitistRecombiningDiscreteLognormalOnePlusOne",
+        "SuperSmoothRecombiningDiscreteLognormalOnePlusOne",
+        "SmoothElitistRandRecombiningDiscreteLognormalOnePlusOne",
+        "RecombiningDiscreteLognormalOnePlusOne",
+        "RandRecombiningDiscreteLognormalOnePlusOne",
+        "UltraSmoothDiscreteLognormalOnePlusOne",
+        "ZetaSmoothDiscreteLognormalOnePlusOne",
+        "SuperSmoothDiscreteLognormalOnePlusOne",
+    ]
+    algos = [a for a in algos if a in list(ng.optimizers.registry.keys())]
+    # print(algos)
+    algo = np.random.choice(algos)
+    print(algo)
+    for benchmark_type in [np.random.randint(4)]:
+        shape = tuple([int(p) for p in list(photonics_ceviche(None, benchmark_type))])  # type: ignore
+        name = photonics_ceviche("name", benchmark_type) + str(shape)  # type: ignore
+        print(f"Shape = {shape} {type(shape)} {type(shape[0])}")
+        if c0:
+            instrum = ng.p.Array(shape=shape, lower=0.0, upper=1.0)
+        else:
+            instrum = ng.p.Array(shape=shape, lower=0.0, upper=1.0).set_integer_casting()
+
+        def pc(x):
+            return photonics_ceviche(x, benchmark_type)
+
+        instrum.set_name(name)
+        func = ExperimentFunction(pc, instrum)
+        # func.add_descriptor(name=name)
+        # func.parametrization.set_name(name)
+        print(f"name = {name}")
+        for optim in [algo]:
+            for budget in [20, 50, 90]:
+                yield Experiment(func, optim, budget=budget, seed=next(seedg))
+
+
+@registry.register
+def multi_ceviche_c0(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of multi_ceviche with continuous permittivities."""
+    return multi_ceviche(seed, c0=True)
 
 
 @registry.register

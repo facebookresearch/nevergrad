@@ -220,7 +220,7 @@ class Parameter(Layered):
         ), f"Expected {type(self)} but got {type(sent_reference)} as reference"
         self._check_frozen()
         del self.value  # remove all cached information
-        self._internal_set_standardized_data(np.array(data, copy=False), reference=sent_reference)
+        self._internal_set_standardized_data(np.asarray(data), reference=sent_reference)
         return self
 
     def _internal_set_standardized_data(  # pylint: disable=unused-argument

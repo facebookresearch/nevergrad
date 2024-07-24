@@ -107,55 +107,8 @@ def ng_full_gym(
         "SpecialRL",
         "PSO",
         "NGOpt",
-        "NgIoh21",
+        "NgIohTuned",
     ]
-    optims = [
-        np.random.choice(
-            [
-                "NgIoh21",
-                "NgIoh21",
-                "NgIoh21",
-                "Carola4",
-                "Carola5",
-                "Carola6",
-                "Carola8",
-                "Carola9",
-                "Carola14",
-            ]
-        )
-    ]  # DiagonalCMA", "CMA","NgIoh21", "NgIoh21"])] #"PSO", "SQOPSO", "NGOpt", "NGOptRW", "NoisyRL1", "NoisyRL3", "NoisyRL2", "SpecialRL", "NGDSRW", "NgIoh21"])]
-    optims = ["NGOpt", "NgDS", "NgDS2", "NGDSRW"]
-    optims = ["NgIoh4", "NgDS2", "NgDS3"]
-    optims = ["NgDS3", "NGDSRW"]
-    optims = ["CSEC11"]
-    optims = [np.random.choice(["NGOpt", "SQOPSO", "CMA", "CSEC11", "CMA", "VLPCMA", "DE", "QODE"])]
-    optims = ["SQOPSODCMA"]
-    optims = [
-        np.random.choice(
-            ["CMA", "PSO", "CSEC11", "NgIoh4", "RandomSearch", "DiagonalCMA", "CMA", "VLPCMA", "Cobyla"]
-        )
-    ]
-    # optims = [np.random.choice(["TBPSA", "NoisyRL2", "NoisyRL3", "SpecialRL", "MixDeterministicRL"])]
-    optims = [np.random.choice(["QODE", "QNDE"])]
-    optims = ["NgIoh4"]
-    optims = [np.random.choice(["CSEC11", "SQOPSODCMA", "NgIoh4", "NGOpt"])]
-    optims = ["CSEC11"]
-    if structured:
-        optims = get_optimizers("split", seed=next(seedg))  # type: ignore
-        # optims = [np.random.choice(optims)]
-    optims = [
-        np.random.choice(
-            [
-                "BigLognormalDiscreteOnePlusOne",
-                "XLognormalDiscreteOnePlusOne",
-                "SmallLognormalDiscreteOnePlusOne",
-                "HugeLognormalDiscreteOnePlusOne",
-            ]
-        )
-    ]
-    optims = ["OLNDiscreteOnePlusOne"]
-    optims = ["NgIohLn"]
-    # optims = [np.random.choice(["NgIohMLn", "NgIohLn", "NgIoh"])]
     if multi:
         controls = ["multi_neural"]
     else:
