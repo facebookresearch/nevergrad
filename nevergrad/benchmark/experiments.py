@@ -1183,8 +1183,7 @@ def deceptive(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                 6400,
                 12800,
             ]:  # + list(range(100, 20001, 500)):
-                if np.random.rand() > 0.8:
-                    yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
+                yield Experiment(func, optim, budget=budget, num_workers=1, seed=next(seedg))
 
 
 @registry.register
