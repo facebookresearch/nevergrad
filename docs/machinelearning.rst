@@ -308,3 +308,13 @@ Nevergrad is a plugin in `Hydra <https://hydra.cc/docs/plugins/nevergrad_sweeper
 Nevergrad is interfaced in `IOH Profiler <https://iohprofiler.liacs.nl/>`_, a tool from Univ. Leiden, CNRS, Sorbonne univ and Tel Hai college for profiling optimization algorithms.
 
 Nevergrad is interfaced in `MixSimulator <https://github.com/Foloso/MixSimulator/>`_, a useful tool to get the optimal parameters for an electrical mix.
+
+
+
+Nevergrad is also used for improving the diversity in image generation: <./examples/diversity/Diversity in image generation with Nevergrad.md>.
+
+And for guiding latent image generation <./examples/guiding/Guiding image generation with Nevergrad.md>.
+
+And for the detection of fake images <./examples/lognormal/Lognormal mutations in Nevergrad.md>.
+
+And for retrofitting <./examples/retrofitting/Retrofitting with Nevergrad.md>.
