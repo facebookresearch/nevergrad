@@ -1024,7 +1024,6 @@ def parallel_small_budget(seed: tp.Optional[int] = None) -> tp.Iterator[Experime
     ]
     budgets = [10, 50, 100, 200, 400]
     optims = refactor_optims(optims)
-    optims = ["NgLglr"]
     for optim in optims:
         for function in functions:
             for budget in budgets:
@@ -1378,7 +1377,6 @@ def multimodal(seed: tp.Optional[int] = None, para: bool = False) -> tp.Iterator
         for uv_factor in [0, 5]
     ]
     optims = refactor_optims(optims)
-    optims = ["NgLglr"]  # DO NOT SUBMIT
     for func in functions:
         for optim in optims:
             for budget in [3000, 10000, 30000, 100000]:
