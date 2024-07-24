@@ -172,6 +172,7 @@ class _OnePlusOne(base.Optimizer):
             "lognormal",
             "xlognormal",
             "xsmalllognormal",
+            "tinylognormal",
             "lognormal",
             "smalllognormal",
             "biglognormal",
@@ -193,6 +194,11 @@ class _OnePlusOne(base.Optimizer):
             self._global_mr = 0.8
             self._memory_index = 0
             self._memory_size = 12  # Dirty random value
+            self._best_recent_loss = float("inf")
+        elif mutation == "tinylognormal":
+            self._global_mr = 0.01
+            self._memory_index = 0
+            self._memory_size = 2  # Dirty random value
             self._best_recent_loss = float("inf")
         elif mutation == "smalllognormal":
             self._global_mr = 0.2
@@ -650,6 +656,9 @@ BigLognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="biglognormal")
 )
 SmallLognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="smalllognormal").set_name(
     "SmallLognormalDiscreteOnePlusOne", register=True
+)
+TinyLognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="tinylognormal").set_name(
+    "TinyLognormalDiscreteOnePlusOne", register=True
 )
 HugeLognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="hugelognormal").set_name(
     "HugeLognormalDiscreteOnePlusOne", register=True
@@ -5200,6 +5209,9 @@ SmoothDiscreteLognormalOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutati
 SuperSmoothDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
     smoother=True, mutation="lengler", antismooth=9
 ).set_name("SuperSmoothDiscreteLenglerOnePlusOne", register=True)
+SuperSmoothTinyLognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True, mutation="tinylognormal", antismooth=9
+).set_name("SuperSmoothTinyLognormalDiscreteOnePlusOne", register=True)
 UltraSmoothDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
     smoother=True, mutation="lengler", antismooth=3
 ).set_name("UltraSmoothDiscreteLenglerOnePlusOne", register=True)
@@ -5219,13 +5231,13 @@ SmoothRecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
     smoother=True,
     crossover=True,
     mutation="lengler",
-).set_name("SmoothRecombiningDiscreteLanglerOnePlusOne", register=True)
+).set_name("SmoothRecombiningDiscreteLenglerOnePlusOne", register=True)
 UltraSmoothRecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
     smoother=True,
     crossover=True,
     mutation="lengler",
     antismooth=3,
-).set_name("UltraSmoothRecombiningDiscreteLanglerOnePlusOne", register=True)
+).set_name("UltraSmoothRecombiningDiscreteLenglerOnePlusOne", register=True)
 UltraSmoothElitistRecombiningDiscreteLognormalOnePlusOne = ParametrizedOnePlusOne(
     smoother=True,
     crossover=True,
@@ -5239,20 +5251,20 @@ UltraSmoothElitistRecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
     mutation="lengler",
     antismooth=3,
     roulette_size=7,
-).set_name("UltraSmoothElitistRecombiningDiscreteLanglerOnePlusOne", register=True)
+).set_name("UltraSmoothElitistRecombiningDiscreteLenglerOnePlusOne", register=True)
 SuperSmoothElitistRecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
     smoother=True,
     crossover=True,
     mutation="lengler",
     antismooth=9,
     roulette_size=7,
-).set_name("SuperSmoothElitistRecombiningDiscreteLanglerOnePlusOne", register=True)
+).set_name("SuperSmoothElitistRecombiningDiscreteLenglerOnePlusOne", register=True)
 SuperSmoothRecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
     smoother=True,
     crossover=True,
     mutation="lengler",
     antismooth=9,
-).set_name("SuperSmoothRecombiningDiscreteLanglerOnePlusOne", register=True)
+).set_name("SuperSmoothRecombiningDiscreteLenglerOnePlusOne", register=True)
 SuperSmoothRecombiningDiscreteLognormalOnePlusOne = ParametrizedOnePlusOne(
     smoother=True,
     crossover=True,
@@ -5264,14 +5276,14 @@ SmoothElitistRecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
     crossover=True,
     mutation="lengler",
     roulette_size=7,
-).set_name("SmoothElitistRecombiningDiscreteLanglerOnePlusOne", register=True)
+).set_name("SmoothElitistRecombiningDiscreteLenglerOnePlusOne", register=True)
 SmoothElitistRandRecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
     smoother=True,
     crossover=True,
     mutation="lengler",
     roulette_size=7,
     crossover_type="rand",
-).set_name("SmoothElitistRandRecombiningDiscreteLanglerOnePlusOne", register=True)
+).set_name("SmoothElitistRandRecombiningDiscreteLenglerOnePlusOne", register=True)
 SmoothElitistRandRecombiningDiscreteLognormalOnePlusOne = ParametrizedOnePlusOne(
     smoother=True,
     crossover=True,
@@ -5282,7 +5294,7 @@ SmoothElitistRandRecombiningDiscreteLognormalOnePlusOne = ParametrizedOnePlusOne
 RecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
     crossover=True,
     mutation="lengler",
-).set_name("RecombiningDiscreteLanglerOnePlusOne", register=True)
+).set_name("RecombiningDiscreteLenglerOnePlusOne", register=True)
 RecombiningDiscreteLognormalOnePlusOne = ParametrizedOnePlusOne(
     crossover=True,
     mutation="lognormal",
@@ -7184,6 +7196,7 @@ class NgIoh15b(NgIoh15):
 
 NgDS3 = Chaining([LognormalDiscreteOnePlusOne, NgDS2], ["tenth"]).set_name("NgDS3", register=True)
 NgLn = Chaining([LognormalDiscreteOnePlusOne, NGOpt], ["tenth"]).set_name("NgLn", register=True)
+NgLglr = Chaining([DiscreteLenglerOnePlusOne, NGOpt], ["tenth"]).set_name("NgLglr", register=True)
 NgRS = Chaining([oneshot.RandomSearch, NGOpt], ["tenth"]).set_name("NgRS", register=True)
 
 
@@ -7474,11 +7487,23 @@ SQOPSODCMA20bar = ConfPortfolio(optimizers=[SQOPSODCMA] * 20, warmup_ratio=0.5).
     "SQOPSODCMA20bar", register=True
 )
 NgIohLn = Chaining([LognormalDiscreteOnePlusOne, CSEC11], ["tenth"]).set_name("NgIohLn", register=True)
+CMALn = Chaining([LognormalDiscreteOnePlusOne, CMA], ["tenth"]).set_name("CMALn", register=True)
+CMARS = Chaining([RandomSearch, CMA], ["tenth"]).set_name("CMARS", register=True)
 NgIohRS = Chaining([oneshot.RandomSearch, CSEC11], ["tenth"]).set_name("NgIohRS", register=True)
+PolyLN = ConfPortfolio(
+    optimizers=[
+        Rescaled(base_optimizer=SmallLognormalDiscreteOnePlusOne, scale=np.random.rand()) for i in range(20)
+    ],
+    warmup_ratio=0.5,
+).set_name("PolyLN", register=True)
 MultiLN = ConfPortfolio(
     optimizers=[
         Rescaled(base_optimizer=SmallLognormalDiscreteOnePlusOne, scale=2.0 ** (i - 5)) for i in range(6)
     ],
     warmup_ratio=0.5,
 ).set_name("MultiLN", register=True)
+ManyLN = ConfPortfolio(
+    optimizers=[SmallLognormalDiscreteOnePlusOne for i in range(20)],
+    warmup_ratio=0.5,
+).set_name("ManyLN", register=True)
 NgIohMLn = Chaining([MultiLN, CSEC11], ["tenth"]).set_name("NgIohMLn", register=True)

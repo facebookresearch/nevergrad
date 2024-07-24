@@ -252,7 +252,7 @@ def create_plots(
     # Normalization of types.
     for col in df.columns:
         print(" Working on ", col)
-        failed_indices = []
+        failed_indices: tp.List[tp.Any] = []
         if "max_irr" in col:
             df[col] = df[col].round(decimals=4)
         if col in (
@@ -263,27 +263,44 @@ def create_plots(
             "num_blocks",
             "block_dimension",
             "num_objectives",
+            "loss",
         ):
             try:
-                df[col] = df[col].astype(float).astype(int)
-                print(col, " is converted to int")
+                df[col] = (
+                    df[col].astype(float).astype(int)
+                    if ("num" in col or "dim" in col or "budget" in col)
+                    else df[col].astype(float)
+                )
+                # print(col, " is converted to int")
             except Exception as e1:
-                try:
-                    for i in range(len(df[col])):
+                for i in range(len(df[col])):
+                    try:
                         float(df[col][i])
-                except Exception as e2:
-                    failed_indices += [i]
-                    assert (
-                        len(failed_indices) < 100
-                    ), f"Fails at row {i+2}, Exceptions: {e1}, {e2}. Failed-indices = {failed_indices}"
+                    except Exception as e2:
+                        if len(failed_indices) < 20:
+                            print("Error ", e2)
+                        failed_indices += [i]
+                assert (
+                    len(failed_indices) < 500
+                ), f"Fails at row {i+2}, Exceptions: {e1}. Failed-indices = {failed_indices}"
+                for i0 in range(len(failed_indices)):
+                    i = failed_indices[len(failed_indices) - 1 - i0]
                     df.drop(index=i, inplace=True)
-                    print("We drop index ", i, " for ", col)
+                    print("We drop index ", i, "/", len(df), " for ", col)
+                try:
+                    df[col] = (
+                        df[col].astype(float).astype(int)
+                        if ("num" in col or "dim" in col or "budget" in col)
+                        else df[col].astype(float)
+                    )
+                except:
+                    print(f"Failed for {col}")
+
         elif col != "loss":
             df[col] = df[col].astype(str)
             df[col] = df[col].replace(r"\.[0]*$", "", regex=True)
             try:
                 df.loc[:, col] = pd.to_numeric(df.loc[:, col])
-                print(col, " is converted to numeric")
             except:
                 pass
     if "num_objectives" in df.columns:
@@ -1045,18 +1062,7 @@ def main() -> None:
         args.merge_parametrization,
         args.remove_suffix,
     )
-    #    exp_df.replace("CSEC11", "NGIohTuned", inplace=True)
-    #    exp_df.replace("CSEC10", "NgIohAlt", inplace=True)
-    #    for c in ["NgIoh", "SQOPSO", "NGDS", "CSEC", "Carola", "NgDS", "Wiz"]:  # NgLn
-    #        #    for c in ["CSEC", "NgIohAlt", "NgDS", "NgLn", "Wiz", "DSproba", "DSsubsp"]:
-    #        try:
-    #            filter = exp_df["optimizer_name"].str.contains(c)
-    #            exp_df = exp_df[~filter]
-    #            print("filter ", c, " succeeded.")
-    #        except:
-    #            print("filter ", c, " failed.")
-    # merging names
-    #
+    exp_df.replace("CSEC11", "NGIohTuned", inplace=True)
     output_dir = args.output
     if output_dir is None:
         output_dir = str(Path(args.filepath).with_suffix("")) + "_plots"
