@@ -312,7 +312,7 @@ Nevergrad is interfaced in `MixSimulator <https://github.com/Foloso/MixSimulator
 
 Nevergrad is also used for `improving the diversity in image generation <./examples/diversity/Diversity in image generation with Nevergrad.md/>'_.
 
-And for `guiding latent image generation <https://github.com/facebookresearch/nevergrad/blob/main/docs/examples/guiding/Guiding image generation with Nevergrad.md/>'_.
+And for `guiding latent image generation <https://github.com/facebookresearch/nevergrad/blob/main/docs/examples/guiding/>'_.
 
 And for the `detection of fake images <./examples/lognormal/Lognormal mutations in Nevergrad.md/>'_.
 
