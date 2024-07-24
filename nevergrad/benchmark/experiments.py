@@ -3605,15 +3605,7 @@ def photonics(
         "RBFGS",
         "LBFGSB",
     ]
-    optims = ["QrDE", "QODE", "RFMetaModelDE"]
-    optims = ["PCABO"]
-    optims = ["PCABO", "NGOpt", "QODE"]
-    optims = ["QOPSO"]  # , "QORealSpacePSO", "RealSpacePSO"]
-    optims = ["MicroCMA", "MiniCMA", "QODE", "TinyDE", "MicroDE", "NGOpt"]
-    optims = ["NGOpt"]
-    optims = ["SQOPSO"]
     optims = refactor_optims(optims)
-    optims = ["NgRS"]
     for method in ["clipping", "tanh"]:  # , "arctan"]:
         for name in (
             ["bragg"]
@@ -3633,7 +3625,7 @@ def photonics(
             for budget in [1e1, 1e2, 1e3]:
                 for algo in optims:
                     xp = Experiment(func, algo, int(budget), num_workers=1, seed=next(seedg))
-                    if not xp.is_incoherent and np.random.rand() > 0.8:
+                    if not xp.is_incoherent:
                         yield xp
 
 
