@@ -1,7 +1,10 @@
 
 Related paper: https://arxiv.org/abs/2310.12583 
+
 Related plugin: https://github.com/mathuvu/sd-webui-diversity 
+
 Comments welcome here: https://www.facebook.com/groups/nevergradusers/
+
 ## Diversity
 
 Randomly generating points in a domain can be disappointing: sometimes ten random values are poorly distributed in the domain.
@@ -21,8 +24,11 @@ Using Nevergrad, we create points which are more evenly distributed than random 
 For example:
 `
 `# x is a batch of 50 random latent vectors, with size 256x256 and 3 channels
-x = np.random.randn(50,256,256,3)`
+
+`x = np.random.randn(50,256,256,3)`
+
 `from nevergrad.common import sphere`
+
 `derand_x = quasi_randomize(x)`
 
 creates a point set with the same shape as x, and with some nice properties.

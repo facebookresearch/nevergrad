@@ -2,6 +2,7 @@ We present a family of black-box optimization algorithms recently added in Never
 ## Lognormal algorithm
 
 Lognormal mutations have been added in Nevergrad.
+
 Papers:
 - https://dl.acm.org/doi/10.1145/1389095.1389298
 - https://dl.acm.org/doi/abs/10.1145/2001576.2001699
@@ -12,6 +13,7 @@ Nevergrad contains an automatic adaptation of continuous algorithms to discrete 
 - when the problem is very difficult (in particular, highly multimodal);
 - when there is a good prior (a probability distribution) on the local of the optimum.
 ## Application to fake images
+
 We observe the followings:
 - No-box attacks are excellent for some fake detectors
 - Square-Attacks are excellent for many fake detectors

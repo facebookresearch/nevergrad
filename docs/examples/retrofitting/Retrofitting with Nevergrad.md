@@ -3,6 +3,7 @@ Comments welcome here: https://www.facebook.com/groups/nevergradusers/
 ## What is retrofitting ?
 
 Retrofitting is, in general, the addition of new features.
+
 In machine learning, Retrofitting is typically the modification of a model using high-level information.
 
 ## When is classical gradient-based deep learning limited ?
