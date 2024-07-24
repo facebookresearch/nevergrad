@@ -252,7 +252,7 @@ def create_plots(
     # Normalization of types.
     for col in df.columns:
         print(" Working on ", col)
-        failed_indices = []
+        failed_indices: tp.List[tp.Any] = []
         if "max_irr" in col:
             df[col] = df[col].round(decimals=4)
         if col in (
