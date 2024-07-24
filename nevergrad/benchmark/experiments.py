@@ -3489,11 +3489,8 @@ def ceviche(
         "ZetaSmoothDiscreteLognormalOnePlusOne",
         "SuperSmoothDiscreteLognormalOnePlusOne",
     ]
-    algos = [a for a in algos if a in list(ng.optimizers.registry.keys())]
-    # print(algos)
-    algo = np.random.choice(algos)
-    print(algo)
-    for optim in [algo]:
+    # algo = np.random.choice(algos)
+    for optim in algos:
         for budget in [20, 50, 100, 160, 240]:
             yield Experiment(func, optim, budget=budget, seed=next(seedg))
 
@@ -3544,10 +3541,8 @@ def multi_ceviche(
         "SuperSmoothDiscreteLognormalOnePlusOne",
     ]
     algos = [a for a in algos if a in list(ng.optimizers.registry.keys())]
-    # print(algos)
-    algo = np.random.choice(algos)
-    print(algo)
-    for benchmark_type in [np.random.randint(4)]:
+
+    for benchmark_type in list(range(4)):
         shape = tuple([int(p) for p in list(photonics_ceviche(None, benchmark_type))])  # type: ignore
         name = photonics_ceviche("name", benchmark_type) + str(shape)  # type: ignore
         print(f"Shape = {shape} {type(shape)} {type(shape[0])}")
@@ -3564,7 +3559,7 @@ def multi_ceviche(
         # func.add_descriptor(name=name)
         # func.parametrization.set_name(name)
         print(f"name = {name}")
-        for optim in [algo]:
+        for optim in algos:
             for budget in [20, 50, 90]:
                 yield Experiment(func, optim, budget=budget, seed=next(seedg))
 
