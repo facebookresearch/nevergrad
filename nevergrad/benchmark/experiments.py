@@ -1080,8 +1080,6 @@ def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                     for optim in optims:
                         for nw in [1, 10]:
                             for budget in [50, 500, 5000]:
-                                if np.random.rand() > 0.3:
-                                    continue
                                 yield Experiment(
                                     dfunc, optim, num_workers=nw, budget=budget, seed=next(seedg)
                                 )
@@ -1386,7 +1384,7 @@ def multimodal(seed: tp.Optional[int] = None, para: bool = False) -> tp.Iterator
             for budget in [3000, 10000, 30000, 100000]:
                 for nw in [1000] if para else [1]:
                     xp = Experiment(func, optim, budget=budget, num_workers=nw, seed=next(seedg))
-                    if not xp.is_incoherent and np.random.rand() > 0.8:
+                    if not xp.is_incoherent:
                         yield xp
 
 
@@ -2668,7 +2666,7 @@ def fishing(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
             for fu in funcs:
                 xp = Experiment(fu, algo, budget, seed=next(seedg))
                 xp.function.parametrization.real_world = True
-                if not xp.is_incoherent: # and np.random.rand() > 0.8:
+                if not xp.is_incoherent:  # and np.random.rand() > 0.8:
                     yield xp
 
 
