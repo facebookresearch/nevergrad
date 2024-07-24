@@ -2668,7 +2668,7 @@ def fishing(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
             for fu in funcs:
                 xp = Experiment(fu, algo, budget, seed=next(seedg))
                 xp.function.parametrization.real_world = True
-                if not xp.is_incoherent and np.random.rand() > 0.8:
+                if not xp.is_incoherent: # and np.random.rand() > 0.8:
                     yield xp
 
 
