@@ -310,10 +310,10 @@ Nevergrad is interfaced in `IOH Profiler <https://iohprofiler.liacs.nl/>`_, a to
 Nevergrad is interfaced in `MixSimulator <https://github.com/Foloso/MixSimulator/>`_, a useful tool to get the optimal parameters for an electrical mix.
 
 
-Nevergrad is also used for `improving the diversity in image generation <./examples/diversity/Diversity in image generation with Nevergrad.md/>'_.
+Nevergrad is also used for `Guiding latent image generation <https://github.com/facebookresearch/nevergrad/blob/main/docs/examples/guiding/Guiding%20image%20generation%20with%20Nevergrad.md/>`_.
 
-And for `guiding latent image generation <https://github.com/facebookresearch/nevergrad/blob/main/docs/examples/guiding/>'_.
+And for `Increasing diversity in image generation <https://github.com/facebookresearch/nevergrad/blob/main/docs/examples/diversity/Diversity%20in%20image%20generation%20with%20Nevergrad.md/>`_.
 
-And for the `detection of fake images <./examples/lognormal/Lognormal mutations in Nevergrad.md/>'_.
+And for the `Detection of fake images <https://github.com/facebookresearch/nevergrad/blob/main/docs/examples/lognormal/Lognormal%20mutations%20in%20Nevergrad.md/>`_.
 
-And for `retrofitting <./examples/retrofitting/Retrofitting with Nevergrad.md/>'_.
+And for `Retrofitting <https://github.com/facebookresearch/nevergrad/blob/main/docs/examples/retrofitting/Retrofitting%20with%20Nevergrad.md>`_.
