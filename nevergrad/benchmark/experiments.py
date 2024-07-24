@@ -2128,51 +2128,6 @@ def nozp_noms_bbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 @registry.register
-def nozp_noms_bbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Testing optimizers on exponentiated problems.
-    Cigar, Ellipsoid.
-    Both rotated and unrotated.
-    Budget 100, 1000, 10000.
-    Dimension 50.
-    """
-
-    seedg = create_seed_generator(seed)
-    optims = [
-        "TinyCMA",
-        "QODE",
-        "MetaModelOnePlusOne",
-        "LhsDE",
-        "TinyLhsDE",
-        "TinyQODE",
-        "ChainMetaModelSQP",
-        "MicroCMA",
-        "MultiScaleCMA",
-    ]
-    optims = ["QODE"]
-    optims = ["CMA", "LargeCMA", "OldCMA", "DE", "PSO", "Powell", "Cobyla", "SQP"]
-    optims = ["QOPSO", "QORealSpacePSO"]
-    optims = ["SQOPSO"]  # , "QORealSpacePSO", "RealSpacePSO"]
-    dims = [2, 3, 5, 10, 20]
-    functions = [
-        ArtificialFunction(
-            name, block_dimension=d, rotation=rotation, expo=expo, translation_factor=tf, zero_pen=False
-        )
-        for name in ["cigar", "sphere", "rastrigin"]
-        for rotation in [True]
-        for expo in [1.0, 5.0]
-        for tf in [1.0]
-        for d in dims
-    ]
-    optims = ["QODE", "PSO", "SQOPSO", "DE", "CMA"]
-    optims = refactor_optims(optims)
-    for optim in optims:
-        for function in functions:
-            for budget in [100, 200, 400, 800, 1600, 3200]:
-                for nw in [1]:
-                    yield Experiment(function, optim, budget=budget, num_workers=nw, seed=next(seedg))
-
-
-@registry.register
 def pbbob(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Testing optimizers on exponentiated problems.
     Cigar, Ellipsoid.

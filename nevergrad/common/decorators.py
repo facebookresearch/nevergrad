@@ -49,7 +49,7 @@ class Registry(tp.MutableMapping[str, X]):
 
     def register_with_info(self, **info: tp.Any) -> tp.Callable[[X], X]:
         """Decorator for registering a function and information about it"""
-        return functools.partial(self.register, info=info)
+        return functools.partial(self.register, info=info)  # type: ignore
 
     def get_info(self, name: str) -> tp.Dict[tp.Hashable, tp.Any]:
         if name not in self:
