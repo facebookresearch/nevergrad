@@ -311,7 +311,7 @@ class _OnePlusOne(base.Optimizer):
             elif (
                 "lognormal" in mutation
             ):  # in ["xlognormal", ""lognormal", "smalllognormal", "biglognormal", "hugelognormal"]:
-                mutation_rate = self._global_mr
+                mutation_rate = max(0.1 / self.dimension, self._global_mr)
                 assert mutation_rate > 0.0
                 individual_mutation_rate = 1.0 / (
                     1.0 + (((1.0 - mutation_rate) / mutation_rate) * np.exp(0.22 * np.random.randn()))
