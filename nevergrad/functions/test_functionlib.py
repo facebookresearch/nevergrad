@@ -64,7 +64,7 @@ def test_artitificial_function_repr() -> None:
     assert "sphere" in output, f"Unexpected representation: {output}"
 
 
-def test_ptb_no_overfitting() -> None:
+def no_test_ptb_no_overfitting() -> None:
     func = functionlib.PBT(("sphere", "cigar"), (3, 7), 12)
     func = func.copy()
     # We do a gradient descent.

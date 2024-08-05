@@ -303,10 +303,17 @@ If you want to run Open AI Gym, see `One-line for learning state-of-the-art Open
 Examples from our external users
 --------------------------------
 
-Nevergrad is integrated in `Ray/Tune <https://docs.ray.io/en/latest/tune/api/doc/ray.tune.search.nevergrad.NevergradSearch.html>`_, Berkeley AI Research library for parameter tuning .
-
 Nevergrad is a plugin in `Hydra <https://hydra.cc/docs/plugins/nevergrad_sweeper/>`_ Facebook's parameter sweeping library.
 
 Nevergrad is interfaced in `IOH Profiler <https://iohprofiler.liacs.nl/>`_, a tool from Univ. Leiden, CNRS, Sorbonne univ and Tel Hai college for profiling optimization algorithms.
 
 Nevergrad is interfaced in `MixSimulator <https://github.com/Foloso/MixSimulator/>`_, a useful tool to get the optimal parameters for an electrical mix.
+
+
+Nevergrad is also used for `Guiding latent image generation <https://github.com/facebookresearch/nevergrad/blob/main/docs/examples/guiding/Guiding%20image%20generation%20with%20Nevergrad.md/>`_.
+
+And for `Increasing diversity in image generation <https://github.com/facebookresearch/nevergrad/blob/main/docs/examples/diversity/Diversity%20in%20image%20generation%20with%20Nevergrad.md/>`_.
+
+And for the `Detection of fake images <https://github.com/facebookresearch/nevergrad/blob/main/docs/examples/lognormal/Lognormal%20mutations%20in%20Nevergrad.md/>`_.
+
+And for `Retrofitting <https://github.com/facebookresearch/nevergrad/blob/main/docs/examples/retrofitting/Retrofitting%20with%20Nevergrad.md>`_.

@@ -40,7 +40,8 @@ commands:
             pip install --progress-bar off -U pip setuptools
             pip install --progress-bar off -e .[all]
             #pip install --progress-bar off --use-deprecated=legacy-resolver -e .[all]
-            pip install --progress-bar off -U numpy>=1.20.0
+            #pip install --progress-bar off -U numpy==1.24.0
+            pip install --progress-bar off -U numpy==1.24.0 matplotlib==2.2.3 pyomo==5.7.1
             pip install keras==2.6.0  # issue on Nov 4th 2021
 
 jobs:
@@ -195,7 +196,7 @@ jobs:
   pytests:
     executor: ubuntu-python38
 
-    parallelism: 10
+    parallelism: 11
 
     steps:
 
@@ -210,7 +211,7 @@ jobs:
             #pytest nevergrad -v --exitfirst --durations=20 --cov=nevergrad
     # The resource_class feature allows configuring CPU and RAM resources for each job. Different resource classes are
     # available for different executors. https://circleci.com/docs/2.0/configuration-reference/#resourceclass
-    resource_class: large
+    resource_class: xlarge
 
 
   docs-deploy:

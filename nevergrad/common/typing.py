@@ -54,7 +54,7 @@ ArrayLike = Union[Tuple[float, ...], List[float], _np.ndarray]  # most common
 PathLike = Union[str, Path]
 FloatLoss = float
 Loss = Union[float, ArrayLike]
-BoundValue = Optional[Union[float, int, _np.int_, _np.float_, ArrayLike]]
+BoundValue = Optional[Union[float, int, _np.int_, _np.float64, ArrayLike]]
 
 
 # %% Protocol definitions for executor typing
@@ -65,15 +65,12 @@ X = TypeVar("X", covariant=True)
 class JobLike(Protocol[X]):
     # pylint: disable=pointless-statement
 
-    def done(self) -> bool:
-        ...
+    def done(self) -> bool: ...
 
-    def result(self) -> X:
-        ...
+    def result(self) -> X: ...
 
 
 class ExecutorLike(Protocol):
     # pylint: disable=pointless-statement, unused-argument
 
-    def submit(self, fn: Callable[..., X], *args: Any, **kwargs: Any) -> JobLike[X]:
-        ...
+    def submit(self, fn: Callable[..., X], *args: Any, **kwargs: Any) -> JobLike[X]: ...

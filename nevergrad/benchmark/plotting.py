@@ -16,7 +16,8 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 from matplotlib.legend import Legend
-from matplotlib import cm
+
+# from matplotlib import cm
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import nevergrad.common.typing as tp
 from . import utils
@@ -101,9 +102,10 @@ def aggregate_winners(
         *(
             aggregate_winners(
                 df.loc[
-                    df.loc[:, categories[0]] == val
-                    if categories[0] != "budget"
-                    else df.loc[:, categories[0]] <= val
+                    df.loc[:, categories[0]]
+                    == val
+                    # if categories[0] != "budget"
+                    # else df.loc[:, categories[0]] <= val
                 ],
                 categories[1:],
                 all_optimizers,
@@ -249,6 +251,8 @@ def create_plots(
     df = df.loc[:, [x for x in df.columns if not x.startswith("info/")]]
     # Normalization of types.
     for col in df.columns:
+        print(" Working on ", col)
+        failed_indices: tp.List[tp.Any] = []
         if "max_irr" in col:
             df[col] = df[col].round(decimals=4)
         if col in (
@@ -259,15 +263,39 @@ def create_plots(
             "num_blocks",
             "block_dimension",
             "num_objectives",
+            "loss",
         ):
             try:
-                df[col] = df[col].astype(float).astype(int)
+                df[col] = (
+                    df[col].astype(float).astype(int)
+                    if ("num" in col or "dim" in col or "budget" in col)
+                    else df[col].astype(float)
+                )
+                # print(col, " is converted to int")
             except Exception as e1:
-                try:
-                    for i in range(len(df[col])):
+                for i in range(len(df[col])):
+                    try:
                         float(df[col][i])
-                except Exception as e2:
-                    assert False, f"Fails at row {i+2}, Exceptions: {e1}, {e2}"
+                    except Exception as e2:
+                        if len(failed_indices) < 20:
+                            print("Error ", e2)
+                        failed_indices += [i]
+                assert (
+                    len(failed_indices) < 500
+                ), f"Fails at row {i+2}, Exceptions: {e1}. Failed-indices = {failed_indices}"
+                for i0 in range(len(failed_indices)):
+                    i = failed_indices[len(failed_indices) - 1 - i0]
+                    df.drop(index=i, inplace=True)
+                    print("We drop index ", i, "/", len(df), " for ", col)
+                try:
+                    df[col] = (
+                        df[col].astype(float).astype(int)
+                        if ("num" in col or "dim" in col or "budget" in col)
+                        else df[col].astype(float)
+                    )
+                except:
+                    print(f"Failed for {col}")
+
         elif col != "loss":
             df[col] = df[col].astype(str)
             df[col] = df[col].replace(r"\.[0]*$", "", regex=True)
@@ -543,10 +571,10 @@ class XpPlotter:
         self._ax.grid(True, which="both")
         self._overlays: tp.List[tp.Any] = []
         legend_infos: tp.List[LegendInfo] = []
-        title_addendum = ""
+        title_addendum = f"({len(sorted_optimizers)} algos)"
         for optim_name in (
-            sorted_optimizers[:1] + sorted_optimizers[-12:]
-            if len(sorted_optimizers) > 13
+            sorted_optimizers[:1] + sorted_optimizers[-35:]
+            if len(sorted_optimizers) > 35
             else sorted_optimizers
         ):
             vals = optim_vals[optim_name]
@@ -599,7 +627,11 @@ class XpPlotter:
                     )
             self._ax.set_ylim(top=upperbound_up)
         all_x = [v for vals in optim_vals.values() for v in vals[xaxis]]
-        self._ax.set_xlim([min(all_x), max(all_x)])
+        try:
+            all_x = [float(a_) for a_ in all_x]
+            self._ax.set_xlim([min(all_x), max(all_x)])  # type: ignore
+        except TypeError:
+            print(f"TypeError for minimum or maximum or {all_x}")
         self.add_legends(legend_infos)
         # global info
         if "tmp" not in title:
@@ -612,7 +644,7 @@ class XpPlotter:
         vals: tp.Dict[str, np.ndarray], log: bool = False
     ) -> tp.Tuple[np.ndarray, np.ndarray]:
         loss = vals["loss"]
-        conf = vals["loss_std"] / np.sqrt(vals["num_eval"] - 1)
+        conf = vals["loss_std"] / np.sqrt(vals["loss_nums"] - 1)
         if not log:
             return loss - conf, loss + conf
         lloss = np.log10(loss)
@@ -683,6 +715,7 @@ class XpPlotter:
         groupeddf = df.groupby(["optimizer_name", "budget"])
         means = groupeddf.mean()
         stds = groupeddf.std()
+        nums = groupeddf.count()
         optim_vals: tp.Dict[str, tp.Dict[str, np.ndarray]] = {}
         # extract name and coordinates
         for optim in df.unique("optimizer_name"):
@@ -690,6 +723,7 @@ class XpPlotter:
             optim_vals[optim]["budget"] = np.array(means.loc[optim, :].index)
             optim_vals[optim]["loss"] = np.array(means.loc[optim, "loss"])
             optim_vals[optim]["loss_std"] = np.array(stds.loc[optim, "loss"])
+            optim_vals[optim]["loss_nums"] = np.array(nums.loc[optim, "loss"])
             num_eval = np.array(groupeddf.count().loc[optim, "loss"])
             optim_vals[optim]["num_eval"] = num_eval
             if "pseudotime" in means.columns:
@@ -782,7 +816,7 @@ class FightPlotter:
         max_cols = 25
         self._cax = self._ax.imshow(
             100 * np.array(self.winrates)[:, :max_cols],
-            cmap=cm.seismic,
+            cmap="seismic",
             interpolation="none",
             vmin=0,
             vmax=100,
@@ -931,7 +965,9 @@ def compute_best_placements(positions: tp.List[float], min_diff: float) -> tp.Li
     ----
     This function is probably not optimal, but seems a very good heuristic
     """
-    assert all(v2 >= v1 for v2, v1 in zip(positions[1:], positions[:-1]))
+    assert all(
+        v2 >= v1 for v2, v1 in zip(positions[1:], positions[:-1])
+    )  # , str(zip(LegendGroup, positions))
     groups = [LegendGroup([k], [pos], min_diff) for k, pos in enumerate(positions)]
     new_groups: tp.List[LegendGroup] = []
     ready = False
@@ -1010,8 +1046,7 @@ def main() -> None:
         args.merge_parametrization,
         args.remove_suffix,
     )
-    # merging names
-    #
+    exp_df.replace("CSEC11", "NGIohTuned", inplace=True)
     output_dir = args.output
     if output_dir is None:
         output_dir = str(Path(args.filepath).with_suffix("")) + "_plots"

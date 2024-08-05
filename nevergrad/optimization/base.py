@@ -108,9 +108,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             raise ValueError("No variable to optimize in this parametrization.")
         self.name = self.__class__.__name__  # printed name in repr
         # keep a record of evaluations, and current bests which are updated at each new evaluation
-        self.archive: utils.Archive[
-            utils.MultiValue
-        ] = utils.Archive()  # dict like structure taking np.ndarray as keys and Value as values
+        self.archive: utils.Archive[utils.MultiValue] = (
+            utils.Archive()
+        )  # dict like structure taking np.ndarray as keys and Value as values
         self.current_bests = {
             x: utils.MultiValue(self.parametrization, np.inf, reference=self.parametrization)
             for x in ["optimistic", "pessimistic", "average", "minimum"]
@@ -344,7 +344,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 )
                 loss = 5.0e20  # sys.float_info.max leads to numerical problems so let us do this.
         elif isinstance(loss, (tuple, list, np.ndarray)):
-            loss = np.array(loss, copy=False, dtype=float).ravel() if len(loss) != 1 else loss[0]
+            loss = np.asarray(loss, dtype=float).ravel() if len(loss) != 1 else loss[0]
         elif not isinstance(loss, np.ndarray):
             raise TypeError(
                 f'"tell" method only supports float values but the passed loss was: {loss} (type: {type(loss)}.'

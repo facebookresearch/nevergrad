@@ -51,7 +51,7 @@ bestfreq=`cat ${u}/fig*.txt | grep '^[ ]*algo.*:' | head -n 1 |sed 's/(.*//g' | 
 num=`cat ${u}/fig*.txt | grep '^[ ]*algo.*:' | wc -l `
 uminus=`echo $u | sed 's/_plots.*//g'`
 bestsr=`cat rnk__${uminus}_plots.cp.txt | grep '^[ ]*algo.*:' | head -n 1 |sed 's/(.*//g' | sed 's/.*://g'`
-echo "\\subsubsection{`echo $u | sed 's/_plots.$//g'` (NSR:$bestsr) (Freq:$bestfreq) (num:$num)}" | sed 's/_/ /g'| sed 's/aquacrop/(RW) &/g' | sed 's/rocket/(RW)&/g' | sed 's/fishing/(RW)&/g' | sed 's/MLDA/(RW)&/g' | sed 's/keras/(RW)&/g' | sed 's/mltuning/(RW)&/g' | sed 's/powersystems/(RW)&/g' | sed 's/mixsimulator/(RW)&/g' | sed 's/olympus/(RW)&/g' | sed 's/double.o.seven/(RW)&/g'
+echo "\\subsubsection{`echo $u | sed 's/_plots.$//g'` (NSR:$bestsr) (Freq:$bestfreq) (num:$num)}" | sed 's/_/ /g'| sed 's/[a-z ]*gym/(RW)&/g' | sed 's/sequential.fastgames/(RW)&/g' | sed 's/aquacrop/(RW) &/g' | sed 's/rocket/(RW)&/g' | sed 's/fishing/(RW)&/g' | sed 's/MLDA/(RW)&/g' | sed 's/keras/(RW)&/g' | sed 's/mltuning/(RW)&/g' | sed 's/powersystems/(RW)&/g' | sed 's/mixsimulator/(RW)&/g' | sed 's/olympus/(RW)&/g' | sed 's/double.o.seven/(RW)&/g'
 timeout 10 cat scripts/txt/`echo $u | sed 's/_plots/.txt/g' | sed 's/\///g'`
 (
 (
@@ -87,7 +87,7 @@ done
 ) | tee competition.tex
 ) > dagstuhloid.tex
 wait
-echo '\\begin{enumerate}' ; grep -i 'subsubsection.*rw' competition.tex | sed 's/.*NSR//g' | sed 's/).*//g' | sort | uniq -c | sort -n -r  | sed 's/.*/\\item &/g' ; echo '\\end{enumerate}' > rwtex.tex
+( echo '\begin{enumerate}' ; grep -i 'subsubsection.*rw' competition.tex | sed 's/.*NSR//g' | sed 's/).*//g' | sort | uniq -c | sort -n -r  | sed 's/.*/\\item &/g' ; echo '\end{enumerate}' )> rwtex.tex
 
 (
 echo "\\section{Statistics over all benchmarks}\\label{bigstats}"
@@ -96,31 +96,35 @@ echo 'Of course, statistics here are a risky thing: when two codes are very clos
 
 echo '\subsection{NGOpt and Base algorithms}'
 echo 'Here base algorithms have no metamodel and no complex combinations. NGOpt is the only sophisticated combination: this is an analysis of NGOpt.'
-for n in 1 2 3
+for n in 1 2 3 5000
 do
 echo "\\subsubsection{Number of times each algorithm was ranked among the $n first: NGOpt and base algorithms}"
 echo "\\begin{itemize}"
+echo '\item []'
 #grep -A$n begin.enumerate dagstuhloid.tex | grep '(' | grep ')' | grep '^\\item' | sed 's/ (.*//g' | sed 's/^.item //g' | sort | uniq -c | sort -n -r | head -n 8 | sed 's/^/\\item/g'
-egrep -v 'Multi|Carola|BAR|NGOpt[0-9A-Z]|NgIoh|Wiz|BIPOP|Shiwa|Meta|Micro|Tiny|SQPCMA|CMandAS2|Chain' dagstuhloid.tex  |grep -A$n begin.enumerate  | grep '(' | grep ')' | grep '^\\item' | sed 's/ (.*//g' | sed 's/^.item //g' | sort | uniq -c | sort -n -r | head -n 8 | sed 's/^/\\item/g'
+egrep -v 'NgDS|NGDS|Multi|Carola|BAR|NGOpt[0-9A-Z]|NgIoh|Wiz|BIPOP|Shiwa|Meta|Micro|Tiny|SQPCMA|CMandAS2|Chain' dagstuhloid.tex  |grep -A$n begin.enumerate  | grep '(' | grep ')' | grep '^\\item' | sed 's/ (.*//g' | sed 's/^.item //g' | sort | uniq -c | sort -n -r | head -n 8 | sed 's/^/\\item/g'
 echo "\\end{itemize}"
 done 
 
 echo '\subsection{Wizards, multilevels, specific standard deviations, and combinations excluded}'
 echo 'The success (robustness) of quasi-opposite PSO is visible.'
-for n in 1 2 3
+for n in 1 2 3 5000
 do
 echo "\\subsubsection{Number of times each algorithm was ranked among the $n first: no wizard, no combination}"
 echo "\\begin{itemize}"
-egrep -v 'NGOpt|Carola|BAR|Multi|BIPOP|NgIoh|Wiz|Shiwa|Meta|SQPCMA|Micro|Tiny|CMASQP|BIPOP|CMandAS2|Chain' dagstuhloid.tex  |grep -A$n begin.enumerate  | grep '(' | grep ')' | grep '^\\item' | sed 's/ (.*//g' | sed 's/^.item //g' | sort | uniq -c | sort -n -r | head -n 8 | sed 's/^/\\item/g'
+echo '\item []'
+egrep -v 'NGDS|Carola|NgDS|NGOpt|Carola|BAR|Multi|BIPOP|NgIoh|Wiz|Shiwa|Meta|SQPCMA|Micro|Tiny|CMASQP|BIPOP|CMandAS2|Chain' dagstuhloid.tex  |grep -A$n begin.enumerate  | grep '(' | grep ')' | grep '^\\item' | sed 's/ (.*//g' | sed 's/^.item //g' | sort | uniq -c | sort -n -r | head -n 8 | sed 's/^/\\item/g'
+#egrep -v 'NGOpt|Carola|BAR|Multi|BIPOP|NgIoh|Wiz|Shiwa|Meta|SQPCMA|Micro|Tiny|CMASQP|BIPOP|CMandAS2|Chain' dagstuhloid.tex  |grep -A$n begin.enumerate  | grep '(' | grep ')' | grep '^\\item' | sed 's/ (.*//g' | sed 's/^.item //g' | sort | uniq -c | sort -n -r | head -n 8 | sed 's/^/\\item/g'
 echo "\\end{itemize}"
 done 
 
 echo '\subsection{Everything included}'
 echo 'All strong methods are wizards, except tools based on quasi-opposite samplings.'
-for n in 1 2 3
+for n in 1 2 3 5000
 do
 echo "\\subsubsection{Number of times each algorithm was ranked among the $n first: everything included}"
 echo "\\begin{itemize}"
+echo '\item []'
 grep -A$n begin.enumerate dagstuhloid.tex | grep '(' | grep ')' | grep '^\\item' | sed 's/ (.*//g' | sed 's/^.item //g' | sort | uniq -c | sort -n -r | head -n 8 | sed 's/^/\\item/g'
 echo "\\end{itemize}"
 done 
@@ -178,7 +182,7 @@ sed -i 's/\\subsubsection{yabbob .*}/\\subsection{Artificial noise-free single o
 sed -i 's/\\subsubsection{yamegapenbbob .*}/\\subsection{Constrained BBOB variants}&/g' $v
 sed -i 's/\\subsubsection{(RW)keras tuning .*}/\\subsection{Real world machine learning tuning}&/g' $v
 sed -i 's/\\subsubsection{bonnans .*}/\\subsection{Discrete optimization}&/g' $v
-sed -i 's/\\subsubsection{(RW) aquacrop fao .*}/\\subsection{Real world, other than machine learning}&/g' $v
+sed -i 's/\\subsubsection{(RW) aquacrop fao .*}/\\subsection{Real world, other than machine learning HP tuning}&/g' $v
 sed -i 's/.*control.*//g' $v
 sed -i 's/\\subsubsection{multiobjective example hd .*}/\\subsection{Multiobjective problemes}&/g' $v
 sed -i 's/\\subsubsection{ranknoisy .*}/\\subsection{Noisy optimization}&/g' $v
@@ -200,6 +204,9 @@ done
 sed -i 's/.png}}/.png.pdf}}/g' dagstuhloid.tex
 # ================
 cp scripts/tex/biblio.bib .
+(echo '\begin{itemize}' ; ./scripts/compare.sh NGOpt CSEC10 | sed 's/rnk__//g' | sed 's/^/\\item /g' | sed 's/(x)//g' |sed 's/_/-/g' ; echo '\item []' ; echo '\end{itemize}' ) > compa.tex
+(echo '\begin{itemize}' ; ./scripts/compare.sh NGOpt CSEC10 | sed 's/rnk__//g' | sed 's/^/\\item /g' | sed 's/(x)//g' |sed 's/_/-/g' ; echo '\item []' ; echo '\end{itemize}' ) > compa2.tex
+
 pdflatex dagstuhloid.tex
 bibtex dagstuhloid.aux
 pdflatex dagstuhloid.tex
@@ -214,4 +221,6 @@ echo '</html>'
 ) >  dagstuhloid.html
 
 
-tar -zcvf texdag.tgz dagstuhloid.tex biblio.bib *plots/*all_pure.png *plots/xpresults_all.png ms_bbob_plots/fight_tran*.png *_plots/*.pdf dagstuhloid.html competition.tex bigstats.tex dagstuhloid.pdf rwtex.tex
+tar -zcvf texdag.tgz dagstuhloid.tex biblio.bib *plots/*all_pure.png *plots/xpresults_all.png ms_bbob_plots/fight_tran*.png *_plots/*.pdf dagstuhloid.html competition.tex bigstats.tex dagstuhloid.pdf rwtex.tex compa.tex
+
+tar -zcvf justplots.tgz *plots/*all_pure.png *plots/xpresults_all.png

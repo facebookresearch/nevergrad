@@ -226,7 +226,7 @@ class MLTuning(ExperimentFunction):
         # For the evaluation we remove the noise (unless overfitter)
         evalparams["noise_free"] = not overfitter
         parametrization.function.proxy = not overfitter
-        super().__init__(partial(self._ml_parametrization, **params), parametrization.set_name(""))
+        super().__init__(partial(self._ml_parametrization, **params), parametrization.set_name(""))  # type: ignore
         self._evalparams = evalparams
 
     def evaluation_function(self, *recommendations: p.Parameter) -> float:
@@ -270,7 +270,9 @@ class MLTuning(ExperimentFunction):
                 except Exception as e:
                     assert False, f"failing with error {e} for dataset {dataset}"
             else:
-                data = {"diabetes": sklearn.datasets.load_diabetes,}[
+                data = {
+                    "diabetes": sklearn.datasets.load_diabetes,
+                }[
                     # data = {"boston": sklearn.datasets.load_boston, "diabetes": sklearn.datasets.load_diabetes,}[
                     dataset
                 ](return_X_y=True)

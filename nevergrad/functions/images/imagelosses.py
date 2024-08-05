@@ -146,7 +146,7 @@ class Blur(ImageLoss):
         return -float(cv2.Laplacian(img, cv2.CV_64F).var())  # type: ignore
 
 
-@registry.register
+# @registry.register
 class Brisque(ImageLoss):
     """
     This estimates the Brisque score (lower is better).

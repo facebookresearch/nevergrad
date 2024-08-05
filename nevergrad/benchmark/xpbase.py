@@ -125,7 +125,7 @@ def create_seed_generator(seed: tp.Optional[int]) -> tp.Iterator[tp.Optional[int
     """
     generator = None if seed is None else np.random.RandomState(seed=seed)
     while True:
-        yield None if generator is None else generator.randint(2**32, dtype=np.uint32)
+        yield None if generator is None else generator.randint(2**32, dtype=np.uint32)  # type: ignore
 
 
 class Experiment:
@@ -168,9 +168,9 @@ class Experiment:
             optimizer=optimizer, num_workers=num_workers, budget=budget, batch_mode=batch_mode
         )
         self.result = {"loss": np.nan, "elapsed_budget": np.nan, "elapsed_time": np.nan, "error": ""}
-        self._optimizer: tp.Optional[
-            obase.Optimizer
-        ] = None  # to be able to restore stopped/checkpointed optimizer
+        self._optimizer: tp.Optional[obase.Optimizer] = (
+            None  # to be able to restore stopped/checkpointed optimizer
+        )
 
         # make sure the random_state of the base function is created, so that spawning copy does not
         # trigger a seed for the base function, but only for the copied function
@@ -225,7 +225,7 @@ class Experiment:
         self.result["loss"] = pfunc.evaluation_function(*opt.pareto_front())
         if (
             self.constraint_violation
-            and np.sum([f(opt.recommend().value) for f in self.constraint_violation]) > 0  # type: ignore
+            and np.max([f(opt.recommend().value) for f in self.constraint_violation]) > 0  # type: ignore
             or len(self.function.parametrization._constraint_checkers) > 0
             and not opt.recommend().satisfies_constraints(pfunc.parametrization)
         ):
