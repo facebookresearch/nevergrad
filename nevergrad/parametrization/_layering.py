@@ -346,8 +346,9 @@ class SignificantFigure(Int):
         self.sig_fig = sig_fig
 
     @staticmethod
-    def _routine_round_to_sig_fig(value: tp.Union[float, int, np.ndarray], digits: int) -> tp.Union[
-        float, int, np.ndarray]:
+    def _routine_round_to_sig_fig(
+        value: tp.Union[float, int, np.ndarray], digits: int
+    ) -> tp.Union[float, int, np.ndarray]:
         """
         Rounds the number to the specified number of significant digits.
         :param value: A number to round off.
