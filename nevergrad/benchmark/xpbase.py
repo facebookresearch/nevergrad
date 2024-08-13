@@ -154,7 +154,9 @@ class Experiment:
         batch_mode: bool = True,
         seed: tp.Optional[int] = None,
         constraint_violation: tp.Optional[ngtp.ArrayLike] = None,
+        penalize_violation_at_test: bool = True,
     ) -> None:
+        self.penalize_violation_at_test = penalize_violation_at_test
         assert isinstance(function, fbase.ExperimentFunction), (
             "All experiment functions should " "derive from ng.functions.ExperimentFunction"
         )
@@ -229,7 +231,10 @@ class Experiment:
             or len(self.function.parametrization._constraint_checkers) > 0
             and not opt.recommend().satisfies_constraints(pfunc.parametrization)
         ):
-            self.result["loss"] += 1e9  # type: ignore
+            print(f"{len(self.constraint_violation)} ==> cv violation!!!!")
+            print(f"{len(self.function.parametrization._constraint_checkers)} ==> cv checker!!!!")
+            if self.penalize_violation_at_test:
+                self.result["loss"] += 1e9  # type: ignore
         self.result["elapsed_budget"] = num_calls
         if num_calls > self.optimsettings.budget:
             raise RuntimeError(

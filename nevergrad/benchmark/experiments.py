@@ -3542,7 +3542,7 @@ def multi_ceviche(
         instrumc0 = ng.p.Array(shape=shape, lower=0.0, upper=1.0)
         instrumc0pen = ng.p.Array(shape=shape, lower=0.0, upper=1.0)
         instrum = ng.p.Array(shape=shape, lower=0.0, upper=1.0).set_integer_casting()
-        instrum2 = ng.p.Array(shape=shape, lower=0.0, upper=1.0).set_integer_casting()
+        instrum2 = ng.p.Array(shape=shape, lower=0.0, upper=1.0)  # .set_integer_casting()
         #     for benchmark_type in [np.random.randint(4)]:
         #         shape = tuple([int(p) for p in list(photonics_ceviche(None, benchmark_type))])  # type: ignore
         #         name = photonics_ceviche("name", benchmark_type) + str(shape)  # type: ignore
@@ -3583,11 +3583,15 @@ def multi_ceviche(
         import copy
 
         def cv(x):
-            return np.sum((x - np.round(x)) ** 2)
+            return np.sum(np.clip(np.abs(x - np.round(x)) - 1e-3, 0.0, 50000000.0))
 
         for optim in [algo]:  # TODO: we also need penalizations.
             for budget in list(
-                np.random.choice([3, 20, 50, 90, 150, 250, 400], 3, replace=False)
+                np.random.choice(
+                    [3, 20, 50, 90, 150, 250, 400, 800] + ([1600] if benchmark_type != 2 else []),
+                    4,
+                    replace=False,
+                )
             ):  # [int(np.random.choice([3, 20, 50, 90]))]: #[20, 50, 90]:
                 if np.random.rand() < 0.03:
                     from scipy import optimize as scipyoptimize
@@ -3607,17 +3611,28 @@ def multi_ceviche(
                         f"LOGPB{benchmark_type} LBFGSB with_budget {budget} returns {epc(result.x.reshape(shape))}"
                     )
                 if c0 and np.random.choice([True, False]):
-                    pen = np.random.choice([False, True])
+                    pen = np.random.choice([True, False])
                     if pen:
                         optim2 = copy.deepcopy(ng.optimizers.registry[optim])
-                        optim2.name += "c0p"
+                        try:
+                            optim2.name += "c0p"
+                        except:
+                            optim2.__name__ += "c0p"
                         sfunc = helpers.SpecialEvaluationExperiment(c0penfunc, evaluation=eval_func)
                         yield Experiment(
-                            sfunc, optim2, budget=budget, seed=next(seedg), constraint_violation=[cv]
+                            sfunc,
+                            optim2,
+                            budget=budget,
+                            seed=next(seedg),
+                            constraint_violation=[cv],
+                            penalize_violation_at_test=False,
                         )
                     else:
                         optim3 = copy.deepcopy(ng.optimizers.registry[optim])
-                        optim3.name += "c0"
+                        try:
+                            optim3.name += "c0"
+                        except:
+                            optim3.__name__ += "c0"
                         sfunc = helpers.SpecialEvaluationExperiment(c0func, evaluation=eval_func)
                         yield Experiment(sfunc, optim3, budget=budget, seed=next(seedg))
                 else:

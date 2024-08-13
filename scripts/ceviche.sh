@@ -27,39 +27,39 @@ echo Starting at
 date
 # num_workers is the number of processes. Maybe use a bit more than the number of cores at the line "cpus-per-task"
 # above.
-python -m nevergrad.benchmark $task --num_workers=73 2>&1 | tail -n 50
-python -m nevergrad.benchmark $task --num_workers=73 2>&1 | tail -n 50
-python -m nevergrad.benchmark $task --num_workers=73 2>&1 | tail -n 50
-python -m nevergrad.benchmark $task --num_workers=73 2>&1 | tail -n 50
-python -m nevergrad.benchmark $task --num_workers=73 2>&1 | tail -n 50
-python -m nevergrad.benchmark $task --num_workers=73 2>&1 | tail -n 50
-python -m nevergrad.benchmark $task --num_workers=73 2>&1 | tail -n 50
+python -m nevergrad.benchmark $task --num_workers=1 2>&1 | tail -n 50
+python -m nevergrad.benchmark $task --num_workers=1 2>&1 | tail -n 50
+python -m nevergrad.benchmark $task --num_workers=1 2>&1 | tail -n 50
+python -m nevergrad.benchmark $task --num_workers=1 2>&1 | tail -n 50
+python -m nevergrad.benchmark $task --num_workers=1 2>&1 | tail -n 50
+python -m nevergrad.benchmark $task --num_workers=1 2>&1 | tail -n 50
+python -m nevergrad.benchmark $task --num_workers=1 2>&1 | tail -n 50
 if [ $SLURM_ARRAY_TASK_ID -eq  0 ]; then
 cp multi_ceviche_c0.csv multi_ceviche_c0_`date | sed 's/ /_/g'`.csv.back
 fi
-python -m nevergrad.benchmark $task --num_workers=73 2>&1 | tail -n 50
-python -m nevergrad.benchmark $task --num_workers=73 2>&1 | tail -n 50
-python -m nevergrad.benchmark $task --num_workers=73 2>&1 | tail -n 50
-python -m nevergrad.benchmark $task --num_workers=73 2>&1 | tail -n 50
-python -m nevergrad.benchmark $task --num_workers=73 2>&1 | tail -n 50
-python -m nevergrad.benchmark $task --num_workers=73 2>&1 | tail -n 50
+python -m nevergrad.benchmark $task --num_workers=1 2>&1 | tail -n 50
+python -m nevergrad.benchmark $task --num_workers=1 2>&1 | tail -n 50
+python -m nevergrad.benchmark $task --num_workers=1 2>&1 | tail -n 50
+python -m nevergrad.benchmark $task --num_workers=1 2>&1 | tail -n 50
+python -m nevergrad.benchmark $task --num_workers=1 2>&1 | tail -n 50
+python -m nevergrad.benchmark $task --num_workers=1 2>&1 | tail -n 50
 if [ $SLURM_ARRAY_TASK_ID -eq  0 ]; then
 cp multi_ceviche_c0.csv multi_ceviche_c0_`date | sed 's/ /_/g'`.csv.back
 fi
-python -m nevergrad.benchmark $task --num_workers=73 2>&1 | tail -n 50
-python -m nevergrad.benchmark $task --num_workers=73 2>&1 | tail -n 50
-python -m nevergrad.benchmark $task --num_workers=73 2>&1 | tail -n 50
-python -m nevergrad.benchmark $task --num_workers=73 2>&1 | tail -n 50
-python -m nevergrad.benchmark $task --num_workers=73 2>&1 | tail -n 50
+python -m nevergrad.benchmark $task --num_workers=1 2>&1 | tail -n 50
+python -m nevergrad.benchmark $task --num_workers=1 2>&1 | tail -n 50
+python -m nevergrad.benchmark $task --num_workers=1 2>&1 | tail -n 50
+python -m nevergrad.benchmark $task --num_workers=1 2>&1 | tail -n 50
+python -m nevergrad.benchmark $task --num_workers=1 2>&1 | tail -n 50
 if [ $SLURM_ARRAY_TASK_ID -eq  0 ]; then
 cp multi_ceviche_c0.csv multi_ceviche_c0_`date | sed 's/ /_/g'`.csv.back
 fi
-python -m nevergrad.benchmark $task --num_workers=73 2>&1 | tail -n 50
-python -m nevergrad.benchmark $task --num_workers=73 2>&1 | tail -n 50
-python -m nevergrad.benchmark $task --num_workers=73 2>&1 | tail -n 50
-python -m nevergrad.benchmark $task --num_workers=73 2>&1 | tail -n 50
-python -m nevergrad.benchmark $task --num_workers=73 2>&1 | tail -n 50
-python -m nevergrad.benchmark $task --num_workers=73 2>&1 | tail -n 50
+python -m nevergrad.benchmark $task --num_workers=1 2>&1 | tail -n 50
+python -m nevergrad.benchmark $task --num_workers=1 2>&1 | tail -n 50
+python -m nevergrad.benchmark $task --num_workers=1 2>&1 | tail -n 50
+python -m nevergrad.benchmark $task --num_workers=1 2>&1 | tail -n 50
+python -m nevergrad.benchmark $task --num_workers=1 2>&1 | tail -n 50
+python -m nevergrad.benchmark $task --num_workers=1 2>&1 | tail -n 50
 echo task over $SLURM_ARRAY_TASK_ID $task
 echo Finishing at
 date

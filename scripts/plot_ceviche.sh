@@ -7,5 +7,5 @@ cat multi_ceviche_c0.csv | sed 's/,[^,]*$//g' | sed 's/.*,//g' | sort | uniq -c 
 
 
 echo 'Want to know what BFGS does ?'
-grep LOGPB *.out | sed 's/.*://g' | sort | uniq -c | grep with_budget | awk '{ data[$2,"_",$5] += $7; num[$2,"_",$5] += 1  } END { for (u in data) { print u, data[u]/num[u]}   } ' | sort -n
+grep LOGPB *.out | sed 's/.*://g' | sort | uniq -c | grep with_budget | awk '{ data[$2,"_",$5] += $7; num[$2,"_",$5] += 1  } END { for (u in data) { print u, data[u]/num[u]}   } ' | sort -n | grep '800 |1600 '
 
