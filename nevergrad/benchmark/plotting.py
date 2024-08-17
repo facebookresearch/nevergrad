@@ -284,8 +284,9 @@ def create_plots(
                     assert (
                         len(failed_indices) < 100
                     ), f"Fails at row {i+2}, Exceptions: {e1}, {e2}. Failed-indices = {failed_indices}"
-                    df.drop(index=i, inplace=True)
-                    print("We drop index ", i, " for ", col)
+            print("Dropping ", failed_indices)
+            df.drop(df.index[failed_indices], inplace=True)  #        df.drop(index=i, inplace=True)
+        #                    print("We drop index ", i, " for ", col)
         elif col != "loss":
             df[col] = df[col].astype(str)
             df[col] = df[col].replace(r"\.[0]*$", "", regex=True)
@@ -525,14 +526,14 @@ def ceviche_sota() -> tp.Dict[str, tp.Tuple[float, float]]:
     # grep LOGPB *.out | sed 's/.*://g' | sort | uniq -c | grep with_budget | awk '{ data[$2,"_",$5] += $7;  num[$2,"_",$5] += 1  } END { for (u in data) { print u, data[u]/num[u], num[u]}   } ' | sort -n  | grep '400 '
     # Also obtained by examples/plot_ceviches.sh
     # After log files have been created by sbatch examples/ceviche.sh
-    ceviche["waveguide-bend"] = (-0.54734, 1000000)  # Budget 400
-    ceviche["beam-splitter"] = (-0.614139, 1000000)
-    ceviche["mode-converter"] = (-0.577284, 1000000)
-    ceviche["wdm"] = (-0.64356, 100000)
-    # LOGPB0_800 -0.54734
-    # LOGPB1_800 -0.614139
-    # LOGPB2_800 -0.577284
-    # LOGPB3_800 -0.64356
+    ceviche["waveguide-bend"] = (-0.603663, 1000000)  # Budget 400
+    ceviche["beam-splitter"] = (-0.641013, 1000000)
+    ceviche["mode-converter"] = (-0.641013, 1000000)
+    ceviche["wdm"] = (-0.577576, 100000)
+    # LOGPB0_3200 -0.603663
+    # LOGPB1_3200 -0.641013
+    # LOGPB2_3200 -0.57415
+    # LOGPB3_3200 -0.577576
     return ceviche
 
 
@@ -618,6 +619,7 @@ class XpPlotter:
             else sorted_optimizers
         ):
             vals = optim_vals[optim_name]
+
             indices = np.where(vals["num_eval"] > 0)
             lowerbound = min(lowerbound, np.min(vals["loss"]))
             # We here add some state of the art results.
