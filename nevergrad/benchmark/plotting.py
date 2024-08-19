@@ -260,7 +260,7 @@ def create_plots(
     # Normalization of types.
     for col in df.columns:
         print(" Working on ", col)
-        failed_indices = []
+        failed_indices: tp.List[tp.Any] = []
         if "max_irr" in col:
             df[col] = df[col].round(decimals=4)
         if col in (
@@ -289,12 +289,12 @@ def create_plots(
                 print("Dropping ", failed_indices)
                 df.drop(df.index[failed_indices], inplace=True)  #        df.drop(index=i, inplace=True)
         #                    print("We drop index ", i, " for ", col)
+
         elif col != "loss":
             df[col] = df[col].astype(str)
             df[col] = df[col].replace(r"\.[0]*$", "", regex=True)
             try:
                 df.loc[:, col] = pd.to_numeric(df.loc[:, col])
-                print(col, " is converted to numeric")
             except:
                 pass
     if "num_objectives" in df.columns:
@@ -1090,18 +1090,7 @@ def main() -> None:
         args.merge_parametrization,
         args.remove_suffix,
     )
-    #    exp_df.replace("CSEC11", "NGIohTuned", inplace=True)
-    #    exp_df.replace("CSEC10", "NgIohAlt", inplace=True)
-    #    for c in ["NgIoh", "SQOPSO", "NGDS", "CSEC", "Carola", "NgDS", "Wiz"]:  # NgLn
-    #        #    for c in ["CSEC", "NgIohAlt", "NgDS", "NgLn", "Wiz", "DSproba", "DSsubsp"]:
-    #        try:
-    #            filter = exp_df["optimizer_name"].str.contains(c)
-    #            exp_df = exp_df[~filter]
-    #            print("filter ", c, " succeeded.")
-    #        except:
-    #            print("filter ", c, " failed.")
-    # merging names
-    #
+    exp_df.replace("CSEC11", "NGIohTuned", inplace=True)
     output_dir = args.output
     if output_dir is None:
         output_dir = str(Path(args.filepath).with_suffix("")) + "_plots"

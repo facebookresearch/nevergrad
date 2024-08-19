@@ -54,50 +54,12 @@ from . import gymexperiments  # noqa
 #    list_optims = ["QOTPDE", "LQOTPDE", "LQODE"]
 #    list_optims = ["SPQODE", "SQOPSO", "DiagonalCMA"]
 def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
-    # return ["DiscreteLenglerOnePlusOne"]
-    #    return ["OLNDiscreteOnePlusOne"]
-    # return [np.random.choice([
-    #    "NgLn",
-    #    "SmallLognormalDiscreteOnePlusOne",
-    #    "XLognormalDiscreteOnePlusOne",
-    # ])]
-    return ["NgIohLn", "NgIohRS", "NgIohTuned"] * 5 + [
-        # "BigLognormalDiscreteOnePlusOne",
-        # "DiscreteLenglerOnePlusOne",
-        "NgLn",
-        "ChainDE",
-        "DE",
-        "TwoPointsDE",
-        # "SmallLognormalDiscreteOnePlusOne",
-        "SQOPSODCMA",
-        # "XLognormalDiscreteOnePlusOne",
-        "XSmallLognormalDiscreteOnePlusOne",
-        "MultiLN",
-        "NgRS",
-        "NgIohRS",
-        "NgIohMLn",
-        "NgIohLn",
-        # "LognormalDiscreteOnePlusOne",
-        # "HugeLognormalDiscreteOnePlusOne",
-    ]
-    # return ["CSEC11"]
-    # return [np.random.choice(["CSEC11", "SQOPSODCMA", "NgIoh4", "NGOpt"])]
-    # return ["LPCMA"]  #return [np.random.choice(["CSEC10", "DSproba", "NgIoh4", "DSbase", "DS3p", "DSsubspace"])]
-    # return x
-    # return ["LognormalDiscreteOnePlusOne"]
-    # return ["TBPSA", "OptimisticDiscreteOnePlusOne", "NGOpt", "CSEC10"] #CSEC10"]
-    # return ["NGOpt", "NgIoh4"]
-    #    return ["NgIoh8"]
-    # return ["DE", "NGOpt", "NgIoh11", "RandomSearch"]
-    # return ["DiscreteLenglerOnePlusOne", "LognormalDiscreteOnePlusOne"]
-    # return ["DSproba" + str(i) for i in range(2, 10)]
-    # return ["DSproba", "DSsubspace", "DS3p", "DSbase"]
-    # return ["DSproba"]
+
     if False:  # np.random.randn() < 0.0:
         return list(
             np.random.choice(
                 [
-                    "NgIoh4",
+                    "NgIohTuned",
                     "NGOpt",
                     "NGOptRW",
                     "ChainCMASQP",
@@ -1118,8 +1080,6 @@ def instrum_discrete(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                     for optim in optims:
                         for nw in [1, 10]:
                             for budget in [50, 500, 5000]:
-                                if np.random.rand() > 0.3:
-                                    continue
                                 yield Experiment(
                                     dfunc, optim, num_workers=nw, budget=budget, seed=next(seedg)
                                 )
@@ -1784,8 +1744,7 @@ def yabbob(
                 )
                 if constraint_case != 0:
                     xp.function.parametrization.has_constraints = True
-                if np.random.rand() > 0.25:
-                    continue
+
                 if not xp.is_incoherent:
                     yield xp
 
@@ -2661,7 +2620,7 @@ def fishing(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
             for fu in funcs:
                 xp = Experiment(fu, algo, budget, seed=next(seedg))
                 xp.function.parametrization.real_world = True
-                if not xp.is_incoherent:
+                if not xp.is_incoherent:  # and np.random.rand() > 0.8:
                     yield xp
 
 
@@ -3482,11 +3441,8 @@ def ceviche(
         "ZetaSmoothDiscreteLognormalOnePlusOne",
         "SuperSmoothDiscreteLognormalOnePlusOne",
     ]
-    algos = [a for a in algos if a in list(ng.optimizers.registry.keys())]
-    # print(algos)
-    algo = np.random.choice(algos)
-    print(algo)
-    for optim in [algo]:
+    # algo = np.random.choice(algos)
+    for optim in algos:
         for budget in [20, 50, 100, 160, 240]:
             yield Experiment(func, optim, budget=budget, seed=next(seedg))
 
@@ -3537,7 +3493,6 @@ def multi_ceviche(
         "SuperSmoothDiscreteLognormalOnePlusOne",
     ]
     algos = [a for a in algos if a in list(ng.optimizers.registry.keys())]
-    # print(algos)
     algos = refactor_optims(algos)
     # algo = np.random.choice(algos)
     for benchmark_type in [np.random.randint(4)]:
@@ -3578,6 +3533,7 @@ def multi_ceviche(
 
         # Function for experiments completely in the discrete context.
         func = ExperimentFunction(pc, instrum)
+
         # Function for experiments in the continuous context.
         c0func = ExperimentFunction(pc, instrumc0)
         c0penfunc = ExperimentFunction(pc, instrumc0pen)
@@ -3646,16 +3602,6 @@ def multi_ceviche(
                     )  # Once in the discrete case.
 
 
-#         instrum.set_name(name)
-#         func = ExperimentFunction(pc, instrum)
-#         # func.add_descriptor(name=name)
-#         # func.parametrization.set_name(name)
-#         print(f"name = {name}")
-#         for optim in [algo]:
-#             for budget in [20, 50, 90]:
-#                 yield Experiment(func, optim, budget=budget, seed=next(seedg))
-
-
 @registry.register
 def multi_ceviche_c0(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of multi_ceviche with continuous permittivities."""
@@ -3691,13 +3637,6 @@ def photonics(
         "RBFGS",
         "LBFGSB",
     ]
-    optims = ["QrDE", "QODE", "RFMetaModelDE"]
-    optims = ["PCABO"]
-    optims = ["PCABO", "NGOpt", "QODE"]
-    optims = ["QOPSO"]  # , "QORealSpacePSO", "RealSpacePSO"]
-    optims = ["MicroCMA", "MiniCMA", "QODE", "TinyDE", "MicroDE", "NGOpt"]
-    optims = ["NGOpt"]
-    optims = ["SQOPSO"]
     optims = refactor_optims(optims)
     for method in ["clipping", "tanh"]:  # , "arctan"]:
         for name in (
