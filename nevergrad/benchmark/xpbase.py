@@ -231,8 +231,8 @@ class Experiment:
             or len(self.function.parametrization._constraint_checkers) > 0
             and not opt.recommend().satisfies_constraints(pfunc.parametrization)
         ):
-            print(f"{len(self.constraint_violation)} ==> cv violation!!!!")
-            print(f"{len(self.function.parametrization._constraint_checkers)} ==> cv checker!!!!")
+            # print(f"{len(self.constraint_violation)} ==> cv violation!!!!")
+            # print(f"{len(self.function.parametrization._constraint_checkers)} ==> cv checker!!!!")
             if self.penalize_violation_at_test:
                 self.result["loss"] += 1e9  # type: ignore
         self.result["elapsed_budget"] = num_calls

@@ -272,20 +272,22 @@ def create_plots(
             "block_dimension",
             "num_objectives",
         ):
-            try:
-                df[col] = df[col].astype(float).astype(int)
-                print(col, " is converted to int")
-            except Exception as e1:
+            for _ in range(2):
                 try:
-                    for i in range(len(df[col])):
-                        float(df[col][i])
-                except Exception as e2:
-                    failed_indices += [i]
-                    assert (
-                        len(failed_indices) < 100
-                    ), f"Fails at row {i+2}, Exceptions: {e1}, {e2}. Failed-indices = {failed_indices}"
-            print("Dropping ", failed_indices)
-            df.drop(df.index[failed_indices], inplace=True)  #        df.drop(index=i, inplace=True)
+                    df[col] = df[col].astype(float).astype(int)
+                    print(col, " is converted to int")
+                    continue
+                except Exception as e1:
+                    try:
+                        for i in range(len(df[col])):
+                            float(df[col][i])
+                    except Exception as e2:
+                        failed_indices += [i]
+                        assert (
+                            len(failed_indices) < 100
+                        ), f"Fails at row {i+2}, Exceptions: {e1}, {e2}. Failed-indices = {failed_indices}"
+                print("Dropping ", failed_indices)
+                df.drop(df.index[failed_indices], inplace=True)  #        df.drop(index=i, inplace=True)
         #                    print("We drop index ", i, " for ", col)
         elif col != "loss":
             df[col] = df[col].astype(str)

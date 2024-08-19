@@ -61,7 +61,7 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
     #    "SmallLognormalDiscreteOnePlusOne",
     #    "XLognormalDiscreteOnePlusOne",
     # ])]
-    return [
+    return ["NgIohLn", "NgIohRS", "NgIohTuned"] * 5 + [
         # "BigLognormalDiscreteOnePlusOne",
         # "DiscreteLenglerOnePlusOne",
         "NgLn",
@@ -3539,7 +3539,7 @@ def multi_ceviche(
     algos = [a for a in algos if a in list(ng.optimizers.registry.keys())]
     # print(algos)
     algos = refactor_optims(algos)
-    algo = np.random.choice(algos)
+    # algo = np.random.choice(algos)
     for benchmark_type in [np.random.randint(4)]:
         shape = tuple([int(p) for p in list(photonics_ceviche(None, benchmark_type))])  # type: ignore
         name = photonics_ceviche("name", benchmark_type) + str(shape)  # type: ignore
@@ -3590,7 +3590,7 @@ def multi_ceviche(
         def cv(x):
             return np.sum(np.clip(np.abs(x - np.round(x)) - 1e-3, 0.0, 50000000.0))
 
-        for optim in [algo]:  # TODO: we also need penalizations.
+        for optim in algos:  # TODO: we also need penalizations.
             for budget in list(
                 np.random.choice(
                     [3, 20, 50, 90, 150, 250, 400, 800, 1600, 3200],

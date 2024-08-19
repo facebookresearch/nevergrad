@@ -226,7 +226,7 @@ class MLTuning(ExperimentFunction):
         # For the evaluation we remove the noise (unless overfitter)
         evalparams["noise_free"] = not overfitter
         parametrization.function.proxy = not overfitter
-        super().__init__(partial(self._ml_parametrization, **params), parametrization.set_name(""))
+        super().__init__(partial(self._ml_parametrization, **params), parametrization.set_name(""))  # type: ignore
         self._evalparams = evalparams
 
     def evaluation_function(self, *recommendations: p.Parameter) -> float:
