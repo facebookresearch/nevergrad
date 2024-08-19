@@ -278,16 +278,17 @@ def create_plots(
                     print(col, " is converted to int")
                     continue
                 except Exception as e1:
-                    try:
-                        for i in range(len(df[col])):
+                    for i in range(len(df[col])):
+                        try:
                             float(df[col][i])
-                    except Exception as e2:
-                        failed_indices += [i]
+                        except Exception as e2:
+                            failed_indices += [i]
                         assert (
                             len(failed_indices) < 100
                         ), f"Fails at row {i+2}, Exceptions: {e1}, {e2}. Failed-indices = {failed_indices}"
                 print("Dropping ", failed_indices)
                 df.drop(df.index[failed_indices], inplace=True)  #        df.drop(index=i, inplace=True)
+                failed_indices = []
         #                    print("We drop index ", i, " for ", col)
 
         elif col != "loss":
