@@ -529,10 +529,14 @@ def ceviche_sota() -> tp.Dict[str, tp.Tuple[float, float]]:
     # grep LOGPB *.out | sed 's/.*://g' | sort | uniq -c | grep with_budget | awk '{ data[$2,"_",$5] += $7;  num[$2,"_",$5] += 1  } END { for (u in data) { print u, data[u]/num[u], num[u]}   } ' | sort -n  | grep '400 '
     # Also obtained by examples/plot_ceviches.sh
     # After log files have been created by sbatch examples/ceviche.sh
-    ceviche["waveguide-bend"] = (-0.603663, 1000000)  # Budget 400
-    ceviche["beam-splitter"] = (-0.641013, 1000000)
-    ceviche["mode-converter"] = (-0.641013, 1000000)
-    ceviche["wdm"] = (-0.577576, 100000)
+    ceviche["waveguide-bend"] = (-0.590207, 1000000)  # Budget 400
+    ceviche["beam-splitter"] = (-0.623696, 1000000)
+    ceviche["mode-converter"] = (-0.634207, 1000000)
+    ceviche["wdm"] = (-0.603663, 100000)
+    # LOGPB0_3200 -0.590207
+    # LOGPB1_3200 -0.623696
+    # LOGPB2_3200 -0.634207
+    # LOGPB3_3200 -0.590554
     # LOGPB0_3200 -0.603663
     # LOGPB1_3200 -0.641013
     # LOGPB2_3200 -0.57415

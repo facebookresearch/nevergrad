@@ -54,7 +54,7 @@ from . import gymexperiments  # noqa
 #    list_optims = ["QOTPDE", "LQOTPDE", "LQODE"]
 #    list_optims = ["SPQODE", "SQOPSO", "DiagonalCMA"]
 def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
-
+    return ["NgIoh4", "NgIoh21", "NgIohTuned", "NgIohLn", "NgIohRS"] + (["LBFGSB"] * 2)
     if False:  # np.random.randn() < 0.0:
         return list(
             np.random.choice(
@@ -3570,6 +3570,9 @@ def multi_ceviche(
                     assert np.max(result.x.flatten()) <= 1.0001
                     print(
                         f"LOGPB{benchmark_type} LBFGSB with_budget {budget} returns {epc(result.x.reshape(shape))}"
+                    )
+                    print(
+                        f"LOGPB{benchmark_type} CheatingLBFGSB with_budget {budget} returns {fpc(result.x.reshape(shape))}"
                     )
                 if c0 and np.random.choice([True, False]):
                     pen = np.random.choice([True, False])

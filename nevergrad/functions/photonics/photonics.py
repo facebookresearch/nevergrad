@@ -464,7 +464,7 @@ def ceviche(x: np.ndarray, benchmark_type: int = 0, discretize=False, wantgrad=F
 
     # The model class provides a convenience property, `design_variable_shape`
     # which specifies the design shape it expects.
-    design = x > 0.5  # np.random.rand(*model.design_variable_shape)
+    design = x > 0.5 if discretize else x  # np.random.rand(*model.design_variable_shape)
     # The model class has a `simulate()` method which takes the design variable as
     # an input and returns scattering parameters and fields.
     # s_params, fields = model.simulate(design)
