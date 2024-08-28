@@ -2135,12 +2135,12 @@ MetaModelDSproba = ParametrizedMetaModel(multivariate_optimizer=DSproba).set_nam
 RFMetaModelOnePlusOne = ParametrizedMetaModel(multivariate_optimizer=OnePlusOne, algorithm="rf").set_name(
     "RFMetaModelOnePlusOne", register=True
 )
-RFMetaModelLogNormal = ParametrizedMetaModel(multivariate_optimizer=LognormalDiscreteOnePlusOne, algorithm="rf").set_name(
-    "RFMetaModelLogNormal", register=True
-)
-NeuralMetaModelLogNormal = ParametrizedMetaModel(multivariate_optimizer=LognormalDiscreteOnePlusOne, algorithm="neural").set_name(
-    "NeuralMetaModelLogNormal", register=True
-)
+RFMetaModelLogNormal = ParametrizedMetaModel(
+    multivariate_optimizer=LognormalDiscreteOnePlusOne, algorithm="rf"
+).set_name("RFMetaModelLogNormal", register=True)
+NeuralMetaModelLogNormal = ParametrizedMetaModel(
+    multivariate_optimizer=LognormalDiscreteOnePlusOne, algorithm="neural"
+).set_name("NeuralMetaModelLogNormal", register=True)
 MetaModelPSO = ParametrizedMetaModel(multivariate_optimizer=PSO).set_name("MetaModelPSO", register=True)
 RFMetaModelPSO = ParametrizedMetaModel(multivariate_optimizer=PSO, algorithm="rf").set_name(
     "RFMetaModelPSO", register=True
