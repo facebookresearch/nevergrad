@@ -54,7 +54,7 @@ from . import gymexperiments  # noqa
 #    list_optims = ["QOTPDE", "LQOTPDE", "LQODE"]
 #    list_optims = ["SPQODE", "SQOPSO", "DiagonalCMA"]
 def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
-    return ["NgIoh4", "NgIoh21", "NgIohTuned", "NgIohLn", "NgIohRS", "LBFGSB"]
+    #return ["NgIoh4", "NgIoh21", "NgIohTuned", "NgIohLn", "NgIohRS", "LBFGSB"]
     if False:  # np.random.randn() < 0.0:
         return list(
             np.random.choice(
