@@ -68,9 +68,9 @@ class OptimizerSettings:
     def name(self) -> str:
         try:
             try:
-                return self.optimizer.name
+                return self.optimizer.name  # type: ignore
             except:
-                return self.optimizer.__name__
+                return self.optimizer.__name__  # type: ignore
         except:
             return self.optimizer if isinstance(self.optimizer, str) else repr(self.optimizer)
 

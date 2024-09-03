@@ -3592,7 +3592,7 @@ def multi_ceviche(
                 if np.random.rand() < 0.05:
                     from scipy import optimize as scipyoptimize
 
-                    x0 = np.random.rand(np.prod(shape))
+                    x0 = np.random.rand(np.prod(shape))  # type: ignore
                     result = scipyoptimize.minimize(
                         fpc,
                         x0=x0,
@@ -3616,26 +3616,26 @@ def multi_ceviche(
                     pre_optim = ng.optimizers.registry[optim]
                     if pen:
                         try:
-                            optim2 = type(optim, pre_optim.__bases__, dict(pre_optim.__dict__))
+                            optim2 = type(optim, pre_optim.__bases__, dict(pre_optim.__dict__))  # type: ignore
                         except:
                             optim2 = copy.deepcopy(pre_optim)
                         try:
-                            optim2.name += "c0p"
+                            optim2.name += "c0p"  # type: ignore
                         except:
                             optim2.__name__ += "c0p"
                         sfunc = helpers.SpecialEvaluationExperiment(c0penfunc, evaluation=eval_func)
                         yield Experiment(
                             sfunc,
-                            optim2,
+                            optim2,  # type: ignore
                             budget=budget,
                             seed=next(seedg),
-                            constraint_violation=[cv],
+                            constraint_violation=[cv],  # type: ignore
                             penalize_violation_at_test=False,
                         )
                     else:
                         cheat = np.random.choice([False, True])
                         try:
-                            optim3 = type(optim, pre_optim.__bases__, dict(pre_optim.__dict__))
+                            optim3 = type(optim, pre_optim.__bases__, dict(pre_optim.__dict__))  # type: ignore
                         except:
                             optim3 = copy.deepcopy(pre_optim)
                         try:
