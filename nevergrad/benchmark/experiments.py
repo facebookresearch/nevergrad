@@ -54,7 +54,7 @@ from . import gymexperiments  # noqa
 #    list_optims = ["QOTPDE", "LQOTPDE", "LQODE"]
 #    list_optims = ["SPQODE", "SQOPSO", "DiagonalCMA"]
 def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
-    return ["NgIoh4", "NgIoh21", "NgIohTuned", "NgIohLn", "NgIohRS"] + (["LBFGSB"] * 2)
+    return ["NgIoh4", "NgIoh21", "NgIohTuned", "NgIohLn", "NgIohRS", "LBFGSB"]
     if False:  # np.random.randn() < 0.0:
         return list(
             np.random.choice(
@@ -3452,6 +3452,18 @@ def multi_ceviche(
     seed: tp.Optional[int] = None,
     c0: bool = False,
 ) -> tp.Iterator[Experiment]:
+    """Categories when running with c0:
+    BFGScheat works on the continuous problem, with continuous domain, with continuous test.
+    BFGS      works on the continuous problem, with continuous domain, with *discrete* test.
+    Alg+C0    works on the continuous problem, with continuous domain, with *discrete* test.
+    Alg+C0C   works on the continuous problem, with continuous domain, with continuous test.
+    Alg+C0p   works on the continuous problem, with continuous domain, with *discrete* test. Penalization.
+    Alg       works on the discrete problem on a discrete domain.
+    For each Alg in Nevergrad optimizers listed below.
+
+    Please launch the experiment command multiple times:
+    python -m nevergrad.benchmark multi_ceviche_c0
+    """
     seedg = create_seed_generator(seed)
     algos = [
         "DiagonalCMA",
@@ -3493,16 +3505,20 @@ def multi_ceviche(
         "SuperSmoothDiscreteLognormalOnePlusOne",
     ]
     algos = [a for a in algos if a in list(ng.optimizers.registry.keys())]
-    algos = refactor_optims(algos)
+    algos = ["LognormalDiscreteOnePlusOne", "CMA", "DiscreteLenglerOnePlusOne"]
+    # if np.random.choice([True,False]):
+    #    algos = refactor_optims(algos)
     # algo = np.random.choice(algos)
-    for benchmark_type in [np.random.randint(4)]:
+    for benchmark_type in [np.random.choice([0, 1, 2, 3])]:  # [np.random.randint(4)]:
         shape = tuple([int(p) for p in list(photonics_ceviche(None, benchmark_type))])  # type: ignore
         name = photonics_ceviche("name", benchmark_type) + str(shape)  # type: ignore
         # print(f"Shape = {shape} {type(shape)} {type(shape[0])}")
         instrumc0 = ng.p.Array(shape=shape, lower=0.0, upper=1.0)
+        instrumc0c = ng.p.Array(shape=shape, lower=0.0, upper=1.0)
         instrumc0pen = ng.p.Array(shape=shape, lower=0.0, upper=1.0)
         instrum = ng.p.Array(shape=shape, lower=0.0, upper=1.0).set_integer_casting()
         instrum2 = ng.p.Array(shape=shape, lower=0.0, upper=1.0)  # .set_integer_casting()
+        instrum2p = ng.p.Array(shape=shape, lower=0.0, upper=1.0)  # .set_integer_casting()
         #     for benchmark_type in [np.random.randint(4)]:
         #         shape = tuple([int(p) for p in list(photonics_ceviche(None, benchmark_type))])  # type: ignore
         #         name = photonics_ceviche("name", benchmark_type) + str(shape)  # type: ignore
@@ -3525,36 +3541,55 @@ def multi_ceviche(
         #                sfunc = helpers.SpecialEvaluationExperiment(func, evaluation=iqa)
         #                sfunc.add_descriptors(non_proxy_function=False)
         #                xp = Experiment(sfunc, algo, budget, num_workers=1, seed=next(seedg))
-
         instrum.set_name(name)
         instrumc0.set_name(name)  # + "c0")
+        instrumc0c.set_name(name)  # + "c0")
         instrumc0pen.set_name(name)  # + "c0p")
         instrum2.set_name(name)  # + "c0")
+        instrum2p.set_name(name)  # + "c0")
 
         # Function for experiments completely in the discrete context.
         func = ExperimentFunction(pc, instrum)
 
         # Function for experiments in the continuous context.
         c0func = ExperimentFunction(pc, instrumc0)
+        c0cfunc = ExperimentFunction(pc, instrumc0c)
         c0penfunc = ExperimentFunction(pc, instrumc0pen)
         # Evaluation function for the continuous context, but with discretization.
         eval_func = ExperimentFunction(epc, instrum2)
+        cheat_eval_func = ExperimentFunction(pc, instrum2)
 
         # print(f"name = {name}")
         import copy
 
+        def export_numpy(name, array):  # type: ignore
+            from PIL import Image
+            import numpy as np
+
+            x = (255 * (1 - array)).astype("uint8")
+            print(
+                "Histogram",
+                name,
+                [100 * np.average(np.abs(np.round(10 * x.flatten()) - i) < 0.1) for i in range(11)],
+            )
+
+            im = Image.fromarray(x)
+            im.convert("RGB").save(f"{name}.png", mode="L")
+
         def cv(x):
             return np.sum(np.clip(np.abs(x - np.round(x)) - 1e-3, 0.0, 50000000.0))
 
-        for optim in algos:  # TODO: we also need penalizations.
+        for optim in [np.random.choice(algos)]:  # TODO: we also need penalizations.
             for budget in list(
                 np.random.choice(
-                    [3, 20, 50, 90, 150, 250, 400, 800, 1600, 3200],
-                    8,
+                    # [3, 20, 50, 90, 150, 250, 400, 800, 1600, 3200, 6400, 12800, 25600, 51200, 102400, 204800, 409600],
+                    [12800, 25600, 51200, 102400, 204800, 409600],
+                    # [3],
+                    1,
                     replace=False,
                 )
             ):  # [int(np.random.choice([3, 20, 50, 90]))]: #[20, 50, 90]:
-                if np.random.rand() < 0.03:
+                if np.random.rand() < 0.05:
                     from scipy import optimize as scipyoptimize
 
                     x0 = np.random.rand(np.prod(shape))
@@ -3568,16 +3603,22 @@ def multi_ceviche(
                     )
                     assert -1e-5 <= np.min(result.x.flatten())
                     assert np.max(result.x.flatten()) <= 1.0001
-                    print(
-                        f"LOGPB{benchmark_type} LBFGSB with_budget {budget} returns {epc(result.x.reshape(shape))}"
-                    )
-                    print(
-                        f"LOGPB{benchmark_type} CheatingLBFGSB with_budget {budget} returns {fpc(result.x.reshape(shape))}"
-                    )
-                if c0 and np.random.choice([True, False]):
-                    pen = np.random.choice([True, False])
+                    real_loss = epc(result.x.reshape(shape))
+                    fake_loss = fpc(result.x.reshape(shape))[0]
+                    print(f"\nLOGPB{benchmark_type} LBFGSB with_budget {budget} returns {real_loss}")
+                    print(f"\nLOGPB{benchmark_type} CheatingLBFGSB with_budget {budget} returns {fake_loss}")
+                    if real_loss < -0.6 and np.random.rand() < 0.1:
+                        export_numpy(
+                            f"pb{benchmark_type}_bfgs_{real_loss}_{fake_loss}", result.x.reshape(shape)
+                        )
+                if c0 and np.random.choice([True, True, True, False] + ([False] * 4)):
+                    pen = np.random.choice([True, False, False])
+                    pre_optim = ng.optimizers.registry[optim]
                     if pen:
-                        optim2 = copy.deepcopy(ng.optimizers.registry[optim])
+                        try:
+                            optim2 = type(optim, pre_optim.__bases__, dict(pre_optim.__dict__))
+                        except:
+                            optim2 = copy.deepcopy(pre_optim)
                         try:
                             optim2.name += "c0p"
                         except:
@@ -3592,16 +3633,31 @@ def multi_ceviche(
                             penalize_violation_at_test=False,
                         )
                     else:
-                        optim3 = copy.deepcopy(ng.optimizers.registry[optim])
+                        cheat = np.random.choice([False, True])
                         try:
-                            optim3.name += "c0"
+                            optim3 = type(optim, pre_optim.__bases__, dict(pre_optim.__dict__))
                         except:
-                            optim3.__name__ += "c0"
-                        sfunc = helpers.SpecialEvaluationExperiment(c0func, evaluation=eval_func)
+                            optim3 = copy.deepcopy(pre_optim)
+                        try:
+                            optim3.name += "c0" if not cheat else "c0c"
+                        except:
+                            optim3.__name__ += "c0" if not cheat else "c0c"
+                        sfunc = helpers.SpecialEvaluationExperiment(
+                            c0func, evaluation=eval_func if not cheat else cheat_eval_func
+                        )
                         yield Experiment(sfunc, optim3, budget=budget, seed=next(seedg))
                 else:
+
+                    def plot_epc(x):
+                        real_loss = photonics_ceviche(x, benchmark_type, discretize=True)
+                        if real_loss < -0.5:
+                            export_numpy(f"pb{benchmark_type}_{optim}_{real_loss}", x.reshape(shape))
+                        return real_loss
+
+                    plot_eval_func = ExperimentFunction(plot_epc, instrum2p)
+                    pfunc = helpers.SpecialEvaluationExperiment(func, evaluation=plot_eval_func)
                     yield Experiment(
-                        func, optim, budget=budget, seed=next(seedg)
+                        func if np.random.rand() < 0.0 else pfunc, optim, budget=budget, seed=next(seedg)
                     )  # Once in the discrete case.
 
 

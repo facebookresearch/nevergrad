@@ -7,5 +7,10 @@ cat multi_ceviche_c0.csv | sed 's/,[^,]*$//g' | sed 's/.*,//g' | sort | uniq -c 
 
 
 echo 'Want to know what BFGS does ?'
-grep LOGPB *.out | sed 's/.*://g' | sort | uniq -c | grep with_budget | awk '{ data[$2,"_",$5] += $7; num[$2,"_",$5] += 1  } END { for (u in data) { print u, data[u]/num[u]}   } ' | sort -n | grep '3200 '
+grep LOGPB *.out | grep -iv cheating | sed 's/.*://g' | sort | uniq -c | grep with_budget | awk '{ data[$2,"_",$5] += $7; num[$2,"_",$5] += 1  } END { for (u in data) { print u, data[u]/num[u]}   } ' | sort -n | sed 's/_/ /g' | sed 's/[^LOGPB0-9\-\.]/ /g' | awk '{ data[$1][$2 +0] = $3; datamax[$1] = ( $2 + 0  > datamax[$1] + 0 ? $2 + 0  : datamax[$1] +0 ) } END  { for (pb in data) { print pb, datamax[pb], data[pb][datamax[pb] + 0] } } '
+echo 'Want to know what BFGS does when cheating ?'
+grep LOGPB *.out | grep -i cheating | sed 's/(//g' | sed 's/, array.*//g' | sed 's/.*://g' | sort | uniq -c | grep with_budget | awk '{ data[$2,"_",$5] += $7; num[$2,"_",$5] += 1  } END { for (u in data) { print u, data[u]/num[u]}   } ' | sort -n | sed 's/_/ /g' | sed 's/[^LOGPB0-9\-\.]/ /g' | awk '{ data[$1][$2 +0] = $3; datamax[$1] = ( $2 + 0  > datamax[$1] + 0 ? $2 + 0  : datamax[$1] +0 ) } END  { for (pb in data) { print pb, datamax[pb], data[pb][datamax[pb] + 0] } } '
+
+echo "Biggest budgets:"
+cat multi_ceviche_c0.csv | sed 's/^[0-9\.\-]*,//g' | sed 's/,.*//g' | sort -n | uniq -c | tail -n 10
 

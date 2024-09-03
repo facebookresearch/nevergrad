@@ -66,7 +66,13 @@ class OptimizerSettings:
 
     @property
     def name(self) -> str:
-        return self.optimizer if isinstance(self.optimizer, str) else repr(self.optimizer)
+        try:
+            try:
+                return self.optimizer.name
+            except:
+                return self.optimizer.__name__
+        except:
+            return self.optimizer if isinstance(self.optimizer, str) else repr(self.optimizer)
 
     @property
     def batch_mode(self) -> bool:
