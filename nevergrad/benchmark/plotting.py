@@ -533,6 +533,7 @@ def ceviche_sota() -> tp.Dict[str, tp.Tuple[float, float]]:
     ceviche["beam-splitter"] = (-0.623696, 1000000)
     ceviche["mode-converter"] = (-0.634207, 1000000)
     ceviche["wdm"] = (-0.603663, 100000)
+
     # LOGPB0_3200 -0.590207
     # LOGPB1_3200 -0.623696
     # LOGPB2_3200 -0.634207

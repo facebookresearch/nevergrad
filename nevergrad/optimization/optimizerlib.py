@@ -2138,6 +2138,9 @@ RFMetaModelOnePlusOne = ParametrizedMetaModel(multivariate_optimizer=OnePlusOne,
 RFMetaModelLogNormal = ParametrizedMetaModel(
     multivariate_optimizer=LognormalDiscreteOnePlusOne, algorithm="rf"
 ).set_name("RFMetaModelLogNormal", register=True)
+SVMMetaModelLogNormal = ParametrizedMetaModel(
+    multivariate_optimizer=LognormalDiscreteOnePlusOne, algorithm="svr"
+).set_name("SVMMetaModelLogNormal", register=True)
 NeuralMetaModelLogNormal = ParametrizedMetaModel(
     multivariate_optimizer=LognormalDiscreteOnePlusOne, algorithm="neural"
 ).set_name("NeuralMetaModelLogNormal", register=True)
@@ -5221,6 +5224,10 @@ SuperSmoothTinyLognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(
 UltraSmoothDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
     smoother=True, mutation="lengler", antismooth=3
 ).set_name("UltraSmoothDiscreteLenglerOnePlusOne", register=True)
+UltraSmoothDiscreteLognormalOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True, mutation="lognormal", antismooth=3
+).set_name("UltraSmoothDiscreteLognormalOnePlusOne ", register=True)
+
 SmoothLognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="lognormal").set_name(
     "SmoothLognormalDiscreteOnePlusOne", register=True
 )

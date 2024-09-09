@@ -54,7 +54,7 @@ from . import gymexperiments  # noqa
 #    list_optims = ["QOTPDE", "LQOTPDE", "LQODE"]
 #    list_optims = ["SPQODE", "SQOPSO", "DiagonalCMA"]
 def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
-    #return ["NgIoh4", "NgIoh21", "NgIohTuned", "NgIohLn", "NgIohRS", "LBFGSB"]
+    # return ["NgIoh4", "NgIoh21", "NgIohTuned", "NgIohLn", "NgIohRS", "LBFGSB"]
     if False:  # np.random.randn() < 0.0:
         return list(
             np.random.choice(
@@ -3451,6 +3451,7 @@ def ceviche(
 def multi_ceviche(
     seed: tp.Optional[int] = None,
     c0: bool = False,
+    precompute: bool = False,
 ) -> tp.Iterator[Experiment]:
     """Categories when running with c0:
     BFGScheat works on the continuous problem, with continuous domain, with continuous test.
@@ -3505,7 +3506,20 @@ def multi_ceviche(
         "SuperSmoothDiscreteLognormalOnePlusOne",
     ]
     algos = [a for a in algos if a in list(ng.optimizers.registry.keys())]
-    algos = ["LognormalDiscreteOnePlusOne", "CMA", "DiscreteLenglerOnePlusOne"]
+    algos = [
+        "LognormalDiscreteOnePlusOne",
+        "CMA",
+        "DiscreteLenglerOnePlusOne",
+        "SmoothDiscreteLognormalOnePlusOne",
+        "SuperSmoothDiscreteLognormalOnePlusOne",
+        "AnisotropicAdaptiveDiscreteOnePlusOne",
+        "RFMetaModelLogNormal",
+        "NeuralMetaModelLogNormal",
+        "RFMetaModelLogNormal",
+        "NeuralMetaModelLogNormal",
+        "SVMMetaModelLogNormal",
+        "UltraSmoothDiscreteLognormalOnePlusOne",
+    ]
     # if np.random.choice([True,False]):
     #    algos = refactor_optims(algos)
     # algo = np.random.choice(algos)
@@ -3566,6 +3580,8 @@ def multi_ceviche(
             from PIL import Image
             import numpy as np
 
+            freq = np.average(np.abs(array.flatten() - 0.5) < 0.35)
+            freq2 = np.average(np.abs(array.flatten() - 0.5) < 0.45)
             x = (255 * (1 - array)).astype("uint8")
             print(
                 "Histogram",
@@ -3574,22 +3590,30 @@ def multi_ceviche(
             )
 
             im = Image.fromarray(x)
-            im.convert("RGB").save(f"{name}.png", mode="L")
+            im.convert("RGB").save(f"{name}_{freq}_{freq2}.png", mode="L")
 
         def cv(x):
             return np.sum(np.clip(np.abs(x - np.round(x)) - 1e-3, 0.0, 50000000.0))
 
+        budgets = (
+            [
+                np.random.choice([3, 20, 50, 90, 150, 250, 400, 800, 1600, 3200, 6400]),
+                np.random.choice([12800, 25600, 51200, 102400, 204800, 409600]),
+            ]
+            if not precompute
+            else [np.random.choice([409600, 204800]) - 102400]
+        )
         for optim in [np.random.choice(algos)]:  # TODO: we also need penalizations.
-            for budget in list(
-                np.random.choice(
-                    # [3, 20, 50, 90, 150, 250, 400, 800, 1600, 3200, 6400, 12800, 25600, 51200, 102400, 204800, 409600],
-                    [12800, 25600, 51200, 102400, 204800, 409600],
-                    # [3],
-                    1,
-                    replace=False,
-                )
-            ):  # [int(np.random.choice([3, 20, 50, 90]))]: #[20, 50, 90]:
-                if np.random.rand() < 0.05:
+            for budget in budgets:
+                #                np.random.choice(
+                #                    # [3, 20, 50, 90, 150, 250, 400, 800, 1600, 3200, 6400, 12800, 25600, 51200, 102400, 204800, 409600],
+                #                    [12800, 25600, 51200, 102400, 204800, 409600],
+                #                    #[3],
+                #                    1,
+                #                    replace=False,
+                #                )
+                #            ):  # [int(np.random.choice([3, 20, 50, 90]))]: #[20, 50, 90]:
+                if np.random.rand() < 0.05 or precompute:
                     from scipy import optimize as scipyoptimize
 
                     x0 = np.random.rand(np.prod(shape))  # type: ignore
@@ -3598,23 +3622,29 @@ def multi_ceviche(
                         x0=x0,
                         method="L-BFGS-B",
                         jac=True,
-                        options={"maxiter": budget},
+                        options={"maxiter": budget if not precompute else 102400},
                         bounds=[[0, 1] for _ in range(np.prod(shape))],
                     )
                     assert -1e-5 <= np.min(result.x.flatten())
                     assert np.max(result.x.flatten()) <= 1.0001
                     real_loss = epc(result.x.reshape(shape))
                     fake_loss = fpc(result.x.reshape(shape))[0]
-                    print(f"\nLOGPB{benchmark_type} LBFGSB with_budget {budget} returns {real_loss}")
-                    print(f"\nLOGPB{benchmark_type} CheatingLBFGSB with_budget {budget} returns {fake_loss}")
-                    if real_loss < -0.6 and np.random.rand() < 0.1:
-                        export_numpy(
-                            f"pb{benchmark_type}_bfgs_{real_loss}_{fake_loss}", result.x.reshape(shape)
+                    if not precompute:
+                        print(f"\nLOGPB{benchmark_type} LBFGSB with_budget {budget} returns {real_loss}")
+                        print(
+                            f"\nLOGPB{benchmark_type} CheatingLBFGSB with_budget {budget} returns {fake_loss}"
                         )
-                if c0 and np.random.choice([True, True, True, False] + ([False] * 4)):
-                    pen = np.random.choice([True, False, False])
+                    initial_point = result.x.reshape(shape)
+                    if real_loss < -0.9 and np.random.rand() < 0.9:
+                        export_numpy(
+                            f"pb{benchmark_type}_budget{budget if not precompute else 102400}_bfgs_{real_loss}_{fake_loss}",
+                            result.x.reshape(shape),
+                        )
+                if (c0 and np.random.choice([True, True, True, False] + ([True] * 2))) or precompute:
+                    pen = np.random.choice([True, False, False] + ([False] * 20)) and not precompute
                     pre_optim = ng.optimizers.registry[optim]
                     if pen:
+                        assert not precompute
                         try:
                             optim2 = type(optim, pre_optim.__bases__, dict(pre_optim.__dict__))  # type: ignore
                         except:
@@ -3639,11 +3669,31 @@ def multi_ceviche(
                         except:
                             optim3 = copy.deepcopy(pre_optim)
                         try:
-                            optim3.name += "c0" if not cheat else "c0c"
+                            optim3.name += ("c0" if not cheat else "c0c") + ("P" if precompute else "")
                         except:
-                            optim3.__name__ += "c0" if not cheat else "c0c"
+                            optim3.__name__ += ("c0" if not cheat else "c0c") + ("P" if precompute else "")
+
+                        def plot_pc(x):
+                            fake_loss = photonics_ceviche(x, benchmark_type)
+                            real_loss = photonics_ceviche(x, benchmark_type, discretize=True)
+                            if real_loss < -0.5:
+                                print("exporting")
+                                export_numpy(
+                                    f"pb{benchmark_type}_{optim}c0c_budget{budget}_{real_loss}_fl{fake_loss}",
+                                    x.reshape(shape),
+                                )
+                            return fake_loss
+
+                        if precompute:
+                            instrum2i = ng.p.Array(
+                                init=initial_point, lower=0.0, upper=1.0
+                            )  # .set_integer_casting()
+                            instrum2i.set_name(name)  # + "c0")
+                        plot_cheat_eval_func = ExperimentFunction(
+                            plot_pc, instrum2 if not precompute else instrum2i
+                        )
                         sfunc = helpers.SpecialEvaluationExperiment(
-                            c0func, evaluation=eval_func if not cheat else cheat_eval_func
+                            c0func, evaluation=eval_func if not cheat else plot_cheat_eval_func
                         )
                         yield Experiment(sfunc, optim3, budget=budget, seed=next(seedg))
                 else:
@@ -3651,7 +3701,9 @@ def multi_ceviche(
                     def plot_epc(x):
                         real_loss = photonics_ceviche(x, benchmark_type, discretize=True)
                         if real_loss < -0.5:
-                            export_numpy(f"pb{benchmark_type}_{optim}_{real_loss}", x.reshape(shape))
+                            export_numpy(
+                                f"pb{benchmark_type}_{optim}_budget{budget}_{real_loss}", x.reshape(shape)
+                            )
                         return real_loss
 
                     plot_eval_func = ExperimentFunction(plot_epc, instrum2p)
@@ -3665,6 +3717,12 @@ def multi_ceviche(
 def multi_ceviche_c0(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of multi_ceviche with continuous permittivities."""
     return multi_ceviche(seed, c0=True)  # means that we include c0 cases.
+
+
+@registry.register
+def multi_ceviche_c0p(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of multi_ceviche with continuous permittivities."""
+    return multi_ceviche(seed, c0=True, precompute=True)  # means that we include c0 cases.
 
 
 @registry.register
