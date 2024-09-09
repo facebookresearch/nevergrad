@@ -2135,6 +2135,10 @@ MetaModelDSproba = ParametrizedMetaModel(multivariate_optimizer=DSproba).set_nam
 RFMetaModelOnePlusOne = ParametrizedMetaModel(multivariate_optimizer=OnePlusOne, algorithm="rf").set_name(
     "RFMetaModelOnePlusOne", register=True
 )
+MetaModelLogNormal = ParametrizedMetaModel(
+    multivariate_optimizer=LognormalDiscreteOnePlusOne,
+    algorithm="quad",
+).set_name("MetaModelLogNormal", register=True)
 RFMetaModelLogNormal = ParametrizedMetaModel(
     multivariate_optimizer=LognormalDiscreteOnePlusOne, algorithm="rf"
 ).set_name("RFMetaModelLogNormal", register=True)
