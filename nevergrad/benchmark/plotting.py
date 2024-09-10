@@ -283,9 +283,9 @@ def create_plots(
                             float(df[col][i])
                         except Exception as e2:
                             failed_indices += [i]
-                        assert (
-                            len(failed_indices) < 100
-                        ), f"Fails at row {i+2}, Exceptions: {e1}, {e2}. Failed-indices = {failed_indices}"
+                            assert (
+                                len(failed_indices) < 100
+                            ), f"Fails at row {i+2}, Exceptions: {e1}, {e2}. Failed-indices = {failed_indices}"
                 print("Dropping ", failed_indices)
                 df.drop(df.index[failed_indices], inplace=True)  #        df.drop(index=i, inplace=True)
                 failed_indices = []
@@ -522,7 +522,7 @@ def gp_sota() -> tp.Dict[str, tp.Tuple[float, float]]:
 
 
 def ceviche_sota() -> tp.Dict[str, tp.Tuple[float, float]]:
-    ceviche = {}
+    ceviche: dict[str, tuple[float, float]] = {}
     # {0: "waveguide-bend", 1: "beam-splitter", 2: "mode-converter", 3: "wdm"}
 
     # Numbers below can be obtained by:

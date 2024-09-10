@@ -3577,7 +3577,7 @@ def multi_ceviche(
         c0penfunc = ExperimentFunction(pc, instrumc0pen)
         # Evaluation function for the continuous context, but with discretization.
         eval_func = ExperimentFunction(epc, instrum2)
-        cheat_eval_func = ExperimentFunction(pc, instrum2)
+        # cheat_eval_func = ExperimentFunction(pc, instrum2)
 
         # print(f"name = {name}")
         import copy
@@ -3654,7 +3654,7 @@ def multi_ceviche(
                         try:
                             optim2 = type(optim, pre_optim.__bases__, dict(pre_optim.__dict__))  # type: ignore
                         except:
-                            optim2 = copy.deepcopy(pre_optim)
+                            optim2 = copy.deepcopy(pre_optim)  # type: ignore
                         try:
                             optim2.name += "c0p"  # type: ignore
                         except:
@@ -3673,7 +3673,7 @@ def multi_ceviche(
                         try:
                             optim3 = type(optim, pre_optim.__bases__, dict(pre_optim.__dict__))  # type: ignore
                         except:
-                            optim3 = copy.deepcopy(pre_optim)
+                            optim3 = copy.deepcopy(pre_optim)  # type: ignore
                         try:
                             optim3.name += ("c0" if not cheat else "c0c") + ("P" if precompute else "")
                         except:
@@ -3699,7 +3699,8 @@ def multi_ceviche(
                             plot_pc, instrum2 if not precompute else instrum2i
                         )
                         sfunc = helpers.SpecialEvaluationExperiment(
-                            c0func, evaluation=eval_func if not cheat else plot_cheat_eval_func
+                            c0func if not cheat else c0cfunc,
+                            evaluation=eval_func if not cheat else plot_cheat_eval_func,
                         )
                         yield Experiment(sfunc, optim3, budget=budget, seed=next(seedg))
                 else:
