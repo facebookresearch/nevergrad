@@ -2141,8 +2141,13 @@ RFMetaModelLogNormal = ParametrizedMetaModel(
 SVMMetaModelLogNormal = ParametrizedMetaModel(
     multivariate_optimizer=LognormalDiscreteOnePlusOne, algorithm="svr"
 ).set_name("SVMMetaModelLogNormal", register=True)
+MetaModelLogNormal = ParametrizedMetaModel(
+    multivariate_optimizer=LognormalDiscreteOnePlusOne,
+    algorithm="quad",
+).set_name("MetaModelLogNormal", register=True)
 NeuralMetaModelLogNormal = ParametrizedMetaModel(
-    multivariate_optimizer=LognormalDiscreteOnePlusOne, algorithm="neural"
+    multivariate_optimizer=LognormalDiscreteOnePlusOne,
+    algorithm="neural"
 ).set_name("NeuralMetaModelLogNormal", register=True)
 MetaModelPSO = ParametrizedMetaModel(multivariate_optimizer=PSO).set_name("MetaModelPSO", register=True)
 RFMetaModelPSO = ParametrizedMetaModel(multivariate_optimizer=PSO, algorithm="rf").set_name(
