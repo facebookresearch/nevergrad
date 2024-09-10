@@ -3519,6 +3519,9 @@ def multi_ceviche(
         "NeuralMetaModelLogNormal",
         "SVMMetaModelLogNormal",
         "UltraSmoothDiscreteLognormalOnePlusOne",
+        "VoronoiDE",
+        "UltraSmoothDiscreteLognormalOnePlusOne",
+        "VoronoiDE",
     ]
     # if np.random.choice([True,False]):
     #    algos = refactor_optims(algos)
