@@ -3675,7 +3675,7 @@ def multi_ceviche(
                         except:
                             optim3 = copy.deepcopy(pre_optim)  # type: ignore
                         try:
-                            optim3.name += ("c0" if not cheat else "c0c") + ("P" if precompute else "")
+                            optim3.name += ("c0" if not cheat else "c0c") + ("P" if precompute else "")  # type: ignore
                         except:
                             optim3.__name__ += ("c0" if not cheat else "c0c") + ("P" if precompute else "")
 
@@ -3702,7 +3702,7 @@ def multi_ceviche(
                             c0func if not cheat else c0cfunc,
                             evaluation=eval_func if not cheat else plot_cheat_eval_func,
                         )
-                        yield Experiment(sfunc, optim3, budget=budget, seed=next(seedg))
+                        yield Experiment(sfunc, optim3, budget=budget, seed=next(seedg))  # type: ignore
                 else:
 
                     def plot_epc(x):

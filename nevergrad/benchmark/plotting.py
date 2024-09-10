@@ -662,7 +662,7 @@ class XpPlotter:
             text = "{} ({:.3g} <{:.3g}>)".format(
                 optim_name,
                 vals["loss"][-1],
-                vals["loss"][-2] if len(vals["loss"]) > 2 else float("nan"),
+                vals["loss"][-2] if len(vals["loss"]) > 1 else float("nan"),
             )
             if vals[xaxis].size:
                 legend_infos.append(LegendInfo(vals[xaxis][-1], vals["loss"][-1], line, text))
