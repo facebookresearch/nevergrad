@@ -3522,6 +3522,9 @@ def multi_ceviche(
         "VoronoiDE",
         "UltraSmoothDiscreteLognormalOnePlusOne",
         "VoronoiDE",
+        "RF1MetaModelLogNormal",
+        "Neural1MetaModelLogNormal",
+        "SVM1MetaModelLogNormal",
     ]
     # if np.random.choice([True,False]):
     #    algos = refactor_optims(algos)
