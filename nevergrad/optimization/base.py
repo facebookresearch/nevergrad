@@ -399,9 +399,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 a, b, c, d, e, f = penalty_style
             else:
                 a, b, c, d, e, f = (1e5, 1.0, 0.5, 1.0, 0.5, 1.0)
-
+            ratio = 1 if self.budget is not None and self._num_tell > self.budget / 2.0 else 0.0
             violation = float(
-                (a + np.sum(np.maximum(loss, 0.0)))
+                (a * ratio + np.sum(np.maximum(loss, 0.0)))
                 * ((f + self._num_tell) ** e)
                 * (b * np.sum(np.maximum(constraint_violation, 0.0) ** c) ** d)
             )

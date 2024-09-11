@@ -15,7 +15,10 @@ class MetaModelFailure(ValueError):
 
 
 def learn_on_k_best(
-    archive: utils.Archive[utils.MultiValue], k: int, algorithm: str = "quad"
+    archive: utils.Archive[utils.MultiValue],
+    k: int,
+    algorithm: str = "quad",
+    degree: int = 2,
 ) -> tp.ArrayLike:
     """Approximate optimum learnt from the k best.
 
@@ -38,7 +41,7 @@ def learn_on_k_best(
 
     from sklearn.preprocessing import PolynomialFeatures
 
-    polynomial_features = PolynomialFeatures(degree=2)
+    polynomial_features = PolynomialFeatures(degree=degree)
     X2 = polynomial_features.fit_transform(X)
     if not max(y) - min(y) > 1e-20:  # better use "not" for dealing with nans
         raise MetaModelFailure

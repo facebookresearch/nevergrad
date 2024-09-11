@@ -90,7 +90,7 @@ class ExperimentFunction:
         if not hasattr(function, "__self__") or function.__self__ != self:  # type: ignore
             name = function.__name__ if hasattr(function, "__name__") else function.__class__.__name__
             self._descriptors.update(name=name)
-        if len(self.parametrization.name) > 24:
+        if len(self.parametrization.name) > 34:
             raise RuntimeError(
                 f"For the sake of benchmarking, please rename the current parametrization:\n{self.parametrization!r}\n"
                 "to a shorter name. This way it will be more readable in the experiments.\n"

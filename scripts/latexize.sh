@@ -204,8 +204,8 @@ done
 sed -i 's/.png}}/.png.pdf}}/g' dagstuhloid.tex
 # ================
 cp scripts/tex/biblio.bib .
-(echo '\begin{itemize}' ; ./scripts/compare.sh NGOpt CSEC10 | sed 's/rnk__//g' | sed 's/^/\\item /g' | sed 's/(x)//g' |sed 's/_/-/g' ; echo '\item []' ; echo '\end{itemize}' ) > compa.tex
-(echo '\begin{itemize}' ; ./scripts/compare.sh NGOpt CSEC10 | sed 's/rnk__//g' | sed 's/^/\\item /g' | sed 's/(x)//g' |sed 's/_/-/g' ; echo '\item []' ; echo '\end{itemize}' ) > compa2.tex
+(echo '\begin{itemize}' ; ./scripts/compare.sh NGOpt NgIohTuned | sed 's/rnk__//g' | sed 's/^/\\item /g' | sed 's/(x)//g' |sed 's/_/-/g' ; echo '\item []' ; echo '\end{itemize}' ) > compa.tex
+(echo '\begin{itemize}' ; ./scripts/compare.sh NGOpt NgIohTuned | sed 's/rnk__//g' | sed 's/^/\\item /g' | sed 's/(x)//g' |sed 's/_/-/g' ; echo '\item []' ; echo '\end{itemize}' ) > compa2.tex
 
 pdflatex dagstuhloid.tex
 bibtex dagstuhloid.aux
