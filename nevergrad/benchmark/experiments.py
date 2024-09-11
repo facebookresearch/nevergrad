@@ -54,6 +54,7 @@ from . import gymexperiments  # noqa
 #    list_optims = ["QOTPDE", "LQOTPDE", "LQODE"]
 #    list_optims = ["SPQODE", "SQOPSO", "DiagonalCMA"]
 def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
+    # return ["NgIoh4", "NgIoh21", "NgIohTuned", "NgIohLn", "NgIohRS", "LBFGSB"]
     if False:  # np.random.randn() < 0.0:
         return list(
             np.random.choice(
@@ -3450,7 +3451,20 @@ def ceviche(
 def multi_ceviche(
     seed: tp.Optional[int] = None,
     c0: bool = False,
+    precompute: bool = False,
 ) -> tp.Iterator[Experiment]:
+    """Categories when running with c0:
+    BFGScheat works on the continuous problem, with continuous domain, with continuous test.
+    BFGS      works on the continuous problem, with continuous domain, with *discrete* test.
+    Alg+C0    works on the continuous problem, with continuous domain, with *discrete* test.
+    Alg+C0C   works on the continuous problem, with continuous domain, with continuous test.
+    Alg+C0p   works on the continuous problem, with continuous domain, with *discrete* test. Penalization.
+    Alg       works on the discrete problem on a discrete domain.
+    For each Alg in Nevergrad optimizers listed below.
+
+    Please launch the experiment command multiple times:
+    python -m nevergrad.benchmark multi_ceviche_c0
+    """
     seedg = create_seed_generator(seed)
     algos = [
         "DiagonalCMA",
@@ -3492,33 +3506,230 @@ def multi_ceviche(
         "SuperSmoothDiscreteLognormalOnePlusOne",
     ]
     algos = [a for a in algos if a in list(ng.optimizers.registry.keys())]
-
-    for benchmark_type in list(range(4)):
+    algos = [
+        "LognormalDiscreteOnePlusOne",
+        "CMA",
+        "DiscreteLenglerOnePlusOne",
+        "SmoothDiscreteLognormalOnePlusOne",
+        "SuperSmoothDiscreteLognormalOnePlusOne",
+        "AnisotropicAdaptiveDiscreteOnePlusOne",
+        "RFMetaModelLogNormal",
+        "NeuralMetaModelLogNormal",
+        "RFMetaModelLogNormal",
+        "NeuralMetaModelLogNormal",
+        "SVMMetaModelLogNormal",
+        "UltraSmoothDiscreteLognormalOnePlusOne",
+        "VoronoiDE",
+        "UltraSmoothDiscreteLognormalOnePlusOne",
+        "VoronoiDE",
+        "RF1MetaModelLogNormal",
+        "Neural1MetaModelLogNormal",
+        "SVM1MetaModelLogNormal",
+    ]
+    # if np.random.choice([True,False]):
+    #    algos = refactor_optims(algos)
+    # algo = np.random.choice(algos)
+    for benchmark_type in [np.random.choice([0, 1, 2, 3])]:  # [np.random.randint(4)]:
         shape = tuple([int(p) for p in list(photonics_ceviche(None, benchmark_type))])  # type: ignore
         name = photonics_ceviche("name", benchmark_type) + str(shape)  # type: ignore
-        print(f"Shape = {shape} {type(shape)} {type(shape[0])}")
-        if c0:
-            instrum = ng.p.Array(shape=shape, lower=0.0, upper=1.0)
-        else:
-            instrum = ng.p.Array(shape=shape, lower=0.0, upper=1.0).set_integer_casting()
+        # print(f"Shape = {shape} {type(shape)} {type(shape[0])}")
+        instrumc0 = ng.p.Array(shape=shape, lower=0.0, upper=1.0)
+        instrumc0c = ng.p.Array(shape=shape, lower=0.0, upper=1.0)
+        instrumc0pen = ng.p.Array(shape=shape, lower=0.0, upper=1.0)
+        instrum = ng.p.Array(shape=shape, lower=0.0, upper=1.0).set_integer_casting()
+        instrum2 = ng.p.Array(shape=shape, lower=0.0, upper=1.0)  # .set_integer_casting()
+        instrum2p = ng.p.Array(shape=shape, lower=0.0, upper=1.0)  # .set_integer_casting()
+        #     for benchmark_type in [np.random.randint(4)]:
+        #         shape = tuple([int(p) for p in list(photonics_ceviche(None, benchmark_type))])  # type: ignore
+        #         name = photonics_ceviche("name", benchmark_type) + str(shape)  # type: ignore
+        #         print(f"Shape = {shape} {type(shape)} {type(shape[0])}")
+        #         if c0:
+        #             instrum = ng.p.Array(shape=shape, lower=0.0, upper=1.0)
+        #         else:
+        #             instrum = ng.p.Array(shape=shape, lower=0.0, upper=1.0).set_integer_casting()
 
         def pc(x):
             return photonics_ceviche(x, benchmark_type)
 
+        def fpc(x):
+            loss, grad = photonics_ceviche(x.reshape(shape), benchmark_type, wantgrad=True)
+            return loss, grad.flatten()
+
+        def epc(x):
+            return photonics_ceviche(x, benchmark_type, discretize=True)
+
+        #                sfunc = helpers.SpecialEvaluationExperiment(func, evaluation=iqa)
+        #                sfunc.add_descriptors(non_proxy_function=False)
+        #                xp = Experiment(sfunc, algo, budget, num_workers=1, seed=next(seedg))
         instrum.set_name(name)
+        instrumc0.set_name(name)  # + "c0")
+        instrumc0c.set_name(name)  # + "c0")
+        instrumc0pen.set_name(name)  # + "c0p")
+        instrum2.set_name(name)  # + "c0")
+        instrum2p.set_name(name)  # + "c0")
+
+        # Function for experiments completely in the discrete context.
         func = ExperimentFunction(pc, instrum)
-        # func.add_descriptor(name=name)
-        # func.parametrization.set_name(name)
-        print(f"name = {name}")
-        for optim in algos:
-            for budget in [20, 50, 90]:
-                yield Experiment(func, optim, budget=budget, seed=next(seedg))
+
+        # Function for experiments in the continuous context.
+        c0func = ExperimentFunction(pc, instrumc0)
+        c0cfunc = ExperimentFunction(pc, instrumc0c)
+        c0penfunc = ExperimentFunction(pc, instrumc0pen)
+        # Evaluation function for the continuous context, but with discretization.
+        eval_func = ExperimentFunction(epc, instrum2)
+        # cheat_eval_func = ExperimentFunction(pc, instrum2)
+
+        # print(f"name = {name}")
+        import copy
+
+        def export_numpy(name, array):  # type: ignore
+            from PIL import Image
+            import numpy as np
+
+            freq = np.average(np.abs(array.flatten() - 0.5) < 0.35)
+            freq2 = np.average(np.abs(array.flatten() - 0.5) < 0.45)
+            x = (255 * (1 - array)).astype("uint8")
+            print(
+                "Histogram",
+                name,
+                [100 * np.average(np.abs(np.round(10 * x.flatten()) - i) < 0.1) for i in range(11)],
+            )
+
+            im = Image.fromarray(x)
+            im.convert("RGB").save(f"{name}_{freq}_{freq2}.png", mode="L")
+
+        def cv(x):
+            return np.sum(np.clip(np.abs(x - np.round(x)) - 1e-3, 0.0, 50000000.0))
+
+        budgets = (
+            [
+                np.random.choice([3, 20, 50, 90, 150, 250, 400, 800, 1600, 3200, 6400]),
+                np.random.choice([12800, 25600, 51200, 102400, 204800, 409600]),
+            ]
+            if not precompute
+            else [np.random.choice([409600, 204800]) - 102400]
+        )
+        for optim in [np.random.choice(algos)]:  # TODO: we also need penalizations.
+            for budget in budgets:
+                #                np.random.choice(
+                #                    # [3, 20, 50, 90, 150, 250, 400, 800, 1600, 3200, 6400, 12800, 25600, 51200, 102400, 204800, 409600],
+                #                    [12800, 25600, 51200, 102400, 204800, 409600],
+                #                    #[3],
+                #                    1,
+                #                    replace=False,
+                #                )
+                #            ):  # [int(np.random.choice([3, 20, 50, 90]))]: #[20, 50, 90]:
+                if np.random.rand() < 0.05 or precompute:
+                    from scipy import optimize as scipyoptimize
+
+                    x0 = np.random.rand(np.prod(shape))  # type: ignore
+                    result = scipyoptimize.minimize(
+                        fpc,
+                        x0=x0,
+                        method="L-BFGS-B",
+                        jac=True,
+                        options={"maxiter": budget if not precompute else 102400},
+                        bounds=[[0, 1] for _ in range(np.prod(shape))],
+                    )
+                    assert -1e-5 <= np.min(result.x.flatten())
+                    assert np.max(result.x.flatten()) <= 1.0001
+                    real_loss = epc(result.x.reshape(shape))
+                    fake_loss = fpc(result.x.reshape(shape))[0]
+                    if not precompute:
+                        print(f"\nLOGPB{benchmark_type} LBFGSB with_budget {budget} returns {real_loss}")
+                        print(
+                            f"\nLOGPB{benchmark_type} CheatingLBFGSB with_budget {budget} returns {fake_loss}"
+                        )
+                    initial_point = result.x.reshape(shape)
+                    if real_loss < -0.9 and np.random.rand() < 0.9:
+                        export_numpy(
+                            f"pb{benchmark_type}_budget{budget if not precompute else 102400}_bfgs_{real_loss}_{fake_loss}",
+                            result.x.reshape(shape),
+                        )
+                if (c0 and np.random.choice([True, True, True, False] + ([True] * 2))) or precompute:
+                    pen = np.random.choice([True, False, False] + ([False] * 20)) and not precompute
+                    pre_optim = ng.optimizers.registry[optim]
+                    if pen:
+                        assert not precompute
+                        try:
+                            optim2 = type(optim, pre_optim.__bases__, dict(pre_optim.__dict__))  # type: ignore
+                        except:
+                            optim2 = copy.deepcopy(pre_optim)  # type: ignore
+                        try:
+                            optim2.name += "c0p"  # type: ignore
+                        except:
+                            optim2.__name__ += "c0p"
+                        sfunc = helpers.SpecialEvaluationExperiment(c0penfunc, evaluation=eval_func)
+                        yield Experiment(
+                            sfunc,
+                            optim2,  # type: ignore
+                            budget=budget,
+                            seed=next(seedg),
+                            constraint_violation=[cv],  # type: ignore
+                            penalize_violation_at_test=False,
+                        )
+                    else:
+                        cheat = np.random.choice([False, True])
+                        try:
+                            optim3 = type(optim, pre_optim.__bases__, dict(pre_optim.__dict__))  # type: ignore
+                        except:
+                            optim3 = copy.deepcopy(pre_optim)  # type: ignore
+                        try:
+                            optim3.name += ("c0" if not cheat else "c0c") + ("P" if precompute else "")  # type: ignore
+                        except:
+                            optim3.__name__ += ("c0" if not cheat else "c0c") + ("P" if precompute else "")
+
+                        def plot_pc(x):
+                            fake_loss = photonics_ceviche(x, benchmark_type)
+                            real_loss = photonics_ceviche(x, benchmark_type, discretize=True)
+                            if real_loss < -0.5:
+                                print("exporting")
+                                export_numpy(
+                                    f"pb{benchmark_type}_{optim}c0c_budget{budget}_{real_loss}_fl{fake_loss}",
+                                    x.reshape(shape),
+                                )
+                            return fake_loss
+
+                        if precompute:
+                            instrum2i = ng.p.Array(
+                                init=initial_point, lower=0.0, upper=1.0
+                            )  # .set_integer_casting()
+                            instrum2i.set_name(name)  # + "c0")
+                        plot_cheat_eval_func = ExperimentFunction(
+                            plot_pc, instrum2 if not precompute else instrum2i
+                        )
+                        sfunc = helpers.SpecialEvaluationExperiment(
+                            c0func if not cheat else c0cfunc,
+                            evaluation=eval_func if not cheat else plot_cheat_eval_func,
+                        )
+                        yield Experiment(sfunc, optim3, budget=budget, seed=next(seedg))  # type: ignore
+                else:
+
+                    def plot_epc(x):
+                        real_loss = photonics_ceviche(x, benchmark_type, discretize=True)
+                        if real_loss < -0.5:
+                            export_numpy(
+                                f"pb{benchmark_type}_{optim}_budget{budget}_{real_loss}", x.reshape(shape)
+                            )
+                        return real_loss
+
+                    plot_eval_func = ExperimentFunction(plot_epc, instrum2p)
+                    pfunc = helpers.SpecialEvaluationExperiment(func, evaluation=plot_eval_func)
+                    yield Experiment(
+                        func if np.random.rand() < 0.0 else pfunc, optim, budget=budget, seed=next(seedg)
+                    )  # Once in the discrete case.
 
 
 @registry.register
 def multi_ceviche_c0(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of multi_ceviche with continuous permittivities."""
-    return multi_ceviche(seed, c0=True)
+    return multi_ceviche(seed, c0=True)  # means that we include c0 cases.
+
+
+@registry.register
+def multi_ceviche_c0p(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of multi_ceviche with continuous permittivities."""
+    return multi_ceviche(seed, c0=True, precompute=True)  # means that we include c0 cases.
 
 
 @registry.register

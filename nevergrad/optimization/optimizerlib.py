@@ -2061,10 +2061,12 @@ class _MetaModel(base.Optimizer):
         multivariate_optimizer: tp.Optional[base.OptCls] = None,
         frequency_ratio: float = 0.9,
         algorithm: str,  # Quad or NN or SVR
+        degree: int = 2,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.frequency_ratio = frequency_ratio
         self.algorithm = algorithm
+        self.degree = degree
         elitist = self.dimension < 3
         if multivariate_optimizer is None:
             multivariate_optimizer = ParametrizedCMA(elitist=elitist) if self.dimension > 1 else OnePlusOne
@@ -2078,7 +2080,7 @@ class _MetaModel(base.Optimizer):
         freq = max(13, self.num_workers, self.dimension, int(self.frequency_ratio * sample_size))
         if len(self.archive) >= sample_size and not self._num_ask % freq:
             try:
-                data = learn_on_k_best(self.archive, sample_size, self.algorithm)
+                data = learn_on_k_best(self.archive, sample_size, self.algorithm, self.degree)
                 candidate = self.parametrization.spawn_child().set_standardized_data(data)
             except (OverflowError, MetaModelFailure):  # The optimum is at infinity. Shit happens.
                 candidate = self._optim.ask()
@@ -2117,6 +2119,7 @@ class ParametrizedMetaModel(base.ConfiguredOptimizer):
         multivariate_optimizer: tp.Optional[base.OptCls] = None,
         frequency_ratio: float = 0.9,
         algorithm: str = "quad",
+        degree: int = 2,
     ) -> None:
         super().__init__(_MetaModel, locals())
         assert 0 <= frequency_ratio <= 1.0
@@ -2135,13 +2138,31 @@ MetaModelDSproba = ParametrizedMetaModel(multivariate_optimizer=DSproba).set_nam
 RFMetaModelOnePlusOne = ParametrizedMetaModel(multivariate_optimizer=OnePlusOne, algorithm="rf").set_name(
     "RFMetaModelOnePlusOne", register=True
 )
+RF1MetaModelLogNormal = ParametrizedMetaModel(
+    multivariate_optimizer=LognormalDiscreteOnePlusOne,
+    algorithm="rf",
+    degree=1,
+).set_name("RF1MetaModelLogNormal", register=True)
+SVM1MetaModelLogNormal = ParametrizedMetaModel(
+    multivariate_optimizer=LognormalDiscreteOnePlusOne,
+    algorithm="svr",
+    degree=1,
+).set_name("SVM1MetaModelLogNormal", register=True)
+Neural1MetaModelLogNormal = ParametrizedMetaModel(
+    multivariate_optimizer=LognormalDiscreteOnePlusOne,
+    algorithm="neural",
+    degree=1,
+).set_name("Neural1MetaModelLogNormal", register=True)
+RFMetaModelLogNormal = ParametrizedMetaModel(
+    multivariate_optimizer=LognormalDiscreteOnePlusOne, algorithm="rf"
+).set_name("RFMetaModelLogNormal", register=True)
+SVMMetaModelLogNormal = ParametrizedMetaModel(
+    multivariate_optimizer=LognormalDiscreteOnePlusOne, algorithm="svr"
+).set_name("SVMMetaModelLogNormal", register=True)
 MetaModelLogNormal = ParametrizedMetaModel(
     multivariate_optimizer=LognormalDiscreteOnePlusOne,
     algorithm="quad",
 ).set_name("MetaModelLogNormal", register=True)
-RFMetaModelLogNormal = ParametrizedMetaModel(
-    multivariate_optimizer=LognormalDiscreteOnePlusOne, algorithm="rf"
-).set_name("RFMetaModelLogNormal", register=True)
 NeuralMetaModelLogNormal = ParametrizedMetaModel(
     multivariate_optimizer=LognormalDiscreteOnePlusOne, algorithm="neural"
 ).set_name("NeuralMetaModelLogNormal", register=True)
@@ -5225,6 +5246,10 @@ SuperSmoothTinyLognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(
 UltraSmoothDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
     smoother=True, mutation="lengler", antismooth=3
 ).set_name("UltraSmoothDiscreteLenglerOnePlusOne", register=True)
+UltraSmoothDiscreteLognormalOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True, mutation="lognormal", antismooth=3
+).set_name("UltraSmoothDiscreteLognormalOnePlusOne ", register=True)
+
 SmoothLognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="lognormal").set_name(
     "SmoothLognormalDiscreteOnePlusOne", register=True
 )

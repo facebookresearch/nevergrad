@@ -422,7 +422,7 @@ first_time_ceviche = True
 model = None
 
 
-def ceviche(x: np.ndarray, benchmark_type: int = 0) -> tp.Any:
+def ceviche(x: np.ndarray, benchmark_type: int = 0, discretize=False, wantgrad=False) -> tp.Any:
     global first_time_ceviche
     global model
     import autograd  # type: ignore
@@ -435,7 +435,7 @@ def ceviche(x: np.ndarray, benchmark_type: int = 0) -> tp.Any:
     # ceviche_challenges.waveguide_bend.prefabs
     # ceviche_challenges.wdm.prefabs
 
-    if first_time_ceviche:
+    if first_time_ceviche or x is None:
         if benchmark_type == 0:
             spec = ceviche_challenges.waveguide_bend.prefabs.waveguide_bend_2umx2um_spec()
             params = ceviche_challenges.waveguide_bend.prefabs.waveguide_bend_sim_params()
@@ -452,6 +452,8 @@ def ceviche(x: np.ndarray, benchmark_type: int = 0) -> tp.Any:
             spec = ceviche_challenges.wdm.prefabs.wdm_spec()
             params = ceviche_challenges.wdm.prefabs.wdm_sim_params()
             model = ceviche_challenges.wdm.model.WdmModel(params, spec)
+    if discretize:
+        x = np.round(x)
 
     if isinstance(x, str) and x == "name":
         return {0: "waveguide-bend", 1: "beam-splitter", 2: "mode-converter", 3: "wdm"}[benchmark_type]
@@ -462,7 +464,7 @@ def ceviche(x: np.ndarray, benchmark_type: int = 0) -> tp.Any:
 
     # The model class provides a convenience property, `design_variable_shape`
     # which specifies the design shape it expects.
-    design = x > 0.5  # np.random.rand(*model.design_variable_shape)
+    design = x > 0.5 if discretize else x  # np.random.rand(*model.design_variable_shape)
     # The model class has a `simulate()` method which takes the design variable as
     # an input and returns scattering parameters and fields.
     # s_params, fields = model.simulate(design)
@@ -477,7 +479,9 @@ def ceviche(x: np.ndarray, benchmark_type: int = 0) -> tp.Any:
         s21 = npa.abs(s_params[:, 0, 1])
         return npa.mean(s11) - npa.mean(s21)
 
-    loss_value, _ = autograd.value_and_grad(loss_fn)(design)  # type: ignore
+    loss_value, grad = autograd.value_and_grad(loss_fn)(design)  # type: ignore
     # loss_value, loss_grad = autograd.value_and_grad(loss_fn)(design)  # type: ignore
     first_time_ceviche = False
+    if wantgrad:
+        return loss_value, grad
     return loss_value

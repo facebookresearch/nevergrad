@@ -1,12 +1,12 @@
 #!/bin/bash
-#SBATCH --job-name=ceviche
-#SBATCH --output=ceviche_%A_%a.out
-#SBATCH --error=ceviche_%A_%a.err
+#SBATCH --job-name=wsceviche
+#SBATCH --output=wsceviche_%A_%a.out
+#SBATCH --error=wsceviche_%A_%a.err
 #SBATCH --time=72:00:00
 #SBATCH --partition=scavenge
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=70
-#SBATCH -a 0-900%330
+#SBATCH -a 0-900%300
 
 
 #999%200
@@ -18,11 +18,11 @@
 
 
 if [ $SLURM_ARRAY_TASK_ID -eq  0 ]; then
-cp multi_ceviche_c0.csv multi_ceviche_c0_`date | sed 's/ /_/g'`.csv.back
+cp multi_ceviche_c0p.csv multi_ceviche_c0p_`date | sed 's/ /_/g'`.csv.back
 fi
 
 
-task=multi_ceviche_c0
+task=multi_ceviche_c0p
 
 echo task attribution $SLURM_ARRAY_TASK_ID $task
 echo Keras/TF versions:
