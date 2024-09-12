@@ -3525,10 +3525,12 @@ def multi_ceviche(
         "RF1MetaModelLogNormal",
         "Neural1MetaModelLogNormal",
         "SVM1MetaModelLogNormal",
-    ]
+        "DSproba",
+    ] + (["DSproba"] * 5000)
     # if np.random.choice([True,False]):
     #    algos = refactor_optims(algos)
     # algo = np.random.choice(algos)
+    algos = ["RF1MetaModelLogNormal", "Neural1MetaModelLogNormal", "SVM1MetaModelLogNormal", "CMAL"]
     for benchmark_type in [np.random.choice([0, 1, 2, 3])]:  # [np.random.randint(4)]:
         shape = tuple([int(p) for p in list(photonics_ceviche(None, benchmark_type))])  # type: ignore
         name = photonics_ceviche("name", benchmark_type) + str(shape)  # type: ignore
@@ -3607,7 +3609,7 @@ def multi_ceviche(
                 np.random.choice([12800, 25600, 51200, 102400, 204800, 409600]),
             ]
             if not precompute
-            else [np.random.choice([409600, 204800]) - 102400]
+            else [np.random.choice([409600, 204800 + 102400, 204800 + 102400, 204800]) - 102400]
         )
         for optim in [np.random.choice(algos)]:  # TODO: we also need penalizations.
             for budget in budgets:
@@ -3728,7 +3730,7 @@ def multi_ceviche_c0(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 @registry.register
 def multi_ceviche_c0p(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Counterpart of multi_ceviche with continuous permittivities."""
+    """Counterpart of multi_ceviche with continuous permittivities and warmstart."""
     return multi_ceviche(seed, c0=True, precompute=True)  # means that we include c0 cases.
 
 

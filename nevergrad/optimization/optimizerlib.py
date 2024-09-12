@@ -2067,6 +2067,8 @@ class _MetaModel(base.Optimizer):
         self.frequency_ratio = frequency_ratio
         self.algorithm = algorithm
         self.degree = degree
+        if algorithm == "image":
+            self.degree = 1
         elitist = self.dimension < 3
         if multivariate_optimizer is None:
             multivariate_optimizer = ParametrizedCMA(elitist=elitist) if self.dimension > 1 else OnePlusOne
@@ -2077,10 +2079,25 @@ class _MetaModel(base.Optimizer):
     def _internal_ask_candidate(self) -> p.Parameter:
         # We request a bit more points than what is really necessary for our dimensionality (+dimension).
         sample_size = int((self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1)
-        freq = max(13, self.num_workers, self.dimension, int(self.frequency_ratio * sample_size))
+        try:
+            shape = self.parametrization.value.shape
+        except:
+            shape = None
+        if self.degree != 2:
+            sample_size = int(np.power(sample_size, self.degree / 2.0))
+            if "image" == self.algorithm:
+                sample_size = 50  # let us assume that 50 images is all we need.
+        freq = max(
+            13 if "image" != self.algorithm else 0,
+            self.num_workers,
+            self.dimension if "image" != self.algorithm else 0,
+            int(self.frequency_ratio * sample_size),
+        )
         if len(self.archive) >= sample_size and not self._num_ask % freq:
             try:
-                data = learn_on_k_best(self.archive, sample_size, self.algorithm, self.degree)
+                data = learn_on_k_best(
+                    self.archive, sample_size, self.algorithm, self.degree, shape, self.parametrization
+                )
                 candidate = self.parametrization.spawn_child().set_standardized_data(data)
             except (OverflowError, MetaModelFailure):  # The optimum is at infinity. Shit happens.
                 candidate = self._optim.ask()
@@ -2127,17 +2144,28 @@ class ParametrizedMetaModel(base.ConfiguredOptimizer):
 
 MetaModel = ParametrizedMetaModel().set_name("MetaModel", register=True)
 NeuralMetaModel = ParametrizedMetaModel(algorithm="neural").set_name("NeuralMetaModel", register=True)
+ImageMetaModel = ParametrizedMetaModel(algorithm="image").set_name("ImageMetaModel", register=True)
 SVMMetaModel = ParametrizedMetaModel(algorithm="svr").set_name("SVMMetaModel", register=True)
 RFMetaModel = ParametrizedMetaModel(algorithm="rf").set_name("RFMetaModel", register=True)
 MetaModelOnePlusOne = ParametrizedMetaModel(multivariate_optimizer=OnePlusOne).set_name(
     "MetaModelOnePlusOne", register=True
 )
+ImageMetaModelOnePlusOne = ParametrizedMetaModel(
+    multivariate_optimizer=OnePlusOne, algorithm="image"
+).set_name("ImageMetaModelOnePlusOne", register=True)
+ImageMetaModelDiagonalCMA = ParametrizedMetaModel(
+    multivariate_optimizer=DiagonalCMA, algorithm="image"
+).set_name("ImageMetaModelDiagonalCMA", register=True)
 MetaModelDSproba = ParametrizedMetaModel(multivariate_optimizer=DSproba).set_name(
     "MetaModelDSproba", register=True
 )
 RFMetaModelOnePlusOne = ParametrizedMetaModel(multivariate_optimizer=OnePlusOne, algorithm="rf").set_name(
     "RFMetaModelOnePlusOne", register=True
 )
+ImageMetaModelLogNormal = ParametrizedMetaModel(
+    multivariate_optimizer=LognormalDiscreteOnePlusOne,
+    algorithm="image",
+).set_name("ImageMetaModelLogNormal", register=True)
 RF1MetaModelLogNormal = ParametrizedMetaModel(
     multivariate_optimizer=LognormalDiscreteOnePlusOne,
     algorithm="rf",
@@ -3288,6 +3316,7 @@ class Chaining(base.ConfiguredOptimizer):
 
 
 # new names
+CMAL = Chaining([CMA, DiscreteLenglerOnePlusOne], ["half"]).set_name("CMAL", register=True)
 GeneticDE = Chaining([RotatedTwoPointsDE, TwoPointsDE], [200]).set_name(
     "GeneticDE", register=True
 )  # Also known as CGDE

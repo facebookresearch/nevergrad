@@ -1,5 +1,7 @@
 #!/bin/bash
 cp multi_ceviche_c0.csv multi_ceviche_c0plot_`date | sed 's/ /_/g'`.csv.back
+cp multi_ceviche_c0p.csv multi_ceviche_c0p_plot_`date | sed 's/ /_/g'`.csv.back
+cp multi_ceviche_c0_discrete.csv multi_ceviche_c0_discreteplot_`date | sed 's/ /_/g'`.csv.back
 grep -v c0 multi_ceviche_c0.csv > multi_ceviche_c0_discrete.csv
 touch multi_ceviche_c0_plots
 rm -rf multi_ceviche_c0_plots
