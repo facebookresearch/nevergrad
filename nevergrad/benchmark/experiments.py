@@ -3531,6 +3531,7 @@ def multi_ceviche(
     #    algos = refactor_optims(algos)
     # algo = np.random.choice(algos)
     algos = ["RF1MetaModelLogNormal", "Neural1MetaModelLogNormal", "SVM1MetaModelLogNormal", "CMAL"]
+
     for benchmark_type in [np.random.choice([0, 1, 2, 3])]:  # [np.random.randint(4)]:
         shape = tuple([int(p) for p in list(photonics_ceviche(None, benchmark_type))])  # type: ignore
         name = photonics_ceviche("name", benchmark_type) + str(shape)  # type: ignore

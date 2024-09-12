@@ -2098,6 +2098,7 @@ class _MetaModel(base.Optimizer):
                 data = learn_on_k_best(
                     self.archive, sample_size, self.algorithm, self.degree, shape, self.parametrization
                 )
+
                 candidate = self.parametrization.spawn_child().set_standardized_data(data)
             except (OverflowError, MetaModelFailure):  # The optimum is at infinity. Shit happens.
                 candidate = self._optim.ask()
