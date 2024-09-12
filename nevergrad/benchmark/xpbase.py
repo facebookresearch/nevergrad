@@ -12,6 +12,7 @@ import traceback
 import nevergrad.common.typing as ngtp
 import typing as tp
 import numpy as np
+from nevergrad.optimization import callbacks
 from nevergrad.parametrization import parameter as p
 from nevergrad.common import decorators
 from nevergrad.common import errors
@@ -289,6 +290,7 @@ class Experiment:
             try:
                 # call the actual Optimizer.minimize method because overloaded versions could alter the worklflow
                 # and provide unfair comparisons  (especially for parallelized settings)
+                optimizer.register_callback("ask", callbacks.EarlyStopping.timer(3600*(48+24)))
                 obase.Optimizer.minimize(
                     self._optimizer,
                     pfunc,
