@@ -15,7 +15,11 @@ import contextlib
 import collections
 import typing as tp
 import numpy as np
-from nevergrad.common import sphere
+
+try:
+    from nevergrad.common import sphere
+except Exception as e:
+    print("Trouble for importing quasi-randomization:", e)
 
 
 def quasi_randomize(x: tp.Iterable[tp.Any], method: str = "none") -> tp.Any:
