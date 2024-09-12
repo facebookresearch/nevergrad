@@ -161,7 +161,7 @@ def learn_on_k_best(
     except ValueError as e:
         # if "image" in algorithm:
         #    print("b", para, e)
-        raise MetaModelFailure("Infinite meta-model optimum in learn_on_k_best.")
+        raise MetaModelFailure(f"Infinite meta-model optimum in learn_on_k_best: {e}.")
     if (
         float(model.predict(trans(minimum.flatten()[None, :]))) > y[len(y) // 3]
         and algorithm == "image"
