@@ -122,22 +122,26 @@ def learn_on_k_best(
     model.fit(X2, y)
     # Check model quality.
     model_outputs = model.predict(X2)
+    #if algorithm == "image":
+    #    for i in range(len(model_outputs)):
+    #        print(i, model_outputs[i], y[i])
     indices = np.argsort(y)
     ordered_model_outputs = [model_outputs[i] for i in indices]
     success_rate = np.average(0.5 + 0.5 * np.sign(np.diff(ordered_model_outputs)))
-    # if "image" == algorithm:
-    # print([np.sum(x) for x in X2])
-    # print("z", success_rate)  #, len(y), ordered_model_outputs)
+    #if "image" == algorithm:
+     #print([np.sum(x) for x in X2])
+     #print("z", success_rate)  #, len(y), ordered_model_outputs)
     if not np.all(np.diff(ordered_model_outputs) > 0) and "image" != algorithm:
         raise MetaModelFailure("Unlearnable objective function.")
     if np.average(0.5 + 0.5 * np.sign(np.diff(ordered_model_outputs))) < 0.6:
-        # if algorithm == "image":
+        #if algorithm == "image":
         #    print("q")
         raise MetaModelFailure("Unlearnable objective function.")
     try:
         Powell = registry["Powell"]
         DE = registry["DE"]
-        for cls in (Powell, DE):  # Powell excellent here, DE as a backup for thread safety.
+        DiscreteLenglerOnePlusOne = registry["DiscreteLenglerOnePlusOne"]
+        for cls in ((Powell, DE) if algorithm != "image" else (DiscreteLenglerOnePlusOne,)):  # Powell excellent here, DE as a backup for thread safety.
             optimizer = cls(
                 parametrization=para if (para is not None and algorithm == "image") else dimension,
                 budget=45 * dimension + 30,
@@ -145,12 +149,19 @@ def learn_on_k_best(
             # limit to 20s at most
             optimizer.register_callback("ask", callbacks.EarlyStopping.timer(20))
             if "image" in algorithm:
-                optimizer.suggest(new_first_k_individuals[0].reshape(shape))
-                optimizer.suggest(new_first_k_individuals[1].reshape(shape))
-                # print("k")
+                optimizer.suggest(X2[0].reshape(shape))
+                optimizer.suggest(X2[1].reshape(shape))
+                optimizer.suggest(X2[2].reshape(shape))
+                # print(new_first_k_individuals[0].shape, X[0].shape)
+                # print(new_first_k_individuals[0][:15], X[0][:15])
+                # print(np.sum(new_first_k_individuals[0]), np.sum(X[0]))
+                # print(type(X[0]), type(new_first_k_individuals[0]))
+                # print(X[0].dtype, new_first_k_individuals[0].dtype)
+                # print("k", float(model.predict(trans(np.asarray(new_first_k_individuals[0], dtype=X[0].dtype).flatten()[None, :]))))
+                # print("k3", float(model.predict(trans(X[0].flatten()[None, :]))))
             try:
                 minimum_point = optimizer.minimize(
-                    lambda x: float(model.predict(trans(x.flatten()[None, :])))
+                    lambda x: float(model.predict(trans(np.asarray(x, dtype=X[0].dtype).flatten()[None, :])))
                     # lambda x: float(model.predict(polynomial_features.fit_transform(x[None, :])))
                 )
                 minimum = minimum_point.value
@@ -159,15 +170,15 @@ def learn_on_k_best(
             else:
                 break
     except ValueError as e:
-        # if "image" in algorithm:
-        #    print("b", para, e)
+        #if "image" in algorithm:
+        #   print("b", para, e)
         raise MetaModelFailure(f"Infinite meta-model optimum in learn_on_k_best: {e}.")
     if (
         float(model.predict(trans(minimum.flatten()[None, :]))) > y[len(y) // 3]
         and algorithm == "image"
         and success_rate < 0.9
     ):
-        # print("bbb", float(model.predict(trans(minimum[None, :]))), y)
+        #print("b", "bbb", float(model.predict(trans(minimum[None, :]))), y)
         raise MetaModelFailure("Not a good proposal.")
     if float(model.predict(trans(minimum[None, :]))) > y[0] and algorithm != "image":
         raise MetaModelFailure("Not a good proposal.")
@@ -182,6 +193,6 @@ def learn_on_k_best(
         # if "image" in algorithm:
         #    print("d")
         raise MetaModelFailure("huge meta-model optimum in learn_on_k_best.")
-    # if "image" in algorithm:
+    #if "image" in algorithm:
     # print("e" + "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee")
     return middle + normalization * minimum.flatten()

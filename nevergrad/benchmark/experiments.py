@@ -3530,8 +3530,11 @@ def multi_ceviche(
     # if np.random.choice([True,False]):
     #    algos = refactor_optims(algos)
     # algo = np.random.choice(algos)
-    algos = ["RF1MetaModelLogNormal", "Neural1MetaModelLogNormal", "SVM1MetaModelLogNormal", "CMAL"]
-
+    if not precompute:
+        algos = ["RF1MetaModelLogNormal", "Neural1MetaModelLogNormal", "SVM1MetaModelLogNormal", "CMAL"]
+    else:
+        algos = ["UltraSmoothDiscreteLognormalOnePlusOne", "DiscreteLenglerOnePlusOne", "CMA", "CMAL"]
+    algos = ["CMALS", "CMAL", "CMALL"]
     for benchmark_type in [np.random.choice([0, 1, 2, 3])]:  # [np.random.randint(4)]:
         shape = tuple([int(p) for p in list(photonics_ceviche(None, benchmark_type))])  # type: ignore
         name = photonics_ceviche("name", benchmark_type) + str(shape)  # type: ignore
@@ -3649,7 +3652,7 @@ def multi_ceviche(
                             f"pb{benchmark_type}_budget{budget if not precompute else 102400}_bfgs_{real_loss}_{fake_loss}",
                             result.x.reshape(shape),
                         )
-                if (c0 and np.random.choice([True, True, True, False] + ([True] * 2))) or precompute:
+                if (c0 and np.random.choice([True, True, True, False] + ([True] * 2))) and not precompute:
                     pen = np.random.choice([True, False, False] + ([False] * 20)) and not precompute
                     pre_optim = ng.optimizers.registry[optim]
                     if pen:

@@ -5276,9 +5276,11 @@ SuperSmoothTinyLognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(
 UltraSmoothDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
     smoother=True, mutation="lengler", antismooth=3
 ).set_name("UltraSmoothDiscreteLenglerOnePlusOne", register=True)
+CMALS = Chaining([CMA, DiscreteLenglerOnePlusOne, UltraSmoothDiscreteLenglerOnePlusOne], ["third", "third"]).set_name("CMALS", register=True)
 UltraSmoothDiscreteLognormalOnePlusOne = ParametrizedOnePlusOne(
     smoother=True, mutation="lognormal", antismooth=3
 ).set_name("UltraSmoothDiscreteLognormalOnePlusOne ", register=True)
+CMALL = Chaining([CMA, DiscreteLenglerOnePlusOne, UltraSmoothDiscreteLognormalOnePlusOne], ["third", "third"]).set_name("CMALL", register=True)
 
 SmoothLognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="lognormal").set_name(
     "SmoothLognormalDiscreteOnePlusOne", register=True
