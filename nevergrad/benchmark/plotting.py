@@ -443,10 +443,34 @@ def create_plots(
         cases = [()]
     # Average normalized plot with everything.
     out_filepath = output_folder / "xpresults_all.png"
-    data = XpPlotter.make_data(df, normalized_loss=True)
-    xpplotter = XpPlotter(
-        data, title=os.path.basename(output_folder), name_style=name_style, xaxis=xpaxis, pure_only=True
-    )
+    try:
+        data = XpPlotter.make_data(df, normalized_loss=True)
+        xpplotter = XpPlotter(
+            data, title=os.path.basename(output_folder), name_style=name_style, xaxis=xpaxis, pure_only=True
+        )
+    except Exception as e:
+        lower = 0
+        upper = len(df)
+        while upper > lower + 1:
+            middle = (lower + upper) // 2
+            small_df = df.head(middle)
+            try:
+                print("Testing ", middle)
+                small_data = XpPlotter.make_data(small_df, normalized_loss=True)
+                xpplotter = XpPlotter(
+                    data,
+                    title=os.path.basename(output_folder),
+                    name_style=name_style,
+                    xaxis=xpaxis,
+                    pure_only=True,
+                )
+                print("Work with ", middle)
+                lower = middle
+            except:
+                print("Failing with ", middle)
+                upper = middle
+
+        assert False, f"Big failure {e} at line {middle}"
     xpplotter.save(out_filepath)
     # Now one xp plot per case.
     for case in cases:
@@ -764,6 +788,24 @@ class XpPlotter:
         )
         groupeddf = df.groupby(["optimizer_name", "budget"])
         means = groupeddf.mean() if no_limit else groupeddf.median()
+        # try:
+        #    means = groupeddf.mean() if no_limit else groupeddf.median()
+        # except Exception as e:
+        #    lower=0
+        #    upper = len(df)
+        #    while upper-lower > 1:
+        #        print(f"Working on a dataframe of length {len(df.head((upper+lower) // 2))}")
+        #        groupeddf = df.head((upper+lower) // 2).groupby(["optimizer_name", "budget"])
+        #        try:
+        #            means = groupeddf.mean() if no_limit else groupeddf.median()
+        #            print("Ok at ", (upper+lower) // 2)
+        #            lower = (lower+upper) // 2
+        #        except:
+        #            print("Fail at ", (upper+lower) // 2)
+        #            upper = (lower+upper) // 2
+        #
+        #    assert False, f"{e} at line {lower}-{upper}."
+
         stds = groupeddf.std()
         nums = groupeddf.count()
         optim_vals: tp.Dict[str, tp.Dict[str, np.ndarray]] = {}

@@ -98,10 +98,10 @@ def learn_on_k_best(
             k = np.zeros(shape=(len(x), len(y)))
             for i in range(len(x)):
                 for j in range(len(y)):
-                    k[i][j] = np.exp(-500.0 * np.sum((rephrase(x[i]) - rephrase(y[j])) ** 2) / (len(x[0])))
+                    k[i][j] = np.exp(-50.0 * np.sum((rephrase(x[i]) - rephrase(y[j])) ** 2) / (len(x[0])))
             return k
 
-        model = SVR(kernel=my_kernel, C=1e10, tol=1e-10)
+        model = SVR(kernel=my_kernel, C=1e4, tol=1e-3)
         # print(X2.shape)
     elif algorithm in ["svm", "svr"]:
         from sklearn.svm import SVR
@@ -122,26 +122,32 @@ def learn_on_k_best(
     model.fit(X2, y)
     # Check model quality.
     model_outputs = model.predict(X2)
-    #if algorithm == "image":
+    # if algorithm == "image":
     #    for i in range(len(model_outputs)):
     #        print(i, model_outputs[i], y[i])
     indices = np.argsort(y)
     ordered_model_outputs = [model_outputs[i] for i in indices]
     success_rate = np.average(0.5 + 0.5 * np.sign(np.diff(ordered_model_outputs)))
-    #if "image" == algorithm:
-     #print([np.sum(x) for x in X2])
-     #print("z", success_rate)  #, len(y), ordered_model_outputs)
+    # if "image" == algorithm:
+    # print([np.sum(x) for x in X2])
+    # print("z", success_rate)  #, len(y), ordered_model_outputs)
     if not np.all(np.diff(ordered_model_outputs) > 0) and "image" != algorithm:
         raise MetaModelFailure("Unlearnable objective function.")
     if np.average(0.5 + 0.5 * np.sign(np.diff(ordered_model_outputs))) < 0.6:
-        #if algorithm == "image":
+        # if algorithm == "image":
         #    print("q")
         raise MetaModelFailure("Unlearnable objective function.")
     try:
         Powell = registry["Powell"]
         DE = registry["DE"]
         DiscreteLenglerOnePlusOne = registry["DiscreteLenglerOnePlusOne"]
-        for cls in ((Powell, DE) if algorithm != "image" else (DiscreteLenglerOnePlusOne,)):  # Powell excellent here, DE as a backup for thread safety.
+
+        def loss_function_sm(x):
+            return float(model.predict(trans(np.asarray(x, dtype=X[0].dtype).flatten()[None, :])))
+
+        for cls in (
+            (Powell, DE) if algorithm != "image" else (DiscreteLenglerOnePlusOne,)
+        ):  # Powell excellent here, DE as a backup for thread safety.
             optimizer = cls(
                 parametrization=para if (para is not None and algorithm == "image") else dimension,
                 budget=45 * dimension + 30,
@@ -160,27 +166,23 @@ def learn_on_k_best(
                 # print("k", float(model.predict(trans(np.asarray(new_first_k_individuals[0], dtype=X[0].dtype).flatten()[None, :]))))
                 # print("k3", float(model.predict(trans(X[0].flatten()[None, :]))))
             try:
-                minimum_point = optimizer.minimize(
-                    lambda x: float(model.predict(trans(np.asarray(x, dtype=X[0].dtype).flatten()[None, :])))
-                    # lambda x: float(model.predict(polynomial_features.fit_transform(x[None, :])))
-                )
+                minimum_point = optimizer.minimize(loss_function_sm)
+                # lambda x: float(model.predict(trans(np.asarray(x, dtype=X[0].dtype).flatten()[None, :])))
+                # lambda x: float(model.predict(polynomial_features.fit_transform(x[None, :])))
+                # )
                 minimum = minimum_point.value
             except RuntimeError:
                 assert cls == Powell, "Only Powell is allowed to crash here."
             else:
                 break
     except ValueError as e:
-        #if "image" in algorithm:
+        # if "image" in algorithm:
         #   print("b", para, e)
         raise MetaModelFailure(f"Infinite meta-model optimum in learn_on_k_best: {e}.")
-    if (
-        float(model.predict(trans(minimum.flatten()[None, :]))) > y[len(y) // 3]
-        and algorithm == "image"
-        and success_rate < 0.9
-    ):
-        #print("b", "bbb", float(model.predict(trans(minimum[None, :]))), y)
+    if loss_function_sm(minimum) > y[len(y) // 3] and algorithm == "image" and success_rate < 0.9:
+        # print("b", "bbb", float(model.predict(trans(minimum[None, :]))), y)
         raise MetaModelFailure("Not a good proposal.")
-    if float(model.predict(trans(minimum[None, :]))) > y[0] and algorithm != "image":
+    if loss_function_sm(minimum) > y[0] and algorithm != "image":
         raise MetaModelFailure("Not a good proposal.")
     if algorithm == "image":
         # print(minimum)  # This is is the real space of the user.
@@ -193,6 +195,6 @@ def learn_on_k_best(
         # if "image" in algorithm:
         #    print("d")
         raise MetaModelFailure("huge meta-model optimum in learn_on_k_best.")
-    #if "image" in algorithm:
+    # if "image" in algorithm:
     # print("e" + "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee")
     return middle + normalization * minimum.flatten()
