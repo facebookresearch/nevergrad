@@ -155,11 +155,7 @@ def learn_on_k_best(
     except ValueError as e:
         raise MetaModelFailure(f"Infinite meta-model optimum in learn_on_k_best: {e}.")
     predicted_value = float(model.predict(trans(minimum.flatten()[None, :])))
-    if (
-        predicted_value > y[len(y) // 3]
-        and algorithm == "image"
-        and success_rate < 0.9
-    ):
+    if predicted_value > y[len(y) // 3] and algorithm == "image" and success_rate < 0.9:
         raise MetaModelFailure("Not a good proposal.")
     if predicted_value > y[0] and algorithm != "image":
         raise MetaModelFailure("Not a good proposal.")

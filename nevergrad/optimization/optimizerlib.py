@@ -703,7 +703,7 @@ RecombiningPortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(
 ).set_name("RecombiningPortfolioDiscreteOnePlusOne", register=True)
 
 
-# pylint: too-many-arguments,too-many-instance-attributes
+# pylint: too-many-arguments
 
 
 class _CMA(base.Optimizer):
