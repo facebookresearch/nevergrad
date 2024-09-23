@@ -143,7 +143,7 @@ class MLTuning(ExperimentFunction):
             # We optimize only the depth, so we fix all other parameters than the depth
             params = dict(
                 noise_free=False,
-                criterion="mse",
+                criterion="friedman_mse",
                 min_samples_split=0.00001,
                 regressor="decision_tree",
                 alpha=1.0,
@@ -158,7 +158,8 @@ class MLTuning(ExperimentFunction):
                     lower=1, upper=1200
                 ).set_integer_casting(),  # Depth, in case we use a decision tree.
                 criterion=p.Choice(
-                    ["mse", "friedman_mse", "mae"]
+                    ["friedman_mse", "poisson", "absolute_error", "squared_error"],
+                    # ["mse", "friedman_mse", "mae"]
                 ),  # Criterion for building the decision tree.
                 min_samples_split=p.Log(
                     lower=0.0000001, upper=1
@@ -177,7 +178,8 @@ class MLTuning(ExperimentFunction):
             # We specify below the list of hyperparameters for the decision trees.
             parametrization = p.Instrumentation(
                 depth=p.Scalar(lower=1, upper=1200).set_integer_casting(),
-                criterion=p.Choice(["mse", "friedman_mse", "mae"]),
+                criterion=p.Choice(["friedman_mse", "poisson", "absolute_error", "squared_error"]),
+                # criterion=p.Choice(["mse", "friedman_mse", "mae"]),
                 min_samples_split=p.Log(lower=0.0000001, upper=1),
                 regressor="decision_tree",
             )
@@ -189,7 +191,7 @@ class MLTuning(ExperimentFunction):
                 activation="no",
                 solver="no",
             )
-            evalparams = dict(params, criterion="mse", min_samples_split=0.00001)
+            evalparams = dict(params, criterion="friedman_mse", min_samples_split=0.00001)
         elif regressor == "mlp":
             # Let us define the parameters of the neural network.
             parametrization = p.Instrumentation(
@@ -224,7 +226,7 @@ class MLTuning(ExperimentFunction):
         # For the evaluation we remove the noise (unless overfitter)
         evalparams["noise_free"] = not overfitter
         parametrization.function.proxy = not overfitter
-        super().__init__(partial(self._ml_parametrization, **params), parametrization.set_name(""))
+        super().__init__(partial(self._ml_parametrization, **params), parametrization.set_name(""))  # type: ignore
         self._evalparams = evalparams
 
     def evaluation_function(self, *recommendations: p.Parameter) -> float:
@@ -239,12 +241,18 @@ class MLTuning(ExperimentFunction):
         # Filling datasets.
         rng = self.parametrization.random_state
         if not dataset.startswith("artificial"):
-            assert dataset in ["boston", "diabetes", "kerasBoston", "auto-mpg", "red-wine", "white-wine"]
+            assert dataset in ["diabetes", "kerasBoston", "auto-mpg", "red-wine", "white-wine"]
             assert data_dimension is None
             sets_url = {
-                "auto-mpg": "http://www-lisic.univ-littoral.fr/~teytaud/files/Cours/Apprentissage/data/auto-mpg.data",
-                "red-wine": "http://www-lisic.univ-littoral.fr/~teytaud/files/Cours/Apprentissage/data/winequality-red.csv",
-                "white-wine": "http://www-lisic.univ-littoral.fr/~teytaud/files/Cours/Apprentissage/data/winequality-white.csv",
+                # "auto-mpg": "http://www-lisic.univ-littoral.fr/~teytaud/files/Cours/Apprentissage/data/auto-mpg.data",
+                # "red-wine": "http://www-lisic.univ-littoral.fr/~teytaud/files/Cours/Apprentissage/data/winequality-red.csv",
+                # "white-wine": "http://www-lisic.univ-littoral.fr/~teytaud/files/Cours/Apprentissage/data/winequality-white.csv",
+                # "auto-mpg": "https://github.com/plotly/datasets/blob/master/auto-mpg.csv",
+                # "red-wine": "https://github.com/plotly/datasets/blob/master/winequality-red.csv",
+                # "white-wine": "https://github.com/stedy/Machine-Learning-with-R-datasets/blob/master/winequality-white.csv",
+                "auto-mpg": "https://raw.githubusercontent.com/plotly/datasets/master/auto-mpg.csv",
+                "red-wine": "https://raw.githubusercontent.com/plotly/datasets/master/winequality-red.csv",
+                "white-wine": "https://raw.githubusercontent.com/stedy/Machine-Learning-with-R-datasets/master/winequality-white.csv",
             }
             sets_tag = {"auto-mpg": "mpg", "red-wine": "quality", "white-wine": "quality"}
             if dataset == "kerasBoston":
@@ -257,9 +265,15 @@ class MLTuning(ExperimentFunction):
 
                 data = keras.datasets.boston_housing
             elif dataset in sets_tag:
-                data = pd.read_csv(sets_url[dataset])
+                try:
+                    data = pd.read_csv(sets_url[dataset])
+                except Exception as e:
+                    assert False, f"failing with error {e} for dataset {dataset}"
             else:
-                data = {"boston": sklearn.datasets.load_boston, "diabetes": sklearn.datasets.load_diabetes,}[
+                data = {
+                    "diabetes": sklearn.datasets.load_diabetes,
+                }[
+                    # data = {"boston": sklearn.datasets.load_boston, "diabetes": sklearn.datasets.load_diabetes,}[
                     dataset
                 ](return_X_y=True)
 

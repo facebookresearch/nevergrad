@@ -33,7 +33,7 @@ class VectorNode:
         self, dimension: int, coordinates: tp.Optional[tp.Union[np.ndarray, tp.List[float]]] = None
     ) -> None:
         self.dimension = dimension
-        self.coordinates = np.array(coordinates, copy=False)
+        self.coordinates = np.asarray(coordinates)
         self._next: tp.List["VectorNode"] = [self for _ in range(self.dimension)]
         self._prev: tp.List["VectorNode"] = [self for _ in range(self.dimension)]
         self.dominated_flag = 0
@@ -185,7 +185,7 @@ class HypervolumeIndicator:
     """
 
     def __init__(self, reference_point: np.ndarray) -> None:
-        self.reference_point = np.array(reference_point, copy=False)
+        self.reference_point = np.asarray(reference_point)
         self.dimension = self.reference_point.size
         self.reference_bounds = np.full(self.dimension, -np.inf)
         self._multilist: tp.Optional[VectorLinkedList] = None

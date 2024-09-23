@@ -254,7 +254,7 @@ class SequentialRecastOptimizer(RecastOptimizer):
         that it can be serialized.
         """
         if self.num_ask != 0:
-            raise ValueError("Can only enable pickling before all asks.")
+            raise ValueError("Can only enable pickling before all asks.")
         self._enable_pickling = True
 
     def _internal_ask_candidate(self) -> p.Parameter:
@@ -413,6 +413,7 @@ class BatchRecastOptimizer(RecastOptimizer):
         executor: tp.Optional[tp.ExecutorLike] = None,
         batch_mode: bool = False,
         verbosity: int = 0,
+        constraint_violation: tp.Any = None,
     ) -> p.Parameter:
         raise NotImplementedError("This optimizer isn't supported by the way minimize works by default.")
 

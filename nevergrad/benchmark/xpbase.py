@@ -9,12 +9,17 @@ import random
 import numbers
 import warnings
 import traceback
+import nevergrad.common.typing as ngtp
 import typing as tp
 import numpy as np
 from nevergrad.parametrization import parameter as p
 from nevergrad.common import decorators
 from nevergrad.common import errors
-from ..functions.rl.agents import torch  # import includes pytorch fix
+
+try:
+    from ..functions.rl.agents import torch  # import includes pytorch fix
+except ModuleNotFoundError:
+    pass
 from ..functions import base as fbase
 from ..optimization import base as obase
 from ..optimization.optimizerlib import (
@@ -61,7 +66,13 @@ class OptimizerSettings:
 
     @property
     def name(self) -> str:
-        return self.optimizer if isinstance(self.optimizer, str) else repr(self.optimizer)
+        try:
+            try:
+                return self.optimizer.name  # type: ignore
+            except:
+                return self.optimizer.__name__  # type: ignore
+        except:
+            return self.optimizer if isinstance(self.optimizer, str) else repr(self.optimizer)
 
     @property
     def batch_mode(self) -> bool:
@@ -120,7 +131,7 @@ def create_seed_generator(seed: tp.Optional[int]) -> tp.Iterator[tp.Optional[int
     """
     generator = None if seed is None else np.random.RandomState(seed=seed)
     while True:
-        yield None if generator is None else generator.randint(2**32, dtype=np.uint32)
+        yield None if generator is None else generator.randint(2**32, dtype=np.uint32)  # type: ignore
 
 
 class Experiment:
@@ -148,12 +159,16 @@ class Experiment:
         num_workers: int = 1,
         batch_mode: bool = True,
         seed: tp.Optional[int] = None,
+        constraint_violation: tp.Optional[ngtp.ArrayLike] = None,
+        penalize_violation_at_test: bool = True,
     ) -> None:
+        self.penalize_violation_at_test = penalize_violation_at_test
         assert isinstance(function, fbase.ExperimentFunction), (
             "All experiment functions should " "derive from ng.functions.ExperimentFunction"
         )
         assert function.dimension, "Nothing to optimize"
         self.function = function
+        self.constraint_violation = constraint_violation
         self.seed = (
             seed  # depending on the inner workings of the function, the experiment may not be repeatable
         )
@@ -161,9 +176,10 @@ class Experiment:
             optimizer=optimizer, num_workers=num_workers, budget=budget, batch_mode=batch_mode
         )
         self.result = {"loss": np.nan, "elapsed_budget": np.nan, "elapsed_time": np.nan, "error": ""}
-        self._optimizer: tp.Optional[
-            obase.Optimizer
-        ] = None  # to be able to restore stopped/checkpointed optimizer
+        self._optimizer: tp.Optional[obase.Optimizer] = (
+            None  # to be able to restore stopped/checkpointed optimizer
+        )
+
         # make sure the random_state of the base function is created, so that spawning copy does not
         # trigger a seed for the base function, but only for the copied function
         self.function.parametrization.random_state  # pylint: disable=pointless-statement
@@ -215,6 +231,16 @@ class Experiment:
         # (pareto_front returns only the recommendation in singleobjective)
         self.result["num_objectives"] = opt.num_objectives
         self.result["loss"] = pfunc.evaluation_function(*opt.pareto_front())
+        if (
+            self.constraint_violation
+            and np.max([f(opt.recommend().value) for f in self.constraint_violation]) > 0  # type: ignore
+            or len(self.function.parametrization._constraint_checkers) > 0
+            and not opt.recommend().satisfies_constraints(pfunc.parametrization)
+        ):
+            # print(f"{len(self.constraint_violation)} ==> cv violation!!!!")
+            # print(f"{len(self.function.parametrization._constraint_checkers)} ==> cv checker!!!!")
+            if self.penalize_violation_at_test:
+                self.result["loss"] += 1e9  # type: ignore
         self.result["elapsed_budget"] = num_calls
         if num_calls > self.optimsettings.budget:
             raise RuntimeError(
@@ -268,6 +294,7 @@ class Experiment:
                     pfunc,
                     batch_mode=executor.batch_mode,
                     executor=executor,
+                    constraint_violation=self.constraint_violation,
                 )
             except Exception as e:  # pylint: disable=broad-except
                 self._log_results(pfunc, t0, self._optimizer.num_ask)

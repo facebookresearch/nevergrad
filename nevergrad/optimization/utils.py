@@ -76,13 +76,21 @@ class MultiValue:
         y: float
             the new evaluation
         """
+        if y > 1e10:
+            y = 1e10
+        elif y < -1e10:
+            y = -1e10
         self._minimum = min(self._minimum, y)
-        self.mean = (self.count * self.mean + y) / float(self.count + 1)
+        ratio = self.count / (self.count + 1)
+        self.mean = ratio * self.mean + (y / float(self.count + 1))
         self.square = (self.count * self.square + y * y) / float(self.count + 1)
-        self.square = max(self.square, self.mean**2)
         self.count += 1
-        factor = math.sqrt(float(self.count) / float(self.count - 1.0))
-        self.variance = factor * (self.square - self.mean**2)
+        try:
+            self.square = max(self.square, self.mean**2)
+            factor = math.sqrt(float(self.count) / float(self.count - 1.0))
+            self.variance = factor * (self.square - self.mean**2)
+        except OverflowError:
+            self.variance = 1e10
 
     def as_array(self, reference: p.Parameter) -> np.ndarray:
         return self.parameter.get_standardized_data(reference=reference)
@@ -104,7 +112,7 @@ def _get_nash(optimizer: tp.Any) -> tp.List[tp.Tuple[tp.Tuple[float, ...], int]]
         return [(optimizer.provide_recommendation(), 1)]
     # make deterministic at the price of sort complexity
     return sorted(
-        ((np.frombuffer(k), p.count) for k, p in optimizer.archive.bytesdict.items() if p.count >= threshold),
+        ((np.frombuffer(k), p.count) for k, p in optimizer.archive.bytesdict.items() if p.count >= threshold),  # type: ignore
         key=operator.itemgetter(1),
     )
 
@@ -149,9 +157,9 @@ class SequentialExecutor:
 
 
 def _tobytes(x: tp.ArrayLike) -> bytes:
-    x = np.array(x, copy=False)  # for compatibility
+    x = np.asarray(x)  # for compatibility
     assert x.ndim == 1, f"Input shape: {x.shape}"
-    assert x.dtype == np.float_, f"Incorrect type {x.dtype} is not float"
+    assert x.dtype == np.float64, f"Incorrect type {x.dtype} is not float"
     return x.tobytes()
 
 
@@ -267,8 +275,8 @@ class Pruning:
         threshold = float(self.min_len + 1) / len(archive)
         names = ["optimistic", "pessimistic", "average"]
         for name in names:
-            quantiles[name] = np.quantile(
-                [v.get_estimation(name) for v in archive.values()], threshold, interpolation="lower"
+            quantiles[name] = np.quantile(  # type: ignore
+                [v.get_estimation(name) for v in archive.values()], threshold, method="lower"
             )
         new_archive: Archive[MultiValue] = Archive()
         new_archive.bytesdict = {

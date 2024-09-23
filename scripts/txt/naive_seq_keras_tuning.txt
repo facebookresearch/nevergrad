@@ -1,0 +1,12 @@
+Keras tuning, but not very parallel and without overfitting.
+
+budget150
+budget500
+datasetauto-mpg
+datasetdiabetes
+datasetkerasBoston
+datasetred-wine
+datasetwhite-wine
+workers1
+workers125
+workers37

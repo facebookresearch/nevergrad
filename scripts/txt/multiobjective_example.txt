@@ -1,0 +1,14 @@
+Multiobjective artificial benchmark.
+
+budget100
+budget1600
+budget200
+budget3200
+budget400
+budget800
+dimension6
+dimension7
+objectives2
+objectives3
+workers1
+workers100

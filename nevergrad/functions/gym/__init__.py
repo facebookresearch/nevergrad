@@ -4,5 +4,4 @@
 # LICENSE file in the root directory of this source tree.
 
 from .multigym import GymMulti as GymMulti
-from .multigym import CompilerGym as CompilerGym
 from .tuple_gym_env import TupleActionSpace

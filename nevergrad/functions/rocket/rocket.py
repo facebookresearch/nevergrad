@@ -228,7 +228,7 @@ def rocket(thrust_bias: np.ndarray):
         percentage = row[0] / np.sum(
             thrust_list
         )  # percentage of total thrust to find percentage of mass lost
-        assert percentage >= 0.0
+        assert percentage >= -1e-5, f"percentage is {percentage}"
         assert percentage <= 1.0
         mass_loss = mass_reman * percentage
         mass_reman -= mass_loss

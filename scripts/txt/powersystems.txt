@@ -1,0 +1,15 @@
+powersystems
+budget12800
+budget3200
+budget6400
+dimension1806
+dimension3150
+dimension6174
+dimension9646
+num dams13
+num dams3
+num dams5
+num dams9
+num workers1
+num workers10
+num workers100

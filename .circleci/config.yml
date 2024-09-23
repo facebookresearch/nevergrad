@@ -11,9 +11,9 @@ orbs:
 
 # the set up in which the ubuntu jobs will run:
 executors:
-  ubuntu-python37:
+  ubuntu-python38:
     docker:
-      - image: cimg/python:3.7
+      - image: cimg/python:3.9
     working_directory: ~/repo
 
 
@@ -27,23 +27,26 @@ commands:
       - restore_cache:
           name: "[all] Restore cache"
           keys:
-          - v2-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          - v4-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
           # fallback to installing main requirements
-          - v2-dependencies-main-{{ checksum "requirements/main.txt"}}
+          - v4-dependencies-main-{{ checksum "requirements/main.txt"}}
 
       - run:
           name: "[all] Install dependencies"
           command: |
-            python3 -m venv venv
+            #python3 -m venv venv
+            rm -rf venv && python3 -m venv venv
             . venv/bin/activate
             pip install --progress-bar off -U pip setuptools
-            pip install --progress-bar off --use-deprecated=legacy-resolver -e .[all]
-            pip install --progress-bar off -U numpy>=1.20.0
+            pip install --progress-bar off -e .[all]
+            #pip install --progress-bar off --use-deprecated=legacy-resolver -e .[all]
+            #pip install --progress-bar off -U numpy==1.24.0
+            pip install --progress-bar off -U numpy==1.24.0 matplotlib==2.2.3 pyomo==5.7.1
             pip install keras==2.6.0  # issue on Nov 4th 2021
 
 jobs:
   install:
-    executor: ubuntu-python37
+    executor: ubuntu-python38
 
     steps:
       - checkout
@@ -52,15 +55,15 @@ jobs:
       - restore_cache:
           name: "[no-extra] Restore cache"
           keys:
-          - v2-dependencies-main-{{ checksum "requirements/main.txt"}}
+          - v4-dependencies-main-{{ checksum "requirements/main.txt"}}
           # fallback to using the latest cache if no exact match is found
 
       - run:
           name: "[no-extra] Install dependencies"
           command: |
-            python3 -m venv venv
+            rm -rf venv && python3 -m venv venv
             . venv/bin/activate
-            pip install --progress-bar off pip==21.0.1
+            pip install --progress-bar off pip==23.2
             pip install --progress-bar off -e .
 
       - run:
@@ -79,7 +82,7 @@ jobs:
           name: "[no-extra] Save cache"
           paths:
             - ./venv
-          key: v2-dependencies-main-{{ checksum "requirements/main.txt"}}
+          key: v4-dependencies-main-{{ checksum "requirements/main.txt"}}
 
       - run:
           name: "[no-extra] Run basic tests (checking dependencies)"
@@ -94,7 +97,7 @@ jobs:
           name: "[all] Save cache"
           paths:
             - ./venv
-          key: v2-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+          key: v4-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
 
       - run:
           name: "[all] Print installation"
@@ -123,7 +126,8 @@ jobs:
             pip install -U pip
             cd ..  # don't use nevergrad locally
             echo "Installing wheel"
-            pip install --progress-bar off --use-deprecated=legacy-resolver repo/nevergrad-build/dist/nevergrad-*any.whl
+            pip install --progress-bar off repo/nevergrad-build/dist/nevergrad-*any.whl
+            #pip install --progress-bar off --use-deprecated=legacy-resolver repo/nevergrad-build/dist/nevergrad-*any.whl
             echo "Installed wheel"
             python -c "from nevergrad import functions;f = functions.ArtificialFunction(name='sphere', block_dimension=2);f([2, 3])"
 
@@ -143,7 +147,7 @@ jobs:
           paths: html
 
   docs-links:
-    executor: ubuntu-python37
+    executor: ubuntu-python38
 
     steps:
 
@@ -158,7 +162,7 @@ jobs:
             make linkcheck
 
   static:
-    executor: ubuntu-python37
+    executor: ubuntu-python38
 
     steps:
 
@@ -190,7 +194,9 @@ jobs:
 
 
   pytests:
-    executor: ubuntu-python37
+    executor: ubuntu-python38
+
+    parallelism: 11
 
     steps:
 
@@ -201,7 +207,11 @@ jobs:
           when: always
           command: |
             . venv/bin/activate
-            pytest nevergrad -v --exitfirst --durations=20 --cov=nevergrad
+            pytest --circleci-parallelize nevergrad -v --durations=20 --cov=nevergrad
+            #pytest nevergrad -v --exitfirst --durations=20 --cov=nevergrad
+    # The resource_class feature allows configuring CPU and RAM resources for each job. Different resource classes are
+    # available for different executors. https://circleci.com/docs/2.0/configuration-reference/#resourceclass
+    resource_class: xlarge
 
 
   docs-deploy:
@@ -274,12 +284,12 @@ jobs:
           name: pytest
           command: |
             . ./venv/Scripts/activate
-            pytest nevergrad -v --exitfirst --durations=20
+            pytest --circleci-parallelize nevergrad -v --durations=20
 
 
   pypi-deploy:
 
-    executor: ubuntu-python37
+    executor: ubuntu-python38
 
     steps:
 
@@ -292,7 +302,7 @@ jobs:
           name: Create .pypirc
           command: |
             echo -e "[pypi]" >> ~/.pypirc
-            echo -e "username = jrapin" >> ~/.pypirc
+            echo -e "username = __token__" >> ~/.pypirc
             echo -e "password = $PYPI_PASSWORD" >> ~/.pypirc
 
       - run:

@@ -30,6 +30,7 @@ class ArtificialVariable:
         hashing: bool,
         only_index_transform: bool,
         random_state: np.random.RandomState,
+        expo: float,
     ) -> None:
         self._dimension = dimension
         self._transforms: tp.List[utils.Transform] = []
@@ -41,6 +42,7 @@ class ArtificialVariable:
         self.hashing = hashing
         self.dimension = self._dimension
         self.random_state = random_state
+        self.expo = expo
 
     def _initialize(self) -> None:
         """Delayed initialization of the transforms to avoid slowing down the instance creation
@@ -49,7 +51,7 @@ class ArtificialVariable:
         """
         # use random indices for blocks
         indices = self.random_state.choice(
-            self._dimension, self.block_dimension * self.num_blocks, replace=False
+            self._dimension, self.block_dimension * self.num_blocks, replace=False  # type: ignore
         ).tolist()
         indices.sort()  # keep the indices sorted sorted so that blocks do not overlap
         # Caution this is also important for split, so that splitted arrays end un in the same block
@@ -60,6 +62,7 @@ class ArtificialVariable:
                     translation_factor=self.translation_factor,
                     rotation=self.rotation,
                     random_state=self.random_state,
+                    expo=self.expo,
                 )
             )
 
@@ -74,7 +77,7 @@ class ArtificialVariable:
                 self.random_state.seed(int(hashlib.md5(str(y).encode()).hexdigest(), 16) % 500000)
                 data2[i] = self.random_state.normal(0.0, 1.0)
             data = data2
-        data = np.array(data, copy=False)
+        data = np.asarray(data)
         output = []
         for transform in self._transforms:
             output.append(data[transform.indices] if self.only_index_transform else transform(data))
@@ -151,9 +154,15 @@ class ArtificialFunction(ExperimentFunction):
         aggregator: str = "max",
         split: bool = False,
         bounded: bool = False,
+        expo: float = 1.0,
+        zero_pen: bool = False,
     ) -> None:
         # pylint: disable=too-many-locals
         self.name = name
+        self.expo = expo
+        self.translation_factor = translation_factor
+        self.zero_pen = zero_pen
+        self.constraint_violation: tp.ArrayLike = []
         self._parameters = {x: y for x, y in locals().items() if x not in ["__class__", "self"]}
         # basic checks
         assert noise_level >= 0, "Noise level must be greater or equal to 0"
@@ -204,6 +213,7 @@ class ArtificialFunction(ExperimentFunction):
             hashing=hashing,
             only_index_transform=only_index_transform,
             random_state=self._parametrization.random_state,
+            expo=self.expo,
         )
         self._aggregator: tp.Callable[[tp.ArrayLike], float] = {  # type: ignore
             "max": np.max,
@@ -239,7 +249,14 @@ class ArtificialFunction(ExperimentFunction):
         for block in x:
             results.append(self._func(block))
         try:
-            return float(self._aggregator(results))
+            val = float(self._aggregator(results))
+            if self.zero_pen:
+                val += 1e3 * max(  # type: ignore
+                    self.translation_factor / (1e-7 + self.translation_factor + np.linalg.norm(x.flatten()))
+                    - 0.75,
+                    0.0,
+                )
+            return val
         except OverflowError:
             return float("inf")
 

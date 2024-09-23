@@ -55,7 +55,8 @@ def test_base_example() -> None:
 
     optimizer = ng.optimizers.NGOpt(parametrization=instrum, budget=10, num_workers=2)
     # We use ThreadPoolExecutor for CircleCI but please
-    # use the line below:
+    # use the line just below, with ProcessPoolExecutor instead (unless your
+    # code is I/O bound rather than CPU bound):
     with futures.ThreadPoolExecutor(max_workers=optimizer.num_workers) as executor:
     #with futures.ProcessPoolExecutor(max_workers=optimizer.num_workers) as executor:
         recommendation = optimizer.minimize(square, executor=executor, batch_mode=False)

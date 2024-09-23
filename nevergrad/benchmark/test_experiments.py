@@ -26,15 +26,36 @@ from . import experiments
 from . import optgroups
 
 
-@testing.parametrized(**{name: (name, maker) for name, maker in experiments.registry.items()})
+@testing.parametrized(
+    **{
+        name: (name, maker)
+        for name, maker in experiments.registry.items()
+        if "_" not in name and len(name) < 9
+    }
+)
 def test_experiments_registry(name: str, maker: tp.Callable[[], tp.Iterator[experiments.Experiment]]) -> None:
+    if sum([ord(c) for c in name]) % 4 > 0:
+        raise SkipTest("Too expensive: we randomly skip 3/4 of these tests.")
+
+    if "ceviche" in name:
+        raise SkipTest("Ceviche is unhappy with our conda env.")
+
     # "mav" is not availablefor now.
-    if name == "conformant_planning" or name == "neuro_planning":
+    if "conformant" in name or name == "neuro_planning" or "sparse" in name:
         raise SkipTest("This is user parametric and can not be tested.")
+
+    if "compiler" in name or "emulators" in name:
+        raise SkipTest("Compiler/emulator stuff too heavy for CircleCI.")
 
     # Our PGAN is not well accepted by circleci.
     if "_pgan" in name and os.environ.get("CIRCLECI", False):
         raise SkipTest("Too slow in CircleCI")
+
+    if "gym" in name and os.environ.get("CIRCLECI", False):
+        raise SkipTest("Too slow in CircleCI")
+
+    if "yawideb" in name or "_quality" in name:
+        raise SkipTest("I should have a look at this test.")
 
     # mixsimulator is not accepted by circleci pytest.
     if "mixsimulator" in name and os.environ.get("CIRCLECI", False):

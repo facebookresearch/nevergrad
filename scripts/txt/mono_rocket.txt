@@ -1,0 +1,26 @@
+Rocket parametrization, optimized sequentially.
+
+budget100
+budget1600
+budget200
+budget25
+budget400
+budget50
+budget800
+symmetry0
+symmetry1
+symmetry10
+symmetry11
+symmetry12
+symmetry13
+symmetry14
+symmetry15
+symmetry16
+symmetry2
+symmetry3
+symmetry4
+symmetry5
+symmetry6
+symmetry7
+symmetry8
+symmetry9

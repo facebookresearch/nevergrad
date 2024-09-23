@@ -16,7 +16,8 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 from matplotlib.legend import Legend
-from matplotlib import cm
+
+# from matplotlib import cm
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import nevergrad.common.typing as tp
 from . import utils
@@ -26,6 +27,8 @@ from .exporttable import export_table
 
 
 _DPI = 250
+no_limit = False
+pure_algorithms = []
 
 # %% Basic tools
 
@@ -100,9 +103,10 @@ def aggregate_winners(
         *(
             aggregate_winners(
                 df.loc[
-                    df.loc[:, categories[0]] == val
-                    if categories[0] != "budget"
-                    else df.loc[:, categories[0]] <= val
+                    df.loc[:, categories[0]]
+                    == val
+                    # if categories[0] != "budget"
+                    # else df.loc[:, categories[0]] <= val
                 ],
                 categories[1:],
                 all_optimizers,
@@ -215,7 +219,7 @@ def normalized_losses(df: pd.DataFrame, descriptors: tp.List[str]) -> utils.Sele
         subdf = df.select_and_drop(**dict(zip(descriptors, case)))
         losses = np.array(subdf.loc[:, "loss"])
         m = min(losses)
-        M = max(losses[losses < float("inf")])
+        M = max(losses[losses < (float("inf") if no_limit else float("1e6"))])
         df.loc[subdf.index, "loss"] = (df.loc[subdf.index, "loss"] - m) / (M - m) if M != m else 1
     return df  # type: ignore
 
@@ -227,6 +231,7 @@ def create_plots(
     max_combsize: int = 1,
     xpaxis: str = "budget",
     competencemaps: bool = False,
+    nomanyxp: bool = False,
 ) -> None:
     """Saves all representing plots to the provided folder
 
@@ -242,9 +247,57 @@ def create_plots(
         x-axis for xp plots (either budget or pseudotime)
     """
     assert xpaxis in ["budget", "pseudotime"]
+    if "non_proxy_function" in df.columns:
+        print("removing non_proxy_function")
+        df.drop(columns=["non_proxy_function"], inplace=True)
     df = remove_errors(df)
     df.loc[:, "loss"] = pd.to_numeric(df.loc[:, "loss"])
+    if not no_limit:
+        loss = pd.to_numeric(df.loc[:, "loss"])
+        upper = np.max(loss[loss < 1e6])
+        df.loc[:, "loss"] = df.loc[:, "loss"].clip(lower=-1e6, upper=upper)
     df = df.loc[:, [x for x in df.columns if not x.startswith("info/")]]
+    # Normalization of types.
+    for col in df.columns:
+        print(" Working on ", col)
+        failed_indices: tp.List[tp.Any] = []
+        if "max_irr" in col:
+            df[col] = df[col].round(decimals=4)
+        if col in (
+            "budget",
+            "num_workers",
+            "dimension",
+            "useful_dimensions",
+            "num_blocks",
+            "block_dimension",
+            "num_objectives",
+        ):
+            for _ in range(2):
+                try:
+                    df[col] = df[col].astype(float).astype(int)
+                    print(col, " is converted to int")
+                    continue
+                except Exception as e1:
+                    for i in range(len(df[col])):
+                        try:
+                            float(df[col][i])
+                        except Exception as e2:
+                            failed_indices += [i]
+                            assert (
+                                len(failed_indices) < 100
+                            ), f"Fails at row {i+2}, Exceptions: {e1}, {e2}. Failed-indices = {failed_indices}"
+                print("Dropping ", failed_indices)
+                df.drop(df.index[failed_indices], inplace=True)  #        df.drop(index=i, inplace=True)
+                failed_indices = []
+        #                    print("We drop index ", i, " for ", col)
+
+        elif col != "loss":
+            df[col] = df[col].astype(str)
+            df[col] = df[col].replace(r"\.[0]*$", "", regex=True)
+            try:
+                df.loc[:, col] = pd.to_numeric(df.loc[:, col])
+            except:
+                pass
     if "num_objectives" in df.columns:
         df = df[df.num_objectives != 0]  # the optimization did not even start
     # If we have a descriptor "instrum_str",
@@ -258,6 +311,8 @@ def create_plots(
         df = df.drop(columns="dimension")
         if "parametrization" in set(df.columns):
             df = df.drop(columns="parametrization")
+        if "instrumentation" in set(df.columns):
+            df = df.drop(columns="instrumentation")
     df = utils.Selector(df.fillna("N-A"))  # remove NaN in non score values
     assert not any("Unnamed: " in x for x in df.columns), f"Remove the unnamed index column:  {df.columns}"
     assert "error " not in df.columns, f"Remove error rows before plotting"
@@ -335,7 +390,7 @@ def create_plots(
             print("\n# new case #", fixed, case)
             casedf = df.select(**dict(zip(fixed, case)))
             data_df = FightPlotter.winrates_from_selection(
-                casedf, fight_descriptors, num_rows=num_rows, num_cols=30
+                casedf, fight_descriptors, num_rows=num_rows, num_cols=350
             )
             fplotter = FightPlotter(data_df)
             # Competence maps: we find out the best algorithm for each attribute1=valuei/attribute2=valuej.
@@ -346,12 +401,8 @@ def create_plots(
             name = "fight_" + ",".join("{}{}".format(x, y) for x, y in zip(fixed, case)) + ".png"
             name = "fight_all.png" if name == "fight_.png" else name
             name = compactize(name)
+            fullname = name
 
-            if name == "fight_all.png":
-                with open(str(output_folder / name) + ".cp.txt", "w") as f:
-                    f.write("ranking:\n")
-                    for i, algo in enumerate(data_df.columns[:58]):
-                        f.write(f"  algo {i}: {algo}\n")
             if len(name) > 240:
                 hashcode = hashlib.md5(bytes(name, "utf8")).hexdigest()
                 name = re.sub(r"\([^()]*\)", "", name)
@@ -364,9 +415,18 @@ def create_plots(
             )
             fplotter = FightPlotter(data_df)
             if name == "fight_all.png":
+                with open(str(output_folder / name) + ".cp.txt", "w") as f:
+                    f.write(fullname)
+                    f.write("ranking:\n")
+                    global pure_algorithms
+                    pure_algorithms = list(data_df.columns[:])
+                    for i, algo in enumerate(data_df.columns[:158]):
+                        f.write(f"  algo {i}: {algo}\n")
+            if name == "fight_all.png":
                 fplotter.save(str(output_folder / "fight_all_pure.png"), dpi=_DPI)
             else:
                 fplotter.save(str(output_folder / name) + "_pure.png", dpi=_DPI)
+                print(f"# {len(data_df.columns[:])}  {data_df.columns[:]}")
             if order == 2 and competencemaps and best_algo:  # With order 2 we can create a competence map.
                 print("\n# Competence map")
                 name = "competencemap_" + ",".join("{}".format(x) for x in fixed) + ".tex"
@@ -383,13 +443,42 @@ def create_plots(
         cases = [()]
     # Average normalized plot with everything.
     out_filepath = output_folder / "xpresults_all.png"
-    data = XpPlotter.make_data(df, normalized_loss=True)
-    xpplotter = XpPlotter(data, title=os.path.basename(output_folder), name_style=name_style, xaxis=xpaxis)
+    try:
+        data = XpPlotter.make_data(df, normalized_loss=True)
+        xpplotter = XpPlotter(
+            data, title=os.path.basename(output_folder), name_style=name_style, xaxis=xpaxis, pure_only=True
+        )
+    except Exception as e:
+        lower = 0
+        upper = len(df)
+        while upper > lower + 1:
+            middle = (lower + upper) // 2
+            small_df = df.head(middle)
+            try:
+                print("Testing ", middle)
+                _ = XpPlotter.make_data(small_df, normalized_loss=True)
+                xpplotter = XpPlotter(
+                    data,
+                    title=os.path.basename(output_folder),
+                    name_style=name_style,
+                    xaxis=xpaxis,
+                    pure_only=True,
+                )
+                print("Work with ", middle)
+                lower = middle
+            except:
+                print("Failing with ", middle)
+                upper = middle
+
+        assert False, f"Big failure {e} at line {middle}"
     xpplotter.save(out_filepath)
     # Now one xp plot per case.
     for case in cases:
+        if nomanyxp:
+            continue
         subdf = df.select_and_drop(**dict(zip(descriptors, case)))
         description = ",".join("{}:{}".format(x, y) for x, y in zip(descriptors, case))
+        full_description = description
         description = compactize(description)
         if len(description) > 280:
             hash_ = hashlib.md5(bytes(description, "utf8")).hexdigest()
@@ -407,7 +496,7 @@ def create_plots(
             warnings.warn(f"Bypassing error in xpplotter:\n{e}", RuntimeWarning)
         else:
             xpplotter.save(out_filepath)
-            xpplotter.save_txt(txt_out_filepath, data)
+            xpplotter.save_txt(txt_out_filepath, data, full_description)
     plt.close("all")
 
 
@@ -424,6 +513,60 @@ def gp_sota() -> tp.Dict[str, tp.Tuple[float, float]]:
     gp["InvertedDoublePendulumBulletEnv-v0"] = (-9092.17, 300000.0)
     gp["LunarLanderContinuous-v2"] = (-287.58, 1000000.0)
     return gp
+
+
+#    LOGPB0_150 -0.591678
+#    LOGPB0_20 -0.499837
+#    LOGPB0_250 -0.576301
+#    LOGPB0_3 -0.424572
+#    LOGPB0_400 -0.50911
+#    LOGPB0_50 -0.576757
+#    LOGPB0_90 -0.616816
+#    LOGPB1_150 -0.577477
+#    LOGPB1_20 -0.557164
+#    LOGPB1_250 -0.577601
+#    LOGPB1_3 -0.412766
+#    LOGPB1_400 -0.582446
+#    LOGPB1_50 -0.540028
+#    LOGPB1_90 -0.565553
+#    LOGPB2_150 -0.4966
+#    LOGPB2_20 -0.496643
+#    LOGPB2_250 -0.628773
+#    LOGPB2_3 -0.380808
+#    LOGPB2_400 -0.543632
+#    LOGPB2_50 -0.585993
+#    LOGPB2_90 -0.486193
+#    LOGPB3_150 -0.68359
+#    LOGPB3_20 -0.685482
+#    LOGPB3_250 -0.577344
+#    LOGPB3_3 -0.329887
+#    LOGPB3_400 -0.585512
+#    LOGPB3_50 -0.657603
+#    LOGPB3_90 -0.606128
+
+
+def ceviche_sota() -> tp.Dict[str, tp.Tuple[float, float]]:
+    ceviche: dict[str, tuple[float, float]] = {}
+    # {0: "waveguide-bend", 1: "beam-splitter", 2: "mode-converter", 3: "wdm"}
+
+    # Numbers below can be obtained by:
+    # grep LOGPB *.out | sed 's/.*://g' | sort | uniq -c | grep with_budget | awk '{ data[$2,"_",$5] += $7;  num[$2,"_",$5] += 1  } END { for (u in data) { print u, data[u]/num[u], num[u]}   } ' | sort -n  | grep '400 '
+    # Also obtained by examples/plot_ceviches.sh
+    # After log files have been created by sbatch examples/ceviche.sh
+    ceviche["waveguide-bend"] = (-0.590207, 1000000)  # Budget 400
+    ceviche["beam-splitter"] = (-0.623696, 1000000)
+    ceviche["mode-converter"] = (-0.634207, 1000000)
+    ceviche["wdm"] = (-0.603663, 100000)
+
+    # LOGPB0_3200 -0.590207
+    # LOGPB1_3200 -0.623696
+    # LOGPB2_3200 -0.634207
+    # LOGPB3_3200 -0.590554
+    # LOGPB0_3200 -0.603663
+    # LOGPB1_3200 -0.641013
+    # LOGPB2_3200 -0.57415
+    # LOGPB3_3200 -0.577576
+    return ceviche
 
 
 class LegendInfo(tp.NamedTuple):
@@ -457,6 +600,7 @@ class XpPlotter:
         title: str,
         name_style: tp.Optional[tp.Dict[str, tp.Any]] = None,
         xaxis: str = "budget",
+        pure_only: bool = False,
     ) -> None:
         if name_style is None:
             name_style = NameStyle()
@@ -469,6 +613,18 @@ class XpPlotter:
         # plot from best to worst
         lowerbound = np.inf
         sorted_optimizers = sorted(optim_vals, key=lambda x: optim_vals[x]["loss"][-1], reverse=True)
+        if pure_only:
+            assert len(pure_algorithms) > 0
+            sorted_optimizers = [
+                o for o in sorted_optimizers if o + " " in [p[: (len(o) + 1)] for p in pure_algorithms]
+            ]
+            with open("rnk__" + str(title) + ".cp.txt", "w") as f:
+                f.write(compactize(title))
+                f.write("ranking:\n")
+                for i, algo in reversed(list(enumerate(sorted_optimizers))):
+                    f.write(f"  algo {i}: {algo} (x)\n")
+            # print(sorted_optimizers, " merged with ", pure_algorithms)
+            # print("Leads to ", sorted_optimizers)
         self._fig = plt.figure()
         self._ax = self._fig.add_subplot(111)
         # use log plot? yes, if no negative value
@@ -488,18 +644,19 @@ class XpPlotter:
         self._ax.grid(True, which="both")
         self._overlays: tp.List[tp.Any] = []
         legend_infos: tp.List[LegendInfo] = []
-        title_addendum = ""
+        title_addendum = f"({len(sorted_optimizers)} algos)"
         for optim_name in (
-            sorted_optimizers[:1] + sorted_optimizers[-12:]
-            if len(sorted_optimizers) > 13
+            sorted_optimizers[:1] + sorted_optimizers[-35:]
+            if len(sorted_optimizers) > 35
             else sorted_optimizers
         ):
             vals = optim_vals[optim_name]
+
             indices = np.where(vals["num_eval"] > 0)
             lowerbound = min(lowerbound, np.min(vals["loss"]))
             # We here add some state of the art results.
             # This adds a cross on figures, x-axis = budget and y-axis = loss.
-            for sota_name, sota in [("GP", gp_sota())]:
+            for sota_name, sota in [("GP", gp_sota()), ("ceviche", ceviche_sota())]:
                 for k in sota.keys():
                     if k in title:
                         th = sota[k][0]  # loss of proposed solution.
@@ -510,7 +667,7 @@ class XpPlotter:
                             vals[xaxis][indices],
                             th + 0 * vals["loss"][indices],
                             name_style[optim_name],
-                            label="gp",
+                            label=sota_name,
                         )
                         plt.plot(  # Vertical line, showing the budget of the GP solution.
                             [cost] * 3,
@@ -520,7 +677,7 @@ class XpPlotter:
                                 max(vals["loss"][indices]),
                             ],
                             name_style[optim_name],
-                            label="gp",
+                            label=sota_name,
                         )
             line = plt.plot(vals[xaxis], vals["loss"], name_style[optim_name], label=optim_name)
             # confidence lines
@@ -529,7 +686,7 @@ class XpPlotter:
             text = "{} ({:.3g} <{:.3g}>)".format(
                 optim_name,
                 vals["loss"][-1],
-                vals["loss"][-2] if len(vals["loss"]) > 2 else float("nan"),
+                vals["loss"][-2] if len(vals["loss"]) > 1 else float("nan"),
             )
             if vals[xaxis].size:
                 legend_infos.append(LegendInfo(vals[xaxis][-1], vals["loss"][-1], line, text))
@@ -544,7 +701,11 @@ class XpPlotter:
                     )
             self._ax.set_ylim(top=upperbound_up)
         all_x = [v for vals in optim_vals.values() for v in vals[xaxis]]
-        self._ax.set_xlim([min(all_x), max(all_x)])
+        try:
+            all_x = [float(a_) for a_ in all_x]
+            self._ax.set_xlim([min(all_x), max(all_x)])  # type: ignore
+        except TypeError:
+            print(f"TypeError for minimum or maximum or {all_x}")
         self.add_legends(legend_infos)
         # global info
         if "tmp" not in title:
@@ -557,7 +718,7 @@ class XpPlotter:
         vals: tp.Dict[str, np.ndarray], log: bool = False
     ) -> tp.Tuple[np.ndarray, np.ndarray]:
         loss = vals["loss"]
-        conf = vals["loss_std"] / np.sqrt(vals["num_eval"] - 1)
+        conf = vals["loss_std"] / np.sqrt(vals["loss_nums"] - 1)
         if not log:
             return loss - conf, loss + conf
         lloss = np.log10(loss)
@@ -626,8 +787,10 @@ class XpPlotter:
             ]
         )
         groupeddf = df.groupby(["optimizer_name", "budget"])
-        means = groupeddf.mean()
+        means = groupeddf.mean() if no_limit else groupeddf.median()
+
         stds = groupeddf.std()
+        nums = groupeddf.count()
         optim_vals: tp.Dict[str, tp.Dict[str, np.ndarray]] = {}
         # extract name and coordinates
         for optim in df.unique("optimizer_name"):
@@ -635,6 +798,7 @@ class XpPlotter:
             optim_vals[optim]["budget"] = np.array(means.loc[optim, :].index)
             optim_vals[optim]["loss"] = np.array(means.loc[optim, "loss"])
             optim_vals[optim]["loss_std"] = np.array(stds.loc[optim, "loss"])
+            optim_vals[optim]["loss_nums"] = np.array(nums.loc[optim, "loss"])
             num_eval = np.array(groupeddf.count().loc[optim, "loss"])
             optim_vals[optim]["num_eval"] = num_eval
             if "pseudotime" in means.columns:
@@ -642,7 +806,9 @@ class XpPlotter:
         return optim_vals
 
     @staticmethod
-    def save_txt(output_filepath: tp.PathLike, optim_vals: tp.Dict[str, tp.Dict[str, np.ndarray]]) -> None:
+    def save_txt(
+        output_filepath: tp.PathLike, optim_vals: tp.Dict[str, tp.Dict[str, np.ndarray]], addendum: str = ""
+    ) -> None:
         """Saves a list of best performances.
 
         output_filepath: Path or str
@@ -657,6 +823,7 @@ class XpPlotter:
                     best_performance[i] = (l, optim)
 
         with open(output_filepath, "w") as f:
+            f.write(addendum)
             f.write("Best performance:\n")
             for i in best_performance.keys():
                 f.write(
@@ -721,10 +888,15 @@ class FightPlotter:
         self.winrates = winrates_df
         self._fig = plt.figure()
         self._ax = self._fig.add_subplot(111)
+        max_cols = 25
         self._cax = self._ax.imshow(
-            100 * np.array(self.winrates), cmap=cm.seismic, interpolation="none", vmin=0, vmax=100
+            100 * np.array(self.winrates)[:, :max_cols],
+            cmap="seismic",
+            interpolation="none",
+            vmin=0,
+            vmax=100,
         )
-        x_names = self.winrates.columns
+        x_names = self.winrates.columns[:max_cols]  # we plot only the 50 best
         self._ax.set_xticks(list(range(len(x_names))))
         self._ax.set_xticklabels(x_names, rotation=45, ha="right", fontsize=7)
         y_names = self.winrates.index
@@ -741,7 +913,7 @@ class FightPlotter:
         df: utils.Selector,
         categories: tp.List[str],
         num_rows: int = 5,
-        num_cols: int = 30,
+        num_cols: int = 350,
         complete_runs_only: bool = False,
     ) -> pd.DataFrame:
         """Creates a fight plot win rate data out of the given run dataframe,
@@ -868,7 +1040,9 @@ def compute_best_placements(positions: tp.List[float], min_diff: float) -> tp.Li
     ----
     This function is probably not optimal, but seems a very good heuristic
     """
-    assert all(v2 >= v1 for v2, v1 in zip(positions[1:], positions[:-1]))
+    assert all(
+        v2 >= v1 for v2, v1 in zip(positions[1:], positions[:-1])
+    )  # , str(zip(LegendGroup, positions))
     groups = [LegendGroup([k], [pos], min_diff) for k, pos in enumerate(positions)]
     new_groups: tp.List[LegendGroup] = []
     ready = False
@@ -918,6 +1092,12 @@ def main() -> None:
         "--competencemaps", type=bool, default=False, help="whether we should export only competence maps"
     )
     parser.add_argument(
+        "--nomanyxp",
+        type=bool,
+        default=False,
+        help="whether we should remove the export of detailed convergence curves",
+    )
+    parser.add_argument(
         "--merge-parametrization",
         action="store_true",
         help="if present, parametrization is merge into the optimizer name",
@@ -941,8 +1121,7 @@ def main() -> None:
         args.merge_parametrization,
         args.remove_suffix,
     )
-    # merging names
-    #
+    exp_df.replace("CSEC11", "NGIohTuned", inplace=True)
     output_dir = args.output
     if output_dir is None:
         output_dir = str(Path(args.filepath).with_suffix("")) + "_plots"
@@ -952,6 +1131,7 @@ def main() -> None:
         max_combsize=args.max_combsize if not args.competencemaps else 2,
         xpaxis="pseudotime" if args.pseudotime else "budget",
         competencemaps=args.competencemaps,
+        nomanyxp=args.nomanyxp,
     )
 
 

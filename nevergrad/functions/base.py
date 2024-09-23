@@ -65,6 +65,11 @@ class ExperimentFunction:
         inst._descriptors = {
             x: y for x, y in callargs.items() if isinstance(y, (str, tuple, int, float, bool))
         }
+        # if "bonnans" in str(cls.__name__) or "discrete" in str(cls.__name__) or "pbo" in str(cls.__name__):
+        #    inst._descriptors = {
+        #        x: y for x, y in callargs.items() if isinstance(y, (str, tuple, int, float, bool)) and "dimension" not
+        #        in x and "paramet" not in x
+        #    }
         inst._descriptors["function_class"] = cls.__name__
         return inst  # type: ignore
 
@@ -85,7 +90,7 @@ class ExperimentFunction:
         if not hasattr(function, "__self__") or function.__self__ != self:  # type: ignore
             name = function.__name__ if hasattr(function, "__name__") else function.__class__.__name__
             self._descriptors.update(name=name)
-        if len(self.parametrization.name) > 24:
+        if len(self.parametrization.name) > 34:
             raise RuntimeError(
                 f"For the sake of benchmarking, please rename the current parametrization:\n{self.parametrization!r}\n"
                 "to a shorter name. This way it will be more readable in the experiments.\n"
@@ -175,6 +180,12 @@ class ExperimentFunction:
         # Caution: only if names differ!
         if output.parametrization.name != self.parametrization.name:
             output.parametrization = _reset_copy(self.parametrization)
+        output.parametrization.has_constraints = self.parametrization.has_constraints
+        output.parametrization.enforce_determinism = self.parametrization.enforce_determinism
+        output.parametrization.real_world = self.parametrization.real_world
+        output.parametrization.hptuning = self.parametrization.hptuning
+        output.parametrization.neural = self.parametrization.neural
+        assert output.parametrization.real_world == self.parametrization.real_world, "pb in copy!"
         # then if there are still differences, something went wrong
         if not output.equivalent_to(self):
             raise errors.ExperimentFunctionCopyError(

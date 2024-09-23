@@ -45,9 +45,6 @@ def get_optimizers(*names: str, seed: tp.Optional[int] = None) -> tp.List[Optim]
 @registry.register
 def large() -> tp.Sequence[Optim]:
     return [
-        "NGO",
-        "Shiwa",
-        "DiagonalCMA",
         "CMA",
         "PSO",
         "DE",
@@ -91,6 +88,15 @@ def emna_variants() -> tp.Sequence[Optim]:
         "NaiveAnisoEMNATBPSA",
         "AnisoEMNATBPSA",
     ]
+
+
+@registry.register
+def split() -> tp.Sequence[Optim]:
+    # optims: tp.List[Optim] = []
+    optims = [o for o in optimizerlib_registry.keys() if "Split" in o[:7] and "BO" not in o] + [
+        o[5:] for o in optimizerlib_registry.keys() if "Split" in o[:7] and "BO" not in o
+    ]
+    return optims
 
 
 @registry.register
@@ -177,7 +183,10 @@ def competence_map() -> tp.Sequence[Optim]:
 @registry.register
 def competitive() -> tp.Sequence[Optim]:
     return get_optimizers("cma", "competence_map") + [
-        "MetaNGOpt10",
+        #        "MetaNGOpt10",
+        "NGOpt",
+        "NGOptRW",
+        "GeneticDE",
         "NaiveTBPSA",
         "PSO",
         "DE",
@@ -193,6 +202,7 @@ def all_bo() -> tp.Sequence[Optim]:
     return sorted(x for x in ng.optimizers.registry if "BO" in x)
 
 
+@registry.register
 def all_nlopts() -> tp.Sequence[Optim]:
     list_nlopt_options = [
         "LN_SBPLX",

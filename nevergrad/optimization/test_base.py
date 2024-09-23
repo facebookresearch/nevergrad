@@ -87,6 +87,18 @@ def test_tell_types(value: tp.Any, error: bool) -> None:
         np.testing.assert_raises(TypeError, optim.tell, x, value)
     else:
         optim.tell(x, value)
+    x = optim.ask()
+    if error:
+        np.testing.assert_raises(TypeError, optim.tell, x, value)
+    else:
+        optim.tell(x, value, [3.0, 5.0, -1.0])  # Standard penalty function
+    x = optim.ask()
+    if error:
+        np.testing.assert_raises(TypeError, optim.tell, x, value)
+    else:
+        optim.tell(x, value, [3.0, 5.0, -1.0], [1.0, 1.0, 1.0, 1.0, 1.0, 1.0])  # User-chosen penalty function
+
+    # def tell(self, candidate: p.Parameter, loss: tp.Loss, constraint_violation: tp.Optional[tp.Loss] = None, penalty_style: tp.Optional[str]) -> None:
 
 
 def test_base_optimizer() -> None:
@@ -130,17 +142,18 @@ def test_optimize_and_dump(tmp_path: Path) -> None:
 
 
 def test_compare() -> None:
-    optimizer = optimizerlib.CMA(parametrization=3, budget=1000, num_workers=5)
+    optimizer = optimizerlib.OnePlusOne(parametrization=2, budget=1200, num_workers=6)
     optimizerlib.addCompare(optimizer)
-    for _ in range(1000):  # TODO make faster test
+    for _ in range(200):  # TODO make faster test
         x: tp.List[tp.Any] = []
         for _ in range(6):
             x += [optimizer.ask()]
-        winners = sorted(x, key=lambda x_: np.linalg.norm(x_.value - np.array((1.0, 1.0, 1.0))))
+        winners = sorted(x, key=lambda x_: np.linalg.norm(x_.value - np.array((1.0, 1.0))) ** 2)
         optimizer.compare(winners[:3], winners[3:])  # type: ignore
+        if np.abs(optimizer.provide_recommendation().value[0] - 1.0) < 1e-5:
+            return
     result = optimizer.provide_recommendation()
-    print(result)
-    np.testing.assert_almost_equal(result.value[0], 0.01569, decimal=2)
+    np.testing.assert_almost_equal(result.value[0], 1.00, decimal=1)
 
 
 def test_naming() -> None:

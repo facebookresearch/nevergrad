@@ -27,6 +27,9 @@ from . import photonics
 from .. import base
 
 
+ceviche = photonics.ceviche
+
+
 def _make_parametrization(
     name: str,
     dimension: int,
@@ -75,7 +78,7 @@ def _make_parametrization(
     ), f"Cannot work with dimension {dimension} for {name}: not divisible by {shape[0]}."
     b_array = np.array(bounds)
     assert b_array.shape[0] == shape[0]  # pylint: disable=unsubscriptable-object
-    ones = np.ones((1, shape[1]))
+    ones = np.ones((1, int(shape[1])))
     init = np.sum(b_array, axis=1, keepdims=True).dot(ones) / 2  # type: ignore
     if as_tuple:
         instrum = ng.p.Instrumentation(
@@ -178,7 +181,7 @@ class Photonics(base.ExperimentFunction):
         assert not kwargs
         data = np.concatenate(args).T if self._as_tuple else args[0]
         assert data.size == self.dimension
-        return np.array(data, copy=False).ravel()
+        return np.asarray(data).ravel()
 
     def evaluation_function(self, *recommendations: ng.p.Parameter) -> float:
         assert len(recommendations) == 1, "Should not be a pareto set for a singleobjective function"

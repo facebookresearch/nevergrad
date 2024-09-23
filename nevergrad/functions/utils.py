@@ -17,7 +17,8 @@ class Transform:
         indices: tp.List[int],
         translation_factor: float = 1,
         rotation: bool = False,
-        random_state: np.random.RandomState = None,
+        random_state: tp.Optional[np.random.RandomState] = None,
+        expo: float = 1.0,
     ) -> None:
         dim = len(indices)
         assert dim
@@ -25,7 +26,7 @@ class Transform:
             random_state = np.random.RandomState(0)
             random_state.set_state(np.random.get_state())
         self.indices = np.asarray(indices)
-        self.translation: np.ndarray = random_state.normal(0, 1, dim) * translation_factor
+        self.translation: np.ndarray = (random_state.normal(0, 1, dim) ** expo) * translation_factor
         self.rotation_matrix: tp.Optional[np.ndarray] = None
         if rotation:
             self.rotation_matrix = np.linalg.qr(random_state.normal(0, 1, size=(dim, dim)))[0]
