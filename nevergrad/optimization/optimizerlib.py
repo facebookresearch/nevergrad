@@ -2198,6 +2198,10 @@ MetaModelDSproba = ParametrizedMetaModel(multivariate_optimizer=DSproba).set_nam
 RFMetaModelOnePlusOne = ParametrizedMetaModel(multivariate_optimizer=OnePlusOne, algorithm="rf").set_name(
     "RFMetaModelOnePlusOne", register=True
 )
+ImageMetaModelLengler = ParametrizedMetaModel(
+    multivariate_optimizer=DiscreteLenglerOnePlusOne,
+    algorithm="image",
+).set_name("ImageMetaModelLengler", register=True)
 ImageMetaModelLogNormal = ParametrizedMetaModel(
     multivariate_optimizer=LognormalDiscreteOnePlusOne,
     algorithm="image",
@@ -5328,7 +5332,12 @@ CLengler = Chaining([CMA, DiscreteLenglerOnePlusOne], ["tenth"]).set_name("CLeng
 CMALL = Chaining(
     [CMA, DiscreteLenglerOnePlusOne, UltraSmoothDiscreteLognormalOnePlusOne], ["third", "third"]
 ).set_name("CMALL", register=True)
+CMAILL = Chaining(
+    [ImageMetaModel, ImageMetaModelLengler, UltraSmoothDiscreteLognormalOnePlusOne], ["third", "third"]
+).set_name("CMAILL", register=True)
 CMASL = Chaining([CMA, SmootherDiscreteLenglerOnePlusOne], ["tenth"]).set_name("CMASL", register=True)
+CMASL2 = Chaining([CMA, SmootherDiscreteLenglerOnePlusOne], ["third"]).set_name("CMASL2", register=True)
+CMASL3 = Chaining([CMA, SmootherDiscreteLenglerOnePlusOne], ["half"]).set_name("CMASL3", register=True)
 
 SmoothLognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="lognormal").set_name(
     "SmoothLognormalDiscreteOnePlusOne", register=True

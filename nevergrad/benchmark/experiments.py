@@ -3536,7 +3536,7 @@ def multi_ceviche(
         algos = ["UltraSmoothDiscreteLognormalOnePlusOne", "DiscreteLenglerOnePlusOne", "CMA", "CMAL"]
     algos = ["CMALS", "CMALYS", "CMALL"]
     algos = ["CLengler", "CMALS", "CMALYS", "CMALL", "CMAL"]
-    algos = ["CMASL"]
+    algos = ["CMASL2", "CMASL3"]
 
     for benchmark_type in [np.random.choice([0, 1, 2, 3])]:  # [np.random.randint(4)]:
         shape = tuple([int(p) for p in list(photonics_ceviche(None, benchmark_type))])  # type: ignore
@@ -3665,7 +3665,7 @@ def multi_ceviche(
                             f"pb{benchmark_type}_budget{budget if not precompute else 102400}_bfgs_{real_loss}_{fake_loss}",
                             result.x.reshape(shape),
                         )
-                if (c0 and np.random.choice([True, True, True, False] + ([True] * 2))) and not precompute:
+                if (c0 and np.random.choice([True, False, False, False] + ([False] * 20))) and not precompute:
                     pen = np.random.choice([True, False, False] + ([False] * 20)) and not precompute
                     pre_optim = ng.optimizers.registry[optim]
                     if pen:
@@ -3726,7 +3726,7 @@ def multi_ceviche(
 
                     def plot_epc(x):
                         real_loss = photonics_ceviche(x, benchmark_type, discretize=True)
-                        if real_loss < -0.95:
+                        if real_loss < -0.95 or np.random.rand() < 0.2:
                             export_numpy(
                                 f"pb{benchmark_type}_{optim}_budget{budget}_{real_loss}", x.reshape(shape)
                             )
