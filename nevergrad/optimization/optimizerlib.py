@@ -278,7 +278,7 @@ class _OnePlusOne(base.Optimizer):
             and isinstance(self.parametrization, p.Array)
         ):
             possible_radii = [3] if not self.super_radii else [3, 3 + np.random.randint(int(np.sqrt(np.sqrt(self.dimension))))]  # type: ignore
-            self.suggest(smooth_copy(pessimistic, possible_radii=possible_radii).value)
+            self.suggest(smooth_copy(pessimistic, possible_radii=possible_radii).value)  # type: ignore
         if self.num_objectives > 1 and self.use_pareto:  # multiobjective
             # revert to using a sample of the pareto front (not "pessimistic" though)
             pareto = (

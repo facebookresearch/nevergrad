@@ -3715,7 +3715,7 @@ def multi_ceviche(
                             )  # .set_integer_casting()
                             instrum2i.set_name(name)  # + "c0")
                         plot_cheat_eval_func = ExperimentFunction(
-                            plot_pc, instrum2 if not precompute else instrum2i
+                            plot_pc, instrum2 if not precompute else instrum2i  # type: ignore
                         )
                         sfunc = helpers.SpecialEvaluationExperiment(
                             c0func if not cheat else c0cfunc,

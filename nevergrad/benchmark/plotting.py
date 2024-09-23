@@ -456,7 +456,7 @@ def create_plots(
             small_df = df.head(middle)
             try:
                 print("Testing ", middle)
-                small_data = XpPlotter.make_data(small_df, normalized_loss=True)
+                _ = XpPlotter.make_data(small_df, normalized_loss=True)
                 xpplotter = XpPlotter(
                     data,
                     title=os.path.basename(output_folder),
@@ -788,23 +788,6 @@ class XpPlotter:
         )
         groupeddf = df.groupby(["optimizer_name", "budget"])
         means = groupeddf.mean() if no_limit else groupeddf.median()
-        # try:
-        #    means = groupeddf.mean() if no_limit else groupeddf.median()
-        # except Exception as e:
-        #    lower=0
-        #    upper = len(df)
-        #    while upper-lower > 1:
-        #        print(f"Working on a dataframe of length {len(df.head((upper+lower) // 2))}")
-        #        groupeddf = df.head((upper+lower) // 2).groupby(["optimizer_name", "budget"])
-        #        try:
-        #            means = groupeddf.mean() if no_limit else groupeddf.median()
-        #            print("Ok at ", (upper+lower) // 2)
-        #            lower = (lower+upper) // 2
-        #        except:
-        #            print("Fail at ", (upper+lower) // 2)
-        #            upper = (lower+upper) // 2
-        #
-        #    assert False, f"{e} at line {lower}-{upper}."
 
         stds = groupeddf.std()
         nums = groupeddf.count()
