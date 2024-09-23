@@ -24,3 +24,24 @@ echo 'plt.savefig("' $pb '"+".svg")' | sed 's/ //g'
 python plotter.py
 
 done
+
+(
+echo "import matplotlib"
+echo "import matplotlib.pyplot as plt" ) > plothisto.py
+for pb in 0 1 2 3 
+do
+(
+echo "x=[]"
+echo "y=[]" ) >> plothisto.py
+ls -ctr pb${pb}*.png | grep -i c0c | sed 's/_/ /g' | awk '{print $5, $6}' | sed 's/fl//g' | sort -n -r | awk '{ print "x+=[", $1,"];y+=[",$2,"]" }' >> plothisto.py
+
+(
+echo "plt.plot(x,y,'*-',label=\"pb$pb\")"
+) >> plothisto.py
+done
+(
+echo "plt.legend()"
+echo "plt.savefig('histo.png')"
+) >>plothisto.py
+python plothisto.py
+

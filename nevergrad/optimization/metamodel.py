@@ -98,10 +98,10 @@ def learn_on_k_best(
             k = np.zeros(shape=(len(x), len(y)))
             for i in range(len(x)):
                 for j in range(len(y)):
-                    k[i][j] = np.exp(-500.0 * np.sum((rephrase(x[i]) - rephrase(y[j])) ** 2) / (len(x[0])))
+                    k[i][j] = np.exp(-50.0 * np.sum((rephrase(x[i]) - rephrase(y[j])) ** 2) / (len(x[0])))
             return k
 
-        model = SVR(kernel=my_kernel, C=1e10, tol=1e-10)
+        model = SVR(kernel=my_kernel, C=1e4, tol=1e-3)
         # print(X2.shape)
     elif algorithm in ["svm", "svr"]:
         from sklearn.svm import SVR
@@ -122,6 +122,9 @@ def learn_on_k_best(
     model.fit(X2, y)
     # Check model quality.
     model_outputs = model.predict(X2)
+    # if algorithm == "image":
+    #    for i in range(len(model_outputs)):
+    #        print(i, model_outputs[i], y[i])
     indices = np.argsort(y)
     ordered_model_outputs = [model_outputs[i] for i in indices]
     success_rate = np.average(0.5 + 0.5 * np.sign(np.diff(ordered_model_outputs)))
@@ -132,7 +135,14 @@ def learn_on_k_best(
     try:
         Powell = registry["Powell"]
         DE = registry["DE"]
-        for cls in (Powell, DE):  # Powell excellent here, DE as a backup for thread safety.
+        DiscreteLenglerOnePlusOne = registry["DiscreteLenglerOnePlusOne"]
+
+        def loss_function_sm(x):
+            return float(model.predict(trans(np.asarray(x, dtype=X[0].dtype).flatten()[None, :])))
+
+        for cls in (
+            (Powell, DE) if algorithm != "image" else (DiscreteLenglerOnePlusOne,)
+        ):  # Powell excellent here, DE as a backup for thread safety.
             optimizer = cls(
                 parametrization=para if (para is not None and algorithm == "image") else dimension,
                 budget=45 * dimension + 30,
@@ -140,13 +150,21 @@ def learn_on_k_best(
             # limit to 20s at most
             optimizer.register_callback("ask", callbacks.EarlyStopping.timer(20))
             if "image" in algorithm:
-                optimizer.suggest(new_first_k_individuals[0].reshape(shape))
-                optimizer.suggest(new_first_k_individuals[1].reshape(shape))
+                optimizer.suggest(X2[0].reshape(shape))
+                optimizer.suggest(X2[1].reshape(shape))
+                optimizer.suggest(X2[2].reshape(shape))
+                # print(new_first_k_individuals[0].shape, X[0].shape)
+                # print(new_first_k_individuals[0][:15], X[0][:15])
+                # print(np.sum(new_first_k_individuals[0]), np.sum(X[0]))
+                # print(type(X[0]), type(new_first_k_individuals[0]))
+                # print(X[0].dtype, new_first_k_individuals[0].dtype)
+                # print("k", float(model.predict(trans(np.asarray(new_first_k_individuals[0], dtype=X[0].dtype).flatten()[None, :]))))
+                # print("k3", float(model.predict(trans(X[0].flatten()[None, :]))))
             try:
-                minimum_point = optimizer.minimize(
-                    lambda x: float(model.predict(trans(x.flatten()[None, :])))
-                    # lambda x: float(model.predict(polynomial_features.fit_transform(x[None, :])))
-                )
+                minimum_point = optimizer.minimize(loss_function_sm)
+                # lambda x: float(model.predict(trans(np.asarray(x, dtype=X[0].dtype).flatten()[None, :])))
+                # lambda x: float(model.predict(polynomial_features.fit_transform(x[None, :])))
+                # )
                 minimum = minimum_point.value
             except RuntimeError:
                 assert cls == Powell, "Only Powell is allowed to crash here."
@@ -154,10 +172,10 @@ def learn_on_k_best(
                 break
     except ValueError as e:
         raise MetaModelFailure(f"Infinite meta-model optimum in learn_on_k_best: {e}.")
-    predicted_value = float(model.predict(trans(minimum.flatten()[None, :])))
-    if predicted_value > y[len(y) // 3] and algorithm == "image" and success_rate < 0.9:
+    if loss_function_sm(minimum) > y[len(y) // 3] and algorithm == "image" and success_rate < 0.9:
+        # print("b", "bbb", float(model.predict(trans(minimum[None, :]))), y)
         raise MetaModelFailure("Not a good proposal.")
-    if predicted_value > y[0] and algorithm != "image":
+    if loss_function_sm(minimum) > y[0] and algorithm != "image":
         raise MetaModelFailure("Not a good proposal.")
     if algorithm == "image":
         minimum = minimum_point.get_standardized_data(reference=para)
