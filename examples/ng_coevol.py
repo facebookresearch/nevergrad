@@ -173,15 +173,17 @@ ng_optims += ["exLOS" + o for o in ng_orig_optims if "ois" in o and "iscr" in o]
 ng_optims += ["exLOS" + o for o in ng_orig_optims if "ois" in o and "iscr" in o]  # Direct optimization of exploitation, with more evals per iteration
 #print(ng_optims)
 
-
+ng_optims = [o for o in ng_optims if "SA" not in o and "Smooth" not in o]
 algo = np.random.choice(ng_optims)
 #algo = "RS"
 print("The algorithm is ", algo)
 
-factor = 10
+factor = 1
 
 if algo[:4] in ["expl", "exlo", "exLO"]:
-    budget = 50 * np.random.choice([10, 20, 40, 80, 160]) #, 320, 640, 1280, 2560, 5120, 10240])
+    budget = np.random.choice([5, 10, 20, 40, 80, 160, 320, 640, 1280, 2560, 5120, 10240])
+    if np.random.choice([False, True]):
+        budget = np.random.choice([3, 6, 9, 14, 21, 29, 42, 55, 87, 101, 132, 180, 401, 1024])
     budget *= factor
     big_lower = np.asarray([[lower for _  in range(lambd)] for _ in range(2)])
     big_upper = np.asarray([[upper for _  in range(lambd)] for _ in range(2)])
@@ -208,7 +210,7 @@ elif algo[:5] == "fip__":
     P = np.random.rand(lambd, N) > .5
     Q = np.random.rand(lambd, N) > .5
     num = 0
-    budget = np.random.choice([10, 20, 40, 80, 160]) #, 320, 640, 1280, 2560, 5120, 10240, 20480, 40960, 81920, 163840, 327680])
+    budget = np.random.choice([5,10, 20, 40, 80, 160, 320, 640, 1280]) #, 2560, 5120, 10240, 20480, 40960, 81920, 163840, 327680])
     budget *= factor
     iteration = 0
     for i in range(budget):
@@ -225,7 +227,7 @@ elif algo[:5] == "ficpl":
     P2 = np.random.rand(lambd, N) > .5
     Q2 = np.random.rand(lambd, N) > .5
     num = 100
-    budget = np.random.choice([10, 20, 40, 80, 160]) #, 320, 640, 1280, 2560, 5120, 10240, 20480, 40960, 81920, 163840, 327680])
+    budget = np.random.choice([5, 10, 20, 40, 80, 160, 320, 640, 1280])  #, 2560, 5120, 10240, 20480, 40960, 81920, 163840, 327680])
     budget *= factor
     iteration = 0
     for i in range(budget // lambd):
@@ -243,7 +245,7 @@ elif algo[:5] in ["fipl_", "fpll_"]:
     P = np.random.rand(lambd, N) > .5
     Q = np.random.rand(lambd, N) > .5
     num = 100
-    budget = np.random.choice([10, 20, 40, 80, 160]) #, 320, 640, 1280, 2560, 5120, 10240, 20480, 40960, 81920, 163840, 327680])
+    budget = np.random.choice([5, 10, 20, 40, 80, 160, 320, 640, 1280])  #, 2560, 5120, 10240, 20480, 40960, 81920, 163840, 327680])
     budget *= factor
     iteration = 0
     for i in range(budget):
@@ -262,13 +264,19 @@ elif algo == "Pkl":
         return (left >= middle) and (middle >= right)
     kappa = 0.3/N   # < ln(2) / N
     
-    P = np.random.rand(lambd, N) > .5
-    Q = np.random.rand(lambd, N) > .5
-    P2 = np.random.rand(lambd, N) > .5
-    Q2 = np.random.rand(lambd, N) > .5
+    P = np.random.rand(lambd, N)
+    Q = np.random.rand(lambd, N)
+    for i in range(lambd):
+        for j in range(N):
+            P[i][j] *= upper[j] + 1
+            Q[i][j] *= upper[j] + 1
+    P = np.floor(P)
+    Q = np.floor(Q)
+    P2 = copy.deepcopy(P)
+    Q2 = copy.deepcopy(Q)
     
-    nbiter = np.random.choice([10, 20, 40, 80, 160]) #, 320, 640, 1280, 2560, 5120, 10240, 20480, 40960, 81920, 163840, 327680, 655360, 1320000])
-    nbiter*= 10
+    nbiter = np.random.choice([5, 10, 20, 40, 80, 160, 320, 640, 1280]) #, 2560, 5120, 10240, 20480, 40960, 81920, 163840, 327680, 655360, 1320000])
+    #nbiter*= 10
     for t in range(nbiter):
     
         for i in range(lambd):
@@ -286,9 +294,19 @@ elif algo == "Pkl":
             Q2[i] = y
             for k in range(N):
                 if np.random.rand() < kappa / N:
-                    P2[i][k] = 1 - P2[i][k]
+                    if (upper[k] == 1.):
+                        P2[i][k] = 1 - P2[i][k]
+                    else:
+                        prev = P2[i][k]
+                        while P2[i][k] == prev:
+                            P2[i][k] = np.random.randint(upper[k]+1)
                 if np.random.rand() < kappa / N:
-                    Q2[i][k] = 1 - Q2[i][k]
+                    if (upper[k] == 1.):
+                        Q2[i][k] = 1 - Q2[i][k]
+                    else:
+                        prev = Q2[i][k]
+                        while Q2[i][k] == prev:
+                            Q2[i][k] = np.random.randint(upper[k]+1)
         P = copy.deepcopy(P2)
         Q = copy.deepcopy(Q2)
 

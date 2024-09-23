@@ -27,7 +27,8 @@ from nevergrad.functions.games.game import ng_game
 # Creating a problem
 games = list(ng_game()) + ["c0" + game for game in list(ng_game())]
 game = np.random.choice(games)
-style = np.random.choice(["robust", "stochastic"])
+#style = np.random.choice(["robust", "stochastic"])
+style = "stochastic"
 print("Working on ", game)
 
 def gaussianize(x):
@@ -71,21 +72,27 @@ else:
         return ng_game(subgame, gaussianize(x), gaussianize(y))
 
 
-algo = np.random.choice([o for o in list(ng.optimizers.registry.keys()) if ("CMA" in o or "OnePlusOne" in o or "PSO" in o or "DE" in o or "BFGS" in o or "Cobyla" in o or "NGOpt" == o or "NgIohTu" in o) ])
-budget = np.random.choice([10, 31, 100, 314, 1000])
+algo = np.random.choice([o for o in list(ng.optimizers.registry.keys()) if (("CMA" in o or "OnePlusOne" in o or "PSO" in o or "DE" in o or "BFGS" in o or "Cobyla" in o or "NGOpt" == o or "NgIohTu" in o) and "Chain" not in o) ])
+algo = "AlmostRotationInvariantDEAndBigPop"
+budget = np.random.choice([10, 31, 100, 314, 1000, 3140, 10000, 31400])
+a = np.random.choice([0, 10, 20, 50, 75, 100, 200])
+if np.random.choice([True, False, True, True]):
+    algo = np.random.choice([o for o in list(ng.optimizers.registry.keys()) if "ticNois" in o and "ecomb" not in o and "astGA" not in o and "Portf" not in o]) # or "TBPSA" in o or "SPSA" in o])
 optim = ng.optimizers.registry[algo](ng.p.Array(shape=(N,), lower=lower, upper=upper).set_integer_casting(no_action=c0), budget)   
 
 num_calls = 0
 num_big_calls = 0
-a = np.random.choice([0, 10, 20, 50, 75, 100, 200])
-def loss(x):
+def loss(x, number=None):
     global num_big_calls
     num_big_calls += 1
-    v = [f(np.random.randint(low=0,high=101, size=N), x) for _ in range(int(np.power(num_big_calls, a/100.)))]
+    if number is None:
+        v = [f(np.random.randint(low=0,high=101, size=N), x) for _ in range(int(np.power(num_big_calls, a/100.)))]
+    else:
+        v = [f(np.random.randint(low=0,high=101, size=N), x) for _ in range(number)]
     return np.average(v) if style == "stochastic" else np.max(v)
     
 
 v = optim.minimize(loss).value
 my_num_calls = num_calls
-ex = loss(v)
+ex = loss(v, 5000)
 print(f"Game{game}{style}_Algo{algo}{a}_budget{my_num_calls}_loss{ex}_seed{0}__result")

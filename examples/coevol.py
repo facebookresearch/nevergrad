@@ -117,7 +117,7 @@ ng_optims += ["exlog" + o for o in ng_orig_optims if "ois" in o and "iscr" in o]
 ng_optims += ["exlog" + o for o in ng_orig_optims if "ois" in o and "iscr" in o]  # Direct optimization of exploitation, with more evals per iteration
 ng_optims += ["exlog" + o for o in ng_orig_optims if "ois" in o and "iscr" in o]  # Direct optimization of exploitation, with more evals per iteration
 
-ng_optims = ["Pkl"] * 8
+ng_optims += ["Pkl"] * 8
 
 ng_optims += ["exLOG" + o for o in ng_orig_optims if "SQP" in o  or "MetaModel" in o]  # Direct optimization of exploitation
 ng_optims += ["exLOG" + o for o in ng_orig_optims if "XLog" in o ]  # Direct optimization of exploitation
@@ -134,7 +134,14 @@ ng_optims += ["exLOS" + o for o in ng_orig_optims if "ois" in o and "iscr" in o]
 ng_optims += ["exLOS" + o for o in ng_orig_optims if "ois" in o and "iscr" in o]  # Direct optimization of exploitation, with more evals per iteration
 #print(ng_optims)
 
+
+print(ng_optims)
+print([o for o in ng_optims if "engler" in o])
+quit()
+ng_optims = [o for o in ng_optims if "Lengler" in o and "ecomb" not in o and "Smooth" not in o]
 algo = np.random.choice(ng_optims)
+
+print(algo)
 #algo = "RS"
 #print("We work with ", algo)
 
