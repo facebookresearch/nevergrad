@@ -393,6 +393,7 @@ class DifferentialEvolution(base.ConfiguredOptimizer):
 
 
 DE = DifferentialEvolution().set_name("DE", register=True)
+LPSDE = DifferentialEvolution(popsize="large").set_name("LPSDE", register=True)
 TwoPointsDE = DifferentialEvolution(crossover="twopoints").set_name("TwoPointsDE", register=True)
 VoronoiDE = DifferentialEvolution(crossover="voronoi").set_name("VoronoiDE", register=True)
 RotatedTwoPointsDE = DifferentialEvolution(crossover="rotated_twopoints").set_name(
