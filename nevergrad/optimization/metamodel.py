@@ -187,14 +187,6 @@ def learn_on_k_best(
     if algorithm == "image":
         # print(minimum)  # This is is the real space of the user.
         minimum = minimum_point.get_standardized_data(reference=para)
-    # if float(model.predict(trans(minimum[None, :]))) > y[len(y) // 3]:
-    #    if "image" in algorithm:
-    #        print("bbb", float(model.predict(trans(minimum[None, :]))), "min:", y[0], "max:", y[-1], "avg:", np.average(y), "1/3:", y[len(y) // 3])
-    #    raise MetaModelFailure("Not a good proposal.")
     if np.sum(minimum**2) > 1.0 and algorithm != "image":
-        # if "image" in algorithm:
-        #    print("d")
         raise MetaModelFailure("huge meta-model optimum in learn_on_k_best.")
-    # if "image" in algorithm:
-    # print("e" + "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee")
     return middle + normalization * minimum.flatten()
