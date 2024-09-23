@@ -67,9 +67,18 @@ def smooth_copy(array: p.Array, possible_radii: tp.Optional[tp.List[int]] = None
         possible_radii = [3]
     value = candidate._value
     radii = [array.random_state.choice(possible_radii) for _ in value.shape]
-    value2 = ndimage.convolve(value, np.ones(radii) / np.prod(radii))
+    try:
+        value2 = ndimage.convolve(value, np.ones(radii) / np.prod(radii))
+    except Exception as e:
+        assert False, f"{e} in smooth_copy, {radii}, {np.prod(radii)}"
     # DE style operator.
-    indices = array.random_state.randint(4, size=value.shape) == 0
+    invfreq = 4 if len(possible_radii) == 1 else max(4, np.random.randint(max(4, len(array.value.flatten()))))
+    indices = array.random_state.randint(invfreq, size=value.shape) == 0
+    while np.sum(indices) == 0 and len(possible_radii) > 1:
+        invfreq = (
+            4 if len(possible_radii) == 1 else max(4, np.random.randint(max(4, len(array.value.flatten()))))
+        )
+        indices = array.random_state.randint(invfreq, size=value.shape) == 0
     value[indices] = value2[indices]
     candidate._value = value
     return candidate
@@ -108,6 +117,7 @@ class _OnePlusOne(base.Optimizer):
         use_pareto: bool = False,
         sparse: tp.Union[bool, int] = False,
         smoother: bool = False,
+        super_radii: bool = False,
         roulette_size: int = 2,
         antismooth: int = 55,
         crossover_type: str = "none",
@@ -128,6 +138,7 @@ class _OnePlusOne(base.Optimizer):
         self.imr = 0.2
         self.use_pareto = use_pareto
         self.smoother = smoother
+        self.super_radii = super_radii
         self.annealing = annealing
         self._annealing_base: tp.Optional[tp.ArrayLike] = None
         self._max_loss = -float("inf")
@@ -266,7 +277,8 @@ class _OnePlusOne(base.Optimizer):
             and self._num_ask % max(self.num_workers + 1, self.antismooth) == 0
             and isinstance(self.parametrization, p.Array)
         ):
-            self.suggest(smooth_copy(pessimistic).value)  # type: ignore
+            possible_radii = [3] if not self.super_radii else [3, 3 + np.random.randint(int(np.sqrt(np.sqrt(self.dimension))))]  # type: ignore
+            self.suggest(smooth_copy(pessimistic, possible_radii=possible_radii).value)  # type: ignore
         if self.num_objectives > 1 and self.use_pareto:  # multiobjective
             # revert to using a sample of the pareto front (not "pessimistic" though)
             pareto = (
@@ -571,6 +583,7 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
         use_pareto: bool = False,
         sparse: bool = False,
         smoother: bool = False,
+        super_radii: bool = False,
         roulette_size: int = 2,
         antismooth: int = 55,
         crossover_type: str = "none",
@@ -2148,6 +2161,28 @@ NeuralMetaModel = ParametrizedMetaModel(algorithm="neural").set_name("NeuralMeta
 ImageMetaModel = ParametrizedMetaModel(algorithm="image").set_name("ImageMetaModel", register=True)
 SVMMetaModel = ParametrizedMetaModel(algorithm="svr").set_name("SVMMetaModel", register=True)
 RFMetaModel = ParametrizedMetaModel(algorithm="rf").set_name("RFMetaModel", register=True)
+
+# Without quad
+Quad1MetaModel = ParametrizedMetaModel(degree=1).set_name("Quad1MetaModel", register=True)
+Neural1MetaModel = ParametrizedMetaModel(algorithm="neural, degree=1").set_name(
+    "Neural1MetaModel", register=True
+)
+SVM1MetaModel = ParametrizedMetaModel(algorithm="svr, degree=1").set_name("SVM1MetaModel", register=True)
+RF1MetaModel = ParametrizedMetaModel(algorithm="rf", degree=1).set_name("RF1MetaModel", register=True)
+# OnePlusOne, without quad
+Quad1MetaModelOnePlusOne = ParametrizedMetaModel(multivariate_optimizer=OnePlusOne, degree=1).set_name(
+    "Quad1MetaModelOnePlusOne", register=True
+)
+Neural1MetaModelOnePlusOne = ParametrizedMetaModel(
+    multivariate_optimizer=OnePlusOne, algorithm="neural, degree=1"
+).set_name("Neural1MetaModelOnePlusOne", register=True)
+SVM1MetaModelOnePlusOne = ParametrizedMetaModel(
+    multivariate_optimizer=OnePlusOne, algorithm="svr, degree=1"
+).set_name("SVM1MetaModelOnePlusOne", register=True)
+RF1MetaModelOnePlusOne = ParametrizedMetaModel(
+    multivariate_optimizer=OnePlusOne, algorithm="rf", degree=1
+).set_name("RF1MetaModelOnePlusOne", register=True)
+
 MetaModelOnePlusOne = ParametrizedMetaModel(multivariate_optimizer=OnePlusOne).set_name(
     "MetaModelOnePlusOne", register=True
 )
@@ -2163,6 +2198,10 @@ MetaModelDSproba = ParametrizedMetaModel(multivariate_optimizer=DSproba).set_nam
 RFMetaModelOnePlusOne = ParametrizedMetaModel(multivariate_optimizer=OnePlusOne, algorithm="rf").set_name(
     "RFMetaModelOnePlusOne", register=True
 )
+ImageMetaModelLengler = ParametrizedMetaModel(
+    multivariate_optimizer=DiscreteLenglerOnePlusOne,
+    algorithm="image",
+).set_name("ImageMetaModelLengler", register=True)
 ImageMetaModelLogNormal = ParametrizedMetaModel(
     multivariate_optimizer=LognormalDiscreteOnePlusOne,
     algorithm="image",
@@ -5276,9 +5315,29 @@ SuperSmoothTinyLognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(
 UltraSmoothDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
     smoother=True, mutation="lengler", antismooth=3
 ).set_name("UltraSmoothDiscreteLenglerOnePlusOne", register=True)
+SmootherDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True, mutation="lengler", antismooth=2, super_radii=True
+).set_name("SmootherDiscreteLenglerOnePlusOne", register=True)
+YoSmoothDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True, mutation="lengler", antismooth=2
+).set_name("YoSmoothDiscreteLenglerOnePlusOne", register=True)
+CMALS = Chaining(
+    [CMA, DiscreteLenglerOnePlusOne, UltraSmoothDiscreteLenglerOnePlusOne], ["third", "third"]
+).set_name("CMALS", register=True)
 UltraSmoothDiscreteLognormalOnePlusOne = ParametrizedOnePlusOne(
     smoother=True, mutation="lognormal", antismooth=3
 ).set_name("UltraSmoothDiscreteLognormalOnePlusOne ", register=True)
+CMALYS = Chaining([CMA, YoSmoothDiscreteLenglerOnePlusOne], ["tenth"]).set_name("CMALYS", register=True)
+CLengler = Chaining([CMA, DiscreteLenglerOnePlusOne], ["tenth"]).set_name("CLengler", register=True)
+CMALL = Chaining(
+    [CMA, DiscreteLenglerOnePlusOne, UltraSmoothDiscreteLognormalOnePlusOne], ["third", "third"]
+).set_name("CMALL", register=True)
+CMAILL = Chaining(
+    [ImageMetaModel, ImageMetaModelLengler, UltraSmoothDiscreteLognormalOnePlusOne], ["third", "third"]
+).set_name("CMAILL", register=True)
+CMASL = Chaining([CMA, SmootherDiscreteLenglerOnePlusOne], ["tenth"]).set_name("CMASL", register=True)
+CMASL2 = Chaining([CMA, SmootherDiscreteLenglerOnePlusOne], ["third"]).set_name("CMASL2", register=True)
+CMASL3 = Chaining([CMA, SmootherDiscreteLenglerOnePlusOne], ["half"]).set_name("CMASL3", register=True)
 
 SmoothLognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="lognormal").set_name(
     "SmoothLognormalDiscreteOnePlusOne", register=True

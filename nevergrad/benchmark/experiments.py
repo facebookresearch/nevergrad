@@ -3526,11 +3526,17 @@ def multi_ceviche(
         "Neural1MetaModelLogNormal",
         "SVM1MetaModelLogNormal",
         "DSproba",
-    ] + (["DSproba"] * 5000)
+    ]
     # if np.random.choice([True,False]):
     #    algos = refactor_optims(algos)
     # algo = np.random.choice(algos)
-    algos = ["RF1MetaModelLogNormal", "Neural1MetaModelLogNormal", "SVM1MetaModelLogNormal", "CMAL"]
+    if not precompute:
+        algos = ["RF1MetaModelLogNormal", "Neural1MetaModelLogNormal", "SVM1MetaModelLogNormal", "CMAL"]
+    else:
+        algos = ["UltraSmoothDiscreteLognormalOnePlusOne", "DiscreteLenglerOnePlusOne", "CMA", "CMAL"]
+    algos = ["CMALS", "CMALYS", "CMALL"]
+    algos = ["CLengler", "CMALS", "CMALYS", "CMALL", "CMAL"]
+    algos = ["CMASL2", "CMASL3"]
 
     for benchmark_type in [np.random.choice([0, 1, 2, 3])]:  # [np.random.randint(4)]:
         shape = tuple([int(p) for p in list(photonics_ceviche(None, benchmark_type))])  # type: ignore
@@ -3610,8 +3616,18 @@ def multi_ceviche(
                 np.random.choice([12800, 25600, 51200, 102400, 204800, 409600]),
             ]
             if not precompute
-            else [np.random.choice([409600, 204800 + 102400, 204800 + 102400, 204800]) - 102400]
+            else [np.random.choice([409600, 204800 + 102400, 204800]) - 102400]
         )
+        if benchmark_type == 3:
+            budgets = (
+                [
+                    np.random.choice([3, 20, 50, 90, 150, 250, 400, 800, 1600, 3200, 6400]),
+                    np.random.choice([12800, 25600, 51200, 102400]),
+                ]
+                if not precompute
+                else [np.random.choice([204800 + 51200, 204800]) - 102400]
+            )
+
         for optim in [np.random.choice(algos)]:  # TODO: we also need penalizations.
             for budget in budgets:
                 #                np.random.choice(
@@ -3644,12 +3660,12 @@ def multi_ceviche(
                             f"\nLOGPB{benchmark_type} CheatingLBFGSB with_budget {budget} returns {fake_loss}"
                         )
                     initial_point = result.x.reshape(shape)
-                    if real_loss < -0.9 and np.random.rand() < 0.9:
+                    if real_loss < -0.95:  # and np.random.rand() < 0.9:
                         export_numpy(
                             f"pb{benchmark_type}_budget{budget if not precompute else 102400}_bfgs_{real_loss}_{fake_loss}",
                             result.x.reshape(shape),
                         )
-                if (c0 and np.random.choice([True, True, True, False] + ([True] * 2))) or precompute:
+                if (c0 and np.random.choice([True, False, False, False] + ([False] * 20))) and not precompute:
                     pen = np.random.choice([True, False, False] + ([False] * 20)) and not precompute
                     pre_optim = ng.optimizers.registry[optim]
                     if pen:
@@ -3685,7 +3701,7 @@ def multi_ceviche(
                         def plot_pc(x):
                             fake_loss = photonics_ceviche(x, benchmark_type)
                             real_loss = photonics_ceviche(x, benchmark_type, discretize=True)
-                            if real_loss < -0.5:
+                            if real_loss < -0.95 or np.random.rand() < 0.2:
                                 print("exporting")
                                 export_numpy(
                                     f"pb{benchmark_type}_{optim}c0c_budget{budget}_{real_loss}_fl{fake_loss}",
@@ -3699,7 +3715,7 @@ def multi_ceviche(
                             )  # .set_integer_casting()
                             instrum2i.set_name(name)  # + "c0")
                         plot_cheat_eval_func = ExperimentFunction(
-                            plot_pc, instrum2 if not precompute else instrum2i
+                            plot_pc, instrum2 if not precompute else instrum2i  # type: ignore
                         )
                         sfunc = helpers.SpecialEvaluationExperiment(
                             c0func if not cheat else c0cfunc,
@@ -3710,7 +3726,7 @@ def multi_ceviche(
 
                     def plot_epc(x):
                         real_loss = photonics_ceviche(x, benchmark_type, discretize=True)
-                        if real_loss < -0.5:
+                        if real_loss < -0.95 or np.random.rand() < 0.2:
                             export_numpy(
                                 f"pb{benchmark_type}_{optim}_budget{budget}_{real_loss}", x.reshape(shape)
                             )
