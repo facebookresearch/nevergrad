@@ -125,14 +125,9 @@ def learn_on_k_best(
     indices = np.argsort(y)
     ordered_model_outputs = [model_outputs[i] for i in indices]
     success_rate = np.average(0.5 + 0.5 * np.sign(np.diff(ordered_model_outputs)))
-    # if "image" == algorithm:
-    # print([np.sum(x) for x in X2])
-    # print("z", success_rate)  #, len(y), ordered_model_outputs)
     if not np.all(np.diff(ordered_model_outputs) > 0) and "image" != algorithm:
         raise MetaModelFailure("Unlearnable objective function.")
     if np.average(0.5 + 0.5 * np.sign(np.diff(ordered_model_outputs))) < 0.6:
-        # if algorithm == "image":
-        #    print("q")
         raise MetaModelFailure("Unlearnable objective function.")
     try:
         Powell = registry["Powell"]
@@ -147,7 +142,6 @@ def learn_on_k_best(
             if "image" in algorithm:
                 optimizer.suggest(new_first_k_individuals[0].reshape(shape))
                 optimizer.suggest(new_first_k_individuals[1].reshape(shape))
-                # print("k")
             try:
                 minimum_point = optimizer.minimize(
                     lambda x: float(model.predict(trans(x.flatten()[None, :])))
@@ -159,29 +153,17 @@ def learn_on_k_best(
             else:
                 break
     except ValueError as e:
-        # if "image" in algorithm:
-        #    print("b", para, e)
         raise MetaModelFailure(f"Infinite meta-model optimum in learn_on_k_best: {e}.")
-    if (
-        float(model.predict(trans(minimum.flatten()[None, :]))) > y[len(y) // 3]
-        and algorithm == "image"
-        and success_rate < 0.9
-    ):
-        # print("bbb", float(model.predict(trans(minimum[None, :]))), y)
+    predicted_value = float(model.predict(trans(minimum.flatten()[None, :])))
+    if predicted_value > y[len(y) // 3] and algorithm == "image" and success_rate < 0.9:
         raise MetaModelFailure("Not a good proposal.")
-    if float(model.predict(trans(minimum[None, :]))) > y[0] and algorithm != "image":
+    if predicted_value > y[0] and algorithm != "image":
         raise MetaModelFailure("Not a good proposal.")
     if algorithm == "image":
-        # print(minimum)  # This is is the real space of the user.
         minimum = minimum_point.get_standardized_data(reference=para)
     # if float(model.predict(trans(minimum[None, :]))) > y[len(y) // 3]:
     #    if "image" in algorithm:
-    #        print("bbb", float(model.predict(trans(minimum[None, :]))), "min:", y[0], "max:", y[-1], "avg:", np.average(y), "1/3:", y[len(y) // 3])
     #    raise MetaModelFailure("Not a good proposal.")
     if np.sum(minimum**2) > 1.0 and algorithm != "image":
-        # if "image" in algorithm:
-        #    print("d")
         raise MetaModelFailure("huge meta-model optimum in learn_on_k_best.")
-    # if "image" in algorithm:
-    # print("e" + "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee")
     return middle + normalization * minimum.flatten()
