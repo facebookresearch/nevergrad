@@ -176,7 +176,7 @@ and <a class="reference internal" href="parametrization_ref.html#parametrization
 <p>An <em>ask and tell</em> interface is also available. The 3 key methods for this interface are respectively:</p>
 <ul class="simple">
 <li><p><code class="code docutils literal notranslate"><span class="pre">ask</span></code>: suggest a candidate on which to evaluate the function to optimize.</p></li>
-<li><p><code class="code docutils literal notranslate"><span class="pre">tell</span></code>: for updated the optimizer with the value of the function for a candidate.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">tell</span></code>: to update the optimizer with the value of the function for a candidate.</p></li>
 <li><p><code class="code docutils literal notranslate"><span class="pre">provide_recommendation</span></code>: returns the candidate the algorithms considers the best.</p></li>
 </ul>
 <p>For most optimization algorithms in the platform, they can be called in arbitrary order - asynchronous optimization is OK. Some algorithms (with class attribute <code class="code docutils literal notranslate"><span class="pre">no_parallelization=True</span></code> however do not support this.</p>
@@ -281,21 +281,18 @@ The functions/callbacks registered on <code class="code docutils literal notrans
 <section id="optimization-with-constraints">
 <h2>Optimization with constraints<a class="headerlink" href="#optimization-with-constraints" title="Permalink to this heading"></a></h2>
 <p>Sometimes you want the best candidate, given some constraints.</p>
-<p>Then, if you want to work with the ask/tell form, instead of
-.. code-block:: python</p>
-<blockquote>
-<div><p>optimizer.tell(candidate, value)</p>
-</div></blockquote>
-<p>you can do
-.. code-block:: python</p>
-<blockquote>
-<div><p>optimizer.tell(candidate, value, [constraint_violation1, constraint_violation2, constraint_violation3])</p>
-</div></blockquote>
-<p>Or, if you work with minimize, you can also replace
-.. code-block:: python</p>
-<blockquote>
-<div><p>optimizer.minimize(loss_function)</p>
-</div></blockquote>
+<p>Then, if you want to work with the ask/tell form, instead of</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">optimizer</span><span class="o">.</span><span class="n">tell</span><span class="p">(</span><span class="n">candidate</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>you can do</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">optimizer</span><span class="o">.</span><span class="n">tell</span><span class="p">(</span><span class="n">candidate</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="p">[</span><span class="n">constraint_violation1</span><span class="p">,</span> <span class="n">constraint_violation2</span><span class="p">,</span> <span class="n">constraint_violation3</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>Or, if you work with minimize, you can also replace</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">optimizer</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="n">loss_function</span><span class="p">)</span>
+</pre></div>
+</div>
 <p>by
 .. code-block:: python</p>
 <blockquote>
