@@ -17,6 +17,7 @@ import copy
 import numpy as np
 import itertools
 from joblib import Parallel, delayed  # type: ignore
+
 try:
     from joblib import parallel_config
 except:
