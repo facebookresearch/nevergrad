@@ -91,6 +91,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         self.num_workers = int(num_workers)
         self.budget = budget
         self.optim_curve: tp.List[tp.Any] = []
+        self.skip_constraints = False
 
         # How do we deal with cheap constraints i.e. constraints which are fast and use low resources and easy ?
         # True ==> we penalize them (infinite values for candidates which violate the constraint).
@@ -493,26 +494,34 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # - just projection to constraint satisfaction.
         # We try using the normal tool during half constraint budget, in order to reduce the impact on the normal run.
         self.parametrization.tabu_fails = 0
-        for _ in range(max_trials):
+
+        if self.skip_constraints and not self._suggestions:
+            candidate = self._internal_ask_candidate()
             is_suggestion = False
-            if self._suggestions:  # use suggestions if available
-                is_suggestion = True
-                candidate = self._suggestions.pop()
-            else:
-                try:  # Sometimes we have a limited budget so that
-                    candidate = self._internal_ask_candidate()
-                except AssertionError as e:
-                    assert (
-                        self.parametrization._constraint_checkers
-                    ), f"Error: {e}"  # This should not happen without constraint issues.
-                    candidate = self.parametrization.spawn_child()
-            if candidate.satisfies_constraints(self.parametrization):
-                break  # good to go!
-            if self._penalize_cheap_violations or self.no_parallelization:
-                # Warning! This might be a tell not asked.
-                self._internal_tell_candidate(candidate, float("Inf"))  # DE requires a tell
-            # updating num_ask  is necessary for some algorithms which need new num to ask another point
-            self._num_ask += 1
+        else:
+            for _ in range(max_trials):
+                is_suggestion = False
+                if self._suggestions:  # use suggestions if available
+                    is_suggestion = True
+                    candidate = self._suggestions.pop()
+                else:
+                    try:  # Sometimes we have a limited budget so that
+                        candidate = self._internal_ask_candidate()
+                    except AssertionError as e:
+                        assert (
+                            self.parametrization._constraint_checkers
+                        ), f"Error: {e}"  # This should not happen without constraint issues.
+                        candidate = self.parametrization.spawn_child()
+                if candidate.satisfies_constraints(self.parametrization):
+                    if self._num_ask % 10 == 0:
+                        if candidate.can_skip_constraints(self.parametrization):
+                            self.skip_constraints = True
+                    break  # good to go!
+                if self._penalize_cheap_violations or self.no_parallelization:
+                    # Warning! This might be a tell not asked.
+                    self._internal_tell_candidate(candidate, float("Inf"))  # DE requires a tell
+                # updating num_ask  is necessary for some algorithms which need new num to ask another point
+                self._num_ask += 1
         satisfies = candidate.satisfies_constraints(self.parametrization)
         if not satisfies and self.parametrization.tabu_length == 0:
             # still not solving, let's run sub-optimization
