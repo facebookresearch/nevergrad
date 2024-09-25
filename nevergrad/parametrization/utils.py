@@ -207,7 +207,7 @@ X = tp.TypeVar("X")
 
 
 class Subobjects(tp.Generic[X]):
-    """Identifies suboject of a class and applies
+    """Identifies subobject of a class and applies
     functions recursively on them.
 
     Parameters
