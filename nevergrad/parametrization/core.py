@@ -261,11 +261,14 @@ class Parameter(Layered):
 
     def can_skip_constraints(self, ref: tp.Optional[P] = None) -> bool:
         inside = self._subobjects.apply("can_skip_constraints")
-        #print(f"{len(inside)} / {inside}  / {ref} / {ref.tabu_length if ref is not None else []} / {self._constraint_checkers}")
-        val = (len(inside) == 0 or all(inside.values())) and (ref is None or ref.tabu_length == 0) and not self._constraint_checkers
-        #print(inside, val)
+        # print(f"{len(inside)} / {inside}  / {ref} / {ref.tabu_length if ref is not None else []} / {self._constraint_checkers}")
+        val = (
+            (len(inside) == 0 or all(inside.values()))
+            and (ref is None or ref.tabu_length == 0)
+            and not self._constraint_checkers
+        )
+        # print(inside, val)
         return val
-        
 
     # %% Constraint management
     def satisfies_constraints(self, ref: tp.Optional[P] = None, no_tabu: bool = False) -> bool:
