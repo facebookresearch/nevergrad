@@ -493,9 +493,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # - just projection to constraint satisfaction.
         # We try using the normal tool during half constraint budget, in order to reduce the impact on the normal run.
         self.parametrization.tabu_fails = 0
-        idx2 = -7
-        for idx in range(max_trials):
-            idx2 = idx
+        for _ in range(max_trials):
             is_suggestion = False
             if self._suggestions:  # use suggestions if available
                 is_suggestion = True
