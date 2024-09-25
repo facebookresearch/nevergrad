@@ -275,6 +275,8 @@ class Parameter(Layered):
         bool
             True iff the constraint is satisfied
         """
+        if ref.tabu_length == 0 and not self._constraint_checkers:
+            return True
         inside = self._subobjects.apply("satisfies_constraints")
         if not all(inside.values()):
             return False

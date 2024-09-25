@@ -17,7 +17,10 @@ import copy
 import numpy as np
 import itertools
 from joblib import Parallel, delayed  # type: ignore
-from joblib import parallel_config
+try:
+    from joblib import parallel_config
+except:
+    print("Some stuff might fail: issue in joblib")
 
 
 # if np.random.rand() < 0.5:
