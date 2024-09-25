@@ -273,7 +273,7 @@ class Int(Layered, Filterable):
         out = super()._layered_get_value()
         if not self.deterministic:
             out += self.random_state.rand(*out.shape) - 0.5
-        out = np.round(out).astype(int)
+        out = np.round(out).astype(np.int64)
         # make sure rounding does not reach beyond the bounds
         eps = 1e-12
         if bounds[0] is not None:
@@ -303,4 +303,4 @@ def _to_int(value: tp.Union[float, np.ndarray]) -> tp.Union[int, np.ndarray]:
     if not isinstance(value, np.ndarray):
         return int(np.round(value))
     else:
-        return np.round(value).astype(int)
+        return np.round(value).astype(np.int64)
