@@ -16,7 +16,7 @@ def test_reference() -> None:
     assert not imagelosses.Koncept512.REQUIRES_REFERENCE
     assert not imagelosses.Brisque.REQUIRES_REFERENCE
     assert len([loss for loss in imagelosses.registry.values() if loss.REQUIRES_REFERENCE]) == 5
-    assert len([loss for loss in imagelosses.registry.values() if not loss.REQUIRES_REFERENCE]) == 3
+    assert len([loss for loss in imagelosses.registry.values() if not loss.REQUIRES_REFERENCE]) == 2
 
 
 def test_l1_loss() -> None:
@@ -27,7 +27,7 @@ def test_l1_loss() -> None:
 @pytest.mark.parametrize("loss_name", imagelosses.registry)  # type: ignore
 def test_consistency_losses_with_oteytaud(loss_name: str) -> None:
     path = Path(__file__).with_name("headrgb_olivier.png")
-    image = PIL.Image.open(path).resize((256, 256), PIL.Image.ANTIALIAS)
+    image = PIL.Image.open(path).resize((256, 256))  # , PIL.Image.BICUBIC)
     data = np.asarray(image)[:, :, :3]  # 4th Channel is pointless here, only 255.
 
     data_flip = np.flip(data, 0).copy()  # Copy necessary as some nets do not support negative stride.

@@ -49,6 +49,11 @@ class Parameter(Layered):
         # Main features
         super().__init__()
         self.tabu_congruence: tp.Any = default_congruence
+        self.neural = False
+        self.has_constraints = False
+        self.enforce_determinism = False
+        self.real_world = False
+        self.hptuning = False
         self.tabu_fails = 0
         self._subobjects = utils.Subobjects(
             self, base=Parameter, attribute="__dict__"
@@ -215,7 +220,7 @@ class Parameter(Layered):
         ), f"Expected {type(self)} but got {type(sent_reference)} as reference"
         self._check_frozen()
         del self.value  # remove all cached information
-        self._internal_set_standardized_data(np.array(data, copy=False), reference=sent_reference)
+        self._internal_set_standardized_data(np.asarray(data), reference=sent_reference)
         return self
 
     def _internal_set_standardized_data(  # pylint: disable=unused-argument
@@ -253,6 +258,17 @@ class Parameter(Layered):
 
     def __bool__(self) -> bool:
         raise RuntimeError("bool check is not allowed to avoid confusion")
+
+    def can_skip_constraints(self, ref: tp.Optional[P] = None) -> bool:
+        inside = self._subobjects.apply("can_skip_constraints")
+        # print(f"{len(inside)} / {inside}  / {ref} / {ref.tabu_length if ref is not None else []} / {self._constraint_checkers}")
+        val = (
+            (len(inside) == 0 or all(inside.values()))
+            and (ref is None or ref.tabu_length == 0)
+            and not self._constraint_checkers
+        )
+        # print(inside, val)
+        return val
 
     # %% Constraint management
     def satisfies_constraints(self, ref: tp.Optional[P] = None, no_tabu: bool = False) -> bool:
@@ -399,6 +415,10 @@ class Parameter(Layered):
         child._subobjects = self._subobjects.new(child)
         child._meta = {}
         child.tabu_length = self.tabu_length
+        child.real_world = self.real_world
+        child.enforce_determinism = self.enforce_determinism
+        child.hptuning = self.hptuning
+        child.neural = self.neural
         child.parents_uids = list(self.parents_uids)
         child.heritage = dict(self.heritage)
         child.loss = None

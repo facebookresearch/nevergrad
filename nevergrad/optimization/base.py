@@ -90,6 +90,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # you can also replace or reinitialize this random state
         self.num_workers = int(num_workers)
         self.budget = budget
+        self.optim_curve: tp.List[tp.Any] = []
+        self.skip_constraints = False
 
         # How do we deal with cheap constraints i.e. constraints which are fast and use low resources and easy ?
         # True ==> we penalize them (infinite values for candidates which violate the constraint).
@@ -107,9 +109,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             raise ValueError("No variable to optimize in this parametrization.")
         self.name = self.__class__.__name__  # printed name in repr
         # keep a record of evaluations, and current bests which are updated at each new evaluation
-        self.archive: utils.Archive[
-            utils.MultiValue
-        ] = utils.Archive()  # dict like structure taking np.ndarray as keys and Value as values
+        self.archive: utils.Archive[utils.MultiValue] = (
+            utils.Archive()
+        )  # dict like structure taking np.ndarray as keys and Value as values
         self.current_bests = {
             x: utils.MultiValue(self.parametrization, np.inf, reference=self.parametrization)
             for x in ["optimistic", "pessimistic", "average", "minimum"]
@@ -343,11 +345,15 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 )
                 loss = 5.0e20  # sys.float_info.max leads to numerical problems so let us do this.
         elif isinstance(loss, (tuple, list, np.ndarray)):
-            loss = np.array(loss, copy=False, dtype=float).ravel() if len(loss) != 1 else loss[0]
+            loss = np.asarray(loss, dtype=float).ravel() if len(loss) != 1 else loss[0]
         elif not isinstance(loss, np.ndarray):
             raise TypeError(
                 f'"tell" method only supports float values but the passed loss was: {loss} (type: {type(loss)}.'
             )
+        if isinstance(loss, float) and (
+            len(self.optim_curve) == 0 or self.num_tell > self.optim_curve[-1][0] * 1.1
+        ):
+            self.optim_curve += [(self.num_tell, loss)]
         # check Parameter
         if not isinstance(candidate, p.Parameter):
             raise TypeError(
@@ -388,23 +394,25 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         if not candidate.satisfies_constraints(self.parametrization) and self.budget is not None:
             penalty = self._constraints_manager.penalty(candidate, self.num_ask, self.budget)
             loss = loss + penalty
-        if isinstance(loss, float) and (
-            self.num_objectives == 1 or self.num_objectives > 1 and not self._no_hypervolume
-        ):
-            self._update_archive_and_bests(candidate, loss)
 
         if constraint_violation is not None:
             if penalty_style is not None:
                 a, b, c, d, e, f = penalty_style
             else:
                 a, b, c, d, e, f = (1e5, 1.0, 0.5, 1.0, 0.5, 1.0)
-
+            ratio = 1 if self.budget is not None and self._num_tell > self.budget / 2.0 else 0.0
             violation = float(
-                (a + np.sum(np.maximum(loss, 0.0)))
+                (a * ratio + np.sum(np.maximum(loss, 0.0)))
                 * ((f + self._num_tell) ** e)
                 * (b * np.sum(np.maximum(constraint_violation, 0.0) ** c) ** d)
             )
             loss += violation
+
+        if isinstance(loss, float) and (
+            self.num_objectives == 1 or self.num_objectives > 1 and not self._no_hypervolume
+        ):
+            self._update_archive_and_bests(candidate, loss)
+
         if candidate.uid in self._asked:
             self._internal_tell_candidate(candidate, loss)
             self._asked.remove(candidate.uid)
@@ -486,26 +494,34 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         # - just projection to constraint satisfaction.
         # We try using the normal tool during half constraint budget, in order to reduce the impact on the normal run.
         self.parametrization.tabu_fails = 0
-        for _ in range(max_trials):
+
+        if self.skip_constraints and not self._suggestions:
+            candidate = self._internal_ask_candidate()
             is_suggestion = False
-            if self._suggestions:  # use suggestions if available
-                is_suggestion = True
-                candidate = self._suggestions.pop()
-            else:
-                try:  # Sometimes we have a limited budget so that
-                    candidate = self._internal_ask_candidate()
-                except AssertionError as e:
-                    assert (
-                        self.parametrization._constraint_checkers
-                    ), f"Error: {e}"  # This should not happen without constraint issues.
-                    candidate = self.parametrization.spawn_child()
-            if candidate.satisfies_constraints(self.parametrization):
-                break  # good to go!
-            if self._penalize_cheap_violations or self.no_parallelization:
-                # Warning! This might be a tell not asked.
-                self._internal_tell_candidate(candidate, float("Inf"))  # DE requires a tell
-            # updating num_ask  is necessary for some algorithms which need new num to ask another point
-            self._num_ask += 1
+        else:
+            for _ in range(max_trials):
+                is_suggestion = False
+                if self._suggestions:  # use suggestions if available
+                    is_suggestion = True
+                    candidate = self._suggestions.pop()
+                else:
+                    try:  # Sometimes we have a limited budget so that
+                        candidate = self._internal_ask_candidate()
+                    except AssertionError as e:
+                        assert (
+                            self.parametrization._constraint_checkers
+                        ), f"Error: {e}"  # This should not happen without constraint issues.
+                        candidate = self.parametrization.spawn_child()
+                if candidate.satisfies_constraints(self.parametrization):
+                    if self._num_ask % 10 == 0:
+                        if candidate.can_skip_constraints(self.parametrization):
+                            self.skip_constraints = True
+                    break  # good to go!
+                if self._penalize_cheap_violations or self.no_parallelization:
+                    # Warning! This might be a tell not asked.
+                    self._internal_tell_candidate(candidate, float("Inf"))  # DE requires a tell
+                # updating num_ask  is necessary for some algorithms which need new num to ask another point
+                self._num_ask += 1
         satisfies = candidate.satisfies_constraints(self.parametrization)
         if not satisfies and self.parametrization.tabu_length == 0:
             # still not solving, let's run sub-optimization

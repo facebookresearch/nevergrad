@@ -1,0 +1,27 @@
+PBBOB, i.e. parametric bbob.
+
+budget100
+budget200
+budget300
+budget400
+budget500
+budget600
+budget700
+budget800
+dimension20
+dimension40
+dimensions20
+dimensions40
+expo1
+expo3
+expo5
+expo7
+expo9
+namecigar
+namedeceptivemultimodal
+namehm
+namerastrigin
+namesphere
+workers1
+workers10
+workers50

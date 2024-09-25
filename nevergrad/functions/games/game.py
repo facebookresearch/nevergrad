@@ -122,6 +122,9 @@ class _Game:
                 visible1, visible2, len(visible1) + len(cards1), len(visible2) + len(cards2), stack, policy1
             )
             we_play = False
+            next_visible1 = None
+            next_stack = None
+            next_visible2 = None
             for i in range(len(visible1)):  # pylint: disable=consider-using-enumerate
                 for location in range(2):
                     # print("testing ", visible1[i], " on ", stack[location])
@@ -145,8 +148,8 @@ class _Game:
                             we_play = True
             if we_play:
                 something_moves = True
-                visible1 = sorted(next_visible1 + ([cards1[0]] if cards1 else []))
-                stack = sorted(next_stack)
+                visible1 = sorted(next_visible1 + ([cards1[0]] if cards1 else []))  # type: ignore
+                stack = sorted(next_stack)  # type: ignore
                 if cards1:
                     del cards1[0]
                 if not visible1:
@@ -178,7 +181,7 @@ class _Game:
                             we_play = True
             if we_play:
                 something_moves = True
-                visible2 = sorted(next_visible2 + ([cards2[0]] if cards2 else []))
+                visible2 = sorted(next_visible2 + ([cards2[0]] if cards2 else []))  # type: ignore
                 stack = sorted(next_stack)
                 if cards2:
                     del cards2[0]

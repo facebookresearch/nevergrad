@@ -1,0 +1,25 @@
+Game strategy optimization. Noisy.
+
+
+archiDenseNet
+archiPerceptron
+budget100
+budget1000
+budget10000
+budget200
+budget2000
+budget20000
+budget400
+budget4000
+budget40000
+budget50
+budget500
+budget5000
+dimension15
+dimension675
+repetitions1
+repetitions10
+repetitions100
+workers1
+workers10
+workers100

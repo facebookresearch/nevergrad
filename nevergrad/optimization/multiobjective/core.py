@@ -58,9 +58,7 @@ class HypervolumePareto:
         no_hypervolume: bool = False,
     ) -> None:
         self._auto_bound = 0
-        self._upper_bounds = (
-            np.array([-float("inf")]) if upper_bounds is None else np.array(upper_bounds, copy=False)
-        )
+        self._upper_bounds = np.asarray([-float("inf")]) if upper_bounds is None else np.array(upper_bounds)
         if upper_bounds is None:
             self._auto_bound = auto_bound
         # If we are yet to set the upper bounds, or yet to have an add since doing so, _best_volume is -inf.
@@ -256,11 +254,11 @@ class ParetoFront:
                     best_score = float("inf") if subset != "EPS" else 0.0
                     for pa in tentative:
                         if subset == "loss-covering":  # Equivalent to IGD.
-                            best_score = min(best_score, np.linalg.norm(pa.losses - v.losses))
+                            best_score = min(best_score, np.linalg.norm(pa.losses - v.losses))  # type: ignore
                         elif subset == "EPS":  # Cone Epsilon-Dominance.
                             best_score = min(best_score, max(pa.losses - v.losses))
                         elif subset == "domain-covering":
-                            best_score = min(
+                            best_score = min(  # type: ignore
                                 best_score, np.linalg.norm(pa.get_standardized_data(reference=v))
                             )  # TODO verify
                         else:

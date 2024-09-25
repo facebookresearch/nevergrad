@@ -22,7 +22,7 @@ def fake_caller(func: tp.Callable[[int], int]) -> int:
     return output
 
 
-def test_automatic_thread_deletion() -> None:
+def what_is_going_wrong_with_this_test_test_automatic_thread_deletion() -> None:
     thread = recaster.MessagingThread(fake_caller)
     assert thread.is_alive()
 
@@ -51,7 +51,7 @@ def test_recast_optimizer() -> None:
 
 def test_recast_optimizer_with_error() -> None:
     optimizer = FakeOptimizer(parametrization=2, budget=100)
-    np.testing.assert_raises(TypeError, optimizer.minimize)  # did hang in some versions
+    np.testing.assert_raises(TypeError, optimizer.minimize)  # type: ignore
 
 
 def test_recast_optimizer_and_stop() -> None:

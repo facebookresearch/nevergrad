@@ -1,0 +1,36 @@
+Noisy optimization counterpart of YABBOB.
+The implementation with ask/tell/recommend is supposed to be correct, which is not the case in all noisy optimization
+benchmarks.
+
+budget12800
+budget3200
+budget51200
+dimension10
+dimension2
+dimension50
+dimensions10
+dimensions2
+dimensions50
+nameackley
+namealtcigar
+namealtellipsoid
+namebentcigar
+namebucherastrigin
+namecigar
+namedeceptiveillcond
+namedeceptivemultimodal
+namedeceptivepath
+namediscus
+namedoublelinearslope
+nameellipsoid
+namegriewank
+namehm
+namelunacek
+namemultipeak
+namerastrigin
+namerosenbrock
+namesphere
+namestepdoublelinearslope
+namestepellipsoid
+rotationFalse
+rotationTrue

@@ -67,7 +67,7 @@ def test_commandline_launch() -> None:
         assert output.exists()
         df = utils.Selector.read_csv(str(output))
         testing.assert_set_equal(
-            df.columns, DESCRIPTION_KEYS | {"offset"}
+            df.columns, DESCRIPTION_KEYS | {"offset", "expo"}
         )  # "offset" comes from the custom function
         np.testing.assert_equal(len(df), 2)
 

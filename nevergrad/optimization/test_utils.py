@@ -80,7 +80,7 @@ def test_archive_errors() -> None:
     archive: utils.Archive[float] = utils.Archive()
     archive[[12, 0.0]] = 12.0
     np.testing.assert_raises(AssertionError, archive.__getitem__, [12, 0])  # int instead of float
-    np.testing.assert_raises(AssertionError, archive.__getitem__, [[12], [0.0]])  # int instead of float
+    np.testing.assert_raises(AssertionError, archive.__getitem__, [[12], [0.0]])  # type: ignore
     np.testing.assert_raises(RuntimeError, archive.keys)
     np.testing.assert_raises(RuntimeError, archive.items)
 

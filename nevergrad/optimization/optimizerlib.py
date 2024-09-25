@@ -8,6 +8,7 @@ import itertools
 from collections import deque
 import warnings
 import numpy as np
+from collections import defaultdict
 import scipy.ndimage as ndimage
 
 try:
@@ -43,9 +44,17 @@ from .recastlib import *  # noqa: F403
 
 try:
     from .externalbo import HyperOpt  # pylint: disable=unused-import
-except ModuleNotFoundError:
+
+    # HyperOpt = ParametrizedHyperOpt().set_name("HyperOpt", register=True)
+except:  # ModuleNotFoundError:
     pass
 
+# from .externalbo import ParametrizedHyperOpt
+# Lamcts = LamctsOptimizer(random_restart=True, device="cpu").set_name("Lamcts", register=True)
+# Lamcts2 = LamctsOptimizer(random_restart=True, device="cpu").set_name("Lamcts2", register=True)
+
+# run with LOGLEVEL=DEBUG for more debug information
+# logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
 logger = logging.getLogger(__name__)
 
 
@@ -58,9 +67,18 @@ def smooth_copy(array: p.Array, possible_radii: tp.Optional[tp.List[int]] = None
         possible_radii = [3]
     value = candidate._value
     radii = [array.random_state.choice(possible_radii) for _ in value.shape]
-    value2 = ndimage.convolve(value, np.ones(radii) / np.prod(radii))
+    try:
+        value2 = ndimage.convolve(value, np.ones(radii) / np.prod(radii))
+    except Exception as e:
+        assert False, f"{e} in smooth_copy, {radii}, {np.prod(radii)}"
     # DE style operator.
-    indices = array.random_state.randint(4, size=value.shape) == 0
+    invfreq = 4 if len(possible_radii) == 1 else max(4, np.random.randint(max(4, len(array.value.flatten()))))
+    indices = array.random_state.randint(invfreq, size=value.shape) == 0
+    while np.sum(indices) == 0 and len(possible_radii) > 1:
+        invfreq = (
+            4 if len(possible_radii) == 1 else max(4, np.random.randint(max(4, len(array.value.flatten()))))
+        )
+        indices = array.random_state.randint(invfreq, size=value.shape) == 0
     value[indices] = value2[indices]
     candidate._value = value
     return candidate
@@ -99,14 +117,28 @@ class _OnePlusOne(base.Optimizer):
         use_pareto: bool = False,
         sparse: tp.Union[bool, int] = False,
         smoother: bool = False,
+        super_radii: bool = False,
+        roulette_size: int = 2,
+        antismooth: int = 55,
+        crossover_type: str = "none",
+        forced_discretization: bool = False,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.parametrization.tabu_length = tabu_length
+        if forced_discretization:
+            self.parametrization.set_integer_casting()  # type: ignore
+        self.antismooth = antismooth
+        self.crossover_type = crossover_type
+        self.roulette_size = roulette_size
         assert crossover or (not rotation), "We can not have both rotation and not crossover."
         self._sigma: float = 1
         self._previous_best_loss = float("inf")
+        self._best_recent_mr = 0.2
+        self.inds = np.array([True] * self.dimension)
+        self.imr = 0.2
         self.use_pareto = use_pareto
         self.smoother = smoother
+        self.super_radii = super_radii
         self.annealing = annealing
         self._annealing_base: tp.Optional[tp.ArrayLike] = None
         self._max_loss = -float("inf")
@@ -143,11 +175,58 @@ class _OnePlusOne(base.Optimizer):
             "portfolio",
             "discreteBSO",
             "lengler",
+            "lengler2",
+            "lengler3",
+            "lenglerhalf",
+            "lenglerfourth",
             "doerr",
+            "lognormal",
+            "xlognormal",
+            "xsmalllognormal",
+            "tinylognormal",
+            "lognormal",
+            "smalllognormal",
+            "biglognormal",
+            "hugelognormal",
         ], f"Unkwnown mutation: '{mutation}'"
         if mutation == "adaptive":
             self._adaptive_mr = 0.5
-        if mutation == "coordinatewise_adaptive":
+        elif mutation == "lognormal":
+            self._global_mr = 0.2
+            self._memory_index = 0
+            self._memory_size = 12  # Dirty random value
+            self._best_recent_loss = float("inf")
+        elif mutation == "xsmalllognormal":
+            self._global_mr = 0.8
+            self._memory_index = 0
+            self._memory_size = 4  # Dirty random value
+            self._best_recent_loss = float("inf")
+        elif mutation == "xlognormal":
+            self._global_mr = 0.8
+            self._memory_index = 0
+            self._memory_size = 12  # Dirty random value
+            self._best_recent_loss = float("inf")
+        elif mutation == "tinylognormal":
+            self._global_mr = 0.01
+            self._memory_index = 0
+            self._memory_size = 2  # Dirty random value
+            self._best_recent_loss = float("inf")
+        elif mutation == "smalllognormal":
+            self._global_mr = 0.2
+            self._memory_index = 0
+            self._memory_size = 4  # Dirty random value
+            self._best_recent_loss = float("inf")
+        elif mutation == "biglognormal":
+            self._global_mr = 0.2
+            self._memory_index = 0
+            self._memory_size = 120  # Dirty random value
+            self._best_recent_loss = float("inf")
+        elif mutation == "hugelognormal":
+            self._global_mr = 0.2
+            self._memory_index = 0
+            self._memory_size = 1200  # Dirty random value
+            self._best_recent_loss = float("inf")
+        elif mutation == "coordinatewise_adaptive":
             self._velocity = self._rng.uniform(size=self.dimension) * arity / 4.0
             self._modified_variables = np.array([True] * self.dimension)
         self.noise_handling = noise_handling
@@ -195,10 +274,11 @@ class _OnePlusOne(base.Optimizer):
         pessimistic = self.current_bests["pessimistic"].parameter.spawn_child()
         if (
             self.smoother
-            and self._num_ask % max(self.num_workers + 1, 55) == 0
+            and self._num_ask % max(self.num_workers + 1, self.antismooth) == 0
             and isinstance(self.parametrization, p.Array)
         ):
-            self.suggest(smooth_copy(pessimistic).value)  # type: ignore
+            possible_radii = [3] if not self.super_radii else [3, 3 + np.random.randint(int(np.sqrt(np.sqrt(self.dimension))))]  # type: ignore
+            self.suggest(smooth_copy(pessimistic, possible_radii=possible_radii).value)  # type: ignore
         if self.num_objectives > 1 and self.use_pareto:  # multiobjective
             # revert to using a sample of the pareto front (not "pessimistic" though)
             pareto = (
@@ -209,8 +289,9 @@ class _OnePlusOne(base.Optimizer):
         if self.crossover and self._num_ask % 2 == 1 and len(self.archive) > 2:
             data = mutator.crossover(
                 pessimistic.get_standardized_data(reference=ref),
-                mutator.get_roulette(self.archive, num=2),
+                mutator.get_roulette(self.archive, num=self.roulette_size),
                 rotation=self.rotation,
+                crossover_type=self.crossover_type,
             )
             return pessimistic.set_standardized_data(data, reference=ref)
         # mutating
@@ -239,6 +320,20 @@ class _OnePlusOne(base.Optimizer):
                     )
                 else:
                     data = mutator.crossover(pessimistic_data, mutator.get_roulette(self.archive, num=2))
+            elif (
+                "lognormal" in mutation
+            ):  # in ["xlognormal", ""lognormal", "smalllognormal", "biglognormal", "hugelognormal"]:
+                mutation_rate = max(0.1 / self.dimension, self._global_mr)
+                assert mutation_rate > 0.0
+                individual_mutation_rate = 1.0 / (
+                    1.0 + (((1.0 - mutation_rate) / mutation_rate) * np.exp(0.22 * np.random.randn()))
+                )
+                # print(f"pd={pessimistic_data}_imr={individual_mutation_rate}, d={self.dimension}, arity={self.arity_for_discrete_mutation}")
+                data = mutator.portfolio_discrete_mutation(
+                    pessimistic_data,
+                    intensity=individual_mutation_rate * self.dimension,
+                    arity=self.arity_for_discrete_mutation,
+                )
             elif mutation == "adaptive":
                 data = mutator.portfolio_discrete_mutation(
                     pessimistic_data,
@@ -265,6 +360,38 @@ class _OnePlusOne(base.Optimizer):
                 )
             elif mutation == "lengler":
                 alpha = 1.54468
+                intensity = int(max(1, self.dimension * (alpha * np.log(self.num_ask) / self.num_ask)))
+                data = mutator.portfolio_discrete_mutation(
+                    pessimistic_data,
+                    intensity=intensity,
+                    arity=self.arity_for_discrete_mutation,
+                )
+            elif mutation == "lengler2":
+                alpha = 3.0
+                intensity = int(max(1, self.dimension * (alpha * np.log(self.num_ask) / self.num_ask)))
+                data = mutator.portfolio_discrete_mutation(
+                    pessimistic_data,
+                    intensity=intensity,
+                    arity=self.arity_for_discrete_mutation,
+                )
+            elif mutation == "lengler3":
+                alpha = 9.0
+                intensity = int(max(1, self.dimension * (alpha * np.log(self.num_ask) / self.num_ask)))
+                data = mutator.portfolio_discrete_mutation(
+                    pessimistic_data,
+                    intensity=intensity,
+                    arity=self.arity_for_discrete_mutation,
+                )
+            elif mutation == "lenglerfourth":
+                alpha = 0.4
+                intensity = int(max(1, self.dimension * (alpha * np.log(self.num_ask) / self.num_ask)))
+                data = mutator.portfolio_discrete_mutation(
+                    pessimistic_data,
+                    intensity=intensity,
+                    arity=self.arity_for_discrete_mutation,
+                )
+            elif mutation == "lenglerhalf":
+                alpha = 0.8
                 intensity = int(max(1, self.dimension * (alpha * np.log(self.num_ask) / self.num_ask)))
                 data = mutator.portfolio_discrete_mutation(
                     pessimistic_data,
@@ -301,7 +428,14 @@ class _OnePlusOne(base.Optimizer):
                     data.shape
                 ) < 1 + self._rng.randint(self.sparse)
                 data[zeroing] = 0.0
-            return pessimistic.set_standardized_data(data, reference=ref)
+            candidate = pessimistic.set_standardized_data(data, reference=ref)
+            if mutation == "coordinatewise_adaptive":
+                candidate._meta["modified_variables"] = (self._modified_variables,)
+            if (
+                "lognormal" in mutation
+            ):  # in ["xlognormal", "lognormal", "smalllognormal", "biglognormal", "hugelognormal"]:
+                candidate._meta["individual_mutation_rate"] = individual_mutation_rate
+            return candidate
 
     def _internal_tell(self, x: tp.ArrayLike, loss: tp.FloatLoss) -> None:
         if self.annealing != "none":
@@ -342,16 +476,49 @@ class _OnePlusOne(base.Optimizer):
             self._doerr_index = -1
         if self.mutation == "doerr":
             self._doerr_current_best = min(self._doerr_current_best, loss)
-        if self.mutation == "adaptive":
+        elif self.mutation == "adaptive":
             factor = 1.2 if loss <= self._previous_best_loss else 0.731  # 0.731 = 1.2**(-np.exp(1)-1)
             self._adaptive_mr = min(1.0, factor * self._adaptive_mr)
-        if self.mutation == "coordinatewise_adaptive":
+        elif self.mutation == "coordinatewise_adaptive":
             factor = 1.2 if loss < self._previous_best_loss else 0.731  # 0.731 = 1.2**(-np.exp(1)-1)
-            inds = self._modified_variables
+            # inds = self._modified_variables
+            inds = self.inds
             self._velocity[inds] = np.clip(
                 self._velocity[inds] * factor, 1.0, self.arity_for_discrete_mutation / 4.0
             )
+        elif (
+            "lognormal" in self.mutation
+        ):  # in ["xlognormal", "lognormal", "smalllognormal", "biglognormal", "hugelognormal"]:
+            # TODO: care about tell not ask, which invalidates the line above.
+            self._memory_index = (self._memory_index + 1) % self._memory_size
+            if loss < self._best_recent_loss:
+                self._best_recent_loss = loss
+                self._best_recent_mr = self.imr
+
+            if self._memory_index == 0:
+                self._global_mr = self._best_recent_mr
+                self._best_recent_loss = float("inf")
+
         self._previous_best_loss = self.current_bests["pessimistic"].mean  # could be the current one
+
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        """Called whenever calling :code:`tell` on a candidate that was "asked"."""
+        data = candidate.get_standardized_data(reference=self.parametrization)
+        if self.mutation == "coordinatewise_adaptive":
+            self.inds = (
+                candidate._meta["modified_variables"]
+                if "modified_variables" in candidate._meta
+                else np.array([True] * len(data))
+            )
+        if (
+            "lognormal" in self.mutation
+        ):  # in ["xlognormal", "lognormal", "smalllognormal", "biglognormal", "hugelognormal"]:
+            self.imr = (
+                candidate._meta["individual_mutation_rate"]
+                if "individual_mutation_rate" in candidate._meta
+                else 0.2
+            )
+        self._internal_tell(data, loss)
 
 
 class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
@@ -384,6 +551,7 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
         - `"portfolio"`: Random number of mutated bits (called niform mixing in
           Dang & Lehre "Self-adaptation of Mutation Rates in Non-elitist Population", 2016)
         - `"lengler"`: specific mutation rate chosen as a function of the dimension and iteration index.
+        - `"lengler{2|3|half|fourth}"`: variant of Lengler
     crossover: bool
         whether to add a genetic crossover step every other iteration.
     use_pareto: bool
@@ -395,8 +563,8 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
 
     Notes
     -----
-    After many papers advocared the mutation rate 1/d in the discrete (1+1) for the discrete case,
-    `it was proposed <https://arxiv.org/abs/1606.05551>`_ to use of a randomly
+    After many papers advocated the mutation rate 1/d in the discrete (1+1) for the discrete case,
+    `it was proposed <https://arxiv.org/abs/1606.05551>`_ to use a randomly
     drawn mutation rate. `Fast genetic algorithms <https://arxiv.org/abs/1703.03334>`_ are based on a similar idea
     These two simple methods perform quite well on a wide range of problems.
 
@@ -415,11 +583,18 @@ class ParametrizedOnePlusOne(base.ConfiguredOptimizer):
         use_pareto: bool = False,
         sparse: bool = False,
         smoother: bool = False,
+        super_radii: bool = False,
+        roulette_size: int = 2,
+        antismooth: int = 55,
+        crossover_type: str = "none",
     ) -> None:
         super().__init__(_OnePlusOne, locals())
 
 
 OnePlusOne = ParametrizedOnePlusOne().set_name("OnePlusOne", register=True)
+OnePlusLambda = ParametrizedOnePlusOne().set_name(
+    "OnePlusLambda", register=True
+)  # Same as one-plus-one as lambda is set to num_workers
 # SA = ParametrizedOnePlusOne(annealing="Exp0.9").set_name("SA", register=True)
 NoisyOnePlusOne = ParametrizedOnePlusOne(noise_handling="random").set_name("NoisyOnePlusOne", register=True)
 DiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="discrete").set_name("DiscreteOnePlusOne", register=True)
@@ -462,11 +637,44 @@ PortfolioDiscreteOnePlusOneT = ParametrizedOnePlusOne(tabu_length=10000, mutatio
 DiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(mutation="lengler").set_name(
     "DiscreteLenglerOnePlusOne", register=True
 )
+DiscreteLengler2OnePlusOne = ParametrizedOnePlusOne(mutation="lengler2").set_name(
+    "DiscreteLengler2OnePlusOne", register=True
+)
+DiscreteLengler3OnePlusOne = ParametrizedOnePlusOne(mutation="lengler3").set_name(
+    "DiscreteLengler3OnePlusOne", register=True
+)
+DiscreteLenglerHalfOnePlusOne = ParametrizedOnePlusOne(mutation="lenglerhalf").set_name(
+    "DiscreteLenglerHalfOnePlusOne", register=True
+)
+DiscreteLenglerFourthOnePlusOne = ParametrizedOnePlusOne(mutation="lenglerfourth").set_name(
+    "DiscreteLenglerFourthOnePlusOne", register=True
+)
 DiscreteLenglerOnePlusOneT = ParametrizedOnePlusOne(tabu_length=10000, mutation="lengler").set_name(
     "DiscreteLenglerOnePlusOneT", register=True
 )
 AdaptiveDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="adaptive").set_name(
     "AdaptiveDiscreteOnePlusOne", register=True
+)
+LognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="lognormal").set_name(
+    "LognormalDiscreteOnePlusOne", register=True
+)
+XLognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="xlognormal").set_name(
+    "XLognormalDiscreteOnePlusOne", register=True
+)
+XSmallLognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="xsmalllognormal").set_name(
+    "XSmallLognormalDiscreteOnePlusOne", register=True
+)
+BigLognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="biglognormal").set_name(
+    "BigLognormalDiscreteOnePlusOne", register=True
+)
+SmallLognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="smalllognormal").set_name(
+    "SmallLognormalDiscreteOnePlusOne", register=True
+)
+TinyLognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="tinylognormal").set_name(
+    "TinyLognormalDiscreteOnePlusOne", register=True
+)
+HugeLognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="hugelognormal").set_name(
+    "HugeLognormalDiscreteOnePlusOne", register=True
 )
 AnisotropicAdaptiveDiscreteOnePlusOne = ParametrizedOnePlusOne(mutation="coordinatewise_adaptive").set_name(
     "AnisotropicAdaptiveDiscreteOnePlusOne", register=True
@@ -486,6 +694,9 @@ OptimisticNoisyOnePlusOne = ParametrizedOnePlusOne(noise_handling="optimistic").
 OptimisticDiscreteOnePlusOne = ParametrizedOnePlusOne(
     noise_handling="optimistic", mutation="discrete"
 ).set_name("OptimisticDiscreteOnePlusOne", register=True)
+OLNDiscreteOnePlusOne = ParametrizedOnePlusOne(noise_handling="optimistic", mutation="lognormal").set_name(
+    "OLNDiscreteOnePlusOne", register=True
+)
 NoisyDiscreteOnePlusOne = ParametrizedOnePlusOne(
     noise_handling=("random", 1.0), mutation="discrete"
 ).set_name("NoisyDiscreteOnePlusOne", register=True)
@@ -505,9 +716,6 @@ RecombiningPortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(
 ).set_name("RecombiningPortfolioDiscreteOnePlusOne", register=True)
 
 
-# pylint: too-many-arguments,too-many-instance-attributes
-
-
 class _CMA(base.Optimizer):
     _CACHE_KEY = "#CMA#datacache"
 
@@ -517,15 +725,19 @@ class _CMA(base.Optimizer):
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
         config: tp.Optional["ParametrizedCMA"] = None,
+        algorithm: str = "quad",
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        self.algorithm = algorithm
         self._config = ParametrizedCMA() if config is None else config
         pop = self._config.popsize
         self._popsize = (
             max(num_workers, 4 + int(self._config.popsize_factor * np.log(self.dimension)))
             if pop is None
-            else pop
+            else max(pop, num_workers)
         )
+        if self._config.elitist:
+            self._popsize = max(self._popsize, self.num_workers + 1)
         # internal attributes
         self._to_be_asked: tp.Deque[np.ndarray] = deque()
         self._to_be_told: tp.List[p.Parameter] = []
@@ -537,6 +749,8 @@ class _CMA(base.Optimizer):
     @property
     def es(self) -> tp.Any:  # typing not possible since cmaes not imported :(
         scale_multiplier = 1.0
+        if self.dimension == 1:
+            self._config.fcmaes = True
         if p.helpers.Normalizer(self.parametrization).fully_bounded:
             scale_multiplier = 0.3 if self.dimension < 18 else 0.15
         if self._es is None or (not self._config.fcmaes and self._es.stop()):
@@ -554,9 +768,11 @@ class _CMA(base.Optimizer):
 
                 inopts.update(self._config.inopts if self._config.inopts is not None else {})
                 self._es = cma.CMAEvolutionStrategy(
-                    x0=self.parametrization.sample().get_standardized_data(reference=self.parametrization)
-                    if self._config.random_init
-                    else np.zeros(self.dimension, dtype=np.float_),
+                    x0=(
+                        self.parametrization.sample().get_standardized_data(reference=self.parametrization)
+                        if self._config.random_init
+                        else np.zeros(self.dimension, dtype=np.float64)
+                    ),
                     sigma0=self._config.scale * scale_multiplier,
                     inopts=inopts,
                 )
@@ -568,7 +784,7 @@ class _CMA(base.Optimizer):
                         "Please install fcmaes (pip install fcmaes) to use FCMA optimizers"
                     ) from e
                 self._es = cmaes.Cmaes(
-                    x0=np.zeros(self.dimension, dtype=np.float_),
+                    x0=np.zeros(self.dimension, dtype=np.float64),
                     input_sigma=self._config.scale * scale_multiplier,
                     popsize=self._popsize,
                     randn=self._rng.randn,
@@ -610,7 +826,7 @@ class _CMA(base.Optimizer):
         sample_size = int(d * d / 2 + d / 2 + 3)
         if self._config.high_speed and n >= sample_size:
             try:
-                data = learn_on_k_best(self.archive, sample_size)
+                data = learn_on_k_best(self.archive, sample_size, self.algorithm)
                 return data  # type: ignore
             except MetaModelFailure:  # Failures in the metamodeling can happen.
                 pass
@@ -624,7 +840,7 @@ class _CMA(base.Optimizer):
 
 class ParametrizedCMA(base.ConfiguredOptimizer):
     """CMA-ES optimizer,
-    This evolution strategy uses a Gaussian sampling, iteratively modified
+    This evolution strategy uses Gaussian sampling, iteratively modified
     for searching in the best directions.
     This optimizer wraps an external implementation: https://github.com/CMA-ES/pycma
 
@@ -664,17 +880,22 @@ class ParametrizedCMA(base.ConfiguredOptimizer):
         popsize: tp.Optional[int] = None,
         popsize_factor: float = 3.0,
         diagonal: bool = False,
+        zero: bool = False,
         high_speed: bool = False,
         fcmaes: bool = False,
         random_init: bool = False,
         inopts: tp.Optional[tp.Dict[str, tp.Any]] = None,
+        algorithm: str = "quad",
     ) -> None:
         super().__init__(_CMA, locals(), as_config=True)
+        if zero:
+            scale = scale / 1000.0
         if fcmaes:
             if diagonal:
                 raise RuntimeError("fcmaes doesn't support diagonal=True, use fcmaes=False")
         self.scale = scale
         self.elitist = elitist
+        self.zero = zero
         self.popsize = popsize
         self.popsize_factor = popsize_factor
         self.diagonal = diagonal
@@ -755,6 +976,9 @@ class ChoiceBase(base.Optimizer):
 
 
 OldCMA = ParametrizedCMA().set_name("OldCMA", register=True)
+LargeCMA = ParametrizedCMA(scale=3.0).set_name("LargeCMA", register=True)
+LargeDiagCMA = ParametrizedCMA(scale=3.0, diagonal=True).set_name("LargeDiagCMA", register=True)
+TinyCMA = ParametrizedCMA(scale=0.33).set_name("TinyCMA", register=True)
 CMAbounded = ParametrizedCMA(
     scale=1.5884, popsize_factor=1, elitist=True, diagonal=True, fcmaes=False
 ).set_name("CMAbounded", register=True)
@@ -773,7 +997,7 @@ CMAtuning = ParametrizedCMA(
 
 
 @registry.register
-class CMA(ChoiceBase):  # Adds Risto's CMA to CMA.
+class MetaCMA(ChoiceBase):  # Adds Risto's CMA to CMA.
     """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
 
     def _select_optimizer_cls(self) -> base.OptCls:
@@ -783,6 +1007,8 @@ class CMA(ChoiceBase):  # Adds Risto's CMA to CMA.
             and not self.has_noise
             and self.num_objectives < 2
         ):
+            if self.dimension == 1:
+                return OnePlusOne
             if p.helpers.Normalizer(self.parametrization).fully_bounded:
                 return CMAbounded
             if self.budget < 50:
@@ -797,7 +1023,13 @@ class CMA(ChoiceBase):  # Adds Risto's CMA to CMA.
 
 
 DiagonalCMA = ParametrizedCMA(diagonal=True).set_name("DiagonalCMA", register=True)
+SDiagonalCMA = ParametrizedCMA(diagonal=True, zero=True).set_name("SDiagonalCMA", register=True)
 FCMA = ParametrizedCMA(fcmaes=True).set_name("FCMA", register=True)
+
+
+@registry.register
+class CMA(MetaCMA):
+    pass
 
 
 class _PopulationSizeController:
@@ -1069,8 +1301,8 @@ class _PSO(base.Optimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._config = ConfPSO() if config is None else config
-        if budget is not None and budget < 60:
-            warnings.warn("PSO is inefficient with budget < 60", errors.InefficientSettingsWarning)
+        # if budget is not None and budget < 60:
+        #    warnings.warn("PSO is inefficient with budget < 60", errors.InefficientSettingsWarning)
         cases: tp.Dict[str, tp.Tuple[tp.Optional[float], transforms.Transform]] = dict(
             arctan=(0, transforms.ArctanBound(0, 1)),
             identity=(None, transforms.Affine(1, 0)),
@@ -1084,16 +1316,38 @@ class _PSO(base.Optimizer):
         self._uid_queue = base.utils.UidQueue()
         self.population: tp.Dict[str, p.Parameter] = {}
         self._best = self.parametrization.spawn_child()
+        self.previous_candidate: tp.Optional[tp.Any] = None
+        self.previous_speed: tp.Optional[tp.Any] = None
 
     def _internal_ask_candidate(self) -> p.Parameter:
         # population is increased only if queue is empty (otherwise tell_not_asked does not work well at the beginning)
         if len(self.population) < self.llambda:
+            r = (
+                np.exp(-5.0 * self._rng.rand())
+                if self._config.so
+                else (self._rng.rand() if self._config.sqo else 1.0)
+            )
             candidate = self.parametrization.sample()
+            if self._config.qo:
+                if self.previous_candidate is not None:
+                    data = self.previous_candidate.get_standardized_data(reference=self.parametrization)
+                    candidate.set_standardized_data(-r * data, reference=self.parametrization)
+                    self.previous_candidate = None
+                else:
+                    self.previous_candidate = candidate
             self.population[candidate.uid] = candidate
             dim = self.parametrization.dimension
             candidate.heritage["speed"] = (
                 self._rng.normal(size=dim) if self._eps is None else self._rng.uniform(-1, 1, dim)
             )
+            if self._config.sqo:
+                assert self._config.qo, "SQO only when QO!"
+                if self.previous_speed is not None:
+                    candidate.heritage["speed"] = -r * self.previous_speed
+                    self.previous_speed = None
+                else:
+                    self.previous_speed = candidate.heritage["speed"]
+
             self._uid_queue.asked.add(candidate.uid)
             return candidate
         uid = self._uid_queue.ask()
@@ -1177,6 +1431,12 @@ class ConfPSO(base.ConfiguredOptimizer):
         particle swarm optimization parameter
     phig: float
         particle swarm optimization parameter
+    qo: bool
+        whether we use quasi-opposite initialization
+    sqo: bool
+        whether we use quasi-opposite initialization for speed
+    so: bool
+        whether we use the special quasi-opposite initialization for speed
 
     Note
     ----
@@ -1197,6 +1457,9 @@ class ConfPSO(base.ConfiguredOptimizer):
         omega: float = 0.5 / math.log(2.0),
         phip: float = 0.5 + math.log(2.0),
         phig: float = 0.5 + math.log(2.0),
+        qo: bool = False,
+        sqo: bool = False,
+        so: bool = False,
     ) -> None:
         super().__init__(_PSO, locals(), as_config=True)
         assert transform in ["arctan", "gaussian", "identity"]
@@ -1205,11 +1468,19 @@ class ConfPSO(base.ConfiguredOptimizer):
         self.omega = omega
         self.phip = phip
         self.phig = phig
+        self.qo = qo
+        self.sqo = sqo
+        self.so = so
 
 
 ConfiguredPSO = ConfPSO  # backward compatibility (to be removed)
 RealSpacePSO = ConfPSO().set_name("RealSpacePSO", register=True)
 PSO = ConfPSO(transform="arctan").set_name("PSO", register=True)
+QOPSO = ConfPSO(transform="arctan", qo=True).set_name("QOPSO", register=True)
+QORealSpacePSO = ConfPSO(qo=True).set_name("QORealSpacePSO", register=True)
+SQOPSO = ConfPSO(transform="arctan", qo=True, sqo=True).set_name("SQOPSO", register=True)
+SOPSO = ConfPSO(transform="arctan", qo=True, sqo=True, so=True).set_name("SOPSO", register=True)
+SQORealSpacePSO = ConfPSO(qo=True, sqo=True).set_name("SQORealSpacePSO", register=True)
 
 
 @registry.register
@@ -1289,20 +1560,25 @@ class _Rescaled(base.Optimizer):
         parametrization: IntOrParameter,
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
-        base_optimizer: base.OptCls = CMA,
+        base_optimizer: base.OptCls = MetaCMA,
         scale: tp.Optional[float] = None,
+        shift: tp.Optional[float] = None,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self._optimizer = base_optimizer(self.parametrization, budget=budget, num_workers=num_workers)
+        self.no_parallelization = self._optimizer.no_parallelization
         self._subcandidates: tp.Dict[str, p.Parameter] = {}
         if scale is None:
             assert self.budget is not None, "Either scale or budget must be known in _Rescaled."
             scale = math.sqrt(math.log(self.budget) / self.dimension)
         self.scale = scale
+        self.shift = shift
         assert self.scale != 0.0, "scale should be non-zero in Rescaler."
 
     def rescale_candidate(self, candidate: p.Parameter, inverse: bool = False) -> p.Parameter:
         data = candidate.get_standardized_data(reference=self.parametrization)
+        if self.shift is not None:
+            data = data + self.shift * np.random.randn(self.dimension)
         scale = self.scale if not inverse else 1.0 / self.scale
         return self.parametrization.spawn_child().set_standardized_data(scale * data)
 
@@ -1327,6 +1603,8 @@ class _Rescaled(base.Optimizer):
 class Rescaled(base.ConfiguredOptimizer):
     """Configured optimizer for creating rescaled optimization algorithms.
 
+    By default, scales to sqrt(log(budget)/n_dimensions).
+
     Parameters
     ----------
     base_optimizer: base.OptCls
@@ -1339,13 +1617,31 @@ class Rescaled(base.ConfiguredOptimizer):
     def __init__(
         self,
         *,
-        base_optimizer: base.OptCls = CMA,
+        base_optimizer: base.OptCls = MetaCMA,
         scale: tp.Optional[float] = None,
+        shift: tp.Optional[float] = None,
     ) -> None:
         super().__init__(_Rescaled, locals())
 
 
 RescaledCMA = Rescaled().set_name("RescaledCMA", register=True)
+TinyLhsDE = Rescaled(base_optimizer=LhsDE, scale=1e-3).set_name("TinyLhsDE", register=True)
+LocalBFGS = Rescaled(base_optimizer=BFGS, scale=1e-2).set_name("LocalBFGS", register=True)
+LocalBFGS.no_parallelization = True
+TinyQODE = Rescaled(base_optimizer=QODE, scale=1e-3).set_name("TinyQODE", register=True)
+TinySQP = Rescaled(base_optimizer=SQP, scale=1e-3).set_name("TinySQP", register=True)
+MicroSQP = Rescaled(base_optimizer=SQP, scale=1e-6).set_name("MicroSQP", register=True)
+TinySQP.no_parallelization = True
+MicroSQP.no_parallelization = True
+TinySPSA = Rescaled(base_optimizer=SPSA, scale=1e-3).set_name("TinySPSA", register=True)
+MicroSPSA = Rescaled(base_optimizer=SPSA, scale=1e-6).set_name("MicroSPSA", register=True)
+TinySPSA.no_parallelization = True
+MicroSPSA.no_parallelization = True
+VastLengler = Rescaled(base_optimizer=DiscreteLenglerOnePlusOne, scale=1000).set_name(
+    "VastLengler", register=True
+)
+VastDE = Rescaled(base_optimizer=DE, scale=1000).set_name("VastDE", register=True)
+LSDE = Rescaled(base_optimizer=DE, scale=10).set_name("LSDE", register=True)
 
 
 class SplitOptimizer(base.Optimizer):
@@ -1500,7 +1796,7 @@ class ConfSplitOptimizer(base.ConfiguredOptimizer):
         num_optims: tp.Optional[float] = None,
         num_vars: tp.Optional[tp.List[int]] = None,
         max_num_vars: tp.Optional[int] = None,
-        multivariate_optimizer: base.OptCls = CMA,
+        multivariate_optimizer: base.OptCls = MetaCMA,
         monovariate_optimizer: base.OptCls = oneshot.RandomSearch,
         progressive: bool = False,
         non_deterministic_descriptor: bool = True,
@@ -1570,10 +1866,12 @@ class ConfPortfolio(base.ConfiguredOptimizer):
         *,
         optimizers: tp.Sequence[tp.Union[base.Optimizer, base.OptCls, str]] = (),
         warmup_ratio: tp.Optional[float] = None,
+        no_crossing: bool = False,
     ) -> None:
         self.optimizers = optimizers
         self.warmup_ratio = warmup_ratio
         super().__init__(Portfolio, locals(), as_config=True)
+        self.no_crossing = no_crossing
 
 
 @registry.register
@@ -1587,6 +1885,7 @@ class Portfolio(base.Optimizer):
         num_workers: int = 1,
         config: tp.Optional["ConfPortfolio"] = None,
     ) -> None:
+        self.no_crossing = False
         distribute_workers = config is not None and config.warmup_ratio == 1.0
         self._config = ConfPortfolio() if config is None else config
         cfg = self._config
@@ -1595,33 +1894,78 @@ class Portfolio(base.Optimizer):
         if not optimizers:  # default
             optimizers = []
             if budget is None or budget >= 12 * num_workers:
-                optimizers = [CMA, "TwoPointsDE"]
+                optimizers = [MetaCMA, "TwoPointsDE"]
             if budget is not None:  # needs a budget
                 optimizers.append("ScrHammersleySearch")
         num = len(optimizers)
+        # print(f"Optimizers = {optimizers}")
         self.optims: tp.List[base.Optimizer] = []
-        sub_budget = None if budget is None else budget // num + (budget % num > 0)
-        sub_workers = 1
+        num_non_para = 0
+        for opt in optimizers:
+            Optim_tmp: base.OptCls = registry[opt] if isinstance(opt, str) else opt  # type: ignore
+            if Optim_tmp.no_parallelization:
+                num_non_para += 1
+        if num_workers <= num:
+            num_non_para = 0  # no problem with non-parallelizable if num_workers < num
+        num_para = num - num_non_para
+        rebudget = (
+            int(np.ceil((budget * config.warmup_ratio)))
+            if config is not None and config.warmup_ratio is not None and budget is not None
+            else budget
+        )
+        sub_budget = None if budget is None else rebudget // num_para + (rebudget % num_para > 0)  # type: ignore
+        if (
+            budget is not None
+            and sub_budget is not None
+            and config is not None
+            and config.warmup_ratio is not None
+            and config.warmup_ratio < 1.0
+        ):
+            sub_budget += 1 + int(
+                budget * (1 - config.warmup_ratio)
+            )  # We need additional budget for the selected optimizer
+        needed_workers = num_workers - num_non_para
+        sub_workers = max(
+            1, needed_workers // (num - num_non_para) + (needed_workers % (num - num_non_para) > 0)
+        )
         if distribute_workers:
             sub_workers = num_workers // num + (num_workers % num > 0)
-        for opt in optimizers:
+        # print(
+        #     f"{num_workers} workers, {num} algorithms, budget {budget}, {num} optimizers, {sub_workers} sub_workers, sub_budget={sub_budget}, distrib: {distribute_workers}"
+        # )
+        assert num * sub_workers >= num_workers
+        turns = []
+        self.str_info = ""
+        for index, opt in enumerate(optimizers):
             if isinstance(opt, base.Optimizer):
+                self.str_info += f"XX{opt}"
                 if opt.parametrization is not self.parametrization:
                     raise errors.NevergradValueError(
                         "Initialized optimizers are only accepted if "
                         "the parametrization object is strictly the same"
                     )
+                self.str_info += f"append{opt}"
+                turns += [index] * (1 if opt.no_parallelization else sub_workers)
+                if not opt.no_parallelization:
+                    assert opt.num_workers == sub_workers
                 self.optims.append(opt)
                 continue
             Optim: base.OptCls = registry[opt] if isinstance(opt, str) else opt
-            assert sub_workers == 1 or not Optim.no_parallelization
+            # assert sub_workers == 1 or not Optim.no_parallelization
             self.optims.append(
                 Optim(
                     self.parametrization,  # share parametrization and its rng
                     budget=sub_budget,
-                    num_workers=sub_workers,
+                    num_workers=1 if Optim.no_parallelization else sub_workers,
                 )
             )
+            assert sub_workers >= 1
+            turns += [index] * (1 if Optim.no_parallelization else sub_workers)
+            self.str_info += f"Added {opt} with budget {sub_budget} with {1 if Optim.no_parallelization else sub_workers} workers"  # DEBUG INFO
+            # print( f"Added {opt} with budget {sub_budget} with {1 if Optim.no_parallelization else sub_workers} workers")
+        self.turns = turns
+        # print("end additions...", self.turns, optimizers)
+        assert max(self.turns) < len(self.optims)
         # current optimizer choice
         self._current = -1
         self._warmup_budget: tp.Optional[int] = None
@@ -1629,29 +1973,42 @@ class Portfolio(base.Optimizer):
             raise ValueError("warmup_ratio is only available if a budget is provided")
         if not any(x is None for x in (cfg.warmup_ratio, budget)):
             self._warmup_budget = int(cfg.warmup_ratio * budget)  # type: ignore
+        self.num_times = [0] * num
 
     def _internal_ask_candidate(self) -> p.Parameter:
         # optimizer selection if budget is over
         if self._warmup_budget is not None:
             if len(self.optims) > 1 and self._warmup_budget < self.num_tell:
                 ind = self.current_bests["pessimistic"].parameter._meta.get("optim_index", -1)
-                if ind >= 0:  # not a tell not asked
+                if ind >= 0 and ind < len(self.optims):  # not a tell not asked
                     if self.num_workers == 1 or self.optims[ind].num_workers > 1:
                         self.optims = [self.optims[ind]]  # throw away everything else
         num = len(self.optims)
-        for k in range(2 * num):
+        if num == 1:
+            optim_index = 0
+        else:
+            # for _ in range(2 * len(self.turns)):
             self._current += 1
-            optim_index = self._current % len(self.optims)
+            # optim_index = self._current % len(self.optims)
+            optim_index = self.turns[self._current % len(self.turns)]
+            assert optim_index < len(
+                self.optims
+            ), f"{optim_index}, {self.turns}, {len(self.optims)} {self.num_times} {self.str_info} {self.optims}"
             opt = self.optims[optim_index]
-
-            if opt.num_workers > opt.num_ask - (opt.num_tell - opt.num_tell_not_asked):
-                break  # if there are workers left, use this optimizer
-            if k > num:
-                if not opt.no_parallelization:
-                    break  # if no worker is available, try the first parallelizable optimizer
+            # break
+            # if opt.num_workers > opt.num_ask - (opt.num_tell):  # - opt.num_tell_not_asked):
+            #     # if opt.num_workers > opt.num_ask - (opt.num_tell - opt.num_tell_not_asked):
+            #     break  # if there are workers left, use this optimizer
+            # # print(optim_index, " not available", opt)  # DEBUG INFO
+            # # print( f"{opt} ({optim_index}) not available, because {opt.num_workers} not > {opt.num_ask} - ({opt.num_tell} - {opt.num_tell_not_asked})")  # DEBUG INFO
+            # if k > len(self.turns):
+            #     if not opt.no_parallelization:
+            #         break  # if no worker is available, try the first parallelizable optimizer
         if optim_index is None:
             raise RuntimeError("Something went wrong in optimizer selection")
         opt = self.optims[optim_index]
+        self.num_times[optim_index] += 1
+        # print( optim_index, " is chosen:", opt, self.num_times[optim_index], self.turns, self.optims, self.num_times, self.num_workers,)  # DEBUG INFO
         if optim_index > 1 and not opt.num_ask and not opt._suggestions and not opt.num_tell:
             # most algorithms start at 0, lets avoid that for all but the first if they have no information
             opt._suggestions.append(self.parametrization.sample())
@@ -1664,6 +2021,9 @@ class Portfolio(base.Optimizer):
         # Telling all optimizers is presumably better than just
         # self.optims[optim_index].tell(candidate, value)
         accepted = 0
+        if self.no_crossing and len(self.optims) > candidate._meta["optim_index"]:
+            self.optims[candidate._meta["optim_index"]].tell(candidate, loss)
+            return
         for opt in self.optims:
             try:
                 opt.tell(candidate, loss)
@@ -1678,15 +2038,18 @@ class Portfolio(base.Optimizer):
             opt.enable_pickling()
 
 
-ParaPortfolio = ConfPortfolio(optimizers=[CMA, TwoPointsDE, PSO, SQP, ScrHammersleySearch]).set_name(
+ParaPortfolio = ConfPortfolio(optimizers=[MetaCMA, TwoPointsDE, PSO, SQP, ScrHammersleySearch]).set_name(
     "ParaPortfolio", register=True
 )
-ASCMADEthird = ConfPortfolio(optimizers=[CMA, LhsDE], warmup_ratio=0.33).set_name(
+ASCMADEthird = ConfPortfolio(optimizers=[MetaCMA, LhsDE], warmup_ratio=0.33).set_name(
     "ASCMADEthird", register=True
 )
 MultiCMA = ConfPortfolio(
     optimizers=[ParametrizedCMA(random_init=True) for _ in range(3)], warmup_ratio=0.1
 ).set_name("MultiCMA", register=True)
+MultiDS = ConfPortfolio(optimizers=[DSproba for _ in range(3)], warmup_ratio=0.1).set_name(
+    "MultiDS", register=True
+)
 TripleCMA = ConfPortfolio(
     optimizers=[ParametrizedCMA(random_init=True) for _ in range(3)], warmup_ratio=0.33
 ).set_name("TripleCMA", register=True)
@@ -1697,6 +2060,8 @@ MultiScaleCMA = ConfPortfolio(
     optimizers=[ParametrizedCMA(random_init=True, scale=scale) for scale in [1.0, 1e-3, 1e-6]],
     warmup_ratio=0.33,
 ).set_name("MultiScaleCMA", register=True)
+LPCMA = ParametrizedCMA(popsize_factor=10.0).set_name("LPCMA", register=True)
+VLPCMA = ParametrizedCMA(popsize_factor=100.0).set_name("VLPCMA", register=True)
 
 
 class _MetaModel(base.Optimizer):
@@ -1708,13 +2073,18 @@ class _MetaModel(base.Optimizer):
         *,
         multivariate_optimizer: tp.Optional[base.OptCls] = None,
         frequency_ratio: float = 0.9,
+        algorithm: str,  # Quad or NN or SVR
+        degree: int = 2,
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         self.frequency_ratio = frequency_ratio
+        self.algorithm = algorithm
+        self.degree = degree
+        if algorithm == "image":
+            self.degree = 1
+        elitist = self.dimension < 3
         if multivariate_optimizer is None:
-            multivariate_optimizer = (
-                ParametrizedCMA(elitist=(self.dimension < 3)) if self.dimension > 1 else OnePlusOne
-            )
+            multivariate_optimizer = ParametrizedCMA(elitist=elitist) if self.dimension > 1 else OnePlusOne
         self._optim = multivariate_optimizer(
             self.parametrization, budget, num_workers
         )  # share parametrization and its rng
@@ -1722,12 +2092,28 @@ class _MetaModel(base.Optimizer):
     def _internal_ask_candidate(self) -> p.Parameter:
         # We request a bit more points than what is really necessary for our dimensionality (+dimension).
         sample_size = int((self.dimension * (self.dimension - 1)) / 2 + 2 * self.dimension + 1)
-        freq = max(13, self.num_workers, self.dimension, int(self.frequency_ratio * sample_size))
+        try:
+            shape = self.parametrization.value.shape
+        except:
+            shape = None
+        if self.degree != 2:
+            sample_size = int(np.power(sample_size, self.degree / 2.0))
+            if "image" == self.algorithm:
+                sample_size = 50  # let us assume that 50 images is all we need.
+        freq = max(
+            13 if "image" != self.algorithm else 0,
+            self.num_workers,
+            self.dimension if "image" != self.algorithm else 0,
+            int(self.frequency_ratio * sample_size),
+        )
         if len(self.archive) >= sample_size and not self._num_ask % freq:
             try:
-                data = learn_on_k_best(self.archive, sample_size)
+                data = learn_on_k_best(
+                    self.archive, sample_size, self.algorithm, self.degree, shape, self.parametrization
+                )
+
                 candidate = self.parametrization.spawn_child().set_standardized_data(data)
-            except MetaModelFailure:  # The optimum is at infinity. Shit happens.
+            except (OverflowError, MetaModelFailure):  # The optimum is at infinity. Shit happens.
                 candidate = self._optim.ask()
         else:
             candidate = self._optim.ask()
@@ -1763,32 +2149,673 @@ class ParametrizedMetaModel(base.ConfiguredOptimizer):
         *,
         multivariate_optimizer: tp.Optional[base.OptCls] = None,
         frequency_ratio: float = 0.9,
+        algorithm: str = "quad",
+        degree: int = 2,
     ) -> None:
         super().__init__(_MetaModel, locals())
         assert 0 <= frequency_ratio <= 1.0
 
 
 MetaModel = ParametrizedMetaModel().set_name("MetaModel", register=True)
+NeuralMetaModel = ParametrizedMetaModel(algorithm="neural").set_name("NeuralMetaModel", register=True)
+ImageMetaModel = ParametrizedMetaModel(algorithm="image").set_name("ImageMetaModel", register=True)
+SVMMetaModel = ParametrizedMetaModel(algorithm="svr").set_name("SVMMetaModel", register=True)
+RFMetaModel = ParametrizedMetaModel(algorithm="rf").set_name("RFMetaModel", register=True)
+
+# Without quad
+Quad1MetaModel = ParametrizedMetaModel(degree=1).set_name("Quad1MetaModel", register=True)
+Neural1MetaModel = ParametrizedMetaModel(algorithm="neural, degree=1").set_name(
+    "Neural1MetaModel", register=True
+)
+SVM1MetaModel = ParametrizedMetaModel(algorithm="svr, degree=1").set_name("SVM1MetaModel", register=True)
+RF1MetaModel = ParametrizedMetaModel(algorithm="rf", degree=1).set_name("RF1MetaModel", register=True)
+# OnePlusOne, without quad
+Quad1MetaModelOnePlusOne = ParametrizedMetaModel(multivariate_optimizer=OnePlusOne, degree=1).set_name(
+    "Quad1MetaModelOnePlusOne", register=True
+)
+Neural1MetaModelOnePlusOne = ParametrizedMetaModel(
+    multivariate_optimizer=OnePlusOne, algorithm="neural, degree=1"
+).set_name("Neural1MetaModelOnePlusOne", register=True)
+SVM1MetaModelOnePlusOne = ParametrizedMetaModel(
+    multivariate_optimizer=OnePlusOne, algorithm="svr, degree=1"
+).set_name("SVM1MetaModelOnePlusOne", register=True)
+RF1MetaModelOnePlusOne = ParametrizedMetaModel(
+    multivariate_optimizer=OnePlusOne, algorithm="rf", degree=1
+).set_name("RF1MetaModelOnePlusOne", register=True)
+
 MetaModelOnePlusOne = ParametrizedMetaModel(multivariate_optimizer=OnePlusOne).set_name(
     "MetaModelOnePlusOne", register=True
 )
+ImageMetaModelOnePlusOne = ParametrizedMetaModel(
+    multivariate_optimizer=OnePlusOne, algorithm="image"
+).set_name("ImageMetaModelOnePlusOne", register=True)
+ImageMetaModelDiagonalCMA = ParametrizedMetaModel(
+    multivariate_optimizer=DiagonalCMA, algorithm="image"
+).set_name("ImageMetaModelDiagonalCMA", register=True)
+MetaModelDSproba = ParametrizedMetaModel(multivariate_optimizer=DSproba).set_name(
+    "MetaModelDSproba", register=True
+)
+RFMetaModelOnePlusOne = ParametrizedMetaModel(multivariate_optimizer=OnePlusOne, algorithm="rf").set_name(
+    "RFMetaModelOnePlusOne", register=True
+)
+ImageMetaModelLengler = ParametrizedMetaModel(
+    multivariate_optimizer=DiscreteLenglerOnePlusOne,
+    algorithm="image",
+).set_name("ImageMetaModelLengler", register=True)
+ImageMetaModelLogNormal = ParametrizedMetaModel(
+    multivariate_optimizer=LognormalDiscreteOnePlusOne,
+    algorithm="image",
+).set_name("ImageMetaModelLogNormal", register=True)
+RF1MetaModelLogNormal = ParametrizedMetaModel(
+    multivariate_optimizer=LognormalDiscreteOnePlusOne,
+    algorithm="rf",
+    degree=1,
+).set_name("RF1MetaModelLogNormal", register=True)
+SVM1MetaModelLogNormal = ParametrizedMetaModel(
+    multivariate_optimizer=LognormalDiscreteOnePlusOne,
+    algorithm="svr",
+    degree=1,
+).set_name("SVM1MetaModelLogNormal", register=True)
+Neural1MetaModelLogNormal = ParametrizedMetaModel(
+    multivariate_optimizer=LognormalDiscreteOnePlusOne,
+    algorithm="neural",
+    degree=1,
+).set_name("Neural1MetaModelLogNormal", register=True)
+RFMetaModelLogNormal = ParametrizedMetaModel(
+    multivariate_optimizer=LognormalDiscreteOnePlusOne, algorithm="rf"
+).set_name("RFMetaModelLogNormal", register=True)
+SVMMetaModelLogNormal = ParametrizedMetaModel(
+    multivariate_optimizer=LognormalDiscreteOnePlusOne, algorithm="svr"
+).set_name("SVMMetaModelLogNormal", register=True)
+MetaModelLogNormal = ParametrizedMetaModel(
+    multivariate_optimizer=LognormalDiscreteOnePlusOne,
+    algorithm="quad",
+).set_name("MetaModelLogNormal", register=True)
+NeuralMetaModelLogNormal = ParametrizedMetaModel(
+    multivariate_optimizer=LognormalDiscreteOnePlusOne, algorithm="neural"
+).set_name("NeuralMetaModelLogNormal", register=True)
+MetaModelPSO = ParametrizedMetaModel(multivariate_optimizer=PSO).set_name("MetaModelPSO", register=True)
+RFMetaModelPSO = ParametrizedMetaModel(multivariate_optimizer=PSO, algorithm="rf").set_name(
+    "RFMetaModelPSO", register=True
+)
+SVMMetaModelPSO = ParametrizedMetaModel(multivariate_optimizer=PSO, algorithm="svr").set_name(
+    "SVMMetaModelPSO", register=True
+)
+
+MetaModelDE = ParametrizedMetaModel(multivariate_optimizer=DE).set_name("MetaModelDE", register=True)
+MetaModelQODE = ParametrizedMetaModel(multivariate_optimizer=QODE).set_name("MetaModelQODE", register=True)
+NeuralMetaModelDE = ParametrizedMetaModel(algorithm="neural", multivariate_optimizer=DE).set_name(
+    "NeuralMetaModelDE", register=True
+)
+SVMMetaModelDE = ParametrizedMetaModel(algorithm="svr", multivariate_optimizer=DE).set_name(
+    "SVMMetaModelDE", register=True
+)
+RFMetaModelDE = ParametrizedMetaModel(algorithm="rf", multivariate_optimizer=DE).set_name(
+    "RFMetaModelDE", register=True
+)
+
+MetaModelTwoPointsDE = ParametrizedMetaModel(multivariate_optimizer=TwoPointsDE).set_name(
+    "MetaModelTwoPointsDE", register=True
+)
+NeuralMetaModelTwoPointsDE = ParametrizedMetaModel(
+    algorithm="neural", multivariate_optimizer=TwoPointsDE
+).set_name("NeuralMetaModelTwoPointsDE", register=True)
+SVMMetaModelTwoPointsDE = ParametrizedMetaModel(algorithm="svr", multivariate_optimizer=TwoPointsDE).set_name(
+    "SVMMetaModelTwoPointsDE", register=True
+)
+RFMetaModelTwoPointsDE = ParametrizedMetaModel(algorithm="rf", multivariate_optimizer=TwoPointsDE).set_name(
+    "RFMetaModelTwoPointsDE", register=True
+)
+
+
+def rescaled(n: int, o: tp.Any):
+    return Rescaled(base_optimizer=o, scale=1.0 / np.exp(np.log(n) * np.random.rand()))  # type: ignore
 
 
 @registry.register
-class SQPCMA(Portfolio):
-    """Passive portfolio of CMA and many SQP."""
+class MultiBFGSPlus(Portfolio):
+    """Passive portfolio of MetaCMA and many SQP."""
 
     def __init__(
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
-        cma_workers = num_workers // 2
-        optims: tp.List[base.Optimizer] = [CMA(self.parametrization, budget=budget, num_workers=cma_workers)]
+        optims: tp.List[base.Optimizer] = []
+        optims += [
+            rescaled(num_workers, BFGS)(self.parametrization, num_workers=1) for _ in range(num_workers)
+        ]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+        self.optims.clear()
+        self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+
+
+@registry.register
+class LogMultiBFGSPlus(Portfolio):
+    """Passive portfolio of MetaCMA and many SQP."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        if budget is not None:
+            num_workers = int(max(num_workers, 1 + np.log(budget)))
+        optims: tp.List[base.Optimizer] = []
+        optims += [
+            rescaled(num_workers, BFGS)(self.parametrization, num_workers=1) for _ in range(num_workers)
+        ]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+        self.optims.clear()
+        self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+
+
+@registry.register
+class SqrtMultiBFGSPlus(Portfolio):
+    """Passive portfolio of MetaCMA and many SQP."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        if budget is not None:
+            num_workers = int(max(num_workers, 1 + np.sqrt(budget)))
+        optims: tp.List[base.Optimizer] = []
+        optims += [
+            rescaled(num_workers, BFGS)(self.parametrization, num_workers=1) for _ in range(num_workers)
+        ]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+        self.optims.clear()
+        self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+
+
+@registry.register
+class MultiCobylaPlus(Portfolio):
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        optims: tp.List[base.Optimizer] = []
+        optims += [
+            rescaled(num_workers, Cobyla)(self.parametrization, num_workers=1) for _ in range(num_workers)
+        ]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+        self.optims.clear()
+        self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+
+
+@registry.register
+class MultiSQPPlus(Portfolio):
+    """Passive portfolio of MetaCMA and many SQP."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        optims: tp.List[base.Optimizer] = []
+        optims += [
+            rescaled(num_workers, SQP)(self.parametrization, num_workers=1) for _ in range(num_workers)
+        ]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+        self.optims.clear()
+        self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+
+
+@registry.register
+class BFGSCMAPlus(Portfolio):
+    """Passive portfolio of MetaCMA and many BFGS."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        cma_workers = max(1, num_workers // 2)
+        optims: tp.List[base.Optimizer] = [
+            MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
+        ]
+        optims += [
+            rescaled(num_workers, BFGS)(self.parametrization, num_workers=1)
+            for _ in range(num_workers - cma_workers)
+        ]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+        self.optims.clear()
+        self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+
+
+@registry.register
+class LogBFGSCMAPlus(Portfolio):
+    """Passive portfolio of MetaCMA and many BFGS."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        if budget is not None:
+            num_workers = int(max(num_workers, 1 + np.log(budget)))
+        cma_workers = max(1, num_workers // 2)
+        optims: tp.List[base.Optimizer] = [
+            MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
+        ]
+        optims += [
+            rescaled(num_workers, BFGS)(self.parametrization, num_workers=1)
+            for _ in range(num_workers - cma_workers)
+        ]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+        self.optims.clear()
+        self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+
+
+@registry.register
+class SqrtBFGSCMAPlus(Portfolio):
+    """Passive portfolio of MetaCMA and many BFGS."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        if budget is not None:
+            num_workers = int(max(num_workers, 1 + np.sqrt(budget)))
+        cma_workers = max(1, num_workers // 2)
+        optims: tp.List[base.Optimizer] = [
+            MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
+        ]
+        optims += [
+            rescaled(num_workers, BFGS)(self.parametrization, num_workers=1)
+            for _ in range(num_workers - cma_workers)
+        ]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+        self.optims.clear()
+        self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+
+
+@registry.register
+class SQPCMAPlus(Portfolio):
+    """Passive portfolio of MetaCMA and many SQP."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        cma_workers = max(1, num_workers // 2)
+        optims: tp.List[base.Optimizer] = [
+            MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
+        ]
+        optims += [
+            rescaled(num_workers, SQP)(self.parametrization, num_workers=1)
+            for _ in range(num_workers - cma_workers)
+        ]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+        self.optims.clear()
+        self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+
+
+@registry.register
+class LogSQPCMAPlus(Portfolio):
+    """Passive portfolio of MetaCMA and many SQP."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        if budget is not None:
+            num_workers = int(max(num_workers, 1 + np.log(budget)))
+        cma_workers = max(1, num_workers // 2)
+        optims: tp.List[base.Optimizer] = [
+            MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
+        ]
+        optims += [
+            rescaled(num_workers, SQP)(self.parametrization, num_workers=1)
+            for _ in range(num_workers - cma_workers)
+        ]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+        self.optims.clear()
+        self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+
+
+@registry.register
+class SqrtSQPCMAPlus(Portfolio):
+    """Passive portfolio of MetaCMA and many SQP."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        if budget is not None:
+            num_workers = int(max(num_workers, 1 + np.sqrt(budget)))
+        cma_workers = max(1, num_workers // 2)
+        optims: tp.List[base.Optimizer] = [
+            MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
+        ]
+        optims += [
+            rescaled(num_workers, SQP)(self.parametrization, num_workers=1)
+            for _ in range(num_workers - cma_workers)
+        ]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+        self.optims.clear()
+        self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+
+
+@registry.register
+class MultiBFGS(Portfolio):
+    """Passive portfolio of MetaCMA and many SQP."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        optims: tp.List[base.Optimizer] = []
+        optims += [RBFGS(self.parametrization, num_workers=1) for _ in range(num_workers)]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+        self.optims.clear()
+        self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+
+
+@registry.register
+class LogMultiBFGS(Portfolio):
+    """Passive portfolio of MetaCMA and many SQP."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        if budget is not None:
+            num_workers = int(max(num_workers, 1 + np.log(budget)))
+        optims: tp.List[base.Optimizer] = []
+        optims += [BFGS(self.parametrization, num_workers=1) for _ in range(num_workers)]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+        self.optims.clear()
+        self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+
+
+@registry.register
+class SqrtMultiBFGS(Portfolio):
+    """Passive portfolio of MetaCMA and many SQP."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        if budget is not None:
+            num_workers = int(max(num_workers, 1 + np.sqrt(budget)))
+        optims: tp.List[base.Optimizer] = []
+        optims += [BFGS(self.parametrization, num_workers=1) for _ in range(num_workers)]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+        self.optims.clear()
+        self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+
+
+@registry.register
+class MultiCobyla(Portfolio):
+    """Passive portfolio of MetaCMA and many SQP."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        optims: tp.List[base.Optimizer] = []
+        optims += [Cobyla(self.parametrization, num_workers=1) for _ in range(num_workers)]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+        self.optims.clear()
+        self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+
+
+@registry.register
+class ForceMultiCobyla(Portfolio):
+    """Passive portfolio of MetaCMA and many SQP."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        optims: tp.List[base.Optimizer] = []
+        force_num_workers = max(num_workers, int(np.sqrt(budget))) if budget is not None else num_workers
+        optims += [Cobyla(self.parametrization, num_workers=1) for _ in range(force_num_workers)]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+        self.optims.clear()
+        self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+
+
+@registry.register
+class MultiSQP(Portfolio):
+    """Passive portfolio of MetaCMA and many SQP."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        optims: tp.List[base.Optimizer] = []
+        optims += [SQP(self.parametrization, num_workers=1) for _ in range(num_workers)]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+        self.optims.clear()
+        self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+
+
+@registry.register
+class BFGSCMA(Portfolio):
+    """Passive portfolio of MetaCMA and many BFGS."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        cma_workers = max(1, num_workers // 2)
+        optims: tp.List[base.Optimizer] = [
+            MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
+        ]
+        optims += [BFGS(self.parametrization, num_workers=1) for _ in range(num_workers - cma_workers)]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+        self.optims.clear()
+        self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+
+
+@registry.register
+class LogBFGSCMA(Portfolio):
+    """Passive portfolio of MetaCMA and many BFGS."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        if budget is not None:
+            num_workers = int(max(num_workers, 1 + np.log(budget)))
+        cma_workers = max(1, num_workers // 2)
+        optims: tp.List[base.Optimizer] = [
+            MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
+        ]
+        optims += [BFGS(self.parametrization, num_workers=1) for _ in range(num_workers - cma_workers)]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+        self.optims.clear()
+        self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+
+
+@registry.register
+class SqrtBFGSCMA(Portfolio):
+    """Passive portfolio of MetaCMA and many BFGS."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        if budget is not None:
+            num_workers = int(max(num_workers, 1 + np.sqrt(budget)))
+        cma_workers = max(1, num_workers // 2)
+        optims: tp.List[base.Optimizer] = [
+            MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
+        ]
+        optims += [BFGS(self.parametrization, num_workers=1) for _ in range(num_workers - cma_workers)]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+        self.optims.clear()
+        self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+
+
+@registry.register
+class SQPCMA(Portfolio):
+    """Passive portfolio of MetaCMA and many SQP."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        cma_workers = max(1, num_workers // 2)
+        optims: tp.List[base.Optimizer] = [
+            MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
+        ]
         optims += [SQP(self.parametrization, num_workers=1) for _ in range(num_workers - cma_workers)]
         for opt in optims[2:]:  # make sure initializations differ
             opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
         self.optims.clear()
         self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+
+
+@registry.register
+class LogSQPCMA(Portfolio):
+    """Passive portfolio of MetaCMA and many SQP."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        if budget is not None:
+            num_workers = int(max(num_workers, 1 + np.log(budget)))
+        cma_workers = max(1, num_workers // 2)
+        optims: tp.List[base.Optimizer] = [
+            MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
+        ]
+        optims += [SQP(self.parametrization, num_workers=1) for _ in range(num_workers - cma_workers)]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+        self.optims.clear()
+        self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+
+
+@registry.register
+class SqrtSQPCMA(Portfolio):
+    """Passive portfolio of MetaCMA and many SQP."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        if budget is not None:
+            num_workers = int(max(num_workers, 1 + np.sqrt(budget)))
+        cma_workers = max(1, num_workers // 2)
+        optims: tp.List[base.Optimizer] = [
+            MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
+        ]
+        optims += [SQP(self.parametrization, num_workers=1) for _ in range(num_workers - cma_workers)]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+        self.optims.clear()
+        self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+
+
+@registry.register
+class FSQPCMA(Portfolio):
+    """Passive portfolio of MetaCMA and many SQP."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        num_workers = max(num_workers, int(np.sqrt(budget)))  # type: ignore
+        cma_workers = max(1, num_workers // 2)
+        optims: tp.List[base.Optimizer] = [
+            MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
+        ]
+        optims += [SQP(self.parametrization, num_workers=1) for _ in range(num_workers - cma_workers)]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+        self.optims.clear()
+        self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+
+
+@registry.register
+class F2SQPCMA(Portfolio):
+    """Passive portfolio of MetaCMA and many SQP."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        num_workers = max(num_workers, int(np.log(budget)))  # type: ignore
+        cma_workers = max(1, num_workers // 2)
+        optims: tp.List[base.Optimizer] = [
+            MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
+        ]
+        optims += [SQP(self.parametrization, num_workers=1) for _ in range(num_workers - cma_workers)]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+        self.optims.clear()
+        self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+
+
+@registry.register
+class F3SQPCMA(Portfolio):
+    """Passive portfolio of MetaCMA and many SQP."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        num_workers = max(num_workers, int(np.sqrt(budget)))  # type: ignore
+        cma_workers = max(1, num_workers // 2)
+        optims: tp.List[base.Optimizer] = [
+            MetaCMA(self.parametrization, budget=budget, num_workers=cma_workers)
+        ]
+        optims += [
+            Rescaled(base_optimizer=SQP, scale=max(0.01, np.exp(-1.0 / np.random.rand())))(
+                self.parametrization, num_workers=1
+            )
+            for _ in range(num_workers - cma_workers)
+        ]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+        self.optims.clear()
+        self.optims.extend(optims)
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
 
 
 @registry.register
@@ -1859,7 +2886,7 @@ class CMandAS3(Portfolio):
             if num_workers == 1:
                 optims = [ChainCMAPowell for _ in range(3)]
             else:
-                optims = [CMA for _ in range(3)]
+                optims = [MetaCMA for _ in range(3)]
             warmup_ratio = 0.1
         super().__init__(
             parametrization,
@@ -1886,7 +2913,7 @@ class CM(Portfolio):
         if budget < 201:
             optims = [OnePlusOne]
         if budget > 50 * dim:
-            optims = [CMA]
+            optims = [MetaCMA]
         super().__init__(
             parametrization,
             budget=budget,
@@ -2009,7 +3036,7 @@ try:
             else:
                 x_probe = self.bo.suggest(util)  # this is time consuming
                 x_probe = [x_probe[self._fake_function.key(i)] for i in range(len(x_probe))]
-            data = self._normalizer.backward(np.array(x_probe, copy=False))
+            data = self._normalizer.backward(np.asarray(x_probe))
             candidate = self.parametrization.spawn_child().set_standardized_data(data)
             candidate._meta["x_probe"] = x_probe
             return candidate
@@ -2148,7 +3175,7 @@ class _BayesOptim(base.Optimizer):
                 candidate = candidate.tolist()
             self._buffer = candidate
         x_probe = self._buffer.pop()
-        data = self._normalizer.backward(np.array(x_probe, copy=False))
+        data = self._normalizer.backward(np.array(x_probe))
         candidate = self.parametrization.spawn_child().set_standardized_data(data)
         candidate._meta["x_probe"] = x_probe
         return candidate
@@ -2230,13 +3257,16 @@ class _Chain(base.Optimizer):
         budget: tp.Optional[int] = None,
         num_workers: int = 1,
         *,
-        optimizers: tp.Sequence[tp.Union[base.ConfiguredOptimizer, tp.Type[base.Optimizer]]] = [
-            LHSSearch,
-            DE,
-        ],
+        optimizers: tp.Optional[
+            tp.Sequence[tp.Union[base.ConfiguredOptimizer, tp.Type[base.Optimizer]]]
+        ] = None,
         budgets: tp.Sequence[tp.Union[str, int]] = (10,),
+        no_crossing: tp.Optional[bool] = False,
     ) -> None:
+        if optimizers is None:
+            optimizers = [LHSSearch, DE]
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        self.no_crossing = no_crossing
         # delayed initialization
         # Either we have the budget for each algorithm, or the last algorithm uses the rest of the budget, so:
         self.optimizers: tp.List[base.Optimizer] = []
@@ -2245,17 +3275,22 @@ class _Chain(base.Optimizer):
             "dimension": self.dimension,
             "half": self.budget // 2 if self.budget else self.num_workers,
             "third": self.budget // 3 if self.budget else self.num_workers,
+            "fourth": self.budget // 4 if self.budget else self.num_workers,
             "tenth": self.budget // 10 if self.budget else self.num_workers,
+            "equal": self.budget // (len(budgets) + 1) if self.budget else self.num_workers,
+            "most": (self.budget * 4) // 5 if self.budget else self.num_workers,
             "sqrt": int(np.sqrt(self.budget)) if self.budget else self.num_workers,
         }
         self.budgets = [max(1, converter[b]) if isinstance(b, str) else b for b in budgets]
         last_budget = None if self.budget is None else max(4, self.budget - sum(self.budgets))
         assert len(optimizers) == len(self.budgets) + 1
         assert all(
-            x in ("third", "half", "tenth", "dimension", "num_workers", "sqrt") or x > 0 for x in self.budgets
+            x in ("equal", "fourth", "third", "half", "tenth", "dimension", "num_workers", "sqrt") or x > 0
+            for x in self.budgets
         ), str(self.budgets)
         for opt, optbudget in zip(optimizers, self.budgets + [last_budget]):  # type: ignore
             self.optimizers.append(opt(self.parametrization, budget=optbudget, num_workers=self.num_workers))
+        # print(f"Chaining of {self.optimizers}")
         if self.name.startswith("chain"):
             warnings.warn(
                 "Chain optimizers are renamed with a capital C for consistency. "
@@ -2267,12 +3302,17 @@ class _Chain(base.Optimizer):
         # Which algorithm are we playing with ?
         sum_budget = 0.0
         opt = self.optimizers[0]
-        for opt in self.optimizers:
+        chosen_index = 0
+        for index, opt in enumerate(self.optimizers):
             sum_budget += float("inf") if opt.budget is None else opt.budget
             if self.num_ask < sum_budget:
+                chosen_index = index
                 break
         # if we are over budget, then use the last one...
-        return opt.ask()
+
+        candidate = opt.ask()
+        candidate._meta["optim_index"] = chosen_index
+        return candidate
 
     def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
         # Let us inform all concerned algorithms
@@ -2280,7 +3320,10 @@ class _Chain(base.Optimizer):
         for k, opt in enumerate(self.optimizers):
             is_last = k == len(self.optimizers) - 1
             sum_budget += float("inf") if opt.budget is None or is_last else opt.budget
-            if self.num_tell < sum_budget:
+            if self.num_tell < sum_budget and not (
+                self.no_crossing
+                and ("optim_index" not in candidate._meta or k != candidate._meta["optim_index"])
+            ):
                 opt.tell(candidate, loss)
 
     def enable_pickling(self):
@@ -2307,24 +3350,112 @@ class Chaining(base.ConfiguredOptimizer):
         self,
         optimizers: tp.Sequence[tp.Union[base.ConfiguredOptimizer, tp.Type[base.Optimizer]]],
         budgets: tp.Sequence[tp.Union[str, int]],
+        no_crossing: tp.Optional[bool] = False,
     ) -> None:
         super().__init__(_Chain, locals())
 
 
 # new names
+CMAL = Chaining([CMA, DiscreteLenglerOnePlusOne], ["half"]).set_name("CMAL", register=True)
 GeneticDE = Chaining([RotatedTwoPointsDE, TwoPointsDE], [200]).set_name(
     "GeneticDE", register=True
 )  # Also known as CGDE
+MemeticDE = Chaining([RotatedTwoPointsDE, TwoPointsDE, DE, SQP], ["fourth", "fourth", "fourth"]).set_name(
+    "MemeticDE", register=True
+)
+QNDE = Chaining([QODE, RBFGS], ["half"]).set_name("QNDE", register=True)
+ChainDE = Chaining([DE, RBFGS], ["half"]).set_name("ChainDE", register=True)
+OpoDE = Chaining([OnePlusOne, QODE], ["half"]).set_name("OpoDE", register=True)
+OpoTinyDE = Chaining([OnePlusOne, TinyQODE], ["half"]).set_name("OpoTinyDE", register=True)
+QNDE.no_parallelization = True
+ChainDE.no_parallelization = True
+Carola1 = Chaining([Cobyla, MetaModel], ["half"]).set_name("Carola1", register=True)
+Carola2 = Chaining([Cobyla, MetaModel, SQP], ["third", "third"]).set_name("Carola2", register=True)
+DS2 = Chaining([Cobyla, MetaModelDSproba, SQP], ["third", "third"]).set_name("DS2", register=True)
+Carola4 = Chaining([Cobyla, MetaModel, SQP], ["sqrt", "half"]).set_name("Carola4", register=True)
+DS4 = Chaining([Cobyla, MetaModelDSproba, SQP], ["sqrt", "half"]).set_name("DS4", register=True)
+Carola5 = Chaining([Cobyla, MetaModel, SQP], ["sqrt", "most"]).set_name("Carola5", register=True)
+DS5 = Chaining([Cobyla, MetaModelDSproba, SQP], ["sqrt", "most"]).set_name("DS5", register=True)
+Carola6 = Chaining([Cobyla, MetaModel, SQP], ["tenth", "most"]).set_name("Carola6", register=True)
+DS6 = Chaining([Cobyla, MetaModelDSproba, SQP], ["tenth", "most"]).set_name("DS6", register=True)
+DS6.no_parallelization = True
+PCarola6 = Rescaled(
+    base_optimizer=Chaining([Cobyla, MetaModel, SQP], ["tenth", "most"]), scale=10.0
+).set_name("PCarola6", register=True)
+pCarola6 = Rescaled(base_optimizer=Chaining([Cobyla, MetaModel, SQP], ["tenth", "most"]), scale=3.0).set_name(
+    "pCarola6", register=True
+)
+Carola1.no_parallelization = True
+Carola2.no_parallelization = True
+DS2.no_parallelization = True
+Carola4.no_parallelization = True
+DS4.no_parallelization = True
+DS5.no_parallelization = True
+Carola5.no_parallelization = True
+Carola6.no_parallelization = True
+PCarola6.no_parallelization = True
+pCarola6.no_parallelization = True
+Carola7 = Chaining([MultiCobyla, MetaModel, MultiSQP], ["tenth", "most"]).set_name("Carola7", register=True)
+Carola8 = Chaining([Cobyla, CmaFmin2, SQP], ["tenth", "most"]).set_name("Carola8", register=True)
+DS8 = Chaining([Cobyla, DSproba, SQP], ["tenth", "most"]).set_name("DS8", register=True)
+Carola9 = Chaining(
+    [Cobyla, ParametrizedMetaModel(multivariate_optimizer=CmaFmin2), SQP], ["tenth", "most"]
+).set_name("Carola9", register=True)
+DS9 = Chaining(
+    [Cobyla, ParametrizedMetaModel(multivariate_optimizer=DSproba), SQP], ["tenth", "most"]
+).set_name("DS9", register=True)
+Carola9.no_parallelization = True
+Carola8.no_parallelization = True
+DS8.no_parallelization = True
+Carola10 = Chaining([Cobyla, CmaFmin2, RBFGS], ["tenth", "most"]).set_name("Carola10", register=True)
+Carola10.no_parallelization = True
+
+
+@registry.register
+class Carola3(Portfolio):
+    """Passive portfolio of MetaCMA and many SQP."""
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        cma_workers = max(1, num_workers // 2)
+        optims: tp.List[base.Optimizer] = [
+            MetaModel(self.parametrization, budget=budget, num_workers=cma_workers)
+        ]
+        optims += [Carola1(self.parametrization, num_workers=1) for _ in range(num_workers - cma_workers)]
+        for opt in optims[2:]:  # make sure initializations differ
+            opt.initial_guess = self._rng.normal(0, 1, self.dimension)  # type: ignore
+        self.optims.clear()
+        self.optims.extend(optims)
+
+
+BAR = ConfPortfolio(optimizers=[OnePlusOne, DiagonalCMA, OpoDE], warmup_ratio=0.5).set_name(
+    "BAR", register=True
+)
+BAR2 = ConfPortfolio(optimizers=[OnePlusOne, MetaCMA, OpoDE], warmup_ratio=0.5).set_name(
+    "BAR2", register=True
+)
+BAR3 = ConfPortfolio(optimizers=[RandomSearch, OnePlusOne, MetaCMA, QNDE], warmup_ratio=0.5).set_name(
+    "BAR3", register=True
+)
+MemeticDE.no_parallelization = True
 discretememetic = Chaining(
     [RandomSearch, DiscreteLenglerOnePlusOne, DiscreteOnePlusOne], ["third", "third"]
 ).set_name("discretememetic", register=True)
 # discretememeticT = Chaining(
 #     [RandomSearch, DiscreteLenglerOnePlusOneT, DiscreteOnePlusOneT], ["tenth", "third"]
 # ).set_name("discretememeticT", register=True)
-ChainCMAPowell = Chaining([CMA, Powell], ["half"]).set_name("ChainCMAPowell", register=True)
+ChainCMAPowell = Chaining([MetaCMA, Powell], ["half"]).set_name("ChainCMAPowell", register=True)
+ChainDSPowell = Chaining([DSproba, Powell], ["half"]).set_name("ChainDSPowell", register=True)
 ChainCMAPowell.no_parallelization = True  # TODO make this automatic
+ChainDSPowell.no_parallelization = True  # TODO make this automatic
 ChainMetaModelSQP = Chaining([MetaModel, SQP], ["half"]).set_name("ChainMetaModelSQP", register=True)
+ChainMetaModelDSSQP = Chaining([MetaModelDSproba, SQP], ["half"]).set_name(
+    "ChainMetaModelDSSQP", register=True
+)
 ChainMetaModelSQP.no_parallelization = True
+ChainMetaModelDSSQP.no_parallelization = True
 ChainMetaModelPowell = Chaining([MetaModel, Powell], ["half"]).set_name("ChainMetaModelPowell", register=True)
 ChainMetaModelPowell.no_parallelization = True
 ChainDiagonalCMAPowell = Chaining([DiagonalCMA, Powell], ["half"]).set_name(
@@ -2335,10 +3466,11 @@ ChainNaiveTBPSAPowell = Chaining([NaiveTBPSA, Powell], ["half"]).set_name(
     "ChainNaiveTBPSAPowell", register=True
 )
 ChainNaiveTBPSAPowell.no_parallelization = True
-ChainNaiveTBPSACMAPowell = Chaining([NaiveTBPSA, CMA, Powell], ["third", "third"]).set_name(
+ChainNaiveTBPSACMAPowell = Chaining([NaiveTBPSA, MetaCMA, Powell], ["third", "third"]).set_name(
     "ChainNaiveTBPSACMAPowell", register=True
 )
 ChainNaiveTBPSACMAPowell.no_parallelization = True
+BAR4 = ConfPortfolio(optimizers=[ChainMetaModelSQP, QNDE], warmup_ratio=0.5).set_name("BAR4", register=True)
 
 
 @registry.register
@@ -2586,6 +3718,7 @@ class NGOptBase(base.Optimizer):
         analysis = p.helpers.analyze(self.parametrization)
         funcinfo = self.parametrization.function
         self.has_noise = not (analysis.deterministic and funcinfo.deterministic)
+        self.has_real_noise = not funcinfo.deterministic
         # The noise coming from discrete variables goes to 0.
         self.noise_from_instrumentation = self.has_noise and funcinfo.deterministic
         self.fully_continuous = analysis.continuous
@@ -2624,7 +3757,7 @@ class NGOptBase(base.Optimizer):
             # noise and discrete: let us merge evolution and bandits.
             cls: base.OptCls = DoubleFastGADiscreteOnePlusOne if self.dimension < 60 else CMA
         else:
-            if self.has_noise and self.fully_continuous:
+            if self.has_real_noise and self.fully_continuous:
                 # This is the real of population control. FIXME: should we pair with a bandit ?
                 cls = TBPSA
             else:
@@ -2653,8 +3786,11 @@ class NGOptBase(base.Optimizer):
                             else:
                                 # DE is great in such a case (?).
                                 cls = (
-                                    DE if self.dimension > 2000 else CMA if self.dimension > 1 else OnePlusOne
+                                    DE
+                                    if self.dimension > 2000
+                                    else MetaCMA if self.dimension > 1 else OnePlusOne
                                 )
+        # print(f"NGOptbase: budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, {cls}")
         return cls
 
     def _internal_ask_candidate(self) -> p.Parameter:
@@ -2676,6 +3812,54 @@ class NGOptBase(base.Optimizer):
 
     def enable_pickling(self) -> None:
         self.optim.enable_pickling()
+
+
+@registry.register
+class NGOptDSBase(NGOptBase):
+    """Nevergrad optimizer by competence map."""
+
+    def _select_optimizer_cls(self) -> base.OptCls:
+        # pylint: disable=too-many-nested-blocks
+        assert self.budget is not None
+        if self.has_noise and self.has_discrete_not_softmax:
+            # noise and discrete: let us merge evolution and bandits.
+            cls: base.OptCls = DoubleFastGADiscreteOnePlusOne if self.dimension < 60 else CMA
+        else:
+            if self.has_noise and self.fully_continuous:
+                # This is the real of population control. FIXME: should we pair with a bandit ?
+                cls = Chaining([SQOPSO, OptimisticDiscreteOnePlusOne], ["half"])
+            else:
+                if (
+                    self.has_discrete_not_softmax
+                    or not self.parametrization.function.metrizable
+                    or not self.fully_continuous
+                ):
+                    cls = DoubleFastGADiscreteOnePlusOne
+                else:
+                    if self.num_workers > self.budget / 5:
+                        if self.num_workers > self.budget / 2.0 or self.budget < self.dimension:
+                            cls = MetaRecentering
+                        else:
+                            cls = NaiveTBPSA
+                    else:
+                        # Possibly a good idea to go memetic for large budget, but something goes wrong for the moment.
+                        if (
+                            self.num_workers == 1 and self.budget > 6000 and self.dimension > 7
+                        ):  # Let us go memetic.
+                            cls = ChainDSPowell
+                        else:
+                            if self.num_workers == 1 and self.budget < self.dimension * 30:
+                                # One plus one so good in large ratio "dimension / budget".
+                                cls = OnePlusOne if self.dimension > 30 else Cobyla
+                            else:
+                                # DE is great in such a case (?).
+                                cls = (
+                                    DE
+                                    if self.dimension > 2000
+                                    else MetaCMA if self.dimension > 1 else OnePlusOne
+                                )
+        # print(f"NGOptbase: budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, {cls}")
+        return cls
 
 
 @registry.register
@@ -3092,12 +4276,427 @@ class NGOpt39(NGOpt16):
                 return MetaModelFmin2
             return NGOpt15
         else:
-            return super()._select_optimizer_cls()
+            return NGOpt16
 
 
 @registry.register
 class NGOptRW(NGOpt39):
     def _select_optimizer_cls(self) -> base.OptCls:
+        if self.fully_continuous and not self.has_noise and self.budget >= 12 * self.dimension:  # type: ignore
+            return ConfPortfolio(
+                optimizers=[GeneticDE, PSO, super()._select_optimizer_cls()], warmup_ratio=0.33
+            )
+        else:
+            return super()._select_optimizer_cls()
+
+
+@registry.register
+class NGOptF(NGOpt39):
+    def _select_optimizer_cls(self) -> base.OptCls:
+
+        best = defaultdict(lambda: defaultdict(list))  # type: ignore
+
+        def recommend_method(d, nod):
+            best[12][833.333] += ["MemeticDE"]
+            best[12][83.3333] += ["MemeticDE"]
+            best[12][8.33333] += ["RealSpacePSO"]
+            best[12][0.833333] += ["CauchyOnePlusOne"]
+            best[12][833.333] += ["VLPCMA"]
+            best[12][83.3333] += ["NLOPT_LN_SBPLX"]
+            best[12][8.33333] += ["NLOPT_LN_SBPLX"]
+            best[12][0.833333] += ["NLOPT_LN_SBPLX"]
+            best[12][833.333] += ["VLPCMA"]
+            best[12][83.3333] += ["MemeticDE"]
+            best[12][8.33333] += ["SMAC3"]
+            best[12][0.833333] += ["Cobyla"]
+            best[24][416.667] += ["VLPCMA"]
+            best[24][41.6667] += ["Wiz"]
+            best[24][4.16667] += ["NLOPT_LN_SBPLX"]
+            best[24][0.416667] += ["Cobyla"]
+            best[24][416.667] += ["NLOPT_LN_SBPLX"]
+            best[24][41.6667] += ["Wiz"]
+            best[24][4.16667] += ["NLOPT_LN_SBPLX"]
+            best[24][0.416667] += ["NLOPT_LN_SBPLX"]
+            best[24][416.667] += ["ChainDiagonalCMAPowell"]
+            best[24][41.6667] += ["NLOPT_LN_SBPLX"]
+            best[24][4.16667] += ["QORealSpacePSO"]
+            best[24][0.416667] += ["Cobyla"]
+            best[2][5000] += ["NGOpt16"]
+            best[2][500] += ["LhsDE"]
+            best[2][50] += ["SODE"]
+            best[2][5] += ["Carola2"]
+            best[2][5000] += ["MetaModelQODE"]
+            best[2][500] += ["MetaModelQODE"]
+            best[2][50] += ["PCABO"]
+            best[2][5] += ["HammersleySearchPlusMiddlePoint"]
+            best[2][5000] += ["QORealSpacePSO"]
+            best[2][500] += ["ChainDiagonalCMAPowell"]
+            best[2][50] += ["MetaModelQODE"]
+            best[2][5] += ["Cobyla"]
+            best[5][2000] += ["MemeticDE"]
+            best[5][200] += ["MemeticDE"]
+            best[5][20] += ["LhsDE"]
+            best[5][2] += ["MultiSQP"]
+            best[5][2000] += ["MemeticDE"]
+            best[5][200] += ["LhsDE"]
+            best[5][20] += ["LhsDE"]
+            best[5][2] += ["NLOPT_LN_SBPLX"]
+            best[5][2000] += ["LhsDE"]
+            best[5][200] += ["VLPCMA"]
+            best[5][20] += ["BayesOptimBO"]
+            best[5][2] += ["NLOPT_LN_SBPLX"]
+            best[96][0.104167] += ["PCABO"]
+            bestdist = float("inf")
+            for d1 in best:
+                for nod2 in best[d1]:
+                    dist = (d - d1) ** 2 + (nod - nod2) ** 2
+                    if dist < bestdist:
+                        bestdist = dist
+                        bestalg = best[d1][nod2]
+            return bestalg
+
+        if self.fully_continuous and not self.has_noise:
+            algs = recommend_method(self.dimension, self.budget / self.dimension)  # type: ignore
+            if self.num_workers > 1:
+                algs = [a for a in algs if not registry[a].no_parallelization]
+                if len(algs) == 0:
+                    return SQPCMA
+            return ConfPortfolio(optimizers=[registry[a] for a in algs], warmup_ratio=0.6)
+
+        if self.fully_continuous and not self.has_noise and self.budget >= 12 * self.dimension:  # type: ignore
+            return ConfPortfolio(optimizers=[GeneticDE, PSO, NGOpt39], warmup_ratio=0.33)
+        else:
+            return super()._select_optimizer_cls()
+
+
+@registry.register
+class NGOptF2(NGOpt39):
+    def _select_optimizer_cls(self) -> base.OptCls:
+
+        best = defaultdict(lambda: defaultdict(list))  # type: ignore
+
+        def recommend_method(d, nod):
+            best[12][833.333] += ["MemeticDE"]
+            best[12][83.3333] += ["MemeticDE"]
+            best[12][8.33333] += ["RealSpacePSO"]
+            best[12][0.833333] += ["CauchyOnePlusOne"]
+            best[12][833.333] += ["VLPCMA"]
+            best[12][83.3333] += ["NLOPT_LN_SBPLX"]
+            best[12][8.33333] += ["NLOPT_LN_SBPLX"]
+            best[12][0.833333] += ["NLOPT_LN_SBPLX"]
+            best[12][833.333] += ["VLPCMA"]
+            best[12][83.3333] += ["MemeticDE"]
+            best[12][8.33333] += ["SMAC3"]
+            best[12][0.833333] += ["Cobyla"]
+            best[24][416.667] += ["VLPCMA"]
+            best[24][41.6667] += ["Wiz"]
+            best[24][4.16667] += ["NLOPT_LN_SBPLX"]
+            best[24][0.416667] += ["Cobyla"]
+            best[24][416.667] += ["NLOPT_LN_SBPLX"]
+            best[24][41.6667] += ["Wiz"]
+            best[24][4.16667] += ["NLOPT_LN_SBPLX"]
+            best[24][0.416667] += ["NLOPT_LN_SBPLX"]
+            best[24][416.667] += ["ChainDiagonalCMAPowell"]
+            best[24][41.6667] += ["NLOPT_LN_SBPLX"]
+            best[24][4.16667] += ["QORealSpacePSO"]
+            best[24][0.416667] += ["Cobyla"]
+            best[2][5000] += ["NGOpt16"]
+            best[2][500] += ["LhsDE"]
+            best[2][50] += ["SODE"]
+            best[2][5] += ["Carola2"]
+            best[2][5000] += ["MetaModelQODE"]
+            best[2][500] += ["MetaModelQODE"]
+            best[2][50] += ["PCABO"]
+            best[2][5] += ["HammersleySearchPlusMiddlePoint"]
+            best[2][5000] += ["QORealSpacePSO"]
+            best[2][500] += ["ChainDiagonalCMAPowell"]
+            best[2][50] += ["MetaModelQODE"]
+            best[2][5] += ["Cobyla"]
+            best[5][2000] += ["MemeticDE"]
+            best[5][200] += ["MemeticDE"]
+            best[5][20] += ["LhsDE"]
+            best[5][2] += ["MultiSQP"]
+            best[5][2000] += ["MemeticDE"]
+            best[5][200] += ["LhsDE"]
+            best[5][20] += ["LhsDE"]
+            best[5][2] += ["NLOPT_LN_SBPLX"]
+            best[5][2000] += ["LhsDE"]
+            best[5][200] += ["VLPCMA"]
+            best[5][20] += ["BayesOptimBO"]
+            best[5][2] += ["NLOPT_LN_SBPLX"]
+            best[96][0.104167] += ["PCABO"]
+            bestdist = float("inf")
+            for d1 in best:
+                for nod2 in best[d1]:
+                    dist = (d - d1) ** 2 + (nod - nod2) ** 2
+                    if dist < bestdist:
+                        bestdist = dist
+                        bestalg = best[d1][nod2]
+            return bestalg
+
+        if self.fully_continuous and not self.has_noise:
+            algs = recommend_method(self.dimension, self.budget / self.dimension)  # type: ignore
+            if self.num_workers > 1:
+                algs = [a for a in algs if not registry[a].no_parallelization]
+                if len(algs) == 0:
+                    return SQPCMA
+
+            def most_frequent(List):
+                return max(set(List), key=List.count)
+
+            return registry[most_frequent(algs)]
+
+        if self.fully_continuous and not self.has_noise and self.budget >= 12 * self.dimension:  # type: ignore
+            return ConfPortfolio(optimizers=[GeneticDE, PSO, NGOpt39], warmup_ratio=0.33)
+        else:
+            return super()._select_optimizer_cls()
+
+
+@registry.register
+class NGOptF3(NGOpt39):
+    def _select_optimizer_cls(self) -> base.OptCls:
+
+        best = defaultdict(lambda: defaultdict(list))  # type: ignore
+
+        def recommend_method(d, nod):
+            best[12][833.333] += ["MemeticDE"]
+            best[12][83.3333] += ["NGOptRW"]
+            best[12][8.33333] += ["RealSpacePSO"]
+            best[12][0.833333] += ["ASCMADEthird"]
+            best[12][8333.33] += ["GeneticDE"]
+            best[12][833.333] += ["TripleCMA"]
+            best[12][83.3333] += ["NLOPT_LN_SBPLX"]
+            best[12][8.33333] += ["NLOPT_LN_SBPLX"]
+            best[12][0.833333] += ["NLOPT_LN_SBPLX"]
+            best[12][8333.33] += ["GeneticDE"]
+            best[12][833.333] += ["VLPCMA"]
+            best[12][83.3333] += ["MemeticDE"]
+            best[12][8.33333] += ["SMAC3"]
+            best[12][0.833333] += ["Cobyla"]
+            best[24][416.667] += ["VLPCMA"]
+            best[24][41.6667] += ["Wiz"]
+            best[24][4.16667] += ["NLOPT_LN_SBPLX"]
+            best[24][0.416667] += ["Cobyla"]
+            best[24][4166.67] += ["NGOptF"]
+            best[24][416.667] += ["NLOPT_LN_SBPLX"]
+            best[24][41.6667] += ["ChainNaiveTBPSAPowell"]
+            best[24][4.16667] += ["NLOPT_LN_SBPLX"]
+            best[24][0.416667] += ["NLOPT_LN_NELDERMEAD"]
+            best[24][4166.67] += ["Carola1"]
+            best[24][416.667] += ["ChainDiagonalCMAPowell"]
+            best[24][41.6667] += ["NLOPT_LN_SBPLX"]
+            best[24][4.16667] += ["NLOPT_GN_CRS2_LM"]
+            best[24][0.416667] += ["Cobyla"]
+            best[2][500000] += ["NGOptF2"]
+            best[2][50000] += ["NeuralMetaModelDE"]
+            best[2][5000] += ["ASCMADEthird"]
+            best[2][500] += ["LQODE"]
+            best[2][50] += ["SODE"]
+            best[2][5] += ["Carola2"]
+            best[2][500000] += ["NLOPT_GN_CRS2_LM"]
+            best[2][50000] += ["NGOptF2"]
+            best[2][5000] += ["MetaModelQODE"]
+            best[2][500] += ["MetaModelQODE"]
+            best[2][50] += ["PCABO"]
+            best[2][5] += ["HammersleySearchPlusMiddlePoint"]
+            best[2][500000] += ["NGOptF"]
+            best[2][50000] += ["NGOptF"]
+            best[2][5000] += ["LQODE"]
+            best[2][500] += ["ChainDiagonalCMAPowell"]
+            best[2][50] += ["NLOPT_GN_DIRECT"]
+            best[2][5] += ["Cobyla"]
+            best[48][20.8333] += ["RLSOnePlusOne"]
+            best[48][2.08333] += ["NGOptF"]
+            best[48][0.208333] += ["NGOptF2"]
+            best[48][208.333] += ["MetaModelQODE"]
+            best[48][20.8333] += ["DiscreteLengler2OnePlusOne"]
+            best[48][2.08333] += ["NGOptF"]
+            best[48][0.208333] += ["NGOptF2"]
+            best[48][2083.33] += ["NGOptF2"]
+            best[48][208.333] += ["ChainNaiveTBPSAPowell"]
+            best[48][20.8333] += ["ChainNaiveTBPSAPowell"]
+            best[48][2.08333] += ["NLOPT_LN_NELDERMEAD"]
+            best[48][0.208333] += ["BOBYQA"]
+            best[5][20000] += ["NGOptF"]
+            best[5][2000] += ["MemeticDE"]
+            best[5][200] += ["TwoPointsDE"]
+            best[5][20] += ["NGOptF2"]
+            best[5][2] += ["MultiSQP"]
+            best[5][20000] += ["CmaFmin2"]
+            best[5][2000] += ["DiscreteDE"]
+            best[5][200] += ["LhsDE"]
+            best[5][20] += ["SMAC3"]
+            best[5][2] += ["NLOPT_LN_SBPLX"]
+            best[5][200000] += ["LQODE"]
+            best[5][20000] += ["NGOptF"]
+            best[5][2000] += ["LhsDE"]
+            best[5][200] += ["FCMA"]
+            best[5][20] += ["SMAC3"]
+            best[5][2] += ["NLOPT_LN_SBPLX"]
+            best[96][10.4167] += ["Carola2"]
+            best[96][1.04167] += ["ChainDiagonalCMAPowell"]
+            best[96][0.104167] += ["MetaModelQODE"]
+            best[96][10.4167] += ["NGOpt8"]
+            best[96][1.04167] += ["ChoiceBase"]
+            best[96][0.104167] += ["Carola1"]
+            best[96][104.167] += ["NGOptF"]
+            best[96][10.4167] += ["CMandAS3"]
+            best[96][1.04167] += ["ASCMADEthird"]
+            best[96][0.104167] += ["CMAtuning"]
+            bestdist = float("inf")
+            for d1 in best:
+                for nod2 in best[d1]:
+                    dist = (d - d1) ** 2 + (nod - nod2) ** 2
+                    if dist < bestdist:
+                        bestdist = dist
+                        bestalg = best[d1][nod2]
+            return bestalg
+
+        if self.fully_continuous and not self.has_noise:
+            algs = recommend_method(self.dimension, self.budget / self.dimension)  # type: ignore
+            if self.num_workers > 1:
+                algs = [a for a in algs if not registry[a].no_parallelization]
+                if len(algs) == 0:
+                    return SQPCMA
+
+            def most_frequent(List):
+                return max(set(List), key=List.count)
+
+            return registry[most_frequent(algs)]
+
+        if self.fully_continuous and not self.has_noise and self.budget >= 12 * self.dimension:  # type: ignore
+            return ConfPortfolio(optimizers=[GeneticDE, PSO, NGOpt39], warmup_ratio=0.33)
+        else:
+            return super()._select_optimizer_cls()
+
+
+@registry.register
+class NGOptF5(NGOpt39):
+    def _select_optimizer_cls(self) -> base.OptCls:
+
+        best = defaultdict(lambda: defaultdict(list))  # type: ignore
+
+        def recommend_method(d, nod):
+            best[12][8333.33] += ["DiscreteDE"]
+            best[12][833.333] += ["DiscreteDE"]
+            best[12][83.3333] += ["MetaModelDE"]
+            best[12][8.33333] += ["NGOpt"]
+            best[12][0.833333] += ["NLOPT_GN_DIRECT_L"]
+            best[12][83333.3] += ["RPowell"]
+            best[12][8333.33] += ["DiscreteDE"]
+            best[12][833.333] += ["NLOPT_GN_ISRES"]
+            best[12][83.3333] += ["SMAC3"]
+            best[12][8.33333] += ["NGOpt"]
+            best[12][0.833333] += ["NLOPT_LN_SBPLX"]
+            best[12][83333.3] += ["NGOptBase"]
+            best[12][8333.33] += ["RPowell"]
+            best[12][833.333] += ["ChainMetaModelPowell"]
+            best[12][83.3333] += ["RotatedTwoPointsDE"]
+            best[12][8.33333] += ["NGOpt39"]
+            best[12][0.833333] += ["NLOPT_LN_NEWUOA_BOUND"]
+            best[24][4166.67] += ["CmaFmin2"]
+            best[24][416.667] += ["CmaFmin2"]
+            best[24][41.6667] += ["CmaFmin2"]
+            best[24][4.16667] += ["NLOPT_LN_SBPLX"]
+            best[24][0.416667] += ["Cobyla"]
+            best[24][41666.7] += ["MultiCMA"]
+            best[24][4166.67] += ["CmaFmin2"]
+            best[24][416.667] += ["RotatedTwoPointsDE"]
+            best[24][41.6667] += ["CmaFmin2"]
+            best[24][4.16667] += ["pysot"]
+            best[24][0.416667] += ["NLOPT_LN_NELDERMEAD"]
+            best[24][41666.7] += ["MultiCMA"]
+            best[24][4166.67] += ["Shiwa"]
+            best[24][416.667] += ["CmaFmin2"]
+            best[24][41.6667] += ["NLOPT_GN_CRS2_LM"]
+            best[24][4.16667] += ["NLOPT_GN_CRS2_LM"]
+            best[24][0.416667] += ["Cobyla"]
+            best[2][500000] += ["BAR"]
+            best[2][50000] += ["ASCMADEthird"]
+            best[2][5000] += ["ChainMetaModelPowell"]
+            best[2][500] += ["DiscreteDE"]
+            best[2][50] += ["RFMetaModelOnePlusOne"]
+            best[2][5] += ["Carola2"]
+            best[2][500000] += ["BAR3"]
+            best[2][50000] += ["ChainCMAPowell"]
+            best[2][5000] += ["ASCMADEthird"]
+            best[2][500] += ["NeuralMetaModelTwoPointsDE"]
+            best[2][50] += ["CMandAS2"]
+            best[2][5] += ["NaiveTBPSA"]
+            best[2][500000] += ["BAR"]
+            best[2][50000] += ["ASCMADEthird"]
+            best[2][5000] += ["CM"]
+            best[2][500] += ["ChainDiagonalCMAPowell"]
+            best[2][50] += ["Powell"]
+            best[2][5] += ["Cobyla"]
+            best[48][208.333] += ["DiscreteDE"]
+            best[48][20.8333] += ["pysot"]
+            best[48][2.08333] += ["MultiCobyla"]
+            best[48][0.208333] += ["NLOPT_LN_NELDERMEAD"]
+            best[48][2083.33] += ["RPowell"]
+            best[48][208.333] += ["CmaFmin2"]
+            best[48][20.8333] += ["RPowell"]
+            best[48][2.08333] += ["pysot"]
+            best[48][0.208333] += ["BOBYQA"]
+            best[48][20833.3] += ["MetaModelTwoPointsDE"]
+            best[48][2083.33] += ["RPowell"]
+            best[48][208.333] += ["DiscreteDE"]
+            best[48][20.8333] += ["ChainNaiveTBPSACMAPowell"]
+            best[48][2.08333] += ["NLOPT_LN_BOBYQA"]
+            best[48][0.208333] += ["BOBYQA"]
+            best[5][200000] += ["RescaledCMA"]
+            best[5][20000] += ["RFMetaModelDE"]
+            best[5][2000] += ["DiscreteDE"]
+            best[5][200] += ["TwoPointsDE"]
+            best[5][20] += ["NGOpt39"]
+            best[5][2] += ["OnePlusLambda"]
+            best[5][200000] += ["BAR"]
+            best[5][20000] += ["ChainNaiveTBPSACMAPowell"]
+            best[5][2000] += ["CmaFmin2"]
+            best[5][200] += ["RotatedTwoPointsDE"]
+            best[5][20] += ["pysot"]
+            best[5][2] += ["NLOPT_LN_SBPLX"]
+            best[5][200000] += ["ASCMADEthird"]
+            best[5][20000] += ["ASCMADEthird"]
+            best[5][2000] += ["QOTPDE"]
+            best[5][200] += ["NGOpt10"]
+            best[5][20] += ["LQODE"]
+            best[5][2] += ["NLOPT_LN_SBPLX"]
+            best[96][104.167] += ["NGOptF"]
+            best[96][10.4167] += ["NGOpt4"]
+            best[96][1.04167] += ["RPowell"]
+            best[96][0.104167] += ["ASCMADEthird"]
+            best[96][1041.67] += ["NLOPT_LN_NELDERMEAD"]
+            best[96][104.167] += ["RPowell"]
+            best[96][10.4167] += ["NGOpt8"]
+            best[96][1.04167] += ["RPowell"]
+            best[96][0.104167] += ["NLOPT_LN_NELDERMEAD"]
+            best[96][1041.67] += ["CMandAS3"]
+            best[96][104.167] += ["Powell"]
+            best[96][10.4167] += ["NGOptBase"]
+            best[96][1.04167] += ["Powell"]
+            best[96][0.104167] += ["NLOPT_LN_NELDERMEAD"]
+            bestdist = float("inf")
+            for d1 in best:
+                for nod2 in best[d1]:
+                    dist = (d - d1) ** 2 + (nod - nod2) ** 2
+                    if dist < bestdist:
+                        bestdist = dist
+                        bestalg = best[d1][nod2]
+            return bestalg
+
+        if self.fully_continuous and not self.has_noise:
+            algs = recommend_method(self.dimension, self.budget / self.dimension)  # type: ignore
+            if self.num_workers > 1:
+                algs = [a for a in algs if not registry[a].no_parallelization]
+                if len(algs) == 0:
+                    return SQPCMA
+
+            def most_frequent(List):
+                return max(set(List), key=List.count)
+
+            return registry[most_frequent(algs)]
+
         if self.fully_continuous and not self.has_noise and self.budget >= 12 * self.dimension:  # type: ignore
             return ConfPortfolio(optimizers=[GeneticDE, PSO, NGOpt39], warmup_ratio=0.33)
         else:
@@ -3108,6 +4707,540 @@ class NGOptRW(NGOpt39):
 class NGOpt(NGOpt39):
     # Learning something automatically so that it's less unreadable would be great.
     pass
+
+
+@registry.register
+class Wiz(NGOpt16):
+    def _select_optimizer_cls(self) -> base.OptCls:
+        if self.fully_continuous and self.has_noise:  # In particular for neuro-DPS.
+            DeterministicMix = ConfPortfolio(optimizers=[DiagonalCMA, PSO, GeneticDE])
+            return Chaining([DeterministicMix, OptimisticNoisyOnePlusOne], ["half"])
+
+        cma_vars = max(1, 4 + int(3 * np.log(self.dimension)))
+        num36 = (
+            1 + int(np.sqrt(4.0 * (4 * self.budget) // (self.dimension * 1000)))
+            if self.budget is not None
+            else 1
+        )
+        num21 = 1 + (4 * self.budget) // (self.dimension * 1000) if self.budget is not None else 1
+        num_dim10 = (
+            1 + int(np.sqrt(8.0 * (8 * self.budget) // (self.dimension * 1000)))
+            if self.budget is not None
+            else 1
+        )
+        num_dim20 = self.budget // (500 * self.dimension) if self.budget is not None else 1
+        para = 1
+        if self.budget is not None and self.budget > 5000 * self.dimension:
+            para = num36 * cma_vars
+        elif self.dimension < 5:
+            para = num21 * cma_vars
+        elif self.dimension < 10:
+            para = num_dim10 * cma_vars
+        elif self.dimension < 20:
+            para = num_dim20 * cma_vars
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget < 1000 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+        ):
+            return Carola2
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget > 10000 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+        ):
+            return Carola2
+        # Special cases in the bounded case
+        if (
+            self.budget is not None
+            and self.budget > 500 * self.dimension
+            and self.fully_continuous
+            and not self.has_noise
+            and self.num_objectives < 2
+            and self.num_workers <= para
+            and p.helpers.Normalizer(self.parametrization).fully_bounded
+        ):
+            if self.dimension == 1:
+                return NGOpt16
+            if (
+                self.budget > 5000 * self.dimension
+            ):  # Asymptotically let us trust NGOpt36 and its subtle restart.
+                return NGOpt36
+            if self.dimension < 5:  # Low dimension: let us hit the bounds.
+                return NGOpt21
+            if self.dimension < 10:  # Moderate dimension: reasonable restart + bet and run.
+                num = 1 + int(np.sqrt(8.0 * (8 * self.budget) // (self.dimension * 1000)))
+                return ConfPortfolio(optimizers=[NGOpt14] * num, warmup_ratio=0.7)
+            if self.dimension < 20:  # Nobody knows why this seems to be so good.
+                num = self.budget // (500 * self.dimension)
+                return ConfPortfolio(
+                    optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3**i) for i in range(num)],
+                    warmup_ratio=0.5,
+                )
+            if self.num_workers == 1:
+                return CmaFmin2
+            # We need a special case for dim < 30 ---> let's see later.
+            # Otherwise, let us go back to normal life: NGOpt16 which rocks in many cases, possibly Cobyla.
+            return NGOpt16
+        elif (  # This might be specific of high-precision cases.
+            self.budget is not None
+            and self.fully_continuous
+            and not self.has_noise
+            and self.num_objectives < 2
+            and self.num_workers <= cma_vars
+            and self.budget > 50 * self.dimension
+            and p.helpers.Normalizer(self.parametrization).fully_bounded
+        ):
+            if self.dimension < 3:
+                return NGOpt8
+            if self.dimension <= 20 and self.num_workers == 1:
+                MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                MetaModelFmin2.no_parallelization = True
+                return MetaModelFmin2
+            return NGOpt15
+        else:
+            return super()._select_optimizer_cls()
+
+
+@registry.register
+class NgIoh(NGOpt16):
+    def _select_optimizer_cls(self) -> base.OptCls:
+        if self.fully_continuous and self.has_noise:  # In particular for neuro-DPS.
+            DeterministicMix = ConfPortfolio(optimizers=[DiagonalCMA, PSO, GeneticDE])
+            return Chaining([DeterministicMix, OptimisticNoisyOnePlusOne], ["half"])
+
+        cma_vars = max(1, 4 + int(3 * np.log(self.dimension)))
+        num36 = (
+            1 + int(np.sqrt(4.0 * (4 * self.budget) // (self.dimension * 1000)))
+            if self.budget is not None
+            else 1
+        )
+        num21 = 1 + (4 * self.budget) // (self.dimension * 1000) if self.budget is not None else 1
+        num_dim10 = (
+            1 + int(np.sqrt(8.0 * (8 * self.budget) // (self.dimension * 1000)))
+            if self.budget is not None
+            else 1
+        )
+        num_dim20 = self.budget // (500 * self.dimension) if self.budget is not None else 1
+        para = 1
+        if self.budget is not None and self.budget > 5000 * self.dimension:
+            para = num36 * cma_vars
+        elif self.dimension < 5:
+            para = num21 * cma_vars
+        elif self.dimension < 10:
+            para = num_dim10 * cma_vars
+        elif self.dimension < 20:
+            para = num_dim20 * cma_vars
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget < 1000 * self.dimension
+            and self.budget > 20 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+        ):
+            return Carola2
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget > 10000 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+        ):
+            return Carola2
+        # Special cases in the bounded case
+        if (
+            self.budget is not None
+            and self.budget > 500 * self.dimension
+            and self.fully_continuous
+            and not self.has_noise
+            and self.num_objectives < 2
+            and self.num_workers <= para
+            and p.helpers.Normalizer(self.parametrization).fully_bounded
+        ):
+            if self.dimension == 1:
+                return NGOpt16
+            if (
+                self.budget > 5000 * self.dimension
+            ):  # Asymptotically let us trust NGOpt36 and its subtle restart.
+                return NGOpt36
+            if self.dimension < 5:  # Low dimension: let us hit the bounds.
+                return NGOpt21
+            if self.dimension < 10:  # Moderate dimension: reasonable restart + bet and run.
+                num = 1 + int(np.sqrt(8.0 * (8 * self.budget) // (self.dimension * 1000)))
+                return ConfPortfolio(optimizers=[NGOpt14] * num, warmup_ratio=0.7)
+            if self.dimension < 20:  # Nobody knows why this seems to be so good.
+                num = self.budget // (500 * self.dimension)
+                return ConfPortfolio(
+                    optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3**i) for i in range(num)],
+                    warmup_ratio=0.5,
+                )
+            if self.num_workers == 1:
+                return CmaFmin2
+            # We need a special case for dim < 30 ---> let's see later.
+            # Otherwise, let us go back to normal life: NGOpt16 which rocks in many cases, possibly Cobyla.
+            return NGOpt16
+        elif (  # This might be specific of high-precision cases.
+            self.budget is not None
+            and self.fully_continuous
+            and not self.has_noise
+            and self.num_objectives < 2
+            and self.num_workers <= cma_vars
+            and self.budget > 50 * self.dimension
+            and p.helpers.Normalizer(self.parametrization).fully_bounded
+        ):
+            if self.dimension < 3:
+                return NGOpt8
+            if self.dimension <= 20 and self.num_workers == 1:
+                MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                MetaModelFmin2.no_parallelization = True
+                return MetaModelFmin2
+            return NGOpt15
+        else:
+            return super()._select_optimizer_cls()
+
+
+@registry.register
+class NgIoh2(NGOpt16):
+    def _select_optimizer_cls(self) -> base.OptCls:
+        if self.fully_continuous and self.has_noise:  # In particular for neuro-DPS.
+            DeterministicMix = ConfPortfolio(optimizers=[DiagonalCMA, PSO, GeneticDE])
+            return Chaining([DeterministicMix, OptimisticNoisyOnePlusOne], ["half"])
+
+        cma_vars = max(1, 4 + int(3 * np.log(self.dimension)))
+        num36 = (
+            1 + int(np.sqrt(4.0 * (4 * self.budget) // (self.dimension * 1000)))
+            if self.budget is not None
+            else 1
+        )
+        num21 = 1 + (4 * self.budget) // (self.dimension * 1000) if self.budget is not None else 1
+        num_dim10 = (
+            1 + int(np.sqrt(8.0 * (8 * self.budget) // (self.dimension * 1000)))
+            if self.budget is not None
+            else 1
+        )
+        num_dim20 = self.budget // (500 * self.dimension) if self.budget is not None else 1
+        para = 1
+        if self.budget is not None and self.budget > 5000 * self.dimension:
+            para = num36 * cma_vars
+        elif self.dimension < 5:
+            para = num21 * cma_vars
+        elif self.dimension < 10:
+            para = num_dim10 * cma_vars
+        elif self.dimension < 20:
+            para = num_dim20 * cma_vars
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget < 1000 * self.dimension
+            and self.budget > 20 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 200
+        ):
+            return Carola2
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget >= 1000 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 200
+        ):
+            return Carola2
+        # Special cases in the bounded case
+        if (
+            self.budget is not None
+            and self.budget > 500 * self.dimension
+            and self.fully_continuous
+            and not self.has_noise
+            and self.num_objectives < 2
+            and self.num_workers <= para
+            and p.helpers.Normalizer(self.parametrization).fully_bounded
+        ):
+            if self.dimension == 1:
+                return NGOpt16
+            if (
+                self.budget > 5000 * self.dimension
+            ):  # Asymptotically let us trust NGOpt36 and its subtle restart.
+                return NGOpt36
+            if self.dimension < 5:  # Low dimension: let us hit the bounds.
+                return NGOpt21
+            if self.dimension < 10:  # Moderate dimension: reasonable restart + bet and run.
+                num = 1 + int(np.sqrt(8.0 * (8 * self.budget) // (self.dimension * 1000)))
+                return ConfPortfolio(optimizers=[NGOpt14] * num, warmup_ratio=0.7)
+            if self.dimension < 20:  # Nobody knows why this seems to be so good.
+                num = self.budget // (500 * self.dimension)
+                return ConfPortfolio(
+                    optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3**i) for i in range(num)],
+                    warmup_ratio=0.5,
+                )
+            if self.num_workers == 1:
+                return CmaFmin2
+            # We need a special case for dim < 30 ---> let's see later.
+            # Otherwise, let us go back to normal life: NGOpt16 which rocks in many cases, possibly Cobyla.
+            return NGOpt16
+        elif (  # This might be specific of high-precision cases.
+            self.budget is not None
+            and self.fully_continuous
+            and not self.has_noise
+            and self.num_objectives < 2
+            and self.num_workers <= cma_vars
+            and self.budget > 50 * self.dimension
+            and p.helpers.Normalizer(self.parametrization).fully_bounded
+        ):
+            if self.dimension < 3:
+                return NGOpt8
+            if self.dimension <= 20 and self.num_workers == 1:
+                MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                MetaModelFmin2.no_parallelization = True
+                return MetaModelFmin2
+            return NGOpt15
+        else:
+            return super()._select_optimizer_cls()
+
+
+@registry.register
+class NgIoh3(NGOpt16):
+    def _select_optimizer_cls(self) -> base.OptCls:
+        if self.fully_continuous and self.has_noise:  # In particular for neuro-DPS.
+            DeterministicMix = ConfPortfolio(optimizers=[DiagonalCMA, PSO, GeneticDE])
+            return Chaining([DeterministicMix, OptimisticNoisyOnePlusOne], ["half"])
+
+        cma_vars = max(1, 4 + int(3 * np.log(self.dimension)))
+        num36 = (
+            1 + int(np.sqrt(4.0 * (4 * self.budget) // (self.dimension * 1000)))
+            if self.budget is not None
+            else 1
+        )
+        num21 = 1 + (4 * self.budget) // (self.dimension * 1000) if self.budget is not None else 1
+        num_dim10 = (
+            1 + int(np.sqrt(8.0 * (8 * self.budget) // (self.dimension * 1000)))
+            if self.budget is not None
+            else 1
+        )
+        num_dim20 = self.budget // (500 * self.dimension) if self.budget is not None else 1
+        para = 1
+        if self.budget is not None and self.budget > 5000 * self.dimension:
+            para = num36 * cma_vars
+        elif self.dimension < 5:
+            para = num21 * cma_vars
+        elif self.dimension < 10:
+            para = num_dim10 * cma_vars
+        elif self.dimension < 20:
+            para = num_dim20 * cma_vars
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget < 1000 * self.dimension
+            and self.budget > 20 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 100
+        ):
+            return Carola2
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget >= 1000 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            return Carola2
+        # Special cases in the bounded case
+        if (
+            self.budget is not None
+            and self.budget > 500 * self.dimension
+            and self.fully_continuous
+            and not self.has_noise
+            and self.num_objectives < 2
+            and self.num_workers <= para
+            and p.helpers.Normalizer(self.parametrization).fully_bounded
+        ):
+            if self.dimension == 1:
+                return NGOpt16
+            if (
+                self.budget > 5000 * self.dimension
+            ):  # Asymptotically let us trust NGOpt36 and its subtle restart.
+                return NGOpt36
+            if self.dimension < 5:  # Low dimension: let us hit the bounds.
+                return NGOpt21
+            if self.dimension < 10:  # Moderate dimension: reasonable restart + bet and run.
+                num = 1 + int(np.sqrt(8.0 * (8 * self.budget) // (self.dimension * 1000)))
+                return ConfPortfolio(optimizers=[NGOpt14] * num, warmup_ratio=0.7)
+            if self.dimension < 20:  # Nobody knows why this seems to be so good.
+                num = self.budget // (500 * self.dimension)
+                return ConfPortfolio(
+                    optimizers=[Rescaled(base_optimizer=NGOpt14, scale=1.3**i) for i in range(num)],
+                    warmup_ratio=0.5,
+                )
+            if self.num_workers == 1:
+                return CmaFmin2
+            # We need a special case for dim < 30 ---> let's see later.
+            # Otherwise, let us go back to normal life: NGOpt16 which rocks in many cases, possibly Cobyla.
+            return NGOpt16
+        elif (  # This might be specific of high-precision cases.
+            self.budget is not None
+            and self.fully_continuous
+            and not self.has_noise
+            and self.num_objectives < 2
+            and self.num_workers <= cma_vars
+            and self.budget > 50 * self.dimension
+            and p.helpers.Normalizer(self.parametrization).fully_bounded
+        ):
+            if self.dimension < 3:
+                return NGOpt8
+            if self.dimension <= 20 and self.num_workers == 1:
+                MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                MetaModelFmin2.no_parallelization = True
+                return MetaModelFmin2
+            return NGOpt15
+        else:
+            return super()._select_optimizer_cls()
+
+
+@registry.register
+class NgIoh4(NGOptBase):
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
+
+    def _select_optimizer_cls(self) -> base.OptCls:
+        optCls: base.OptCls = NGOptBase
+        funcinfo = self.parametrization.function
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget < 1000 * self.dimension
+            and self.budget > 20 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 100
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget >= 1000 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        # Special cases in the bounded case
+        if self.has_noise and (self.has_discrete_not_softmax or not funcinfo.metrizable):
+            optCls = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
+        elif self.dimension >= 60 and not funcinfo.metrizable:
+            optCls = CMA
+        # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, we choose {optCls}")
+        return optCls
+
+
+@registry.register
+class NgIohRW2(NgIoh4):
+    def _select_optimizer_cls(self) -> base.OptCls:
+        if self.fully_continuous and not self.has_noise and self.budget >= 12 * self.dimension:  # type: ignore
+            return ConfPortfolio(optimizers=[SQPCMA, QODE, PSO], warmup_ratio=0.33)
+            # return ConfPortfolio(optimizers=[QODE, PSO, super()._select_optimizer_cls()], warmup_ratio=0.33)
+        else:
+            return super()._select_optimizer_cls()
+
+
+@registry.register
+class NgIoh5(NGOptBase):
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
+
+    def _select_optimizer_cls(self) -> base.OptCls:
+        optCls: base.OptCls = NGOptBase
+        funcinfo = self.parametrization.function
+        if not self.has_noise and self._arity > 0:
+            return DiscreteLenglerOnePlusOne
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget < 1000 * self.dimension
+            and self.budget > 20 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 100
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget >= 1000 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        # Special cases in the bounded case
+        if self.has_noise and (self.has_discrete_not_softmax or not funcinfo.metrizable):
+            optCls = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
+        elif self.dimension >= 60 and not funcinfo.metrizable:
+            optCls = CMA
+        # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, we choose {optCls}")
+        return optCls
+
+
+@registry.register
+class NgIoh6(NGOptBase):
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
+
+    def _select_optimizer_cls(self) -> base.OptCls:
+        optCls: base.OptCls = NGOptBase
+        funcinfo = self.parametrization.function
+        if not self.has_noise and self._arity > 0:
+            return RecombiningPortfolioDiscreteOnePlusOne
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget < 1000 * self.dimension
+            and self.budget > 20 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 100
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget >= 1000 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        # Special cases in the bounded case
+        if self.has_noise and (self.has_discrete_not_softmax or not funcinfo.metrizable):
+            optCls = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
+        elif self.dimension >= 60 and not funcinfo.metrizable:
+            optCls = CMA
+        # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, we choose {optCls}")
+        return optCls
 
 
 class _MSR(Portfolio):
@@ -3158,3 +5291,2343 @@ class MultipleSingleRuns(base.ConfiguredOptimizer):
         base_optimizer: base.OptCls = NGOpt,
     ) -> None:
         super().__init__(_MSR, locals())
+
+
+# Smooth variants of evolutionary algorithms.
+SmoothDiscreteOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="discrete").set_name(
+    "SmoothDiscreteOnePlusOne", register=True
+)
+SmoothPortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="portfolio").set_name(
+    "SmoothPortfolioDiscreteOnePlusOne", register=True
+)
+SmoothDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="lengler").set_name(
+    "SmoothDiscreteLenglerOnePlusOne", register=True
+)
+SmoothDiscreteLognormalOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="lognormal").set_name(
+    "SmoothDiscreteLognormalOnePlusOne", register=True
+)
+SuperSmoothDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True, mutation="lengler", antismooth=9
+).set_name("SuperSmoothDiscreteLenglerOnePlusOne", register=True)
+SuperSmoothTinyLognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True, mutation="tinylognormal", antismooth=9
+).set_name("SuperSmoothTinyLognormalDiscreteOnePlusOne", register=True)
+UltraSmoothDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True, mutation="lengler", antismooth=3
+).set_name("UltraSmoothDiscreteLenglerOnePlusOne", register=True)
+SmootherDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True, mutation="lengler", antismooth=2, super_radii=True
+).set_name("SmootherDiscreteLenglerOnePlusOne", register=True)
+YoSmoothDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True, mutation="lengler", antismooth=2
+).set_name("YoSmoothDiscreteLenglerOnePlusOne", register=True)
+CMALS = Chaining(
+    [CMA, DiscreteLenglerOnePlusOne, UltraSmoothDiscreteLenglerOnePlusOne], ["third", "third"]
+).set_name("CMALS", register=True)
+UltraSmoothDiscreteLognormalOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True, mutation="lognormal", antismooth=3
+).set_name("UltraSmoothDiscreteLognormalOnePlusOne ", register=True)
+CMALYS = Chaining([CMA, YoSmoothDiscreteLenglerOnePlusOne], ["tenth"]).set_name("CMALYS", register=True)
+CLengler = Chaining([CMA, DiscreteLenglerOnePlusOne], ["tenth"]).set_name("CLengler", register=True)
+CMALL = Chaining(
+    [CMA, DiscreteLenglerOnePlusOne, UltraSmoothDiscreteLognormalOnePlusOne], ["third", "third"]
+).set_name("CMALL", register=True)
+CMAILL = Chaining(
+    [ImageMetaModel, ImageMetaModelLengler, UltraSmoothDiscreteLognormalOnePlusOne], ["third", "third"]
+).set_name("CMAILL", register=True)
+CMASL = Chaining([CMA, SmootherDiscreteLenglerOnePlusOne], ["tenth"]).set_name("CMASL", register=True)
+CMASL2 = Chaining([CMA, SmootherDiscreteLenglerOnePlusOne], ["third"]).set_name("CMASL2", register=True)
+CMASL3 = Chaining([CMA, SmootherDiscreteLenglerOnePlusOne], ["half"]).set_name("CMASL3", register=True)
+
+SmoothLognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="lognormal").set_name(
+    "SmoothLognormalDiscreteOnePlusOne", register=True
+)
+SmoothAdaptiveDiscreteOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="adaptive").set_name(
+    "SmoothAdaptiveDiscreteOnePlusOne", register=True
+)
+
+SmoothRecombiningPortfolioDiscreteOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True,
+    crossover=True,
+    mutation="portfolio",
+).set_name("SmoothRecombiningPortfolioDiscreteOnePlusOne", register=True)
+SmoothRecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True,
+    crossover=True,
+    mutation="lengler",
+).set_name("SmoothRecombiningDiscreteLenglerOnePlusOne", register=True)
+UltraSmoothRecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True,
+    crossover=True,
+    mutation="lengler",
+    antismooth=3,
+).set_name("UltraSmoothRecombiningDiscreteLenglerOnePlusOne", register=True)
+UltraSmoothElitistRecombiningDiscreteLognormalOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True,
+    crossover=True,
+    mutation="lognormal",
+    antismooth=3,
+    roulette_size=7,
+).set_name("UltraSmoothElitistRecombiningDiscreteLognormalOnePlusOne", register=True)
+UltraSmoothElitistRecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True,
+    crossover=True,
+    mutation="lengler",
+    antismooth=3,
+    roulette_size=7,
+).set_name("UltraSmoothElitistRecombiningDiscreteLenglerOnePlusOne", register=True)
+SuperSmoothElitistRecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True,
+    crossover=True,
+    mutation="lengler",
+    antismooth=9,
+    roulette_size=7,
+).set_name("SuperSmoothElitistRecombiningDiscreteLenglerOnePlusOne", register=True)
+SuperSmoothRecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True,
+    crossover=True,
+    mutation="lengler",
+    antismooth=9,
+).set_name("SuperSmoothRecombiningDiscreteLenglerOnePlusOne", register=True)
+SuperSmoothRecombiningDiscreteLognormalOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True,
+    crossover=True,
+    mutation="lognormal",
+    antismooth=9,
+).set_name("SuperSmoothRecombiningDiscreteLognormalOnePlusOne", register=True)
+SmoothElitistRecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True,
+    crossover=True,
+    mutation="lengler",
+    roulette_size=7,
+).set_name("SmoothElitistRecombiningDiscreteLenglerOnePlusOne", register=True)
+SmoothElitistRandRecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True,
+    crossover=True,
+    mutation="lengler",
+    roulette_size=7,
+    crossover_type="rand",
+).set_name("SmoothElitistRandRecombiningDiscreteLenglerOnePlusOne", register=True)
+SmoothElitistRandRecombiningDiscreteLognormalOnePlusOne = ParametrizedOnePlusOne(
+    smoother=True,
+    crossover=True,
+    mutation="lognormal",
+    roulette_size=7,
+    crossover_type="rand",
+).set_name("SmoothElitistRandRecombiningDiscreteLognormalOnePlusOne", register=True)
+RecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
+    crossover=True,
+    mutation="lengler",
+).set_name("RecombiningDiscreteLenglerOnePlusOne", register=True)
+RecombiningDiscreteLognormalOnePlusOne = ParametrizedOnePlusOne(
+    crossover=True,
+    mutation="lognormal",
+).set_name("RecombiningDiscreteLognormalOnePlusOne", register=True)
+MaxRecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
+    crossover=True, mutation="lengler", crossover_type="max"
+).set_name("MaxRecombiningDiscreteLenglerOnePlusOne", register=True)
+MinRecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
+    crossover=True, mutation="lengler", crossover_type="min"
+).set_name("MinRecombiningDiscreteLenglerOnePlusOne", register=True)
+OnePtRecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
+    crossover=True, mutation="lengler", crossover_type="onepoint"
+).set_name("OnePtRecombiningDiscreteLenglerOnePlusOne", register=True)
+TwoPtRecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
+    crossover=True, mutation="lengler", crossover_type="twopoint"
+).set_name("TwoPtRecombiningDiscreteLenglerOnePlusOne", register=True)
+RandRecombiningDiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(
+    crossover=True,
+    mutation="lengler",
+    crossover_type="rand",
+).set_name("RandRecombiningDiscreteLenglerOnePlusOne", register=True)
+RandRecombiningDiscreteLognormalOnePlusOne = ParametrizedOnePlusOne(
+    crossover=True,
+    mutation="lognormal",
+    crossover_type="rand",
+).set_name("RandRecombiningDiscreteLognormalOnePlusOne", register=True)
+
+
+@registry.register
+class NgIoh7(NGOptBase):
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
+
+    def _select_optimizer_cls(self) -> base.OptCls:
+        optCls: base.OptCls = NGOptBase
+        funcinfo = self.parametrization.function
+        if isinstance(self.parametrization, p.Array) and not self.fully_continuous and not self.has_noise:
+            return ConfPortfolio(
+                optimizers=[
+                    SuperSmoothDiscreteLenglerOnePlusOne,
+                    SuperSmoothElitistRecombiningDiscreteLenglerOnePlusOne,
+                    DiscreteLenglerOnePlusOne,
+                ],
+                warmup_ratio=0.4,
+            )
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget < 1000 * self.dimension
+            and self.budget > 20 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 100
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget >= 1000 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        # Special cases in the bounded case
+        if self.has_noise and (self.has_discrete_not_softmax or not funcinfo.metrizable):
+            optCls = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
+        elif self.dimension >= 60 and not funcinfo.metrizable:
+            optCls = CMA
+        # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, we choose {optCls}")
+        return optCls
+
+
+@registry.register
+class NgDS11(NGOptDSBase):
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
+
+    def _select_optimizer_cls(self, budget: tp.Optional[int] = None) -> base.OptCls:
+        # print(f"NgIoh11 with dimension {self.dimension} and budget {budget}/{self.budget}")
+        if budget is None:
+            budget = self.budget
+        else:
+            self.budget = budget
+        optCls: base.OptCls = NGOptBase
+        funcinfo = self.parametrization.function
+        if isinstance(self.parametrization, p.Array) and not self.fully_continuous and not self.has_noise:
+            return ConfPortfolio(
+                optimizers=[
+                    SuperSmoothDiscreteLenglerOnePlusOne,
+                    SuperSmoothElitistRecombiningDiscreteLenglerOnePlusOne,
+                    DiscreteLenglerOnePlusOne,
+                ],
+                warmup_ratio=0.4,
+            )
+        if self.fully_continuous and self.num_workers == 1 and budget is not None and not self.has_noise:
+            if 300 * self.dimension < budget < 3000 * self.dimension:
+                if self.dimension == 2:
+                    return DS14
+                if self.dimension < 4:
+                    return DS4
+                if self.dimension < 8:
+                    return DS5
+                if self.dimension < 15:
+                    return DS9
+                if self.dimension < 30:
+                    return DS8
+                if self.dimension < 60:
+                    return DS9
+
+            if 300 * self.dimension < budget < 3000 * self.dimension and self.dimension == 2:
+                return DS6
+            if 300 * self.dimension < budget < 3000 * self.dimension:
+                return DS6
+            if 3000 * self.dimension < budget:
+                MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                MetaModelFmin2.no_parallelization = True
+                return MetaModelFmin2
+            if 300 * self.dimension < budget < 3000 * self.dimension and self.dimension <= 3:
+                MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                MetaModelFmin2.no_parallelization = True
+                return ChainMetaModelSQP
+            if budget < 30 * self.dimension and self.dimension < 50 and self.dimension > 30:
+                return ChainMetaModelSQP
+            if budget >= 30 * self.dimension and budget < 300 * self.dimension and self.dimension == 2:
+                return NLOPT_LN_SBPLX
+            if budget >= 30 * self.dimension and budget < 300 * self.dimension and self.dimension < 15:
+                return ChainMetaModelSQP
+            if budget >= 300 * self.dimension and budget < 3000 * self.dimension and self.dimension < 30:
+                return MultiCMA
+
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and budget is not None
+            and budget < 1000 * self.dimension
+            and budget > 20 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 100
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and budget is not None
+            and budget >= 1000 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        # Special cases in the bounded case
+        if self.has_noise and (self.has_discrete_not_softmax or not funcinfo.metrizable):
+            optCls = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
+        # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, we choose {optCls}")
+        return optCls
+
+
+@registry.register
+class NgIoh11(NGOptBase):
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
+
+    def _select_optimizer_cls(self, budget: tp.Optional[int] = None) -> base.OptCls:
+        # print(f"NgIoh11 with dimension {self.dimension} and budget {budget}/{self.budget}")
+        if budget is None:
+            budget = self.budget
+        else:
+            self.budget = budget
+        optCls: base.OptCls = NGOptBase
+        funcinfo = self.parametrization.function
+        if isinstance(self.parametrization, p.Array) and not self.fully_continuous and not self.has_noise:
+            return ConfPortfolio(
+                optimizers=[
+                    SuperSmoothDiscreteLenglerOnePlusOne,
+                    SuperSmoothElitistRecombiningDiscreteLenglerOnePlusOne,
+                    DiscreteLenglerOnePlusOne,
+                ],
+                warmup_ratio=0.4,
+            )
+        if self.fully_continuous and self.num_workers == 1 and budget is not None and not self.has_noise:
+            if 300 * self.dimension < budget < 3000 * self.dimension:
+                if self.dimension == 2:
+                    return Carola14
+                if self.dimension < 4:
+                    return Carola4
+                if self.dimension < 8:
+                    return Carola5
+                if self.dimension < 15:
+                    return Carola9
+                if self.dimension < 30:
+                    return Carola8
+                if self.dimension < 60:
+                    return Carola9
+
+            if 300 * self.dimension < budget < 3000 * self.dimension and self.dimension == 2:
+                return FCarola6
+            if 300 * self.dimension < budget < 3000 * self.dimension:
+                return Carola6
+            if 3000 * self.dimension < budget:
+                MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                MetaModelFmin2.no_parallelization = True
+                return MetaModelFmin2
+            if 300 * self.dimension < budget < 3000 * self.dimension and self.dimension <= 3:
+                MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                MetaModelFmin2.no_parallelization = True
+                return ChainMetaModelSQP
+            if budget < 30 * self.dimension and self.dimension < 50 and self.dimension > 30:
+                return ChainMetaModelSQP
+            if budget >= 30 * self.dimension and budget < 300 * self.dimension and self.dimension == 2:
+                return NLOPT_LN_SBPLX
+            if budget >= 30 * self.dimension and budget < 300 * self.dimension and self.dimension < 15:
+                return ChainMetaModelSQP
+            if budget >= 300 * self.dimension and budget < 3000 * self.dimension and self.dimension < 30:
+                return MultiCMA
+
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and budget is not None
+            and budget < 1000 * self.dimension
+            and budget > 20 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 100
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and budget is not None
+            and budget >= 1000 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        # Special cases in the bounded case
+        if self.has_noise and (self.has_discrete_not_softmax or not funcinfo.metrizable):
+            optCls = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
+        # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, we choose {optCls}")
+        return optCls
+
+
+@registry.register
+class NgIoh14(NgIoh11):
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
+
+    def _select_optimizer_cls(self, budget: tp.Optional[int] = None) -> base.OptCls:
+        assert budget is None
+        optCls: base.OptCls = NGOptBase
+        funcinfo = self.parametrization.function
+        if isinstance(self.parametrization, p.Array) and not self.fully_continuous and not self.has_noise:
+            return ConfPortfolio(
+                optimizers=[
+                    SuperSmoothDiscreteLenglerOnePlusOne,
+                    SuperSmoothElitistRecombiningDiscreteLenglerOnePlusOne,
+                    DiscreteLenglerOnePlusOne,
+                ],
+                warmup_ratio=0.4,
+            )
+        if self.fully_continuous and self.budget is not None and not self.has_noise:
+            num = self.budget // (1000 * self.dimension)
+            if self.budget > 2000 * self.dimension and num >= self.num_workers:
+                optimizers = []  # type: ignore
+                # optimizers += [Rescaled(base_optimizer=NgIoh11, scale=max(.01, np.exp(-1.0 / np.random.rand())))]
+                optimizers += [
+                    Rescaled(
+                        base_optimizer=NgIoh11._select_optimizer_cls(self),
+                        scale=max(0.01, np.exp(-1.0 / np.random.rand())),
+                    )
+                ]
+                if len(optimizers) < num:
+                    optimizers += [FCarola6]  # type: ignore
+                # if len(optimizers) < num:
+                #    optimizers += [pCarola6]
+                if len(optimizers) < num:
+                    optimizers += [ChainMetaModelSQP]  # type: ignore
+                if len(optimizers) < num:
+                    MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                    optimizers += [MetaModelFmin2]  # type: ignore
+                while len(optimizers) < num:
+                    optimizers += [
+                        Rescaled(
+                            base_optimizer=NgIoh11._select_optimizer_cls(self),
+                            scale=max(0.01, np.exp(-1.0 / np.random.rand())),
+                        )
+                    ]
+                return ConfPortfolio(optimizers=optimizers, warmup_ratio=0.70, no_crossing=True)
+
+        if self.fully_continuous and self.num_workers == 1 and self.budget is not None and not self.has_noise:
+            if 300 * self.dimension < self.budget < 3000 * self.dimension:
+                if self.dimension == 2:
+                    return Carola14
+                if self.dimension < 4:
+                    return Carola4
+                if self.dimension < 8:
+                    return Carola5
+                if self.dimension < 15:
+                    return Carola9
+                if self.dimension < 30:
+                    return Carola8
+                if self.dimension < 60:
+                    return Carola9
+
+            if 300 * self.dimension < self.budget < 3000 * self.dimension and self.dimension == 2:
+                return FCarola6
+            if 300 * self.dimension < self.budget < 3000 * self.dimension:
+                return Carola6
+            if 3000 * self.dimension < self.budget:
+                MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                MetaModelFmin2.no_parallelization = True
+                return MetaModelFmin2
+            if 300 * self.dimension < self.budget < 3000 * self.dimension and self.dimension <= 3:
+                MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                MetaModelFmin2.no_parallelization = True
+                return ChainMetaModelSQP
+            if self.budget < 30 * self.dimension and self.dimension < 50 and self.dimension > 30:
+                return ChainMetaModelSQP
+            if (
+                self.budget >= 30 * self.dimension
+                and self.budget < 300 * self.dimension
+                and self.dimension == 2
+            ):
+                return NLOPT_LN_SBPLX
+            if (
+                self.budget >= 30 * self.dimension
+                and self.budget < 300 * self.dimension
+                and self.dimension < 15
+            ):
+                return ChainMetaModelSQP
+            if (
+                self.budget >= 300 * self.dimension
+                and self.budget < 3000 * self.dimension
+                and self.dimension < 30
+            ):
+                return MultiCMA
+
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget < 1000 * self.dimension
+            and self.budget > 20 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 100
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget >= 1000 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        # Special cases in the bounded case
+        if self.has_noise and (self.has_discrete_not_softmax or not funcinfo.metrizable):
+            optCls = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
+        # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, we choose {optCls}")
+        return optCls
+
+
+@registry.register
+class NgIoh13(NgIoh11):
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
+
+    def _select_optimizer_cls(self, budget: tp.Optional[int] = None) -> base.OptCls:
+        assert budget is None
+        optCls: base.OptCls = NGOptBase
+        funcinfo = self.parametrization.function
+        if isinstance(self.parametrization, p.Array) and not self.fully_continuous and not self.has_noise:
+            return ConfPortfolio(
+                optimizers=[
+                    SuperSmoothDiscreteLenglerOnePlusOne,
+                    SuperSmoothElitistRecombiningDiscreteLenglerOnePlusOne,
+                    DiscreteLenglerOnePlusOne,
+                ],
+                warmup_ratio=0.4,
+            )
+        if self.fully_continuous and self.budget is not None and not self.has_noise:
+            num = self.budget // (1000 * self.dimension)
+            if self.budget > 2000 * self.dimension and num >= self.num_workers:
+                optimizers = []
+                optimizers += [
+                    Rescaled(
+                        base_optimizer=NgIoh11._select_optimizer_cls(self),
+                        scale=max(0.01, np.exp(-1.0 / np.random.rand())),
+                    )
+                ]
+                if len(optimizers) < num:
+                    optimizers += [FCarola6]  # type: ignore
+                # if len(optimizers) < num:
+                #    optimizers += [pCarola6]
+                if len(optimizers) < num:
+                    optimizers += [ChainMetaModelSQP]  # type: ignore
+                if len(optimizers) < num:
+                    MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                    optimizers += [MetaModelFmin2]  # type: ignore
+                while len(optimizers) < num:
+                    optimizers += [
+                        Rescaled(
+                            base_optimizer=NgIoh11._select_optimizer_cls(self),
+                            scale=max(0.01, np.exp(-1.0 / np.random.rand())),
+                        )
+                    ]
+                return ConfPortfolio(optimizers=optimizers, warmup_ratio=1.00, no_crossing=True)
+
+        if self.fully_continuous and self.num_workers == 1 and self.budget is not None and not self.has_noise:
+            if 300 * self.dimension < self.budget < 3000 * self.dimension:
+                if self.dimension == 2:
+                    return Carola14
+                if self.dimension < 4:
+                    return Carola4
+                if self.dimension < 8:
+                    return Carola5
+                if self.dimension < 15:
+                    return Carola9
+                if self.dimension < 30:
+                    return Carola8
+                if self.dimension < 60:
+                    return Carola9
+
+            if 300 * self.dimension < self.budget < 3000 * self.dimension and self.dimension == 2:
+                return FCarola6
+            if 300 * self.dimension < self.budget < 3000 * self.dimension:
+                return Carola6
+            if 3000 * self.dimension < self.budget:
+                MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                MetaModelFmin2.no_parallelization = True
+                return MetaModelFmin2
+            if 300 * self.dimension < self.budget < 3000 * self.dimension and self.dimension <= 3:
+                MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                MetaModelFmin2.no_parallelization = True
+                return ChainMetaModelSQP
+            if self.budget < 30 * self.dimension and self.dimension < 50 and self.dimension > 30:
+                return ChainMetaModelSQP
+            if (
+                self.budget >= 30 * self.dimension
+                and self.budget < 300 * self.dimension
+                and self.dimension == 2
+            ):
+                return NLOPT_LN_SBPLX
+            if (
+                self.budget >= 30 * self.dimension
+                and self.budget < 300 * self.dimension
+                and self.dimension < 15
+            ):
+                return ChainMetaModelSQP
+            if (
+                self.budget >= 300 * self.dimension
+                and self.budget < 3000 * self.dimension
+                and self.dimension < 30
+            ):
+                return MultiCMA
+
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget < 1000 * self.dimension
+            and self.budget > 20 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 100
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget >= 1000 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        # Special cases in the bounded case
+        if self.has_noise and (self.has_discrete_not_softmax or not funcinfo.metrizable):
+            optCls = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
+        # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, we choose {optCls}")
+        return optCls
+
+
+@registry.register
+class NgIoh15(NgIoh11):
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
+
+    def _select_optimizer_cls(self, budget: tp.Optional[int] = None) -> base.OptCls:
+        assert budget is None
+        optCls: base.OptCls = NGOptBase
+        funcinfo = self.parametrization.function
+        if isinstance(self.parametrization, p.Array) and not self.fully_continuous and not self.has_noise:
+            return ConfPortfolio(
+                optimizers=[
+                    SuperSmoothDiscreteLenglerOnePlusOne,
+                    SuperSmoothElitistRecombiningDiscreteLenglerOnePlusOne,
+                    DiscreteLenglerOnePlusOne,
+                ],
+                warmup_ratio=0.4,
+            )
+        if self.fully_continuous and self.budget is not None and not self.has_noise:
+            num = self.budget // (1000 * self.dimension)
+            if self.budget > 2000 * self.dimension and num >= self.num_workers:
+                optimizers = []
+                for _ in range(num):
+                    optimizers += [
+                        Rescaled(
+                            base_optimizer=NgIoh11._select_optimizer_cls(self),
+                            scale=max(0.01, np.exp(-1.0 / np.random.rand())),
+                        )
+                    ]
+                    # optimizers += [NgIoh11]
+                return ConfPortfolio(optimizers=optimizers, warmup_ratio=0.70, no_crossing=True)
+        if self.fully_continuous and self.num_workers == 1 and self.budget is not None and not self.has_noise:
+            if 300 * self.dimension < self.budget < 3000 * self.dimension:
+                if self.dimension == 2:
+                    return Carola14
+                if self.dimension < 4:
+                    return Carola4
+                if self.dimension < 8:
+                    return Carola5
+                if self.dimension < 15:
+                    return Carola9
+                if self.dimension < 30:
+                    return Carola8
+                if self.dimension < 60:
+                    return Carola9
+
+            if 300 * self.dimension < self.budget < 3000 * self.dimension and self.dimension == 2:
+                return FCarola6
+            if 300 * self.dimension < self.budget < 3000 * self.dimension:
+                return Carola6
+            if 3000 * self.dimension < self.budget:
+                MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                MetaModelFmin2.no_parallelization = True
+                return MetaModelFmin2
+            if 300 * self.dimension < self.budget < 3000 * self.dimension and self.dimension <= 3:
+                MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                MetaModelFmin2.no_parallelization = True
+                return ChainMetaModelSQP
+            if self.budget < 30 * self.dimension and self.dimension < 50 and self.dimension > 30:
+                return ChainMetaModelSQP
+            if (
+                self.budget >= 30 * self.dimension
+                and self.budget < 300 * self.dimension
+                and self.dimension == 2
+            ):
+                return NLOPT_LN_SBPLX
+            if (
+                self.budget >= 30 * self.dimension
+                and self.budget < 300 * self.dimension
+                and self.dimension < 15
+            ):
+                return ChainMetaModelSQP
+            if (
+                self.budget >= 300 * self.dimension
+                and self.budget < 3000 * self.dimension
+                and self.dimension < 30
+            ):
+                return MultiCMA
+
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget < 1000 * self.dimension
+            and self.budget > 20 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 100
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget >= 1000 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        # Special cases in the bounded case
+        if self.has_noise and (self.has_discrete_not_softmax or not funcinfo.metrizable):
+            optCls = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
+        # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, we choose {optCls}")
+        return optCls
+
+
+@registry.register
+class NgIoh12(NgIoh11):
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
+
+    def _select_optimizer_cls(self, budget: tp.Optional[int] = None) -> base.OptCls:
+        assert budget is None
+        optCls: base.OptCls = NGOptBase
+        funcinfo = self.parametrization.function
+        if isinstance(self.parametrization, p.Array) and not self.fully_continuous and not self.has_noise:
+            return ConfPortfolio(
+                optimizers=[
+                    SuperSmoothDiscreteLenglerOnePlusOne,
+                    SuperSmoothElitistRecombiningDiscreteLenglerOnePlusOne,
+                    DiscreteLenglerOnePlusOne,
+                ],
+                warmup_ratio=0.4,
+            )
+        if self.fully_continuous and self.budget is not None and not self.has_noise:
+            num = self.budget // (1000 * self.dimension)
+            if self.budget > 2000 * self.dimension and num >= self.num_workers:
+                optimizers = []
+                for _ in range(num):
+                    optimizers += [
+                        Rescaled(
+                            base_optimizer=NgIoh11._select_optimizer_cls(self),
+                            scale=max(0.01, np.exp(-1.0 / np.random.rand())),
+                        )
+                    ]
+                    # optimizers += [NgIoh11]
+                    # optimizers += [NgIoh11]
+                return ConfPortfolio(optimizers=optimizers, warmup_ratio=1.00, no_crossing=True)
+        if self.fully_continuous and self.num_workers == 1 and self.budget is not None and not self.has_noise:
+            if 300 * self.dimension < self.budget < 3000 * self.dimension:
+                if self.dimension == 2:
+                    return Carola14
+                if self.dimension < 4:
+                    return Carola4
+                if self.dimension < 8:
+                    return Carola5
+                if self.dimension < 15:
+                    return Carola9
+                if self.dimension < 30:
+                    return Carola8
+                if self.dimension < 60:
+                    return Carola9
+
+            if 300 * self.dimension < self.budget < 3000 * self.dimension and self.dimension == 2:
+                return FCarola6
+            if 300 * self.dimension < self.budget < 3000 * self.dimension:
+                return Carola6
+            if 3000 * self.dimension < self.budget:
+                MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                MetaModelFmin2.no_parallelization = True
+                return MetaModelFmin2
+            if 300 * self.dimension < self.budget < 3000 * self.dimension and self.dimension <= 3:
+                MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                MetaModelFmin2.no_parallelization = True
+                return ChainMetaModelSQP
+            if self.budget < 30 * self.dimension and self.dimension < 50 and self.dimension > 30:
+                return ChainMetaModelSQP
+            if (
+                self.budget >= 30 * self.dimension
+                and self.budget < 300 * self.dimension
+                and self.dimension == 2
+            ):
+                return NLOPT_LN_SBPLX
+            if (
+                self.budget >= 30 * self.dimension
+                and self.budget < 300 * self.dimension
+                and self.dimension < 15
+            ):
+                return ChainMetaModelSQP
+            if (
+                self.budget >= 300 * self.dimension
+                and self.budget < 3000 * self.dimension
+                and self.dimension < 30
+            ):
+                return MultiCMA
+
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget < 1000 * self.dimension
+            and self.budget > 20 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 100
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget >= 1000 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        # Special cases in the bounded case
+        if self.has_noise and (self.has_discrete_not_softmax or not funcinfo.metrizable):
+            optCls = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
+        # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, we choose {optCls}")
+        return optCls
+
+
+@registry.register
+class NgIoh16(NgIoh11):
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
+
+    def _select_optimizer_cls(self, budget: tp.Optional[int] = None) -> base.OptCls:
+        assert budget is None
+        optCls: base.OptCls = NGOptBase
+        funcinfo = self.parametrization.function
+        if isinstance(self.parametrization, p.Array) and not self.fully_continuous and not self.has_noise:
+            return ConfPortfolio(
+                optimizers=[
+                    SuperSmoothDiscreteLenglerOnePlusOne,
+                    SuperSmoothElitistRecombiningDiscreteLenglerOnePlusOne,
+                    DiscreteLenglerOnePlusOne,
+                ],
+                warmup_ratio=0.4,
+            )
+        if self.fully_continuous and self.budget is not None and not self.has_noise:
+            num = self.budget // (1000 * self.dimension)
+            if self.budget > 2000 * self.dimension and num >= self.num_workers:
+                optimizers = []
+                # sub_budget = self.budget // num + (self.budget % num > 0)
+                for _ in range(num):
+                    optimizers += [
+                        Rescaled(
+                            base_optimizer=Carola14,
+                            # base_optimizer=NgIoh11._select_optimizer_cls(self, sub_budget),
+                            scale=max(0.01, np.exp(-1.0 / np.random.rand())),
+                        )
+                    ]
+                # print("NgIoh16 chooses ", optimizers)
+                return ConfPortfolio(optimizers=optimizers, warmup_ratio=1.00, no_crossing=True)
+        if self.fully_continuous and self.num_workers == 1 and self.budget is not None and not self.has_noise:
+            if 300 * self.dimension < self.budget < 3000 * self.dimension:
+                if self.dimension == 2:
+                    return Carola14
+                if self.dimension < 4:
+                    return Carola4
+                if self.dimension < 8:
+                    return Carola5
+                if self.dimension < 15:
+                    return Carola9
+                if self.dimension < 30:
+                    return Carola8
+                if self.dimension < 60:
+                    return Carola9
+
+            if 300 * self.dimension < self.budget < 3000 * self.dimension and self.dimension == 2:
+                return FCarola6
+            if 300 * self.dimension < self.budget < 3000 * self.dimension:
+                return Carola6
+            if 3000 * self.dimension < self.budget:
+                MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                MetaModelFmin2.no_parallelization = True
+                return MetaModelFmin2
+            if 300 * self.dimension < self.budget < 3000 * self.dimension and self.dimension <= 3:
+                MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                MetaModelFmin2.no_parallelization = True
+                return ChainMetaModelSQP
+            if self.budget < 30 * self.dimension and self.dimension < 50 and self.dimension > 30:
+                return ChainMetaModelSQP
+            if (
+                self.budget >= 30 * self.dimension
+                and self.budget < 300 * self.dimension
+                and self.dimension == 2
+            ):
+                return NLOPT_LN_SBPLX
+            if (
+                self.budget >= 30 * self.dimension
+                and self.budget < 300 * self.dimension
+                and self.dimension < 15
+            ):
+                return ChainMetaModelSQP
+            if (
+                self.budget >= 300 * self.dimension
+                and self.budget < 3000 * self.dimension
+                and self.dimension < 30
+            ):
+                return MultiCMA
+
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget < 1000 * self.dimension
+            and self.budget > 20 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 100
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget >= 1000 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        # Special cases in the bounded case
+        if self.has_noise and (self.has_discrete_not_softmax or not funcinfo.metrizable):
+            optCls = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
+        # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, we choose {optCls}")
+        return optCls
+
+
+@registry.register
+class NgIoh17(NgIoh11):
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
+
+    def _select_optimizer_cls(self, budget: tp.Optional[int] = None) -> base.OptCls:
+        assert budget is None
+        optCls: base.OptCls = NGOptBase
+        funcinfo = self.parametrization.function
+        if isinstance(self.parametrization, p.Array) and not self.fully_continuous and not self.has_noise:
+            return ConfPortfolio(
+                optimizers=[
+                    SuperSmoothDiscreteLenglerOnePlusOne,
+                    SuperSmoothElitistRecombiningDiscreteLenglerOnePlusOne,
+                    DiscreteLenglerOnePlusOne,
+                ],
+                warmup_ratio=0.4,
+            )
+        if self.fully_continuous and self.budget is not None and not self.has_noise:
+            num = self.budget // (1000 * self.dimension)
+            if self.budget > 2000 * self.dimension and num >= self.num_workers:
+                optimizers = []
+                orig_budget = self.budget
+                sub_budget = self.budget // num + (self.budget % num > 0)
+                # sub_budget = self.budget
+                for _ in range(num):
+                    optimizers += [
+                        Rescaled(
+                            # base_optimizer=Carola2,
+                            base_optimizer=NgIoh11._select_optimizer_cls(self, sub_budget),
+                            scale=max(0.01, np.exp(-1.0 / np.random.rand())),
+                        )
+                    ]
+                    # optimizers += [NgIoh11]
+                self.budget = orig_budget
+                return Chaining(optimizers, [sub_budget] * (len(optimizers) - 1), no_crossing=True)
+                # optimizers += [NgIoh11]
+                # print("NgIoh16 chooses ", optimizers)
+                # self.budget = orig_budget
+                # return ConfPortfolio(optimizers=optimizers, warmup_ratio=1.00, no_crossing=True)
+        if self.fully_continuous and self.num_workers == 1 and self.budget is not None and not self.has_noise:
+            if 300 * self.dimension < self.budget < 3000 * self.dimension:
+                if self.dimension == 2:
+                    return Carola14
+                if self.dimension < 4:
+                    return Carola4
+                if self.dimension < 8:
+                    return Carola5
+                if self.dimension < 15:
+                    return Carola9
+                if self.dimension < 30:
+                    return Carola8
+                if self.dimension < 60:
+                    return Carola9
+
+            if 300 * self.dimension < self.budget < 3000 * self.dimension and self.dimension == 2:
+                return FCarola6
+            if 300 * self.dimension < self.budget < 3000 * self.dimension:
+                return Carola6
+            if 3000 * self.dimension < self.budget:
+                MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                MetaModelFmin2.no_parallelization = True
+                return MetaModelFmin2
+            if 300 * self.dimension < self.budget < 3000 * self.dimension and self.dimension <= 3:
+                MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                MetaModelFmin2.no_parallelization = True
+                return ChainMetaModelSQP
+            if self.budget < 30 * self.dimension and self.dimension < 50 and self.dimension > 30:
+                return ChainMetaModelSQP
+            if (
+                self.budget >= 30 * self.dimension
+                and self.budget < 300 * self.dimension
+                and self.dimension == 2
+            ):
+                return NLOPT_LN_SBPLX
+            if (
+                self.budget >= 30 * self.dimension
+                and self.budget < 300 * self.dimension
+                and self.dimension < 15
+            ):
+                return ChainMetaModelSQP
+            if (
+                self.budget >= 300 * self.dimension
+                and self.budget < 3000 * self.dimension
+                and self.dimension < 30
+            ):
+                return MultiCMA
+
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget < 1000 * self.dimension
+            and self.budget > 20 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 100
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget >= 1000 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        # Special cases in the bounded case
+        if self.has_noise and (self.has_discrete_not_softmax or not funcinfo.metrizable):
+            optCls = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
+        # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, we choose {optCls}")
+        return optCls
+
+
+@registry.register
+class NgDS(NgDS11):
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
+
+    def _select_optimizer_cls(self, budget: tp.Optional[int] = None) -> base.OptCls:
+        assert budget is None
+        optCls: base.OptCls = NGOptBase
+        funcinfo = self.parametrization.function
+        if isinstance(self.parametrization, p.Array) and not self.fully_continuous and not self.has_noise:
+            return ConfPortfolio(
+                optimizers=[
+                    SuperSmoothDiscreteLenglerOnePlusOne,
+                    SuperSmoothElitistRecombiningDiscreteLenglerOnePlusOne,
+                    DiscreteLenglerOnePlusOne,
+                ],
+                warmup_ratio=0.4,
+            )
+        if self.fully_continuous and self.budget is not None and not self.has_noise:
+            if self.budget > 2000 * self.dimension:
+                vlpcma = ParametrizedMetaModel(multivariate_optimizer=VLPCMA)
+                return vlpcma
+                # optimizers += [NgIoh11]
+                # print("NgIoh16 chooses ", optimizers)
+                # self.budget = orig_budget
+                # return ConfPortfolio(optimizers=optimizers, warmup_ratio=1.00, no_crossing=True)
+        if self.fully_continuous and self.num_workers == 1 and self.budget is not None and not self.has_noise:
+            if 300 * self.dimension < self.budget < 3000 * self.dimension:
+                if self.dimension == 2:
+                    return DS14
+                if self.dimension < 4:
+                    return DS4
+                if self.dimension < 8:
+                    return DS5
+                if self.dimension < 15:
+                    return DS9
+                if self.dimension < 30:
+                    return DS8
+                if self.dimension < 60:
+                    return DS9
+
+            if 300 * self.dimension < self.budget < 3000 * self.dimension and self.dimension == 2:
+                return DS6
+            if 300 * self.dimension < self.budget < 3000 * self.dimension:
+                return DS6
+            if 3000 * self.dimension < self.budget:
+                MetaModelDS = ParametrizedMetaModel(multivariate_optimizer=DSproba)
+                MetaModelDS.no_parallelization = True
+                return MetaModelDS
+            if 300 * self.dimension < self.budget < 3000 * self.dimension and self.dimension <= 3:
+                return ChainMetaModelDSSQP
+            if self.budget < 30 * self.dimension and self.dimension < 50 and self.dimension > 30:
+                return ChainMetaModelDSSQP
+            if (
+                self.budget >= 30 * self.dimension
+                and self.budget < 300 * self.dimension
+                and self.dimension == 2
+            ):
+                return NLOPT_LN_SBPLX
+            if (
+                self.budget >= 30 * self.dimension
+                and self.budget < 300 * self.dimension
+                and self.dimension < 15
+            ):
+                return ChainMetaModelDSSQP
+            if (
+                self.budget >= 300 * self.dimension
+                and self.budget < 3000 * self.dimension
+                and self.dimension < 30
+            ):
+                return MultiDS  # TODOICI
+
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget < 1000 * self.dimension
+            and self.budget > 20 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 100
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return DS2
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget >= 1000 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return DS2  # TODOICI
+        # Special cases in the bounded case
+        if self.has_noise and (self.has_discrete_not_softmax or not funcinfo.metrizable):
+            optCls = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
+        # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, we choose {optCls}")
+        return optCls
+
+
+@registry.register
+class NgIoh21(NgIoh11):
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
+
+    def _select_optimizer_cls(self, budget: tp.Optional[int] = None) -> base.OptCls:
+        assert budget is None
+        optCls: base.OptCls = NGOptBase
+        funcinfo = self.parametrization.function
+        if isinstance(self.parametrization, p.Array) and not self.fully_continuous and not self.has_noise:
+            return ConfPortfolio(
+                optimizers=[
+                    SuperSmoothDiscreteLenglerOnePlusOne,
+                    SuperSmoothElitistRecombiningDiscreteLenglerOnePlusOne,
+                    DiscreteLenglerOnePlusOne,
+                ],
+                warmup_ratio=0.4,
+            )
+        if self.fully_continuous and self.budget is not None and not self.has_noise:
+            if self.budget > 2000 * self.dimension:
+                vlpcma = ParametrizedMetaModel(multivariate_optimizer=VLPCMA)
+                return vlpcma
+                # optimizers += [NgIoh11]
+                # print("NgIoh16 chooses ", optimizers)
+                # self.budget = orig_budget
+                # return ConfPortfolio(optimizers=optimizers, warmup_ratio=1.00, no_crossing=True)
+        if self.fully_continuous and self.num_workers == 1 and self.budget is not None and not self.has_noise:
+            if 300 * self.dimension < self.budget < 3000 * self.dimension:
+                if self.dimension == 2:
+                    return Carola14
+                if self.dimension < 4:
+                    return Carola4
+                if self.dimension < 8:
+                    return Carola5
+                if self.dimension < 15:
+                    return Carola9
+                if self.dimension < 30:
+                    return Carola8
+                if self.dimension < 60:
+                    return Carola9
+
+            if 300 * self.dimension < self.budget < 3000 * self.dimension and self.dimension == 2:
+                return FCarola6
+            if 300 * self.dimension < self.budget < 3000 * self.dimension:
+                return Carola6
+            if 3000 * self.dimension < self.budget:
+                MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                MetaModelFmin2.no_parallelization = True
+                return MetaModelFmin2
+            if 300 * self.dimension < self.budget < 3000 * self.dimension and self.dimension <= 3:
+                MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                MetaModelFmin2.no_parallelization = True
+                return ChainMetaModelSQP
+            if self.budget < 30 * self.dimension and self.dimension < 50 and self.dimension > 30:
+                return ChainMetaModelSQP
+            if (
+                self.budget >= 30 * self.dimension
+                and self.budget < 300 * self.dimension
+                and self.dimension == 2
+            ):
+                return NLOPT_LN_SBPLX
+            if (
+                self.budget >= 30 * self.dimension
+                and self.budget < 300 * self.dimension
+                and self.dimension < 15
+            ):
+                return ChainMetaModelSQP
+            if (
+                self.budget >= 300 * self.dimension
+                and self.budget < 3000 * self.dimension
+                and self.dimension < 30
+            ):
+                return MultiCMA
+
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget < 1000 * self.dimension
+            and self.budget > 20 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 100
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget >= 1000 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        # Special cases in the bounded case
+        if self.has_noise and (self.has_discrete_not_softmax or not funcinfo.metrizable):
+            optCls = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
+        # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, we choose {optCls}")
+        return optCls
+
+
+@registry.register
+class NgDS2(NgDS11):
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
+
+    def _select_optimizer_cls(self, budget: tp.Optional[int] = None) -> base.OptCls:
+        if self.budget is not None and self.dimension < self.budget:
+            return NgIoh21._select_optimizer_cls(self, budget)  # type: ignore
+        assert budget is None
+        optCls: base.OptCls = NGOptBase
+        funcinfo = self.parametrization.function
+        if isinstance(self.parametrization, p.Array) and not self.fully_continuous and not self.has_noise:
+            return ConfPortfolio(
+                optimizers=[
+                    SuperSmoothDiscreteLenglerOnePlusOne,
+                    SuperSmoothElitistRecombiningDiscreteLenglerOnePlusOne,
+                    DiscreteLenglerOnePlusOne,
+                ],
+                warmup_ratio=0.4,
+            )
+        if self.fully_continuous and self.budget is not None and not self.has_noise:
+            if self.budget > 2000 * self.dimension:
+                vlpcma = ParametrizedMetaModel(multivariate_optimizer=VLPCMA)
+                return vlpcma
+                # optimizers += [NgIoh11]
+                # print("NgIoh16 chooses ", optimizers)
+                # self.budget = orig_budget
+                # return ConfPortfolio(optimizers=optimizers, warmup_ratio=1.00, no_crossing=True)
+        if self.fully_continuous and self.num_workers == 1 and self.budget is not None and not self.has_noise:
+            if 300 * self.dimension < self.budget < 3000 * self.dimension:
+                if self.dimension == 2:
+                    return DS14
+                if self.dimension < 4:
+                    return DS4
+                if self.dimension < 8:
+                    return DS5
+                if self.dimension < 15:
+                    return DS9
+                if self.dimension < 30:
+                    return DS8
+                if self.dimension < 60:
+                    return DS9
+
+            if 300 * self.dimension < self.budget < 3000 * self.dimension and self.dimension == 2:
+                return DS6
+            if 300 * self.dimension < self.budget < 3000 * self.dimension:
+                return DS6
+            if 3000 * self.dimension < self.budget:
+                MetaModelDS = ParametrizedMetaModel(multivariate_optimizer=DSproba)
+                MetaModelDS.no_parallelization = True
+                return MetaModelDS
+            if 300 * self.dimension < self.budget < 3000 * self.dimension and self.dimension <= 3:
+                return ChainMetaModelDSSQP
+            if self.budget < 30 * self.dimension and self.dimension < 50 and self.dimension > 30:
+                return ChainMetaModelDSSQP
+            if (
+                self.budget >= 30 * self.dimension
+                and self.budget < 300 * self.dimension
+                and self.dimension == 2
+            ):
+                return NLOPT_LN_SBPLX
+            if (
+                self.budget >= 30 * self.dimension
+                and self.budget < 300 * self.dimension
+                and self.dimension < 15
+            ):
+                return ChainMetaModelDSSQP
+            if (
+                self.budget >= 300 * self.dimension
+                and self.budget < 3000 * self.dimension
+                and self.dimension < 30
+            ):
+                return MultiDS  # TODOICI
+
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget < 1000 * self.dimension
+            and self.budget > 20 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 100
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return DS2
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget >= 1000 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return DS2  # TODOICI
+        # Special cases in the bounded case
+        if self.has_noise and (self.has_discrete_not_softmax or not funcinfo.metrizable):
+            optCls = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
+        # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, we choose {optCls}")
+        return optCls
+
+
+@registry.register
+class NGDSRW(NGOpt39):
+    def _select_optimizer_cls(self) -> base.OptCls:
+        if self.fully_continuous and not self.has_noise and self.budget >= 12 * self.dimension:  # type: ignore
+            return ConfPortfolio(
+                optimizers=[GeneticDE, PSO, super()._select_optimizer_cls()], warmup_ratio=0.33
+            )
+        else:
+            if self.budget is not None and self.dimension > self.budget:
+                return NgDS2._select_optimizer_cls(self)  # type: ignore
+            return NGOpt39._select_optimizer_cls(self)  # type: ignore
+
+
+@registry.register
+class NgIoh20(NgIoh11):
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
+
+    def _select_optimizer_cls(self, budget: tp.Optional[int] = None) -> base.OptCls:
+        assert budget is None
+        optCls: base.OptCls = NGOptBase
+        funcinfo = self.parametrization.function
+        if isinstance(self.parametrization, p.Array) and not self.fully_continuous and not self.has_noise:
+            return ConfPortfolio(
+                optimizers=[
+                    SuperSmoothDiscreteLenglerOnePlusOne,
+                    SuperSmoothElitistRecombiningDiscreteLenglerOnePlusOne,
+                    DiscreteLenglerOnePlusOne,
+                ],
+                warmup_ratio=0.4,
+            )
+        if self.fully_continuous and self.budget is not None and not self.has_noise:
+            if self.budget > 2000 * self.dimension:
+                vlpcma = (
+                    ParametrizedMetaModel(multivariate_optimizer=VLPCMA)
+                    if self.dimension > 4
+                    else ParametrizedMetaModel(multivariate_optimizer=LPCMA)
+                )
+                return vlpcma
+                # optimizers += [NgIoh11]
+                # print("NgIoh16 chooses ", optimizers)
+                # self.budget = orig_budget
+                # return ConfPortfolio(optimizers=optimizers, warmup_ratio=1.00, no_crossing=True)
+        if self.fully_continuous and self.num_workers == 1 and self.budget is not None and not self.has_noise:
+            if 300 * self.dimension < self.budget < 3000 * self.dimension:
+                if self.dimension == 2:
+                    return Carola14
+                if self.dimension < 4:
+                    return Carola4
+                if self.dimension < 8:
+                    return Carola5
+                if self.dimension < 15:
+                    return Carola9
+                if self.dimension < 30:
+                    return Carola8
+                if self.dimension < 60:
+                    return Carola9
+
+            if 300 * self.dimension < self.budget < 3000 * self.dimension and self.dimension == 2:
+                return FCarola6
+            if 300 * self.dimension < self.budget < 3000 * self.dimension:
+                return Carola6
+            if 3000 * self.dimension < self.budget:
+                MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                MetaModelFmin2.no_parallelization = True
+                return MetaModelFmin2
+            if 300 * self.dimension < self.budget < 3000 * self.dimension and self.dimension <= 3:
+                MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                MetaModelFmin2.no_parallelization = True
+                return ChainMetaModelSQP
+            if self.budget < 30 * self.dimension and self.dimension < 50 and self.dimension > 30:
+                return ChainMetaModelSQP
+            if (
+                self.budget >= 30 * self.dimension
+                and self.budget < 300 * self.dimension
+                and self.dimension == 2
+            ):
+                return NLOPT_LN_SBPLX
+            if (
+                self.budget >= 30 * self.dimension
+                and self.budget < 300 * self.dimension
+                and self.dimension < 15
+            ):
+                return ChainMetaModelSQP
+            if (
+                self.budget >= 300 * self.dimension
+                and self.budget < 3000 * self.dimension
+                and self.dimension < 30
+            ):
+                return MultiCMA
+
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget < 1000 * self.dimension
+            and self.budget > 20 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 100
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget >= 1000 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        # Special cases in the bounded case
+        if self.has_noise and (self.has_discrete_not_softmax or not funcinfo.metrizable):
+            optCls = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
+        # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, we choose {optCls}")
+        return optCls
+
+
+@registry.register
+class NgIoh19(NgIoh11):
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
+
+    def _select_optimizer_cls(self, budget: tp.Optional[int] = None) -> base.OptCls:
+        assert budget is None
+        optCls: base.OptCls = NGOptBase
+        funcinfo = self.parametrization.function
+        if isinstance(self.parametrization, p.Array) and not self.fully_continuous and not self.has_noise:
+            return ConfPortfolio(
+                optimizers=[
+                    SuperSmoothDiscreteLenglerOnePlusOne,
+                    SuperSmoothElitistRecombiningDiscreteLenglerOnePlusOne,
+                    DiscreteLenglerOnePlusOne,
+                ],
+                warmup_ratio=0.4,
+            )
+        if self.fully_continuous and self.budget is not None and not self.has_noise:
+            if self.budget > 2000 * self.dimension:
+                vlpcma = VLPCMA if self.dimension > 4 else LPCMA
+                return vlpcma
+                # optimizers += [NgIoh11]
+                # print("NgIoh16 chooses ", optimizers)
+                # self.budget = orig_budget
+                # return ConfPortfolio(optimizers=optimizers, warmup_ratio=1.00, no_crossing=True)
+        if self.fully_continuous and self.num_workers == 1 and self.budget is not None and not self.has_noise:
+            if 300 * self.dimension < self.budget < 3000 * self.dimension:
+                if self.dimension == 2:
+                    return Carola14
+                if self.dimension < 4:
+                    return Carola4
+                if self.dimension < 8:
+                    return Carola5
+                if self.dimension < 15:
+                    return Carola9
+                if self.dimension < 30:
+                    return Carola8
+                if self.dimension < 60:
+                    return Carola9
+
+            if 300 * self.dimension < self.budget < 3000 * self.dimension and self.dimension == 2:
+                return FCarola6
+            if 300 * self.dimension < self.budget < 3000 * self.dimension:
+                return Carola6
+            if 3000 * self.dimension < self.budget:
+                MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                MetaModelFmin2.no_parallelization = True
+                return MetaModelFmin2
+            if 300 * self.dimension < self.budget < 3000 * self.dimension and self.dimension <= 3:
+                MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                MetaModelFmin2.no_parallelization = True
+                return ChainMetaModelSQP
+            if self.budget < 30 * self.dimension and self.dimension < 50 and self.dimension > 30:
+                return ChainMetaModelSQP
+            if (
+                self.budget >= 30 * self.dimension
+                and self.budget < 300 * self.dimension
+                and self.dimension == 2
+            ):
+                return NLOPT_LN_SBPLX
+            if (
+                self.budget >= 30 * self.dimension
+                and self.budget < 300 * self.dimension
+                and self.dimension < 15
+            ):
+                return ChainMetaModelSQP
+            if (
+                self.budget >= 300 * self.dimension
+                and self.budget < 3000 * self.dimension
+                and self.dimension < 30
+            ):
+                return MultiCMA
+
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget < 1000 * self.dimension
+            and self.budget > 20 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 100
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget >= 1000 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        # Special cases in the bounded case
+        if self.has_noise and (self.has_discrete_not_softmax or not funcinfo.metrizable):
+            optCls = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
+        # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, we choose {optCls}")
+        return optCls
+
+
+@registry.register
+class NgIoh18(NgIoh11):
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
+
+    def _select_optimizer_cls(self, budget: tp.Optional[int] = None) -> base.OptCls:
+        assert budget is None
+        optCls: base.OptCls = NGOptBase
+        funcinfo = self.parametrization.function
+        if isinstance(self.parametrization, p.Array) and not self.fully_continuous and not self.has_noise:
+            return ConfPortfolio(
+                optimizers=[
+                    SuperSmoothDiscreteLenglerOnePlusOne,
+                    SuperSmoothElitistRecombiningDiscreteLenglerOnePlusOne,
+                    DiscreteLenglerOnePlusOne,
+                ],
+                warmup_ratio=0.4,
+            )
+        if self.fully_continuous and self.budget is not None and not self.has_noise:
+            num = self.budget // (1000 * self.dimension)
+            if self.budget > 2000 * self.dimension and num >= self.num_workers:
+                optimizers = []
+                orig_budget = self.budget
+                sub_budget = self.budget // num + (self.budget % num > 0)
+                # sub_budget = self.budget
+                optimizers = [NgIoh11._select_optimizer_cls(self, sub_budget)]
+                for k in range(num - 1):
+                    optimizers += (
+                        [
+                            Rescaled(
+                                # base_optimizer=Carola2,
+                                base_optimizer=NgIoh11._select_optimizer_cls(self, sub_budget),
+                                scale=np.random.rand() * 2.0,
+                            )
+                        ]
+                        if k % 3 == 2
+                        else (
+                            [
+                                Rescaled(
+                                    # base_optimizer=Carola2,
+                                    base_optimizer=NgIoh11._select_optimizer_cls(self, sub_budget),
+                                    shift=np.random.randn(),
+                                )
+                            ]
+                            if k % 3 == 0
+                            else [
+                                Rescaled(
+                                    # base_optimizer=Carola2,
+                                    base_optimizer=NgIoh11._select_optimizer_cls(self, sub_budget),
+                                    scale=np.random.rand() * 2.0,
+                                    shift=np.random.randn(),
+                                )
+                            ]
+                        )
+                    )
+                    # optimizers += [NgIoh11]
+                self.budget = orig_budget
+                return Chaining(optimizers, [sub_budget] * (len(optimizers) - 1), no_crossing=True)
+                # optimizers += [NgIoh11]
+                # print("NgIoh16 chooses ", optimizers)
+                # self.budget = orig_budget
+                # return ConfPortfolio(optimizers=optimizers, warmup_ratio=1.00, no_crossing=True)
+        if self.fully_continuous and self.num_workers == 1 and self.budget is not None and not self.has_noise:
+            if 300 * self.dimension < self.budget < 3000 * self.dimension:
+                if self.dimension == 2:
+                    return Carola14
+                if self.dimension < 4:
+                    return Carola4
+                if self.dimension < 8:
+                    return Carola5
+                if self.dimension < 15:
+                    return Carola9
+                if self.dimension < 30:
+                    return Carola8
+                if self.dimension < 60:
+                    return Carola9
+
+            if 300 * self.dimension < self.budget < 3000 * self.dimension and self.dimension == 2:
+                return FCarola6
+            if 300 * self.dimension < self.budget < 3000 * self.dimension:
+                return Carola6
+            if 3000 * self.dimension < self.budget:
+                MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                MetaModelFmin2.no_parallelization = True
+                return MetaModelFmin2
+            if 300 * self.dimension < self.budget < 3000 * self.dimension and self.dimension <= 3:
+                MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                MetaModelFmin2.no_parallelization = True
+                return ChainMetaModelSQP
+            if self.budget < 30 * self.dimension and self.dimension < 50 and self.dimension > 30:
+                return ChainMetaModelSQP
+            if (
+                self.budget >= 30 * self.dimension
+                and self.budget < 300 * self.dimension
+                and self.dimension == 2
+            ):
+                return NLOPT_LN_SBPLX
+            if (
+                self.budget >= 30 * self.dimension
+                and self.budget < 300 * self.dimension
+                and self.dimension < 15
+            ):
+                return ChainMetaModelSQP
+            if (
+                self.budget >= 300 * self.dimension
+                and self.budget < 3000 * self.dimension
+                and self.dimension < 30
+            ):
+                return MultiCMA
+
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget < 1000 * self.dimension
+            and self.budget > 20 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 100
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget >= 1000 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        # Special cases in the bounded case
+        if self.has_noise and (self.has_discrete_not_softmax or not funcinfo.metrizable):
+            optCls = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
+        # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, we choose {optCls}")
+        return optCls
+
+
+@registry.register
+class NgIoh10(NGOptBase):
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
+
+    def _select_optimizer_cls(self) -> base.OptCls:
+        optCls: base.OptCls = NGOptBase
+        funcinfo = self.parametrization.function
+        if isinstance(self.parametrization, p.Array) and not self.fully_continuous and not self.has_noise:
+            return ConfPortfolio(
+                optimizers=[
+                    SuperSmoothDiscreteLenglerOnePlusOne,
+                    SuperSmoothElitistRecombiningDiscreteLenglerOnePlusOne,
+                    DiscreteLenglerOnePlusOne,
+                ],
+                warmup_ratio=0.4,
+            )
+        if self.fully_continuous and self.num_workers == 1 and self.budget is not None and not self.has_noise:
+            if 300 * self.dimension < self.budget < 3000 * self.dimension and self.dimension == 2:
+                return FCarola6
+            if 300 * self.dimension < self.budget < 3000 * self.dimension:
+                return Carola6
+            if 3000 * self.dimension < self.budget:
+                MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                MetaModelFmin2.no_parallelization = True
+                return MetaModelFmin2
+            if 300 * self.dimension < self.budget < 3000 * self.dimension and self.dimension <= 3:
+                MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                MetaModelFmin2.no_parallelization = True
+                return ChainMetaModelSQP
+            if self.budget < 30 * self.dimension and self.dimension < 50 and self.dimension > 30:
+                return ChainMetaModelSQP
+            if (
+                self.budget >= 30 * self.dimension
+                and self.budget < 300 * self.dimension
+                and self.dimension == 2
+            ):
+                return NLOPT_LN_SBPLX
+            if (
+                self.budget >= 30 * self.dimension
+                and self.budget < 300 * self.dimension
+                and self.dimension < 15
+            ):
+                return ChainMetaModelSQP
+            if (
+                self.budget >= 300 * self.dimension
+                and self.budget < 3000 * self.dimension
+                and self.dimension < 30
+            ):
+                return MultiCMA
+
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget < 1000 * self.dimension
+            and self.budget > 20 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 100
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget >= 1000 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        # Special cases in the bounded case
+        if self.has_noise and (self.has_discrete_not_softmax or not funcinfo.metrizable):
+            optCls = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
+        # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, we choose {optCls}")
+        return optCls
+
+
+@registry.register
+class NgIoh9(NGOptBase):
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
+
+    def _select_optimizer_cls(self) -> base.OptCls:
+        optCls: base.OptCls = NGOptBase
+        funcinfo = self.parametrization.function
+        if isinstance(self.parametrization, p.Array) and not self.fully_continuous and not self.has_noise:
+            return ConfPortfolio(
+                optimizers=[
+                    SuperSmoothDiscreteLenglerOnePlusOne,
+                    SuperSmoothElitistRecombiningDiscreteLenglerOnePlusOne,
+                    DiscreteLenglerOnePlusOne,
+                ],
+                warmup_ratio=0.4,
+            )
+        if self.fully_continuous and self.num_workers == 1 and self.budget is not None and not self.has_noise:
+            if 300 * self.dimension < self.budget < 3000 * self.dimension and self.dimension == 2:
+                MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                MetaModelFmin2.no_parallelization = True
+                return MetaModelFmin2
+            if 300 * self.dimension < self.budget and self.dimension == 3:
+                return ChainMetaModelSQP
+            if 3000 * self.dimension < self.budget:
+                MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                MetaModelFmin2.no_parallelization = True
+                return MetaModelFmin2
+            if 300 * self.dimension < self.budget < 3000 * self.dimension and self.dimension <= 3:
+                MetaModelFmin2 = ParametrizedMetaModel(multivariate_optimizer=CmaFmin2)
+                MetaModelFmin2.no_parallelization = True
+                return ChainMetaModelSQP
+            if self.budget < 30 * self.dimension and self.dimension < 50 and self.dimension > 30:
+                return ChainMetaModelSQP
+            if (
+                self.budget >= 30 * self.dimension
+                and self.budget < 300 * self.dimension
+                and self.dimension == 2
+            ):
+                return NLOPT_LN_SBPLX
+            if (
+                self.budget >= 30 * self.dimension
+                and self.budget < 300 * self.dimension
+                and self.dimension < 15
+            ):
+                return ChainMetaModelSQP
+            if (
+                self.budget >= 300 * self.dimension
+                and self.budget < 3000 * self.dimension
+                and self.dimension < 30
+            ):
+                return MultiCMA
+
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget < 1000 * self.dimension
+            and self.budget > 20 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 100
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget >= 1000 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        # Special cases in the bounded case
+        if self.has_noise and (self.has_discrete_not_softmax or not funcinfo.metrizable):
+            optCls = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
+        # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, we choose {optCls}")
+        return optCls
+
+
+@registry.register
+class NgIoh8(NGOptBase):
+    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
+
+    def _select_optimizer_cls(self) -> base.OptCls:
+        optCls: base.OptCls = NGOptBase
+        funcinfo = self.parametrization.function
+        if isinstance(self.parametrization, p.Array) and not self.fully_continuous and not self.has_noise:
+            return ConfPortfolio(
+                optimizers=[
+                    SuperSmoothDiscreteLenglerOnePlusOne,
+                    SuperSmoothElitistRecombiningDiscreteLenglerOnePlusOne,
+                    DiscreteLenglerOnePlusOne,
+                ],
+                warmup_ratio=0.4,
+            )
+        if self.fully_continuous and self.num_workers == 1 and self.budget is not None and not self.has_noise:
+            if self.budget < 30 * self.dimension and self.dimension < 50 and self.dimension > 30:
+                return ChainMetaModelSQP
+            if (
+                self.budget >= 30 * self.dimension
+                and self.budget < 300 * self.dimension
+                and self.dimension == 2
+            ):
+                return NLOPT_LN_SBPLX
+            if (
+                self.budget >= 30 * self.dimension
+                and self.budget < 300 * self.dimension
+                and self.dimension < 15
+            ):
+                return ChainMetaModelSQP
+            if (
+                self.budget >= 300 * self.dimension
+                and self.budget < 3000 * self.dimension
+                and self.dimension < 30
+            ):
+                return MultiCMA
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget < 1000 * self.dimension
+            and self.budget > 20 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 100
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget >= 1000 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return Carola2
+        # Special cases in the bounded case
+        if self.has_noise and (self.has_discrete_not_softmax or not funcinfo.metrizable):
+            optCls = RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne
+        elif self.dimension >= 60 and not funcinfo.metrizable:
+            optCls = CMA
+        # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, we choose {optCls}")
+        return optCls
+
+
+# Specifically for RL.
+MixDeterministicRL = ConfPortfolio(optimizers=[DiagonalCMA, PSO, GeneticDE]).set_name(
+    "MixDeterministicRL", register=True
+)
+SpecialRL = Chaining([MixDeterministicRL, TBPSA], ["half"]).set_name("SpecialRL", register=True)
+NoisyRL1 = Chaining([MixDeterministicRL, NoisyOnePlusOne], ["half"]).set_name("NoisyRL1", register=True)
+NoisyRL2 = Chaining(
+    [MixDeterministicRL, RecombiningPortfolioOptimisticNoisyDiscreteOnePlusOne], ["half"]
+).set_name("NoisyRL2", register=True)
+NoisyRL3 = Chaining([MixDeterministicRL, OptimisticNoisyOnePlusOne], ["half"]).set_name(
+    "NoisyRL3", register=True
+)
+
+
+from . import experimentalvariants  # pylint: disable=unused-import
+
+FCarola6 = Chaining([NGOpt, NGOpt, RBFGS], ["tenth", "most"]).set_name("FCarola6", register=True)
+FCarola6.no_parallelization = True
+Carola11 = Chaining([MultiCMA, RBFGS], ["most"]).set_name("Carola11", register=True)
+Carola11.no_parallelization = True
+Carola14 = Chaining([MultiCMA, RBFGS], ["most"]).set_name("Carola14", register=True)
+Carola14.no_parallelization = True
+DS14 = Chaining([MultiDS, RBFGS], ["most"]).set_name("DS14", register=True)
+DS14.no_parallelization = True
+Carola13 = Chaining([CmaFmin2, RBFGS], ["most"]).set_name("Carola13", register=True)
+Carola13.no_parallelization = True
+Carola15 = Chaining([Cobyla, MetaModel, RBFGS], ["sqrt", "most"]).set_name("Carola15", register=True)
+Carola15.no_parallelization = True
+
+
+@registry.register
+class NgIoh12b(NgIoh12):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.no_crossing = True
+
+
+@registry.register
+class NgIoh13b(NgIoh13):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.no_crossing = True
+
+
+@registry.register
+class NgIoh14b(NgIoh14):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.no_crossing = True
+
+
+@registry.register
+class NgIoh15b(NgIoh15):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.no_crossing = True
+
+
+NgDS3 = Chaining([LognormalDiscreteOnePlusOne, NgDS2], ["tenth"]).set_name("NgDS3", register=True)
+NgLn = Chaining([LognormalDiscreteOnePlusOne, NGOpt], ["tenth"]).set_name("NgLn", register=True)
+NgLglr = Chaining([DiscreteLenglerOnePlusOne, NGOpt], ["tenth"]).set_name("NgLglr", register=True)
+NgRS = Chaining([oneshot.RandomSearch, NGOpt], ["tenth"]).set_name("NgRS", register=True)
+
+
+@registry.register
+class CSEC(NGOpt39):
+    # Cognitive Synthetic Entity Controller
+
+    def _select_optimizer_cls(self, budget: tp.Optional[int] = None) -> base.OptCls:
+        assert budget is None
+
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget >= 3000 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return NgIoh21._select_optimizer_cls(self, budget)  # type: ignore
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget >= 30 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return NgIoh4._select_optimizer_cls(self)  # type: ignore
+
+        if (
+            self.fully_continuous
+            and self.budget is not None
+            and self.num_workers > np.sqrt(self.budget)
+            and self.budget >= 30 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return NgDS3
+
+        return NgDS2._select_optimizer_cls(self, budget)  # type: ignore
+
+
+@registry.register
+class CSEC10(NGOptBase):
+    def _select_optimizer_cls(self, budget: tp.Optional[int] = None) -> base.OptCls:
+        assert self.budget is not None
+        function = self.parametrization
+        # assert False
+        if isinstance(self.parametrization, p.Array) and not self.fully_continuous and not self.has_noise:
+            return GeneticDE
+            # return ConfPortfolio(
+            #    optimizers=[
+            #        SuperSmoothDiscreteLenglerOnePlusOne,
+            #        SuperSmoothElitistRecombiningDiscreteLenglerOnePlusOne,
+            #        DiscreteLenglerOnePlusOne,
+            #    ],
+            #    warmup_ratio=0.4,
+            # )
+        if (
+            function.real_world
+            and not function.hptuning
+            and not function.neural
+            and not self.parametrization.function.metrizable
+        ):
+            return NgDS2._select_optimizer_cls(self, budget)  # type: ignore
+        if function.has_constraints:
+            return NgLn
+        if (
+            self.num_workers == 1
+            and function.real_world
+            and not function.hptuning
+            and not function.neural
+            and self.dimension > self.budget
+            and self.fully_continuous
+            and not self.has_noise
+        ):
+            return DSproba
+        if (
+            self.num_workers < np.sqrt(1 + self.dimension)
+            and function.real_world
+            and not function.hptuning
+            and not function.neural
+            and 8 * self.dimension > self.budget
+            and self.fully_continuous
+            and not self.has_noise
+        ):
+            return DiscreteLenglerOnePlusOne
+        if function.real_world and not function.hptuning and not function.neural and self.fully_continuous:
+            return NGOpt._select_optimizer_cls(self)  # type: ignore
+        if (
+            function.real_world
+            and function.neural
+            and not function.function.deterministic
+            and not function.enforce_determinism
+        ):
+            return NoisyRL2
+        if (
+            function.real_world
+            and function.neural
+            and (function.function.deterministic or function.enforce_determinism)
+        ):
+            return SQOPSO
+        if function.real_world and not function.neural:
+            return NGDSRW._select_optimizer_cls(self)  # type: ignore
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget >= 3000 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return NgIoh21._select_optimizer_cls(self, budget)  # type: ignore
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget >= 30 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return NgIoh4._select_optimizer_cls(self)  # type: ignore
+
+        if (
+            self.fully_continuous
+            and self.budget is not None
+            and self.num_workers > np.log(3 + self.budget)
+            and self.budget >= 30 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return NgDS3
+
+        return NgDS2._select_optimizer_cls(self, budget)  # type: ignore
+
+
+@registry.register
+class CSEC11(NGOptBase):
+    def _select_optimizer_cls(self, budget: tp.Optional[int] = None) -> base.OptCls:
+        assert self.budget is not None
+        function = self.parametrization
+        # assert False
+        if isinstance(self.parametrization, p.Array) and not self.fully_continuous and not self.has_noise:
+            return GeneticDE
+            # return ConfPortfolio(
+            #    optimizers=[
+            #        SuperSmoothDiscreteLenglerOnePlusOne,
+            #        SuperSmoothElitistRecombiningDiscreteLenglerOnePlusOne,
+            #        DiscreteLenglerOnePlusOne,
+            #    ],
+            #    warmup_ratio=0.4,
+            # )
+        if (
+            function.real_world
+            and not function.hptuning
+            and not function.neural
+            and not self.parametrization.function.metrizable
+        ):
+            return NgDS2._select_optimizer_cls(self, budget)  # type: ignore
+        if function.has_constraints:
+            return NgLn
+        if (
+            self.num_workers == 1
+            and function.real_world
+            and not function.hptuning
+            and not function.neural
+            and self.dimension > self.budget
+            and self.fully_continuous
+            and not self.has_noise
+        ):
+            return DSproba
+        if (
+            self.num_workers < np.sqrt(1 + self.dimension)
+            and function.real_world
+            and not function.hptuning
+            and not function.neural
+            and 8 * self.dimension > self.budget
+            and self.fully_continuous
+            and not self.has_noise
+        ):
+            return DiscreteLenglerOnePlusOne
+        if function.real_world and not function.hptuning and not function.neural and self.fully_continuous:
+            return NGOpt._select_optimizer_cls(self)  # type: ignore
+        if (
+            function.real_world
+            and function.neural
+            and not function.function.deterministic
+            and not function.enforce_determinism
+        ):
+            return NoisyRL2
+        if (
+            function.real_world
+            and function.neural
+            and (function.function.deterministic or function.enforce_determinism)
+        ):
+            return SQOPSO
+        if function.real_world and not function.neural:
+            return NGDSRW._select_optimizer_cls(self)  # type: ignore
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget >= 300 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return NgIoh21._select_optimizer_cls(self, budget)  # type: ignore
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget >= 30 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return NgIoh4._select_optimizer_cls(self)  # type: ignore
+
+        if (
+            self.fully_continuous
+            and self.budget is not None
+            and self.num_workers > np.log(3 + self.budget)
+            and self.budget >= 30 * self.dimension
+            and not self.has_noise
+            and self.dimension > 1
+            and self.dimension < 50
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return NgDS3
+
+        return NgDS2._select_optimizer_cls(self, budget)  # type: ignore
+
+
+@registry.register
+class NgIohTuned(CSEC11):
+    # Learning something automatically so that it's less unreadable would be great.
+    pass
+
+
+# ExtLognormalDiscreteOnePlusOne = Chaining(
+#    [LognormalDiscreteOnePlusOne] * 10, [0.1] * 9, no_crossing=True
+# ).set_name("ExtLognormalDiscreteOnePlusOne", register=True)
+
+
+SplitCSEC11 = ConfSplitOptimizer(
+    multivariate_optimizer=CSEC11, monovariate_optimizer=CSEC11, non_deterministic_descriptor=False
+).set_name("SplitCSEC11", register=True)
+SplitSQOPSO = ConfSplitOptimizer(
+    multivariate_optimizer=SQOPSO, monovariate_optimizer=SQOPSO, non_deterministic_descriptor=False
+).set_name("SplitSQOPSO", register=True)
+SplitPSO = ConfSplitOptimizer(
+    multivariate_optimizer=PSO, monovariate_optimizer=PSO, non_deterministic_descriptor=False
+).set_name("SplitPSO", register=True)
+SplitCMA = ConfSplitOptimizer(
+    multivariate_optimizer=CMA, monovariate_optimizer=CMA, non_deterministic_descriptor=False
+).set_name("SplitCMA", register=True)
+SplitQODE = ConfSplitOptimizer(
+    multivariate_optimizer=QODE, monovariate_optimizer=QODE, non_deterministic_descriptor=False
+).set_name("SplitQODE", register=True)
+SplitTwoPointsDE = ConfSplitOptimizer(
+    multivariate_optimizer=TwoPointsDE, monovariate_optimizer=TwoPointsDE, non_deterministic_descriptor=False
+).set_name("SplitTwoPointsDE", register=True)
+SplitDE = ConfSplitOptimizer(
+    multivariate_optimizer=DE, monovariate_optimizer=DE, non_deterministic_descriptor=False
+).set_name("SplitDE", register=True)
+
+
+SQOPSODCMA = Chaining([SQOPSO, DiagonalCMA], ["half"]).set_name("SQOPSODCMA", register=True)
+SQOPSODCMA20 = Chaining(optimizers=[SQOPSODCMA] * 20, budgets=["equal"] * 19, no_crossing=True).set_name(
+    "SQOPSODCMA20", register=True
+)
+SQOPSODCMA20bar = ConfPortfolio(optimizers=[SQOPSODCMA] * 20, warmup_ratio=0.5).set_name(
+    "SQOPSODCMA20bar", register=True
+)
+NgIohLn = Chaining([LognormalDiscreteOnePlusOne, CSEC11], ["tenth"]).set_name("NgIohLn", register=True)
+CMALn = Chaining([LognormalDiscreteOnePlusOne, CMA], ["tenth"]).set_name("CMALn", register=True)
+CMARS = Chaining([RandomSearch, CMA], ["tenth"]).set_name("CMARS", register=True)
+NgIohRS = Chaining([oneshot.RandomSearch, CSEC11], ["tenth"]).set_name("NgIohRS", register=True)
+PolyLN = ConfPortfolio(
+    optimizers=[
+        Rescaled(base_optimizer=SmallLognormalDiscreteOnePlusOne, scale=np.random.rand()) for i in range(20)
+    ],
+    warmup_ratio=0.5,
+).set_name("PolyLN", register=True)
+MultiLN = ConfPortfolio(
+    optimizers=[
+        Rescaled(base_optimizer=SmallLognormalDiscreteOnePlusOne, scale=2.0 ** (i - 5)) for i in range(6)
+    ],
+    warmup_ratio=0.5,
+).set_name("MultiLN", register=True)
+ManyLN = ConfPortfolio(
+    optimizers=[SmallLognormalDiscreteOnePlusOne for i in range(20)],
+    warmup_ratio=0.5,
+).set_name("ManyLN", register=True)
+NgIohMLn = Chaining([MultiLN, CSEC11], ["tenth"]).set_name("NgIohMLn", register=True)

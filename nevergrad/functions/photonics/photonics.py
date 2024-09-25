@@ -23,6 +23,13 @@ from scipy.linalg import toeplitz
 # pylint: disable=blacklisted-name,too-many-locals,too-many-arguments
 
 
+def trapezoid(a, b):  # type: ignore
+    try:
+        return np.trapz(a, b)  # numpy < 2.0
+    except:  # type: ignore
+        return np.trapezoid(a, b)  # numpy 2.0
+
+
 def bragg(X: np.ndarray) -> float:
     """
     Cost function for the Bragg mirror problem: maximizing the reflection
@@ -35,7 +42,7 @@ def bragg(X: np.ndarray) -> float:
     bar = int(np.size(X) / 2)
     n = np.concatenate(([1], np.sqrt(X[0:bar]), [1.7320508075688772]))
     type_ = np.arange(0, bar + 2)
-    hauteur = np.concatenate(([0], X[bar : 2 * bar], [0]))
+    hauteur = np.concatenate(([0], X[bar : 2 * bar], [0]))  # type: ignore
     tmp = np.tan(2 * np.pi * n[type_] * hauteur / lam)
     # Specific to this substrate.
     Z = n[-1]
@@ -50,8 +57,8 @@ def bragg(X: np.ndarray) -> float:
 def chirped(X: np.ndarray) -> float:
     lam = np.linspace(500, 800, 50)
     n = np.array([1, 1.4142135623730951, 1.7320508075688772])
-    type_ = np.concatenate(([0], np.tile([2, 1], int(np.size(X) / 2)), [2]))
-    hauteur = np.concatenate(([0], X, [0]))
+    type_ = np.concatenate(([0], np.tile([2, 1], int(np.size(X) / 2)), [2]))  # type: ignore
+    hauteur = np.concatenate(([0], X, [0]))  # type: ignore
     r = np.zeros(np.size(lam)) + 0j
     for m in range(0, np.size(lam)):
         # Specific to this substrate.
@@ -109,8 +116,8 @@ def c_bas(A: np.ndarray, V: np.ndarray, h: float) -> np.ndarray:
 
 
 def marche(a: float, b: float, p: float, n: int, x: float) -> np.ndarray:
-    l = np.zeros(n, dtype=np.complex_)  # noqa
-    m = np.zeros(n, dtype=np.complex_)
+    l = np.zeros(n, dtype=np.complex128)  # noqa
+    m = np.zeros(n, dtype=np.complex128)
     tmp = (
         1
         / (2 * np.pi * np.arange(1, n))
@@ -187,7 +194,7 @@ def morpho(X: np.ndarray) -> float:
     l = lam / d  # noqa
     k0 = 2 * np.pi / l
     P, V = homogene(k0, 0, pol, 1, n)
-    S = np.block([[np.zeros([n, n]), np.eye(n, dtype=np.complex_)], [np.eye(n), np.zeros([n, n])]])
+    S = np.block([[np.zeros([n, n]), np.eye(n, dtype=np.complex128)], [np.eye(n), np.zeros([n, n])]])
     for j in range(0, n_motifs):
         Pc, Vc = creneau(k0, 0, pol, e2, 1, a[j], n, x0[j])
         S = cascade(S, interface(P, Pc))
@@ -196,7 +203,7 @@ def morpho(X: np.ndarray) -> float:
         S = c_bas(S, V, spacers[j])
     Pc, Vc = homogene(k0, 0, pol, e2, n)
     S = cascade(S, interface(P, Pc))
-    R = np.zeros(3, dtype=np.float_)
+    R = np.zeros(3, dtype=np.float64)
     for j in range(-1, 2):
         R[j] = abs(S[j + nmod, nmod]) ** 2 * np.real(V[j + nmod]) / k0
     cost: float = 1 - (R[-1] + R[1]) / 2 + R[0] / 2
@@ -208,7 +215,7 @@ def morpho(X: np.ndarray) -> float:
         P, V = homogene(k0, 0, pol, 1, n)
         S = np.block(
             [
-                [np.zeros([n, n], dtype=np.complex_), np.eye(n)],
+                [np.zeros([n, n], dtype=np.complex128), np.eye(n)],
                 [np.eye(n), np.zeros([n, n])],
             ]
         )
@@ -366,8 +373,8 @@ def cf_photosic_reference(X: np.ndarray) -> float:
         absorb = absorption(lam, epsilon, mu, type_, hauteur, pol, theta)
         scc[k] = solar(lam)
         Ab[k] = absorb[len(absorb) - 1]
-    max_scc = np.trapz(scc, vlam)
-    j_sc = np.trapz(scc * Ab, vlam)
+    max_scc = trapezoid(scc, vlam)
+    j_sc = trapezoid(scc * Ab, vlam)
     CE = j_sc / max_scc
     cost = 1 - CE
     return cost  # type: ignore
@@ -404,8 +411,77 @@ def cf_photosic_realistic(eps_and_d: np.ndarray) -> float:
         absorb = absorption(lam, epsilon, mu, type_, hauteur, pol, theta)
         scc[k] = solar(lam)
         Ab[k] = absorb[len(absorb) - 1]
-    max_scc = np.trapz(scc, vlam)
-    j_sc = np.trapz(scc * Ab, vlam)
+    max_scc = trapezoid(scc, vlam)
+    j_sc = trapezoid(scc * Ab, vlam)
     CE = j_sc / max_scc
     cost = 1 - CE
     return cost  # type: ignore
+
+
+first_time_ceviche = True
+model = None
+
+
+def ceviche(x: np.ndarray, benchmark_type: int = 0, discretize=False, wantgrad=False) -> tp.Any:
+    global first_time_ceviche
+    global model
+    import autograd  # type: ignore
+    import autograd.numpy as npa  # type: ignore
+    import ceviche_challenges  # type: ignore
+    import autograd  # type: ignore
+
+    # ceviche_challenges.beam_splitter.prefabs
+    # ceviche_challenges.mode_converter.prefabs
+    # ceviche_challenges.waveguide_bend.prefabs
+    # ceviche_challenges.wdm.prefabs
+
+    if first_time_ceviche or x is None:
+        if benchmark_type == 0:
+            spec = ceviche_challenges.waveguide_bend.prefabs.waveguide_bend_2umx2um_spec()
+            params = ceviche_challenges.waveguide_bend.prefabs.waveguide_bend_sim_params()
+            model = ceviche_challenges.waveguide_bend.model.WaveguideBendModel(params, spec)
+        elif benchmark_type == 1:
+            spec = ceviche_challenges.beam_splitter.prefabs.pico_splitter_spec()
+            params = ceviche_challenges.beam_splitter.prefabs.pico_splitter_sim_params()
+            model = ceviche_challenges.beam_splitter.model.BeamSplitterModel(params, spec)
+        elif benchmark_type == 2:
+            spec = ceviche_challenges.mode_converter.prefabs.mode_converter_spec_23()
+            params = ceviche_challenges.mode_converter.prefabs.mode_converter_sim_params()
+            model = ceviche_challenges.mode_converter.model.ModeConverterModel(params, spec)
+        elif benchmark_type == 3:
+            spec = ceviche_challenges.wdm.prefabs.wdm_spec()
+            params = ceviche_challenges.wdm.prefabs.wdm_sim_params()
+            model = ceviche_challenges.wdm.model.WdmModel(params, spec)
+    if discretize:
+        x = np.round(x)
+
+    if isinstance(x, str) and x == "name":
+        return {0: "waveguide-bend", 1: "beam-splitter", 2: "mode-converter", 3: "wdm"}[benchmark_type]
+    elif x is None:
+        return model.design_variable_shape
+
+    assert x.shape == model.design_variable_shape, f"Expected shape: {model.design_variable_shap}"  # type: ignore
+
+    # The model class provides a convenience property, `design_variable_shape`
+    # which specifies the design shape it expects.
+    design = x > 0.5 if discretize else x  # np.random.rand(*model.design_variable_shape)
+    # The model class has a `simulate()` method which takes the design variable as
+    # an input and returns scattering parameters and fields.
+    # s_params, fields = model.simulate(design)
+
+    # Construct a loss function, assuming the `model` and `design` from the code
+    # snippet above are instantiated.
+
+    def loss_fn(x):
+        """A simple loss function taking mean s11 - mean s21."""
+        s_params, _ = model.simulate(x)
+        s11 = npa.abs(s_params[:, 0, 0])
+        s21 = npa.abs(s_params[:, 0, 1])
+        return npa.mean(s11) - npa.mean(s21)
+
+    loss_value, grad = autograd.value_and_grad(loss_fn)(design)  # type: ignore
+    # loss_value, loss_grad = autograd.value_and_grad(loss_fn)(design)  # type: ignore
+    first_time_ceviche = False
+    if wantgrad:
+        return loss_value, grad
+    return loss_value
