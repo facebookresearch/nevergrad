@@ -442,14 +442,13 @@ class Game(ExperimentFunction):
         return loss
 
 
-
 def ng_game(game=None, policy1=None, policy2=None):
     """
     None ==> returns the list of games
     just the name of the game ==> returns the two dimensions
     two policies ==> returns  the result
     """
-     
+
     if game == None:
         return _Game().get_list_of_games()
 

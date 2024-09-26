@@ -1,5 +1,5 @@
 #!/bin/bash
-pbs="`grep '^Game' ngco*.out | sed 's/.*://g' | sed 's/_.*//g' | sed 's/^Game//g' | sed 's/_.*//g' | sort | uniq | grep -iv pkl`"
+pbs="`grep '^Game' ngco*.out | sed 's/.*://g' | sed 's/_.*//g' | sed 's/^Game//g' | sed 's/_.*//g' | sort | uniq`"
 
 for pb in $pbs
 #for s in `seq 0 31` ''
@@ -22,10 +22,16 @@ echo 'def l(x_):' >> ngngplotter.py
 echo '   return int(np.exp(int(.5 + np.log(1 + x_)/np.log(3))*np.log(3)))' >> ngngplotter.py
 echo 'allalgs=[]' >> ngngplotter.py
 echo 'for all_algos in [False, True]:' >> ngngplotter.py
-echo '  for a in [d for d in data.keys() if "ficpl" not in d and (all_algos or "eteLengler" in d)]:' >> ngngplotter.py
+echo ' allmax = 0' >> ngngplotter.py
+echo ' ymax = 0' >> ngngplotter.py
+echo ' ymin = 1e12' >> ngngplotter.py
+echo ' ally = [] ' >> ngngplotter.py
+echo ' for weplot in [False, True]:' >> ngngplotter.py
+echo '  for a in [d for d in data.keys() if "ficpl" not in d and (all_algos or "Pkl" in d or "Lengler" in d or "Portfolio" in d)]:' >> ngngplotter.py
 echo '   x = list(np.unique(sorted([l(d) for d in data[a].keys()])))' >> ngngplotter.py
 # echo '   x = [x_ for x_ in x if x_ < 100000]' >> ngngplotter.py
-echo '   y = []' >> ngngplotter.py      
+echo '   y = []' >> ngngplotter.py  
+echo '   allmax = max(allmax, np.max(x))' >> ngngplotter.py
 echo '   for r_ in x:' >> ngngplotter.py
 echo '     tmp = []' >> ngngplotter.py
 echo '     for x_ in data[a].keys():' >> ngngplotter.py
@@ -33,11 +39,20 @@ echo '         if l(x_) == r_:'   >> ngngplotter.py
 echo '             tmp += list(data[a][x_])' >> ngngplotter.py
 #echo '     print(tmp)' >> ngngplotter.py
 echo '     y += [np.average(tmp)]' >> ngngplotter.py
+echo '     ymin = min(np.min(y), ymin)' >> ngngplotter.py
+echo '     ymax = max(np.max(y), ymax)' >> ngngplotter.py
+echo '     ally += [np.min(y)]' >> ngngplotter.py
 echo '   assert len(x) == len(y)' >> ngngplotter.py
 echo '   allalgs += [(float(np.min(y)), a, int(np.round(np.log(max(x))/ np.log(10))))]' >> ngngplotter.py
 #echo '   print(x)'   >> ngngplotter.py
-echo '   plt.loglog(x, y, label=a.replace("Algo", "").replace("Discrete", "Disc").replace("OnePlusOne", "1+1"))'   >> ngngplotter.py
-echo '   plt.text(x[-1], y[-1], a.replace("Lognormal", "LN").replace("Recombining", "Rec").replace("Smooth","SM").replace("Algo", "").replace("Discrete", "Disc").replace("OnePlusOne", "1+1"), rotation=30, rotation_mode="anchor")' >> ngngplotter.py
+echo '   if weplot:' >> ngngplotter.py
+echo '     freq = len([y_ for y_ in ally if y_ < y[-1]]) / len(ally)' >> ngngplotter.py
+echo '     plt.loglog(x, y, label=a.replace("Algo", "").replace("Discrete", "Disc").replace("OnePlusOne", "1+1"))'   >> ngngplotter.py
+echo '     #plt.text(x[-1], y[-1], a.replace("Lognormal", "LN").replace("Recombining", "Rec").replace("Smooth","SM").replace("Algo", "").replace("Discrete", "Disc").replace("OnePlusOne", "1+1"), rotation=(0 if ("pkl" in a or "PKL" in a or "Pkl" in a) else 30), rotation_mode="anchor")' >> ngngplotter.py
+echo '     goal = ymin + (ymax-ymin) * freq' >> ngngplotter.py
+echo '     goal = y[-1]*.5 + goal*.5' >> ngngplotter.py
+echo '     plt.loglog([x[-1], allmax*(100 if ("Pkl" in a or "pkl" in a or "PKL" in a) else 2)], [y[-1], goal], "--k")' >> ngngplotter.py
+echo '     plt.text(allmax* (100 if ("Pkl" in a or "pkl" in a or "PKL" in a) else 2), goal, a.replace("Lognormal", "LN").replace("Recombining", "Rec").replace("Smooth","SM").replace("Algo", "").replace("Discrete", "Disc").replace("OnePlusOne", "1+1"), rotation=(0 if ("pkl" in a or "PKL" in a or "Pkl" in a) else 30), rotation_mode="anchor")' >> ngngplotter.py
 #echo 'plt.legend()' >> ngngplotter.py
 echo '  plt.tight_layout()' >> ngngplotter.py
 echo '  plt.title(title)' >> ngngplotter.py

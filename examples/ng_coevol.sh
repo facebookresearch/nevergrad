@@ -11,24 +11,26 @@
 for a in `seq 120`
 do
 (
-python examples/ng_coevol.py | grep seed
-python examples/ng_coevol.py | grep seed
-python examples/ng_coevol.py | grep seed
-python examples/ng_coevol.py | grep seed
-python examples/ng_coevol.py | grep seed
-python examples/ng_coevol.py | grep seed
-python examples/ng_coevol.py | grep seed
-python examples/ng_coevol.py | grep seed
-python examples/ng_coevol.py | grep seed
-python examples/ng_coevol.py | grep seed
-python examples/ng_coevol.py | grep seed
-python examples/ng_coevol.py | grep seed
-python examples/ng_coevol.py | grep seed
-python examples/ng_coevol.py | grep seed
-python examples/ng_coevol.py | grep seed
-python examples/ng_coevol.py | grep seed
+(
+python examples/ng_coevol.py | grep seed | more
+python examples/ng_coevol.py | grep seed | more
+python examples/ng_coevol.py | grep seed | more
+python examples/ng_coevol.py | grep seed | more
+python examples/ng_coevol.py | grep seed | more
+python examples/ng_coevol.py | grep seed | more
+python examples/ng_coevol.py | grep seed | more
+python examples/ng_coevol.py | grep seed | more
+python examples/ng_coevol.py | grep seed | more
+python examples/ng_coevol.py | grep seed | more
+python examples/ng_coevol.py | grep seed | more
+python examples/ng_coevol.py | grep seed | more
+python examples/ng_coevol.py | grep seed | more
+python examples/ng_coevol.py | grep seed | more
+python examples/ng_coevol.py | grep seed | more
+python examples/ng_coevol.py | grep seed | more
 
-) &
+) | more 
+)&
 done
 
 

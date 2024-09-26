@@ -173,18 +173,19 @@ ng_optims += ["exLOS" + o for o in ng_orig_optims if "ois" in o and "iscr" in o]
 ng_optims += ["exLOS" + o for o in ng_orig_optims if "ois" in o and "iscr" in o]  # Direct optimization of exploitation, with more evals per iteration
 #print(ng_optims)
 
-ng_optims = [o for o in ng_optims if "SA" not in o and "Smooth" not in o]
+ng_optims = [o for o in ng_optims if "SA" not in o and "Smooth" not in o and ("Pkl" in o or "engl" in o or "ortfo" in o)]
 algo = np.random.choice(ng_optims)
 #algo = "RS"
 print("The algorithm is ", algo)
 
-factor = 1
+factor = .2
 
 if algo[:4] in ["expl", "exlo", "exLO"]:
     budget = np.random.choice([5, 10, 20, 40, 80, 160, 320, 640, 1280, 2560, 5120, 10240])
     if np.random.choice([False, True]):
         budget = np.random.choice([3, 6, 9, 14, 21, 29, 42, 55, 87, 101, 132, 180, 401, 1024])
     budget *= factor
+    budget = int(np.ceil(budget))
     big_lower = np.asarray([[lower for _  in range(lambd)] for _ in range(2)])
     big_upper = np.asarray([[upper for _  in range(lambd)] for _ in range(2)])
     optim = ng.optimizers.registry[algo[5:]](ng.p.Array(shape=(2, lambd, N), lower=big_lower, upper=big_upper).set_integer_casting(no_action=c0), budget)
@@ -212,6 +213,7 @@ elif algo[:5] == "fip__":
     num = 0
     budget = np.random.choice([5,10, 20, 40, 80, 160, 320, 640, 1280]) #, 2560, 5120, 10240, 20480, 40960, 81920, 163840, 327680])
     budget *= factor
+    budget = int(np.ceil(budget))
     iteration = 0
     for i in range(budget):
         iteration = iteration + 1
@@ -229,6 +231,7 @@ elif algo[:5] == "ficpl":
     num = 100
     budget = np.random.choice([5, 10, 20, 40, 80, 160, 320, 640, 1280])  #, 2560, 5120, 10240, 20480, 40960, 81920, 163840, 327680])
     budget *= factor
+    budget = int(np.ceil(budget))
     iteration = 0
     for i in range(budget // lambd):
       for j in range(lambd):
@@ -247,6 +250,7 @@ elif algo[:5] in ["fipl_", "fpll_"]:
     num = 100
     budget = np.random.choice([5, 10, 20, 40, 80, 160, 320, 640, 1280])  #, 2560, 5120, 10240, 20480, 40960, 81920, 163840, 327680])
     budget *= factor
+    budget = int(np.ceil(budget))
     iteration = 0
     for i in range(budget):
         iteration = iteration + 1

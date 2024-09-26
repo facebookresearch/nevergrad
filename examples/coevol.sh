@@ -5,8 +5,8 @@
 #SBATCH --time=72:00:00
 #SBATCH --partition=scavenge
 #SBATCH --nodes=1
-#SBATCH --cpus-per-task=80
-#SBATCH -a 0-90
+#SBATCH --cpus-per-task=70
+#SBATCH -a 0-390
 
 for a in `seq 120`
 do
@@ -16,19 +16,8 @@ python examples/coevol.py
 python examples/coevol.py
 python examples/coevol.py
 python examples/coevol.py
-python examples/coevol.py
-python examples/coevol.py
-python examples/coevol.py
-python examples/coevol.py
-python examples/coevol.py
-python examples/coevol.py
-python examples/coevol.py
-python examples/coevol.py
-python examples/coevol.py
-python examples/coevol.py
-python examples/coevol.py
 
-) &
+) | more  &
 done
 
 
