@@ -6,14 +6,9 @@
 #SBATCH --partition=scavenge
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=70
-#SBATCH -a 0-600%330
+#SBATCH -a 0-300%330
 
 
-#999%200
-
-
-
-#273
 
 
 

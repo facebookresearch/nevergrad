@@ -58,7 +58,7 @@ Ask and tell interface
 An *ask and tell* interface is also available. The 3 key methods for this interface are respectively:
 
 - :code:`ask`: suggest a candidate on which to evaluate the function to optimize.
-- :code:`tell`: for updated the optimizer with the value of the function for a candidate.
+- :code:`tell`: to update the optimizer with the value of the function for a candidate.
 - :code:`provide_recommendation`: returns the candidate the algorithms considers the best.
 
 For most optimization algorithms in the platform, they can be called in arbitrary order - asynchronous optimization is OK. Some algorithms (with class attribute :code:`no_parallelization=True` however do not support this.
@@ -154,16 +154,19 @@ Optimization with constraints
 Sometimes you want the best candidate, given some constraints.
 
 Then, if you want to work with the ask/tell form, instead of 
+
 .. code-block:: python
 
     optimizer.tell(candidate, value)
 
 you can do
+
 .. code-block:: python
 
     optimizer.tell(candidate, value, [constraint_violation1, constraint_violation2, constraint_violation3])
 
 Or, if you work with minimize, you can also replace
+
 .. code-block:: python
 
     optimizer.minimize(loss_function)

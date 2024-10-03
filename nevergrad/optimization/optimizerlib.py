@@ -2202,6 +2202,7 @@ SVM1MetaModelD = ParametrizedMetaModel(algorithm="svr", degree=1, multivariate_o
 RF1MetaModelD = ParametrizedMetaModel(algorithm="rf", degree=1, multivariate_optimizer=EDCMA).set_name(
     "RF1MetaModelD", register=True
 )
+
 # OnePlusOne, without quad
 Quad1MetaModelOnePlusOne = ParametrizedMetaModel(multivariate_optimizer=OnePlusOne, degree=1).set_name(
     "Quad1MetaModelOnePlusOne", register=True
@@ -5373,6 +5374,7 @@ CMASL2 = Chaining([CMA, SmootherDiscreteLenglerOnePlusOne], ["third"]).set_name(
 CMASL3 = Chaining([CMA, SmootherDiscreteLenglerOnePlusOne], ["half"]).set_name("CMASL3", register=True)
 CMAL2 = Chaining([CMA, SmootherDiscreteLenglerOnePlusOne], ["half"]).set_name("CMAL2", register=True)
 CMAL3 = Chaining([DiagonalCMA, SmootherDiscreteLenglerOnePlusOne], ["half"]).set_name("CMAL3", register=True)
+
 
 SmoothLognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="lognormal").set_name(
     "SmoothLognormalDiscreteOnePlusOne", register=True

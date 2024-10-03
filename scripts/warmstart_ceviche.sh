@@ -6,15 +6,7 @@
 #SBATCH --partition=scavenge
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=70
-#SBATCH -a 0-700%330
-
-
-#999%200
-
-
-
-#273
-
+#SBATCH -a 0-100%300
 
 
 if [ $SLURM_ARRAY_TASK_ID -eq  0 ]; then

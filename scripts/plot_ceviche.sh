@@ -28,6 +28,7 @@ cp "$u" ../multi_ceviche_c0_plots/best_`echo $u | sed 's/[^0-9a-zA-Z\.]/_/g'`
 done
 popd
 
+
 pushd multi_ceviche_c0_discrete_plots
 
 for u in xpresu*.png
@@ -57,6 +58,7 @@ cat multi_ceviche_c0.csv | sed 's/,[^,]*$//g' | sed 's/.*,//g' | sort | uniq -c 
 python examples/convert_ceviche_npy.py
 
 tar -zcvf ~/pixel.tgz LOGPB*.png multi_cev*_plots pb*budget*.png allpngs/*.png histo.png WSpb*budget*.png
+
 echo 'Want to know what BFGS does ?'
 grep LOGPB *.out | grep -iv cheating | sed 's/.*://g' | sort | uniq -c | grep with_budget | awk '{ data[$2,"_",$5] += $7; num[$2,"_",$5] += 1  } END { for (u in data) { print u, data[u]/num[u]}   } ' | sort -n | sed 's/_/ /g' | sed 's/[^-LOGPB0-9\.]/ /g'  | sed 's/_/ /g' | sed 's/ [ ]*/ /g' | sort -n -k 2,3 > nocheat.txt
 echo "overview ----------------------------------------------"

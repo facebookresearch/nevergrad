@@ -37,6 +37,7 @@ ls -ctr pb${pb}*.png | grep -i c0c | sed 's/_/ /g' | awk '{print $5, $6}' | sed 
 
 (
 echo "plt.loglog(x,y,'*-',label=\"pb$pb\")"
+#echo "plt.plot(x,y,'*-',label=\"pb$pb\")"
 ) >> plothisto.py
 done
 (
