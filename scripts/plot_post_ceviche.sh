@@ -36,7 +36,7 @@ echo "y=[]" ) >> plothisto.py
 ls -ctr pb${pb}*.png | grep -i c0c | sed 's/_/ /g' | awk '{print $5, $6}' | sed 's/fl//g' | sort -n -r | awk '{ print "x+=[", $1,"];y+=[",$2,"]" }' >> plothisto.py
 
 (
-echo "plt.plot(x,y,'*-',label=\"pb$pb\")"
+echo "plt.loglog(x,y,'*-',label=\"pb$pb\")"
 ) >> plothisto.py
 done
 (

@@ -1023,6 +1023,7 @@ class MetaCMA(ChoiceBase):  # Adds Risto's CMA to CMA.
 
 
 DiagonalCMA = ParametrizedCMA(diagonal=True).set_name("DiagonalCMA", register=True)
+EDCMA = ParametrizedCMA(diagonal=True, elitist=True).set_name("EDCMA", register=True)
 SDiagonalCMA = ParametrizedCMA(diagonal=True, zero=True).set_name("SDiagonalCMA", register=True)
 FCMA = ParametrizedCMA(fcmaes=True).set_name("FCMA", register=True)
 
@@ -2159,25 +2160,57 @@ class ParametrizedMetaModel(base.ConfiguredOptimizer):
 MetaModel = ParametrizedMetaModel().set_name("MetaModel", register=True)
 NeuralMetaModel = ParametrizedMetaModel(algorithm="neural").set_name("NeuralMetaModel", register=True)
 ImageMetaModel = ParametrizedMetaModel(algorithm="image").set_name("ImageMetaModel", register=True)
+ImageMetaModelD = ParametrizedMetaModel(algorithm="image", multivariate_optimizer=EDCMA).set_name(
+    "ImageMetaModelD", register=True
+)
+ImageMetaModelE = ParametrizedMetaModel(algorithm="image", multivariate_optimizer=CMAtuning).set_name(
+    "ImageMetaModelE", register=True
+)
 SVMMetaModel = ParametrizedMetaModel(algorithm="svr").set_name("SVMMetaModel", register=True)
 RFMetaModel = ParametrizedMetaModel(algorithm="rf").set_name("RFMetaModel", register=True)
 
 # Without quad
 Quad1MetaModel = ParametrizedMetaModel(degree=1).set_name("Quad1MetaModel", register=True)
-Neural1MetaModel = ParametrizedMetaModel(algorithm="neural, degree=1").set_name(
+Neural1MetaModel = ParametrizedMetaModel(algorithm="neural", degree=1).set_name(
     "Neural1MetaModel", register=True
 )
-SVM1MetaModel = ParametrizedMetaModel(algorithm="svr, degree=1").set_name("SVM1MetaModel", register=True)
+SVM1MetaModel = ParametrizedMetaModel(algorithm="svr", degree=1).set_name("SVM1MetaModel", register=True)
 RF1MetaModel = ParametrizedMetaModel(algorithm="rf", degree=1).set_name("RF1MetaModel", register=True)
+# Without quad, elisit
+Quad1MetaModelE = ParametrizedMetaModel(degree=1, multivariate_optimizer=CMAtuning).set_name(
+    "Quad1MetaModelE", register=True
+)
+Neural1MetaModelE = ParametrizedMetaModel(
+    algorithm="neural", degree=1, multivariate_optimizer=CMAtuning
+).set_name("Neural1MetaModelE", register=True)
+SVM1MetaModelE = ParametrizedMetaModel(algorithm="svr", degree=1, multivariate_optimizer=CMAtuning).set_name(
+    "SVM1MetaModelE", register=True
+)
+RF1MetaModelE = ParametrizedMetaModel(algorithm="rf", degree=1, multivariate_optimizer=CMAtuning).set_name(
+    "RF1MetaModelE", register=True
+)
+# Without quad, elitist, diagonal
+Quad1MetaModelD = ParametrizedMetaModel(degree=1, multivariate_optimizer=EDCMA).set_name(
+    "Quad1MetaModelD", register=True
+)
+Neural1MetaModelD = ParametrizedMetaModel(
+    algorithm="neural", degree=1, multivariate_optimizer=EDCMA
+).set_name("Neural1MetaModelD", register=True)
+SVM1MetaModelD = ParametrizedMetaModel(algorithm="svr", degree=1, multivariate_optimizer=EDCMA).set_name(
+    "SVM1MetaModelD", register=True
+)
+RF1MetaModelD = ParametrizedMetaModel(algorithm="rf", degree=1, multivariate_optimizer=EDCMA).set_name(
+    "RF1MetaModelD", register=True
+)
 # OnePlusOne, without quad
 Quad1MetaModelOnePlusOne = ParametrizedMetaModel(multivariate_optimizer=OnePlusOne, degree=1).set_name(
     "Quad1MetaModelOnePlusOne", register=True
 )
 Neural1MetaModelOnePlusOne = ParametrizedMetaModel(
-    multivariate_optimizer=OnePlusOne, algorithm="neural, degree=1"
+    multivariate_optimizer=OnePlusOne, algorithm="neural", degree=1
 ).set_name("Neural1MetaModelOnePlusOne", register=True)
 SVM1MetaModelOnePlusOne = ParametrizedMetaModel(
-    multivariate_optimizer=OnePlusOne, algorithm="svr, degree=1"
+    multivariate_optimizer=OnePlusOne, algorithm="svr", degree=1
 ).set_name("SVM1MetaModelOnePlusOne", register=True)
 RF1MetaModelOnePlusOne = ParametrizedMetaModel(
     multivariate_optimizer=OnePlusOne, algorithm="rf", degree=1
@@ -5338,6 +5371,8 @@ CMAILL = Chaining(
 CMASL = Chaining([CMA, SmootherDiscreteLenglerOnePlusOne], ["tenth"]).set_name("CMASL", register=True)
 CMASL2 = Chaining([CMA, SmootherDiscreteLenglerOnePlusOne], ["third"]).set_name("CMASL2", register=True)
 CMASL3 = Chaining([CMA, SmootherDiscreteLenglerOnePlusOne], ["half"]).set_name("CMASL3", register=True)
+CMAL2 = Chaining([CMA, SmootherDiscreteLenglerOnePlusOne], ["half"]).set_name("CMAL2", register=True)
+CMAL3 = Chaining([DiagonalCMA, SmootherDiscreteLenglerOnePlusOne], ["half"]).set_name("CMAL3", register=True)
 
 SmoothLognormalDiscreteOnePlusOne = ParametrizedOnePlusOne(smoother=True, mutation="lognormal").set_name(
     "SmoothLognormalDiscreteOnePlusOne", register=True

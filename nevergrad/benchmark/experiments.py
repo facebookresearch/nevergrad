@@ -3452,6 +3452,7 @@ def multi_ceviche(
     seed: tp.Optional[int] = None,
     c0: bool = False,
     precompute: bool = False,
+    warmstart: bool = False,
 ) -> tp.Iterator[Experiment]:
     """Categories when running with c0:
     BFGScheat works on the continuous problem, with continuous domain, with continuous test.
@@ -3505,19 +3506,45 @@ def multi_ceviche(
         "ZetaSmoothDiscreteLognormalOnePlusOne",
         "SuperSmoothDiscreteLognormalOnePlusOne",
     ]
-    algos = [a for a in algos if a in list(ng.optimizers.registry.keys())]
+    # if np.random.choice([True,False]):
+    #    algos = refactor_optims(algos)
+    # algo = np.random.choice(algos)
+    assert not (precompute and not warmstart)
+    if not precompute:
+        algos = ["RF1MetaModelLogNormal", "Neural1MetaModelLogNormal", "SVM1MetaModelLogNormal", "CMAL"]
+    else:
+        algos = ["UltraSmoothDiscreteLognormalOnePlusOne", "DiscreteLenglerOnePlusOne", "CMA", "CMAL"]
+    algos = ["CMALS", "CMALYS", "CMALL"]
+    algos = ["CLengler", "CMALS", "CMALYS", "CMALL", "CMAL"]
+    algos = ["CMASL2", "CMASL3"]
     algos = [
+        "DiagonalCMA",
+        "CMAL3",
+        "CMA",
+        "CLengler",
+        "CMALL",
+        "CMALYS",
+        "CMALS" "DiscreteLenglerOnePlusOne",
+        "CMASL3",
+        "CMASL2",
+        "DSproba",
+    ]
+    algos += [
         "LognormalDiscreteOnePlusOne",
         "CMA",
         "DiscreteLenglerOnePlusOne",
         "SmoothDiscreteLognormalOnePlusOne",
         "SuperSmoothDiscreteLognormalOnePlusOne",
         "AnisotropicAdaptiveDiscreteOnePlusOne",
-        "RFMetaModelLogNormal",
-        "NeuralMetaModelLogNormal",
-        "RFMetaModelLogNormal",
-        "NeuralMetaModelLogNormal",
-        "SVMMetaModelLogNormal",
+        #    "RFMetaModelLogNormal",
+        #    "NeuralMetaModelLogNormal",
+        #    "RFMetaModelLogNormal",
+        #    "NeuralMetaModelLogNormal",
+        #    "SVMMetaModelLogNormal",
+        "Neural1MetaModelE",
+        "SVM1MetaModelE",
+        "Quad1MetaModelE",
+        "RF1MetaModelE",
         "UltraSmoothDiscreteLognormalOnePlusOne",
         "VoronoiDE",
         "UltraSmoothDiscreteLognormalOnePlusOne",
@@ -3526,19 +3553,23 @@ def multi_ceviche(
         "Neural1MetaModelLogNormal",
         "SVM1MetaModelLogNormal",
         "DSproba",
+        "ImageMetaModelE",
+        "ImageMetaModelOnePlusOne",
+        "ImageMetaModelDiagonalCMA",
+        "ImageMetaModelLengler",
+        "ImageMetaModelLogNormal",
     ]
-    # if np.random.choice([True,False]):
-    #    algos = refactor_optims(algos)
-    # algo = np.random.choice(algos)
-    if not precompute:
-        algos = ["RF1MetaModelLogNormal", "Neural1MetaModelLogNormal", "SVM1MetaModelLogNormal", "CMAL"]
-    else:
-        algos = ["UltraSmoothDiscreteLognormalOnePlusOne", "DiscreteLenglerOnePlusOne", "CMA", "CMAL"]
-    algos = ["CMALS", "CMALYS", "CMALL"]
-    algos = ["CLengler", "CMALS", "CMALYS", "CMALL", "CMAL"]
-    algos = ["CMASL2", "CMASL3"]
 
+    algos = [a for a in algos if a in list(ng.optimizers.registry.keys())]
     for benchmark_type in [np.random.choice([0, 1, 2, 3])]:  # [np.random.randint(4)]:
+        if warmstart:
+            try:
+                suggestion = np.load(f"bestnp{benchmark_type}.npy")
+            except Exception as e:
+                print(
+                    "Be caereful! You need warmstart data for warmstarting :-)  use scripts/plot_ceviche.sh."
+                )
+                raise e
         shape = tuple([int(p) for p in list(photonics_ceviche(None, benchmark_type))])  # type: ignore
         name = photonics_ceviche("name", benchmark_type) + str(shape)  # type: ignore
         # print(f"Shape = {shape} {type(shape)} {type(shape[0])}")
@@ -3591,9 +3622,12 @@ def multi_ceviche(
         # print(f"name = {name}")
         import copy
 
-        def export_numpy(name, array):  # type: ignore
+        def export_numpy(name, array, fields=None):  # type: ignore
             from PIL import Image
             import numpy as np
+
+            if warmstart:
+                name = "WS" + name
 
             freq = np.average(np.abs(array.flatten() - 0.5) < 0.35)
             freq2 = np.average(np.abs(array.flatten() - 0.5) < 0.45)
@@ -3603,6 +3637,9 @@ def multi_ceviche(
                 name,
                 [100 * np.average(np.abs(np.round(10 * x.flatten()) - i) < 0.1) for i in range(11)],
             )
+            if fields is not None:
+                np.save(name + "fields.", fields)
+                np.save(name + "savedarray", array)
 
             im = Image.fromarray(x)
             im.convert("RGB").save(f"{name}_{freq}_{freq2}.png", mode="L")
@@ -3627,7 +3664,6 @@ def multi_ceviche(
                 if not precompute
                 else [np.random.choice([204800 + 51200, 204800]) - 102400]
             )
-
         for optim in [np.random.choice(algos)]:  # TODO: we also need penalizations.
             for budget in budgets:
                 #                np.random.choice(
@@ -3638,7 +3674,7 @@ def multi_ceviche(
                 #                    replace=False,
                 #                )
                 #            ):  # [int(np.random.choice([3, 20, 50, 90]))]: #[20, 50, 90]:
-                if np.random.rand() < 0.05 or precompute:
+                if (np.random.rand() < 0.05 or precompute) and not warmstart:
                     from scipy import optimize as scipyoptimize
 
                     x0 = np.random.rand(np.prod(shape))  # type: ignore
@@ -3646,6 +3682,7 @@ def multi_ceviche(
                         fpc,
                         x0=x0,
                         method="L-BFGS-B",
+                        tol=1e-9,
                         jac=True,
                         options={"maxiter": budget if not precompute else 102400},
                         bounds=[[0, 1] for _ in range(np.prod(shape))],
@@ -3653,19 +3690,19 @@ def multi_ceviche(
                     assert -1e-5 <= np.min(result.x.flatten())
                     assert np.max(result.x.flatten()) <= 1.0001
                     real_loss = epc(result.x.reshape(shape))
-                    fake_loss = fpc(result.x.reshape(shape))[0]
+                    fake_loss, _ignored_gradient = fpc(result.x.reshape(shape))
                     if not precompute:
                         print(f"\nLOGPB{benchmark_type} LBFGSB with_budget {budget} returns {real_loss}")
                         print(
                             f"\nLOGPB{benchmark_type} CheatingLBFGSB with_budget {budget} returns {fake_loss}"
                         )
                     initial_point = result.x.reshape(shape)
-                    if real_loss < -0.95:  # and np.random.rand() < 0.9:
+                    if budget > 100000 or np.random.rand() < 0.05:
                         export_numpy(
                             f"pb{benchmark_type}_budget{budget if not precompute else 102400}_bfgs_{real_loss}_{fake_loss}",
                             result.x.reshape(shape),
                         )
-                if (c0 and np.random.choice([True, False, False, False] + ([False] * 20))) and not precompute:
+                if (c0 and np.random.choice([True, False, False, False])) and not precompute:
                     pen = np.random.choice([True, False, False] + ([False] * 20)) and not precompute
                     pre_optim = ng.optimizers.registry[optim]
                     if pen:
@@ -3686,6 +3723,7 @@ def multi_ceviche(
                             seed=next(seedg),
                             constraint_violation=[cv],  # type: ignore
                             penalize_violation_at_test=False,
+                            suggestions=([suggestion] if warmstart else None),
                         )
                     else:
                         cheat = np.random.choice([False, True])
@@ -3701,8 +3739,7 @@ def multi_ceviche(
                         def plot_pc(x):
                             fake_loss = photonics_ceviche(x, benchmark_type)
                             real_loss = photonics_ceviche(x, benchmark_type, discretize=True)
-                            if real_loss < -0.95 or np.random.rand() < 0.2:
-                                print("exporting")
+                            if budget > 100000 or np.random.rand() < 0.05:
                                 export_numpy(
                                     f"pb{benchmark_type}_{optim}c0c_budget{budget}_{real_loss}_fl{fake_loss}",
                                     x.reshape(shape),
@@ -3721,21 +3758,29 @@ def multi_ceviche(
                             c0func if not cheat else c0cfunc,
                             evaluation=eval_func if not cheat else plot_cheat_eval_func,
                         )
-                        yield Experiment(sfunc, optim3, budget=budget, seed=next(seedg))  # type: ignore
+                        yield Experiment(sfunc, optim3, budget=budget, seed=next(seedg), suggestions=([suggestion] if warmstart else None))  # type: ignore
                 else:
 
                     def plot_epc(x):
-                        real_loss = photonics_ceviche(x, benchmark_type, discretize=True)
-                        if real_loss < -0.95 or np.random.rand() < 0.2:
+                        real_loss, fields = photonics_ceviche(
+                            x, benchmark_type, discretize=True, wantfields=True
+                        )
+                        if budget > 100000 or np.random.rand() < 0.05:
                             export_numpy(
-                                f"pb{benchmark_type}_{optim}_budget{budget}_{real_loss}", x.reshape(shape)
+                                f"pb{benchmark_type}_{optim}_budget{budget}_{real_loss}",
+                                x.reshape(shape),
+                                fields,
                             )
                         return real_loss
 
                     plot_eval_func = ExperimentFunction(plot_epc, instrum2p)
                     pfunc = helpers.SpecialEvaluationExperiment(func, evaluation=plot_eval_func)
                     yield Experiment(
-                        func if np.random.rand() < 0.0 else pfunc, optim, budget=budget, seed=next(seedg)
+                        func if np.random.rand() < 0.0 else pfunc,
+                        optim,
+                        budget=budget,
+                        seed=next(seedg),
+                        suggestions=([suggestion] if warmstart else None),
                     )  # Once in the discrete case.
 
 
@@ -3743,6 +3788,12 @@ def multi_ceviche(
 def multi_ceviche_c0(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Counterpart of multi_ceviche with continuous permittivities."""
     return multi_ceviche(seed, c0=True)  # means that we include c0 cases.
+
+
+@registry.register
+def multi_ceviche_c0_warmstart(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
+    """Counterpart of multi_ceviche with continuous permittivities."""
+    return multi_ceviche(seed, c0=True, warmstart=True)  # means that we include c0 cases.
 
 
 @registry.register
