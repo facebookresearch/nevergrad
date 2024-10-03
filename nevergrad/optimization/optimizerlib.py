@@ -2164,20 +2164,20 @@ RFMetaModel = ParametrizedMetaModel(algorithm="rf").set_name("RFMetaModel", regi
 
 # Without quad
 Quad1MetaModel = ParametrizedMetaModel(degree=1).set_name("Quad1MetaModel", register=True)
-Neural1MetaModel = ParametrizedMetaModel(algorithm="neural, degree=1").set_name(
+Neural1MetaModel = ParametrizedMetaModel(algorithm="neural", degree=1).set_name(
     "Neural1MetaModel", register=True
 )
-SVM1MetaModel = ParametrizedMetaModel(algorithm="svr, degree=1").set_name("SVM1MetaModel", register=True)
+SVM1MetaModel = ParametrizedMetaModel(algorithm="svr", degree=1).set_name("SVM1MetaModel", register=True)
 RF1MetaModel = ParametrizedMetaModel(algorithm="rf", degree=1).set_name("RF1MetaModel", register=True)
 # OnePlusOne, without quad
 Quad1MetaModelOnePlusOne = ParametrizedMetaModel(multivariate_optimizer=OnePlusOne, degree=1).set_name(
     "Quad1MetaModelOnePlusOne", register=True
 )
 Neural1MetaModelOnePlusOne = ParametrizedMetaModel(
-    multivariate_optimizer=OnePlusOne, algorithm="neural, degree=1"
+    multivariate_optimizer=OnePlusOne, algorithm="neural", degree=1
 ).set_name("Neural1MetaModelOnePlusOne", register=True)
 SVM1MetaModelOnePlusOne = ParametrizedMetaModel(
-    multivariate_optimizer=OnePlusOne, algorithm="svr, degree=1"
+    multivariate_optimizer=OnePlusOne, algorithm="svr", degree=1
 ).set_name("SVM1MetaModelOnePlusOne", register=True)
 RF1MetaModelOnePlusOne = ParametrizedMetaModel(
     multivariate_optimizer=OnePlusOne, algorithm="rf", degree=1
