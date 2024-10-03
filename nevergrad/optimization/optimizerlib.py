@@ -2174,10 +2174,10 @@ Quad1MetaModelOnePlusOne = ParametrizedMetaModel(multivariate_optimizer=OnePlusO
     "Quad1MetaModelOnePlusOne", register=True
 )
 Neural1MetaModelOnePlusOne = ParametrizedMetaModel(
-    multivariate_optimizer=OnePlusOne, algorithm="neural, degree=1"
+    multivariate_optimizer=OnePlusOne, algorithm="neural", degree=1
 ).set_name("Neural1MetaModelOnePlusOne", register=True)
 SVM1MetaModelOnePlusOne = ParametrizedMetaModel(
-    multivariate_optimizer=OnePlusOne, algorithm="svr, degree=1"
+    multivariate_optimizer=OnePlusOne, algorithm="svr", degree=1
 ).set_name("SVM1MetaModelOnePlusOne", register=True)
 RF1MetaModelOnePlusOne = ParametrizedMetaModel(
     multivariate_optimizer=OnePlusOne, algorithm="rf", degree=1
