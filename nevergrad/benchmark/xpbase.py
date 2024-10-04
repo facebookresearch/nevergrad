@@ -161,8 +161,10 @@ class Experiment:
         seed: tp.Optional[int] = None,
         constraint_violation: tp.Optional[ngtp.ArrayLike] = None,
         penalize_violation_at_test: bool = True,
+        suggestions: tp.Optional[ngtp.ArrayLike] = None,
     ) -> None:
         self.penalize_violation_at_test = penalize_violation_at_test
+        self.suggestions = suggestions
         assert isinstance(function, fbase.ExperimentFunction), (
             "All experiment functions should " "derive from ng.functions.ExperimentFunction"
         )
@@ -289,6 +291,9 @@ class Experiment:
             try:
                 # call the actual Optimizer.minimize method because overloaded versions could alter the worklflow
                 # and provide unfair comparisons  (especially for parallelized settings)
+                if self.suggestions is not None:
+                    for s in self.suggestions:
+                        self._optimizer.suggest(s)
                 obase.Optimizer.minimize(
                     self._optimizer,
                     pfunc,
