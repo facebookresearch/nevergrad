@@ -176,7 +176,7 @@ cat tmp.tex.tmp
 #ls `ls $v | sed 's/\.tex/\.pdf/g'` | sed 's/.*/\\includegraphics[width=.99\\textwidth]{{&}}\\\\/g' 
 #done
 #done
-echo '\section{Agregated table}'
+echo '\section{Aggregated table}'
 cat agtable.tex
 cat scripts/tex/end.tex ) >> dagstuhloid.tex
 for v in competition.tex dagstuhloid.tex

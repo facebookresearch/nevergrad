@@ -1164,7 +1164,7 @@ class AXP(base.Optimizer):
     ) -> None:
         super().__init__(parametrization, budget=budget, num_workers=num_workers)
         try:
-            from ax.service.ax_client import AxClient, ObjectiveProperties
+            from ax.service.ax_client import AxClient, ObjectiveProperties  # type: ignore
         except Exception as e:
             print(f"Pb for creating AX solver")
             raise e
@@ -1193,7 +1193,7 @@ class AXP(base.Optimizer):
         trial_index_to_param, _ = self.ax_client.get_next_trials(max_trials=1)
         assert len(trial_index_to_param) == 1
         vals = np.zeros(self.dimension)
-        for a, _trial in trial_index_to_param.items():
+        for _, _trial in trial_index_to_param.items():
             trial = _trial
         for i in range(self.dimension):
             vals[i] = invsig(trial["x" + str(i)])
