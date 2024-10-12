@@ -422,7 +422,13 @@ first_time_ceviche = True
 model = None
 
 
-def ceviche(x: np.ndarray, benchmark_type: int = 0, discretize=False, wantgrad=False) -> tp.Any:
+global no_neg
+no_neg = True
+
+
+def ceviche(
+    x: np.ndarray, benchmark_type: int = 0, discretize=False, wantgrad=False, wantfields=False
+) -> tp.Any:
     global first_time_ceviche
     global model
     import autograd  # type: ignore
@@ -472,16 +478,74 @@ def ceviche(x: np.ndarray, benchmark_type: int = 0, discretize=False, wantgrad=F
     # Construct a loss function, assuming the `model` and `design` from the code
     # snippet above are instantiated.
 
-    def loss_fn(x):
+    def loss_fn(x, fields_are_needed=False):
         """A simple loss function taking mean s11 - mean s21."""
-        s_params, _ = model.simulate(x)
-        s11 = npa.abs(s_params[:, 0, 0])
-        s21 = npa.abs(s_params[:, 0, 1])
-        return npa.mean(s11) - npa.mean(s21)
+        s_params, fields = model.simulate(x)
+        # print("shape=", s_params.shape, " for benchmark_type = ", benchmark_type)
+        # assert False
+        if benchmark_type == 0 or benchmark_type == 2:
+            the_loss = 1 - npa.abs(s_params[0, 0, 1]) ** 2
+        elif benchmark_type == 1:
+            the_loss = npa.abs(npa.abs(s_params[0, 0, 1]) ** 2 - 0.5) + npa.abs(
+                npa.abs(s_params[0, 0, 2]) ** 2 - 0.5
+            )
+        elif benchmark_type == 3:
+            the_loss = 1 - (npa.abs(s_params[0, 0, 1]) ** 2 + npa.abs(s_params[1, 0, 2]) ** 2) / 2
+        else:
+            assert False
 
-    loss_value, grad = autograd.value_and_grad(loss_fn)(design)  # type: ignore
+        global no_neg
+        if the_loss < 0 and no_neg:
+            no_neg = False
+            print(f"NEG npa: pb{benchmark_type}, {the_loss} vs {loss_fn_nograd(x)}")
+        if fields_are_needed:
+            return the_loss, fields
+        return the_loss
+
+    def loss_fn_nograd(x, fields_are_needed=False):
+        """A simple loss function taking mean s11 - mean s21."""
+        s_params, fields = model.simulate(x)
+        # print("shape=", s_params.shape, " for benchmark_type = ", benchmark_type)
+        # assert False
+        if benchmark_type == 0 or benchmark_type == 2:
+            the_loss = 1 - np.abs(s_params[0, 0, 1]) ** 2
+        elif benchmark_type == 1:
+            the_loss = np.abs(np.abs(s_params[0, 0, 1]) ** 2 - 0.5) + np.abs(
+                np.abs(s_params[0, 0, 2]) ** 2 - 0.5
+            )
+        elif benchmark_type == 3:
+            the_loss = 1 - (np.abs(s_params[0, 0, 1]) ** 2 + np.abs(s_params[1, 0, 2]) ** 2) / 2
+        else:
+            assert False
+
+        global no_neg
+        if the_loss < 0 and no_neg:
+            no_neg = False
+            print(f"NEG np: pb{benchmark_type}, np:{the_loss}, npa:{loss_fn(x)}")
+        if fields_are_needed:
+            return the_loss, fields
+        return the_loss
+
+    if wantgrad:
+        loss_value_npa, grad = autograd.value_and_grad(loss_fn)(design)  # type: ignore
+    else:
+        loss_value = loss_fn_nograd(design)  # type: ignore
+        # print("DIFF:", loss_value, loss_value_npa)
     # loss_value, loss_grad = autograd.value_and_grad(loss_fn)(design)  # type: ignore
     first_time_ceviche = False
+    assert not (wantgrad and wantfields)
     if wantgrad:
-        return loss_value, grad
+        # if loss_value_npa< 0.0:
+        #    print(x, "NP:", loss_fn_nograd(x), "NPA:", loss_fn(x))
+        #    assert False, f"superweird_{loss_fn_nograd(x)}_{loss_fn(x)}"
+        return loss_value_npa, grad
+    if wantfields:
+        loss_value, fields = loss_fn_nograd(design, fields_are_needed=True)
+        # if loss_value < 0.0:
+        #    print(x, "NP:", loss_fn_nograd(x), "NPA:", loss_fn(x))
+        #    assert False, f"superweird_{loss_fn_nograd(x)}_{loss_fn(x)}"
+        return loss_value, fields
+    # if loss_value < 0.0:
+    #     print(x, "NP:", loss_fn_nograd(x), "NPA:", loss_fn(x))
+    #     assert False, f"superweird_{loss_fn_nograd(x)}_{loss_fn(x)}"
     return loss_value

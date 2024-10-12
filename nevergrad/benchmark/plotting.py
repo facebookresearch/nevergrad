@@ -443,10 +443,34 @@ def create_plots(
         cases = [()]
     # Average normalized plot with everything.
     out_filepath = output_folder / "xpresults_all.png"
-    data = XpPlotter.make_data(df, normalized_loss=True)
-    xpplotter = XpPlotter(
-        data, title=os.path.basename(output_folder), name_style=name_style, xaxis=xpaxis, pure_only=True
-    )
+    try:
+        data = XpPlotter.make_data(df, normalized_loss=True)
+        xpplotter = XpPlotter(
+            data, title=os.path.basename(output_folder), name_style=name_style, xaxis=xpaxis, pure_only=True
+        )
+    except Exception as e:
+        lower = 0
+        upper = len(df)
+        while upper > lower + 1:
+            middle = (lower + upper) // 2
+            small_df = df.head(middle)
+            try:
+                print("Testing ", middle)
+                _ = XpPlotter.make_data(small_df, normalized_loss=True)
+                xpplotter = XpPlotter(
+                    data,
+                    title=os.path.basename(output_folder),
+                    name_style=name_style,
+                    xaxis=xpaxis,
+                    pure_only=True,
+                )
+                print("Work with ", middle)
+                lower = middle
+            except:
+                print("Failing with ", middle)
+                upper = middle
+
+        assert False, f"Big failure {e} at line {middle}"
     xpplotter.save(out_filepath)
     # Now one xp plot per case.
     for case in cases:
@@ -529,11 +553,15 @@ def ceviche_sota() -> tp.Dict[str, tp.Tuple[float, float]]:
     # grep LOGPB *.out | sed 's/.*://g' | sort | uniq -c | grep with_budget | awk '{ data[$2,"_",$5] += $7;  num[$2,"_",$5] += 1  } END { for (u in data) { print u, data[u]/num[u], num[u]}   } ' | sort -n  | grep '400 '
     # Also obtained by examples/plot_ceviches.sh
     # After log files have been created by sbatch examples/ceviche.sh
-    ceviche["waveguide-bend"] = (-0.590207, 1000000)  # Budget 400
-    ceviche["beam-splitter"] = (-0.623696, 1000000)
-    ceviche["mode-converter"] = (-0.634207, 1000000)
-    ceviche["wdm"] = (-0.603663, 100000)
-
+    ceviche["waveguide-bend"] = (0.0681388, 1000000)  # Budget 400
+    ceviche["beam-splitter"] = (0.496512, 1000000)
+    ceviche["mode-converter"] = (0.181592, 1000000)
+    ceviche["wdm"] = (0.982352, 100000)
+    # LOGPB0 409600 0.0681388
+    # LOGPB1 204800 0.496512
+    # LOGPB2 204800 0.181592
+    # LOGPB3 51200 0.982352
+    #
     # LOGPB0_3200 -0.590207
     # LOGPB1_3200 -0.623696
     # LOGPB2_3200 -0.634207
@@ -764,6 +792,7 @@ class XpPlotter:
         )
         groupeddf = df.groupby(["optimizer_name", "budget"])
         means = groupeddf.mean() if no_limit else groupeddf.median()
+
         stds = groupeddf.std()
         nums = groupeddf.count()
         optim_vals: tp.Dict[str, tp.Dict[str, np.ndarray]] = {}

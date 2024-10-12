@@ -259,6 +259,17 @@ class Parameter(Layered):
     def __bool__(self) -> bool:
         raise RuntimeError("bool check is not allowed to avoid confusion")
 
+    def can_skip_constraints(self, ref: tp.Optional[P] = None) -> bool:
+        inside = self._subobjects.apply("can_skip_constraints")
+        # print(f"{len(inside)} / {inside}  / {ref} / {ref.tabu_length if ref is not None else []} / {self._constraint_checkers}")
+        val = (
+            (len(inside) == 0 or all(inside.values()))
+            and (ref is None or ref.tabu_length == 0)
+            and not self._constraint_checkers
+        )
+        # print(inside, val)
+        return val
+
     # %% Constraint management
     def satisfies_constraints(self, ref: tp.Optional[P] = None, no_tabu: bool = False) -> bool:
         """Whether the instance satisfies the constraints added through
