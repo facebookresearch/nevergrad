@@ -1133,6 +1133,70 @@ class EDA(base.Optimizer):
         raise errors.TellNotAskedNotSupportedError
 
 
+# pylint: disable=too-many-instance-attributes
+
+
+@registry.register
+class AXP(base.Optimizer):
+    """Test-based population-size adaptation.
+
+    Population-size equal to lambda = 4 x dimension.
+    Test by comparing the first fifth and the last fifth of the 5lambda evaluations.
+
+    Caution
+    -------
+    This optimizer is probably wrong.
+    """
+
+    def __init__(
+        self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        try:
+            from ax.service.ax_client import AxClient, ObjectiveProperties
+        except Exception as e:
+            print(f"Pb for creating AX solver")
+            raise e
+        self.ax_parametrization = [
+            {"name": "x" + str(i), "type": "range", "bounds": [0.0, 1.0]} for i in range(self.dimension)
+        ]
+        self.ax_client = AxClient()
+        self.ax_client.create_experiment(
+            name="ax_optimization",
+            parameters=self.ax_parametrization,
+            objectives={"result": ObjectiveProperties(minimize=True)},
+            #                            parameter_constraints=["x + y <= 2.0"],  # Optional.
+        )
+
+    # def _internal_provide_recommendation(
+    #    self,
+    # ) -> tp.ArrayLike:  # This is NOT the naive version. We deal with noise.
+
+    def _internal_ask_candidate(self) -> p.Parameter:
+        def invsig(x):
+            def p(x):
+                return np.clip(x, 1e-15, 1.0 - 1e-15)
+
+            return np.log(p(x) / (1 - p(x)))
+
+        trial_index_to_param, _ = self.ax_client.get_next_trials(max_trials=1)
+        assert len(trial_index_to_param) == 1
+        vals = np.zeros(self.dimension)
+        for a, _trial in trial_index_to_param.items():
+            trial = _trial
+        for i in range(self.dimension):
+            vals[i] = invsig(trial["x" + str(i)])
+        candidate = self.parametrization.spawn_child().set_standardized_data(vals)
+        candidate._meta["trial_index"] = self.num_ask
+        return candidate
+
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        self.ax_client.complete_trial(trial_index=candidate._meta["trial_index"], raw_data=loss)
+
+    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        raise errors.TellNotAskedNotSupportedError
+
+
 class PCEDA(EDA):
     _POPSIZE_ADAPTATION = True
     _COVARIANCE_MEMORY = False
@@ -3078,7 +3142,7 @@ class _BayesOptim(base.Optimizer):
                 obj_fun=None,  # Assuming that this is not used :-)
                 DoE_size=init_budget if init_budget is not None else 5,
                 max_FEs=budget,
-                verbose=True,
+                verbose=False,
                 n_point=1,  # We start with a sequential procedure, maybe we'll extend in a second moment
                 n_components=cfg.n_components,
                 acquisition_optimization={"optimizer": "BFGS"},

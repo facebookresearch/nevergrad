@@ -12,7 +12,7 @@ import traceback
 import nevergrad.common.typing as ngtp
 import typing as tp
 import numpy as np
-from nevergrad.optimization import callbacks
+from nevergrad.optimization import callbacks as ngcallbacks
 from nevergrad.parametrization import parameter as p
 from nevergrad.common import decorators
 from nevergrad.common import errors
@@ -290,13 +290,14 @@ class Experiment:
             try:
                 # call the actual Optimizer.minimize method because overloaded versions could alter the worklflow
                 # and provide unfair comparisons  (especially for parallelized settings)
-                optimizer.register_callback("ask", callbacks.EarlyStopping.timer(3600*(48+24)))
+                # self._optimizer.register_callback("ask", ngcallbacks.EarlyStopping.timer(3600*(48+24)))
                 obase.Optimizer.minimize(
                     self._optimizer,
                     pfunc,
                     batch_mode=executor.batch_mode,
                     executor=executor,
                     constraint_violation=self.constraint_violation,
+                    max_time=3600 * 24 * 2.5,
                 )
             except Exception as e:  # pylint: disable=broad-except
                 self._log_results(pfunc, t0, self._optimizer.num_ask)

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-pip install img2pdf
+python -m pip install img2pdf
 
 allplots=""
 
@@ -43,7 +43,8 @@ for v in zp_ms_bbob_plots/fight_translation_factor0.01.png_pure.png zp_ms_bbob_p
 do
  convert $v -trim +repage prout.png
  cp prout $v
- img2pdf -o ${v}.pdf $v
+ # img2pdf -o ${v}.pdf $v
+ python -m img2pdf -o ${v}.pdf $v
 done
 for u in $allplots
 do
@@ -57,9 +58,9 @@ timeout 10 cat scripts/txt/`echo $u | sed 's/_plots/.txt/g' | sed 's/\///g'`
 (
 
 convert ${u}/fight_all_pure.png -trim +repage  ${u}/fight_all_pure.pre.png
-img2pdf -o ${u}/fight_all_pure.png.pdf  ${u}/fight_all_pure.pre.png
+python -m img2pdf -o ${u}/fight_all_pure.png.pdf  ${u}/fight_all_pure.pre.png
 convert ${u}/xpresults_all.png -trim +repage  ${u}/xpresults_all.pre.png
-img2pdf -o ${u}/xpresults_all.png.pdf ${u}/xpresults_all.pre.png
+python -m img2pdf -o ${u}/xpresults_all.png.pdf ${u}/xpresults_all.pre.png
 ) 2>&1 | cat > logconvert${uminus}.log
 ) &
 echo " "
@@ -175,6 +176,8 @@ cat tmp.tex.tmp
 #ls `ls $v | sed 's/\.tex/\.pdf/g'` | sed 's/.*/\\includegraphics[width=.99\\textwidth]{{&}}\\\\/g' 
 #done
 #done
+echo '\section{Agregated table}'
+cat agtable.tex
 cat scripts/tex/end.tex ) >> dagstuhloid.tex
 for v in competition.tex dagstuhloid.tex
 do

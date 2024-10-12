@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import time
 import pickle
 import warnings
 from pathlib import Path
@@ -615,6 +616,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         batch_mode: bool = False,
         verbosity: int = 0,
         constraint_violation: tp.Any = None,
+        max_time: tp.Optional[float] = None,
     ) -> p.Parameter:
         """Optimization (minimization) procedure
 
@@ -664,7 +666,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         remaining_budget = self.budget - self.num_ask
         first_iteration = True
         #
-        while remaining_budget or self._running_jobs or self._finished_jobs:
+        t0 = time.time()
+        while (remaining_budget or self._running_jobs or self._finished_jobs) and (
+            max_time is None or time.time() < t0 + max_time
+        ):
             # # # # # Update optimizer with finished jobs # # # # #
             # this is the first thing to do when resuming an existing optimization run
             # process finished
