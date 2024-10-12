@@ -314,7 +314,9 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                     return res
 
                 # scenario = Scenario({'cs': cs, 'run_obj': smac2_obj, 'runcount-limit': remaining, 'deterministic': True})
-                scenario = Scenario(cs, deterministic=True, n_trials=int(remaining))
+                scenario = Scenario(
+                    cs, deterministic=True, n_trials=int(remaining)
+                )  # , output_directory="/dev/null")
 
                 smac = HyperparameterOptimizationFacade(scenario, smac2_obj)
                 res = smac.optimize()

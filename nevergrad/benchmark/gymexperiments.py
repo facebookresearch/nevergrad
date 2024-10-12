@@ -22,6 +22,85 @@ def gym_problem_modifier(specific_problem):
 
 
 def gym_optimizer_modifier(optims):
+    #     return list(
+    #         np.random.choice(
+    #             [
+    #                 "RandomSearch",
+    #                 "AXP",
+    #                 "LognormalDiscreteOnePlusOne",
+    #                 "AX",
+    #                 "CMA",
+    #                 "Cobyla",
+    #                 "PCABO",
+    #                 "SMAC3",
+    #                 "NgIohTuned",
+    #                 "NGDSRW",
+    #                 "PymooBIPOP",
+    #                 "CMA",
+    #                 "PSO",
+    #                 "SQOPSO",
+    #                 "DE",
+    #                 "DiscreteLenglerOnePlusOne",
+    #                 "DiscreteOnePlusOne",
+    #                 "OnePlusOne",
+    #                 "DSproba",
+    #                 "MetaModel",
+    #             ],
+    #             1,
+    #         )
+    #     )
+    #     return list(
+    #         np.random.choice(
+    #             [
+    #                 "RandomSearch",
+    #                 "AX",
+    #                 "CMA",
+    #                 "Cobyla",
+    #                 "PCABO",
+    #                 "SMAC3",
+    #                 "NgIohTuned",
+    #                 "NGDSRW",
+    #                 "PymooBIPOP",
+    #                 "CMA",
+    #                 "PSO",
+    #                 "SQOPSO",
+    #                 "DE",
+    #                 "DiscreteLenglerOnePlusOne",
+    #                 "DiscreteOnePlusOne",
+    #                 "OnePlusOne",
+    #                 "DSproba",
+    #                 "MetaModel",
+    #             ],
+    #             3,
+    #         )
+    #     )
+    #     return list(
+    #         np.random.choice(
+    #             [
+    #                 "RandomSearch",
+    #                 "AXP",
+    #                 "LognormalDiscreteOnePlusOne",
+    #                 "AX",
+    #                 "CMA",
+    #                 "Cobyla",
+    #                 "PCABO",
+    #                 "SMAC3",
+    #                 "NgIohTuned",
+    #                 "NGDSRW",
+    #                 "PymooBIPOP",
+    #                 "CMA",
+    #                 "PSO",
+    #                 "SQOPSO",
+    #                 "DE",
+    #                 "DiscreteLenglerOnePlusOne",
+    #                 "DiscreteOnePlusOne",
+    #                 "OnePlusOne",
+    #                 "DSproba",
+    #                 "MetaModel",
+    #             ],
+    #             1,
+    #         )
+    #     )
     print(optims)
     if os.environ.get("GYM_OPTIMIZER") is not None:
         optimizer_string = os.environ.get("GYM_OPTIMIZER")
