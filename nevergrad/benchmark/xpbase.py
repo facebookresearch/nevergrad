@@ -12,7 +12,6 @@ import traceback
 import nevergrad.common.typing as ngtp
 import typing as tp
 import numpy as np
-from nevergrad.optimization import callbacks as ngcallbacks
 from nevergrad.parametrization import parameter as p
 from nevergrad.common import decorators
 from nevergrad.common import errors
