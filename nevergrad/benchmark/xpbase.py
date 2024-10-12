@@ -300,6 +300,7 @@ class Experiment:
                     batch_mode=executor.batch_mode,
                     executor=executor,
                     constraint_violation=self.constraint_violation,
+                    max_time=3600 * 24 * 2.5,
                 )
             except Exception as e:  # pylint: disable=broad-except
                 self._log_results(pfunc, t0, self._optimizer.num_ask)

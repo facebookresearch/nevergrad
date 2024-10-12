@@ -7,6 +7,8 @@
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=67
 
+
+
 # This script works both as a standalone script or with slurm.
 # This is much slower than mini_plot_dagstuhloid, but outputs more data (in particular: competence maps and plots for
 # subcases).
@@ -18,11 +20,14 @@ if compgen -G "*.csv" > /dev/null; then
 # First we run all nevergrad plotting.
 for i in `ls *.csv `
 do
-    (python -m nevergrad.benchmark.plotting --nomanyxp=1 $i ; python -m nevergrad.benchmark.plotting --max_combsize=2 --competencemaps=1 --nomanyxp=1 $i ) &
+    python -m nevergrad.benchmark.plotting --nomanyxp=1 $i &
+    #(python -m nevergrad.benchmark.plotting --nomanyxp=1 $i ; python -m nevergrad.benchmark.plotting --max_combsize=2 --competencemaps=1 --nomanyxp=1 $i ) &
 
 done
 wait
 
+./scripts/multirank.sh
+./scripts/get_statistics.sh
 
 # Second we do pdflatex
 for i in *.csv
@@ -43,5 +48,5 @@ fi # End of "there is something to do".
 # tar -zcvf ~/dag.tgz *_plots
 scripts/latexize.sh
 
-tar -zcvf dagstuhloid.tgz dagstuhloid.pdf *.csv *plots/xpresults_all.png rnk_*.txt *plots/fight_all.png.cp.txt
+tar -zcvf dagstuhloid.tgz dagstuhloid.pdf *.csv *plots/xpresults_all.png rnk_*.txt *plots/fight_all.png.cp.txt pie*.png agpi*.png
 
