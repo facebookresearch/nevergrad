@@ -637,6 +637,9 @@ PortfolioDiscreteOnePlusOneT = ParametrizedOnePlusOne(tabu_length=10000, mutatio
 DiscreteLenglerOnePlusOne = ParametrizedOnePlusOne(mutation="lengler").set_name(
     "DiscreteLenglerOnePlusOne", register=True
 )
+OptimisticLengler = ParametrizedOnePlusOne(noise_handling="optimistic", mutation="lengler").set_name(
+    "OptimisticLengler", register=True
+)
 DiscreteLengler2OnePlusOne = ParametrizedOnePlusOne(mutation="lengler2").set_name(
     "DiscreteLengler2OnePlusOne", register=True
 )
