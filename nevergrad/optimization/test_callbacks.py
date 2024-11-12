@@ -16,7 +16,7 @@ from . import callbacks
 
 # pylint: disable=unused-argument
 def _func(x: tp.Any, y: tp.Any, blublu: str, array: tp.Any, multiobjective: bool = False) -> tp.Loss:
-    return 12 if not multiobjective else [12, 12]
+    return 12 if not multiobjective else [12, 12]  # type: ignore
 
 
 def test_log_parameters(tmp_path: Path) -> None:
