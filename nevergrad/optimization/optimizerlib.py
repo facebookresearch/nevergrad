@@ -1150,7 +1150,7 @@ class AXP(base.Optimizer):
     """AX-platform.
 
     Usually computationally slow and not better than the rest
-    in terms of performance per iteration. 
+    in terms of performance per iteration.
     Maybe prefer HyperOpt or Cobyla for low budget optimization.
     """
 
@@ -2488,6 +2488,7 @@ class BFGSCMAPlus(Portfolio):
 @registry.register
 class LogBFGSCMAPlus(Portfolio):
     """Passive portfolio of CMA and several BFGS; at least log(budget)."""
+
     def __init__(
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
     ) -> None:
