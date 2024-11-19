@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Comparison on all benchmarks, for the simple regret criterion: the wizard performs best &mdash; nevergrad  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            nevergrad
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../optimization.html">How to perform optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parametrization.html">Parametrizing your optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../machinelearning.html">Examples - Nevergrad for machine learning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../optimizers_ref.html">Optimizers API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parametrization_ref.html">Parametrization API reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../benchmarking.html">Running algorithm benchmarks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../r.html">Examples - Nevergrad for R</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../benchmarks.html">Examples of benchmarks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pyomo.html">Examples - Working with Pyomo model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../windows.html">Installation and configuration on Windows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributing to Nevergrad</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../opencompetition2020.html">Open Optimization Competition 2020</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">nevergrad</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Comparison on all benchmarks, for the simple regret criterion: the wizard performs best</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/statistics/Statistics.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <p>This page records statistics on the benchmarks in Nevergrad.</p>
+<p>In all cases, we count 0.1 instead of 0 for making figures more readable.
+Overall, the result is that the wizard NgIohTuned performs best.
+As NgIohTuned is a wizard and the present document compares many methods possibly close to each other, we maintain another page [[AgStatistics]]
+which uses only one method per category (e.g. Random Search, Bayesian Optimization, Evolutionary Computation, Direct Search, Differential Evolution, Particle Swarm Optimization…).</p>
+<section id="comparison-on-all-benchmarks-for-the-simple-regret-criterion-the-wizard-performs-best">
+<h1>Comparison on all benchmarks, for the simple regret criterion: the wizard performs best<a class="headerlink" href="#comparison-on-all-benchmarks-for-the-simple-regret-criterion-the-wizard-performs-best" title="Permalink to this heading"></a></h1>
+<p>We record the number of times each algorithm performs best, for the simple regret criterion.</p>
+<p><strong><img alt="Simple regret" src="../_images/pie1.png" /></strong></p>
+</section>
+<section id="comparing-all-methods-with-a-robustness-criterion-the-wizard-still-performs-best">
+<h1>Comparing all methods, with a robustness criterion: the wizard still performs best<a class="headerlink" href="#comparing-all-methods-with-a-robustness-criterion-the-wizard-still-performs-best" title="Permalink to this heading"></a></h1>
+<p>Same figure, but with Nevergrad’s Robust criterion instead of the simple regret: this means that for each benchmark, instead of the simple regret, we consider the frequency at which a method outperforms the others. We still count how many times each method is best.
+<strong><img alt="Simple regret" src="../_images/pierob1.png" /></strong></p>
+</section>
+<section id="comparing-from-the-point-of-view-of-the-frequency-at-which-a-method-is-in-the-three-best-the-wizard-ngiohtuned-still-performs-best">
+<h1>Comparing from the point of view of the frequency at which a method is in the three best: the wizard NgIohTuned still performs best<a class="headerlink" href="#comparing-from-the-point-of-view-of-the-frequency-at-which-a-method-is-in-the-three-best-the-wizard-ngiohtuned-still-performs-best" title="Permalink to this heading"></a></h1>
+<p>We report the two previous figures, but for the frequency of being in the 3 best instead of the frequency of being the best.
+<strong><img alt="Simple regret" src="../_images/pie3.png" /></strong></p>
+<p><strong><img alt="Simple regret" src="../_images/pierob3.png" /></strong></p>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2019, Facebook AI Research.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
