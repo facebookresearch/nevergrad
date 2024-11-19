@@ -160,7 +160,7 @@ class ExperimentFunction:
         """
         # auto_init is automatically filled by __new__, aka when creating the instance
         output: EF = self.__class__(
-            **{x: _reset_copy(y) if isinstance(y, p.Parameter) else y for x, y in self._auto_init.items()}
+            **{x: _reset_copy(y) if isinstance(y, p.Parameter) else y for x, y in self._auto_init.items()}  # type: ignore
         )
         return output
 

@@ -52,3 +52,4 @@ scripts/latexize.sh
 
 tar -zcvf dagstuhloid.tgz dagstuhloid.pdf *.csv *plots/xpresults_all.png rnk_*.txt *plots/fight_all.png.cp.txt *pie*.png 
 
+

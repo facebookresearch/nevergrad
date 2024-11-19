@@ -22,6 +22,7 @@ task=${tasks[SLURM_ARRAY_TASK_ID % ${#tasks[@]} ]}
 #
 #conda info
 
+
 #echo Starting at
 #date
 # num_workers is the number of processes. Maybe use a bit more than the number of cores at the line "cpus-per-task"

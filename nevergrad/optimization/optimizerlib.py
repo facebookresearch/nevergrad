@@ -50,6 +50,9 @@ except:  # ModuleNotFoundError:
     pass
 
 # from .externalbo import ParametrizedHyperOpt
+
+# Removed because performance disappointed when it is compared to other algorithms
+# with same conditions.
 # Lamcts = LamctsOptimizer(random_restart=True, device="cpu").set_name("Lamcts", register=True)
 # Lamcts2 = LamctsOptimizer(random_restart=True, device="cpu").set_name("Lamcts2", register=True)
 
@@ -998,7 +1001,7 @@ CMAtuning = ParametrizedCMA(
 
 @registry.register
 class MetaCMA(ChoiceBase):  # Adds Risto's CMA to CMA.
-    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
+    """Nevergrad CMA optimizer by competence map. You might modify this one for designing your own competence map."""
 
     def _select_optimizer_cls(self) -> base.OptCls:
         if (
@@ -1066,14 +1069,9 @@ class _PopulationSizeController:
 # pylint: disable=too-many-instance-attributes
 @registry.register
 class EDA(base.Optimizer):
-    """Test-based population-size adaptation.
+    """Estimation of distribution algorithm.
 
-    Population-size equal to lambda = 4 x dimension.
-    Test by comparing the first fifth and the last fifth of the 5lambda evaluations.
-
-    Caution
-    -------
-    This optimizer is probably wrong.
+    Population-size equal to lambda = 4 x dimension by default.
     """
 
     _POPSIZE_ADAPTATION = False
@@ -1149,14 +1147,11 @@ class EDA(base.Optimizer):
 
 @registry.register
 class AXP(base.Optimizer):
-    """Test-based population-size adaptation.
+    """AX-platform.
 
-    Population-size equal to lambda = 4 x dimension.
-    Test by comparing the first fifth and the last fifth of the 5lambda evaluations.
-
-    Caution
-    -------
-    This optimizer is probably wrong.
+    Usually computationally slow and not better than the rest
+    in terms of performance per iteration.
+    Maybe prefer HyperOpt or Cobyla for low budget optimization.
     """
 
     def __init__(
@@ -1179,10 +1174,6 @@ class AXP(base.Optimizer):
             #                            parameter_constraints=["x + y <= 2.0"],  # Optional.
         )
         self._trials = []
-
-    # def _internal_provide_recommendation(
-    #    self,
-    # ) -> tp.ArrayLike:  # This is NOT the naive version. We deal with noise.
 
     def _internal_ask_candidate(self) -> p.Parameter:
         def invsig(x):
@@ -2376,7 +2367,7 @@ def rescaled(n: int, o: tp.Any):
 
 @registry.register
 class MultiBFGSPlus(Portfolio):
-    """Passive portfolio of MetaCMA and many SQP."""
+    """Passive portfolio of several BFGS."""
 
     def __init__(
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
@@ -2395,7 +2386,7 @@ class MultiBFGSPlus(Portfolio):
 
 @registry.register
 class LogMultiBFGSPlus(Portfolio):
-    """Passive portfolio of MetaCMA and many SQP."""
+    """Passive portfolio of several BFGS (at least logarithmic in the budget)."""
 
     def __init__(
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
@@ -2416,7 +2407,7 @@ class LogMultiBFGSPlus(Portfolio):
 
 @registry.register
 class SqrtMultiBFGSPlus(Portfolio):
-    """Passive portfolio of MetaCMA and many SQP."""
+    """Passive portfolio of several BFGS (at least sqrt of budget)."""
 
     def __init__(
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
@@ -2454,7 +2445,7 @@ class MultiCobylaPlus(Portfolio):
 
 @registry.register
 class MultiSQPPlus(Portfolio):
-    """Passive portfolio of MetaCMA and many SQP."""
+    """Passive portfolio of several SQP."""
 
     def __init__(
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
@@ -2473,7 +2464,7 @@ class MultiSQPPlus(Portfolio):
 
 @registry.register
 class BFGSCMAPlus(Portfolio):
-    """Passive portfolio of MetaCMA and many BFGS."""
+    """Passive portfolio of CMA and several BFGS; at least log(budget)."""
 
     def __init__(
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
@@ -2496,7 +2487,7 @@ class BFGSCMAPlus(Portfolio):
 
 @registry.register
 class LogBFGSCMAPlus(Portfolio):
-    """Passive portfolio of MetaCMA and many BFGS."""
+    """Passive portfolio of CMA and several BFGS; at least log(budget)."""
 
     def __init__(
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
@@ -2521,7 +2512,7 @@ class LogBFGSCMAPlus(Portfolio):
 
 @registry.register
 class SqrtBFGSCMAPlus(Portfolio):
-    """Passive portfolio of MetaCMA and many BFGS."""
+    """Passive portfolio of CMA and several BFGS; at least sqrt(budget)."""
 
     def __init__(
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
@@ -2546,7 +2537,7 @@ class SqrtBFGSCMAPlus(Portfolio):
 
 @registry.register
 class SQPCMAPlus(Portfolio):
-    """Passive portfolio of MetaCMA and many SQP."""
+    """Passive portfolio of CMA and several SQP."""
 
     def __init__(
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
@@ -2569,7 +2560,7 @@ class SQPCMAPlus(Portfolio):
 
 @registry.register
 class LogSQPCMAPlus(Portfolio):
-    """Passive portfolio of MetaCMA and many SQP."""
+    """Passive portfolio of CMA and several SQP."""
 
     def __init__(
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
@@ -2619,7 +2610,7 @@ class SqrtSQPCMAPlus(Portfolio):
 
 @registry.register
 class MultiBFGS(Portfolio):
-    """Passive portfolio of MetaCMA and many SQP."""
+    """Passive portfolio of many BFGS."""
 
     def __init__(
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
@@ -2636,7 +2627,7 @@ class MultiBFGS(Portfolio):
 
 @registry.register
 class LogMultiBFGS(Portfolio):
-    """Passive portfolio of MetaCMA and many SQP."""
+    """Passive portfolio of many BFGS."""
 
     def __init__(
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
@@ -2655,7 +2646,7 @@ class LogMultiBFGS(Portfolio):
 
 @registry.register
 class SqrtMultiBFGS(Portfolio):
-    """Passive portfolio of MetaCMA and many SQP."""
+    """Passive portfolio of many BFGS."""
 
     def __init__(
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
@@ -2674,7 +2665,7 @@ class SqrtMultiBFGS(Portfolio):
 
 @registry.register
 class MultiCobyla(Portfolio):
-    """Passive portfolio of MetaCMA and many SQP."""
+    """Passive portfolio of several Cobyla."""
 
     def __init__(
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
@@ -2691,7 +2682,7 @@ class MultiCobyla(Portfolio):
 
 @registry.register
 class ForceMultiCobyla(Portfolio):
-    """Passive portfolio of MetaCMA and many SQP."""
+    """Passive portfolio of several Cobyla."""
 
     def __init__(
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1
@@ -2709,7 +2700,7 @@ class ForceMultiCobyla(Portfolio):
 
 @registry.register
 class MultiSQP(Portfolio):
-    """Passive portfolio of MetaCMA and many SQP."""
+    """Passive portfolio of several SQP."""
 
     def __init__(
         self, parametrization: IntOrParameter, budget: tp.Optional[int] = None, num_workers: int = 1

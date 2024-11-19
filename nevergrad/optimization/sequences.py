@@ -144,7 +144,7 @@ class HaltonPermutationGenerator:
         self.scrambling = scrambling
         self.primes = _get_first_primes(dimension).tolist()
         self.seed = random_state.randint(2**32, dtype=np.uint32)
-        self.fulllist = np.arange(self.primes[-1]) if self.primes else []
+        self.fulllist = np.arange(self.primes[-1]) if self.primes else []  # type: ignore
 
     def get_permutations_generator(self) -> tp.Iterator[tp.ArrayLike]:
         if self.scrambling:

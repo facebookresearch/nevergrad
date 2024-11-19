@@ -3,6 +3,7 @@
 echo DEPRECATED
 
 exit 1
+
 (
 echo 'import matplotlib'
 echo 'import matplotlib.pyplot as plt'
@@ -26,6 +27,7 @@ echo  "labels = []"
 echo  "numbers = []"
 echo "# $num best"
 for a in RandomSearch AXP Cobyla PCABO SMAC3 NgIohTuned PymooBIPOP CMA PSO SQOPSO DE DiscreteLenglerOnePlusOne DiscreteOnePlusOne OnePlusOne DSproba MetaModel LognormalDiscreteOnePlusOne 
+
 do
 echo -n "# $a is in the $num best in this number of problems:"
 number=$( 
