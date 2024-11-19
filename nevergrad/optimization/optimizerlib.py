@@ -1188,6 +1188,7 @@ class AXP(base.Optimizer):
         def invsig(x):
             def p(x):
                 return np.clip(x, 1e-15, 1.0 - 1e-15)
+
             return np.log(p(x) / (1 - p(x)))
 
         if len(self._trials) == 0:
@@ -3977,8 +3978,8 @@ class Shiwa(NGOptBase):
         return optCls
 
 
-#@registry.register
-#class MetaBO(NGOptBase):
+# @registry.register
+# class MetaBO(NGOptBase):
 #    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
 #
 #    def _select_optimizer_cls(self) -> base.OptCls:

@@ -448,7 +448,11 @@ def create_plots(
         data = XpPlotter.make_data(df, normalized_loss=True)
         for pure_only in [False, True]:
             xpplotter = XpPlotter(
-                data, title=os.path.basename(output_folder), name_style=name_style, xaxis=xpaxis, pure_only=pure_only
+                data,
+                title=os.path.basename(output_folder),
+                name_style=name_style,
+                xaxis=xpaxis,
+                pure_only=pure_only,
             )
     except Exception as e:
         lower = 0
