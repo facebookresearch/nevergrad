@@ -1173,10 +1173,7 @@ class AXP(base.Optimizer):
             objectives={"result": ObjectiveProperties(minimize=True)},
             #                            parameter_constraints=["x + y <= 2.0"],  # Optional.
         )
-
-    # def _internal_provide_recommendation(
-    #    self,
-    # ) -> tp.ArrayLike:  # This is NOT the naive version. We deal with noise.
+        self._trials = []  # type: ignore
 
     def _internal_ask_candidate(self) -> p.Parameter:
         def invsig(x):
@@ -1185,11 +1182,14 @@ class AXP(base.Optimizer):
 
             return np.log(p(x) / (1 - p(x)))
 
-        trial_index_to_param, _ = self.ax_client.get_next_trials(max_trials=1)
-        assert len(trial_index_to_param) == 1
+        if len(self._trials) == 0:
+            trial_index_to_param, _ = self.ax_client.get_next_trials(max_trials=1)
+            for _, _trial in trial_index_to_param.items():
+                trial = _trial
+                self._trials += [trial]
+        trial = self._trials[0]
+        self._trials = self._trials[1:]
         vals = np.zeros(self.dimension)
-        for _, _trial in trial_index_to_param.items():
-            trial = _trial
         for i in range(self.dimension):
             vals[i] = invsig(trial["x" + str(i)])
         candidate = self.parametrization.spawn_child().set_standardized_data(vals)
@@ -3969,6 +3969,13 @@ class Shiwa(NGOptBase):
         return optCls
 
 
+# @registry.register
+# class MetaBO(NGOptBase):
+#    """Nevergrad optimizer by competence map. You might modify this one for designing your own competence map."""
+#
+#    def _select_optimizer_cls(self) -> base.OptCls:
+#        optCls: base.OptCls = NGOptBase
+#        funcinfo = self.parametrization.function
 @registry.register
 class NGO(NGOptBase):  # compatibility
     pass

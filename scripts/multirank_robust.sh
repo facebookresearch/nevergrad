@@ -3,7 +3,6 @@
 echo DEPRECATED
 
 exit 1
-
 (
 echo 'import matplotlib'
 echo 'import matplotlib.pyplot as plt'
@@ -20,27 +19,26 @@ do
 for num in 1 2 4 8 
 do
 echo  "num=$num"
-echo  "numt=$( ls rnk* | wc -l )"
+echo  "numt=$( ls */*.cp.txt | wc -l )"
 echo  "title=f'How many times in the {num} best ? out of {numt}'"
 echo 'plt.clf()'
 echo  "labels = []"
 echo  "numbers = []"
 echo "# $num best"
 for a in RandomSearch AXP Cobyla PCABO SMAC3 NgIohTuned PymooBIPOP CMA PSO SQOPSO DE DiscreteLenglerOnePlusOne DiscreteOnePlusOne OnePlusOne DSproba MetaModel LognormalDiscreteOnePlusOne 
-
 do
 echo -n "# $a is in the $num best in this number of problems:"
 number=$( 
-for k in rnk*.txt
+for k in */*.cp.txt
 do
-if [ "$ag" == yes ]; then
+if [ "$ag" == yes  ]; then
     grep ':' $k | grep -v ' AX ' | sed 's/.*://g' | sed 's/ (.*//g' | egrep '[a-zA-Z0-9]' | egrep -v ' NgIohTuned | NGDSRW | AX | SMAC3 | LognormalDiscreteOnePlusOne | PCABO | PSO | PymooBIPOP | CMA ' | head -n $num | grep "^ $a$"
 else
-    grep ':' $k | grep -v ' AX ' | grep -v ' NGDSRW ' | sed 's/.*://g' | sed 's/ (.*//g' | egrep '[a-zA-Z0-9]' | head -n $num | grep "^ $a$"
+    grep ':' $k | grep -v ' AX ' | grep -v 'NGDSRW ' | sed 's/.*://g' | sed 's/ (.*//g' | egrep '[a-zA-Z0-9]' | head -n $num | grep "^ $a$"
 fi
 done | wc -l )
 echo $number
-if [ "$ag" == yes ]; then
+if [ "$ag" == yes  ]; then
 echo "labels += [\" $a \" + '(' + str( $number ) + ')' ];numbers += [ $number + .2 ]" | egrep -v ' NgIohTuned | NGDSRW | AX | SMAC3 | PCABO | PSO | PymooBIPOP | CMA | LognormalDiscreteOnePlusOne '
 else
 echo "labels += [\" $a \" + '(' + str( $number ) + ')' ];numbers += [ $number + .2 ]"
@@ -48,10 +46,10 @@ fi
 done
 echo "plt.pie(numbers, labels=labels)"
 echo "plt.title(title)"
-if [ "$ag" == yes ]; then
-echo "plt.savefig(f'agpie{num}.png')"
+if [ "$ag" == "yes" ]; then
+echo "plt.savefig(f'agpierob{num}.png')"
 else
-echo "plt.savefig(f'pie{num}.png')"
+echo "plt.savefig(f'pierob{num}.png')"
 fi
 done
 done

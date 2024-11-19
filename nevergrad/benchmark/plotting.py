@@ -402,6 +402,12 @@ def create_plots(
             name = "fight_all.png" if name == "fight_.png" else name
             name = compactize(name)
             fullname = name
+            if name == "fight_all.png":
+                with open(str(output_folder / name) + ".cp.txt", "w") as f:
+                    f.write(fullname)
+                    f.write("ranking:\n")
+                    for i, algo in enumerate(data_df.columns[:158]):
+                        f.write(f"  algo {i}: {algo}\n")
 
             if len(name) > 240:
                 hashcode = hashlib.md5(bytes(name, "utf8")).hexdigest()
@@ -415,13 +421,8 @@ def create_plots(
             )
             fplotter = FightPlotter(data_df)
             if name == "fight_all.png":
-                with open(str(output_folder / name) + ".cp.txt", "w") as f:
-                    f.write(fullname)
-                    f.write("ranking:\n")
-                    global pure_algorithms
-                    pure_algorithms = list(data_df.columns[:])
-                    for i, algo in enumerate(data_df.columns[:158]):
-                        f.write(f"  algo {i}: {algo}\n")
+                global pure_algorithms
+                pure_algorithms = list(data_df.columns[:])
             if name == "fight_all.png":
                 fplotter.save(str(output_folder / "fight_all_pure.png"), dpi=_DPI)
             else:
@@ -445,9 +446,14 @@ def create_plots(
     out_filepath = output_folder / "xpresults_all.png"
     try:
         data = XpPlotter.make_data(df, normalized_loss=True)
-        xpplotter = XpPlotter(
-            data, title=os.path.basename(output_folder), name_style=name_style, xaxis=xpaxis, pure_only=True
-        )
+        for pure_only in [False, True]:
+            xpplotter = XpPlotter(
+                data,
+                title=os.path.basename(output_folder),
+                name_style=name_style,
+                xaxis=xpaxis,
+                pure_only=pure_only,
+            )
     except Exception as e:
         lower = 0
         upper = len(df)
@@ -636,11 +642,11 @@ class XpPlotter:
             sorted_optimizers = [
                 o for o in sorted_optimizers if o + " " in [p[: (len(o) + 1)] for p in pure_algorithms]
             ]
-            with open("rnk__" + str(title) + ".cp.txt", "w") as f:
-                f.write(compactize(title))
-                f.write("ranking:\n")
-                for i, algo in reversed(list(enumerate(sorted_optimizers))):
-                    f.write(f"  algo {i}: {algo} (x)\n")
+        with open(("rnk__" if not pure_only else "rnkpure__") + str(title) + ".cp.txt", "w") as f:
+            f.write(compactize(title))
+            f.write("ranking:\n")
+            for i, algo in reversed(list(enumerate(sorted_optimizers))):
+                f.write(f"  algo {i}: {algo} (x)\n")
             # print(sorted_optimizers, " merged with ", pure_algorithms)
             # print("Leads to ", sorted_optimizers)
         self._fig = plt.figure()
