@@ -3,9 +3,9 @@
 pbs=`ls rnk*.txt | sed 's/rnk__//g' | sed 's/_plots.*//g'`
 
 (
-echo '\begin{tabular}{|c|c|c|c|}'
+echo '\begin{tabular}{|p{2cm}|c|c|c|}'
 echo '\hline'
-echo 'Best algorithm & Dimension & Budget & Problem name \\'
+echo 'Best algorithm & Problem name & Dimension & Budget \\'
 echo '\hline'
 
 for pb in $pbs

@@ -54,33 +54,41 @@ from . import gymexperiments  # noqa
 #    list_optims = ["QOTPDE", "LQOTPDE", "LQODE"]
 #    list_optims = ["SPQODE", "SQOPSO", "DiagonalCMA"]
 def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
-    #     return list(
-    #         np.random.choice(
-    #             [
-    #                 "RandomSearch",
-    #                 "AXP",
-    #                 "LognormalDiscreteOnePlusOne",
-    #                 "AX",
-    #                 "CMA",
-    #                 "Cobyla",
-    #                 "PCABO",
-    #                 "SMAC3",
-    #                 "NgIohTuned",
-    #                 "NGDSRW",
-    #                 "PymooBIPOP",
-    #                 "CMA",
-    #                 "PSO",
-    #                 "SQOPSO",
-    #                 "DE",
-    #                 "DiscreteLenglerOnePlusOne",
-    #                 "DiscreteOnePlusOne",
-    #                 "OnePlusOne",
-    #                 "DSproba",
-    #                 "MetaModel",
-    #             ],
-    #             1,
-    #         )
-    #     )
+    #return ["SMAC3"]
+    #return ["AXP"]
+    #return [ "RandomSearch","Cobyla","NgIohTuned","PymooBIPOP","CMA","PSO","SQOPSO","DE","DiscreteLenglerOnePlusOne","DiscreteOnePlusOne","OnePlusOne","DSproba","MetaModel","LognormalDiscreteOnePlusOne","CauchyRandomSearch","RandomScaleRandomSearchPlusMiddlePoint","HullAvgMetaTuneRecentering","HyperOpt","NGDSRW"]
+    return [np.random.choice([ "RandomSearch","AXP","Cobyla","PCABO","SMAC3","NgIohTuned","PymooBIPOP","CMA","PSO","SQOPSO","DE","DiscreteLenglerOnePlusOne","DiscreteOnePlusOne","OnePlusOne","DSproba","MetaModel","LognormalDiscreteOnePlusOne","CauchyRandomSearch","RandomScaleRandomSearchPlusMiddlePoint","HullAvgMetaTuneRecentering","HyperOpt","NGDSRW"])]
+    return ["RandomSearch"]
+    return ["HyperOpt"]
+    return ["CauchyRandomSearch"]
+    return ["RandomScaleRandomSearchPlusMiddlePoint"]
+    return ["HullAvgMetaTuneRecentering"]
+    return list(
+             np.random.choice(
+                 [
+                     "RandomSearch",
+                     "AXP",
+                     "LognormalDiscreteOnePlusOne",
+                     "CMA",
+                     "Cobyla",
+                     "PCABO",
+                     "SMAC3",
+                     "NgIohTuned",
+                     "NGDSRW",
+                     "PymooBIPOP",
+                     "CMA",
+                     "PSO",
+                     "SQOPSO",
+                     "DE",
+                     "DiscreteLenglerOnePlusOne",
+                     "DiscreteOnePlusOne",
+                     "OnePlusOne",
+                     "DSproba",
+                     "MetaModel",
+                 ],
+                 1,
+             )
+    )
     #     return [
     #         np.random.choice(["RandomSearch", "AX", "CMA", "Cobyla", "PCABO", "SMAC3", "NgIohTuned", "NGDSRW"])
     #     ]

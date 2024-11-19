@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import numpy as np
 import os
 import typing as tp
 from nevergrad.functions import gym as nevergrad_gym
@@ -22,6 +23,16 @@ def gym_problem_modifier(specific_problem):
 
 
 def gym_optimizer_modifier(optims):
+    return [np.random.choice([ "RandomSearch","AXP","Cobyla","PCABO","SMAC3","NgIohTuned","PymooBIPOP","CMA","PSO","SQOPSO","DE","DiscreteLenglerOnePlusOne","DiscreteOnePlusOne","OnePlusOne","DSproba","MetaModel","LognormalDiscreteOnePlusOne","CauchyRandomSearch","RandomScaleRandomSearchPlusMiddlePoint","HullAvgMetaTuneRecentering","HyperOpt","NGDSRW"])]
+    return [ "RandomSearch","Cobyla","NgIohTuned","PymooBIPOP","CMA","PSO","SQOPSO","DE","DiscreteLenglerOnePlusOne","DiscreteOnePlusOne","OnePlusOne","DSproba","MetaModel","LognormalDiscreteOnePlusOne","CauchyRandomSearch","RandomScaleRandomSearchPlusMiddlePoint","HullAvgMetaTuneRecentering","HyperOpt","NGDSRW"]
+    return [ "RandomSearch","AXP","Cobyla","PCABO","SMAC3","NgIohTuned","PymooBIPOP","CMA","PSO","SQOPSO","DE","DiscreteLenglerOnePlusOne","DiscreteOnePlusOne","OnePlusOne","DSproba","MetaModel","LognormalDiscreteOnePlusOne","CauchyRandomSearch","RandomScaleRandomSearchPlusMiddlePoint","HullAvgMetaTuneRecentering","HyperOpt","NGDSRW"]
+    return ["RandomSearch"]
+    return ["HyperOpt"]
+    return ["CauchyRandomSearch"]
+    return ["RandomScaleRandomSearchPlusMiddlePoint"]
+    return ["HullAvgMetaTuneRecentering"]
+    return ["SMAC3"]
+    return ["AXP"]
     #     return list(
     #         np.random.choice(
     #             [

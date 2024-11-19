@@ -291,6 +291,11 @@ class Experiment:
             try:
                 # call the actual Optimizer.minimize method because overloaded versions could alter the worklflow
                 # and provide unfair comparisons  (especially for parallelized settings)
+                import signal
+                def handler(signum, frame):
+                    raise Exception("Time exceeded!")
+                signal.signal(signal.SIGALRM, handler)
+                signal.alarm(int(2.8 * 3600 * 24))
                 if self.suggestions is not None:
                     for s in self.suggestions:
                         self._optimizer.suggest(s)
@@ -302,6 +307,7 @@ class Experiment:
                     constraint_violation=self.constraint_violation,
                     max_time=3600 * 24 * 2.5,
                 )
+                signal.alarm(0)
             except Exception as e:  # pylint: disable=broad-except
                 self._log_results(pfunc, t0, self._optimizer.num_ask)
                 raise e
