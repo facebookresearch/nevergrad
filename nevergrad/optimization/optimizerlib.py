@@ -1173,7 +1173,7 @@ class AXP(base.Optimizer):
             objectives={"result": ObjectiveProperties(minimize=True)},
             #                            parameter_constraints=["x + y <= 2.0"],  # Optional.
         )
-        self._trials = []
+        self._trials = []  # type: ignore
 
     def _internal_ask_candidate(self) -> p.Parameter:
         def invsig(x):
