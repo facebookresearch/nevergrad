@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+# import numpy as np
 import os
 import typing as tp
 from nevergrad.functions import gym as nevergrad_gym
@@ -22,86 +23,7 @@ def gym_problem_modifier(specific_problem):
 
 
 def gym_optimizer_modifier(optims):
-    #     return list(
-    #         np.random.choice(
-    #             [
-    #                 "RandomSearch",
-    #                 "AXP",
-    #                 "LognormalDiscreteOnePlusOne",
-    #                 "AX",
-    #                 "CMA",
-    #                 "Cobyla",
-    #                 "PCABO",
-    #                 "SMAC3",
-    #                 "NgIohTuned",
-    #                 "NGDSRW",
-    #                 "PymooBIPOP",
-    #                 "CMA",
-    #                 "PSO",
-    #                 "SQOPSO",
-    #                 "DE",
-    #                 "DiscreteLenglerOnePlusOne",
-    #                 "DiscreteOnePlusOne",
-    #                 "OnePlusOne",
-    #                 "DSproba",
-    #                 "MetaModel",
-    #             ],
-    #             1,
-    #         )
-    #     )
-    #     return list(
-    #         np.random.choice(
-    #             [
-    #                 "RandomSearch",
-    #                 "AX",
-    #                 "CMA",
-    #                 "Cobyla",
-    #                 "PCABO",
-    #                 "SMAC3",
-    #                 "NgIohTuned",
-    #                 "NGDSRW",
-    #                 "PymooBIPOP",
-    #                 "CMA",
-    #                 "PSO",
-    #                 "SQOPSO",
-    #                 "DE",
-    #                 "DiscreteLenglerOnePlusOne",
-    #                 "DiscreteOnePlusOne",
-    #                 "OnePlusOne",
-    #                 "DSproba",
-    #                 "MetaModel",
-    #             ],
-    #             3,
-    #         )
-    #     )
-    #     return list(
-    #         np.random.choice(
-    #             [
-    #                 "RandomSearch",
-    #                 "AXP",
-    #                 "LognormalDiscreteOnePlusOne",
-    #                 "AX",
-    #                 "CMA",
-    #                 "Cobyla",
-    #                 "PCABO",
-    #                 "SMAC3",
-    #                 "NgIohTuned",
-    #                 "NGDSRW",
-    #                 "PymooBIPOP",
-    #                 "CMA",
-    #                 "PSO",
-    #                 "SQOPSO",
-    #                 "DE",
-    #                 "DiscreteLenglerOnePlusOne",
-    #                 "DiscreteOnePlusOne",
-    #                 "OnePlusOne",
-    #                 "DSproba",
-    #                 "MetaModel",
-    #             ],
-    #             1,
-    #         )
-    #     )
-    print(optims)
+
     if os.environ.get("GYM_OPTIMIZER") is not None:
         optimizer_string = os.environ.get("GYM_OPTIMIZER")
         print(f"Considering optimizers with {optimizer_string} in their name.")
