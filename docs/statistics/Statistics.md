@@ -1,9 +1,10 @@
 This page records statistics on the benchmarks in Nevergrad.
 
-In all cases, we count 0.1 instead of 0 for making figures more readable.
+In all cases, we count +0.2 for making figures more readable (so these figures are not exactly proportional).
 Overall, the result is that the wizard NgIohTuned performs best.
-As NgIohTuned is a wizard and the present document compares many methods possibly close to each other, we maintain another page [[AgStatistics]]
-which uses only one method per category (e.g. Random Search, Bayesian Optimization, Evolutionary Computation, Direct Search, Differential Evolution, Particle Swarm Optimization...).
+As NgIohTuned is a wizard, and given that it is tuned on the same benchamrks, and also because the present document compares many methods possibly close to each other, we maintain another page [[AgStatistics]]
+which uses only one method per category (e.g. Random Search, Bayesian Optimization, Evolutionary Computation, Direct Search, Differential Evolution, Particle Swarm Optimization...) and excludes wizards and excludes methods tuned on Nevergrad benchmarks.
+
 # Comparison on all benchmarks, for the simple regret criterion: the wizard performs best
 We record the number of times each algorithm performs best, for the simple regret criterion.
 
