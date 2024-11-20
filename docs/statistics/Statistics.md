@@ -1,6 +1,6 @@
 This page records statistics on the benchmarks in Nevergrad.
 
-In all cases, we count 0.1 instead of 0 for making figures more readable.
+In all cases, we count +0.2 for making figures more readable (so this figures are not exactly proportional).
 Overall, the result is that the wizard NgIohTuned performs best.
 As NgIohTuned is a wizard and the present document compares many methods possibly close to each other, we maintain another page [[AgStatistics]]
 which uses only one method per category (e.g. Random Search, Bayesian Optimization, Evolutionary Computation, Direct Search, Differential Evolution, Particle Swarm Optimization...).
