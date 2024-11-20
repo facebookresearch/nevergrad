@@ -3,7 +3,7 @@ Contrarily to [[Statistics]], we here exclude wizards and consider only one meth
 
 Overall, we get excellent for discrete optimization methods, because they are compatible with any search space, any context, and methods (such as wizards) which adapt to different contexts are excluded.
 
-In all cases, we count 0.1 instead of 0 for making figures more readable.
+In all cases, we count +0.2 for making figures more readable (so this figures are not exactly proportional).
 
 
 # Comparison on all benchmarks, for the simple regret criterion: the wizard performs best
