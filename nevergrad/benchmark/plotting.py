@@ -219,7 +219,7 @@ def normalized_losses(df: pd.DataFrame, descriptors: tp.List[str]) -> utils.Sele
         subdf = df.select_and_drop(**dict(zip(descriptors, case)))
         losses = np.array(subdf.loc[:, "loss"])
         m = min(losses)
-        M = max(losses[losses < (float("inf") if no_limit else float("1e6"))])
+        M = max(losses[losses < (float("inf") if no_limit else float("1e26"))])
         df.loc[subdf.index, "loss"] = (df.loc[subdf.index, "loss"] - m) / (M - m) if M != m else 1
     return df  # type: ignore
 
@@ -254,8 +254,8 @@ def create_plots(
     df.loc[:, "loss"] = pd.to_numeric(df.loc[:, "loss"])
     if not no_limit:
         loss = pd.to_numeric(df.loc[:, "loss"])
-        upper = np.max(loss[loss < 1e6])
-        df.loc[:, "loss"] = df.loc[:, "loss"].clip(lower=-1e6, upper=upper)
+        upper = np.max(loss[loss < 1e26])
+        df.loc[:, "loss"] = df.loc[:, "loss"].clip(lower=-1e26, upper=upper)
     df = df.loc[:, [x for x in df.columns if not x.startswith("info/")]]
     # Normalization of types.
     for col in df.columns:
