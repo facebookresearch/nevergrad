@@ -1679,7 +1679,7 @@ class _Cauchized(base.Optimizer):
         x = self.parametrization.sample()
         y = self.rescale_candidate(x)
         xp = self.rescale_candidate(y, inverse=True)
-        assert np.sum((xp.value - x.value) ** 2)
+        assert np.sum((xp.value - x.value) ** 2) < 0.01 * np.sum((x.value)**2)
         # if scale is None:
         #    assert self.budget is not None, "Either scale or budget must be known in _Rescaled."
         #    scale = math.sqrt(math.log(self.budget) / self.dimension)
