@@ -1660,6 +1660,61 @@ class _Rescaled(base.Optimizer):
         self._optimizer.enable_pickling()
 
 
+class _Cauchized(base.Optimizer):
+    """Proposes a version of a base optimizer which works at a different scale."""
+
+    def __init__(
+        self,
+        parametrization: IntOrParameter,
+        budget: tp.Optional[int] = None,
+        num_workers: int = 1,
+        base_optimizer: base.OptCls = MetaCMA,
+        # scale: tp.Optional[float] = None,
+        # shift: tp.Optional[float] = None,
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        self._optimizer = base_optimizer(self.parametrization, budget=budget, num_workers=num_workers)
+        self.no_parallelization = self._optimizer.no_parallelization
+        self._subcandidates: tp.Dict[str, p.Parameter] = {}
+        x = self.parametrization.sample()
+        y = self.rescale_candidate(x)
+        xp = self.rescale_candidate(y, inverse=True)
+        assert np.sum((xp.value - x.value) ** 2)
+        # if scale is None:
+        #    assert self.budget is not None, "Either scale or budget must be known in _Rescaled."
+        #    scale = math.sqrt(math.log(self.budget) / self.dimension)
+        # self.scale = scale
+        # self.shift = shift
+        # assert self.scale != 0.0, "scale should be non-zero in Rescaler."
+
+    def rescale_candidate(self, candidate: p.Parameter, inverse: bool = False) -> p.Parameter:
+        data = candidate.get_standardized_data(reference=self.parametrization)
+        # if self.shift is not None:
+        #    data = data + self.shift * np.random.randn(self.dimension)
+        # scale = self.scale if not inverse else 1.0 / self.scale
+        return self.parametrization.spawn_child().set_standardized_data(
+            np.sign(data) * np.abs(data) ** (1.0 / 3.0 if inverse else 3.0)
+        )
+        # return self.parametrization.spawn_child().set_standardized_data(data**(1./3. if inverse else 3.))
+
+    def _internal_ask_candidate(self) -> p.Parameter:
+        candidate = self._optimizer.ask()
+        sent_candidate = self.rescale_candidate(candidate)
+        # We store the version corresponding to the underlying optimizer.
+        self._subcandidates[sent_candidate.uid] = candidate
+        return sent_candidate
+
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        self._optimizer.tell(self._subcandidates.pop(candidate.uid), loss)
+
+    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        candidate = self.rescale_candidate(candidate, inverse=True)
+        self._optimizer.tell(candidate, loss)
+
+    def enable_pickling(self) -> None:
+        self._optimizer.enable_pickling()
+
+
 class Rescaled(base.ConfiguredOptimizer):
     """Configured optimizer for creating rescaled optimization algorithms.
 
@@ -1682,6 +1737,26 @@ class Rescaled(base.ConfiguredOptimizer):
         shift: tp.Optional[float] = None,
     ) -> None:
         super().__init__(_Rescaled, locals())
+
+
+class Cauchized(base.ConfiguredOptimizer):
+    """Configured optimizer for creating cauchized optimization algorithms.
+
+    Parameters
+    ----------
+    base_optimizer: base.OptCls
+        optimization algorithm to be rescaled.
+    """
+
+    # pylint: disable=unused-argument
+    def __init__(
+        self,
+        *,
+        base_optimizer: base.OptCls = MetaCMA,
+        #    scale: tp.Optional[float] = None,
+        #    shift: tp.Optional[float] = None,
+    ) -> None:
+        super().__init__(_Cauchized, locals())
 
 
 RescaledCMA = Rescaled().set_name("RescaledCMA", register=True)
@@ -7678,6 +7753,7 @@ class NgIohTuned(CSEC11):
     pass
 
 
+CNgIohTuned = Cauchized(base_optimizer=NgIohTuned)
 # ExtLognormalDiscreteOnePlusOne = Chaining(
 #    [LognormalDiscreteOnePlusOne] * 10, [0.1] * 9, no_crossing=True
 # ).set_name("ExtLognormalDiscreteOnePlusOne", register=True)
