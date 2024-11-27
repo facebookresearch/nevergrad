@@ -14,7 +14,7 @@ from setuptools import find_packages, setup
 from setuptools.command.install import install
 
 
-def is_canonical(version: str) -> bool):
+def is_canonical(version: str) -> bool:
     return (
         re.match(
             r"^([1-9][0-9]*!)?(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*))*((a|b|rc)(0|[1-9][0-9]*))?(\.post(0|[1-9][0-9]*))?(\.dev(0|[1-9][0-9]*))?$",
