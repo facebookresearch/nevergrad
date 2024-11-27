@@ -4,14 +4,24 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import re
 import os
+import re
 import sys
 import typing as tp
 from pathlib import Path
-from setuptools import setup
-from setuptools import find_packages
+
+from setuptools import find_packages, setup
 from setuptools.command.install import install
+
+
+def is_canonical(version: str) -> bool):
+    return (
+        re.match(
+            r"^([1-9][0-9]*!)?(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*))*((a|b|rc)(0|[1-9][0-9]*))?(\.post(0|[1-9][0-9]*))?(\.dev(0|[1-9][0-9]*))?$",
+            version,
+        )
+        is not None
+    )
 
 
 # read requirements
@@ -32,6 +42,7 @@ init_str = Path("nevergrad/__init__.py").read_text()
 match = re.search(r"^__version__ = \"(?P<version>[\w\.]+?)\"$", init_str, re.MULTILINE)
 assert match is not None, "Could not find version in nevergrad/__init__.py"
 version = match.group("version")
+assert is_canonical(version), f"Version {version} is not canonical"
 
 
 def _replace_relative_links(regex: tp.Match[str]) -> str:
