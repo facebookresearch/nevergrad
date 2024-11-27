@@ -3,14 +3,14 @@ runs:
   using: composite
   steps:
   - uses: actions/checkout@v4.1.0
-  - name: restore_cache
-    uses: actions/cache@v3.3.2
-    with:
-      key: v4-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
-      path: ./venv
-      restore-keys: |
-        v4-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
-        v4-dependencies-main-{{ checksum "requirements/main.txt"}}
+  # - name: restore_cache
+  #   uses: actions/cache@v3.3.2
+  #   with:
+  #     key: v4-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+  #     path: ./venv
+  #     restore-keys: |
+  #       v4-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+  #       v4-dependencies-main-{{ checksum "requirements/main.txt"}}
   - name: "[all] Install dependencies"
     run: |
       #python3 -m venv venv
