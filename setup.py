@@ -9,6 +9,7 @@ import re
 import sys
 import typing as tp
 from pathlib import Path
+from pprint import pprint
 
 from setuptools import find_packages, setup
 from setuptools.command.install import install
@@ -83,6 +84,8 @@ print(f"{version=}")
 print(f"{long_description=}")
 print(f"{find_packages()=}")
 print(f"{requirements=}")
+
+pprint(dict(os.environ))
 
 # setup
 setup(
