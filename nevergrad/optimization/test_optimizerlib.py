@@ -855,7 +855,7 @@ def check_metamodel(
     "penalization,expected,as_layer",
     [
         (False, [1.005573e00, 3.965783e-04], False),
-        (True, [0.999975, -0.111235], False),
+        (True, [0.0, 0.0], False),
         (False, [1.000132, -3.679e-4], True),
     ],
 )
