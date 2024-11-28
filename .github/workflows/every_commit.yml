@@ -2,79 +2,79 @@ name: facebookresearch/nevergrad/every_commit
 on:
   push:
     branches:
-    - main
+      - main
   pull_request:
 jobs:
   install:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/setup-python@v5
-      with:
-        python-version: '3.9'
-    - uses: actions/checkout@v4.1.0
-    - name: restore_cache
-      uses: actions/cache@v3.3.2
-      with:
-        key: v4-dependencies-main-{{ checksum "requirements/main.txt"}}
-        path: "./venv"
-        restore-keys: v4-dependencies-main-{{ checksum "requirements/main.txt"}}
-    - name: "[no-extra] Install dependencies"
-      run: |
-        rm -rf venv && python3 -m venv venv
-        . venv/bin/activate
-        pip install --progress-bar off pip==23.2
-        pip install --progress-bar off -e .
-    - name: "[no-extra] Print installation"
-      run: |
-        . venv/bin/activate
-        pip freeze
-    - name: "[no-extra] Run basic tests (checking dependencies)"
-      run: |
-        . venv/bin/activate
-        python -m nevergrad.optimization.requirements_check  # calls a bit of everything
-    - uses: "./.github/actions/ubuntu_restore_all"
-    - name: save_cache
-      uses: actions/cache@v3.3.2
-      with:
-        path: "./venv"
-        key: v4-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
-    - name: "[all] Print installation"
-      run: |
-        . venv/bin/activate
-        pip freeze
-    - name: Run wheel and check package
-      run: |
-        . venv/bin/activate
-        pip install wheel
-        rm -rf dist  # make sure it's clean
-        echo "Creating sdist"
-        python setup.py sdist
-        echo "Created sdist, now creating wheel"
-        python setup.py bdist_wheel
-        echo "Created wheel"
-        mkdir nevergrad-build
-        mv dist nevergrad-build/
-        python -c "from pathlib import Path;files = Path('nevergrad.egg-info/SOURCES.txt').read_text().split(); assert 'LICENSE' in files"
-        python3 -m venv test_wheel
-        . test_wheel/bin/activate
-        pip install -U pip
-        cd ..  # don't use nevergrad locally
-        echo "Installing wheel"
-        pip install --progress-bar off repo/nevergrad-build/dist/nevergrad-*any.whl
-        #pip install --progress-bar off --use-deprecated=legacy-resolver repo/nevergrad-build/dist/nevergrad-*any.whl
-        echo "Installed wheel"
-        python -c "from nevergrad import functions;f = functions.ArtificialFunction(name='sphere', block_dimension=2);f([2, 3])"
-    - name: Build docs
-      run: |
-        . venv/bin/activate
-        cd docs/
-        make html
-    - name: Upload static files as artifact
-      id: deployment
-      uses: actions/upload-pages-artifact@v3
-      with:
-        path: docs/_build/html/
-      if: github.event_name != 'pull_request'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+      - uses: actions/checkout@v4.1.0
+      - name: restore_cache
+        uses: actions/cache@v3.3.2
+        with:
+          key: v4-dependencies-main-{{ checksum "requirements/main.txt"}}
+          path: "./venv"
+          restore-keys: v4-dependencies-main-{{ checksum "requirements/main.txt"}}
+      - name: "[no-extra] Install dependencies"
+        run: |
+          rm -rf venv && python3 -m venv venv
+          . venv/bin/activate
+          pip install --progress-bar off pip==23.2
+          pip install --progress-bar off -e .
+      - name: "[no-extra] Print installation"
+        run: |
+          . venv/bin/activate
+          pip freeze
+      - name: "[no-extra] Run basic tests (checking dependencies)"
+        run: |
+          . venv/bin/activate
+          python -m nevergrad.optimization.requirements_check  # calls a bit of everything
+      - uses: "./.github/actions/ubuntu_restore_all"
+      - name: save_cache
+        uses: actions/cache@v3.3.2
+        with:
+          path: "./venv"
+          key: v4-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
+      - name: "[all] Print installation"
+        run: |
+          . venv/bin/activate
+          pip freeze
+      - name: Run wheel and check package
+        run: |
+          . venv/bin/activate
+          pip install wheel
+          rm -rf dist  # make sure it's clean
+          echo "Creating sdist"
+          python setup.py sdist
+          echo "Created sdist, now creating wheel"
+          python setup.py bdist_wheel
+          echo "Created wheel"
+          mkdir nevergrad-build
+          mv dist nevergrad-build/
+          python -c "from pathlib import Path;files = Path('nevergrad.egg-info/SOURCES.txt').read_text().split(); assert 'LICENSE' in files"
+          python3 -m venv test_wheel
+          . test_wheel/bin/activate
+          pip install -U pip
+          cd ..  # don't use nevergrad locally
+          echo "Installing wheel"
+          pip install --progress-bar off repo/nevergrad-build/dist/nevergrad-*any.whl
+          #pip install --progress-bar off --use-deprecated=legacy-resolver repo/nevergrad-build/dist/nevergrad-*any.whl
+          echo "Installed wheel"
+          python -c "from nevergrad import functions;f = functions.ArtificialFunction(name='sphere', block_dimension=2);f([2, 3])"
+      - name: Build docs
+        run: |
+          . venv/bin/activate
+          cd docs/
+          make html
+      - name: Upload static files as artifact
+        id: deployment
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/_build/html/
+        if: github.event_name != 'pull_request'
   deploy-docs:
     environment:
       name: github-pages
@@ -88,38 +88,38 @@ jobs:
   static:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/setup-python@v5
-      with:
-        python-version: '3.9'
-    - uses: actions/checkout@v4.1.0
-    - uses: "./.github/actions/ubuntu_restore_all"
-    - name: Run mypy
-      run: |
-        . venv/bin/activate
-        mypy --version
-        mypy nevergrad
-    - name: Run basic pylint
-      run: |
-        . venv/bin/activate
-        pylint --version
-        pylint nevergrad --disable=all --enable=unused-import,unused-argument,unused-variable,undefined-loop-variable,redefined-builtin,used-before-assignment,super-init-not-called,useless-super-delegation,dangerous-default-value,unnecessary-pass,attribute-defined-outside-init
-    - name: Run black
-      run: |
-        . venv/bin/activate
-        pip install black
-        black --version
-        black nevergrad --check --diff
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+      - uses: actions/checkout@v4.1.0
+      - uses: "./.github/actions/ubuntu_restore_all"
+      - name: Run mypy
+        run: |
+          . venv/bin/activate
+          mypy --version
+          mypy nevergrad
+      - name: Run basic pylint
+        run: |
+          . venv/bin/activate
+          pylint --version
+          pylint nevergrad --disable=all --enable=unused-import,unused-argument,unused-variable,undefined-loop-variable,redefined-builtin,used-before-assignment,super-init-not-called,useless-super-delegation,dangerous-default-value,unnecessary-pass,attribute-defined-outside-init
+      - name: Run black
+        run: |
+          . venv/bin/activate
+          pip install black
+          black --version
+          black nevergrad --check --diff
   pytests:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/setup-python@v5
-      with:
-        python-version: '3.9'
-    - uses: actions/checkout@v4.1.0
-    - uses: "./.github/actions/ubuntu_restore_all"
-    - name: "[all] Run pytest"
-      run: |
-        . venv/bin/activate
-        pip install pytest
-        pytest --circleci-parallelize nevergrad -v --durations=20 --cov=nevergrad
-        #pytest nevergrad -v --exitfirst --durations=20 --cov=nevergrad
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+      - uses: actions/checkout@v4.1.0
+      - uses: "./.github/actions/ubuntu_restore_all"
+      - name: "[all] Run pytest"
+        run: |
+          . venv/bin/activate
+          pip install pytest
+          pytest --circleci-parallelize nevergrad -v --durations=20 --cov=nevergrad
+          #pytest nevergrad -v --exitfirst --durations=20 --cov=nevergrad

@@ -14,11 +14,12 @@ from setuptools import find_packages, setup
 from setuptools.command.install import install
 
 
-def is_canonical(version: str) -> bool:
+def is_canonical(version_str: str) -> bool:
     return (
         re.match(
-            r"^([1-9][0-9]*!)?(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*))*((a|b|rc)(0|[1-9][0-9]*))?(\.post(0|[1-9][0-9]*))?(\.dev(0|[1-9][0-9]*))?$",
-            version,
+            r"^([1-9][0-9]*!)?(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*))*"
+            + r"((a|b|rc)(0|[1-9][0-9]*))?(\.post(0|[1-9][0-9]*))?(\.dev(0|[1-9][0-9]*))?$",
+            version_str,
         )
         is not None
     )
@@ -77,6 +78,11 @@ class VerifyCircleCiVersionCommand(install):  # type: ignore
             info = f"Git tag: {tag} does not match the version of this app: {version}"
             sys.exit(info)
 
+
+print(f"{version=}")
+print(f"{long_description=}")
+print(f"{find_packages()=}")
+print(f"{requirements=}")
 
 # setup
 setup(
