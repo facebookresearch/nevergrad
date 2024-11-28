@@ -60,6 +60,7 @@ jobs:
           pip install -U pip
           cd ..  # don't use nevergrad locally
           echo "Installing wheel"
+          pwd
           pip install --progress-bar off repo/nevergrad-build/dist/nevergrad-*any.whl
           #pip install --progress-bar off --use-deprecated=legacy-resolver repo/nevergrad-build/dist/nevergrad-*any.whl
           echo "Installed wheel"
@@ -121,5 +122,6 @@ jobs:
         run: |
           . venv/bin/activate
           pip install pytest
-          pytest --circleci-parallelize nevergrad -v --durations=20 --cov=nevergrad
+          # PARALLELIZE?
+          pytest nevergrad -v --durations=20 --cov=nevergrad
           #pytest nevergrad -v --exitfirst --durations=20 --cov=nevergrad
