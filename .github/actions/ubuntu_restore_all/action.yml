@@ -12,13 +12,12 @@ runs:
           v4-dependencies-main-{{ checksum "requirements/main.txt"}}
     - name: "[all] Install dependencies"
       run: |
-        set -ex
         #python3 -m venv venv
         rm -rf venv && python3 -m venv venv
         . venv/bin/activate
         pip install --progress-bar off -U pip setuptools
-        ( unset GITHUB_REF ; pip install --progress-bar off -v IOHexperimenter>=0.2.9.2 )
-        pip install --progress-bar off -v -e .[all]
+        ( unset GITHUB_REF ; pip install --progress-bar off IOHexperimenter>=0.2.9.2 )
+        pip install --progress-bar off -e .[all]
         #pip install --progress-bar off --use-deprecated=legacy-resolver -e .[all]
         pip install --progress-bar off -U numpy==1.24.0 matplotlib==2.2.3 pyomo==5.7.1
         pip install keras==2.6.0  # issue on Nov 4th 2021

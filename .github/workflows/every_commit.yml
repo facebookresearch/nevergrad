@@ -60,9 +60,8 @@ jobs:
           pip install -U pip
           cd ..  # don't use nevergrad locally
           echo "Installing wheel"
-          pwd
-          pip install --progress-bar off repo/nevergrad-build/dist/nevergrad-*any.whl
-          #pip install --progress-bar off --use-deprecated=legacy-resolver repo/nevergrad-build/dist/nevergrad-*any.whl
+          pip install --progress-bar off nevergrad/nevergrad-build/dist/nevergrad-*any.whl
+          #pip install --progress-bar off --use-deprecated=legacy-resolver nevergrad/nevergrad-build/dist/nevergrad-*any.whl
           echo "Installed wheel"
           python -c "from nevergrad import functions;f = functions.ArtificialFunction(name='sphere', block_dimension=2);f([2, 3])"
       - name: Build docs
@@ -111,7 +110,7 @@ jobs:
           black --version
           black nevergrad --check --diff
   pytests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-16-cores
     steps:
       - uses: actions/setup-python@v5
         with:
@@ -123,5 +122,5 @@ jobs:
           . venv/bin/activate
           pip install pytest
           # PARALLELIZE?
-          pytest nevergrad -v --durations=20 --cov=nevergrad
+          pytest nevergrad -n auto -v --durations=20 --cov=nevergrad
           #pytest nevergrad -v --exitfirst --durations=20 --cov=nevergrad

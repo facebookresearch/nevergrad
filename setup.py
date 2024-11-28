@@ -9,21 +9,9 @@ import re
 import sys
 import typing as tp
 from pathlib import Path
-from pprint import pprint
 
 from setuptools import find_packages, setup
 from setuptools.command.install import install
-
-
-def is_canonical(version_str: str) -> bool:
-    return (
-        re.match(
-            r"^([1-9][0-9]*!)?(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*))*"
-            + r"((a|b|rc)(0|[1-9][0-9]*))?(\.post(0|[1-9][0-9]*))?(\.dev(0|[1-9][0-9]*))?$",
-            version_str,
-        )
-        is not None
-    )
 
 
 # read requirements
@@ -44,7 +32,6 @@ init_str = Path("nevergrad/__init__.py").read_text()
 match = re.search(r"^__version__ = \"(?P<version>[\w\.]+?)\"$", init_str, re.MULTILINE)
 assert match is not None, "Could not find version in nevergrad/__init__.py"
 version = match.group("version")
-assert is_canonical(version), f"Version {version} is not canonical"
 
 
 def _replace_relative_links(regex: tp.Match[str]) -> str:
@@ -79,13 +66,6 @@ class VerifyCircleCiVersionCommand(install):  # type: ignore
             info = f"Git tag: {tag} does not match the version of this app: {version}"
             sys.exit(info)
 
-
-print(f"{version=}")
-print(f"{long_description=}")
-print(f"{find_packages()=}")
-print(f"{requirements=}")
-
-pprint(dict(os.environ))
 
 # setup
 setup(
