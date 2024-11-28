@@ -3,46 +3,45 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import os
-import re
-import sys
-import time
-import random
 import inspect
 import logging
+import os
 import platform
+import random
+import re
+import sys
 import tempfile
+import time
 import warnings
-from pathlib import Path
 from functools import partial
+from pathlib import Path
 from unittest import SkipTest
 from unittest.mock import patch
-import pytest
-import numpy as np
-import pandas as pd
-from scipy import stats
-from scipy.ndimage import gaussian_filter
-from bayes_opt.util import acq_max
 
 # from bayes_opt.util import NotUniqueError
 import nevergrad as ng
 import nevergrad.common.typing as tp
+import numpy as np
+import pandas as pd
+import pytest
+from bayes_opt.util import acq_max
 from nevergrad.common import testing
+from scipy import stats
+from scipy.ndimage import gaussian_filter
 
 # from nevergrad.common import errors
-from . import base
-from . import optimizerlib as optlib
-from . import experimentalvariants as xpvariants
-from . import es
-from .optimizerlib import registry
-from .optimizerlib import NGOptBase
+from . import base, es, experimentalvariants as xpvariants, optimizerlib as optlib
+from .optimizerlib import NGOptBase, registry
 
 
 # decorators to be used when testing on Windows is unecessary
 # or cumbersome
 skip_win_perf = pytest.mark.skipif(
-    sys.platform == "win32", reason="Slow, and no need to test performance on all platforms"
+    sys.platform == "win32",
+    reason="Slow, and no need to test performance on all platforms",
 )
+
+np.random.seed(0)
 
 
 def long_name(s: str):
@@ -195,7 +194,11 @@ def test_ngopt(dim: int, budget_multiplier: int, num_workers: int, bounded: bool
         instrumentation.set_bounds(lower=-12.0, upper=15.0)
     if discrete:
         instrumentation.set_integer_casting()
-    ngopt = optlib.NGOpt(ng.p.Array(shape=(dim,)), budget=budget_multiplier * dim, num_workers=num_workers)
+    ngopt = optlib.NGOpt(
+        ng.p.Array(shape=(dim,)),
+        budget=budget_multiplier * dim,
+        num_workers=num_workers,
+    )
     ngopt.tell(ngopt.ask(), 42.0)
 
 
@@ -242,7 +245,14 @@ def test_infnan(name: str) -> None:
             return
         assert (  # The "bad" algorithms, most of them originating in CMA's recommendation rule.
             any(x == name for x in ["WidePSO", "SPSA", "NGOptBase", "Shiwa", "NGO"])
-            or isinstance(optim, (optlib.Portfolio, optlib._CMA, optlib.recaster.SequentialRecastOptimizer))
+            or isinstance(
+                optim,
+                (
+                    optlib.Portfolio,
+                    optlib._CMA,
+                    optlib.recaster.SequentialRecastOptimizer,
+                ),
+            )
             or "NGOpt" in name
             or "HS" in name
             or "Adapti" in name
@@ -498,7 +508,14 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
         np.random.seed(12)
         random.seed(12)  # may depend on non numpy generator
     # budget=6 by default, larger for special cases needing more
-    budget = {"WidePSO": 100, "PSO": 200, "MEDA": 100, "EDA": 100, "MPCEDA": 100, "TBPSA": 100}.get(name, 6)
+    budget = {
+        "WidePSO": 100,
+        "PSO": 200,
+        "MEDA": 100,
+        "EDA": 100,
+        "MPCEDA": 100,
+        "TBPSA": 100,
+    }.get(name, 6)
     if isinstance(optimizer_cls, (optlib.DifferentialEvolution, optlib.EvolutionStrategy)):
         budget = 80
     dimension = min(16, max(4, int(np.sqrt(budget))))
@@ -704,7 +721,12 @@ def test_bo_init() -> None:
         raise SkipTest("This test fails on Windows, no idea why.")
     arg = ng.p.Scalar(init=4, lower=1, upper=10).set_integer_casting()
     # The test was flaky with normalize_y=True.
-    gp_param = {"alpha": 1e-5, "normalize_y": False, "n_restarts_optimizer": 1, "random_state": None}
+    gp_param = {
+        "alpha": 1e-5,
+        "normalize_y": False,
+        "n_restarts_optimizer": 1,
+        "random_state": None,
+    }
     my_opt = ng.optimizers.ParametrizedBO(gp_parameters=gp_param, initialization=None)
     try:
         optimizer = my_opt(parametrization=arg, budget=10)
@@ -949,7 +971,12 @@ continuous_cases: tp.List[tp.Tuple[str, object, int, int, str]] = [
 )
 @testing.suppress_nevergrad_warnings()
 def test_ngopt_selection(
-    name: str, param: tp.Any, budget: int, num_workers: int, expected: str, caplog: tp.Any
+    name: str,
+    param: tp.Any,
+    budget: int,
+    num_workers: int,
+    expected: str,
+    caplog: tp.Any,
 ) -> None:
     with caplog.at_level(logging.DEBUG, logger="nevergrad.optimization.optimizerlib"):
         # pylint: disable=expression-not-assigned
