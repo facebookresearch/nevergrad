@@ -126,5 +126,11 @@ jobs:
         run: |
           . venv/bin/activate
           pip install pytest
-          pytest nevergrad -n auto -v --durations=20 --cov=nevergrad
+
+          # run tests with no parallelism
+          pytest nevergrad -v --durations=20 --cov=nevergrad
+
+          # run in parallel using pytest-xdist
+          # pytest nevergrad -n auto -v --durations=20 --cov=nevergrad
+
           #pytest nevergrad -v --exitfirst --durations=20 --cov=nevergrad

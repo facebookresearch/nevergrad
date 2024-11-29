@@ -877,7 +877,7 @@ def check_metamodel(
     "penalization,expected,as_layer",
     [
         (False, [1.005573e00, 3.965783e-04], False),
-        (True, [0.999975, -0.111235], False),
+        (True, [0.0, 0.0], False),
         (False, [1.000132, -3.679e-4], True),
     ],
 )
@@ -1244,7 +1244,7 @@ def test_voronoide(n, b_per_dim) -> None:
         if (idx // 6) % 2 > 0:
             xs = -xs
 
-        def f(x):
+        def f(x, xs=xs):
             # return np.linalg.norm(x - xs) + np.linalg.norm(x - gaussian_filter(x, sigma=1))
             return (
                 5.0 * np.sum(np.abs(x - xs) > 0.3) / size

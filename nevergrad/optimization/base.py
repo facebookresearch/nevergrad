@@ -392,8 +392,11 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             # multiobjective reference is not handled :s
             # but this allows obtaining both scalar and multiobjective loss (through losses)
             callback(self, candidate, loss)
+        no_update = False
+
         if not candidate.satisfies_constraints(self.parametrization) and self.budget is not None:
             penalty = self._constraints_manager.penalty(candidate, self.num_ask, self.budget)
+            no_update = True
             loss = loss + penalty
 
         if constraint_violation is not None:
@@ -402,6 +405,9 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             else:
                 a, b, c, d, e, f = (1e5, 1.0, 0.5, 1.0, 0.5, 1.0)
             ratio = 1 if self.budget is not None and self._num_tell > self.budget / 2.0 else 0.0
+            iviolation = np.sum(np.maximum(constraint_violation, 0.0))
+            if iviolation > 0.0:
+                no_update = True
             violation = float(
                 (a * ratio + np.sum(np.maximum(loss, 0.0)))
                 * ((f + self._num_tell) ** e)
@@ -409,8 +415,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             )
             loss += violation
 
-        if isinstance(loss, float) and (
-            self.num_objectives == 1 or self.num_objectives > 1 and not self._no_hypervolume
+        if (
+            isinstance(loss, float)
+            and (self.num_objectives == 1 or self.num_objectives > 1 and not self._no_hypervolume)
+            and not no_update
         ):
             self._update_archive_and_bests(candidate, loss)
 
