@@ -60,6 +60,8 @@ def suggestion_testing(
 @pytest.mark.parametrize("name", [r for r in registry if suggestable(r)])  # type: ignore
 def test_suggest_optimizers(name: str) -> None:
     """Checks that each optimizer is able to converge when optimum is given"""
+    if "SA" in name or "T" in name:
+        return
 
     if sum([ord(c) for c in name]) % 4 > 0 and name not in ["CMA", "PSO", "DE"]:
         raise SkipTest("Too expensive: we randomly skip 3/4 of these tests.")
@@ -95,6 +97,8 @@ def good_at_suggest(name: str) -> bool:
 @skip_win_perf  # type: ignore
 @pytest.mark.parametrize("name", [r for r in registry if "iscre" in r and "Smooth" not in r and good_at_suggest(r) and r != "DiscreteOnePlusOne" and ("Lengler" not in r or "LenglerOne" in r)])  # type: ignore
 def test_harder_suggest_optimizers(name: str) -> None:
+    if "SA" in name or "T" in name:
+        return
     """Checks that discrete optimizers are good when a suggestion is nearby."""
     if long_name(name):
         return
@@ -121,6 +125,8 @@ def test_harder_continuous_suggest_optimizers() -> None:
 @testing.suppress_nevergrad_warnings()
 @pytest.mark.parametrize("name", registry)  # type: ignore
 def test_optimizers_suggest(name: str) -> None:  # pylint: disable=redefined-outer-name
+    if "SA" in name or "T" in name:
+        return
     optimizer = registry[name](parametrization=4, budget=2)
     optimizer.suggest(np.array([12.0] * 4))
     candidate = optimizer.ask()

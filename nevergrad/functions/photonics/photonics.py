@@ -429,6 +429,18 @@ no_neg = True
 def ceviche(
     x: np.ndarray, benchmark_type: int = 0, discretize=False, wantgrad=False, wantfields=False
 ) -> tp.Any:
+    """
+    x = 2d or 3d array of scalars
+     Inputs:
+    1. benchmark_type = 0 1 2 or 3, depending on which benchmark you want
+    2. discretize = True if we want to force x to be in {0,1} (just checks sign(x-0.5) )
+    3. wantgrad = True if we want to know the gradient
+    4. wantfields = True if we want the fields of the simulation
+     Returns:
+    1. the loss (to be minimized)
+    2. the gradient or none (depending on wantgrad)
+    3. the fields or none (depending on wantfields
+    """
     global first_time_ceviche
     global model
     import autograd  # type: ignore

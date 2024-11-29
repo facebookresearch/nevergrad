@@ -53,7 +53,7 @@ First of all, you declare and attach components to the model, those components a
 Next, you will fill in the containers using the :code:`create_instance()` method.
 The :code:`create_instance()` method allows you to take the abstract model and optional data and returns a new :code:`ConcreteModel` instance.
 You are recommended to use :code:`DataPortal` in Pyomo to load data in various format.
-You may refer to the `Pyomo documentation <https://pyomo.readthedocs.io/en/stable/working_abstractmodels/data/dataportals.html>`_ for the details.
+You may refer to the `Pyomo documentation <https://pyomo.readthedocs.io/en/stable>`_ for the details.
 
 
 .. literalinclude:: ../nevergrad/functions/pyomo/test_pyomo_doc.py
