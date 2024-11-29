@@ -1217,7 +1217,7 @@ def test_voronoide(n, b_per_dim) -> None:
         if (idx // 6) % 2 > 0:
             xs = -xs
 
-        def f(x):
+        def f(x, xs=xs):
             # return np.linalg.norm(x - xs) + np.linalg.norm(x - gaussian_filter(x, sigma=1))
             return (
                 5.0 * np.sum(np.abs(x - xs) > 0.3) / size
