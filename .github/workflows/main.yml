@@ -1,0 +1,19 @@
+name: facebookresearch/nevergrad/main
+on:
+  push:
+    branches:
+      - main
+jobs:
+  docs-links:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+      - uses: actions/checkout@v4.1.0
+      - uses: "./.github/actions/ubuntu_restore_all"
+      - name: Check links
+        run: |
+          . venv/bin/activate
+          cd docs/
+          make linkcheck

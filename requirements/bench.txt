@@ -51,6 +51,7 @@ pybullet>=3.2.2
 glfw
 mujoco
 pySOT
+pytest-xdist
 poap
 pytest-circleci-parallelized
 Py-BOBYQA>=1.2
