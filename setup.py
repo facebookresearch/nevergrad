@@ -4,13 +4,13 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import os
 import re
+import os
 import sys
 import typing as tp
 from pathlib import Path
-
-from setuptools import find_packages, setup
+from setuptools import setup
+from setuptools import find_packages
 from setuptools.command.install import install
 
 
