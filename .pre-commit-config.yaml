@@ -1,24 +1,28 @@
 repos:
--   repo: https://github.com/pre-commit/pre-commit-hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v2.2.3
     hooks:
-    - id: trailing-whitespace
-    - id: end-of-file-fixer
-    - id: check-added-large-files
-# -   repo: https://github.com/pre-commit/mirrors-autopep8
-#     rev: v1.4.4  # Use the sha / tag you want to point at
-#     hooks:
-#     - id: autopep8
-#       exclude: ^scripts/
-#       args: ['-i', '--max-line-length=140']
--   repo: https://github.com/python/black
-    rev: 20.8b1
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-added-large-files
+  # -   repo: https://github.com/pre-commit/mirrors-autopep8
+  #     rev: v1.4.4  # Use the sha / tag you want to point at
+  #     hooks:
+  #     - id: autopep8
+  #       exclude: ^scripts/
+  #       args: ['-i', '--max-line-length=140']
+  - repo: https://github.com/python/black
+    rev: 22.3.0
     hooks:
-    - id: black
-      language_version: python3
--   repo: https://github.com/pre-commit/mirrors-pylint
+      - id: black
+        language_version: python3
+  - repo: https://github.com/pre-commit/mirrors-pylint
     rev: v2.4.4
     hooks:
-    - id: pylint
-      exclude: ^scripts/
-      args: ['--disable=bad-continuation']  # coz incompatible with black
+      - id: pylint
+        exclude: ^scripts/
+        args: ['--disable=bad-continuation'] # coz incompatible with black
+  - repo: https://github.com/google/yamlfmt
+    rev: v0.14.0
+    hooks:
+      - id: yamlfmt
