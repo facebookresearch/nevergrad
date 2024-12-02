@@ -114,8 +114,7 @@ jobs:
           black --version
           black nevergrad --check --diff
   pytests:
-    # runs-on: ubuntu-latest-16-cores
-    runs-on: ubuntu-latest
+    runs-on: 8-core-ubuntu # 32GB RAM, 8 vCPUs
     steps:
       - uses: actions/setup-python@v5
         with:
