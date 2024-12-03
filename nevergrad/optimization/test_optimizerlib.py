@@ -44,6 +44,9 @@ skip_win_perf = pytest.mark.skipif(
 np.random.seed(0)
 
 
+CI = bool(os.environ.get("CIRCLECI", False)) or bool(os.environ.get("CI", False))
+
+
 def long_name(s: str):
     if s[-1] in "0123456789":
         return True
@@ -55,9 +58,7 @@ def long_name(s: str):
         return True
     if "DS" in s or "AX" in s or "BO" in s or any(x in s for x in [str(i) for i in range(10)]):
         return True
-    return len(s.replace("DiscreteOnePlusOne", "D1+1").replace("Tuned", "")) > 2 and os.environ.get(
-        "CIRCLECI", False
-    )
+    return len(s.replace("DiscreteOnePlusOne", "D1+1").replace("Tuned", "")) > 2 and CI
 
 
 short_registry = [r for r in registry if not long_name(r)]
@@ -206,8 +207,8 @@ def test_ngopt(dim: int, budget_multiplier: int, num_workers: int, bounded: bool
 @pytest.mark.parametrize("name", short_registry)  # type: ignore
 @testing.suppress_nevergrad_warnings()  # hides bad loss
 def test_infnan(name: str) -> None:
-    if any(x in name for x in ["SMAC", "BO", "AX"]) and os.environ.get("CIRCLECI", False):
-        raise SkipTest("too slow for CircleCI!")
+    if any(x in name for x in ["SMAC", "BO", "AX"]) and CI:
+        raise SkipTest("too slow for CI!")
     if "Force" in name:
         raise SkipTest("Forced methods not tested for infnan")
 
@@ -264,8 +265,8 @@ def test_infnan(name: str) -> None:
 @pytest.mark.parametrize("name", short_registry)  # type: ignore
 def test_optimizers(name: str) -> None:
     """Checks that each optimizer is able to converge on a simple test case"""
-    if any(x in name for x in ["Chain", "SMAC", "BO", "AX"]) and os.environ.get("CIRCLECI", False):
-        raise SkipTest("too slow for CircleCI!")
+    if any(x in name for x in ["Chain", "SMAC", "BO", "AX"]) and CI:
+        raise SkipTest("too slow for CI!")
     if "BO" in name or "Chain" in name or "Tiny" in name or "Micro" in name:  # moo issues :-(
         return
     if any(x in name for x in ["Tiny", "Vast"]):
@@ -289,7 +290,7 @@ def test_optimizers(name: str) -> None:
         ]
         or "Tiny" in name
         or "Micro" in name
-    ) and os.environ.get("CIRCLECI", False):
+    ) and CI:
         raise SkipTest("Too expensive: we randomly skip 3/4 of these tests.")
     if name in ["CMAbounded", "NEWUOA"]:  # Not a general purpose optimization method.
         return
@@ -322,8 +323,8 @@ def test_optimizers(name: str) -> None:
 @pytest.mark.parametrize("name", short_registry)  # type: ignore
 def test_optimizers_minimal(name: str) -> None:
     optimizer_cls = registry[name]
-    if any(x in name for x in ["SMAC", "BO", "AX"]) and os.environ.get("CIRCLECI", False):
-        raise SkipTest("too slow for CircleCI!")
+    if any(x in name for x in ["SMAC", "BO", "AX"]) and CI:
+        raise SkipTest("too slow for CI!")
     if optimizer_cls.one_shot or name in [
         "CM",
         "NLOPT_LN_PRAXIS",
@@ -480,8 +481,8 @@ def recomkeeper() -> tp.Generator[RecommendationKeeper, None, None]:
 # pylint: disable=redefined-outer-name
 @pytest.mark.parametrize("name", short_registry)  # type: ignore
 def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper) -> None:
-    if any(x in name for x in ["SMAC", "BO", "AX"]) and os.environ.get("CIRCLECI", False):
-        raise SkipTest("too slow for CircleCI!")
+    if any(x in name for x in ["SMAC", "BO", "AX"]) and CI:
+        raise SkipTest("too slow for CI!")
     if (
         name in UNSEEDABLE
         or "BAR" in name
@@ -906,10 +907,8 @@ def test_constrained_optimization(penalization: bool, expected: tp.List[float], 
 def test_parametrization_offset(name: str) -> None:
     if long_name(name):
         return
-    if any(x in name for x in ["SMAC", "BO", "AX"]) and os.environ.get(
-        "CIRCLECI", False
-    ):  # Outside CircleCI, only the big.
-        raise SkipTest("too slow for CircleCI!")
+    if any(x in name for x in ["SMAC", "BO", "AX"]) and CI:
+        raise SkipTest("too slow for CI!")
     if sum([ord(c) for c in name]) % 4 > 0:
         raise SkipTest("Randomly skipping 75% of these tests.")
     if "PSO" in name or "BO" in name:
@@ -1212,13 +1211,13 @@ def test_smoother() -> None:
 @pytest.mark.parametrize("n", [5, 10, 15, 25, 40])  # type: ignore
 @pytest.mark.parametrize("b_per_dim", [10, 20])  # type: ignore
 def test_voronoide(n, b_per_dim) -> None:
-    if n < 25 or b_per_dim < 1 and not os.environ.get("CIRCLECI", False):  # Outside CircleCI, only the big.
-        raise SkipTest("Only big things outside CircleCI.")
+    if n < 25 or b_per_dim < 1 and not CI:  # Outside CircleCI, only the big.
+        raise SkipTest("Only big things outside CI.")
 
     list_optims = ["CMA", "DE", "PSO", "RandomSearch", "TwoPointsDE", "OnePlusOne"]
-    if os.environ.get("CIRCLECI", False) and (n > 10 or n * b_per_dim > 100):  # In CircleCI, only the small.
-        raise SkipTest("Topology optimization too slow in CircleCI")
-    if os.environ.get("CIRCLECI", False) or (n < 10 or b_per_dim < 20):
+    if CI and (n > 10 or n * b_per_dim > 100):  # In CircleCI, only the small.
+        raise SkipTest("Topology optimization too slow in CI")
+    if CI or (n < 10 or b_per_dim < 20):
         list_optims = ["CMA", "PSO", "OnePlusOne"]
     if n > 20:
         list_optims = ["DE", "TwoPointsDE"]
