@@ -33,6 +33,8 @@ from scipy.ndimage import gaussian_filter
 from . import base, es, experimentalvariants as xpvariants, optimizerlib as optlib
 from .optimizerlib import NGOptBase, registry
 
+# pylint: disable=too-many-boolean-expressions,too-many-branches
+
 # decorators to be used when testing on Windows is unecessary
 # or cumbersome
 skip_win_perf = pytest.mark.skipif(
@@ -482,7 +484,7 @@ def recomkeeper() -> tp.Generator[RecommendationKeeper, None, None]:
 def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper) -> None:
     if any(x in name for x in ["SMAC", "BO", "AX"]) and CI:
         raise SkipTest("too slow for CI!")
-    if (  # pylint: disable=too-many-boolean-expressions
+    if (
         name in UNSEEDABLE
         or "BAR" in name
         or "AX" in name
@@ -1214,6 +1216,8 @@ def test_voronoide(n, b_per_dim) -> None:
         raise SkipTest("Only big things outside CI.")
 
     list_optims = ["CMA", "DE", "PSO", "RandomSearch", "TwoPointsDE", "OnePlusOne"]
+    if CI:
+        raise SkipTest("OOMs in CI")
     if CI and (n > 10 or n * b_per_dim > 100):  # In CircleCI, only the small.
         raise SkipTest("Topology optimization too slow in CI")
     if CI or (n < 10 or b_per_dim < 20):
