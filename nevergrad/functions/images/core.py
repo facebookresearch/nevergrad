@@ -3,22 +3,23 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import os
 import itertools
+import os
 from pathlib import Path
 
 import cv2
-import numpy as np
-import PIL.Image
-import torch.nn as nn
-import torch
-import torchvision
-from torchvision.models import resnet50
-import torchvision.transforms as tr
 
 import nevergrad as ng
 import nevergrad.common.typing as tp
+import numpy as np
+import PIL.Image
+import torch
+import torch.nn as nn
+import torchvision
+import torchvision.transforms as tr
 from nevergrad.common import errors
+from torchvision.models import resnet50
+
 from .. import base
 from . import imagelosses
 
@@ -102,7 +103,8 @@ class Image(base.ExperimentFunction):
             .numpy()[:, :, :, [2, 1, 0]]
         )
 
-    def interpolate(self, base_image: np.ndarray, target: np.ndarray, k: int, num_images: int) -> np.ndarray:
+    @staticmethod
+    def interpolate(base_image: np.ndarray, target: np.ndarray, k: int, num_images: int) -> np.ndarray:
         if num_images == 1:
             return target
         coef1 = k / (num_images - 1)
@@ -132,7 +134,10 @@ class Image(base.ExperimentFunction):
             image = self._generate_images(base_image).squeeze(0)
             image = cv2.resize(image, dsize=(226, 226), interpolation=cv2.INTER_NEAREST)
             if export_string:
-                cv2.imwrite(f"{export_string}_image{i}_{num_total_images}_{self.num_images}.jpg", image)
+                cv2.imwrite(
+                    f"{export_string}_image{i}_{num_total_images}_{self.num_images}.jpg",
+                    image,
+                )
             assert image.shape == (226, 226, 3), f"{x.shape} != {(226, 226, 3)}"
             loss += self.loss_function(image)
         return loss
@@ -202,7 +207,12 @@ class ImageAdversarial(base.ExperimentFunction):
             mutable_sigma=True,
         ).set_name("")
         array.set_mutation(sigma=self.epsilon / 10)
-        array.set_bounds(lower=-self.epsilon, upper=self.epsilon, method="clipping", full_range_sampling=True)
+        array.set_bounds(
+            lower=-self.epsilon,
+            upper=self.epsilon,
+            method="clipping",
+            full_range_sampling=True,
+        )
         max_size = ng.p.Scalar(lower=1, upper=200).set_integer_casting()
         array = ng.p.mutation.Crossover(axis=(1, 2), max_size=max_size)(array)
         super().__init__(self._loss, array)
@@ -250,7 +260,10 @@ class ImageAdversarial(base.ExperimentFunction):
             an experiment function corresponding to 1 of the image of the provided folder dataset.
         """
         assert model in {"resnet50", "test"}
-        tags = {"folder": "#FAKE#" if folder is None else Path(folder).name, "model": model}
+        tags = {
+            "folder": "#FAKE#" if folder is None else Path(folder).name,
+            "model": model,
+        }
         classifier: tp.Any = Resnet50() if model == "resnet50" else TestClassifier()
         classifier.eval()
 
@@ -271,7 +284,11 @@ class ImageAdversarial(base.ExperimentFunction):
             _, pred = torch.max(classifier(data), axis=1)
             if pred == target:
                 func = cls(
-                    classifier=classifier, image=data[0], label=int(target), targeted=False, epsilon=0.05
+                    classifier=classifier,
+                    image=data[0],
+                    label=int(target),
+                    targeted=False,
+                    epsilon=0.05,
                 )
                 func.add_descriptors(**tags)
                 yield func
@@ -310,7 +327,8 @@ class ImageFromPGAN(base.ExperimentFunction):
         if not torch.cuda.is_available():
             use_gpu = False
         # Storing high level information..
-        if os.environ.get("CIRCLECI", False):
+        CI = bool(os.environ.get("CIRCLECI", False)) or bool(os.environ.get("CI", False))
+        if CI:
             raise errors.UnsupportedExperiment("ImageFromPGAN is not well supported in CircleCI")
         self.pgan_model = torch.hub.load(
             "facebookresearch/pytorch_GAN_zoo:hub",
