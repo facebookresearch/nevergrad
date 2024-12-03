@@ -4,20 +4,19 @@
 # LICENSE file in the root directory of this source tree.
 
 # import os
+import contextlib
+import itertools
+import random
 import sys
 import time
-import random
-import itertools
-import contextlib
 import typing as tp
 from pathlib import Path
+
 import numpy as np
 import pytest
 from nevergrad.common import testing
-from . import transforms as trans
-from . import parameter as p
-from . import utils
-from . import helpers
+
+from . import helpers, parameter as p, transforms as trans, utils
 
 
 def test_temporary_directory_copy() -> None:
@@ -32,8 +31,6 @@ def test_command_function() -> None:
     command = f"{sys.executable} -m nevergrad.parametrization.test_utils".split()
     word = "testblublu12"
     output = utils.CommandFunction(command)(word)
-    # if os.environ.get("CIRCLECI", False):
-    #     raise SkipTest("Failing in CircleCI")  # TODO investigate why
     assert output is not None
     assert word in output, f'Missing word "{word}" in output:\n{output}'
     try:
@@ -51,14 +48,31 @@ def test_command_function() -> None:
     v_scalar=(True, p.Scalar(), ("",)),
     tuple_=(False, p.Tuple(p.Scalar(), p.Array(shape=(2,))), ("", "0", "1")),
     v_tuple_=(True, p.Tuple(p.Scalar(), p.Array(shape=(2,))), ("0", "1")),
-    instrumentation=(False, p.Instrumentation(p.Scalar(), y=p.Scalar()), ("", "0", "y")),
+    instrumentation=(
+        False,
+        p.Instrumentation(p.Scalar(), y=p.Scalar()),
+        ("", "0", "y"),
+    ),
     instrumentation_v=(True, p.Instrumentation(p.Scalar(), y=p.Scalar()), ("0", "y")),
-    choice=(False, p.Choice([p.Scalar(), "blublu"]), ("", "choices", "choices.0", "choices.1", "indices")),
+    choice=(
+        False,
+        p.Choice([p.Scalar(), "blublu"]),
+        ("", "choices", "choices.0", "choices.1", "indices"),
+    ),
     v_choice=(True, p.Choice([p.Scalar(), "blublu"]), ("", "choices.0", "indices")),
     tuple_choice_dict=(
         False,
         p.Tuple(p.Choice([p.Dict(x=p.Scalar(), y=12), p.Scalar()])),
-        ("", "0", "0.choices", "0.choices.0", "0.choices.0.x", "0.choices.0.y", "0.choices.1", "0.indices"),
+        (
+            "",
+            "0",
+            "0.choices",
+            "0.choices.0",
+            "0.choices.0.x",
+            "0.choices.0.y",
+            "0.choices.1",
+            "0.indices",
+        ),
     ),
     v_tuple_choice_dict=(
         True,
@@ -104,7 +118,17 @@ def test_split_as_data_parameters(param: p.Parameter, names: tp.List[str]) -> No
 
 @testing.parametrized(
     order_0=(0, ("", "choices.0.x", "choices.1", "indices")),
-    order_1=(1, ("", "choices.0.x", "choices.1", "indices", "choices.1#sigma", "choices.0.x#sigma")),
+    order_1=(
+        1,
+        (
+            "",
+            "choices.0.x",
+            "choices.1",
+            "indices",
+            "choices.1#sigma",
+            "choices.0.x#sigma",
+        ),
+    ),
     order_2=(
         2,
         (
@@ -250,7 +274,10 @@ def test_normalizer_backward() -> None:
 
 def test_normalizer_forward() -> None:
     ref = p.Tuple(
-        p.Scalar(init=0), p.Scalar(init=1), p.Scalar(lower=-1, upper=3, init=0), p.Scalar(lower=-1, upper=1)
+        p.Scalar(init=0),
+        p.Scalar(init=1),
+        p.Scalar(lower=-1, upper=3, init=0),
+        p.Scalar(lower=-1, upper=1),
     )
     scaler = helpers.Normalizer(ref)
     assert not scaler.fully_bounded
@@ -266,12 +293,18 @@ def test_normalizer_forward() -> None:
 
 
 @testing.parametrized(
-    set_bounds=(True, p.Array(shape=(1, 2)).set_bounds(-12, 12, method="arctan", full_range_sampling=False)),
+    set_bounds=(
+        True,
+        p.Array(shape=(1, 2)).set_bounds(-12, 12, method="arctan", full_range_sampling=False),
+    ),
     log=(True, p.Log(lower=0.001, upper=1000)),
     partial=(False, p.Scalar(lower=-12, init=0)),
     none=(False, p.Scalar()),
     full_tuple=(True, p.Tuple(p.Log(lower=0.01, upper=1), p.Scalar(lower=0, upper=1))),
-    partial_tuple=(False, p.Tuple(p.Log(lower=0.01, upper=1), p.Scalar(lower=0, init=1))),
+    partial_tuple=(
+        False,
+        p.Tuple(p.Log(lower=0.01, upper=1), p.Scalar(lower=0, init=1)),
+    ),
 )
 def test_scaler_fully_bounded(expected: float, param: p.Parameter) -> None:
     scaler = helpers.Normalizer(param)

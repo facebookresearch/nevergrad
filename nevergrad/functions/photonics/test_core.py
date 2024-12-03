@@ -4,14 +4,17 @@
 # LICENSE file in the root directory of this source tree.
 
 import os
-from unittest import SkipTest
-import warnings
 import typing as tp
-import pytest
+import warnings
+from unittest import SkipTest
+
 import numpy as np
+import pytest
 from nevergrad.common import testing
-from . import core
-from . import photonics
+
+from . import core, photonics
+
+CI = bool(os.environ.get("CIRCLECI", False)) or bool(os.environ.get("CI", False))
 
 
 @testing.parametrized(
@@ -66,7 +69,7 @@ def test_photonics_bragg_recombination() -> None:
 
 
 def test_photonics_custom_mutation() -> None:
-    if os.environ.get("CIRCLECI", False):
+    if CI:
         raise SkipTest("Skipping in CI because way too slow on their machine (weird)")
     func = core.Photonics("morpho", 16, rolling=True)
     param = func.parametrization.spawn_child()
@@ -102,7 +105,7 @@ def test_no_warning(name: str, method: str) -> None:
     bragg=("bragg", 2.5, 0.93216),
 )
 def test_photonics_values(name: str, value: float, expected: float) -> None:
-    if name == "morpho" and os.environ.get("CIRCLECI", False):
+    if name == "morpho" and CI:
         raise SkipTest("Too slow in CircleCI")
     photo = core.Photonics(name, 16)
     np.testing.assert_almost_equal(photo(value * np.ones(16)), expected, decimal=4)
@@ -169,13 +172,21 @@ EPS_AND_D = [  # photosic realistic
 @testing.parametrized(
     morpho=("morpho", 1.127904, None),
     chirped=("chirped", 0.594587, None),
-    good_chirped=("chirped", 0.275923, np.array([GOOD_CHIRPED])),  # supposed to be better
+    good_chirped=(
+        "chirped",
+        0.275923,
+        np.array([GOOD_CHIRPED]),
+    ),  # supposed to be better
     bragg=("bragg", 0.96776, None),
-    photosic_realistic=("cf_photosic_realistic", 0.0860257, np.array(EPS_AND_D).reshape((2, -1))),
+    photosic_realistic=(
+        "cf_photosic_realistic",
+        0.0860257,
+        np.array(EPS_AND_D).reshape((2, -1)),
+    ),
     photosic_reference=("cf_photosic_reference", 0.431072, None),
 )
 def test_photonics_values_random(name: str, expected: float, data: tp.Optional[np.ndarray]) -> None:
-    if name == "morpho" and os.environ.get("CIRCLECI", False):
+    if name == "morpho" and CI:
         raise SkipTest("Too slow in CircleCI")
     size = data.size if data is not None else (16 if name != "morpho" else 4)
     photo = core.Photonics(name, size)
