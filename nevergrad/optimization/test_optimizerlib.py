@@ -1215,9 +1215,13 @@ def test_voronoide(n, b_per_dim) -> None:
     if n < 25 or b_per_dim < 1 and not CI:  # Outside CircleCI, only the big.
         raise SkipTest("Only big things outside CI.")
 
+    if not CI:
+        raise ValueError(f"{os.environ.get('CIRCLECI', False)=} {os.environ.get('CI', False)=}")
+
     list_optims = ["CMA", "DE", "PSO", "RandomSearch", "TwoPointsDE", "OnePlusOne"]
     if CI:
         raise SkipTest("OOMs in CI")
+    raise ValueError("Unreachable")
     if CI and (n > 10 or n * b_per_dim > 100):  # In CircleCI, only the small.
         raise SkipTest("Topology optimization too slow in CI")
     if CI or (n < 10 or b_per_dim < 20):
