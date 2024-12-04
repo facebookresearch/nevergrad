@@ -85,6 +85,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: install
     if: github.event_name != 'pull_request'
+    permissions:
+      id-token: write
+      pages: write
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
@@ -114,8 +117,7 @@ jobs:
           black --version
           black nevergrad --check --diff
   pytests:
-    # runs-on: ubuntu-latest-16-cores
-    runs-on: ubuntu-latest
+    runs-on: 8-core-ubuntu # 32GB RAM, 8 vCPUs
     steps:
       - uses: actions/setup-python@v5
         with:
@@ -128,9 +130,9 @@ jobs:
           pip install pytest
 
           # run tests with no parallelism
-          pytest nevergrad -v --durations=20 --cov=nevergrad
+          # pytest nevergrad -v --durations=20 --timeout=100 --cov=nevergrad
 
           # run in parallel using pytest-xdist
-          # pytest nevergrad -n auto -v --durations=20 --cov=nevergrad
+          pytest nevergrad -n auto -v --durations=20 --timeout=100 --cov=nevergrad
 
           #pytest nevergrad -v --exitfirst --durations=20 --cov=nevergrad

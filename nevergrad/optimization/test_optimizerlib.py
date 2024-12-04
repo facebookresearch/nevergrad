@@ -33,6 +33,7 @@ from scipy.ndimage import gaussian_filter
 from . import base, es, experimentalvariants as xpvariants, optimizerlib as optlib
 from .optimizerlib import NGOptBase, registry
 
+# pylint: disable=too-many-boolean-expressions,too-many-branches
 
 # decorators to be used when testing on Windows is unecessary
 # or cumbersome
@@ -466,8 +467,8 @@ class RecommendationKeeper:
         # sort and remove unused names
         # then update recommendation file
         names = sorted(x for x in self.recommendations.index if x in registry)
-        recom = self.recommendations.loc[names, :]
-        recom.iloc[:, :] = np.round(recom, 10)
+        recom = self.recommendations.loc[names]
+        recom = recom.round(10)
         recom.to_csv(self.filepath)
 
 
@@ -733,7 +734,7 @@ def test_bo_init() -> None:
         optimizer = my_opt(parametrization=arg, budget=10)
         optimizer.minimize(np.abs)
     #    except NotUniqueError:
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-except
         print(f"Problem {e} in Bayesian optimization.")  # Anyway Bayesian Optimization is basically weak.
 
 
@@ -1256,7 +1257,7 @@ def test_voronoide(n, b_per_dim) -> None:
             try:
                 other = ng.optimizers.registry[o](array, budget=b, num_workers=nw)
                 val = f(other.minimize(f).value)
-            except:
+            except:  # pylint: disable=bare-except
                 print(f"crash in {o}")
                 val = float(1.0e7)
             # print(o, val / vde)
