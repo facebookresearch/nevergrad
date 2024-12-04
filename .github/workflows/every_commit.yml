@@ -127,9 +127,9 @@ jobs:
           pip install pytest
 
           # run tests with no parallelism
-          pytest nevergrad -v --durations=20 --timeout=100 --cov=nevergrad -vvvvv
+          # pytest nevergrad -v --durations=20 --timeout=100 --cov=nevergrad
 
           # run in parallel using pytest-xdist
-          # pytest nevergrad -n auto -v --durations=20 --cov=nevergrad
+          pytest nevergrad -n auto -v --durations=20 --timeout=100 --cov=nevergrad
 
           #pytest nevergrad -v --exitfirst --durations=20 --cov=nevergrad
