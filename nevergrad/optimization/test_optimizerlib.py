@@ -467,7 +467,10 @@ class RecommendationKeeper:
         # sort and remove unused names
         # then update recommendation file
         names = sorted(x for x in self.recommendations.index if x in registry)
-        recom = self.recommendations.loc[names, :]
+        print(f"{len(names)=}, {names[1:19]=}")
+        names = sorted(set(names))
+        print(f"{len(names)=}, {names[1:19]=}")
+        recom = self.recommendations.loc[names]
         recom = recom.round(10)
         recom.to_csv(self.filepath)
 
@@ -1219,9 +1222,6 @@ def test_voronoide(n, b_per_dim) -> None:
         raise ValueError(f"{os.environ.get('CIRCLECI', False)=} {os.environ.get('CI', False)=}")
 
     list_optims = ["CMA", "DE", "PSO", "RandomSearch", "TwoPointsDE", "OnePlusOne"]
-    if CI:
-        raise SkipTest("OOMs in CI")
-    raise ValueError("Unreachable")
     if CI and (n > 10 or n * b_per_dim > 100):  # In CircleCI, only the small.
         raise SkipTest("Topology optimization too slow in CI")
     if CI or (n < 10 or b_per_dim < 20):
