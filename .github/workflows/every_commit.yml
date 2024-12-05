@@ -8,8 +8,7 @@ jobs:
   install:
     runs-on: ubuntu-latest
     permissions:
-      id-token: write
-      pages: write
+      contents: write
     steps:
       - uses: actions/setup-python@v5
         with:
