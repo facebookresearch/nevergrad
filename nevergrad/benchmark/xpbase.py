@@ -7,11 +7,13 @@ import sys
 import time
 import random
 import numbers
+import os
 import warnings
 import traceback
 import nevergrad.common.typing as ngtp
 import typing as tp
 import numpy as np
+from concurrent import futures
 from nevergrad.parametrization import parameter as p
 from nevergrad.common import decorators
 from nevergrad.common import errors
@@ -62,7 +64,12 @@ class OptimizerSettings:
         self.optimizer = optimizer
         self.budget = budget
         self.num_workers = num_workers
-        self.executor = execution.MockedTimedExecutor(batch_mode)
+        ng_cpus_per_task = int(os.getenv("NG_CPUS_PER_TASK", "1"))
+        if ng_cpus_per_task > 1:
+            self.executor: tp.Any = futures.ThreadPoolExecutor(max_workers=ng_cpus_per_task)
+            assert not batch_mode
+        else:
+            self.executor = execution.MockedTimedExecutor(batch_mode)
 
     @property
     def name(self) -> str:
@@ -76,7 +83,7 @@ class OptimizerSettings:
 
     @property
     def batch_mode(self) -> bool:
-        return self.executor.batch_mode
+        return hasattr(self.executor, "batch_mode") and self.executor.batch_mode
 
     def __repr__(self) -> str:
         return f"Experiment: {self.name}<budget={self.budget}, num_workers={self.num_workers}, batch_mode={self.batch_mode}>"
@@ -225,7 +232,9 @@ class Experiment:
     def _log_results(self, pfunc: fbase.ExperimentFunction, t0: float, num_calls: int) -> None:
         """Internal method for logging results before handling the error"""
         self.result["elapsed_time"] = time.time() - t0
-        self.result["pseudotime"] = self.optimsettings.executor.time
+        self.result["pseudotime"] = (
+            self.optimsettings.executor.time if hasattr(self.optimsettings.executor, "time") else float("nan")
+        )
         # make a final evaluation with oracle (no noise, but function may still be stochastic)
         opt = self._optimizer
         assert opt is not None
