@@ -3,7 +3,7 @@ import scipy.sparse as sp
 import scipy.sparse.linalg as lin
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-from functions import addupml2d, yeeder2d, block
+from .functions import addupml2d, yeeder2d, block
 
 import time
 
@@ -61,7 +61,7 @@ def mode_converter(X, ev_out=-3.5**2/4, ev_in=-3.5**2, plot=False, show=False):
     shift_out = -00 * nanometers          # y-shift
 
     # FDFD PARAMETERS
-    NRES = 50                                     # GRID RESOLUTION
+    NRES = 4                                     # GRID RESOLUTION
     SPACER = lam0 * np.array([1, 1])                      # Y SPACERS
     NPML = [20, 20, 20, 20]                    # NB PML
     nmax = max([inputWG_n, centerWG_n, outputWG_n])
@@ -354,7 +354,7 @@ if __name__ == "__main__":
     shift_out = -00 * nanometers          # y-shift
 
     # FDFD PARAMETERS
-    NRES = 50                                     # GRID RESOLUTION
+    NRES = 4                                     # GRID RESOLUTION
     SPACER = lam0 * np.array([1, 1])                      # Y SPACERS
     NPML = [20, 20, 20, 20]                    # NB PML
     nmax = max([inputWG_n, centerWG_n, outputWG_n])
