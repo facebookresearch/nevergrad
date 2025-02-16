@@ -5,3 +5,6 @@
 
 from .core import Photonics as Photonics
 from .core import ceviche
+from .core import gambas
+from .gambas import gambas_function
+from .mode_converter import mode_converter
