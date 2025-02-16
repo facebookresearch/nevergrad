@@ -37,7 +37,7 @@ commands:
             #python3 -m venv venv
             rm -rf venv && python3 -m venv venv
             . venv/bin/activate
-            pip install --progress-bar off -U pip setuptools
+            pip install --progress-bar off -U pip setuptools<72.0.0
             pip install --progress-bar off -e .[all]
             #pip install --progress-bar off --use-deprecated=legacy-resolver -e .[all]
             #pip install --progress-bar off -U numpy==1.24.0
