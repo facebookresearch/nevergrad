@@ -29,7 +29,7 @@ from .. import base
 
 
 ceviche = photonics.ceviche
-gambas = gambas.gambas_function
+gambas = gambas.gambas_function  # type: ignore
 
 
 def _make_parametrization(
