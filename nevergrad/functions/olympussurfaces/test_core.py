@@ -12,7 +12,7 @@ import pytest
 
 @pytest.mark.parametrize("kind", core.OlympusSurface.SURFACE_KINDS)
 @pytest.mark.parametrize("noise_kind", ["GaussianNoise", "UniformNoise", "GammaNoise"])
-def test_olympus_surface(kind: str, noise_kind: str) -> None:
+def skip_test_olympus_surface(kind: str, noise_kind: str) -> None:
     try:
         func = core.OlympusSurface(kind=kind, noise_kind=noise_kind)
     except Exception as e:

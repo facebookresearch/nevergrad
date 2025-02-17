@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from .functions import addupml2d, yeeder2d, block
 
-import time
+# import time
 
 # %% CALCULATE S-PARAMETERS FOR WGs
 
@@ -205,7 +205,7 @@ def mode_converter(X, ev_out=-(3.5**2) / 4, ev_in=-(3.5**2), plot=False, show=Fa
     # EXTRACT OUPUT SLAB WAVEGUIDE FROM GRID
     nx = Nx2 - 2 * NPML[0] + 1
     erzz = sp.diags_array(ER2[nx, 0:Ny2:2], format="csc")
-    urxx = sp.diags_array(UR2[nx, 1:Ny2:2], format="csc")
+    # urxx = sp.diags_array(UR2[nx, 1:Ny2:2], format="csc")
     inv_uryy = sp.diags_array(1 / UR2[nx + 1, 0:Ny2:2], format="csc")
 
     # BUILD DERIVATIVE MATRICES

@@ -24,9 +24,10 @@ def gambas_function(
     global first_time_ceviche
     global model
     import autograd  # type: ignore
-    import autograd.numpy as npa  # type: ignore
-    import ceviche_challenges  # type: ignore
-    import autograd  # type: ignore
+
+    #    import autograd.numpy as npa  # type: ignore
+    #    import ceviche_challenges  # type: ignore
+    #    import autograd  # type: ignore
 
     # ceviche_challenges.beam_splitter.prefabs
     # ceviche_challenges.mode_converter.prefabs
