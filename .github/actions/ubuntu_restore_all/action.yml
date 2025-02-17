@@ -15,7 +15,7 @@ runs:
         #python3 -m venv venv
         rm -rf venv && python3 -m venv venv
         . venv/bin/activate
-        pip install --progress-bar off -U pip setuptools
+        pip install --progress-bar off -U pip setuptools<72.0.0
         ( unset GITHUB_REF ; pip install --progress-bar off IOHexperimenter>=0.2.9.2 )
         pip install --progress-bar off -e .[all]
         #pip install --progress-bar off --use-deprecated=legacy-resolver -e .[all]
