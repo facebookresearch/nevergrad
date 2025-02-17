@@ -264,7 +264,7 @@ jobs:
           command: |
             py -3 -m venv venv
             . ./venv/Scripts/activate
-            pip install --progress-bar off -U pip setuptools
+            pip install --progress-bar off -U pip setuptools<72.0.0
             #  pip install --progress-bar off torch==1.4.0+cpu torchvision==0.5.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
             pip install --use-deprecated=legacy-resolver --progress-bar off .[all]
 
