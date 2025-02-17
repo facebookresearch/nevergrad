@@ -5,6 +5,7 @@ from .mode_converter import mode_converter
 
 first_time_ceviche = True
 
+
 def gambas_function(
     x: np.ndarray, benchmark_type: int = 0, discretize=False, wantgrad=False, wantfields=False
 ) -> tp.Any:
@@ -33,11 +34,11 @@ def gambas_function(
     # ceviche_challenges.wdm.prefabs
 
     if benchmark_type == 2:  # TODO
-        design_variable_shape = (30,30)
+        design_variable_shape = (30, 30)
         simulate = mode_converter
     if first_time_ceviche or x is None:
         if benchmark_type == 2:
-            design_variable_shape = (30,30)
+            design_variable_shape = (30, 30)
             simulate = mode_converter
         else:
             print("Benchmark not defined yet")
@@ -75,7 +76,7 @@ def gambas_function(
     def loss_fn(x, fields_are_needed=False):
         """A simple loss function"""
         the_loss, field = simulate(x.reshape(design_variable_shape))
-        
+
         if fields_are_needed:
             return the_loss, field
         return the_loss
@@ -83,7 +84,7 @@ def gambas_function(
     def loss_fn_nograd(x, fields_are_needed=False):
         """A simple loss function"""
         the_loss, field = simulate(x.reshape(design_variable_shape))
-        
+
         if fields_are_needed:
             return the_loss, field
         return the_loss
@@ -112,8 +113,9 @@ def gambas_function(
     #     assert False, f"superweird_{loss_fn_nograd(x)}_{loss_fn(x)}"
     return loss_value
 
+
 if __name__ == "__main__":
-    design_variable_shape = (345,345)
+    design_variable_shape = (345, 345)
     x = np.random.random(design_variable_shape)
-    loss = ceviche(x, benchmark_type=2, discretize=False)
+    loss = gambas_function(x, benchmark_type=2, discretize=False)
     print(loss)
