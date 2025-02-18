@@ -612,6 +612,20 @@ class XpPlotter:
         xaxis: str = "budget",
         pure_only: bool = False,
     ) -> None:
+        # Very dirty hack, find better.
+        threshold = float("NaN")
+        if "Swimmer" in title:
+            threshold = -325
+        if "Hopper" in title:
+            threshold = -3120
+        if "Cheetah" in title:
+            threshold = -3430
+        if "Walker" in title:
+            threshold = -4390
+        if "Ant" in title:
+            threshold = -3580
+        if "Humanoid" in title:
+            threshold = -6000
         if name_style is None:
             name_style = NameStyle()
         upperbound = max(
@@ -716,6 +730,8 @@ class XpPlotter:
             self._ax.set_xlim([min(all_x), max(all_x)])  # type: ignore
         except TypeError:
             print(f"TypeError for minimum or maximum or {all_x}")
+        if threshold and lowerbound < threshold:
+            plt.plot([min(all_x), max(all_x)], [threshold, threshold], label='target')
         self.add_legends(legend_infos)
         # global info
         if "tmp" not in title:
