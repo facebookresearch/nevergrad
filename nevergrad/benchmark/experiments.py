@@ -3561,7 +3561,7 @@ def multi_ceviche(
     ]
 
     algos = [a for a in algos if a in list(ng.optimizers.registry.keys())]
-    for benchmark_type in [2]:  #[np.random.choice([0, 1, 2, 3])]:  # [np.random.randint(4)]:
+    for benchmark_type in [2]:  # [np.random.choice([0, 1, 2, 3])]:  # [np.random.randint(4)]:
         if warmstart:
             try:
                 suggestion = np.load(f"bestnp{benchmark_type}.npy")
@@ -3571,10 +3571,10 @@ def multi_ceviche(
                 )
                 raise e
         shape = tuple([int(p) for p in list(photonics_gambas(None, benchmark_type))])  # type: ignore
-        #shape = tuple([int(p) for p in list(photonics_ceviche(None, benchmark_type))])  # type: ignore
+        # shape = tuple([int(p) for p in list(photonics_ceviche(None, benchmark_type))])  # type: ignore
         print(shape)
         name = photonics_gambas("name", benchmark_type) + str(shape)  # type: ignore
-        #name = photonics_ceviche("name", benchmark_type) + str(shape)  # type: ignore
+        # name = photonics_ceviche("name", benchmark_type) + str(shape)  # type: ignore
         # print(f"Shape = {shape} {type(shape)} {type(shape[0])}")
         instrumc0 = ng.p.Array(shape=shape, lower=0.0, upper=1.0)
         instrumc0c = ng.p.Array(shape=shape, lower=0.0, upper=1.0)
@@ -3593,16 +3593,16 @@ def multi_ceviche(
 
         def pc(x):
             return photonics_gambas(x, benchmark_type)
-            #return photonics_ceviche(x, benchmark_type)
+            # return photonics_ceviche(x, benchmark_type)
 
         def fpc(x):
             loss, grad = photonics_gambas(x.reshape(shape), benchmark_type, wantgrad=True)
-            #loss, grad = photonics_ceviche(x.reshape(shape), benchmark_type, wantgrad=True)
+            # loss, grad = photonics_ceviche(x.reshape(shape), benchmark_type, wantgrad=True)
             return loss, grad.flatten()
 
         def epc(x):
             return photonics_gambas(x, benchmark_type, discretize=True)
-            #return photonics_ceviche(x, benchmark_type, discretize=True)
+            # return photonics_ceviche(x, benchmark_type, discretize=True)
 
         #                sfunc = helpers.SpecialEvaluationExperiment(func, evaluation=iqa)
         #                sfunc.add_descriptors(non_proxy_function=False)
@@ -3670,7 +3670,7 @@ def multi_ceviche(
                 if not precompute
                 else [np.random.choice([204800 + 51200, 204800]) - 102400]
             )
-        budgets = [np.random.choice([int(65536*32*(2**i)) for i in range(10)])]
+        budgets = [np.random.choice([int(65536 * 32 * (2**i)) for i in range(10)])]
         for optim in [np.random.choice(algos)]:  # TODO: we also need penalizations.
             for budget in budgets:
                 #                np.random.choice(
@@ -3745,9 +3745,9 @@ def multi_ceviche(
 
                         def plot_pc(x):
                             fake_loss = photonics_gambas(x, benchmark_type)
-                            #fake_loss = photonics_ceviche(x, benchmark_type)
+                            # fake_loss = photonics_ceviche(x, benchmark_type)
                             real_loss = photonics_gambas(x, benchmark_type, discretize=True)
-                            #real_loss = photonics_ceviche(x, benchmark_type, discretize=True)
+                            # real_loss = photonics_ceviche(x, benchmark_type, discretize=True)
                             if budget > 1000 or np.random.rand() < 0.05:
                                 export_numpy(
                                     f"pb{benchmark_type}_{optim}c0c_budget{budget}_{real_loss}_fl{fake_loss}",
@@ -3774,9 +3774,9 @@ def multi_ceviche(
                         real_loss, fields = photonics_gambas(
                             x, benchmark_type, discretize=True, wantfields=True
                         )
-                        #real_loss, fields = photonics_ceviche(
+                        # real_loss, fields = photonics_ceviche(
                         #    x, benchmark_type, discretize=True, wantfields=True
-                        #)
+                        # )
                         if budget > 1000 or np.random.rand() < 0.05:
                             export_numpy(
                                 f"pb{benchmark_type}_{optim}_budget{budget}_{real_loss}",

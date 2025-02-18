@@ -731,7 +731,7 @@ class XpPlotter:
         except TypeError:
             print(f"TypeError for minimum or maximum or {all_x}")
         if threshold and lowerbound < threshold:
-            plt.plot([min(all_x), max(all_x)], [threshold, threshold], label='target')
+            plt.plot([min(all_x), max(all_x)], [threshold, threshold], label="target")
         self.add_legends(legend_infos)
         # global info
         if "tmp" not in title:
