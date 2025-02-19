@@ -3643,9 +3643,9 @@ def multi_ceviche(
                 name,
                 [100 * np.average(np.abs(np.round(10 * x.flatten()) - i) < 0.1) for i in range(11)],
             )
+            np.save(name + "savedarray", array)
             if fields is not None:
                 np.save(name + "fields.", fields)
-                np.save(name + "savedarray", array)
 
             im = Image.fromarray(x)
             im.convert("RGB").save(f"{name}_{freq}_{freq2}.png", mode="L")
@@ -3670,7 +3670,7 @@ def multi_ceviche(
                 if not precompute
                 else [np.random.choice([204800 + 51200, 204800]) - 102400]
             )
-        budgets = [np.random.choice([int(65536 * 32 * (2**i)) for i in range(10)])]
+        budgets = [np.random.choice([int(65536 * (2**i)) for i in range(15)])]
         for optim in [np.random.choice(algos)]:  # TODO: we also need penalizations.
             for budget in budgets:
                 #                np.random.choice(
@@ -3681,7 +3681,7 @@ def multi_ceviche(
                 #                    replace=False,
                 #                )
                 #            ):  # [int(np.random.choice([3, 20, 50, 90]))]: #[20, 50, 90]:
-                if (np.random.rand() < 0.05 or precompute) and not warmstart:
+                if (np.random.rand() < 0.00 or precompute) and not warmstart:
                     from scipy import optimize as scipyoptimize
 
                     x0 = np.random.rand(np.prod(shape))  # type: ignore
