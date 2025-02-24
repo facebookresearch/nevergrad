@@ -3,74 +3,151 @@ import nevergrad as ng
 import time
 import signal
 from joblib import Parallel, delayed
+import matplotlib.pyplot as plt
+import matplotlib
+
+matplotlib.rcParams.update({'figure.autolayout': True})
+
+
+
+# no more than max_algos algorithms.
+max_algos = int(len(list(ng.optimizers.registry.keys()))) // 5
 
 def handler(signum, frame):
     return Exception("too slow")
 
 
-def perf(algo, d=5, n=50, resample=10, nt=10000, budget=20):
+def perf(algo, d=5, n=50, resample=40, nt=1000, budget=20):
+  try:
     score = []
+    d = int(d)
+    n = int(n)
+    nt = int(nt)
+    budget = int(budget)
     overfits = []
-    for _ in range(resample):
+    for idx in range(resample):
+        np.random.seed(idx)
         x = np.random.randn(n,d)  # training set
-        xt = np.random.randn(nt,d)  # test set
+        #xt = np.random.randn(nt,d)  # test set
         t = np.random.randn(d)  # target
         y = np.random.randn(n)
-        yt = np.random.randn(nt)
+        #yt = np.random.randn(nt)
         def label(x, t):
             return np.linalg.norm(x-t)**2 + np.random.randn()
         for i in range(len(x)):
             y[i] = label(x[i], t)
-        for i in range(len(xt)):
-            yt[i] = label(xt[i], t)
+        #for i in range(len(xt)):
+        #    yt[i] = label(xt[i], t)
         def loss(p):
             pred = np.random.randn(n)
             for i in range(len(x)):
                 pred[i] = label(x[i], p)
-            return np.sum((y - pred) ** 2)
+            return np.sum((y - pred) ** 2) / len(y)
         def testloss(p):
             pred = np.random.randn(nt)
-            for i in range(len(xt)):
-                pred[i] = label(xt[i], p)
-            return np.sum((yt - pred) ** 2)
+            sco = 0
+            for i in range(nt):
+                inp = np.random.randn(d)
+                sco += (label(inp, p) + label(inp, t))**2
+            return sco / nt
         reco = ng.optimizers.registry[algo](d, budget).minimize(loss).value
         tl = testloss(reco)
         l = loss(reco)
         score = score + [tl]
         overfits = overfits + [tl - l]
     return np.sum(score) / len(score), np.sum(overfits) / len(overfits)
+  except Exception as e:
+    print(e, flush=True)
+    return float("inf"), float("inf")
 
 score = {}
 overfit = {}
 explain = {}
+score_per_budget = {}
+overfit_per_budget = {}
 
 
-def display_losses(data):
+def display_losses(data, explain):
     result = ""
     for i, a in enumerate(sorted(list(data.keys()), key = lambda a: data[a])):
-        result += f"{a}, {data[a]}, {i} / {len(data)}\n"
-        if i > 10 and i < len(data) - 10:
-            continue
+        #if i == 10 or i == len(data) - 10:
+        #    result += "... ... ... \n"
+        #if i > 10 and i < len(data) - 10 and (i % 20 > 0):
+        #    continue
+        result += f"{a}, {data[a]}, {i} / {len(data)} ===== {explain[a]}\n"
     return result
 
-def go(d,n,budget):
-    for a in list(ng.optimizers.registry.keys())[:10]:
-        if "AX" in a:
+
+
+
+def subgo(a,d,n,budget,stop_on_error=False):
+    a_full = a +  "__" + str(budget)
+    try:
+        signal.signal(signal.SIGALRM, handler)
+        signal.alarm(600)
+        assert not "AX" in a  # too slow
+        s, o = perf(a, d=d, n=n, budget=budget)
+        e = ""
+        signal.alarm(0)
+        return a_full,s,o, str(e), a, budget
+    except Exception as e:
+        assert not stop_on_error, str(e)
+        print(a,d,n,budget,stop_on_error,str(e),flush=True)
+        s = float("inf")
+        o = float("inf")
+        return a_full,s,o, str(e), a, budget
+
+
+def draw(data, filename, context):
+  for n in [3, 7, 15]:
+    plt.clf()
+    algorithms = list(data.keys())
+    num = len(algorithms) // n
+    sortedalgorithms = sorted(algorithms, key=lambda a: -min(data[a].values()))
+    mean_algorithm = sortedalgorithms[len(algorithms) // 4]
+    roof = min(data[mean_algorithm].values())
+    for i, a in enumerate(sortedalgorithms):
+        if i > n and i < len(algorithms) - n and (i % num != 0):
             continue
-        try:
-            signal.signal(signal.SIGALRM, handler)
-            signal.alarm(7)
-            score[a], overfit[a] = perf(a, d=d, n=n, budget=budget)
-            signal.alarm(0)
-        except Exception as e:
-            score[a + "__" + str(budget)] = float("inf")
-            explain[a + "__" + str(budget)] = e
-    filename = f"perf_d{d}_n{n}_budget{budget}.txt"
+        x = sorted(list(data[a].keys()))
+        y = [data[a][x_] for x_ in x]
+        yroof = [min(data[a][x_], roof) for x_ in x]
+        plt.plot(x, yroof, label=f"{a} {min(y):.2f} ({len(algorithms)-i}/{len(algorithms)})")
+    plt.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left', prop={'size': 2 + (50 // n)})
+    plt.title(context)
+    plt.tight_layout()
+    plt.savefig(str(n) +"___" + filename, bbox_inches='tight')
+
+
+
+def go(d,n,budget,max_algos=max_algos, stop_on_error=False):
+    context = f"Dim {d}, Dataset size {n}, Budget {budget}"
+    optims = list(ng.optimizers.registry.keys())[:max_algos]
+    np.random.shuffle(optims)
+    nj = 80
+    for realbudget in [budget, 2*budget, 4*budget]:
+        res = Parallel(n_jobs=nj)(delayed(subgo)(a,d, n, realbudget,stop_on_error=stop_on_error) for a in optims)
+        for i in range(len(res)):
+            a_full, s, o, e, a, b = res[i]
+            score[a_full] = s
+            overfit[a_full] = o
+            explain[a_full] = e
+            if a not in score_per_budget:
+                score_per_budget[a] = {}
+                overfit_per_budget[a] = {}
+            score_per_budget[a][b] = s
+            overfit_per_budget[a][b] = o
+    filename = f"perf_d{d}_n{n}_budget{budget}______{np.random.randint(200)}_{nj}.txt"
     with open(filename, "w") as f:
-        f.write(display_losses(score))
-    filename = f"overfit_d{d}_n{n}_budget{budget}.txt"
+        res = display_losses(score,explain)
+        f.write(res)
+    draw(score_per_budget, filename + ".png", context)
+    filename = f"overfit_d{d}_n{n}_budget{budget}______{np.random.randint(200)}_{nj}.txt"
     with open(filename, "w") as f:
-        f.write(display_losses(overfit))
+        res2 = display_losses(overfit,explain)
+        f.write(res2)
+    draw(overfit_per_budget, filename + ".png", context)
+    return (res, res2) #"perf ===========================================================\n" + res + "overfit =================================================================\n" + res2
     #    print("===============================================================")
     #    print("============= Performances ======================")
     #    display_losses(score)
@@ -79,13 +156,18 @@ def go(d,n,budget):
     
                 
     
-d = []
-n = []
-budget = []
-for d_ in [10, 100, 10000, 1000000]:
-    for n_ in [10, 100, 10000, 1000000]:
-        for b_ in [10, 100, 1000, 1000000]:
-            d += [d_]
-            n += [n_]
-            budget += [b_]
-Parallel(n_jobs=10)(delayed(go)(d[i], n[i], budget[i]) for i in range(len(n)))   
+#go(10,10,10,max_algos=3,stop_on_error=True)
+#for d_ in [10, 100, 10000, 1000000]:
+#    for n_ in [10, 100, 10000]:
+#        for b_ in [10, 100, 1000, 100000]:
+            #d += [d_]
+            #n += [n_]
+            #budget += [b_]
+d_ = np.random.choice([3, 10, 100, 1000, 10000]) #, 1000000])
+n_ = np.random.choice([3, 10, 100, 1000])
+b_ = np.random.choice([3, 10, 100, 1000])  #, 100000])
+#d_ = 3
+#b_ = 3
+#n_ = 3
+go(d_, n_, b_)
+#Parallel(n_jobs=70)(delayed(go)(d[i], n[i], budget[i]) for i in range(len(n)))   
