@@ -5,6 +5,7 @@
 import numpy as np
 import typing as tp
 from .mode_converter import mode_converter
+from .bender import bender
 
 
 first_time_ceviche = True
@@ -41,17 +42,19 @@ def gambas_function(
     if benchmark_type == 2:  # TODO
         design_variable_shape = (30, 30)
         simulate = mode_converter
+    elif benchmark_type == 0:
+        design_variable_shape = (45, 45)
+        simulate = bender
     if first_time_ceviche or x is None:
         if benchmark_type == 2:
             design_variable_shape = (30, 30)
             simulate = mode_converter
+        elif benchmark_type == 0:
+            design_variable_shape = (45, 45)
+            simulate = bender
         else:
             print("Benchmark not defined yet")
             return None
-        # elif benchmark_type == 0:
-        #     spec = ceviche_challenges.waveguide_bend.prefabs.waveguide_bend_2umx2um_spec()
-        #     params = ceviche_challenges.waveguide_bend.prefabs.waveguide_bend_sim_params()
-        #     model = ceviche_challenges.waveguide_bend.model.WaveguideBendModel(params, spec)
         # elif benchmark_type == 1:
         #     spec = ceviche_challenges.beam_splitter.prefabs.pico_splitter_spec()
         #     params = ceviche_challenges.beam_splitter.prefabs.pico_splitter_sim_params()
@@ -120,7 +123,7 @@ def gambas_function(
 
 
 if __name__ == "__main__":
-    design_variable_shape = (345, 345)
+    design_variable_shape = (30, 30)
     x = np.random.random(design_variable_shape)
     loss = gambas_function(x, benchmark_type=2, discretize=False)
     print(loss)
