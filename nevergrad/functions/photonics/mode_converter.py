@@ -5,8 +5,8 @@
 import numpy as np
 import scipy.sparse as sp
 import scipy.sparse.linalg as lin
-import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
+# import matplotlib.pyplot as plt
+# import matplotlib.gridspec as gridspec
 from .functions import addupml2d, yeeder2d, block
 
 # import time
@@ -28,7 +28,7 @@ nanometers = micrometers / 1000
 #########################################################
 
 
-def mode_converter(X, ev_out=-2.4**2, ev_in=-2.8**2, plot=False, show=False):
+def mode_converter(X, ev_out=-2.4**2, ev_in=-2.8**2, plot=False, show=False):  # type: ignore
     """
         Computes the conversion efficiency between the mode of index ev_in
         in the input wg, into the mode of index ev_out in the output wg,

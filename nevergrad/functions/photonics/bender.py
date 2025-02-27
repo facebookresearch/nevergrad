@@ -1,11 +1,15 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
 import numpy as np
 import scipy.sparse as sp
 import scipy.sparse.linalg as lin
-import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
+# import matplotlib.pyplot as plt
+# import matplotlib.gridspec as gridspec
 from .functions import addupml2d, yeeder2d, block
 
-import time
+#import time
 
 #%% CALCULATE S-PARAMETERS FOR WGs 
 
@@ -23,7 +27,7 @@ nanometers = micrometers / 1000
 ## Using Ceviche mode converter dimentions
 #########################################################
 
-def bender(X, ev_out=-3.5**2, ev_in=-3.5**2, plot=False, show=False):
+def bender(X, ev_out=-3.5**2, ev_in=-3.5**2, plot=False, show=False):  # type: ignore
     """
         Computes the conversion efficiency between the mode of index ev_in
         in the input wg, into the mode of index ev_out in the output wg,
@@ -93,8 +97,8 @@ def bender(X, ev_out=-3.5**2, ev_in=-3.5**2, plot=False, show=False):
     dy2 = dy/2
 
     # CALCULATE AXIS VECTORS 
-    xa = np.arange(1, Nx+1) * dx
-    ya = np.arange(1, Ny+1) * dy
+    # xa = np.arange(1, Nx+1) * dx
+    # ya = np.arange(1, Ny+1) * dy
     xa2 = np.arange(1, Nx2+1) * dx2
     ya2 = np.arange(1, Ny2+1) * dy2
     # # CENTER WINDOW (with (x,y) = (0,0) in the center of the central block)
