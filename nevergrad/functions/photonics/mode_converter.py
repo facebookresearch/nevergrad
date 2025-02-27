@@ -28,7 +28,7 @@ nanometers = micrometers / 1000
 #########################################################
 
 
-def mode_converter(X, ev_out=-2.4**2, ev_in=-2.8**2, plot=False, show=False):  # type: ignore
+def mode_converter(X, ev_out=-2.4**2, ev_in=-2.8**2):
     """
         Computes the conversion efficiency between the mode of index ev_in
         in the input wg, into the mode of index ev_out in the output wg,

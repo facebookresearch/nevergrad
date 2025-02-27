@@ -27,7 +27,7 @@ nanometers = micrometers / 1000
 ## Using Ceviche mode converter dimentions
 #########################################################
 
-def bender(X, ev_out=-3.5**2, ev_in=-3.5**2, plot=False, show=False):  # type: ignore
+def bender(X, ev_out=-3.5**2, ev_in=-3.5**2):
     """
         Computes the conversion efficiency between the mode of index ev_in
         in the input wg, into the mode of index ev_out in the output wg,
