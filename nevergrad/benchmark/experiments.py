@@ -3674,7 +3674,6 @@ def multi_ceviche(
                 else [np.random.choice([204800 + 51200, 204800]) - 102400]
             )
         budgets = [np.random.choice([int(65536 * (2**i)) for i in range(2)])]
-        #budget = 1500
         for optim in [np.random.choice(algos)]:  # TODO: we also need penalizations.
             for budget in budgets:
                 #                np.random.choice(
