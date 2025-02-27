@@ -102,13 +102,13 @@
   <section id="examples-nevergrad-for-machine-learning">
 <span id="machinelearning"></span><h1>Examples - Nevergrad for machine learning<a class="headerlink" href="#examples-nevergrad-for-machine-learning" title="Permalink to this heading"></a></h1>
 <p>Let us assume that you have defined an objective function as in:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">myfunction</span><span class="p">(</span><span class="n">lr</span><span class="p">,</span> <span class="n">num_layers</span><span class="p">,</span> <span class="n">arg3</span><span class="p">,</span> <span class="n">arg4</span><span class="p">,</span> <span class="n">other_anything</span><span class="p">):</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">myfunction</span><span class="p">(</span><span class="n">lr</span><span class="p">,</span> <span class="n">num_layers</span><span class="p">,</span> <span class="n">arg3</span><span class="p">,</span> <span class="n">arg4</span><span class="p">,</span> <span class="n">other_anything</span><span class="p">):</span>
     <span class="o">...</span>
     <span class="k">return</span> <span class="o">-</span><span class="n">accuracy</span>  <span class="c1"># something to minimize</span>
 </pre></div>
 </div>
 <p>You should define how it must be instrumented, i.e. what are the arguments you want to optimize upon, and on which space they are defined. If you have both continuous and discrete parameters, you have a good initial guess, maybe just use <code class="code docutils literal notranslate"><span class="pre">TransitionChoice</span></code> for all discrete variables, <code class="code docutils literal notranslate"><span class="pre">Array</span></code> for all your continuous variables, and use <code class="code docutils literal notranslate"><span class="pre">PortfolioDiscreteOnePlusOne</span></code> as optimizer.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nevergrad</span> <span class="k">as</span> <span class="nn">ng</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">nevergrad</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ng</span>
 <span class="c1"># instrument learning rate and number of layers, keep arg3 to 3 and arg4 to 4</span>
 <span class="n">lr</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">Log</span><span class="p">(</span><span class="n">lower</span><span class="o">=</span><span class="mf">0.0001</span><span class="p">,</span> <span class="n">upper</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># log distributed between 0.001 and 1</span>
 <span class="n">num_layers</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">TransitionChoice</span><span class="p">([</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">])</span>
@@ -132,14 +132,14 @@
 <section id="optimization-of-continuous-hyperparameters-with-cma-pso-de-random-and-quasirandom">
 <h2>Optimization of continuous hyperparameters with CMA, PSO, DE, Random and QuasiRandom<a class="headerlink" href="#optimization-of-continuous-hyperparameters-with-cma-pso-de-random-and-quasirandom" title="Permalink to this heading"></a></h2>
 <p>Let’s first define our test case:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nevergrad</span> <span class="k">as</span> <span class="nn">ng</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">nevergrad</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ng</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
 
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Optimization of continuous hyperparameters =========&quot;</span><span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">train_and_return_test_error</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">train_and_return_test_error</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">([</span><span class="nb">int</span><span class="p">(</span><span class="mf">50.</span> <span class="o">*</span> <span class="nb">abs</span><span class="p">(</span><span class="n">x_</span> <span class="o">-</span> <span class="mf">0.2</span><span class="p">))</span> <span class="k">for</span> <span class="n">x_</span> <span class="ow">in</span> <span class="n">x</span><span class="p">])</span>
 
 <span class="n">parametrization</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">Array</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">300</span><span class="p">,))</span>  <span class="c1"># optimize on R^300</span>
@@ -183,7 +183,7 @@ A complete list is available in <code class="code docutils literal notranslate">
 </section>
 <section id="asynchronous-version-with-concurrent-futures">
 <h3>Asynchronous version with concurrent.futures<a class="headerlink" href="#asynchronous-version-with-concurrent-futures" title="Permalink to this heading"></a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">concurrent</span> <span class="kn">import</span> <span class="n">futures</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">concurrent</span><span class="w"> </span><span class="kn">import</span> <span class="n">futures</span>
 
 <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">:</span>
     <span class="n">optim</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">registry</span><span class="p">[</span><span class="n">name</span><span class="p">](</span><span class="n">parametrization</span><span class="o">=</span><span class="n">instru</span><span class="p">,</span> <span class="n">budget</span><span class="o">=</span><span class="n">budget</span><span class="p">)</span>
@@ -199,15 +199,15 @@ A complete list is available in <code class="code docutils literal notranslate">
 <section id="optimization-of-mixed-continuous-and-discrete-hyperparameters">
 <h2>Optimization of mixed (continuous and discrete) hyperparameters<a class="headerlink" href="#optimization-of-mixed-continuous-and-discrete-hyperparameters" title="Permalink to this heading"></a></h2>
 <p>Let’s define our function:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
 <span class="c1"># Let us define a function.</span>
-<span class="k">def</span> <span class="nf">myfunction</span><span class="p">(</span><span class="n">arg1</span><span class="p">,</span> <span class="n">arg2</span><span class="p">,</span> <span class="n">arg3</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">myfunction</span><span class="p">(</span><span class="n">arg1</span><span class="p">,</span> <span class="n">arg2</span><span class="p">,</span> <span class="n">arg3</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="k">if</span> <span class="n">arg1</span> <span class="o">!=</span> <span class="s2">&quot;a&quot;</span> <span class="k">else</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="k">if</span> <span class="n">arg2</span> <span class="o">!=</span> <span class="s2">&quot;e&quot;</span> <span class="k">else</span> <span class="mi">0</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>This function must then be instrumented in order to let the optimizer now what are the arguments:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nevergrad</span> <span class="k">as</span> <span class="nn">ng</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">nevergrad</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ng</span>
 <span class="c1"># argument transformation</span>
 <span class="c1"># Optimization of mixed (continuous and discrete) hyperparameters.</span>
 <span class="n">arg1</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">TransitionChoice</span><span class="p">([</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">])</span>  <span class="c1"># 1st arg. = positional discrete argument</span>
@@ -244,7 +244,7 @@ A complete list is available in <code class="code docutils literal notranslate">
 The function therefore returns 7 + 1 = 8.</p>
 <p>Then you can run the optimization as usual. <code class="code docutils literal notranslate"><span class="pre">PortfolioDiscreteOnePlusOne</span></code> is quite a natural choice when you have a good initial guess and a mix of discrete and continuous variables; in this case, it might be better to use <code class="code docutils literal notranslate"><span class="pre">TransitionChoice</span></code> rather than <code class="code docutils literal notranslate"><span class="pre">Choice</span></code>.
 <cite>TwoPointsDE</cite> is often excellent in the large scale case (budget in the hundreds).</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nevergrad</span> <span class="k">as</span> <span class="nn">ng</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">nevergrad</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ng</span>
 <span class="n">budget</span> <span class="o">=</span> <span class="mi">1200</span>  <span class="c1"># How many episode we will do before concluding.</span>
 <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;RandomSearch&quot;</span><span class="p">,</span> <span class="s2">&quot;ScrHammersleySearch&quot;</span><span class="p">,</span> <span class="s2">&quot;TwoPointsDE&quot;</span><span class="p">,</span> <span class="s2">&quot;PortfolioDiscreteOnePlusOne&quot;</span><span class="p">,</span> <span class="s2">&quot;CMA&quot;</span><span class="p">,</span> <span class="s2">&quot;PSO&quot;</span><span class="p">]:</span>
     <span class="n">optim</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">registry</span><span class="p">[</span><span class="n">name</span><span class="p">](</span><span class="n">parametrization</span><span class="o">=</span><span class="n">instru</span><span class="p">,</span> <span class="n">budget</span><span class="o">=</span><span class="n">budget</span><span class="p">)</span>
@@ -272,14 +272,14 @@ The function therefore returns 7 + 1 = 8.</p>
 <section id="manual-parametrization">
 <h3>Manual parametrization<a class="headerlink" href="#manual-parametrization" title="Permalink to this heading"></a></h3>
 <p>You always have the possibility to define your own parametrization inside your function (not recommended):</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">softmax</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">possible_values</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">softmax</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">possible_values</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="n">expx</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">x_</span> <span class="o">-</span> <span class="nb">max</span><span class="p">(</span><span class="n">x</span><span class="p">))</span> <span class="k">for</span> <span class="n">x_</span> <span class="ow">in</span> <span class="n">x</span><span class="p">]</span>
     <span class="n">probas</span> <span class="o">=</span> <span class="p">[</span><span class="n">e</span> <span class="o">/</span> <span class="nb">sum</span><span class="p">(</span><span class="n">expx</span><span class="p">)</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">expx</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">if</span> <span class="n">possible_values</span> <span class="ow">is</span> <span class="kc">None</span>
             <span class="k">else</span> <span class="n">possible_values</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="n">probas</span><span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">train_and_return_test_error_mixed</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">train_and_return_test_error_mixed</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
     <span class="n">cx</span> <span class="o">=</span> <span class="p">[</span><span class="n">x_</span> <span class="o">-</span> <span class="mf">0.1</span> <span class="k">for</span> <span class="n">x_</span> <span class="ow">in</span> <span class="n">x</span><span class="p">[</span><span class="mi">3</span><span class="p">:]]</span>
     <span class="n">activation</span> <span class="o">=</span> <span class="n">softmax</span><span class="p">(</span><span class="n">x</span><span class="p">[:</span><span class="mi">3</span><span class="p">],</span> <span class="p">[</span><span class="s2">&quot;tanh&quot;</span><span class="p">,</span> <span class="s2">&quot;sigmoid&quot;</span><span class="p">,</span> <span class="s2">&quot;relu&quot;</span><span class="p">])</span>
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">cx</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="mf">1.</span> <span class="k">if</span> <span class="n">activation</span> <span class="o">!=</span> <span class="s2">&quot;tanh&quot;</span> <span class="k">else</span> <span class="mf">0.</span><span class="p">)</span>
@@ -287,7 +287,7 @@ The function therefore returns 7 + 1 = 8.</p>
 <span class="n">parametrization</span> <span class="o">=</span> <span class="mi">10</span>  <span class="c1"># you can just provide the size of your input in this case</span>
 
 <span class="c1">#This version is bigger.</span>
-<span class="k">def</span> <span class="nf">train_and_return_test_error_mixed</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">train_and_return_test_error_mixed</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
     <span class="n">cx</span> <span class="o">=</span> <span class="n">x</span><span class="p">[:(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span><span class="p">)]</span>  <span class="c1"># continuous part.</span>
     <span class="n">presoftmax_values</span> <span class="o">=</span> <span class="n">x</span><span class="p">[(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span><span class="p">):]</span>  <span class="c1"># discrete part.</span>
     <span class="n">values_for_this_softmax</span> <span class="o">=</span> <span class="p">[]</span>
@@ -310,8 +310,8 @@ The function therefore returns 7 + 1 = 8.</p>
 <p>We do not average evaluations over multiple episodes - the algorithm is in charge of averaging, if need be.
 <code class="code docutils literal notranslate"><span class="pre">TBPSA</span></code>, based on population-control mechanisms, performs quite well in this case.</p>
 <p>If you want to run Open AI Gym, see <a class="reference external" href="https://docs.google.com/document/d/1noubQ_ZTZ4PZeQ1St7Asi1Af02q7k0nRoX_Pipu9ZKs/edit?usp=sharing/">One-line for learning state-of-the-art OpenAI Gym controllers with Nevergrad</a></p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nevergrad</span> <span class="k">as</span> <span class="nn">ng</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">nevergrad</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ng</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
 <span class="c1"># Similar, but with a noisy case: typically a case in which we train in reinforcement learning.</span>
 <span class="c1"># This is about parameters rather than hyperparameters. TBPSA is a strong candidate in this case.</span>
@@ -322,7 +322,7 @@ The function therefore returns 7 + 1 = 8.</p>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Optimization of parameters in reinforcement learning ===============&quot;</span><span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">simulate_and_return_test_error_with_rl</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">noisy</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">simulate_and_return_test_error_with_rl</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">noisy</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">([</span><span class="nb">int</span><span class="p">(</span><span class="mf">50.</span> <span class="o">*</span> <span class="nb">abs</span><span class="p">(</span><span class="n">x_</span> <span class="o">-</span> <span class="mf">0.2</span><span class="p">))</span> <span class="k">for</span> <span class="n">x_</span> <span class="ow">in</span> <span class="n">x</span><span class="p">])</span> <span class="o">+</span> <span class="n">noisy</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">()</span>
 
 

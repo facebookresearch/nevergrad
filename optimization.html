@@ -106,9 +106,9 @@
 <section id="basic-example">
 <h2>Basic example<a class="headerlink" href="#basic-example" title="Permalink to this heading"></a></h2>
 <p>Minimizing a function using an optimizer (here <code class="code docutils literal notranslate"><span class="pre">NgIohTuned</span></code>, our adaptative optimization algorithm) can be easily run with:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nevergrad</span> <span class="k">as</span> <span class="nn">ng</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">nevergrad</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ng</span>
 
-<span class="k">def</span> <span class="nf">square</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">12</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">square</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">12</span><span class="p">):</span>
     <span class="k">return</span> <span class="nb">sum</span><span class="p">((</span><span class="n">x</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="nb">abs</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
 
 <span class="c1"># optimization on x as an array of shape (2,)</span>
@@ -133,9 +133,9 @@ and <a class="reference internal" href="parametrization_ref.html#parametrization
 </pre></div>
 </div>
 <p>We can work in the discrete case as well, e.g. with the one-max function applied on <code class="code docutils literal notranslate"><span class="pre">{0,1,2,3,4,5,6}^10</span></code>:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nevergrad</span> <span class="k">as</span> <span class="nn">ng</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">nevergrad</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ng</span>
 
-<span class="k">def</span> <span class="nf">onemax</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">onemax</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
     <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">-</span> <span class="n">x</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 
 <span class="c1"># Discrete, ordered</span>
@@ -158,7 +158,7 @@ and <a class="reference internal" href="parametrization_ref.html#parametrization
 <section id="using-several-workers">
 <h2>Using several workers<a class="headerlink" href="#using-several-workers" title="Permalink to this heading"></a></h2>
 <p>Running the function evaluation in parallel with several workers is as easy as providing an executor:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">concurrent</span> <span class="kn">import</span> <span class="n">futures</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">concurrent</span><span class="w"> </span><span class="kn">import</span> <span class="n">futures</span>
 
 <span class="n">optimizer</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">NGOpt</span><span class="p">(</span><span class="n">parametrization</span><span class="o">=</span><span class="n">instrum</span><span class="p">,</span> <span class="n">budget</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">num_workers</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
 <span class="c1"># We use ThreadPoolExecutor for CircleCI but please</span>
@@ -182,9 +182,9 @@ and <a class="reference internal" href="parametrization_ref.html#parametrization
 <p>For most optimization algorithms in the platform, they can be called in arbitrary order - asynchronous optimization is OK. Some algorithms (with class attribute <code class="code docutils literal notranslate"><span class="pre">no_parallelization=True</span></code> however do not support this.</p>
 <p>The <code class="code docutils literal notranslate"><span class="pre">Parameter</span></code> class holds attribute <code class="code docutils literal notranslate"><span class="pre">value</span></code> which contain the actual value to evaluate through the function.</p>
 <p>Here is a simpler example in the sequential case (this is what happens in the <code class="code docutils literal notranslate"><span class="pre">optimize</span></code> method for <code class="code docutils literal notranslate"><span class="pre">num_workers=1</span></code>):</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nevergrad</span> <span class="k">as</span> <span class="nn">ng</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">nevergrad</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ng</span>
 
-<span class="k">def</span> <span class="nf">square</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">12</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">square</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">12</span><span class="p">):</span>
     <span class="k">return</span> <span class="nb">sum</span><span class="p">((</span><span class="n">x</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="nb">abs</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
 
 <span class="n">instrum</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">Instrumentation</span><span class="p">(</span><span class="n">ng</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">Array</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,)),</span> <span class="n">y</span><span class="o">=</span><span class="n">ng</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">Scalar</span><span class="p">())</span>  <span class="c1"># We are working on R^2 x R.</span>
@@ -205,7 +205,7 @@ and <a class="reference internal" href="parametrization_ref.html#parametrization
 <h2>Choosing an optimizer<a class="headerlink" href="#choosing-an-optimizer" title="Permalink to this heading"></a></h2>
 <p><code class="code docutils literal notranslate"><span class="pre">ng.optimizers.registry</span></code> is a <code class="code docutils literal notranslate"><span class="pre">dict</span></code> of all optimizers, so you <code class="code docutils literal notranslate"><span class="pre">ng.optimizers.NgIohTuned</span></code> is equivalent to <code class="code docutils literal notranslate"><span class="pre">ng.optimizers.registry[&quot;NgIohTuned&quot;]</span></code>.
 Also, <strong>you can print the full list of optimizers</strong> with:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nevergrad</span> <span class="k">as</span> <span class="nn">ng</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">nevergrad</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ng</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">ng</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">registry</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
 </pre></div>
@@ -263,12 +263,12 @@ Also, <strong>you can print the full list of optimizers</strong> with:</p>
 <p>You can add callbacks to the <code class="code docutils literal notranslate"><span class="pre">ask</span></code> and <code class="code docutils literal notranslate"><span class="pre">tell</span></code> methods through the <code class="code docutils literal notranslate"><span class="pre">register_callback</span></code> method.
 The functions/callbacks registered on <code class="code docutils literal notranslate"><span class="pre">ask</span></code> must have signature <code class="code docutils literal notranslate"><span class="pre">callback</span> <span class="pre">(optimizer)</span></code> and functions registered on <code class="code docutils literal notranslate"><span class="pre">tell</span></code> must have signature <code class="code docutils literal notranslate"><span class="pre">function(optimizer,</span> <span class="pre">candidate,</span> <span class="pre">value)</span></code>.</p>
 <p>The example below shows a callback which prints <code class="code docutils literal notranslate"><span class="pre">candidate</span></code> and <code class="code docutils literal notranslate"><span class="pre">value</span></code> on <code class="code docutils literal notranslate"><span class="pre">tell</span></code>:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nevergrad</span> <span class="k">as</span> <span class="nn">ng</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">nevergrad</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ng</span>
 
-<span class="k">def</span> <span class="nf">my_function</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">my_function</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
     <span class="k">return</span> <span class="nb">abs</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
 
-<span class="k">def</span> <span class="nf">print_candidate_and_value</span><span class="p">(</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">candidate</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">print_candidate_and_value</span><span class="p">(</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">candidate</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">candidate</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
 
 <span class="n">optimizer</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">NGOpt</span><span class="p">(</span><span class="n">parametrization</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">budget</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
@@ -305,9 +305,9 @@ And then, please use the float-valued version, and never the boolean one unless 
 “Cheap” means that we do not try to reduce the number of calls to such constraints.
 We basically repeat mutations until we get a satisfiable point.</p>
 <p>Let us say that we want to minimize <code class="code docutils literal notranslate"><span class="pre">(x[0]-.5)**2</span> <span class="pre">+</span> <span class="pre">(x[1]-.5)**2</span></code> under the constraint <code class="code docutils literal notranslate"><span class="pre">x[0]</span> <span class="pre">&gt;=</span> <span class="pre">1</span></code>.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nevergrad</span> <span class="k">as</span> <span class="nn">ng</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">nevergrad</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ng</span>
 
-<span class="k">def</span> <span class="nf">square</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">square</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
     <span class="k">return</span> <span class="nb">sum</span><span class="p">((</span><span class="n">x</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
 
 <span class="n">optimizer</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">NGOpt</span><span class="p">(</span><span class="n">parametrization</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">budget</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
@@ -320,9 +320,9 @@ We basically repeat mutations until we get a satisfiable point.</p>
 </pre></div>
 </div>
 <p>Note that we can provide a richer information by using float-valued constraints (&gt;= 0 if ok):</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nevergrad</span> <span class="k">as</span> <span class="nn">ng</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">nevergrad</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ng</span>
 
-<span class="k">def</span> <span class="nf">square</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">square</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
     <span class="k">return</span> <span class="nb">sum</span><span class="p">((</span><span class="n">x</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
 
 <span class="n">optimizer</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">NGOpt</span><span class="p">(</span><span class="n">parametrization</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">budget</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
@@ -374,9 +374,9 @@ More precisely, the budget is distributed over several algorithms, and when an o
 </pre></div>
 </div>
 <p>We can then minimize as usual:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nevergrad</span> <span class="k">as</span> <span class="nn">ng</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">nevergrad</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ng</span>
 
-<span class="k">def</span> <span class="nf">square</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">square</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
     <span class="k">return</span> <span class="nb">sum</span><span class="p">((</span><span class="n">x</span> <span class="o">-</span> <span class="mf">.5</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
 
 <span class="n">optimizer</span> <span class="o">=</span> <span class="n">DEwithLHS30</span><span class="p">(</span><span class="n">parametrization</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">budget</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
@@ -399,10 +399,10 @@ More precisely, the budget is distributed over several algorithms, and when an o
 </div></blockquote>
 <p>In other words, use it at your own risk ;) and provide feedbacks (both positive and negative) if you have any!</p>
 <p>To perform multiobjective optimization, you can just provide <code class="code docutils literal notranslate"><span class="pre">tell</span></code> with the results as an array or list of floats:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nevergrad</span> <span class="k">as</span> <span class="nn">ng</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">nevergrad</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ng</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
-<span class="k">def</span> <span class="nf">multiobjective</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">multiobjective</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
     <span class="k">return</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">x</span><span class="o">**</span><span class="mi">2</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">x</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)]</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Example: &quot;</span><span class="p">,</span> <span class="n">multiobjective</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])))</span>

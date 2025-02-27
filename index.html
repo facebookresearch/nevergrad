@@ -99,9 +99,9 @@
 <p>You can find other installation options (including for Windows users) in the <a class="reference internal" href="getting_started.html#getting-started"><span class="std std-ref">Getting started section</span></a>.</p>
 <p>Feel free to join <a class="reference external" href="https://www.facebook.com/groups/nevergradusers/">Nevergrad users Facebook group</a>.</p>
 <p>Minimizing a function using an optimizer (here <code class="code docutils literal notranslate"><span class="pre">NgIohTuned</span></code>, our adaptative optimization algorithm) can be easily run with:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nevergrad</span> <span class="k">as</span> <span class="nn">ng</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">nevergrad</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ng</span>
 
-<span class="k">def</span> <span class="nf">square</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">square</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
     <span class="k">return</span> <span class="nb">sum</span><span class="p">((</span><span class="n">x</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
 
 <span class="c1"># optimization on x as an array of shape (2,)</span>
@@ -115,9 +115,9 @@
 <p><em>Convergence of a population of points to the minima with two-points DE.</em></p>
 <p><code class="code docutils literal notranslate"><span class="pre">nevergrad</span></code> can also support bounded continuous variables as well as discrete variables, and mixture of those.
 To do this, one can specify the input space:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nevergrad</span> <span class="k">as</span> <span class="nn">ng</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">nevergrad</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ng</span>
 
-<span class="k">def</span> <span class="nf">fake_training</span><span class="p">(</span><span class="n">learning_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">architecture</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">fake_training</span><span class="p">(</span><span class="n">learning_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">architecture</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
     <span class="c1"># optimal for learning_rate=0.2, batch_size=4, architecture=&quot;conv&quot;</span>
     <span class="k">return</span> <span class="p">(</span><span class="n">learning_rate</span> <span class="o">-</span> <span class="mf">0.2</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">batch_size</span> <span class="o">-</span> <span class="mi">4</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="mi">0</span> <span class="k">if</span> <span class="n">architecture</span> <span class="o">==</span> <span class="s2">&quot;conv&quot;</span> <span class="k">else</span> <span class="mi">10</span><span class="p">)</span>
 

@@ -98,9 +98,9 @@ This section gives an example of how to optimize Pyomo models using Nevergrad.</
 <h2>Concrete Model<a class="headerlink" href="#concrete-model" title="Permalink to this heading"></a></h2>
 <p>Let us create a <code class="code docutils literal notranslate"><span class="pre">ConcreteModel</span></code> instance using Pyomo.
 In a <code class="code docutils literal notranslate"><span class="pre">ConcreteModel</span></code>, each component is fully initialized.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyomo</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pyomo.environ</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pyomo</span>
 
-<span class="k">def</span> <span class="nf">square</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">square</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">pyomo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">((</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">)</span>
 
 <span class="n">model</span> <span class="o">=</span> <span class="n">pyomo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">()</span>
@@ -115,8 +115,8 @@ Nevergrad has provided an utility to parse the Pyomo model to enable you to crea
 Such <code class="code docutils literal notranslate"><span class="pre">ExperimentFunction</span></code> contains the parameters, constraints, and an objective function to be optimized.
 Note that only single objective model is supported by the utility.
 To do this, you should first import new module.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nevergrad</span> <span class="k">as</span> <span class="nn">ng</span>
-<span class="kn">import</span> <span class="nn">nevergrad.functions.pyomo</span> <span class="k">as</span> <span class="nn">ng_pyomo</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">nevergrad</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ng</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">nevergrad.functions.pyomo</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ng_pyomo</span>
 
 </pre></div>
 </div>

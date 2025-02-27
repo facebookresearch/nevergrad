@@ -113,7 +113,7 @@ The parametrization subpackage will help you do thanks to:</p>
 <li><p>a random letter, which is either <code class="code docutils literal notranslate"><span class="pre">a</span></code>, <code class="code docutils literal notranslate"><span class="pre">b</span></code> or <code class="code docutils literal notranslate"><span class="pre">c</span></code>,</p></li>
 </ul>
 <p>The main attribute for users is the <code class="code docutils literal notranslate"><span class="pre">value</span></code> attribute, which provides the value of the defined <code class="code docutils literal notranslate"><span class="pre">dict</span></code>:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nevergrad</span> <span class="k">as</span> <span class="nn">ng</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">nevergrad</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ng</span>
 
 <span class="c1"># build a parameter providing a dict value:</span>
 <span class="n">param</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">Dict</span><span class="p">(</span>
@@ -246,7 +246,7 @@ where it is easier to define operations.</p>
 </div>
 <p>You can then directly perform optimization on a function given its parametrization:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span>
-<span class="k">def</span> <span class="nf">myfunction</span><span class="p">(</span><span class="n">arg1</span><span class="p">,</span> <span class="n">arg2</span><span class="p">,</span> <span class="n">arg3</span><span class="p">,</span> <span class="n">amount</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">myfunction</span><span class="p">(</span><span class="n">arg1</span><span class="p">,</span> <span class="n">arg2</span><span class="p">,</span> <span class="n">arg3</span><span class="p">,</span> <span class="n">amount</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)):</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">arg1</span><span class="p">,</span> <span class="n">arg2</span><span class="p">,</span> <span class="n">arg3</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">amount</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">amount</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span>
 
@@ -287,10 +287,10 @@ where it is easier to define operations.</p>
 <li><p><strong>prepare the command to execute</strong> that will run your code. Make sure that the last printed line is just a float, which is the value to base the optimization upon. We will be doing minimization here, so this value must decrease for better results.</p></li>
 <li><p><strong>instantiate</strong> your code into a function using the <code class="code docutils literal notranslate"><span class="pre">FolderFunction</span></code> class:</p></li>
 </ul>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
-<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
-<span class="kn">import</span> <span class="nn">nevergrad</span> <span class="k">as</span> <span class="nn">ng</span>
-<span class="kn">from</span> <span class="nn">nevergrad.parametrization</span> <span class="kn">import</span> <span class="n">FolderFunction</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">nevergrad</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ng</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">nevergrad.parametrization</span><span class="w"> </span><span class="kn">import</span> <span class="n">FolderFunction</span>
 
 <span class="c1"># nevergrad/parametrization/examples contains a script</span>
 <span class="n">example_folder</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">ng</span><span class="o">.</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s2">&quot;parametrization&quot;</span> <span class="o">/</span> <span class="s2">&quot;examples&quot;</span>
