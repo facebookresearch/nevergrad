@@ -5,6 +5,7 @@
 
 import numpy as np
 import nevergrad.common.typing as tp
+import time
 from . import utils
 from .base import registry
 from . import callbacks
@@ -74,7 +75,7 @@ def learn_on_k_best(
 
         nw = np.random.choice([16, 64, 256])
         model = MLPRegressor(
-            hidden_layer_sizes=(nw, nw), solver="adam", max_fun=15000, max_iter=200, early_stopping=True
+            hidden_layer_sizes=(nw, nw), solver="adam", max_fun=15000, max_iter=200
         )
         # print("learning on ", len(inputs), " and ", len(outputs))
         # print("dim input = ", len(inputs[0]), inputs[np.random.randint(len(inputs))])
@@ -82,7 +83,9 @@ def learn_on_k_best(
         outputs = np.asarray(outputs)
         generalize = np.asarray(generalize)
         # print(inputs.shape, outputs.shape)
-        model.fit(inputs, outputs)
+        t0 = time.time()
+        while time.time() < t0 + 7:
+            model.partial_fit(inputs, outputs)
         output = model.predict(generalize)
         return output
 
