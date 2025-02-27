@@ -21,6 +21,7 @@ from nevergrad.functions.ml import MLTuning
 from nevergrad.functions import mlda as _mlda
 from nevergrad.functions.photonics import Photonics
 from nevergrad.functions.photonics import ceviche as photonics_ceviche
+from nevergrad.functions.photonics import gambas_function as photonics_gambas
 from nevergrad.functions.arcoating import ARCoating
 from nevergrad.functions import images as imagesxp
 from nevergrad.functions.powersystems import PowerSystem
@@ -3560,7 +3561,7 @@ def multi_ceviche(
     ]
 
     algos = [a for a in algos if a in list(ng.optimizers.registry.keys())]
-    for benchmark_type in [np.random.choice([0, 1, 2, 3])]:  # [np.random.randint(4)]:
+    for benchmark_type in [2]:  # [np.random.choice([0, 1, 2, 3])]:  # [np.random.randint(4)]:
         if warmstart:
             try:
                 suggestion = np.load(f"bestnp{benchmark_type}.npy")
@@ -3569,8 +3570,11 @@ def multi_ceviche(
                     "Be caereful! You need warmstart data for warmstarting :-)  use scripts/plot_ceviche.sh."
                 )
                 raise e
-        shape = tuple([int(p) for p in list(photonics_ceviche(None, benchmark_type))])  # type: ignore
-        name = photonics_ceviche("name", benchmark_type) + str(shape)  # type: ignore
+        shape = tuple([int(p) for p in list(photonics_gambas(None, benchmark_type))])  # type: ignore
+        # shape = tuple([int(p) for p in list(photonics_ceviche(None, benchmark_type))])  # type: ignore
+        print(shape)
+        name = photonics_gambas("name", benchmark_type) + str(shape)  # type: ignore
+        # name = photonics_ceviche("name", benchmark_type) + str(shape)  # type: ignore
         # print(f"Shape = {shape} {type(shape)} {type(shape[0])}")
         instrumc0 = ng.p.Array(shape=shape, lower=0.0, upper=1.0)
         instrumc0c = ng.p.Array(shape=shape, lower=0.0, upper=1.0)
@@ -3588,14 +3592,17 @@ def multi_ceviche(
         #             instrum = ng.p.Array(shape=shape, lower=0.0, upper=1.0).set_integer_casting()
 
         def pc(x):
-            return photonics_ceviche(x, benchmark_type)
+            return photonics_gambas(x, benchmark_type)
+            # return photonics_ceviche(x, benchmark_type)
 
         def fpc(x):
-            loss, grad = photonics_ceviche(x.reshape(shape), benchmark_type, wantgrad=True)
+            loss, grad = photonics_gambas(x.reshape(shape), benchmark_type, wantgrad=True)
+            # loss, grad = photonics_ceviche(x.reshape(shape), benchmark_type, wantgrad=True)
             return loss, grad.flatten()
 
         def epc(x):
-            return photonics_ceviche(x, benchmark_type, discretize=True)
+            return photonics_gambas(x, benchmark_type, discretize=True)
+            # return photonics_ceviche(x, benchmark_type, discretize=True)
 
         #                sfunc = helpers.SpecialEvaluationExperiment(func, evaluation=iqa)
         #                sfunc.add_descriptors(non_proxy_function=False)
@@ -3636,9 +3643,9 @@ def multi_ceviche(
                 name,
                 [100 * np.average(np.abs(np.round(10 * x.flatten()) - i) < 0.1) for i in range(11)],
             )
+            np.save(name + "savedarray", array)
             if fields is not None:
                 np.save(name + "fields.", fields)
-                np.save(name + "savedarray", array)
 
             im = Image.fromarray(x)
             im.convert("RGB").save(f"{name}_{freq}_{freq2}.png", mode="L")
@@ -3663,7 +3670,7 @@ def multi_ceviche(
                 if not precompute
                 else [np.random.choice([204800 + 51200, 204800]) - 102400]
             )
-
+        budgets = [np.random.choice([int(65536 * (2**i)) for i in range(15)])]
         for optim in [np.random.choice(algos)]:  # TODO: we also need penalizations.
             for budget in budgets:
                 #                np.random.choice(
@@ -3674,7 +3681,7 @@ def multi_ceviche(
                 #                    replace=False,
                 #                )
                 #            ):  # [int(np.random.choice([3, 20, 50, 90]))]: #[20, 50, 90]:
-                if (np.random.rand() < 0.05 or precompute) and not warmstart:
+                if (np.random.rand() < 0.00 or precompute) and not warmstart:
                     from scipy import optimize as scipyoptimize
 
                     x0 = np.random.rand(np.prod(shape))  # type: ignore
@@ -3697,13 +3704,13 @@ def multi_ceviche(
                             f"\nLOGPB{benchmark_type} CheatingLBFGSB with_budget {budget} returns {fake_loss}"
                         )
                     initial_point = result.x.reshape(shape)
-                    if budget > 100000 or np.random.rand() < 0.05:
+                    if budget > 1000 or np.random.rand() < 0.05:
                         export_numpy(
                             f"pb{benchmark_type}_budget{budget if not precompute else 102400}_bfgs_{real_loss}_{fake_loss}",
                             result.x.reshape(shape),
                         )
-                if (c0 and np.random.choice([True, False, False, False])) and not precompute:
-                    pen = np.random.choice([True, False, False] + ([False] * 20)) and not precompute
+                if (c0 and np.random.choice([False, False, False, False])) and not precompute:  # TODO
+                    pen = np.random.choice([False, False, False] + ([False] * 20)) and not precompute  # TODO
                     pre_optim = ng.optimizers.registry[optim]
                     if pen:
                         assert not precompute
@@ -3737,9 +3744,11 @@ def multi_ceviche(
                             optim3.__name__ += ("c0" if not cheat else "c0c") + ("P" if precompute else "")
 
                         def plot_pc(x):
-                            fake_loss = photonics_ceviche(x, benchmark_type)
-                            real_loss = photonics_ceviche(x, benchmark_type, discretize=True)
-                            if budget > 100000 or np.random.rand() < 0.05:
+                            fake_loss = photonics_gambas(x, benchmark_type)
+                            # fake_loss = photonics_ceviche(x, benchmark_type)
+                            real_loss = photonics_gambas(x, benchmark_type, discretize=True)
+                            # real_loss = photonics_ceviche(x, benchmark_type, discretize=True)
+                            if budget > 1000 or np.random.rand() < 0.05:
                                 export_numpy(
                                     f"pb{benchmark_type}_{optim}c0c_budget{budget}_{real_loss}_fl{fake_loss}",
                                     x.reshape(shape),
@@ -3762,10 +3771,13 @@ def multi_ceviche(
                 else:
 
                     def plot_epc(x):
-                        real_loss, fields = photonics_ceviche(
+                        real_loss, fields = photonics_gambas(
                             x, benchmark_type, discretize=True, wantfields=True
                         )
-                        if budget > 100000 or np.random.rand() < 0.05:
+                        # real_loss, fields = photonics_ceviche(
+                        #    x, benchmark_type, discretize=True, wantfields=True
+                        # )
+                        if budget > 1000 or np.random.rand() < 0.05:
                             export_numpy(
                                 f"pb{benchmark_type}_{optim}_budget{budget}_{real_loss}",
                                 x.reshape(shape),

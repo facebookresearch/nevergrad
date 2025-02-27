@@ -24,10 +24,12 @@ import numpy as np
 import nevergrad as ng
 from nevergrad.ops import mutations
 from . import photonics
+from . import gambas
 from .. import base
 
 
 ceviche = photonics.ceviche
+gambas = gambas.gambas_function  # type: ignore
 
 
 def _make_parametrization(

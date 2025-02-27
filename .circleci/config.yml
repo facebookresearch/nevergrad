@@ -37,12 +37,14 @@ commands:
             #python3 -m venv venv
             rm -rf venv && python3 -m venv venv
             . venv/bin/activate
-            pip install --progress-bar off -U pip setuptools
+            pip install -U setuptools<72.0.0
+            pip install --progress-bar off -U pip setuptools<72.0.0
             pip install --progress-bar off -e .[all]
             #pip install --progress-bar off --use-deprecated=legacy-resolver -e .[all]
             #pip install --progress-bar off -U numpy==1.24.0
             pip install --progress-bar off -U numpy==1.24.0 matplotlib==2.2.3 pyomo==5.7.1
             pip install keras==2.6.0  # issue on Nov 4th 2021
+            pip install -U setuptools<72.0.0
 
 jobs:
   install:
@@ -264,7 +266,8 @@ jobs:
           command: |
             py -3 -m venv venv
             . ./venv/Scripts/activate
-            pip install --progress-bar off -U pip setuptools
+            pip install --progress-bar off -U pip setuptools<72.0.0
+            pip install -U setuptools<72.0.0
             #  pip install --progress-bar off torch==1.4.0+cpu torchvision==0.5.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
             pip install --use-deprecated=legacy-resolver --progress-bar off .[all]
 
