@@ -28,7 +28,7 @@ def learn_on_k_best(
     ----------
     archive: utils.Archive[utils.Value]
     """
-    print("learn_on_k_best", k, algorithm)
+    # print("learn_on_k_best", k, algorithm, flush=True)
     items = list(archive.items_as_arrays())
     dimension = len(items[0][0])
     if algorithm == "image":
@@ -51,7 +51,7 @@ def learn_on_k_best(
             new_first_k_individuals += [new_child.value.flatten()]
     else:
         new_first_k_individuals = first_k_individuals
-    
+
     # assert len(new_first_k_individuals[0]) == len(first_k_individuals[0][0])
     # first_k_individuals = in the representation space  (after [0])
     # new_first_k_individuals = in the space of real values for the user
@@ -62,23 +62,26 @@ def learn_on_k_best(
         generalize = []
         for i in range(k):
             this_array = np.asarray(new_first_k_individuals[i][0]).reshape(shape)
-            #print("shape=", this_array.shape)
-            #print("thisarray=", this_array)
+            # print("shape=", this_array.shape)
+            # print("thisarray=", this_array)
             for index, values in np.ndenumerate(this_array):
-                #print(index, type(index), values)
+                # print(index, type(index), values)
                 inputs += [np.asarray(index)]
                 if i == 0:
                     generalize += [np.asarray(index)]
                 outputs += [[values]]
         from sklearn.neural_network import MLPRegressor
+
         nw = np.random.choice([16, 64, 256])
-        model = MLPRegressor(hidden_layer_sizes=(nw, nw), solver="lbfgs", max_fun=1500000, max_iter=20000)
-        #print("learning on ", len(inputs), " and ", len(outputs))
-        #print("dim input = ", len(inputs[0]), inputs[np.random.randint(len(inputs))])
+        model = MLPRegressor(
+            hidden_layer_sizes=(nw, nw), solver="adam", max_fun=15000, max_iter=200, early_stopping=True
+        )
+        # print("learning on ", len(inputs), " and ", len(outputs))
+        # print("dim input = ", len(inputs[0]), inputs[np.random.randint(len(inputs))])
         inputs = np.asarray(inputs)
         outputs = np.asarray(outputs)
         generalize = np.asarray(generalize)
-        #print(inputs.shape, outputs.shape)
+        # print(inputs.shape, outputs.shape)
         model.fit(inputs, outputs)
         output = model.predict(generalize)
         return output

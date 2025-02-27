@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 sys.path.insert(0, os.path.abspath("."))
 
 from joblib import Parallel, delayed
@@ -12,7 +13,7 @@ print(ng.__file__)
 
 for kbudget in [1, 5, 10]:
  print("kbudget =", kbudget)
- for dim in [2,1,3]:
+ for dim in [2]:
     print("Experiment in dimension ", dim)
     Nk=1   # we might play with greater values later
     N = 30
@@ -34,9 +35,9 @@ for kbudget in [1, 5, 10]:
 
        return np.min([subf(x,y) for y in Y])
     
-    num_manips = 9
+    num_manips = 80 
     #for optim in ["LognormalDiscreteOnePlusOne", "RFMetaModelLogNormal", "NeuralMetaModelLogNormal"]:
-    for optim in ["VoxelizeMetaModelOnePlusOne", "OnePlusOne", "MetaModelOnePlusOne", "ImageMetaModelOnePlusOne", "CMASL", "CLengler"]:
+    for optim in ["DiscreteLenglerOnePlusOne", "LognormalDiscreteOnePlusOne", "OnePlusOne", "CMASL", "CLengler", "VoxelizeMetaModelOnePlusOne", "MetaModelOnePlusOne", "ImageMetaModelOnePlusOne"]:
        loss = [] 
        #for k in range(num_manips):
        #  opt = ng.optimizers.registry[optim](domain, budget).minimize(f).value
@@ -44,5 +45,6 @@ for kbudget in [1, 5, 10]:
        def manip():
            domain = ng.p.Array(shape=[N]*dim, lower=0., upper=1.)
            return ng.optimizers.registry[optim](domain, budget).minimize(f).value
-       loss = Parallel(n_jobs=1)(delayed(manip)() for i in range(num_manips))
-       print(optim, "==>",  np.average(loss), "+-", np.std(loss)/np.sqrt(num_manips-1))
+       t0 = time.time()
+       loss = Parallel(n_jobs=10)(delayed(manip)() for i in range(num_manips))
+       print(optim, "==>",  np.average(loss), "+-", np.std(loss)/np.sqrt(num_manips-1), "   t=", time.time()-t0, flush=True)
