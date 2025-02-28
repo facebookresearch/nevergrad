@@ -74,9 +74,7 @@ def learn_on_k_best(
         from sklearn.neural_network import MLPRegressor
 
         nw = np.random.choice([16, 64, 256])
-        model = MLPRegressor(
-            hidden_layer_sizes=(nw, nw), solver="adam", max_fun=15000, max_iter=200
-        )
+        model = MLPRegressor(hidden_layer_sizes=(nw, nw), solver="adam", max_fun=15000, max_iter=200)
         # print("learning on ", len(inputs), " and ", len(outputs))
         # print("dim input = ", len(inputs[0]), inputs[np.random.randint(len(inputs))])
         inputs = np.asarray(inputs)
