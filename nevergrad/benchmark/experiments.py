@@ -3506,6 +3506,7 @@ def multi_ceviche(
         "ZetaSmoothDiscreteLognormalOnePlusOne",
         "SuperSmoothDiscreteLognormalOnePlusOne",
     ]
+    algos = ["ImageMetaModel", "ImageMetaModelD", "ImageMetaModelDiagonalCMA", "ImageMetaModelE", "ImageMetaModelLengler", "ImageMetaModelLogNormal", "ImageMetaModelOnePlusOne", ]
     # if np.random.choice([True,False]):
     #    algos = refactor_optims(algos)
     # algo = np.random.choice(algos)
@@ -3518,7 +3519,7 @@ def multi_ceviche(
     algos = ["CLengler", "CMALS", "CMALYS", "CMALL", "CMAL"]
     algos = ["CMASL2", "CMASL3"]
     algos = [
-        "DiagonalCMA",
+        "DiagonalCMA", "DiscreteOnePlusOne",
         "CMAL3",
         "CMA",
         "CLengler",
@@ -3549,6 +3550,8 @@ def multi_ceviche(
         "VoronoiDE",
         "UltraSmoothDiscreteLognormalOnePlusOne",
         "VoronoiDE",
+        "DiagonalCMA",
+        "CMA",
         "RF1MetaModelLogNormal",
         "Neural1MetaModelLogNormal",
         "SVM1MetaModelLogNormal",
@@ -3558,10 +3561,10 @@ def multi_ceviche(
         "ImageMetaModelDiagonalCMA",
         "ImageMetaModelLengler",
         "ImageMetaModelLogNormal",
-    ]
+    ] + ["DiscreteOnePlusOne"] * 20
 
     algos = [a for a in algos if a in list(ng.optimizers.registry.keys())]
-    for benchmark_type in [2]:  # [np.random.choice([0, 1, 2, 3])]:  # [np.random.randint(4)]:
+    for benchmark_type in [0, 2]:  # [np.random.choice([0, 1, 2, 3])]:  # [np.random.randint(4)]:
         if warmstart:
             try:
                 suggestion = np.load(f"bestnp{benchmark_type}.npy")
@@ -3670,7 +3673,8 @@ def multi_ceviche(
                 if not precompute
                 else [np.random.choice([204800 + 51200, 204800]) - 102400]
             )
-        budgets = [np.random.choice([int(65536 * (2**i)) for i in range(15)])]
+        budgets = [np.random.choice([int(65536 * (2**i)) for i in range(2)])]
+        #budget = 1500
         for optim in [np.random.choice(algos)]:  # TODO: we also need penalizations.
             for budget in budgets:
                 #                np.random.choice(
@@ -3709,7 +3713,7 @@ def multi_ceviche(
                             f"pb{benchmark_type}_budget{budget if not precompute else 102400}_bfgs_{real_loss}_{fake_loss}",
                             result.x.reshape(shape),
                         )
-                if (c0 and np.random.choice([False, False, False, False])) and not precompute:  # TODO
+                if (c0 and np.random.choice([True, True, False, False])) and not precompute:  # TODO
                     pen = np.random.choice([False, False, False] + ([False] * 20)) and not precompute  # TODO
                     pre_optim = ng.optimizers.registry[optim]
                     if pen:
