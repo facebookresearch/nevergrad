@@ -10,9 +10,6 @@ import scipy.sparse.linalg as lin
 # import matplotlib.gridspec as gridspec
 from .functions import addupml2d, yeeder2d, block
 
-# import time
-
-# %% CALCULATE S-PARAMETERS FOR WGs
 
 
 c0 = 299792458
@@ -25,9 +22,8 @@ micrometers = 1
 nanometers = micrometers / 1000
 
 #########################################################
-## Using Ceviche mode converter dimentions
+## Using Ceviche mode converter dimensions
 #########################################################
-
 
 def mode_converter(X, ev_out=-(2.4**2), ev_in=-(2.8**2)):
     """
@@ -45,7 +41,7 @@ def mode_converter(X, ev_out=-(2.4**2), ev_in=-(2.8**2)):
     lam0 = 1.55 * micrometers
     k0 = 2 * np.pi / lam0
 
-    MODE = "E"  # 'E' or 'H'
+    MODE = "E" # "E" or 'H'
 
     # CENTER modifiable box PARAMETERS
     centerWG_n = 3.5  # refractive index, if discretized
@@ -64,9 +60,11 @@ def mode_converter(X, ev_out=-(2.4**2), ev_in=-(2.8**2)):
     shift_out = -00 * nanometers  # y-shift
 
     # FDFD PARAMETERS
-    NRES = 4  # GRID RESOLUTION
-    SPACER = lam0 * np.array([1, 1])  # Y SPACERS
-    NPML = [20, 20, 20, 20]  # NB PML
+    
+    NRES = 8                                     # GRID RESOLUTION
+    SPACER = lam0 * np.array([1, 1])                      # Y SPACERS
+    NPML = [20, 20, 20, 20]                    # NB PML
+
     nmax = max([inputWG_n, centerWG_n, outputWG_n])
 
     ### CALCULATE OPTIMIZED GRID
@@ -101,7 +99,8 @@ def mode_converter(X, ev_out=-(2.4**2), ev_in=-(2.8**2)):
     ya = np.arange(1, Ny + 1) * dy
     xa2 = np.arange(1, Nx2 + 1) * dx2
     ya2 = np.arange(1, Ny2 + 1) * dy2
-    # CENTER WINDOW (with (x,y) = (0,0) in the center)
+    
+    # CENTER WINDOW (with (x, y) = (0, 0) in the center)
     xa = xa - np.mean(xa)
     ya = ya - np.mean(ya)
     xa2 = xa2 - np.mean(xa2)
@@ -124,6 +123,8 @@ def mode_converter(X, ev_out=-(2.4**2), ev_in=-(2.8**2)):
 
     # OUTPUT WAVEGUIDE
     pos_x = -grid_size_x / 2 + PML[0] + inputWG_L + centerWG_L
+
+    
     pos_y = -outputWG_w / 2
     Len_x = outputWG_L + PML[1]
     Len_y = outputWG_w
@@ -135,15 +136,17 @@ def mode_converter(X, ev_out=-(2.4**2), ev_in=-(2.8**2)):
 
     nb_struct_x = int(centerWG_L / dx2)
     nb_struct_y = int(centerWG_w / dy2)
-    assert (
-        len(X) == nb_struct_x and len(X[0]) == nb_struct_y
-    ), f"nb_struct_x={nb_struct_x}, nb_struct_y={nb_struct_y}, np.shape(X)={np.shape(X)}"
 
     #  CENTER WAVEGUIDE
-    X = 1 + X * (centerWG_n**2 - 1)  # shift value range from 0-1 to 1-n**2
-
+    X = 1 + X * (centerWG_n**2-1) # shift value range from 0-1 to 1-n**2
+    X = np.kron(X, np.ones((2, 2))) # doubles the array resolution (transforms a pixel in four pixels)
+    assert (
+        len(X) == nb_struct_x and len(X[0]) == nb_struct_y
+        ),f"nb_struct_x={nb_struct_x}, nb_struct_y={nb_struct_y}, np.shape(X)={np.shape(X)}"
+    
     center_x_beg = int(Nx - nb_struct_x / 2)
     center_y_beg = int(Ny - nb_struct_y / 2)
+    
 
     ER2[center_x_beg : center_x_beg + nb_struct_x, center_y_beg : center_y_beg + nb_struct_y] = X
 
@@ -186,8 +189,9 @@ def mode_converter(X, ev_out=-(2.4**2), ev_in=-(2.8**2)):
     NEFF = -1j * D
     # GET SOURCE MODE
     neff_in = NEFF[0]
-    normalization = np.sqrt(neff_in / (2 * Z0) * (np.sum(np.abs(input_mode[:, 0]) ** 2) * dy))
-    input_mode = input_mode[:, 0] / normalization  # NORMALIZED MODE
+    
+    normalization = np.sqrt(neff_in / (2 * Z0) * (np.sum(np.abs(input_mode[:, 0])**2) * dy))
+    input_mode = input_mode[:, 0] / normalization # NORMALIZED MODE
 
     # EXTRACT OUPUT SLAB WAVEGUIDE FROM GRID
     nx = Nx2 - 2 * NPML[0] + 1
@@ -223,7 +227,8 @@ def mode_converter(X, ev_out=-(2.4**2), ev_in=-(2.8**2)):
     NEFF = -1j * D
     # GET SOURCE MODE
     neff_out = NEFF[0]
-    normalization = np.sqrt(neff_out / (2 * Z0) * (np.sum(np.abs(output_mode[:, 0]) ** 2) * dy))
+    
+    normalization = np.sqrt(neff_out / (2 * Z0) * (np.sum(np.abs(output_mode[:, 0])**2) * dy))
     output_mode = output_mode[:, 0] / normalization
 
     #########################################################
@@ -242,7 +247,7 @@ def mode_converter(X, ev_out=-(2.4**2), ev_in=-(2.8**2)):
     else:
         A = DEX @ inv_ERyy @ DHX + DEY @ inv_ERxx @ DHY + URzz
 
-    # np.savetxt("Debug", A.toarray()[:100,:100], fmt="%.3f")
+    # np.savetxt("Debug", A.toarray()[:100, :100], fmt="%.3f")
     # CALCULATE SOURCE FIELD
     fsrc = np.zeros((Nx, Ny), dtype=complex)
     for nx in range(Nx):
@@ -265,14 +270,12 @@ def mode_converter(X, ev_out=-(2.4**2), ev_in=-(2.8**2)):
     #########################################################
 
     # EXTRACT FIELDS
-    nx = Nx - NPML[1] - 2
+    nx = Nx - NPML[1]-2
     ftrn = U[nx, :]
+
 
     # CALCULATE S PARAMETERS
     S21 = ftrn @ np.conj(output_mode) / (np.conj(output_mode).T @ output_mode)
-    ST = abs(S21) ** 2  # TRANSMISSION
-    #########################################################
-    ## DRAW  SOLUTION
-    #########################################################
-
-    return 1 - ST, U
+    ST = abs(S21)**2    # TRANSMISSION
+   
+    return 1-ST, U
