@@ -61,7 +61,7 @@ def learn_on_k_best(
         inputs = []
         outputs = []
         generalize = []
-        for i in range(k):
+        for i in range(k):  # type: ignore
             this_array = np.asarray(new_first_k_individuals[i][0]).reshape(shape)  # type: ignore
             # print("shape=", this_array.shape)
             # print("thisarray=", this_array)
