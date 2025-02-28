@@ -35,7 +35,7 @@ def learn_on_k_best(
     if algorithm == "image":
         k = len(archive) // 6
     if algorithm == "voxelize":
-        k = np.random.randint(len(archive) // 6)
+        k = int(np.random.randint(len(archive) // 6))
         if k < 2:
             k = 2
     # Select the k best.
@@ -77,9 +77,9 @@ def learn_on_k_best(
         model = MLPRegressor(hidden_layer_sizes=(nw, nw), solver="adam", max_fun=15000, max_iter=200)
         # print("learning on ", len(inputs), " and ", len(outputs))
         # print("dim input = ", len(inputs[0]), inputs[np.random.randint(len(inputs))])
-        inputs = np.array(inputs)
-        outputs = np.array(outputs)
-        generalize = np.array(generalize)
+        inputs = np.array(inputs)  # type: ignore
+        outputs = np.array(outputs)  # type: ignore
+        generalize = np.array(generalize)  # type: ignore
         # print(inputs.shape, outputs.shape)
         t0 = time.time()
         while time.time() < t0 + 7:
