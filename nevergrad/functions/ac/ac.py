@@ -5,7 +5,7 @@
 
 """
 Optimization of the FAO crop management model.
-Based on 
+Based on
 https://colab.research.google.com/github/thomasdkelly/aquacrop/blob/master/tutorials/AquaCrop_OSPy_Notebook_3.ipynb#scrollTo=YDm931IGNxCb
 """
 
