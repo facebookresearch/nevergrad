@@ -5,8 +5,9 @@
 import numpy as np
 import scipy.sparse as sp
 import scipy.sparse.linalg as lin
-import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
+
+# import matplotlib.pyplot as plt
+# import matplotlib.gridspec as gridspec
 from .functions import addupml2d, yeeder2d, block
 
 
@@ -24,16 +25,16 @@ nanometers = micrometers / 1000
 ## Using Ceviche mode converter dimensions
 #########################################################
 
-def mode_converter(X, ev_out=-2.4**2, ev_in=-2.8**2, plot=False, show=False):
+def mode_converter(X, ev_out=-(2.4**2), ev_in=-(2.8**2)):
     """
-        Computes the conversion efficiency between the mode of index ev_in
-        in the input wg, into the mode of index ev_out in the output wg, 
-        given a central block of dimensions:
-            centerWG_w = 2 * micrometers        # Width
-            centerWG_L = 2 * micrometers          # Length
-        described in X float array of size (centerWG_w x dx , centerWG_L x dy)
-        X is the permittivities
-        Default ev values compute fundamental mode to first order mode
+    Computes the conversion efficiency between the mode of index ev_in
+    in the input wg, into the mode of index ev_out in the output wg,
+    given a central block of dimensions:
+        centerWG_w = 2 * micrometers        # Width
+        centerWG_L = 2 * micrometers          # Length
+    described in X float array of size (centerWG_w x dx , centerWG_L x dy)
+    X is the permittivities
+    Default ev values compute fundamental mode to first order mode
     """
 
     # SOURCE
@@ -43,27 +44,28 @@ def mode_converter(X, ev_out=-2.4**2, ev_in=-2.8**2, plot=False, show=False):
     MODE = "E" # "E" or 'H'
 
     # CENTER modifiable box PARAMETERS
-    centerWG_n = 3.5                              # refractive index, if discretized
-    centerWG_w = 1.5 * micrometers        # Width
-    centerWG_L = 1.5 * micrometers          # Length
+    centerWG_n = 3.5  # refractive index, if discretized
+    centerWG_w = 1.5 * micrometers  # Width
+    centerWG_L = 1.5 * micrometers  # Length
 
     # INPUT / OUTPUT WGs  PARAMETERS
-    inputWG_n = 3.5                               # refractive index
-    inputWG_L = 750 * nanometers         # Width
-    inputWG_w = 200 * nanometers      # Length
-    shift_in = 00 * nanometers              # y-shift
+    inputWG_n = 3.5  # refractive index
+    inputWG_L = 750 * nanometers  # Width
+    inputWG_w = 200 * nanometers  # Length
+    shift_in = 00 * nanometers  # y-shift
 
-    outputWG_n = 3.5                            # refractive index
-    outputWG_L = 750 * nanometers      # Width
-    outputWG_w = 400 * nanometers    # Length
-    shift_out = -00 * nanometers          # y-shift
+    outputWG_n = 3.5  # refractive index
+    outputWG_L = 750 * nanometers  # Width
+    outputWG_w = 400 * nanometers  # Length
+    shift_out = -00 * nanometers  # y-shift
 
     # FDFD PARAMETERS
+    
     NRES = 8                                     # GRID RESOLUTION
     SPACER = lam0 * np.array([1, 1])                      # Y SPACERS
     NPML = [20, 20, 20, 20]                    # NB PML
-    nmax = max([inputWG_n, centerWG_n, outputWG_n])
 
+    nmax = max([inputWG_n, centerWG_n, outputWG_n])
 
     ### CALCULATE OPTIMIZED GRID
     # GRID RESOLUTION
@@ -92,21 +94,21 @@ def mode_converter(X, ev_out=-2.4**2, ev_in=-2.8**2, plot=False, show=False):
     Ny2 = 2 * Ny
     dy2 = dy / 2
 
-    # CALCULATE AXIS VECTORS 
+    # CALCULATE AXIS VECTORS
     xa = np.arange(1, Nx + 1) * dx
     ya = np.arange(1, Ny + 1) * dy
     xa2 = np.arange(1, Nx2 + 1) * dx2
     ya2 = np.arange(1, Ny2 + 1) * dy2
+    
     # CENTER WINDOW (with (x, y) = (0, 0) in the center)
     xa = xa - np.mean(xa)
     ya = ya - np.mean(ya)
     xa2 = xa2 - np.mean(xa2)
-    ya2 = ya2 -np.mean(ya2)
+    ya2 = ya2 - np.mean(ya2)
 
-    PML = [np.abs(xa2[2 * NPML[0] - 1]-xa2[0]), np.abs(xa2[Nx2-1]-xa2[Nx2-1-2 * NPML[1]])]
+    PML = [np.abs(xa2[2 * NPML[0] - 1] - xa2[0]), np.abs(xa2[Nx2 - 1] - xa2[Nx2 - 1 - 2 * NPML[1]])]
 
-
-    #%% BUILD OPTICAL INTEGRATED CIRCUIT
+    # %% BUILD OPTICAL INTEGRATED CIRCUIT
     # INITIALIZE MATERIALS ARRAYS
     ER2 = np.ones((Nx2, Ny2))
     UR2 = np.ones((Nx2, Ny2))
@@ -119,15 +121,15 @@ def mode_converter(X, ev_out=-2.4**2, ev_in=-2.8**2, plot=False, show=False):
     pos_y = pos_y + shift_in
     ER2 = block(xa2, ya2, ER2, pos_x, pos_y, Len_x, Len_y, inputWG_n)
 
-
     # OUTPUT WAVEGUIDE
     pos_x = -grid_size_x / 2 + PML[0] + inputWG_L + centerWG_L
-    pos_y = - outputWG_w / 2
+
+    
+    pos_y = -outputWG_w / 2
     Len_x = outputWG_L + PML[1]
     Len_y = outputWG_w
     pos_y = pos_y + shift_out
     ER2 = block(xa2, ya2, ER2, pos_x, pos_y, Len_x, Len_y, outputWG_n)
-
 
     # ev_in = -inputWG_n**2
     # ev_out = - 2 * inputWG_n**2 # second mode ?
@@ -145,8 +147,8 @@ def mode_converter(X, ev_out=-2.4**2, ev_in=-2.8**2, plot=False, show=False):
     center_x_beg = int(Nx - nb_struct_x / 2)
     center_y_beg = int(Ny - nb_struct_y / 2)
     
-    ER2[center_x_beg:center_x_beg + nb_struct_x, center_y_beg:center_y_beg + nb_struct_y] = X
 
+    ER2[center_x_beg : center_x_beg + nb_struct_x, center_y_beg : center_y_beg + nb_struct_y] = X
 
     # INCORPORATE PML
     [inv_ERxx, inv_ERyy, ERzz, inv_URxx, inv_URyy, URzz] = addupml2d(ER2, UR2, NPML)
@@ -165,7 +167,7 @@ def mode_converter(X, ev_out=-2.4**2, ev_in=-2.8**2, plot=False, show=False):
     inv_urxx = sp.diags_array(1 / UR2[nx, 1:Ny2:2], format="csc")
     inv_uryy = sp.diags_array(1 / UR2[nx + 1, 0:Ny2:2], format="csc")
     urzz = sp.diags_array(UR2[nx, 1:Ny2:2], format="csc")
-        
+
     # BUILD DERIVATIVE MATRICES
     NS = [1, Ny]
     RES = np.array([1, dy])
@@ -180,7 +182,6 @@ def mode_converter(X, ev_out=-2.4**2, ev_in=-2.8**2, plot=False, show=False):
         A = -(DEY @ inv_erxx @ DHY + urzz)
         B = inv_eryy
 
-
     # SOLVE FULL EIGEN-VALUE PROBLEM
     ev = ev_in
     [D, input_mode] = lin.eigs(A, k=1, M=B, sigma=ev)  # Find the eigen value closest to the -n**2
@@ -188,6 +189,7 @@ def mode_converter(X, ev_out=-2.4**2, ev_in=-2.8**2, plot=False, show=False):
     NEFF = -1j * D
     # GET SOURCE MODE
     neff_in = NEFF[0]
+    
     normalization = np.sqrt(neff_in / (2 * Z0) * (np.sum(np.abs(input_mode[:, 0])**2) * dy))
     input_mode = input_mode[:, 0] / normalization # NORMALIZED MODE
 
@@ -201,7 +203,7 @@ def mode_converter(X, ev_out=-2.4**2, ev_in=-2.8**2, plot=False, show=False):
     inv_urxx = sp.diags_array(1 / UR2[nx, 1:Ny2:2], format="csc")
     inv_uryy = sp.diags_array(1 / UR2[nx + 1, 0:Ny2:2], format="csc")
     urzz = sp.diags_array(UR2[nx, 1:Ny2:2], format="csc")
-        
+
     # BUILD DERIVATIVE MATRICES
     NS = [1, Ny]
     RES = np.array([1, dy])
@@ -220,11 +222,12 @@ def mode_converter(X, ev_out=-2.4**2, ev_in=-2.8**2, plot=False, show=False):
 
     # SOLVE FULL EIGEN-VALUE PROBLEM
     ev = ev_out
-    [D, output_mode] = lin.eigs(A, k=1, M=B, sigma=ev) # Find the eigen value closest to the -n**2
+    [D, output_mode] = lin.eigs(A, k=1, M=B, sigma=ev)  # Find the eigen value closest to the -n**2
     D = np.sqrt(D)
     NEFF = -1j * D
     # GET SOURCE MODE
     neff_out = NEFF[0]
+    
     normalization = np.sqrt(neff_out / (2 * Z0) * (np.sum(np.abs(output_mode[:, 0])**2) * dy))
     output_mode = output_mode[:, 0] / normalization
 
@@ -237,7 +240,6 @@ def mode_converter(X, ev_out=-2.4**2, ev_in=-2.8**2, plot=False, show=False):
     RES = np.array([dx, dy])
     BC = [0, 0]
     [DEX, DEY, DHX, DHY] = yeeder2d(NS, k0 * RES, BC)
-
 
     # BUILD WAVE MATRIX
     if MODE == "E":
@@ -256,7 +258,6 @@ def mode_converter(X, ev_out=-2.4**2, ev_in=-2.8**2, plot=False, show=False):
     Q = np.zeros((Nx, Ny))
     Q[:nx, :] = 1
     Q = sp.diags_array(Q.flatten("F"), format="csc")
-
 
     # CALCULATE SOURCE VECTOR
     b = (Q @ A - A @ Q) @ fsrc.flatten("F")

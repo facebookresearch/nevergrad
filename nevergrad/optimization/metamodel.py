@@ -5,6 +5,7 @@
 
 import numpy as np
 import nevergrad.common.typing as tp
+import time
 from . import utils
 from .base import registry
 from . import callbacks
@@ -28,10 +29,15 @@ def learn_on_k_best(
     ----------
     archive: utils.Archive[utils.Value]
     """
+    # print("learn_on_k_best", k, algorithm, flush=True)
     items = list(archive.items_as_arrays())
     dimension = len(items[0][0])
     if algorithm == "image":
         k = len(archive) // 6
+    if algorithm == "voxelize":
+        k = int(np.random.randint(len(archive) // 6))
+        if k < 2:
+            k = 2
     # Select the k best.
     first_k_individuals = sorted(items, key=lambda indiv: archive[indiv[0]].get_estimation("average"))[:k]
     if algorithm == "image":
@@ -46,10 +52,40 @@ def learn_on_k_best(
             new_first_k_individuals += [new_child.value.flatten()]
     else:
         new_first_k_individuals = first_k_individuals
+
     # assert len(new_first_k_individuals[0]) == len(first_k_individuals[0][0])
     # first_k_individuals = in the representation space  (after [0])
     # new_first_k_individuals = in the space of real values for the user
     assert len(first_k_individuals) == k
+    if algorithm == "voxelize":
+        inputs = []
+        outputs = []
+        generalize = []
+        for i in range(k):  # type: ignore
+            this_array = np.asarray(new_first_k_individuals[i][0]).reshape(shape)  # type: ignore
+            # print("shape=", this_array.shape)
+            # print("thisarray=", this_array)
+            for index, values in np.ndenumerate(this_array):
+                # print(index, type(index), values)
+                inputs += [np.asarray(index)]
+                if i == 0:
+                    generalize += [np.asarray(index)]
+                outputs += [[values]]
+        from sklearn.neural_network import MLPRegressor
+
+        nw = np.random.choice([16, 64, 256])
+        model = MLPRegressor(hidden_layer_sizes=(nw, nw), solver="adam", max_fun=15000, max_iter=200)
+        # print("learning on ", len(inputs), " and ", len(outputs))
+        # print("dim input = ", len(inputs[0]), inputs[np.random.randint(len(inputs))])
+        inputs = np.array(inputs)  # type: ignore
+        outputs = np.array(outputs)  # type: ignore
+        generalize = np.array(generalize)  # type: ignore
+        # print(inputs.shape, outputs.shape)
+        t0 = time.time()
+        while time.time() < t0 + 7:
+            model.partial_fit(inputs, outputs)
+        output = model.predict(generalize)
+        return output
 
     # Recenter the best.
     middle = np.array(sum(p[0] for p in first_k_individuals) / k)
