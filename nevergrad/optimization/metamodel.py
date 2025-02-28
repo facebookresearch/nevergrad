@@ -62,7 +62,7 @@ def learn_on_k_best(
         outputs = []
         generalize = []
         for i in range(k):
-            this_array = np.asarray(new_first_k_individuals[i][0]).reshape(shape)
+            this_array = np.asarray(new_first_k_individuals[i][0]).reshape(shape)  # type: ignore
             # print("shape=", this_array.shape)
             # print("thisarray=", this_array)
             for index, values in np.ndenumerate(this_array):
@@ -77,9 +77,9 @@ def learn_on_k_best(
         model = MLPRegressor(hidden_layer_sizes=(nw, nw), solver="adam", max_fun=15000, max_iter=200)
         # print("learning on ", len(inputs), " and ", len(outputs))
         # print("dim input = ", len(inputs[0]), inputs[np.random.randint(len(inputs))])
-        inputs = np.asarray(inputs)
-        outputs = np.asarray(outputs)
-        generalize = np.asarray(generalize)
+        inputs = np.array(inputs)
+        outputs = np.array(outputs)
+        generalize = np.array(generalize)
         # print(inputs.shape, outputs.shape)
         t0 = time.time()
         while time.time() < t0 + 7:
