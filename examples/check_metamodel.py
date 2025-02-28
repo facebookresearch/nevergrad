@@ -11,7 +11,7 @@ import numpy as np
 print(ng.__file__)
 
 
-for kbudget in [1, 5, 10, 25]:
+for kbudget in [1, 5, 10, 25, 40]:
  print("kbudget =", kbudget)
  for dim in [2]:
     print("Experiment in dimension ", dim)
@@ -37,7 +37,7 @@ for kbudget in [1, 5, 10, 25]:
     
     num_manips = 80 
     #for optim in ["LognormalDiscreteOnePlusOne", "RFMetaModelLogNormal", "NeuralMetaModelLogNormal"]:
-    for optim in ["DiscreteLenglerOnePlusOne", "LognormalDiscreteOnePlusOne", "OnePlusOne", "CMASL", "CLengler", "VoxelizeMetaModelOnePlusOne", "MetaModelOnePlusOne", "ImageMetaModelOnePlusOne", "DiagonalCMA", "PSO", "DE"]:
+    for optim in ["DiscreteLenglerOnePlusOne", "LognormalDiscreteOnePlusOne", "OnePlusOne", "CMASL", "CLengler", "VoxelizeMetaModelOnePlusOne", "MetaModelOnePlusOne", "ImageMetaModelOnePlusOne", "DiagonalCMA", "PSO", "DE", "CMA"]:
        loss = [] 
        #for k in range(num_manips):
        #  opt = ng.optimizers.registry[optim](domain, budget).minimize(f).value
