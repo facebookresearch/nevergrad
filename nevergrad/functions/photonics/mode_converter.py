@@ -114,7 +114,7 @@ def mode_converter(X, ev_out=-2.4**2, ev_in=-2.8**2, plot=False, show=False):
     # INPUT WAVEGUIDE
     pos_x = -grid_size_x / 2
     pos_y = -inputWG_w / 2
-    Len_x = PML[0] + inputWG_L + 1
+    Len_x = PML[0] + inputWG_L + 2 * NRES
     Len_y = inputWG_w
     pos_y = pos_y + shift_in
     ER2 = block(xa2, ya2, ER2, pos_x, pos_y, Len_x, Len_y, inputWG_n)
