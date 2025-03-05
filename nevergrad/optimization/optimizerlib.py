@@ -2140,7 +2140,7 @@ class _MetaModel(base.Optimizer):
         self.frequency_ratio = frequency_ratio
         self.algorithm = algorithm
         self.degree = degree
-        if algorithm == "image":
+        if algorithm in ["image", "voxelize"]:
             self.degree = 1
         elitist = self.dimension < 3
         if multivariate_optimizer is None:
@@ -2158,12 +2158,12 @@ class _MetaModel(base.Optimizer):
             shape = None
         if self.degree != 2:
             sample_size = int(np.power(sample_size, self.degree / 2.0))
-            if "image" == self.algorithm:
+            if self.algorithm in ["image", "voxelize"]:
                 sample_size = 50  # let us assume that 50 images is all we need.
         freq = max(
-            13 if "image" != self.algorithm else 0,
+            13 if ("image" != self.algorithm and "voxelize" != self.algorithm) else 0,
             self.num_workers,
-            self.dimension if "image" != self.algorithm else 0,
+            self.dimension if self.algorithm not in ["image", "voxelize"] else 0,
             int(self.frequency_ratio * sample_size),
         )
         if len(self.archive) >= sample_size and not self._num_ask % freq:
@@ -2282,6 +2282,9 @@ MetaModelOnePlusOne = ParametrizedMetaModel(multivariate_optimizer=OnePlusOne).s
 ImageMetaModelOnePlusOne = ParametrizedMetaModel(
     multivariate_optimizer=OnePlusOne, algorithm="image"
 ).set_name("ImageMetaModelOnePlusOne", register=True)
+VoxelizeMetaModelOnePlusOne = ParametrizedMetaModel(
+    multivariate_optimizer=OnePlusOne, algorithm="voxelize"
+).set_name("VoxelizeMetaModelOnePlusOne", register=True)
 ImageMetaModelDiagonalCMA = ParametrizedMetaModel(
     multivariate_optimizer=DiagonalCMA, algorithm="image"
 ).set_name("ImageMetaModelDiagonalCMA", register=True)
