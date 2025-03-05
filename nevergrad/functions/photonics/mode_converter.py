@@ -59,7 +59,7 @@ def mode_converter(X, ev_out=-2.4**2, ev_in=-2.8**2, plot=False, show=False):
     shift_out = -00 * nanometers          # y-shift
 
     # FDFD PARAMETERS
-    NRES = 8                                     # GRID RESOLUTION
+    NRES = 20                                     # GRID RESOLUTION
     SPACER = lam0 * np.array([1, 1])                      # Y SPACERS
     NPML = [20, 20, 20, 20]                    # NB PML
     nmax = max([inputWG_n, centerWG_n, outputWG_n])
@@ -137,7 +137,7 @@ def mode_converter(X, ev_out=-2.4**2, ev_in=-2.8**2, plot=False, show=False):
 
     #  CENTER WAVEGUIDE
     X = 1 + X * (centerWG_n**2-1) # shift value range from 0-1 to 1-n**2
-    X = np.kron(X, np.ones((2, 2))) # doubles the array resolution (transforms a pixel in four pixels)
+    X = np.kron(X, np.ones((5, 5))) # doubles the array resolution (transforms a pixel in four pixels)
     assert (
         len(X) == nb_struct_x and len(X[0]) == nb_struct_y
         ),f"nb_struct_x={nb_struct_x}, nb_struct_y={nb_struct_y}, np.shape(X)={np.shape(X)}"
