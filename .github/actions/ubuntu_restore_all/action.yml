@@ -3,7 +3,7 @@ runs:
   using: composite
   steps:
     - name: restore_cache
-      uses: actions/cache@v3.3.2
+      uses: actions/cache@v4
       with:
         key: v4-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}
         path: ./venv
