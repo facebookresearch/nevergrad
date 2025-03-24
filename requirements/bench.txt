@@ -65,5 +65,5 @@ numpy>=1.16.2
 scipy>=1.2.1
 #matplotlib>=3.0.3
 autograd>=1.2
-ceviche>=0.0.2
+#ceviche>=0.0.2
 scikit-image>=0.15.0
