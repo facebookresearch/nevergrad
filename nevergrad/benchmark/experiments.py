@@ -3989,23 +3989,6 @@ def pbo_reduced_suite(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     return pbo_suite(seed, reduced=True)
 
 
-def causal_similarity(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Finding the best causal graph"""
-    # pylint: disable=import-outside-toplevel
-    from nevergrad.functions.causaldiscovery import CausalDiscovery
-
-    seedg = create_seed_generator(seed)
-    optims = ["CMA", "NGOpt8", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
-    func = CausalDiscovery()
-    optims = refactor_optims(optims)
-    for budget in [100 * 5**k for k in range(3)]:
-        for num_workers in [1]:
-            for algo in optims:
-                xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
-                if not xp.is_incoherent:
-                    yield xp
-
-
 def unit_commitment(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     """Unit commitment problem."""
     seedg = create_seed_generator(seed)
