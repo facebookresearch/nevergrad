@@ -10,7 +10,8 @@ import nevergrad as ng
 from nevergrad.common import testing
 from .test_base import CounterFunction
 from . import optimizerlib
-from . import experimentalvariants as xpvariants
+
+# from . import experimentalvariants as xpvariants
 from . import utils
 
 

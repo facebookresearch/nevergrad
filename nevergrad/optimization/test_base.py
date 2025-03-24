@@ -10,7 +10,8 @@ import nevergrad.common.typing as tp
 from nevergrad.common import testing
 import nevergrad as ng
 from . import optimizerlib
-from . import experimentalvariants as xpvariants
+
+# from . import experimentalvariants as xpvariants
 from . import base
 from . import utils
 from . import callbacks
