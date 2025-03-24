@@ -20,7 +20,13 @@ from nevergrad.functions.pbt import PBT
 from nevergrad.functions.ml import MLTuning
 from nevergrad.functions import mlda as _mlda
 from nevergrad.functions.photonics import Photonics
-from nevergrad.functions.photonics import ceviche as photonics_ceviche
+
+try:
+    from nevergrad.functions.photonics import ceviche as photonics_ceviche
+
+    ceviche_available = True
+except:
+    ceviche_available = False
 from nevergrad.functions.photonics import gambas_function as photonics_gambas
 from nevergrad.functions.arcoating import ARCoating
 from nevergrad.functions import images as imagesxp
@@ -3395,56 +3401,61 @@ def far_optimum_es(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
                 yield Experiment(func, optim, budget=budget, seed=next(seedg))
 
 
-@registry.register
-def ceviche(
-    seed: tp.Optional[int] = None,
-) -> tp.Iterator[Experiment]:
-    seedg = create_seed_generator(seed)
-    instrum = ng.p.Array(shape=(40, 40), lower=0.0, upper=1.0).set_integer_casting()
-    func = ExperimentFunction(photonics_ceviche, instrum.set_name("transition"))
-    algos = [
-        "DiagonalCMA",
-        "PSO",
-        "DE",
-        "CMA",
-        "OnePlusOne",
-        "LognormalDiscreteOnePlusOne",
-        "DiscreteLenglerOnePlusOne",
-        "MetaModel",
-        "MetaModelDE",
-        "MetaModelDSproba",
-        "MetaModelOnePlusOne",
-        "MetaModelPSO",
-        "MetaModelQODE",
-        "MetaModelTwoPointsDE",
-        "NeuralMetaModel",
-        "NeuralMetaModelDE",
-        "NeuralMetaModelTwoPointsDE",
-        "RFMetaModel",
-        "RFMetaModelDE",
-        "RFMetaModelOnePlusOne",
-        "RFMetaModelPSO",
-        "RFMetaModelTwoPointsDE",
-        "SVMMetaModel",
-        "SVMMetaModelDE",
-        "SVMMetaModelPSO",
-        "SVMMetaModelTwoPointsDE",
-        "RandRecombiningDiscreteLognormalOnePlusOne",
-        "SmoothDiscreteLognormalOnePlusOne",
-        "SmoothLognormalDiscreteOnePlusOne",
-        "UltraSmoothElitistRecombiningDiscreteLognormalOnePlusOne",
-        "SuperSmoothRecombiningDiscreteLognormalOnePlusOne",
-        "SmoothElitistRandRecombiningDiscreteLognormalOnePlusOne",
-        "RecombiningDiscreteLognormalOnePlusOne",
-        "RandRecombiningDiscreteLognormalOnePlusOne",
-        "UltraSmoothDiscreteLognormalOnePlusOne",
-        "ZetaSmoothDiscreteLognormalOnePlusOne",
-        "SuperSmoothDiscreteLognormalOnePlusOne",
-    ]
-    # algo = np.random.choice(algos)
-    for optim in algos:
-        for budget in [20, 50, 100, 160, 240]:
-            yield Experiment(func, optim, budget=budget, seed=next(seedg))
+try:
+
+    @registry.register
+    def ceviche(
+        seed: tp.Optional[int] = None,
+    ) -> tp.Iterator[Experiment]:
+        seedg = create_seed_generator(seed)
+        instrum = ng.p.Array(shape=(40, 40), lower=0.0, upper=1.0).set_integer_casting()
+        func = ExperimentFunction(photonics_ceviche, instrum.set_name("transition"))
+        algos = [
+            "DiagonalCMA",
+            "PSO",
+            "DE",
+            "CMA",
+            "OnePlusOne",
+            "LognormalDiscreteOnePlusOne",
+            "DiscreteLenglerOnePlusOne",
+            "MetaModel",
+            "MetaModelDE",
+            "MetaModelDSproba",
+            "MetaModelOnePlusOne",
+            "MetaModelPSO",
+            "MetaModelQODE",
+            "MetaModelTwoPointsDE",
+            "NeuralMetaModel",
+            "NeuralMetaModelDE",
+            "NeuralMetaModelTwoPointsDE",
+            "RFMetaModel",
+            "RFMetaModelDE",
+            "RFMetaModelOnePlusOne",
+            "RFMetaModelPSO",
+            "RFMetaModelTwoPointsDE",
+            "SVMMetaModel",
+            "SVMMetaModelDE",
+            "SVMMetaModelPSO",
+            "SVMMetaModelTwoPointsDE",
+            "RandRecombiningDiscreteLognormalOnePlusOne",
+            "SmoothDiscreteLognormalOnePlusOne",
+            "SmoothLognormalDiscreteOnePlusOne",
+            "UltraSmoothElitistRecombiningDiscreteLognormalOnePlusOne",
+            "SuperSmoothRecombiningDiscreteLognormalOnePlusOne",
+            "SmoothElitistRandRecombiningDiscreteLognormalOnePlusOne",
+            "RecombiningDiscreteLognormalOnePlusOne",
+            "RandRecombiningDiscreteLognormalOnePlusOne",
+            "UltraSmoothDiscreteLognormalOnePlusOne",
+            "ZetaSmoothDiscreteLognormalOnePlusOne",
+            "SuperSmoothDiscreteLognormalOnePlusOne",
+        ]
+        # algo = np.random.choice(algos)
+        for optim in algos:
+            for budget in [20, 50, 100, 160, 240]:
+                yield Experiment(func, optim, budget=budget, seed=next(seedg))
+
+except:
+    assert not ceviche_available
 
 
 @registry.register
@@ -3987,23 +3998,6 @@ def pbo_suite(seed: tp.Optional[int] = None, reduced: bool = False) -> tp.Iterat
 @registry.register
 def pbo_reduced_suite(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
     return pbo_suite(seed, reduced=True)
-
-
-def causal_similarity(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
-    """Finding the best causal graph"""
-    # pylint: disable=import-outside-toplevel
-    from nevergrad.functions.causaldiscovery import CausalDiscovery
-
-    seedg = create_seed_generator(seed)
-    optims = ["CMA", "NGOpt8", "DE", "PSO", "RecES", "RecMixES", "RecMutDE", "ParametrizationDE"]
-    func = CausalDiscovery()
-    optims = refactor_optims(optims)
-    for budget in [100 * 5**k for k in range(3)]:
-        for num_workers in [1]:
-            for algo in optims:
-                xp = Experiment(func, algo, budget, num_workers=num_workers, seed=next(seedg))
-                if not xp.is_incoherent:
-                    yield xp
 
 
 def unit_commitment(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
