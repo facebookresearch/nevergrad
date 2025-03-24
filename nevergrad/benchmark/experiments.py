@@ -20,8 +20,10 @@ from nevergrad.functions.pbt import PBT
 from nevergrad.functions.ml import MLTuning
 from nevergrad.functions import mlda as _mlda
 from nevergrad.functions.photonics import Photonics
+
 try:
     from nevergrad.functions.photonics import ceviche as photonics_ceviche
+
     ceviche_available = True
 except:
     ceviche_available = False
@@ -3400,6 +3402,7 @@ def far_optimum_es(seed: tp.Optional[int] = None) -> tp.Iterator[Experiment]:
 
 
 try:
+
     @registry.register
     def ceviche(
         seed: tp.Optional[int] = None,
@@ -3450,6 +3453,7 @@ try:
         for optim in algos:
             for budget in [20, 50, 100, 160, 240]:
                 yield Experiment(func, optim, budget=budget, seed=next(seedg))
+
 except:
     assert not ceviche_available
 
