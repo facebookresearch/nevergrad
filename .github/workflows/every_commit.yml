@@ -15,7 +15,7 @@ jobs:
           python-version: '3.9'
       - uses: actions/checkout@v4.1.0
       - name: restore_cache
-        uses: actions/cache@v3.3.2
+        uses: actions/cache@v4
         with:
           key: v4-dependencies-main-{{ checksum "requirements/main.txt"}}
           path: "./venv"
@@ -36,7 +36,7 @@ jobs:
           python -m nevergrad.optimization.requirements_check  # calls a bit of everything
       - uses: "./.github/actions/ubuntu_restore_all"
       - name: save_cache
-        uses: actions/cache@v3.3.2
+        uses: actions/cache@v4
         with:
           path: "./venv"
           key: v4-dependencies-{{ checksum "requirements/dev.txt" }}-{{ checksum "requirements/main.txt"}}-{{ checksum "requirements/bench.txt"}}

@@ -10,7 +10,8 @@ import nevergrad.common.typing as tp
 from nevergrad.common import testing
 import nevergrad as ng
 from . import optimizerlib
-from . import experimentalvariants as xpvariants
+
+# from . import experimentalvariants as xpvariants
 from . import base
 from . import utils
 from . import callbacks
@@ -102,7 +103,7 @@ def test_tell_types(value: tp.Any, error: bool) -> None:
 
 
 def test_base_optimizer() -> None:
-    zeroptim = xpvariants.Zero(parametrization=2, budget=4, num_workers=1)
+    zeroptim = optimizerlib.Zero(parametrization=2, budget=4, num_workers=1)
     zeroptim.parametrization.function.deterministic = False
     assert not zeroptim.parametrization.function.deterministic
     representation = repr(zeroptim)

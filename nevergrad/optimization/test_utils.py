@@ -9,7 +9,9 @@ import numpy as np
 import nevergrad as ng
 from nevergrad.common import testing
 from .test_base import CounterFunction
-from . import experimentalvariants as xpvariants
+from . import optimizerlib
+
+# from . import experimentalvariants as xpvariants
 from . import utils
 
 
@@ -45,7 +47,7 @@ def test_sequential_executor() -> None:
 
 
 def test_get_nash() -> None:
-    zeroptim = xpvariants.Zero(parametrization=1, budget=4, num_workers=1)
+    zeroptim = optimizerlib.Zero(parametrization=1, budget=4, num_workers=1)
     param = zeroptim.parametrization
     for k in range(4):
         array = (float(k),)

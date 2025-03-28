@@ -229,8 +229,6 @@ ChainCMAwithMetaRecentering = Chaining([MetaRecentering, CMA], ["num_workers"]).
 )
 
 # Random search
-Zero = RandomSearchMaker(scale=0.0).set_name("Zero", register=True)
-StupidRandom = RandomSearchMaker(stupid=True).set_name("StupidRandom", register=True)
 CauchyRandomSearch = RandomSearchMaker(sampler="cauchy").set_name("CauchyRandomSearch", register=True)
 RandomScaleRandomSearch = RandomSearchMaker(scale="random", middle_point=True).set_name(
     "RandomScaleRandomSearch", register=True

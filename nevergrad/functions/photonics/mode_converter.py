@@ -11,7 +11,6 @@ import scipy.sparse.linalg as lin
 from .functions import addupml2d, yeeder2d, block
 
 
-
 c0 = 299792458
 epsi0 = 8.85418782e-12
 mu0 = 12.566370614e-7
@@ -22,7 +21,7 @@ micrometers = 1
 nanometers = micrometers / 1000
 
 #########################################################
-## Using Ceviche mode converter dimensions
+## Using Ceviche mode converter dimentions
 #########################################################
 
 
@@ -36,14 +35,13 @@ def mode_converter(X, ev_out=-(2.4**2), ev_in=-(2.8**2)):
     described in X float array of size (centerWG_w x dx , centerWG_L x dy)
     X is the permittivities
     Default ev values compute fundamental mode to first order mode
-
     """
 
     # SOURCE
     lam0 = 1.55 * micrometers
     k0 = 2 * np.pi / lam0
 
-    MODE = "E" # "E" or 'H'
+    MODE = "E"  # 'E' or 'H'
 
     # CENTER modifiable box PARAMETERS
     centerWG_n = 3.5  # refractive index, if discretized
@@ -243,7 +241,6 @@ def mode_converter(X, ev_out=-(2.4**2), ev_in=-(2.8**2)):
     else:
         A = DEX @ inv_ERyy @ DHX + DEY @ inv_ERxx @ DHY + URzz
 
-    # np.savetxt("Debug", A.toarray()[:100, :100], fmt="%.3f")
     # CALCULATE SOURCE FIELD
     fsrc = np.zeros((Nx, Ny), dtype=complex)
     for nx in range(Nx):

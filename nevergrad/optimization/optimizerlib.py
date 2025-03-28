@@ -24,6 +24,7 @@ from nevergrad.parametrization import transforms
 from nevergrad.parametrization import discretization
 from nevergrad.parametrization import _layering
 from nevergrad.parametrization import _datalayers
+from .oneshot import RandomSearchMaker  # type: ignore
 from . import oneshot
 from . import base
 from . import mutations
@@ -7716,6 +7717,14 @@ SQOPSODCMA20 = Chaining(optimizers=[SQOPSODCMA] * 20, budgets=["equal"] * 19, no
 SQOPSODCMA20bar = ConfPortfolio(optimizers=[SQOPSODCMA] * 20, warmup_ratio=0.5).set_name(
     "SQOPSODCMA20bar", register=True
 )
+SparseOrNot = ConfPortfolio(
+    optimizers=[OnePlusOne, RecombiningDiscreteLenglerOnePlusOne],
+    warmup_ratio=0.5,
+).set_name("SparseOrNot", register=True)
+TripleOnePlusOne = ConfPortfolio(
+    optimizers=[OnePlusOne, OnePlusOne, OnePlusOne],
+    warmup_ratio=0.5,
+).set_name("TripleOnePlusOne", register=True)
 NgIohLn = Chaining([LognormalDiscreteOnePlusOne, CSEC11], ["tenth"]).set_name("NgIohLn", register=True)
 CMALn = Chaining([LognormalDiscreteOnePlusOne, CMA], ["tenth"]).set_name("CMALn", register=True)
 CMARS = Chaining([RandomSearch, CMA], ["tenth"]).set_name("CMARS", register=True)
@@ -7737,3 +7746,5 @@ ManyLN = ConfPortfolio(
     warmup_ratio=0.5,
 ).set_name("ManyLN", register=True)
 NgIohMLn = Chaining([MultiLN, CSEC11], ["tenth"]).set_name("NgIohMLn", register=True)
+Zero = RandomSearchMaker(scale=0.0).set_name("Zero", register=True)
+StupidRandom = RandomSearchMaker(stupid=True).set_name("StupidRandom", register=True)

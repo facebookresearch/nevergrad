@@ -6,7 +6,11 @@
 #SBATCH --partition=scavenge
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=70
+<<<<<<< HEAD
 #SBATCH -a 0-900%50
+=======
+#SBATCH -a 0-700%330
+>>>>>>> upstream/main
 
 
 #999%200
