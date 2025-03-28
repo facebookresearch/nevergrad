@@ -10,10 +10,6 @@ import scipy.sparse.linalg as lin
 # import matplotlib.gridspec as gridspec
 from .functions import addupml2d, yeeder2d, block
 
-# import time
-
-# %% CALCULATE S-PARAMETERS FOR WGs
-
 
 c0 = 299792458
 epsi0 = 8.85418782e-12
@@ -64,9 +60,9 @@ def mode_converter(X, ev_out=-(2.4**2), ev_in=-(2.8**2)):
     shift_out = -00 * nanometers  # y-shift
 
     # FDFD PARAMETERS
-    NRES = 4  # GRID RESOLUTION
-    SPACER = lam0 * np.array([1, 1])  # Y SPACERS
-    NPML = [20, 20, 20, 20]  # NB PML
+    NRES = 20                                     # GRID RESOLUTION
+    SPACER = lam0 * np.array([1, 1])                      # Y SPACERS
+    NPML = [20, 20, 20, 20]                    # NB PML
     nmax = max([inputWG_n, centerWG_n, outputWG_n])
 
     ### CALCULATE OPTIMIZED GRID
@@ -101,7 +97,7 @@ def mode_converter(X, ev_out=-(2.4**2), ev_in=-(2.8**2)):
     ya = np.arange(1, Ny + 1) * dy
     xa2 = np.arange(1, Nx2 + 1) * dx2
     ya2 = np.arange(1, Ny2 + 1) * dy2
-    # CENTER WINDOW (with (x,y) = (0,0) in the center)
+    # CENTER WINDOW (with (x, y) = (0, 0) in the center)
     xa = xa - np.mean(xa)
     ya = ya - np.mean(ya)
     xa2 = xa2 - np.mean(xa2)
@@ -117,14 +113,14 @@ def mode_converter(X, ev_out=-(2.4**2), ev_in=-(2.8**2)):
     # INPUT WAVEGUIDE
     pos_x = -grid_size_x / 2
     pos_y = -inputWG_w / 2
-    Len_x = PML[0] + inputWG_L + 1
+    Len_x = PML[0] + inputWG_L + 2 * NRES
     Len_y = inputWG_w
     pos_y = pos_y + shift_in
     ER2 = block(xa2, ya2, ER2, pos_x, pos_y, Len_x, Len_y, inputWG_n)
 
     # OUTPUT WAVEGUIDE
     pos_x = -grid_size_x / 2 + PML[0] + inputWG_L + centerWG_L
-    pos_y = -outputWG_w / 2
+    pos_y = - outputWG_w / 2
     Len_x = outputWG_L + PML[1]
     Len_y = outputWG_w
     pos_y = pos_y + shift_out
@@ -135,15 +131,18 @@ def mode_converter(X, ev_out=-(2.4**2), ev_in=-(2.8**2)):
 
     nb_struct_x = int(centerWG_L / dx2)
     nb_struct_y = int(centerWG_w / dy2)
-    assert (
-        len(X) == nb_struct_x and len(X[0]) == nb_struct_y
-    ), f"nb_struct_x={nb_struct_x}, nb_struct_y={nb_struct_y}, np.shape(X)={np.shape(X)}"
 
     #  CENTER WAVEGUIDE
-    X = 1 + X * (centerWG_n**2 - 1)  # shift value range from 0-1 to 1-n**2
-
+    X = 1 + X * (centerWG_n**2-1) # shift value range from 0-1 to 1-n**2
+    X = np.kron(X, np.ones((5, 5))) # doubles the array resolution (transforms a pixel in four pixels)
+    assert (
+        len(X) == nb_struct_x and len(X[0]) == nb_struct_y
+        ),f"nb_struct_x={nb_struct_x}, nb_struct_y={nb_struct_y}, np.shape(X)={np.shape(X)}"
+    
     center_x_beg = int(Nx - nb_struct_x / 2)
     center_y_beg = int(Ny - nb_struct_y / 2)
+    
+    ER2[center_x_beg:center_x_beg + nb_struct_x, center_y_beg:center_y_beg + nb_struct_y] = X
 
     ER2[center_x_beg : center_x_beg + nb_struct_x, center_y_beg : center_y_beg + nb_struct_y] = X
 
@@ -186,8 +185,8 @@ def mode_converter(X, ev_out=-(2.4**2), ev_in=-(2.8**2)):
     NEFF = -1j * D
     # GET SOURCE MODE
     neff_in = NEFF[0]
-    normalization = np.sqrt(neff_in / (2 * Z0) * (np.sum(np.abs(input_mode[:, 0]) ** 2) * dy))
-    input_mode = input_mode[:, 0] / normalization  # NORMALIZED MODE
+    normalization = np.sqrt(neff_in / (2 * Z0) * (np.sum(np.abs(input_mode[:, 0])**2) * dy))
+    input_mode = input_mode[:, 0] / normalization # NORMALIZED MODE
 
     # EXTRACT OUPUT SLAB WAVEGUIDE FROM GRID
     nx = Nx2 - 2 * NPML[0] + 1
@@ -223,7 +222,7 @@ def mode_converter(X, ev_out=-(2.4**2), ev_in=-(2.8**2)):
     NEFF = -1j * D
     # GET SOURCE MODE
     neff_out = NEFF[0]
-    normalization = np.sqrt(neff_out / (2 * Z0) * (np.sum(np.abs(output_mode[:, 0]) ** 2) * dy))
+    normalization = np.sqrt(neff_out / (2 * Z0) * (np.sum(np.abs(output_mode[:, 0])**2) * dy))
     output_mode = output_mode[:, 0] / normalization
 
     #########################################################
@@ -242,7 +241,6 @@ def mode_converter(X, ev_out=-(2.4**2), ev_in=-(2.8**2)):
     else:
         A = DEX @ inv_ERyy @ DHX + DEY @ inv_ERxx @ DHY + URzz
 
-    # np.savetxt("Debug", A.toarray()[:100,:100], fmt="%.3f")
     # CALCULATE SOURCE FIELD
     fsrc = np.zeros((Nx, Ny), dtype=complex)
     for nx in range(Nx):
